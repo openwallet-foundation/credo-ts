@@ -1,24 +1,22 @@
 import type { IssuerSignedDocument } from '@animo-id/mdoc'
-import type { AgentContext } from '../../agent'
-import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
-
 import {
   COSEKey,
+  cborEncode,
   DeviceSignedDocument,
   Document,
-  Verifier,
-  cborEncode,
   parseDeviceSigned,
   parseIssuerSigned,
+  Verifier,
 } from '@animo-id/mdoc'
+import type { AgentContext } from '../../agent'
+import { TypedArrayEncoder } from './../../utils'
+import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
+import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig } from '../x509'
-
-import { KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
-import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
-import { TypedArrayEncoder } from './../../utils'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
+import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } from './mdocSupportedAlgs'
 
 /**
@@ -219,13 +217,5 @@ export class Mdoc {
     } catch (error) {
       return { isValid: false, error: error.message }
     }
-  }
-
-  private toJSON() {
-    return this.base64Url
-  }
-
-  private toString() {
-    return this.base64Url
   }
 }

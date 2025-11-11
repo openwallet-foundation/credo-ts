@@ -1,7 +1,7 @@
-import { createHash } from 'crypto'
-import fs from 'fs'
 import { ConsoleLogger, LogLevel } from '@credo-ts/core'
+import { createHash } from 'crypto'
 import express from 'express'
+import fs from 'fs'
 import multer, { diskStorage } from 'multer'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
@@ -39,7 +39,7 @@ function fileHash(filePath: string, algorithm = 'sha256') {
 }
 
 const fileStorage = diskStorage({
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   filename: (_req: any, file: { originalname: string }, cb: (arg0: null, arg1: string) => void) => {
     cb(null, `${file.originalname}-${new Date().toISOString()}`)
   },

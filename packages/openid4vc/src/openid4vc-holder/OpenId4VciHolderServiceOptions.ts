@@ -1,5 +1,13 @@
-import type { AgentContext, Kms, MdocRecord, SdJwtVcRecord, W3cCredentialRecord } from '@credo-ts/core'
+import type {
+  AgentContext,
+  Kms,
+  MdocRecord,
+  SdJwtVcRecord,
+  W3cCredentialRecord,
+  W3cV2CredentialRecord,
+} from '@credo-ts/core'
 import type { CredentialOfferObject, IssuerMetadataResult } from '@openid4vc/openid4vci'
+import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@openid4vc/openid4vci'
 import type {
   OpenId4VcCredentialHolderBinding,
   OpenId4VciAccessTokenResponse,
@@ -7,8 +15,6 @@ import type {
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciMetadata,
 } from '../shared'
-
-import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@openid4vc/openid4vci'
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
 
 export { OpenId4VciAuthorizationFlow }
@@ -66,7 +72,7 @@ export interface OpenId4VciCredentialResponse {
    * The record contains the credential instance (instances in case of batch issuance)
    * along with metadata such as the VCT Type Metadata (in case of SD-JWT)
    */
-  record: SdJwtVcRecord | MdocRecord | W3cCredentialRecord
+  record: SdJwtVcRecord | MdocRecord | W3cCredentialRecord | W3cV2CredentialRecord
 
   notificationId?: string
 }
@@ -77,6 +83,12 @@ export interface OpenId4VciDeferredCredentialResponse {
   transactionId: string
   interval?: number
   notificationId?: string
+  /**
+   * Mapping from JWK thumbprint values to KMS key ids that were submitted in the credential request.
+   * These should be used when retrieving the deferred credentials, to store the associated kms key id
+   * for each received credential.
+   */
+  jwkThumbprintKmsKeyIdMapping?: Record<string, string>
 }
 
 export interface OpenId4VciResolvedCredentialOffer {

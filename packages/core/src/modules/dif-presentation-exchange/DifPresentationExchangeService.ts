@@ -1,17 +1,39 @@
 import type { Checked, PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@animo-id/pex'
 import { PEX, Status } from '@animo-id/pex'
+import { type PartialSdJwtDecodedVerifiableCredential, PEVersion } from '@animo-id/pex/dist/main/lib/index.js'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import type {
   SdJwtDecodedVerifiableCredential,
   W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
   W3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
+import { injectable } from 'tsyringe'
 import type { AgentContext } from '../../agent'
+import { CredoError } from '../../error'
 import type { Query } from '../../storage/StorageService'
+import { JsonTransformer } from '../../utils'
 import type { VerificationMethod } from '../dids'
+import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
+import { getJwkHumanDescription } from '../kms'
+import { MdocApi, MdocRecord, type MdocSessionTranscriptOptions } from '../mdoc'
+import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
+import { SdJwtVcApi } from '../sd-jwt-vc'
 import type { W3cCredentialRecord, W3cJsonPresentation } from '../vc'
+import {
+  ClaimFormat,
+  SignatureSuiteRegistry,
+  W3cCredentialRepository,
+  W3cCredentialService,
+  W3cPresentation,
+} from '../vc'
+import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
+import {
+  ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
+  AnonCredsDataIntegrityServiceSymbol,
+} from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
+import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import type {
   DifPexCredentialsForRequest,
   DifPexInputDescriptorToCredentials,
@@ -21,32 +43,8 @@ import type {
   DifPresentationExchangeSubmission,
   VerifiablePresentation,
 } from './models'
-import type { PresentationToCreate } from './utils'
-
-import { injectable } from 'tsyringe'
-
-import { CredoError } from '../../error'
-import { JsonTransformer } from '../../utils'
-import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
-import { MdocApi, MdocRecord, MdocSessionTranscriptOptions } from '../mdoc'
-import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
-import { SdJwtVcApi } from '../sd-jwt-vc'
-import {
-  ClaimFormat,
-  SignatureSuiteRegistry,
-  W3cCredentialRepository,
-  W3cCredentialService,
-  W3cPresentation,
-} from '../vc'
-import {
-  ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
-  AnonCredsDataIntegrityServiceSymbol,
-} from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
-
-import { PEVersion, PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
-import { getJwkHumanDescription } from '../kms'
-import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
+import type { PresentationToCreate } from './utils'
 import {
   getCredentialsForRequest,
   getPresentationsToCreate,
@@ -239,6 +237,13 @@ export class DifPresentationExchangeService {
           getSphereonOriginalVerifiableCredential(c.credential)
         )
 
+        const extraProofOptions = this.shouldSignUsingAnonCredsDataIntegrity(presentationToCreate)
+          ? {
+              typeSupportsSelectiveDisclosure: true,
+              type: `DataIntegrityProof.${ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE}`,
+            }
+          : {}
+
         const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
           presentationDefinitionForSubject,
           credentialsForPresentation,
@@ -247,8 +252,9 @@ export class DifPresentationExchangeService {
             proofOptions: {
               challenge,
               domain,
+
+              ...extraProofOptions,
             },
-            signatureOptions: {},
             presentationSubmissionLocation,
           }
         )
@@ -456,15 +462,17 @@ export class DifPresentationExchangeService {
    */
   private shouldSignUsingAnonCredsDataIntegrity(
     presentationToCreate: PresentationToCreate,
-    presentationSubmission: DifPresentationExchangeSubmission
+    presentationSubmission?: DifPresentationExchangeSubmission
   ) {
     if (presentationToCreate.claimFormat !== ClaimFormat.LdpVp) return undefined
 
-    const validDescriptorFormat = presentationSubmission.descriptor_map.every((descriptor) =>
-      [ClaimFormat.DiVc, ClaimFormat.DiVp, ClaimFormat.LdpVc, ClaimFormat.LdpVp].includes(
-        descriptor.format as ClaimFormat
+    const validDescriptorFormat =
+      !presentationSubmission ||
+      presentationSubmission.descriptor_map.every((descriptor) =>
+        [ClaimFormat.DiVc, ClaimFormat.DiVp, ClaimFormat.LdpVc, ClaimFormat.LdpVp].includes(
+          descriptor.format as ClaimFormat
+        )
       )
-    )
 
     const credentialAreSignedUsingAnonCredsDataIntegrity = presentationToCreate.verifiableCredentials.every(
       ({ credential }) => {
@@ -556,7 +564,7 @@ export class DifPresentationExchangeService {
           // as then we know when determining which VPs to submit already if the proof types are supported
           // by the verifier, and we can then just add this to the vpToCreate interface
           proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
-          proofPurpose: 'authentication',
+          proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
           verificationMethod: verificationMethod.id,
           presentation: w3cPresentation,
           challenge,
@@ -565,7 +573,7 @@ export class DifPresentationExchangeService {
 
         return signedPresentation.encoded as W3CVerifiablePresentation
       }
-      if (presentationToCreate.claimFormat === ClaimFormat.SdJwtVc) {
+      if (presentationToCreate.claimFormat === ClaimFormat.SdJwtDc) {
         const sdJwtInput = presentationInput as
           | SdJwtDecodedVerifiableCredential
           | PartialSdJwtDecodedVerifiableCredential

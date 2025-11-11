@@ -1,16 +1,17 @@
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { Ed25519PublicJwk } from '../../kms'
+import { SignatureSuiteRegistry, SignatureSuiteToken, type SuiteInfo } from '../data-integrity/SignatureSuiteRegistry'
+import { Ed25519Signature2018, Ed25519Signature2020 } from '../data-integrity/signature-suites'
+import { W3cJsonLdCredentialService } from '../data-integrity/W3cJsonLdCredentialService'
+import { W3cJwtCredentialService } from '../jwt-vc'
+import { W3cCredentialRepository } from '../repository'
 import { W3cCredentialService } from '../W3cCredentialService'
 import { W3cCredentialsModule } from '../W3cCredentialsModule'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
-import { SignatureSuiteRegistry, SignatureSuiteToken, SuiteInfo } from '../data-integrity/SignatureSuiteRegistry'
-import { W3cJsonLdCredentialService } from '../data-integrity/W3cJsonLdCredentialService'
-import { Ed25519Signature2018, Ed25519Signature2020 } from '../data-integrity/signature-suites'
-import { W3cJwtCredentialService } from '../jwt-vc'
-import { W3cCredentialRepository } from '../repository'
 
-jest.mock('../../../plugins/DependencyManager')
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
+vi.mock('../../../plugins/DependencyManager')
+const DependencyManagerMock = DependencyManager as MockedClassConstructor<typeof DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 

@@ -1,8 +1,8 @@
 import type { HashName } from '../../crypto'
 import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate, X509Certificate } from '../x509'
-import { SdJwtVc } from './SdJwtVcService'
 import { SdJwtVcRecord } from './repository'
+import type { SdJwtVc } from './SdJwtVcService'
 
 export interface SdJwtVcStoreOptions {
   record: SdJwtVcRecord
@@ -160,4 +160,9 @@ export type SdJwtVcVerifyOptions = {
   verifyCredentialStatus?: boolean
 
   trustedCertificates?: EncodedX509Certificate[]
+
+  /**
+   * Date that should be used as the current time. If not provided, current time will be used.
+   */
+  now?: Date
 }

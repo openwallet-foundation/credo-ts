@@ -1,8 +1,7 @@
-import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@credo-ts/didcomm'
-import type { AnonCredsCredentialValues, AnonCredsSchema } from '../models'
-
 import { CredoError, Hasher, TypedArrayEncoder } from '@credo-ts/core'
+import type { DidCommCredentialPreviewAttributeOptions, DidCommLinkedAttachment } from '@credo-ts/didcomm'
 import { encodeAttachment } from '@credo-ts/didcomm'
+import type { AnonCredsCredentialValues, AnonCredsSchema } from '../models'
 
 import { bytesToBigint } from './bytesToBigint'
 
@@ -63,13 +62,11 @@ export function encodeCredentialValue(value: unknown) {
   }
 
   if (isNumber(value)) {
-    // biome-ignore lint/style/noParameterAssign: <explanation>
     value = value.toString()
   }
 
   // If value is null we must use the string value 'None'
   if (value === null || value === undefined) {
-    // biome-ignore lint/style/noParameterAssign: <explanation>
     value = 'None'
   }
 
@@ -108,7 +105,7 @@ export const mapAttributeRawValuesToAnonCredsCredentialValues = (
  * @returns CredValues
  */
 export function convertAttributesToCredentialValues(
-  attributes: CredentialPreviewAttributeOptions[]
+  attributes: DidCommCredentialPreviewAttributeOptions[]
 ): AnonCredsCredentialValues {
   return attributes.reduce<AnonCredsCredentialValues>((credentialValues, attribute) => {
     credentialValues[attribute.name] = {
@@ -191,7 +188,7 @@ export function checkValidCredentialValueEncoding(raw: unknown, encoded: string)
   return encoded === encodeCredentialValue(raw)
 }
 
-export function assertAttributesMatch(schema: AnonCredsSchema, attributes: CredentialPreviewAttributeOptions[]) {
+export function assertAttributesMatch(schema: AnonCredsSchema, attributes: DidCommCredentialPreviewAttributeOptions[]) {
   const schemaAttributes = schema.attrNames
   const credAttributes = attributes.map((a) => a.name)
 
@@ -215,8 +212,8 @@ export function assertAttributesMatch(schema: AnonCredsSchema, attributes: Crede
  * @returns a modified version of the credential preview with the linked credentials
  * */
 export function createAndLinkAttachmentsToPreview(
-  attachments: LinkedAttachment[],
-  previewAttributes: CredentialPreviewAttributeOptions[]
+  attachments: DidCommLinkedAttachment[],
+  previewAttributes: DidCommCredentialPreviewAttributeOptions[]
 ) {
   const credentialPreviewAttributeNames = previewAttributes.map((attribute) => attribute.name)
   const newPreviewAttributes = [...previewAttributes]

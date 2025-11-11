@@ -38,7 +38,7 @@ export interface W3cJsonLdDeriveProofOptions {
 export const deriveProof = async (
   proofDocument: JsonObject,
   revealDocument: JsonObject,
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   { suite, skipProofCompaction, documentLoader, nonce }: any
 ): Promise<W3cJsonLdVerifiableCredential> => {
   if (!suite) {
@@ -109,7 +109,7 @@ export const deriveProof = async (
     })
 
     delete compactProof[alias]
-    // biome-ignore lint/performance/noDelete: <explanation>
+    // biome-ignore lint/performance/noDelete: no explanation
     delete compactProof['@context']
 
     /**
@@ -125,7 +125,7 @@ export const deriveProof = async (
     const key = Object.keys(compactProof)[0]
     jsonld.addValue(derivedProof.document, key, compactProof[key])
   } else {
-    // biome-ignore lint/performance/noDelete: <explanation>
+    // biome-ignore lint/performance/noDelete: no explanation
     delete derivedProof.proof['@context']
     jsonld.addValue(derivedProof.document, 'proof', derivedProof.proof)
   }

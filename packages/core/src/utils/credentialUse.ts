@@ -4,8 +4,8 @@
 
 import { AgentContext } from '../agent'
 import { CredoError } from '../error'
-import { Mdoc, MdocRecord, MdocRecordInstances, MdocRepository } from '../modules/mdoc'
-import { SdJwtVc, SdJwtVcRecord, SdJwtVcRecordInstances, SdJwtVcRepository } from '../modules/sd-jwt-vc'
+import { Mdoc, MdocRecord, type MdocRecordInstances, MdocRepository } from '../modules/mdoc'
+import { type SdJwtVc, SdJwtVcRecord, type SdJwtVcRecordInstances, SdJwtVcRepository } from '../modules/sd-jwt-vc'
 import { decodeSdJwtVc } from '../modules/sd-jwt-vc/decodeSdJwtVc'
 import {
   W3cCredentialRecord,
@@ -13,7 +13,8 @@ import {
   W3cCredentialRepository,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
-  W3cVerifiableCredential,
+  W3cV2CredentialRecord,
+  type W3cVerifiableCredential,
 } from '../modules/vc'
 
 /**
@@ -54,7 +55,7 @@ export function canUseInstanceFromCredentialRecord({
   credentialRecord,
   useMode,
 }: {
-  credentialRecord: W3cCredentialRecord | SdJwtVcRecord | MdocRecord
+  credentialRecord: W3cCredentialRecord | W3cV2CredentialRecord | SdJwtVcRecord | MdocRecord
   useMode: CredentialUseMode
 }) {
   // If we're not required to use a new instance, we can always return the first instance

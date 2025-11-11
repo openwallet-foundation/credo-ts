@@ -1,10 +1,8 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
+import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import type { AnonCredsProof, AnonCredsProofRequest, AnonCredsSelectedCredentials } from '../models'
 import type { CreateProofOptions, VerifyProofOptions } from '../services'
-
-import { CredoError } from '@credo-ts/core'
-
-import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import { AnonCredsRegistryService } from '../services'
 
 import { assertBestPracticeRevocationInterval } from './revocationInterval'

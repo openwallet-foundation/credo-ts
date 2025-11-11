@@ -1,14 +1,15 @@
 import { Kms } from '@credo-ts/core'
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRecord, TenantRoutingRecord } from '../../repository'
 import { TenantRepository } from '../../repository/TenantRepository'
 import { TenantRoutingRepository } from '../../repository/TenantRoutingRepository'
 import { TenantRecordService } from '../TenantRecordService'
 
-jest.mock('../../repository/TenantRepository')
-const TenantRepositoryMock = TenantRepository as jest.Mock<TenantRepository>
-jest.mock('../../repository/TenantRoutingRepository')
-const TenantRoutingRepositoryMock = TenantRoutingRepository as jest.Mock<TenantRoutingRepository>
+vi.mock('../../repository/TenantRepository')
+const TenantRepositoryMock = TenantRepository as MockedClassConstructor<typeof TenantRepository>
+vi.mock('../../repository/TenantRoutingRepository')
+const TenantRoutingRepositoryMock = TenantRoutingRepository as MockedClassConstructor<typeof TenantRoutingRepository>
 
 const tenantRepository = new TenantRepositoryMock()
 const tenantRoutingRepository = new TenantRoutingRepositoryMock()
@@ -18,23 +19,19 @@ const tenantRecordService = new TenantRecordService(tenantRepository, tenantRout
 
 describe('TenantRecordService', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
-  // FIXME: connectionImageUrl is now part of DIDComm module. Tenants records do not currently
-  // store data related to module config
   describe('createTenant', () => {
     test('creates a tenant record and stores it in the tenant repository', async () => {
       const tenantRecord = await tenantRecordService.createTenant(agentContext, {
         label: 'Test Tenant',
-        //connectionImageUrl: 'https://example.com/connection.png',
       })
 
       expect(tenantRecord).toMatchObject({
         id: expect.any(String),
         config: {
           label: 'Test Tenant',
-          //connectionImageUrl: 'https://example.com/connection.png',
         },
       })
 
@@ -44,7 +41,7 @@ describe('TenantRecordService', () => {
 
   describe('getTenantById', () => {
     test('returns value from tenant repository get by id', async () => {
-      const tenantRecord = jest.fn() as unknown as TenantRecord
+      const tenantRecord = vi.fn() as unknown as TenantRecord
       mockFunction(tenantRepository.getById).mockResolvedValue(tenantRecord)
       const returnedTenantRecord = await tenantRecordService.getTenantById(agentContext, 'tenantId')
 
@@ -105,7 +102,7 @@ describe('TenantRecordService', () => {
 
   describe('findTenantRoutingRecordByRecipientKey', () => {
     test('returns value from tenant routing repository findByRecipientKey', async () => {
-      const tenantRoutingRecord = jest.fn() as unknown as TenantRoutingRecord
+      const tenantRoutingRecord = vi.fn() as unknown as TenantRoutingRecord
       mockFunction(tenantRoutingRepository.findByRecipientKey).mockResolvedValue(tenantRoutingRecord)
 
       const recipientKey = Kms.PublicJwk.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')

@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
 import { AnonCredsLinkSecretRecord } from '../../../repository'
@@ -7,24 +8,26 @@ import * as testModule from '../linkSecret'
 const agentConfig = getAgentConfig('AnonCreds Migration - Link Secret - 0.3.1-0.4.0')
 const agentContext = getAgentContext()
 
-jest.mock('../../../repository/AnonCredsLinkSecretRepository')
-const AnonCredsLinkSecretRepositoryMock = AnonCredsLinkSecretRepository as jest.Mock<AnonCredsLinkSecretRepository>
+vi.mock('../../../repository/AnonCredsLinkSecretRepository')
+const AnonCredsLinkSecretRepositoryMock = AnonCredsLinkSecretRepository as MockedClassConstructor<
+  typeof AnonCredsLinkSecretRepository
+>
 const linkSecretRepository = new AnonCredsLinkSecretRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn(() => linkSecretRepository),
+        resolve: vi.fn(() => linkSecretRepository),
       },
     })),
   }
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.3.1-0.4.0 | AnonCreds Migration | Link Secret', () => {
   let agent: Agent
@@ -34,7 +37,7 @@ describe('0.3.1-0.4.0 | AnonCreds Migration | Link Secret', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('migrateLinkSecretToV0_4()', () => {

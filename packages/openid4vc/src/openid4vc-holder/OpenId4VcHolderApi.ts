@@ -1,3 +1,13 @@
+import {
+  AgentContext,
+  type DcqlQueryResult,
+  DcqlService,
+  type DifPexCredentialsForRequest,
+  DifPresentationExchangeService,
+  injectable,
+} from '@credo-ts/core'
+import type { OpenId4VciMetadata } from '../shared'
+import { OpenId4VciHolderService } from './OpenId4VciHolderService'
 import type {
   OpenId4VciAuthCodeFlowOptions,
   OpenId4VciDeferredCredentialRequestOptions,
@@ -9,24 +19,11 @@ import type {
   OpenId4VciSendNotificationOptions,
   OpenId4VciTokenRefreshOptions,
 } from './OpenId4VciHolderServiceOptions'
+import { OpenId4VpHolderService } from './OpenId4vpHolderService'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
   ResolveOpenId4VpAuthorizationRequestOptions,
 } from './OpenId4vpHolderServiceOptions'
-
-import {
-  AgentContext,
-  DcqlQueryResult,
-  DcqlService,
-  DifPexCredentialsForRequest,
-  DifPresentationExchangeService,
-  injectable,
-} from '@credo-ts/core'
-
-import { OpenId4VciMetadata } from '../shared'
-
-import { OpenId4VciHolderService } from './OpenId4VciHolderService'
-import { OpenId4VpHolderService } from './OpenId4vpHolderService'
 
 /**
  * @public

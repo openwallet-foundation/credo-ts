@@ -1,16 +1,17 @@
+import '@hyperledger/indy-vdr-nodejs'
 import { JsonTransformer } from '@credo-ts/core'
-
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests/helpers'
-import { IndyVdrPool, IndyVdrPoolService } from '../../pool'
+import { IndyVdrPoolService } from '../../pool'
+import { IndyVdrPool } from '../../pool/IndyVdrPool'
 import { IndyVdrIndyDidResolver } from '../IndyVdrIndyDidResolver'
-
 import didIndyLjgpST2rjsoxYegQDRm7EL from './__fixtures__/didIndyLjgpST2rjsoxYegQDRm7EL.json'
 import didIndyLjgpST2rjsoxYegQDRm7ELdiddocContent from './__fixtures__/didIndyLjgpST2rjsoxYegQDRm7ELdiddocContent.json'
 import didIndyR1xKJw17sUoXhejEpugMYJFixture from './__fixtures__/didIndyR1xKJw17sUoXhejEpugMYJ.json'
 import didIndyWJz9mHyW9BZksioQnRsrAoFixture from './__fixtures__/didIndyWJz9mHyW9BZksioQnRsrAo.json'
 
-jest.mock('../../pool/IndyVdrPool')
-const IndyVdrPoolMock = IndyVdrPool as jest.Mock<IndyVdrPool>
+vi.mock('../../pool/IndyVdrPool')
+const IndyVdrPoolMock = IndyVdrPool as MockedClassConstructor<typeof IndyVdrPool>
 const poolMock = new IndyVdrPoolMock()
 mockProperty(poolMock, 'indyNamespace', 'ns1')
 
@@ -18,7 +19,7 @@ const agentConfig = getAgentConfig('IndyVdrIndyDidResolver')
 
 const agentContext = getAgentContext({
   agentConfig,
-  registerInstances: [[IndyVdrPoolService, { getPoolForNamespace: jest.fn().mockReturnValue(poolMock) }]],
+  registerInstances: [[IndyVdrPoolService, { getPoolForNamespace: vi.fn().mockReturnValue(poolMock) }]],
 })
 
 const resolver = new IndyVdrIndyDidResolver()
@@ -39,7 +40,7 @@ describe('IndyVdrIndyDidResolver', () => {
         },
       }
 
-      const poolMockSubmitRequest = jest.spyOn(poolMock, 'submitRequest')
+      const poolMockSubmitRequest = vi.spyOn(poolMock, 'submitRequest')
       poolMockSubmitRequest.mockResolvedValueOnce(nymResponse)
 
       const result = await resolver.resolve(agentContext, did)
@@ -75,8 +76,8 @@ describe('IndyVdrIndyDidResolver', () => {
         },
       }
 
-      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(nymResponse)
-      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(attribResponse)
+      vi.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(nymResponse)
+      vi.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(attribResponse)
 
       const result = await resolver.resolve(agentContext, did)
 
@@ -114,8 +115,8 @@ describe('IndyVdrIndyDidResolver', () => {
         },
       }
 
-      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(nymResponse)
-      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(attribResponse)
+      vi.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(nymResponse)
+      vi.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(attribResponse)
 
       const result = await resolver.resolve(agentContext, did)
 
@@ -131,7 +132,7 @@ describe('IndyVdrIndyDidResolver', () => {
     it('should return did resolution metadata with error if the indy ledger service throws an error', async () => {
       const did = 'did:indy:ns1:R1xKJw17sUoXhejEpugMYJ'
 
-      jest.spyOn(poolMock, 'submitRequest').mockRejectedValue(new Error('Error submitting read request'))
+      vi.spyOn(poolMock, 'submitRequest').mockRejectedValue(new Error('Error submitting read request'))
 
       const result = await resolver.resolve(agentContext, did)
 

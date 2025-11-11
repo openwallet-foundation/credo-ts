@@ -1,15 +1,15 @@
-import { HashName } from '../../../crypto'
+import type { HashName } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../../../utils'
-import { Constructor } from '../../../utils/mixins'
-import { parseWithErrorHandling } from '../../../utils/zod'
+import type { Constructor } from '../../../utils/mixins'
+import { zParseWithErrorHandling } from '../../../utils/zod'
 import { KeyManagementError } from '../error/KeyManagementError'
 import { legacyKeyIdFromPublicJwk } from '../legacy'
 import { assymetricPublicJwkMatches } from './equals'
 import { getJwkHumanDescription } from './humanDescription'
-import { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
+import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
 import { calculateJwkThumbprint } from './jwkThumbprint'
-import { KmsJwkPublicAsymmetric, assertJwkAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
+import { assertJwkAsymmetric, type KmsJwkPublicAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
 
 import {
   Ed25519PublicJwk,
@@ -49,7 +49,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
 
   public static fromUnknown(jwkJson: unknown) {
     // We remove any private properties if they are present
-    const publicJwk = publicJwkFromPrivateJwk(parseWithErrorHandling(zKmsJwkPublic, jwkJson, 'jwk is not a valid jwk'))
+    const publicJwk = publicJwkFromPrivateJwk(zParseWithErrorHandling(zKmsJwkPublic, jwkJson, 'jwk is not a valid jwk'))
     assertJwkAsymmetric(publicJwk)
 
     let jwkInstance: SupportedPublicJwk
@@ -111,6 +111,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   public toJson({ includeKid = true }: { includeKid?: boolean } = {}): Jwk['jwk'] {
     if (includeKid) return this.jwk.jwk
 
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { kid, ...jwk } = this.jwk.jwk
     return jwk
   }
@@ -303,12 +304,6 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
    */
   public equals(other: PublicJwk) {
     return assymetricPublicJwkMatches(this.toJson(), other.toJson())
-  }
-
-  private toJSON() {
-    return {
-      jwk: this.jwk,
-    }
   }
 
   /**

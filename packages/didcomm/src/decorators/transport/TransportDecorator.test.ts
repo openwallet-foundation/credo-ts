@@ -1,4 +1,4 @@
-import { ClassValidationError, JsonTransformer, MessageValidator } from '../../../../core'
+import { ClassValidationError, JsonTransformer, MessageValidator } from '../../../../core/src/index'
 
 import { ReturnRouteTypes, TransportDecorator } from './TransportDecorator'
 

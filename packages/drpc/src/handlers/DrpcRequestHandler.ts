@@ -1,9 +1,8 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import { DrpcRequestMessage } from '../messages'
 import type { DrpcService } from '../services/DrpcService'
 
-import { DrpcRequestMessage } from '../messages'
-
-export class DrpcRequestHandler implements MessageHandler {
+export class DrpcRequestHandler implements DidCommMessageHandler {
   private drpcMessageService: DrpcService
   public supportedMessages = [DrpcRequestMessage]
 
@@ -11,7 +10,7 @@ export class DrpcRequestHandler implements MessageHandler {
     this.drpcMessageService = drpcMessageService
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<DrpcRequestHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<DrpcRequestHandler>) {
     await this.drpcMessageService.receiveRequest(messageContext)
 
     return undefined

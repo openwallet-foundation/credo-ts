@@ -1,23 +1,20 @@
-import type { AgentContext } from '../../agent'
-import type { X509CreateCertificateOptions } from './X509ServiceOptions'
-
 import { AsnParser } from '@peculiar/asn1-schema'
 import {
-  SubjectPublicKeyInfo,
   id_ce_authorityKeyIdentifier,
   id_ce_extKeyUsage,
   id_ce_issuerAltName,
   id_ce_keyUsage,
   id_ce_subjectAltName,
   id_ce_subjectKeyIdentifier,
+  SubjectPublicKeyInfo,
 } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
+import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { publicJwkToCryptoKeyAlgorithm, spkiToPublicJwk } from '../../crypto/webcrypto/utils'
+import type { AnyUint8Array } from '../../types'
 import { TypedArrayEncoder } from '../../utils'
-
-import { PublicJwk, assymetricPublicJwkMatches } from '../kms'
-import { X509Error } from './X509Error'
+import { assymetricPublicJwkMatches, PublicJwk } from '../kms'
 import {
   convertName,
   createAuthorityKeyIdentifierExtension,
@@ -29,6 +26,8 @@ import {
   createSubjectAlternativeNameExtension,
   createSubjectKeyIdentifierExtension,
 } from './utils'
+import { X509Error } from './X509Error'
+import type { X509CreateCertificateOptions } from './X509ServiceOptions'
 
 export enum X509KeyUsage {
   DigitalSignature = 1,
@@ -54,13 +53,13 @@ export enum X509ExtendedKeyUsage {
 
 export type X509CertificateOptions = {
   publicJwk: PublicJwk
-  privateKey?: Uint8Array
+  privateKey?: AnyUint8Array
   x509Certificate: x509.X509Certificate
 }
 
 export class X509Certificate {
   public publicJwk: PublicJwk
-  public privateKey?: Uint8Array
+  public privateKey?: AnyUint8Array
   private x509Certificate: x509.X509Certificate
 
   private constructor(options: X509CertificateOptions) {
@@ -81,7 +80,7 @@ export class X509Certificate {
     return this.publicJwk.hasKeyId
   }
 
-  public static fromRawCertificate(rawCertificate: Uint8Array): X509Certificate {
+  public static fromRawCertificate(rawCertificate: AnyUint8Array): X509Certificate {
     const certificate = new x509.X509Certificate(rawCertificate)
     return X509Certificate.parseCertificate(certificate)
   }
@@ -162,7 +161,7 @@ export class X509Certificate {
     return keyIds?.[0]
   }
 
-  // biome-ignore lint/suspicious/useGetterReturn: <explanation>
+  // biome-ignore lint/suspicious/useGetterReturn: no explanation
   public get keyUsage() {
     const keyUsages = this.getMatchingExtensions<x509.KeyUsagesExtension>(id_ce_keyUsage)?.map((e) => e.usages)
 
@@ -376,10 +375,6 @@ export class X509Certificate {
    */
   public toString(format?: 'asn' | 'pem' | 'hex' | 'base64' | 'text' | 'base64url') {
     return this.x509Certificate.toString(format ?? 'pem')
-  }
-
-  private toJSON() {
-    return this.toString()
   }
 
   public equal(certificate: X509Certificate) {

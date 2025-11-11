@@ -1,13 +1,11 @@
 import type { DifPresentationExchangeDefinitionV2, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
-import type { AgentType } from './utils'
-
-import { ClaimFormat, Kms, MdocRecord, SdJwtVcRecord, X509Service, parseDid } from '@credo-ts/core'
+import { ClaimFormat, Kms, MdocRecord, parseDid, SdJwtVcRecord, X509Service } from '@credo-ts/core'
 import express, { type Express } from 'express'
-import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcHolderModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
-
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
+import { TenantsModule } from '../../tenants/src'
+import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
+import type { AgentType } from './utils'
 import { createAgentFromModules, waitForVerificationSessionRecordSubject } from './utils'
 
 const serverPort = 1236
@@ -19,20 +17,19 @@ describe('OpenID4VP Draft 21', () => {
   let clearNock: () => void
 
   let holder: AgentType<{
-    openId4VcHolder: OpenId4VcHolderModule
+    openid4vc: OpenId4VcModule
   }>
 
   let verifier: AgentType<{
-    openId4VcVerifier: OpenId4VcVerifierModule
+    openid4vc: OpenId4VcModule<undefined, OpenId4VcVerifierModuleConfigOptions>
   }>
 
   beforeEach(async () => {
     expressApp = express()
 
     holder = (await createAgentFromModules(
-      'holder',
       {
-        openId4VcHolder: new OpenId4VcHolderModule(),
+        openid4vc: new OpenId4VcModule(),
         inMemory: new InMemoryWalletModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598e',
@@ -40,10 +37,12 @@ describe('OpenID4VP Draft 21', () => {
     )) as unknown as typeof holder
 
     verifier = (await createAgentFromModules(
-      'verifier',
       {
-        openId4VcVerifier: new OpenId4VcVerifierModule({
-          baseUrl: verificationBaseUrl,
+        openid4vc: new OpenId4VcModule({
+          app: expressApp,
+          verifier: {
+            baseUrl: verificationBaseUrl,
+          },
         }),
         inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
@@ -52,8 +51,6 @@ describe('OpenID4VP Draft 21', () => {
       global.fetch
     )) as unknown as typeof verifier
 
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
 
@@ -65,7 +62,7 @@ describe('OpenID4VP Draft 21', () => {
   })
 
   it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -129,7 +126,7 @@ describe('OpenID4VP Draft 21', () => {
     } satisfies DifPresentationExchangeDefinitionV2
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'x5c',
@@ -148,7 +145,7 @@ describe('OpenID4VP Draft 21', () => {
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -166,7 +163,7 @@ describe('OpenID4VP Draft 21', () => {
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -193,12 +190,12 @@ describe('OpenID4VP Draft 21', () => {
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
@@ -234,7 +231,7 @@ describe('OpenID4VP Draft 21', () => {
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { presentationExchange } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+    const { presentationExchange } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession.id
     )
 
@@ -263,7 +260,7 @@ describe('OpenID4VP Draft 21', () => {
       presentations: [
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -311,7 +308,7 @@ describe('OpenID4VP Draft 21', () => {
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc and sd-jwt (jarm)', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -433,7 +430,7 @@ describe('OpenID4VP Draft 21', () => {
     } satisfies DifPresentationExchangeDefinitionV2
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'direct_post.jwt',
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
@@ -453,7 +450,7 @@ describe('OpenID4VP Draft 21', () => {
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -499,7 +496,7 @@ describe('OpenID4VP Draft 21', () => {
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -526,12 +523,12 @@ describe('OpenID4VP Draft 21', () => {
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
@@ -572,7 +569,7 @@ describe('OpenID4VP Draft 21', () => {
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { presentationExchange } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+    const { presentationExchange } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession.id
     )
 
@@ -626,7 +623,7 @@ describe('OpenID4VP Draft 21', () => {
         },
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -674,10 +671,10 @@ describe('OpenID4VP Draft 21', () => {
   })
 
   it('throws error when creating request with transaction data', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     await expect(
-      verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'direct_post.jwt',
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
@@ -699,10 +696,10 @@ describe('OpenID4VP Draft 21', () => {
   })
 
   it('throws error when creating request with dcql', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     await expect(
-      verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'direct_post.jwt',
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
@@ -722,10 +719,10 @@ describe('OpenID4VP Draft 21', () => {
   })
 
   it('throws error when creating request with dc_api', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     await expect(
-      verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'dc_api.jwt',
         verifierId: openIdVerifier.verifierId,
         requestSigner: {

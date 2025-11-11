@@ -1,4 +1,22 @@
+export { DidCommApi } from './DidCommApi'
+export { DidCommDispatcher } from './DidCommDispatcher'
+export { DidCommEnvelopeService } from './DidCommEnvelopeService'
+export * from './DidCommEvents'
+export { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
+export { DidCommMessage } from './DidCommMessage'
+export { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
+export { DidCommMessageReceiver } from './DidCommMessageReceiver'
+export { DidCommMessageSender } from './DidCommMessageSender'
+export { DidCommModule } from './DidCommModule'
+export { DidCommModuleConfig, type DidCommModuleConfigOptions } from './DidCommModuleConfig'
+export type { DidCommTransportSession } from './DidCommTransportService'
+export { DidCommTransportService } from './DidCommTransportService'
+export { AckDecorator } from './decorators/ack/AckDecorator'
+export { DidCommAttachment, DidCommAttachmentData } from './decorators/attachment/DidCommAttachment'
+export { ServiceDecorator, type ServiceDecoratorOptions } from './decorators/service/ServiceDecorator'
+export { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 export * from './errors'
+export { getOutboundDidCommMessageContext } from './getDidCommOutboundMessageContext'
 export * from './handlers'
 export * from './messages'
 export * from './models'
@@ -7,38 +25,21 @@ export * from './repository'
 export * from './services'
 export * from './transport'
 export * from './types'
-
-export * from './Events'
-export type { TransportSession } from './TransportService'
-export { TransportService } from './TransportService'
-export { Attachment, AttachmentData } from './decorators/attachment/Attachment'
-export { ServiceDecorator, ServiceDecoratorOptions } from './decorators/service/ServiceDecorator'
-export { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
-export { AckDecorator } from './decorators/ack/AckDecorator'
-
-export { FeatureRegistry } from './FeatureRegistry'
-export { AgentMessage } from './AgentMessage'
-export { Dispatcher } from './Dispatcher'
-export { EnvelopeService } from './EnvelopeService'
-export { MessageSender } from './MessageSender'
-export { MessageReceiver } from './MessageReceiver'
-export { MessageHandlerRegistry } from './MessageHandlerRegistry'
-
-export { DidCommApi } from './DidCommApi'
-export { DidCommModule } from './DidCommModule'
-export { DidCommModuleConfig, DidCommModuleConfigOptions } from './DidCommModuleConfig'
-
-export { getOutboundMessageContext } from './getOutboundMessageContext'
-
-export { getDefaultDidcommModules } from './util/modules'
-export {
-  type ParsedMessageType,
-  parseMessageType,
-  IsValidMessageType,
-  replaceLegacyDidSovPrefix,
-} from './util/messageType'
-
-export { LinkedAttachment, LinkedAttachmentOptions } from './util/LinkedAttachment'
-export { oobInvitationFromShortUrl, parseInvitationUrl, parseInvitationShortUrl } from './util/parseInvitation'
 export { encodeAttachment, isLinkedAttachment } from './util/attachment'
+export { DidCommLinkedAttachment, type DidCommLinkedAttachmentOptions } from './util/DidCommLinkedAttachment'
 export { isValidJweStructure } from './util/JWE'
+export {
+  IsValidMessageType,
+  type ParsedMessageType,
+  parseDidCommProtocolUri,
+  parseMessageType,
+  replaceLegacyDidSovPrefix,
+  supportsIncomingDidCommProtocolUri,
+  supportsIncomingMessageType,
+} from './util/messageType'
+export {
+  oobInvitationFromShortUrl,
+  parseInvitationJson,
+  parseInvitationShortUrl,
+  parseInvitationUrl,
+} from './util/parseInvitation'

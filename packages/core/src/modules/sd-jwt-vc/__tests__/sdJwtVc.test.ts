@@ -1,9 +1,7 @@
-import nock, { cleanAll } from 'nock'
-
-import { getAgentOptions } from '../../../../tests'
-
 import { Agent, DidKey, TypedArrayEncoder } from '@credo-ts/core'
+import nock, { cleanAll } from 'nock'
 import { transformSeedToPrivateJwk } from '../../../../../askar/src'
+import { getAgentOptions } from '../../../../tests'
 import { PublicJwk } from '../../kms'
 
 const issuer = new Agent(getAgentOptions('sd-jwt-vc-issuer-agent'))
@@ -125,7 +123,7 @@ describe('sd-jwt-vc end to end test', () => {
     // parse SD-JWT
     const sdJwtVc = holder.sdJwtVc.fromCompact<Header, Payload>(compact)
     expect(sdJwtVc).toEqual({
-      claimFormat: 'vc+sd-jwt',
+      claimFormat: 'dc+sd-jwt',
       compact: expect.any(String),
       encoded: expect.any(String),
       kbJwt: undefined,
@@ -205,7 +203,7 @@ describe('sd-jwt-vc end to end test', () => {
       compactSdJwtVc: compact,
       fetchTypeMetadata: true,
     })
-    expect(verificationResult.verification.isValid).toBe(true)
+    expect(verificationResult.isValid).toBe(true)
     expect(verificationResult.sdJwtVc?.typeMetadata).toEqual({
       vct: 'https://example.com/vct-type',
     })
@@ -216,7 +214,7 @@ describe('sd-jwt-vc end to end test', () => {
     // Metadata created by the verifier and send out of band by the verifier to the holder
     const verifierMetadata = {
       audience: verifierDid,
-      issuedAt: new Date().getTime() / 1000,
+      issuedAt: Date.now() / 1000,
       nonce: TypedArrayEncoder.toBase64URL(verifier.kms.randomBytes({ length: 32 })),
     }
 
@@ -241,7 +239,7 @@ describe('sd-jwt-vc end to end test', () => {
       },
     })
 
-    const { verification: presentationVerification } = await verifier.sdJwtVc.verify({
+    const { isValid } = await verifier.sdJwtVc.verify({
       compactSdJwtVc: presentation,
       keyBinding: { audience: verifierDid, nonce: verifierMetadata.nonce },
       requiredClaimKeys: [
@@ -261,7 +259,7 @@ describe('sd-jwt-vc end to end test', () => {
       ],
     })
 
-    expect(presentationVerification.isValid).toBeTruthy()
+    expect(isValid).toBe(true)
 
     cleanAll()
   })

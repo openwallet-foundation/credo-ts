@@ -1,33 +1,36 @@
-import { createHash } from 'crypto'
+import type { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
+import type { AgentContext, DidDocumentService, VerificationMethod } from '@credo-ts/core'
 import {
-  AgentContext,
   DidDocument,
-  DidDocumentService,
+  DidRepository,
   DidsApi,
   MultiBaseEncoder,
   MultiHashEncoder,
   TypedArrayEncoder,
-  VerificationMethod,
 } from '@credo-ts/core'
+import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
-import { WebvhDidResolver } from '../../../dids'
+import { WebVhDidResolver } from '../../../dids'
 import { WebVhAnonCredsRegistry } from '../WebVhAnonCredsRegistry'
 
 import {
   issuerId,
+  mockCredDefResource,
+  mockRegRevEntryResource,
   mockResolvedDidDocument,
+  mockResolvedDidRecord,
   mockRevRegDefResource,
   mockSchemaResource,
   verificationMethodId,
 } from './mock-resources'
 
-// Mock the WebvhDidResolver
-const mockResolveResource = jest.fn()
-jest.mock('../../../dids/WebvhDidResolver', () => {
+// Mock the WebVhDidResolver
+const mockResolveResource = vi.fn()
+vi.mock('../../../dids/WebVhDidResolver', () => {
   return {
-    WebvhDidResolver: jest.fn().mockImplementation(() => {
+    WebVhDidResolver: vi.fn().mockImplementation(() => {
       return { resolveResource: mockResolveResource }
     }),
   }
@@ -48,9 +51,13 @@ interface DidDocumentOptions {
 }
 
 // Mock DidsApi
-const mockResolveDidDocument = jest.fn()
+const mockResolveDidDocument = vi.fn()
 const mockDidsApi = {
   resolveDidDocument: mockResolveDidDocument,
+}
+const mockFindCreatedDid = vi.fn()
+const mockDidsRepository = {
+  findCreatedDid: mockFindCreatedDid,
 }
 
 describe('WebVhAnonCredsRegistry', () => {
@@ -61,18 +68,20 @@ describe('WebVhAnonCredsRegistry', () => {
     // Reset the mocks before each test
     mockResolveResource.mockReset()
     mockResolveDidDocument.mockReset()
+    mockFindCreatedDid.mockReset()
 
     const agentConfig = getAgentConfig('WebVhAnonCredsRegistryTest')
     agentContext = getAgentContext({
       agentConfig,
       registerInstances: [
         [DidsApi, mockDidsApi],
-        [WebvhDidResolver, { resolveResource: mockResolveResource }],
+        [DidRepository, mockDidsRepository],
+        [WebVhDidResolver, { resolveResource: mockResolveResource }],
       ],
     })
 
     // Default mock for verifyProof to return true (will be overridden in verifyProof tests)
-    jest.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof').mockResolvedValue(true)
+    vi.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof').mockResolvedValue(true)
 
     registry = new WebVhAnonCredsRegistry()
   })
@@ -198,7 +207,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return resolutionMetadata with error if proof validation fails (placeholder)', async () => {
       // Use a type assertion to access the private method for mocking
-      const verifyProofSpy = jest.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
+      const verifyProofSpy = vi.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
       verifyProofSpy.mockResolvedValueOnce(false)
 
       const schemaContent = { attrNames: ['a'], name: 'N', version: 'V' }
@@ -329,6 +338,46 @@ describe('WebVhAnonCredsRegistry', () => {
     })
   })
 
+  describe('registerSchema', () => {
+    it('should register and retrieve a schema with correct resolutionMetadata', async () => {
+      const schemaId = mockSchemaResource.id
+
+      const mockResolverResponse = {
+        content: mockSchemaResource,
+        schemaId: schemaId,
+        schemaMetadata: mockSchemaResource.metadata || {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+      const schema = mockSchemaResource.content
+
+      const result = await registry.registerSchema(agentContext, { schema })
+      expect(result).toMatchObject({
+        schemaState: {
+          state: 'finished',
+          schemaId,
+        },
+      })
+
+      const schemaResponse = await registry.getSchema(agentContext, schemaId)
+
+      expect(mockResolveResource).toHaveBeenCalledWith(agentContext, schemaId)
+      expect(schemaResponse).toEqual({
+        schema: {
+          attrNames: mockSchemaResource.content.attrNames,
+          name: mockSchemaResource.content.name,
+          version: mockSchemaResource.content.version,
+          issuerId: issuerId,
+        },
+        schemaId,
+        resolutionMetadata: mockResolverResponse.dereferencingMetadata,
+        schemaMetadata: mockSchemaResource.metadata,
+      })
+    })
+  })
+
   describe('getCredentialDefinition', () => {
     it('should return resolutionMetadata with error for invalid prefix (tested via helper)', async () => {
       const credDefId = 'did:web:example.com/resource/credDef123' // Invalid prefix for this registry
@@ -361,6 +410,38 @@ describe('WebVhAnonCredsRegistry', () => {
     })
   })
 
+  describe('registerCredentialDefinition', () => {
+    it('should register and retrieve a credential definition with correct resolutionMetadata', async () => {
+      const credentialDefinition = mockCredDefResource.content as AnonCredsCredentialDefinition
+      const mockResolverResponse = {
+        content: mockCredDefResource,
+        contentMetadata: {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+
+      const result = await registry.registerCredentialDefinition(agentContext, { credentialDefinition, options: {} })
+      const credDef = await registry.getCredentialDefinition(agentContext, mockCredDefResource.id)
+
+      expect(result).toMatchObject({
+        credentialDefinitionState: {
+          state: 'finished',
+          credentialDefinition,
+        },
+        credentialDefinitionMetadata: {},
+        registrationMetadata: {},
+      })
+      expect(credDef).toMatchObject({
+        credentialDefinition,
+        credentialDefinitionId: mockCredDefResource.id,
+        resolutionMetadata: { contentType: 'application/json' },
+        credentialDefinitionMetadata: mockCredDefResource.metadata,
+      })
+    })
+  })
+
   describe('getRevocationRegistryDefinition', () => {
     it('should correctly resolve and parse a valid RevRegDef resource', async () => {
       const revRegDefId = mockRevRegDefResource.id
@@ -373,7 +454,7 @@ describe('WebVhAnonCredsRegistry', () => {
       mockResolveResource.mockResolvedValue(mockResolverResponse)
 
       // We need to mock verifyProof to return true for this test
-      const verifyProofSpy = jest.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
+      const verifyProofSpy = vi.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
       verifyProofSpy.mockResolvedValue(true)
 
       const result = await registry.getRevocationRegistryDefinition(agentContext, revRegDefId)
@@ -397,10 +478,69 @@ describe('WebVhAnonCredsRegistry', () => {
     // similar to the getSchema tests
   })
 
+  describe('registerRevocationRegistryDefinition', () => {
+    it('should register and retrieve a RevRegDef with correct resolutionMetadata', async () => {
+      const revRegDefId = mockRevRegDefResource.id
+      const revocationRegistryDefinition = mockRevRegDefResource.content as AnonCredsRevocationRegistryDefinition
+      const mockResolverResponse = {
+        content: mockRevRegDefResource,
+        contentMetadata: mockRevRegDefResource.metadata || {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+
+      const result = await registry.registerRevocationRegistryDefinition(agentContext, {
+        revocationRegistryDefinition,
+        options: {},
+      })
+      const revRegDef = await registry.getRevocationRegistryDefinition(agentContext, revRegDefId)
+
+      expect(result).toMatchObject({
+        revocationRegistryDefinitionState: {
+          state: 'finished',
+          revocationRegistryDefinition,
+        },
+        revocationRegistryDefinitionMetadata: {},
+        registrationMetadata: {},
+      })
+      expect(revRegDef).toMatchObject({
+        revocationRegistryDefinition,
+        revocationRegistryDefinitionId: revRegDefId,
+        resolutionMetadata: { contentType: 'application/json' },
+        revocationRegistryDefinitionMetadata: mockRevRegDefResource.metadata,
+      })
+    })
+  })
+
+  describe('registerRevocationStatusList', () => {
+    it('should correctly resolve and parse a valid RevocationStatusList resource', async () => {
+      // Remove timestamp from validations
+      const { timestamp: _, ...revocationStatusList } = mockRegRevEntryResource.content
+
+      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+
+      const result = await registry.registerRevocationStatusList(agentContext, {
+        revocationStatusList,
+        options: {},
+      })
+
+      expect(result).toMatchObject({
+        revocationStatusListState: {
+          state: 'finished',
+          revocationStatusList,
+        },
+        revocationStatusListMetadata: { previousVersionId: '', nextVersionId: '' },
+        registrationMetadata: {},
+      })
+    })
+  })
+
   describe('verifyProof', () => {
     beforeEach(() => {
       // Clear the default verifyProof mock for these tests
-      jest.restoreAllMocks()
+      vi.restoreAllMocks()
 
       // Mock successful DID resolution
       mockResolveDidDocument.mockResolvedValue(
@@ -417,7 +557,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return false for null proof', async () => {
       const testInput = { ...mockSchemaResource }
-      // @ts-ignore
+      // @ts-expect-error
       testInput.proof = null
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -426,7 +566,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return false for undefined proof', async () => {
       const testInput = { ...mockSchemaResource }
-      // @ts-ignore
+      // @ts-expect-error
       testInput.proof = undefined
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -435,7 +575,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return false for non-object proof', async () => {
       const testInput = { ...mockSchemaResource }
-      // @ts-ignore
+      // @ts-expect-error
       testInput.proof = testInput.proof.proofValue
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -445,7 +585,6 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for wrong proof type', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
       testProof.type = 'Ed25519Signature2020'
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -466,7 +605,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for missing verificationMethod', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
+      // @ts-expect-error
       testProof.verificationMethod = undefined
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -477,7 +616,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for invalid verificationMethod type', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
+      // @ts-expect-error
       testProof.verificationMethod = { id: testProof.verificationMethod }
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -487,7 +626,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for missing proofValue', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
+      // @ts-expect-error
       testProof.proofValue = undefined
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -498,7 +637,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for invalid proofValue type', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
+      // @ts-expect-error
       testProof.proofValue = { value: testInput.proof.proofValue }
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -524,7 +663,6 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false when verification method not found in DID document', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
       testProof.verificationMethod = `${issuerId}#key-01`
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)

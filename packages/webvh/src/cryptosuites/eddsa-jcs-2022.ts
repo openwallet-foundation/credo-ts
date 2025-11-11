@@ -1,15 +1,19 @@
-import { type AgentContext, CredoError } from '@credo-ts/core'
 import {
+  type AgentContext,
+  type AnyUint8Array,
+  Buffer,
+  CredoError,
   DidsApi,
+  getPublicJwkFromVerificationMethod,
   Hasher,
   Kms,
   MultiBaseEncoder,
   TypedArrayEncoder,
-  getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
+import { MultibaseEncoding, multibaseEncode } from 'didwebvh-ts'
 import { canonicalize } from 'json-canonicalize'
 import { WebVhResource } from '../anoncreds/utils/transform'
-import { ProofOptions } from './types'
+import type { Proof, ProofOptions, UnsecuredDocument } from './types'
 
 export class EddsaJcs2022Cryptosuite {
   didApi: DidsApi
@@ -34,6 +38,18 @@ export class EddsaJcs2022Cryptosuite {
     const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
     return publicJwk
+  }
+
+  public async _publicKeyIdFromId(verificationMethodId: string): Promise<string> {
+    const didDocument = await this.didApi.resolveDidDocument(verificationMethodId)
+    const [didRecord] = await this.didApi.getCreatedDids({ did: didDocument.id })
+    const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    return (
+      didRecord.keys?.find(
+        ({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${verificationMethod.publicKeyMultibase}`
+      )?.kmsKeyId ?? publicJwk.legacyKeyId
+    )
   }
 
   public transformation(unsecuredDocument: object, options: ProofOptions) {
@@ -79,7 +95,7 @@ export class EddsaJcs2022Cryptosuite {
     return hashData
   }
 
-  public async proofVerification(hashData: Uint8Array, proofBytes: Uint8Array, options: ProofOptions) {
+  public async proofVerification(hashData: AnyUint8Array, proofBytes: AnyUint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
     const publicJwk = await this._publicJwkFromId(options.verificationMethod)
     const verificationResult = await this.keyApi.verify({
@@ -93,7 +109,9 @@ export class EddsaJcs2022Cryptosuite {
 
   public async verifyProof(securedDocument: WebVhResource) {
     // https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { proof, ...unsecuredDocument } = securedDocument
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { proofValue, ...proofOptions } = securedDocument.proof
     const proofBytes = MultiBaseEncoder.decode(securedDocument.proof.proofValue)
     const transformedData = this.transformation(unsecuredDocument, proofOptions)
@@ -105,5 +123,29 @@ export class EddsaJcs2022Cryptosuite {
       verifiedDocument: unsecuredDocument,
     }
     return verificationResult
+  }
+  public async proofSerialization(hashData: Uint8Array, options: ProofOptions) {
+    // https://www.w3.org/TR/vc-di-eddsa/#proof-serialization-eddsa-jcs-2022
+    const keyId = await this._publicKeyIdFromId(options.verificationMethod)
+    const proofBytes = await this.keyApi.sign({
+      keyId,
+      algorithm: 'EdDSA',
+      data: Buffer.from(hashData),
+    })
+    return proofBytes.signature
+  }
+
+  async createProof(unsecuredDocument: UnsecuredDocument, options: ProofOptions) {
+    // https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022
+    const proof: Proof = {
+      ...options,
+      proofValue: '',
+    }
+    const proofConfig = this.proofConfiguration(options)
+    const transformedData = this.transformation(unsecuredDocument, options)
+    const hashData = this.hashing(transformedData, proofConfig)
+    const proofBytes = await this.proofSerialization(hashData, options)
+    proof.proofValue = multibaseEncode(proofBytes, MultibaseEncoding.BASE58_BTC)
+    return proof
   }
 }

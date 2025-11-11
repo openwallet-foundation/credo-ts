@@ -2,11 +2,13 @@ import { Jwt } from '@credo-ts/core'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { type AgentType, createAgentFromModules } from '../../../tests/utils'
 import { universityDegreePresentationDefinition } from '../../../tests/utilsVp'
-import { OpenId4VcVerifierModule } from '../OpenId4VcVerifierModule'
+import { OpenId4VcModule } from '../../OpenId4VcModule'
 
 const modules = {
-  openId4VcVerifier: new OpenId4VcVerifierModule({
-    baseUrl: 'http://redirect-uri',
+  openid4vc: new OpenId4VcModule({
+    verifier: {
+      baseUrl: 'http://redirect-uri',
+    },
   }),
   inMemory: new InMemoryWalletModule(),
 }
@@ -15,7 +17,7 @@ describe('OpenId4VcVerifier', () => {
   let verifier: AgentType<typeof modules>
 
   beforeEach(async () => {
-    verifier = await createAgentFromModules('verifier', modules, '96213c3d7fc8d4d6754c7a0fd969598f')
+    verifier = await createAgentFromModules(modules, '96213c3d7fc8d4d6754c7a0fd969598f')
   })
 
   afterEach(async () => {
@@ -24,9 +26,9 @@ describe('OpenId4VcVerifier', () => {
 
   describe('Verification', () => {
     it('check openid proof request format (vp token)', async () => {
-      const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
       const { authorizationRequest, verificationSession } =
-        await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+        await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
           requestSigner: {
             method: 'did',
             didUrl: verifier.kid,

@@ -1,8 +1,66 @@
+import {
+  AgentContext,
+  ClaimFormat,
+  CredoError,
+  EventEmitter,
+  injectable,
+  JwsService,
+  Jwt,
+  JwtPayload,
+  joinUriParts,
+  Kms,
+  MdocApi,
+  type Query,
+  type QueryOptions,
+  SdJwtVcApi,
+  TypedArrayEncoder,
+  utils,
+  W3cCredentialService,
+  W3cV2CredentialService,
+} from '@credo-ts/core'
+import {
+  type AuthorizationServerMetadata,
+  calculateJwkThumbprint,
+  HashAlgorithm,
+  type Jwk,
+  type JwtSignerJwk,
+  type JwtSignerWithJwk,
+  Oauth2AuthorizationServer,
+  Oauth2Client,
+  Oauth2ErrorCodes,
+  Oauth2ResourceServer,
+  Oauth2ServerErrorResponseError,
+  PkceCodeChallengeMethod,
+  preAuthorizedCodeGrantIdentifier,
+} from '@openid4vc/oauth2'
+import {
+  type CredentialConfigurationSupportedWithFormats,
+  type CredentialConfigurationsSupportedWithFormats,
+  type CredentialIssuerMetadata,
+  type CredentialRequestFormatSpecific,
+  type CredentialResponse,
+  type DeferredCredentialResponse,
+  extractScopesForCredentialConfigurationIds,
+  getCredentialConfigurationsMatchingRequestFormat,
+  Openid4vciDraftVersion,
+  Openid4vciIssuer,
+  type ParseCredentialRequestReturn,
+} from '@openid4vc/openid4vci'
+import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
 import type {
   OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciCredentialOfferPayload,
   OpenId4VciMetadata,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
+import { OpenId4VciCredentialFormatProfile } from '../shared'
+import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
+import { getCredentialConfigurationsSupportedForScopes, getOfferedCredentials } from '../shared/issuerMetadataUtils'
+import { storeActorIdForContextCorrelationId } from '../shared/router'
+import { getProofTypeFromPublicJwk, getPublicJwkFromDid, getSupportedJwaSignatureAlgorithms } from '../shared/utils'
+import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
+import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
+import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import type {
   OpenId4VciAuthorizationCodeFlowConfig,
   OpenId4VciCreateCredentialOfferOptions,
@@ -16,70 +74,6 @@ import type {
   OpenId4VciSignCredentials,
   OpenId4VciSignW3cCredentials,
 } from './OpenId4VcIssuerServiceOptions'
-
-import {
-  AgentContext,
-  ClaimFormat,
-  CredoError,
-  EventEmitter,
-  JwsService,
-  Jwt,
-  JwtPayload,
-  Kms,
-  MdocApi,
-  Query,
-  QueryOptions,
-  SdJwtVcApi,
-  TypedArrayEncoder,
-  W3cCredentialService,
-  injectable,
-  joinUriParts,
-  utils,
-} from '@credo-ts/core'
-import {
-  AuthorizationServerMetadata,
-  HashAlgorithm,
-  Jwk,
-  JwtSignerJwk,
-  JwtSignerWithJwk,
-  Oauth2AuthorizationServer,
-  Oauth2Client,
-  Oauth2ErrorCodes,
-  Oauth2ResourceServer,
-  Oauth2ServerErrorResponseError,
-  PkceCodeChallengeMethod,
-  calculateJwkThumbprint,
-  preAuthorizedCodeGrantIdentifier,
-} from '@openid4vc/oauth2'
-import {
-  CredentialConfigurationSupportedWithFormats,
-  CredentialConfigurationsSupportedWithFormats,
-  CredentialIssuerMetadata,
-  CredentialRequestFormatSpecific,
-  CredentialResponse,
-  DeferredCredentialResponse,
-  Openid4vciDraftVersion,
-  Openid4vciIssuer,
-  ParseCredentialRequestReturn,
-  extractScopesForCredentialConfigurationIds,
-  getCredentialConfigurationsMatchingRequestFormat,
-} from '@openid4vc/openid4vci'
-import { OpenId4VciCredentialFormatProfile } from '../shared'
-import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
-import { getCredentialConfigurationsSupportedForScopes, getOfferedCredentials } from '../shared/issuerMetadataUtils'
-import { storeActorIdForContextCorrelationId } from '../shared/router'
-import {
-  addSecondsToDate,
-  dateToSeconds,
-  getProofTypeFromPublicJwk,
-  getPublicJwkFromDid,
-  getSupportedJwaSignatureAlgorithms,
-} from '../shared/utils'
-
-import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
-import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
-import { OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
-import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import {
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuanceSessionRepository,
@@ -94,17 +88,20 @@ import { generateTxCode } from './util/txCode'
 @injectable()
 export class OpenId4VcIssuerService {
   private w3cCredentialService: W3cCredentialService
+  private w3cV2CredentialService: W3cV2CredentialService
   private openId4VcIssuerConfig: OpenId4VcIssuerModuleConfig
   private openId4VcIssuerRepository: OpenId4VcIssuerRepository
   private openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
 
   public constructor(
     w3cCredentialService: W3cCredentialService,
+    w3cV2CredentialService: W3cV2CredentialService,
     openId4VcIssuerConfig: OpenId4VcIssuerModuleConfig,
     openId4VcIssuerRepository: OpenId4VcIssuerRepository,
     openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
   ) {
     this.w3cCredentialService = w3cCredentialService
+    this.w3cV2CredentialService = w3cV2CredentialService
     this.openId4VcIssuerConfig = openId4VcIssuerConfig
     this.openId4VcIssuerRepository = openId4VcIssuerRepository
     this.openId4VcIssuanceSessionRepository = openId4VcIssuanceSessionRepository
@@ -113,7 +110,7 @@ export class OpenId4VcIssuerService {
   public async createStatelessCredentialOffer(
     agentContext: AgentContext,
     options: OpenId4VciCreateStatelessCredentialOfferOptions & { issuer: OpenId4VcIssuerRecord }
-  ) {
+  ): Promise<{ credentialOffer: string; credentialOfferObject: OpenId4VciCredentialOfferPayload }> {
     const { authorizationCodeFlowConfig, issuer, credentialConfigurationIds } = options
     const vcIssuer = this.getIssuer(agentContext)
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
@@ -163,7 +160,7 @@ export class OpenId4VcIssuerService {
       authorizationCodeFlowConfig,
       issuer,
       credentialConfigurationIds,
-      version = 'v1.draft11-15',
+      version = 'v1.draft15',
       authorization,
     } = options
     if (!preAuthorizedCodeFlowConfig && !authorizationCodeFlowConfig) {
@@ -200,6 +197,7 @@ export class OpenId4VcIssuerService {
     }
 
     const grants = await this.getGrantsFromConfig(agentContext, {
+      issuer,
       issuerMetadata,
       preAuthorizedCodeFlowConfig,
       authorizationCodeFlowConfig,
@@ -211,14 +209,21 @@ export class OpenId4VcIssuerService {
       credentialOfferUri: hostedCredentialOfferUri,
       credentialOfferScheme: options.baseUri,
       issuerMetadata: {
-        originalDraftVersion:
-          version === 'v1.draft11-15' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft15,
         ...issuerMetadata,
+        originalDraftVersion:
+          version === 'v1.draft11-14' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft15,
       },
     })
 
     const createdAt = new Date()
-    const expiresAt = addSecondsToDate(createdAt, this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds)
+    const expiresAt = utils.addSecondsToDate(
+      createdAt,
+      this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds
+    )
+
+    const chainedAuthorizationServerConfig = issuer.chainedAuthorizationServerConfigs?.find(
+      (config) => config.issuer === authorizationCodeFlowConfig?.authorizationServerUrl
+    )
 
     const issuanceSessionRepository = this.openId4VcIssuanceSessionRepository
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
@@ -249,6 +254,11 @@ export class OpenId4VcIssuerService {
             required: true,
           }
         : undefined,
+      chainedIdentity: chainedAuthorizationServerConfig
+        ? {
+            externalAuthorizationServerUrl: chainedAuthorizationServerConfig.issuer,
+          }
+        : undefined,
       // TODO: how to mix pre-auth and auth? Need to do state checks
       preAuthorizedCode: credentialOfferObject.grants?.[preAuthorizedCodeGrantIdentifier]?.['pre-authorized_code'],
       userPin: preAuthorizedCodeFlowConfig?.txCode
@@ -256,6 +266,7 @@ export class OpenId4VcIssuerService {
         : undefined,
       generateRefreshTokens: options.generateRefreshTokens,
       issuanceMetadata: options.issuanceMetadata,
+      openId4VciVersion: version,
     })
     await issuanceSessionRepository.save(agentContext, issuanceSession)
     this.emitStateChangedEvent(agentContext, issuanceSession, null)
@@ -269,7 +280,7 @@ export class OpenId4VcIssuerService {
   public async createCredentialResponse(
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
-  ) {
+  ): Promise<{ issuanceSession: OpenId4VcIssuanceSessionRecord; credentialResponse: CredentialResponse }> {
     options.issuanceSession.assertState([
       // OfferUriRetrieved is valid when doing auth flow (we should add a check)
       OpenId4VcIssuanceSessionState.OfferUriRetrieved,
@@ -339,7 +350,7 @@ export class OpenId4VcIssuerService {
     const mapper =
       options.credentialRequestToCredentialMapper ?? this.openId4VcIssuerConfig.credentialRequestToCredentialMapper
 
-    let verification: OpenId4VciCredentialRequestToCredentialMapperOptions['verification'] = undefined
+    let verification: OpenId4VciCredentialRequestToCredentialMapperOptions['verification']
 
     // NOTE: this will throw an error if the verifier module is not registered and there is a
     // verification session. But you can't get here without the verifier module anyway
@@ -430,7 +441,11 @@ export class OpenId4VcIssuerService {
 
       credentialResponse = vcIssuer.createCredentialResponse({
         credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
-        credentials: credentialRequest.proofs ? credentials.credentials : undefined,
+        credentials: credentialRequest.proofs
+          ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
+            ? credentials.credentials.map((c) => ({ credential: c }))
+            : credentials.credentials
+          : undefined,
         cNonce,
         cNonceExpiresInSeconds,
         credentialRequest: parsedCredentialRequest,
@@ -454,13 +469,12 @@ export class OpenId4VcIssuerService {
   public async createDeferredCredentialResponse(
     agentContext: AgentContext,
     options: OpenId4VciCreateDeferredCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
-  ) {
+  ): Promise<{
+    issuanceSession: OpenId4VcIssuanceSessionRecord
+    deferredCredentialResponse: DeferredCredentialResponse
+  }> {
     options.issuanceSession.assertState([
-      // OfferUriRetrieved is valid when doing auth flow (we should add a check)
-      OpenId4VcIssuanceSessionState.OfferUriRetrieved,
-      OpenId4VcIssuanceSessionState.AccessTokenCreated,
       OpenId4VcIssuanceSessionState.CredentialRequestReceived,
-      // It is possible to issue multiple credentials in one session
       OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
     ])
     const transaction = options.issuanceSession.transactions.find(
@@ -502,6 +516,7 @@ export class OpenId4VcIssuerService {
     if (signOptionsOrDeferral.type === 'deferral') {
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
         interval: signOptionsOrDeferral.interval,
+        transactionId: signOptionsOrDeferral.transactionId,
       })
 
       // Update expiry time to allow for re-check
@@ -514,7 +529,7 @@ export class OpenId4VcIssuerService {
       })
 
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
-        credentials: credentials.credentials,
+        credentials: credentials.credentials.map((c) => ({ credential: c })),
       })
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
@@ -556,12 +571,6 @@ export class OpenId4VcIssuerService {
 
     const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
-
-    // FIXME: verify request against the configuration
-    // - key attestations required
-    // - proof types supported
-    // - signing alg values supported
-    // - key attestation level met.
 
     const allowedProofTypes = credentialConfiguration.proof_types_supported ?? {
       jwt: { proof_signing_alg_values_supported: getSupportedJwaSignatureAlgorithms(agentContext) },
@@ -686,7 +695,7 @@ export class OpenId4VcIssuerService {
     }
 
     if (proofType === 'jwt') {
-      let firstNonce: string | undefined = undefined
+      let firstNonce: string | undefined
       const proofSigners: Array<(JwtSignerWithJwk & { method: 'did' }) | JwtSignerJwk> = []
 
       for (const jwt of proofValue) {
@@ -951,11 +960,12 @@ export class OpenId4VcIssuerService {
     const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
     const issuerUrl = joinUriParts(config.baseUrl, [issuerRecord.issuerId])
     const oauth2Client = this.getOauth2Client(agentContext)
+    const directAuthorizationServerConfigs = issuerRecord.directAuthorizationServerConfigs
 
     const extraAuthorizationServers: AuthorizationServerMetadata[] =
-      fetchExternalAuthorizationServerMetadata && issuerRecord.authorizationServerConfigs
+      fetchExternalAuthorizationServerMetadata && directAuthorizationServerConfigs
         ? await Promise.all(
-            issuerRecord.authorizationServerConfigs.map(async (server) => {
+            directAuthorizationServerConfigs.map(async (server) => {
               const metadata = await oauth2Client.fetchAuthorizationServerMetadata(server.issuer)
               if (!metadata)
                 throw new CredoError(`Authorization server metadata not found for issuer '${server.issuer}'`)
@@ -965,10 +975,10 @@ export class OpenId4VcIssuerService {
         : []
 
     const authorizationServers =
-      issuerRecord.authorizationServerConfigs && issuerRecord.authorizationServerConfigs.length > 0
+      directAuthorizationServerConfigs && directAuthorizationServerConfigs.length > 0
         ? [
-            ...issuerRecord.authorizationServerConfigs.map((authorizationServer) => authorizationServer.issuer),
-            // Our issuer is also a valid authorization server (only for pre-auth)
+            ...directAuthorizationServerConfigs.map((authorizationServer) => authorizationServer.issuer),
+            // Our issuer is also a valid authorization server (for pre-auth and chained auth)
             issuerUrl,
           ]
         : undefined
@@ -994,17 +1004,19 @@ export class OpenId4VcIssuerService {
       'pre-authorized_grant_anonymous_access_supported': true,
 
       jwks_uri: joinUriParts(issuerUrl, [config.jwksEndpointPath]),
-      authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
 
-      // TODO: PAR (maybe not needed as we only use this auth server for presentation during issuance)
-      // pushed_authorization_request_endpoint: '',
-      // require_pushed_authorization_requests: true
+      authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
+      authorization_endpoint: joinUriParts(issuerUrl, [config.authorizationEndpoint]),
+
+      pushed_authorization_request_endpoint: joinUriParts(issuerUrl, [config.pushedAuthorizationRequestEndpoint]),
+      require_pushed_authorization_requests: true,
 
       code_challenge_methods_supported: [PkceCodeChallengeMethod.S256],
       dpop_signing_alg_values_supported: issuerRecord.dpopSigningAlgValuesSupported,
     } satisfies AuthorizationServerMetadata
 
     return {
+      originalDraftVersion: Openid4vciDraftVersion.V1,
       credentialIssuer: credentialIssuerMetadata,
       authorizationServers: [issuerAuthorizationServer, ...extraAuthorizationServers],
     }
@@ -1015,14 +1027,14 @@ export class OpenId4VcIssuerService {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
     const cNonceExpiresInSeconds = this.openId4VcIssuerConfig.cNonceExpiresInSeconds
-    const cNonceExpiresAt = addSecondsToDate(new Date(), cNonceExpiresInSeconds)
+    const cNonceExpiresAt = utils.addSecondsToDate(new Date(), cNonceExpiresInSeconds)
 
     const key = issuer.resolvedAccessTokenPublicJwk
     const cNonce = await jwsService.createJwsCompact(agentContext, {
       keyId: key.keyId,
       payload: JwtPayload.fromJson({
         iss: issuerMetadata.credentialIssuer.credential_issuer,
-        exp: dateToSeconds(cNonceExpiresAt),
+        exp: utils.dateToSeconds(cNonceExpiresAt),
       }),
       protectedHeaderOptions: {
         typ: 'credo+cnonce',
@@ -1086,7 +1098,7 @@ export class OpenId4VcIssuerService {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
     const expiresInSeconds = this.openId4VcIssuerConfig.refreshTokenExpiresInSeconds
-    const expiresAt = addSecondsToDate(new Date(), expiresInSeconds)
+    const expiresAt = utils.addSecondsToDate(new Date(), expiresInSeconds)
 
     const key = issuer.resolvedAccessTokenPublicJwk
     const refreshToken = await jwsService.createJwsCompact(agentContext, {
@@ -1094,7 +1106,7 @@ export class OpenId4VcIssuerService {
       payload: JwtPayload.fromJson({
         iss: issuerMetadata.credentialIssuer.credential_issuer,
         aud: issuerMetadata.credentialIssuer.credential_issuer,
-        exp: dateToSeconds(expiresAt),
+        exp: utils.dateToSeconds(expiresAt),
         issuer_state: options.issuerState,
         'pre-authorized_code': options.preAuthorizedCode,
         cnf: options.dpop
@@ -1211,9 +1223,14 @@ export class OpenId4VcIssuerService {
     })
   }
 
-  public getOauth2Client(agentContext: AgentContext) {
+  public getOauth2Client(agentContext: AgentContext, issuerRecord?: OpenId4VcIssuerRecord) {
     return new Oauth2Client({
-      callbacks: getOid4vcCallbacks(agentContext),
+      callbacks: {
+        ...getOid4vcCallbacks(agentContext),
+        ...(issuerRecord
+          ? { clientAuthentication: dynamicOid4vciClientAuthentication(agentContext, issuerRecord) }
+          : {}),
+      },
     })
   }
 
@@ -1246,15 +1263,20 @@ export class OpenId4VcIssuerService {
   ) {
     const expiresAt =
       issuanceSession.expiresAt ??
-      addSecondsToDate(issuanceSession.createdAt, this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds)
+      utils.addSecondsToDate(
+        issuanceSession.createdAt,
+        this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds
+      )
 
     issuanceSession.expiresAt = new Date(
       Math.max(
         expiresAt.getTime(),
-        addSecondsToDate(
-          new Date(),
-          Math.max(this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds, interval * 2)
-        ).getTime()
+        utils
+          .addSecondsToDate(
+            new Date(),
+            Math.max(this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds, interval * 2)
+          )
+          .getTime()
       )
     )
 
@@ -1300,15 +1322,16 @@ export class OpenId4VcIssuerService {
   private async getGrantsFromConfig(
     agentContext: AgentContext,
     config: {
+      issuer: OpenId4VcIssuerRecord
       issuerMetadata: OpenId4VciMetadata
       preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
       authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
     }
   ) {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
-    const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig, issuerMetadata } = config
+    const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig, issuer, issuerMetadata } = config
 
-    // TOOD: export type
+    // TODO: export type
     const grants: Parameters<Openid4vciIssuer['createCredentialOffer']>[0]['grants'] = {}
 
     // Pre auth
@@ -1336,6 +1359,13 @@ export class OpenId4VcIssuerService {
           )
         }
 
+        authorizationServerUrl = issuerMetadata.credentialIssuer.credential_issuer
+      }
+
+      const authorizationServerConfig = issuer.authorizationServerConfigs?.find(
+        (server) => server.issuer === authorizationServerUrl
+      )
+      if (authorizationServerConfig?.type === 'chained') {
         authorizationServerUrl = issuerMetadata.credentialIssuer.credential_issuer
       }
 
@@ -1503,13 +1533,13 @@ export class OpenId4VcIssuerService {
         )) as string[] | Record<string, unknown>[],
       }
     }
-    if (signOptions.format === ClaimFormat.SdJwtVc) {
+    if (signOptions.format === ClaimFormat.SdJwtDc) {
       if (
         credentialConfiguration.format !== OpenId4VciCredentialFormatProfile.SdJwtVc &&
         credentialConfiguration.format !== OpenId4VciCredentialFormatProfile.SdJwtDc
       ) {
         throw new CredoError(
-          `Invalid credential format returned by sign options. Expected '${ClaimFormat.SdJwtVc}', received '${signOptions.format}'.`
+          `Invalid credential format returned by sign options. Expected '${ClaimFormat.SdJwtDc}', received '${signOptions.format}'.`
         )
       }
 
@@ -1557,6 +1587,21 @@ export class OpenId4VcIssuerService {
         credentials: await Promise.all(
           signOptions.credentials.map((credential) => mdocApi.sign(credential).then((signed) => signed.base64Url))
         ),
+      }
+    }
+    if (signOptions.format === ClaimFormat.SdJwtW3cVc) {
+      return {
+        format: credentialConfiguration.format,
+        credentials: (await Promise.all(
+          signOptions.credentials.map((credential) =>
+            this.w3cV2CredentialService
+              .signCredential(agentContext, {
+                format: ClaimFormat.SdJwtW3cVc,
+                ...credential,
+              })
+              .then((signed) => signed.encoded)
+          )
+        )) as string[] | Record<string, unknown>[],
       }
     }
     throw new CredoError(`Unsupported credential format ${signOptions.format}`)

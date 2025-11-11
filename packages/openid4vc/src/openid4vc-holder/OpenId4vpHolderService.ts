@@ -8,13 +8,6 @@ import type {
   HashName,
   MdocSessionTranscriptOptions,
 } from '@credo-ts/core'
-import type {
-  OpenId4VpAcceptAuthorizationRequestOptions,
-  OpenId4VpResolvedAuthorizationRequest,
-  ParsedTransactionDataEntry,
-  ResolveOpenId4VpAuthorizationRequestOptions,
-} from './OpenId4vpHolderServiceOptions'
-
 import {
   ClaimFormat,
   CredoError,
@@ -22,25 +15,30 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
   Hasher,
+  injectable,
   Kms,
   TypedArrayEncoder,
-  injectable,
 } from '@credo-ts/core'
+import type { Jwk } from '@openid4vc/oauth2'
 import {
-  Openid4vpAuthorizationResponse,
-  Openid4vpClient,
-  VpToken,
   extractEncryptionJwkFromJwks,
   getOpenid4vpClientId,
   isJarmResponseMode,
   isOpenid4vpAuthorizationRequestDcApi,
+  type Openid4vpAuthorizationResponse,
+  Openid4vpClient,
   parseAuthorizationRequestVersion,
   parseTransactionData,
+  type VpToken,
 } from '@openid4vc/openid4vp'
-
-import { Jwk } from '@openid4vc/oauth2'
-import { OpenId4VpVersion } from '../openid4vc-verifier'
+import type { OpenId4VpVersion } from '../openid4vc-verifier'
 import { getOid4vcCallbacks } from '../shared/callbacks'
+import type {
+  OpenId4VpAcceptAuthorizationRequestOptions,
+  OpenId4VpResolvedAuthorizationRequest,
+  ParsedTransactionDataEntry,
+  ResolveOpenId4VpAuthorizationRequestOptions,
+} from './OpenId4vpHolderServiceOptions'
 
 @injectable()
 export class OpenId4VpHolderService {
@@ -192,13 +190,13 @@ export class OpenId4VpHolderService {
 
     if (!selectedTransactionDataCredentials) {
       throw new CredoError(
-        'Autohrization request contains transaction data entries, but no credential ids to sign transaction data hashes provided in acceptAuthorizationRequest method.'
+        'Authorization request contains transaction data entries, but no credential ids to sign transaction data hashes provided in acceptAuthorizationRequest method.'
       )
     }
 
     if (!transactionData) {
       throw new CredoError(
-        'Autohrization request doe not contains transaction data entries, but credentail ids were provided to sign transaction data hashes in acceptAuthorizationRequest method.'
+        'Authorization request does not contains transaction data entries, but credential ids were provided to sign transaction data hashes in acceptAuthorizationRequest method.'
       )
     }
 
@@ -209,8 +207,8 @@ export class OpenId4VpHolderService {
     }
 
     const credentialsToTransactionData: Record<string, ParsedTransactionDataEntry[]> = {}
-    for (const transactionDataIndex in transactionData) {
-      const transactionDataEntry = transactionData[transactionDataIndex]
+
+    transactionData.forEach((transactionDataEntry, transactionDataIndex) => {
       const { credentialId } = selectedTransactionDataCredentials[transactionDataIndex]
 
       if (!transactionDataEntry.transactionData.credential_ids.includes(credentialId)) {
@@ -226,12 +224,12 @@ export class OpenId4VpHolderService {
       }
 
       const unsupportedFormats = selectedCredentials[credentialId]
-        .filter((c) => c.claimFormat !== ClaimFormat.SdJwtVc)
+        .filter((c) => c.claimFormat !== ClaimFormat.SdJwtDc)
         .map((c) => c.claimFormat)
 
       if (unsupportedFormats.length > 0) {
         throw new CredoError(
-          `Credential id '${credentialId}' selected to sign transaction data with index '${transactionDataIndex}' unsupported format(s) ${unsupportedFormats.join(', ')}. Only '${ClaimFormat.SdJwtVc}' is supported for transaction data signing in Credo at the moment.`
+          `Credential id '${credentialId}' selected to sign transaction data with index '${transactionDataIndex}' unsupported format(s) ${unsupportedFormats.join(', ')}. Only '${ClaimFormat.SdJwtDc}' is supported for transaction data signing in Credo at the moment.`
         )
       }
 
@@ -239,7 +237,7 @@ export class OpenId4VpHolderService {
         credentialsToTransactionData[credentialId] = []
       }
       credentialsToTransactionData[credentialId].push(transactionDataEntry)
-    }
+    })
 
     const updatedCredentials = {
       ...selectedCredentials,
@@ -275,10 +273,10 @@ export class OpenId4VpHolderService {
       )
 
       updatedCredentials[credentialId] = updatedCredentials[credentialId].map((credential) => {
-        if (credential.claimFormat !== ClaimFormat.SdJwtVc) {
+        if (credential.claimFormat !== ClaimFormat.SdJwtDc) {
           // We already verified this above
           throw new CredoError(
-            `Unexpected claim format '${credential.claimFormat}' for transaction data, expected '${ClaimFormat.SdJwtVc}'`
+            `Unexpected claim format '${credential.claimFormat}' for transaction data, expected '${ClaimFormat.SdJwtDc}'`
           )
         }
 
@@ -344,7 +342,7 @@ export class OpenId4VpHolderService {
     // NOTE: in v1 DC API request the audience is always origin: (not the client id)
     const audience = openid4vpVersion === 'v1' && isDcApiRequest ? `origin:${options.origin}` : clientId
 
-    let encryptionJwk: Jwk | undefined = undefined
+    let encryptionJwk: Jwk | undefined
     if (shouldEncryptResponse) {
       // NOTE: Once we add support for federation we need to require the clientMetadata as input to the accept method.
       const clientMetadata = authorizationRequestPayload.client_metadata
@@ -418,7 +416,7 @@ export class OpenId4VpHolderService {
     }
 
     let vpToken: VpToken
-    let presentationSubmission: DifPresentationExchangeSubmission | undefined = undefined
+    let presentationSubmission: DifPresentationExchangeSubmission | undefined
 
     const parsedTransactionData = authorizationRequestPayload.transaction_data
       ? parseTransactionData({

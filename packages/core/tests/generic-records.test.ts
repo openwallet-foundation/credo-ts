@@ -1,7 +1,6 @@
-import type { GenericRecord } from '../src/modules/generic-records/repository/GenericRecord'
-
 import { Agent } from '../src/agent/Agent'
 import { RecordNotFoundError } from '../src/error'
+import type { GenericRecord } from '../src/modules/generic-records/repository/GenericRecord'
 
 import { getAgentOptions } from './helpers'
 
@@ -97,7 +96,7 @@ describe('genericRecords', () => {
     const deleteRecordById = async () => {
       await aliceAgent.genericRecords.deleteById('test')
     }
-    expect(deleteRecordById).rejects.toThrow(RecordNotFoundError)
+    await expect(deleteRecordById).rejects.toThrow(RecordNotFoundError)
   })
 
   test('update generic record', async () => {

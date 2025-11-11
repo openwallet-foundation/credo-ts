@@ -16,7 +16,11 @@ export function getEd25519VerificationKey2018({
   publicJwk,
   id,
   controller,
-}: { id: string; publicJwk: PublicJwk<Ed25519PublicJwk>; controller: string }) {
+}: {
+  id: string
+  publicJwk: PublicJwk<Ed25519PublicJwk>
+  controller: string
+}) {
   return new VerificationMethod({
     id,
     type: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,

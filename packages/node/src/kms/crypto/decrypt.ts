@@ -1,16 +1,15 @@
-import type { DecipherGCM } from 'node:crypto'
-
 import { Buffer } from 'node:buffer'
+import type { DecipherGCM } from 'node:crypto'
 import { createDecipheriv, createSecretKey, timingSafeEqual } from 'node:crypto'
-import { Kms } from '@credo-ts/core'
+import { type AnyUint8Array, Kms, type Uint8ArrayBuffer } from '@credo-ts/core'
 
 import { performSign } from './sign'
 
 export async function performDecrypt(
   key: Kms.KmsJwkPrivateOct,
   dataDecryption: Kms.KmsDecryptDataDecryption,
-  encrypted: Uint8Array
-): Promise<{ data: Uint8Array }> {
+  encrypted: AnyUint8Array
+): Promise<{ data: Uint8ArrayBuffer }> {
   const secretKeyBytes = Buffer.from(key.k, 'base64url')
   const nodeKey = createSecretKey(secretKeyBytes)
 

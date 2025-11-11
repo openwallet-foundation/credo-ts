@@ -1,4 +1,5 @@
 export * from './DcqlCredentialsForRequest'
+
 import type {
   DcqlCredential as _DcqlCredential,
   DcqlMdocCredential as _DcqlMdocCredential,
@@ -11,7 +12,7 @@ import type {
 import type { VerifiablePresentation } from '../../dif-presentation-exchange'
 import type { MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
-import type { W3cCredentialRecord } from '../../vc'
+import type { W3cCredentialRecord, W3cV2CredentialRecord } from '../../vc'
 
 export type DcqlQuery = _DcqlQuery.Input | _DcqlQuery.Output
 export type DcqlCredential = _DcqlCredential.Model['Input']
@@ -22,13 +23,13 @@ export type DcqlW3cVcCredential = _DcqlW3cVcCredential.Model['Input']
 export type DcqlFailedCredential = NonNullable<
   _DcqlQueryResult['credential_matches'][string]['failed_credentials']
 >[number] & {
-  record: MdocRecord | SdJwtVcRecord | W3cCredentialRecord
+  record: MdocRecord | SdJwtVcRecord | W3cCredentialRecord | W3cV2CredentialRecord
 }
 
 export type DcqlValidCredential = NonNullable<
   _DcqlQueryResult['credential_matches'][string]['valid_credentials']
 >[number] & {
-  record: MdocRecord | SdJwtVcRecord | W3cCredentialRecord
+  record: MdocRecord | SdJwtVcRecord | W3cCredentialRecord | W3cV2CredentialRecord
 }
 
 export type DcqlMatchWithRecord =

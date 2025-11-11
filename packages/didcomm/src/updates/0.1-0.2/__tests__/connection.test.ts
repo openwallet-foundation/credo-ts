@@ -1,16 +1,17 @@
-import { Agent, DidDocumentRole, DidRecord, DidRepository, JsonTransformer } from '../../../../../core'
+import type { MockedClassConstructor } from '../../../../../../tests/types'
+import { Agent, DidDocumentRole, DidRecord, DidRepository, JsonTransformer } from '../../../../../core/src/index'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
 import {
-  ConnectionRecord,
-  ConnectionRepository,
-  ConnectionRole,
-  ConnectionState,
-  DidExchangeRole,
-  DidExchangeState,
-  OutOfBandRecord,
-  OutOfBandRepository,
-  OutOfBandRole,
-  OutOfBandState,
+  DidCommConnectionRecord,
+  DidCommConnectionRepository,
+  DidCommConnectionRole,
+  DidCommConnectionState,
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+  DidCommOutOfBandRecord,
+  DidCommOutOfBandRepository,
+  DidCommOutOfBandRole,
+  DidCommOutOfBandState,
 } from '../../../modules'
 import * as testModule from '../connection'
 
@@ -19,35 +20,37 @@ import didPeerR1xKJw17sUoXhejEpugMYJ from './__fixtures__/didPeerR1xKJw17sUoXhej
 import legacyDidPeer4kgVt6CidfKgo1MoWMqsQX from './__fixtures__/legacyDidPeer4kgVt6CidfKgo1MoWMqsQX.json'
 import legacyDidPeerR1xKJw17sUoXhejEpugMYJ from './__fixtures__/legacyDidPeerR1xKJw17sUoXhejEpugMYJ.json'
 
-const agentConfig = getAgentConfig('Migration ConnectionRecord 0.1-0.2')
+const agentConfig = getAgentConfig('Migration DidCommConnectionRecord 0.1-0.2')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/connections/repository/ConnectionRepository')
-const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
+vi.mock('../../../modules/connections/repository/DidCommConnectionRepository')
+const ConnectionRepositoryMock = DidCommConnectionRepository as MockedClassConstructor<
+  typeof DidCommConnectionRepository
+>
 const connectionRepository = new ConnectionRepositoryMock()
 
-jest.mock('../../../../../core/src/modules/dids/repository/DidRepository')
-const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+vi.mock('../../../../../core/src/modules/dids/repository/DidRepository')
+const DidRepositoryMock = DidRepository as MockedClassConstructor<typeof DidRepository>
 const didRepository = new DidRepositoryMock()
 
-jest.mock('../../../modules/oob/repository/OutOfBandRepository')
-const OutOfBandRepositoryMock = OutOfBandRepository as jest.Mock<OutOfBandRepository>
+vi.mock('../../../modules/oob/repository/DidCommOutOfBandRepository')
+const OutOfBandRepositoryMock = DidCommOutOfBandRepository as MockedClassConstructor<typeof DidCommOutOfBandRepository>
 const outOfBandRepository = new OutOfBandRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn((cls) => {
-          if (cls === ConnectionRepository) {
+        resolve: vi.fn((cls) => {
+          if (cls === DidCommConnectionRepository) {
             return connectionRepository
           }
           if (cls === DidRepository) {
             return didRepository
           }
-          if (cls === OutOfBandRepository) {
+          if (cls === DidCommOutOfBandRepository) {
             return outOfBandRepository
           }
 
@@ -94,7 +97,7 @@ const connectionJsonNewDidStateRole = {
 }
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.1-0.2 | Connection', () => {
   let agent: Agent
@@ -104,12 +107,12 @@ describe('0.1-0.2 | Connection', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('migrateCredentialRecordToV0_2()', () => {
     it('should fetch all records and apply the needed updates', async () => {
-      const input = JsonTransformer.fromJSON(connectionJson, ConnectionRecord)
+      const input = JsonTransformer.fromJSON(connectionJson, DidCommConnectionRecord)
       const records = [input]
 
       mockFunction(connectionRepository.getAll).mockResolvedValue(records)
@@ -150,7 +153,7 @@ describe('0.1-0.2 | Connection', () => {
     it('should update the connection role and state to did exchange values', async () => {
       const connectionRecord = JsonTransformer.fromJSON(
         { ...connectionJson, state: 'requested', role: 'invitee' },
-        ConnectionRecord
+        DidCommConnectionRecord
       )
 
       await testModule.updateConnectionRoleAndState(agent, connectionRecord)
@@ -181,7 +184,7 @@ describe('0.1-0.2 | Connection', () => {
 
   describe('extractDidDocument', () => {
     it('should extract the did document from the connection record and update the did to a did:peer did', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJson, ConnectionRecord)
+      const connectionRecord = JsonTransformer.fromJSON(connectionJson, DidCommConnectionRecord)
 
       // No did record exists yet
       mockFunction(didRepository.findById).mockResolvedValue(null)
@@ -210,7 +213,7 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should create a DidRecord for didDoc and theirDidDoc', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJson, ConnectionRecord)
+      const connectionRecord = JsonTransformer.fromJSON(connectionJson, DidCommConnectionRecord)
 
       // No did record exists yet
       mockFunction(didRepository.findById).mockResolvedValue(null)
@@ -263,7 +266,7 @@ describe('0.1-0.2 | Connection', () => {
     it('should not extract the did document if it does not exist on the connection record', async () => {
       const connectionRecord = JsonTransformer.fromJSON(
         { ...connectionJson, didDoc: undefined, theirDidDoc: undefined },
-        ConnectionRecord
+        DidCommConnectionRecord
       )
 
       await testModule.extractDidDocument(agent, connectionRecord)
@@ -285,7 +288,7 @@ describe('0.1-0.2 | Connection', () => {
     })
 
     it('should not create a did record if a did record for the did already exists', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJson, ConnectionRecord)
+      const connectionRecord = JsonTransformer.fromJSON(connectionJson, DidCommConnectionRecord)
 
       const didRecord = JsonTransformer.fromJSON(
         {
@@ -360,7 +363,7 @@ describe('0.1-0.2 | Connection', () => {
 
   describe('migrateToOobRecord', () => {
     it('should extract the invitation from the connection record and generate an invitation did', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, DidCommConnectionRecord)
 
       // No did record exists yet
       mockFunction(outOfBandRepository.findByQuery).mockResolvedValue([])
@@ -386,8 +389,8 @@ describe('0.1-0.2 | Connection', () => {
       })
     })
 
-    it('should create an OutOfBandRecord from the invitation and store the outOfBandId in the connection record', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
+    it('should create an DidCommOutOfBandRecord from the invitation and store the outOfBandId in the connection record', async () => {
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, DidCommConnectionRecord)
 
       // No did record exists yet
       mockFunction(outOfBandRepository.findByQuery).mockResolvedValue([])
@@ -419,8 +422,8 @@ describe('0.1-0.2 | Connection', () => {
           accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
           handshake_protocols: ['https://didcomm.org/connections/1.0'],
         },
-        role: OutOfBandRole.Sender,
-        state: OutOfBandState.AwaitResponse,
+        role: DidCommOutOfBandRole.Sender,
+        state: DidCommOutOfBandState.AwaitResponse,
         autoAcceptConnection: true,
         reusable: false,
         mediatorId: 'a-mediator-id',
@@ -428,8 +431,8 @@ describe('0.1-0.2 | Connection', () => {
       })
     })
 
-    it('should create an OutOfBandRecord if an OutOfBandRecord with the invitation id already exists, but the recipientKeys are different', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
+    it('should create an DidCommOutOfBandRecord if an DidCommOutOfBandRecord with the invitation id already exists, but the recipientKeys are different', async () => {
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, DidCommConnectionRecord)
 
       // Out of band record does not exist yet
       mockFunction(outOfBandRepository.findByQuery).mockResolvedValueOnce([])
@@ -440,15 +443,15 @@ describe('0.1-0.2 | Connection', () => {
       expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
-        role: OutOfBandRole.Sender,
+        role: DidCommOutOfBandRole.Sender,
       })
 
       // Expect the out of band record to be created
       expect(outOfBandRepository.save).toHaveBeenCalled()
     })
 
-    it('should not create an OutOfBandRecord if an OutOfBandRecord with the invitation id and recipientKeys already exists', async () => {
-      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, ConnectionRecord)
+    it('should not create an DidCommOutOfBandRecord if an DidCommOutOfBandRecord with the invitation id and recipientKeys already exists', async () => {
+      const connectionRecord = JsonTransformer.fromJSON(connectionJsonNewDidStateRole, DidCommConnectionRecord)
 
       const outOfBandRecord = JsonTransformer.fromJSON(
         {
@@ -471,15 +474,15 @@ describe('0.1-0.2 | Connection', () => {
             accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
             handshake_protocols: ['https://didcomm.org/connections/1.0'],
           },
-          role: OutOfBandRole.Sender,
-          state: OutOfBandState.AwaitResponse,
+          role: DidCommOutOfBandRole.Sender,
+          state: DidCommOutOfBandState.AwaitResponse,
           autoAcceptConnection: true,
           did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
           reusable: false,
           mediatorId: 'a-mediator-id',
           createdAt: connectionRecord.createdAt.toISOString(),
         },
-        OutOfBandRecord
+        DidCommOutOfBandRecord
       )
 
       // Out of band record does not exist yet
@@ -491,7 +494,7 @@ describe('0.1-0.2 | Connection', () => {
       expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
-        role: OutOfBandRole.Sender,
+        role: DidCommOutOfBandRole.Sender,
       })
       expect(outOfBandRepository.save).not.toHaveBeenCalled()
 
@@ -517,7 +520,7 @@ describe('0.1-0.2 | Connection', () => {
     it('should update the existing out of band record to reusable and state await response if the connection record is a multiUseInvitation', async () => {
       const connectionRecord = JsonTransformer.fromJSON(
         { ...connectionJsonNewDidStateRole, multiUseInvitation: true },
-        ConnectionRecord
+        DidCommConnectionRecord
       )
 
       const outOfBandRecord = JsonTransformer.fromJSON(
@@ -541,15 +544,15 @@ describe('0.1-0.2 | Connection', () => {
             accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
             handshake_protocols: ['https://didcomm.org/connections/1.0'],
           },
-          role: OutOfBandRole.Sender,
-          state: OutOfBandState.AwaitResponse,
+          role: DidCommOutOfBandRole.Sender,
+          state: DidCommOutOfBandState.AwaitResponse,
           autoAcceptConnection: true,
           did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
           reusable: false,
           mediatorId: 'a-mediator-id',
           createdAt: connectionRecord.createdAt.toISOString(),
         },
-        OutOfBandRecord
+        DidCommOutOfBandRecord
       )
 
       // Out of band record already exists
@@ -561,7 +564,7 @@ describe('0.1-0.2 | Connection', () => {
       expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
-        role: OutOfBandRole.Sender,
+        role: DidCommOutOfBandRole.Sender,
       })
       expect(outOfBandRepository.save).not.toHaveBeenCalled()
       expect(outOfBandRepository.update).toHaveBeenCalledWith(agentContext, outOfBandRecord)
@@ -586,8 +589,8 @@ describe('0.1-0.2 | Connection', () => {
           accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
           handshake_protocols: ['https://didcomm.org/connections/1.0'],
         },
-        role: OutOfBandRole.Sender,
-        state: OutOfBandState.AwaitResponse,
+        role: DidCommOutOfBandRole.Sender,
+        state: DidCommOutOfBandState.AwaitResponse,
         autoAcceptConnection: true,
         did: didPeerR1xKJw17sUoXhejEpugMYJ.id,
         reusable: true,
@@ -600,91 +603,151 @@ describe('0.1-0.2 | Connection', () => {
   describe('oobStateFromDidExchangeRoleAndState', () => {
     it('should return the correct state for all connection role and state combinations', () => {
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Responder, DidExchangeState.InvitationSent)
-      ).toEqual(OutOfBandState.AwaitResponse)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Responder,
+          DidCommDidExchangeState.InvitationSent
+        )
+      ).toEqual(DidCommOutOfBandState.AwaitResponse)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Responder, DidExchangeState.RequestReceived)
-      ).toEqual(OutOfBandState.Done)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Responder,
+          DidCommDidExchangeState.RequestReceived
+        )
+      ).toEqual(DidCommOutOfBandState.Done)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Responder, DidExchangeState.ResponseSent)
-      ).toEqual(OutOfBandState.Done)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Responder,
+          DidCommDidExchangeState.ResponseSent
+        )
+      ).toEqual(DidCommOutOfBandState.Done)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Responder, DidExchangeState.Completed)
-      ).toEqual(OutOfBandState.Done)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Responder,
+          DidCommDidExchangeState.Completed
+        )
+      ).toEqual(DidCommOutOfBandState.Done)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Responder, DidExchangeState.Abandoned)
-      ).toEqual(OutOfBandState.Done)
-      expect(testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Requester, DidExchangeState.Start)).toEqual(
-        OutOfBandState.PrepareResponse
-      )
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Responder,
+          DidCommDidExchangeState.Abandoned
+        )
+      ).toEqual(DidCommOutOfBandState.Done)
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Requester, DidCommDidExchangeState.Start)
+      ).toEqual(DidCommOutOfBandState.PrepareResponse)
 
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Requester, DidExchangeState.InvitationReceived)
-      ).toEqual(OutOfBandState.PrepareResponse)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Requester,
+          DidCommDidExchangeState.InvitationReceived
+        )
+      ).toEqual(DidCommOutOfBandState.PrepareResponse)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Requester, DidExchangeState.RequestSent)
-      ).toEqual(OutOfBandState.Done)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Requester,
+          DidCommDidExchangeState.RequestSent
+        )
+      ).toEqual(DidCommOutOfBandState.Done)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Requester, DidExchangeState.ResponseReceived)
-      ).toEqual(OutOfBandState.Done)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Requester,
+          DidCommDidExchangeState.ResponseReceived
+        )
+      ).toEqual(DidCommOutOfBandState.Done)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Requester, DidExchangeState.Completed)
-      ).toEqual(OutOfBandState.Done)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Requester,
+          DidCommDidExchangeState.Completed
+        )
+      ).toEqual(DidCommOutOfBandState.Done)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Requester, DidExchangeState.Abandoned)
-      ).toEqual(OutOfBandState.Done)
-      expect(testModule.oobStateFromDidExchangeRoleAndState(DidExchangeRole.Responder, DidExchangeState.Start)).toEqual(
-        OutOfBandState.AwaitResponse
-      )
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Requester,
+          DidCommDidExchangeState.Abandoned
+        )
+      ).toEqual(DidCommOutOfBandState.Done)
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Responder, DidCommDidExchangeState.Start)
+      ).toEqual(DidCommOutOfBandState.AwaitResponse)
     })
   })
 
   describe('didExchangeStateAndRoleFromRoleAndState', () => {
     it('should return the correct state for all connection role and state combinations', () => {
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Inviter, ConnectionState.Invited)
-      ).toEqual([DidExchangeRole.Responder, DidExchangeState.InvitationSent])
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Inviter,
+          DidCommConnectionState.Invited
+        )
+      ).toEqual([DidCommDidExchangeRole.Responder, DidCommDidExchangeState.InvitationSent])
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Inviter, ConnectionState.Requested)
-      ).toEqual([DidExchangeRole.Responder, DidExchangeState.RequestReceived])
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Inviter,
+          DidCommConnectionState.Requested
+        )
+      ).toEqual([DidCommDidExchangeRole.Responder, DidCommDidExchangeState.RequestReceived])
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Inviter, ConnectionState.Responded)
-      ).toEqual([DidExchangeRole.Responder, DidExchangeState.ResponseSent])
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Inviter,
+          DidCommConnectionState.Responded
+        )
+      ).toEqual([DidCommDidExchangeRole.Responder, DidCommDidExchangeState.ResponseSent])
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Inviter, ConnectionState.Complete)
-      ).toEqual([DidExchangeRole.Responder, DidExchangeState.Completed])
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Inviter,
+          DidCommConnectionState.Complete
+        )
+      ).toEqual([DidCommDidExchangeRole.Responder, DidCommDidExchangeState.Completed])
 
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Invitee, ConnectionState.Invited)
-      ).toEqual([DidExchangeRole.Requester, DidExchangeState.InvitationReceived])
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Invitee,
+          DidCommConnectionState.Invited
+        )
+      ).toEqual([DidCommDidExchangeRole.Requester, DidCommDidExchangeState.InvitationReceived])
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Invitee, ConnectionState.Requested)
-      ).toEqual([DidExchangeRole.Requester, DidExchangeState.RequestSent])
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Invitee,
+          DidCommConnectionState.Requested
+        )
+      ).toEqual([DidCommDidExchangeRole.Requester, DidCommDidExchangeState.RequestSent])
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Invitee, ConnectionState.Responded)
-      ).toEqual([DidExchangeRole.Requester, DidExchangeState.ResponseReceived])
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Invitee,
+          DidCommConnectionState.Responded
+        )
+      ).toEqual([DidCommDidExchangeRole.Requester, DidCommDidExchangeState.ResponseReceived])
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(ConnectionRole.Invitee, ConnectionState.Complete)
-      ).toEqual([DidExchangeRole.Requester, DidExchangeState.Completed])
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Invitee,
+          DidCommConnectionState.Complete
+        )
+      ).toEqual([DidCommDidExchangeRole.Requester, DidCommDidExchangeState.Completed])
     })
 
     it('should return did exchange role if role is already did exchange role', () => {
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(DidExchangeRole.Responder, DidExchangeState.RequestSent)
-      ).toEqual([DidExchangeRole.Responder, expect.anything()])
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommDidExchangeRole.Responder,
+          DidCommDidExchangeState.RequestSent
+        )
+      ).toEqual([DidCommDidExchangeRole.Responder, expect.anything()])
 
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(DidExchangeRole.Requester, ConnectionState.Requested)
-      ).toEqual([DidExchangeRole.Requester, expect.anything()])
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommDidExchangeRole.Requester,
+          DidCommConnectionState.Requested
+        )
+      ).toEqual([DidCommDidExchangeRole.Requester, expect.anything()])
     })
 
     it('should return the input state if state is not a valid connection state', () => {
       expect(
         testModule.didExchangeStateAndRoleFromRoleAndState(
-          DidExchangeRole.Responder,
-          'something-weird' as ConnectionState
+          DidCommDidExchangeRole.Responder,
+          'something-weird' as DidCommConnectionState
         )
-      ).toEqual([DidExchangeRole.Responder, 'something-weird'])
+      ).toEqual([DidCommDidExchangeRole.Responder, 'something-weird'])
     })
   })
 })

@@ -1,2 +1,2 @@
-export * from './V1RevocationNotificationHandler'
-export * from './V2RevocationNotificationHandler'
+export * from './DidCommRevocationNotificationV1Handler'
+export * from './DidCommRevocationNotificationV2Handler'

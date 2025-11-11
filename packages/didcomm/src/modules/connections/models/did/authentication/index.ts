@@ -1,7 +1,6 @@
-import type { ClassConstructor } from 'class-transformer'
-
 import { CredoError } from '@credo-ts/core'
-import { Transform, TransformationType, instanceToPlain, plainToInstance } from 'class-transformer'
+import type { ClassConstructor } from 'class-transformer'
+import { instanceToPlain, plainToInstance, Transform, TransformationType } from 'class-transformer'
 
 import { PublicKey, publicKeyTypes } from '../publicKey'
 

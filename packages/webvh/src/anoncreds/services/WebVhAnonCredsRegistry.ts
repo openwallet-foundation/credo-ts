@@ -1,22 +1,38 @@
 import type {
+  AnonCredsCredentialDefinition,
   AnonCredsRegistry,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsRevocationRegistryDefinitionValue,
+  AnonCredsRevocationStatusList,
+  AnonCredsRevocationStatusListWithoutTimestamp,
+  AnonCredsSchema,
   GetCredentialDefinitionReturn,
   GetRevocationRegistryDefinitionReturn,
   GetRevocationStatusListReturn,
   GetSchemaReturn,
+  RegisterCredentialDefinitionOptions,
   RegisterCredentialDefinitionReturn,
+  RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListOptions,
   RegisterRevocationStatusListReturn,
+  RegisterSchemaOptions,
   RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
-import type { AgentContext } from '@credo-ts/core'
 
-import { CredoError, JsonTransformer, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  type AgentContext,
+  CredoError,
+  DidRepository,
+  JsonTransformer,
+  MultiBaseEncoder,
+  MultiHashEncoder,
+  type Proof,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
-import { EddsaJcs2022Cryptosuite } from '../../cryptosuites/eddsa-jcs-2022'
-import { WebvhDidResolver } from '../../dids'
+import { EddsaJcs2022Cryptosuite, type UnsecuredDocument } from '../../cryptosuites'
+import { WebVhDidResolver } from '../../dids'
 import { WebVhResource } from '../utils/transform'
 
 type DidResourceResolutionResult = {
@@ -36,7 +52,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   public readonly supportedIdentifier = /^did:webvh:.*/
 
   /**
-   * Resolves a resource using the WebvhDidResolver and performs common validation steps.
+   * Resolves a resource using the WebVhDidResolver and performs common validation steps.
    *
    * @param agentContext The agent context.
    * @param resourceId The DID URI of the resource to resolve.
@@ -56,7 +72,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     resourceTypeString: string
   ): Promise<{ resourceObject: WebVhResource; resolutionResult: DidResourceResolutionResult }> {
     try {
-      const webvhDidResolver = agentContext.dependencyManager.resolve(WebvhDidResolver)
+      const webvhDidResolver = agentContext.dependencyManager.resolve(WebVhDidResolver)
       if (!this.supportedIdentifier.test(resourceId))
         throw new CredoError(`Invalid ${resourceTypeString} ID: ${resourceId}`)
 
@@ -356,47 +372,59 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   public async getRevocationStatusList(
     agentContext: AgentContext,
     revocationRegistryId: string,
-    timestamp: number // TODO: How should timestamp be handled?
+    timestamp: number
   ): Promise<GetRevocationStatusListReturn> {
     try {
-      const webvhDidResolver = agentContext.dependencyManager.resolve(WebvhDidResolver)
-      if (!revocationRegistryId.startsWith('did:web:'))
+      if (!revocationRegistryId.startsWith('did:webvh:'))
         throw new CredoError(`Invalid revocationRegistryId: ${revocationRegistryId}`)
 
       agentContext.config.logger.trace(
-        `Attempting to resolve revocation status list resource for '${revocationRegistryId}' at timestamp ${timestamp} via did:web resolver`
+        `Attempting to resolve revocation status list resource for '${revocationRegistryId}' at timestamp ${timestamp} via did:webvh resolver`
       )
-
-      // TODO: Determine how to incorporate the timestamp into the resolution process for did:web
-      // Maybe resolving just the revocationRegistryId gives the structure, and another resource/path gives the status at a time?
-      // For now, just resolving the base ID.
-      const effectiveIdToResolve = revocationRegistryId // Adjust this based on timestamp handling strategy
-
-      // Attempt to resolve the resource
-      await webvhDidResolver.resolveResource(agentContext, effectiveIdToResolve)
-
-      // TODO: Implement actual logic for parsing the resolved resource into AnonCreds RevocationStatusList format
-      throw new CredoError('Method not implemented.')
-
-      // Placeholder return - replace with actual implementation
-      /*
-      return {
-        revocationStatusList: {
-          issuerId: '', // Extract issuerId from revocationRegistryId or resolved data
-          revRegDefId: revocationRegistryId,
-          currentAccumulator: '', // Replace with actual data
-          revocationList: [], // Replace with actual data
-          timestamp: 0 // Extract or determine timestamp based on resolved data
-        },
-        resolutionMetadata: {},
-        revocationStatusListMetadata: {},
+      const { resourceObject } = await this._resolveAndValidateAttestedResource(
+        agentContext,
+        revocationRegistryId,
+        'revocation status list'
+      )
+      if (!resourceObject.links) {
+        throw new CredoError('No revocation entries found.')
       }
-      */
+
+      const revocationEntries = resourceObject.links
+        .filter((entry) => entry.timestamp != null)
+        .sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0))
+      if (!revocationEntries || revocationEntries.length === 0) {
+        throw new CredoError('No revocation entries found.')
+      }
+
+      let revocationEntryId: string | undefined
+      for (const [index, entry] of revocationEntries?.entries() ?? []) {
+        if (entry.timestamp && entry.timestamp > timestamp) {
+          revocationEntryId = revocationEntries?.[index - 1]?.id
+          break
+        }
+      }
+      if (!revocationEntryId) {
+        revocationEntryId = revocationEntries?.[revocationEntries.length - 1]?.id
+      }
+
+      const { resourceObject: revocationEntryResourceObject, resolutionResult: revocationEntryResolutionResult } =
+        await this._resolveAndValidateAttestedResource(agentContext, revocationEntryId, 'revocation status list entry')
+
+      if (!revocationEntryResourceObject) {
+        throw new CredoError('No revocation entry found for the given timestamp.')
+      }
+
+      return {
+        revocationStatusList: revocationEntryResourceObject.content as AnonCredsRevocationStatusList,
+        resolutionMetadata: revocationEntryResolutionResult.dereferencingMetadata || {},
+        revocationStatusListMetadata: revocationEntryResourceObject.metadata || {},
+      }
     } catch (error) {
       agentContext.config.logger.error(
-        `Error retrieving revocation registry status list '${revocationRegistryId}' via did:web`,
+        `Error retrieving revocation registry status list '${revocationRegistryId}' via did:webvh`,
         {
-          error,
+          error: error instanceof Error ? error.message : String(error),
           revocationRegistryId,
           timestamp,
         }
@@ -412,26 +440,158 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  public async registerSchema(agentContext: AgentContext): Promise<RegisterSchemaReturn> {
-    agentContext.config.logger.warn('registerSchema not implemented for WebVhAnonCredsRegistry')
-    throw new CredoError('Method not implemented.')
+  public async registerSchema(
+    agentContext: AgentContext,
+    options?: WebVhRegisterSchemaOptions
+  ): Promise<RegisterSchemaReturn> {
+    if (!options?.schema) throw new CredoError('Schema options must be provided.')
+
+    const resourceId = this._digestMultibase(canonicalize(options.schema))
+    const schemaId = `${options.schema.issuerId}/resources/${resourceId}`
+
+    const attestedResource = await this.buildSignedResource(agentContext, {
+      content: options.schema,
+      id: schemaId,
+      metadata: {
+        resourceId,
+        resourceType: 'anonCredsSchema',
+        resourceName: options.schema.name,
+      },
+      issuerId: options.schema.issuerId,
+      verificationMethod: options?.options?.verificationMethod,
+    })
+
+    return {
+      schemaState: { state: 'finished', schema: options.schema, schemaId },
+      registrationMetadata: { attestedResource },
+      schemaMetadata: {},
+    }
   }
 
-  public async registerCredentialDefinition(agentContext: AgentContext): Promise<RegisterCredentialDefinitionReturn> {
-    agentContext.config.logger.warn('registerCredentialDefinition not implemented for WebVhAnonCredsRegistry')
-    throw new CredoError('Method not implemented.')
+  public async registerCredentialDefinition(
+    agentContext: AgentContext,
+    options?: WebVhRegisterCredentialDefinitionOptions
+  ): Promise<RegisterCredentialDefinitionReturn> {
+    if (!options?.credentialDefinition) throw new CredoError('credentialDefinition options must be provided.')
+
+    const resourceId = this._digestMultibase(canonicalize(options.credentialDefinition))
+
+    const credentialDefinitionId = `${options.credentialDefinition.issuerId}/resources/${resourceId}`
+
+    const attestedResource = await this.buildSignedResource(agentContext, {
+      content: options.credentialDefinition,
+      id: credentialDefinitionId,
+      metadata: {
+        resourceId,
+        resourceType: 'anonCredsCredDef',
+        resourceName: options.credentialDefinition.tag,
+      },
+      issuerId: options.credentialDefinition.issuerId,
+      verificationMethod: options.options?.verificationMethod,
+    })
+
+    return {
+      credentialDefinitionState: {
+        state: 'finished',
+        credentialDefinition: options.credentialDefinition,
+        credentialDefinitionId,
+      },
+      credentialDefinitionMetadata: {},
+      registrationMetadata: { attestedResource },
+    }
   }
 
   public async registerRevocationRegistryDefinition(
-    agentContext: AgentContext
+    agentContext: AgentContext,
+    options?: WebVhRegisterRevocationRegistryDefinitionOptions
   ): Promise<RegisterRevocationRegistryDefinitionReturn> {
-    agentContext.config.logger.warn('registerRevocationRegistryDefinition not implemented for WebVhAnonCredsRegistry')
-    throw new CredoError('Method not implemented.')
+    if (!options?.revocationRegistryDefinition)
+      throw new CredoError('revocationRegistryDefinition options must be provided.')
+
+    const resourceId = this._digestMultibase(canonicalize(options.revocationRegistryDefinition))
+
+    const revocationRegistryDefinitionId = `${options.revocationRegistryDefinition.issuerId}/resources/${resourceId}`
+
+    const attestedResource = await this.buildSignedResource(agentContext, {
+      content: options.revocationRegistryDefinition,
+      id: revocationRegistryDefinitionId,
+      metadata: {
+        resourceId,
+        resourceType: 'anonCredsRevocRegDef',
+        resourceName: options.revocationRegistryDefinition.tag,
+      },
+      issuerId: options.revocationRegistryDefinition.issuerId,
+      verificationMethod: options.options?.verificationMethod,
+    })
+
+    return {
+      revocationRegistryDefinitionState: {
+        state: 'finished',
+        revocationRegistryDefinition: options.revocationRegistryDefinition,
+        revocationRegistryDefinitionId,
+      },
+      registrationMetadata: { attestedResource },
+      revocationRegistryDefinitionMetadata: {},
+    }
   }
 
-  public async registerRevocationStatusList(agentContext: AgentContext): Promise<RegisterRevocationStatusListReturn> {
-    agentContext.config.logger.warn('registerRevocationStatusList not implemented for WebVhAnonCredsRegistry')
-    throw new CredoError('Method not implemented.')
+  public async updateRevocationRegistryDefinition(
+    agentContext: AgentContext,
+    registrationMetadata: { proof?: Proof } & Record<string, object>,
+    extraInfo: Record<string, object>
+  ) {
+    const { proof, ...restMetadata } = registrationMetadata
+
+    const vm = proof?.verificationMethod
+    if (!vm) throw new Error('verificationMethod not found in proof')
+    const verificationMethod = typeof vm === 'string' ? vm : vm.id
+
+    const updatedMetadata = { ...restMetadata, ...extraInfo }
+
+    const newProof = await this.createProof(agentContext, updatedMetadata, verificationMethod)
+
+    return {
+      registrationMetadata: {
+        ...updatedMetadata,
+        proof: newProof,
+      },
+    }
+  }
+
+  public async registerRevocationStatusList(
+    agentContext: AgentContext,
+    options?: WebVhRegisterRevocationStatusListOptions
+  ): Promise<RegisterRevocationStatusListReturn> {
+    if (!options?.revocationStatusList) throw new CredoError('revocationStatusList options must be provided.')
+
+    const timestamp = Math.floor(Date.now() / 1000)
+    const resourceId = this._digestMultibase(canonicalize(options.revocationStatusList))
+
+    const resourceStatusListId = `${options.revocationStatusList.issuerId}/resources/${resourceId}`
+
+    const attestedResource = await this.buildSignedResource(agentContext, {
+      content: options.revocationStatusList,
+      id: resourceStatusListId,
+      metadata: {
+        resourceId,
+        resourceType: 'anonCredsStatusList',
+        resourceName: '0',
+      },
+      issuerId: options.revocationStatusList.issuerId,
+      verificationMethod: options?.options?.verificationMethod,
+    })
+
+    return {
+      revocationStatusListState: {
+        state: 'finished',
+        revocationStatusList: { ...options.revocationStatusList, timestamp },
+      },
+      registrationMetadata: { attestedResource },
+      revocationStatusListMetadata: {
+        previousVersionId: '',
+        nextVersionId: '',
+      },
+    }
   }
 
   public async verifyProof(agentContext: AgentContext, attestedResource: WebVhResource): Promise<boolean> {
@@ -446,5 +606,120 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       })
       return false
     }
+  }
+
+  public async createProof(
+    agentContext: AgentContext,
+    unsecuredDocument: UnsecuredDocument,
+    verificationMethod: string
+  ) {
+    const cryptosuite = new EddsaJcs2022Cryptosuite(agentContext)
+    try {
+      const creationResult = await cryptosuite.createProof(unsecuredDocument, {
+        type: 'DataIntegrityProof',
+        cryptosuite: 'eddsa-jcs-2022',
+        verificationMethod,
+        proofPurpose: 'assertionMethod',
+      })
+      return creationResult
+    } catch (error) {
+      agentContext.config.logger.error('Error during proof creation of did:webvh resource', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
+    }
+  }
+
+  private async buildSignedResource(
+    agentContext: AgentContext,
+    {
+      content,
+      id,
+      metadata,
+      issuerId,
+      verificationMethod,
+    }: {
+      content:
+        | AnonCredsSchema
+        | AnonCredsCredentialDefinition
+        | AnonCredsRevocationRegistryDefinition
+        | AnonCredsRevocationStatusListWithoutTimestamp
+      id: string
+      metadata: Record<string, unknown>
+      issuerId: string
+      verificationMethod?: string
+    }
+  ) {
+    const verificationMethodId = await this.getVerificationMethodId(agentContext, issuerId, verificationMethod)
+
+    // Prepare the generic resource payload to be signed
+    const resourcePayload = {
+      '@context': [
+        'https://identity.foundation/did-attested-resources/context/v0.1',
+        'https://w3id.org/security/data-integrity/v2',
+      ],
+      type: ['AttestedResource'],
+      id,
+      content,
+      metadata,
+    }
+
+    const proof = await this.createProof(agentContext, resourcePayload, verificationMethodId)
+    return {
+      ...resourcePayload,
+      proof,
+    }
+  }
+
+  private async getVerificationMethodId(
+    agentContext: AgentContext,
+    issuerId: string,
+    explicitVerificationMethod?: string
+  ): Promise<string> {
+    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+
+    const didRecord = await didRepository.findCreatedDid(agentContext, issuerId)
+    if (!didRecord) {
+      throw new CredoError(`No DID found for issuer ${issuerId}`)
+    }
+
+    // Use the explicit verification method if provided, otherwise use the first available with publicKeyMultibase
+    const verificationMethod =
+      explicitVerificationMethod ??
+      (didRecord.didDocument?.verificationMethod?.[0]?.publicKeyMultibase
+        ? didRecord.didDocument.verificationMethod[0].id
+        : undefined)
+
+    if (!verificationMethod) {
+      throw new CredoError(`No verification method found for DID ${didRecord.id}`)
+    }
+    return verificationMethod
+  }
+}
+
+export type WebVhRegisterSchemaOptions = Omit<RegisterSchemaOptions, 'options'> & {
+  options?: {
+    verificationMethod?: string
+  }
+}
+
+export type WebVhRegisterCredentialDefinitionOptions = Omit<RegisterCredentialDefinitionOptions, 'options'> & {
+  options?: {
+    verificationMethod?: string
+  }
+}
+
+export type WebVhRegisterRevocationRegistryDefinitionOptions = Omit<
+  RegisterRevocationRegistryDefinitionOptions,
+  'options'
+> & {
+  options?: {
+    verificationMethod?: string
+  }
+}
+
+export type WebVhRegisterRevocationStatusListOptions = Omit<RegisterRevocationStatusListOptions, 'options'> & {
+  options?: {
+    verificationMethod?: string
   }
 }

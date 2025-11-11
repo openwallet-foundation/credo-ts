@@ -1,33 +1,38 @@
-import { CheqdNetwork, DIDDocument, DidStdFee, VerificationMethods } from '@cheqd/sdk'
-import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import {
-  AgentContext,
-  DID_V1_CONTEXT_URL,
-  DidCreateOptions,
-  DidCreateResult,
-  DidDeactivateResult,
-  DidDocumentKey,
-  DidRegistrar,
-  DidUpdateOptions,
-  DidUpdateResult,
-  Kms,
-  SECURITY_JWS_CONTEXT_URL,
-  XOR,
-  getKmsKeyIdForVerifiacationMethod,
-  getPublicJwkFromVerificationMethod,
-} from '@credo-ts/core'
-
-import { MethodSpecificIdAlgo, createDidVerificationMethod } from '@cheqd/sdk'
+  CheqdNetwork,
+  createDidVerificationMethod,
+  type DIDDocument,
+  type DidStdFee,
+  MethodSpecificIdAlgo,
+  VerificationMethods,
+} from '@cheqd/sdk'
+import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
 import {
+  AgentContext,
+  type AnyUint8Array,
+  DID_V1_CONTEXT_URL,
+  type DidCreateOptions,
+  type DidCreateResult,
+  type DidDeactivateResult,
   DidDocument,
+  type DidDocumentKey,
   DidDocumentRole,
   DidRecord,
+  type DidRegistrar,
   DidRepository,
+  type DidUpdateOptions,
+  type DidUpdateResult,
+  getKmsKeyIdForVerifiacationMethod,
+  getPublicJwkFromVerificationMethod,
   JsonTransformer,
+  Kms,
+  SECURITY_JWS_CONTEXT_URL,
   TypedArrayEncoder,
-  VerificationMethod,
+  type Uint8ArrayBuffer,
   utils,
+  VerificationMethod,
+  type XOR,
 } from '@credo-ts/core'
 
 import {
@@ -37,7 +42,6 @@ import {
 } from '../anoncreds/utils/identifiers'
 import { CheqdLedgerService } from '../ledger'
 
-import { KmsJwkPublicOkp } from '@credo-ts/core/src/modules/kms'
 import {
   createMsgCreateDidDocPayloadToSign,
   createMsgDeactivateDidDocPayloadToSign,
@@ -148,7 +152,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         const methodSpecificIdAlgo = options.options.methodSpecificIdAlgo
         const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
-        let publicJwk: KmsJwkPublicOkp & { crv: 'Ed25519' }
+        let publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }
         if (options.options.createKey) {
           const createKeyResult = await kms.createKey(options.options.createKey)
           publicJwk = createKeyResult.publicJwk
@@ -318,7 +322,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
           const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
           let createdKey: DidDocumentKey
 
-          let publicJwk: KmsJwkPublicOkp & { crv: 'Ed25519' }
+          let publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }
           if (options.options.createKey) {
             const createKeyResult = await kms.createKey(options.options.createKey)
             publicJwk = createKeyResult.publicJwk
@@ -583,7 +587,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     }
 
     try {
-      let data: Uint8Array
+      let data: Uint8ArrayBuffer
       if (typeof resource.data === 'string') {
         data = TypedArrayEncoder.fromBase64(resource.data)
       } else if (typeof resource.data === 'object') {
@@ -638,7 +642,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
   private async signPayload(
     agentContext: AgentContext,
-    payload: Uint8Array,
+    payload: AnyUint8Array,
     verificationMethod: VerificationMethod[] = [],
     keys?: DidDocumentKey[]
   ) {

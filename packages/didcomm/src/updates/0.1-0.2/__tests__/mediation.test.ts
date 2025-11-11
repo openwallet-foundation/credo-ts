@@ -1,31 +1,32 @@
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
-import { MediationRecord, MediationRole } from '../../../modules/routing'
-import { MediationRepository } from '../../../modules/routing/repository/MediationRepository'
+import { DidCommMediationRecord, DidCommMediationRole } from '../../../modules/routing'
+import { DidCommMediationRepository } from '../../../modules/routing/repository/DidCommMediationRepository'
 import * as testModule from '../mediation'
 
 const agentConfig = getAgentConfig('Migration MediationRecord 0.1-0.2')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/routing/repository/MediationRepository')
-const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
+vi.mock('../../../modules/routing/repository/DidCommMediationRepository')
+const MediationRepositoryMock = DidCommMediationRepository as MockedClassConstructor<typeof DidCommMediationRepository>
 const mediationRepository = new MediationRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn(() => mediationRepository),
+        resolve: vi.fn(() => mediationRepository),
       },
     })),
   }
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.1-0.2 | Mediation', () => {
   let agent: Agent
@@ -36,13 +37,13 @@ describe('0.1-0.2 | Mediation', () => {
 
   describe('migrateMediationRecordToV0_2()', () => {
     it('should fetch all records and apply the needed updates ', async () => {
-      const records: MediationRecord[] = [
+      const records: DidCommMediationRecord[] = [
         getMediationRecord({
-          role: MediationRole.Mediator,
+          role: DidCommMediationRole.Mediator,
           endpoint: 'firstEndpoint',
         }),
         getMediationRecord({
-          role: MediationRole.Recipient,
+          role: DidCommMediationRole.Recipient,
           endpoint: 'secondEndpoint',
         }),
       ]
@@ -61,18 +62,18 @@ describe('0.1-0.2 | Mediation', () => {
         2,
         agentContext,
         getMediationRecord({
-          role: MediationRole.Mediator,
+          role: DidCommMediationRole.Mediator,
           endpoint: 'secondEndpoint',
         })
       )
 
       expect(records).toMatchObject([
         {
-          role: MediationRole.Mediator,
+          role: DidCommMediationRole.Mediator,
           endpoint: 'firstEndpoint',
         },
         {
-          role: MediationRole.Mediator,
+          role: DidCommMediationRole.Mediator,
           endpoint: 'secondEndpoint',
         },
       ])
@@ -80,9 +81,9 @@ describe('0.1-0.2 | Mediation', () => {
   })
 
   describe('updateMediationRole()', () => {
-    it(`should update the role to ${MediationRole.Mediator} if no endpoint exists on the record and mediationRoleUpdateStrategy is 'recipientIfEndpoint'`, async () => {
+    it(`should update the role to ${DidCommMediationRole.Mediator} if no endpoint exists on the record and mediationRoleUpdateStrategy is 'recipientIfEndpoint'`, async () => {
       const mediationRecord = getMediationRecord({
-        role: MediationRole.Recipient,
+        role: DidCommMediationRole.Recipient,
       })
 
       await testModule.updateMediationRole(agent, mediationRecord, {
@@ -90,13 +91,13 @@ describe('0.1-0.2 | Mediation', () => {
       })
 
       expect(mediationRecord).toMatchObject({
-        role: MediationRole.Mediator,
+        role: DidCommMediationRole.Mediator,
       })
     })
 
-    it(`should update the role to ${MediationRole.Recipient} if an endpoint exists on the record and mediationRoleUpdateStrategy is 'recipientIfEndpoint'`, async () => {
+    it(`should update the role to ${DidCommMediationRole.Recipient} if an endpoint exists on the record and mediationRoleUpdateStrategy is 'recipientIfEndpoint'`, async () => {
       const mediationRecord = getMediationRecord({
-        role: MediationRole.Mediator,
+        role: DidCommMediationRole.Mediator,
         endpoint: 'something',
       })
 
@@ -105,18 +106,18 @@ describe('0.1-0.2 | Mediation', () => {
       })
 
       expect(mediationRecord).toMatchObject({
-        role: MediationRole.Recipient,
+        role: DidCommMediationRole.Recipient,
         endpoint: 'something',
       })
     })
 
     it(`should not update the role if mediationRoleUpdateStrategy is 'doNotChange'`, async () => {
       const mediationRecordMediator = getMediationRecord({
-        role: MediationRole.Mediator,
+        role: DidCommMediationRole.Mediator,
         endpoint: 'something',
       })
       const mediationRecordRecipient = getMediationRecord({
-        role: MediationRole.Recipient,
+        role: DidCommMediationRole.Recipient,
         endpoint: 'something',
       })
 
@@ -125,7 +126,7 @@ describe('0.1-0.2 | Mediation', () => {
       })
 
       expect(mediationRecordMediator).toMatchObject({
-        role: MediationRole.Mediator,
+        role: DidCommMediationRole.Mediator,
         endpoint: 'something',
       })
 
@@ -134,14 +135,14 @@ describe('0.1-0.2 | Mediation', () => {
       })
 
       expect(mediationRecordRecipient).toMatchObject({
-        role: MediationRole.Recipient,
+        role: DidCommMediationRole.Recipient,
         endpoint: 'something',
       })
     })
 
-    it(`should update the role to ${MediationRole.Recipient} if mediationRoleUpdateStrategy is 'allRecipient'`, async () => {
+    it(`should update the role to ${DidCommMediationRole.Recipient} if mediationRoleUpdateStrategy is 'allRecipient'`, async () => {
       const mediationRecord = getMediationRecord({
-        role: MediationRole.Mediator,
+        role: DidCommMediationRole.Mediator,
         endpoint: 'something',
       })
 
@@ -150,14 +151,14 @@ describe('0.1-0.2 | Mediation', () => {
       })
 
       expect(mediationRecord).toMatchObject({
-        role: MediationRole.Recipient,
+        role: DidCommMediationRole.Recipient,
         endpoint: 'something',
       })
     })
 
-    it(`should update the role to ${MediationRole.Mediator} if mediationRoleUpdateStrategy is 'allMediator'`, async () => {
+    it(`should update the role to ${DidCommMediationRole.Mediator} if mediationRoleUpdateStrategy is 'allMediator'`, async () => {
       const mediationRecord = getMediationRecord({
-        role: MediationRole.Recipient,
+        role: DidCommMediationRole.Recipient,
         endpoint: 'something',
       })
 
@@ -166,19 +167,19 @@ describe('0.1-0.2 | Mediation', () => {
       })
 
       expect(mediationRecord).toMatchObject({
-        role: MediationRole.Mediator,
+        role: DidCommMediationRole.Mediator,
         endpoint: 'something',
       })
     })
   })
 })
 
-function getMediationRecord({ role, endpoint }: { role: MediationRole; endpoint?: string }) {
+function getMediationRecord({ role, endpoint }: { role: DidCommMediationRole; endpoint?: string }) {
   return JsonTransformer.fromJSON(
     {
       role,
       endpoint,
     },
-    MediationRecord
+    DidCommMediationRecord
   )
 }

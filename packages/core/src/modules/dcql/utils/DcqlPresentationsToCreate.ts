@@ -1,15 +1,15 @@
 import type { DcqlMdocCredential, DcqlSdJwtVcCredential, DcqlW3cVcCredential } from 'dcql'
-import { JsonObject } from '../../../types'
+import type { JsonObject } from '../../../types'
 import { CredentialUseMode, canUseInstanceFromCredentialRecord } from '../../../utils/credentialUse'
 import { MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
-import { ClaimFormat, W3cCredentialRecord } from '../../vc'
+import { ClaimFormat, W3cCredentialRecord, W3cV2CredentialRecord } from '../../vc'
 import { DcqlError } from '../DcqlError'
 import type { DcqlCredentialsForRequest } from '../models'
 
 //  - the credentials included in the presentation
 export interface DcqlSdJwtVcPresentationToCreate {
-  claimFormat: ClaimFormat.SdJwtVc
+  claimFormat: ClaimFormat.SdJwtDc
   credentialRecord: SdJwtVcRecord
   disclosedPayload: DcqlSdJwtVcCredential.Claims
 
@@ -41,11 +41,25 @@ export interface DcqlMdocPresentationToCreate {
   useMode: CredentialUseMode
 }
 
+export interface DcqlJwtW3cVpPresentationToCreate {
+  claimFormat: ClaimFormat.JwtW3cVp
+  credentialRecord: W3cV2CredentialRecord
+  disclosedPayload: DcqlW3cVcCredential.Claims
+}
+
+export interface DcqlSdJwtW3cVpPresentationToCreate {
+  claimFormat: ClaimFormat.SdJwtW3cVp
+  credentialRecord: W3cV2CredentialRecord
+  disclosedPayload: DcqlW3cVcCredential.Claims
+}
+
 type DcqlPresentationToCreate =
   | DcqlSdJwtVcPresentationToCreate
   | DcqlJwtVpPresentationToCreate
   | DcqlLdpVpPresentationToCreate
   | DcqlMdocPresentationToCreate
+  | DcqlJwtW3cVpPresentationToCreate
+  | DcqlSdJwtW3cVpPresentationToCreate
 
 export type DcqlPresentationsToCreate = Record<string, [DcqlPresentationToCreate, ...DcqlPresentationToCreate[]]>
 
@@ -66,28 +80,40 @@ export function dcqlGetPresentationsToCreate(
         )
       }
 
-      if (match.claimFormat === ClaimFormat.SdJwtVc) {
-        presentationToCreate = {
-          claimFormat: ClaimFormat.SdJwtVc,
-          credentialRecord: match.credentialRecord,
-          disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
-          additionalPayload: match.additionalPayload,
-          useMode,
-        }
-      } else if (match.claimFormat === ClaimFormat.MsoMdoc) {
-        presentationToCreate = {
-          claimFormat: ClaimFormat.MsoMdoc,
-          credentialRecord: match.credentialRecord,
-          disclosedPayload: match.disclosedPayload as DcqlMdocCredential.NameSpaces,
-          useMode,
-        }
-      } else {
-        presentationToCreate = {
-          claimFormat: match.claimFormat === ClaimFormat.LdpVc ? ClaimFormat.LdpVp : ClaimFormat.JwtVp,
-          credentialRecord: match.credentialRecord,
-          disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
-          useMode,
-        }
+      switch (match.claimFormat) {
+        case ClaimFormat.SdJwtDc:
+          presentationToCreate = {
+            claimFormat: ClaimFormat.SdJwtDc,
+            credentialRecord: match.credentialRecord,
+            disclosedPayload: match.disclosedPayload as DcqlSdJwtVcCredential.Claims,
+            additionalPayload: match.additionalPayload,
+            useMode,
+          }
+          break
+        case ClaimFormat.MsoMdoc:
+          presentationToCreate = {
+            claimFormat: ClaimFormat.MsoMdoc,
+            credentialRecord: match.credentialRecord,
+            disclosedPayload: match.disclosedPayload as DcqlMdocCredential.NameSpaces,
+            useMode,
+          }
+          break
+        case ClaimFormat.JwtW3cVc:
+        case ClaimFormat.SdJwtW3cVc:
+          presentationToCreate = {
+            claimFormat: match.claimFormat === ClaimFormat.JwtW3cVc ? ClaimFormat.JwtW3cVp : ClaimFormat.SdJwtW3cVp,
+            credentialRecord: match.credentialRecord,
+            disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
+          }
+          break
+
+        default:
+          presentationToCreate = {
+            claimFormat: match.claimFormat === ClaimFormat.LdpVc ? ClaimFormat.LdpVp : ClaimFormat.JwtVp,
+            credentialRecord: match.credentialRecord,
+            disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
+            useMode,
+          }
       }
 
       if (!presentationsToCreate[credentialQueryId]) {

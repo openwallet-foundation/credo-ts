@@ -1,18 +1,16 @@
-import type { Query, QueryOptions } from '../../storage/StorageService'
-import type { MdocDeviceResponsePresentationDefinitionOptions, MdocStoreOptions } from './MdocOptions'
-import type {
-  MdocDeviceResponseOptions,
-  MdocDeviceResponseVerifyOptions,
-  MdocSignOptions,
-  MdocVerifyOptions,
-} from './MdocOptions'
-
 import { injectable } from 'tsyringe'
-
 import { AgentContext } from '../../agent'
-
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import { Mdoc } from './Mdoc'
 import { MdocDeviceResponse } from './MdocDeviceResponse'
+import type {
+  MdocDeviceResponseOptions,
+  MdocDeviceResponsePresentationDefinitionOptions,
+  MdocDeviceResponseVerifyOptions,
+  MdocSignOptions,
+  MdocStoreOptions,
+  MdocVerifyOptions,
+} from './MdocOptions'
 import { MdocRecord, MdocRepository } from './repository'
 
 /**

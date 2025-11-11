@@ -1,6 +1,6 @@
 import { Kms, MdocDeviceResponse, TypedArrayEncoder } from '@credo-ts/core'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
-import { OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
+import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
 import type { AgentType } from './utils'
 import { createAgentFromModules } from './utils'
 
@@ -8,13 +8,15 @@ const baseUrl = 'https://credo.com/oid4vp'
 
 describe('OpenId4Vc', () => {
   let verifier: AgentType<{
-    openId4VcVerifier: OpenId4VcVerifierModule
+    openid4vc: OpenId4VcModule<undefined, OpenId4VcVerifierModuleConfigOptions>
   }>
 
   beforeEach(async () => {
-    verifier = (await createAgentFromModules('verifier', {
-      openId4VcVerifier: new OpenId4VcVerifierModule({
-        baseUrl,
+    verifier = (await createAgentFromModules({
+      openid4vc: new OpenId4VcModule({
+        verifier: {
+          baseUrl,
+        },
       }),
       inMemory: new InMemoryWalletModule(),
     })) as unknown as typeof verifier
@@ -25,7 +27,7 @@ describe('OpenId4Vc', () => {
   })
 
   it('can succesfully verify a device response containing multiple mdoc documents', async () => {
-    const openid4vcVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openid4vcVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const certificate = await verifier.agent.x509.createCertificate({
       authorityKey: Kms.PublicJwk.fromPublicJwk(
@@ -85,7 +87,7 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const { verificationSession } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+    const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
       verifierId: openid4vcVerifier.verifierId,
       requestSigner: {
         method: 'x5c',
@@ -141,7 +143,7 @@ describe('OpenId4Vc', () => {
       ],
     })
 
-    const verified = await verifier.agent.modules.openId4VcVerifier.verifyAuthorizationResponse({
+    const verified = await verifier.agent.openid4vc.verifier.verifyAuthorizationResponse({
       verificationSessionId: verificationSession.id,
       authorizationResponse: {
         vp_token: TypedArrayEncoder.toBase64URL(deviceResponse),
@@ -161,7 +163,7 @@ describe('OpenId4Vc', () => {
   })
 
   it('does not verify when a device response with multiple documents does not match the presentation definition', async () => {
-    const openid4vcVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openid4vcVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const certificate = await verifier.agent.x509.createCertificate({
       authorityKey: Kms.PublicJwk.fromPublicJwk(
@@ -205,7 +207,7 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    const { verificationSession } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+    const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
       verifierId: openid4vcVerifier.verifierId,
       requestSigner: {
         method: 'x5c',
@@ -263,7 +265,7 @@ describe('OpenId4Vc', () => {
     })
 
     await expect(
-      verifier.agent.modules.openId4VcVerifier.verifyAuthorizationResponse({
+      verifier.agent.openid4vc.verifier.verifyAuthorizationResponse({
         verificationSessionId: verificationSession.id,
         authorizationResponse: {
           vp_token: TypedArrayEncoder.toBase64URL(deviceResponse),

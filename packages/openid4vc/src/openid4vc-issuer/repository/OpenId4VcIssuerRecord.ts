@@ -1,14 +1,12 @@
-import { Kms, RecordTags, TagsBase } from '@credo-ts/core'
+import { BaseRecord, CredoError, isJsonObject, Kms, type RecordTags, type TagsBase, utils } from '@credo-ts/core'
+import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid4vc/openid4vci'
+import { Transform, TransformationType } from 'class-transformer'
 import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
 } from '../../shared'
 import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
-
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
-import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid4vc/openid4vci'
-import { Transform, TransformationType } from 'class-transformer'
 
 export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>
 
@@ -40,7 +38,7 @@ export type OpenId4VcIssuerRecordProps = {
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
 
   /**
-   * Indicate support for batch issuane of credentials
+   * Indicate support for batch issuance of credentials
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 }
@@ -67,11 +65,12 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
    * Only here for class transformation. If credentialsSupported is set we transform
    * it to the new credentialConfigurationsSupported format
    */
+  // biome-ignore lint/correctness/noUnusedPrivateClassMembers: see above
   private set credentialsSupported(credentialsSupported: Array<unknown>) {
     if (this.credentialConfigurationsSupported) return
 
     this.credentialConfigurationsSupported =
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       credentialsSupportedToCredentialConfigurationsSupported(credentialsSupported as any) as any
   }
 
@@ -99,9 +98,36 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
     return value
   })
   public display?: OpenId4VciCredentialIssuerMetadataDisplay[]
+
+  // Adds the type field if missing (for older records)
+  @Transform(({ type, value }) => {
+    if (type === TransformationType.PLAIN_TO_CLASS && Array.isArray(value)) {
+      return value.map((config) => {
+        if (isJsonObject(config) && typeof config.type === 'undefined') {
+          return {
+            ...config,
+            type: 'direct',
+          }
+        }
+
+        return config
+      })
+    }
+
+    return value
+  })
   public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
+
   public dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
+
+  public get directAuthorizationServerConfigs() {
+    return this.authorizationServerConfigs?.filter((config) => config.type === 'direct')
+  }
+
+  public get chainedAuthorizationServerConfigs() {
+    return this.authorizationServerConfigs?.filter((config) => config.type === 'chained')
+  }
 
   public get resolvedAccessTokenPublicJwk() {
     if (this.accessTokenPublicJwk) {

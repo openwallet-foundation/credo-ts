@@ -1,9 +1,7 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { CheqdModuleConfigOptions } from './CheqdModuleConfig'
-
 import { AgentConfig, Buffer } from '@credo-ts/core'
-
 import { CheqdApi } from './CheqdApi'
+import type { CheqdModuleConfigOptions } from './CheqdModuleConfig'
 import { CheqdModuleConfig } from './CheqdModuleConfig'
 import { CheqdLedgerService } from './ledger'
 

@@ -1,24 +1,20 @@
-import type { AgentType } from './utils'
-
-import { ClaimFormat, CredoError, Kms } from '@credo-ts/core'
+import { ClaimFormat, CredoError, Kms, utils } from '@credo-ts/core'
+import type { Jwk } from '@openid4vc/oauth2'
+import { AuthorizationFlow, Openid4vciWalletProvider } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
-
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
-  OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
-  OpenId4VcIssuerModule,
+  type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerRecord,
-  OpenId4VcVerifierModule,
-  OpenId4VciCredentialConfigurationSupportedWithFormats,
+  type OpenId4VciCredentialConfigurationSupportedWithFormats,
   OpenId4VciCredentialFormatProfile,
+  OpenId4VcModule,
+  type OpenId4VcVerifierModuleConfigOptions,
 } from '../src'
-
-import { Jwk } from '@openid4vc/oauth2'
-import { AuthorizationFlow, Openid4vciWalletProvider } from '@openid4vc/openid4vci'
-import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
-import { addSecondsToDate } from '../src/shared/utils'
+import type { AgentType } from './utils'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 
 const universityDegreeCredentialConfigurationSupportedMdoc = {
@@ -47,13 +43,12 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
   let clearNock: () => void
 
   let issuer: AgentType<{
-    openId4VcIssuer: OpenId4VcIssuerModule
-    openId4VcVerifier: OpenId4VcVerifierModule
+    openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions, OpenId4VcVerifierModuleConfigOptions>
   }>
   let issuerRecord: OpenId4VcIssuerRecord
 
   let holder: AgentType<{
-    openId4VcHolder: OpenId4VcHolderModule
+    openid4vc: OpenId4VcModule
   }>
 
   let keyAttestationJwt: string
@@ -63,109 +58,120 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
   beforeEach(async () => {
     expressApp = express()
 
-    issuer = await createAgentFromModules('issuer', {
-      openId4VcVerifier: new OpenId4VcVerifierModule({
-        baseUrl: verifierBaseUrl,
-      }),
-      openId4VcIssuer: new OpenId4VcIssuerModule({
-        baseUrl: issuerBaseUrl,
-        getVerificationSessionForIssuanceSessionAuthorization: async ({ issuanceSession, scopes }) => {
-          if (scopes.includes(universityDegreeCredentialConfigurationSupportedMdoc.scope)) {
-            const createRequestReturn = await issuer.agent.modules.openId4VcVerifier.createAuthorizationRequest({
-              verifierId: issuanceSession.issuerId,
-              requestSigner: {
-                method: 'x5c',
-                x5c: [issuer.certificate],
-              },
-              responseMode: 'direct_post.jwt',
-              dcql: {
-                query: {
-                  credentials: [
-                    {
-                      id: 'e498bd12-be8f-4884-8ffe-2704176b99be',
-                      format: 'vc+sd-jwt',
-                      claims: [
+    issuer = await createAgentFromModules(
+      {
+        openid4vc: new OpenId4VcModule({
+          app: expressApp,
+          issuer: {
+            baseUrl: issuerBaseUrl,
+            getVerificationSessionForIssuanceSessionAuthorization: async ({ issuanceSession, scopes }) => {
+              if (scopes.includes(universityDegreeCredentialConfigurationSupportedMdoc.scope)) {
+                const createRequestReturn = await issuer.agent.openid4vc.verifier.createAuthorizationRequest({
+                  verifierId: issuanceSession.issuerId,
+                  requestSigner: {
+                    method: 'x5c',
+                    x5c: [issuer.certificate],
+                  },
+                  responseMode: 'direct_post.jwt',
+                  dcql: {
+                    query: {
+                      credentials: [
                         {
-                          path: ['given_name'],
-                        },
-                        {
-                          path: ['family_name'],
+                          id: 'e498bd12-be8f-4884-8ffe-2704176b99be',
+                          format: 'vc+sd-jwt',
+                          claims: [
+                            {
+                              path: ['given_name'],
+                            },
+                            {
+                              path: ['family_name'],
+                            },
+                          ],
+                          meta: {
+                            vct_values: ['urn:eu.europa.ec.eudi:pid:1'],
+                          },
                         },
                       ],
-                      meta: {
-                        vct_values: ['urn:eu.europa.ec.eudi:pid:1'],
+                    },
+                  },
+                })
+
+                return {
+                  ...createRequestReturn,
+                  scopes: [universityDegreeCredentialConfigurationSupportedMdoc.scope],
+                }
+              }
+
+              throw new Error('Unsupported scope values')
+            },
+            credentialRequestToCredentialMapper: async ({ holderBinding, credentialConfiguration }) => {
+              if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+                if (holderBinding.bindingMethod !== 'jwk') {
+                  throw new CredoError('Expected jwk binding method')
+                }
+                expect(holderBinding.keyAttestation?.payload.attested_keys).toHaveLength(10)
+                expect(holderBinding.keyAttestation).toEqual({
+                  payload: {
+                    iat: expect.any(Number),
+                    exp: expect.any(Number),
+                    attested_keys: expect.any(Array),
+                    key_storage: ['iso_18045_high'],
+                    user_authentication: ['iso_18045_high'],
+                  },
+                  header: {
+                    alg: 'ES256',
+                    typ: 'keyattestation+jwt',
+                    x5c: [expect.any(String)],
+                  },
+                  signer: {
+                    method: 'x5c',
+                    x5c: [expect.any(String)],
+                    alg: Kms.KnownJwaSignatureAlgorithms.ES256,
+                    publicJwk: expect.any(Object),
+                  },
+                })
+
+                return {
+                  type: 'credentials',
+                  format: OpenId4VciCredentialFormatProfile.MsoMdoc,
+                  credentials: holderBinding.keys.map((holderBinding, index) => ({
+                    docType: credentialConfiguration.doctype,
+                    holderKey: holderBinding.jwk,
+                    issuerCertificate: issuer.certificate,
+                    namespaces: {
+                      [credentialConfiguration.doctype]: {
+                        index,
                       },
                     },
-                  ],
-                },
-              },
-            })
+                    validityInfo: {
+                      validFrom: new Date('2024-01-01'),
+                      validUntil: new Date('2050-01-01'),
+                    },
+                  })),
+                }
+              }
 
-            return {
-              ...createRequestReturn,
-              scopes: [universityDegreeCredentialConfigurationSupportedMdoc.scope],
-            }
-          }
+              throw new Error('not supported')
+            },
+          },
+          verifier: {
+            baseUrl: verifierBaseUrl,
+          },
+        }),
+        inMemory: new InMemoryWalletModule({}),
+      },
+      undefined,
+      global.fetch
+    )
 
-          throw new Error('Unsupported scope values')
-        },
-        credentialRequestToCredentialMapper: async ({ holderBinding, credentialConfiguration }) => {
-          if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
-            if (holderBinding.bindingMethod !== 'jwk') {
-              throw new CredoError('Expected jwk binding method')
-            }
-            expect(holderBinding.keyAttestation?.payload.attested_keys).toHaveLength(10)
-            expect(holderBinding.keyAttestation).toEqual({
-              payload: {
-                iat: expect.any(Number),
-                exp: expect.any(Number),
-                attested_keys: expect.any(Array),
-                key_storage: ['iso_18045_high'],
-                user_authentication: ['iso_18045_high'],
-              },
-              header: {
-                alg: 'ES256',
-                typ: 'keyattestation+jwt',
-                x5c: [expect.any(String)],
-              },
-              signer: {
-                method: 'x5c',
-                x5c: [expect.any(String)],
-                alg: Kms.KnownJwaSignatureAlgorithms.ES256,
-                publicJwk: expect.any(Object),
-              },
-            })
-
-            return {
-              type: 'credentials',
-              format: OpenId4VciCredentialFormatProfile.MsoMdoc,
-              credentials: holderBinding.keys.map((holderBinding, index) => ({
-                docType: credentialConfiguration.doctype,
-                holderKey: holderBinding.jwk,
-                issuerCertificate: issuer.certificate,
-                namespaces: {
-                  [credentialConfiguration.doctype]: {
-                    index,
-                  },
-                },
-                validityInfo: {
-                  validFrom: new Date('2024-01-01'),
-                  validUntil: new Date('2050-01-01'),
-                },
-              })),
-            }
-          }
-
-          throw new Error('not supported')
-        },
-      }),
-      inMemory: new InMemoryWalletModule({}),
-    })
-
-    holder = await createAgentFromModules('holder', {
-      openId4VcHolder: new OpenId4VcHolderModule(),
-      inMemory: new InMemoryWalletModule({}),
-    })
+    holder = await createAgentFromModules(
+      {
+        openid4vc: new OpenId4VcModule(),
+        inMemory: new InMemoryWalletModule({}),
+      },
+      undefined,
+      global.fetch
+    )
 
     const walletProviderCertificate = await holder.agent.x509.createCertificate({
       authorityKey: Kms.PublicJwk.fromPublicJwk(
@@ -192,7 +198,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       walletName: 'Credo Wallet',
       walletLink: 'https://credo.js.org',
       // 5 minutes
-      expiresAt: addSecondsToDate(new Date(), 300),
+      expiresAt: utils.addSecondsToDate(new Date(), 300),
     })
 
     attestedKeys = await Promise.all(
@@ -217,7 +223,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       keyStorage: ['iso_18045_high'],
       userAuthentication: ['iso_18045_high'],
       // 5 minutes
-      expiresAt: addSecondsToDate(new Date(), 300),
+      expiresAt: utils.addSecondsToDate(new Date(), 300),
     })
 
     // Trust wallet provider
@@ -255,7 +261,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     holder.agent.x509.config.addTrustedCertificate(issuer.certificate)
     issuer.agent.x509.config.addTrustedCertificate(issuer.certificate)
 
-    issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
+    issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
       issuerId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
       dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
       batchCredentialIssuance: {
@@ -266,13 +272,10 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       },
     })
 
-    await issuer.agent.modules.openId4VcVerifier.createVerifier({
+    await issuer.agent.openid4vc.verifier.createVerifier({
       verifierId: issuerRecord.issuerId,
     })
 
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
-    expressApp.use('/oid4vp', issuer.agent.modules.openId4VcVerifier.config.router)
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
 
@@ -285,7 +288,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
 
   it('e2e flow issuing a batch of mdoc based on wallet and key attestation', async () => {
     // Create offer for university degree
-    const { issuanceSession, credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { issuanceSession, credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
@@ -298,17 +301,17 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     })
 
     // Resolve offer
-    const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
 
     // Request access token
-    const tokenResponse = await holder.agent.modules.openId4VcHolder.requestToken({
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       walletAttestationJwt,
       clientId: 'wallet',
     })
 
     // Request credentials
-    const credentialResponse = await holder.agent.modules.openId4VcHolder.requestCredentials({
+    const credentialResponse = await holder.agent.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponse,
       credentialBindingResolver: () => ({
@@ -326,7 +329,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     expect(credentialResponse.credentials[0].record).toHaveLength(10)
     const credentials = credentialResponse.credentials[0].record
 
-    for (const credentialIndex in credentials) {
+    for (const credentialIndex of credentials.keys()) {
       const credential = credentials[credentialIndex]
       if (credential.claimFormat !== ClaimFormat.MsoMdoc) {
         throw new Error('Expected mdoc')
@@ -338,7 +341,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
 
   it('e2e flow with presentation during issuance, issuing a batch of mdoc based on wallet and key attestation', async () => {
     // Create offer for university degree
-    const { issuanceSession, credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { issuanceSession, credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
@@ -353,20 +356,22 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     })
 
     // Resolve offer
-    const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
 
-    const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(resolvedCredentialOffer, {
+    const resolvedAuthorizationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
+      resolvedCredentialOffer,
+      {
         clientId: 'wallet',
-        redirectUri: 'something',
+        redirectUri: 'http://localhost/callback',
         walletAttestationJwt,
-      })
+      }
+    )
 
     if (resolvedAuthorizationRequest.authorizationFlow !== AuthorizationFlow.PresentationDuringIssuance) {
       throw new Error('expected presentation during issuance')
     }
 
-    const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
+    const resolvedPresentationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
       resolvedAuthorizationRequest.openid4vpRequestUrl
     )
     if (!resolvedPresentationRequest.dcql) {
@@ -374,10 +379,10 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     }
 
     // Submit presentation
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedPresentationRequest.dcql.queryResult
     )
-    const openId4VpResult = await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const openId4VpResult = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
       authorizationRequestPayload: resolvedPresentationRequest.authorizationRequestPayload,
       dcql: {
         credentials: selectedCredentials,
@@ -388,19 +393,18 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     }
 
     // Request authorization code
-    const { authorizationCode, dpop } =
-      await holder.agent.modules.openId4VcHolder.retrieveAuthorizationCodeUsingPresentation({
-        authSession: resolvedAuthorizationRequest.authSession,
-        resolvedCredentialOffer,
-        presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
-        dpop: resolvedAuthorizationRequest.dpop,
+    const { authorizationCode, dpop } = await holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+      authSession: resolvedAuthorizationRequest.authSession,
+      resolvedCredentialOffer,
+      presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
+      dpop: resolvedAuthorizationRequest.dpop,
 
-        // TODO: should we dynamically retrieve the wallet attestation JWT based on a callback?
-        walletAttestationJwt,
-      })
+      // TODO: should we dynamically retrieve the wallet attestation JWT based on a callback?
+      walletAttestationJwt,
+    })
 
     // Request access token
-    const tokenResponse = await holder.agent.modules.openId4VcHolder.requestToken({
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       code: authorizationCode,
       dpop,
@@ -409,7 +413,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     })
 
     // Request credentials
-    const credentialResponse = await holder.agent.modules.openId4VcHolder.requestCredentials({
+    const credentialResponse = await holder.agent.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       clientId: 'wallet',
       ...tokenResponse,
@@ -430,10 +434,12 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
 
   it('throws error if wallet attestation required but not provided', async () => {
     // Create offer for university degree
-    const { credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
       credentialConfigurationIds: ['universityDegree'],
-      authorizationCodeFlowConfig: {},
+      authorizationCodeFlowConfig: {
+        requirePresentationDuringIssuance: true,
+      },
       preAuthorizedCodeFlowConfig: {},
 
       // Require DPoP and wallet attestations
@@ -444,35 +450,37 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     })
 
     // Resolve offer
-    const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
 
     await expect(
-      holder.agent.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(resolvedCredentialOffer, {
+      holder.agent.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(resolvedCredentialOffer, {
         clientId: 'wallet',
-        redirectUri: 'something',
+        redirectUri: 'http://localhost/callback',
       })
     ).rejects.toThrow('Missing required client attestation parameters in pushed authorization request')
 
     // Request pre-auth access token
     await expect(
-      holder.agent.modules.openId4VcHolder.requestToken({
+      holder.agent.openid4vc.holder.requestToken({
         resolvedCredentialOffer,
         clientId: 'wallet',
       })
     ).rejects.toThrow('Missing required client attestation parameters in access token request')
 
-    const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(resolvedCredentialOffer, {
+    const resolvedAuthorizationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
+      resolvedCredentialOffer,
+      {
         clientId: 'wallet',
-        redirectUri: 'something',
+        redirectUri: 'http://localhost/callback',
         walletAttestationJwt,
-      })
+      }
+    )
 
     if (resolvedAuthorizationRequest.authorizationFlow !== AuthorizationFlow.PresentationDuringIssuance) {
       throw new Error('expected presentation during issuance')
     }
 
-    const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
+    const resolvedPresentationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
       resolvedAuthorizationRequest.openid4vpRequestUrl
     )
     if (!resolvedPresentationRequest.dcql) {
@@ -480,10 +488,10 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     }
 
     // Submit presentation
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedPresentationRequest.dcql.queryResult
     )
-    const openId4VpResult = await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const openId4VpResult = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
       authorizationRequestPayload: resolvedPresentationRequest.authorizationRequestPayload,
       dcql: {
         credentials: selectedCredentials,
@@ -494,7 +502,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     }
 
     await expect(
-      holder.agent.modules.openId4VcHolder.retrieveAuthorizationCodeUsingPresentation({
+      holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
         authSession: resolvedAuthorizationRequest.authSession,
         resolvedCredentialOffer,
         presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
@@ -503,19 +511,18 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     ).rejects.toThrow('Missing required client attestation parameters in pushed authorization request')
 
     // Request authorization code
-    const { authorizationCode, dpop } =
-      await holder.agent.modules.openId4VcHolder.retrieveAuthorizationCodeUsingPresentation({
-        authSession: resolvedAuthorizationRequest.authSession,
-        resolvedCredentialOffer,
-        presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
-        dpop: resolvedAuthorizationRequest.dpop,
+    const { authorizationCode, dpop } = await holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+      authSession: resolvedAuthorizationRequest.authSession,
+      resolvedCredentialOffer,
+      presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
+      dpop: resolvedAuthorizationRequest.dpop,
 
-        // TODO: should we dynamically retrieve the wallet attestation JWT based on a callback?
-        walletAttestationJwt,
-      })
+      // TODO: should we dynamically retrieve the wallet attestation JWT based on a callback?
+      walletAttestationJwt,
+    })
 
     await expect(
-      holder.agent.modules.openId4VcHolder.requestToken({
+      holder.agent.openid4vc.holder.requestToken({
         resolvedCredentialOffer,
         code: authorizationCode,
         dpop,
@@ -525,7 +532,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
 
     // Request access token
     await expect(
-      holder.agent.modules.openId4VcHolder.requestToken({
+      holder.agent.openid4vc.holder.requestToken({
         resolvedCredentialOffer,
         code: authorizationCode,
         dpop,
@@ -539,7 +546,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
 
   it('throws error if key attestation required but not provided', async () => {
     // Create offer for university degree
-    const { credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
@@ -552,17 +559,17 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     })
 
     // Resolve offer
-    const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
 
     // Request access token
-    const tokenResponse = await holder.agent.modules.openId4VcHolder.requestToken({
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       clientId: 'wallet',
     })
 
     // Request credentials (client error)
     await expect(
-      holder.agent.modules.openId4VcHolder.requestCredentials({
+      holder.agent.openid4vc.holder.requestCredentials({
         resolvedCredentialOffer,
         ...tokenResponse,
         credentialBindingResolver: () => ({
@@ -586,7 +593,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
 
     // Request credentials (server error)
     await expect(
-      holder.agent.modules.openId4VcHolder.requestCredentials({
+      holder.agent.openid4vc.holder.requestCredentials({
         resolvedCredentialOffer,
         ...tokenResponse,
         credentialBindingResolver: () => ({

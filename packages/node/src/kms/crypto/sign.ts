@@ -1,7 +1,6 @@
-import type { CanBePromise } from '@credo-ts/core'
-
-import { constants, sign as _sign, createHmac, createPrivateKey, createSecretKey } from 'node:crypto'
+import { sign as _sign, constants, createHmac, createPrivateKey, createSecretKey } from 'node:crypto'
 import { promisify } from 'node:util'
+import type { AnyUint8Array, CanBePromise, Uint8ArrayBuffer } from '@credo-ts/core'
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 
 const sign = promisify(_sign)
@@ -9,8 +8,8 @@ const sign = promisify(_sign)
 export function performSign(
   key: Kms.KmsJwkPrivate,
   algorithm: Kms.KnownJwaSignatureAlgorithm,
-  data: Uint8Array
-): CanBePromise<Uint8Array> {
+  data: AnyUint8Array
+): CanBePromise<Uint8ArrayBuffer> {
   const nodeAlgorithm = mapJwaSignatureAlgorithmToNode(algorithm)
   const nodeKey =
     key.kty === 'oct' ? createSecretKey(TypedArrayEncoder.fromBase64(key.k)) : createPrivateKey({ format: 'jwk', key })
@@ -23,20 +22,22 @@ export function performSign(
           {
             key: nodeKey,
             padding: constants.RSA_PKCS1_PSS_PADDING,
-            saltLength: Number.parseInt(algorithm.slice(2)) / 8,
+            saltLength: Number.parseInt(algorithm.slice(2), 10) / 8,
           }
         : nodeKey
 
-      return sign(nodeAlgorithm, data, nodeKeyInput)
+      return sign(nodeAlgorithm, data, nodeKeyInput) as Promise<Uint8ArrayBuffer>
     }
     case 'EC': {
       // Node returns EC signatures as DER encoded, but we need raw
-      return sign(nodeAlgorithm, data, nodeKey).then((derSignature) => Kms.derEcSignatureToRaw(derSignature, key.crv))
+      return sign(nodeAlgorithm, data, nodeKey).then((derSignature) =>
+        Kms.derEcSignatureToRaw(derSignature, key.crv)
+      ) as Promise<Uint8ArrayBuffer>
     }
     case 'oct': {
       return createHmac(nodeAlgorithm as string, nodeKey)
         .update(data)
-        .digest()
+        .digest() as Uint8ArrayBuffer
     }
     default:
       // @ts-expect-error

@@ -1,12 +1,12 @@
-import type { AgentContext } from '../../../agent'
-
 import { Subject } from 'rxjs'
-
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
+import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
 import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
+import type { AgentContext } from '../../../agent'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { JsonTransformer, TypedArrayEncoder } from '../../../utils'
+import { KeyManagementApi, PublicJwk, X25519PublicJwk } from '../../kms'
 import { DidsModuleConfig } from '../DidsModuleConfig'
 import {
   DidCommV1Service,
@@ -18,13 +18,10 @@ import {
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { PeerDidResolver } from '../methods'
 import { DidKey } from '../methods/key'
-import { PeerDidNumAlgo, getNumAlgoFromPeerDid } from '../methods/peer/didPeer'
+import { getNumAlgoFromPeerDid, PeerDidNumAlgo } from '../methods/peer/didPeer'
 import { didDocumentJsonToNumAlgo1Did } from '../methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../repository'
 import { DidResolverService } from '../services'
-
-import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
-import { KeyManagementApi, PublicJwk, X25519PublicJwk } from '../../kms'
 import didPeer1zQmY from './__fixtures__/didPeer1zQmY.json'
 
 describe('peer dids', () => {

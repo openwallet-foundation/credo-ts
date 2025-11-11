@@ -1,8 +1,7 @@
-import type { DidCommDocumentService } from '../../../services'
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 
 import { Subject } from 'rxjs'
-
-import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { CredoError } from '../../../../../core/src/error'
 import {
@@ -12,18 +11,19 @@ import {
   getMockOutOfBand,
   mockFunction,
 } from '../../../../../core/tests/helpers'
-import { InboundMessageContext } from '../../../models'
-import { DidExchangeState } from '../../connections'
-import { OutOfBandService } from '../OutOfBandService'
-import { OutOfBandEventTypes } from '../domain/OutOfBandEvents'
-import { OutOfBandRole } from '../domain/OutOfBandRole'
-import { OutOfBandState } from '../domain/OutOfBandState'
-import { HandshakeReuseMessage } from '../messages'
-import { HandshakeReuseAcceptedMessage } from '../messages/HandshakeReuseAcceptedMessage'
-import { OutOfBandRepository } from '../repository'
+import { DidCommInboundMessageContext } from '../../../models'
+import type { DidCommDocumentService } from '../../../services'
+import { DidCommDidExchangeState } from '../../connections'
+import { DidCommOutOfBandService } from '../DidCommOutOfBandService'
+import { DidCommOutOfBandEventTypes } from '../domain/DidCommOutOfBandEvents'
+import { DidCommOutOfBandRole } from '../domain/DidCommOutOfBandRole'
+import { DidCommOutOfBandState } from '../domain/DidCommOutOfBandState'
+import { DidCommHandshakeReuseMessage } from '../messages'
+import { DidCommHandshakeReuseAcceptedMessage } from '../messages/DidCommHandshakeReuseAcceptedMessage'
+import { DidCommOutOfBandRepository } from '../repository'
 
-jest.mock('../repository/OutOfBandRepository')
-const OutOfBandRepositoryMock = OutOfBandRepository as jest.Mock<OutOfBandRepository>
+vi.mock('../repository/DidCommOutOfBandRepository')
+const OutOfBandRepositoryMock = DidCommOutOfBandRepository as MockedClassConstructor<typeof DidCommOutOfBandRepository>
 
 const key = Kms.PublicJwk.fromPublicKey({
   kty: 'OKP',
@@ -33,9 +33,9 @@ const key = Kms.PublicJwk.fromPublicKey({
 
 const agentContext = getAgentContext()
 
-describe('OutOfBandService', () => {
-  let outOfBandRepository: OutOfBandRepository
-  let outOfBandService: OutOfBandService
+describe('DidCommOutOfBandService', () => {
+  let outOfBandRepository: DidCommOutOfBandRepository
+  let outOfBandService: DidCommOutOfBandService
   let didCommDocumentService: DidCommDocumentService
   let eventEmitter: EventEmitter
 
@@ -43,12 +43,12 @@ describe('OutOfBandService', () => {
     eventEmitter = new EventEmitter(agentDependencies, new Subject())
     outOfBandRepository = new OutOfBandRepositoryMock()
     didCommDocumentService = {} as DidCommDocumentService
-    outOfBandService = new OutOfBandService(outOfBandRepository, eventEmitter, didCommDocumentService)
+    outOfBandService = new DidCommOutOfBandService(outOfBandRepository, eventEmitter, didCommDocumentService)
   })
 
   describe('processHandshakeReuse', () => {
     test('throw error when no parentThreadId is present', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
@@ -56,39 +56,39 @@ describe('OutOfBandService', () => {
         parentThreadId: undefined,
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
       })
 
-      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrow(
         new CredoError('handshake-reuse message must have a parent thread id')
       )
     })
 
     test('throw error when no out of band record is found for parentThreadId', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
       })
 
-      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrow(
         new CredoError('No out of band record found for handshake-reuse message')
       )
     })
 
     test('throw error when role or state is incorrect ', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -96,76 +96,76 @@ describe('OutOfBandService', () => {
 
       // Correct state, incorrect role
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.AwaitResponse,
-        role: OutOfBandRole.Receiver,
+        state: DidCommOutOfBandState.AwaitResponse,
+        role: DidCommOutOfBandRole.Receiver,
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrow(
         new CredoError('Invalid out-of-band record role receiver, expected is sender.')
       )
 
-      mockOob.state = OutOfBandState.PrepareResponse
-      mockOob.role = OutOfBandRole.Sender
-      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
+      mockOob.state = DidCommOutOfBandState.PrepareResponse
+      mockOob.role = DidCommOutOfBandRole.Sender
+      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrow(
         new CredoError('Invalid out-of-band record state prepare-response, valid states are: await-response.')
       )
     })
 
     test('throw error when the out of band record has request messages ', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
       })
 
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.AwaitResponse,
-        role: OutOfBandRole.Sender,
+        state: DidCommOutOfBandState.AwaitResponse,
+        role: DidCommOutOfBandRole.Sender,
       })
       mockOob.outOfBandInvitation.addRequest(reuseMessage)
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrow(
         new CredoError('Handshake reuse should only be used when no requests are present')
       )
     })
 
     test("throw error when the message context doesn't have a ready connection", async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
       })
 
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.AwaitResponse,
-        role: OutOfBandRole.Sender,
+        state: DidCommOutOfBandState.AwaitResponse,
+        role: DidCommOutOfBandRole.Sender,
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrow(
         new CredoError(`No connection associated with incoming message ${reuseMessage.type}`)
       )
     })
 
     test('emits handshake reused event ', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const reuseListener = jest.fn()
+      const reuseListener = vi.fn()
 
-      const connection = getMockConnection({ state: DidExchangeState.Completed })
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -173,20 +173,20 @@ describe('OutOfBandService', () => {
       })
 
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.AwaitResponse,
-        role: OutOfBandRole.Sender,
+        state: DidCommOutOfBandState.AwaitResponse,
+        role: DidCommOutOfBandRole.Sender,
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      eventEmitter.on(OutOfBandEventTypes.HandshakeReused, reuseListener)
+      eventEmitter.on(DidCommOutOfBandEventTypes.HandshakeReused, reuseListener)
       await outOfBandService.processHandshakeReuse(messageContext)
-      eventEmitter.off(OutOfBandEventTypes.HandshakeReused, reuseListener)
+      eventEmitter.off(DidCommOutOfBandEventTypes.HandshakeReused, reuseListener)
 
       expect(reuseListener).toHaveBeenCalledTimes(1)
       const [[reuseEvent]] = reuseListener.mock.calls
 
       expect(reuseEvent).toMatchObject({
-        type: OutOfBandEventTypes.HandshakeReused,
+        type: DidCommOutOfBandEventTypes.HandshakeReused,
         payload: {
           connectionRecord: connection,
           outOfBandRecord: mockOob,
@@ -196,25 +196,25 @@ describe('OutOfBandService', () => {
     })
 
     it('updates state to done if out of band record is not reusable', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
-        connection: getMockConnection({ state: DidExchangeState.Completed }),
+        connection: getMockConnection({ state: DidCommDidExchangeState.Completed }),
       })
 
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.AwaitResponse,
-        role: OutOfBandRole.Sender,
+        state: DidCommOutOfBandState.AwaitResponse,
+        role: DidCommOutOfBandRole.Sender,
         reusable: true,
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      const updateStateSpy = jest.spyOn(outOfBandService, 'updateState')
+      const updateStateSpy = vi.spyOn(outOfBandService, 'updateState')
 
       // Reusable shouldn't update state
       await outOfBandService.processHandshakeReuse(messageContext)
@@ -223,30 +223,30 @@ describe('OutOfBandService', () => {
       // Non-reusable should update state
       mockOob.reusable = false
       await outOfBandService.processHandshakeReuse(messageContext)
-      expect(updateStateSpy).toHaveBeenCalledWith(agentContext, mockOob, OutOfBandState.Done)
+      expect(updateStateSpy).toHaveBeenCalledWith(agentContext, mockOob, DidCommOutOfBandState.Done)
     })
 
     it('returns a handshake-reuse-accepted message', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
-        connection: getMockConnection({ state: DidExchangeState.Completed }),
+        connection: getMockConnection({ state: DidCommDidExchangeState.Completed }),
       })
 
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.AwaitResponse,
-        role: OutOfBandRole.Sender,
+        state: DidCommOutOfBandState.AwaitResponse,
+        role: DidCommOutOfBandRole.Sender,
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
       const reuseAcceptedMessage = await outOfBandService.processHandshakeReuse(messageContext)
 
-      expect(reuseAcceptedMessage).toBeInstanceOf(HandshakeReuseAcceptedMessage)
+      expect(reuseAcceptedMessage).toBeInstanceOf(DidCommHandshakeReuseAcceptedMessage)
       expect(reuseAcceptedMessage.thread).toMatchObject({
         threadId: reuseMessage.id,
         parentThreadId: reuseMessage.thread?.parentThreadId,
@@ -256,7 +256,7 @@ describe('OutOfBandService', () => {
 
   describe('processHandshakeReuseAccepted', () => {
     test('throw error when no parentThreadId is present', async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         threadId: 'threadId',
         parentThreadId: 'parentThreadId',
       })
@@ -265,41 +265,41 @@ describe('OutOfBandService', () => {
         parentThreadId: undefined,
       })
 
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
       })
 
-      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError('handshake-reuse-accepted message must have a parent thread id')
       )
     })
 
     test('throw error when no out of band record is found for parentThreadId', async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         parentThreadId: 'parentThreadId',
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
       })
 
-      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError('No out of band record found for handshake-reuse-accepted message')
       )
     })
 
     test('throw error when role or state is incorrect ', async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         parentThreadId: 'parentThreadId',
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -307,80 +307,80 @@ describe('OutOfBandService', () => {
 
       // Correct state, incorrect role
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.PrepareResponse,
-        role: OutOfBandRole.Sender,
+        state: DidCommOutOfBandState.PrepareResponse,
+        role: DidCommOutOfBandRole.Sender,
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError('Invalid out-of-band record role sender, expected is receiver.')
       )
 
-      mockOob.state = OutOfBandState.AwaitResponse
-      mockOob.role = OutOfBandRole.Receiver
-      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
+      mockOob.state = DidCommOutOfBandState.AwaitResponse
+      mockOob.role = DidCommOutOfBandRole.Receiver
+      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError('Invalid out-of-band record state await-response, valid states are: prepare-response.')
       )
     })
 
     test("throw error when the message context doesn't have a ready connection", async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         parentThreadId: 'parentThreadId',
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
       })
 
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.PrepareResponse,
-        role: OutOfBandRole.Receiver,
+        state: DidCommOutOfBandState.PrepareResponse,
+        role: DidCommOutOfBandRole.Receiver,
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError(`No connection associated with incoming message ${reuseAcceptedMessage.type}`)
       )
     })
 
     test("throw error when the reuseConnectionId on the oob record doesn't match with the inbound message connection id", async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         parentThreadId: 'parentThreadId',
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
-        connection: getMockConnection({ state: DidExchangeState.Completed, id: 'connectionId' }),
+        connection: getMockConnection({ state: DidCommDidExchangeState.Completed, id: 'connectionId' }),
       })
 
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.PrepareResponse,
-        role: OutOfBandRole.Receiver,
+        state: DidCommOutOfBandState.PrepareResponse,
+        role: DidCommOutOfBandRole.Receiver,
         reuseConnectionId: 'anotherConnectionId',
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError('handshake-reuse-accepted is not in response to a handshake-reuse message.')
       )
     })
 
     test('emits handshake reused event ', async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         parentThreadId: 'parentThreadId',
         threadId: 'threadId',
       })
 
-      const reuseListener = jest.fn()
+      const reuseListener = vi.fn()
 
-      const connection = getMockConnection({ state: DidExchangeState.Completed, id: 'connectionId' })
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const connection = getMockConnection({ state: DidCommDidExchangeState.Completed, id: 'connectionId' })
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -388,21 +388,21 @@ describe('OutOfBandService', () => {
       })
 
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.PrepareResponse,
-        role: OutOfBandRole.Receiver,
+        state: DidCommOutOfBandState.PrepareResponse,
+        role: DidCommOutOfBandRole.Receiver,
         reuseConnectionId: 'connectionId',
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      eventEmitter.on(OutOfBandEventTypes.HandshakeReused, reuseListener)
+      eventEmitter.on(DidCommOutOfBandEventTypes.HandshakeReused, reuseListener)
       await outOfBandService.processHandshakeReuseAccepted(messageContext)
-      eventEmitter.off(OutOfBandEventTypes.HandshakeReused, reuseListener)
+      eventEmitter.off(DidCommOutOfBandEventTypes.HandshakeReused, reuseListener)
 
       expect(reuseListener).toHaveBeenCalledTimes(1)
       const [[reuseEvent]] = reuseListener.mock.calls
 
       expect(reuseEvent).toMatchObject({
-        type: OutOfBandEventTypes.HandshakeReused,
+        type: DidCommOutOfBandEventTypes.HandshakeReused,
         payload: {
           connectionRecord: connection,
           outOfBandRecord: mockOob,
@@ -412,73 +412,73 @@ describe('OutOfBandService', () => {
     })
 
     it('updates state to done', async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         parentThreadId: 'parentThreadId',
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
-        connection: getMockConnection({ state: DidExchangeState.Completed, id: 'connectionId' }),
+        connection: getMockConnection({ state: DidCommDidExchangeState.Completed, id: 'connectionId' }),
       })
 
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.PrepareResponse,
-        role: OutOfBandRole.Receiver,
+        state: DidCommOutOfBandState.PrepareResponse,
+        role: DidCommOutOfBandRole.Receiver,
         reusable: true,
         reuseConnectionId: 'connectionId',
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      const updateStateSpy = jest.spyOn(outOfBandService, 'updateState')
+      const updateStateSpy = vi.spyOn(outOfBandService, 'updateState')
 
       await outOfBandService.processHandshakeReuseAccepted(messageContext)
-      expect(updateStateSpy).toHaveBeenCalledWith(agentContext, mockOob, OutOfBandState.Done)
+      expect(updateStateSpy).toHaveBeenCalledWith(agentContext, mockOob, DidCommOutOfBandState.Done)
     })
   })
 
   describe('updateState', () => {
     test('updates the state on the out of band record', async () => {
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.Initial,
+        state: DidCommOutOfBandState.Initial,
       })
 
-      await outOfBandService.updateState(agentContext, mockOob, OutOfBandState.Done)
+      await outOfBandService.updateState(agentContext, mockOob, DidCommOutOfBandState.Done)
 
-      expect(mockOob.state).toEqual(OutOfBandState.Done)
+      expect(mockOob.state).toEqual(DidCommOutOfBandState.Done)
     })
 
     test('updates the record in the out of band repository', async () => {
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.Initial,
+        state: DidCommOutOfBandState.Initial,
       })
 
-      await outOfBandService.updateState(agentContext, mockOob, OutOfBandState.Done)
+      await outOfBandService.updateState(agentContext, mockOob, DidCommOutOfBandState.Done)
 
       expect(outOfBandRepository.update).toHaveBeenCalledWith(agentContext, mockOob)
     })
 
     test('emits an OutOfBandStateChangedEvent', async () => {
-      const stateChangedListener = jest.fn()
+      const stateChangedListener = vi.fn()
 
       const mockOob = getMockOutOfBand({
-        state: OutOfBandState.Initial,
+        state: DidCommOutOfBandState.Initial,
       })
 
-      eventEmitter.on(OutOfBandEventTypes.OutOfBandStateChanged, stateChangedListener)
-      await outOfBandService.updateState(agentContext, mockOob, OutOfBandState.Done)
-      eventEmitter.off(OutOfBandEventTypes.OutOfBandStateChanged, stateChangedListener)
+      eventEmitter.on(DidCommOutOfBandEventTypes.OutOfBandStateChanged, stateChangedListener)
+      await outOfBandService.updateState(agentContext, mockOob, DidCommOutOfBandState.Done)
+      eventEmitter.off(DidCommOutOfBandEventTypes.OutOfBandStateChanged, stateChangedListener)
 
       expect(stateChangedListener).toHaveBeenCalledTimes(1)
       const [[stateChangedEvent]] = stateChangedListener.mock.calls
 
       expect(stateChangedEvent).toMatchObject({
-        type: OutOfBandEventTypes.OutOfBandStateChanged,
+        type: DidCommOutOfBandEventTypes.OutOfBandStateChanged,
         payload: {
           outOfBandRecord: mockOob,
-          previousState: OutOfBandState.Initial,
+          previousState: DidCommOutOfBandState.Initial,
         },
       })
     })
@@ -489,7 +489,7 @@ describe('OutOfBandService', () => {
       const expected = getMockOutOfBand()
       mockFunction(outOfBandRepository.getById).mockReturnValue(Promise.resolve(expected))
       const result = await outOfBandService.getById(agentContext, expected.id)
-      expect(outOfBandRepository.getById).toBeCalledWith(agentContext, expected.id)
+      expect(outOfBandRepository.getById).toHaveBeenCalledWith(agentContext, expected.id)
 
       expect(result).toBe(expected)
     })
@@ -498,7 +498,7 @@ describe('OutOfBandService', () => {
       const expected = getMockOutOfBand()
       mockFunction(outOfBandRepository.findById).mockReturnValue(Promise.resolve(expected))
       const result = await outOfBandService.findById(agentContext, expected.id)
-      expect(outOfBandRepository.findById).toBeCalledWith(agentContext, expected.id)
+      expect(outOfBandRepository.findById).toHaveBeenCalledWith(agentContext, expected.id)
 
       expect(result).toBe(expected)
     })
@@ -508,7 +508,7 @@ describe('OutOfBandService', () => {
 
       mockFunction(outOfBandRepository.getAll).mockReturnValue(Promise.resolve(expected))
       const result = await outOfBandService.getAll(agentContext)
-      expect(outOfBandRepository.getAll).toBeCalledWith(agentContext)
+      expect(outOfBandRepository.getAll).toHaveBeenCalledWith(agentContext)
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })
@@ -517,8 +517,12 @@ describe('OutOfBandService', () => {
       const expected = [getMockOutOfBand(), getMockOutOfBand()]
 
       mockFunction(outOfBandRepository.findByQuery).mockReturnValue(Promise.resolve(expected))
-      const result = await outOfBandService.findAllByQuery(agentContext, { state: OutOfBandState.Initial }, {})
-      expect(outOfBandRepository.findByQuery).toBeCalledWith(agentContext, { state: OutOfBandState.Initial }, {})
+      const result = await outOfBandService.findAllByQuery(agentContext, { state: DidCommOutOfBandState.Initial }, {})
+      expect(outOfBandRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { state: DidCommOutOfBandState.Initial },
+        {}
+      )
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })

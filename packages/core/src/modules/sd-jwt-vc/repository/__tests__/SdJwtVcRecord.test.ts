@@ -1,6 +1,5 @@
-import { SdJwtVcRecord } from '../SdJwtVcRecord'
-
 import { JsonTransformer } from '@credo-ts/core'
+import { SdJwtVcRecord } from '../SdJwtVcRecord'
 
 describe('SdJwtVcRecord', () => {
   test('sets the values passed in the constructor on the record', () => {

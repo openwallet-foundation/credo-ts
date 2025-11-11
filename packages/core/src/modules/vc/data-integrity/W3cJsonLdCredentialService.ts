@@ -1,31 +1,28 @@
 import type { AgentContext } from '../../../agent/context'
-
+import { createKmsKeyPairClass } from '../../../crypto/KmsKeyPair'
+import { CredoError } from '../../../error'
+import { injectable } from '../../../plugins'
+import type { SingleOrArray } from '../../../types'
+import { asArray, JsonTransformer } from '../../../utils'
+import { DidsApi, parseDid, VerificationMethod } from '../../dids'
+import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type'
+import { PublicJwk } from '../../kms'
+import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
+import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
+import { w3cDate } from '../util'
 import type {
   W3cJsonLdSignCredentialOptions,
   W3cJsonLdSignPresentationOptions,
   W3cJsonLdVerifyCredentialOptions,
   W3cJsonLdVerifyPresentationOptions,
 } from '../W3cCredentialServiceOptions'
-import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
-import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
-
-import { createKmsKeyPairClass } from '../../../crypto/KmsKeyPair'
-import { CredoError } from '../../../error'
-import { injectable } from '../../../plugins'
-import { JsonTransformer, asArray } from '../../../utils'
-import { DidsApi, VerificationMethod, parseDid } from '../../dids'
-import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
-import { w3cDate } from '../util'
-
-import { SingleOrArray } from '../../../types'
-import { PublicJwk } from '../../kms'
-import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
 import { assertOnlyW3cJsonLdVerifiableCredentials } from './jsonldUtil'
 import jsonld from './libraries/jsonld'
 import vc from './libraries/vc'
 import { W3cJsonLdVerifiableCredential } from './models'
 import { W3cJsonLdVerifiablePresentation } from './models/W3cJsonLdVerifiablePresentation'
+import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
 
 /**
  * Supports signing and verification of credentials according to the [Verifiable Credential Data Model](https://www.w3.org/TR/vc-data-model)
@@ -211,13 +208,20 @@ export class W3cJsonLdCredentialService {
       useNativeCanonize: false,
     })
 
-    const result = await vc.signPresentation({
+    const signOptions: Record<string, unknown> = {
       presentation: JsonTransformer.toJSON(options.presentation),
       suite: suite,
       challenge: options.challenge,
       domain: options.domain,
       documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-    })
+    }
+
+    // this is a hack because vcjs throws if purpose is passed as undefined or null
+    if (options.proofPurpose) {
+      signOptions.purpose = options.proofPurpose
+    }
+
+    const result = await vc.signPresentation(signOptions)
 
     return JsonTransformer.fromJSON(result, W3cJsonLdVerifiablePresentation)
   }
@@ -357,16 +361,14 @@ export class W3cJsonLdCredentialService {
 
     return proofs.map((proof) => {
       const SuiteClass = this.signatureSuiteRegistry.getByProofType(proof.type)?.suiteClass
-      if (SuiteClass) {
-        return new SuiteClass({
-          LDKeyClass: WalletKeyPair,
-          proof: {
-            verificationMethod: proof.verificationMethod,
-          },
-          date: proof.created,
-          useNativeCanonize: false,
-        })
-      }
+      return new SuiteClass({
+        LDKeyClass: WalletKeyPair,
+        proof: {
+          verificationMethod: proof.verificationMethod,
+        },
+        date: proof.created,
+        useNativeCanonize: false,
+      })
     })
   }
 }

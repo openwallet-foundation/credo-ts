@@ -1,11 +1,7 @@
-import { Kms } from '.'
 import type { Logger } from './logger'
+import { Ed25519PublicJwk, PublicJwk } from './modules/kms'
 
 export interface InitConfig {
-  /**
-   * Agent public endpoints, sorted by priority (higher priority first)
-   */
-  label: string
   logger?: Logger
   autoUpdateStorageOnStartup?: boolean
 
@@ -28,6 +24,19 @@ export type JsonArray = Array<JsonValue>
 export interface JsonObject {
   [property: string]: JsonValue
 }
+
+/**
+ * Typescript 5.7/5.9 made the Uint8Array generic. This causes a lot of type errors
+ * and is also not backwards compatible with older TypeScript versions.
+ *
+ * This type util infers the return type, so that in older versions the non generic
+ * Uint8Array is used, and in newer version the generic Uint8Array is used.
+ *
+ * See https://github.com/microsoft/typescript/issues/62240
+ */
+export type Uint8ArrayBuffer = ReturnType<typeof Uint8Array.from>
+
+export type AnyUint8Array = Uint8Array
 
 /**
  * Flatten an array of arrays
@@ -71,8 +80,8 @@ export type IsAny<T> = unknown extends T ? ([keyof T] extends [never] ? false : 
 export interface ResolvedDidCommService {
   id: string
   serviceEndpoint: string
-  recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
-  routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+  recipientKeys: PublicJwk<Ed25519PublicJwk>[]
+  routingKeys: PublicJwk<Ed25519PublicJwk>[]
 }
 
 export const isJsonObject = (value: unknown): value is JsonObject => {

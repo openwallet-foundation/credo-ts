@@ -253,7 +253,7 @@ describe('NodeKeyManagementService', () => {
           algorithm: 'RS256',
           data: new Uint8Array([1, 2, 3]),
         })
-      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', service.backend))
+      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', [service.backend]))
     })
 
     it('signs with RS256', async () => {
@@ -598,7 +598,7 @@ describe('NodeKeyManagementService', () => {
           data: new Uint8Array([1, 2, 3]),
           signature: new Uint8Array([1, 2, 3]),
         })
-      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', service.backend))
+      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', [service.backend]))
     })
 
     it('verifies RS256 signature', async () => {
@@ -1852,7 +1852,6 @@ describe('NodeKeyManagementService', () => {
       await expect(
         service.importKey(agentContext, {
           privateJwk: {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
             kty: 'something',
           },
@@ -1895,7 +1894,7 @@ describe('NodeKeyManagementService', () => {
           algorithm: 'RS256',
           data: new Uint8Array([1, 2, 3]),
         })
-      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError(keyId, service.backend))
+      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError(keyId, [service.backend]))
     })
   })
 })

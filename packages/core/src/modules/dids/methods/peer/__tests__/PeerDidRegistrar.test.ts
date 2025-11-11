@@ -1,18 +1,18 @@
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
+import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
+import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
+import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../../../kms'
 import { DidCommV1Service, DidDocumentBuilder, getEd25519VerificationKey2018 } from '../../../domain'
 import { DidDocumentRole } from '../../../domain/DidDocumentRole'
 import { DidRepository } from '../../../repository/DidRepository'
-import { PeerDidRegistrar } from '../PeerDidRegistrar'
 import { PeerDidNumAlgo } from '../didPeer'
-
-import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
-import { TypedArrayEncoder } from '../../../../../utils'
-import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../../../kms'
+import { PeerDidRegistrar } from '../PeerDidRegistrar'
 import didPeer0z6MksLeFixture from './__fixtures__/didPeer0z6MksLe.json'
 
-jest.mock('../../../repository/DidRepository')
-const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+vi.mock('../../../repository/DidRepository')
+const DidRepositoryMock = DidRepository as MockedClassConstructor<typeof DidRepository>
 
 const didRepositoryMock = new DidRepositoryMock()
 
@@ -25,7 +25,7 @@ const kms = agentContext.resolve(KeyManagementApi)
 
 describe('DidRegistrar', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('PeerDidRegistrar', () => {
@@ -65,7 +65,7 @@ describe('DidRegistrar', () => {
       it('should return an error state if no key or key type is provided', async () => {
         const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
-          // @ts-ignore
+          // @ts-expect-error
           options: {
             numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
           },

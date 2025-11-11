@@ -1,15 +1,12 @@
-import type { HttpMethod } from '@openid4vc/oauth2'
-import type { Response, Router } from 'express'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-
 import { joinUriParts, utils } from '@credo-ts/core'
+import type { HttpMethod } from '@openid4vc/oauth2'
 import { Oauth2ErrorCodes, Oauth2ResourceUnauthorizedError, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
-  CredentialConfigurationsSupportedWithFormats,
+  type CredentialConfigurationsSupportedWithFormats,
   getCredentialConfigurationsMatchingRequestFormat,
+  Openid4vciDraftVersion,
 } from '@openid4vc/openid4vci'
-
+import type { Response, Router } from 'express'
 import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
 import {
   getRequestContext,
@@ -18,10 +15,11 @@ import {
   sendUnauthorizedError,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
-import { addSecondsToDate } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
+import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 export function configureCredentialEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.post(config.credentialEndpointPath, async (request: OpenId4VcIssuanceRequest, response: Response, next) => {
@@ -148,7 +146,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
 
       const expiresAt =
         issuanceSession.expiresAt ??
-        addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
+        utils.addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
 
       // Verify the issuance session subject
       if (issuanceSession.authorization?.subject) {
@@ -173,11 +171,16 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       else if (Date.now() > expiresAt.getTime()) {
         issuanceSession.errorMessage = 'Credential offer has expired'
         await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
-        throw new Oauth2ServerErrorResponseError({
-          // What is the best error here?
-          error: Oauth2ErrorCodes.CredentialRequestDenied,
-          error_description: 'Session expired',
-        })
+        return sendOauth2ErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          new Oauth2ServerErrorResponseError({
+            // What is the best error here?
+            error: Oauth2ErrorCodes.CredentialRequestDenied,
+            error_description: 'Session expired',
+          })
+        )
       } else {
         issuanceSession.authorization = {
           ...issuanceSession.authorization,
@@ -248,7 +251,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       }
 
       const createdAt = new Date()
-      const expiresAt = addSecondsToDate(createdAt, config.statefulCredentialOfferExpirationInSeconds)
+      const expiresAt = utils.addSecondsToDate(createdAt, config.statefulCredentialOfferExpirationInSeconds)
 
       issuanceSession = new OpenId4VcIssuanceSessionRecord({
         createdAt,
@@ -269,6 +272,12 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         authorization: {
           subject: tokenPayload.sub,
         },
+        openId4VciVersion:
+          issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.V1
+            ? 'v1'
+            : issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft15
+              ? 'v1.draft15'
+              : 'v1.draft11-14',
       })
 
       // Save and update

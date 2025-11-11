@@ -82,13 +82,15 @@ describe('OpenId4VcIssuerRecord', () => {
         },
         cryptographic_binding_methods_supported: ['did:key'],
         credential_signing_alg_values_supported: ['Ed25519Signature2018'],
-        display: [
-          {
-            name: 'Example University Degree',
-            description: 'JFF Plugfest 3 OpenBadge Credential',
-            background_color: '#464c49',
-          },
-        ],
+        credential_metadata: {
+          display: [
+            {
+              name: 'Example University Degree',
+              description: 'JFF Plugfest 3 OpenBadge Credential',
+              background_color: '#464c49',
+            },
+          ],
+        },
       },
       '613ecbbb-0a4c-4041-bb78-c64943139d5f': {
         format: 'jwt_vc_json',
@@ -97,40 +99,46 @@ describe('OpenId4VcIssuerRecord', () => {
         },
         cryptographic_binding_methods_supported: ['did:key'],
         credential_signing_alg_values_supported: ['EdDSA'],
-        display: [
-          {
-            name: 'Example University Degree',
-            description: 'JFF Plugfest 3 OpenBadge Credential',
-            background_color: '#464c49',
-          },
-        ],
+        credential_metadata: {
+          display: [
+            {
+              name: 'Example University Degree',
+              description: 'JFF Plugfest 3 OpenBadge Credential',
+              background_color: '#464c49',
+            },
+          ],
+        },
       },
       '904afaa1-f319-4a12-9c3c-0a6081c3feb0': {
         format: 'mso_mdoc',
         doctype: 'some-doc-type',
         cryptographic_binding_methods_supported: ['did:key'],
         credential_signing_alg_values_supported: ['EdDSA'],
-        display: [
-          {
-            name: 'Passport',
-            description: 'Passport of the Kingdom of Kākāpō',
-            background_color: '#171717',
-          },
-        ],
+        credential_metadata: {
+          display: [
+            {
+              name: 'Passport',
+              description: 'Passport of the Kingdom of Kākāpō',
+              background_color: '#171717',
+            },
+          ],
+        },
       },
       'c3db5513-ae2b-46e9-8a0d-fbfd0ce52b6a': {
         format: 'vc+sd-jwt',
         vct: 'something',
         cryptographic_binding_methods_supported: ['did:key'],
         credential_signing_alg_values_supported: ['EdDSA'],
-        display: [
-          {
-            name: 'Passport',
-            description: 'Passport of the Kingdom of Kākāpō',
-            background_color: '#171717',
-            logo: { uri: 'https://static.mattr.global/credential-assets/government-of-kakapo/web/logo.svg' },
-          },
-        ],
+        credential_metadata: {
+          display: [
+            {
+              name: 'Passport',
+              description: 'Passport of the Kingdom of Kākāpō',
+              background_color: '#171717',
+              logo: { uri: 'https://static.mattr.global/credential-assets/government-of-kakapo/web/logo.svg' },
+            },
+          ],
+        },
       },
     })
   })
@@ -189,7 +197,7 @@ describe('OpenId4VcIssuerRecord', () => {
     ])
   })
 
-  test('removes logo if empty objct in display metadata', () => {
+  test('removes logo if empty object in display metadata', () => {
     const instance = JsonTransformer.fromJSON(
       {
         display: [
@@ -209,7 +217,7 @@ describe('OpenId4VcIssuerRecord', () => {
     ])
   })
 
-  test('does not transfrom display metadata if already using uri', () => {
+  test('does not transform display metadata if already using uri', () => {
     const instance = JsonTransformer.fromJSON(
       {
         display: [
@@ -229,6 +237,34 @@ describe('OpenId4VcIssuerRecord', () => {
         name: 'hello',
         logo: {
           uri: 'uri',
+        },
+      },
+    ])
+  })
+
+  test('should correctly transform authorization servers configurations', () => {
+    const instance = JsonTransformer.fromJSON(
+      {
+        authorizationServerConfigs: [
+          {
+            issuer: 'https://issuer.example.com',
+            clientAuthentication: {
+              clientId: 'issuer-server',
+              clientSecret: 'issuer-server',
+            },
+          },
+        ],
+      },
+      OpenId4VcIssuerRecord
+    )
+
+    expect(instance.authorizationServerConfigs).toEqual([
+      {
+        type: 'direct',
+        issuer: 'https://issuer.example.com',
+        clientAuthentication: {
+          clientId: 'issuer-server',
+          clientSecret: 'issuer-server',
         },
       },
     ])
