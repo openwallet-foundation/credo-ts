@@ -24,7 +24,7 @@ export class DrizzleMdocRecordAdapter extends BaseDrizzleRecordAdapter<
     return {
       alg,
       docType,
-      base64Url: record.base64Url,
+      credentialInstances: record.credentialInstances,
       customTags,
     }
   }

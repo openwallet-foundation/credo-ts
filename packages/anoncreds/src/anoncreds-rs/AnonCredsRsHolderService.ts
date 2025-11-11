@@ -451,7 +451,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     })
 
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-    const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, { credential })
+    const w3cCredentialRecord = W3cCredentialRecord.fromCredential(credential)
 
     const anonCredsCredentialMetadata: W3cAnonCredsCredentialMetadata = {
       credentialRevocationId: anonCredsTags.anonCredsCredentialRevocationId,
@@ -462,8 +462,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     w3cCredentialRecord.setTags(anonCredsTags)
     w3cCredentialRecord.metadata.set(W3cAnonCredsCredentialMetadataKey, anonCredsCredentialMetadata)
 
-    const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
-    await w3cCredentialRepository.update(agentContext, w3cCredentialRecord)
+    await w3cCredentialService.storeCredential(agentContext, { record: w3cCredentialRecord })
 
     return w3cCredentialRecord
   }

@@ -1,5 +1,4 @@
 import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord, W3cV2CredentialRecord } from '@credo-ts/core'
-import { Mdoc } from '@credo-ts/core'
 import type {
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciDpopRequestOptions,
@@ -294,23 +293,25 @@ export class HolderInquirer extends BaseInquirer {
     }
   }
 
-  private printCredential = (credential: W3cCredentialRecord | W3cV2CredentialRecord | SdJwtVcRecord | MdocRecord) => {
-    if (credential.type === 'W3cCredentialRecord') {
-      console.log(greenText(`W3cCredentialRecord with claim format ${credential.credential.claimFormat}`, true))
-      console.log(JSON.stringify(credential.credential.jsonCredential, null, 2))
+  private printCredential = (
+    credentialRecord: W3cCredentialRecord | W3cV2CredentialRecord | SdJwtVcRecord | MdocRecord
+  ) => {
+    if (credentialRecord.type === 'W3cCredentialRecord') {
+      console.log(greenText(`W3cCredentialRecord with claim format ${credentialRecord.credential.claimFormat}`, true))
+      console.log(JSON.stringify(credentialRecord.credential.jsonCredential, null, 2))
       console.log('')
-    } else if (credential.type === 'W3cV2CredentialRecord') {
-      console.log(greenText(`W3cCredentialRecord with claim format ${credential.credential.claimFormat}`, true))
-      console.log(JSON.stringify(credential.credential.resolvedCredential.toJSON(), null, 2))
+    } else if (credentialRecord.type === 'W3cV2CredentialRecord') {
+      console.log(greenText(`W3cCredentialRecord with claim format ${credentialRecord.credential.claimFormat}`, true))
+      console.log(JSON.stringify(credentialRecord.credential.resolvedCredential.toJSON(), null, 2))
       console.log('')
-    } else if (credential.type === 'MdocRecord') {
+    } else if (credentialRecord.type === 'MdocRecord') {
       console.log(greenText('MdocRecord', true))
-      const namespaces = Mdoc.fromBase64Url(credential.base64Url).issuerSignedNamespaces
+      const namespaces = credentialRecord.credential.issuerSignedNamespaces
       console.log(JSON.stringify(namespaces, null, 2))
       console.log('')
     } else {
       console.log(greenText('SdJwtVcRecord', true))
-      const prettyClaims = credential.firstSdJwtVc.prettyClaims
+      const prettyClaims = credentialRecord.credential.prettyClaims
       console.log(JSON.stringify(prettyClaims, null, 2))
       console.log('')
     }

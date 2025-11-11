@@ -1,4 +1,4 @@
-import type { Mdoc, SdJwtVc } from '@credo-ts/core'
+import type { MdocRecord, SdJwtVcRecord } from '@credo-ts/core'
 import {
   ClaimFormat,
   CredoError,
@@ -373,9 +373,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(deferredCredentialResponse.deferredCredentials).toHaveLength(0)
     expect(deferredCredentialResponse.credentials).toHaveLength(1)
 
-    const compactSdJwtVcTenant1 = (deferredCredentialResponse.credentials[0].record[0] as SdJwtVc).compact
-    const sdJwtVcTenant1 = holderTenant.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
-    expect(sdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
+    const firstSdJwtVcTenant1 = (deferredCredentialResponse.credentials[0].record as SdJwtVcRecord).firstSdJwtVc
+    expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
     await holderTenant.endSession()
     clearNock()
@@ -571,9 +570,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(deferredCredentialResponse.credentials).toHaveLength(1)
 
     expect(deferredCredentialResponse.credentials).toHaveLength(1)
-    const mdocBase64Url = (deferredCredentialResponse.credentials[0].record[0] as Mdoc).base64Url
-    const mdoc = holderTenant.mdoc.fromBase64Url(mdocBase64Url)
-    expect(mdoc.docType).toEqual('UniversityDegreeCredential')
+    const firstMdoc = (deferredCredentialResponse.credentials[0].record as MdocRecord).firstMdoc
+    expect(firstMdoc.docType).toEqual('UniversityDegreeCredential')
 
     await holderTenant.endSession()
   })

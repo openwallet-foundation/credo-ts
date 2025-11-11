@@ -30,7 +30,7 @@ const credentialRecordFactory = async (credential: W3cJsonLdVerifiableCredential
   // Create an instance of the w3cCredentialRecord
   return new W3cCredentialRecord({
     tags: { expandedTypes: asArray(expandedTypes) },
-    credential: credential,
+    credentialInstances: [{ credential: credential.jsonCredential }],
   })
 }
 
@@ -116,7 +116,9 @@ describe('W3cCredentialsService', () => {
           W3cJsonLdVerifiableCredential
         )
 
-        w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, { credential: credential })
+        w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, {
+          record: W3cCredentialRecord.fromCredential(credential),
+        })
 
         expect(w3cCredentialRecord).toMatchObject({
           type: 'W3cCredentialRecord',
@@ -148,7 +150,9 @@ describe('W3cCredentialsService', () => {
           Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
           W3cJsonLdVerifiableCredential
         )
-        await w3cCredentialService.storeCredential(agentContext, { credential: credential })
+        await w3cCredentialService.storeCredential(agentContext, {
+          record: W3cCredentialRecord.fromCredential(credential),
+        })
 
         const records = await w3cCredentialService.getAllCredentialRecords(agentContext)
 

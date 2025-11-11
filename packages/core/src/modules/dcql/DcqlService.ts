@@ -788,10 +788,6 @@ export class DcqlService {
           encodedCreatedPresentation = signedPresentation.encoded
           createdPresentation = signedPresentation
         } else if (presentationToCreate.claimFormat === ClaimFormat.JwtW3cVp) {
-          if (!presentationToCreate.subjectIds) {
-            throw new DcqlError('Cannot create presentation for credentials without subject id')
-          }
-
           const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
           const w3cV2Presentation = new W3cV2Presentation({
             holder: presentationToCreate.credentialRecord.credential.resolvedCredential.credentialSubjectIds[0],
@@ -812,10 +808,6 @@ export class DcqlService {
           encodedCreatedPresentation = signedPresentation.encoded
           createdPresentation = signedPresentation
         } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtW3cVp) {
-          if (!presentationToCreate.subjectIds) {
-            throw new DcqlError('Cannot create presentation for credentials without subject id')
-          }
-
           const presentationFrame = buildDisclosureFrameForPayload(presentationToCreate.disclosedPayload)
           if (!domain) {
             throw new DcqlError('Missing domain property for creating SdJwtVc presentation.')

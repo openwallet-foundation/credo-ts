@@ -11,7 +11,7 @@ import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 export interface W3cCredentialRecordOptions {
   id?: string
   createdAt?: Date
-  tags: CustomW3cCredentialTags
+  tags?: CustomW3cCredentialTags
 
   /**
    * The W3C credential instances to store on the record.
@@ -63,7 +63,7 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
-      this._tags = props.tags
+      this._tags = props.tags ?? {}
       this.credentialInstances = props.credentialInstances
       // We set this as a property since we can get down to 1 credential
       // and in this case we still need to know whether this was a multi instance

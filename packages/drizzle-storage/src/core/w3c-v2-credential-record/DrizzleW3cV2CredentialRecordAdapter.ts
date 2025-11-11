@@ -35,7 +35,7 @@ export class DrizzleW3cV2CredentialRecordAdapter extends BaseDrizzleRecordAdapte
 
     return {
       // JWT vc is string, JSON-LD vc is object
-      credential: record.credential.encoded,
+      credentialInstances: record.credentialInstances,
 
       // Tags
       issuerId,

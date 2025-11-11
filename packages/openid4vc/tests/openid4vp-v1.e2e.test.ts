@@ -12,6 +12,7 @@ import {
   W3cCredentialSubject,
   W3cIssuer,
   W3cV2Credential,
+  W3cV2CredentialRecord,
   W3cV2CredentialSubject,
   W3cV2Issuer,
   w3cDate,
@@ -370,8 +371,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       holder: { method: 'did', didUrl: holder1.kid },
     })
 
-    await holderTenant.w3cV2Credentials.storeCredential({ credential: signedCredential1 })
-    await holderTenant.w3cV2Credentials.storeCredential({ credential: signedCredential2 })
+    await holderTenant.w3cV2Credentials.store({ record: W3cV2CredentialRecord.fromCredential(signedCredential1) })
+    await holderTenant.w3cV2Credentials.store({ record: W3cV2CredentialRecord.fromCredential(signedCredential2) })
 
     const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
       await verifierTenant1.modules.openid4vc.verifier.createAuthorizationRequest({

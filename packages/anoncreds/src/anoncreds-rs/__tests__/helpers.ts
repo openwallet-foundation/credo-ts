@@ -7,6 +7,7 @@ import type {
 import type { AgentContext } from '@credo-ts/core'
 import {
   JsonTransformer,
+  W3cCredentialRecord,
   W3cCredentialRepository,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
@@ -227,7 +228,7 @@ export async function storeCredential(
 ) {
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
   const record = await w3cCredentialService.storeCredential(agentContext, {
-    credential: w3cJsonLdCredential,
+    record: W3cCredentialRecord.fromCredential(w3cJsonLdCredential),
   })
 
   const anonCredsCredentialRecordTags: AnonCredsCredentialTags = {

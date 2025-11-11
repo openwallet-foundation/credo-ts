@@ -7,11 +7,9 @@ import {
   type JwkDidCreateOptions,
   type KeyDidCreateOptions,
   Kms,
-  Mdoc,
-  W3cJsonLdVerifiableCredential,
-  W3cJwtVerifiableCredential,
-  W3cV2JwtVerifiableCredential,
-  W3cV2SdJwtVerifiableCredential,
+  MdocRecord,
+  W3cCredentialRecord,
+  W3cV2CredentialRecord,
   X509Module,
 } from '@credo-ts/core'
 import type {
@@ -203,22 +201,19 @@ export class Holder extends BaseAgent<ReturnType<ReturnType<typeof getOpenIdHold
     })
 
     const storedCredentials = await Promise.all(
-      credentialResponse.credentials.map((response) => {
-        // TODO: handle batch issuance
-        const credential = response.credentials[0]
-        if (credential instanceof W3cJwtVerifiableCredential || credential instanceof W3cJsonLdVerifiableCredential) {
-          return this.agent.w3cCredentials.store({ credential })
+      credentialResponse.credentials.map((credential) => {
+        if (credential.record instanceof W3cCredentialRecord) {
+          return this.agent.w3cCredentials.store({ record: credential.record })
         }
-        if (
-          credential instanceof W3cV2JwtVerifiableCredential ||
-          credential instanceof W3cV2SdJwtVerifiableCredential
-        ) {
-          return this.agent.w3cV2Credentials.storeCredential({ credential })
+        if (credential.record instanceof W3cV2CredentialRecord) {
+          return this.agent.w3cV2Credentials.store({ record: credential.record })
         }
-        if (credential instanceof Mdoc) {
-          return this.agent.mdoc.store(credential)
+        if (credential.record instanceof MdocRecord) {
+          return this.agent.mdoc.store({ record: credential.record })
         }
-        return this.agent.sdJwtVc.store(credential.compact)
+        return this.agent.sdJwtVc.store({
+          record: credential.record,
+        })
       })
     )
 

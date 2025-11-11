@@ -13,7 +13,11 @@ describe('W3cCredentialRecord', () => {
       )
 
       const w3cCredentialRecord = new W3cCredentialRecord({
-        credential,
+        credentialInstances: [
+          {
+            credential: credential.jsonCredential,
+          },
+        ],
         tags: {
           expandedTypes: ['https://expanded.tag#1'],
         },

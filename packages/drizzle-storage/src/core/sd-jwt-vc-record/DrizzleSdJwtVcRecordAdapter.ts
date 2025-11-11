@@ -25,7 +25,7 @@ export class DrizzleSdJwtVcRecordAdapter extends BaseDrizzleRecordAdapter<
       alg,
       sdAlg,
       vct,
-      compactSdJwtVc: record.compactSdJwtVc,
+      credentialInstances: record.credentialInstances,
       customTags,
     }
   }

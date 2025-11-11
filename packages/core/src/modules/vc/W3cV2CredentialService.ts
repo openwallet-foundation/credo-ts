@@ -141,15 +141,10 @@ export class W3cV2CredentialService {
     agentContext: AgentContext,
     options: W3cV2StoreCredentialOptions
   ): Promise<W3cV2CredentialRecord> {
-    // Create an instance of the w3cV2CredentialRecord
-    const w3cV2CredentialRecord = new W3cV2CredentialRecord({
-      credential: options.credential,
-    })
-
     // Store the w3cV2 credential record
-    await this.w3cV2CredentialRepository.save(agentContext, w3cV2CredentialRecord)
+    await this.w3cV2CredentialRepository.save(agentContext, options.record)
 
-    return w3cV2CredentialRecord
+    return options.record
   }
 
   public async removeCredentialRecord(agentContext: AgentContext, id: string) {

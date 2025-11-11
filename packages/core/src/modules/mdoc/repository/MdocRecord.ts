@@ -1,6 +1,6 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
-import { NonEmptyArray } from '../../../types'
+import type { NonEmptyArray } from '../../../types'
 import { JsonTransformer } from '../../../utils'
 import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'

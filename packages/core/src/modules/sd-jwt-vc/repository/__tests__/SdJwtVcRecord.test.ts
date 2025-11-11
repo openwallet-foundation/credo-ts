@@ -12,7 +12,7 @@ describe('SdJwtVcRecord', () => {
       tags: {
         some: 'tag',
       },
-      sdJwtVcs: [
+      credentialInstances: [
         {
           compactSdJwtVc,
         },
@@ -41,7 +41,7 @@ describe('SdJwtVcRecord', () => {
       tags: {
         some: 'tag',
       },
-      sdJwtVcs: [
+      credentialInstances: [
         {
           compactSdJwtVc,
         },

@@ -39,7 +39,7 @@ export class DrizzleW3cCredentialRecordAdapter extends BaseDrizzleRecordAdapter<
 
     return {
       // JWT vc is string, JSON-LD vc is object
-      credential: record.credential.encoded,
+      credentialInstances: record.credentialInstances,
       expandedTypes,
 
       // Tags

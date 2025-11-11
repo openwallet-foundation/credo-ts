@@ -1,4 +1,4 @@
-import { Agent, DidKey, TypedArrayEncoder } from '@credo-ts/core'
+import { Agent, DidKey, SdJwtVcRecord, TypedArrayEncoder } from '@credo-ts/core'
 import nock, { cleanAll } from 'nock'
 import { transformSeedToPrivateJwk } from '../../../../../askar/src'
 import { getAgentOptions } from '../../../../tests'
@@ -209,7 +209,11 @@ describe('sd-jwt-vc end to end test', () => {
     })
 
     // Store credential
-    await holder.sdJwtVc.store(compact)
+    await holder.sdJwtVc.store({
+      record: new SdJwtVcRecord({
+        credentialInstances: [{ compactSdJwtVc: compact }],
+      }),
+    })
 
     // Metadata created by the verifier and send out of band by the verifier to the holder
     const verifierMetadata = {
@@ -219,7 +223,7 @@ describe('sd-jwt-vc end to end test', () => {
     }
 
     const presentation = await holder.sdJwtVc.present<Payload>({
-      compactSdJwtVc: compact,
+      sdJwtVc: compact,
       verifierMetadata,
       presentationFrame: {
         given_name: true,

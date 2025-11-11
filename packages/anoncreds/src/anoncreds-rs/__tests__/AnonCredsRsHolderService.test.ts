@@ -11,7 +11,7 @@ import {
   AnonCredsLinkSecretRecord,
   AnonCredsModuleConfig,
 } from '@credo-ts/anoncreds'
-import type { DidRepository } from '@credo-ts/core'
+import type { DidRepository, W3cJsonCredential } from '@credo-ts/core'
 import {
   DidResolverService,
   DidsModuleConfig,
@@ -464,8 +464,11 @@ describe('AnonCredsRsHolderService', () => {
 
   test('deleteCredential', async () => {
     const record = new W3cCredentialRecord({
-      credential: {} as W3cJsonLdVerifiableCredential,
-      tags: {},
+      credentialInstances: [
+        {
+          credential: {} as W3cJsonCredential,
+        },
+      ],
     })
     findByIdMock.mockResolvedValueOnce(null).mockResolvedValueOnce(record)
     getByCredentialIdMock.mockRejectedValueOnce(new Error())
@@ -476,8 +479,8 @@ describe('AnonCredsRsHolderService', () => {
   })
 
   test('get single Credential', async () => {
-    const record = new W3cCredentialRecord({
-      credential: new W3cJsonLdVerifiableCredential({
+    const record = W3cCredentialRecord.fromCredential(
+      new W3cJsonLdVerifiableCredential({
         credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
         issuer: 'test',
         issuanceDate: Date.now().toString(),
@@ -488,9 +491,8 @@ describe('AnonCredsRsHolderService', () => {
           proofPurpose: 'test',
           verificationMethod: 'test',
         },
-      }),
-      tags: {},
-    })
+      })
+    )
 
     const tags: AnonCredsCredentialTags = {
       anonCredsLinkSecretId: 'linkSecretId',
@@ -531,8 +533,8 @@ describe('AnonCredsRsHolderService', () => {
   })
 
   test('getCredentials', async () => {
-    const record = new W3cCredentialRecord({
-      credential: new W3cJsonLdVerifiableCredential({
+    const record = W3cCredentialRecord.fromCredential(
+      new W3cJsonLdVerifiableCredential({
         credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
         issuer: 'test',
         issuanceDate: Date.now().toString(),
@@ -543,9 +545,8 @@ describe('AnonCredsRsHolderService', () => {
           proofPurpose: 'test',
           verificationMethod: 'test',
         },
-      }),
-      tags: {},
-    })
+      })
+    )
     const records = [record]
 
     const tags: AnonCredsCredentialTags = {

@@ -1,6 +1,8 @@
 // TODO: we should probably move this to another file
 // and create a set of abstract credential utils that
-// can work with any credential record/type
+// can work with any credential record/type. For now
+// this works okay since we don't add new credential
+// types often.
 
 import { AgentContext } from '../agent'
 import { CredoError } from '../error'
@@ -9,11 +11,16 @@ import { type SdJwtVc, SdJwtVcRecord, type SdJwtVcRecordInstances, SdJwtVcReposi
 import { decodeSdJwtVc } from '../modules/sd-jwt-vc/decodeSdJwtVc'
 import {
   W3cCredentialRecord,
-  W3cCredentialRecordInstances,
+  type W3cCredentialRecordInstances,
   W3cCredentialRepository,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
   W3cV2CredentialRecord,
+  type W3cV2CredentialRecordInstances,
+  W3cV2CredentialRepository,
+  W3cV2JwtVerifiableCredential,
+  W3cV2SdJwtVerifiableCredential,
+  type W3cV2VerifiableCredential,
   type W3cVerifiableCredential,
 } from '../modules/vc'
 
@@ -28,21 +35,21 @@ export enum CredentialUseMode {
   New = 'New',
 
   /**
-   * Use a new unused instance if the credential was received as a batch (mimicking behaviour of the `CredentialUseMode.New` mode).
-   * If only a single instance was received it will use the first instance (mimicking behaviour of the `CredentialUseMode.First` mode).
+   * Use a new unused instance if the credential was received as a batch (mimicking behavior of the `CredentialUseMode.New` mode).
+   * If only a single instance was received it will use the first instance (mimicking behavior of the `CredentialUseMode.First` mode).
    */
   NewIfReceivedInBatch = 'NewIfReceivedInBatch',
 
   /**
    * use a new unused instance if available, or fallback to the
    * first one if not available. This is a combination of the `first` and `new` modes, and the same
-   * behaviour applies (in terms of whether the instance is removed from the record).
+   * behavior applies (in terms of whether the instance is removed from the record).
    */
   NewOrFirst = 'NewOrFirst',
 
   /**
    * Always use the first credential instance on the record. This does not remove
-   * the credential instance from the record, and it also does not prevent reusage.
+   * the credential instance from the record, and it also does not prevent reusing.
    */
   First = 'First',
 }
@@ -128,7 +135,7 @@ export async function useInstanceFromCredentialRecord<Record extends W3cCredenti
   /**
    * If the first instance was used, this value will be `true`. The first time
    * the first instance is used, technically the credential is not reused yet,
-   * but we make no disnticion between this.
+   * but we make no distinction between this.
    */
   isReused: boolean
 
@@ -169,7 +176,7 @@ export async function useInstanceFromCredentialRecord<Record extends W3cCredenti
     isReused = false
   }
 
-  let transformedCredentialInstance: W3cVerifiableCredential | Mdoc | SdJwtVc
+  let transformedCredentialInstance: W3cVerifiableCredential | Mdoc | SdJwtVc | W3cV2VerifiableCredential
   if (credentialRecord instanceof MdocRecord) {
     const { issuerSignedBase64Url, kmsKeyId } = credentialInstance as MdocRecordInstances[0]
     transformedCredentialInstance = Mdoc.fromBase64Url(issuerSignedBase64Url)
@@ -204,6 +211,18 @@ export async function useInstanceFromCredentialRecord<Record extends W3cCredenti
     if (!isReused && updateRecordIfNewInstanceIsUsed) {
       // Update record
       const repository = agentContext.resolve(W3cCredentialRepository)
+      await repository.update(agentContext, credentialRecord)
+    }
+  } else if (credentialRecord instanceof W3cV2CredentialRecord) {
+    const { credential } = credentialInstance as W3cV2CredentialRecordInstances[0]
+
+    transformedCredentialInstance = credential.includes('~')
+      ? W3cV2SdJwtVerifiableCredential.fromCompact(credential)
+      : W3cV2JwtVerifiableCredential.fromCompact(credential)
+
+    if (!isReused && updateRecordIfNewInstanceIsUsed) {
+      // Update record
+      const repository = agentContext.resolve(W3cV2CredentialRepository)
       await repository.update(agentContext, credentialRecord)
     }
   } else {

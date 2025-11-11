@@ -58,10 +58,14 @@ describe('0.4-0.5 | W3cCredentialRecord', () => {
             expandedTypes: ['https://example.com'],
           },
           id: '3b3cf6ca-fa09-4498-b891-e280fbbb7fa7',
-          credential: JsonTransformer.fromJSON(
-            Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
-            W3cJsonLdVerifiableCredential
-          ),
+          credentialInstances: [
+            {
+              credential: JsonTransformer.fromJSON(
+                Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+                W3cJsonLdVerifiableCredential
+              ).jsonCredential,
+            },
+          ],
         }),
       ]
 
@@ -84,10 +88,14 @@ describe('0.4-0.5 | W3cCredentialRecord', () => {
             expandedTypes: ['https'],
           },
           id: '3b3cf6ca-fa09-4498-b891-e280fbbb7fa7',
-          credential: JsonTransformer.fromJSON(
-            Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
-            W3cJsonLdVerifiableCredential
-          ),
+          credentialInstances: [
+            {
+              credential: JsonTransformer.fromJSON(
+                Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+                W3cJsonLdVerifiableCredential
+              ).jsonCredential,
+            },
+          ],
         }),
       ]
 

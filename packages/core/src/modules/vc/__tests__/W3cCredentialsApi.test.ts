@@ -4,7 +4,7 @@ import { JsonTransformer } from '../../../utils'
 import { customDocumentLoader } from '../data-integrity/__tests__/documentLoader'
 import { Ed25519Signature2018Fixtures } from '../data-integrity/__tests__/fixtures'
 import { W3cJsonLdVerifiableCredential } from '../data-integrity/models'
-import { W3cCredentialRepository } from '../repository'
+import { W3cCredentialRecord, W3cCredentialRepository } from '../repository'
 import { W3cCredentialService } from '../W3cCredentialService'
 import { W3cCredentialsModule } from '../W3cCredentialsModule'
 
@@ -52,7 +52,14 @@ describe('W3cCredentialsApi', () => {
     const serviceSpy = vi.spyOn(w3cCredentialService, 'storeCredential')
 
     await agent.w3cCredentials.store({
-      credential: testCredential,
+      record: new W3cCredentialRecord({
+        credentialInstances: [
+          {
+            credential: testCredential.jsonCredential,
+          },
+        ],
+        tags: {},
+      }),
     })
 
     expect(repoSpy).toHaveBeenCalledTimes(1)
@@ -64,7 +71,7 @@ describe('W3cCredentialsApi', () => {
     const serviceSpy = vi.spyOn(w3cCredentialService, 'getCredentialRecordById')
 
     const storedCredential = await agent.w3cCredentials.store({
-      credential: testCredential,
+      record: W3cCredentialRecord.fromCredential(testCredential),
     })
 
     const retrievedCredential = await agent.w3cCredentials.getById(storedCredential.id)
@@ -80,7 +87,7 @@ describe('W3cCredentialsApi', () => {
     const serviceSpy = vi.spyOn(w3cCredentialService, 'removeCredentialRecord')
 
     const storedCredential = await agent.w3cCredentials.store({
-      credential: testCredential,
+      record: W3cCredentialRecord.fromCredential(testCredential),
     })
 
     await agent.w3cCredentials.deleteById(storedCredential.id)

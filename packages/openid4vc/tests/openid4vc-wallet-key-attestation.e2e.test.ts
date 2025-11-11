@@ -1,4 +1,4 @@
-import { ClaimFormat, CredoError, Kms, utils } from '@credo-ts/core'
+import { CredoError, Kms, Mdoc, MdocRecord, SdJwtVcRecord, utils } from '@credo-ts/core'
 import type { Jwk } from '@openid4vc/oauth2'
 import { AuthorizationFlow, Openid4vciWalletProvider } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
@@ -256,7 +256,16 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         jwk: holder.jwk,
       },
     })
-    await holder.agent.sdJwtVc.store(holderIdentityCredential.compact)
+    await holder.agent.sdJwtVc.store({
+      record: new SdJwtVcRecord({
+        credentialInstances: [
+          {
+            compactSdJwtVc: holderIdentityCredential.compact,
+            kmsKeyId: holder.jwk.keyId,
+          },
+        ],
+      }),
+    })
 
     holder.agent.x509.config.addTrustedCertificate(issuer.certificate)
     issuer.agent.x509.config.addTrustedCertificate(issuer.certificate)
@@ -327,16 +336,17 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
 
     expect(credentialResponse.credentials).toHaveLength(1)
     expect(credentialResponse.credentials[0].record).toHaveLength(10)
-    const credentials = credentialResponse.credentials[0].record
+    const credentialRecord = credentialResponse.credentials[0].record
 
-    for (const credentialIndex of credentials.keys()) {
-      const credential = credentials[credentialIndex]
-      if (credential.claimFormat !== ClaimFormat.MsoMdoc) {
-        throw new Error('Expected mdoc')
-      }
-
-      expect(credential.deviceKey?.fingerprint).toEqual(attestedKeys[credentialIndex].fingerprint)
+    if (!(credentialRecord instanceof MdocRecord)) {
+      throw new Error('Expected mdoc record')
     }
+
+    credentialRecord.credentialInstances.forEach((credential, credentialIndex) => {
+      expect(Mdoc.fromBase64Url(credential.issuerSignedBase64Url).deviceKey?.fingerprint).toEqual(
+        attestedKeys[credentialIndex].fingerprint
+      )
+    })
   })
 
   it('e2e flow with presentation during issuance, issuing a batch of mdoc based on wallet and key attestation', async () => {

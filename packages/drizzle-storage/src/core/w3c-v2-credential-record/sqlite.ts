@@ -1,4 +1,4 @@
-import type { ClaimFormat, W3cV2VerifiableCredential } from '@credo-ts/core'
+import type { ClaimFormat, W3cV2CredentialRecordInstances } from '@credo-ts/core'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
@@ -7,7 +7,11 @@ export const w3cV2Credential = sqliteTable(
   {
     ...getSqliteBaseRecordTable(),
 
-    credential: text({ mode: 'json' }).$type<W3cV2VerifiableCredential['encoded']>().notNull(),
+    // credential: text({ mode: 'json' }).$type<W3cV2VerifiableCredential['encoded']>().notNull(),
+
+    credentialInstances: text('credential_instances', { mode: 'json' })
+      .$type<W3cV2CredentialRecordInstances>()
+      .notNull(),
 
     // Default Tags
     issuerId: text('issuer_id').notNull(),
