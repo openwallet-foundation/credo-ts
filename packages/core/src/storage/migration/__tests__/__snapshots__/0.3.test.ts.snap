@@ -30,31 +30,35 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 > should correctly update 'claimFormat'
     "type": "W3cCredentialRecord",
     "value": {
       "createdAt": "2024-02-05T06:44:47.543Z",
-      "credential": {
-        "@context": [
-          "https://www.w3.org/2018/credentials/v1",
-          "https://www.w3.org/2018/credentials/examples/v1",
-        ],
-        "credentialSubject": {
-          "degree": {
-            "name": "Bachelor of Science and Arts",
-            "type": "BachelorDegree",
+      "credentialInstances": [
+        {
+          "credential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1",
+              "https://www.w3.org/2018/credentials/examples/v1",
+            ],
+            "credentialSubject": {
+              "degree": {
+                "name": "Bachelor of Science and Arts",
+                "type": "BachelorDegree",
+              },
+            },
+            "issuanceDate": "2017-10-22T12:23:48Z",
+            "issuer": "did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL",
+            "proof": {
+              "created": "2022-04-18T23:13:10Z",
+              "jws": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..ECQsj_lABelr1jkehSkqaYpc5CBvbSjbi3ZvgiVVKxZFDYfj5xZmeXb_awa4aw_cGEVaoypeN2uCFmeG6WKkBw",
+              "proofPurpose": "assertionMethod",
+              "type": "Ed25519Signature2018",
+              "verificationMethod": "did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL",
+            },
+            "type": [
+              "VerifiableCredential",
+              "UniversityDegreeCredential",
+            ],
           },
         },
-        "issuanceDate": "2017-10-22T12:23:48Z",
-        "issuer": "did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL",
-        "proof": {
-          "created": "2022-04-18T23:13:10Z",
-          "jws": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..ECQsj_lABelr1jkehSkqaYpc5CBvbSjbi3ZvgiVVKxZFDYfj5xZmeXb_awa4aw_cGEVaoypeN2uCFmeG6WKkBw",
-          "proofPurpose": "assertionMethod",
-          "type": "Ed25519Signature2018",
-          "verificationMethod": "did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL",
-        },
-        "type": [
-          "VerifiableCredential",
-          "UniversityDegreeCredential",
-        ],
-      },
+      ],
       "id": "0e1f070a-e31f-46cf-88db-25c1621b2f4e",
       "metadata": {},
       "updatedAt": "2023-03-18T22:50:20.522Z",
@@ -95,7 +99,11 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 > should correctly update 'claimFormat'
     "type": "W3cCredentialRecord",
     "value": {
       "createdAt": "2024-02-05T06:44:47.600Z",
-      "credential": "eyJhbGciOiJFZERTQSJ9.eyJpc3MiOiJkaWQ6a2V5Ono2TWtva3JzVm84RGJHRHNuTUFqbm9IaEpvdE1iRFppSGZ2eE00ajY1ZDhwclhVciIsInN1YiI6ImRpZDpleGFtcGxlOmViZmViMWY3MTJlYmM2ZjFjMjc2ZTEyZWMyMSIsInZjIjp7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy8yMDE4L2NyZWRlbnRpYWxzL3YxIl0sImlkIjoiaHR0cDovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzM3MzIiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIl0sImlzc3VlciI6eyJpZCI6ImRpZDprZXk6ejZNa29rcnNWbzhEYkdEc25NQWpub0hoSm90TWJEWmlIZnZ4TTRqNjVkOHByWFVyIn0sImlzc3VhbmNlRGF0ZSI6IjIwMTAtMDEtMDFUMTk6MjM6MjRaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTplYmZlYjFmNzEyZWJjNmYxYzI3NmUxMmVjMjEifX0sImp0aSI6Imh0dHA6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8zNzMyIiwibmJmIjoxMjYyMzczODA0fQ.suzrfmzM07yiiibK0vOdP9Q0dARA7XVNRUa9DSbH519EWrUDgzsq6SiIG9yyBt39yaqsZc1-8byyuMrPziyWBg",
+      "credentialInstances": [
+        {
+          "credential": "eyJhbGciOiJFZERTQSJ9.eyJpc3MiOiJkaWQ6a2V5Ono2TWtva3JzVm84RGJHRHNuTUFqbm9IaEpvdE1iRFppSGZ2eE00ajY1ZDhwclhVciIsInN1YiI6ImRpZDpleGFtcGxlOmViZmViMWY3MTJlYmM2ZjFjMjc2ZTEyZWMyMSIsInZjIjp7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy8yMDE4L2NyZWRlbnRpYWxzL3YxIl0sImlkIjoiaHR0cDovL2V4YW1wbGUuZWR1L2NyZWRlbnRpYWxzLzM3MzIiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIl0sImlzc3VlciI6eyJpZCI6ImRpZDprZXk6ejZNa29rcnNWbzhEYkdEc25NQWpub0hoSm90TWJEWmlIZnZ4TTRqNjVkOHByWFVyIn0sImlzc3VhbmNlRGF0ZSI6IjIwMTAtMDEtMDFUMTk6MjM6MjRaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXhhbXBsZTplYmZlYjFmNzEyZWJjNmYxYzI3NmUxMmVjMjEifX0sImp0aSI6Imh0dHA6Ly9leGFtcGxlLmVkdS9jcmVkZW50aWFscy8zNzMyIiwibmJmIjoxMjYyMzczODA0fQ.suzrfmzM07yiiibK0vOdP9Q0dARA7XVNRUa9DSbH519EWrUDgzsq6SiIG9yyBt39yaqsZc1-8byyuMrPziyWBg",
+        },
+      ],
       "id": "da65187b-f461-4f39-8597-b0d95531d40d",
       "metadata": {},
       "updatedAt": "2023-03-18T22:50:20.522Z",

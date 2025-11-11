@@ -56,7 +56,11 @@ describe('SdJwtVcRecord', () => {
       _tags: {
         some: 'tag',
       },
-      compactSdJwtVc,
+      credentialInstances: [
+        {
+          compactSdJwtVc,
+        },
+      ],
     })
 
     const instance = JsonTransformer.deserialize(JSON.stringify(json), SdJwtVcRecord)

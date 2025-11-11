@@ -124,7 +124,11 @@ describe('W3cCredentialsService', () => {
           type: 'W3cCredentialRecord',
           id: expect.any(String),
           createdAt: expect.any(Date),
-          credential: expect.any(W3cJsonLdVerifiableCredential),
+          credentialInstances: [
+            {
+              credential: Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+            },
+          ],
         })
 
         expect(w3cCredentialRecord.getTags()).toMatchObject({

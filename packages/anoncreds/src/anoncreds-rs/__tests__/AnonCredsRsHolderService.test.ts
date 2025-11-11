@@ -22,6 +22,7 @@ import {
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
+  w3cDate,
 } from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
@@ -482,11 +483,11 @@ describe('AnonCredsRsHolderService', () => {
     const record = W3cCredentialRecord.fromCredential(
       new W3cJsonLdVerifiableCredential({
         credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
-        issuer: 'test',
-        issuanceDate: Date.now().toString(),
+        issuer: 'uri:test',
+        issuanceDate: w3cDate(Date.now()),
         type: ['VerifiableCredential'],
         proof: {
-          created: Date.now().toString(),
+          created: w3cDate(Date.now()),
           type: 'test',
           proofPurpose: 'test',
           verificationMethod: 'test',
@@ -536,11 +537,11 @@ describe('AnonCredsRsHolderService', () => {
     const record = W3cCredentialRecord.fromCredential(
       new W3cJsonLdVerifiableCredential({
         credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
-        issuer: 'test',
-        issuanceDate: Date.now().toString(),
+        issuer: 'uri:test',
+        issuanceDate: w3cDate(Date.now()),
         type: ['VerifiableCredential'],
         proof: {
-          created: Date.now().toString(),
+          created: w3cDate(Date.now()),
           type: 'test',
           proofPurpose: 'test',
           verificationMethod: 'test',
@@ -648,6 +649,15 @@ describe('AnonCredsRsHolderService', () => {
       credentialDefinitionId: 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/CLAIM_DEF/104/default',
     })
 
-    expect(saveCredentialMock).toHaveBeenCalledWith(agentContext, expect.objectContaining({ credential }))
+    expect(saveCredentialMock).toHaveBeenCalledWith(
+      agentContext,
+      expect.objectContaining({
+        credentialInstances: [
+          {
+            credential: credential.encoded,
+          },
+        ],
+      })
+    )
   })
 })

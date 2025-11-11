@@ -122,7 +122,9 @@ describe('sd-jwt-vc end to end test', () => {
 
     // parse SD-JWT
     const sdJwtVc = holder.sdJwtVc.fromCompact<Header, Payload>(compact)
+    sdJwtVc.kmsKeyId = holderKey.keyId
     expect(sdJwtVc).toEqual({
+      kmsKeyId: holderKey.keyId,
       claimFormat: 'dc+sd-jwt',
       compact: expect.any(String),
       encoded: expect.any(String),
@@ -211,7 +213,12 @@ describe('sd-jwt-vc end to end test', () => {
     // Store credential
     await holder.sdJwtVc.store({
       record: new SdJwtVcRecord({
-        credentialInstances: [{ compactSdJwtVc: compact }],
+        credentialInstances: [
+          {
+            compactSdJwtVc: compact,
+            kmsKeyId: holderKey.keyId,
+          },
+        ],
       }),
     })
 
@@ -223,7 +230,7 @@ describe('sd-jwt-vc end to end test', () => {
     }
 
     const presentation = await holder.sdJwtVc.present<Payload>({
-      sdJwtVc: compact,
+      sdJwtVc,
       verifierMetadata,
       presentationFrame: {
         given_name: true,
