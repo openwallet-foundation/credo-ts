@@ -2,6 +2,7 @@ import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import type { NonEmptyArray } from '../../../types'
 import { JsonTransformer } from '../../../utils'
+import { CredentialMultiInstanceState } from '../../../utils/credentialUseTypes'
 import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
 import type { KnownJwaSignatureAlgorithm } from '../../kms'
@@ -46,7 +47,15 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
   public readonly type = MdocRecord.type
 
   public credentialInstances!: MdocRecordInstances
-  public readonly isMultiInstanceRecord!: boolean
+
+  /**
+   * Tracks the state of credential instances on this record.
+   * - SingleInstanceUnused: Single instance that has never been used
+   * - SingleInstanceUsed: Single instance that has been used at least once
+   * - MultiInstanceLastUnused: Multiple instances with at least one unused instance available
+   * - MultiInstanceLastUsed: Multiple instances where only the first (reusable) instance remains
+   */
+  public multiInstanceState!: CredentialMultiInstanceState
 
   /**
    * Only here for class transformation. If base64Url is set we transform
@@ -67,10 +76,14 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
       this.credentialInstances = props.credentialInstances
-      // We set this as a property since we can get down to 1 credential
-      // and in this case we still need to know whether this was a multi instance
-      // record when it was created.
-      this.isMultiInstanceRecord = this.credentialInstances.length > 1
+
+      // Set multiInstanceState based on the number of initial instances. We
+      // assume the instance is unused when the record is created.
+      this.multiInstanceState =
+        this.credentialInstances.length === 1
+          ? CredentialMultiInstanceState.SingleInstanceUnused
+          : CredentialMultiInstanceState.MultiInstanceFirstUnused
+
       this._tags = props.tags ?? {}
     }
   }

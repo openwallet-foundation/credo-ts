@@ -1,6 +1,7 @@
 import { BaseRecord, type Tags, type TagsBase } from '../../../storage/BaseRecord'
 import type { NonEmptyArray } from '../../../types'
 import { asArray, JsonTransformer } from '../../../utils'
+import { CredentialMultiInstanceState } from '../../../utils/credentialUseTypes'
 import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
 import { W3cV2JwtVerifiableCredential } from '../jwt-vc'
@@ -40,7 +41,11 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
   public readonly type = W3cV2CredentialRecord.type
 
   public credentialInstances!: W3cV2CredentialRecordInstances
-  public readonly isMultiInstanceRecord!: boolean
+
+  /**
+   * Tracks the state of credential instances on this record.
+   */
+  public multiInstanceState!: CredentialMultiInstanceState
 
   public constructor(props: W3cV2CredentialRecordOptions) {
     super()
@@ -48,10 +53,13 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
       this.credentialInstances = props.credentialInstances
-      // We set this as a property since we can get down to 1 credential
-      // and in this case we still need to know whether this was a multi instance
-      // record when it was created.
-      this.isMultiInstanceRecord = this.credentialInstances.length > 1
+
+      // Set multiInstanceState based on the number of initial instances. We
+      // assume the instance is unused when the record is created.
+      this.multiInstanceState =
+        this.credentialInstances.length === 1
+          ? CredentialMultiInstanceState.SingleInstanceUnused
+          : CredentialMultiInstanceState.MultiInstanceFirstUnused
     }
   }
 

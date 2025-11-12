@@ -12,7 +12,7 @@ import type { AgentContext } from '../../agent'
 import { isNonEmptyArray, type JsonObject, type JsonValue, mapNonEmptyArray } from '../../types'
 import { asArray, TypedArrayEncoder } from '../../utils'
 import {
-  CredentialUseMode,
+  CredentialMultiInstanceUseMode,
   canUseInstanceFromCredentialRecord,
   useInstanceFromCredentialRecord,
 } from '../../utils/credentialUse'
@@ -55,6 +55,17 @@ import type {
   DcqlValidCredential,
 } from './models'
 import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from './utils'
+
+export interface DcqlSelectCredentialsForRequestOptions {
+  /**
+   * The usage mode of the credential instances from the credential record.
+   *
+   * If {@link CredentialMultiInstanceUseMode.New} is selected and one or more credentials
+   * don't have new instances available, an error will be thrown. It does not
+   * actually select the credential from the
+   */
+  useMode?: CredentialMultiInstanceUseMode
+}
 
 @injectable()
 export class DcqlService {
@@ -546,18 +557,7 @@ export class DcqlService {
    */
   public selectCredentialsForRequest(
     dcqlQueryResult: DcqlQueryResult,
-    {
-      useMode = CredentialUseMode.NewOrFirst,
-    }: {
-      /**
-       * The usage mode of the credential instances from the credential record.
-       *
-       * If {@link CredentialUseMode.New} is selected and one or more credentials
-       * don't have new instances available, an error will be thrown. It does not
-       * actually select the credential from the
-       */
-      useMode?: CredentialUseMode
-    } = {}
+    { useMode = CredentialMultiInstanceUseMode.NewOrFirst }: DcqlSelectCredentialsForRequestOptions = {}
   ): DcqlCredentialsForRequest {
     if (!dcqlQueryResult.can_be_satisfied) {
       throw new DcqlError(

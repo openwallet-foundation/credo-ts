@@ -1,6 +1,6 @@
 import type { DcqlMdocCredential, DcqlSdJwtVcCredential, DcqlW3cVcCredential } from 'dcql'
 import type { JsonObject } from '../../../types'
-import { CredentialUseMode, canUseInstanceFromCredentialRecord } from '../../../utils/credentialUse'
+import { CredentialMultiInstanceUseMode, canUseInstanceFromCredentialRecord } from '../../../utils/credentialUse'
 import { MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord, W3cV2CredentialRecord } from '../../vc'
@@ -17,28 +17,28 @@ export interface DcqlSdJwtVcPresentationToCreate {
    * Additional payload to include in the Key Binding JWT
    */
   additionalPayload?: JsonObject
-  useMode: CredentialUseMode
+  useMode: CredentialMultiInstanceUseMode
 }
 
 export interface DcqlJwtVpPresentationToCreate {
   claimFormat: ClaimFormat.JwtVp
   credentialRecord: W3cCredentialRecord
   disclosedPayload: DcqlW3cVcCredential.Claims
-  useMode: CredentialUseMode
+  useMode: CredentialMultiInstanceUseMode
 }
 
 export interface DcqlLdpVpPresentationToCreate {
   claimFormat: ClaimFormat.LdpVp
   credentialRecord: W3cCredentialRecord
   disclosedPayload: DcqlW3cVcCredential.Claims
-  useMode: CredentialUseMode
+  useMode: CredentialMultiInstanceUseMode
 }
 
 export interface DcqlMdocPresentationToCreate {
   claimFormat: ClaimFormat.MsoMdoc
   credentialRecord: MdocRecord
   disclosedPayload: DcqlMdocCredential.NameSpaces
-  useMode: CredentialUseMode
+  useMode: CredentialMultiInstanceUseMode
 }
 
 export interface DcqlJwtW3cVpPresentationToCreate {
@@ -73,7 +73,7 @@ export function dcqlGetPresentationsToCreate(
       const matchIndex = matches.indexOf(match)
       let presentationToCreate: DcqlPresentationToCreate
 
-      const useMode = match.useMode ?? CredentialUseMode.NewOrFirst
+      const useMode = match.useMode ?? CredentialMultiInstanceUseMode.NewOrFirst
       if (!canUseInstanceFromCredentialRecord({ credentialRecord: match.credentialRecord, useMode })) {
         throw new DcqlError(
           `Unable to prepare presentation for credential at index ${matchIndex} for query credential '${credentialQueryId}'. No new credential instance available on the credential record.`

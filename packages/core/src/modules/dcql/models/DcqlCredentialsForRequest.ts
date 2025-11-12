@@ -1,5 +1,5 @@
 import type { JsonObject, NonEmptyArray } from '../../../types'
-import { CredentialUseMode } from '../../../utils/credentialUse'
+import { CredentialMultiInstanceUseMode } from '../../../utils/credentialUse'
 import type { MdocNameSpaces, MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { ClaimFormat, W3cCredentialRecord, W3cV2CredentialRecord } from '../../vc'
@@ -16,9 +16,9 @@ export type DcqlCredentialsForRequest = Record<
         disclosedPayload: MdocNameSpaces
 
         /**
-         * @default {@link CredentialUseMode.NewOrFirst}
+         * @default {@link CredentialMultiInstanceUseMode.NewOrFirst}
          */
-        useMode?: CredentialUseMode
+        useMode?: CredentialMultiInstanceUseMode
       }
     | {
         claimFormat: ClaimFormat.SdJwtDc
@@ -32,9 +32,9 @@ export type DcqlCredentialsForRequest = Record<
         additionalPayload?: JsonObject
 
         /**
-         * @default {@link CredentialUseMode.NewOrFirst}
+         * @default {@link CredentialMultiInstanceUseMode.NewOrFirst}
          */
-        useMode?: CredentialUseMode
+        useMode?: CredentialMultiInstanceUseMode
       }
     | {
         claimFormat: ClaimFormat.JwtVc | ClaimFormat.LdpVc
@@ -42,9 +42,9 @@ export type DcqlCredentialsForRequest = Record<
         disclosedPayload: JsonObject
 
         /**
-         * @default {@link CredentialUseMode.NewOrFirst}
+         * @default {@link CredentialMultiInstanceUseMode.NewOrFirst}
          */
-        useMode?: CredentialUseMode
+        useMode?: CredentialMultiInstanceUseMode
       }
     | {
         claimFormat: ClaimFormat.JwtW3cVc | ClaimFormat.SdJwtW3cVc
@@ -52,9 +52,9 @@ export type DcqlCredentialsForRequest = Record<
         disclosedPayload: JsonObject
 
         /**
-         * @default {@link CredentialUseMode.NewOrFirst}
+         * @default {@link CredentialMultiInstanceUseMode.NewOrFirst}
          */
-        useMode?: CredentialUseMode
+        useMode?: CredentialMultiInstanceUseMode
       }
   >
 >

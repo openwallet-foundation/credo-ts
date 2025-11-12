@@ -4,6 +4,7 @@ import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import type { NonEmptyArray } from '../../../types'
 import { JsonTransformer } from '../../../utils'
+import { CredentialMultiInstanceState } from '../../../utils/credentialUseTypes'
 import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
 import type { KnownJwaSignatureAlgorithm } from '../../kms'
@@ -61,7 +62,11 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
   public readonly type = SdJwtVcRecord.type
 
   public credentialInstances!: SdJwtVcRecordInstances
-  public readonly isMultiInstanceRecord!: boolean
+
+  /**
+   * Tracks the state of credential instances on this record.
+   */
+  public multiInstanceState!: CredentialMultiInstanceState
 
   /**
    * Only here for class transformation. If compactSdJwtVc is set we transform
@@ -85,10 +90,13 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
       this.createdAt = props.createdAt ?? new Date()
 
       this.credentialInstances = props.credentialInstances
-      // We set this as a property since we can get down to 1 credential
-      // and in this case we still need to know whether this was a multi instance
-      // record when it was created.
-      this.isMultiInstanceRecord = this.credentialInstances.length > 1
+
+      // Set multiInstanceState based on the number of initial instances. We
+      // assume the instance is unused when the record is created.
+      this.multiInstanceState =
+        this.credentialInstances.length === 1
+          ? CredentialMultiInstanceState.SingleInstanceUnused
+          : CredentialMultiInstanceState.MultiInstanceFirstUnused
 
       this.typeMetadata = props.typeMetadata
       this._tags = props.tags ?? {}
