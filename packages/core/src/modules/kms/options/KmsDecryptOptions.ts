@@ -74,7 +74,7 @@ export const zKmsDecryptOptions = z.object({
    * The key to use for decrypting. There are three possible formats:
    * - a key id, pointing to a symmetric (oct) jwk that can be used directly for decryption
    * - a private symmetric (oct) jwk object that can be used directly for decryption
-   * - an object configuring key agreement, based on an existing assymetric key
+   * - an object configuring key agreement, based on an existing asymmetric key
    */
   key: z.union([
     z.object({
