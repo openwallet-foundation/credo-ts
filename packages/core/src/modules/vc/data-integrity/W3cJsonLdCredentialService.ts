@@ -360,7 +360,7 @@ export class W3cJsonLdCredentialService {
     }
 
     return proofs.map((proof) => {
-      const SuiteClass = this.signatureSuiteRegistry.getByProofType(proof.type)?.suiteClass
+      const SuiteClass = this.signatureSuiteRegistry.getByProofType(proof.type).suiteClass
       return new SuiteClass({
         LDKeyClass: WalletKeyPair,
         proof: {
