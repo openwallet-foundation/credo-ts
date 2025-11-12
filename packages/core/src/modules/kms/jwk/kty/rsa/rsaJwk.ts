@@ -9,7 +9,7 @@ const zKmsJwkPrivateRsaOth = z.array(
       r: z.optional(zBase64Url),
       t: z.optional(zBase64Url),
     })
-    .passthrough()
+    .loose()
 )
 
 export const zKmsJwkPublicRsa = z.object({
