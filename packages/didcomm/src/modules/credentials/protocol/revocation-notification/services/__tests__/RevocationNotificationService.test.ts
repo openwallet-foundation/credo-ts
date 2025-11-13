@@ -62,7 +62,9 @@ describe('RevocationNotificationService', () => {
 
       const date = new Date('2020-01-01T00:00:00.000Z')
 
-      const dateSpy = vi.spyOn(global, 'Date').mockImplementation(() => date)
+      const dateSpy = vi.spyOn(global, 'Date').mockImplementation(function () {
+        return date
+      })
 
       const credentialRecord = new DidCommCredentialExchangeRecord({
         threadId: 'thread-id',
@@ -177,7 +179,9 @@ describe('RevocationNotificationService', () => {
 
       const date = new Date('2020-01-01T00:00:00.000Z')
 
-      const dateSpy = vi.spyOn(global, 'Date').mockImplementation(() => date)
+      const dateSpy = vi.spyOn(global, 'Date').mockImplementation(function () {
+        return date
+      })
 
       const credentialRecord = new DidCommCredentialExchangeRecord({
         threadId: 'thread-id',

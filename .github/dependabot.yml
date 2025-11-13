@@ -52,6 +52,10 @@ updates:
       - "github-actions"
     commit-message:
       prefix: "ci"
+    groups:
+      all-updates:
+        patterns:
+          - "*"
 
   # Docker dependencies
   - package-ecosystem: "docker"
@@ -67,6 +71,18 @@ updates:
       - "docker"
     commit-message:
       prefix: "build"
+    groups:
+      major-updates:
+        patterns:
+          - "*"
+        update-types:
+          - major
+      non-breaking-updates:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
 
   # Docker dependencies
   - package-ecosystem: "docker-compose"
@@ -82,3 +98,15 @@ updates:
       - "docker"
     commit-message:
       prefix: "build"
+    groups:
+      major-updates:
+        patterns:
+          - "*"
+        update-types:
+          - major
+      non-breaking-updates:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch

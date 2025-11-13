@@ -16,13 +16,17 @@ const linkSecretRepository = new AnonCredsLinkSecretRepositoryMock()
 
 vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: vi.fn(() => ({
-      config: agentConfig,
-      context: agentContext,
-      dependencyManager: {
-        resolve: vi.fn(() => linkSecretRepository),
-      },
-    })),
+    Agent: vi.fn(function () {
+      return {
+        config: agentConfig,
+        context: agentContext,
+        dependencyManager: {
+          resolve: vi.fn(function () {
+            return linkSecretRepository
+          }),
+        },
+      }
+    }),
   }
 })
 

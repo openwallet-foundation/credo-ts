@@ -24,15 +24,17 @@ const didCommMessageRepository = new DidCommMessageRepositoryMock()
 
 vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: vi.fn(() => ({
-      config: agentConfig,
-      context: agentContext,
-      dependencyManager: {
-        resolve: vi.fn((token) =>
-          token === CredentialRepositoryMock ? credentialRepository : didCommMessageRepository
-        ),
-      },
-    })),
+    Agent: vi.fn(function () {
+      return {
+        config: agentConfig,
+        context: agentContext,
+        dependencyManager: {
+          resolve: vi.fn(function (token) {
+            return token === CredentialRepositoryMock ? credentialRepository : didCommMessageRepository
+          }),
+        },
+      }
+    }),
   }
 })
 
