@@ -288,6 +288,7 @@ describe('DidCommOutOfBandService', () => {
         recipientKey: key,
       })
 
+      mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValueOnce(null)
       await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError('No out of band record found for handshake-reuse-accepted message')
       )

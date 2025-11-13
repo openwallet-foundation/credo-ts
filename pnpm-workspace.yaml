@@ -28,7 +28,8 @@ catalog:
   rxjs: ^7.8.2
   tsyringe: ^4.10.0
   typescript: ~5.9.3
-  vitest: ^3.2.4
+  vitest: ^4.0.8
+  "@vitest/coverage-v8": ^4.0.8
   ws: ^8.18.3
   zod: ^4.1.12
 

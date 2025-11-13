@@ -29,32 +29,40 @@
   "bin": "./bin.mjs",
   "exports": {
     ".": {
-      "import": "./src/index.ts",
-      "cli": "./build/index.mjs"
+      "cli": "./build/index.mjs",
+      "import": "./src/index.ts"
     },
     "./didcomm": {
-      "import": "./build/didcomm/bundle.mjs"
+      "cli": "./build/didcomm/bundle.mjs",
+      "import": "./src/didcomm/bundle.ts"
     },
     "./action-menu": {
-      "import": "./build/action-menu/bundle.mjs"
+      "cli": "./build/action-menu/bundle.mjs",
+      "import": "./src/action-menu/bundle.ts"
     },
     "./core": {
-      "import": "./build/core/bundle.mjs"
+      "cli": "./build/core/bundle.mjs",
+      "import": "./src/core/bundle.ts"
     },
     "./drpc": {
-      "import": "./build/drpc/bundle.mjs"
+      "cli": "./build/drpc/bundle.mjs",
+      "import": "./src/drpc/bundle.ts"
     },
     "./tenants": {
-      "import": "./build/tenants/bundle.mjs"
+      "cli": "./build/tenants/bundle.mjs",
+      "import": "./src/tenants/bundle.ts"
     },
     "./openid4vc": {
-      "import": "./build/openid4vc/bundle.mjs"
+      "cli": "./build/openid4vc/bundle.mjs",
+      "import": "./src/openid4vc/bundle.ts"
     },
     "./anoncreds": {
-      "import": "./build/anoncreds/bundle.mjs"
+      "cli": "./build/anoncreds/bundle.mjs",
+      "import": "./src/anoncreds/bundle.ts"
     },
     "./question-answer": {
-      "import": "./build/question-answer/bundle.mjs"
+      "cli": "./build/question-answer/bundle.mjs",
+      "import": "./src/question-answer/bundle.ts"
     }
   },
   "publishConfig": {
@@ -179,10 +187,14 @@
   "scripts": {
     "build": "tsdown --config-loader unconfig",
     "prepublishOnly": "pnpm run build",
-    "cli:local": "node --conditions cli bin.mjs --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
+    "cli:local:compiled": "node --conditions cli bin.mjs --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
+    "cli:local": "vite-node cli/bin.ts --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
     "cli:local:generate": "pnpm cli:local generate",
+    "cli:local:compiled:generate": "pnpm cli:local:compiled generate",
     "cli:local:migrate:postgres": "pnpm cli:local migrate --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
+    "cli:local:compiled:migrate:postgres": "pnpm cli:local:compiled migrate --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
     "cli:local:migrate:sqlite": "pnpm cli:local migrate --dialect sqlite --database-url \"file:local.db\"",
+    "cli:local:compiled:migrate:sqlite": "pnpm cli:local:compiled migrate --dialect sqlite --database-url \"file:local.db\"",
     "cli:local:studio:postgres": "pnpm cli:local studio --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
     "cli:local:studio:sqlite": "pnpm cli:local studio --dialect sqlite --database-url \"file:../../db.db\""
   },
