@@ -24,7 +24,7 @@
     "changeset-version": "pnpm changeset version && pnpm style:fix"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.5",
+    "@biomejs/biome": "^2.3.5",
     "@changesets/cli": "^2.29.7",
     "@credo-ts/action-menu": "workspace:*",
     "@credo-ts/anoncreds": "workspace:*",
