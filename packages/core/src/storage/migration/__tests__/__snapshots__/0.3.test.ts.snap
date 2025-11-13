@@ -17,6 +17,7 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 > should correctly update 'claimFormat'
       ],
       "givenId": undefined,
       "issuerId": "did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL",
+      "multiInstanceState": "SingleInstanceUsed",
       "proofTypes": [
         "Ed25519Signature2018",
       ],
@@ -61,6 +62,7 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 > should correctly update 'claimFormat'
       ],
       "id": "0e1f070a-e31f-46cf-88db-25c1621b2f4e",
       "metadata": {},
+      "multiInstanceState": "SingleInstanceUsed",
       "updatedAt": "2023-03-18T22:50:20.522Z",
     },
   },
@@ -88,6 +90,7 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 > should correctly update 'claimFormat'
       ],
       "givenId": "http://example.edu/credentials/3732",
       "issuerId": "did:key:z6MkokrsVo8DbGDsnMAjnoHhJotMbDZiHfvxM4j65d8prXUr",
+      "multiInstanceState": "SingleInstanceUsed",
       "schemaIds": [],
       "subjectIds": [
         "did:example:ebfeb1f712ebc6f1c276e12ec21",
@@ -106,6 +109,7 @@ exports[`UpdateAssistant | v0.3.1 - v0.4 > should correctly update 'claimFormat'
       ],
       "id": "da65187b-f461-4f39-8597-b0d95531d40d",
       "metadata": {},
+      "multiInstanceState": "SingleInstanceUsed",
       "updatedAt": "2023-03-18T22:50:20.522Z",
     },
   },

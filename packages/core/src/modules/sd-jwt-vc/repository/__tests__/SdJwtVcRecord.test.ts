@@ -1,4 +1,4 @@
-import { JsonTransformer } from '@credo-ts/core'
+import { CredentialMultiInstanceState, JsonTransformer } from '@credo-ts/core'
 import { SdJwtVcRecord } from '../SdJwtVcRecord'
 
 describe('SdJwtVcRecord', () => {
@@ -27,6 +27,7 @@ describe('SdJwtVcRecord', () => {
       alg: 'EdDSA',
       sdAlg: 'sha-256',
       vct: 'IdentityCredential',
+      multiInstanceState: CredentialMultiInstanceState.SingleInstanceUnused,
     })
     expect(sdJwtVcRecord.encoded).toEqual(compactSdJwtVc)
   })
@@ -73,6 +74,7 @@ describe('SdJwtVcRecord', () => {
       alg: 'EdDSA',
       sdAlg: 'sha-256',
       vct: 'IdentityCredential',
+      multiInstanceState: CredentialMultiInstanceState.SingleInstanceUnused,
     })
     expect(instance.encoded).toBe(compactSdJwtVc)
   })

@@ -34,6 +34,7 @@ exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 > should correctly update the
       ],
       "givenId": undefined,
       "issuerId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx",
+      "multiInstanceState": "SingleInstanceUnused",
       "proofTypes": [
         "DataIntegrityProof",
       ],
@@ -98,7 +99,6 @@ exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 > should correctly update the
         },
       ],
       "id": "1-4e4f-41d9-94c4-f49351b811f1",
-      "isMultiInstanceRecord": false,
       "metadata": {
         "_w3c/anonCredsMetadata": {
           "credentialRevocationId": undefined,
@@ -106,6 +106,7 @@ exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 > should correctly update the
           "methodName": "indy",
         },
       },
+      "multiInstanceState": "SingleInstanceUnused",
       "updatedAt": "2024-02-28T22:50:20.522Z",
     },
   },
