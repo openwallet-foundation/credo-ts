@@ -22,8 +22,8 @@
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "express": "catalog:",
     "inquirer": "^8.2.5",
-    "jose": "^6.1.0",
-    "oidc-provider": "^9.5.1"
+    "jose": "^6.1.1",
+    "oidc-provider": "^9.5.2"
   },
   "devDependencies": {
     "@credo-ts/askar": "workspace:*",
