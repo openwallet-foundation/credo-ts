@@ -63,6 +63,16 @@ export class LegacyIndyDidCommCredentialFormatService
    */
   public readonly credentialRecordType = 'w3c' as const
 
+  private hasLoggedWarning = false
+  private ensureWarningLoggedOnce(agentContext: AgentContext) {
+    if (this.hasLoggedWarning) return
+
+    agentContext.config.logger.debug(
+      "The 'LegacyIndyDidCommCredentialFormatService' is deprecated and will be removed in version 0.7 of Credo. You should upgrade to the 'AnonCredsDidCommCredentialFormatService' instead."
+    )
+    this.hasLoggedWarning = true
+  }
+
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.
    *
@@ -71,12 +81,13 @@ export class LegacyIndyDidCommCredentialFormatService
    *
    */
   public async createProposal(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     {
       credentialFormats,
       credentialExchangeRecord,
     }: DidCommCredentialFormatCreateProposalOptions<LegacyIndyCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateProposalReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     const format = new DidCommCredentialFormatSpec({
       format: INDY_CRED_FILTER,
     })
@@ -108,9 +119,10 @@ export class LegacyIndyDidCommCredentialFormatService
   }
 
   public async processProposal(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { attachment }: DidCommCredentialFormatProcessOptions
   ): Promise<void> {
+    this.ensureWarningLoggedOnce(agentContext)
     const proposalJson = attachment.getDataAsJson()
 
     JsonTransformer.fromJSON(proposalJson, AnonCredsCredentialProposal)
@@ -125,6 +137,7 @@ export class LegacyIndyDidCommCredentialFormatService
       proposalAttachment,
     }: DidCommCredentialFormatAcceptProposalOptions<LegacyIndyCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateOfferReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     const indyFormat = credentialFormats?.indy
 
     const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyDidCommCredentialProposalFormat>()
@@ -169,6 +182,7 @@ export class LegacyIndyDidCommCredentialFormatService
       attachmentId,
     }: DidCommCredentialFormatCreateOfferOptions<LegacyIndyCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateOfferReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     const indyFormat = credentialFormats.indy
 
     if (!indyFormat) {
@@ -189,6 +203,7 @@ export class LegacyIndyDidCommCredentialFormatService
     agentContext: AgentContext,
     { attachment, credentialExchangeRecord }: DidCommCredentialFormatProcessOptions
   ) {
+    this.ensureWarningLoggedOnce(agentContext)
     agentContext.config.logger.debug(
       `Processing indy credential offer for credential record ${credentialExchangeRecord.id}`
     )
@@ -211,6 +226,7 @@ export class LegacyIndyDidCommCredentialFormatService
       credentialFormats,
     }: DidCommCredentialFormatAcceptOfferOptions<LegacyIndyCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
     const credentialOffer = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
@@ -263,9 +279,10 @@ export class LegacyIndyDidCommCredentialFormatService
    * We don't have any models to validate an indy request object, for now this method does nothing
    */
   public async processRequest(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     _options: DidCommCredentialFormatProcessOptions
   ): Promise<void> {
+    this.ensureWarningLoggedOnce(agentContext)
     // not needed for Indy
   }
 
@@ -278,6 +295,7 @@ export class LegacyIndyDidCommCredentialFormatService
       requestAttachment,
     }: DidCommCredentialFormatAcceptRequestOptions<LegacyIndyCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     // Assert credential attributes
     const credentialAttributes = credentialExchangeRecord.credentialAttributes
     if (!credentialAttributes) {
@@ -319,6 +337,7 @@ export class LegacyIndyDidCommCredentialFormatService
     agentContext: AgentContext,
     { credentialExchangeRecord, attachment }: DidCommCredentialFormatProcessCredentialOptions
   ): Promise<void> {
+    this.ensureWarningLoggedOnce(agentContext)
     const credentialRequestMetadata = credentialExchangeRecord.metadata.get<AnonCredsCredentialRequestMetadata>(
       AnonCredsCredentialRequestMetadataKey
     )

@@ -68,10 +68,21 @@ const V2_INDY_PRESENTATION = 'hlindy/proof@v2.0'
 export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatService<LegacyIndyDidCommProofFormat> {
   public readonly formatKey = 'indy' as const
 
+  private hasLoggedWarning = false
+  private ensureWarningLoggedOnce(agentContext: AgentContext) {
+    if (this.hasLoggedWarning) return
+
+    agentContext.config.logger.debug(
+      "The 'LegacyIndyDidCommCredentialFormatService' is deprecated and will be removed in version 0.7 of Credo. You should upgrade to the 'AnonCredsDidCommCredentialFormatService' instead."
+    )
+    this.hasLoggedWarning = true
+  }
+
   public async createProposal(
     agentContext: AgentContext,
     { attachmentId, proofFormats }: DidCommProofFormatCreateProposalOptions<LegacyIndyDidCommProofFormat>
   ): Promise<DidCommProofFormatCreateReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION_PROPOSAL,
@@ -96,9 +107,10 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
   }
 
   public async processProposal(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { attachment }: DidCommProofFormatProcessOptions
   ): Promise<void> {
+    this.ensureWarningLoggedOnce(agentContext)
     const proposalJson = attachment.getDataAsJson<AnonCredsProofRequest>()
 
     // fromJson also validates
@@ -112,6 +124,7 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
     agentContext: AgentContext,
     { proposalAttachment, attachmentId }: DidCommProofFormatAcceptProposalOptions<LegacyIndyDidCommProofFormat>
   ): Promise<DidCommProofFormatCreateReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION_REQUEST,
@@ -135,6 +148,7 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
     agentContext: AgentContext,
     { attachmentId, proofFormats }: DidCommFormatCreateRequestOptions<LegacyIndyDidCommProofFormat>
   ): Promise<DidCommProofFormatCreateReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION_REQUEST,
@@ -164,9 +178,10 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
   }
 
   public async processRequest(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { attachment }: DidCommProofFormatProcessOptions
   ): Promise<void> {
+    this.ensureWarningLoggedOnce(agentContext)
     const requestJson = attachment.getDataAsJson<AnonCredsProofRequest>()
 
     // fromJson also validates
@@ -184,6 +199,7 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
       attachmentId,
     }: DidCommProofFormatAcceptRequestOptions<LegacyIndyDidCommProofFormat>
   ): Promise<DidCommProofFormatCreateReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION,
       attachmentId,
@@ -211,6 +227,7 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
     agentContext: AgentContext,
     { requestAttachment, attachment }: DidCommProofFormatProcessPresentationOptions
   ): Promise<boolean> {
+    this.ensureWarningLoggedOnce(agentContext)
     const verifierService =
       agentContext.dependencyManager.resolve<AnonCredsVerifierService>(AnonCredsVerifierServiceSymbol)
 
@@ -269,6 +286,7 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
     agentContext: AgentContext,
     { requestAttachment, proofFormats }: DidCommProofFormatGetCredentialsForRequestOptions<LegacyIndyDidCommProofFormat>
   ): Promise<DidCommProofFormatGetCredentialsForRequestReturn<LegacyIndyDidCommProofFormat>> {
+    this.ensureWarningLoggedOnce(agentContext)
     const proofRequestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
     // Set default values
