@@ -21,7 +21,7 @@ catalog:
   '@types/node': ^20.19.25
   '@types/ws': ^8.18.1
   class-transformer: 0.5.1
-  class-validator: 0.14.1
+  class-validator: 0.14.2
   express: ^5.1.0
   nock: ^14.0.10
   reflect-metadata: 0.2.2
