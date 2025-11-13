@@ -15,13 +15,17 @@ const mediationRepository = new MediationRepositoryMock()
 
 vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: vi.fn(() => ({
-      config: agentConfig,
-      context: agentContext,
-      dependencyManager: {
-        resolve: vi.fn(() => mediationRepository),
-      },
-    })),
+    Agent: vi.fn(function () {
+      return {
+        config: agentConfig,
+        context: agentContext,
+        dependencyManager: {
+          resolve: vi.fn(function () {
+            return mediationRepository
+          }),
+        },
+      }
+    }),
   }
 })
 

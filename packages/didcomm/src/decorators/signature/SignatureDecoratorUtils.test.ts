@@ -8,7 +8,9 @@ import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecorato
 vi.mock('../../../../core/src/utils/timestamp', async (importOriginal) => {
   return {
     ...(await importOriginal()),
-    default: vi.fn(() => Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0)),
+    default: vi.fn(function () {
+      return Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0)
+    }),
   }
 })
 
