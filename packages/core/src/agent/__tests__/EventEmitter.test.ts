@@ -7,7 +7,7 @@ import { EventEmitter } from '../EventEmitter'
 const mockEmit = vi.fn()
 const mockOn = vi.fn()
 const mockOff = vi.fn()
-const mock = vi.fn().mockImplementation(() => {
+const mock = vi.fn(function () {
   return { emit: mockEmit, on: mockOn, off: mockOff }
 })
 

@@ -87,6 +87,10 @@ describe('DidCommMediationRecipientService', () => {
     )
   })
 
+  afterEach(() => {
+    vitest.clearAllMocks()
+  })
+
   describe('processMediationGrant', () => {
     test('should process base58 encoded routing keys', async () => {
       mediationRecord.state = DidCommMediationState.Requested

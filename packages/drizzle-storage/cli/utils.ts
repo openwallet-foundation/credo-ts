@@ -23,7 +23,7 @@ export async function resolveBundle(bundle: string) {
       (value) => value && typeof value === 'object' && 'name' in value && 'records' in value
     )
     if (!bundleValue) {
-      throw new Error(`Expected module ${bundle} to export a buundle object defining the bundle.`)
+      throw new Error(`Expected module ${bundle} to export a bundle object defining the bundle.`)
     }
     return bundleValue as {
       name: string

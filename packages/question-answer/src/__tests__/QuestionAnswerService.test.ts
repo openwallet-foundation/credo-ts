@@ -182,6 +182,7 @@ describe('QuestionAnswerService', () => {
         connection: mockConnectionRecord,
       })
 
+      mockFunction(questionAnswerRepository.findSingleByQuery).mockResolvedValueOnce(null)
       const questionAnswerRecord = await questionAnswerService.processReceiveQuestion(messageContext)
 
       expect(questionAnswerRecord).toMatchObject(

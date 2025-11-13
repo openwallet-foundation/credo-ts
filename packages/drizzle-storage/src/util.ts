@@ -3,13 +3,15 @@ import type { DrizzleRecordBundle } from './DrizzleRecord'
 export const dirname = import.meta.dirname
 export const rootDirectory = `${dirname}/..`
 
+const addSchemaExtension = (path: string) => (dirname.endsWith('/src') ? `${path}.ts` : `${path}.mjs`)
+
 export const bundleMigrationDefinition = (bundle: string): DrizzleRecordBundle['migrations'] => ({
   postgres: {
-    schemaPath: `${rootDirectory}/build/${bundle}/postgres.mjs`,
+    schemaPath: addSchemaExtension(`${dirname}/${bundle}/postgres`),
     migrationsPath: `${rootDirectory}/migrations/${bundle}/postgres`,
   },
   sqlite: {
-    schemaPath: `${rootDirectory}/build/${bundle}/sqlite.mjs`,
+    schemaPath: addSchemaExtension(`${dirname}/${bundle}/sqlite`),
     migrationsPath: `${rootDirectory}/migrations/${bundle}/sqlite`,
   },
 })
