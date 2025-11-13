@@ -6,7 +6,7 @@ networks:
 
 services:
   credo:
-    image: mcr.microsoft.com/devcontainers/javascript-node:1-20-bullseye
+    image: mcr.microsoft.com/devcontainers/javascript-node:4-24-bullseye
     working_dir: /work
     tty: true
     volumes:
