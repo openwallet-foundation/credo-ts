@@ -66,6 +66,10 @@ describe('ActionMenuService', () => {
     actionMenuService = new ActionMenuService(actionMenuRepository, agentConfig, eventEmitter)
   })
 
+  afterEach(() => {
+    vitest.clearAllMocks()
+  })
+
   describe('createMenu', () => {
     let testMenu: ActionMenu
 

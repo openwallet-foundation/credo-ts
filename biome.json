@@ -120,6 +120,9 @@
       ],
       "linter": {
         "rules": {
+          "complexity": {
+            "useArrowFunction": "off"
+          },
           "correctness": {
             "noUndeclaredDependencies": "off"
           }
