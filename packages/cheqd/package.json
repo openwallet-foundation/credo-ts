@@ -36,7 +36,7 @@
   "dependencies": {
     "@cheqd/sdk": "npm:@cheqd/sdk-esm@^5.3.6",
     "@cheqd/ts-proto": "^4.1.1",
-    "@cosmjs/crypto": "^0.33.1",
+    "@cosmjs/crypto": "^0.37.0",
     "@cosmjs/proto-signing": "^0.33.1",
     "@cosmjs/stargate": "^0.33.1",
     "@credo-ts/anoncreds": "workspace:*",
