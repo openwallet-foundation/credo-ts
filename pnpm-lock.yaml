@@ -826,7 +826,7 @@ importers:
         specifier: workspace:*
         version: link:../node
       '@hyperledger/anoncreds-nodejs':
-        specifier: ^0.3.3
+        specifier: 'catalog:'
         version: 0.3.3
       zstd-napi:
         specifier: ^0.0.12
