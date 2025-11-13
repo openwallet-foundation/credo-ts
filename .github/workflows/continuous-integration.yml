@@ -30,7 +30,7 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
@@ -67,7 +67,7 @@ jobs:
 
       - name: Setup NodeJS
         id: setup-node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -95,14 +95,14 @@ jobs:
       # Upload coverage for shard
       - run: mv coverage/coverage-final.json coverage/${{ matrix.shard }}.json
         if: success()
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: success()
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-unit-${{ matrix.shard }}
           path: coverage/${{ matrix.shard }}.json
           overwrite: true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: failed-tests-${{ matrix.node-version }}-unit-${{ matrix.shard }}
@@ -128,7 +128,7 @@ jobs:
 
       - name: Setup NodeJS
         id: setup-node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -158,14 +158,14 @@ jobs:
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/e2e.json
         if: success()
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: success()
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-e2e
           path: coverage/e2e.json
           overwrite: true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: failed-tests-${{ matrix.node-version }}-e2e
@@ -183,7 +183,7 @@ jobs:
         node-version: [20, 22]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # setup dependencies
       - name: Setup services
@@ -191,7 +191,7 @@ jobs:
 
       - name: Setup NodeJS
         id: setup-node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -204,7 +204,7 @@ jobs:
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: pnpm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache-path.outputs.STORE_PATH }}
           key: ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -225,14 +225,14 @@ jobs:
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/drizzle.json
         if: success()
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: success()
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-drizzle
           path: coverage/drizzle.json
           overwrite: true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: failed-tests-${{ matrix.node-version }}-drizzle
@@ -244,7 +244,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [e2e-tests, unit-tests, drizzle-tests]
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           pattern: coverage-artifacts-20-*
           path: coverage

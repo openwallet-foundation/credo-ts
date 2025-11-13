@@ -27,15 +27,19 @@ const DidCommMessageRepositoryMock = DidCommMessageRepository as MockedClassCons
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 
 vi.mock('../../../../../core/src/agent/Agent', () => ({
-  Agent: vi.fn(() => ({
-    config: agentConfig,
-    context: agentContext,
-    dependencyManager: {
-      resolve: vi.fn((injectionToken) =>
-        injectionToken === DidCommCredentialExchangeRepository ? credentialRepository : didCommMessageRepository
-      ),
-    },
-  })),
+  Agent: vi.fn(function () {
+    return {
+      config: agentConfig,
+      context: agentContext,
+      dependencyManager: {
+        resolve: vi.fn(function (injectionToken) {
+          return injectionToken === DidCommCredentialExchangeRepository
+            ? credentialRepository
+            : didCommMessageRepository
+        }),
+      },
+    }
+  }),
 }))
 
 // Mock typed object

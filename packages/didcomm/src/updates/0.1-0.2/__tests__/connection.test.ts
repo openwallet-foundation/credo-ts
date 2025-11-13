@@ -39,25 +39,27 @@ const outOfBandRepository = new OutOfBandRepositoryMock()
 
 vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: vi.fn(() => ({
-      config: agentConfig,
-      context: agentContext,
-      dependencyManager: {
-        resolve: vi.fn((cls) => {
-          if (cls === DidCommConnectionRepository) {
-            return connectionRepository
-          }
-          if (cls === DidRepository) {
-            return didRepository
-          }
-          if (cls === DidCommOutOfBandRepository) {
-            return outOfBandRepository
-          }
+    Agent: vi.fn(function () {
+      return {
+        config: agentConfig,
+        context: agentContext,
+        dependencyManager: {
+          resolve: vi.fn(function (cls) {
+            if (cls === DidCommConnectionRepository) {
+              return connectionRepository
+            }
+            if (cls === DidRepository) {
+              return didRepository
+            }
+            if (cls === DidCommOutOfBandRepository) {
+              return outOfBandRepository
+            }
 
-          throw new Error(`No instance found for ${cls}`)
-        }),
-      },
-    })),
+            throw new Error(`No instance found for ${cls}`)
+          }),
+        },
+      }
+    }),
   }
 })
 

@@ -17,22 +17,24 @@ import { Client, PrivateKey } from '@hashgraph/sdk'
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
 
 vi.mock('@hiero-did-sdk/registrar', () => ({
-  DIDUpdateBuilder: vi.fn().mockReturnValue({
-    addService: vi.fn().mockReturnThis(),
-    removeService: vi.fn().mockReturnThis(),
-    addVerificationMethod: vi.fn().mockReturnThis(),
-    removeVerificationMethod: vi.fn().mockReturnThis(),
-    addAssertionMethod: vi.fn().mockReturnThis(),
-    removeAssertionMethod: vi.fn().mockReturnThis(),
-    addAuthenticationMethod: vi.fn().mockReturnThis(),
-    removeAuthenticationMethod: vi.fn().mockReturnThis(),
-    addCapabilityDelegationMethod: vi.fn().mockReturnThis(),
-    removeCapabilityDelegationMethod: vi.fn().mockReturnThis(),
-    addCapabilityInvocationMethod: vi.fn().mockReturnThis(),
-    removeCapabilityInvocationMethod: vi.fn().mockReturnThis(),
-    addKeyAgreementMethod: vi.fn().mockReturnThis(),
-    removeKeyAgreementMethod: vi.fn().mockReturnThis(),
-    build: vi.fn(),
+  DIDUpdateBuilder: vi.fn(function () {
+    return {
+      addService: vi.fn().mockReturnThis(),
+      removeService: vi.fn().mockReturnThis(),
+      addVerificationMethod: vi.fn().mockReturnThis(),
+      removeVerificationMethod: vi.fn().mockReturnThis(),
+      addAssertionMethod: vi.fn().mockReturnThis(),
+      removeAssertionMethod: vi.fn().mockReturnThis(),
+      addAuthenticationMethod: vi.fn().mockReturnThis(),
+      removeAuthenticationMethod: vi.fn().mockReturnThis(),
+      addCapabilityDelegationMethod: vi.fn().mockReturnThis(),
+      removeCapabilityDelegationMethod: vi.fn().mockReturnThis(),
+      addCapabilityInvocationMethod: vi.fn().mockReturnThis(),
+      removeCapabilityInvocationMethod: vi.fn().mockReturnThis(),
+      addKeyAgreementMethod: vi.fn().mockReturnThis(),
+      removeKeyAgreementMethod: vi.fn().mockReturnThis(),
+      build: vi.fn(),
+    }
   }),
   generateCreateDIDRequest: vi.fn(),
   submitCreateDIDRequest: vi.fn(),
