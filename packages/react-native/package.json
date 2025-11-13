@@ -38,17 +38,17 @@
     "events": "^3.3.0"
   },
   "devDependencies": {
-    "react-native": "^0.82.1",
+    "react-native": "^0.82.0",
     "react-native-fs": "^2.20.0",
-    "react-native-get-random-values": "^2.0.0",
+    "react-native-get-random-values": "^1.11.0",
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@animo-id/expo-secure-environment": "^0.1.1",
-    "expo-crypto": "^15.0.7",
     "react-native": ">=0.71.4",
     "react-native-fs": "^2.20.0",
-    "react-native-get-random-values": ">=1.11.0 <3.0.0"
+    "react-native-get-random-values": "^1.11.0",
+    "expo-crypto": "^15.0.7",
+    "@animo-id/expo-secure-environment": "^0.1.1"
   },
   "peerDependenciesMeta": {
     "@animo-id/expo-secure-environment": {

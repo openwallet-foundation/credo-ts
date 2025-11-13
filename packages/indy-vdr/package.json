@@ -41,8 +41,8 @@
     "@hyperledger/indy-vdr-nodejs": "catalog:",
     "@hyperledger/indy-vdr-shared": "catalog:",
     "@stablelib/ed25519": "^2.0.2",
-    "@types/ref-array-di": "^1.2.8",
-    "@types/ref-struct-di": "^1.1.12",
+    "@types/ref-array-di": "^1.2.6",
+    "@types/ref-struct-di": "^1.1.10",
     "rxjs": "catalog:",
     "typescript": "catalog:"
   },

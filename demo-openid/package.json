@@ -21,9 +21,9 @@
     "@koa/bodyparser": "^6.0.0",
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "express": "catalog:",
-    "inquirer": "^8.2.7",
-    "jose": "^6.1.1",
-    "oidc-provider": "^9.5.2"
+    "inquirer": "^8.2.5",
+    "jose": "^6.1.0",
+    "oidc-provider": "^9.5.1"
   },
   "devDependencies": {
     "@credo-ts/askar": "workspace:*",
@@ -32,7 +32,7 @@
     "@credo-ts/openid4vc": "workspace:*",
     "@types/express": "catalog:",
     "@types/figlet": "^1.7.0",
-    "@types/inquirer": "^8.2.12",
+    "@types/inquirer": "^8.2.6",
     "@types/oidc-provider": "^9.5.0",
     "figlet": "^1.9.3",
     "tsx": "^4.20.6"

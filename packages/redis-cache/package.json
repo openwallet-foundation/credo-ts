@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
-    "ioredis": "^5.8.2"
+    "ioredis": "^5.8.1"
   },
   "devDependencies": {
     "typescript": "catalog:"

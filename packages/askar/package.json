@@ -44,8 +44,8 @@
     "@credo-ts/tenants": "workspace:*",
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "@openwallet-foundation/askar-shared": "catalog:",
-    "@types/ref-array-di": "^1.2.8",
-    "@types/ref-struct-di": "^1.1.12",
+    "@types/ref-array-di": "^1.2.6",
+    "@types/ref-struct-di": "^1.1.10",
     "reflect-metadata": "catalog:",
     "typescript": "catalog:"
   },
