@@ -17,13 +17,17 @@ const didRepository = new DidRepositoryMock()
 
 vi.mock('../../../../../agent/Agent', () => {
   return {
-    Agent: vi.fn(() => ({
-      config: agentConfig,
-      context: agentContext,
-      dependencyManager: {
-        resolve: vi.fn(() => didRepository),
-      },
-    })),
+    Agent: vi.fn(function () {
+      return {
+        config: agentConfig,
+        context: agentContext,
+        dependencyManager: {
+          resolve: vi.fn(function () {
+            return didRepository
+          }),
+        },
+      }
+    }),
   }
 })
 

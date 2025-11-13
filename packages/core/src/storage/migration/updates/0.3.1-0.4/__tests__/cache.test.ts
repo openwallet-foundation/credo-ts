@@ -13,13 +13,17 @@ const storageService = {
 
 vi.mock('../../../../../agent/Agent', () => {
   return {
-    Agent: vi.fn(() => ({
-      config: agentConfig,
-      context: agentContext,
-      dependencyManager: {
-        resolve: vi.fn(() => storageService),
-      },
-    })),
+    Agent: vi.fn(function () {
+      return {
+        config: agentConfig,
+        context: agentContext,
+        dependencyManager: {
+          resolve: vi.fn(function () {
+            return storageService
+          }),
+        },
+      }
+    }),
   }
 })
 
