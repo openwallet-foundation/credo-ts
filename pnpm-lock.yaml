@@ -129,9 +129,6 @@ importers:
       '@credo-ts/hedera':
         specifier: workspace:*
         version: link:packages/hedera
-      '@credo-ts/indy-sdk-to-askar-migration':
-        specifier: workspace:*
-        version: link:packages/indy-sdk-to-askar-migration
       '@credo-ts/indy-vdr':
         specifier: workspace:*
         version: link:packages/indy-vdr
@@ -828,31 +825,6 @@ importers:
       zstd-napi:
         specifier: ^0.0.12
         version: 0.0.12
-
-  packages/indy-sdk-to-askar-migration:
-    dependencies:
-      '@credo-ts/anoncreds':
-        specifier: workspace:*
-        version: link:../anoncreds
-      '@credo-ts/askar':
-        specifier: workspace:*
-        version: link:../askar
-      '@credo-ts/core':
-        specifier: workspace:*
-        version: link:../core
-      '@credo-ts/node':
-        specifier: workspace:*
-        version: link:../node
-    devDependencies:
-      '@openwallet-foundation/askar-nodejs':
-        specifier: 'catalog:'
-        version: 0.4.3
-      '@openwallet-foundation/askar-shared':
-        specifier: 'catalog:'
-        version: 0.4.3
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
 
   packages/indy-vdr:
     dependencies:

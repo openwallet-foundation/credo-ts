@@ -167,6 +167,14 @@ See [Supported Features](https://credo.js.org/guides/features) on the Credo webs
     </td>
   </tr>  
   <tr>
+    <td><s>@aries-framework/indy-sdk-to-askar-migration</s> (deprecated, unmaintained after 0.5.x)</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/indy-sdk-to-askar-migration">
+        <img alt="@aries-framework/indy-sdk-to-askar-migration version" src="https://img.shields.io/npm/v/@aries-framework/indy-sdk-to-askar-migration"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
     <td><s>@aries-framework/indy-sdk</s> (deprecated, unmaintained after 0.4.x)</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/indy-sdk">
