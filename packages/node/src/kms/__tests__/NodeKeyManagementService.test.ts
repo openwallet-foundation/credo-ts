@@ -468,6 +468,22 @@ describe('NodeKeyManagementService', () => {
       })
     })
 
+    it('signs with Ed25519 using Ed25519 key', async () => {
+      const { keyId } = await service.createKey(agentContext, {
+        type: { kty: 'OKP', crv: 'Ed25519' },
+      })
+
+      const result = await service.sign(agentContext, {
+        keyId,
+        algorithm: 'Ed25519',
+        data: new Uint8Array([1, 2, 3]),
+      })
+
+      expect(result).toEqual({
+        signature: expect.any(Uint8Array),
+      })
+    })
+
     it('throws error when signing with x25519 key', async () => {
       const { keyId } = await service.createKey(agentContext, {
         type: { kty: 'OKP', crv: 'X25519' },

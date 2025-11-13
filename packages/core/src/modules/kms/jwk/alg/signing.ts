@@ -60,7 +60,7 @@ export function supportedSigningAlgsForKey(
       case 'P-521':
         return ['ES512']
       case 'Ed25519':
-        return ['EdDSA']
+        return ['EdDSA', 'Ed25519']
 
       // X25519
       default:
@@ -124,7 +124,7 @@ export function createKeyTypeForSigningAlgorithm(algorithm: KnownJwaSignatureAlg
     }
   }
 
-  if (algorithm === 'EdDSA') {
+  if (algorithm === 'EdDSA' || algorithm === 'Ed25519') {
     return {
       kty: 'OKP',
       crv: 'Ed25519',
