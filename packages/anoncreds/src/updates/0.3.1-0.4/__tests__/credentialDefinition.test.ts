@@ -38,15 +38,19 @@ const registryService = {
 }
 vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: vi.fn(() => ({
-      config: agentConfig,
-      context: agentContext,
-      dependencyManager: {
-        resolve: vi.fn((injectionSymbol) =>
-          injectionSymbol === AnonCredsCredentialDefinitionRepository ? credentialDefinitionRepository : registryService
-        ),
-      },
-    })),
+    Agent: vi.fn(function () {
+      return {
+        config: agentConfig,
+        context: agentContext,
+        dependencyManager: {
+          resolve: vi.fn((injectionSymbol) =>
+            injectionSymbol === AnonCredsCredentialDefinitionRepository
+              ? credentialDefinitionRepository
+              : registryService
+          ),
+        },
+      }
+    }),
   }
 })
 
