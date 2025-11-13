@@ -8,7 +8,7 @@ import {
 } from '@cheqd/sdk'
 import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload } from '@cheqd/ts-proto/cheqd/did/v2'
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
-import { EnglishMnemonic as _ } from '@cosmjs/crypto'
+import { EnglishMnemonic as _EnglishMnemonic } from '@cosmjs/crypto'
 import { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 import {
   type AnyUint8Array,
@@ -162,7 +162,7 @@ export async function renderResourceData(data: AnyUint8Array, mimeType: string) 
   return TypedArrayEncoder.toBase64URL(data)
 }
 
-export class EnglishMnemonic extends _ {
+export class EnglishMnemonic extends _EnglishMnemonic {
   public static readonly _mnemonicMatcher = /^[a-z]+( [a-z]+)*$/
 }
 
