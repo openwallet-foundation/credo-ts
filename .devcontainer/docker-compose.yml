@@ -20,7 +20,7 @@ services:
   postgres:
     networks:
       - local_credo_network
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
