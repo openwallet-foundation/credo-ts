@@ -95,14 +95,14 @@ jobs:
       # Upload coverage for shard
       - run: mv coverage/coverage-final.json coverage/${{ matrix.shard }}.json
         if: success()
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: success()
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-unit-${{ matrix.shard }}
           path: coverage/${{ matrix.shard }}.json
           overwrite: true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: failed-tests-${{ matrix.node-version }}-unit-${{ matrix.shard }}
@@ -158,14 +158,14 @@ jobs:
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/e2e.json
         if: success()
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: success()
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-e2e
           path: coverage/e2e.json
           overwrite: true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: failed-tests-${{ matrix.node-version }}-e2e
@@ -225,14 +225,14 @@ jobs:
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/drizzle.json
         if: success()
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: success()
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-drizzle
           path: coverage/drizzle.json
           overwrite: true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: failed-tests-${{ matrix.node-version }}-drizzle
