@@ -25,7 +25,6 @@ export * from './repository'
 export * from './services'
 export * from './transport'
 export * from './types'
-export { encodeAttachment } from './util/attachment'
 export { isValidJweStructure } from './util/JWE'
 export {
   IsValidMessageType,

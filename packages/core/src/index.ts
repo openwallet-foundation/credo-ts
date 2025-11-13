@@ -68,7 +68,6 @@ export {
   deepEquality,
   equalsIgnoreOrder,
   equalsWithOrder,
-  HashlinkEncoder,
   IsStringOrInstance,
   IsStringOrInstanceOrArrayOfInstances,
   IsStringOrStringArray,
