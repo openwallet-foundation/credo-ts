@@ -1,5 +1,5 @@
 import type { Constructor, DependencyManager, EmptyModuleMap, Module, ModulesMap, Update } from '@credo-ts/core'
-import { AgentConfig, InjectionSymbols } from '@credo-ts/core'
+import { InjectionSymbols } from '@credo-ts/core'
 import { TenantAgentContextProvider } from './context/TenantAgentContextProvider'
 import { TenantSessionCoordinator } from './context/TenantSessionCoordinator'
 import { TenantRepository, TenantRoutingRepository } from './repository'
@@ -22,13 +22,6 @@ export class TenantsModule<AgentModules extends ModulesMap = EmptyModuleMap> imp
    * Registers the dependencies of the tenants module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
-    // Warn about experimental module
-    dependencyManager
-      .resolve(AgentConfig)
-      .logger.warn(
-        "The '@credo-ts/tenants' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-      )
-
     // Api
     // NOTE: this is a singleton because tenants can't have their own tenants. This makes sure the tenants api is always used in the root agent context.
     dependencyManager.registerSingleton(TenantsApi)

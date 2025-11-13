@@ -1,6 +1,5 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
-import { AgentConfig } from '@credo-ts/core'
 import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry, DidCommProtocol } from '@credo-ts/didcomm'
 
 import { DrpcApi } from './DrpcApi'
@@ -16,13 +15,6 @@ export class DrpcModule implements Module {
    * Registers the dependencies of the drpc message module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
-    // Warn about experimental module
-    dependencyManager
-      .resolve(AgentConfig)
-      .logger.warn(
-        "The '@credo-ts/drpc' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-      )
-
     // Services
     dependencyManager.registerSingleton(DrpcService)
 
