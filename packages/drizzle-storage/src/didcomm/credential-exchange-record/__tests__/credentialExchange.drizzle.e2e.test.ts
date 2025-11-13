@@ -50,15 +50,6 @@ describe.each(['postgres', 'sqlite'] as const)('CredentialExchangeRecord with %s
             value: 'something',
           },
         ],
-        linkedAttachments: [
-          {
-            '@id': 'a402b029-6dfb-4840-97f3-b3b0f8e7ac49',
-            'mime-type': 'hello',
-            data: {
-              json: { some: 'key' },
-            },
-          },
-        ],
       },
       DidCommCredentialExchangeRecord
     )

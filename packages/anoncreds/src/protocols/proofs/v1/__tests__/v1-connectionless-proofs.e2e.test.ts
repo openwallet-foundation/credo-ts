@@ -12,12 +12,9 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../../../../../core/tests'
 import {
-  DidCommAttachment,
-  DidCommAttachmentData,
   DidCommAutoAcceptProof,
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
-  DidCommLinkedAttachment,
   DidCommMediatorPickupStrategy,
   DidCommProofEventTypes,
   DidCommProofState,
@@ -463,22 +460,6 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       offer: {
         credentialDefinitionId: credentialDefinition.credentialDefinitionId,
         attributes: credentialPreview.attributes,
-        linkedAttachments: [
-          new DidCommLinkedAttachment({
-            name: 'image_0',
-            attachment: new DidCommAttachment({
-              filename: 'picture-of-a-cat.png',
-              data: new DidCommAttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
-            }),
-          }),
-          new DidCommLinkedAttachment({
-            name: 'image_1',
-            attachment: new DidCommAttachment({
-              filename: 'picture-of-a-dog.png',
-              data: new DidCommAttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
-            }),
-          }),
-        ],
       },
     })
 

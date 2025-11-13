@@ -26,7 +26,6 @@ import {
   DidCommMessageRepository,
   DidCommMessageRole,
   DidCommProtocol,
-  isLinkedAttachment,
 } from '@credo-ts/didcomm'
 import type { LegacyIndyDidCommCredentialFormatService } from '../../../formats'
 
@@ -125,22 +124,17 @@ export class DidCommCredentialV1Protocol
       throw new CredoError('Missing indy credential format in v1 create proposal call.')
     }
 
-    // TODO: linked attachments are broken currently. We never include them in the messages.
-    // The linking with previews does work, so it shouldn't be too much work to re-enable this.
-    const { linkedAttachments } = credentialFormats.indy
-
     // Create record
     const credentialExchangeRecord = new DidCommCredentialExchangeRecord({
       connectionId: connectionRecord.id,
       threadId: utils.uuid(),
       state: DidCommCredentialState.ProposalSent,
       role: DidCommCredentialRole.Holder,
-      linkedAttachments: linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
       autoAcceptCredential,
       protocolVersion: 'v1',
     })
 
-    // call create proposal for validation of the proposal and addition of linked attachments
+    // call create proposal for validation of the proposal
     const { previewAttributes, attachment } = await this.indyCredentialFormat.createProposal(agentContext, {
       credentialFormats,
       credentialExchangeRecord,
@@ -331,7 +325,6 @@ export class DidCommCredentialV1Protocol
       credentialPreview: new DidCommCredentialV1Preview({
         attributes: previewAttributes,
       }),
-      attachments: credentialExchangeRecord.linkedAttachments,
     })
 
     message.setThread({
@@ -393,7 +386,6 @@ export class DidCommCredentialV1Protocol
       credentialPreview: new DidCommCredentialV1Preview({
         attributes: previewAttributes,
       }),
-      attachments: credentialExchangeRecord.linkedAttachments,
     })
     message.setThread({
       threadId: credentialExchangeRecord.threadId,
@@ -445,9 +437,6 @@ export class DidCommCredentialV1Protocol
     const credentialExchangeRecord = new DidCommCredentialExchangeRecord({
       connectionId: connectionRecord?.id,
       threadId: utils.uuid(),
-      linkedAttachments: credentialFormats.indy.linkedAttachments?.map(
-        (linkedAttachments) => linkedAttachments.attachment
-      ),
       state: DidCommCredentialState.OfferSent,
       role: DidCommCredentialRole.Issuer,
       autoAcceptCredential,
@@ -472,7 +461,6 @@ export class DidCommCredentialV1Protocol
       }),
       comment,
       offerAttachments: [attachment],
-      attachments: credentialFormats.indy.linkedAttachments?.map((linkedAttachments) => linkedAttachments.attachment),
     })
 
     await didCommMessageRepository.saveAgentMessage(agentContext, {
@@ -635,7 +623,6 @@ export class DidCommCredentialV1Protocol
     const requestMessage = new DidCommRequestCredentialV1Message({
       comment,
       requestAttachments: [attachment],
-      attachments: offerMessage.appendedAttachments?.filter((attachment) => isLinkedAttachment(attachment)),
     })
     requestMessage.setThread({
       threadId: credentialExchangeRecord.threadId,
@@ -645,9 +632,6 @@ export class DidCommCredentialV1Protocol
     credentialExchangeRecord.credentialAttributes = offerMessage.credentialPreview.attributes
     credentialExchangeRecord.autoAcceptCredential =
       autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
-    credentialExchangeRecord.linkedAttachments = offerMessage.appendedAttachments?.filter((attachment) =>
-      isLinkedAttachment(attachment)
-    )
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: requestMessage,
@@ -695,9 +679,7 @@ export class DidCommCredentialV1Protocol
       throw new CredoError('Missing indy credential format in v1 negotiate proposal call.')
     }
 
-    const { linkedAttachments } = credentialFormats.indy
-
-    // call create proposal for validation of the proposal and addition of linked attachments
+    // call create proposal for validation of the proposal
     // As the format is different for v1 of the issue credential protocol we won't be using the attachment
     const { previewAttributes, attachment } = await this.indyCredentialFormat.createProposal(agentContext, {
       credentialFormats,
@@ -733,7 +715,6 @@ export class DidCommCredentialV1Protocol
 
     // Update record
     credentialExchangeRecord.credentialAttributes = message.credentialPreview?.attributes
-    credentialExchangeRecord.linkedAttachments = linkedAttachments?.map((attachment) => attachment.attachment)
     credentialExchangeRecord.autoAcceptCredential =
       autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.ProposalSent)
@@ -883,7 +864,6 @@ export class DidCommCredentialV1Protocol
     const issueMessage = new DidCommIssueCredentialV1Message({
       comment,
       credentialAttachments: [attachment],
-      attachments: credentialExchangeRecord.linkedAttachments,
     })
 
     issueMessage.setThread({

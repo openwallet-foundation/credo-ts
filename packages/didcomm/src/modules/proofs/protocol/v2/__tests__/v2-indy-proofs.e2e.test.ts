@@ -6,11 +6,6 @@ import {
 import type { EventReplaySubject } from '../../../../../../../core/tests'
 import { waitForProofExchangeRecord } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
-import {
-  DidCommAttachment,
-  DidCommAttachmentData,
-  DidCommLinkedAttachment,
-} from '../../../../../../../didcomm/src/index'
 import { DidCommProofState } from '../../../models'
 import { DidCommProofExchangeRecord } from '../../../repository'
 import {
@@ -64,22 +59,6 @@ describe('Present Proof', () => {
             name: 'age',
             value: '99',
           },
-        ],
-        linkedAttachments: [
-          new DidCommLinkedAttachment({
-            name: 'image_0',
-            attachment: new DidCommAttachment({
-              filename: 'picture-of-a-cat.png',
-              data: new DidCommAttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
-            }),
-          }),
-          new DidCommLinkedAttachment({
-            name: 'image_1',
-            attachment: new DidCommAttachment({
-              filename: 'picture-of-a-dog.png',
-              data: new DidCommAttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
-            }),
-          }),
         ],
       },
     })

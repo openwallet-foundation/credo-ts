@@ -21,12 +21,9 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../../../../../../core/tests'
 import {
-  DidCommAttachment,
-  DidCommAttachmentData,
   DidCommAutoAcceptProof,
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
-  DidCommLinkedAttachment,
   DidCommMediatorPickupStrategy,
   DidCommPresentationV2Message,
   DidCommProofEventTypes,
@@ -363,7 +360,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const [faberConnection] = await makeConnection(faberAgent, aliceAgent)
 
-    // issue credential with two linked attachments
+    // issue credential
     await issueLegacyAnonCredsCredential({
       issuerAgent: faberAgent as AnonCredsTestsAgent,
       issuerReplay: faberReplay,
@@ -373,22 +370,6 @@ describe('V2 Connectionless Proofs - Indy', () => {
       offer: {
         credentialDefinitionId: credentialDefinition.credentialDefinitionId,
         attributes: credentialPreview.attributes,
-        linkedAttachments: [
-          new DidCommLinkedAttachment({
-            name: 'image_0',
-            attachment: new DidCommAttachment({
-              filename: 'picture-of-a-cat.png',
-              data: new DidCommAttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
-            }),
-          }),
-          new DidCommLinkedAttachment({
-            name: 'image_1',
-            attachment: new DidCommAttachment({
-              filename: 'picture-of-a-dog.png',
-              data: new DidCommAttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
-            }),
-          }),
-        ],
       },
     })
 

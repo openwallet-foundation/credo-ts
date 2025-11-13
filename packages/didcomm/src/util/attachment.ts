@@ -26,13 +26,3 @@ export function encodeAttachment(
   }
   throw new CredoError(`Attachment: (${attachment.id}) has no data to create a link with`)
 }
-
-/**
- * Checks if an attachment is a linked Attachment
- *
- * @param attachment the attachment that has to be validated
- * @returns a boolean whether the attachment is a linkedAttachment
- */
-export function isLinkedAttachment(attachment: DidCommAttachment) {
-  return HashlinkEncoder.isValid(`hl:${attachment.id}`)
-}

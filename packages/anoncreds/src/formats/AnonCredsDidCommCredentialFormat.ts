@@ -1,8 +1,4 @@
-import type {
-  DidCommCredentialFormat,
-  DidCommCredentialPreviewAttributeOptions,
-  DidCommLinkedAttachment,
-} from '@credo-ts/didcomm'
+import type { DidCommCredentialFormat, DidCommCredentialPreviewAttributeOptions } from '@credo-ts/didcomm'
 import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 
 export interface AnonCredsDidCommCredentialProposalFormat {
@@ -34,7 +30,6 @@ export interface AnonCredsDidCommProposeCredentialFormat {
   issuerId?: string
 
   attributes?: DidCommCredentialPreviewAttributeOptions[]
-  linkedAttachments?: DidCommLinkedAttachment[]
 
   // Kept for backwards compatibility
   schemaIssuerDid?: string
@@ -49,7 +44,6 @@ export interface AnonCredsDidCommAcceptProposalFormat {
   revocationRegistryDefinitionId?: string
   revocationRegistryIndex?: number
   attributes?: DidCommCredentialPreviewAttributeOptions[]
-  linkedAttachments?: DidCommLinkedAttachment[]
 }
 
 /**
@@ -69,7 +63,6 @@ export interface AnonCredsDidCommOfferCredentialFormat {
   revocationRegistryDefinitionId?: string
   revocationRegistryIndex?: number
   attributes: DidCommCredentialPreviewAttributeOptions[]
-  linkedAttachments?: DidCommLinkedAttachment[]
 }
 
 /**

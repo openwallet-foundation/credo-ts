@@ -1,9 +1,6 @@
 import type { AnonCredsRequestProofFormat } from '@credo-ts/anoncreds'
 import type { DidCommCredentialExchangeRecord } from '@credo-ts/didcomm'
 import {
-  DidCommAttachment,
-  DidCommAttachmentData,
-  DidCommLinkedAttachment,
   DidCommPresentationV2Message,
   DidCommProofExchangeRecord,
   DidCommProofState,
@@ -75,22 +72,6 @@ describe('PP V2 AnonCreds Proofs', () => {
             name: 'age',
             value: '99',
           },
-        ],
-        linkedAttachments: [
-          new DidCommLinkedAttachment({
-            name: 'image_0',
-            attachment: new DidCommAttachment({
-              filename: 'picture-of-a-cat.png',
-              data: new DidCommAttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
-            }),
-          }),
-          new DidCommLinkedAttachment({
-            name: 'image_1',
-            attachment: new DidCommAttachment({
-              filename: 'picture-of-a-dog.png',
-              data: new DidCommAttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
-            }),
-          }),
         ],
       },
     }))

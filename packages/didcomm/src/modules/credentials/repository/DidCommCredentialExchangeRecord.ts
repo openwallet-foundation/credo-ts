@@ -1,7 +1,6 @@
 import type { TagsBase } from '@credo-ts/core'
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Type } from 'class-transformer'
-import { DidCommAttachment } from '../../../decorators/attachment/DidCommAttachment'
 import type { DidCommCredentialRole } from '../models'
 import type { DidCommAutoAcceptCredential } from '../models/DidCommCredentialAutoAcceptType'
 import { DidCommCredentialPreviewAttribute } from '../models/DidCommCredentialPreviewAttribute'
@@ -21,7 +20,6 @@ export interface DidCommCredentialExchangeRecordProps {
   tags?: CustomDidCommCredentialExchangeTags
   credentialAttributes?: DidCommCredentialPreviewAttribute[]
   autoAcceptCredential?: DidCommAutoAcceptCredential
-  linkedAttachments?: DidCommAttachment[]
   revocationNotification?: DidCommRevocationNotification
   errorMessage?: string
   credentials?: CredentialRecordBinding[]
@@ -62,9 +60,6 @@ export class DidCommCredentialExchangeRecord extends BaseRecord<
   @Type(() => DidCommCredentialPreviewAttribute)
   public credentialAttributes?: DidCommCredentialPreviewAttribute[]
 
-  @Type(() => DidCommAttachment)
-  public linkedAttachments?: DidCommAttachment[]
-
   // Type is CredentialRecord on purpose (without Exchange) as this is how the record was initially called.
   public static readonly type = 'CredentialRecord'
   public readonly type = DidCommCredentialExchangeRecord.type
@@ -84,7 +79,6 @@ export class DidCommCredentialExchangeRecord extends BaseRecord<
 
       this.credentialAttributes = props.credentialAttributes
       this.autoAcceptCredential = props.autoAcceptCredential
-      this.linkedAttachments = props.linkedAttachments
       this.revocationNotification = props.revocationNotification
       this.errorMessage = props.errorMessage
       this.credentials = props.credentials || []

@@ -45,7 +45,6 @@ export class DrizzleDidcommCredentialExchangeRecordAdapter extends BaseDrizzleRe
       credentials: record.credentials,
       credentialIds,
       credentialAttributes: JsonTransformer.toJSON(record.credentialAttributes) as JsonObject[],
-      linkedAttachments: record.linkedAttachments?.map((a) => JsonTransformer.toJSON(a)),
 
       customTags,
     }
