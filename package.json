@@ -54,13 +54,13 @@
     "@types/ws": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "cors": "^2.8.5",
-    "drizzle-kit": "^0.31.5",
+    "drizzle-kit": "^0.31.6",
     "express": "catalog:",
     "nock": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "supertest": "^7.1.4",
-    "tsdown": "^0.15.6",
+    "tsdown": "^0.16.4",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
     "undici": "^6.21.3",
@@ -72,9 +72,6 @@
   "pnpm": {
     "overrides": {
       "vite": "npm:rolldown-vite@latest"
-    },
-    "patchedDependencies": {
-      "drizzle-kit": "patches/drizzle-kit.patch"
     }
   },
   "resolutions": {
