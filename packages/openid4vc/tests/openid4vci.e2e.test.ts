@@ -357,7 +357,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(issuer1Record.credentialConfigurationsSupported).toEqual({
       universityDegree: {
         format: 'mso_mdoc',
-        cryptographic_binding_methods_supported: ['did:key', 'jwk'],
+        cryptographic_binding_methods_supported: ['jwk'],
         proof_types_supported: {
           jwt: {
             proof_signing_alg_values_supported: ['ES256', 'EdDSA'],
