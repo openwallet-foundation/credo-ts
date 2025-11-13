@@ -263,6 +263,14 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "multi_instance_state": {
+          "name": "multi_instance_state",
+          "type": "CredentialMultiInstanceState",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'SingleInstanceUsed'"
         }
       },
       "indexes": {},
@@ -351,6 +359,14 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "multi_instance_state": {
+          "name": "multi_instance_state",
+          "type": "CredentialMultiInstanceState",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'SingleInstanceUsed'"
         }
       },
       "indexes": {},
@@ -628,6 +644,14 @@
           "type": "text[]",
           "primaryKey": false,
           "notNull": false
+        },
+        "multi_instance_state": {
+          "name": "multi_instance_state",
+          "type": "CredentialMultiInstanceState",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'SingleInstanceUsed'"
         }
       },
       "indexes": {},
@@ -747,6 +771,14 @@
           "type": "text[]",
           "primaryKey": false,
           "notNull": false
+        },
+        "multi_instance_state": {
+          "name": "multi_instance_state",
+          "type": "CredentialMultiInstanceState",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'SingleInstanceUsed'"
         }
       },
       "indexes": {},
@@ -774,6 +806,11 @@
     }
   },
   "enums": {
+    "public.CredentialMultiInstanceState": {
+      "name": "CredentialMultiInstanceState",
+      "schema": "public",
+      "values": ["SingleInstanceUsed", "SingleInstanceUnused", "MultiInstanceFirstUsed", "MultiInstanceFirstUnused"]
+    },
     "public.didRole": {
       "name": "didRole",
       "schema": "public",

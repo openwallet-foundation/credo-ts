@@ -1,4 +1,5 @@
 -- Default [] is because SQLITE doesn't allow changing the column properties afterwards
+-- Default 'SingleInstanceUsed' is because SQLITE doesn't allow changing the column properties afterwards
 -- Only other solution is to create a new table, migrate all rows and then drop+rename.
 
 -- Mdoc migration
@@ -27,4 +28,9 @@ ALTER TABLE `W3cV2Credential` ADD `credential_instances` text NOT NULL DEFAULT '
 UPDATE `W3cV2Credential` SET `credential_instances` = json_array(
   json_object('credential', `credential`)
 );--> statement-breakpoint
-ALTER TABLE `W3cV2Credential` DROP COLUMN `credential`;
+ALTER TABLE `W3cV2Credential` DROP COLUMN `credential`;--> statement-breakpoint
+
+ALTER TABLE `Mdoc` ADD `multi_instance_state` text DEFAULT 'SingleInstanceUsed' NOT NULL;--> statement-breakpoint
+ALTER TABLE `SdJwtVc` ADD `multi_instance_state` text DEFAULT 'SingleInstanceUsed' NOT NULL;--> statement-breakpoint
+ALTER TABLE `W3cCredential` ADD `multi_instance_state` text DEFAULT 'SingleInstanceUsed' NOT NULL;--> statement-breakpoint
+ALTER TABLE `W3cV2Credential` ADD `multi_instance_state` text DEFAULT 'SingleInstanceUsed' NOT NULL;

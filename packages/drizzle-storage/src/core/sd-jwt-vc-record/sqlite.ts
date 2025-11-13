@@ -1,4 +1,4 @@
-import type { Kms, SdJwtVcRecordInstances } from '@credo-ts/core'
+import type { CredentialMultiInstanceState, Kms, SdJwtVcRecordInstances } from '@credo-ts/core'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
@@ -13,7 +13,10 @@ export const sdJwtVc = sqliteTable(
     alg: text().$type<Kms.KnownJwaSignatureAlgorithm>().notNull(),
     sdAlg: text('sd_alg').$type<string>().notNull(),
 
-    // compactSdJwtVc: text('compact_sd_jwt_vc').notNull(),
+    multiInstanceState: text('multi_instance_state')
+      .$type<CredentialMultiInstanceState>()
+      .notNull()
+      .default('SingleInstanceUsed' satisfies `${CredentialMultiInstanceState}` as CredentialMultiInstanceState),
   },
   (table) => sqliteBaseRecordIndexes(table, 'sdJwtVc')
 )

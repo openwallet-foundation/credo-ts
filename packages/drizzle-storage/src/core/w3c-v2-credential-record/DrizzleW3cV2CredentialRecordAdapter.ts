@@ -30,12 +30,14 @@ export class DrizzleW3cV2CredentialRecordAdapter extends BaseDrizzleRecordAdapte
       claimFormat,
       cryptosuites,
       algs,
+      multiInstanceState: _,
       ...customTags
     } = record.getTags()
 
     return {
       // JWT vc is string, JSON-LD vc is object
       credentialInstances: record.credentialInstances,
+      multiInstanceState: record.multiInstanceState,
 
       // Tags
       issuerId,

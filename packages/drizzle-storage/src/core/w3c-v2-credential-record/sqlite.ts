@@ -1,4 +1,4 @@
-import type { ClaimFormat, W3cV2CredentialRecordInstances } from '@credo-ts/core'
+import type { ClaimFormat, CredentialMultiInstanceState, W3cV2CredentialRecordInstances } from '@credo-ts/core'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
@@ -6,8 +6,6 @@ export const w3cV2Credential = sqliteTable(
   'W3cV2Credential',
   {
     ...getSqliteBaseRecordTable(),
-
-    // credential: text({ mode: 'json' }).$type<W3cV2VerifiableCredential['encoded']>().notNull(),
 
     credentialInstances: text('credential_instances', { mode: 'json' })
       .$type<W3cV2CredentialRecordInstances>()
@@ -22,6 +20,11 @@ export const w3cV2Credential = sqliteTable(
     givenId: text('given_id'),
     claimFormat: text('claim_format').$type<ClaimFormat.SdJwtW3cVc | ClaimFormat.JwtW3cVc>().notNull(),
     algs: text({ mode: 'json' }).$type<string[]>(),
+
+    multiInstanceState: text('multi_instance_state')
+      .$type<CredentialMultiInstanceState>()
+      .notNull()
+      .default('SingleInstanceUsed' satisfies `${CredentialMultiInstanceState}` as CredentialMultiInstanceState),
   },
   (table) => sqliteBaseRecordIndexes(table, 'w3cV2Credential')
 )

@@ -50,6 +50,11 @@ export type DefaultW3cCredentialTags = {
   cryptosuites?: Array<string>
   types: Array<string>
   algs?: Array<string>
+
+  /**
+   * @since 0.6 - tag was not defined before 0.6
+   */
+  multiInstanceState?: CredentialMultiInstanceState
 }
 
 export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, CustomW3cCredentialTags> {
@@ -60,8 +65,11 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
 
   /**
    * Tracks the state of credential instances on this record.
+   *
+   * NOTE: This defaults to `CredentialMultiInstanceState.SingleInstanceUsed` for records that
+   * don't have a value set from before 0.6. We assume the credential has already been used.
    */
-  public multiInstanceState!: CredentialMultiInstanceState
+  public multiInstanceState = CredentialMultiInstanceState.SingleInstanceUsed
 
   public constructor(props: W3cCredentialRecordOptions) {
     super()
@@ -128,6 +136,7 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
       givenId: credential.id,
       claimFormat: credential.claimFormat,
       types: credential.type,
+      multiInstanceState: this.multiInstanceState,
     }
 
     // Proof types is used for ldp_vc credentials

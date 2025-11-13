@@ -19,13 +19,14 @@ export class DrizzleSdJwtVcRecordAdapter extends BaseDrizzleRecordAdapter<
   }
 
   public getValues(record: SdJwtVcRecord) {
-    const { alg, sdAlg, vct, ...customTags } = record.getTags()
+    const { alg, sdAlg, vct, multiInstanceState: _, ...customTags } = record.getTags()
 
     return {
       alg,
       sdAlg,
       vct,
       credentialInstances: record.credentialInstances,
+      multiInstanceState: record.multiInstanceState,
       customTags,
     }
   }

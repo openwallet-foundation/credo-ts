@@ -19,12 +19,13 @@ export class DrizzleMdocRecordAdapter extends BaseDrizzleRecordAdapter<
   }
 
   public getValues(record: MdocRecord) {
-    const { alg, docType, ...customTags } = record.getTags()
+    const { alg, docType, multiInstanceState: _, ...customTags } = record.getTags()
 
     return {
       alg,
       docType,
       credentialInstances: record.credentialInstances,
+      multiInstanceState: record.multiInstanceState,
       customTags,
     }
   }

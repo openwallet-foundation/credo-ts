@@ -283,6 +283,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "multi_instance_state": {
+          "name": "multi_instance_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'SingleInstanceUsed'"
         }
       },
       "indexes": {},
@@ -378,6 +386,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "multi_instance_state": {
+          "name": "multi_instance_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'SingleInstanceUsed'"
         }
       },
       "indexes": {},
@@ -677,6 +693,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "multi_instance_state": {
+          "name": "multi_instance_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'SingleInstanceUsed'"
         }
       },
       "indexes": {},
@@ -807,6 +831,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "multi_instance_state": {
+          "name": "multi_instance_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'SingleInstanceUsed'"
         }
       },
       "indexes": {},

@@ -1,11 +1,18 @@
-import type { ClaimFormat, W3cCredentialRecordInstances } from '@credo-ts/core'
+import type { ClaimFormat, CredentialMultiInstanceState, W3cCredentialRecordInstances } from '@credo-ts/core'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { exhaustiveArray } from '../../util'
 
 export const w3cCredentialClaimFormat = pgEnum('W3cClaimFormat', [
   'ldp_vc' satisfies `${ClaimFormat.LdpVc}`,
   'jwt_vc' satisfies `${ClaimFormat.JwtVc}`,
 ])
+
+const credentialMultiInstanceStates = exhaustiveArray(
+  {} as CredentialMultiInstanceState,
+  ['SingleInstanceUsed', 'SingleInstanceUnused', 'MultiInstanceFirstUsed', 'MultiInstanceFirstUnused'] as const
+)
+export const credentialMultiInstanceStateEnum = pgEnum('CredentialMultiInstanceState', credentialMultiInstanceStates)
 
 export const w3cCredential = pgTable(
   'W3cCredential',
@@ -13,7 +20,6 @@ export const w3cCredential = pgTable(
     ...getPostgresBaseRecordTable(),
 
     // JWT vc is string, JSON-LD vc is object
-    // credential: jsonb().$type<W3cVerifiableCredential['encoded']>().notNull(),
 
     credentialInstances: jsonb('credential_instances').$type<W3cCredentialRecordInstances>().notNull(),
 
@@ -31,6 +37,10 @@ export const w3cCredential = pgTable(
 
     // Custom Tags
     expandedTypes: text('expanded_types').array(),
+
+    multiInstanceState: credentialMultiInstanceStateEnum('multi_instance_state')
+      .notNull()
+      .default('SingleInstanceUsed'),
   },
   (table) => postgresBaseRecordIndexes(table, 'w3cCredential')
 )

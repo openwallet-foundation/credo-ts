@@ -24,6 +24,11 @@ export type DefaultSdJwtVcRecordTags = {
    * The alg is the alg used to sign the SD-JWT
    */
   alg: KnownJwaSignatureAlgorithm
+
+  /**
+   * @since 0.6 - tag was not defined before 0.6
+   */
+  multiInstanceState?: CredentialMultiInstanceState
 }
 
 export type SdJwtVcRecordStorageProps = {
@@ -65,8 +70,11 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
 
   /**
    * Tracks the state of credential instances on this record.
+   *
+   * NOTE: This defaults to `CredentialMultiInstanceState.SingleInstanceUsed` for records that
+   * don't have a value set from before 0.6. We assume the credential has already been used.
    */
-  public multiInstanceState!: CredentialMultiInstanceState
+  public multiInstanceState = CredentialMultiInstanceState.SingleInstanceUsed
 
   /**
    * Only here for class transformation. If compactSdJwtVc is set we transform
@@ -133,6 +141,7 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
       vct,
       sdAlg: sdAlg ?? 'sha-256',
       alg,
+      multiInstanceState: this.multiInstanceState,
     }
   }
 

@@ -1,6 +1,7 @@
 import type { ClaimFormat, W3cV2CredentialRecordInstances } from '@credo-ts/core'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { credentialMultiInstanceStateEnum } from '../w3c-credential-record/postgres'
 
 export const w3cV2CredentialClaimFormat = pgEnum('W3cV2ClaimFormat', [
   'vc+sd-jwt' satisfies `${ClaimFormat.SdJwtW3cVc}`,
@@ -25,6 +26,10 @@ export const w3cV2Credential = pgTable(
     givenId: text('given_id'),
     claimFormat: w3cV2CredentialClaimFormat('claim_format').notNull(),
     algs: text().array(),
+
+    multiInstanceState: credentialMultiInstanceStateEnum('multi_instance_state')
+      .notNull()
+      .default('SingleInstanceUsed'),
   },
   (table) => postgresBaseRecordIndexes(table, 'w3cV2Credential')
 )

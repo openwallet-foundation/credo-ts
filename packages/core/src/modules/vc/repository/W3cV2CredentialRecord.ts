@@ -34,6 +34,11 @@ export type DefaultW3cV2CredentialTags = {
 
   types: Array<string>
   algs?: Array<string>
+
+  /**
+   * @since 0.6 - tag was not defined before 0.6
+   */
+  multiInstanceState?: CredentialMultiInstanceState
 }
 
 export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags> {
@@ -44,8 +49,11 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
 
   /**
    * Tracks the state of credential instances on this record.
+   *
+   * NOTE: This defaults to `CredentialMultiInstanceState.SingleInstanceUsed` for records that
+   * don't have a value set from before 0.6. We assume the credential has already been used.
    */
-  public multiInstanceState!: CredentialMultiInstanceState
+  public multiInstanceState = CredentialMultiInstanceState.SingleInstanceUsed
 
   public constructor(props: W3cV2CredentialRecordOptions) {
     super()
@@ -112,6 +120,7 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
       givenId: resolvedCredential.id,
       claimFormat: credential.claimFormat,
       types: asArray(resolvedCredential.type),
+      multiInstanceState: this.multiInstanceState,
     }
 
     if (credential.claimFormat === ClaimFormat.JwtW3cVc) {

@@ -28,4 +28,10 @@ UPDATE "W3cV2Credential" SET "credential_instances" = jsonb_build_array(
   jsonb_build_object('credential', "credential")
 );--> statement-breakpoint
 ALTER TABLE "W3cV2Credential" DROP COLUMN "credential";--> statement-breakpoint
-ALTER TABLE "W3cV2Credential" ALTER COLUMN "credential_instances" SET NOT NULL;
+ALTER TABLE "W3cV2Credential" ALTER COLUMN "credential_instances" SET NOT NULL;--> statement-breakpoint
+
+CREATE TYPE "public"."CredentialMultiInstanceState" AS ENUM('SingleInstanceUsed', 'SingleInstanceUnused', 'MultiInstanceFirstUsed', 'MultiInstanceFirstUnused');--> statement-breakpoint
+ALTER TABLE "Mdoc" ADD COLUMN "multi_instance_state" "CredentialMultiInstanceState" DEFAULT 'SingleInstanceUsed' NOT NULL;--> statement-breakpoint
+ALTER TABLE "SdJwtVc" ADD COLUMN "multi_instance_state" "CredentialMultiInstanceState" DEFAULT 'SingleInstanceUsed' NOT NULL;--> statement-breakpoint
+ALTER TABLE "W3cCredential" ADD COLUMN "multi_instance_state" "CredentialMultiInstanceState" DEFAULT 'SingleInstanceUsed' NOT NULL;--> statement-breakpoint
+ALTER TABLE "W3cV2Credential" ADD COLUMN "multi_instance_state" "CredentialMultiInstanceState" DEFAULT 'SingleInstanceUsed' NOT NULL;

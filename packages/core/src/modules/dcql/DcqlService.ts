@@ -58,11 +58,13 @@ import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from '
 
 export interface DcqlSelectCredentialsForRequestOptions {
   /**
-   * The usage mode of the credential instances from the credential record.
+   * The usage mode to apply to the credentials when selecting credentials.
    *
-   * If {@link CredentialMultiInstanceUseMode.New} is selected and one or more credentials
-   * don't have new instances available, an error will be thrown. It does not
-   * actually select the credential from the
+   * If and usage mode is selected that require a new instance to be used, and there's no
+   * new instances available, an error will be thrown.
+   *
+   * It does not actually select the credential from the record yet, it just filters
+   *  out records that don't match the filter.
    */
   useMode?: CredentialMultiInstanceUseMode
 }

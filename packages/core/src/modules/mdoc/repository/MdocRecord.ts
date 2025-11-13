@@ -16,6 +16,11 @@ export type DefaultMdocRecordTags = {
    * The Jwa Signature Algorithm used to sign the Mdoc.
    */
   alg: KnownJwaSignatureAlgorithm
+
+  /**
+   * @since 0.6 - tag was not defined before 0.6
+   */
+  multiInstanceState?: CredentialMultiInstanceState
 }
 
 export type MdocRecordStorageProps = {
@@ -50,12 +55,11 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
 
   /**
    * Tracks the state of credential instances on this record.
-   * - SingleInstanceUnused: Single instance that has never been used
-   * - SingleInstanceUsed: Single instance that has been used at least once
-   * - MultiInstanceLastUnused: Multiple instances with at least one unused instance available
-   * - MultiInstanceLastUsed: Multiple instances where only the first (reusable) instance remains
+   *
+   * NOTE: This defaults to `CredentialMultiInstanceState.SingleInstanceUsed` for records that
+   * don't have a value set from before 0.6. We assume the credential has already been used.
    */
-  public multiInstanceState!: CredentialMultiInstanceState
+  public multiInstanceState = CredentialMultiInstanceState.SingleInstanceUsed
 
   /**
    * Only here for class transformation. If base64Url is set we transform
@@ -116,6 +120,7 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
       ...this._tags,
       docType,
       alg,
+      multiInstanceState: this.multiInstanceState,
     }
   }
 

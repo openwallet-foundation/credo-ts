@@ -1,6 +1,7 @@
 import type { Kms, SdJwtVcRecordInstances } from '@credo-ts/core'
 import { jsonb, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { credentialMultiInstanceStateEnum } from '../w3c-credential-record/postgres'
 
 export const sdJwtVc = pgTable(
   'SdJwtVc',
@@ -13,7 +14,9 @@ export const sdJwtVc = pgTable(
     alg: text().$type<Kms.KnownJwaSignatureAlgorithm>().notNull(),
     sdAlg: text('sd_alg').$type<string>().notNull(),
 
-    // compactSdJwtVc: text('compact_sd_jwt_vc').notNull(),
+    multiInstanceState: credentialMultiInstanceStateEnum('multi_instance_state')
+      .notNull()
+      .default('SingleInstanceUsed'),
   },
   (table) => postgresBaseRecordIndexes(table, 'sdJwtVc')
 )
