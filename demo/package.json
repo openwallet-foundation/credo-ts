@@ -16,7 +16,7 @@
     "@hyperledger/anoncreds-nodejs": "catalog:",
     "@hyperledger/indy-vdr-nodejs": "catalog:",
     "@openwallet-foundation/askar-nodejs": "catalog:",
-    "inquirer": "^8.2.5"
+    "inquirer": "^8.2.7"
   },
   "devDependencies": {
     "@credo-ts/anoncreds": "workspace:*",
@@ -27,9 +27,9 @@
     "@credo-ts/hedera": "workspace:*",
     "@credo-ts/indy-vdr": "workspace:*",
     "@credo-ts/node": "workspace:*",
-    "@hiero-did-sdk/client": "0.1.5",
+    "@hiero-did-sdk/client": "^0.1.6",
     "@types/figlet": "^1.7.0",
-    "@types/inquirer": "^8.2.6",
+    "@types/inquirer": "^8.2.12",
     "clear": "^0.1.0",
     "figlet": "^1.9.3"
   }
