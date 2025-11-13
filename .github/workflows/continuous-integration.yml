@@ -244,7 +244,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [e2e-tests, unit-tests, drizzle-tests]
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           pattern: coverage-artifacts-20-*
           path: coverage
