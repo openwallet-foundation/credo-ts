@@ -73,6 +73,8 @@ export class DidCommConnectionService {
   private eventEmitter: EventEmitter
   private logger: Logger
 
+  private hasLoggedWarning = false
+
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
     connectionRepository: DidCommConnectionRepository,
@@ -83,6 +85,15 @@ export class DidCommConnectionService {
     this.didRepository = didRepository
     this.eventEmitter = eventEmitter
     this.logger = logger
+  }
+
+  private ensureWarningLoggedOnce() {
+    if (this.hasLoggedWarning) return
+
+    this.logger.debug(
+      'The v1 connection protocol is deprecated and will be removed in version 0.7 of Credo. You should upgrade to the did exchange protocol instead.'
+    )
+    this.hasLoggedWarning = true
   }
 
   /**
@@ -97,6 +108,7 @@ export class DidCommConnectionService {
     outOfBandRecord: DidCommOutOfBandRecord,
     config: ConnectionRequestParams
   ): Promise<ConnectionProtocolMsgReturnType<DidCommConnectionRequestMessage>> {
+    this.ensureWarningLoggedOnce()
     this.logger.debug(`Create message ${DidCommConnectionRequestMessage.type.messageTypeUri} start`, outOfBandRecord)
     outOfBandRecord.assertRole(DidCommOutOfBandRole.Receiver)
     outOfBandRecord.assertState(DidCommOutOfBandState.PrepareResponse)
@@ -159,6 +171,7 @@ export class DidCommConnectionService {
     messageContext: DidCommInboundMessageContext<DidCommConnectionRequestMessage>,
     outOfBandRecord: DidCommOutOfBandRecord
   ): Promise<DidCommConnectionRecord> {
+    this.ensureWarningLoggedOnce()
     this.logger.debug(`Process message ${DidCommConnectionRequestMessage.type.messageTypeUri} start`, {
       message: messageContext.message,
     })
@@ -212,6 +225,7 @@ export class DidCommConnectionService {
     outOfBandRecord: DidCommOutOfBandRecord,
     routing?: DidCommRouting
   ): Promise<ConnectionProtocolMsgReturnType<DidCommConnectionResponseMessage>> {
+    this.ensureWarningLoggedOnce()
     this.logger.debug(`Create message ${DidCommConnectionResponseMessage.type.messageTypeUri} start`, connectionRecord)
     connectionRecord.assertState(DidCommDidExchangeState.RequestReceived)
     connectionRecord.assertRole(DidCommDidExchangeRole.Responder)
@@ -306,6 +320,7 @@ export class DidCommConnectionService {
     messageContext: DidCommInboundMessageContext<DidCommConnectionResponseMessage>,
     outOfBandRecord: DidCommOutOfBandRecord
   ): Promise<DidCommConnectionRecord> {
+    this.ensureWarningLoggedOnce()
     this.logger.debug(`Process message ${DidCommConnectionResponseMessage.type.messageTypeUri} start`, {
       message: messageContext.message,
     })
@@ -446,6 +461,7 @@ export class DidCommConnectionService {
   public async processProblemReport(
     messageContext: DidCommInboundMessageContext<DidCommConnectionProblemReportMessage>
   ): Promise<DidCommConnectionRecord> {
+    this.ensureWarningLoggedOnce()
     const { message: connectionProblemReportMessage, recipientKey, senderKey } = messageContext
 
     this.logger.debug(`Processing connection problem report for verkey ${recipientKey?.fingerprint}`)
