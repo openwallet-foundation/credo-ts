@@ -28,11 +28,13 @@ const agentContext = getAgentContext({
 
 vi.mock('../../../../../agent/Agent', () => {
   return {
-    Agent: vi.fn(() => ({
-      config: agentConfig,
-      context: agentContext,
-      dependencyManager: agentContext.dependencyManager,
-    })),
+    Agent: vi.fn(function () {
+      return {
+        config: agentConfig,
+        context: agentContext,
+        dependencyManager: agentContext.dependencyManager,
+      }
+    }),
   }
 })
 
