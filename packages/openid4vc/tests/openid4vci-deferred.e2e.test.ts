@@ -3,7 +3,6 @@ import {
   ClaimFormat,
   CredoError,
   DidsApi,
-  getPublicJwkFromVerificationMethod,
   JwsService,
   Jwt,
   JwtPayload,
