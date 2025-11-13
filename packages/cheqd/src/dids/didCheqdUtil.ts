@@ -8,7 +8,7 @@ import {
 } from '@cheqd/sdk'
 import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload } from '@cheqd/ts-proto/cheqd/did/v2'
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
-import { EnglishMnemonic as _ } from '@cosmjs/crypto'
+import { EnglishMnemonic as _EnglishMnemonic } from '@cosmjs/crypto'
 import { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 import {
   type AnyUint8Array,
@@ -135,8 +135,13 @@ export function getClosestResourceVersion(resources: Metadata[], date: Date) {
   for (const resource of resources) {
     if (!resource.created) throw new CredoError("Missing required property 'created' on resource")
 
-    if (resource.created.getTime() < date.getTime()) {
-      const diff = date.getTime() - resource.created.getTime()
+    // NOTE: The date passed in is based on seconds, while we compare with milliseconds
+    // this results in invalid results due to the precision being lost. So we floor the result
+    // allowing for some leeway in time differences
+    const resourceCreatedAt = new Date(Math.floor(resource.created.getTime() / 1000) * 1000)
+
+    if (resourceCreatedAt.getTime() <= date.getTime()) {
+      const diff = date.getTime() - resourceCreatedAt.getTime()
 
       if (diff < minDiff) {
         closest = resource
@@ -162,7 +167,7 @@ export async function renderResourceData(data: AnyUint8Array, mimeType: string) 
   return TypedArrayEncoder.toBase64URL(data)
 }
 
-export class EnglishMnemonic extends _ {
+export class EnglishMnemonic extends _EnglishMnemonic {
   public static readonly _mnemonicMatcher = /^[a-z]+( [a-z]+)*$/
 }
 
