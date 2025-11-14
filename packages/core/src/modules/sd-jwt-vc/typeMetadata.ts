@@ -1,3 +1,6 @@
+import { z } from 'zod'
+import { vJwk } from '../kms/jwk/jwk'
+
 export interface SdJwtVcTypeMetadataClaim {
   path: Array<string | null>
   display?: Array<{
@@ -57,3 +60,23 @@ export interface SdJwtVcTypeMetadata {
   schema_uri?: string
   'schema_uri#integrity'?: string
 }
+
+export const JwksSchema = z.object({
+  keys: z.array(vJwk),
+})
+
+export const SdJwtVcIssuerMetadataSchema = z.union([
+  z.object({
+    issuer: z.string().url(),
+    jwks_uri: z.string().url(),
+    jwks: z.never().optional(),
+  }),
+  z.object({
+    issuer: z.string().url(),
+    jwks_uri: z.never().optional(),
+    jwks: JwksSchema,
+  }),
+])
+
+export type SdJwtVcIssuerMetadata = z.infer<typeof SdJwtVcIssuerMetadataSchema>
+export type Jwks = z.infer<typeof JwksSchema>

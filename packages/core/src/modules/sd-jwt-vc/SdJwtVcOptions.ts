@@ -59,12 +59,25 @@ export interface SdJwtVcIssuerX5c {
   issuer: string
 }
 
+export interface SdJwtVcIssuerMetadata {
+  method: 'jwt-vc-issuer-metadata'
+
+  /**
+   * The JWK that should be present at GET /.well-known/jwt-vc-issuer or at the issuer's jwks_uri
+   */
+  jwk: PublicJwk
+
+  /**
+   * The issuer of the JWT. It should be a HTTPS URI.
+   * Holders and verifiers should be able to call GET /.well-known/jwt-vc-issuer from this issuer
+   */
+  issuer: string
+}
+
 // We support jwk and did based binding for the holder at the moment
 export type SdJwtVcHolderBinding = SdJwtVcHolderDidBinding | SdJwtVcHolderJwkBinding
 
-// We only support did based issuance currently, but we might want to add support
-// for x509 or issuer metadata (as defined in SD-JWT VC) in the future
-export type SdJwtVcIssuer = SdJwtVcIssuerDid | SdJwtVcIssuerX5c
+export type SdJwtVcIssuer = SdJwtVcIssuerDid | SdJwtVcIssuerX5c | SdJwtVcIssuerMetadata
 
 export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> {
   payload: Payload
