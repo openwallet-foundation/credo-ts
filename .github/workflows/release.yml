@@ -71,29 +71,22 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           if [[ ! "${{ contains(fromJSON(env.LABELS), 'alpha-release') }}" == "true" ]]; then
-            echo "run=false" >> $GITHUB_OUTPUT
-          else
-            echo "run=true" >> $GITHUB_OUTPUT
+            exit 0
           fi
 
       - uses: actions/checkout@v5
-        if: steps.should-run.outputs.run == 'true'
       - uses: pnpm/action-setup@v4
-        if: steps.should-run.outputs.run == 'true'
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
-        if: steps.should-run.outputs.run == 'true'
         with:
           node-version: 22
           cache: pnpm
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-        if: steps.should-run.outputs.run == 'true'
 
       - name: Creating .npmrc
-        if: steps.should-run.outputs.run == 'true'
         run: |
           cat << EOF > ".npmrc"
             //registry.npmjs.org/:_authToken=$NPM_TOKEN
@@ -102,7 +95,6 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
 
       - name: Create unstable release
-        if: steps.should-run.outputs.run == 'true'
         env:
           TAG: ${{ github.event_name == 'push' && 'alpha' || format('pr-{0}', github.event.number) }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
