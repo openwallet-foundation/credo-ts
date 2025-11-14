@@ -7,7 +7,6 @@
 '@credo-ts/askar': patch
 '@credo-ts/cheqd': patch
 '@credo-ts/drpc': patch
-'@credo-ts/indy-sdk-to-askar-migration': patch
 '@credo-ts/indy-vdr': patch
 '@credo-ts/question-answer': patch
 '@credo-ts/react-native': patch
