@@ -25,23 +25,23 @@ export class W3cV2CredentialsApi {
     this.w3cV2CredentialService = w3cV2CredentialService
   }
 
-  public async storeCredential(options: W3cV2StoreCredentialOptions): Promise<W3cV2CredentialRecord> {
+  public async store(options: W3cV2StoreCredentialOptions): Promise<W3cV2CredentialRecord> {
     return this.w3cV2CredentialService.storeCredential(this.agentContext, options)
   }
 
-  public async removeCredentialRecord(id: string) {
+  public async deleteById(id: string) {
     return this.w3cV2CredentialService.removeCredentialRecord(this.agentContext, id)
   }
 
-  public async getAllCredentialRecords(): Promise<W3cV2CredentialRecord[]> {
+  public async getAll(): Promise<W3cV2CredentialRecord[]> {
     return this.w3cV2CredentialService.getAllCredentialRecords(this.agentContext)
   }
 
-  public async getCredentialRecordById(id: string): Promise<W3cV2CredentialRecord> {
+  public async getById(id: string): Promise<W3cV2CredentialRecord> {
     return this.w3cV2CredentialService.getCredentialRecordById(this.agentContext, id)
   }
 
-  public async findCredentialRecordsByQuery(
+  public async findAllByQuery(
     query: Query<W3cV2CredentialRecord>,
     queryOptions?: QueryOptions
   ): Promise<W3cV2VerifiableCredential[]> {

@@ -6,7 +6,7 @@ import type {
   QueryOptions,
   StorageService,
 } from '@credo-ts/core'
-import { injectable, JsonTransformer, RecordDuplicateError, RecordNotFoundError } from '@credo-ts/core'
+import { CredoError, injectable, JsonTransformer, RecordDuplicateError, RecordNotFoundError } from '@credo-ts/core'
 import { Scan, Session } from '@openwallet-foundation/askar-shared'
 
 import { AskarStoreManager } from '../AskarStoreManager'
@@ -20,6 +20,10 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
 
   private withSession<Return>(agentContext: AgentContext, callback: (session: Session) => Return) {
     return this.askarStoreManager.withSession(agentContext, callback)
+  }
+
+  private withTransaction<Return>(agentContext: AgentContext, callback: (session: Session) => Return) {
+    return this.askarStoreManager.withTransaction(agentContext, callback)
   }
 
   /** @inheritDoc */
@@ -61,6 +65,46 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
         })
       }
 
+      throw new AskarError('Error updating record', { cause: error })
+    }
+  }
+
+  /**
+   * Update the record by id with a lock based on the value returned in `updateCallback`.
+   *
+   * NOTE that this has no effect when SQLite is used, as SQLite does not support row level
+   * locking
+   */
+  public async updateByIdWithLock(
+    agentContext: AgentContext,
+    recordClass: BaseRecordConstructor<T>,
+    id: string,
+    updateCallback: (record: T) => Promise<T>
+  ): Promise<T> {
+    try {
+      const updatedRecord = await this.withTransaction(agentContext, async (session) => {
+        const record = await session.fetch({ category: recordClass.type, name: id, forUpdate: true })
+
+        if (!record) {
+          throw new RecordNotFoundError(`record with id ${id} not found.`, {
+            recordType: recordClass.type,
+          })
+        }
+
+        const recordInstance = recordToInstance(record, recordClass)
+        const updatedRecord = await updateCallback(recordInstance)
+
+        updatedRecord.updatedAt = new Date()
+        const value = JsonTransformer.serialize(updatedRecord)
+        const tags = transformFromRecordTagValues(updatedRecord.getTags()) as Record<string, string>
+
+        await session.replace({ category: updatedRecord.type, name: updatedRecord.id, value, tags })
+
+        return updatedRecord
+      })
+      return updatedRecord
+    } catch (error) {
+      if (error instanceof CredoError) throw error
       throw new AskarError('Error updating record', { cause: error })
     }
   }

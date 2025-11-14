@@ -27,6 +27,7 @@ import type {
   SdJwtVcPayload,
   SdJwtVcPresentOptions,
   SdJwtVcSignOptions,
+  SdJwtVcStoreOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
@@ -65,6 +66,13 @@ export interface SdJwtVc<
     payload: Record<string, unknown>
   }
 
+  /**
+   * The key id in the KMS bound to this SD-JWT VC, used for presentations.
+   *
+   * This will only be set on the holder side if defined on the SdJwtVcRecord
+   */
+  kmsKeyId?: string
+
   typeMetadata?: SdJwtVcTypeMetadata
 }
 
@@ -92,7 +100,10 @@ export class SdJwtVcService {
     this.sdJwtVcRepository = sdJwtVcRepository
   }
 
-  public async sign<Payload extends SdJwtVcPayload>(agentContext: AgentContext, options: SdJwtVcSignOptions<Payload>) {
+  public async sign<Payload extends SdJwtVcPayload>(
+    agentContext: AgentContext,
+    options: SdJwtVcSignOptions<Payload>
+  ): Promise<SdJwtVc> {
     const { payload, disclosureFrame, hashingAlgorithm } = options
 
     // default is sha-256
@@ -189,18 +200,23 @@ export class SdJwtVcService {
 
   public async present<Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
-    { compactSdJwtVc, presentationFrame, verifierMetadata, additionalPayload }: SdJwtVcPresentOptions<Payload>
+    { sdJwtVc, presentationFrame, verifierMetadata, additionalPayload }: SdJwtVcPresentOptions<Payload>
   ): Promise<string> {
     const sdjwt = new SDJwtVcInstance(this.getBaseSdJwtConfig(agentContext))
+    const compactSdJwtVc = typeof sdJwtVc === 'string' ? sdJwtVc : sdJwtVc.compact
+    const sdJwtVcInstance = await sdjwt.decode(compactSdJwtVc)
 
-    const sdJwtVc = await sdjwt.decode(compactSdJwtVc)
-
-    const holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt?.payload)
+    const holderBinding = parseHolderBindingFromCredential(sdJwtVcInstance.jwt?.payload)
     if (!holderBinding && verifierMetadata) {
       throw new SdJwtVcError("Verifier metadata provided, but credential has no 'cnf' claim to create a KB-JWT from")
     }
 
-    const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding, true) : undefined
+    const holder = holderBinding
+      ? await extractKeyFromHolderBinding(agentContext, holderBinding, {
+          forSigning: true,
+          jwkKeyId: typeof sdJwtVc !== 'string' ? sdJwtVc.kmsKeyId : undefined,
+        })
+      : undefined
     sdjwt.config({
       kbSigner: holder ? getSdJwtSigner(agentContext, holder.publicJwk) : undefined,
       kbSignAlg: holder?.alg,
@@ -383,13 +399,9 @@ export class SdJwtVcService {
     }
   }
 
-  public async store(agentContext: AgentContext, compactSdJwtVc: string) {
-    const sdJwtVcRecord = new SdJwtVcRecord({
-      compactSdJwtVc,
-    })
-    await this.sdJwtVcRepository.save(agentContext, sdJwtVcRecord)
-
-    return sdJwtVcRecord
+  public async store(agentContext: AgentContext, options: SdJwtVcStoreOptions) {
+    await this.sdJwtVcRepository.save(agentContext, options.record)
+    return options.record
   }
 
   public async getById(agentContext: AgentContext, id: string): Promise<SdJwtVcRecord> {

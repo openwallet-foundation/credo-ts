@@ -1,15 +1,28 @@
 import { BaseRecord, type Tags, type TagsBase } from '../../../storage/BaseRecord'
+import type { NonEmptyArray } from '../../../types'
 import { asArray, JsonTransformer } from '../../../utils'
+import { CredentialMultiInstanceState } from '../../../utils/credentialUseTypes'
 import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
-import { ClaimFormat, W3cV2EnvelopedVerifiableCredential, type W3cV2VerifiableCredential } from '../models'
-import { W3cV2VerifiableCredentialTransformer } from '../models/credential/W3cV2VerifiableCredential'
+import { W3cV2JwtVerifiableCredential } from '../jwt-vc'
+import { ClaimFormat, type W3cV2VerifiableCredential } from '../models'
+import { W3cV2SdJwtVerifiableCredential } from '../sd-jwt-vc'
 
 export interface W3cV2CredentialRecordOptions {
   id?: string
   createdAt?: Date
-  credential: W3cV2VerifiableCredential
+
+  credentialInstances: W3cV2CredentialRecordInstances
 }
+
+export type W3cV2CredentialRecordInstances = NonEmptyArray<{
+  /**
+   * NOTE: String for now, might change in the future if we add other types.
+   */
+  credential: string
+
+  // no kmsKeyId for w3c credential record, since all credentials are bound to a DID
+}>
 
 export type DefaultW3cV2CredentialTags = {
   issuerId: string
@@ -21,26 +34,78 @@ export type DefaultW3cV2CredentialTags = {
 
   types: Array<string>
   algs?: Array<string>
+
+  /**
+   * @since 0.6 - tag was not defined before 0.6
+   */
+  multiInstanceState?: CredentialMultiInstanceState
 }
 
 export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags> {
   public static readonly type = 'W3cV2CredentialRecord'
   public readonly type = W3cV2CredentialRecord.type
 
-  @W3cV2VerifiableCredentialTransformer()
-  public credential!: W3cV2VerifiableCredential
+  public credentialInstances!: W3cV2CredentialRecordInstances
+
+  /**
+   * Tracks the state of credential instances on this record.
+   *
+   * NOTE: This defaults to `CredentialMultiInstanceState.SingleInstanceUsed` for records that
+   * don't have a value set from before 0.6. We assume the credential has already been used.
+   */
+  public multiInstanceState = CredentialMultiInstanceState.SingleInstanceUsed
 
   public constructor(props: W3cV2CredentialRecordOptions) {
     super()
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
-      this.credential = props.credential
+      this.credentialInstances = props.credentialInstances
+
+      // Set multiInstanceState based on the number of initial instances. We
+      // assume the instance is unused when the record is created.
+      this.multiInstanceState =
+        this.credentialInstances.length === 1
+          ? CredentialMultiInstanceState.SingleInstanceUnused
+          : CredentialMultiInstanceState.MultiInstanceFirstUnused
     }
   }
 
+  /**
+   * Only here for class transformation. If credential is set we transform
+   * it to the new credentialInstances array format
+   */
+  private set credential(credential: W3cV2VerifiableCredential) {
+    this.credentialInstances = [
+      {
+        // NOTE: we have to type the `set` method the same as the `get`. Previously
+        // we had a transformer that would transform. Now the set is private and will
+        // only be called by class transformer, and is the raw type.
+        credential: credential as unknown as string,
+      },
+    ]
+  }
+
+  public get firstCredential(): W3cV2VerifiableCredential {
+    const credential = this.credentialInstances[0].credential
+    return credential.includes('~')
+      ? W3cV2SdJwtVerifiableCredential.fromCompact(credential)
+      : W3cV2JwtVerifiableCredential.fromCompact(credential)
+  }
+
+  public static fromCredential(credential: W3cV2VerifiableCredential) {
+    return new W3cV2CredentialRecord({
+      credentialInstances: [
+        {
+          credential: credential.encoded as string,
+        },
+      ],
+    })
+  }
+
   public getTags(): Tags<DefaultW3cV2CredentialTags, TagsBase> {
-    const resolvedCredential = this.credential.resolvedCredential
+    const credential = this.firstCredential
+    const resolvedCredential = credential.resolvedCredential
 
     // Contexts are usually strings, but can sometimes be objects. We're unable to use objects as tags,
     // so we filter out the objects before setting the tags.
@@ -53,17 +118,15 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
       schemaIds: resolvedCredential.credentialSchemaIds,
       contexts: stringContexts,
       givenId: resolvedCredential.id,
-      claimFormat: this.credential.claimFormat,
+      claimFormat: credential.claimFormat,
       types: asArray(resolvedCredential.type),
+      multiInstanceState: this.multiInstanceState,
     }
 
-    if (this.credential instanceof W3cV2EnvelopedVerifiableCredential) {
-      const enveloped = this.credential.envelopedCredential
-      if (enveloped.claimFormat === ClaimFormat.JwtW3cVc) {
-        tags.algs = [enveloped.jwt.header.alg]
-      } else if (enveloped.claimFormat === ClaimFormat.SdJwtW3cVc) {
-        tags.algs = [enveloped.sdJwt.header.alg]
-      }
+    if (credential.claimFormat === ClaimFormat.JwtW3cVc) {
+      tags.algs = [credential.jwt.header.alg]
+    } else if (credential.claimFormat === ClaimFormat.SdJwtW3cVc) {
+      tags.algs = [credential.sdJwt.header.alg]
     }
 
     return tags
@@ -83,6 +146,6 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
    * encoded is convenience method added to all credential records
    */
   public get encoded() {
-    return this.credential.encoded
+    return this.credentialInstances[0].credential
   }
 }

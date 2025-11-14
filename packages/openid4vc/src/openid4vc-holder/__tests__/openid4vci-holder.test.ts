@@ -4,8 +4,9 @@ import {
   DidKey,
   type KeyDidCreateOptions,
   Kms,
-  type SdJwtVc,
+  SdJwtVcRecord,
   TypedArrayEncoder,
+  W3cCredentialRecord,
   W3cCredentialService,
   W3cJwtVerifiableCredential,
 } from '@credo-ts/core'
@@ -132,11 +133,11 @@ describe('OpenId4VcHolder', () => {
       })
 
       expect(credentialsResult.credentials).toHaveLength(1)
-      const w3cCredential = credentialsResult.credentials[0].credentials[0] as W3cJwtVerifiableCredential
+      const w3cCredential = (credentialsResult.credentials[0].record as W3cCredentialRecord).firstCredential
       expect(w3cCredential).toBeInstanceOf(W3cJwtVerifiableCredential)
 
-      expect(w3cCredential.credential.type).toEqual(['VerifiableCredential', 'OpenBadgeCredential'])
-      expect(w3cCredential.credential.credentialSubjectIds[0]).toEqual(holderDid)
+      expect(w3cCredential.type).toEqual(['VerifiableCredential', 'OpenBadgeCredential'])
+      expect(w3cCredential.credentialSubjectIds[0]).toEqual(holderDid)
     })
 
     it('Should successfully receive credential from walt.id using the pre-authorized flow using a did:key Ed25519 subject and jwt_vc_json credential', async () => {
@@ -247,7 +248,7 @@ describe('OpenId4VcHolder', () => {
       })
 
       expect(credentialResponse.credentials).toHaveLength(1)
-      const credential = credentialResponse.credentials[0].credentials[0] as SdJwtVc
+      const credential = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
       expect(credential).toEqual({
         claimFormat: 'dc+sd-jwt',
         compact:

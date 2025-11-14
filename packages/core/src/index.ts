@@ -81,6 +81,7 @@ export {
   TypedArrayEncoder,
 } from './utils'
 export { base64ToBase64URL } from './utils/base64'
+export { CredentialMultiInstanceState, CredentialMultiInstanceUseMode } from './utils/credentialUseTypes'
 export { getDomainFromUrl } from './utils/domain'
 export type { Constructable, Constructor, UnionToIntersection } from './utils/mixins'
 export { getDirFromFilePath, joinUriParts } from './utils/path'

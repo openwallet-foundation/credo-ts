@@ -1,6 +1,12 @@
 import type { HashName } from '../../crypto'
 import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate, X509Certificate } from '../x509'
+import { SdJwtVcRecord } from './repository'
+import type { SdJwtVc } from './SdJwtVcService'
+
+export interface SdJwtVcStoreOptions {
+  record: SdJwtVcRecord
+}
 
 // TODO: extend with required claim names for input (e.g. vct)
 export type SdJwtVcPayload = Record<string, unknown>
@@ -87,7 +93,7 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
 
 // TODO: use the payload type once types are fixed
 export type SdJwtVcPresentOptions<_Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
-  compactSdJwtVc: string
+  sdJwtVc: string | SdJwtVc
 
   /**
    * Use true to disclose everything
@@ -140,8 +146,18 @@ export type SdJwtVcVerifyOptions = {
    * Whether to fetch the `vct` type metadata if the `vct` is an https URL.
    *
    * It will will not influence the verification result if fetching of type metadata fails
+   *
+   * @default false
    */
   fetchTypeMetadata?: boolean
+
+  /**
+   * Whether to verify the status of the credential. If set to false and the credential
+   * has a status, it will not be fetched and verified.
+   *
+   * @default true
+   */
+  verifyCredentialStatus?: boolean
 
   trustedCertificates?: EncodedX509Certificate[]
 

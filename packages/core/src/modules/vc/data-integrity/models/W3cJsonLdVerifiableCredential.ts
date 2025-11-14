@@ -44,7 +44,7 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
   }
 
   public toJson() {
-    return JsonTransformer.toJSON(this)
+    return JsonTransformer.toJSON(this) as W3cJsonCredential
   }
 
   public static fromJson(json: Record<string, unknown>) {

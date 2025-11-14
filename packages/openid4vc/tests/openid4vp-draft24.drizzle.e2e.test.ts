@@ -7,6 +7,7 @@ import {
   parseDid,
   SdJwtVcRecord,
   W3cCredential,
+  W3cCredentialRecord,
   W3cCredentialSubject,
   W3cIssuer,
   w3cDate,
@@ -173,8 +174,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationMethod: verifier.verificationMethod.id,
     })
 
-    await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential1 })
-    await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
+    await holderTenant.w3cCredentials.store({ record: W3cCredentialRecord.fromCredential(signedCredential1) })
+    await holderTenant.w3cCredentials.store({ record: W3cCredentialRecord.fromCredential(signedCredential2) })
 
     const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
       await verifierTenant1.openid4vc.verifier.createAuthorizationRequest({
@@ -250,8 +251,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationMethod: verifier.verificationMethod.id,
     })
 
-    await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential1 })
-    await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
+    await holderTenant.w3cCredentials.store({ record: W3cCredentialRecord.fromCredential(signedCredential1) })
+    await holderTenant.w3cCredentials.store({ record: W3cCredentialRecord.fromCredential(signedCredential2) })
     const authorizationResponseRedirectUri = `https://my-website.com/${randomUUID()}`
 
     const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
@@ -308,11 +309,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               verifiableCredentials: [
                 {
                   claimFormat: ClaimFormat.JwtVc,
-                  credentialRecord: {
-                    credential: {
-                      type: ['VerifiableCredential', 'OpenBadgeCredential'],
-                    },
-                  },
+                  credentialRecord: expect.objectContaining({
+                    credentialInstances: [
+                      expect.objectContaining({
+                        credential: expect.any(String),
+                      }),
+                    ],
+                  }),
                 },
               ],
             },
@@ -333,11 +336,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               verifiableCredentials: [
                 {
                   claimFormat: ClaimFormat.JwtVc,
-                  credentialRecord: {
-                    credential: {
-                      type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-                    },
-                  },
+                  credentialRecord: expect.objectContaining({
+                    credentialInstances: [
+                      expect.objectContaining({
+                        credential: expect.any(String),
+                      }),
+                    ],
+                  }),
                 },
               ],
             },
@@ -492,7 +497,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -576,7 +581,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc.compact,
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -777,7 +786,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -858,7 +867,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc.compact,
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -1055,8 +1068,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
-    await holder.agent.sdJwtVc.store(signedSdJwtVc2.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc2) })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -1183,7 +1196,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc.compact,
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -1214,7 +1231,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc2.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc2.compact,
+                      }),
+                    ],
                   }),
                   disclosedPayload: {
                     cnf: {
@@ -1512,7 +1533,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.mdoc.store(signedMdoc)
+    signedMdoc.deviceKeyId = holderKey.keyId
+    await holder.agent.mdoc.store({ record: MdocRecord.fromMdoc(signedMdoc) })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -1603,7 +1625,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         _sd: ['university', 'name'],
       },
     })
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
 
     const issuerCertificate = await X509Service.createCertificate(verifier.agent.context, {
       authorityKey: Kms.PublicJwk.fromPublicJwk(
@@ -1653,7 +1675,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.mdoc.store(signedMdoc)
+    signedMdoc.deviceKeyId = holderKey.keyId
+    await holder.agent.mdoc.store({ record: MdocRecord.fromMdoc(signedMdoc) })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -1749,7 +1772,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.MsoMdoc,
                   credentialRecord: expect.objectContaining({
-                    base64Url: expect.any(String),
+                    credentialInstances: [
+                      expect.objectContaining({
+                        issuerSignedBase64Url: expect.any(String),
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -1777,7 +1804,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc.compact,
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -1995,8 +2026,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
-    await holder.agent.sdJwtVc.store(signedSdJwtVc2.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc2) })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -2094,7 +2125,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc.compact,
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -2125,7 +2160,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc2.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc2.compact,
+                      }),
+                    ],
                   }),
                   disclosedPayload: {
                     cnf: {
@@ -2338,7 +2377,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         _sd: ['university', 'name'],
       },
     })
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
 
     const selfSignedCertificate = await X509Service.createCertificate(verifier.agent.context, {
       authorityKey: Kms.PublicJwk.fromPublicJwk(
@@ -2397,7 +2436,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.mdoc.store(signedMdoc)
+    signedMdoc.deviceKeyId = holderKey.keyId
+    await holder.agent.mdoc.store({ record: MdocRecord.fromMdoc(signedMdoc) })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)

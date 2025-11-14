@@ -69,7 +69,7 @@ export async function extractHolderFromPresentationCredentials(
     throw new CredoError('No holder binding found in credential included in presentation')
   }
 
-  return await extractKeyFromHolderBinding(agentContext, holderBinding, true)
+  return await extractKeyFromHolderBinding(agentContext, holderBinding, { forSigning: true })
 }
 
 /**

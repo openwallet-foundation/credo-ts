@@ -1,6 +1,7 @@
 import {
   AgentContext,
   type DcqlQueryResult,
+  type DcqlSelectCredentialsForRequestOptions,
   DcqlService,
   type DifPexCredentialsForRequest,
   DifPresentationExchangeService,
@@ -89,8 +90,11 @@ export class OpenId4VcHolderApi {
    * Automatically select credentials from available credentials for a dcql request. Can be called after calling
    * @see resolveOpenId4VpAuthorizationRequest.
    */
-  public selectCredentialsForDcqlRequest(dcqlQueryResult: DcqlQueryResult) {
-    return this.dcqlService.selectCredentialsForRequest(dcqlQueryResult)
+  public selectCredentialsForDcqlRequest(
+    dcqlQueryResult: DcqlQueryResult,
+    options?: DcqlSelectCredentialsForRequestOptions
+  ) {
+    return this.dcqlService.selectCredentialsForRequest(dcqlQueryResult, options)
   }
 
   public async resolveIssuerMetadata(credentialIssuer: string): Promise<OpenId4VciMetadata> {

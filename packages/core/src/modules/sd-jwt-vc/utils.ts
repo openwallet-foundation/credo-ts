@@ -26,7 +26,7 @@ export async function resolveDidUrl(agentContext: AgentContext, didUrl: string) 
 export async function extractKeyFromHolderBinding(
   agentContext: AgentContext,
   holder: SdJwtVcHolderBinding,
-  forSigning = false
+  { forSigning = false, jwkKeyId }: { forSigning?: boolean; jwkKeyId?: string } = {}
 ) {
   if (holder.method === 'did') {
     const parsedDid = parseDid(holder.didUrl)
@@ -62,10 +62,12 @@ export async function extractKeyFromHolderBinding(
     const publicJwk = holder.jwk
     const alg = publicJwk.supportedSignatureAlgorithms[0]
 
+    // FIXME: shouldn't we use `if (forSigning && !publicJwk.keyId)`, or at least use keyId over legacyKeyId
+    // It depends on whether we foresee security issues with trusting the `kid` field in the issued credential jwk.
     // If there is no key id configured when signing, we assume this credential was issued before we included key ids
     // and the we use the legacy key id.
-    if (forSigning && !publicJwk.hasKeyId) {
-      publicJwk.keyId = publicJwk.legacyKeyId
+    if (forSigning) {
+      publicJwk.keyId = jwkKeyId ?? publicJwk.legacyKeyId
     }
 
     return {

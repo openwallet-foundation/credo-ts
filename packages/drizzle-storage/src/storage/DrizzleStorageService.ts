@@ -42,6 +42,23 @@ export class DrizzleStorageService<T extends BaseRecord> implements StorageServi
     await adapter.update(agentContext, record)
   }
 
+  /**
+   * Update the record by id with a lock based on the value returned in `updateCallback`.
+   *
+   * NOTE that this has no effect when SQLite is used, as SQLite does not support row level
+   * locking
+   */
+  public async updateByIdWithLock(
+    agentContext: AgentContext,
+    recordClass: BaseRecordConstructor<T>,
+    id: string,
+    updateCallback: (record: T) => Promise<T>
+  ): Promise<T> {
+    const adapter = this.getAdapterForRecordType(recordClass.type)
+    const updatedRecord = await adapter.updateByIdWithLock(agentContext, id, updateCallback)
+    return updatedRecord
+  }
+
   public async delete(agentContext: AgentContext, record: T): Promise<void> {
     const adapter = this.getAdapterForRecordType(record.type)
     await adapter.delete(agentContext, record.id)

@@ -107,7 +107,7 @@ describe('UpdateAssistant | AnonCreds | v0.4 - v0.5', () => {
 
       // biome-ignore lint/suspicious/noExplicitAny: no explanation
       const recordValue = record.value as any
-      recordValue.credential.issuanceDate = new Date()
+      recordValue.credentialInstances[0].credential.issuanceDate = new Date()
     }
 
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()

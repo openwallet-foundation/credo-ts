@@ -1,25 +1,23 @@
-import type {
-  AgentContext,
-  JsonObject,
-  JwsDetachedFormat,
-  VerificationMethod,
-  W3cCredentialRecord,
-} from '@credo-ts/core'
 import {
+  type AgentContext,
   ClaimFormat,
   CredoError,
   DidsApi,
   deepEquality,
   getPublicJwkFromVerificationMethod,
   JsonEncoder,
+  type JsonObject,
   JsonTransformer,
+  type JwsDetachedFormat,
   JwsService,
   JwtPayload,
   Kms,
   parseDid,
   SignatureSuiteRegistry,
   TypedArrayEncoder,
+  type VerificationMethod,
   W3cCredential,
+  W3cCredentialRecord,
   W3cCredentialService,
   W3cCredentialSubject,
   W3cJsonLdVerifiableCredential,
@@ -886,7 +884,7 @@ export class DataIntegrityDidCommCredentialFormatService
 
       await this.assertCredentialAttributesMatchSchemaAttributes(
         agentContext,
-        w3cCredentialRecord.credential,
+        w3cCredentialRecord.firstCredential,
         getAnonCredsTagsFromRecord(w3cCredentialRecord)?.anonCredsSchemaId as string,
         true
       )
@@ -894,7 +892,7 @@ export class DataIntegrityDidCommCredentialFormatService
       const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
       const w3cJsonLdVerifiableCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
       w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, {
-        credential: w3cJsonLdVerifiableCredential,
+        record: W3cCredentialRecord.fromCredential(w3cJsonLdVerifiableCredential),
       })
     }
 

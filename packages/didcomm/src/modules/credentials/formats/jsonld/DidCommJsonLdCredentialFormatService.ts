@@ -8,6 +8,7 @@ import {
   JsonTransformer,
   utils,
   W3cCredential,
+  W3cCredentialRecord,
   W3cCredentialService,
   W3cJsonLdCredentialService,
   W3cJsonLdVerifiableCredential,
@@ -331,7 +332,7 @@ export class DidCommJsonLdCredentialFormatService
     }
 
     const verifiableCredential = await w3cCredentialService.storeCredential(agentContext, {
-      credential,
+      record: W3cCredentialRecord.fromCredential(credential),
     })
 
     credentialExchangeRecord.credentials.push({

@@ -21,7 +21,7 @@ import { transformSeedToPrivateJwk } from '../../../../../askar/src'
 import { agentDependencies, getAgentOptions } from '../../../../tests'
 import * as fetchUtils from '../../../utils/fetch'
 import { PublicJwk } from '../../kms'
-import { SdJwtVcRepository } from '../repository'
+import { SdJwtVcRecord, SdJwtVcRepository } from '../repository'
 import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 import { SdJwtVcService } from '../SdJwtVcService'
 import {
@@ -588,8 +588,16 @@ describe('SdJwtVcService', () => {
   describe('SdJwtVcService.receive', () => {
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
       const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVc)
-      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, sdJwtVc.compact)
-      expect(sdJwtVcRecord.compactSdJwtVc).toEqual(simpleJwtVc)
+      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, {
+        record: new SdJwtVcRecord({
+          credentialInstances: [
+            {
+              compactSdJwtVc: simpleJwtVc,
+            },
+          ],
+        }),
+      })
+      expect(sdJwtVcRecord.encoded).toEqual(simpleJwtVc)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -610,8 +618,16 @@ describe('SdJwtVcService', () => {
 
     test('Receive sd-jwt-vc without holder binding', async () => {
       const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVcWithoutHolderBinding)
-      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, simpleJwtVcWithoutHolderBinding)
-      expect(sdJwtVcRecord.compactSdJwtVc).toEqual(simpleJwtVcWithoutHolderBinding)
+      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, {
+        record: new SdJwtVcRecord({
+          credentialInstances: [
+            {
+              compactSdJwtVc: simpleJwtVcWithoutHolderBinding,
+            },
+          ],
+        }),
+      })
+      expect(sdJwtVcRecord.encoded).toEqual(simpleJwtVcWithoutHolderBinding)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -782,7 +798,7 @@ describe('SdJwtVcService', () => {
   describe('SdJwtVcService.present', () => {
     test('Present sd-jwt-vc from a basic payload without disclosures', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleJwtVc,
+        sdJwtVc: simpleJwtVc,
         presentationFrame: {},
         verifierMetadata: {
           issuedAt: Date.now() / 1000,
@@ -796,7 +812,7 @@ describe('SdJwtVcService', () => {
 
     test('Present sd-jwt-vc without holder binding', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleJwtVcWithoutHolderBinding,
+        sdJwtVc: simpleJwtVcWithoutHolderBinding,
         presentationFrame: {},
       })
 
@@ -807,7 +823,7 @@ describe('SdJwtVcService', () => {
     test('Errors when providing verifier metadata but SD-JWT VC has no cnf claim', async () => {
       await expect(
         sdJwtVcService.present(agent.context, {
-          compactSdJwtVc: simpleJwtVcWithoutHolderBinding,
+          sdJwtVc: simpleJwtVcWithoutHolderBinding,
           presentationFrame: {},
           verifierMetadata: {
             audience: 'verifier',
@@ -820,7 +836,7 @@ describe('SdJwtVcService', () => {
 
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+        sdJwtVc: sdJwtVcWithSingleDisclosure,
         presentationFrame: { claim: true },
         verifierMetadata: {
           issuedAt: Date.now() / 1000,
@@ -840,7 +856,7 @@ describe('SdJwtVcService', () => {
         address: { country: string }
         given_name: boolean
       }>(agent.context, {
-        compactSdJwtVc: complexSdJwtVc,
+        sdJwtVc: complexSdJwtVc,
         verifierMetadata: {
           issuedAt: Date.now() / 1000,
           audience: verifierDid,
@@ -864,7 +880,7 @@ describe('SdJwtVcService', () => {
   describe('SdJwtVcService.verify', () => {
     test('Verify sd-jwt-vc without disclosures', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleJwtVc,
+        sdJwtVc: simpleJwtVc,
         // no disclosures
         presentationFrame: {},
         verifierMetadata: {
@@ -888,7 +904,7 @@ describe('SdJwtVcService', () => {
 
     test('Verify x509 protected sd-jwt-vc without disclosures', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleX509.sdJwtVc,
+        sdJwtVc: simpleX509.sdJwtVc,
         // no disclosures
         presentationFrame: {},
         verifierMetadata: {
@@ -915,7 +931,7 @@ describe('SdJwtVcService', () => {
 
     test('Verify sd-jwt-vc without holder binding', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleJwtVcWithoutHolderBinding,
+        sdJwtVc: simpleJwtVcWithoutHolderBinding,
         // no disclosures
         presentationFrame: {},
       })
@@ -978,7 +994,7 @@ describe('SdJwtVcService', () => {
       } satisfies Partial<Response> as Response)
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: simpleSdJwtVcWithStatus,
         presentationFrame: {},
       })
 
@@ -1013,7 +1029,7 @@ describe('SdJwtVcService', () => {
       } satisfies Partial<Response> as Response)
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: simpleSdJwtVcWithStatus,
         presentationFrame: {},
       })
 
@@ -1049,7 +1065,7 @@ describe('SdJwtVcService', () => {
       } satisfies Partial<Response> as Response)
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: simpleSdJwtVcWithStatus,
         presentationFrame: {},
       })
 
@@ -1073,7 +1089,7 @@ describe('SdJwtVcService', () => {
 
     test('Verify sd-jwt-vc with a disclosure', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+        sdJwtVc: sdJwtVcWithSingleDisclosure,
         verifierMetadata: {
           issuedAt: Date.now() / 1000,
           audience: verifierDid,
@@ -1102,7 +1118,7 @@ describe('SdJwtVcService', () => {
         address: { country: string }
         given_name: boolean
       }>(agent.context, {
-        compactSdJwtVc: complexSdJwtVc,
+        sdJwtVc: complexSdJwtVc,
         verifierMetadata: {
           issuedAt: Date.now() / 1000,
           audience: verifierDid,

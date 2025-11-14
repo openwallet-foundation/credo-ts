@@ -11,7 +11,7 @@ import {
   AnonCredsLinkSecretRecord,
   AnonCredsModuleConfig,
 } from '@credo-ts/anoncreds'
-import type { DidRepository } from '@credo-ts/core'
+import type { DidRepository, W3cJsonCredential } from '@credo-ts/core'
 import {
   DidResolverService,
   DidsModuleConfig,
@@ -22,6 +22,7 @@ import {
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
+  w3cDate,
 } from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
@@ -464,8 +465,11 @@ describe('AnonCredsRsHolderService', () => {
 
   test('deleteCredential', async () => {
     const record = new W3cCredentialRecord({
-      credential: {} as W3cJsonLdVerifiableCredential,
-      tags: {},
+      credentialInstances: [
+        {
+          credential: {} as W3cJsonCredential,
+        },
+      ],
     })
     findByIdMock.mockResolvedValueOnce(null).mockResolvedValueOnce(record)
     getByCredentialIdMock.mockRejectedValueOnce(new Error())
@@ -476,21 +480,20 @@ describe('AnonCredsRsHolderService', () => {
   })
 
   test('get single Credential', async () => {
-    const record = new W3cCredentialRecord({
-      credential: new W3cJsonLdVerifiableCredential({
+    const record = W3cCredentialRecord.fromCredential(
+      new W3cJsonLdVerifiableCredential({
         credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
-        issuer: 'test',
-        issuanceDate: Date.now().toString(),
+        issuer: 'uri:test',
+        issuanceDate: w3cDate(Date.now()),
         type: ['VerifiableCredential'],
         proof: {
-          created: Date.now().toString(),
+          created: w3cDate(Date.now()),
           type: 'test',
           proofPurpose: 'test',
           verificationMethod: 'test',
         },
-      }),
-      tags: {},
-    })
+      })
+    )
 
     const tags: AnonCredsCredentialTags = {
       anonCredsLinkSecretId: 'linkSecretId',
@@ -531,21 +534,20 @@ describe('AnonCredsRsHolderService', () => {
   })
 
   test('getCredentials', async () => {
-    const record = new W3cCredentialRecord({
-      credential: new W3cJsonLdVerifiableCredential({
+    const record = W3cCredentialRecord.fromCredential(
+      new W3cJsonLdVerifiableCredential({
         credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
-        issuer: 'test',
-        issuanceDate: Date.now().toString(),
+        issuer: 'uri:test',
+        issuanceDate: w3cDate(Date.now()),
         type: ['VerifiableCredential'],
         proof: {
-          created: Date.now().toString(),
+          created: w3cDate(Date.now()),
           type: 'test',
           proofPurpose: 'test',
           verificationMethod: 'test',
         },
-      }),
-      tags: {},
-    })
+      })
+    )
     const records = [record]
 
     const tags: AnonCredsCredentialTags = {
@@ -647,6 +649,15 @@ describe('AnonCredsRsHolderService', () => {
       credentialDefinitionId: 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/CLAIM_DEF/104/default',
     })
 
-    expect(saveCredentialMock).toHaveBeenCalledWith(agentContext, expect.objectContaining({ credential }))
+    expect(saveCredentialMock).toHaveBeenCalledWith(
+      agentContext,
+      expect.objectContaining({
+        credentialInstances: [
+          {
+            credential: credential.encoded,
+          },
+        ],
+      })
+    )
   })
 })

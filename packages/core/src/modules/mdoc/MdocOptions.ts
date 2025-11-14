@@ -4,10 +4,15 @@ import type { DifPresentationExchangeDefinition } from '../dif-presentation-exch
 import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate, X509Certificate } from '../x509'
 import { Mdoc } from './Mdoc'
+import { MdocRecord } from './repository'
 
 export { DateOnly } from '@animo-id/mdoc'
 
 export type MdocNameSpaces = Record<string, Record<string, unknown>>
+
+export interface MdocStoreOptions {
+  record: MdocRecord
+}
 
 export type MdocVerifyOptions = {
   trustedCertificates?: EncodedX509Certificate[]

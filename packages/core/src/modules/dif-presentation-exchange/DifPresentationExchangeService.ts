@@ -15,7 +15,7 @@ import { JsonTransformer } from '../../utils'
 import type { VerificationMethod } from '../dids'
 import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
 import { getJwkHumanDescription } from '../kms'
-import { Mdoc, MdocApi, MdocRecord, type MdocSessionTranscriptOptions } from '../mdoc'
+import { MdocApi, MdocRecord, type MdocSessionTranscriptOptions } from '../mdoc'
 import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import { SdJwtVcApi } from '../sd-jwt-vc'
@@ -212,7 +212,7 @@ export class DifPresentationExchangeService {
 
         const { deviceResponseBase64Url, presentationSubmission } =
           await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agentContext, {
-            mdocs: [Mdoc.fromBase64Url(mdocRecord.base64Url)],
+            mdocs: [mdocRecord.firstCredential],
             presentationDefinition: presentationDefinition,
             sessionTranscriptOptions: mdocSessionTranscript,
           })
@@ -476,8 +476,9 @@ export class DifPresentationExchangeService {
 
     const credentialAreSignedUsingAnonCredsDataIntegrity = presentationToCreate.verifiableCredentials.every(
       ({ credential }) => {
-        if (credential.credential.claimFormat !== ClaimFormat.LdpVc) return false
-        return credential.credential.dataIntegrityCryptosuites.includes(ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE)
+        const firstCredential = credential.firstCredential
+        if (firstCredential.claimFormat !== ClaimFormat.LdpVc) return false
+        return firstCredential.dataIntegrityCryptosuites.includes(ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE)
       }
     )
 
@@ -583,8 +584,14 @@ export class DifPresentationExchangeService {
         }
 
         const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
+
+        // NOTE: we use the kmsKeyId from the first credential. We don't support the new useMode (for single-use credentials) for PEX
+        const originalSdJwtVc = sdJwtVcApi.fromCompact(sdJwtInput.compactSdJwtVc)
+        originalSdJwtVc.kmsKeyId =
+          presentationToCreate.verifiableCredentials[0].credential.credentialInstances[0].kmsKeyId
+
         const sdJwtVc = await sdJwtVcApi.present({
-          compactSdJwtVc: sdJwtInput.compactSdJwtVc,
+          sdJwtVc: originalSdJwtVc,
           // SD is already handled by PEX, so we presents all keys
           presentationFrame: undefined,
           verifierMetadata: {
