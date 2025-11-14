@@ -67,6 +67,7 @@ jobs:
 
       # exit if pull request and no alpha-release tag
       - id: should-run
+        name: Check if should run
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]] && [[ ! "${{ contains(fromJSON(env.LABELS), 'alpha-release') }}" == "true" ]]; then
             echo "run=false" >> $GITHUB_OUTPUT
