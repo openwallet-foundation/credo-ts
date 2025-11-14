@@ -1,5 +1,4 @@
 ---
-"@credo-ts/indy-sdk-to-askar-migration": minor
 "@credo-ts/anoncreds": minor
 "@credo-ts/openid4vc": minor
 "@credo-ts/didcomm": minor
