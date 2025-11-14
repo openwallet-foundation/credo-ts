@@ -1,4 +1,4 @@
-import { ClaimFormat, CredoError, Kms, utils } from '@credo-ts/core'
+import { CredoError, Kms, Mdoc, MdocRecord, SdJwtVcRecord, utils } from '@credo-ts/core'
 import type { Jwk } from '@openid4vc/oauth2'
 import { AuthorizationFlow, Openid4vciWalletProvider } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
@@ -30,6 +30,14 @@ const universityDegreeCredentialConfigurationSupportedMdoc = {
         user_authentication: ['iso_18045_high'],
       },
     },
+    attestation: {
+      proof_signing_alg_values_supported: ['ES256', 'EdDSA'],
+      key_attestations_required: {
+        // TODO: enum for iso enum values
+        key_storage: ['iso_18045_high'],
+        user_authentication: ['iso_18045_high'],
+      },
+    },
   },
   cryptographic_binding_methods_supported: ['jwk'],
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
@@ -37,6 +45,7 @@ const universityDegreeCredentialConfigurationSupportedMdoc = {
 const baseUrl = 'http://localhost:3991'
 const issuerBaseUrl = `${baseUrl}/oid4vci`
 const verifierBaseUrl = `${baseUrl}/oid4vp`
+let generateKeyAttestation: (nonce?: string) => Promise<string>
 
 describe('OpenId4Vc Wallet and Key Attestations', () => {
   let expressApp: Express
@@ -51,7 +60,6 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     openid4vc: OpenId4VcModule
   }>
 
-  let keyAttestationJwt: string
   let attestedKeys: Kms.PublicJwk[]
   let walletAttestationJwt: string
 
@@ -117,6 +125,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
                     attested_keys: expect.any(Array),
                     key_storage: ['iso_18045_high'],
                     user_authentication: ['iso_18045_high'],
+                    nonce: holderBinding.keyAttestation?.payload.nonce,
                   },
                   header: {
                     alg: 'ES256',
@@ -211,20 +220,22 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         )
     )
 
-    keyAttestationJwt = await walletProvider.createKeyAttestationJwt({
-      attestedKeys: attestedKeys.map((key) => key.toJson() as Jwk),
-      signer: {
-        method: 'x5c',
-        alg: Kms.KnownJwaSignatureAlgorithms.ES256,
-        x5c: [walletProviderCertificate.toString('base64url')],
-        kid: walletProviderCertificate.publicJwk.keyId,
-      },
-      use: 'proof_type.jwt',
-      keyStorage: ['iso_18045_high'],
-      userAuthentication: ['iso_18045_high'],
-      // 5 minutes
-      expiresAt: utils.addSecondsToDate(new Date(), 300),
-    })
+    generateKeyAttestation = (nonce?: string) =>
+      walletProvider.createKeyAttestationJwt({
+        attestedKeys: attestedKeys.map((key) => key.toJson() as Jwk),
+        signer: {
+          method: 'x5c',
+          alg: Kms.KnownJwaSignatureAlgorithms.ES256,
+          x5c: [walletProviderCertificate.toString('base64url')],
+          kid: walletProviderCertificate.publicJwk.keyId,
+        },
+        use: 'proof_type.jwt',
+        keyStorage: ['iso_18045_high'],
+        userAuthentication: ['iso_18045_high'],
+        // 5 minutes
+        expiresAt: utils.addSecondsToDate(new Date(), 300),
+        nonce,
+      })
 
     // Trust wallet provider
     issuer.agent.x509.config.setTrustedCertificatesForVerification((_agentContext, { verification }) => {
@@ -256,7 +267,16 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         jwk: holder.jwk,
       },
     })
-    await holder.agent.sdJwtVc.store(holderIdentityCredential.compact)
+    await holder.agent.sdJwtVc.store({
+      record: new SdJwtVcRecord({
+        credentialInstances: [
+          {
+            compactSdJwtVc: holderIdentityCredential.compact,
+            kmsKeyId: holder.jwk.keyId,
+          },
+        ],
+      }),
+    })
 
     holder.agent.x509.config.addTrustedCertificate(issuer.certificate)
     issuer.agent.x509.config.addTrustedCertificate(issuer.certificate)
@@ -314,9 +334,9 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     const credentialResponse = await holder.agent.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponse,
-      credentialBindingResolver: () => ({
+      credentialBindingResolver: async () => ({
         method: 'attestation',
-        keyAttestationJwt,
+        keyAttestationJwt: await generateKeyAttestation(),
       }),
     })
 
@@ -326,17 +346,72 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    expect(credentialResponse.credentials[0].credentials).toHaveLength(10)
-    const credentials = credentialResponse.credentials[0].credentials
+    expect(credentialResponse.credentials[0].record.credentialInstances).toHaveLength(10)
+    const credentialRecord = credentialResponse.credentials[0].record
 
-    for (const credentialIndex of credentials.keys()) {
-      const credential = credentials[credentialIndex]
-      if (credential.claimFormat !== ClaimFormat.MsoMdoc) {
-        throw new Error('Expected mdoc')
-      }
-
-      expect(credential.deviceKey?.fingerprint).toEqual(attestedKeys[credentialIndex].fingerprint)
+    if (!(credentialRecord instanceof MdocRecord)) {
+      throw new Error('Expected mdoc record')
     }
+
+    credentialRecord.credentialInstances.forEach((credential, credentialIndex) => {
+      expect(Mdoc.fromBase64Url(credential.issuerSignedBase64Url).deviceKey?.fingerprint).toEqual(
+        attestedKeys[credentialIndex].fingerprint
+      )
+    })
+  })
+
+  it('e2e flow issuing a batch of mdoc based on wallet and nonce-bound key attestation', async () => {
+    // Create offer for university degree
+    const { issuanceSession, credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+      issuerId: issuerRecord.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+
+      // Require DPoP and wallet attestations
+      authorization: {
+        requireDpop: true,
+        requireWalletAttestation: true,
+      },
+    })
+
+    // Resolve offer
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    // Request access token
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
+      resolvedCredentialOffer,
+      walletAttestationJwt,
+      clientId: 'wallet',
+    })
+
+    // Request credentials
+    const credentialResponse = await holder.agent.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      credentialBindingResolver: async ({ cNonce }) => ({
+        method: 'attestation',
+        keyAttestationJwt: await generateKeyAttestation(cNonce),
+      }),
+    })
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Completed,
+      issuanceSessionId: issuanceSession.id,
+    })
+
+    expect(credentialResponse.credentials).toHaveLength(1)
+    expect(credentialResponse.credentials[0].record.credentialInstances).toHaveLength(10)
+    const credentialRecord = credentialResponse.credentials[0].record
+
+    if (!(credentialRecord instanceof MdocRecord)) {
+      throw new Error('Expected mdoc record')
+    }
+
+    credentialRecord.credentialInstances.forEach((credential, credentialIndex) => {
+      expect(Mdoc.fromBase64Url(credential.issuerSignedBase64Url).deviceKey?.fingerprint).toEqual(
+        attestedKeys[credentialIndex].fingerprint
+      )
+    })
   })
 
   it('e2e flow with presentation during issuance, issuing a batch of mdoc based on wallet and key attestation', async () => {
@@ -417,9 +492,9 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       resolvedCredentialOffer,
       clientId: 'wallet',
       ...tokenResponse,
-      credentialBindingResolver: () => ({
+      credentialBindingResolver: async () => ({
         method: 'attestation',
-        keyAttestationJwt,
+        keyAttestationJwt: await generateKeyAttestation(),
       }),
     })
 
@@ -429,7 +504,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    expect(credentialResponse.credentials[0].credentials).toHaveLength(10)
+    expect(credentialResponse.credentials[0].record.credentialInstances).toHaveLength(10)
   })
 
   it('throws error if wallet attestation required but not provided', async () => {
@@ -602,7 +677,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         }),
       })
     ).rejects.toThrow(
-      `Missing required key attestation. Key attestations are required for proof type 'jwt' in credentail configuration 'universityDegree'`
+      `Missing required key attestation. Key attestations are required for proof type 'jwt' in credential configuration 'universityDegree'`
     )
   })
 })

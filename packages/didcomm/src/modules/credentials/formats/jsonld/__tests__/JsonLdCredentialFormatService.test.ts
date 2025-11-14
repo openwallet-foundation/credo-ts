@@ -381,7 +381,8 @@ describe('JsonLd CredentialFormatService', () => {
       w3c = new W3cCredentialRecord({
         id: 'foo',
         createdAt: new Date(),
-        credential: vc,
+
+        credentialInstances: [{ credential: vc.jsonCredential }],
         tags: {
           expandedTypes: [
             'https://www.w3.org/2018/credentials#VerifiableCredential',

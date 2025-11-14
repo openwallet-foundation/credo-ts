@@ -7,6 +7,7 @@ import type {
   SdJwtVcPayload,
   SdJwtVcPresentOptions,
   SdJwtVcSignOptions,
+  SdJwtVcStoreOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
 
@@ -60,8 +61,8 @@ export class SdJwtVcApi {
     return this.sdJwtVcService.fromCompact<Header, Payload>(sdJwtVcCompact)
   }
 
-  public async store(compactSdJwtVc: string) {
-    return await this.sdJwtVcService.store(this.agentContext, compactSdJwtVc)
+  public async store(options: SdJwtVcStoreOptions) {
+    return await this.sdJwtVcService.store(this.agentContext, options)
   }
 
   public async getById(id: string): Promise<SdJwtVcRecord> {

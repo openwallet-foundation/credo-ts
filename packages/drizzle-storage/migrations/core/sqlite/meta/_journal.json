@@ -15,6 +15,13 @@
       "when": 1758186088805,
       "tag": "0001_gigantic_skrulls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1762858808406,
+      "tag": "0002_add_batch_credential_record_with_kms_key_id",
+      "breakpoints": true
     }
   ]
 }

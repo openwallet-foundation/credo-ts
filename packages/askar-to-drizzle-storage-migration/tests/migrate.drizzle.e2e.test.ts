@@ -9,8 +9,12 @@ import {
   DidDocument,
   JsonTransformer,
   Mdoc,
+  MdocRecord,
+  SdJwtVcRecord,
   TypedArrayEncoder,
+  W3cCredentialRecord,
   W3cJsonLdVerifiableCredential,
+  W3cV2CredentialRecord,
   W3cV2JwtVerifiableCredential,
 } from '@credo-ts/core'
 import { DrizzleStorageModule } from '@credo-ts/drizzle-storage'
@@ -41,16 +45,23 @@ async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
       hey: 'there',
     },
   })
-  await agent.sdJwtVc.store(sdJwtVcWithSingleDisclosure)
-  await agent.mdoc.store(Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url))
-  await agent.w3cCredentials.storeCredential({
-    credential: JsonTransformer.fromJSON(
-      Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
-      W3cJsonLdVerifiableCredential
+  await agent.sdJwtVc.store({
+    record: new SdJwtVcRecord({
+      credentialInstances: [
+        {
+          compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+        },
+      ],
+    }),
+  })
+  await agent.mdoc.store({ record: MdocRecord.fromMdoc(Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url)) })
+  await agent.w3cCredentials.store({
+    record: W3cCredentialRecord.fromCredential(
+      JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED, W3cJsonLdVerifiableCredential)
     ),
   })
-  await agent.w3cV2Credentials.storeCredential({
-    credential: W3cV2JwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc),
+  await agent.w3cV2Credentials.store({
+    record: W3cV2CredentialRecord.fromCredential(W3cV2JwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)),
   })
   await agent.dids.import({
     did: didKeyP256.id,
@@ -82,28 +93,41 @@ async function expectDatabaseWithRecords(agent: Agent | TenantAgent) {
 
   await expect(agent.sdJwtVc.getAll()).resolves.toMatchObject([
     {
-      compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+      credentialInstances: [
+        {
+          compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+        },
+      ],
     },
   ])
 
   await expect(agent.mdoc.getAll()).resolves.toMatchObject([
     {
-      base64Url: Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url).encoded,
+      credentialInstances: [
+        {
+          issuerSignedBase64Url: Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url).encoded,
+        },
+      ],
     },
   ])
 
-  await expect(agent.w3cCredentials.getAllCredentialRecords()).resolves.toMatchObject([
+  await expect(agent.w3cCredentials.getAll()).resolves.toMatchObject([
     {
-      credential: JsonTransformer.fromJSON(
-        Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
-        W3cJsonLdVerifiableCredential
-      ),
+      credentialInstances: [
+        {
+          credential: Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+        },
+      ],
     },
   ])
 
-  await expect(agent.w3cV2Credentials.getAllCredentialRecords()).resolves.toMatchObject([
+  await expect(agent.w3cV2Credentials.getAll()).resolves.toMatchObject([
     {
-      credential: W3cV2JwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc),
+      credentialInstances: [
+        {
+          credential: CredoEs256DidJwkJwtVc,
+        },
+      ],
     },
   ])
 

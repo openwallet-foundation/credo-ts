@@ -1,5 +1,5 @@
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcIssuer } from '@credo-ts/core'
-import { ClaimFormat } from '@credo-ts/core'
+import { ClaimFormat, SdJwtVcRecord } from '@credo-ts/core'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
@@ -255,7 +255,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
         jwk: holder.jwk,
       },
     })
-    await holder.agent.sdJwtVc.store(holderIdentityCredential.compact)
+    holderIdentityCredential.kmsKeyId = holder.jwk.keyId
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(holderIdentityCredential) })
 
     // Create offer for university degree
     const { issuanceSession, credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
@@ -333,10 +334,9 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const compactSdJwtVc = (credentialResponse.credentials[0].credentials[0] as SdJwtVc).compact
-    const sdJwtVc = holder.agent.sdJwtVc.fromCompact(compactSdJwtVc)
-    expect(sdJwtVc.payload.vct).toEqual(universityDegreeCredentialConfigurationSupported.vct)
-    expect(sdJwtVc.prettyClaims.full_name).toEqual('Erika Powerstar')
+    const firstSdJwtVc = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+    expect(firstSdJwtVc.payload.vct).toEqual(universityDegreeCredentialConfigurationSupported.vct)
+    expect(firstSdJwtVc.prettyClaims.full_name).toEqual('Erika Powerstar')
   })
 
   it('e2e flow with requesting presentation of credentials before issuance succeeds with dcql query', async () => {
@@ -376,7 +376,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
         jwk: holder.jwk,
       },
     })
-    await holder.agent.sdJwtVc.store(holderIdentityCredential.compact)
+    holderIdentityCredential.kmsKeyId = holder.jwk.keyId
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(holderIdentityCredential) })
 
     // Create offer for university degree
     const { issuanceSession, credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
@@ -454,10 +455,9 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const compactSdJwtVc = (credentialResponse.credentials[0].credentials[0] as SdJwtVc).compact
-    const sdJwtVc = holder.agent.sdJwtVc.fromCompact(compactSdJwtVc)
-    expect(sdJwtVc.payload.vct).toEqual(universityDegreeCredentialConfigurationSupported.vct)
-    expect(sdJwtVc.prettyClaims.full_name).toEqual('Erika Powerstar')
+    const firstSdJwtVc = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+    expect(firstSdJwtVc.payload.vct).toEqual(universityDegreeCredentialConfigurationSupported.vct)
+    expect(firstSdJwtVc.prettyClaims.full_name).toEqual('Erika Powerstar')
   })
 
   it('e2e flow with requesting presentation of credentials before issuance but fails because presentation not verified', async () => {
@@ -494,7 +494,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
         jwk: holder.jwk,
       },
     })
-    await holder.agent.sdJwtVc.store(holderIdentityCredential.compact)
+    holderIdentityCredential.kmsKeyId = holder.jwk.keyId
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(holderIdentityCredential) })
 
     // Create offer for university degree
     const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({

@@ -141,15 +141,10 @@ export class W3cV2CredentialService {
     agentContext: AgentContext,
     options: W3cV2StoreCredentialOptions
   ): Promise<W3cV2CredentialRecord> {
-    // Create an instance of the w3cV2CredentialRecord
-    const w3cV2CredentialRecord = new W3cV2CredentialRecord({
-      credential: options.credential,
-    })
-
     // Store the w3cV2 credential record
-    await this.w3cV2CredentialRepository.save(agentContext, w3cV2CredentialRecord)
+    await this.w3cV2CredentialRepository.save(agentContext, options.record)
 
-    return w3cV2CredentialRecord
+    return options.record
   }
 
   public async removeCredentialRecord(agentContext: AgentContext, id: string) {
@@ -170,7 +165,7 @@ export class W3cV2CredentialService {
     queryOptions?: QueryOptions
   ): Promise<W3cV2VerifiableCredential[]> {
     const result = await this.w3cV2CredentialRepository.findByQuery(agentContext, query, queryOptions)
-    return result.map((record) => record.credential)
+    return result.map((record) => record.firstCredential)
   }
 
   public async findCredentialRecordByQuery(
@@ -178,6 +173,6 @@ export class W3cV2CredentialService {
     query: Query<W3cV2CredentialRecord>
   ): Promise<W3cV2VerifiableCredential | undefined> {
     const result = await this.w3cV2CredentialRepository.findSingleByQuery(agentContext, query)
-    return result?.credential
+    return result?.firstCredential
   }
 }

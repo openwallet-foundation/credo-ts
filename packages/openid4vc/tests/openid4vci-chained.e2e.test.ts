@@ -1,4 +1,4 @@
-import type { SdJwtVc } from '@credo-ts/core'
+import type { SdJwtVcRecord } from '@credo-ts/core'
 import { CredoError, DidsApi, JwsService, JwtPayload, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { AuthorizationServerMetadata, Jwk, JwtSigner, SignJwtCallback } from '@openid4vc/oauth2'
 import { decodeJwt, jwtHeaderFromJwtSigner, Oauth2AuthorizationServer } from '@openid4vc/oauth2'
@@ -376,10 +376,9 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const compactSdJwtVcTenant1 = (credentialResponse.credentials[0].credentials[0] as SdJwtVc).compact
-    const sdJwtVcTenant1 = holderTenant.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
-    expect(sdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
-    expect(sdJwtVcTenant1.payload.name).toEqual('John Doe')
+    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+    expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
+    expect(firstSdJwtVcTenant1.payload.name).toEqual('John Doe')
 
     await holderTenant.endSession()
 

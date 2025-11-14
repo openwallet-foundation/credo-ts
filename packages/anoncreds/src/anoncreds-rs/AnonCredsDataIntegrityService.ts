@@ -267,7 +267,7 @@ export class AnonCredsDataIntegrityService implements IAnonCredsDataIntegritySer
         agentContext,
         presentationDefinition,
         presentationSubmission,
-        selectedCredentialRecords.map((record) => record.credential) as W3cJsonLdVerifiableCredential[],
+        selectedCredentialRecords.map((record) => record.firstCredential) as W3cJsonLdVerifiableCredential[],
         challenge
       )
 

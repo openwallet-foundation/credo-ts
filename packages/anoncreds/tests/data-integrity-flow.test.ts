@@ -235,7 +235,7 @@ async function anonCredsFlowTest(options: {
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
   const credentialExchangeRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
 
-  expect(credentialExchangeRecord.credential).toEqual({
+  expect(credentialExchangeRecord.firstCredential).toEqual({
     ...{
       ...credential,
       credentialSubject: new W3cCredentialSubject({

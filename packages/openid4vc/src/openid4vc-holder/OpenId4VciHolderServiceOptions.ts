@@ -1,4 +1,11 @@
-import type { AgentContext, Kms, VerifiableCredential } from '@credo-ts/core'
+import type {
+  AgentContext,
+  Kms,
+  MdocRecord,
+  SdJwtVcRecord,
+  W3cCredentialRecord,
+  W3cV2CredentialRecord,
+} from '@credo-ts/core'
 import type { CredentialOfferObject, IssuerMetadataResult } from '@openid4vc/openid4vci'
 import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@openid4vc/openid4vci'
 import type {
@@ -52,13 +59,21 @@ export type OpenId4VciRequestTokenResponse = {
   accessTokenResponse: OpenId4VciAccessTokenResponse
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: no explanation
-type UnionToArrayUnion<T> = T extends any ? T[] : never
-
 export interface OpenId4VciCredentialResponse {
   credentialConfigurationId: string
   credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
-  credentials: UnionToArrayUnion<VerifiableCredential>
+
+  /**
+   * The record containing the credentials returned in the OpenID4VCI credential response
+   *
+   * The credential is returned as a record, which can be provided to the
+   * respective `store()` method of each credential-specific API.
+   *
+   * The record contains the credential instance (instances in case of batch issuance)
+   * along with metadata such as the VCT Type Metadata (in case of SD-JWT)
+   */
+  record: SdJwtVcRecord | MdocRecord | W3cCredentialRecord | W3cV2CredentialRecord
+
   notificationId?: string
 }
 
@@ -68,6 +83,12 @@ export interface OpenId4VciDeferredCredentialResponse {
   transactionId: string
   interval?: number
   notificationId?: string
+  /**
+   * Mapping from JWK thumbprint values to KMS key ids that were submitted in the credential request.
+   * These should be used when retrieving the deferred credentials, to store the associated kms key id
+   * for each received credential.
+   */
+  jwkThumbprintKmsKeyIdMapping?: Record<string, string>
 }
 
 export interface OpenId4VciResolvedCredentialOffer {
@@ -304,6 +325,13 @@ export interface OpenId4VciDeferredCredentialRequestOptions {
   verifyCredentialStatus?: boolean
   accessToken: string
   dpop?: OpenId4VciDpopRequestOptions
+
+  /**
+   * Mapping from JWK thumbprint values to KMS key ids that were submitted in the credential request.
+   * These were returned in the deferred credential return value in case JWKs were used in the proof
+   * of possession of the credential request
+   */
+  jwkThumbprintKmsKeyIdMapping?: Record<string, string>
 }
 
 /**
@@ -407,6 +435,12 @@ export interface OpenId4VciCredentialBindingOptions {
    * indicating they support proof of possession signatures bound to a jwk.
    */
   supportsJwk: boolean
+
+  /**
+   * The cNonce that will be used for the credential request. May be used if dynamically creating a key attestation
+   * that must include the cNonce.
+   */
+  cNonce: string
 }
 
 /**
