@@ -51,6 +51,12 @@ export class DidCommProofsModule<ProofProtocols extends DidCommProofProtocol[] =
     const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
     for (const proofProtocol of this.config.proofProtocols) {
       proofProtocol.register(messageHandlerRegistry, featureRegistry)
+
+      if (proofProtocol.constructor.name === 'DidCommCredentialV1Protocol') {
+        agentContext.config.logger.debug(
+          "The 'DidCommCredentialV1Protocol' is deprecated and will be removed in version 0.7 of Credo. You should upgrade to the 'DidCommCredentialV2Protocol' instead."
+        )
+      }
     }
   }
 }

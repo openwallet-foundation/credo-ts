@@ -52,11 +52,6 @@ export class OpenId4VcModule<
   public register(dependencyManager: DependencyManager) {
     const agentConfig = dependencyManager.resolve(AgentConfig)
 
-    // Warn about experimental module
-    agentConfig.logger.warn(
-      "The '@credo-ts/openid4vc' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-    )
-
     if (agentConfig.allowInsecureHttpUrls) {
       setGlobalConfig({
         allowInsecureUrls: true,

@@ -12,12 +12,9 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../../../../../core/tests'
 import {
-  DidCommAttachment,
-  DidCommAttachmentData,
   DidCommAutoAcceptProof,
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
-  DidCommLinkedAttachment,
   DidCommMediatorPickupStrategy,
   DidCommProofEventTypes,
   DidCommProofState,
@@ -447,7 +444,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     agents = [aliceAgent, faberAgent, mediatorAgent]
 
     const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
-      attributeNames: ['name', 'age', 'image_0', 'image_1'],
+      attributeNames: ['name', 'age'],
     })
 
     const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
@@ -463,22 +460,6 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       offer: {
         credentialDefinitionId: credentialDefinition.credentialDefinitionId,
         attributes: credentialPreview.attributes,
-        linkedAttachments: [
-          new DidCommLinkedAttachment({
-            name: 'image_0',
-            attachment: new DidCommAttachment({
-              filename: 'picture-of-a-cat.png',
-              data: new DidCommAttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
-            }),
-          }),
-          new DidCommLinkedAttachment({
-            name: 'image_1',
-            attachment: new DidCommAttachment({
-              filename: 'picture-of-a-dog.png',
-              data: new DidCommAttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
-            }),
-          }),
-        ],
       },
     })
 

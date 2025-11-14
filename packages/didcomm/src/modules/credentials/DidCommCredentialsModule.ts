@@ -84,6 +84,12 @@ export class DidCommCredentialsModule<
     // Protocol needs to register feature registry items and handlers
     for (const credentialProtocol of this.config.credentialProtocols) {
       credentialProtocol.register(messageHandlerRegistry, featureRegistry)
+
+      if (credentialProtocol.constructor.name === 'DidCommProofV1Protocol') {
+        agentContext.config.logger.debug(
+          "The 'DidCommProofV1Protocol' is deprecated and will be removed in version 0.7 of Credo. You should upgrade to the 'DidCommProofV2Protocol' instead."
+        )
+      }
     }
   }
 }

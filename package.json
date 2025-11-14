@@ -36,7 +36,6 @@
     "@credo-ts/drizzle-storage": "workspace:*",
     "@credo-ts/drpc": "workspace:*",
     "@credo-ts/hedera": "workspace:*",
-    "@credo-ts/indy-sdk-to-askar-migration": "workspace:*",
     "@credo-ts/indy-vdr": "workspace:*",
     "@credo-ts/node": "workspace:*",
     "@credo-ts/openid4vc": "workspace:*",

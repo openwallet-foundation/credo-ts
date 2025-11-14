@@ -25,8 +25,6 @@ export * from './repository'
 export * from './services'
 export * from './transport'
 export * from './types'
-export { encodeAttachment, isLinkedAttachment } from './util/attachment'
-export { DidCommLinkedAttachment, type DidCommLinkedAttachmentOptions } from './util/DidCommLinkedAttachment'
 export { isValidJweStructure } from './util/JWE'
 export {
   IsValidMessageType,

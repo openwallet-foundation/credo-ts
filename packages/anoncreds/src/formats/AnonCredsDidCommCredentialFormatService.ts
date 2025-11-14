@@ -18,7 +18,6 @@ import type {
   DidCommCredentialFormatProcessOptions,
   DidCommCredentialFormatService,
   DidCommCredentialPreviewAttributeOptions,
-  DidCommLinkedAttachment,
 } from '@credo-ts/didcomm'
 import {
   DidCommAttachment,
@@ -52,7 +51,6 @@ import {
   assertCredentialValuesMatch,
   checkCredentialValuesMatch,
   convertAttributesToCredentialValues,
-  createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
 import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
@@ -103,10 +101,7 @@ export class AnonCredsDidCommCredentialFormatService
       throw new CredoError('Missing anoncreds payload in createProposal')
     }
 
-    // We want all properties except for `attributes` and `linkedAttachments` attributes.
-    // The easiest way is to destructure and use the spread operator. But that leaves the other properties unused
-    // biome-ignore lint/correctness/noUnusedVariables: no explanation
-    const { attributes, linkedAttachments, ...anoncredsCredentialProposal } = anoncredsFormat
+    const { attributes, ...anoncredsCredentialProposal } = anoncredsFormat
     const proposal = new AnonCredsCredentialProposal(anoncredsCredentialProposal)
 
     try {
@@ -117,18 +112,13 @@ export class AnonCredsDidCommCredentialFormatService
 
     const attachment = this.getFormatData(JsonTransformer.toJSON(proposal), format.attachmentId)
 
-    const { previewAttributes } = this.getCredentialLinkedAttachments(
-      anoncredsFormat.attributes,
-      anoncredsFormat.linkedAttachments
-    )
-
     // Set the metadata
     credentialExchangeRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
       schemaId: proposal.schemaId,
       credentialDefinitionId: proposal.credentialDefinitionId,
     })
 
-    return { format, attachment, previewAttributes }
+    return { format, attachment, previewAttributes: attributes }
   }
 
   public async processProposal(
@@ -171,7 +161,6 @@ export class AnonCredsDidCommCredentialFormatService
       credentialDefinitionId,
       revocationRegistryDefinitionId: anoncredsFormat?.revocationRegistryDefinitionId,
       revocationRegistryIndex: anoncredsFormat?.revocationRegistryIndex,
-      linkedAttachments: anoncredsFormat?.linkedAttachments,
     })
 
     return { format, attachment, previewAttributes }
@@ -205,7 +194,6 @@ export class AnonCredsDidCommCredentialFormatService
       credentialDefinitionId: anoncredsFormat.credentialDefinitionId,
       revocationRegistryDefinitionId: anoncredsFormat.revocationRegistryDefinitionId,
       revocationRegistryIndex: anoncredsFormat.revocationRegistryIndex,
-      linkedAttachments: anoncredsFormat.linkedAttachments,
     })
 
     return { format, attachment, previewAttributes }
@@ -570,7 +558,6 @@ export class AnonCredsDidCommCredentialFormatService
       revocationRegistryDefinitionId,
       revocationRegistryIndex,
       attributes,
-      linkedAttachments,
     }: {
       credentialDefinitionId: string
       revocationRegistryDefinitionId?: string
@@ -578,7 +565,6 @@ export class AnonCredsDidCommCredentialFormatService
       credentialExchangeRecord: DidCommCredentialExchangeRecord
       attachmentId?: string
       attributes: DidCommCredentialPreviewAttributeOptions[]
-      linkedAttachments?: DidCommLinkedAttachment[]
     }
   ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     const anonCredsIssuerService =
@@ -594,12 +580,7 @@ export class AnonCredsDidCommCredentialFormatService
       credentialDefinitionId,
     })
 
-    const { previewAttributes } = this.getCredentialLinkedAttachments(attributes, linkedAttachments)
-    if (!previewAttributes) {
-      throw new CredoError('Missing required preview attributes for anoncreds offer')
-    }
-
-    await this.assertPreviewAttributesMatchSchemaAttributes(agentContext, offer, previewAttributes)
+    await this.assertPreviewAttributesMatchSchemaAttributes(agentContext, offer, attributes)
 
     // We check locally for credential definition info. If it supports revocation, revocationRegistryIndex
     // and revocationRegistryDefinitionId are mandatory
@@ -633,7 +614,7 @@ export class AnonCredsDidCommCredentialFormatService
 
     const attachment = this.getFormatData(offer, format.attachmentId)
 
-    return { format, attachment, previewAttributes }
+    return { format, attachment, previewAttributes: attributes }
   }
 
   private async assertPreviewAttributesMatchSchemaAttributes(
@@ -644,37 +625,6 @@ export class AnonCredsDidCommCredentialFormatService
     const { schema } = await fetchSchema(agentContext, offer.schema_id)
 
     assertAttributesMatch(schema, attributes)
-  }
-
-  /**
-   * Get linked attachments for anoncreds format from a proposal message. This allows attachments
-   * to be copied across to old style credential records
-   *
-   * @param options ProposeCredentialOptions object containing (optionally) the linked attachments
-   * @return array of linked attachments or undefined if none present
-   */
-  private getCredentialLinkedAttachments(
-    attributes?: DidCommCredentialPreviewAttributeOptions[],
-    linkedAttachments?: DidCommLinkedAttachment[]
-  ): {
-    attachments?: DidCommAttachment[]
-    previewAttributes?: DidCommCredentialPreviewAttributeOptions[]
-  } {
-    if (!linkedAttachments && !attributes) {
-      return {}
-    }
-
-    let previewAttributes = attributes ?? []
-    let attachments: DidCommAttachment[] | undefined
-
-    if (linkedAttachments) {
-      // there are linked attachments so transform into the attribute field of the CredentialPreview object for
-      // this proposal
-      previewAttributes = createAndLinkAttachmentsToPreview(linkedAttachments, previewAttributes)
-      attachments = linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
-    }
-
-    return { attachments, previewAttributes }
   }
 
   /**

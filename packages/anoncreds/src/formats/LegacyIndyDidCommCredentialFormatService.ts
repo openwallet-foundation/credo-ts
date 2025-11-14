@@ -18,7 +18,6 @@ import type {
   DidCommCredentialFormatProcessOptions,
   DidCommCredentialFormatService,
   DidCommCredentialPreviewAttributeOptions,
-  DidCommLinkedAttachment,
 } from '@credo-ts/didcomm'
 import {
   DidCommAttachment,
@@ -36,7 +35,6 @@ import {
   assertCredentialValuesMatch,
   checkCredentialValuesMatch,
   convertAttributesToCredentialValues,
-  createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
 import { isUnqualifiedCredentialDefinitionId, isUnqualifiedSchemaId } from '../utils/indyIdentifiers'
 import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
@@ -65,6 +63,16 @@ export class LegacyIndyDidCommCredentialFormatService
    */
   public readonly credentialRecordType = 'w3c' as const
 
+  private hasLoggedWarning = false
+  private ensureWarningLoggedOnce(agentContext: AgentContext) {
+    if (this.hasLoggedWarning) return
+
+    agentContext.config.logger.debug(
+      "The 'LegacyIndyDidCommCredentialFormatService' is deprecated and will be removed in version 0.7 of Credo. You should upgrade to the 'AnonCredsDidCommCredentialFormatService' instead."
+    )
+    this.hasLoggedWarning = true
+  }
+
   /**
    * Create a {@link AttachmentFormats} object dependent on the message type.
    *
@@ -73,12 +81,13 @@ export class LegacyIndyDidCommCredentialFormatService
    *
    */
   public async createProposal(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     {
       credentialFormats,
       credentialExchangeRecord,
     }: DidCommCredentialFormatCreateProposalOptions<LegacyIndyCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateProposalReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     const format = new DidCommCredentialFormatSpec({
       format: INDY_CRED_FILTER,
     })
@@ -89,10 +98,7 @@ export class LegacyIndyDidCommCredentialFormatService
       throw new CredoError('Missing indy payload in createProposal')
     }
 
-    // We want all properties except for `attributes` and `linkedAttachments` attributes.
-    // The easiest way is to destructure and use the spread operator. But that leaves the other properties unused
-    // biome-ignore lint/correctness/noUnusedVariables: remove properties from object
-    const { attributes, linkedAttachments, ...indyCredentialProposal } = indyFormat
+    const { attributes, ...indyCredentialProposal } = indyFormat
     const proposal = new AnonCredsCredentialProposal(indyCredentialProposal)
 
     try {
@@ -103,24 +109,20 @@ export class LegacyIndyDidCommCredentialFormatService
 
     const attachment = this.getFormatData(JsonTransformer.toJSON(proposal), format.attachmentId)
 
-    const { previewAttributes } = this.getCredentialLinkedAttachments(
-      indyFormat.attributes,
-      indyFormat.linkedAttachments
-    )
-
     // Set the metadata
     credentialExchangeRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
       schemaId: proposal.schemaId,
       credentialDefinitionId: proposal.credentialDefinitionId,
     })
 
-    return { format, attachment, previewAttributes }
+    return { format, attachment, previewAttributes: attributes }
   }
 
   public async processProposal(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { attachment }: DidCommCredentialFormatProcessOptions
   ): Promise<void> {
+    this.ensureWarningLoggedOnce(agentContext)
     const proposalJson = attachment.getDataAsJson()
 
     JsonTransformer.fromJSON(proposalJson, AnonCredsCredentialProposal)
@@ -135,6 +137,7 @@ export class LegacyIndyDidCommCredentialFormatService
       proposalAttachment,
     }: DidCommCredentialFormatAcceptProposalOptions<LegacyIndyCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateOfferReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     const indyFormat = credentialFormats?.indy
 
     const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyDidCommCredentialProposalFormat>()
@@ -159,7 +162,6 @@ export class LegacyIndyDidCommCredentialFormatService
       attachmentId,
       attributes,
       credentialDefinitionId,
-      linkedAttachments: indyFormat?.linkedAttachments,
     })
 
     return { format, attachment, previewAttributes }
@@ -180,6 +182,7 @@ export class LegacyIndyDidCommCredentialFormatService
       attachmentId,
     }: DidCommCredentialFormatCreateOfferOptions<LegacyIndyCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateOfferReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     const indyFormat = credentialFormats.indy
 
     if (!indyFormat) {
@@ -191,7 +194,6 @@ export class LegacyIndyDidCommCredentialFormatService
       attachmentId,
       attributes: indyFormat.attributes,
       credentialDefinitionId: indyFormat.credentialDefinitionId,
-      linkedAttachments: indyFormat.linkedAttachments,
     })
 
     return { format, attachment, previewAttributes }
@@ -201,6 +203,7 @@ export class LegacyIndyDidCommCredentialFormatService
     agentContext: AgentContext,
     { attachment, credentialExchangeRecord }: DidCommCredentialFormatProcessOptions
   ) {
+    this.ensureWarningLoggedOnce(agentContext)
     agentContext.config.logger.debug(
       `Processing indy credential offer for credential record ${credentialExchangeRecord.id}`
     )
@@ -223,6 +226,7 @@ export class LegacyIndyDidCommCredentialFormatService
       credentialFormats,
     }: DidCommCredentialFormatAcceptOfferOptions<LegacyIndyCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
     const credentialOffer = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
@@ -275,9 +279,10 @@ export class LegacyIndyDidCommCredentialFormatService
    * We don't have any models to validate an indy request object, for now this method does nothing
    */
   public async processRequest(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     _options: DidCommCredentialFormatProcessOptions
   ): Promise<void> {
+    this.ensureWarningLoggedOnce(agentContext)
     // not needed for Indy
   }
 
@@ -290,6 +295,7 @@ export class LegacyIndyDidCommCredentialFormatService
       requestAttachment,
     }: DidCommCredentialFormatAcceptRequestOptions<LegacyIndyCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateReturn> {
+    this.ensureWarningLoggedOnce(agentContext)
     // Assert credential attributes
     const credentialAttributes = credentialExchangeRecord.credentialAttributes
     if (!credentialAttributes) {
@@ -331,6 +337,7 @@ export class LegacyIndyDidCommCredentialFormatService
     agentContext: AgentContext,
     { credentialExchangeRecord, attachment }: DidCommCredentialFormatProcessCredentialOptions
   ): Promise<void> {
+    this.ensureWarningLoggedOnce(agentContext)
     const credentialRequestMetadata = credentialExchangeRecord.metadata.get<AnonCredsCredentialRequestMetadata>(
       AnonCredsCredentialRequestMetadataKey
     )
@@ -502,13 +509,11 @@ export class LegacyIndyDidCommCredentialFormatService
       attachmentId,
       credentialDefinitionId,
       attributes,
-      linkedAttachments,
     }: {
       credentialDefinitionId: string
       credentialExchangeRecord: DidCommCredentialExchangeRecord
       attachmentId?: string
       attributes: DidCommCredentialPreviewAttributeOptions[]
-      linkedAttachments?: DidCommLinkedAttachment[]
     }
   ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     const anonCredsIssuerService =
@@ -524,12 +529,7 @@ export class LegacyIndyDidCommCredentialFormatService
       credentialDefinitionId,
     })
 
-    const { previewAttributes } = this.getCredentialLinkedAttachments(attributes, linkedAttachments)
-    if (!previewAttributes) {
-      throw new CredoError('Missing required preview attributes for indy offer')
-    }
-
-    await this.assertPreviewAttributesMatchSchemaAttributes(agentContext, offer, previewAttributes)
+    await this.assertPreviewAttributesMatchSchemaAttributes(agentContext, offer, attributes)
 
     credentialExchangeRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
       schemaId: offer.schema_id,
@@ -538,7 +538,7 @@ export class LegacyIndyDidCommCredentialFormatService
 
     const attachment = this.getFormatData(offer, format.attachmentId)
 
-    return { format, attachment, previewAttributes }
+    return { format, attachment, previewAttributes: attributes }
   }
 
   private async assertPreviewAttributesMatchSchemaAttributes(
@@ -548,37 +548,6 @@ export class LegacyIndyDidCommCredentialFormatService
   ): Promise<void> {
     const { schema } = await fetchSchema(agentContext, offer.schema_id)
     assertAttributesMatch(schema, attributes)
-  }
-
-  /**
-   * Get linked attachments for indy format from a proposal message. This allows attachments
-   * to be copied across to old style credential records
-   *
-   * @param options ProposeCredentialOptions object containing (optionally) the linked attachments
-   * @return array of linked attachments or undefined if none present
-   */
-  private getCredentialLinkedAttachments(
-    attributes?: DidCommCredentialPreviewAttributeOptions[],
-    linkedAttachments?: DidCommLinkedAttachment[]
-  ): {
-    attachments?: DidCommAttachment[]
-    previewAttributes?: DidCommCredentialPreviewAttributeOptions[]
-  } {
-    if (!linkedAttachments && !attributes) {
-      return {}
-    }
-
-    let previewAttributes = attributes ?? []
-    let attachments: DidCommAttachment[] | undefined
-
-    if (linkedAttachments) {
-      // there are linked attachments so transform into the attribute field of the CredentialPreview object for
-      // this proposal
-      previewAttributes = createAndLinkAttachmentsToPreview(linkedAttachments, previewAttributes)
-      attachments = linkedAttachments.map((linkedAttachment) => linkedAttachment.attachment)
-    }
-
-    return { attachments, previewAttributes }
   }
 
   /**

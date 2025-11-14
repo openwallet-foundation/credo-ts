@@ -474,7 +474,7 @@ describe('Indy VDR Indy Did Registrar', () => {
         .slice(0, 32)
     )
 
-    const key = await endorser.kms.importKey(
+    const key = await agent.kms.importKey(
       transformPrivateKeyToPrivateJwk({ type: { kty: 'OKP', crv: 'Ed25519' }, privateKey })
     )
     const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
@@ -483,14 +483,13 @@ describe('Indy VDR Indy Did Registrar', () => {
 
     const { did } = indyDidFromNamespaceAndInitialKey('pool:localtest', publicJwk)
 
-    const didCreateTobeEndorsedResult = (await endorser.dids.create<IndyVdrDidCreateOptions>({
+    const didCreateTobeEndorsedResult = (await agent.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
         endorserMode: 'external',
         endorserDid: endorserDid,
         useEndpointAttrib: true,
         keyId: key.keyId,
-        // keyId: key.keyId
         services: [
           new DidDocumentService({
             id: `${did}#endpoint`,
