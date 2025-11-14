@@ -195,7 +195,15 @@ describe('OpenId4VP DC API', () => {
         _sd: ['university', 'name'],
       },
     })
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store({
+      record: new SdJwtVcRecord({
+        credentialInstances: [
+          {
+            compactSdJwtVc: signedSdJwtVc.compact,
+          },
+        ],
+      }),
+    })
 
     const selfSignedCertificate = await X509Service.createCertificate(verifier.agent.context, {
       authorityKey: Kms.PublicJwk.fromPublicJwk(
@@ -240,7 +248,16 @@ describe('OpenId4VP DC API', () => {
       issuer: { commonName: 'Something', countryName: 'Something' },
     })
 
-    await holder.agent.mdoc.store(signedMdoc)
+    await holder.agent.mdoc.store({
+      record: new MdocRecord({
+        credentialInstances: [
+          {
+            issuerSignedBase64Url: signedMdoc.base64Url,
+            kmsKeyId: holderKey.publicJwk.kid,
+          },
+        ],
+      }),
+    })
 
     holder.agent.x509.config.addTrustedCertificate(verifierCertificate)
     verifier.agent.x509.config.addTrustedCertificate(verifierCertificate)

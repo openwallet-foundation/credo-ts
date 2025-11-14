@@ -8,6 +8,7 @@ import type {
   MdocDeviceResponsePresentationDefinitionOptions,
   MdocDeviceResponseVerifyOptions,
   MdocSignOptions,
+  MdocStoreOptions,
   MdocVerifyOptions,
 } from './MdocOptions'
 import { MdocRecord, MdocRepository } from './repository'
@@ -51,11 +52,10 @@ export class MdocService {
     return deviceResponse.verify(agentContext, options)
   }
 
-  public async store(agentContext: AgentContext, mdoc: Mdoc) {
-    const mdocRecord = new MdocRecord({ mdoc })
-    await this.MdocRepository.save(agentContext, mdocRecord)
+  public async store(agentContext: AgentContext, options: MdocStoreOptions) {
+    await this.MdocRepository.save(agentContext, options.record)
 
-    return mdocRecord
+    return options.record
   }
 
   public async getById(agentContext: AgentContext, id: string): Promise<MdocRecord> {

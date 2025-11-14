@@ -7,7 +7,7 @@ import type {
 import type { AgentContext } from '@credo-ts/core'
 import {
   JsonTransformer,
-  W3cCredentialRepository,
+  W3cCredentialRecord,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
@@ -226,9 +226,7 @@ export async function storeCredential(
   }
 ) {
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-  const record = await w3cCredentialService.storeCredential(agentContext, {
-    credential: w3cJsonLdCredential,
-  })
+  const record = W3cCredentialRecord.fromCredential(w3cJsonLdCredential)
 
   const anonCredsCredentialRecordTags: AnonCredsCredentialTags = {
     anonCredsLinkSecretId: options.linkSecretId,
@@ -249,8 +247,9 @@ export async function storeCredential(
   record.setTags(anonCredsCredentialRecordTags)
   record.metadata.set(W3cAnonCredsCredentialMetadataKey, anonCredsCredentialMetadata)
 
-  const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
-  await w3cCredentialRepository.update(agentContext, record)
+  await w3cCredentialService.storeCredential(agentContext, {
+    record,
+  })
 
   return record
 }

@@ -34,6 +34,7 @@ exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 > should correctly update the
       ],
       "givenId": undefined,
       "issuerId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx",
+      "multiInstanceState": "SingleInstanceUnused",
       "proofTypes": [
         "DataIntegrityProof",
       ],
@@ -45,33 +46,58 @@ exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 > should correctly update the
     },
     "type": "W3cCredentialRecord",
     "value": {
-      "createdAt": "2024-02-28T22:50:20.522Z",
-      "credential": {
-        "@context": [
-          "https://www.w3.org/2018/credentials/v1",
-          "https://w3id.org/security/data-integrity/v2",
-          {
-            "@vocab": "https://www.w3.org/ns/credentials/issuer-dependent#",
-          },
-        ],
-        "credentialSubject": {
-          "test": "test",
-        },
-        "issuanceDate": 2024-02-28T22:50:20.522Z,
-        "issuer": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx",
-        "proof": [
-          {
-            "cryptosuite": "anoncreds-2023",
-            "proofPurpose": "assertionMethod",
-            "proofValue": "ukgGEqXNjaGVtYV9pZNlbZGlkOmluZHk6YmNvdnJpbjp0ZXN0OjZMSHFkVWVXRFdzTDk0elJjMVVMRXgvYW5vbmNyZWRzL3YwL1NDSEVNQS90ZXN0MC4xNTk5MjIxODcyMzA4MDAxLzEuMKtjcmVkX2RlZl9pZNlPZGlkOmluZHk6YmNvdnJpbjp0ZXN0OjZMSHFkVWVXRFdzTDk0elJjMVVMRXgvYW5vbmNyZWRzL3YwL0NMQUlNX0RFRi80MDA4MzIvdGVzdKlzaWduYXR1cmWCrHBfY3JlZGVudGlhbISjbV8y3AAgzL1rQBvM-szpzMImzNrMgcylCi7M8syxzKEQzLBBzKNTzOTM48zbzIlaNDzM1F91MaFh3AEAzOZYzMR6USQgEHTMoRbMrsydzKtnXBAGzITM7C4kPczaWG_Mh2nM0czezItlzLcnPMzVzIJSan06zMDMolbM48z3e8ynzOnMm8y6zOLMqMyizM3M-MyvzNnMrB3MtsyUc0ciO8yYK8ztzIHM4lg1PMyezJ7M0MyYecyrEsz4zOXMvldEF8yZIszbzNPMlT4xzIhfzMYCGA7M9cy3SczmzM3Mql0eScyJZ2UKKHRKGcy6zN8ozLvMvlLM_sy3WTjM_gfMrMzQMszKzKTMxDY2F8zmTWTM3EHMlwB4zLYAEsyeZcyIZBTMtlrMpczfSVdMzN1_zPQMzJ0QEAfM9MzIzIrMwsyeZ8zDH8zPzIRjUi42zJfM5wITADQlzMLM5grM8wrM-MzbC8zUB8ypzOPMj8yscMz7zMNbHAxCLQkpMER2zO7Ml3nMoB4yzI1GzJ7MkG3M61XM21jMhszZzLAvzJBgzK_M1MzlzMnM8gTMs8yCXQNdzLtuzL3MjMzYQsyDoWXcAEsQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSMsydzL0HzPpfzJTM8CLM4czlJsyyzLmhdtwBVQ_M-EvM1cyczK3MqcyccwMqzIvM6kzM6UdwOcyDzPM1zN_Mnzt1zLvM2MyrIHzMoszPzOXMpMzhzJsBMMz5aszuzMbM38yrzNV3WMyFSczMzINpMMyOAszZOszaSMy1zIYBzKvMxHNuzKHM58zuzIvMvcyvzPkfFMyqzN_Mi1nMxADM1szOODERcsz3zJvMtcyCL0dUzJjMzMzwIsy8zJPMxMz_zMbMzcyWGyDM-S5FzOLM5szzYszbTczyLA8bMgAmRczCGHXMmwFhGQfMilMjHVBWcFXM28yWzOjMsMyJzKETHQsezOfMhcybesz7zKXM6wxwbsz8RszHMGBFzObM_mfMq8zWbMzpzKdDzOEwdizM0czeNwRWCR0DzM41bMzNzJczzOczzP7MgUErzK9cAhkDcg1GzLl7IszBPUBua1vMyCfMtszUzIvM6QcDVlzM_szUGczAzObMvszrzLHMl8yWeC0-KlDM7cy4VUPMsD_MmzjM-cz_zPnM0sz3zJPMvmRGzKnMqSdDzJnMpcybf3VnzL_MkMzazK4qI8ySzOjMnszHzMhTFWRozIbM7G1sMD3MjQrMucz4zPDMnMzNIMyPzKIfzJR_TcyMzNjMrVrMycyaKsy6zLjMlSEtKsy4zNfMsMyrY8y0zN5bVFXMgMzAzIzM4hrM2ylyzPJvD8yWVsyRFqxyX2NyZWRlbnRpYWzAu3NpZ25hdHVyZV9jb3JyZWN0bmVzc19wcm9vZoKic2XcAQDMqiPMi8zrzOPMgcy3zOo9GMz4zOlEKUjM3My2zNgAR8yZzJnM4D5fzOLM5szeEGnMscy6zN8mDszrzL3MrszfTHrM7MzBdMyvMcyizIXM3UE4asyXRSJnzK3MygZuXncNzLPMgWZIXQQPHMy3JcyCYF_MhDNnYCsMLl8LzLfM98yhGnZfzPfMrsygzKEAzI_M50nM28yxzLnMpFJ_ScyjEWfMiio2zIfMxszLzLBrIEFJD8zbzMEDPjDMiszIzKcTbCpXT3hzLiIld8zDzLbMyMyqHV3MzHnMwszzdCQEMlpGzOMRzJwCE8zizNXM4HnM8kYSzLcyzNNYzNrM7GbM1xTMwszkzKt5zNjM92QgzOZuCMzlzKQIRhZszP_MpMzbzLXM1sy0NyIHIszyzJBlzMLMjBrM4RI2Q8z2MMyRLRfM7iNkIMzEzORbzPkEesy5zJnMoMy5zMt7zMxYzLjM7zzMoC7Mt8y7OSNtHx84zI_M5m3MgszxM6Fj3AAgzJ49zLXMxljMmGvMqsy1BD3MpszXzMfM7MztzIwBQMyAdMzJCVXM38y0Y8ybzMhoeMyJ",
-            "type": "DataIntegrityProof",
-            "verificationMethod": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/CLAIM_DEF/400832/test",
-          },
-        ],
-        "type": [
-          "VerifiableCredential",
+      "_tags": {
+        "anonCredsAttr::test::marker": true,
+        "anonCredsAttr::test::value": "test",
+        "anonCredsCredentialDefinitionId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/CLAIM_DEF/400832/test",
+        "anonCredsCredentialRevocationId": undefined,
+        "anonCredsLinkSecretId": "ae343b1d-e2af-4706-9aae-2010a7f2c882",
+        "anonCredsMethodName": "indy",
+        "anonCredsRevocationRegistryId": undefined,
+        "anonCredsSchemaId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/SCHEMA/test0.1599221872308001/1.0",
+        "anonCredsSchemaIssuerId": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx",
+        "anonCredsSchemaName": "test0.1599221872308001",
+        "anonCredsSchemaVersion": "1.0",
+        "anonCredsUnqualifiedCredentialDefinitionId": "6LHqdUeWDWsL94zRc1ULEx:3:CL:400832:test",
+        "anonCredsUnqualifiedIssuerId": "6LHqdUeWDWsL94zRc1ULEx",
+        "anonCredsUnqualifiedRevocationRegistryId": undefined,
+        "anonCredsUnqualifiedSchemaId": "6LHqdUeWDWsL94zRc1ULEx:2:test0.1599221872308001:1.0",
+        "anonCredsUnqualifiedSchemaIssuerId": "6LHqdUeWDWsL94zRc1ULEx",
+        "expandedTypes": [
+          "https://www.w3.org/2018/credentials#VerifiableCredential",
         ],
       },
+      "createdAt": "2024-02-28T22:50:20.522Z",
+      "credentialInstances": [
+        {
+          "credential": {
+            "@context": [
+              "https://www.w3.org/2018/credentials/v1",
+              "https://w3id.org/security/data-integrity/v2",
+              {
+                "@vocab": "https://www.w3.org/ns/credentials/issuer-dependent#",
+              },
+            ],
+            "credentialSubject": {
+              "test": "test",
+            },
+            "issuanceDate": 2024-02-28T22:50:20.522Z,
+            "issuer": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx",
+            "proof": [
+              {
+                "cryptosuite": "anoncreds-2023",
+                "proofPurpose": "assertionMethod",
+                "proofValue": "ukgGEqXNjaGVtYV9pZNlbZGlkOmluZHk6YmNvdnJpbjp0ZXN0OjZMSHFkVWVXRFdzTDk0elJjMVVMRXgvYW5vbmNyZWRzL3YwL1NDSEVNQS90ZXN0MC4xNTk5MjIxODcyMzA4MDAxLzEuMKtjcmVkX2RlZl9pZNlPZGlkOmluZHk6YmNvdnJpbjp0ZXN0OjZMSHFkVWVXRFdzTDk0elJjMVVMRXgvYW5vbmNyZWRzL3YwL0NMQUlNX0RFRi80MDA4MzIvdGVzdKlzaWduYXR1cmWCrHBfY3JlZGVudGlhbISjbV8y3AAgzL1rQBvM-szpzMImzNrMgcylCi7M8syxzKEQzLBBzKNTzOTM48zbzIlaNDzM1F91MaFh3AEAzOZYzMR6USQgEHTMoRbMrsydzKtnXBAGzITM7C4kPczaWG_Mh2nM0czezItlzLcnPMzVzIJSan06zMDMolbM48z3e8ynzOnMm8y6zOLMqMyizM3M-MyvzNnMrB3MtsyUc0ciO8yYK8ztzIHM4lg1PMyezJ7M0MyYecyrEsz4zOXMvldEF8yZIszbzNPMlT4xzIhfzMYCGA7M9cy3SczmzM3Mql0eScyJZ2UKKHRKGcy6zN8ozLvMvlLM_sy3WTjM_gfMrMzQMszKzKTMxDY2F8zmTWTM3EHMlwB4zLYAEsyeZcyIZBTMtlrMpczfSVdMzN1_zPQMzJ0QEAfM9MzIzIrMwsyeZ8zDH8zPzIRjUi42zJfM5wITADQlzMLM5grM8wrM-MzbC8zUB8ypzOPMj8yscMz7zMNbHAxCLQkpMER2zO7Ml3nMoB4yzI1GzJ7MkG3M61XM21jMhszZzLAvzJBgzK_M1MzlzMnM8gTMs8yCXQNdzLtuzL3MjMzYQsyDoWXcAEsQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSMsydzL0HzPpfzJTM8CLM4czlJsyyzLmhdtwBVQ_M-EvM1cyczK3MqcyccwMqzIvM6kzM6UdwOcyDzPM1zN_Mnzt1zLvM2MyrIHzMoszPzOXMpMzhzJsBMMz5aszuzMbM38yrzNV3WMyFSczMzINpMMyOAszZOszaSMy1zIYBzKvMxHNuzKHM58zuzIvMvcyvzPkfFMyqzN_Mi1nMxADM1szOODERcsz3zJvMtcyCL0dUzJjMzMzwIsy8zJPMxMz_zMbMzcyWGyDM-S5FzOLM5szzYszbTczyLA8bMgAmRczCGHXMmwFhGQfMilMjHVBWcFXM28yWzOjMsMyJzKETHQsezOfMhcybesz7zKXM6wxwbsz8RszHMGBFzObM_mfMq8zWbMzpzKdDzOEwdizM0czeNwRWCR0DzM41bMzNzJczzOczzP7MgUErzK9cAhkDcg1GzLl7IszBPUBua1vMyCfMtszUzIvM6QcDVlzM_szUGczAzObMvszrzLHMl8yWeC0-KlDM7cy4VUPMsD_MmzjM-cz_zPnM0sz3zJPMvmRGzKnMqSdDzJnMpcybf3VnzL_MkMzazK4qI8ySzOjMnszHzMhTFWRozIbM7G1sMD3MjQrMucz4zPDMnMzNIMyPzKIfzJR_TcyMzNjMrVrMycyaKsy6zLjMlSEtKsy4zNfMsMyrY8y0zN5bVFXMgMzAzIzM4hrM2ylyzPJvD8yWVsyRFqxyX2NyZWRlbnRpYWzAu3NpZ25hdHVyZV9jb3JyZWN0bmVzc19wcm9vZoKic2XcAQDMqiPMi8zrzOPMgcy3zOo9GMz4zOlEKUjM3My2zNgAR8yZzJnM4D5fzOLM5szeEGnMscy6zN8mDszrzL3MrszfTHrM7MzBdMyvMcyizIXM3UE4asyXRSJnzK3MygZuXncNzLPMgWZIXQQPHMy3JcyCYF_MhDNnYCsMLl8LzLfM98yhGnZfzPfMrsygzKEAzI_M50nM28yxzLnMpFJ_ScyjEWfMiio2zIfMxszLzLBrIEFJD8zbzMEDPjDMiszIzKcTbCpXT3hzLiIld8zDzLbMyMyqHV3MzHnMwszzdCQEMlpGzOMRzJwCE8zizNXM4HnM8kYSzLcyzNNYzNrM7GbM1xTMwszkzKt5zNjM92QgzOZuCMzlzKQIRhZszP_MpMzbzLXM1sy0NyIHIszyzJBlzMLMjBrM4RI2Q8z2MMyRLRfM7iNkIMzEzORbzPkEesy5zJnMoMy5zMt7zMxYzLjM7zzMoC7Mt8y7OSNtHx84zI_M5m3MgszxM6Fj3AAgzJ49zLXMxljMmGvMqsy1BD3MpszXzMfM7MztzIwBQMyAdMzJCVXM38y0Y8ybzMhoeMyJ",
+                "type": "DataIntegrityProof",
+                "verificationMethod": "did:indy:bcovrin:test:6LHqdUeWDWsL94zRc1ULEx/anoncreds/v0/CLAIM_DEF/400832/test",
+              },
+            ],
+            "type": [
+              "VerifiableCredential",
+            ],
+          },
+        },
+      ],
       "id": "1-4e4f-41d9-94c4-f49351b811f1",
       "metadata": {
         "_w3c/anonCredsMetadata": {
@@ -80,6 +106,7 @@ exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 > should correctly update the
           "methodName": "indy",
         },
       },
+      "multiInstanceState": "SingleInstanceUnused",
       "updatedAt": "2024-02-28T22:50:20.522Z",
     },
   },

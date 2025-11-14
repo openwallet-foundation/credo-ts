@@ -1,4 +1,9 @@
-import { JsonTransformer, W3cCredentialRecord, W3cJsonLdVerifiableCredential } from '@credo-ts/core'
+import {
+  CredentialMultiInstanceState,
+  JsonTransformer,
+  W3cCredentialRecord,
+  W3cJsonLdVerifiableCredential,
+} from '@credo-ts/core'
 
 import { Ed25519Signature2018Fixtures } from '../../../../core/src/modules/vc/data-integrity/__tests__/fixtures'
 import { W3cAnonCredsCredentialMetadataKey } from '../metadata'
@@ -24,7 +29,11 @@ describe('AnoncredsW3cCredentialRecord', () => {
     }
 
     const w3cCredentialRecord = new W3cCredentialRecord({
-      credential,
+      credentialInstances: [
+        {
+          credential: credential.jsonCredential,
+        },
+      ],
       tags: {
         expandedTypes: ['https://expanded.tag#1'],
       },
@@ -66,6 +75,7 @@ describe('AnoncredsW3cCredentialRecord', () => {
       contexts: credential.contexts,
       proofTypes: credential.proofTypes,
       givenId: credential.id,
+      multiInstanceState: CredentialMultiInstanceState.SingleInstanceUnused,
       types: ['VerifiableCredential', 'UniversityDegreeCredential'],
       cryptosuites: [],
       expandedTypes: ['https://expanded.tag#1'],

@@ -34,6 +34,7 @@ export async function generateMigrations({ dialects, bundles, name, silent }: Ge
         ['generate', '--config', drizzleConfigPath, ...(name ? ['--name', name] : [])],
         {
           encoding: 'utf-8',
+          stdio: 'inherit',
           env: {
             ...process.env,
             DRIZZLE_DIALECT: dialect,
@@ -43,7 +44,7 @@ export async function generateMigrations({ dialects, bundles, name, silent }: Ge
         }
       )
 
-      if (migrateResult.status !== 0 || migrateResult.stderr !== '') {
+      if (migrateResult.status !== 0 || (migrateResult.stderr !== '' && migrateResult.stderr !== null)) {
         throw new Error(
           `Error generating migrations for schema ${dialectBundle.schemaPath} with dialect ${dialect}. Error: ${migrateResult.stderr || migrateResult.stdout}`
         )

@@ -400,7 +400,6 @@ async function testMigration(
     }),
   })
 
-  expect(w3cRepo.update).toHaveBeenCalledTimes(1)
   expect(anonCredsRepo.delete).toHaveBeenCalledTimes(1)
   expect(credentialExchangeRepo.findByQuery).toHaveBeenCalledTimes(1)
   expect(credentialExchangeRepo.findByQuery).toHaveBeenCalledWith(agent.context, {

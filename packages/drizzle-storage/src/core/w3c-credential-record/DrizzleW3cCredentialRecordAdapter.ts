@@ -34,12 +34,14 @@ export class DrizzleW3cCredentialRecordAdapter extends BaseDrizzleRecordAdapter<
 
       // Custom Tags
       expandedTypes,
+      multiInstanceState: _,
       ...customTags
     } = record.getTags()
 
     return {
       // JWT vc is string, JSON-LD vc is object
-      credential: record.credential.encoded,
+      credentialInstances: record.credentialInstances,
+      multiInstanceState: record.multiInstanceState,
       expandedTypes,
 
       // Tags

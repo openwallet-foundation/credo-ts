@@ -25,6 +25,7 @@ import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } fr
  */
 export class Mdoc {
   public base64Url: string
+  #deviceKeyId?: string
 
   private constructor(public issuerSignedDocument: IssuerSignedDocument | DeviceSignedDocument) {
     const issuerSigned = issuerSignedDocument.prepare().get('issuerSigned')
@@ -48,11 +49,24 @@ export class Mdoc {
   /**
    * Get the device key to which the mdoc is bound
    */
-  public get deviceKey(): PublicJwk | null {
+  public get deviceKey(): PublicJwk {
     const deviceKeyRaw = this.issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
-    if (!deviceKeyRaw) return null
+    if (!deviceKeyRaw) throw new MdocError('Could not extract device key from mdoc')
 
-    return PublicJwk.fromUnknown(COSEKey.import(deviceKeyRaw).toJWK())
+    const publicJwk = PublicJwk.fromUnknown(COSEKey.import(deviceKeyRaw).toJWK())
+    if (this.#deviceKeyId) publicJwk.keyId = this.#deviceKeyId
+    return publicJwk
+  }
+
+  public set deviceKeyId(keyId: string | undefined) {
+    this.#deviceKeyId = keyId
+  }
+
+  public get deviceKeyId() {
+    const deviceKey = this.deviceKey
+
+    if (deviceKey.hasKeyId) return deviceKey.keyId
+    return undefined
   }
 
   public static fromBase64Url(mdocBase64Url: string, expectedDocType?: string): Mdoc {

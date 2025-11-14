@@ -48,9 +48,8 @@ const mockPresentationDefinition = (): DifPresentationExchangeDefinitionV1 => ({
   ],
 })
 
-const mockCredentialRecord = new W3cCredentialRecord({
-  tags: {},
-  credential: new W3cJsonLdVerifiableCredential({
+const mockCredentialRecord = W3cCredentialRecord.fromCredential(
+  new W3cJsonLdVerifiableCredential({
     id: 'did:some:id',
     context: [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
@@ -66,12 +65,12 @@ const mockCredentialRecord = new W3cCredentialRecord({
       proofPurpose: 'assertionMethod',
       proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
     },
-  }),
-})
+  })
+)
 
 const presentationSubmission = { id: 'did:id', definition_id: 'my-id', descriptor_map: [] }
 const verifiablePresentation = new W3cJsonLdVerifiablePresentation({
-  verifiableCredential: [mockCredentialRecord.credential],
+  verifiableCredential: [mockCredentialRecord.firstCredential],
   proof: {
     type: 'Ed25519Signature2020',
     created: '2021-11-13T18:19:39Z',
