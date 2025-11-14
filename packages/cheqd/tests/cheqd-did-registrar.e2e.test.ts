@@ -2,12 +2,13 @@ import type { CheqdDidCreateOptions } from '../src'
 import type { DidDocument } from '@credo-ts/core'
 
 import {
+  Agent,
+  DidCommV1Service,
   DidDocumentBuilder,
   getEd25519VerificationKey2018,
   getJsonWebKey2020,
   KeyType,
   utils,
-  Agent,
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { generateKeyPairFromSeed } from '@stablelib/ed25519'
@@ -88,7 +89,7 @@ describe('Cheqd DID registrar', () => {
     expect(did.didState).toMatchObject({ state: 'finished' })
   })
 
-  it('should create a did:cheqd using JsonWebKey2020', async () => {
+  it('should create a did:cheqd using JsonWebKey2020 and update with serviceEndpoint as array', async () => {
     const createResult = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
       secret: {
@@ -135,6 +136,52 @@ describe('Cheqd DID registrar', () => {
       useLocalCreatedDidRecord: false,
     })
     expect(resolvedDocument.didDocumentMetadata.deactivated).toBe(true)
+  })
+  it('should create a did:cheqd using Ed25519VerificationKey2020 and update with DidCommV1Service', async () => {
+    const createResult = await agent.dids.create<CheqdDidCreateOptions>({
+      method: 'cheqd',
+      secret: {
+        verificationMethod: {
+          id: 'key-1',
+          type: 'Ed25519VerificationKey2020',
+        },
+      },
+      options: {
+        network: 'testnet',
+        methodSpecificIdAlgo: 'uuid',
+      },
+    })
+    expect(createResult).toMatchObject({
+      didState: {
+        state: 'finished',
+        didDocument: {
+          verificationMethod: [{ type: 'Ed25519VerificationKey2020' }],
+        },
+      },
+    })
+    expect(createResult.didState.did).toBeDefined()
+    const did = createResult.didState.did as string
+    const didDocument = createResult.didState.didDocument as DidDocument
+    const verificationMethodId = didDocument.verificationMethod?.[0]?.id
+    const service1 = new DidCommV1Service({
+      id: `${did}#didcomm-1`,
+      serviceEndpoint: 'https://this.endpoint.io',
+      recipientKeys: [verificationMethodId ?? ''],
+      accept: ['didcomm/aip2;env=rfc19'],
+      priority: 0,
+    })
+    didDocument.service = [service1]
+    const updateResult = await agent.dids.update({
+      did,
+      didDocument,
+    })
+    expect(updateResult).toMatchObject({
+      didState: {
+        state: 'finished',
+        didDocument,
+      },
+    })
+    expect(updateResult.didState.didDocument?.toJSON()).toMatchObject(didDocument.toJSON())
   })
 
   it('should create a did:cheqd did using custom did document containing Ed25519 key', async () => {

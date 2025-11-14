@@ -74,7 +74,7 @@ const jsonLdProofFormat = new DifPresentationExchangeProofFormatService()
 
 const getCheqdJsonLdModules = () =>
   ({
-    ...getCheqdModules(cheqdPayerSeeds[0]),
+    ...getCheqdModules(cheqdPayerSeeds[4]),
     credentials: new CredentialsModule({
       credentialProtocols: [
         new V2CredentialProtocol({
