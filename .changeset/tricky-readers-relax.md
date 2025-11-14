@@ -1,6 +1,5 @@
 ---
 "@credo-ts/askar-to-drizzle-storage-migration": minor
-"@credo-ts/indy-sdk-to-askar-migration": minor
 "@credo-ts/drizzle-storage": minor
 "@credo-ts/question-answer": minor
 "@credo-ts/react-native": minor
