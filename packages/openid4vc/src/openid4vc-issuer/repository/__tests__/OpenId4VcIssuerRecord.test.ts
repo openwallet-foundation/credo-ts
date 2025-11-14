@@ -1,5 +1,4 @@
-import { JsonTransformer } from '@credo-ts/core'
-
+import { JsonTransformer, Kms } from '@credo-ts/core'
 import { OpenId4VcIssuerRecord } from '../OpenId4VcIssuerRecord'
 
 describe('OpenId4VcIssuerRecord', () => {
@@ -113,7 +112,7 @@ describe('OpenId4VcIssuerRecord', () => {
         format: 'mso_mdoc',
         doctype: 'some-doc-type',
         cryptographic_binding_methods_supported: ['did:key'],
-        credential_signing_alg_values_supported: ['EdDSA'],
+        credential_signing_alg_values_supported: [Kms.KnownCoseSignatureAlgorithms.Ed25519],
         credential_metadata: {
           display: [
             {

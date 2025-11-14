@@ -28,6 +28,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
   private static algToSigType: Partial<Record<Kms.KnownJwaSignatureAlgorithm, SignatureAlgorithm>> = {
     EdDSA: SignatureAlgorithm.EdDSA,
+    Ed25519: SignatureAlgorithm.EdDSA,
     ES256K: SignatureAlgorithm.ES256K,
     ES256: SignatureAlgorithm.ES256,
     ES384: SignatureAlgorithm.ES384,

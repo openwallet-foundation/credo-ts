@@ -13,7 +13,10 @@ import { X25519PublicJwk } from './X25519PublicJwk'
 type Jwk = KmsJwkPublicOkp & { crv: 'Ed25519' }
 
 export class Ed25519PublicJwk implements PublicJwkType<Jwk> {
-  public static supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = [KnownJwaSignatureAlgorithms.EdDSA]
+  public static supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = [
+    KnownJwaSignatureAlgorithms.EdDSA,
+    KnownJwaSignatureAlgorithms.Ed25519,
+  ]
   public static supportdEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] = []
   public static multicodecPrefix = 237
 
