@@ -93,19 +93,21 @@ const anonCredsRepo = {
 
 vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: vi.fn(() => ({
-      config: agentConfig,
-      context: agentContext,
-      dependencyManager: {
-        // biome-ignore lint/suspicious/noExplicitAny: no explanation
-        resolve: vi.fn((repo: any) => {
-          if (repo.prototype.constructor.name === 'AnonCredsCredentialRepository') {
-            return anonCredsRepo
-          }
-          throw new Error(`Couldn't resolve dependency`)
-        }),
-      },
-    })),
+    Agent: vi.fn(function () {
+      return {
+        config: agentConfig,
+        context: agentContext,
+        dependencyManager: {
+          // biome-ignore lint/suspicious/noExplicitAny: no explanation
+          resolve: vi.fn(function (repo: any) {
+            if (repo.prototype.constructor.name === 'AnonCredsCredentialRepository') {
+              return anonCredsRepo
+            }
+            throw new Error(`Couldn't resolve dependency`)
+          }),
+        },
+      }
+    }),
   }
 })
 

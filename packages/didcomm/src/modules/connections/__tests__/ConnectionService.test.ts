@@ -118,6 +118,10 @@ describe('DidCommConnectionService', () => {
     mockFunction(didRepository.findByQuery).mockResolvedValue([])
   })
 
+  afterEach(() => {
+    vitest.clearAllMocks()
+  })
+
   describe('createRequest', () => {
     it('returns a connection request message containing the information from the connection record', async () => {
       expect.assertions(5)

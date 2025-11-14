@@ -42,6 +42,15 @@ import {
   simpleX509,
 } from './sdjwtvc.fixtures'
 
+vi.mock('../repository/SdJwtVcRepository', () => ({
+  SdJwtVcRepository: vi.fn(
+    class SdJwtVcRepository {
+      save = vi.fn()
+    }
+  ),
+}))
+const SdJwtVcRepositoryMock = SdJwtVcRepository as unknown as Constructable<SdJwtVcRepository>
+
 const agent = new Agent(
   getAgentOptions(
     'sdjwtvcserviceagent',
@@ -56,12 +65,15 @@ const agent = new Agent(
   )
 )
 
-agent.kms.randomBytes = vi.fn(() => TypedArrayEncoder.fromString('salt'))
-Date.prototype.getTime = vi.fn(() => 1698151532000)
-Date.now = vi.fn(() => 1698151532000)
-
-vi.mock('../repository/SdJwtVcRepository')
-const SdJwtVcRepositoryMock = SdJwtVcRepository as unknown as Constructable<SdJwtVcRepository>
+agent.kms.randomBytes = vi.fn(function () {
+  return TypedArrayEncoder.fromString('salt')
+})
+Date.prototype.getTime = vi.fn(function () {
+  return 1698151532000
+})
+Date.now = vi.fn(function () {
+  return 1698151532000
+})
 
 const simpleX509Certificate = X509Certificate.fromEncodedCertificate(simpleX509.trustedCertficate)
 
@@ -939,16 +951,24 @@ describe('SdJwtVcService', () => {
       const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
       x509ModuleConfig.addTrustedCertificate(funkeX509.trustedCertificate)
 
-      Date.prototype.getTime = vi.fn(() => 1717498204 * 1000)
-      Date.now = vi.fn(() => 1717498204 * 1000)
+      Date.prototype.getTime = vi.fn(function () {
+        return 1717498204 * 1000
+      })
+      Date.now = vi.fn(function () {
+        return 1717498204 * 1000
+      })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: funkeX509.sdJwtVc,
         requiredClaimKeys: ['issuing_country'],
       })
 
-      Date.prototype.getTime = vi.fn(() => 1698151532000)
-      Date.now = vi.fn(() => 1698151532000)
+      Date.prototype.getTime = vi.fn(function () {
+        return 1698151532000
+      })
+      Date.now = vi.fn(function () {
+        return 1698151532000
+      })
 
       const sdJwtIss = verificationResult.sdJwtVc?.payload.iss
       expect(sdJwtIss).toEqual('https://demo.pid-issuer.bundesdruckerei.de/c')
@@ -1161,14 +1181,22 @@ describe('SdJwtVcService', () => {
     })
 
     test('verify expired sd-jwt-vc and fails', async () => {
-      Date.prototype.getTime = vi.fn(() => 1716111919 * 1000 + 1000)
-      Date.now = vi.fn(() => 1716111919 * 1000 + 1000)
+      Date.prototype.getTime = vi.fn(function () {
+        return 1716111919 * 1000 + 1000
+      })
+      Date.now = vi.fn(function () {
+        return 1716111919 * 1000 + 1000
+      })
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: expiredSdJwtVc,
       })
 
-      Date.prototype.getTime = vi.fn(() => 1698151532000)
-      Date.now = vi.fn(() => 1698151532000)
+      Date.prototype.getTime = vi.fn(function () {
+        return 1698151532000
+      })
+      Date.now = vi.fn(function () {
+        return 1698151532000
+      })
 
       expect(verificationResult).toEqual({
         isValid: false,

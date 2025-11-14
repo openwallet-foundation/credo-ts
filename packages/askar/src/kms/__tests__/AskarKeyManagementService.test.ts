@@ -353,7 +353,23 @@ describe('AskarKeyManagementService', () => {
       })
     })
 
-    it('throws error if algorithm is not supprted by backend', async () => {
+    it('signs with Ed25519', async () => {
+      const { keyId } = await service.createKey(agentContext, {
+        type: { kty: 'OKP', crv: 'Ed25519' },
+      })
+
+      const result = await service.sign(agentContext, {
+        keyId,
+        algorithm: 'Ed25519',
+        data: new Uint8Array([1, 2, 3]),
+      })
+
+      expect(result).toEqual({
+        signature: expect.any(Uint8Array),
+      })
+    })
+
+    it('throws error if algorithm is not supported by backend', async () => {
       const { keyId } = await service.createKey(agentContext, {
         type: { kty: 'EC', crv: 'P-256' },
       })
