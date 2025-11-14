@@ -20,6 +20,7 @@ import {
   anoncredsDefinitionFourAttributesNoRevocation,
   storePreCreatedAnonCredsDefinition,
 } from '../packages/anoncreds/tests/preCreatedAnonCredsDefinition'
+import { sleep } from '../packages/core/src/utils/sleep'
 import { setupEventReplaySubjects } from '../packages/core/tests'
 import { firstValueWithStackTrace, makeConnection } from '../packages/core/tests/helpers'
 
@@ -163,5 +164,5 @@ export async function e2eTest({
   // agent and possibly wait for the response. So e.g. if pickup v1 is used, we wait for the delivery message to be returned
   // as that is the final message that will be exchange after we've called stopMessagePickup. We can hook into the
   // replay subject DidCommMessageProcessed and DidCommMessageSent events.
-  // await sleep(5000)
+  await sleep(2000)
 }
