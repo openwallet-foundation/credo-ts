@@ -1,6 +1,5 @@
-import type { TagsBase } from '../../../storage/BaseRecord'
-
 import { Type } from 'class-transformer'
+import type { TagsBase } from '../../../storage/BaseRecord'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'

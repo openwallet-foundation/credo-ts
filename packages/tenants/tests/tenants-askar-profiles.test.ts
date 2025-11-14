@@ -2,18 +2,15 @@ import type { InitConfig } from '@credo-ts/core'
 
 import { Agent } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
-
-import { AskarModule, AskarMultiWalletDatabaseScheme } from '../../askar/src'
-import { getAskarStoreConfig, testLogger } from '../../core/tests'
-
 import { TenantsModule } from '@credo-ts/tenants'
-import { Store, askar } from '@openwallet-foundation/askar-nodejs'
+import { askar, Store } from '@openwallet-foundation/askar-nodejs'
+import { AskarModule, AskarMultiWalletDatabaseScheme } from '../../askar/src'
 import { AskarStoreManager } from '../../askar/src/AskarStoreManager'
+import { getAskarStoreConfig, testLogger } from '../../core/tests'
 
 describe('Tenants Askar database schemes E2E', () => {
   test('uses AskarWallet for all wallets and tenants when database schema is DatabasePerWallet', async () => {
     const agentConfig: InitConfig = {
-      label: 'Tenant Agent 1',
       logger: testLogger,
     }
 
@@ -66,7 +63,6 @@ describe('Tenants Askar database schemes E2E', () => {
 
   test('uses AskarWallet for main agent, and ProfileAskarWallet for tenants', async () => {
     const agentConfig: InitConfig = {
-      label: 'Tenant Agent 1',
       logger: testLogger,
     }
 

@@ -1,7 +1,6 @@
-import type { VerificationMethod } from './VerificationMethod'
-
 import { CredoError } from '../../../../error'
 import { PublicJwk } from '../../../kms'
+import type { VerificationMethod } from './VerificationMethod'
 
 export const VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020 = 'JsonWebKey2020'
 

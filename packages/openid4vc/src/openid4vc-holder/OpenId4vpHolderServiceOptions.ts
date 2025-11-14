@@ -6,7 +6,7 @@ import type {
   DifPresentationExchangeDefinition,
   EncodedX509Certificate,
 } from '@credo-ts/core'
-import { ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
+import type { ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 
 // TODO: export from oid4vp
@@ -22,13 +22,17 @@ type VerifiedJarRequest = NonNullable<ResolvedOpenid4vpAuthorizationRequest['jar
 export interface OpenId4VpResolvedAuthorizationRequest {
   /**
    * Parameters related to DIF Presentation Exchange. Only defined when
-   * the request included
+   * the request included a presentation definition.
    */
   presentationExchange?: {
     definition: DifPresentationExchangeDefinition
     credentialsForRequest: DifPexCredentialsForRequest
   }
 
+  /**
+   * Parameters related to DCQL. Only defined when
+   * the request included a dcql query.
+   */
   dcql?: {
     queryResult: DcqlQueryResult
   }
@@ -62,6 +66,25 @@ export interface OpenId4VpResolvedAuthorizationRequest {
     signer: VerifiedJarRequest['signer']
     payload: VerifiedJarRequest['jwt']['payload']
     header: VerifiedJarRequest['jwt']['header']
+  }
+
+  verifier: {
+    /**
+     * The client id prefix in normalized form (so e.g. 'did' is returned as 'decentralized_identifier')
+     */
+    clientIdPrefix: ResolvedOpenid4vpAuthorizationRequest['client']['prefix']
+
+    /**
+     * The effective client id, taking into account default values and different draft versions.
+     */
+    effectiveClientId: ResolvedOpenid4vpAuthorizationRequest['client']['effective']
+
+    /**
+     * The client id metadata.
+     *
+     * In case of 'openid_federation' client id prefix, this will be the metadata from the federation.
+     * clientMetadata?: ClientMetadata
+     */
   }
 
   /**

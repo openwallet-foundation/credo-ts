@@ -1,3 +1,4 @@
+import { parseIndyDid } from '@credo-ts/anoncreds'
 import type {
   AgentContext,
   DidCreateOptions,
@@ -10,12 +11,8 @@ import type {
   DidRegistrar,
   DidUpdateResult,
 } from '@credo-ts/core'
-import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
-import type { IndyVdrPool } from '../pool'
-import type { IndyEndpointAttrib } from './didSovUtil'
-
-import { parseIndyDid } from '@credo-ts/anoncreds'
 import {
+  CredoError,
   DidCommV1Service,
   DidCommV2Service,
   DidDocumentRole,
@@ -27,18 +24,18 @@ import {
   NewDidCommV2Service,
   TypedArrayEncoder,
 } from '@credo-ts/core'
+import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
 import { AttribRequest, CustomRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
-
 import { IndyVdrError } from '../error'
+import type { IndyVdrPool } from '../pool'
 import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
-
 import {
-  buildDidDocument,
   createKeyAgreementKey,
   didDocDiff,
   indyDidDocumentFromDid,
   verificationPublicJwkForIndyDid,
 } from './didIndyUtil'
+import type { IndyEndpointAttrib } from './didSovUtil'
 import { endpointsAttribFromServices } from './didSovUtil'
 
 export class IndyVdrIndyDidRegistrar implements DidRegistrar {
@@ -63,11 +60,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     }
   }
 
-  private didCreateFailedResult({
-    reason,
-  }: {
-    reason: string
-  }): IndyVdrDidCreateResult {
+  private didCreateFailedResult({ reason }: { reason: string }): IndyVdrDidCreateResult {
     return {
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
@@ -188,6 +181,20 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     await didRepository.save(agentContext, didRecord)
   }
 
+  public async getDidDocumentFromRecord(agentContext: AgentContext, did: string): Promise<DidDocument> {
+    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+    const didRecord = await didRepository.getSingleByQuery(agentContext, {
+      did,
+      role: DidDocumentRole.Created,
+    })
+
+    if (!didRecord.didDocument) {
+      throw new CredoError(`Did record for did '${did}' has no did document.`)
+    }
+
+    return didRecord.didDocument
+  }
+
   private createDidDocument(
     did: string,
     verificationKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>,
@@ -197,7 +204,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     const verificationKeyBase58 = TypedArrayEncoder.toBase58(verificationKey.publicKey.publicKey)
     // Create base did document
     const didDocumentBuilder = indyDidDocumentFromDid(did, verificationKeyBase58)
-    let diddocContent: Record<string, unknown> | undefined = undefined
+    let diddocContent: Record<string, unknown> | undefined
 
     // Add services if object was passed
     if (services) {
@@ -273,7 +280,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       let nymRequest: NymRequest | CustomRequest
       let didDocument: DidDocument | undefined
       let attribRequest: AttribRequest | CustomRequest | undefined
-      let verificationKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> | undefined = undefined
+      let verificationKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> | undefined
 
       if (res.type === 'endorsedTransaction') {
         const { nymRequest: _nymRequest, attribRequest: _attribRequest } = res.endorsedTransaction
@@ -365,7 +372,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         ])
       }
 
-      didDocument = didDocument ?? (await buildDidDocument(agentContext, pool, did))
+      didDocument = didDocument ?? (await this.getDidDocumentFromRecord(agentContext, did))
       return this.didCreateFinishedResult({ did, didDocument, namespace: res.namespace })
     } catch (error) {
       agentContext.config.logger.error('Error creating indy did', {

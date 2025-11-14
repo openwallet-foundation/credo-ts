@@ -1,13 +1,14 @@
 import type { Observable } from 'rxjs'
+import { catchError, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 import type {
-  DiscoverFeaturesDisclosureReceivedEvent,
-  DiscoverFeaturesQueryReceivedEvent,
-} from '../DiscoverFeaturesEvents'
-
-import { ReplaySubject, catchError, firstValueFrom, map, timeout } from 'rxjs'
+  DidCommDiscoverFeaturesDisclosureReceivedEvent,
+  DidCommDiscoverFeaturesQueryReceivedEvent,
+} from '../DidCommDiscoverFeaturesEvents'
 
 export function waitForDisclosureSubject(
-  subject: ReplaySubject<DiscoverFeaturesDisclosureReceivedEvent> | Observable<DiscoverFeaturesDisclosureReceivedEvent>,
+  subject:
+    | ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>
+    | Observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>,
   { timeoutMs = 10000 }: { timeoutMs: number }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
@@ -24,7 +25,9 @@ export function waitForDisclosureSubject(
 }
 
 export function waitForQuerySubject(
-  subject: ReplaySubject<DiscoverFeaturesQueryReceivedEvent> | Observable<DiscoverFeaturesQueryReceivedEvent>,
+  subject:
+    | ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>
+    | Observable<DidCommDiscoverFeaturesQueryReceivedEvent>,
   { timeoutMs = 10000 }: { timeoutMs: number }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject

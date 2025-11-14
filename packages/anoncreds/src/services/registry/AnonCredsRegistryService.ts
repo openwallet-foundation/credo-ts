@@ -1,10 +1,8 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { AnonCredsRegistry } from '.'
-
 import { injectable } from '@credo-ts/core'
-
 import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
 import { AnonCredsError } from '../../error'
+import type { AnonCredsRegistry } from '.'
 
 /**
  * @internal

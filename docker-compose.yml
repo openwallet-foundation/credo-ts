@@ -1,7 +1,7 @@
 version: '3'
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -30,7 +30,7 @@ services:
       "
 
   cheqd-ledger:
-    image: ghcr.io/cheqd/cheqd-node:production-latest
+    image: ghcr.io/cheqd/cheqd-node:4.1.6
     container_name: cheqd-validator
     platform: linux/amd64
     ports:

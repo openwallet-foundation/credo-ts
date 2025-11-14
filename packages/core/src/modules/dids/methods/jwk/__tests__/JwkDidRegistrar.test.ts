@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { TypedArrayEncoder } from '../../../../../utils'
@@ -7,8 +8,8 @@ import { DidDocumentRole } from '../../../domain/DidDocumentRole'
 import { DidRepository } from '../../../repository/DidRepository'
 import { JwkDidRegistrar } from '../JwkDidRegistrar'
 
-jest.mock('../../../repository/DidRepository')
-const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+vi.mock('../../../repository/DidRepository')
+const DidRepositoryMock = DidRepository as MockedClassConstructor<typeof DidRepository>
 
 const didRepositoryMock = new DidRepositoryMock()
 const jwkDidRegistrar = new JwkDidRegistrar()
@@ -22,7 +23,7 @@ const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
 describe('DidRegistrar', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('JwkDidRegistrar', () => {
@@ -93,7 +94,7 @@ describe('DidRegistrar', () => {
     it('should return an error state if no key or key type is provided', async () => {
       const result = await jwkDidRegistrar.create(agentContext, {
         method: 'jwk',
-        // @ts-ignore
+        // @ts-expect-error
         options: {},
       })
 

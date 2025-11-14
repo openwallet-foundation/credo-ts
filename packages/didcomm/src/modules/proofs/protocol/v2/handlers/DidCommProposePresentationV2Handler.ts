@@ -1,0 +1,46 @@
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
+import { DidCommOutboundMessageContext } from '../../../../../models'
+import type { DidCommProofExchangeRecord } from '../../../repository/DidCommProofExchangeRecord'
+import type { DidCommProofV2Protocol } from '../DidCommProofV2Protocol'
+import { DidCommProposePresentationV2Message } from '../messages/DidCommProposePresentationV2Message'
+
+export class DidCommProposePresentationV2Handler implements DidCommMessageHandler {
+  private proofProtocol: DidCommProofV2Protocol
+  public supportedMessages = [DidCommProposePresentationV2Message]
+
+  public constructor(proofProtocol: DidCommProofV2Protocol) {
+    this.proofProtocol = proofProtocol
+  }
+
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommProposePresentationV2Handler>) {
+    const proofRecord = await this.proofProtocol.processProposal(messageContext)
+
+    const shouldAutoRespond = await this.proofProtocol.shouldAutoRespondToProposal(messageContext.agentContext, {
+      proofRecord,
+      proposalMessage: messageContext.message,
+    })
+
+    if (shouldAutoRespond) {
+      return this.acceptProposal(proofRecord, messageContext)
+    }
+  }
+  private async acceptProposal(
+    proofRecord: DidCommProofExchangeRecord,
+    messageContext: DidCommMessageHandlerInboundMessage<DidCommProposePresentationV2Handler>
+  ) {
+    messageContext.agentContext.config.logger.info('Automatically sending request with autoAccept')
+
+    if (!messageContext.connection) {
+      messageContext.agentContext.config.logger.error('No connection on the messageContext, aborting auto accept')
+      return
+    }
+
+    const { message } = await this.proofProtocol.acceptProposal(messageContext.agentContext, { proofRecord })
+
+    return new DidCommOutboundMessageContext(message, {
+      agentContext: messageContext.agentContext,
+      connection: messageContext.connection,
+      associatedRecord: proofRecord,
+    })
+  }
+}

@@ -5,14 +5,15 @@
 
 import {
   Ed25519PublicJwk,
-  Jwk,
-  KnownJwaSignatureAlgorithm,
+  type Jwk,
+  type KnownJwaSignatureAlgorithm,
   P256PublicJwk,
   P384PublicJwk,
   P521PublicJwk,
   RsaPublicJwk,
   Secp256k1PublicJwk,
 } from '../../modules/kms'
+import type { AnyUint8Array } from '../../types'
 import { CredoWebCryptoError } from './CredoWebCryptoError'
 import type { CredoWebCryptoKey } from './CredoWebCryptoKey'
 
@@ -58,7 +59,7 @@ export type EcKeyGenParams = {
 export type RsaHashedKeyGenParams = {
   name: 'RSASSA-PKCS1-v1_5' | 'RSA-PSS'
   modulusLength: number
-  publicExponent: Uint8Array
+  publicExponent: AnyUint8Array
   hash: { name: HashAlgorithmIdentifier }
 }
 

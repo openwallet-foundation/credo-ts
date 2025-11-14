@@ -1,13 +1,12 @@
-import type { Socket } from 'net'
-import type { DummyStateChangedEvent } from './dummy'
-
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
-import { ConnectionsModule, DidCommModule, MessagePickupModule, OutOfBandModule } from '@credo-ts/didcomm'
-import { HttpInboundTransport, WsInboundTransport, agentDependencies } from '@credo-ts/node'
+import { DidCommModule } from '@credo-ts/didcomm'
+import { agentDependencies, DidCommHttpInboundTransport, DidCommWsInboundTransport } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
-import { Server } from 'ws'
+import type { Socket } from 'net'
+import { WebSocketServer } from 'ws'
+import type { DummyStateChangedEvent } from './dummy'
 
 import { DummyEventTypes, DummyModule, DummyState } from './dummy'
 
@@ -16,15 +15,14 @@ const run = async () => {
   const port = process.env.RESPONDER_PORT ? Number(process.env.RESPONDER_PORT) : 3002
   const autoAcceptRequests = true
   const app = express()
-  const socketServer = new Server({ noServer: true })
+  const socketServer = new WebSocketServer({ noServer: true })
 
-  const httpInboundTransport = new HttpInboundTransport({ app, port })
-  const wsInboundTransport = new WsInboundTransport({ server: socketServer })
+  const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
+  const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
 
   // Setup the agent
   const agent = new Agent({
     config: {
-      label: 'Dummy-powered agent - responder',
       logger: new ConsoleLogger(LogLevel.debug),
     },
     modules: {
@@ -35,24 +33,21 @@ const run = async () => {
           key: 'responder',
         },
       }),
-      didcomm: new DidCommModule({ endpoints: [`http://localhost:${port}`] }),
-      oob: new OutOfBandModule(),
-      messagePickup: new MessagePickupModule(),
-      dummy: new DummyModule({ autoAcceptRequests }),
-      connections: new ConnectionsModule({
-        autoAcceptConnections: true,
+      didcomm: new DidCommModule({
+        endpoints: [`http://localhost:${port}`],
+        transports: {
+          inbound: [httpInboundTransport, wsInboundTransport],
+        },
+        connections: { autoAcceptConnections: true },
       }),
+      dummy: new DummyModule({ autoAcceptRequests }),
     },
     dependencies: agentDependencies,
   })
 
-  // Register transports
-  agent.modules.didcomm.registerInboundTransport(httpInboundTransport)
-  agent.modules.didcomm.registerInboundTransport(wsInboundTransport)
-
   // Allow to create invitation, no other way to ask for invitation yet
   app.get('/invitation', async (_req, res) => {
-    const { outOfBandInvitation } = await agent.modules.oob.createInvitation()
+    const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation()
     res.send(outOfBandInvitation.toUrl({ domain: `http://localhost:${port}/invitation` }))
   })
 

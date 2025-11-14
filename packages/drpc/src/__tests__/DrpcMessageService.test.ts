@@ -1,21 +1,20 @@
-import type { DrpcRequestObject } from '../messages'
-
-import { DidExchangeState, InboundMessageContext } from '@credo-ts/didcomm'
-
+import { DidCommDidExchangeState, DidCommInboundMessageContext } from '@credo-ts/didcomm'
+import type { MockedClassConstructor } from '../../../../tests/types'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { getAgentContext, getMockConnection } from '../../../core/tests/helpers'
+import type { DrpcRequestObject } from '../messages'
 import { DrpcRequestMessage } from '../messages'
 import { DrpcRole } from '../models/DrpcRole'
 import { DrpcRecord } from '../repository/DrpcRecord'
 import { DrpcRepository } from '../repository/DrpcRepository'
 import { DrpcService } from '../services'
 
-jest.mock('../repository/DrpcRepository')
-const DrpcRepositoryMock = DrpcRepository as jest.Mock<DrpcRepository>
+vi.mock('../repository/DrpcRepository')
+const DrpcRepositoryMock = DrpcRepository as MockedClassConstructor<typeof DrpcRepository>
 const drpcMessageRepository = new DrpcRepositoryMock()
 
-jest.mock('../../../core/src/agent/EventEmitter')
-const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
+vi.mock('../../../core/src/agent/EventEmitter')
+const EventEmitterMock = EventEmitter as MockedClassConstructor<typeof EventEmitter>
 const eventEmitter = new EventEmitterMock()
 
 const agentContext = getAgentContext()
@@ -25,7 +24,7 @@ describe('DrpcService', () => {
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
-    state: DidExchangeState.Completed,
+    state: DidCommDidExchangeState.Completed,
   })
 
   beforeEach(() => {
@@ -70,7 +69,10 @@ describe('DrpcService', () => {
     it('stores record and emits message and basic message record', async () => {
       const drpcMessage = new DrpcRequestMessage({ request: { jsonrpc: '2.0', method: 'hello', id: 1 } })
 
-      const messageContext = new InboundMessageContext(drpcMessage, { agentContext, connection: mockConnectionRecord })
+      const messageContext = new DidCommInboundMessageContext(drpcMessage, {
+        agentContext,
+        connection: mockConnectionRecord,
+      })
 
       await drpcMessageService.receiveRequest(messageContext)
 

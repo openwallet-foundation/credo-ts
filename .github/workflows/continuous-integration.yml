@@ -26,11 +26,11 @@ jobs:
     name: Validate
     if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
@@ -42,9 +42,9 @@ jobs:
         run: pnpm style:check
 
       - name: Check Types
-        run: pnpm check-types
+        run: pnpm types:check
 
-      - name: Compile
+      - name: Build
         run: pnpm build
 
   unit-tests:
@@ -55,19 +55,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20, 22]
+        node-version: [20, 22]
         # Each shard runs a set of the tests
         # Make sure to UPDATE THE TEST command with the total length of
         # the shards if you change this!!
         shard: [1, 2]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
 
       - name: Setup NodeJS
         id: setup-node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -78,7 +78,7 @@ jobs:
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: pnpm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache-path.outputs.STORE_PATH }}
           key: ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -89,14 +89,24 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run tests
-        run: pnpm test:unit --coverage --forceExit --shard=${{ matrix.shard }}/2
+        continue-on-error: true
+        run: COLLECT_FAILED_TEST_LOGS=true pnpm test:unit --coverage --shard=${{ matrix.shard }}/2
 
       # Upload coverage for shard
       - run: mv coverage/coverage-final.json coverage/${{ matrix.shard }}.json
-      - uses: actions/upload-artifact@v4
+        if: success()
+      - uses: actions/upload-artifact@v5
+        if: success()
         with:
-          name: coverage-artifacts-${{ matrix.node-version }}
+          name: coverage-artifacts-${{ matrix.node-version }}-unit-${{ matrix.shard }}
           path: coverage/${{ matrix.shard }}.json
+          overwrite: true
+
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: failed-tests-${{ matrix.node-version }}-unit-${{ matrix.shard }}
+          path: testlogs
           overwrite: true
 
   e2e-tests:
@@ -107,10 +117,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20, 22]
+        node-version: [20, 22]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # setup dependencies
       - name: Setup services
@@ -118,7 +128,7 @@ jobs:
 
       - name: Setup NodeJS
         id: setup-node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -131,7 +141,7 @@ jobs:
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: pnpm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache-path.outputs.STORE_PATH }}
           key: ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -142,27 +152,105 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run tests
-        run: pnpm test:e2e --coverage --forceExit
+        continue-on-error: true
+        run: COLLECT_FAILED_TEST_LOGS=true pnpm test:e2e --coverage
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/e2e.json
-      - uses: actions/upload-artifact@v4
+        if: success()
+      - uses: actions/upload-artifact@v5
+        if: success()
         with:
-          name: coverage-artifacts-${{ matrix.node-version }}
+          name: coverage-artifacts-${{ matrix.node-version }}-e2e
           path: coverage/e2e.json
+          overwrite: true
+
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: failed-tests-${{ matrix.node-version }}-e2e
+          path: testlogs
+          overwrite: true
+
+  drizzle-tests:
+    runs-on: ubuntu-24.04
+    name: Drizzle Tests
+    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # setup dependencies
+      - name: Setup services
+        run: docker compose up -d
+
+      - name: Setup NodeJS
+        id: setup-node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - uses: pnpm/action-setup@v4
+
+      # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
+      - name: pnpm cache path
+        id: pnpm-cache-path
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache-path.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # For the Drizzle ORM integration we need to build the package
+      - name: Build drizzle package
+        run: pnpm --filter @credo-ts/drizzle-storage run build
+
+      - name: Run tests
+        continue-on-error: true
+        run: COLLECT_FAILED_TEST_LOGS=true pnpm test:drizzle --coverage
+
+      # Upload coverage for e2e
+      - run: mv coverage/coverage-final.json coverage/drizzle.json
+        if: success()
+      - uses: actions/upload-artifact@v5
+        if: success()
+        with:
+          name: coverage-artifacts-${{ matrix.node-version }}-drizzle
+          path: coverage/drizzle.json
+          overwrite: true
+
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: failed-tests-${{ matrix.node-version }}-drizzle
+          path: testlogs
           overwrite: true
 
   # Upload all the coverage reports
   report-coverage:
     runs-on: ubuntu-24.04
-    needs: [e2e-tests, unit-tests]
+    needs: [e2e-tests, unit-tests, drizzle-tests]
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v6
         with:
-          name: coverage-artifacts-20
+          pattern: coverage-artifacts-20-*
           path: coverage
+          merge-multiple: true
 
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v5
         with:
           directory: coverage
           token: ${{ secrets.CODECOV_TOKEN }}

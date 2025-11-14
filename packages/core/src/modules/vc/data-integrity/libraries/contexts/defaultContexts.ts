@@ -1,4 +1,3 @@
-import { X25519_V1 } from './X25519_v1'
 import { CREDENTIALS_V1 } from './credentials_v1'
 import { DATA_INTEGRITY_V2 } from './dataIntegrity_v2'
 import { DID_V1 } from './did_v1'
@@ -11,6 +10,7 @@ import { SECURITY_V1 } from './security_v1'
 import { SECURITY_V2 } from './security_v2'
 import { PRESENTATION_SUBMISSION } from './submission'
 import { VC_REVOCATION_LIST_2020 } from './vc_revocation_list_2020'
+import { X25519_V1 } from './X25519_v1'
 
 export const DEFAULT_CONTEXTS = {
   'https://w3id.org/security/v1': SECURITY_V1,

@@ -1,13 +1,12 @@
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import type { EventReplaySubject } from '../../../../../../../core/tests'
-
 import {
   issueLegacyAnonCredsCredential,
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { EventReplaySubject } from '../../../../../../../core/tests'
 import { waitForProofExchangeRecordSubject } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
-import { ProofState } from '../../../models/ProofState'
+import { DidCommProofState } from '../../../models/DidCommProofState'
 
 describe('V2 Proofs - Indy', () => {
   let faberAgent: AnonCredsTestsAgent
@@ -66,7 +65,7 @@ describe('V2 Proofs - Indy', () => {
   test('Alice Creates and sends Proof Proposal to Faber', async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    let aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
+    let aliceProofExchangeRecord = await aliceAgent.didcomm.proofs.proposeProof({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -95,10 +94,10 @@ describe('V2 Proofs - Indy', () => {
 
     testLogger.test('Faber waits for presentation from Alice')
     let faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
-    const proposal = await faberAgent.modules.proofs.findProposalMessage(faberProofExchangeRecord.id)
+    const proposal = await faberAgent.didcomm.proofs.findProposalMessage(faberProofExchangeRecord.id)
     expect(proposal).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/propose-presentation',
       formats: [
@@ -122,23 +121,23 @@ describe('V2 Proofs - Indy', () => {
     expect(faberProofExchangeRecord).toMatchObject({
       id: expect.anything(),
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
       protocolVersion: 'v2',
     })
 
     // Accept Proposal
     testLogger.test('Faber accepts presentation proposal from Alice')
-    faberProofExchangeRecord = await faberAgent.modules.proofs.acceptProposal({
-      proofRecordId: faberProofExchangeRecord.id,
+    faberProofExchangeRecord = await faberAgent.didcomm.proofs.acceptProposal({
+      proofExchangeRecordId: faberProofExchangeRecord.id,
     })
 
     testLogger.test('Alice waits for proof request from Faber')
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
-    const request = await faberAgent.modules.proofs.findRequestMessage(faberProofExchangeRecord.id)
+    const request = await faberAgent.didcomm.proofs.findRequestMessage(faberProofExchangeRecord.id)
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/request-presentation',
       formats: [
@@ -164,7 +163,7 @@ describe('V2 Proofs - Indy', () => {
     expect(aliceProofExchangeRecord).toMatchObject({
       id: expect.anything(),
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
       protocolVersion: 'v2',
     })
   })

@@ -1,2 +1,2 @@
-export * from './CredentialExchangeRecord'
-export * from './CredentialRepository'
+export * from './DidCommCredentialExchangeRecord'
+export * from './DidCommCredentialExchangeRepository'

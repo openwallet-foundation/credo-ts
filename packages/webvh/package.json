@@ -1,0 +1,43 @@
+{
+  "name": "@credo-ts/webvh",
+  "exports": {
+    "cli": "./build/index.mjs",
+    "import": "./src/index.ts"
+  },
+  "version": "0.5.13",
+  "description": "Credo WebVH DID method implementation",
+  "files": [
+    "build"
+  ],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "main": "./build/index.js",
+    "types": "./build/index.d.ts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": {
+        "import": "./build/index.mjs",
+        "require": "./build/index.js",
+        "types": "./build/index.d.ts"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "build": "tsdown --config-loader unconfig",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@credo-ts/anoncreds": "workspace:*",
+    "@credo-ts/core": "workspace:*",
+    "class-transformer": "catalog:",
+    "class-validator": "catalog:",
+    "didwebvh-ts": "^2.5.6",
+    "json-canonicalize": "^2.0.0",
+    "tsyringe": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

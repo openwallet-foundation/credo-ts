@@ -1,17 +1,17 @@
-import { JsonTransformer } from '../../../../../../core'
+import { JsonTransformer } from '../../../../../../core/src/index'
+import { DidCommOutOfBandRole } from '../../domain/DidCommOutOfBandRole'
+import { DidCommOutOfBandState } from '../../domain/DidCommOutOfBandState'
 import { OutOfBandDidCommService } from '../../domain/OutOfBandDidCommService'
-import { OutOfBandRole } from '../../domain/OutOfBandRole'
-import { OutOfBandState } from '../../domain/OutOfBandState'
-import { OutOfBandInvitation } from '../../messages'
-import { OutOfBandRecord } from '../OutOfBandRecord'
+import { DidCommOutOfBandInvitation } from '../../messages'
+import { DidCommOutOfBandRecord } from '../DidCommOutOfBandRecord'
 
-describe('OutOfBandRecord', () => {
+describe('DidCommOutOfBandRecord', () => {
   describe('getTags', () => {
     it('should return default tags', () => {
-      const outOfBandRecord = new OutOfBandRecord({
-        state: OutOfBandState.Done,
-        role: OutOfBandRole.Receiver,
-        outOfBandInvitation: new OutOfBandInvitation({
+      const outOfBandRecord = new DidCommOutOfBandRecord({
+        state: DidCommOutOfBandState.Done,
+        role: DidCommOutOfBandRole.Receiver,
+        outOfBandInvitation: new DidCommOutOfBandInvitation({
           label: 'label',
           services: [
             new OutOfBandDidCommService({
@@ -28,8 +28,8 @@ describe('OutOfBandRecord', () => {
       })
 
       expect(outOfBandRecord.getTags()).toEqual({
-        state: OutOfBandState.Done,
-        role: OutOfBandRole.Receiver,
+        state: DidCommOutOfBandState.Done,
+        role: DidCommOutOfBandRole.Receiver,
         invitationId: 'a-message-id',
         threadId: 'a-message-id',
         recipientKeyFingerprints: ['z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
@@ -68,7 +68,7 @@ describe('OutOfBandRecord', () => {
         reusable: false,
       }
 
-      const oobRecord = JsonTransformer.fromJSON(jsonRecord, OutOfBandRecord)
+      const oobRecord = JsonTransformer.fromJSON(jsonRecord, DidCommOutOfBandRecord)
 
       expect(oobRecord.toJSON()).toMatchObject(oobRecord.clone().toJSON())
     })

@@ -1,30 +1,30 @@
+import {
+  AgentContext,
+  type DcqlQueryResult,
+  type DcqlSelectCredentialsForRequestOptions,
+  DcqlService,
+  type DifPexCredentialsForRequest,
+  DifPresentationExchangeService,
+  injectable,
+} from '@credo-ts/core'
+import type { OpenId4VciMetadata } from '../shared'
+import { OpenId4VciHolderService } from './OpenId4VciHolderService'
 import type {
   OpenId4VciAuthCodeFlowOptions,
+  OpenId4VciDeferredCredentialRequestOptions,
   OpenId4VciCredentialRequestOptions as OpenId4VciRequestCredentialOptions,
   OpenId4VciTokenRequestOptions as OpenId4VciRequestTokenOptions,
   OpenId4VciRequestTokenResponse,
   OpenId4VciResolvedCredentialOffer,
   OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
   OpenId4VciSendNotificationOptions,
+  OpenId4VciTokenRefreshOptions,
 } from './OpenId4VciHolderServiceOptions'
+import { OpenId4VpHolderService } from './OpenId4vpHolderService'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
   ResolveOpenId4VpAuthorizationRequestOptions,
 } from './OpenId4vpHolderServiceOptions'
-
-import {
-  AgentContext,
-  DcqlQueryResult,
-  DcqlService,
-  DifPexCredentialsForRequest,
-  DifPresentationExchangeService,
-  injectable,
-} from '@credo-ts/core'
-
-import { OpenId4VciMetadata } from '../shared'
-
-import { OpenId4VciHolderService } from './OpenId4VciHolderService'
-import { OpenId4VpHolderService } from './OpenId4vpHolderService'
 
 /**
  * @public
@@ -90,8 +90,11 @@ export class OpenId4VcHolderApi {
    * Automatically select credentials from available credentials for a dcql request. Can be called after calling
    * @see resolveOpenId4VpAuthorizationRequest.
    */
-  public selectCredentialsForDcqlRequest(dcqlQueryResult: DcqlQueryResult) {
-    return this.dcqlService.selectCredentialsForRequest(dcqlQueryResult)
+  public selectCredentialsForDcqlRequest(
+    dcqlQueryResult: DcqlQueryResult,
+    options?: DcqlSelectCredentialsForRequestOptions
+  ) {
+    return this.dcqlService.selectCredentialsForRequest(dcqlQueryResult, options)
   }
 
   public async resolveIssuerMetadata(credentialIssuer: string): Promise<OpenId4VciMetadata> {
@@ -155,13 +158,35 @@ export class OpenId4VcHolderApi {
    * Requests the token to be used for credential requests.
    */
   public async requestToken(options: OpenId4VciRequestTokenOptions): Promise<OpenId4VciRequestTokenResponse> {
-    const { accessTokenResponse, dpop } = await this.openId4VciHolderService.requestAccessToken(
+    const { accessTokenResponse, authorizationServer, dpop } = await this.openId4VciHolderService.requestAccessToken(
       this.agentContext,
       options
     )
 
     return {
       accessToken: accessTokenResponse.access_token,
+      refreshToken: accessTokenResponse.refresh_token,
+      cNonce: accessTokenResponse.c_nonce,
+      authorizationServer,
+      dpop,
+      accessTokenResponse,
+    }
+  }
+
+  /**
+   * Requests the token to be used for credential requests.
+   */
+  public async refreshToken(
+    options: OpenId4VciTokenRefreshOptions
+  ): Promise<Omit<OpenId4VciRequestTokenResponse, 'authorizationServer'>> {
+    const { accessTokenResponse, dpop } = await this.openId4VciHolderService.refreshAccessToken(
+      this.agentContext,
+      options
+    )
+
+    return {
+      accessToken: accessTokenResponse.access_token,
+      refreshToken: accessTokenResponse.refresh_token,
       cNonce: accessTokenResponse.c_nonce,
       dpop,
       accessTokenResponse,
@@ -169,7 +194,7 @@ export class OpenId4VcHolderApi {
   }
 
   /**
-   * Request a set of credentials from the credential isser.
+   * Request a set of credentials from the credential issuer.
    * Can be used with both the pre-authorized code flow and the authorization code flow.
    */
   public async requestCredentials(options: OpenId4VciRequestCredentialOptions) {
@@ -183,6 +208,13 @@ export class OpenId4VcHolderApi {
       dpop,
       clientId,
     })
+  }
+
+  /**
+   * Request a set of deferred credentials from the credential issuer.
+   */
+  public async requestDeferredCredentials(options: OpenId4VciDeferredCredentialRequestOptions) {
+    return this.openId4VciHolderService.retrieveDeferredCredentials(this.agentContext, options)
   }
 
   /**

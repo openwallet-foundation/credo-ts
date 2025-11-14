@@ -1,12 +1,9 @@
-import type { ConnectionRecord } from '@credo-ts/didcomm'
+import { ActionMenu, ActionMenuModule, ActionMenuRecord, ActionMenuRole, ActionMenuState } from '@credo-ts/action-menu'
 
 import { Agent } from '@credo-ts/core'
-
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import { getAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
-
 import { waitForActionMenuRecord } from './helpers'
-
-import { ActionMenu, ActionMenuModule, ActionMenuRecord, ActionMenuRole, ActionMenuState } from '@credo-ts/action-menu'
 
 const modules = {
   actionMenu: new ActionMenuModule(),
@@ -35,8 +32,8 @@ const aliceAgentOptions = getAgentOptions(
 describe('Action Menu', () => {
   let faberAgent: Agent<typeof faberAgentOptions.modules>
   let aliceAgent: Agent<typeof aliceAgentOptions.modules>
-  let faberConnection: ConnectionRecord
-  let aliceConnection: ConnectionRecord
+  let faberConnection: DidCommConnectionRecord
+  let aliceConnection: DidCommConnectionRecord
 
   const rootMenu = new ActionMenu({
     title: 'Welcome',

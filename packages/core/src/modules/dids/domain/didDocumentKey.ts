@@ -1,4 +1,4 @@
-import { DidDocumentKey } from '../DidsApiOptions'
+import type { DidDocumentKey } from '../DidsApiOptions'
 import { VerificationMethod } from './verificationMethod'
 
 export function getKmsKeyIdForVerifiacationMethod(verificationMethod: VerificationMethod, keys?: DidDocumentKey[]) {

@@ -1,12 +1,18 @@
 import type { ValidityInfo } from '@animo-id/mdoc'
+import type { AnyUint8Array } from '../../types'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate, X509Certificate } from '../x509'
 import { Mdoc } from './Mdoc'
+import { MdocRecord } from './repository'
 
 export { DateOnly } from '@animo-id/mdoc'
 
 export type MdocNameSpaces = Record<string, Record<string, unknown>>
+
+export interface MdocStoreOptions {
+  record: MdocRecord
+}
 
 export type MdocVerifyOptions = {
   trustedCertificates?: EncodedX509Certificate[]
@@ -18,16 +24,31 @@ export type MdocOpenId4VpSessionTranscriptOptions = {
   responseUri: string
   clientId: string
   verifierGeneratedNonce: string
+  encryptionJwk?: PublicJwk
+}
+
+export type MdocOpenId4VpDraft18SessionTranscriptOptions = {
+  type: 'openId4VpDraft18'
+  responseUri: string
+  clientId: string
+  verifierGeneratedNonce: string
   mdocGeneratedNonce: string
 }
 
 export type MdocSessionTranscriptByteOptions = {
   type: 'sesionTranscriptBytes'
-  sessionTranscriptBytes: Uint8Array
+  sessionTranscriptBytes: AnyUint8Array
 }
 
 export type MdocOpenId4VpDcApiSessionTranscriptOptions = {
   type: 'openId4VpDcApi'
+  origin: string
+  verifierGeneratedNonce: string
+  encryptionJwk?: PublicJwk
+}
+
+export type MdocOpenId4VpDcApiDraft24SessionTranscriptOptions = {
+  type: 'openId4VpDcApiDraft24'
   clientId: string
   origin: string
   verifierGeneratedNonce: string
@@ -35,8 +56,10 @@ export type MdocOpenId4VpDcApiSessionTranscriptOptions = {
 
 export type MdocSessionTranscriptOptions =
   | MdocOpenId4VpSessionTranscriptOptions
+  | MdocOpenId4VpDraft18SessionTranscriptOptions
   | MdocSessionTranscriptByteOptions
   | MdocOpenId4VpDcApiSessionTranscriptOptions
+  | MdocOpenId4VpDcApiDraft24SessionTranscriptOptions
 
 export type MdocDocumentRequest = {
   docType: string

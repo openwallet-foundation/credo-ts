@@ -1,5 +1,50 @@
 packages:
-  - 'packages/*'
-  - 'demo'
-  - 'demo-openid'
-  - 'samples/*'
+  - packages/*
+  - demo
+  - demo-openid
+  - samples/*
+
+catalog:
+  '@animo-id/pex': ^6.1.1
+  '@astronautlabs/jsonpath': ^1.1.2
+  '@hyperledger/anoncreds-nodejs': ^0.3.3
+  '@hyperledger/anoncreds-shared': ^0.3.3
+  '@hyperledger/indy-vdr-nodejs': ^0.2.2
+  '@hyperledger/indy-vdr-shared': ^0.2.2
+  '@openwallet-foundation/askar-nodejs': ^0.4.3
+  '@openwallet-foundation/askar-shared': ^0.4.3
+  # Can't update to due https://github.com/PeculiarVentures/x509/pull/108
+  '@peculiar/x509': ~1.13.0
+  '@sphereon/pex-models': ^2.3.2
+  '@stablelib/ed25519': ^2.0.2
+  '@types/express': ^5.0.5
+  '@types/node': ^20.19.25
+  '@types/ws': ^8.18.1
+  class-transformer: 0.5.1
+  class-validator: 0.14.1
+  express: ^5.1.0
+  nock: ^14.0.10
+  reflect-metadata: 0.2.2
+  rxjs: ^7.8.2
+  tsyringe: ^4.10.0
+  typescript: ~5.9.3
+  vitest: ^4.0.8
+  "@vitest/coverage-v8": ^4.0.8
+  ws: ^8.18.3
+  zod: ^4.1.12
+
+ignoredBuiltDependencies:
+  - es5-ext
+  - esbuild
+  - protobufjs
+  - secp256k1
+
+onlyBuiltDependencies:
+  - '@2060.io/ffi-napi'
+  - '@2060.io/ref-napi'
+  - '@biomejs/biome'
+  - '@hyperledger/anoncreds-nodejs'
+  - '@hyperledger/indy-vdr-nodejs'
+  - '@openwallet-foundation/askar-nodejs'
+  - zstd-napi
+  - cbor-extract

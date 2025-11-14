@@ -1,9 +1,9 @@
-import type { AnonCredsCredentialDefinition } from '../../../models'
-
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { JsonTransformer } from '../../../../../core/src'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
 import { InMemoryAnonCredsRegistry } from '../../../../tests/InMemoryAnonCredsRegistry'
+import type { AnonCredsCredentialDefinition } from '../../../models'
 import { AnonCredsCredentialDefinitionRecord } from '../../../repository'
 import { AnonCredsCredentialDefinitionRepository } from '../../../repository/AnonCredsCredentialDefinitionRepository'
 import * as testModule from '../credentialDefinition'
@@ -11,9 +11,10 @@ import * as testModule from '../credentialDefinition'
 const agentConfig = getAgentConfig('AnonCreds Migration - Credential Exchange Record - 0.3.1-0.4.0')
 const agentContext = getAgentContext()
 
-jest.mock('../../../repository/AnonCredsCredentialDefinitionRepository')
-const AnonCredsCredentialDefinitionRepositoryMock =
-  AnonCredsCredentialDefinitionRepository as jest.Mock<AnonCredsCredentialDefinitionRepository>
+vi.mock('../../../repository/AnonCredsCredentialDefinitionRepository')
+const AnonCredsCredentialDefinitionRepositoryMock = AnonCredsCredentialDefinitionRepository as MockedClassConstructor<
+  typeof AnonCredsCredentialDefinitionRepository
+>
 const credentialDefinitionRepository = new AnonCredsCredentialDefinitionRepositoryMock()
 
 const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
@@ -35,22 +36,26 @@ const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
 const registryService = {
   getRegistryForIdentifier: () => inMemoryAnonCredsRegistry,
 }
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
-      config: agentConfig,
-      context: agentContext,
-      dependencyManager: {
-        resolve: jest.fn((injectionSymbol) =>
-          injectionSymbol === AnonCredsCredentialDefinitionRepository ? credentialDefinitionRepository : registryService
-        ),
-      },
-    })),
+    Agent: vi.fn(function () {
+      return {
+        config: agentConfig,
+        context: agentContext,
+        dependencyManager: {
+          resolve: vi.fn((injectionSymbol) =>
+            injectionSymbol === AnonCredsCredentialDefinitionRepository
+              ? credentialDefinitionRepository
+              : registryService
+          ),
+        },
+      }
+    }),
   }
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as unknown as MockedClassConstructor<typeof Agent>
 
 describe('0.3.1-0.4.0 | AnonCreds Migration | Credential Definition Record', () => {
   let agent: Agent
@@ -60,7 +65,7 @@ describe('0.3.1-0.4.0 | AnonCreds Migration | Credential Definition Record', () 
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('migrateAnonCredsCredentialDefinitionRecordToV0_4()', () => {

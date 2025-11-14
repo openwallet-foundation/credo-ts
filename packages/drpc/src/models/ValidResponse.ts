@@ -1,15 +1,15 @@
 import type { ValidationOptions } from 'class-validator'
 
-import { ValidateBy, ValidationError, buildMessage } from 'class-validator'
+import { buildMessage, ValidateBy, ValidationError } from 'class-validator'
 
 export function IsValidDrpcResponse(validationOptions?: ValidationOptions): PropertyDecorator {
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   return (target: any, propertyKey: string | symbol) => {
     ValidateBy(
       {
         name: 'isValidDrpcResponse',
         validator: {
-          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+          // biome-ignore lint/suspicious/noExplicitAny: no explanation
           validate: (value: any): boolean => {
             // Check if value is a valid DrpcResponseObject, an array of DrpcResponseObject (possibly mixed with empty objects), or an empty object
             let isValid = false
@@ -36,7 +36,7 @@ export function IsValidDrpcResponse(validationOptions?: ValidationOptions): Prop
   }
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export function isValidDrpcResponse(value: any): boolean {
   // Check if value is an object
   if (typeof value !== 'object' || value === null) {
@@ -63,7 +63,7 @@ export function isValidDrpcResponse(value: any): boolean {
   return false
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 function isValidDrpcResponseError(error: any): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && 'message' in error
 }

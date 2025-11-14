@@ -1,6 +1,5 @@
-import type { X509CertificateIssuerAndSubjectOptions } from '../X509ServiceOptions'
-
 import { X509Error } from '../X509Error'
+import type { X509CertificateIssuerAndSubjectOptions } from '../X509ServiceOptions'
 
 export const convertName = (name: string | X509CertificateIssuerAndSubjectOptions) => {
   if (typeof name === 'string') return name

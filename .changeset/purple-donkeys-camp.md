@@ -1,18 +1,18 @@
 ---
-'@credo-ts/question-answer': minor
-'@credo-ts/action-menu': minor
-'@credo-ts/anoncreds': minor
-'@credo-ts/indy-vdr': minor
-'@credo-ts/didcomm': minor
-'@credo-ts/tenants': minor
-'@credo-ts/askar': minor
-'@credo-ts/cheqd': minor
-'@credo-ts/core': minor
-'@credo-ts/drpc': minor
-'@credo-ts/node': minor
+"@credo-ts/question-answer": minor
+"@credo-ts/action-menu": minor
+"@credo-ts/anoncreds": minor
+"@credo-ts/indy-vdr": minor
+"@credo-ts/didcomm": minor
+"@credo-ts/tenants": minor
+"@credo-ts/askar": minor
+"@credo-ts/cheqd": minor
+"@credo-ts/core": minor
+"@credo-ts/drpc": minor
+"@credo-ts/node": minor
 ---
 
-DIDComm has been extracted out of the Core. This means that now all DIDComm related modules (e.g. proofs, credentials) must be explicitly added when creating an `Agent` instance. Therefore, their API will be accesable under `agent.modules.[moduleAPI]` instead of `agent.[moduleAPI]`. Some `Agent` DIDComm-related properties and methods where also moved to the API of a new DIDComm module (e.g. `agent.registerInboundTransport` turned into `agent.modules.didcomm.registerInboundTransport`).
+DIDComm has been extracted out of the Core. This means that now all DIDComm related modules (e.g. proofs, credentials) must be explicitly added when creating an `Agent` instance. Therefore, their API will be accesable under `agent.modules.[moduleAPI]` instead of `agent.[moduleAPI]`. Some `Agent` DIDComm-related properties and methods where also moved to the API of a new DIDComm module (e.g. `agent.registerInboundTransport` turned into `agent.didcomm.registerInboundTransport`).
 
 **Example of DIDComm Agent**
 
@@ -32,11 +32,11 @@ Previously:
       config,
       dependencies: agentDependencies,
       modules: {
-        connections: new ConnectionsModule({
+        connections: new DidCommConnectionsModule({
            autoAcceptConnections: true,
         })
       })
-    this.agent.registerInboundTransport(new HttpInboundTransport({ port }))
+    this.agent.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
     this.agent.registerOutboundTransport(new HttpOutboundTransport())
 
 ```
@@ -57,10 +57,10 @@ Now:
       dependencies: agentDependencies,
       modules: {
         ...getDefaultDidcommModules({ endpoints: ['https://myendpoint'] }),
-        connections: new ConnectionsModule({
+        connections: new DidCommConnectionsModule({
            autoAcceptConnections: true,
         })
       })
-    agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
-    agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
+    agent.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
+    agent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
 ```

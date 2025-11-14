@@ -5,17 +5,15 @@ import type {
   AnonCredsSchema,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
-import type { JsonObject } from '@hyperledger/anoncreds-shared'
-import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
-import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
-
 import {
   JsonTransformer,
-  W3cCredentialRepository,
+  W3cCredentialRecord,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
+import type { JsonObject } from '@hyperledger/anoncreds-shared'
 import {
+  anoncreds,
   CredentialDefinition,
   CredentialOffer,
   CredentialRequest,
@@ -26,10 +24,10 @@ import {
   RevocationStatusList,
   Schema,
   W3cCredential,
-  anoncreds,
 } from '@hyperledger/anoncreds-shared'
-
+import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
+import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
 
 /**
  * Creates a valid credential definition and returns its public and
@@ -228,9 +226,7 @@ export async function storeCredential(
   }
 ) {
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-  const record = await w3cCredentialService.storeCredential(agentContext, {
-    credential: w3cJsonLdCredential,
-  })
+  const record = W3cCredentialRecord.fromCredential(w3cJsonLdCredential)
 
   const anonCredsCredentialRecordTags: AnonCredsCredentialTags = {
     anonCredsLinkSecretId: options.linkSecretId,
@@ -251,8 +247,9 @@ export async function storeCredential(
   record.setTags(anonCredsCredentialRecordTags)
   record.metadata.set(W3cAnonCredsCredentialMetadataKey, anonCredsCredentialMetadata)
 
-  const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
-  await w3cCredentialRepository.update(agentContext, record)
+  await w3cCredentialService.storeCredential(agentContext, {
+    record,
+  })
 
   return record
 }

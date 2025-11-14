@@ -1,21 +1,20 @@
+import { type AgentContext, type AnyUint8Array, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { JwkProps, KeyEntryObject, Session } from '@openwallet-foundation/askar-shared'
-
-import { type AgentContext, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import {
+  askar,
   CryptoBox,
   Jwk,
   Key,
   KeyAlgorithm,
   KeyEntryList,
   SignatureAlgorithm,
-  askar,
 } from '@openwallet-foundation/askar-shared'
 
 import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarErrorCode, isAskarError, jwkCrvToAskarAlg, jwkEncToAskarAlg } from '../utils'
 import { aeadDecrypt } from './crypto/decrypt'
 import { askarSupportedKeyAgreementAlgorithms, deriveDecryptionKey, deriveEncryptionKey } from './crypto/deriveKey'
-import { AskarSupportedEncryptionOptions, aeadEncrypt } from './crypto/encrypt'
+import { type AskarSupportedEncryptionOptions, aeadEncrypt } from './crypto/encrypt'
 import { randomBytes } from './crypto/randomBytes'
 
 const askarSupportedEncryptionAlgorithms = [
@@ -29,6 +28,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
   private static algToSigType: Partial<Record<Kms.KnownJwaSignatureAlgorithm, SignatureAlgorithm>> = {
     EdDSA: SignatureAlgorithm.EdDSA,
+    Ed25519: SignatureAlgorithm.EdDSA,
     ES256K: SignatureAlgorithm.ES256K,
     ES256: SignatureAlgorithm.ES256,
     ES384: SignatureAlgorithm.ES384,
@@ -121,7 +121,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       kid: kid ?? utils.uuid(),
     }
 
-    let key: Key | undefined = undefined
+    let key: Key | undefined
     try {
       if (privateJwk.kty === 'oct') {
         // TODO: we need to look at how to import symmetric keys, as we need the alg
@@ -190,7 +190,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     // FIXME: we should maybe keep the default keyId as publicKeyBase58 for a while for now, so it doesn't break
     // Or we need a way to query a key based on the public key?
     const kid = keyId ?? utils.uuid()
-    let askarKey: Key | undefined = undefined
+    let askarKey: Key | undefined
     try {
       if (type.kty === 'EC' || type.kty === 'OKP') {
         const keyAlg = this.assertAskarAlgForJwkCrv(type.kty, type.crv)
@@ -276,12 +276,12 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
       // 3. Perform the signing operation
       const signature = key.key.signMessage({
-        message: data,
+        message: new Uint8Array(data),
         sigType,
       })
 
       return {
-        signature,
+        signature: new Uint8Array(signature),
       }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
@@ -298,7 +298,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     const sigType = this.assertedSigTypeForAlg(algorithm)
 
     // Retrieve the key
-    let askarKey: Key | undefined = undefined
+    let askarKey: Key | undefined
 
     try {
       if (keyInput.keyId) {
@@ -335,7 +335,11 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       }
 
       // 4. Perform the verify operation
-      const verified = askarKey.verifySignature({ message: data, signature, sigType })
+      const verified = askarKey.verifySignature({
+        message: new Uint8Array(data),
+        signature: new Uint8Array(signature),
+        sigType,
+      })
       if (verified) {
         return {
           verified: true,
@@ -363,8 +367,8 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
     const keysToFree: Key[] = []
     try {
-      let encryptionKey: Key | undefined = undefined
-      let encryptedKey: Kms.KmsEncryptedKey | undefined = undefined
+      let encryptionKey: Key | undefined
+      let encryptedKey: Kms.KmsEncryptedKey | undefined
 
       // TODO: we should check if the key allows this operation
       if (key.keyId) {
@@ -421,10 +425,12 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           // anonymous encryption
           if (!privateKey) {
             return {
-              encrypted: CryptoBox.seal({
-                recipientKey,
-                message: data,
-              }),
+              encrypted: new Uint8Array(
+                CryptoBox.seal({
+                  recipientKey,
+                  message: new Uint8Array(data),
+                })
+              ),
             }
           }
 
@@ -435,13 +441,15 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
             keysToFree.push(privateKey)
           }
 
-          const nonce = CryptoBox.randomNonce()
-          const encrypted = CryptoBox.cryptoBox({
-            recipientKey,
-            senderKey: privateKey,
-            message: data,
-            nonce,
-          })
+          const nonce = new Uint8Array(CryptoBox.randomNonce())
+          const encrypted = new Uint8Array(
+            CryptoBox.cryptoBox({
+              recipientKey,
+              senderKey: privateKey,
+              message: new Uint8Array(data),
+              nonce,
+            })
+          )
 
           return {
             encrypted,
@@ -509,7 +517,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     const keysToFree: Key[] = []
 
     try {
-      let decryptionKey: Key | undefined = undefined
+      let decryptionKey: Key | undefined
 
       if (key.keyId) {
         decryptionKey = (await this.getKeyAsserted(agentContext, key.keyId)).key
@@ -571,10 +579,12 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           if (!senderKey) {
             // anonymous encryption
             return {
-              data: CryptoBox.sealOpen({
-                recipientKey: privateKey,
-                ciphertext: encrypted,
-              }),
+              data: new Uint8Array(
+                CryptoBox.sealOpen({
+                  recipientKey: privateKey,
+                  ciphertext: new Uint8Array(encrypted),
+                })
+              ),
             }
           }
 
@@ -584,12 +594,14 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
             )
           }
 
-          const decrypted = CryptoBox.open({
-            recipientKey: privateKey,
-            senderKey: senderKey,
-            message: encrypted,
-            nonce: decryption.iv,
-          })
+          const decrypted = new Uint8Array(
+            CryptoBox.open({
+              recipientKey: privateKey,
+              senderKey: senderKey,
+              message: new Uint8Array(encrypted),
+              nonce: new Uint8Array(decryption.iv),
+            })
+          )
 
           return {
             data: decrypted,
@@ -672,7 +684,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       askar.keyFromJwk({
         // TODO: the JWK class in JS Askar wrapper is too limiting
         // so we use this method directly. should update it
-        jwk: JsonEncoder.toBuffer(jwk) as unknown as Jwk,
+        jwk: new Uint8Array(JsonEncoder.toBuffer(jwk)) as unknown as Jwk,
       })
     )
 
@@ -680,7 +692,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
   }
 
   private keyFromSecretBytesAndEncryptionAlgorithm(
-    secretBytes: Uint8Array,
+    secretBytes: AnyUint8Array,
     algorithm: AskarSupportedEncryptionOptions['algorithm']
   ) {
     const askarEncryptionAlgorithm = jwkEncToAskarAlg[algorithm]
@@ -690,7 +702,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
     return Key.fromSecretBytes({
       algorithm: askarEncryptionAlgorithm,
-      secretKey: secretBytes,
+      secretKey: new Uint8Array(secretBytes),
     })
   }
 
@@ -704,6 +716,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     // TODO: the JWK class in JS Askar wrapper is too limiting
     // so we use this method directly. should update it
     // We extract alg, as Askar doesn't always use the same algs
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { alg, ...jwkSecret } = JsonEncoder.fromBuffer(
       askar.keyGetJwkSecret({
         localKeyHandle: key.handle,
@@ -738,7 +751,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
   private async getKeyAsserted(agentContext: AgentContext, keyId: string) {
     const storageKey = await this.fetchAskarKey(agentContext, keyId)
     if (!storageKey) {
-      throw new Kms.KeyManagementKeyNotFoundError(keyId, this.backend)
+      throw new Kms.KeyManagementKeyNotFoundError(keyId, [this.backend])
     }
 
     return storageKey

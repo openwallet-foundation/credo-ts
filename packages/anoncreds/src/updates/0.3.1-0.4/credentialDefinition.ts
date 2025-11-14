@@ -1,7 +1,6 @@
 import type { BaseAgent } from '@credo-ts/core'
-import type { AnonCredsCredentialDefinition } from '../../models'
-
 import { CredoError } from '@credo-ts/core'
+import type { AnonCredsCredentialDefinition } from '../../models'
 
 import { AnonCredsCredentialDefinitionRepository } from '../../repository'
 import { AnonCredsRegistryService } from '../../services/registry/AnonCredsRegistryService'

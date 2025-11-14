@@ -1,9 +1,8 @@
-import type { W3cCredential } from '../models/credential/W3cCredential'
-import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
-
 import { Jwt } from '../../../crypto/jose/jwt/Jwt'
 import { JsonTransformer } from '../../../utils'
 import { ClaimFormat } from '../models/ClaimFormat'
+import type { W3cCredential } from '../models/credential/W3cCredential'
+import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 
 import { getCredentialFromJwtPayload } from './credentialTransformer'
 

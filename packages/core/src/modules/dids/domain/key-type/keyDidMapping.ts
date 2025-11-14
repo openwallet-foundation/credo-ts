@@ -1,11 +1,10 @@
 import { CredoError } from '../../../../error'
+import type { Constructor } from '../../../../utils/mixins'
+import { PublicJwk } from '../../../kms'
+import type { SupportedPublicJwkClass } from '../../../kms/jwk/PublicJwk'
 import type { VerificationMethod } from '../verificationMethod'
 import { getPublicJwkFromMultikey, isMultikey } from '../verificationMethod'
 import { getPublicJwkFromJsonWebKey2020, isJsonWebKey2020 } from '../verificationMethod/JsonWebKey2020'
-
-import { Constructor } from '../../../../utils/mixins'
-import { PublicJwk } from '../../../kms'
-import { SupportedPublicJwkClass } from '../../../kms/jwk/PublicJwk'
 import { keyDidEd25519 } from './ed25519'
 import { keyDidJsonWebKey } from './keyDidJsonWebKey'
 import { keyDidSecp256k1 } from './secp256k1'
@@ -62,7 +61,7 @@ function getKeyDidMappingByPublicJwk(jwk: PublicJwk | SupportedPublicJwkClass): 
   const jwkTypeClass = jwk instanceof PublicJwk ? jwk.JwkClass : jwk
 
   const keyDid = supportedKeyDids.find((supportedKeyDid) =>
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     supportedKeyDid.PublicJwkTypes.includes(jwkTypeClass as any)
   )
 

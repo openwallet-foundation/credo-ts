@@ -1,17 +1,14 @@
 import type { AgentContext } from '../../../../agent'
-
-import type { DidRegistrar } from '../../domain/DidRegistrar'
-import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
-
+import type { XOR } from '../../../../types'
 import { JsonTransformer } from '../../../../utils'
+import { KeyManagementApi, type KmsCreateKeyOptions, type KmsCreateKeyTypeAssymetric, PublicJwk } from '../../../kms'
+import type { DidDocumentKey } from '../../DidsApiOptions'
 import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
+import type { DidRegistrar } from '../../domain/DidRegistrar'
 import { DidRecord, DidRepository } from '../../repository'
-
-import { XOR } from '../../../../types'
-import { KeyManagementApi, KmsCreateKeyOptions, KmsCreateKeyTypeAssymetric, PublicJwk } from '../../../kms'
-import { DidDocumentKey } from '../../DidsApiOptions'
-import { PeerDidNumAlgo, getAlternativeDidsForPeerDid } from './didPeer'
+import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
+import { getAlternativeDidsForPeerDid, PeerDidNumAlgo } from './didPeer'
 import { publicJwkToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didDocumentJsonToNumAlgo1Did } from './peerDidNumAlgo1'
 import { didDocumentToNumAlgo2Did } from './peerDidNumAlgo2'
