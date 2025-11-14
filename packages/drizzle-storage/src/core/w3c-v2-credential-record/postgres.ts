@@ -13,7 +13,6 @@ export const w3cV2Credential = pgTable(
   {
     ...getPostgresBaseRecordTable(),
 
-    // credential: jsonb().$type<W3cVerifiableCredential['encoded']>().notNull(),
 
     credentialInstances: jsonb('credential_instances').$type<W3cV2CredentialRecordInstances>().notNull(),
 
