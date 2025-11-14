@@ -444,7 +444,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     agents = [aliceAgent, faberAgent, mediatorAgent]
 
     const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
-      attributeNames: ['name', 'age', 'image_0', 'image_1'],
+      attributeNames: ['name', 'age'],
     })
 
     const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)

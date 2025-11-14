@@ -12,6 +12,7 @@ import type {
   DidUpdateResult,
 } from '@credo-ts/core'
 import {
+  CredoError,
   DidCommV1Service,
   DidCommV2Service,
   DidDocumentRole,
@@ -29,7 +30,6 @@ import { IndyVdrError } from '../error'
 import type { IndyVdrPool } from '../pool'
 import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
 import {
-  buildDidDocument,
   createKeyAgreementKey,
   didDocDiff,
   indyDidDocumentFromDid,
@@ -179,6 +179,20 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
     await didRepository.save(agentContext, didRecord)
+  }
+
+  public async getDidDocumentFromRecord(agentContext: AgentContext, did: string): Promise<DidDocument> {
+    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+    const didRecord = await didRepository.getSingleByQuery(agentContext, {
+      did,
+      role: DidDocumentRole.Created,
+    })
+
+    if (!didRecord.didDocument) {
+      throw new CredoError(`Did record for did '${did}' has no did document.`)
+    }
+
+    return didRecord.didDocument
   }
 
   private createDidDocument(
@@ -358,7 +372,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         ])
       }
 
-      didDocument = didDocument ?? (await buildDidDocument(agentContext, pool, did))
+      didDocument = didDocument ?? (await this.getDidDocumentFromRecord(agentContext, did))
       return this.didCreateFinishedResult({ did, didDocument, namespace: res.namespace })
     } catch (error) {
       agentContext.config.logger.error('Error creating indy did', {

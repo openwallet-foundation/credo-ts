@@ -40,7 +40,7 @@ describe('Present Proof', () => {
     } = await setupAnonCredsTests({
       issuerName: 'Faber agent anoncreds unqualified indy proofs',
       holderName: 'Alice agent anoncreds unqualified indy proofs',
-      attributeNames: ['name', 'age', 'image_0', 'image_1'],
+      attributeNames: ['name', 'age'],
     }))
 
     await issueLegacyAnonCredsCredential({
@@ -370,14 +370,6 @@ describe('Present Proof', () => {
                 },
               ],
             },
-            image_0: {
-              name: 'image_0',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
           },
           requested_predicates: {
             age: {
@@ -534,14 +526,6 @@ describe('Present Proof', () => {
                 },
               ],
             },
-            image_0: {
-              name: 'image_0',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
           },
         },
       },
@@ -566,29 +550,8 @@ describe('Present Proof', () => {
                 credentialInfo: {
                   credentialId: expect.any(String),
                   attributes: {
-                    image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
-                    image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
                     name: 'John',
                     age: 99,
-                  },
-                  schemaId: expect.any(String),
-                  credentialDefinitionId: expect.any(String),
-                  revocationRegistryId: null,
-                  credentialRevocationId: null,
-                },
-              },
-            ],
-            image_0: [
-              {
-                credentialId: expect.any(String),
-                revealed: true,
-                credentialInfo: {
-                  credentialId: expect.any(String),
-                  attributes: {
-                    age: 99,
-                    image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
-                    image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
-                    name: 'John',
                   },
                   schemaId: expect.any(String),
                   credentialDefinitionId: expect.any(String),
@@ -655,8 +618,6 @@ describe('Present Proof', () => {
                 credentialInfo: {
                   credentialId: expect.any(String),
                   attributes: {
-                    image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
-                    image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
                     name: 'John',
                     age: 99,
                   },
@@ -701,14 +662,6 @@ describe('Present Proof', () => {
                 },
               ],
             },
-            image_0: {
-              name: 'image_0',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
           },
           requested_predicates: {
             age: {
@@ -745,29 +698,8 @@ describe('Present Proof', () => {
                 credentialInfo: {
                   credentialId: expect.any(String),
                   attributes: {
-                    image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
-                    image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
                     name: 'John',
                     age: 99,
-                  },
-                  schemaId: expect.any(String),
-                  credentialDefinitionId: expect.any(String),
-                  revocationRegistryId: null,
-                  credentialRevocationId: null,
-                },
-              },
-            ],
-            image_0: [
-              {
-                credentialId: expect.any(String),
-                revealed: true,
-                credentialInfo: {
-                  credentialId: expect.any(String),
-                  attributes: {
-                    age: 99,
-                    image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
-                    image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
-                    name: 'John',
                   },
                   schemaId: expect.any(String),
                   credentialDefinitionId: expect.any(String),
@@ -784,8 +716,6 @@ describe('Present Proof', () => {
                 credentialInfo: {
                   credentialId: expect.any(String),
                   attributes: {
-                    image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
-                    image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
                     name: 'John',
                     age: 99,
                   },
@@ -826,14 +756,6 @@ describe('Present Proof', () => {
           requested_attributes: {
             name: {
               name: 'name',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
-            image_0: {
-              name: 'image_0',
               restrictions: [
                 {
                   cred_def_id: credentialDefinitionId,

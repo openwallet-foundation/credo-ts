@@ -50,7 +50,7 @@ describe('PP V2 AnonCreds Proofs', () => {
       issuerId,
       issuerName: 'Faber agent AnonCreds proofs',
       holderName: 'Alice agent AnonCreds proofs',
-      attributeNames: ['name', 'age', 'image_0', 'image_1'],
+      attributeNames: ['name', 'age'],
       registries: [inMemoryRegistry],
       supportRevocation: true,
     }))
@@ -384,14 +384,6 @@ describe('PP V2 AnonCreds Proofs', () => {
                 },
               ],
             },
-            image_0: {
-              name: 'image_0',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
           },
           requested_predicates: {
             age: {
@@ -548,14 +540,6 @@ describe('PP V2 AnonCreds Proofs', () => {
                 },
               ],
             },
-            image_0: {
-              name: 'image_0',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
           },
           requested_predicates: {
             age: {
@@ -592,29 +576,8 @@ describe('PP V2 AnonCreds Proofs', () => {
                 credentialInfo: {
                   credentialId: expect.any(String),
                   attributes: {
-                    image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
-                    image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
                     name: 'John',
                     age: 99,
-                  },
-                  schemaId: expect.any(String),
-                  credentialDefinitionId: expect.any(String),
-                  credentialRevocationId: '1',
-                  revocationRegistryId: revocationRegistryDefinitionId,
-                },
-              },
-            ],
-            image_0: [
-              {
-                credentialId: expect.any(String),
-                revealed: true,
-                credentialInfo: {
-                  credentialId: expect.any(String),
-                  attributes: {
-                    age: 99,
-                    image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
-                    image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
-                    name: 'John',
                   },
                   schemaId: expect.any(String),
                   credentialDefinitionId: expect.any(String),
@@ -631,8 +594,6 @@ describe('PP V2 AnonCreds Proofs', () => {
                 credentialInfo: {
                   credentialId: expect.any(String),
                   attributes: {
-                    image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
-                    image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
                     name: 'John',
                     age: 99,
                   },
@@ -666,14 +627,6 @@ describe('PP V2 AnonCreds Proofs', () => {
           requested_attributes: {
             name: {
               name: 'name',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
-            image_0: {
-              name: 'image_0',
               restrictions: [
                 {
                   cred_def_id: credentialDefinitionId,
@@ -763,14 +716,6 @@ describe('PP V2 AnonCreds Proofs', () => {
       requested_attributes: {
         name: {
           name: 'name',
-          restrictions: [
-            {
-              cred_def_id: credentialDefinitionId,
-            },
-          ],
-        },
-        image_0: {
-          name: 'image_0',
           restrictions: [
             {
               cred_def_id: credentialDefinitionId,
@@ -906,14 +851,6 @@ describe('PP V2 AnonCreds Proofs', () => {
       requested_attributes: {
         name: {
           name: 'name',
-          restrictions: [
-            {
-              cred_def_id: credentialDefinitionId,
-            },
-          ],
-        },
-        image_0: {
-          name: 'image_0',
           restrictions: [
             {
               cred_def_id: credentialDefinitionId,
