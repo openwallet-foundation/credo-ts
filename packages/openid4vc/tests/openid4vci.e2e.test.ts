@@ -3,7 +3,6 @@ import {
   ClaimFormat,
   CredoError,
   DidsApi,
-  getPublicJwkFromVerificationMethod,
   JwsService,
   Jwt,
   JwtPayload,
@@ -184,7 +183,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     if (supportsJwk) {
       return {
         method: 'jwk',
-        keys: [getPublicJwkFromVerificationMethod(holder1.verificationMethod)],
+        keys: [holder1.publicJwk],
       }
     }
 
@@ -357,7 +356,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(issuer1Record.credentialConfigurationsSupported).toEqual({
       universityDegree: {
         format: 'mso_mdoc',
-        cryptographic_binding_methods_supported: ['did:key', 'jwk'],
+        cryptographic_binding_methods_supported: ['jwk'],
         proof_types_supported: {
           jwt: {
             proof_signing_alg_values_supported: ['ES256', 'EdDSA'],
@@ -393,7 +392,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(resolvedCredentialOffer1.offeredCredentialConfigurations).toEqual({
       universityDegree: {
         doctype: 'UniversityDegreeCredential',
-        cryptographic_binding_methods_supported: ['did:key', 'jwk'],
+        cryptographic_binding_methods_supported: ['jwk'],
         format: 'mso_mdoc',
         scope: universityDegreeCredentialConfigurationSupportedMdoc.scope,
         proof_types_supported: {

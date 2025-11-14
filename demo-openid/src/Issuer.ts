@@ -104,7 +104,10 @@ export const credentialConfigurationsSupported = {
     doctype: 'UniversityDegreeCredential',
     scope: 'openid4vc:credential:OpenBadgeCredential',
     cryptographic_binding_methods_supported: ['jwk'],
-    credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
+    credential_signing_alg_values_supported: [
+      Kms.KnownCoseSignatureAlgorithms.Ed25519,
+      Kms.KnownCoseSignatureAlgorithms.ESP256,
+    ],
     proof_types_supported: {
       jwt: {
         proof_signing_alg_values_supported: [

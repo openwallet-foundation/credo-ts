@@ -1,3 +1,4 @@
+export * from './cose'
 export * from './error/KeyManagementAlgorithmNotSupportedError'
 export * from './error/KeyManagementError'
 export * from './error/KeyManagementKeyExistsError'

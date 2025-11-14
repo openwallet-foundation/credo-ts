@@ -20,7 +20,7 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     coverage: {
       include: ['**/*.{js,jsx,ts,tsx}'],
-      exclude: ['/build/', '/node_modules/', '/__tests__/', 'tests', 'coverage'],
+      exclude: ['/build/', '/node_modules/', '/__tests__/', 'tests', 'coverage', '*.d.ts'],
     },
 
     // Enable for debugging

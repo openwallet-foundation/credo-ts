@@ -60,6 +60,7 @@ export const nodeSupportedJwaAlgorithm = [
   'HS512',
   'ES512',
   'EdDSA',
+  'Ed25519',
 ] as const satisfies Kms.KnownJwaSignatureAlgorithm[]
 
 export function mapJwaSignatureAlgorithmToNode(algorithm: Kms.KnownJwaSignatureAlgorithm) {
@@ -82,6 +83,7 @@ export function mapJwaSignatureAlgorithmToNode(algorithm: Kms.KnownJwaSignatureA
       return 'sha512'
     // For EdDSA it's derived based on the key
     case 'EdDSA':
+    case 'Ed25519':
       return undefined
     default:
       throw new Kms.KeyManagementAlgorithmNotSupportedError(`JWA algorithm '${algorithm}'`, 'node')
