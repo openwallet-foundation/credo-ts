@@ -210,6 +210,7 @@ describe('IC v2 credential revocation', () => {
       'anonCredsRevocationRegistryId'
     ) as string
     const credentialRevocationIndex = doneCredentialRecord.getTag('anonCredsCredentialRevocationId') as string
+    const connectionId = doneCredentialRecord.getTag('connectionId') as string
 
     expect(credentialRevocationRegistryDefinitionId).toBeDefined()
     expect(credentialRevocationIndex).toBeDefined()
@@ -224,7 +225,7 @@ describe('IC v2 credential revocation', () => {
     })
 
     await faberAgent.didcomm.credentials.sendRevocationNotification({
-      credentialExchangeRecordId: doneCredentialRecord.id,
+      connectionId,
       revocationFormat: 'anoncreds',
       revocationId: `${credentialRevocationRegistryDefinitionId}::${credentialRevocationIndex}`,
     })
