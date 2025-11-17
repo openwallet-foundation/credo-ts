@@ -7,7 +7,7 @@ import {
   VerificationMethods,
 } from '@cheqd/sdk'
 import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
-import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
+import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2/index.js'
 import {
   AgentContext,
   type AnyUint8Array,
