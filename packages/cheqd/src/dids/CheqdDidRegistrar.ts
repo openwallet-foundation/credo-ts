@@ -1,6 +1,7 @@
 import {
   CheqdNetwork,
   createDidVerificationMethod,
+  createVerificationKeys,
   type DIDDocument,
   type DidStdFee,
   MethodSpecificIdAlgo,
@@ -291,6 +292,19 @@ export class CheqdDidRegistrar implements DidRegistrar {
     let previousDidDocument: DidDocument
     let didRecord: DidRecord | null
 
+    const parsedDid = parseCheqdDid(options.did)
+
+    if (!parsedDid) {
+      return {
+        didDocumentMetadata: {},
+        didRegistrationMetadata: {},
+        didState: {
+          state: 'failed',
+          reason: 'Unable to parse DID',
+        },
+      }
+    }
+
     try {
       if (!options.didDocument && !options.options?.createKey && !options.options?.keyId) {
         return {
@@ -400,20 +414,20 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
         newKeys.push(createdKey)
         if (!updatedDidDocument.verificationMethod) updatedDidDocument.verificationMethod = []
-        updatedDidDocument.verificationMethod.push(
-          ...createDidVerificationMethod(
-            [verificationMethod],
-            [
-              {
-                methodSpecificId: updatedDidDocument.id.split(':')[3],
-                didUrl: updatedDidDocument.id,
-                keyId:
-                  `${updatedDidDocument.id}${createdKey.didDocumentRelativeKeyId}` as `${string}#${string}-${number}`,
-                publicKey: TypedArrayEncoder.toHex(jwk.publicKey.publicKey),
-              },
-            ]
-          ).map((vm) => JsonTransformer.fromJSON(vm, VerificationMethod))
-        )
+        const verificationMethods = createDidVerificationMethod(
+          [verificationMethod],
+          [
+            {
+              methodSpecificId: updatedDidDocument.id.split(':')[3],
+              didUrl: updatedDidDocument.id,
+              keyId:
+                `${updatedDidDocument.id}${createdKey.didDocumentRelativeKeyId}` as `${string}#${string}-${number}`,
+              publicKey: TypedArrayEncoder.toBase64(jwk.publicKey.publicKey),
+            },
+          ]
+        ).map((vm) => JsonTransformer.fromJSON(vm, VerificationMethod))
+        updatedDidDocument.verificationMethod.push(...verificationMethods)
+        // updatedDidDocument.authentication?.push(...verificationMethods.map((vm) => vm.id))
       }
 
       // Store previous keys so we can sign with keys that are now being removed as well
