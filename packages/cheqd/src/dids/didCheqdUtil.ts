@@ -6,7 +6,7 @@ import {
   DIDModule,
   VerificationMethods,
 } from '@cheqd/sdk'
-import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload } from '@cheqd/ts-proto/cheqd/did/v2'
+import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload } from '@cheqd/ts-proto/cheqd/did/v2/index.js'
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 import { EnglishMnemonic as _EnglishMnemonic } from '@cosmjs/crypto'
 import { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
