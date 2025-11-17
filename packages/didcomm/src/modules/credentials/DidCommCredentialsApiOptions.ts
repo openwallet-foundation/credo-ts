@@ -133,7 +133,8 @@ export interface AcceptCredentialOptions {
  * Interface for CredentialsApi.sendRevocationNotification. Will send a revoke message
  */
 export interface SendRevocationNotificationOptions {
-  connectionId: string
+  connectionId?: string
+  credentialExchangeRecordId?: string
   revocationId: string
   revocationFormat: string
   comment?: string
