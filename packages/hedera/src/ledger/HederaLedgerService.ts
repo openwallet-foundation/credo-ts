@@ -71,6 +71,7 @@ export interface HederaCreateDidResult extends CreateDIDResult {
 }
 
 export interface HederaDidUpdateOptions extends DidUpdateOptions {
+  didDocument: DidDocument
   secret?: {
     keys?: DidDocumentKey[]
   }

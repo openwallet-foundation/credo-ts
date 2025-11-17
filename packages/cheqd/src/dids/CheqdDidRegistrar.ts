@@ -23,7 +23,7 @@ import {
   DidRepository,
   type DidUpdateOptions,
   type DidUpdateResult,
-  getKmsKeyIdForVerifiacationMethod,
+  getKmsKeyIdForVerificationMethod,
   getPublicJwkFromVerificationMethod,
   JsonTransformer,
   Kms,
@@ -45,6 +45,7 @@ import { CheqdLedgerService } from '../ledger'
 import {
   createMsgCreateDidDocPayloadToSign,
   createMsgDeactivateDidDocPayloadToSign,
+  dereferenceVerificationMethod,
   generateDidDoc,
   getVerificationMethodId,
   validateSpecCompliantPayload,
@@ -286,10 +287,38 @@ export class CheqdDidRegistrar implements DidRegistrar {
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
 
     const versionId = options.options?.versionId || utils.uuid()
-    let didDocument: DidDocument
+    let updatedDidDocument: DidDocument
+    let previousDidDocument: DidDocument
     let didRecord: DidRecord | null
 
     try {
+      if (!options.didDocument && !options.options?.createKey && !options.options?.keyId) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: 'Either didDocument, otionss.createKey or options.keyId must be provided when updating a cheqd did',
+          },
+        }
+      }
+
+      const resolvedDocument = await cheqdLedgerService.resolve(options.did)
+      didRecord = await didRepository.findCreatedDid(agentContext, options.did)
+      if (!resolvedDocument.didDocument || resolvedDocument.didDocumentMetadata.deactivated || !didRecord) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: 'Did not found',
+          },
+        }
+      }
+
+      previousDidDocument = DidDocument.fromJSON(resolvedDocument.didDocument)
+      updatedDidDocument = options.didDocument ?? DidDocument.fromJSON(previousDidDocument.toJSON())
+
       if (options.didDocument) {
         const isSpecCompliantPayload = validateSpecCompliantPayload(options.didDocument)
         if (!isSpecCompliantPayload.valid) {
@@ -302,143 +331,9 @@ export class CheqdDidRegistrar implements DidRegistrar {
             },
           }
         }
-
-        didDocument = options.didDocument
-        const resolvedDocument = await cheqdLedgerService.resolve(didDocument.id)
-        didRecord = await didRepository.findCreatedDid(agentContext, didDocument.id)
-        if (!resolvedDocument.didDocument || resolvedDocument.didDocumentMetadata.deactivated || !didRecord) {
-          return {
-            didDocumentMetadata: {},
-            didRegistrationMetadata: {},
-            didState: {
-              state: 'failed',
-              reason: 'Did not found',
-            },
-          }
-        }
-
-        const keys = didRecord.keys ?? []
-        if (options.options?.createKey || options.options?.keyId) {
-          const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-          let createdKey: DidDocumentKey
-
-          let publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }
-          if (options.options.createKey) {
-            const createKeyResult = await kms.createKey(options.options.createKey)
-            publicJwk = createKeyResult.publicJwk
-
-            createdKey = {
-              didDocumentRelativeKeyId: `#${utils.uuid()}-1`,
-              kmsKeyId: createKeyResult.keyId,
-            }
-          } else if (options.options.keyId) {
-            const _publicJwk = await kms.getPublicKey({
-              keyId: options.options.keyId,
-            })
-            createdKey = {
-              didDocumentRelativeKeyId: `#${utils.uuid()}-1`,
-              kmsKeyId: options.options.keyId,
-            }
-            if (!_publicJwk) {
-              return {
-                didDocumentMetadata: {},
-                didRegistrationMetadata: {},
-                didState: {
-                  state: 'failed',
-                  reason: `notFound: key with key id '${options.options.keyId}' not found`,
-                },
-              }
-            }
-
-            if (_publicJwk.kty !== 'OKP' || _publicJwk.crv !== 'Ed25519') {
-              return {
-                didDocumentMetadata: {},
-                didRegistrationMetadata: {},
-                didState: {
-                  state: 'failed',
-                  reason: `key with key id '${options.options.keyId}' uses unsupported ${Kms.getJwkHumanDescription(
-                    _publicJwk
-                  )} for did:cheqd`,
-                },
-              }
-            }
-
-            publicJwk = {
-              ..._publicJwk,
-              crv: _publicJwk.crv,
-            }
-          } else {
-            // This will never happen, but to make TS happy
-            return {
-              didDocumentMetadata: {},
-              didRegistrationMetadata: {},
-              didState: {
-                state: 'failed',
-                reason: 'Expect options.createKey or options.keyId',
-              },
-            }
-          }
-
-          // TODO: make this configureable
-          const verificationMethod = VerificationMethods.JWK
-          const jwk = Kms.PublicJwk.fromPublicJwk(publicJwk)
-
-          keys.push(createdKey)
-          didDocument.verificationMethod?.concat(
-            JsonTransformer.fromJSON(
-              createDidVerificationMethod(
-                [verificationMethod],
-                [
-                  {
-                    methodSpecificId: didDocument.id.split(':')[3],
-                    didUrl: didDocument.id,
-                    keyId: `${didDocument.id}${createdKey.didDocumentRelativeKeyId}` as `${string}#${string}-${number}`,
-                    publicKey: TypedArrayEncoder.toHex(jwk.publicKey.publicKey),
-                  },
-                ]
-              ),
-              VerificationMethod
-            )
-          )
-        }
-      } else {
-        return {
-          didDocumentMetadata: {},
-          didRegistrationMetadata: {},
-          didState: {
-            state: 'failed',
-            reason: 'Provide a valid didDocument',
-          },
-        }
       }
 
-      const isSpecCompliantPayload = validateSpecCompliantPayload(options.didDocument)
-      if (!isSpecCompliantPayload.valid) {
-        return {
-          didDocumentMetadata: {},
-          didRegistrationMetadata: {},
-          didState: {
-            state: 'failed',
-            reason: `Invalid did document provided. ${isSpecCompliantPayload.error}`,
-          },
-        }
-      }
-
-      didDocument = options.didDocument
-      const resolvedDocument = await cheqdLedgerService.resolve(didDocument.id)
-      didRecord = await didRepository.findCreatedDid(agentContext, didDocument.id)
-      if (!resolvedDocument.didDocument || resolvedDocument.didDocumentMetadata.deactivated || !didRecord) {
-        return {
-          didDocumentMetadata: {},
-          didRegistrationMetadata: {},
-          didState: {
-            state: 'failed',
-            reason: 'Did not found',
-          },
-        }
-      }
-
-      const keys = didRecord.keys ?? []
+      const newKeys = []
       if (options.options?.createKey || options.options?.keyId) {
         const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
         let createdKey: DidDocumentKey
@@ -503,34 +398,38 @@ export class CheqdDidRegistrar implements DidRegistrar {
         const verificationMethod = options.options.verificationMethodType || VerificationMethods.JWK
         const jwk = Kms.PublicJwk.fromPublicJwk(publicJwk)
 
-        keys.push(createdKey)
-        didDocument.verificationMethod?.concat(
-          JsonTransformer.fromJSON(
-            createDidVerificationMethod(
-              [verificationMethod],
-              [
-                {
-                  methodSpecificId: didDocument.id.split(':')[3],
-                  didUrl: didDocument.id,
-                  keyId: `${didDocument.id}${createdKey.didDocumentRelativeKeyId}` as `${string}#${string}-${number}`,
-                  publicKey: TypedArrayEncoder.toHex(jwk.publicKey.publicKey),
-                },
-              ]
-            ),
-            VerificationMethod
-          )
+        newKeys.push(createdKey)
+        if (!updatedDidDocument.verificationMethod) updatedDidDocument.verificationMethod = []
+        updatedDidDocument.verificationMethod.push(
+          ...createDidVerificationMethod(
+            [verificationMethod],
+            [
+              {
+                methodSpecificId: updatedDidDocument.id.split(':')[3],
+                didUrl: updatedDidDocument.id,
+                keyId:
+                  `${updatedDidDocument.id}${createdKey.didDocumentRelativeKeyId}` as `${string}#${string}-${number}`,
+                publicKey: TypedArrayEncoder.toHex(jwk.publicKey.publicKey),
+              },
+            ]
+          ).map((vm) => JsonTransformer.fromJSON(vm, VerificationMethod))
         )
       }
 
-      // Filter out all keys that are not present in the did document anymore
-      didRecord.keys = didRecord.keys?.filter(({ didDocumentRelativeKeyId }) => {
-        try {
-          didDocument.dereferenceKey(didDocumentRelativeKeyId)
-          return true
-        } catch (_error) {
-          return false
-        }
-      })
+      // Store previous keys so we can sign with keys that are now being removed as well
+      const previousKeys = didRecord.keys ?? []
+
+      // Set keys to new keys and the old keys filtered
+      didRecord.keys = newKeys.concat(
+        previousKeys.filter(({ didDocumentRelativeKeyId }) => {
+          try {
+            updatedDidDocument.dereferenceKey(didDocumentRelativeKeyId)
+            return true
+          } catch (_error) {
+            return false
+          }
+        })
+      )
 
       // TODO: we don't know which keys are managed by Credo. Should we
       // create a keys array for all keys within the did document set to the legacy key id
@@ -549,21 +448,21 @@ export class CheqdDidRegistrar implements DidRegistrar {
       //     };
       //   }
 
-      const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocument.toJSON() as DIDDocument, versionId)
+      const payloadToSign = await createMsgCreateDidDocPayloadToSign(
+        updatedDidDocument.toJSON() as DIDDocument,
+        versionId
+      )
 
-      const authSet = new Set<string>()
+      const authSet = new Set(updatedDidDocument.authentication?.map(getVerificationMethodId) ?? [])
 
-      const authentication: VerificationMethod[] = [
-        ...(didDocument.authentication || []),
-        ...(resolvedDocument.didDocument.authentication || []),
-      ].reduce<VerificationMethod[]>((uniqueAuths, auth) => {
-        const id = getVerificationMethodId(auth)
-        if (!authSet.has(id)) {
-          authSet.add(id)
-          uniqueAuths.push(typeof auth === 'string' ? didDocument.dereferenceVerificationMethod(auth) : auth)
-        }
-        return uniqueAuths
-      }, [])
+      const updatedAuthentication =
+        updatedDidDocument.authentication?.map((auth) => dereferenceVerificationMethod(updatedDidDocument, auth)) ?? []
+      const previousAuthentication =
+        previousDidDocument.authentication
+          ?.filter((auth) => !authSet.has(getVerificationMethodId(auth)))
+          .map((auth) => dereferenceVerificationMethod(previousDidDocument, auth)) ?? []
+
+      const authentication = [...updatedAuthentication, ...previousAuthentication]
 
       if (!authentication || authentication.length === 0) {
         return {
@@ -578,21 +477,25 @@ export class CheqdDidRegistrar implements DidRegistrar {
       const signInputs = await this.signPayload(
         agentContext,
         payloadToSign,
-        // TOOD: we should also sign with the authentication entries that are removed (so we should diff)
         authentication,
-        didRecord.keys
+        // Pass both previous keys and new keys as both can be present in the authentication array
+        previousKeys.concat(newKeys)
       )
 
-      const response = await cheqdLedgerService.update(didDocument.toJSON() as DIDDocument, signInputs, versionId)
+      const response = await cheqdLedgerService.update(
+        updatedDidDocument.toJSON() as DIDDocument,
+        signInputs,
+        versionId
+      )
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
       // Collect all contexts, override existing context if provided
-      const contextSet = this.collectAllContexts(options.didDocument || didDocument)
+      const contextSet = this.collectAllContexts(updatedDidDocument)
       // Add Cheqd default context to the did document
-      didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
+      updatedDidDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
       // Save the did so we know we created it and can issue with it
-      didRecord.didDocument = didDocument
+      didRecord.didDocument = updatedDidDocument
       await didRepository.update(agentContext, didRecord)
 
       return {
@@ -600,8 +503,8 @@ export class CheqdDidRegistrar implements DidRegistrar {
         didRegistrationMetadata: {},
         didState: {
           state: 'finished',
-          did: didDocument.id,
-          didDocument,
+          did: options.did,
+          didDocument: updatedDidDocument,
           secret: options.secret,
         },
       }
@@ -771,7 +674,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     return await Promise.all(
       verificationMethod.map(async (method) => {
         const publicJwk = getPublicJwkFromVerificationMethod(method)
-        const kmsKeyId = getKmsKeyIdForVerifiacationMethod(method, keys) ?? publicJwk.legacyKeyId
+        const kmsKeyId = getKmsKeyIdForVerificationMethod(method, keys) ?? publicJwk.legacyKeyId
 
         const { signature } = await kms.sign({
           data: payload,
@@ -833,7 +736,7 @@ export type CheqdDidCreateOptions = CheqdDidCreateFromDidDocumentOptions | Cheqd
 
 export interface CheqdDidUpdateOptions extends DidUpdateOptions {
   did: string
-  didDocument: DidDocument
+  didDocument?: DidDocument
   secret?: never
 
   options?: {

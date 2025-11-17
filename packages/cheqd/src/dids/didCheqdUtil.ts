@@ -183,3 +183,7 @@ export function getCosmosPayerWallet(cosmosPayerSeed?: string) {
 export function getVerificationMethodId(vm: string | VerificationMethod) {
   return typeof vm === 'string' ? vm : vm.id
 }
+
+export function dereferenceVerificationMethod(didDocument: DidDocument, vm: string | VerificationMethod) {
+  return typeof vm === 'string' ? didDocument.dereferenceVerificationMethod(vm) : vm
+}

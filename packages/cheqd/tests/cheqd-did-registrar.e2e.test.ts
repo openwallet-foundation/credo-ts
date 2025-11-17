@@ -1,7 +1,7 @@
-import type { DidDocument } from '@credo-ts/core'
 import {
   Agent,
   DidCommV1Service,
+  DidDocument,
   DidDocumentBuilder,
   getEd25519VerificationKey2018,
   getJsonWebKey2020,
@@ -134,6 +134,124 @@ describe('Cheqd DID registrar', () => {
       useLocalCreatedDidRecord: false,
     })
     expect(resolvedDocument.didDocumentMetadata.deactivated).toBe(true)
+  })
+
+  it('should create a did:cheqd using JsonWebKey2020 update it with a new key, and the remove the key', async () => {
+    const createResult = await agent.dids.create<CheqdDidCreateOptions>({
+      method: 'cheqd',
+
+      options: {
+        createKey: {
+          type: {
+            crv: 'Ed25519',
+            kty: 'OKP',
+          },
+        },
+        network: 'testnet',
+        methodSpecificIdAlgo: 'base58btc',
+      },
+    })
+
+    expect(createResult).toMatchObject({
+      didState: {
+        state: 'finished',
+        didDocument: {
+          verificationMethod: [{ type: 'JsonWebKey2020' }],
+        },
+      },
+    })
+    expect(createResult.didState.did).toBeDefined()
+    const did = createResult.didState.did as string
+    const didDocument = createResult.didState.didDocument as DidDocument
+    didDocument.service = [validService(did)]
+
+    const updateResult = await agent.dids.update<CheqdDidUpdateOptions>({
+      did,
+      // Did document with added service
+      didDocument,
+      // Create new key
+      options: {
+        createKey: {
+          type: {
+            crv: 'Ed25519',
+            kty: 'OKP',
+          },
+        },
+      },
+    })
+    expect(updateResult.didState.state).toEqual('finished')
+    expect(updateResult.didState.didDocument?.toJSON()).toEqual({
+      id: did,
+      '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
+      assertionMethod: [`${did}#key-1`],
+      authentication: [`${did}#key-1`],
+      controller: [did],
+      service: [
+        {
+          id: `${did}#service-1`,
+          serviceEndpoint: ['https://rand.io'],
+          type: 'CustomType',
+        },
+      ],
+      verificationMethod: [
+        {
+          controller: did,
+          id: `${did}#key-1`,
+          publicKeyJwk: {
+            crv: 'Ed25519',
+            kty: 'OKP',
+            x: expect.any(String),
+          },
+          type: 'JsonWebKey2020',
+        },
+        {
+          controller: did,
+          id: `${did}#key-2`,
+          publicKeyJwk: {
+            crv: 'Ed25519',
+            kty: 'OKP',
+            x: expect.any(String),
+          },
+          type: 'JsonWebKey2020',
+        },
+      ],
+    })
+
+    // Now remove the last entry
+    didDocument.authentication?.pop()
+
+    const removeResult = await agent.dids.update<CheqdDidUpdateOptions>({
+      did,
+      didDocument,
+    })
+
+    expect(removeResult.didState.state).toEqual('finished')
+    expect(removeResult.didState.didDocument?.toJSON()).toEqual({
+      id: did,
+      '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
+      assertionMethod: [`${did}#key-1`],
+      authentication: [`${did}#key-1`],
+      controller: [did],
+      service: [
+        {
+          id: `${did}#service-1`,
+          serviceEndpoint: ['https://rand.io'],
+          type: 'CustomType',
+        },
+      ],
+      verificationMethod: [
+        {
+          controller: did,
+          id: `${did}#key-1`,
+          publicKeyJwk: {
+            crv: 'Ed25519',
+            kty: 'OKP',
+            x: expect.any(String),
+          },
+          type: 'JsonWebKey2020',
+        },
+      ],
+    })
   })
 
   it('should create a did:cheqd using JsonWebKey2020 and update with DidCommV1Service', async () => {

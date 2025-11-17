@@ -116,7 +116,7 @@ export interface DidUpdateOptions {
   options?: DidRegistrationExtraOptions
   secret?: DidRegistrationSecretOptions
   didDocumentOperation?: DidDocumentOperation
-  didDocument: DidDocument | Partial<DidDocument>
+  didDocument?: DidDocument | Partial<DidDocument>
 }
 
 export interface DidUpdateResult {
