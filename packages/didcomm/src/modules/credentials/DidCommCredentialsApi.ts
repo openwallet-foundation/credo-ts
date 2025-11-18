@@ -3,7 +3,7 @@ import { AgentContext, CredoError, InjectionSymbols, inject, injectable, type Lo
 import { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { getOutboundDidCommMessageContext } from '../../getDidCommOutboundMessageContext'
-import { DidCommConnectionService } from '../connections'
+import { DidCommConnectionRecord, DidCommConnectionService } from '../connections'
 import type {
   AcceptCredentialOfferOptions,
   AcceptCredentialOptions,
@@ -513,14 +513,47 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
   }
 
   /**
-   * Send a revocation notification for a credential exchange record. Currently Revocation Notification V2 protocol is supported
+   * Send a revocation notification to a connectionId related to a given revocationId and format.
+   * Currently, Revocation Notification V2 protocol is supported.
    *
-   * @param credentialExchangeRecordId The id of the credential record for which to send revocation notification
+   * @param credentialExchangeId credential exchange record. If not present, connectionId must be present
+   * @param connectionId The id of the connection to send the revocation notification. If not present, credentialExchangeId will be used to
+   * determine connection/service endpoints details
+   * @param revocationFormat Revocation credential identification format, as specified in Aries RFC 0721 (e.g. anoncreds)
+   * @param revocationId Format specific revocation id, as specified in Aries RFC 0721 (e.g. did:indy:entity:revregsdef123::credentialIndex)
    */
   public async sendRevocationNotification(options: SendRevocationNotificationOptions): Promise<void> {
-    const { credentialExchangeRecordId, revocationId, revocationFormat, comment, requestAck } = options
+    const { connectionId, credentialExchangeRecordId, revocationId, revocationFormat, comment, requestAck } = options
 
-    const credentialExchangeRecord = await this.getById(credentialExchangeRecordId)
+    let credentialExchangeRecord: DidCommCredentialExchangeRecord | undefined
+    let connectionRecord: DidCommConnectionRecord | undefined
+    let credentialMessage: DidCommMessage | undefined
+    let requestMessage: DidCommMessage | undefined
+
+    if (credentialExchangeRecordId) {
+      credentialExchangeRecord = await this.getById(credentialExchangeRecordId)
+      if (credentialExchangeRecord.connectionId) {
+        connectionRecord = await this.connectionService.getById(
+          this.agentContext,
+          credentialExchangeRecord.connectionId
+        )
+        connectionRecord.assertReady()
+      }
+
+      const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
+      credentialMessage =
+        (await protocol.findCredentialMessage(this.agentContext, credentialExchangeRecordId)) ?? undefined
+      requestMessage = (await protocol.findRequestMessage(this.agentContext, credentialExchangeRecordId)) ?? undefined
+    } else if (connectionId) {
+      connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
+      connectionRecord.assertReady()
+    } else {
+      throw new CredoError('Either credentialExchangeId or connectionId must be defined')
+    }
+
+    if (!connectionId && !credentialMessage) {
+      throw new CredoError('No associated DIDComm connection was found for the revocation notification')
+    }
 
     const { message } = await this.revocationNotificationService.v2CreateRevocationNotification({
       credentialId: revocationId,
@@ -528,28 +561,13 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       comment,
       requestAck,
     })
-    const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
-
-    const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialExchangeRecord.id)
-    if (!requestMessage) {
-      throw new CredoError(`No request message found for credential record with id '${credentialExchangeRecord.id}'`)
-    }
-
-    const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialExchangeRecord.id)
-    if (!offerMessage) {
-      throw new CredoError(`No offer message found for credential record with id '${credentialExchangeRecord.id}'`)
-    }
-
-    // Use connection if present
-    const connectionRecord = credentialExchangeRecord.connectionId
-      ? await this.connectionService.getById(this.agentContext, credentialExchangeRecord.connectionId)
-      : undefined
-    connectionRecord?.assertReady()
 
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: credentialExchangeRecord,
+      lastSentMessage: credentialMessage,
+      lastReceivedMessage: requestMessage,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
   }
