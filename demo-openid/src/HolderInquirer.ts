@@ -1,22 +1,20 @@
-import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord } from '@credo-ts/core'
+import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord, W3cV2CredentialRecord } from '@credo-ts/core'
 import type {
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VciDpopRequestOptions,
   OpenId4VciResolvedCredentialOffer,
   OpenId4VpResolvedAuthorizationRequest,
 } from '@credo-ts/openid4vc'
-
-import { Mdoc } from '@credo-ts/core'
 import { preAuthorizedCodeGrantIdentifier } from '@credo-ts/openid4vc'
-import { textSync } from 'figlet'
-
 import { clear } from 'console'
+import figlet from 'figlet'
 import { BaseInquirer } from './BaseInquirer'
 import { Holder } from './Holder'
-import { Title, greenText, redText } from './OutputClass'
+import { greenText, redText, Title } from './OutputClass'
 
 export const runHolder = async () => {
   clear()
-  console.log(textSync('Holder', { horizontalLayout: 'full' }))
+  console.log(figlet.textSync('Holder', { horizontalLayout: 'full' }))
   const holder = await HolderInquirer.build()
   await holder.processAnswer()
 }
@@ -152,9 +150,10 @@ export class HolderInquirer extends BaseInquirer {
       this.resolvedCredentialOffer,
       credentialsToRequest
     )
-    let authorizationCode: string | undefined = undefined
-    let codeVerifier: string | undefined = undefined
-    let txCode: string | undefined = undefined
+    let authorizationCode: string | undefined
+    let codeVerifier: string | undefined
+    let txCode: string | undefined
+    let dpop: OpenId4VciDpopRequestOptions | undefined
 
     if (resolvedAuthorization.authorizationFlow === 'Oauth2Redirect') {
       console.log(redText('Authorization required for credential issuance', true))
@@ -166,12 +165,11 @@ export class HolderInquirer extends BaseInquirer {
           if (req.query.code) {
             resolve(req.query.code as string)
             // Store original routes
-            const originalStack = this.holder.app._router.stack
+            const originalStack = this.holder.app.router.stack
 
             // Remove specific GET route by path
-            this.holder.app._router.stack = originalStack.filter(
-              (layer: { route?: { path: string; methods: { get?: unknown } } }) =>
-                !(layer.route && layer.route.path === '/redirect' && layer.route.methods.get)
+            this.holder.app.router.stack = originalStack.filter(
+              (layer) => !(layer.route && layer.route.path === '/redirect')
             )
             res.send('Success! You can now go back to the terminal')
           } else {
@@ -186,6 +184,7 @@ export class HolderInquirer extends BaseInquirer {
       console.log('\n\n')
       codeVerifier = resolvedAuthorization.codeVerifier
       authorizationCode = await code
+      dpop = resolvedAuthorization.dpop
       console.log(greenText('Authorization complete', true))
     } else if (resolvedAuthorization.authorizationFlow === 'PresentationDuringIssuance') {
       console.log(redText('Presentation during issuance not supported yet', true))
@@ -205,6 +204,7 @@ export class HolderInquirer extends BaseInquirer {
       code: authorizationCode,
       redirectUri: authorizationCode ? this.holder.client.redirectUri : undefined,
       txCode,
+      dpop,
     })
 
     console.log(greenText('Received and stored the following credentials.', true))
@@ -225,7 +225,7 @@ export class HolderInquirer extends BaseInquirer {
 
       if (this.resolvedPresentationRequest.presentationExchange.credentialsForRequest.areRequirementsSatisfied) {
         const selectedCredentials = Object.values(
-          this.holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+          this.holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
             this.resolvedPresentationRequest.presentationExchange.credentialsForRequest
           )
         ).flat()
@@ -242,12 +242,12 @@ export class HolderInquirer extends BaseInquirer {
     } else if (this.resolvedPresentationRequest.dcql) {
       console.log(greenText('Received DCQL request'))
 
-      if (this.resolvedPresentationRequest.dcql.queryResult.canBeSatisfied) {
+      if (this.resolvedPresentationRequest.dcql.queryResult.can_be_satisfied) {
         const selectedCredentials = Object.values(
-          this.holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+          this.holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
             this.resolvedPresentationRequest.dcql.queryResult
           )
-        ).flatMap((e) => e.credentialRecord)
+        ).flatMap((e) => e[0].credentialRecord)
         console.log(
           greenText(
             'All requirements for creating the presentation are satisfied. The following credentials will be shared',
@@ -293,19 +293,29 @@ export class HolderInquirer extends BaseInquirer {
     }
   }
 
-  private printCredential = (credential: W3cCredentialRecord | SdJwtVcRecord | MdocRecord) => {
-    if (credential.type === 'W3cCredentialRecord') {
-      console.log(greenText(`W3cCredentialRecord with claim format ${credential.credential.claimFormat}`, true))
-      console.log(JSON.stringify(credential.credential.jsonCredential, null, 2))
+  private printCredential = (
+    credentialRecord: W3cCredentialRecord | W3cV2CredentialRecord | SdJwtVcRecord | MdocRecord
+  ) => {
+    if (credentialRecord.type === 'W3cCredentialRecord') {
+      console.log(
+        greenText(`W3cCredentialRecord with claim format ${credentialRecord.firstCredential.claimFormat}`, true)
+      )
+      console.log(JSON.stringify(credentialRecord.firstCredential.jsonCredential, null, 2))
       console.log('')
-    } else if (credential.type === 'MdocRecord') {
+    } else if (credentialRecord.type === 'W3cV2CredentialRecord') {
+      console.log(
+        greenText(`W3cCredentialRecord with claim format ${credentialRecord.firstCredential.claimFormat}`, true)
+      )
+      console.log(JSON.stringify(credentialRecord.firstCredential.resolvedCredential.toJSON(), null, 2))
+      console.log('')
+    } else if (credentialRecord.type === 'MdocRecord') {
       console.log(greenText('MdocRecord', true))
-      const namespaces = Mdoc.fromBase64Url(credential.base64Url).issuerSignedNamespaces
+      const namespaces = credentialRecord.firstCredential.issuerSignedNamespaces
       console.log(JSON.stringify(namespaces, null, 2))
       console.log('')
     } else {
       console.log(greenText('SdJwtVcRecord', true))
-      const prettyClaims = this.holder.agent.sdJwtVc.fromCompact(credential.compactSdJwtVc).prettyClaims
+      const prettyClaims = credentialRecord.firstCredential.prettyClaims
       console.log(JSON.stringify(prettyClaims, null, 2))
       console.log('')
     }

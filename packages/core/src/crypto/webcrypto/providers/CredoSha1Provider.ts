@@ -1,8 +1,6 @@
-import type { HashAlgorithm } from '../types'
-
 import * as core from 'webcrypto-core'
-
 import { Sha1 } from '../../hashes'
+import type { HashAlgorithm } from '../types'
 
 export class CredoSha1Provider extends core.ProviderCrypto {
   public name = 'SHA-1'

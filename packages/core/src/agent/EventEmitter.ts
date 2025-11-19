@@ -1,14 +1,11 @@
 import type { EventEmitter as NativeEventEmitter } from 'events'
-import type { BaseEvent } from './Events'
-import type { AgentContext } from './context'
-
-import { Subject, fromEventPattern } from 'rxjs'
+import { fromEventPattern, Subject } from 'rxjs'
 import { takeUntil } from 'rxjs/operators'
-
 import { InjectionSymbols } from '../constants'
 import { inject, injectable } from '../plugins'
-
-import { AgentDependencies } from './AgentDependencies'
+import type { AgentDependencies } from './AgentDependencies'
+import type { AgentContext } from './context'
+import type { BaseEvent } from './Events'
 
 type EmitEvent<T extends BaseEvent> = Omit<T, 'metadata'>
 

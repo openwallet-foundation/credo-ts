@@ -1,0 +1,142 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "340715e6-f6a9-4ddb-83fd-1138d7b9abb6",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "DidcommActionMenu": {
+      "name": "DidcommActionMenu",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "connection_id": {
+          "name": "connection_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "thread_id": {
+          "name": "thread_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "menu": {
+          "name": "menu",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "performed_action": {
+          "name": "performed_action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "DidcommActionMenu_context_correlation_id_thread_id_unique": {
+          "name": "DidcommActionMenu_context_correlation_id_thread_id_unique",
+          "columns": ["context_correlation_id", "thread_id"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "didcommActionMenu_fk_context": {
+          "name": "didcommActionMenu_fk_context",
+          "tableFrom": "DidcommActionMenu",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "DidcommActionMenu_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk": {
+          "name": "DidcommActionMenu_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk",
+          "tableFrom": "DidcommActionMenu",
+          "tableTo": "DidcommConnection",
+          "columnsFrom": ["connection_id", "context_correlation_id"],
+          "columnsTo": ["id", "context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "didcommActionMenu_pk": {
+          "columns": ["context_correlation_id", "id"],
+          "name": "didcommActionMenu_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

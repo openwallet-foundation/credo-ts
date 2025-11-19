@@ -1,2 +1,2 @@
-export * from './TransportSessionRepository'
-export * from './InMemoryTransportSessionRepository'
+export * from './DidCommTransportSessionRepository'
+export * from './InMemoryDidCommTransportSessionRepository'

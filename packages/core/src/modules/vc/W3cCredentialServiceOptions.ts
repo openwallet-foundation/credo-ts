@@ -1,5 +1,5 @@
 import type { SingleOrArray } from '../../types'
-import { KnownJwaSignatureAlgorithm } from '../kms'
+import type { KnownJwaSignatureAlgorithm } from '../kms'
 import type { ProofPurpose, W3cJsonLdVerifiablePresentation } from './data-integrity'
 import type { W3cJsonLdVerifiableCredential } from './data-integrity/models/W3cJsonLdVerifiableCredential'
 import type { W3cJwtVerifiableCredential } from './jwt-vc/W3cJwtVerifiableCredential'
@@ -7,6 +7,7 @@ import type { W3cJwtVerifiablePresentation } from './jwt-vc/W3cJwtVerifiablePres
 import type { ClaimFormat, W3cVerifiableCredential } from './models'
 import type { W3cCredential } from './models/credential/W3cCredential'
 import type { W3cPresentation } from './models/presentation/W3cPresentation'
+import { W3cCredentialRecord } from './repository'
 
 export type W3cSignCredentialOptions<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc | undefined = undefined> =
   Format extends ClaimFormat.JwtVc
@@ -125,7 +126,7 @@ interface W3cSignPresentationOptionsBase {
   /**
    * The challenge / nonce to be used in the proof to prevent replay attacks.
    */
-  challenge: string
+  challenge?: string
 
   /**
    * The domain / aud to be used in the proof to assert the intended recipient.
@@ -188,6 +189,6 @@ export interface W3cJsonLdVerifyPresentationOptions extends W3cVerifyPresentatio
   purpose?: ProofPurpose
 }
 
-export interface StoreCredentialOptions {
-  credential: W3cVerifiableCredential
+export type W3cStoreCredentialOptions = {
+  record: W3cCredentialRecord
 }

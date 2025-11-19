@@ -1,20 +1,12 @@
 import type { X509Certificate } from '@credo-ts/core'
-import type { AgentContext } from '../../agent'
-
-import { getAgentConfig, getAgentContext, getAskarStoreConfig } from '../../../tests/helpers'
-import { DidKey } from '../../modules/dids'
-import { JsonEncoder, TypedArrayEncoder } from '../../utils'
-import { JwsService } from '../JwsService'
-
-import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
-import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
-import * as didJwszDnaey from './__fixtures__/didJwszDnaey'
-
 import { CredoError, X509ModuleConfig, X509Service } from '@credo-ts/core'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { AskarKeyManagementService, AskarModuleConfig, transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { AskarStoreManager } from '../../../../askar/src/AskarStoreManager'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
+import { getAgentConfig, getAgentContext, getAskarStoreConfig } from '../../../tests/helpers'
+import type { AgentContext } from '../../agent'
+import { DidKey } from '../../modules/dids'
 import {
   Ed25519PublicJwk,
   KeyManagementApi,
@@ -22,6 +14,11 @@ import {
   P256PublicJwk,
   PublicJwk,
 } from '../../modules/kms'
+import { JsonEncoder, TypedArrayEncoder } from '../../utils'
+import { JwsService } from '../JwsService'
+import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
+import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
+import * as didJwszDnaey from './__fixtures__/didJwszDnaey'
 
 // NOTE: we use askar for the KMS in this test since the signatures with the
 // node KMS are different, but it does correctly verify. It's probably something

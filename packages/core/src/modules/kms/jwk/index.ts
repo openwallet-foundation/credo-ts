@@ -1,65 +1,63 @@
+export * from './alg'
+export { assertSupportedEncryptionAlgorithm, assertSupportedKeyAgreementAlgorithm } from './assertSupported'
+export { assertAsymmetricJwkKeyTypeMatches, assymetricJwkKeyTypeMatches, assymetricPublicJwkMatches } from './equals'
+export { getJwkHumanDescription } from './humanDescription'
 export type {
-  KnownJwaSignatureAlgorithm,
   KnownJwaContentEncryptionAlgorithm,
-  KnownJwaKeyEncryptionAlgorithm,
   KnownJwaKeyAgreementAlgorithm,
+  KnownJwaKeyEncryptionAlgorithm,
+  KnownJwaSignatureAlgorithm,
 } from './jwa'
 export {
-  KnownJwaKeyAgreementAlgorithms,
   KnownJwaContentEncryptionAlgorithms,
+  KnownJwaKeyAgreementAlgorithms,
   KnownJwaKeyEncryptionAlgorithms,
   KnownJwaSignatureAlgorithms,
 } from './jwa'
+
+export type { Jwk, JwkCommon } from './jwk'
 export {
-  type KmsJwkPrivate,
-  type KmsJwkPublic,
-  publicJwkFromPrivateJwk,
-  type KmsJwkPublicAsymmetric,
+  assertKeyAllowsDecrypt,
+  assertKeyAllowsDerive,
+  assertKeyAllowsEncrypt,
+  assertKeyAllowsSign,
+  assertKeyAllowsVerify,
+  keyAllowsDecrypt,
+  keyAllowsEncrypt,
+  keyAllowsSign,
+  keyAllowsVerify,
+} from './keyOps'
+export {
   assertJwkAsymmetric,
   isJwkAsymmetric,
+  type KmsJwkPrivate,
   type KmsJwkPrivateAsymmetric,
-  type KmsJwkPublicFromCreateType,
   type KmsJwkPrivateFromKmsJwkPublic,
+  type KmsJwkPublic,
+  type KmsJwkPublicAsymmetric,
+  type KmsJwkPublicFromCreateType,
   type KmsJwkPublicFromKmsJwkPrivate,
+  publicJwkFromPrivateJwk,
 } from './knownJwk'
-
-export { assertSupportedKeyAgreementAlgorithm, assertSupportedEncryptionAlgorithm } from './assertSupported'
 export type {
   KmsJwkPrivateEc,
-  KmsJwkPublicEc,
   KmsJwkPrivateOct,
-  KmsJwkPublicOct,
   KmsJwkPrivateOkp,
-  KmsJwkPublicOkp,
   KmsJwkPrivateRsa,
+  KmsJwkPublicEc,
+  KmsJwkPublicOct,
+  KmsJwkPublicOkp,
   KmsJwkPublicRsa,
 } from './kty'
-
 export {
+  derEcSignatureToRaw,
   Ed25519PublicJwk,
   P256PublicJwk,
   P384PublicJwk,
   P521PublicJwk,
   RsaPublicJwk,
-  X25519PublicJwk,
-  Secp256k1PublicJwk,
-  derEcSignatureToRaw,
   rawEcSignatureToDer,
+  Secp256k1PublicJwk,
+  X25519PublicJwk,
 } from './kty'
-
-export { Jwk, JwkCommon } from './jwk'
-export {
-  keyAllowsSign,
-  keyAllowsVerify,
-  assertKeyAllowsSign,
-  assertKeyAllowsVerify,
-  keyAllowsEncrypt,
-  assertKeyAllowsEncrypt,
-  keyAllowsDecrypt,
-  assertKeyAllowsDecrypt,
-  assertKeyAllowsDerive,
-} from './keyOps'
-export * from './alg'
-export { getJwkHumanDescription } from './humanDescription'
-export { assymetricJwkKeyTypeMatches, assymetricPublicJwkMatches, assertAsymmetricJwkKeyTypeMatches } from './equals'
 export { PublicJwk } from './PublicJwk'

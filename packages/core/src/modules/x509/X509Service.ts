@@ -1,3 +1,9 @@
+import * as x509 from '@peculiar/x509'
+import { injectable } from 'tsyringe'
+import { AgentContext } from '../../agent'
+import { CredoWebCrypto } from '../../crypto/webcrypto'
+import { X509Certificate } from './X509Certificate'
+import { X509Error } from './X509Error'
 import type {
   X509CreateCertificateOptions,
   X509GetLeafCertificateOptions,
@@ -5,17 +11,8 @@ import type {
   X509ValidateCertificateChainOptions,
 } from './X509ServiceOptions'
 
-import * as x509 from '@peculiar/x509'
-import { injectable } from 'tsyringe'
-
-import { AgentContext } from '../../agent'
-import { CredoWebCrypto } from '../../crypto/webcrypto'
-
-import { X509Certificate } from './X509Certificate'
-import { X509Error } from './X509Error'
-
 @injectable()
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class X509Service {
   /**
    *
@@ -74,7 +71,7 @@ export class X509Service {
       throw new X509Error('Could not parse the full chain. Likely due to incorrect ordering')
     }
 
-    let previousCertificate: X509Certificate | undefined = undefined
+    let previousCertificate: X509Certificate | undefined
 
     if (trustedCertificates) {
       const parsedTrustedCertificates = trustedCertificates.map((trustedCertificate) =>

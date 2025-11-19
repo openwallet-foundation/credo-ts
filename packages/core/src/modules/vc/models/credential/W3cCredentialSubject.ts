@@ -1,7 +1,6 @@
-import type { ValidationOptions } from 'class-validator'
-
 import { Transform, TransformationType } from 'class-transformer'
-import { IsOptional, ValidateBy, buildMessage, isInstance } from 'class-validator'
+import type { ValidationOptions } from 'class-validator'
+import { buildMessage, IsOptional, isInstance, ValidateBy } from 'class-validator'
 
 import { CredoError } from '../../../../error'
 
@@ -20,6 +19,7 @@ export class W3cCredentialSubject {
     if (options) {
       this.id = options.id
 
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       const { id, ...claims } = options.claims ?? {}
       this.claims = Object.keys(claims).length > 0 ? claims : undefined
     }

@@ -1,9 +1,8 @@
-import type { Buffer } from '../../../utils'
-
 import { CredoError } from '../../../error'
+import { replaceError } from '../../../logger/replaceError'
+import type { Jwk } from '../../../modules/kms'
+import type { Buffer } from '../../../utils'
 import { JsonEncoder, TypedArrayEncoder } from '../../../utils'
-
-import { Jwk } from '../../../modules/kms'
 import { JwtPayload } from './JwtPayload'
 
 // TODO: JWT Header typing
@@ -58,7 +57,9 @@ export class Jwt {
         serializedJwt,
       })
     } catch (error) {
-      throw new CredoError(`Invalid JWT. ${error instanceof Error ? error.message : JSON.stringify(error)}`)
+      throw new CredoError(
+        `Invalid JWT. ${error instanceof Error ? error.message : JSON.stringify(error, replaceError)}`
+      )
     }
   }
 }

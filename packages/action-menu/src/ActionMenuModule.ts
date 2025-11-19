@@ -1,9 +1,15 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
-import { FeatureRegistry, Protocol } from '@credo-ts/didcomm'
+import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry, DidCommProtocol } from '@credo-ts/didcomm'
 
 import { ActionMenuApi } from './ActionMenuApi'
 import { ActionMenuRole } from './ActionMenuRole'
+import {
+  ActionMenuProblemReportHandler,
+  MenuMessageHandler,
+  MenuRequestMessageHandler,
+  PerformMessageHandler,
+} from './handlers'
 import { ActionMenuRepository } from './repository'
 import { ActionMenuService } from './services'
 
@@ -25,11 +31,19 @@ export class ActionMenuModule implements Module {
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    // Feature Registry
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const featureRegistry = agentContext.resolve(DidCommFeatureRegistry)
+    const messageHandlerRegistry = agentContext.resolve(DidCommMessageHandlerRegistry)
+    const actionMenuService = agentContext.resolve(ActionMenuService)
+
+    messageHandlerRegistry.registerMessageHandlers([
+      new ActionMenuProblemReportHandler(actionMenuService),
+      new MenuMessageHandler(actionMenuService),
+      new MenuRequestMessageHandler(actionMenuService),
+      new PerformMessageHandler(actionMenuService),
+    ])
 
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/action-menu/1.0',
         roles: [ActionMenuRole.Requester, ActionMenuRole.Responder],
       })

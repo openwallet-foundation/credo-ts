@@ -1,11 +1,8 @@
 import type { AgentContext, BaseAgent } from '@credo-ts/core'
-import type { AnonCredsHolderService } from '../../services'
-import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
-
-import { CacheModuleConfig, CredoError, W3cCredentialRepository, W3cCredentialService } from '@credo-ts/core'
-import { CredentialRepository } from '@credo-ts/didcomm'
-
+import { CacheModuleConfig, CredoError, W3cCredentialRecord, W3cCredentialService } from '@credo-ts/core'
+import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
 import { type AnonCredsCredentialRecord, AnonCredsCredentialRepository } from '../../repository'
+import type { AnonCredsHolderService } from '../../services'
 import { AnonCredsHolderServiceSymbol } from '../../services'
 import { fetchCredentialDefinition } from '../../utils/anonCredsObjects'
 import {
@@ -17,6 +14,7 @@ import {
   isUnqualifiedIndyDid,
   parseIndyRevocationRegistryId,
 } from '../../utils/indyIdentifiers'
+import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
 import { getW3cRecordAnonCredsTags } from '../../utils/w3cAnonCredsUtils'
 
@@ -114,10 +112,14 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
   })
 
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-  const w3cCredentialRecord = await w3cCredentialService.storeCredential(agentContext, {
-    credential: w3cJsonLdCredential,
+  const w3cCredentialRecord = new W3cCredentialRecord({
+    credentialInstances: [
+      {
+        credential: w3cJsonLdCredential.encoded,
+      },
+    ],
+    tags: {},
   })
-
   for (const [key, meta] of Object.entries(legacyRecord.metadata.data)) {
     w3cCredentialRecord.metadata.set(key, meta)
   }
@@ -131,11 +133,10 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
   w3cCredentialRecord.setTags(anonCredsTags)
   w3cCredentialRecord.metadata.set(W3cAnonCredsCredentialMetadataKey, anonCredsCredentialMetadata)
 
-  const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
-  await w3cCredentialRepository.update(agentContext, w3cCredentialRecord)
+  await w3cCredentialService.storeCredential(agentContext, { record: w3cCredentialRecord })
 
   // Find the credential exchange record bound to this anoncreds credential and update it to point to the newly created w3c record
-  const credentialExchangeRepository = agentContext.dependencyManager.resolve(CredentialRepository)
+  const credentialExchangeRepository = agentContext.dependencyManager.resolve(DidCommCredentialExchangeRepository)
   const [relatedCredentialExchangeRecord] = await credentialExchangeRepository.findByQuery(agentContext, {
     credentialIds: [legacyRecord.credentialId],
   })

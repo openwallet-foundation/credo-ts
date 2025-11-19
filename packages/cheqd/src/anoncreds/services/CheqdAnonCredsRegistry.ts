@@ -14,9 +14,8 @@ import type {
   RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
-import type { CheqdCreateResourceOptions } from '../../dids'
-
 import { CredoError, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@credo-ts/core'
+import type { CheqdCreateResourceOptions } from '../../dids'
 
 import { CheqdDidRegistrar, CheqdDidResolver } from '../../dids'
 import {
@@ -50,6 +49,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(`Submitting get schema request for schema '${schemaId}' to ledger`)
 
       const response = await cheqdDidResolver.resolveResource(agentContext, schemaId)
+      if (response.error) throw new Error(`${response.error}: ${response.message}`)
       const schema = JsonTransformer.fromJSON(response.resource, CheqdSchema)
 
       return {
@@ -212,6 +212,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       const response = await cheqdDidResolver.resolveResource(agentContext, credentialDefinitionId)
+      if (response.error) throw new Error(`${response.error}: ${response.message}`)
       const credentialDefinition = JsonTransformer.fromJSON(response.resource, CheqdCredentialDefinition)
       return {
         credentialDefinition: {
@@ -259,6 +260,8 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
           }`
 
       const response = await cheqdDidResolver.resolveResource(agentContext, searchDid)
+      if (response.error) throw new Error(`${response.error}: ${response.message}`)
+
       const revocationRegistryDefinition = JsonTransformer.fromJSON(
         response.resource,
         CheqdRevocationRegistryDefinition
@@ -394,7 +397,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
         agentContext,
         `${parsedDid.did}?resourceType=${cheqdAnonCredsResourceTypes.revocationStatusList}&resourceVersionTime=${timestamp}&resourceName=${revocationRegistryDefinitionName}`
       )
-
+      if (response.error) throw new Error(`${response.error}: ${response.message}`)
       const revocationStatusList = JsonTransformer.fromJSON(response.resource, CheqdRevocationStatusList)
 
       const statusListTimestamp = response.resourceMetadata?.created

@@ -1,6 +1,9 @@
+import { askar } from '@openwallet-foundation/askar-nodejs'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
 import { AskarKeyManagementService, AskarModuleConfig, transformSeedToPrivateJwk } from '../../../../../../askar/src'
+import { AskarStoreManager } from '../../../../../../askar/src/AskarStoreManager'
+import { NodeFileSystem } from '../../../../../../node/src/NodeFileSystem'
 import {
   agentDependencies,
   getAgentConfig,
@@ -13,6 +16,7 @@ import { InjectionSymbols } from '../../../../constants'
 import { JwsService } from '../../../../crypto'
 import { ClassValidationError, CredoError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
+import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
 import { DidJwk, DidKey, DidRepository, DidsApi, DidsModuleConfig } from '../../../dids'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
 import { X509ModuleConfig } from '../../../x509'
@@ -20,11 +24,6 @@ import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
 import { ClaimFormat, W3cCredential, W3cPresentation } from '../../models'
 import { W3cJwtCredentialService } from '../W3cJwtCredentialService'
 import { W3cJwtVerifiableCredential } from '../W3cJwtVerifiableCredential'
-
-import { askar } from '@openwallet-foundation/askar-nodejs'
-import { AskarStoreManager } from '../../../../../../askar/src/AskarStoreManager'
-import { NodeFileSystem } from '../../../../../../node/src/NodeFileSystem'
-import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
 import {
   CredoEs256DidJwkJwtVc,
   CredoEs256DidJwkJwtVcIssuerSeed,
@@ -35,7 +34,7 @@ import {
 import { didIonJwtVcPresentationProfileJwtVc } from './fixtures/jwt-vc-presentation-profile'
 import { didKeyTransmuteJwtVc, didKeyTransmuteJwtVp } from './fixtures/transmute-verifiable-data'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 const storageSerivice = new InMemoryStorageService<any>()
 const config = getAgentConfig('W3cJwtCredentialService')
 const agentContext = getAgentContext({
@@ -260,7 +259,7 @@ describe('W3cJwtCredentialService', () => {
     test('returns invalid result when credential is not according to data model', async () => {
       const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)
 
-      // @ts-ignore
+      // @ts-expect-error
       jwtVc.credential.issuer = undefined
 
       const result = await w3cJwtCredentialService.verifyCredential(agentContext, {

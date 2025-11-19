@@ -1,4 +1,18 @@
-import { AgentContext, JwsSignerWithJwk, Kms } from '@credo-ts/core'
+import {
+  AgentContext,
+  Buffer,
+  CredoError,
+  Hasher,
+  JsonEncoder,
+  JwsService,
+  type JwsSignerWithJwk,
+  JwtPayload,
+  Kms,
+  TypedArrayEncoder,
+  X509Certificate,
+  X509ModuleConfig,
+  X509Service,
+} from '@credo-ts/core'
 import type {
   CallbackContext,
   ClientAuthenticationCallback,
@@ -8,21 +22,8 @@ import type {
   SignJwtCallback,
   VerifyJwtCallback,
 } from '@openid4vc/oauth2'
-import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
-
-import {
-  Buffer,
-  CredoError,
-  Hasher,
-  JsonEncoder,
-  JwsService,
-  JwtPayload,
-  TypedArrayEncoder,
-  X509Certificate,
-  X509ModuleConfig,
-  X509Service,
-} from '@credo-ts/core'
 import { clientAuthenticationDynamic, decodeJwtHeader } from '@openid4vc/oauth2'
+import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 
 import { getPublicJwkFromDid } from './utils'
 
@@ -81,6 +82,22 @@ export function getOid4vcJwtVerifyCallback(
           type: 'openId4VciKeyAttestation',
           openId4VcIssuanceSessionId: options.issuanceSessionId,
           keyAttestation: {
+            jwt: compact,
+            payload: JwtPayload.fromJson(payload),
+          },
+        },
+      })
+    }
+
+    if (signer.method === 'x5c' && header.typ === 'openidvci-issuer-metadata+jwt' && !trustedCertificates) {
+      const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+      const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+
+      trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+        certificateChain,
+        verification: {
+          type: 'openId4VciCredentialIssuerMetadata',
+          credentialIssuerMetadata: {
             jwt: compact,
             payload: JwtPayload.fromJson(payload),
           },
@@ -418,7 +435,7 @@ export function getOid4vcCallbacks(
 
 /**
  * Allows us to authenticate when making requests to an external
- * authorizatin server
+ * authorization server
  */
 export function dynamicOid4vciClientAuthentication(
   agentContext: AgentContext,

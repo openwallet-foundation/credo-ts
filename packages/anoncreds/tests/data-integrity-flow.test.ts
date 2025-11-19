@@ -1,6 +1,4 @@
 import type { DidRepository, SuiteInfo } from '@credo-ts/core'
-import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
-
 import {
   AgentContext,
   DidResolverService,
@@ -19,17 +17,16 @@ import {
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  CredentialRole,
-  CredentialState,
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialPreviewAttribute,
+  DidCommCredentialRole,
+  DidCommCredentialState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
-
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { DataIntegrityCredentialFormatService } from '../../anoncreds/src/formats/DataIntegrityCredentialFormatService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
 import {
   agentDependencies,
   createDidKidVerificationMethod,
@@ -44,9 +41,9 @@ import {
   AnonCredsVerifierServiceSymbol,
 } from '../src'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
-
-import { InMemoryTailsFileService } from './InMemoryTailsFileService'
+import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { anoncreds } from './helpers'
+import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()
@@ -102,7 +99,7 @@ const agentContext = getAgentContext({
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 
-const dataIntegrityCredentialFormatService = new DataIntegrityCredentialFormatService()
+const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
 
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
@@ -132,23 +129,23 @@ async function anonCredsFlowTest(options: {
 }) {
   const { issuerKdv: issuer } = options
 
-  const holderCredentialRecord = new CredentialExchangeRecord({
+  const holderCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v1',
-    state: CredentialState.ProposalSent,
+    state: DidCommCredentialState.ProposalSent,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
-    role: CredentialRole.Holder,
+    role: DidCommCredentialRole.Holder,
   })
 
-  const issuerCredentialRecord = new CredentialExchangeRecord({
+  const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v1',
-    state: CredentialState.ProposalReceived,
+    state: DidCommCredentialState.ProposalReceived,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
-    role: CredentialRole.Issuer,
+    role: DidCommCredentialRole.Issuer,
   })
 
   const credentialAttributes = [
-    new CredentialPreviewAttribute({ name: 'name', value: 'John' }),
-    new CredentialPreviewAttribute({ name: 'age', value: '25' }),
+    new DidCommCredentialPreviewAttribute({ name: 'name', value: 'John' }),
+    new DidCommCredentialPreviewAttribute({ name: 'age', value: '25' }),
   ]
 
   // Set attributes on the credential record, this is normally done by the protocol service
@@ -172,7 +169,7 @@ async function anonCredsFlowTest(options: {
   })
 
   const { attachment: offerAttachment } = await dataIntegrityCredentialFormatService.createOffer(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     credentialFormats: {
       dataIntegrity: {
         bindingRequired: false,
@@ -183,12 +180,12 @@ async function anonCredsFlowTest(options: {
 
   // Holder processes and accepts offer
   await dataIntegrityCredentialFormatService.processOffer(agentContext, {
-    credentialRecord: holderCredentialRecord,
+    credentialExchangeRecord: holderCredentialRecord,
     attachment: offerAttachment,
   })
   const { attachment: requestAttachment, appendAttachments: requestAppendAttachments } =
     await dataIntegrityCredentialFormatService.acceptOffer(agentContext, {
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       offerAttachment,
       credentialFormats: {
         dataIntegrity: {},
@@ -197,11 +194,11 @@ async function anonCredsFlowTest(options: {
 
   // Issuer processes and accepts request
   await dataIntegrityCredentialFormatService.processRequest(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     attachment: requestAttachment,
   })
   const { attachment: credentialAttachment } = await dataIntegrityCredentialFormatService.acceptRequest(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     requestAttachment,
     offerAttachment,
     requestAppendAttachments,
@@ -215,7 +212,7 @@ async function anonCredsFlowTest(options: {
   // Holder processes and accepts credential
   await dataIntegrityCredentialFormatService.processCredential(agentContext, {
     offerAttachment,
-    credentialRecord: holderCredentialRecord,
+    credentialExchangeRecord: holderCredentialRecord,
     attachment: credentialAttachment,
     requestAttachment,
   })
@@ -236,9 +233,9 @@ async function anonCredsFlowTest(options: {
 
   const credentialRecordId = holderCredentialRecord.credentials[0].credentialRecordId
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-  const credentialRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
+  const credentialExchangeRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
 
-  expect(credentialRecord.credential).toEqual({
+  expect(credentialExchangeRecord.firstCredential).toEqual({
     ...{
       ...credential,
       credentialSubject: new W3cCredentialSubject({

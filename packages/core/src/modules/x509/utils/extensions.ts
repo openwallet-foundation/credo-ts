@@ -1,19 +1,18 @@
-import { Hasher } from '../../../crypto/hashes/Hasher'
-import type { X509CertificateExtensionsOptions } from '../X509ServiceOptions'
-
 import {
   AuthorityKeyIdentifierExtension,
   BasicConstraintsExtension,
   CRLDistributionPointsExtension,
   ExtendedKeyUsageExtension,
+  IssuerAlternativeNameExtension,
   KeyUsagesExtension,
   SubjectAlternativeNameExtension,
   SubjectKeyIdentifierExtension,
 } from '@peculiar/x509'
+import { Hasher } from '../../../crypto/hashes/Hasher'
 import { publicJwkToSpki } from '../../../crypto/webcrypto/utils'
 import { TypedArrayEncoder } from '../../../utils'
 import { PublicJwk } from '../../kms'
-import { IssuerAlternativeNameExtension } from '../extensions'
+import type { X509CertificateExtensionsOptions } from '../X509ServiceOptions'
 
 export const createSubjectKeyIdentifierExtension = (
   options: X509CertificateExtensionsOptions['subjectKeyIdentifier'],

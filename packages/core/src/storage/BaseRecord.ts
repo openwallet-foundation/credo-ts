@@ -19,7 +19,7 @@ export type RecordTags<Record extends BaseRecord> = ReturnType<Record['getTags']
 // able to use the BaseRecord without specifying these types. If we don't specify
 // these types, the default TagsBase will be used, but this is not compatible
 // with records that have specified a custom type.
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export type BaseRecordAny = BaseRecord<any, any, any>
 
 export abstract class BaseRecord<
@@ -27,10 +27,10 @@ export abstract class BaseRecord<
   CustomTags extends TagsBase = TagsBase,
   // We want an empty object, as Record<string, unknown> will make typescript
   // not infer the types correctly
-  // biome-ignore lint/complexity/noBannedTypes: <explanation>
+  // biome-ignore lint/complexity/noBannedTypes: no explanation
   MetadataValues = {},
 > {
-  protected _tags: CustomTags = {} as CustomTags
+  protected _tags: CustomTags & TagsBase = {} as CustomTags & TagsBase
 
   public id!: string
 
@@ -63,8 +63,8 @@ export abstract class BaseRecord<
    * @param name name of the tag
    * @param value value of the tag
    */
-  public setTag(name: keyof CustomTags, value: CustomTags[keyof CustomTags]) {
-    this._tags[name] = value
+  public setTag(name: keyof CustomTags | (string & {}), value: CustomTags[keyof CustomTags]) {
+    this._tags[name] = value as (typeof this._tags)[string]
   }
 
   /**
@@ -72,7 +72,7 @@ export abstract class BaseRecord<
    * @param name name of the tag
    * @returns The tag value, or undefined if not found
    */
-  public getTag(name: keyof CustomTags | keyof DefaultTags) {
+  public getTag(name: keyof CustomTags | keyof DefaultTags | (string & {})) {
     return this.getTags()[name]
   }
 
@@ -81,11 +81,11 @@ export abstract class BaseRecord<
    *
    * @param tags the tags to set
    */
-  public setTags(tags: Partial<CustomTags>) {
+  public setTags(tags: Partial<CustomTags | TagsBase>) {
     this._tags = {
       ...this._tags,
       ...tags,
-    }
+    } as typeof this._tags
   }
 
   /**
@@ -94,7 +94,7 @@ export abstract class BaseRecord<
    *
    * @param tags the tags to set
    */
-  public replaceTags(tags: CustomTags & Partial<DefaultTags>) {
+  public replaceTags(tags: CustomTags & Partial<TagsBase>) {
     this._tags = tags
   }
 

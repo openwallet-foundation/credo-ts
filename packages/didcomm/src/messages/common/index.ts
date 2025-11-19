@@ -1,1 +1,1 @@
-export * from './AckMessage'
+export * from './DidCommAckMessage'

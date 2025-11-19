@@ -1,44 +1,47 @@
-import type { DidKey, X509Certificate } from '@credo-ts/core'
-import type {
-  OpenId4VcIssuerRecord,
-  OpenId4VcVerifierRecord,
-  OpenId4VciCredentialConfigurationsSupportedWithFormats,
-  OpenId4VciCredentialRequestToCredentialMapper,
-  OpenId4VciSignMdocCredentials,
-  OpenId4VciSignSdJwtCredentials,
-  OpenId4VciSignW3cCredentials,
-  VerifiedOpenId4VcCredentialHolderBinding,
-} from '@credo-ts/openid4vc'
-
 import { AskarModule, transformSeedToPrivateJwk } from '@credo-ts/askar'
+import type { DidKey, X509Certificate } from '@credo-ts/core'
 import {
   ClaimFormat,
   CredoError,
   JsonTransformer,
   Kms,
+  parseDid,
   TypedArrayEncoder,
+  utils,
   W3cCredential,
   W3cCredentialSubject,
   W3cIssuer,
-  X509Service,
-  parseDid,
-  utils,
   w3cDate,
+  X509Service,
 } from '@credo-ts/core'
+import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '@credo-ts/node'
 import {
-  OpenId4VcIssuerModule,
-  OpenId4VcVerifierApi,
-  OpenId4VcVerifierModule,
+  type OpenId4VcIssuerModuleConfigOptions,
+  OpenId4VcIssuerRecord,
+  type OpenId4VciAuthorizationServerConfig,
+  type OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialFormatProfile,
+  type OpenId4VciCredentialRequestToCredentialMapper,
+  type OpenId4VciSignMdocCredentials,
+  type OpenId4VciSignSdJwtCredentials,
+  type OpenId4VciSignW3cCredentials,
+  OpenId4VcModule,
+  OpenId4VcVerifierApi,
+  type OpenId4VcVerifierModuleConfigOptions,
+  OpenId4VcVerifierRecord,
+  type VerifiedOpenId4VcCredentialHolderBinding,
 } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
-import { Router } from 'express'
-
+import { decodeJwt } from 'jose'
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
 
 const PROVIDER_HOST = process.env.PROVIDER_HOST ?? 'http://localhost:3042'
 const ISSUER_HOST = process.env.ISSUER_HOST ?? 'http://localhost:2000'
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
+export const GOOGLE_ENABLED = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET
 
 export const credentialConfigurationsSupported = {
   PresentationAuthorization: {
@@ -61,7 +64,7 @@ export const credentialConfigurationsSupported = {
   },
   'UniversityDegreeCredential-jwtvcjson': {
     format: OpenId4VciCredentialFormatProfile.JwtVcJson,
-    scope: 'openid4vc:credential:UniversityDegreeCredential-jwtvcjson',
+    scope: 'openid4vc:credential:OpenBadgeCredential',
     // TODO: we should validate this against what is supported by credo
     // as otherwise it's very easy to create invalid configurations?
     cryptographic_binding_methods_supported: ['did:key', 'did:jwk'],
@@ -84,7 +87,7 @@ export const credentialConfigurationsSupported = {
   'UniversityDegreeCredential-sdjwt': {
     format: OpenId4VciCredentialFormatProfile.SdJwtVc,
     vct: 'UniversityDegreeCredential',
-    scope: 'openid4vc:credential:OpenBadgeCredential-sdjwt',
+    scope: 'openid4vc:credential:OpenBadgeCredential',
     cryptographic_binding_methods_supported: ['jwk'],
     credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
     proof_types_supported: {
@@ -99,9 +102,12 @@ export const credentialConfigurationsSupported = {
   'UniversityDegreeCredential-mdoc': {
     format: OpenId4VciCredentialFormatProfile.MsoMdoc,
     doctype: 'UniversityDegreeCredential',
-    scope: 'openid4vc:credential:OpenBadgeCredential-mdoc',
+    scope: 'openid4vc:credential:OpenBadgeCredential',
     cryptographic_binding_methods_supported: ['jwk'],
-    credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
+    credential_signing_alg_values_supported: [
+      Kms.KnownCoseSignatureAlgorithms.Ed25519,
+      Kms.KnownCoseSignatureAlgorithms.ESP256,
+    ],
     proof_types_supported: {
       jwt: {
         proof_signing_alg_values_supported: [
@@ -120,14 +126,41 @@ function getCredentialRequestToCredentialMapper({
 }: {
   issuerDidKey: DidKey
 }): OpenId4VciCredentialRequestToCredentialMapper {
-  return async ({ holderBinding, credentialConfigurationId, credentialConfiguration, authorization }) => {
+  return async ({
+    holderBinding,
+    credentialConfigurationId,
+    credentialConfiguration,
+    authorization,
+    issuanceSession,
+  }) => {
+    // Example of how to use the the access token information from the chained identity server.
+    let authorizedUser = authorization.accessToken.payload.sub
+
+    const isOpenId = issuanceSession.chainedIdentity?.externalAccessTokenResponse?.scope?.split(' ').includes('openid')
+    if (isOpenId) {
+      if (
+        !issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token ||
+        typeof issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token !== 'string'
+      ) {
+        // This should never happen, as Credo already validated the id_token when there is an openid scope.
+        throw new Error('No id_token present in the external access token response')
+      }
+
+      // This token has already been validated by Credo, so we can just decode it.
+      const claims = decodeJwt(issuanceSession.chainedIdentity.externalAccessTokenResponse.id_token)
+      if (typeof claims.email === 'string') {
+        authorizedUser = claims.email
+      }
+    }
+
     if (credentialConfigurationId === 'PresentationAuthorization') {
       return {
-        format: ClaimFormat.SdJwtVc,
+        type: 'credentials',
+        format: ClaimFormat.SdJwtDc,
         credentials: holderBinding.keys.map((binding) => ({
           payload: {
             vct: credentialConfiguration.vct,
-            authorized_user: authorization.accessToken.payload.sub,
+            authorized_user: authorizedUser,
           },
           holder: binding,
           issuer:
@@ -145,6 +178,7 @@ function getCredentialRequestToCredentialMapper({
       assertDidBasedHolderBinding(holderBinding)
 
       return {
+        type: 'credentials',
         format: ClaimFormat.JwtVc,
         credentials: holderBinding.keys.map((binding) => {
           return {
@@ -156,7 +190,7 @@ function getCredentialRequestToCredentialMapper({
               credentialSubject: JsonTransformer.fromJSON(
                 {
                   id: parseDid(binding.didUrl).did,
-                  authorizedUser: authorization.accessToken.payload.sub,
+                  authorizedUser: authorizedUser,
                 },
                 W3cCredentialSubject
               ),
@@ -170,13 +204,14 @@ function getCredentialRequestToCredentialMapper({
 
     if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
       return {
-        format: ClaimFormat.SdJwtVc,
+        type: 'credentials',
+        format: ClaimFormat.SdJwtDc,
         credentials: holderBinding.keys.map((binding) => ({
           payload: {
             vct: credentialConfiguration.vct,
             university: 'innsbruck',
             degree: 'bachelor',
-            authorized_user: authorization.accessToken.payload.sub,
+            authorized_user: authorizedUser,
           },
           holder: binding,
           issuer: {
@@ -192,6 +227,7 @@ function getCredentialRequestToCredentialMapper({
       assertJwkBasedHolderBinding(holderBinding)
 
       return {
+        type: 'credentials',
         format: ClaimFormat.MsoMdoc,
         credentials: holderBinding.keys.map((binding) => ({
           issuerCertificate,
@@ -199,7 +235,7 @@ function getCredentialRequestToCredentialMapper({
           namespaces: {
             'Leopold-Franzens-University': {
               degree: 'bachelor',
-              authorized_user: authorization.accessToken.payload.sub,
+              authorized_user: authorizedUser,
             },
           },
           docType: credentialConfiguration.doctype,
@@ -213,75 +249,72 @@ function getCredentialRequestToCredentialMapper({
 
 export class Issuer extends BaseAgent<{
   askar: AskarModule
-  openId4VcIssuer: OpenId4VcIssuerModule
-  openId4VcVerifier: OpenId4VcVerifierModule
+  openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions, OpenId4VcVerifierModuleConfigOptions>
 }> {
   public issuerRecord!: OpenId4VcIssuerRecord
   public verifierRecord!: OpenId4VcVerifierRecord
 
   public constructor(url: string, port: number, name: string) {
-    const openId4VciRouter = Router()
-    const openId4VpRouter = Router()
-
     super({
       port,
       name,
-      modules: {
+      modules: (app) => ({
         askar: new AskarModule({ askar, store: { id: name, key: name } }),
-        openId4VcVerifier: new OpenId4VcVerifierModule({
-          baseUrl: `${url}/oid4vp`,
-          router: openId4VpRouter,
+        kms: new Kms.KeyManagementModule({
+          backends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())],
         }),
-        openId4VcIssuer: new OpenId4VcIssuerModule({
-          baseUrl: `${url}/oid4vci`,
-          router: openId4VciRouter,
-          credentialRequestToCredentialMapper: (...args) =>
-            getCredentialRequestToCredentialMapper({ issuerDidKey: this.didKey })(...args),
-          getVerificationSessionForIssuanceSessionAuthorization: async ({ agentContext, scopes }) => {
-            const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
-            const authorizationRequest = await verifierApi.createAuthorizationRequest({
-              verifierId: this.verifierRecord.verifierId,
-              requestSigner: {
-                method: 'did',
-                didUrl: `${this.didKey.did}#${this.didKey.publicJwk.fingerprint}`,
-              },
-              responseMode: 'direct_post.jwt',
-              presentationExchange: {
-                definition: {
-                  id: '18e2c9c3-1722-4393-a558-f0ce1e32c4ec',
-                  input_descriptors: [
-                    {
-                      id: '16f00df5-67f1-47e6-81b1-bd3e3743f84c',
-                      constraints: {
-                        fields: [
-                          {
-                            path: ['$.vct'],
-                            filter: {
-                              type: 'string',
-                              const: credentialConfigurationsSupported.PresentationAuthorization.vct,
-                            },
-                          },
-                        ],
-                      },
-                    },
-                  ],
-                  name: 'Presentation Authorization',
-                  purpose: `To issue the requested credentials, we need to verify your 'Presentation Authorization' credential`,
+        openid4vc: new OpenId4VcModule({
+          app,
+          verifier: {
+            baseUrl: `${url}/oid4vp`,
+          },
+          issuer: {
+            baseUrl: `${url}/oid4vci`,
+            credentialRequestToCredentialMapper: (...args) =>
+              getCredentialRequestToCredentialMapper({ issuerDidKey: this.didKey })(...args),
+            getVerificationSessionForIssuanceSessionAuthorization: async ({ agentContext, scopes }) => {
+              const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
+              const authorizationRequest = await verifierApi.createAuthorizationRequest({
+                verifierId: this.verifierRecord.verifierId,
+                requestSigner: {
+                  method: 'did',
+                  didUrl: `${this.didKey.did}#${this.didKey.publicJwk.fingerprint}`,
                 },
-              },
-            })
+                responseMode: 'direct_post.jwt',
+                presentationExchange: {
+                  definition: {
+                    id: '18e2c9c3-1722-4393-a558-f0ce1e32c4ec',
+                    input_descriptors: [
+                      {
+                        id: '16f00df5-67f1-47e6-81b1-bd3e3743f84c',
+                        constraints: {
+                          fields: [
+                            {
+                              path: ['$.vct'],
+                              filter: {
+                                type: 'string',
+                                const: credentialConfigurationsSupported.PresentationAuthorization.vct,
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                    name: 'Presentation Authorization',
+                    purpose: `To issue the requested credentials, we need to verify your 'Presentation Authorization' credential`,
+                  },
+                },
+              })
 
-            return {
-              scopes,
-              ...authorizationRequest,
-            }
+              return {
+                scopes,
+                ...authorizationRequest,
+              }
+            },
           },
         }),
-      },
+      }),
     })
-
-    this.app.use('/oid4vci', openId4VciRouter)
-    this.app.use('/oid4vp', openId4VpRouter)
   }
 
   public static async build(): Promise<Issuer> {
@@ -312,27 +345,47 @@ export class Issuer extends BaseAgent<{
     })
 
     issuer.agent.x509.config.setTrustedCertificates([issuerCertificate])
-    console.log('Set the following certficate for the holder to verify mdoc credentials.')
+    console.log('Set the following certificate for the holder to verify mdoc credentials.')
     console.log(issuerCertificate.toString('base64'))
 
-    issuer.verifierRecord = await issuer.agent.modules.openId4VcVerifier.createVerifier({
+    issuer.verifierRecord = await issuer.agent.openid4vc.verifier.createVerifier({
       verifierId: '726222ad-7624-4f12-b15b-e08aa7042ffa',
     })
-    issuer.issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
+    issuer.issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
       issuerId: '726222ad-7624-4f12-b15b-e08aa7042ffa',
       credentialConfigurationsSupported,
       authorizationServerConfigs: [
         {
+          type: 'direct',
           issuer: PROVIDER_HOST,
           clientAuthentication: {
             clientId: 'issuer-server',
             clientSecret: 'issuer-server',
           },
         },
+        ...((GOOGLE_ENABLED
+          ? [
+              {
+                type: 'chained',
+                issuer: 'https://accounts.google.com',
+                clientAuthentication: {
+                  type: 'clientSecret',
+                  clientId: GOOGLE_CLIENT_ID,
+                  clientSecret: GOOGLE_CLIENT_SECRET,
+                },
+                scopesMapping: {
+                  'openid4vc:credential:OpenBadgeCredential': [
+                    'openid',
+                    'https://www.googleapis.com/auth/userinfo.email',
+                  ],
+                },
+              },
+            ]
+          : []) as OpenId4VciAuthorizationServerConfig[]),
       ],
     })
 
-    const issuerMetadata = await issuer.agent.modules.openId4VcIssuer.getIssuerMetadata(issuer.issuerRecord.issuerId)
+    const issuerMetadata = await issuer.agent.openid4vc.issuer.getIssuerMetadata(issuer.issuerRecord.issuerId)
     console.log(`\nIssuer url is ${issuerMetadata.credentialIssuer.credential_issuer}`)
 
     return issuer
@@ -340,12 +393,12 @@ export class Issuer extends BaseAgent<{
 
   public async createCredentialOffer(options: {
     credentialConfigurationIds: string[]
-    requireAuthorization?: 'presentation' | 'browser'
+    requireAuthorization?: 'presentation' | 'browser' | 'browser-external'
     requirePin: boolean
   }) {
-    const issuerMetadata = await this.agent.modules.openId4VcIssuer.getIssuerMetadata(this.issuerRecord.issuerId)
+    const issuerMetadata = await this.agent.openid4vc.issuer.getIssuerMetadata(this.issuerRecord.issuerId)
 
-    const { credentialOffer, issuanceSession } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer, issuanceSession } = await this.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: this.issuerRecord.issuerId,
       credentialConfigurationIds: options.credentialConfigurationIds,
       // Pre-auth using our own server
@@ -364,7 +417,12 @@ export class Issuer extends BaseAgent<{
       // Auth using external authorization server
       authorizationCodeFlowConfig: options.requireAuthorization
         ? {
-            authorizationServerUrl: options.requireAuthorization === 'browser' ? PROVIDER_HOST : undefined,
+            authorizationServerUrl:
+              options.requireAuthorization === 'browser'
+                ? PROVIDER_HOST
+                : options.requireAuthorization === 'browser-external'
+                  ? 'https://accounts.google.com'
+                  : undefined,
             // TODO: should be generated by us, if we're going to use for matching
             issuerState: utils.uuid(),
             requirePresentationDuringIssuance: options.requireAuthorization === 'presentation',

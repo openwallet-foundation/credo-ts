@@ -1,4 +1,4 @@
-import * as z from '../../../utils/zod'
+import { z } from 'zod'
 
 import { zJwkKeyOps, zJwkUse } from './keyOps'
 
@@ -18,7 +18,7 @@ export const vJwkCommon = z
     'x5t#S256': z.optional(z.string()),
     x5u: z.optional(z.string()),
   })
-  .passthrough()
+  .loose()
 export type JwkCommon = z.output<typeof vJwkCommon>
 
 // This can be used to verify the general structure matches
@@ -52,12 +52,12 @@ export const vJwk = z
             r: z.optional(z.string()),
             t: z.optional(z.string()),
           })
-          .passthrough()
+          .loose()
       )
     ),
     p: z.optional(z.string()),
     q: z.optional(z.string()),
     qi: z.optional(z.string()),
   })
-  .passthrough()
+  .loose()
 export type Jwk = z.output<typeof vJwk>

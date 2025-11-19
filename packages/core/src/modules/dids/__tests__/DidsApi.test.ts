@@ -1,16 +1,15 @@
+import {
+  createPeerDidDocumentFromServices,
+  DidDocument,
+  DidDocumentService,
+  type PeerDidCreateOptions,
+  PeerDidNumAlgo,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { isLongFormDidPeer4, isShortFormDidPeer4 } from '../methods/peer/peerDidNumAlgo4'
-
-import {
-  DidDocument,
-  DidDocumentService,
-  PeerDidCreateOptions,
-  PeerDidNumAlgo,
-  TypedArrayEncoder,
-  createPeerDidDocumentFromServices,
-} from '@credo-ts/core'
 
 const agentOptions = getAgentOptions('DidsApi', undefined, undefined, undefined, { requireDidcomm: true })
 
@@ -161,7 +160,7 @@ describe('DidsApi', () => {
     })
 
     expect(await agent.dids.getCreatedDids({ did })).toHaveLength(1)
-    expect(
+    await expect(
       agent.dids.import({
         did,
         didDocument: didDocument2,
@@ -187,7 +186,7 @@ describe('DidsApi', () => {
   })
 
   test('create and resolve did:peer:4 in short and long form', async () => {
-    const routing = await agent.modules.mediationRecipient.getRouting({})
+    const routing = await agent.didcomm.mediationRecipient.getRouting({})
     const { didDocument, keys } = createPeerDidDocumentFromServices(
       [
         {
@@ -214,8 +213,8 @@ describe('DidsApi', () => {
       ? result.didState.didDocument?.alsoKnownAs[0]
       : undefined
 
-    if (!longFormDid) fail('Long form did not defined')
-    if (!shortFormDid) fail('Short form did not defined')
+    if (!longFormDid) throw new Error('Long form did not defined')
+    if (!shortFormDid) throw new Error('Short form did not defined')
 
     expect(isLongFormDidPeer4(longFormDid)).toBeTruthy()
     expect(isShortFormDidPeer4(shortFormDid)).toBeTruthy()

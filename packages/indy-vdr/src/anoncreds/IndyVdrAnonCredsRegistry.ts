@@ -29,10 +29,6 @@ import type {
   RegisterSchemaReturnStateFinished,
   RegisterSchemaReturnStateWait,
 } from '@credo-ts/anoncreds'
-import type { AgentContext } from '@credo-ts/core'
-import type { SchemaResponse } from '@hyperledger/indy-vdr-shared'
-import type { RevocationRegistryDelta } from './utils/transform'
-
 import {
   dateToTimestamp,
   getUnqualifiedCredentialDefinitionId,
@@ -43,7 +39,9 @@ import {
   parseIndyRevocationRegistryId,
   parseIndySchemaId,
 } from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 import { CredoError } from '@credo-ts/core'
+import type { SchemaResponse } from '@hyperledger/indy-vdr-shared'
 import {
   CredentialDefinitionRequest,
   CustomRequest,
@@ -56,11 +54,9 @@ import {
   RevocationRegistryEntryRequest,
   SchemaRequest,
 } from '@hyperledger/indy-vdr-shared'
-
 import { verificationPublicJwkForIndyDid } from '../dids/didIndyUtil'
 import { IndyVdrPoolService } from '../pool'
 import { multiSignRequest } from '../utils/sign'
-
 import {
   getDidIndyCredentialDefinitionId,
   getDidIndyRevocationRegistryDefinitionId,
@@ -68,6 +64,7 @@ import {
   getDidIndySchemaId,
   indyVdrAnonCredsRegistryIdentifierRegex,
 } from './utils/identifiers'
+import type { RevocationRegistryDelta } from './utils/transform'
 import { anonCredsRevocationStatusListFromIndyVdr, indyVdrCreateLatestRevocationDelta } from './utils/transform'
 
 export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {

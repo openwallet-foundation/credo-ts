@@ -1,13 +1,13 @@
-import { AgentContext, Cache, CacheModuleConfig } from '@credo-ts/core'
-import Redis, { RedisOptions } from 'ioredis'
+import { AgentContext, type Cache, CacheModuleConfig } from '@credo-ts/core'
+import Redis, { type RedisOptions } from 'ioredis'
 
 export type RedisCacheOptions = RedisOptions
 
 export class RedisCache implements Cache {
   private readonly _client: Redis
 
-  constructor(options: RedisCacheOptions = {}) {
-    this._client = new Redis(options)
+  constructor(options: RedisCacheOptions | Redis = {}) {
+    this._client = options instanceof Redis ? options : new Redis(options)
   }
 
   private async client() {

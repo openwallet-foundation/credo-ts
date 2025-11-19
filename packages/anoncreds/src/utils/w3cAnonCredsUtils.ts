@@ -1,12 +1,9 @@
 import type { DefaultW3cCredentialTags, W3cCredentialSubject } from '@credo-ts/core'
+import { CredoError, utils, W3cCredentialRecord } from '@credo-ts/core'
 import type { AnonCredsCredentialInfo, AnonCredsSchema } from '../models'
 import type { AnonCredsCredentialRecord } from '../repository'
 import type { StoreCredentialOptions } from '../services'
 import type { AnonCredsClaimRecord } from './credential'
-import type { W3cAnonCredsCredentialMetadata } from './metadata'
-
-import { CredoError, W3cCredentialRecord, utils } from '@credo-ts/core'
-
 import { mapAttributeRawValuesToAnonCredsCredentialValues } from './credential'
 import {
   getQualifiedDidIndyCredentialDefinition,
@@ -22,6 +19,7 @@ import {
   isUnqualifiedIndyDid,
   isUnqualifiedRevocationRegistryId,
 } from './indyIdentifiers'
+import type { W3cAnonCredsCredentialMetadata } from './metadata'
 import { W3cAnonCredsCredentialMetadataKey } from './metadata'
 
 export type AnonCredsCredentialTags = {
@@ -52,7 +50,8 @@ function anonCredsCredentialInfoFromW3cRecord(
   w3cCredentialRecord: W3cCredentialRecord,
   useUnqualifiedIdentifiers?: boolean
 ): AnonCredsCredentialInfo {
-  if (Array.isArray(w3cCredentialRecord.credential.credentialSubject)) {
+  const firstCredential = w3cCredentialRecord.firstCredential
+  if (Array.isArray(firstCredential.credentialSubject)) {
     throw new CredoError('Credential subject must be an object, not an array.')
   }
 
@@ -80,7 +79,7 @@ function anonCredsCredentialInfoFromW3cRecord(
       : (anonCredsTags.anonCredsRevocationRegistryId ?? null)
 
   return {
-    attributes: (w3cCredentialRecord.credential.credentialSubject.claims as AnonCredsClaimRecord) ?? {},
+    attributes: (firstCredential.credentialSubject.claims as AnonCredsClaimRecord) ?? {},
     credentialId: w3cCredentialRecord.id,
     credentialDefinitionId,
     schemaId,

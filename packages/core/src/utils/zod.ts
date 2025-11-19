@@ -1,11 +1,12 @@
 import { z } from 'zod'
 
 import { ZodValidationError } from '../error'
+import type { AnyUint8Array } from '../types'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-export type BaseSchema = z.Schema<any, any, any>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
+export type zBaseSchema = z.Schema<any, any, any>
 
-export function parseWithErrorHandling<Schema extends BaseSchema>(
+export function zParseWithErrorHandling<Schema extends zBaseSchema>(
   schema: Schema,
   data: unknown,
   customErrorMessage?: string
@@ -22,13 +23,14 @@ export function parseWithErrorHandling<Schema extends BaseSchema>(
   return parseResult.data
 }
 
-const zUniqueArray = <const TItem extends BaseSchema>(item: TItem) =>
+const zUniqueArray = <const TItem extends zBaseSchema>(item: TItem) =>
   z.array(item).refine((a) => new Set<(typeof a)[number]>(a).size === a.length, 'Array must have unique values')
 
-const zOptionalToUndefined = <const TItem extends BaseSchema>(item: TItem) =>
+const zOptionalToUndefined = <const TItem extends zBaseSchema>(item: TItem) =>
   z.optional(item.transform(() => undefined))
 
 const zBase64Url = z.string().regex(/[a-zA-Z0-9_-]+/, 'Must be a base64url string')
 
-export * from 'zod'
-export { zUniqueArray as uniqueArray, zOptionalToUndefined as optionalToUndefined, zBase64Url as base64Url }
+const zAnyUint8Array = z.instanceof<{ new (): AnyUint8Array }>(Uint8Array)
+
+export { zUniqueArray, zOptionalToUndefined, zBase64Url, zAnyUint8Array }

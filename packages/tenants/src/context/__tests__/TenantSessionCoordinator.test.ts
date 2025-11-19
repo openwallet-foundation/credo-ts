@@ -1,18 +1,17 @@
 import type { DependencyManager, Module } from '@credo-ts/core'
-import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
-
 import { AgentConfig, AgentContext } from '@credo-ts/core'
 import { Mutex, withTimeout } from 'async-mutex'
-
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
-import { TenantsModuleConfig } from '../../TenantsModuleConfig'
 import { TenantRecord } from '../../repository'
+import { TenantsModuleConfig } from '../../TenantsModuleConfig'
+import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
 import { TenantSessionCoordinator } from '../TenantSessionCoordinator'
 import { TenantSessionMutex } from '../TenantSessionMutex'
 
-jest.mock('../TenantSessionMutex')
-const TenantSessionMutexMock = TenantSessionMutex as jest.Mock<TenantSessionMutex>
+vi.mock('../TenantSessionMutex')
+const TenantSessionMutexMock = TenantSessionMutex as MockedClassConstructor<typeof TenantSessionMutex>
 
 // tenantAgentContextMapping is private, but we need to access it to properly test this class. Adding type override to
 // make sure we don't get a lot of type errors.
@@ -35,13 +34,13 @@ const tenantSessionMutexMock = TenantSessionMutexMock.mock.instances[0]
 describe('TenantSessionCoordinator', () => {
   afterEach(() => {
     tenantSessionCoordinator.tenantAgentContextMapping = {}
-    jest.resetAllMocks()
-    jest.clearAllMocks()
+    vi.resetAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('getContextForSession', () => {
     test('returns the context from the tenantAgentContextMapping and increases the session count if already available', async () => {
-      const tenant1AgentContext = jest.fn() as unknown as AgentContext
+      const tenant1AgentContext = vi.fn() as unknown as AgentContext
 
       const tenant1 = {
         agentContext: tenant1AgentContext,
@@ -86,12 +85,12 @@ describe('TenantSessionCoordinator', () => {
         },
         storageVersion: '0.5',
       })
-      const createChildSpy = jest.spyOn(agentContext.dependencyManager, 'createChild')
-      const extendSpy = jest.spyOn(agentContext.config, 'extend')
+      const createChildSpy = vi.spyOn(agentContext.dependencyManager, 'createChild')
+      const extendSpy = vi.spyOn(agentContext.config, 'extend')
 
       const tenantDependencyManager = {
-        registerInstance: jest.fn(),
-        initializeAgentContext: jest.fn(),
+        registerInstance: vi.fn(),
+        initializeAgentContext: vi.fn(),
       } as unknown as DependencyManager
 
       createChildSpy.mockReturnValue(tenantDependencyManager)
@@ -99,7 +98,7 @@ describe('TenantSessionCoordinator', () => {
       const tenantAgentContext = await tenantSessionCoordinator.getContextForSession(tenantRecord)
 
       expect(tenantSessionMutexMock.acquireSession).toHaveBeenCalledTimes(1)
-      expect(extendSpy).toHaveBeenCalledWith(tenantRecord.config)
+      expect(extendSpy).toHaveBeenCalledWith({})
       expect(createChildSpy).toHaveBeenCalledWith()
       expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentContext, expect.any(AgentContext))
       expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentConfig, expect.any(AgentConfig))
@@ -183,7 +182,7 @@ describe('TenantSessionCoordinator', () => {
       // Initialize should only be called once
       expect(hasBeenCalledTimes).toEqual(1)
 
-      // @ts-ignore
+      // @ts-expect-error
       agentContext.dependencyManager.registeredModules = originalModules
       expect(tenantAgentContext1).toBe(tenantAgentContext2)
     })
@@ -193,7 +192,7 @@ describe('TenantSessionCoordinator', () => {
     test('Returns early and does not release a session if the agent context correlation id matches the root agent context', async () => {
       const rootAgentContextMock = {
         contextCorrelationId: 'mock',
-        dependencyManager: { dispose: jest.fn() },
+        dependencyManager: { dispose: vi.fn() },
         isRootAgentContext: true,
       } as unknown as AgentContext
       await tenantSessionCoordinator.endAgentContextSession(rootAgentContextMock)
@@ -203,7 +202,7 @@ describe('TenantSessionCoordinator', () => {
 
     test('throws an error if no agent context session exists for the tenant', async () => {
       const tenantAgentContextMock = { contextCorrelationId: 'tenant-does-not-exist' } as unknown as AgentContext
-      expect(tenantSessionCoordinator.endAgentContextSession(tenantAgentContextMock)).rejects.toThrow(
+      await expect(tenantSessionCoordinator.endAgentContextSession(tenantAgentContextMock)).rejects.toThrow(
         `Unknown agent context with contextCorrelationId 'tenant-does-not-exist'. Cannot end session`
       )
     })
@@ -233,7 +232,7 @@ describe('TenantSessionCoordinator', () => {
 
     test('closes the agent context and removes the agent context mapping if the number of sessions reaches 0', async () => {
       const tenant1AgentContext = {
-        dependencyManager: { closeAgentContext: jest.fn() },
+        dependencyManager: { closeAgentContext: vi.fn() },
         contextCorrelationId: 'tenant-tenant1',
       } as unknown as AgentContext
 

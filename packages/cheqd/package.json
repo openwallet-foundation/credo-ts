@@ -1,14 +1,27 @@
 {
   "name": "@credo-ts/cheqd",
-  "main": "src/index",
-  "types": "src/index",
+  "exports": {
+    "cli": "./build/index.mjs",
+    "import": "./src/index.ts"
+  },
   "version": "0.5.13",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
-    "main": "build/index",
-    "types": "build/index",
-    "access": "public"
+    "access": "public",
+    "main": "./build/index.js",
+    "types": "./build/index.d.ts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": {
+        "import": "./build/index.mjs",
+        "require": "./build/index.js",
+        "types": "./build/index.d.ts"
+      },
+      "./package.json": "./package.json"
+    }
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/cheqd",
   "repository": {
@@ -17,28 +30,24 @@
     "directory": "packages/cheqd"
   },
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile",
-    "clean": "rimraf ./build",
-    "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "build": "tsdown --config-loader unconfig",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@cheqd/sdk": "^5.2.1",
-    "@cheqd/ts-proto": "~2.4.1",
-    "@cosmjs/crypto": "~0.30.1",
-    "@cosmjs/proto-signing": "~0.30.1",
-    "@cosmjs/stargate": "~0.30.1",
+    "@cheqd/sdk": "npm:@cheqd/sdk-esm@~5.3.7",
+    "@cheqd/ts-proto": "^4.1.1",
+    "@cosmjs/crypto": "^0.36.2",
+    "@cosmjs/proto-signing": "^0.36.2",
+    "@cosmjs/stargate": "^0.36.2",
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
-    "@stablelib/ed25519": "^1.0.3",
-    "class-transformer": "^0.5.1",
-    "class-validator": "0.14.1",
-    "rxjs": "^7.8.0",
-    "tsyringe": "^4.8.0"
+    "@stablelib/ed25519": "catalog:",
+    "class-transformer": "catalog:",
+    "class-validator": "catalog:",
+    "rxjs": "catalog:",
+    "tsyringe": "catalog:"
   },
   "devDependencies": {
-    "rimraf": "^4.0.7",
-    "typescript": "~5.5.2"
+    "typescript": "catalog:"
   }
 }

@@ -1,15 +1,15 @@
+import { AgentContext } from '../../agent'
+import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
+import type { SdJwtVcRecord } from './repository'
 import type {
   SdJwtVcHeader,
   SdJwtVcPayload,
   SdJwtVcPresentOptions,
   SdJwtVcSignOptions,
+  SdJwtVcStoreOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
-import type { SdJwtVcRecord } from './repository'
-
-import { AgentContext } from '../../agent'
-import { injectable } from '../../plugins'
 
 import { SdJwtVcService } from './SdJwtVcService'
 
@@ -61,8 +61,8 @@ export class SdJwtVcApi {
     return this.sdJwtVcService.fromCompact<Header, Payload>(sdJwtVcCompact)
   }
 
-  public async store(compactSdJwtVc: string) {
-    return await this.sdJwtVcService.store(this.agentContext, compactSdJwtVc)
+  public async store(options: SdJwtVcStoreOptions) {
+    return await this.sdJwtVcService.store(this.agentContext, options)
   }
 
   public async getById(id: string): Promise<SdJwtVcRecord> {

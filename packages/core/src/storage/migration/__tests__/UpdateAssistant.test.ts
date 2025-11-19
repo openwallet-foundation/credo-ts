@@ -1,9 +1,8 @@
 import type { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
-import type { BaseRecord } from '../../BaseRecord'
-
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
+import type { BaseRecord } from '../../BaseRecord'
 import { UpdateAssistant } from '../UpdateAssistant'
 import { CURRENT_FRAMEWORK_STORAGE_VERSION } from '../updates'
 

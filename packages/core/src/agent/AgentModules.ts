@@ -1,7 +1,3 @@
-import type { ApiModule, DependencyManager, Module } from '../plugins'
-import type { IsAny } from '../types'
-import type { Constructor } from '../utils/mixins'
-
 import { CacheModule, SingleContextStorageLruCache } from '../modules/cache'
 import { DcqlModule } from '../modules/dcql/DcqlModule'
 import { DidsModule } from '../modules/dids'
@@ -12,13 +8,16 @@ import { MdocModule } from '../modules/mdoc/MdocModule'
 import { SdJwtVcModule } from '../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../modules/vc'
 import { X509Module } from '../modules/x509'
+import type { ApiModule, DependencyManager, Module } from '../plugins'
+import type { IsAny } from '../types'
+import type { Constructor } from '../utils/mixins'
 
 /**
  * Simple utility type that represent a map of modules. This is used to map from moduleKey (api key) to the api in the framework.
  */
 export type ModulesMap = { [key: string]: Module }
 
-// biome-ignore lint/complexity/noBannedTypes: <explanation>
+// biome-ignore lint/complexity/noBannedTypes: no explanation
 export type EmptyModuleMap = {}
 
 /**
@@ -42,6 +41,10 @@ export type WithoutDefaultModules<Modules extends ModulesMap> = {
   [moduleKey in Exclude<keyof Modules, keyof DefaultAgentModules>]: Modules[moduleKey]
 }
 
+export type ModuleApiInstance<M extends Module> = M['api'] extends Constructor<unknown>
+  ? InstanceType<M['api']>
+  : undefined
+
 /**
  * Type that represents the api object of the agent (`agent.xxx`). It will extract all keys of the modules and map this to the
  * registered {@link Module.api} class instance. If the module does not have an api class registered, the property will be removed
@@ -51,7 +54,7 @@ export type WithoutDefaultModules<Modules extends ModulesMap> = {
  * If the following AgentModules type was passed:
  * ```ts
  * {
- *   connections: ConnectionsModule
+ *   connections: DidCommConnectionsModule
  *   indy: IndyModule
  * }
  * ```
@@ -59,7 +62,7 @@ export type WithoutDefaultModules<Modules extends ModulesMap> = {
  * And we use the `AgentApi` type like this:
  * ```ts
  * type MyAgentApi = AgentApi<{
- *   connections: ConnectionsModule
+ *   connections: DidCommConnectionsModule
  *   indy: IndyModule
  * }>
  * ```
@@ -77,7 +80,7 @@ export type WithoutDefaultModules<Modules extends ModulesMap> = {
 export type AgentApi<Modules extends ModulesMap> = {
   [moduleKey in keyof Modules as Modules[moduleKey]['api'] extends Constructor<unknown>
     ? moduleKey
-    : never]: Modules[moduleKey]['api'] extends Constructor<unknown> ? InstanceType<Modules[moduleKey]['api']> : never
+    : never]: ModuleApiInstance<Modules[moduleKey]>
 }
 
 /**
@@ -156,7 +159,7 @@ export function extendModulesWithDefaultModules<AgentModules extends AgentModule
  * If the dependency manager has the following modules configured:
  * ```ts
  * {
- *   connections: ConnectionsModule
+ *   connections: DidCommConnectionsModule
  *   indy: IndyModule
  * }
  * ```
@@ -190,7 +193,7 @@ export function getAgentApi<AgentModules extends ModulesMap>(
 
     // Api is excluded
     if (excludedApis.includes(apiInstance)) return api
-    // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+    // biome-ignore lint/performance/noAccumulatingSpread: no explanation
     return { ...api, [moduleKey]: apiInstance }
   }, {}) as AgentApi<AgentModules>
 

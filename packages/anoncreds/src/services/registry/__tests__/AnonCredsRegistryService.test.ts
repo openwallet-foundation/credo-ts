@@ -1,9 +1,8 @@
-import type { AnonCredsRegistry } from '../AnonCredsRegistry'
-
 import { getAgentContext } from '../../../../../core/tests/helpers'
 import { anoncreds } from '../../../../tests/helpers'
 import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
 import { AnonCredsError } from '../../../error'
+import type { AnonCredsRegistry } from '../AnonCredsRegistry'
 import { AnonCredsRegistryService } from '../AnonCredsRegistryService'
 
 const registryOne = {

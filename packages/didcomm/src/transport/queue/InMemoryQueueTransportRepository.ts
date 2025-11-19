@@ -1,23 +1,22 @@
-import type { QueueTransportRepository } from './QueueTransportRepository'
+import { AgentContext, injectable, utils } from '@credo-ts/core'
+import type { DidCommQueueTransportRepository } from './DidCommQueueTransportRepository'
+import type { QueuedDidCommMessage } from './QueuedDidCommMessage'
 import type {
   AddMessageOptions,
   GetAvailableMessageCountOptions,
   RemoveMessagesOptions,
   TakeFromQueueOptions,
 } from './QueueTransportRepositoryOptions'
-import type { QueuedMessage } from './QueuedMessage'
 
-import { AgentContext, injectable, utils } from '@credo-ts/core'
-
-interface InMemoryQueuedMessage extends QueuedMessage {
+interface InMemoryQueuedDidCommMessage extends QueuedDidCommMessage {
   connectionId: string
   recipientDids: string[]
   state: 'pending' | 'sending'
 }
 
 @injectable()
-export class InMemoryQueueTransportRepository implements QueueTransportRepository {
-  private messages: InMemoryQueuedMessage[]
+export class InMemoryDidCommQueueTransportRepository implements DidCommQueueTransportRepository {
+  private messages: InMemoryQueuedDidCommMessage[]
 
   public constructor() {
     this.messages = []
@@ -38,7 +37,7 @@ export class InMemoryQueueTransportRepository implements QueueTransportRepositor
     return messages.length
   }
 
-  public takeFromQueue(agentContext: AgentContext, options: TakeFromQueueOptions): QueuedMessage[] {
+  public takeFromQueue(agentContext: AgentContext, options: TakeFromQueueOptions): QueuedDidCommMessage[] {
     const { connectionId, recipientDid, limit, deleteMessages } = options
 
     let messages = this.messages.filter(

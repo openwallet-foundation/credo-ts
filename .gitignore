@@ -12,3 +12,7 @@ logs.txt
 logs/
 .pnpm-store
 ngrok.auth.yml
+cli-build
+*.db
+test-logs
+testlogs

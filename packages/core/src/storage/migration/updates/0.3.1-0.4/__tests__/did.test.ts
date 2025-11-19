@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import { DidDocumentRole, DidRecord } from '../../../../../modules/dids'
@@ -10,24 +11,28 @@ import * as testModule from '../did'
 const agentConfig = getAgentConfig('Migration DidRecord 0.3.1-0.4')
 const agentContext = getAgentContext()
 
-jest.mock('../../../../../modules/dids/repository/DidRepository')
-const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+vi.mock('../../../../../modules/dids/repository/DidRepository')
+const DidRepositoryMock = DidRepository as MockedClassConstructor<typeof DidRepository>
 const didRepository = new DidRepositoryMock()
 
-jest.mock('../../../../../agent/Agent', () => {
+vi.mock('../../../../../agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
-      config: agentConfig,
-      context: agentContext,
-      dependencyManager: {
-        resolve: jest.fn(() => didRepository),
-      },
-    })),
+    Agent: vi.fn(function () {
+      return {
+        config: agentConfig,
+        context: agentContext,
+        dependencyManager: {
+          resolve: vi.fn(function () {
+            return didRepository
+          }),
+        },
+      }
+    }),
   }
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.3.1-0.4 | Did', () => {
   let agent: Agent

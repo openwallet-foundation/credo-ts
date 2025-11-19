@@ -27,7 +27,7 @@ const validCredential = {
 
 describe('W3cCredential', () => {
   test('throws an error when verifiable credential context is missing or not the first entry', () => {
-    expect(() => JsonTransformer.fromJSON({ ...validCredential, '@context': [] }, W3cCredential)).toThrowError(
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, '@context': [] }, W3cCredential)).toThrow(
       /context must be an array of strings or objects, where the first item is the verifiable credential context URL./
     )
 
@@ -39,13 +39,13 @@ describe('W3cCredential', () => {
         },
         W3cCredential
       )
-    ).toThrowError(
+    ).toThrow(
       /context must be an array of strings or objects, where the first item is the verifiable credential context URL./
     )
 
     expect(() =>
       JsonTransformer.fromJSON({ ...validCredential, '@context': { some: 'property' } }, W3cCredential)
-    ).toThrowError(
+    ).toThrow(
       /context must be an array of strings or objects, where the first item is the verifiable credential context URL./
     )
   })
@@ -53,68 +53,66 @@ describe('W3cCredential', () => {
   test('throws an error when id is present and it is not an uri', () => {
     expect(() =>
       JsonTransformer.fromJSON({ ...validCredential, id: 'f8c7d9c9-3f9f-4d1d-9c0d-5b3b5d7b8f5c' }, W3cCredential)
-    ).toThrowError(/id must be an URI/)
+    ).toThrow(/id must be an URI/)
 
-    expect(() => JsonTransformer.fromJSON({ ...validCredential, id: 10 }, W3cCredential)).toThrowError(
-      /id must be an URI/
-    )
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, id: 10 }, W3cCredential)).toThrow(/id must be an URI/)
   })
 
   test('throws an error when type is not an array of string or does not include VerifiableCredential', () => {
-    expect(() => JsonTransformer.fromJSON({ ...validCredential, type: [] }, W3cCredential)).toThrowError(
-      /type must be an array of strings which includes "VerifiableCredential"/
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, type: [] }, W3cCredential)).toThrow(
+      /type must be "VerifiableCredential" or an array of strings which includes "VerifiableCredential"/
     )
 
-    expect(() => JsonTransformer.fromJSON({ ...validCredential, type: ['AnotherType'] }, W3cCredential)).toThrowError(
-      /type must be an array of strings which includes "VerifiableCredential"/
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, type: ['AnotherType'] }, W3cCredential)).toThrow(
+      /type must be "VerifiableCredential" or an array of strings which includes "VerifiableCredential"/
     )
 
-    expect(() => JsonTransformer.fromJSON({ ...validCredential, type: { some: 'prop' } }, W3cCredential)).toThrowError(
-      /type must be an array of strings which includes "VerifiableCredential"/
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, type: { some: 'prop' } }, W3cCredential)).toThrow(
+      /type must be "VerifiableCredential" or an array of strings which includes "VerifiableCredential"/
     )
   })
 
   test('throws an error when issuer is not a valid uri or object with id', () => {
     expect(() =>
       JsonTransformer.fromJSON({ ...validCredential, issuer: 'f8c7d9c9-3f9f-4d1d-9c0d-5b3b5d7b8f5c' }, W3cCredential)
-    ).toThrowError(/issuer must be an URI or an object with an id property which is an URI/)
+    ).toThrow(/issuer must be an URI or an object with an id property which is an URI/)
 
     expect(() =>
       JsonTransformer.fromJSON(
         { ...validCredential, issuer: { id: 'f8c7d9c9-3f9f-4d1d-9c0d-5b3b5d7b8f5c' } },
         W3cCredential
       )
-    ).toThrowError(/issuer must be an URI or an object with an id property which is an URI/)
+    ).toThrow(/issuer must be an URI or an object with an id property which is an URI/)
 
-    expect(() => JsonTransformer.fromJSON({ ...validCredential, issuer: 10 }, W3cCredential)).toThrowError(
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, issuer: 10 }, W3cCredential)).toThrow(
       /issuer must be an URI or an object with an id property which is an URI/
     )
 
     // Valid cases
     expect(() =>
       JsonTransformer.fromJSON({ ...validCredential, issuer: { id: 'urn:uri' } }, W3cCredential)
-    ).not.toThrowError()
-    expect(() => JsonTransformer.fromJSON({ ...validCredential, issuer: 'uri:uri' }, W3cCredential)).not.toThrowError()
+    ).not.toThrow()
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, issuer: 'uri:uri' }, W3cCredential)).not.toThrow()
   })
 
   test('throws an error when issuanceDate is not a valid date', () => {
-    expect(() => JsonTransformer.fromJSON({ ...validCredential, issuanceDate: '2020' }, W3cCredential)).toThrowError(
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, issuanceDate: '2020' }, W3cCredential)).toThrow(
       /property issuanceDate has failed the following constraints: issuanceDate must be RFC 3339 date/
     )
   })
 
   test('throws an error when expirationDate is present and it is not a valid date', () => {
-    expect(() => JsonTransformer.fromJSON({ ...validCredential, expirationDate: '2020' }, W3cCredential)).toThrowError(
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, expirationDate: '2020' }, W3cCredential)).toThrow(
       /property expirationDate has failed the following constraints: expirationDate must be RFC 3339 date/
     )
   })
 
   test('throws an error when credentialSchema is present and it is not a valid credentialSchema object/array', () => {
-    expect(() => JsonTransformer.fromJSON({ ...validCredential, credentialSchema: {} }, W3cCredential)).toThrowError(
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, credentialSchema: {} }, W3cCredential)).toThrow(
       /property credentialSchema\./
     )
 
-    expect(() => JsonTransformer.fromJSON({ ...validCredential, credentialSchema: [{}] }, W3cCredential)).toThrowError(
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, credentialSchema: [{}] }, W3cCredential)).toThrow(
       /property credentialSchema\[0\]\./
     )
 
@@ -123,18 +121,16 @@ describe('W3cCredential', () => {
         { ...validCredential, credentialSchema: [{ id: 'some-random-value', type: 'valid' }] },
         W3cCredential
       )
-    ).toThrowError(/property credentialSchema\[0\]\.id has failed the following constraints/)
+    ).toThrow(/property credentialSchema\[0\]\.id has failed the following constraints/)
 
     expect(() =>
       JsonTransformer.fromJSON(
         { ...validCredential, credentialSchema: [validCredential.credentialSchema, validCredential.credentialSchema] },
         W3cCredential
       )
-    ).not.toThrowError()
+    ).not.toThrow()
 
-    expect(() =>
-      JsonTransformer.fromJSON({ ...validCredential, credentialSchema: [] }, W3cCredential)
-    ).not.toThrowError()
+    expect(() => JsonTransformer.fromJSON({ ...validCredential, credentialSchema: [] }, W3cCredential)).not.toThrow()
   })
 
   test('throws an error when credentialSubject is present and it is not a valid credentialSubject object/array', () => {
@@ -162,7 +158,7 @@ describe('W3cCredential', () => {
         },
         W3cCredential
       )
-    ).not.toThrowError()
+    ).not.toThrow()
 
     expect(() =>
       JsonTransformer.fromJSON(
@@ -172,7 +168,7 @@ describe('W3cCredential', () => {
         },
         W3cCredential
       )
-    ).not.toThrowError()
+    ).not.toThrow()
 
     expect(() =>
       JsonTransformer.fromJSON(
@@ -184,7 +180,7 @@ describe('W3cCredential', () => {
         ],
         W3cCredential
       )
-    ).not.toThrowError()
+    ).not.toThrow()
 
     expect(() =>
       JsonTransformer.fromJSON(
@@ -196,7 +192,7 @@ describe('W3cCredential', () => {
         ],
         W3cCredential
       )
-    ).not.toThrowError()
+    ).not.toThrow()
 
     expect(() =>
       JsonTransformer.fromJSON(
@@ -210,7 +206,7 @@ describe('W3cCredential', () => {
         },
         W3cCredential
       )
-    ).not.toThrowError()
+    ).not.toThrow()
   })
 
   it('should transform from JSON to a class instance and back', () => {

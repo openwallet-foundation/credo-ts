@@ -5,7 +5,6 @@
 '@credo-ts/cheqd': minor
 '@credo-ts/core': minor
 '@credo-ts/drpc': minor
-'@credo-ts/indy-sdk-to-askar-migration': minor
 '@credo-ts/indy-vdr': minor
 '@credo-ts/node': minor
 '@credo-ts/openid4vc': minor

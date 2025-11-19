@@ -1,7 +1,6 @@
 import type { RecordTags, TagsBase, VersionString } from '@credo-ts/core'
-import type { TenantConfig } from '../models/TenantConfig'
-
 import { BaseRecord, utils } from '@credo-ts/core'
+import type { TenantConfig } from '../models/TenantConfig'
 
 export type TenantRecordTags = RecordTags<TenantRecord>
 

@@ -1,14 +1,18 @@
 import type { AbstractCheqdSDKModule, CheqdSDK, DIDDocument, DidStdFee } from '@cheqd/sdk'
+import { CheqdNetwork, createCheqdSDK, DIDModule, FeemarketModule, ResourceModule } from '@cheqd/sdk'
 import type { QueryAllDidDocVersionsMetadataResponse, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
-import type { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
+import type {
+  Metadata,
+  MsgCreateResourcePayload,
+  QueryCollectionResourcesResponse,
+  ResourceWithMetadata,
+} from '@cheqd/ts-proto/cheqd/resource/v2'
 import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
+import type { DeliverTxResponse } from '@cosmjs/stargate'
 import type { DidDocumentMetadata } from '@credo-ts/core'
-
-import { CheqdNetwork, DIDModule, FeemarketModule, ResourceModule, createCheqdSDK } from '@cheqd/sdk'
-import { CredoError, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
-
-import { CheqdModuleConfig } from '../CheqdModuleConfig'
+import { CredoError, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
 import { parseCheqdDid } from '../anoncreds/utils/identifiers'
+import { CheqdModuleConfig } from '../CheqdModuleConfig'
 import { getCosmosPayerWallet } from '../dids/didCheqdUtil'
 
 export interface ICheqdLedgerConfig {
@@ -119,7 +123,7 @@ export class CheqdLedgerService {
     signInputs: SignInfo[],
     versionId?: string | undefined,
     fee?: DidStdFee
-  ) {
+  ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
     return sdk.createDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
   }
@@ -129,7 +133,7 @@ export class CheqdLedgerService {
     signInputs: SignInfo[],
     versionId?: string | undefined,
     fee?: DidStdFee
-  ) {
+  ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
     return sdk.updateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
   }
@@ -139,7 +143,7 @@ export class CheqdLedgerService {
     signInputs: SignInfo[],
     versionId?: string | undefined,
     fee?: DidStdFee
-  ) {
+  ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
     return sdk.deactivateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
   }
@@ -162,22 +166,25 @@ export class CheqdLedgerService {
     resourcePayload: Partial<MsgCreateResourcePayload>,
     signInputs: SignInfo[],
     fee?: DidStdFee
-  ) {
+  ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(did)
     return sdk.createLinkedResourceTx(signInputs, resourcePayload, '', fee, undefined)
   }
 
-  public async resolveResource(did: string, collectionId: string, resourceId: string) {
+  public async resolveResource(did: string, collectionId: string, resourceId: string): Promise<ResourceWithMetadata> {
     const sdk = await this.getSdk(did)
     return sdk.queryLinkedResource(collectionId, resourceId)
   }
 
-  public async resolveCollectionResources(did: string, collectionId: string) {
+  public async resolveCollectionResources(
+    did: string,
+    collectionId: string
+  ): Promise<QueryCollectionResourcesResponse> {
     const sdk = await this.getSdk(did)
     return sdk.queryLinkedResources(collectionId)
   }
 
-  public async resolveResourceMetadata(did: string, collectionId: string, resourceId: string) {
+  public async resolveResourceMetadata(did: string, collectionId: string, resourceId: string): Promise<Metadata> {
     const sdk = await this.getSdk(did)
     return sdk.queryLinkedResourceMetadata(collectionId, resourceId)
   }

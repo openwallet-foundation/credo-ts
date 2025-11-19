@@ -1,5 +1,4 @@
 ---
-'@credo-ts/indy-sdk-to-askar-migration': minor
 '@credo-ts/askar': minor
 ---
 

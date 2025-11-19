@@ -1,22 +1,21 @@
-import type { DidDocument, DidRegistrar } from '../../domain'
-import type { DidResolverService } from '../DidResolverService'
-
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
 import { DidsModuleConfig } from '../../DidsModuleConfig'
+import type { DidDocument, DidRegistrar } from '../../domain'
 import { DidRegistrarService } from '../DidRegistrarService'
+import type { DidResolverService } from '../DidResolverService'
 
 const agentConfig = getAgentConfig('DidResolverService')
 const agentContext = getAgentContext()
 
 const didRegistrarMock = {
   supportedMethods: ['key'],
-  create: jest.fn(),
-  update: jest.fn(),
-  deactivate: jest.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+  deactivate: vi.fn(),
 } as DidRegistrar
 
 const didResolverMock = {
-  invalidateCacheForDid: jest.fn(),
+  invalidateCacheForDid: vi.fn(),
 } as unknown as DidResolverService
 
 const didRegistrarService = new DidRegistrarService(
@@ -29,7 +28,7 @@ const didRegistrarService = new DidRegistrarService(
 
 describe('DidResolverService', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('create', () => {

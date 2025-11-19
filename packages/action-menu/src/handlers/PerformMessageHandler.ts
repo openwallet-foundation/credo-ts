@@ -1,12 +1,11 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
-import type { ActionMenuService } from '../services'
-
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
 import { PerformMessage } from '../messages'
+import type { ActionMenuService } from '../services'
 
 /**
  * @internal
  */
-export class PerformMessageHandler implements MessageHandler {
+export class PerformMessageHandler implements DidCommMessageHandler {
   private actionMenuService: ActionMenuService
   public supportedMessages = [PerformMessage]
 
@@ -14,7 +13,7 @@ export class PerformMessageHandler implements MessageHandler {
     this.actionMenuService = actionMenuService
   }
 
-  public async handle(inboundMessage: MessageHandlerInboundMessage<PerformMessageHandler>) {
+  public async handle(inboundMessage: DidCommMessageHandlerInboundMessage<PerformMessageHandler>) {
     inboundMessage.assertReadyConnection()
 
     await this.actionMenuService.processPerform(inboundMessage)

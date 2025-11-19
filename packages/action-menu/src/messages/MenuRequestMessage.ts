@@ -1,4 +1,4 @@
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 
 /**
  * @internal
@@ -10,7 +10,7 @@ export interface MenuRequestMessageOptions {
 /**
  * @internal
  */
-export class MenuRequestMessage extends AgentMessage {
+export class MenuRequestMessage extends DidCommMessage {
   public constructor(options: MenuRequestMessageOptions) {
     super()
 

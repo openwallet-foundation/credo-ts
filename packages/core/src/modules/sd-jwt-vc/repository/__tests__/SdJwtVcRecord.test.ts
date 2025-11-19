@@ -1,6 +1,5 @@
+import { CredentialMultiInstanceState, JsonTransformer } from '@credo-ts/core'
 import { SdJwtVcRecord } from '../SdJwtVcRecord'
-
-import { JsonTransformer } from '@credo-ts/core'
 
 describe('SdJwtVcRecord', () => {
   test('sets the values passed in the constructor on the record', () => {
@@ -13,7 +12,11 @@ describe('SdJwtVcRecord', () => {
       tags: {
         some: 'tag',
       },
-      compactSdJwtVc,
+      credentialInstances: [
+        {
+          compactSdJwtVc,
+        },
+      ],
     })
 
     expect(sdJwtVcRecord.type).toBe('SdJwtVcRecord')
@@ -24,8 +27,9 @@ describe('SdJwtVcRecord', () => {
       alg: 'EdDSA',
       sdAlg: 'sha-256',
       vct: 'IdentityCredential',
+      multiInstanceState: CredentialMultiInstanceState.SingleInstanceUnused,
     })
-    expect(sdJwtVcRecord.compactSdJwtVc).toEqual(compactSdJwtVc)
+    expect(sdJwtVcRecord.encoded).toEqual(compactSdJwtVc)
   })
 
   test('serializes and deserializes', () => {
@@ -38,7 +42,11 @@ describe('SdJwtVcRecord', () => {
       tags: {
         some: 'tag',
       },
-      compactSdJwtVc,
+      credentialInstances: [
+        {
+          compactSdJwtVc,
+        },
+      ],
     })
 
     const json = sdJwtVcRecord.toJSON()
@@ -49,7 +57,11 @@ describe('SdJwtVcRecord', () => {
       _tags: {
         some: 'tag',
       },
-      compactSdJwtVc,
+      credentialInstances: [
+        {
+          compactSdJwtVc,
+        },
+      ],
     })
 
     const instance = JsonTransformer.deserialize(JSON.stringify(json), SdJwtVcRecord)
@@ -62,7 +74,8 @@ describe('SdJwtVcRecord', () => {
       alg: 'EdDSA',
       sdAlg: 'sha-256',
       vct: 'IdentityCredential',
+      multiInstanceState: CredentialMultiInstanceState.SingleInstanceUnused,
     })
-    expect(instance.compactSdJwtVc).toBe(compactSdJwtVc)
+    expect(instance.encoded).toBe(compactSdJwtVc)
   })
 })

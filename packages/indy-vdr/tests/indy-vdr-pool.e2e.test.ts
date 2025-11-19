@@ -1,14 +1,12 @@
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { CredentialDefinitionRequest, GetNymRequest, NymRequest, SchemaRequest } from '@hyperledger/indy-vdr-shared'
-
+import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
 import { genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
+import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../node/src'
 import { IndyVdrPool } from '../src/pool'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
-
-import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
-import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../node/src'
 import { indyVdrModuleConfig } from './helpers'
 
 const indyVdrPoolService = new IndyVdrPoolService(testLogger, indyVdrModuleConfig)

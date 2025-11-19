@@ -1,26 +1,25 @@
-import type { CredentialProtocol } from '../protocol/CredentialProtocol'
-
-import { CredentialsModuleConfig } from '../CredentialsModuleConfig'
-import { AutoAcceptCredential } from '../models'
+import { DidCommCredentialsModuleConfig } from '../DidCommCredentialsModuleConfig'
+import { DidCommAutoAcceptCredential } from '../models'
+import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
 
 describe('CredentialsModuleConfig', () => {
   test('sets default values', () => {
-    const config = new CredentialsModuleConfig({
+    const config = new DidCommCredentialsModuleConfig({
       credentialProtocols: [],
     })
 
-    expect(config.autoAcceptCredentials).toBe(AutoAcceptCredential.Never)
+    expect(config.autoAcceptCredentials).toBe(DidCommAutoAcceptCredential.Never)
     expect(config.credentialProtocols).toEqual([])
   })
 
   test('sets values', () => {
-    const credentialProtocol = jest.fn() as unknown as CredentialProtocol
-    const config = new CredentialsModuleConfig({
-      autoAcceptCredentials: AutoAcceptCredential.Always,
+    const credentialProtocol = vi.fn() as unknown as DidCommCredentialProtocol
+    const config = new DidCommCredentialsModuleConfig({
+      autoAcceptCredentials: DidCommAutoAcceptCredential.Always,
       credentialProtocols: [credentialProtocol],
     })
 
-    expect(config.autoAcceptCredentials).toBe(AutoAcceptCredential.Always)
+    expect(config.autoAcceptCredentials).toBe(DidCommAutoAcceptCredential.Always)
     expect(config.credentialProtocols).toEqual([credentialProtocol])
   })
 })

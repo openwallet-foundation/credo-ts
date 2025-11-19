@@ -1,11 +1,9 @@
+import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
+import { Hasher } from '../../crypto'
+import { ClaimFormat } from '../vc/index'
 import type { SdJwtVcHeader, SdJwtVcPayload } from './SdJwtVcOptions'
 import type { SdJwtVc } from './SdJwtVcService'
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
-
-import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
-
-import { Hasher } from '../../crypto'
-import { ClaimFormat } from '../vc/index'
 
 export function sdJwtVcHasher(data: string | ArrayBufferLike, alg: string) {
   return Hasher.hash(typeof data === 'string' ? data : new Uint8Array(data), alg)
@@ -24,7 +22,7 @@ export function decodeSdJwtVc<
     header: jwt.header as Header,
     payload: jwt.payload as Payload,
     prettyClaims: prettyClaims as Payload,
-    claimFormat: ClaimFormat.SdJwtVc,
+    claimFormat: ClaimFormat.SdJwtDc,
     encoded: compactSdJwtVc,
     kbJwt: kbJwt
       ? {

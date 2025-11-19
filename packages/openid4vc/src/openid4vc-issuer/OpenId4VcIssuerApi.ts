@@ -1,15 +1,14 @@
-import type {
-  OpenId4VcUpdateIssuerRecordOptions,
-  OpenId4VciCreateCredentialOfferOptions,
-  OpenId4VciCreateCredentialResponseOptions,
-  OpenId4VciCreateIssuerOptions,
-  OpenId4VciCreateStatelessCredentialOfferOptions,
-} from './OpenId4VcIssuerServiceOptions'
-
 import { AgentContext, injectable } from '@credo-ts/core'
-
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
+import type {
+  OpenId4VciCreateCredentialOfferOptions,
+  OpenId4VciCreateCredentialResponseOptions,
+  OpenId4VciCreateDeferredCredentialResponseOptions,
+  OpenId4VciCreateIssuerOptions,
+  OpenId4VciCreateStatelessCredentialOfferOptions,
+  OpenId4VcUpdateIssuerRecordOptions,
+} from './OpenId4VcIssuerServiceOptions'
 
 /**
  * @public
@@ -92,7 +91,7 @@ export class OpenId4VcIssuerApi {
   }
 
   /**
-   * This function creates a response which can be send to the holder after receiving a credential issuance request.
+   * This function creates a response which can be sent to the holder after receiving a credential issuance request.
    */
   public async createCredentialResponse(
     options: OpenId4VciCreateCredentialResponseOptions & { issuanceSessionId: string }
@@ -104,6 +103,24 @@ export class OpenId4VcIssuerApi {
     )
 
     return await this.openId4VcIssuerService.createCredentialResponse(this.agentContext, { ...rest, issuanceSession })
+  }
+
+  /**
+   * This function creates a response which can be sent to the holder after receiving a deferred credential issuance request.
+   */
+  public async createDeferredCredentialResponse(
+    options: OpenId4VciCreateDeferredCredentialResponseOptions & { issuanceSessionId: string }
+  ) {
+    const { issuanceSessionId, ...rest } = options
+    const issuanceSession = await this.openId4VcIssuerService.getIssuanceSessionById(
+      this.agentContext,
+      issuanceSessionId
+    )
+
+    return await this.openId4VcIssuerService.createDeferredCredentialResponse(this.agentContext, {
+      ...rest,
+      issuanceSession,
+    })
   }
 
   public async getIssuerMetadata(issuerId: string) {

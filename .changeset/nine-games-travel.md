@@ -1,5 +1,4 @@
 ---
-"@credo-ts/indy-sdk-to-askar-migration": minor
 "@credo-ts/question-answer": minor
 "@credo-ts/react-native": minor
 "@credo-ts/action-menu": minor

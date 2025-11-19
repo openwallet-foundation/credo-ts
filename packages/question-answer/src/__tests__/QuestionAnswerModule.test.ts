@@ -1,27 +1,27 @@
 import type { DependencyManager } from '@credo-ts/core'
-import type { FeatureRegistry } from '@credo-ts/didcomm'
-
-import { Protocol } from '@credo-ts/didcomm'
-
-import { getAgentContext } from '../../../core/tests'
-
+import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry, DidCommProtocol } from '@credo-ts/didcomm'
 import {
   QuestionAnswerModule,
   QuestionAnswerRepository,
   QuestionAnswerRole,
   QuestionAnswerService,
 } from '@credo-ts/question-answer'
+import { getAgentContext } from '../../../core/tests'
 
 const featureRegistry = {
-  register: jest.fn(),
-} as unknown as FeatureRegistry
+  register: vi.fn(),
+} as unknown as DidCommFeatureRegistry
+
+const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
 
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
-  resolve: () => {
-    return featureRegistry
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
+  registerContextScoped: vi.fn(),
+  resolve: (token: unknown) => {
+    if (token === DidCommFeatureRegistry) return featureRegistry
+    if (token === DidCommMessageHandlerRegistry) return messageHandlerRegistry
+    return {}
   },
 } as unknown as DependencyManager
 
@@ -37,7 +37,7 @@ describe('QuestionAnswerModule', () => {
     await questionAnswerModule.initialize(getAgentContext({ dependencyManager }))
     expect(featureRegistry.register).toHaveBeenCalledTimes(1)
     expect(featureRegistry.register).toHaveBeenCalledWith(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/questionanswer/1.0',
         roles: [QuestionAnswerRole.Questioner, QuestionAnswerRole.Responder],
       })

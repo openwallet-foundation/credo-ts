@@ -1,13 +1,12 @@
-import type { DifPexInputDescriptorToCredentials } from '../models'
-
-import { JsonObject } from '../../../types'
+import type { JsonObject } from '../../../types'
 import { MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
+import type { DifPexInputDescriptorToCredentials } from '../models'
 
 //  - the credentials included in the presentation
 export interface SdJwtVcPresentationToCreate {
-  claimFormat: ClaimFormat.SdJwtVc
+  claimFormat: ClaimFormat.SdJwtDc
   subjectIds: [] // subject is included in the cnf of the sd-jwt and automatically extracted by PEX
   verifiableCredentials: [
     {
@@ -71,10 +70,10 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
   // presentations
   for (const [inputDescriptorId, credentials] of Object.entries(credentialsForInputDescriptor)) {
     for (const credential of credentials) {
-      if (credential.claimFormat === ClaimFormat.SdJwtVc) {
+      if (credential.claimFormat === ClaimFormat.SdJwtDc) {
         // SD-JWT-VC always needs it's own presentation
         presentationsToCreate.push({
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           subjectIds: [],
           verifiableCredentials: [
             {
@@ -91,12 +90,12 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
           subjectIds: [],
         })
       } else {
-        const subjectId = credential.credentialRecord.credential.credentialSubjectIds[0]
+        const subjectId = credential.credentialRecord.firstCredential.credentialSubjectIds[0]
 
         // NOTE: we only support one subjectId per VP -- once we have proper support
         // for multiple proofs on an LDP-VP we can add multiple subjectIds to a single VP for LDP-vp only
         const expectedClaimFormat =
-          credential.credentialRecord.credential.claimFormat === ClaimFormat.LdpVc
+          credential.credentialRecord.firstCredential.claimFormat === ClaimFormat.LdpVc
             ? ClaimFormat.LdpVp
             : ClaimFormat.JwtVp
 

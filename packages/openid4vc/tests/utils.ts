@@ -1,34 +1,30 @@
 import type { BaseEvent, ModulesMap, X509Module } from '@credo-ts/core'
+import { Agent, getDomainFromUrl, LogLevel } from '@credo-ts/core'
 import type { TenantsModule } from '@credo-ts/tenants'
 import type { Observable } from 'rxjs'
+import { catchError, filter, lastValueFrom, map, ReplaySubject, take, timeout } from 'rxjs'
+import {
+  agentDependencies,
+  createDidKidVerificationMethod,
+  createX509Certificate,
+  setupEventReplaySubjects,
+  TestLogger,
+} from '../../core/tests'
 import type {
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuanceSessionStateChangedEvent,
   OpenId4VcVerificationSessionState,
   OpenId4VcVerificationSessionStateChangedEvent,
 } from '../src'
-
-import { Agent, LogLevel, getDomainFromUrl } from '@credo-ts/core'
-import { ReplaySubject, catchError, filter, lastValueFrom, map, take, timeout } from 'rxjs'
-
-import {
-  TestLogger,
-  agentDependencies,
-  createDidKidVerificationMethod,
-  createX509Certificate,
-  setupEventReplaySubjects,
-} from '../../core/tests'
-import { OpenId4VcIssuerEvents, OpenId4VcIssuerModule, OpenId4VcVerifierEvents, OpenId4VcVerifierModule } from '../src'
+import { OpenId4VcIssuerEvents, OpenId4VcModule, OpenId4VcVerifierEvents } from '../src'
 
 export async function createAgentFromModules<MM extends ModulesMap>(
-  label: string,
   modulesMap: MM,
   secretKey?: string,
   customFetch?: typeof global.fetch
 ) {
   const agent = new Agent<MM>({
     config: {
-      label,
       allowInsecureHttpUrls: true,
       logger: new TestLogger(LogLevel.off),
     },
@@ -40,10 +36,11 @@ export async function createAgentFromModules<MM extends ModulesMap>(
   })
 
   let dns = 'localhost'
-  if (modulesMap.openId4VcIssuer instanceof OpenId4VcIssuerModule) {
-    dns = getDomainFromUrl(modulesMap.openId4VcIssuer.config.baseUrl)
-  } else if (modulesMap.openId4VcVerifier instanceof OpenId4VcVerifierModule) {
-    dns = getDomainFromUrl(modulesMap.openId4VcVerifier.config.baseUrl)
+  if (modulesMap.openid4vc instanceof OpenId4VcModule) {
+    const baseUrl = modulesMap.openid4vc.issuer?.config.baseUrl ?? modulesMap.openid4vc.verifier?.config.baseUrl
+    if (baseUrl) {
+      dns = getDomainFromUrl(baseUrl)
+    }
   }
 
   await agent.initialize()
@@ -66,13 +63,13 @@ export async function createAgentFromModules<MM extends ModulesMap>(
 
 export type AgentType<MM extends ModulesMap> = Awaited<ReturnType<typeof createAgentFromModules<MM>>>
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 type AgentWithTenantsModule = Agent<{ tenants: TenantsModule<any>; x509: X509Module }>
 
 export async function createTenantForAgent(
   // FIXME: we need to make some improvements on the agent typing. It'a quite hard
   // to get it right at the moment
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   agent: AgentWithTenantsModule & any,
   label: string
 ) {

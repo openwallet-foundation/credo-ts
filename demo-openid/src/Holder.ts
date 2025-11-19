@@ -1,42 +1,45 @@
-import type {
-  OpenId4VciMetadata,
-  OpenId4VciResolvedCredentialOffer,
-  OpenId4VpResolvedAuthorizationRequest,
-} from '@credo-ts/openid4vc'
+import type { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
 
 import { AskarModule } from '@credo-ts/askar'
 import {
   DidJwk,
   DidKey,
-  JwkDidCreateOptions,
-  KeyDidCreateOptions,
+  type JwkDidCreateOptions,
+  type KeyDidCreateOptions,
   Kms,
-  Mdoc,
-  W3cJsonLdVerifiableCredential,
-  W3cJwtVerifiableCredential,
+  MdocRecord,
+  W3cCredentialRecord,
+  W3cV2CredentialRecord,
   X509Module,
 } from '@credo-ts/core'
+import type {
+  OpenId4VciDpopRequestOptions,
+  OpenId4VciMetadata,
+  OpenId4VciResolvedCredentialOffer,
+  OpenId4VpResolvedAuthorizationRequest,
+} from '@credo-ts/openid4vc'
 import {
-  OpenId4VcHolderModule,
-  OpenId4VciAuthorizationFlow,
   authorizationCodeGrantIdentifier,
+  OpenId4VciAuthorizationFlow,
+  OpenId4VcModule,
   preAuthorizedCodeGrantIdentifier,
 } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
-
-import { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
+import type { Express } from 'express'
 import { BaseAgent } from './BaseAgent'
-import { Output, greenText } from './OutputClass'
+import { greenText, Output } from './OutputClass'
 
 function getOpenIdHolderModules(askarStorageConfig: AskarModuleConfigStoreOptions) {
-  return {
+  return (app: Express) => ({
     askar: new AskarModule({ askar, store: askarStorageConfig }),
-    openId4VcHolder: new OpenId4VcHolderModule(),
+    openid4vc: new OpenId4VcModule({
+      app,
+    }),
     x509: new X509Module({
       getTrustedCertificatesForVerification: (_agentContext, { certificateChain, verification }) => {
         console.log(
           greenText(
-            `dyncamically trusting certificate ${certificateChain[0].getIssuerNameField('C')} for verification of ${
+            `dynamically trusting certificate ${certificateChain[0].getIssuerNameField('C')} for verification of ${
               verification.type
             }`,
             true
@@ -46,10 +49,10 @@ function getOpenIdHolderModules(askarStorageConfig: AskarModuleConfigStoreOption
         return [certificateChain[0].toString('pem')]
       },
     }),
-  } as const
+  })
 }
 
-export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>> {
+export class Holder extends BaseAgent<ReturnType<ReturnType<typeof getOpenIdHolderModules>>> {
   public client = {
     clientId: 'wallet',
     redirectUri: 'http://localhost:3000/redirect',
@@ -74,11 +77,11 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
   }
 
   public async resolveCredentialOffer(credentialOffer: string) {
-    return await this.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+    return await this.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
   }
 
   public async resolveIssuerMetadata(credentialIssuer: string): Promise<OpenId4VciMetadata> {
-    return await this.agent.modules.openId4VcHolder.resolveIssuerMetadata(credentialIssuer)
+    return await this.agent.openid4vc.holder.resolveIssuerMetadata(credentialIssuer)
   }
 
   public async initiateAuthorization(
@@ -86,7 +89,7 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
     credentialsToRequest: string[]
   ) {
     const grants = resolvedCredentialOffer.credentialOfferPayload.grants
-    // TODO: extend iniateAuthorization in oid4vci lib? Or not?
+    // TODO: extend initiateAuthorization in oid4vci lib? Or not?
     if (grants?.[preAuthorizedCodeGrantIdentifier]) {
       return {
         authorizationFlow: 'PreAuthorized',
@@ -94,14 +97,16 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
       } as const
     }
     if (resolvedCredentialOffer.credentialOfferPayload.grants?.[authorizationCodeGrantIdentifier]) {
-      const resolvedAuthorizationRequest =
-        await this.agent.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(resolvedCredentialOffer, {
+      const resolvedAuthorizationRequest = await this.agent.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
+        resolvedCredentialOffer,
+        {
           clientId: this.client.clientId,
           redirectUri: this.client.redirectUri,
           scope: Object.entries(resolvedCredentialOffer.offeredCredentialConfigurations)
             .map(([id, value]) => (credentialsToRequest.includes(id) ? value.scope : undefined))
             .filter((v): v is string => Boolean(v)),
-        })
+        }
+      )
 
       if (resolvedAuthorizationRequest.authorizationFlow === OpenId4VciAuthorizationFlow.PresentationDuringIssuance) {
         return {
@@ -127,9 +132,10 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
       code?: string
       redirectUri?: string
       txCode?: string
+      dpop?: OpenId4VciDpopRequestOptions
     }
   ) {
-    const tokenResponse = await this.agent.modules.openId4VcHolder.requestToken(
+    const tokenResponse = await this.agent.openid4vc.holder.requestToken(
       options.code && options.clientId
         ? {
             resolvedCredentialOffer,
@@ -137,14 +143,16 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
             codeVerifier: options.codeVerifier,
             code: options.code,
             redirectUri: options.redirectUri,
+            dpop: options.dpop,
           }
         : {
             resolvedCredentialOffer,
             txCode: options.txCode,
+            dpop: options.dpop,
           }
     )
 
-    const credentialResponse = await this.agent.modules.openId4VcHolder.requestCredentials({
+    const credentialResponse = await this.agent.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       clientId: options.clientId,
       credentialConfigurationIds: options.credentialsToRequest,
@@ -193,16 +201,19 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
     })
 
     const storedCredentials = await Promise.all(
-      credentialResponse.credentials.map((response) => {
-        // TODO: handle batch issuance
-        const credential = response.credentials[0]
-        if (credential instanceof W3cJwtVerifiableCredential || credential instanceof W3cJsonLdVerifiableCredential) {
-          return this.agent.w3cCredentials.storeCredential({ credential })
+      credentialResponse.credentials.map((credential) => {
+        if (credential.record instanceof W3cCredentialRecord) {
+          return this.agent.w3cCredentials.store({ record: credential.record })
         }
-        if (credential instanceof Mdoc) {
-          return this.agent.mdoc.store(credential)
+        if (credential.record instanceof W3cV2CredentialRecord) {
+          return this.agent.w3cV2Credentials.store({ record: credential.record })
         }
-        return this.agent.sdJwtVc.store(credential.compact)
+        if (credential.record instanceof MdocRecord) {
+          return this.agent.mdoc.store({ record: credential.record })
+        }
+        return this.agent.sdJwtVc.store({
+          record: credential.record,
+        })
       })
     )
 
@@ -210,8 +221,7 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
   }
 
   public async resolveProofRequest(proofRequest: string) {
-    const resolvedProofRequest =
-      await this.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(proofRequest)
+    const resolvedProofRequest = await this.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(proofRequest)
 
     return resolvedProofRequest
   }
@@ -221,18 +231,18 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
       throw new Error('Missing presentation exchange or dcql on resolved authorization request')
     }
 
-    const submissionResult = await this.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const submissionResult = await this.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
       authorizationRequestPayload: resolvedPresentationRequest.authorizationRequestPayload,
       presentationExchange: resolvedPresentationRequest.presentationExchange
         ? {
-            credentials: this.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+            credentials: this.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
               resolvedPresentationRequest.presentationExchange.credentialsForRequest
             ),
           }
         : undefined,
       dcql: resolvedPresentationRequest.dcql
         ? {
-            credentials: this.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+            credentials: this.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
               resolvedPresentationRequest.dcql.queryResult
             ),
           }

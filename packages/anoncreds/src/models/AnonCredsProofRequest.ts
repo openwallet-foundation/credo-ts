@@ -1,12 +1,9 @@
-import type { AnonCredsRequestedAttributeOptions } from './AnonCredsRequestedAttribute'
-import type { AnonCredsRequestedPredicateOptions } from './AnonCredsRequestedPredicate'
-
 import { Expose, Type } from 'class-transformer'
 import { IsIn, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
-
 import { IsMap } from '../utils'
-
+import type { AnonCredsRequestedAttributeOptions } from './AnonCredsRequestedAttribute'
 import { AnonCredsRequestedAttribute } from './AnonCredsRequestedAttribute'
+import type { AnonCredsRequestedPredicateOptions } from './AnonCredsRequestedPredicate'
 import { AnonCredsRequestedPredicate } from './AnonCredsRequestedPredicate'
 import { AnonCredsRevocationInterval } from './AnonCredsRevocationInterval'
 

@@ -1,8 +1,7 @@
 import type { AgentContext, FileSystem } from '@credo-ts/core'
+import { CredoError, InjectionSymbols, TypedArrayEncoder } from '@credo-ts/core'
 import type { AnonCredsRevocationRegistryDefinition } from '../../models'
 import type { TailsFileService } from './TailsFileService'
-
-import { CredoError, InjectionSymbols, TypedArrayEncoder } from '@credo-ts/core'
 
 export class BasicTailsFileService implements TailsFileService {
   private tailsDirectoryPath?: string

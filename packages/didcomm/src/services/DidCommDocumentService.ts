@@ -1,17 +1,18 @@
-import { AgentContext, ResolvedDidCommService, findMatchingEd25519Key } from '@credo-ts/core'
-
 import {
+  AgentContext,
   CredoError,
   DidCommV1Service,
   DidRecord,
   DidRepository,
   DidResolverService,
-  IndyAgentService,
-  Kms,
-  RecordNotFoundError,
+  findMatchingEd25519Key,
   getPublicJwkFromVerificationMethod,
+  IndyAgentService,
   injectable,
+  Kms,
   parseDid,
+  RecordNotFoundError,
+  type ResolvedDidCommService,
   verkeyToPublicJwk,
 } from '@credo-ts/core'
 
