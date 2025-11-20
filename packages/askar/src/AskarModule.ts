@@ -56,8 +56,23 @@ export class AskarModule implements Module {
 
   public async onProvisionContext(agentContext: AgentContext) {
     // We don't have any side effects to run
-    if (agentContext.isRootAgentContext) return
-    if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) return
+    if (agentContext.isRootAgentContext) {
+      return
+    }
+
+    // Ensure we have a profile for context
+    if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) {
+      const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
+      const { store, profile } = await storeManager.getInitializedStoreWithProfile(agentContext)
+      if (!profile) return
+
+      const profiles = await store.listProfiles()
+      if (profiles.includes(profile)) return
+
+      // Create profile for this context
+      await store.createProfile(profile)
+      return
+    }
 
     // For new stores (so not profiles) we need to generate a wallet key
     await storeAskarStoreConfigForContextCorrelationId(agentContext, {

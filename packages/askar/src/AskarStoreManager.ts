@@ -502,29 +502,7 @@ export class AskarStoreManager {
     try {
       const { store, profile } = await this.getInitializedStoreWithProfile(agentContext)
 
-      session = await (transaction ? store.transaction(profile) : store.session(profile))
-        .open()
-        .catch(async (error) => {
-          // If the profile does not exist yet we create it
-          // TODO: do we want some guards around this? I think this is really the easist approach to
-          // just create it if it doesn't exist yet.
-          if (isAskarError(error, AskarErrorCode.NotFound) && profile) {
-            await store.createProfile(profile)
-            const session = await store.session(profile).open()
-
-            try {
-              // For new profiles we need to set the framework storage version
-              await this.setCurrentFrameworkStorageVersionOnSession(session)
-            } catch (error) {
-              await session.close()
-              throw error
-            }
-
-            return session
-          }
-
-          throw error
-        })
+      session = await (transaction ? store.transaction(profile) : store.session(profile)).open()
 
       const result = await callback(session)
       if (transaction && session.handle) {
@@ -533,7 +511,7 @@ export class AskarStoreManager {
 
       return result
     } catch (error) {
-      agentContext.config.logger.error('Error occured during transaction, rollback', {
+      agentContext.config.logger.error('Error occurred during transaction, rollback', {
         error,
       })
       if (transaction && session?.handle) {
