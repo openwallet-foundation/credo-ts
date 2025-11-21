@@ -95,6 +95,10 @@ describe('Tenants Askar database schemes E2E', () => {
       tenantId: tenantRecord.id,
     })
 
+    // Regression check
+    const list = await tenantAgent.genericRecords.findAllByQuery({})
+    expect(list).toHaveLength(0)
+
     const rootStore = agent.dependencyManager.resolve(Store)
     const tenantStore = tenantAgent.dependencyManager.resolve(Store)
 
@@ -105,6 +109,7 @@ describe('Tenants Askar database schemes E2E', () => {
 
     expect(tenantStoreWithProfile.profile).toEqual(`tenant-${tenantRecord.id}`)
     expect(tenantStoreWithProfile.store).toEqual(rootStoreWithProfile.store)
+    expect(await tenantStoreWithProfile.store.listProfiles()).toContain(`tenant-${tenantRecord.id}`)
 
     expect(rootStoreWithProfile.profile).toEqual(undefined)
 
