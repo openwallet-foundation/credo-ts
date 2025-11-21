@@ -23,6 +23,10 @@
       "./package.json": "./package.json"
     }
   },
+  "browser": {
+    "./build/shared/router/express.mjs": "./build/shared/router/express.browser.mjs",
+    "./build/shared/router/express.js": "./build/shared/router/express.browser.js"
+  },
   "react-native": {
     "./build/shared/router/express.mjs": "./build/shared/router/express.native.mjs",
     "./build/shared/router/express.js": "./build/shared/router/express.native.js"
