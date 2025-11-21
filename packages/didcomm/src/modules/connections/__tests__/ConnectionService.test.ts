@@ -212,19 +212,18 @@ describe('DidCommConnectionService', () => {
       DidCommOutOfBandState.AwaitResponse,
       DidCommOutOfBandState.Done,
     ]
-    test.each(invalidConnectionStates)(
-      `throws an error when out-of-band state is %s and not ${DidCommOutOfBandState.PrepareResponse}`,
-      (state) => {
-        expect.assertions(1)
+    test.each(
+      invalidConnectionStates
+    )(`throws an error when out-of-band state is %s and not ${DidCommOutOfBandState.PrepareResponse}`, (state) => {
+      expect.assertions(1)
 
-        const outOfBand = getMockOutOfBand({ state })
-        const config = { label: '', routing: myRouting }
+      const outOfBand = getMockOutOfBand({ state })
+      const config = { label: '', routing: myRouting }
 
-        return expect(connectionService.createRequest(agentContext, outOfBand, config)).rejects.toThrow(
-          `Invalid out-of-band record state ${state}, valid states are: ${DidCommOutOfBandState.PrepareResponse}.`
-        )
-      }
-    )
+      return expect(connectionService.createRequest(agentContext, outOfBand, config)).rejects.toThrow(
+        `Invalid out-of-band record state ${state}, valid states are: ${DidCommOutOfBandState.PrepareResponse}.`
+      )
+    })
   })
 
   describe('processRequest', () => {
@@ -425,19 +424,18 @@ describe('DidCommConnectionService', () => {
       DidCommOutOfBandState.PrepareResponse,
       DidCommOutOfBandState.Done,
     ]
-    test.each(invalidOutOfBandStates)(
-      `throws an error when out-of-band state is %s and not ${DidCommOutOfBandState.AwaitResponse}`,
-      (state) => {
-        expect.assertions(1)
+    test.each(
+      invalidOutOfBandStates
+    )(`throws an error when out-of-band state is %s and not ${DidCommOutOfBandState.AwaitResponse}`, (state) => {
+      expect.assertions(1)
 
-        const inboundMessage = new DidCommInboundMessageContext(vi.fn()(), { agentContext })
-        const outOfBand = getMockOutOfBand({ role: DidCommOutOfBandRole.Sender, state })
+      const inboundMessage = new DidCommInboundMessageContext(vi.fn()(), { agentContext })
+      const outOfBand = getMockOutOfBand({ role: DidCommOutOfBandRole.Sender, state })
 
-        return expect(connectionService.processRequest(inboundMessage, outOfBand)).rejects.toThrow(
-          `Invalid out-of-band record state ${state}, valid states are: ${DidCommOutOfBandState.AwaitResponse}.`
-        )
-      }
-    )
+      return expect(connectionService.processRequest(inboundMessage, outOfBand)).rejects.toThrow(
+        `Invalid out-of-band record state ${state}, valid states are: ${DidCommOutOfBandState.AwaitResponse}.`
+      )
+    })
   })
 
   describe('createResponse', () => {
@@ -525,18 +523,17 @@ describe('DidCommConnectionService', () => {
       DidCommDidExchangeState.Abandoned,
       DidCommDidExchangeState.Start,
     ]
-    test.each(invalidOutOfBandStates)(
-      `throws an error when connection state is %s and not ${DidCommDidExchangeState.RequestReceived}`,
-      async (state) => {
-        expect.assertions(1)
+    test.each(
+      invalidOutOfBandStates
+    )(`throws an error when connection state is %s and not ${DidCommDidExchangeState.RequestReceived}`, async (state) => {
+      expect.assertions(1)
 
-        const connection = getMockConnection({ state })
-        const outOfBand = getMockOutOfBand()
-        return expect(connectionService.createResponse(agentContext, connection, outOfBand)).rejects.toThrow(
-          `Connection record is in invalid state ${state}. Valid states are: ${DidCommDidExchangeState.RequestReceived}.`
-        )
-      }
-    )
+      const connection = getMockConnection({ state })
+      const outOfBand = getMockOutOfBand()
+      return expect(connectionService.createResponse(agentContext, connection, outOfBand)).rejects.toThrow(
+        `Connection record is in invalid state ${state}. Valid states are: ${DidCommDidExchangeState.RequestReceived}.`
+      )
+    })
   })
 
   describe('processResponse', () => {
@@ -767,17 +764,16 @@ describe('DidCommConnectionService', () => {
       DidCommDidExchangeState.Abandoned,
       DidCommDidExchangeState.Start,
     ]
-    test.each(invalidConnectionStates)(
-      `throws an error when connection state is %s and not ${DidCommDidExchangeState.ResponseReceived} or ${DidCommDidExchangeState.Completed}`,
-      (state) => {
-        expect.assertions(1)
-        const connection = getMockConnection({ state })
+    test.each(
+      invalidConnectionStates
+    )(`throws an error when connection state is %s and not ${DidCommDidExchangeState.ResponseReceived} or ${DidCommDidExchangeState.Completed}`, (state) => {
+      expect.assertions(1)
+      const connection = getMockConnection({ state })
 
-        return expect(connectionService.createTrustPing(agentContext, connection)).rejects.toThrow(
-          `Connection record is in invalid state ${state}. Valid states are: ${DidCommDidExchangeState.ResponseReceived}, ${DidCommDidExchangeState.Completed}.`
-        )
-      }
-    )
+      return expect(connectionService.createTrustPing(agentContext, connection)).rejects.toThrow(
+        `Connection record is in invalid state ${state}. Valid states are: ${DidCommDidExchangeState.ResponseReceived}, ${DidCommDidExchangeState.Completed}.`
+      )
+    })
   })
 
   describe('processAck', () => {
