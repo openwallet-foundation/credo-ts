@@ -119,7 +119,7 @@ export class OpenId4VciHolderService {
 
     const credentialConfigurationsSupported = getOfferedCredentials(
       credentialOfferObject.credential_configuration_ids,
-      client.getKnownCredentialConfigurationsSupported(metadata.credentialIssuer),
+      metadata.knownCredentialConfigurations,
       // We only filter for known configurations, so it's ok if not found
       { ignoreNotFoundIds: true }
     )
