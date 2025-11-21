@@ -1073,6 +1073,7 @@ export class OpenId4VcIssuerService {
       originalDraftVersion: Openid4vciDraftVersion.V1,
       credentialIssuer: credentialIssuerMetadata,
       authorizationServers: [issuerAuthorizationServer, ...extraAuthorizationServers],
+      knownCredentialConfigurations: credentialIssuerMetadata.credential_configurations_supported,
 
       signedMetadataJwt: issuerRecord.signedMetadata?.jwt,
     }
@@ -1454,7 +1455,7 @@ export class OpenId4VcIssuerService {
       : requestFormat
         ? getCredentialConfigurationsMatchingRequestFormat({
             requestFormat,
-            credentialConfigurations: issuerMetadata.credentialIssuer.credential_configurations_supported,
+            issuerMetadata,
           })
         : undefined
 
