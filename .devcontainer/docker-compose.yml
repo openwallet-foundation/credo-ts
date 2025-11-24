@@ -6,7 +6,7 @@ networks:
 
 services:
   credo:
-    image: mcr.microsoft.com/devcontainers/javascript-node:4-22-bookworm
+    image: mcr.microsoft.com/devcontainers/javascript-node:4-24-bookworm
     working_dir: /work
     tty: true
     volumes:
