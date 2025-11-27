@@ -11,17 +11,16 @@
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public",
-    "main": "./build/index.js",
-    "types": "./build/index.d.ts",
+    "types": "./build/index.d.mts",
     "module": "./build/index.mjs",
     "exports": {
-      ".": {
-        "import": "./build/index.mjs",
-        "require": "./build/index.js",
-        "types": "./build/index.d.ts"
-      },
+      ".": "./build/index.mjs",
       "./package.json": "./package.json"
     }
+  },
+  "browser": {
+    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.js": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.native.js",
+    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.mjs": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.native.mjs"
   },
   "react-native": {
     "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.js": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.native.js",
