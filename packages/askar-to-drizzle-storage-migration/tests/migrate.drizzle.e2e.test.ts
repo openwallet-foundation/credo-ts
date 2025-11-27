@@ -13,6 +13,7 @@ import {
   SdJwtVcRecord,
   TypedArrayEncoder,
   W3cCredentialRecord,
+  W3cCredentialsModule,
   W3cJsonLdVerifiableCredential,
   W3cV2CredentialRecord,
   W3cV2JwtVerifiableCredential,
@@ -23,6 +24,7 @@ import { askar, askarPostgresStorageConfig } from '../../askar/tests/helpers'
 import didKeyP256 from '../../core/src/modules/dids/__tests__/__fixtures__/didKeyP256.json'
 import { sprindFunkeTestVectorBase64Url } from '../../core/src/modules/mdoc/__tests__/mdoc.fixtures'
 import { sdJwtVcWithSingleDisclosure } from '../../core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.fixtures'
+import { customDocumentLoader } from '../../core/src/modules/vc/data-integrity/__tests__/documentLoader'
 import { Ed25519Signature2018Fixtures } from '../../core/src/modules/vc/data-integrity/__tests__/fixtures'
 import { CredoEs256DidJwkJwtVc } from '../../core/src/modules/vc/jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
 import testLogger from '../../core/tests/logger'
@@ -173,10 +175,6 @@ describe('Askar to Drizzle Migration', () => {
       logger: testLogger,
     })
 
-    await populateDatabaseWithRecords(migrator.askarAgent)
-
-    await migrator.migrate()
-
     const drizzleAgent = new Agent({
       dependencies: agentDependencies,
       config: {
@@ -194,10 +192,16 @@ describe('Askar to Drizzle Migration', () => {
         logger: testLogger,
       },
       modules: {
+        w3cCredentials: new W3cCredentialsModule({
+          documentLoader: customDocumentLoader,
+        }),
         askar: askarModule,
       },
     })
     await askarAgent.initialize()
+
+    await populateDatabaseWithRecords(askarAgent)
+    await migrator.migrate()
 
     // Now expect all the populated records to be available in the Drizzle database
     await expectDatabaseWithRecords(drizzleAgent)
@@ -256,19 +260,22 @@ describe('Askar to Drizzle Migration', () => {
       logger: testLogger,
     })
 
-    await populateDatabaseWithRecords(migrator.askarAgent)
-
     const askarAgent = new Agent({
       dependencies: agentDependencies,
       config: {
         logger: testLogger,
       },
       modules: {
+        w3cCredentials: new W3cCredentialsModule({
+          documentLoader: customDocumentLoader,
+        }),
         askar: askarModule,
         tenants: new TenantsModule(),
       },
     })
     await askarAgent.initialize()
+
+    await populateDatabaseWithRecords(askarAgent)
 
     // Create 3 tenants
     const tenant1 = await askarAgent.modules.tenants.createTenant({ config: { label: 'Tenant 1' } })

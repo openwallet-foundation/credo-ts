@@ -14,15 +14,10 @@
   },
   "publishConfig": {
     "access": "public",
-    "main": "./build/index.js",
-    "types": "./build/index.d.ts",
+    "types": "./build/index.d.mts",
     "module": "./build/index.mjs",
     "exports": {
-      ".": {
-        "import": "./build/index.mjs",
-        "require": "./build/index.js",
-        "types": "./build/index.d.ts"
-      },
+      ".": "./build/index.mjs",
       "./package.json": "./package.json"
     }
   },
