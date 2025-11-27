@@ -59,7 +59,7 @@
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "supertest": "^7.1.4",
-    "tsdown": "^0.16.6",
+    "tsdown": "^0.16.7",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
     "undici": "^6.22.0",
