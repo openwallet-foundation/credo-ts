@@ -15,11 +15,7 @@
     "types": "./build/index.d.mts",
     "module": "./build/index.mjs",
     "exports": {
-      ".": {
-        "import": "./build/index.mjs",
-        "require": "./build/index.mjs",
-        "types": "./build/index.d.mts"
-      },
+      ".": "./build/index.mjs",
       "./package.json": "./package.json"
     }
   },
