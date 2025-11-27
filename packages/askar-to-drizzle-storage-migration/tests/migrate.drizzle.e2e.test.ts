@@ -13,6 +13,7 @@ import {
   SdJwtVcRecord,
   TypedArrayEncoder,
   W3cCredentialRecord,
+  W3cCredentialsModule,
   W3cJsonLdVerifiableCredential,
   W3cV2CredentialRecord,
   W3cV2JwtVerifiableCredential,
@@ -23,6 +24,7 @@ import { askar, askarPostgresStorageConfig } from '../../askar/tests/helpers'
 import didKeyP256 from '../../core/src/modules/dids/__tests__/__fixtures__/didKeyP256.json'
 import { sprindFunkeTestVectorBase64Url } from '../../core/src/modules/mdoc/__tests__/mdoc.fixtures'
 import { sdJwtVcWithSingleDisclosure } from '../../core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.fixtures'
+import { customDocumentLoader } from '../../core/src/modules/vc/data-integrity/__tests__/documentLoader'
 import { Ed25519Signature2018Fixtures } from '../../core/src/modules/vc/data-integrity/__tests__/fixtures'
 import { CredoEs256DidJwkJwtVc } from '../../core/src/modules/vc/jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
 import testLogger from '../../core/tests/logger'
@@ -140,89 +142,92 @@ async function expectDatabaseWithRecords(agent: Agent | TenantAgent) {
 }
 
 describe('Askar to Drizzle Migration', () => {
-  test.each(['sqlite', 'postgres'] as const)(
-    '%s askar to drizzle successful migration and deletion',
-    async (databaseType) => {
-      const storeId = `askar ${databaseType} to drizzle ${databaseType} successful migration ${Math.random()}`
+  test.each([
+    'sqlite',
+    'postgres',
+  ] as const)('%s askar to drizzle successful migration and deletion', async (databaseType) => {
+    const storeId = `askar ${databaseType} to drizzle ${databaseType} successful migration ${Math.random()}`
 
-      const postgresDatabase = databaseType === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
-      const database = postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase())
+    const postgresDatabase = databaseType === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
+    const database = postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase())
 
-      const drizzleModule = new DrizzleStorageModule({
-        bundles: [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle],
-        database,
-      })
+    const drizzleModule = new DrizzleStorageModule({
+      bundles: [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle],
+      database,
+    })
 
-      const askarModule = new AskarModule({
-        askar,
-        store: {
-          id: storeId,
-          key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
-          keyDerivationMethod: 'raw',
-          database: databaseType === 'postgres' ? askarPostgresStorageConfig : undefined,
-        },
-      })
+    const askarModule = new AskarModule({
+      askar,
+      store: {
+        id: storeId,
+        key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
+        keyDerivationMethod: 'raw',
+        database: databaseType === 'postgres' ? askarPostgresStorageConfig : undefined,
+      },
+    })
 
-      await pushDrizzleSchema(drizzleModule)
+    await pushDrizzleSchema(drizzleModule)
 
-      const migrator = await AskarToDrizzleStorageMigrator.initialize({
-        drizzleModule,
-        askarModule,
-        agentDependencies,
+    const migrator = await AskarToDrizzleStorageMigrator.initialize({
+      drizzleModule,
+      askarModule,
+      agentDependencies,
+      logger: testLogger,
+    })
+
+    await populateDatabaseWithRecords(migrator.askarAgent)
+
+    await migrator.migrate()
+
+    const drizzleAgent = new Agent({
+      dependencies: agentDependencies,
+      config: {
         logger: testLogger,
-      })
+      },
+      modules: {
+        drizzle: drizzleModule,
+      },
+    })
+    await drizzleAgent.initialize()
 
-      await populateDatabaseWithRecords(migrator.askarAgent)
+    const askarAgent = new Agent({
+      dependencies: agentDependencies,
+      config: {
+        logger: testLogger,
+      },
+      modules: {
+        askar: askarModule,
+        w3cCredentials: new W3cCredentialsModule({
+          documentLoader: customDocumentLoader,
+        }),
+      },
+    })
+    await askarAgent.initialize()
 
-      await migrator.migrate()
+    // Now expect all the populated records to be available in the Drizzle database
+    await expectDatabaseWithRecords(drizzleAgent)
 
-      const drizzleAgent = new Agent({
-        dependencies: agentDependencies,
-        config: {
-          logger: testLogger,
-        },
-        modules: {
-          drizzle: drizzleModule,
-        },
-      })
-      await drizzleAgent.initialize()
+    // We also still expect all the populated records to be available in the Askar database
+    await expectDatabaseWithRecords(askarAgent)
 
-      const askarAgent = new Agent({
-        dependencies: agentDependencies,
-        config: {
-          logger: testLogger,
-        },
-        modules: {
-          askar: askarModule,
-        },
-      })
-      await askarAgent.initialize()
+    // After succesfull migration we delete the storage records
+    await migrator.deleteStorageRecords()
 
-      // Now expect all the populated records to be available in the Drizzle database
-      await expectDatabaseWithRecords(drizzleAgent)
+    // It should not have deleted the keys
+    expect(await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).toEqual({
+      crv: 'Ed25519',
+      kid: 'consistent-kid',
+      kty: 'OKP',
+      x: 'Df70zEA2tkZXPZxgc0KcM3s_vjut-PP_6QnM5AfLNfo',
+    })
 
-      // We also still expect all the populated records to be available in the Askar database
-      await expectDatabaseWithRecords(askarAgent)
+    // But it should have deleted the other records
+    expect(await askarAgent.genericRecords.getAll()).toEqual([])
 
-      // After succesfull migration we delete the storage records
-      await migrator.deleteStorageRecords()
-
-      // It should not have deleted the keys
-      expect(await askarAgent.kms.getPublicKey({ keyId: 'consistent-kid' })).toEqual({
-        crv: 'Ed25519',
-        kid: 'consistent-kid',
-        kty: 'OKP',
-        x: 'Df70zEA2tkZXPZxgc0KcM3s_vjut-PP_6QnM5AfLNfo',
-      })
-
-      // But it should have deleted the other records
-      expect(await askarAgent.genericRecords.getAll()).toEqual([])
-
-      await postgresDatabase?.teardown()
-      await askarAgent.shutdown()
-      await drizzleAgent.shutdown()
-    }
-  )
+    await postgresDatabase?.teardown()
+    await askarAgent.shutdown()
+    await drizzleAgent.shutdown()
+  })
 
   test.each(['sqlite', 'postgres'])('%s askar to drizzle with tenants successful migration', async (databaseType) => {
     const storeId = `${Math.random()} askar ${databaseType} to drizzle ${databaseType} with tenants successful migration`
@@ -265,6 +270,9 @@ describe('Askar to Drizzle Migration', () => {
       },
       modules: {
         askar: askarModule,
+        w3cCredentials: new W3cCredentialsModule({
+          documentLoader: customDocumentLoader,
+        }),
         tenants: new TenantsModule(),
       },
     })
