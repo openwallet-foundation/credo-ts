@@ -12,13 +12,12 @@
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public",
-    "main": "./build/index.js",
-    "types": "./build/index.d.ts",
+    "types": "./build/index.d.mts",
     "module": "./build/index.mjs",
     "exports": {
       ".": {
         "import": "./build/index.mjs",
-        "types": "./build/index.d.ts"
+        "types": "./build/index.d.mts"
       },
       "./package.json": "./package.json"
     }
