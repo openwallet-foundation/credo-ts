@@ -228,7 +228,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         }
       } else if (parsedCredentialRequest.format) {
         configurationsForToken = getCredentialConfigurationsMatchingRequestFormat({
-          credentialConfigurations: configurationsForScope,
+          issuerMetadata,
           requestFormat: parsedCredentialRequest.format,
         })
       }

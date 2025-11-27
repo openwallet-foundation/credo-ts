@@ -107,9 +107,9 @@ export class HolderInquirer extends BaseInquirer {
   public async dynamicCredentialRequest() {
     const credentialOffer = await this.inquireInput('Enter issuer url: ')
     const issuerMetadata = await this.holder.resolveIssuerMetadata(credentialOffer)
-    const configurationsWithScope = Object.entries(
-      issuerMetadata.credentialIssuer.credential_configurations_supported
-    ).filter(([, configuration]) => configuration.scope)
+    const configurationsWithScope = Object.entries(issuerMetadata.knownCredentialConfigurations).filter(
+      ([, configuration]) => configuration.scope
+    )
 
     this.resolvedCredentialOffer = {
       credentialOfferPayload: {

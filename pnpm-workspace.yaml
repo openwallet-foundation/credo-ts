@@ -5,8 +5,7 @@ packages:
   - samples/*
 
 catalog:
-  # NOTE: need to keep at 2.3.5 for now due to https://github.com/biomejs/biome/issues/8138
-  '@biomejs/biome': 2.3.5
+  '@biomejs/biome': ^2.3.7
   '@animo-id/pex': ^6.1.1
   '@astronautlabs/jsonpath': ^1.1.2
   '@hyperledger/anoncreds-nodejs': ^0.3.4
@@ -30,7 +29,7 @@ catalog:
   rxjs: ^7.8.2
   tsyringe: ^4.10.0
   typescript: ~5.9.3
-  vitest: ^4.0.10
+  vitest: ^4.0.12
   ws: ^8.18.3
   zod: ^4.1.12
 
