@@ -175,21 +175,6 @@ describe('Askar to Drizzle Migration', () => {
       logger: testLogger,
     })
 
-    await populateDatabaseWithRecords(migrator.askarAgent)
-
-    await migrator.migrate()
-
-    const drizzleAgent = new Agent({
-      dependencies: agentDependencies,
-      config: {
-        logger: testLogger,
-      },
-      modules: {
-        drizzle: drizzleModule,
-      },
-    })
-    await drizzleAgent.initialize()
-
     const askarAgent = new Agent({
       dependencies: agentDependencies,
       config: {
@@ -203,6 +188,21 @@ describe('Askar to Drizzle Migration', () => {
       },
     })
     await askarAgent.initialize()
+
+    await populateDatabaseWithRecords(askarAgent)
+
+    await migrator.migrate()
+
+    const drizzleAgent = new Agent({
+      dependencies: agentDependencies,
+      config: {
+        logger: testLogger,
+      },
+      modules: {
+        drizzle: drizzleModule,
+      },
+    })
+    await drizzleAgent.initialize()
 
     // Now expect all the populated records to be available in the Drizzle database
     await expectDatabaseWithRecords(drizzleAgent)
@@ -261,8 +261,6 @@ describe('Askar to Drizzle Migration', () => {
       logger: testLogger,
     })
 
-    await populateDatabaseWithRecords(migrator.askarAgent)
-
     const askarAgent = new Agent({
       dependencies: agentDependencies,
       config: {
@@ -277,6 +275,8 @@ describe('Askar to Drizzle Migration', () => {
       },
     })
     await askarAgent.initialize()
+
+    await populateDatabaseWithRecords(askarAgent)
 
     // Create 3 tenants
     const tenant1 = await askarAgent.modules.tenants.createTenant({ config: { label: 'Tenant 1' } })
