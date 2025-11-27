@@ -6,13 +6,13 @@ packages:
 
 catalog:
   # NOTE: need to keep at 2.3.5 for now due to https://github.com/biomejs/biome/issues/8138
-  '@biomejs/biome': 2.3.5
+  '@biomejs/biome': 2.3.7
   '@animo-id/pex': ^6.1.1
   '@astronautlabs/jsonpath': ^1.1.2
   '@hyperledger/anoncreds-nodejs': ^0.3.4
   '@hyperledger/anoncreds-shared': ^0.3.4
-  '@hyperledger/indy-vdr-nodejs': ^0.2.2
-  '@hyperledger/indy-vdr-shared': ^0.2.2
+  '@hyperledger/indy-vdr-nodejs': ^0.2.3
+  '@hyperledger/indy-vdr-shared': ^0.2.3
   '@openwallet-foundation/askar-nodejs': ^0.4.3
   '@openwallet-foundation/askar-shared': ^0.4.3
   '@peculiar/x509': ^1.14.2
@@ -21,16 +21,16 @@ catalog:
   '@types/express': ^5.0.5
   '@types/node': ^20.19.25
   '@types/ws': ^8.18.1
-  '@vitest/coverage-v8': ^4.0.10
+  '@vitest/coverage-v8': ^4.0.14
   class-transformer: 0.5.1
-  class-validator: 0.14.1
+  class-validator: 0.14.3
   express: ^5.1.0
   nock: ^14.0.10
   reflect-metadata: 0.2.2
   rxjs: ^7.8.2
   tsyringe: ^4.10.0
   typescript: ~5.9.3
-  vitest: ^4.0.10
+  vitest: ^4.0.14
   ws: ^8.18.3
   zod: ^4.1.12
 
