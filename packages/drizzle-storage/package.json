@@ -6,23 +6,7 @@
     "cli-build",
     "migrations",
     "types",
-    "bin.mjs",
-    "didcomm.js",
-    "didcomm.d.ts",
-    "action-menu.js",
-    "action-menu.d.ts",
-    "core.js",
-    "core.d.ts",
-    "drpc.js",
-    "drpc.d.ts",
-    "tenants.js",
-    "tenants.d.ts",
-    "openid4vc.js",
-    "openid4vc.d.ts",
-    "anoncreds.js",
-    "anoncreds.d.ts",
-    "question-answer.js",
-    "question-answer.d.ts"
+    "bin.mjs"
   ],
   "license": "Apache-2.0",
   "description": "Credo storage service implementation based on Drizzle ORM, supporting PostgreSQL and SQLite",
@@ -67,101 +51,101 @@
   },
   "publishConfig": {
     "access": "public",
-    "main": "./build/index.js",
-    "types": "./build/index.d.ts",
+    "types": "./build/index.d.mts",
     "module": "./build/index.mjs",
     "exports": {
       ".": {
         "import": "./build/index.mjs",
-        "require": "./build/index.js",
-        "types": "./build/index.d.ts"
+        "require": "./build/index.mjs",
+        "types": "./build/index.d.mts"
       },
       "./*/migrations/sqlite": {
-        "import": "./migrations/*/sqlite/migrations.js"
+        "import": "./migrations/*/sqlite/migrations.js",
+        "require": "./migrations/*/sqlite/migrations.js"
       },
       "./didcomm": {
         "import": "./build/didcomm/bundle.mjs",
-        "require": "./build/didcomm/bundle.js"
+        "require": "./build/didcomm/bundle.mjs"
       },
       "./didcomm/sqlite": {
         "import": "./build/didcomm/sqlite.mjs",
-        "require": "./build/didcomm/sqlite.js"
+        "require": "./build/didcomm/sqlite.mjs"
       },
       "./didcomm/postgres": {
         "import": "./build/didcomm/postgres.mjs",
-        "require": "./build/didcomm/postgres.js"
+        "require": "./build/didcomm/postgres.mjs"
       },
       "./action-menu": {
         "import": "./build/action-menu/bundle.mjs",
-        "require": "./build/action-menu/bundle.js"
+        "require": "./build/action-menu/bundle.mjs"
       },
       "./action-menu/sqlite": {
         "import": "./build/action-menu/sqlite.mjs",
-        "require": "./build/action-menu/sqlite.js"
+        "require": "./build/action-menu/sqlite.mjs"
       },
       "./action-menu/postgres": {
         "import": "./build/action-menu/postgres.mjs",
-        "require": "./build/action-menu/postgres.js"
+        "require": "./build/action-menu/postgres.mjs"
       },
       "./core": {
         "import": "./build/core/bundle.mjs",
-        "require": "./build/core/bundle.js"
+        "require": "./build/core/bundle.mjs"
       },
       "./core/sqlite": {
         "import": "./build/core/sqlite.mjs",
-        "require": "./build/core/sqlite.js"
+        "require": "./build/core/sqlite.mjs"
       },
       "./core/postgres": {
         "import": "./build/core/postgres.mjs",
-        "require": "./build/core/postgres.js"
+        "require": "./build/core/postgres.mjs"
       },
       "./drpc": {
         "import": "./build/drpc/bundle.mjs",
-        "require": "./build/drpc/bundle.js"
+        "require": "./build/drpc/bundle.mjs"
       },
       "./drpc/sqlite": {
         "import": "./build/drpc/sqlite.mjs",
-        "require": "./build/drpc/sqlite.js"
+        "require": "./build/drpc/sqlite.mjs"
       },
       "./drpc/postgres": {
         "import": "./build/drpc/postgres.mjs",
-        "require": "./build/drpc/postgres.js"
+        "require": "./build/drpc/postgres.mjs"
       },
       "./tenants": {
         "import": "./build/tenants/bundle.mjs",
-        "require": "./build/tenants/bundle.js"
+        "require": "./build/tenants/bundle.mjs"
       },
       "./tenants/sqlite": {
         "import": "./build/tenants/sqlite.mjs",
-        "require": "./build/tenants/sqlite.js"
+        "require": "./build/tenants/sqlite.mjs"
       },
       "./tenants/postgres": {
         "import": "./build/tenants/postgres.mjs",
-        "require": "./build/tenants/postgres.js"
+        "require": "./build/tenants/postgres.mjs"
       },
       "./openid4vc": {
         "import": "./build/openid4vc/bundle.mjs",
-        "require": "./build/openid4vc/bundle.js"
+        "require": "./build/openid4vc/bundle.mjs"
       },
       "./openid4vc/sqlite": {
         "import": "./build/openid4vc/sqlite.mjs",
-        "require": "./build/openid4vc/sqlite.js"
+        "require": "./build/openid4vc/sqlite.mjs"
       },
       "./openid4vc/postgres": {
         "import": "./build/openid4vc/postgres.mjs",
-        "require": "./build/openid4vc/postgres.js"
+        "require": "./build/openid4vc/postgres.mjs"
       },
       "./anoncreds": {
         "import": "./build/anoncreds/bundle.mjs",
-        "require": "./build/anoncreds/bundle.js"
+        "require": "./build/anoncreds/bundle.mjs"
       },
       "./anoncreds/sqlite": {
         "import": "./build/anoncreds/sqlite.mjs",
-        "require": "./build/anoncreds/sqlite.js"
+        "require": "./build/anoncreds/sqlite.mjs"
       },
       "./anoncreds/postgres": {
         "import": "./build/anoncreds/postgres.mjs",
-        "require": "./build/anoncreds/postgres.js"
+        "require": "./build/anoncreds/postgres.mjs"
       },
       "./question-answer": {
         "import": "./build/question-answer/bundle.mjs",
@@ -169,11 +153,11 @@
       },
       "./question-answer/sqlite": {
         "import": "./build/question-answer/sqlite.mjs",
-        "require": "./build/question-answer/sqlite.js"
+        "require": "./build/question-answer/sqlite.mjs"
       },
       "./question-answer/postgres": {
         "import": "./build/question-answer/postgres.mjs",
-        "require": "./build/question-answer/postgres.js"
+        "require": "./build/question-answer/postgres.mjs"
       },
       "./package.json": "./package.json"
     }
