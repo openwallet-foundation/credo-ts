@@ -448,7 +448,7 @@ export class SdJwtVcService {
       const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
       if (supportedSignatureAlgorithms.length === 0) {
         throw new SdJwtVcError(
-          `No supported JWA signature algorithms found for key ${publicJwk.jwkTypehumanDescription}`
+          `No supported JWA signature algorithms found for key ${publicJwk.jwkTypeHumanDescription}`
         )
       }
       const alg = supportedSignatureAlgorithms[0]
@@ -477,7 +477,7 @@ export class SdJwtVcService {
       const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
       if (supportedSignatureAlgorithms.length === 0) {
         throw new SdJwtVcError(
-          `No supported JWA signature algorithms found for key ${publicJwk.jwkTypehumanDescription}`
+          `No supported JWA signature algorithms found for key ${publicJwk.jwkTypeHumanDescription}`
         )
       }
       const alg = supportedSignatureAlgorithms[0]

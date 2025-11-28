@@ -907,7 +907,7 @@ export class DcqlService {
     const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(publicJwk)
     if (supportedSignatureSuites.length === 0) {
       throw new DcqlError(
-        `Couldn't find a supported signature suite for the given jwk ${publicJwk.jwkTypehumanDescription}`
+        `Couldn't find a supported signature suite for the given jwk ${publicJwk.jwkTypeHumanDescription}`
       )
     }
 

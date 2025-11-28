@@ -248,7 +248,7 @@ export class OpenId4VciHolderService {
         throw new CredoError(
           `No supported dpop signature algorithms found in dpop_signing_alg_values_supported '${dpopSigningAlgValuesSupported.join(
             ', '
-          )}' matching jwk ${jwk.jwkTypehumanDescription}`
+          )}' matching jwk ${jwk.jwkTypeHumanDescription}`
         )
       }
 
@@ -837,7 +837,7 @@ export class OpenId4VciHolderService {
       )
       if (!algorithm) {
         throw new CredoError(
-          `Credential binding returned did url that points to key '${firstKey.jwkTypehumanDescription}' that supports signature algorithms ${firstKey.supportedSignatureAlgorithms.join(', ')}, but one of '${proofTypes.jwt.supportedSignatureAlgorithms.join(', ')}' was expected`
+          `Credential binding returned did url that points to key '${firstKey.jwkTypeHumanDescription}' that supports signature algorithms ${firstKey.supportedSignatureAlgorithms.join(', ')}, but one of '${proofTypes.jwt.supportedSignatureAlgorithms.join(', ')}' was expected`
         )
       }
 
@@ -930,7 +930,7 @@ export class OpenId4VciHolderService {
       )
       if (!algorithm) {
         throw new CredoError(
-          `Credential binding returned jwk that points to key '${firstJwk.jwkTypehumanDescription}' that supports signature algorithms ${firstJwk.supportedSignatureAlgorithms.join(', ')}, but one of '${proofTypes.jwt.supportedSignatureAlgorithms.join(', ')}' was expected`
+          `Credential binding returned jwk that points to key '${firstJwk.jwkTypeHumanDescription}' that supports signature algorithms ${firstJwk.supportedSignatureAlgorithms.join(', ')}, but one of '${proofTypes.jwt.supportedSignatureAlgorithms.join(', ')}' was expected`
         )
       }
 

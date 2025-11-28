@@ -48,7 +48,7 @@ export function assertAsymmetricJwkKeyTypeMatches(
  * Checks if two JWK public keys have matching key material
  * Supports EC, OKP, and RSA key types
  */
-export function assymetricPublicJwkMatches(first: KmsJwkPublicAsymmetric, second: KmsJwkPublicAsymmetric): boolean {
+export function asymmetricPublicJwkMatches(first: KmsJwkPublicAsymmetric, second: KmsJwkPublicAsymmetric): boolean {
   // First check that types match
   if (!assymetricJwkKeyTypeMatches(first, second)) {
     return false

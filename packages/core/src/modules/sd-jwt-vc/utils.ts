@@ -44,7 +44,7 @@ export async function extractKeyFromHolderBinding(
 
     const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
     if (supportedSignatureAlgorithms.length === 0) {
-      throw new CredoError(`No supported JWA signature algorithms found for key ${publicJwk.jwkTypehumanDescription}`)
+      throw new CredoError(`No supported JWA signature algorithms found for key ${publicJwk.jwkTypeHumanDescription}`)
     }
     const alg = supportedSignatureAlgorithms[0]
 

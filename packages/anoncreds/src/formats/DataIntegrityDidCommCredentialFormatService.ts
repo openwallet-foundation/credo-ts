@@ -244,7 +244,7 @@ export class DataIntegrityDidCommCredentialFormatService
       publicJwk.legacyKeyId
 
     if (alg && !publicJwk.supportedSignatureAlgorithms.includes(alg as Kms.KnownJwaSignatureAlgorithm)) {
-      throw new CredoError(`jwk ${publicJwk.jwkTypehumanDescription}, does not support the JWS signature alg '${alg}'`)
+      throw new CredoError(`jwk ${publicJwk.jwkTypeHumanDescription}, does not support the JWS signature alg '${alg}'`)
     }
 
     const signingAlg = issuerSupportedAlgs.find(

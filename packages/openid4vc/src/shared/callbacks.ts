@@ -380,7 +380,7 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
 
     if (!publicJwk.supportedSignatureAlgorithms.includes(signer.alg as Kms.KnownJwaSignatureAlgorithm)) {
       throw new CredoError(
-        `jwk ${publicJwk.jwkTypehumanDescription} does not support JWS signature alg '${signer.alg}'`
+        `jwk ${publicJwk.jwkTypeHumanDescription} does not support JWS signature alg '${signer.alg}'`
       )
     }
 
