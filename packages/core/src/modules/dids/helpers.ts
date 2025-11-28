@@ -37,7 +37,7 @@ export function didKeyToEd25519PublicJwk(key: string) {
   }
 
   throw new CredoError(
-    `Expected public jwk to have kty OKP with crv Ed25519, found ${didKey.publicJwk.jwkTypehumanDescription}`
+    `Expected public jwk to have kty OKP with crv Ed25519, found ${didKey.publicJwk.jwkTypeHumanDescription}`
   )
 }
 

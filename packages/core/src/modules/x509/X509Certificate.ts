@@ -14,7 +14,7 @@ import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { publicJwkToCryptoKeyAlgorithm, spkiToPublicJwk } from '../../crypto/webcrypto/utils'
 import type { AnyUint8Array } from '../../types'
 import { TypedArrayEncoder } from '../../utils'
-import { assymetricPublicJwkMatches, PublicJwk } from '../kms'
+import { asymmetricPublicJwkMatches, PublicJwk } from '../kms'
 import {
   convertName,
   createAuthorityKeyIdentifierExtension,
@@ -200,7 +200,7 @@ export class X509Certificate {
 
   public static async create(options: X509CreateCertificateOptions, webCrypto: CredoWebCrypto) {
     const subjectPublicKey = options.subjectPublicKey ?? options.authorityKey
-    const isSelfSignedCertificate = assymetricPublicJwkMatches(options.authorityKey.toJson(), subjectPublicKey.toJson())
+    const isSelfSignedCertificate = asymmetricPublicJwkMatches(options.authorityKey.toJson(), subjectPublicKey.toJson())
 
     const signingKey = new CredoWebCryptoKey(
       options.authorityKey,

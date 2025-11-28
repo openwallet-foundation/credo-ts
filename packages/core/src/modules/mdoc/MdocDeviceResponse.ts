@@ -438,7 +438,7 @@ export class MdocDeviceResponse {
     if (!signatureAlgorithm) {
       throw new MdocError(
         `Unable to create mdoc device response. No supported signature algorithm found to sign device response for jwk  ${
-          jwk.jwkTypehumanDescription
+          jwk.jwkTypeHumanDescription
         }. Key supports algs ${jwk.supportedSignatureAlgorithms.join(
           ', '
         )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`

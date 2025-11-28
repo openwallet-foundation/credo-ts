@@ -2,7 +2,7 @@ import type { AgentContext } from '../agent'
 import { CredoError } from '../error'
 import {
   assertJwkAsymmetric,
-  assymetricPublicJwkMatches,
+  asymmetricPublicJwkMatches,
   getJwkHumanDescription,
   KeyManagementApi,
   KeyManagementError,
@@ -44,21 +44,21 @@ export class JwsService {
         certificateChain: x5c,
       })
 
-      if (!assymetricPublicJwkMatches(certificate.publicJwk.toJson(), key)) {
+      if (!asymmetricPublicJwkMatches(certificate.publicJwk.toJson(), key)) {
         throw new CredoError('Protected header x5c does not match key for signing.')
       }
     }
 
     const jwkInstance = jwk instanceof PublicJwk ? jwk : jwk ? PublicJwk.fromUnknown(jwk) : undefined
     // Make sure the options.key and jwk from protectedHeader are the same.
-    if (jwkInstance && !assymetricPublicJwkMatches(jwkInstance.toJson(), key)) {
+    if (jwkInstance && !asymmetricPublicJwkMatches(jwkInstance.toJson(), key)) {
       throw new CredoError('Protected header JWK does not match key for signing.')
     }
 
     // Validate the options.key used for signing against the jws options
     if (!publicJwk.supportedSignatureAlgorithms.includes(alg)) {
       throw new CredoError(
-        `alg '${alg}' is not a valid JWA signature algorithm for this jwk with ${publicJwk.jwkTypehumanDescription}. Supported algorithms are ${publicJwk.supportedSignatureAlgorithms.join(
+        `alg '${alg}' is not a valid JWA signature algorithm for this jwk with ${publicJwk.jwkTypeHumanDescription}. Supported algorithms are ${publicJwk.supportedSignatureAlgorithms.join(
           ', '
         )}`
       )

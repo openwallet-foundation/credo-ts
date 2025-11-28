@@ -124,7 +124,7 @@ export function getProofTypeFromPublicJwk(agentContext: AgentContext, key: Kms.P
 
   const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(key)
   if (supportedSignatureSuites.length === 0) {
-    throw new CredoError(`Couldn't find a supported signature suite for the given key ${key.jwkTypehumanDescription}.`)
+    throw new CredoError(`Couldn't find a supported signature suite for the given key ${key.jwkTypeHumanDescription}.`)
   }
 
   return supportedSignatureSuites[0].proofType

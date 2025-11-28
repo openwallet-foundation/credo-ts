@@ -106,7 +106,7 @@ export function keyParamsToJwaAlgorithm(
   if (params.name === 'Ed25519') {
     if (!key.publicJwk.is(Ed25519PublicJwk)) {
       throw new CredoWebCryptoError(
-        `Unsupported key for algorithm for Ed25519: ${key.publicJwk.jwkTypehumanDescription}`
+        `Unsupported key for algorithm for Ed25519: ${key.publicJwk.jwkTypeHumanDescription}`
       )
     }
 
@@ -158,7 +158,7 @@ export function keyParamsToJwaAlgorithm(
     }
 
     throw new CredoWebCryptoError(
-      `Unsupported key ${key.publicJwk.jwkTypehumanDescription} or hash algorithm '${hashName}' for ECDSA`
+      `Unsupported key ${key.publicJwk.jwkTypeHumanDescription} or hash algorithm '${hashName}' for ECDSA`
     )
   }
 
@@ -168,7 +168,7 @@ export function keyParamsToJwaAlgorithm(
 
     if (!key.publicJwk.is(RsaPublicJwk)) {
       throw new CredoWebCryptoError(
-        `Unsupported key for algorithm for RSASSA-PKCS1-v1_5: ${key.publicJwk.jwkTypehumanDescription}`
+        `Unsupported key for algorithm for RSASSA-PKCS1-v1_5: ${key.publicJwk.jwkTypeHumanDescription}`
       )
     }
 
@@ -191,7 +191,7 @@ export function keyParamsToJwaAlgorithm(
 
     if (!key.publicJwk.is(RsaPublicJwk)) {
       throw new CredoWebCryptoError(
-        `Unsupported key for algorithm for RSA-PSS: ${key.publicJwk.jwkTypehumanDescription}`
+        `Unsupported key for algorithm for RSA-PSS: ${key.publicJwk.jwkTypeHumanDescription}`
       )
     }
 

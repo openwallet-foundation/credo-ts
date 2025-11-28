@@ -160,7 +160,7 @@ export class Mdoc {
     if (!alg) {
       throw new MdocError(
         `Unable to create sign mdoc. No supported signature algorithm found to sign mdoc for jwk with key ${
-          issuerKey.jwkTypehumanDescription
+          issuerKey.jwkTypeHumanDescription
         }. Key supports algs ${issuerKey.supportedSignatureAlgorithms.join(
           ', '
         )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`

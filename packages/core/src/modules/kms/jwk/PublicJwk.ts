@@ -5,7 +5,7 @@ import type { Constructor } from '../../../utils/mixins'
 import { zParseWithErrorHandling } from '../../../utils/zod'
 import { KeyManagementError } from '../error/KeyManagementError'
 import { legacyKeyIdFromPublicJwk } from '../legacy'
-import { assymetricPublicJwkMatches } from './equals'
+import { asymmetricPublicJwkMatches } from './equals'
 import { getJwkHumanDescription } from './humanDescription'
 import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
 import { calculateJwkThumbprint } from './jwkThumbprint'
@@ -283,7 +283,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   /**
    * Convert the PublicJwk to another type.
    *
-   * NOTE: only supportedf or Ed25519 to X25519 at the moment
+   * NOTE: only supported for Ed25519 to X25519 at the moment
    */
   public convertTo(
     type: Jwk extends Ed25519PublicJwk ? typeof X25519PublicJwk : never
@@ -303,14 +303,14 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
    * of the JWK such as keyId, use, etc..
    */
   public equals(other: PublicJwk) {
-    return assymetricPublicJwkMatches(this.toJson(), other.toJson())
+    return asymmetricPublicJwkMatches(this.toJson(), other.toJson())
   }
 
   /**
    * Get human description of a jwk type. This does
    * not include the (public) key material
    */
-  public get jwkTypehumanDescription() {
+  public get jwkTypeHumanDescription() {
     return getJwkHumanDescription(this.toJson())
   }
 

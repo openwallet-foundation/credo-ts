@@ -168,7 +168,7 @@ export class DidDocument {
     }
 
     throw new CredoError(
-      `Unable to locate verification method with public key ${publicJwk.jwkTypehumanDescription} in purposes ${purposes}`
+      `Unable to locate verification method with public key ${publicJwk.jwkTypeHumanDescription} in purposes ${purposes}`
     )
   }
 

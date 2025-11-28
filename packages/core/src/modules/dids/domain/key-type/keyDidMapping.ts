@@ -67,7 +67,7 @@ function getKeyDidMappingByPublicJwk(jwk: PublicJwk | SupportedPublicJwkClass): 
 
   if (!keyDid) {
     throw new CredoError(
-      `Unsupported did mapping for jwk '${jwk instanceof PublicJwk ? jwk.jwkTypehumanDescription : jwk.name}'`
+      `Unsupported did mapping for jwk '${jwk instanceof PublicJwk ? jwk.jwkTypeHumanDescription : jwk.name}'`
     )
   }
 

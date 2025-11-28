@@ -358,7 +358,7 @@ export class DidCommConnectionService {
     const invitationKey = Kms.PublicJwk.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0])
     if (!invitationKey.is(Kms.Ed25519PublicJwk)) {
       throw new ConnectionProblemReportError(
-        `Expected invitation key to be an Ed25519 key, found ${invitationKey.jwkTypehumanDescription}`,
+        `Expected invitation key to be an Ed25519 key, found ${invitationKey.jwkTypeHumanDescription}`,
         { problemCode: ConnectionProblemReportReason.ResponseNotAccepted }
       )
     }
