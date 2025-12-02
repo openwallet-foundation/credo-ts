@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
-    "@changesets/cli": "^2.29.7",
+    "@changesets/cli": "^2.29.8",
     "@credo-ts/action-menu": "workspace:*",
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/askar": "workspace:*",
@@ -59,7 +59,7 @@
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "supertest": "^7.1.4",
-    "tsdown": "^0.16.6",
+    "tsdown": "^0.16.8",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
     "undici": "^6.22.0",
