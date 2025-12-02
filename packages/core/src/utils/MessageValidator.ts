@@ -14,7 +14,9 @@ export class MessageValidator {
   public static validateSync<T extends object>(classInstance: T & {}) {
     // NOTE: validateSync returns an Array of errors.
     // We have to transform that into an error of choice and throw that.
-    const errors = validateSync(classInstance)
+    const errors = validateSync(classInstance, {
+      forbidUnknownValues: false,
+    })
     if (isValidationErrorArray(errors)) {
       throw new ClassValidationError('Failed to validate class.', {
         classType: classInstance.constructor.name,

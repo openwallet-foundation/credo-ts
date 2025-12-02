@@ -58,8 +58,8 @@ catalogs:
       specifier: 0.5.1
       version: 0.5.1
     class-validator:
-      specifier: 0.14.1
-      version: 0.14.1
+      specifier: ^0.14.1
+      version: 0.14.3
     express:
       specifier: ^5.2.0
       version: 5.2.1
@@ -352,7 +352,7 @@ importers:
         version: 0.5.1
       class-validator:
         specifier: 'catalog:'
-        version: 0.14.1
+        version: 0.14.3
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -383,7 +383,7 @@ importers:
         version: 0.5.1
       class-validator:
         specifier: 'catalog:'
-        version: 0.14.1
+        version: 0.14.3
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -414,7 +414,7 @@ importers:
         version: 0.5.1
       class-validator:
         specifier: 'catalog:'
-        version: 0.14.1
+        version: 0.14.3
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -497,7 +497,7 @@ importers:
         version: 0.5.1
       class-validator:
         specifier: 'catalog:'
-        version: 0.14.1
+        version: 0.14.3
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -594,7 +594,7 @@ importers:
         version: 0.5.1
       class-validator:
         specifier: 'catalog:'
-        version: 0.14.1
+        version: 0.14.3
       dcql:
         specifier: ^3.0.0
         version: 3.0.0(typescript@5.9.3)
@@ -667,7 +667,7 @@ importers:
         version: 0.5.1
       class-validator:
         specifier: 'catalog:'
-        version: 0.14.1
+        version: 0.14.3
       luxon:
         specifier: ^3.7.2
         version: 3.7.2
@@ -725,7 +725,7 @@ importers:
         version: 0.5.1
       class-validator:
         specifier: 'catalog:'
-        version: 0.14.1
+        version: 0.14.3
       drizzle-kit:
         specifier: ^0.31.7
         version: 0.31.7
@@ -771,7 +771,7 @@ importers:
         version: 0.5.1
       class-validator:
         specifier: 'catalog:'
-        version: 0.14.1
+        version: 0.14.3
     devDependencies:
       '@credo-ts/node':
         specifier: workspace:*
@@ -956,7 +956,7 @@ importers:
         version: 0.5.1
       class-validator:
         specifier: 'catalog:'
-        version: 0.14.1
+        version: 0.14.3
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -1047,7 +1047,7 @@ importers:
         version: 0.5.1
       class-validator:
         specifier: 'catalog:'
-        version: 0.14.1
+        version: 0.14.3
       didwebvh-ts:
         specifier: ^2.5.6
         version: 2.5.6
@@ -1081,7 +1081,7 @@ importers:
         version: 0.4.3
       class-validator:
         specifier: 'catalog:'
-        version: 0.14.1
+        version: 0.14.3
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -3530,6 +3530,7 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
     resolution: {integrity: sha512-QXJ6R8ENiZV2rPMbn06cw5JKwqUYN1kzVRbYfONqE1PEXx1noQ4md7uxr2zSczi0ubKkNcbyYDNtIMTZIhGzmQ==}
+    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
@@ -4309,8 +4310,8 @@ packages:
   class-transformer@0.5.1:
     resolution: {integrity: sha512-SQa1Ws6hUbfC98vKGxZH3KFY0Y1lm5Zm0SY8XX9zbK7FJCyVEac3ATW0RIpwzW+oOfmHE5PMPufDG9hCfoEOMw==}
 
-  class-validator@0.14.1:
-    resolution: {integrity: sha512-2VEG9JICxIqTpoK1eMzZqaV+u/EiwEJkMGzTrZf6sU/fwsnOITVgYJ8yojSy6CaXtO9V0Cc6ZQZ8h8m4UBuLwQ==}
+  class-validator@0.14.3:
+    resolution: {integrity: sha512-rXXekcjofVN1LTOSw+u4u9WXVEUvNBVjORW154q/IdmYWy1nMbOU9aNtZB0t8m+FJQ9q91jlr2f9CwwUFdFMRA==}
 
   clean-stack@2.2.0:
     resolution: {integrity: sha512-4diC9HaTE+KRAMWhDhrGOECgWZxoevMc5TlkObMqNSsVU62PYzXZ/SMTjzyGAFF1YusgxGcSWTEXBhp0CPwQ1A==}
@@ -4873,8 +4874,8 @@ packages:
     resolution: {integrity: sha512-ObFo8v4rQJAE59M69QzwloxPZtd33TpYEIjtKD1rrFDcM1Gd7IkDxEBU+HriziN6HSHQnBJi8Dmy+JWkav5HKA==}
     engines: {node: '>=8'}
 
-  envinfo@7.20.0:
-    resolution: {integrity: sha512-+zUomDcLXsVkQ37vUqWBvQwLaLlj8eZPSi61llaEFAVBY5mhcXdaSw1pSJVl4yTYD5g/gEfpNl28YYk4IPvrrg==}
+  envinfo@7.21.0:
+    resolution: {integrity: sha512-Lw7I8Zp5YKHFCXL7+Dz95g4CcbMEpgvqZNNq3AmlT5XAV6CgAAk6gyAMqn2zjw08K9BHfcNuKrMiCPLByGafow==}
     engines: {node: '>=4'}
     hasBin: true
 
@@ -11356,7 +11357,7 @@ snapshots:
       '@react-native-community/cli-tools': 10.1.1
       chalk: 4.1.2
       command-exists: 1.2.9
-      envinfo: 7.20.0
+      envinfo: 7.21.0
       execa: 1.0.0
       hermes-profile-transformer: 0.0.6
       node-stream-zip: 1.15.0
@@ -12843,7 +12844,7 @@ snapshots:
 
   class-transformer@0.5.1: {}
 
-  class-validator@0.14.1:
+  class-validator@0.14.3:
     dependencies:
       '@types/validator': 13.15.9
       libphonenumber-js: 1.12.26
@@ -13299,7 +13300,7 @@ snapshots:
 
   env-editor@0.4.2: {}
 
-  envinfo@7.20.0:
+  envinfo@7.21.0:
     optional: true
 
   error-ex@1.3.4:
