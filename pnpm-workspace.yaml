@@ -22,7 +22,10 @@ catalog:
   '@types/ws': ^8.18.1
   '@vitest/coverage-v8': ^4.0.10
   class-transformer: 0.5.1
-  class-validator: 0.14.1
+  # We have locked the version in a lot of repos because 0.14.2 released
+  # some breaking changes. We now account for that, but keep it at ^0.14.1
+  # for now to not make npm install multiple versions (as 0.14.1 is still valid)
+  class-validator: ^0.14.1
   express: ^5.2.0
   nock: ^14.0.10
   reflect-metadata: 0.2.2
