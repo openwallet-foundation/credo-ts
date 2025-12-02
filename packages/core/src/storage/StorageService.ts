@@ -4,13 +4,14 @@ import type { BaseRecord, TagsBase } from './BaseRecord'
 
 // https://stackoverflow.com/questions/51954558/how-can-i-remove-a-wider-type-from-a-union-type-without-removing-its-subtypes-in/51955852#51955852
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-export type SimpleQuery<T extends BaseRecord<any, any, any>> = T extends BaseRecord<infer DefaultTags, infer CustomTags>
-  ? DefaultTags extends TagsBase
-    ? Partial<ReturnType<T['getTags']>> & TagsBase
-    : CustomTags extends TagsBase
+export type SimpleQuery<T extends BaseRecord<any, any, any>> =
+  T extends BaseRecord<infer DefaultTags, infer CustomTags>
+    ? DefaultTags extends TagsBase
       ? Partial<ReturnType<T['getTags']>> & TagsBase
-      : Partial<DefaultTags & CustomTags> & TagsBase
-  : Partial<ReturnType<T['getTags']>> & TagsBase
+      : CustomTags extends TagsBase
+        ? Partial<ReturnType<T['getTags']>> & TagsBase
+        : Partial<DefaultTags & CustomTags> & TagsBase
+    : Partial<ReturnType<T['getTags']>> & TagsBase
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 interface AdvancedQuery<T extends BaseRecord<any, any, any>> {

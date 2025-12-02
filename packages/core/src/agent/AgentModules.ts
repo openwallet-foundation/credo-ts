@@ -41,9 +41,8 @@ export type WithoutDefaultModules<Modules extends ModulesMap> = {
   [moduleKey in Exclude<keyof Modules, keyof DefaultAgentModules>]: Modules[moduleKey]
 }
 
-export type ModuleApiInstance<M extends Module> = M['api'] extends Constructor<unknown>
-  ? InstanceType<M['api']>
-  : undefined
+export type ModuleApiInstance<M extends Module> =
+  M['api'] extends Constructor<unknown> ? InstanceType<M['api']> : undefined
 
 /**
  * Type that represents the api object of the agent (`agent.xxx`). It will extract all keys of the modules and map this to the
