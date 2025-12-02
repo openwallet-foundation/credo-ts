@@ -38,6 +38,9 @@ updates:
       prefix: "chore"
       prefix-development: "chore"
       include: "scope"
+    ignore:
+      # See pnpm-workspace.yml
+      - dependency-name: class-validator
 
   # GitHub Actions dependencies
   - package-ecosystem: "github-actions"
