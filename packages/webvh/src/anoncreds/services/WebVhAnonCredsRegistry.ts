@@ -46,6 +46,9 @@ type DidResourceResolutionResult = {
 export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   public methodName = 'webvh'
 
+  public allowsCaching = true
+  public allowsLocalRecord = true
+
   /**
    * This class supports resolving objects with did:webvh identifiers.
    */
