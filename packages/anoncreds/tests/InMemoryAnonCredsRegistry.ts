@@ -49,6 +49,9 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
   public readonly supportedIdentifier = /.+/
 
+  public readonly allowsCaching = true
+  public readonly allowsLocalRecord = true
+
   private schemas: Record<string, AnonCredsSchema>
   private credentialDefinitions: Record<string, AnonCredsCredentialDefinition>
   private revocationRegistryDefinitions: Record<string, AnonCredsRevocationRegistryDefinition>

@@ -20,6 +20,9 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
   public readonly methodName = 'hedera'
   public readonly supportedIdentifier = /^did:hedera:.*$/
 
+  public allowsCaching = true
+  public allowsLocalRecord = true
+
   public async registerSchema(
     agentContext: AgentContext,
     options: RegisterSchemaOptions

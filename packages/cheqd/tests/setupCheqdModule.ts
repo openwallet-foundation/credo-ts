@@ -1,7 +1,8 @@
+import { AnonCredsModule } from '@credo-ts/anoncreds'
 import { DidsModule } from '@credo-ts/core'
+import { anoncreds } from '../../anoncreds/tests/helpers'
 import type { CheqdModuleConfigOptions } from '../src'
-
-import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../src'
+import { CheqdAnonCredsRegistry, CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../src'
 
 export const cheqdPayerSeeds = [
   'sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright',
@@ -30,6 +31,10 @@ export const getCheqdModuleConfig = (seed?: string, rpcUrl?: string) =>
   }) satisfies CheqdModuleConfigOptions
 
 export const getCheqdModules = (seed?: string, rpcUrl?: string) => ({
+  anoncreds: new AnonCredsModule({
+    anoncreds,
+    registries: [new CheqdAnonCredsRegistry()],
+  }),
   cheqdSdk: new CheqdModule(getCheqdModuleConfig(seed, rpcUrl)),
   dids: new DidsModule({
     registrars: [new CheqdDidRegistrar()],

@@ -21,13 +21,27 @@ import type { GetSchemaReturn, RegisterSchemaOptions, RegisterSchemaReturn } fro
  */
 export interface AnonCredsRegistry {
   /**
-   * A name to identify the registry. This will be stored as part of the reigstered anoncreds objects to allow querying
-   * for created objects using a specific registry. Multilpe implementations can use the same name, but they should in that
+   * A name to identify the registry. This will be stored as part of the registered anoncreds objects to allow querying
+   * for created objects using a specific registry. Multiple implementations can use the same name, but they should in that
    * case also reference objects on the same networks.
    */
   methodName: string
 
   supportedIdentifier: RegExp
+
+  /**
+   * Whether this registry allows caching of resolved objects (as well as caching
+   * just created objects).
+   */
+  readonly allowsCaching?: boolean
+
+  /**
+   * Whether the resolver allows using a local created object from
+   * a record to resolve the object.
+   *
+   * @default false
+   */
+  readonly allowsLocalRecord?: boolean
 
   getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn>
   registerSchema(agentContext: AgentContext, options: RegisterSchemaOptions): Promise<RegisterSchemaReturn>
