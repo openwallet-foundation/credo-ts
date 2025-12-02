@@ -22,9 +22,8 @@ import type { DidCommCredentialFormatService } from './DidCommCredentialFormatSe
  * }
  * ```
  */
-export type ExtractCredentialFormat<Type> = Type extends DidCommCredentialFormatService<infer CredentialFormat>
-  ? CredentialFormat
-  : never
+export type ExtractCredentialFormat<Type> =
+  Type extends DidCommCredentialFormatService<infer CredentialFormat> ? CredentialFormat : never
 
 /**
  * Infer an array of {@link DidCommCredentialFormat} types based on an array of {@link DidCommCredentialFormatService} types.
