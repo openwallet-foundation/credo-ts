@@ -149,9 +149,9 @@ export class KeyManagementApi {
 
     const operation = { operation: 'verify', algorithm: options.algorithm } as const
     const kms =
-      backend || typeof options.key !== 'string'
+      backend || typeof options.key.keyId !== 'string'
         ? this.getKms(this.agentContext, backend, operation)
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, options.key, operation)).kms
+        : (await this.getKmsForOperationAndKeyId(this.agentContext, options.key.keyId, operation)).kms
 
     return await kms.verify(this.agentContext, kmsOptions)
   }
@@ -172,9 +172,9 @@ export class KeyManagementApi {
       keyAgreement: options.key.keyAgreement,
     } as const
     const kms =
-      backend || typeof options.key !== 'string'
+      backend || typeof options.key.keyId !== 'string'
         ? this.getKms(this.agentContext, backend, operation)
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, options.key, operation)).kms
+        : (await this.getKmsForOperationAndKeyId(this.agentContext, options.key.keyId, operation)).kms
 
     return await kms.encrypt(this.agentContext, kmsOptions)
   }
@@ -195,14 +195,14 @@ export class KeyManagementApi {
       keyAgreement: options.key.keyAgreement,
     } as const
     const kms =
-      backend || typeof options.key !== 'string'
+      backend || typeof options.key.keyId !== 'string'
         ? this.getKms(
             this.agentContext,
 
             backend,
             operation
           )
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, options.key, operation)).kms
+        : (await this.getKmsForOperationAndKeyId(this.agentContext, options.key.keyId, operation)).kms
 
     return await kms.decrypt(this.agentContext, kmsOptions)
   }

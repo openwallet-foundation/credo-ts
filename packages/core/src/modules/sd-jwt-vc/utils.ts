@@ -2,9 +2,11 @@ import type { Signer, Verifier } from '@sd-jwt/types'
 import { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
+import { joinUriParts } from '../../utils/path'
 import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { type Jwk, KeyManagementApi, PublicJwk } from '../kms'
 import type { SdJwtVcHolderBinding } from './SdJwtVcOptions'
+import type { Jwks, SdJwtVcIssuerMetadata } from './typeMetadata'
 
 export async function resolveSigningPublicJwkFromDidUrl(agentContext: AgentContext, didUrl: string) {
   const dids = agentContext.dependencyManager.resolve(DidsApi)
@@ -21,6 +23,43 @@ export async function resolveDidUrl(agentContext: AgentContext, didUrl: string) 
     verificationMethod: didDocument.dereferenceKey(didUrl, ['assertionMethod']),
     didDocument,
   }
+}
+
+async function fetch<Type>(agentContext: AgentContext, url: string): Promise<Type | null> {
+  try {
+    const result = await agentContext.config.agentDependencies.fetch(url)
+    if (!result.ok) return null
+    return (await result.json()) as Type
+  } catch (_error) {
+    return null
+  }
+}
+
+export async function resolveSigningPublicJwkFromJwtVcIssuerMetadata(
+  agentContext: AgentContext,
+  issuer: string,
+  kid: string
+): Promise<{ jwk: PublicJwk; issuer: string } | null> {
+  const url = new URL(issuer)
+  const wellKnownPath = '.well-known/jwt-vc-issuer'
+  const compliantUrl = joinUriParts(url.origin, [wellKnownPath, url.pathname])
+  const nonCompliantUrl = joinUriParts(issuer, [wellKnownPath])
+  const metadata =
+    (await fetch<SdJwtVcIssuerMetadata>(agentContext, compliantUrl)) ??
+    (await fetch<SdJwtVcIssuerMetadata>(agentContext, nonCompliantUrl))
+  if (!metadata) return null
+  if (metadata.jwks) {
+    const jwk = metadata.jwks.keys.find((key) => key.kid === kid)
+    if (!jwk) return null
+    return { jwk: PublicJwk.fromUnknown(jwk), issuer: metadata.issuer }
+  }
+  const jwks = await fetch<Jwks>(agentContext, metadata.jwks_uri)
+  if (!jwks) return null
+
+  const jwk = jwks.keys.find((key) => key.kid === kid)
+  if (!jwk) return null
+
+  return { jwk: PublicJwk.fromUnknown(jwk), issuer: metadata.issuer }
 }
 
 export async function extractKeyFromHolderBinding(
