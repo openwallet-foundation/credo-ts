@@ -281,27 +281,17 @@ export class Issuer extends BaseAgent<{
                   didUrl: `${this.didKey.did}#${this.didKey.publicJwk.fingerprint}`,
                 },
                 responseMode: 'direct_post.jwt',
-                presentationExchange: {
-                  definition: {
-                    id: '18e2c9c3-1722-4393-a558-f0ce1e32c4ec',
-                    input_descriptors: [
+                dcql: {
+                  query: {
+                    credentials: [
                       {
                         id: '16f00df5-67f1-47e6-81b1-bd3e3743f84c',
-                        constraints: {
-                          fields: [
-                            {
-                              path: ['$.vct'],
-                              filter: {
-                                type: 'string',
-                                const: credentialConfigurationsSupported.PresentationAuthorization.vct,
-                              },
-                            },
-                          ],
+                        format: 'dc+sd-jwt',
+                        meta: {
+                          vct_values: [credentialConfigurationsSupported.PresentationAuthorization.vct],
                         },
                       },
                     ],
-                    name: 'Presentation Authorization',
-                    purpose: `To issue the requested credentials, we need to verify your 'Presentation Authorization' credential`,
                   },
                 },
               })
