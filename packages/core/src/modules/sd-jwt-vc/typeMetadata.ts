@@ -1,7 +1,11 @@
 export interface SdJwtVcTypeMetadataClaim {
   path: Array<string | null>
   display?: Array<{
-    lang: string
+    /**
+     * @deprecated `locale` should be used
+     */
+    lang?: string
+    locale?: string
     label: string
     description?: string
   }>
@@ -33,7 +37,12 @@ export interface SdJwtVcTypeMetadataRenderingMethodSvgTemplate {
 }
 
 export interface SdJwtVcTypeMetadataDisplay {
-  lang: string
+  /**
+   * @deprecated `locale` should be used
+   */
+  lang?: string
+
+  locale?: string
   name: string
   description?: string
   rendering?: {
