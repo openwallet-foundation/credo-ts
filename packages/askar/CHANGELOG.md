@@ -1,5 +1,183 @@
 # Changelog
 
+## 0.6.0
+
+### Minor Changes
+
+- 879ed2c: deprecate node 18
+- 297d209: - Rely on Uint8Array instead of Buffer for internal key bytes representation
+  - Remove dependency on external Big Number libraries
+  - Default to use of uncompressed keys for Secp256k1, Secp256r1, Secp384r1 and Secp521r1
+- e936068: when signing in Credo, it is now required to always reference a key id. For DIDs this is extracted from the DidRecord, and for JWKs (e.g. in holder binding) this is extracted form the `kid` of the JWK. For X509 certificates you need to make sure there is a key id attached to the certificate manually for now, since we don't have a X509 record like we have a DidRecord. For x509 certificates created before 0.6 you can use the legacy key id (`certificate.keyId = certificate.publicJwk.legacyKeyId`), for certificates created after 0.6 you need to manually store the key id and set it on the certificate after decoding.
+
+  For this reason, we now require instances of X509 certificates where we used to require encoded certificates, to allow you to set the keyId on the certificate beforehand.
+
+- e936068: The `Key` and `Jwk` classes have been removed in favour of a new `PublicJwk` class, and all APIs in Credo have been updated to use the new `PublicJwk` class. Leveraging Jwk as the base for all APIs provides more flexility and makes it easier to support key types where it's not always so easy to extract the raw public key bytes. In addition all the previous Jwk relatedfunctionality has been replaced with the new KMS jwk functionalty. For example `JwaSignatureAlgorithm` is now `Kms.KnownJwaSignatureAlgorithms`.
+- e936068: The wallet API has been completely rewritten to be more generic, support multiple backends at the same time, support generic encrypting and decryption, support symmetric keys, and enable backends that use key ids rather than the public key to identify a key. This has resulted in significant breaking changes, and all usages of the wallet api should be updated to use the new `agent.kms` APIs. In addition the wallet is not available anymore on the agentContext. If you used this, instead inject the KMS API using `agentContext.resolve(Kms.KeyManagementApi)`.
+- 9df09fa: - messagehandler should return undefined if it doesn't want to response with a message
+- 70c849d: update target for tsc compiler to ES2020. Generally this should not have an impact for the supported environments (Node.JS / React Native). However this will have to be tested in React Native
+- 897c834: DIDComm has been extracted out of the Core. This means that now all DIDComm related modules (e.g. proofs, credentials) must be explicitly added when creating an `Agent` instance. Therefore, their API will be accesable under `agent.modules.[moduleAPI]` instead of `agent.[moduleAPI]`. Some `Agent` DIDComm-related properties and methods where also moved to the API of a new DIDComm module (e.g. `agent.registerInboundTransport` turned into `agent.didcomm.registerInboundTransport`).
+
+  **Example of DIDComm Agent**
+
+  Previously:
+
+  ```ts
+       const config = {
+        label: name,
+        endpoints: ['https://myendpoint'],
+        walletConfig: {
+          id: name,
+          key: name,
+        },
+      } satisfies InitConfig
+
+      const agent = new Agent({
+        config,
+        dependencies: agentDependencies,
+        modules: {
+          connections: new DidCommConnectionsModule({
+             autoAcceptConnections: true,
+          })
+        })
+      this.agent.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
+      this.agent.registerOutboundTransport(new HttpOutboundTransport())
+
+  ```
+
+  Now:
+
+  ```ts
+       const config = {
+        label: name,
+        walletConfig: {
+          id: name,
+          key: name,
+        },
+      } satisfies InitConfig
+
+      const agent = new Agent({
+        config,
+        dependencies: agentDependencies,
+        modules: {
+          ...getDefaultDidcommModules({ endpoints: ['https://myendpoint'] }),
+          connections: new DidCommConnectionsModule({
+             autoAcceptConnections: true,
+          })
+        })
+      agent.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
+      agent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
+  ```
+
+- 81e3571: BREAKING CHANGE:
+
+  `label` and `connectionImageUrl` have been dropped from Agent configuration. Therefore, it must be specified manually in all DIDComm connection establishment related methods. If you don't want to specify any label, just use an empty value.
+
+  In the particular case of mediation provisioning through a `mediatorInvitationUrl`, the label will be always set to an empty value ('').
+
+- 281471e: - depend on @openwallet-foundation/askar instead of @hyperledger/aries-askar
+- e936068: The wallet config has been removed from the main agent config, to allow for more flexibility. Instead, each module can now define their own config for the storage and kms. For askar there is a new `store` property which must be provided on the askar module config where you can set the wallet id and key. It is also possible to disable the kms or storage for askar using `enableKms` and `enableStorage`.
+- 425941e: update askar library to 0.4.0, enabling 16KB page size support for Android
+- bc6f0c7: Add support for ESM module syntax.
+
+  - Use `tsdown` to bundle for ESM -> tsdown is based on rust, so it should help with performance
+  - Update to `vitest` since jest doesn't work well with ESM -> this should also help with performance
+  - Simplify type checking -> just a single type check script instead of one for all packages. This should help with performance.
+
+  NOTE: Since React Native bundles your code, the update to ESM should not cause issues. In addition all latest minor releases of Node 20 and 22 now support requiring ESM modules. This means that even if you project is still a CommonJS project, it can now depend on ESM modules. For this reason Credo is now fully an ESM module.
+
+  Initially we added support for both CJS and ESM in parallel. However this caused issues with some libraries requiring the CJS output, and other the ESM output. Since Credo is only meant to be installed a single time for the dependency injection to work correctly, this resulted in unexpected behavior.
+
+### Patch Changes
+
+- 1810764: fix: incorrect key alg for didcomm. With the introduction of the new KMS API, the XC20P algorithm was used instead of the C20P. This is not resolved and tests have been added to ensure interop with previous Credo versions.
+- 297d209: - Remove usage of Big Number libraries and rely on native implementations
+  - By default rely on uncompressed keys instead of compressed (for P256, P384, P521 and K256)
+  - Utilze Uint8Array more instead of Buffer (i.e. for internally representing a key)
+- 13cd8cb: feat: support node 22
+- a666e94: Export Askar errors.
+- 9befbcb: chore: update askar library to fix a memory leak
+- 1bee6b7: fix: wrap askar operations with Uint8array to fix encoding issues in react native
+- 9f78a6e: allow A128GCM as allowed value for ECDH encryption
+- 0c274fe: feat: support Ed25519 as an algorithm identifier for JWA
+- a53fc54: feat: support A128CBC-HS256 encryption algorithm for JWE
+- Updated dependencies [55318b2]
+- Updated dependencies [e936068]
+- Updated dependencies [43148b4]
+- Updated dependencies [2d10ec3]
+- Updated dependencies [6d83136]
+- Updated dependencies [312a7b2]
+- Updated dependencies [1495177]
+- Updated dependencies [2cace9c]
+- Updated dependencies [879ed2c]
+- Updated dependencies [297d209]
+- Updated dependencies [2312bb8]
+- Updated dependencies [11827cc]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [297d209]
+- Updated dependencies [0500765]
+- Updated dependencies [bea846b]
+- Updated dependencies [13cd8cb]
+- Updated dependencies [2cace9c]
+- Updated dependencies [15acc49]
+- Updated dependencies [df7580c]
+- Updated dependencies [e936068]
+- Updated dependencies [16f109f]
+- Updated dependencies [e936068]
+- Updated dependencies [617b523]
+- Updated dependencies [90caf61]
+- Updated dependencies [e936068]
+- Updated dependencies [dca4fdf]
+- Updated dependencies [14673b1]
+- Updated dependencies [0c274fe]
+- Updated dependencies [2cace9c]
+- Updated dependencies [607659a]
+- Updated dependencies [44b1866]
+- Updated dependencies [5f08bc6]
+- Updated dependencies [27f971d]
+- Updated dependencies [cacd8ee]
+- Updated dependencies [e936068]
+- Updated dependencies [2d10ec3]
+- Updated dependencies [0500765]
+- Updated dependencies [1a4182e]
+- Updated dependencies [8be3d67]
+- Updated dependencies [90caf61]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [e936068]
+- Updated dependencies [290ff19]
+- Updated dependencies [8baa7d7]
+- Updated dependencies [decbcac]
+- Updated dependencies [9df09fa]
+- Updated dependencies [2cace9c]
+- Updated dependencies [70c849d]
+- Updated dependencies [0c274fe]
+- Updated dependencies [897c834]
+- Updated dependencies [a53fc54]
+- Updated dependencies [81e3571]
+- Updated dependencies [9ef54ba]
+- Updated dependencies [8533cd6]
+- Updated dependencies [e936068]
+- Updated dependencies [edd2edc]
+- Updated dependencies [e296877]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [1f74337]
+- Updated dependencies [c5e2a21]
+- Updated dependencies [d59e889]
+- Updated dependencies [e936068]
+- Updated dependencies [645363d]
+- Updated dependencies [e80794b]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [8baa7d7]
+- Updated dependencies [decbcac]
+- Updated dependencies [6c8ab94]
+- Updated dependencies [bc6f0c7]
+- Updated dependencies [8be3d67]
+- Updated dependencies [bd28bba]
+- Updated dependencies [0d49804]
+- Updated dependencies [27f971d]
+  - @credo-ts/core@0.6.0
+
 ## 0.5.13
 
 ### Patch Changes
