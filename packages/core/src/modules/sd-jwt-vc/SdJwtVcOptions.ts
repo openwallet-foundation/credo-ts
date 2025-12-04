@@ -44,26 +44,31 @@ export interface SdJwtVcIssuerX5c {
 
   /**
    *
-   * Array of base64-encoded certificate strings in the DER-format.
+   * Array of X509 certificates.
    *
    * The certificate containing the public key corresponding to the key used to digitally sign the JWS MUST be the first certificate.
    */
   x5c: X509Certificate[]
 
   /**
-   * The issuer of the JWT. Should be a HTTPS URI.
+   * The issuer of the SD-JWT VC.
    *
-   * The issuer value must either match a `uniformResourceIdentifier` SAN entry of the leaf entity certificate
-   * or the domain name in the `iss` value matches a `dNSName` SAN entry of the leaf-entity certificate.
+   * NOTE: in the latest draft of SD-JWT VC the issuer field is optional when using an X509 certificates
+   * to sign the SD-JWT VC.
+   *
+   * Since it's not clear what the iss value should be Credo will likely require
+   * the value to be undefined in a future version, but for now if the issuer value
+   * is defined it MUST match an SAN URI or DNS entry in the leaf certificate, mimicking
+   * previous behavior.
    */
-  issuer: string
+  issuer?: string
 }
 
 // We support jwk and did based binding for the holder at the moment
 export type SdJwtVcHolderBinding = SdJwtVcHolderDidBinding | SdJwtVcHolderJwkBinding
 
-// We only support did based issuance currently, but we might want to add support
-// for x509 or issuer metadata (as defined in SD-JWT VC) in the future
+// We only support did and x509 based issuance currently, but we might want to add support
+// for issuer metadata (as defined in SD-JWT VC) in the future
 export type SdJwtVcIssuer = SdJwtVcIssuerDid | SdJwtVcIssuerX5c
 
 export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> {
