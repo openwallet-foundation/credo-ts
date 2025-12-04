@@ -1,5 +1,278 @@
 # Changelog
 
+## 0.6.0
+
+### Minor Changes
+
+- 879ed2c: deprecate node 18
+- 297d209: - Rely on Uint8Array instead of Buffer for internal key bytes representation
+  - Remove dependency on external Big Number libraries
+  - Default to use of uncompressed keys for Secp256k1, Secp256r1, Secp384r1 and Secp521r1
+- 2cace9c: refactor: remove support for DIDComm linked attachments. The functionality was not working correctly anymore, and only supported for the deprecated v1 issuance protocol
+- b5fc7a6: - All `didcomm` package modules, APIs, models and services that are used for dependency injection now are prefixed with `DidComm` in its naming
+  - DIDComm-related events have also changed their text string to make it possible to distinguish them from events triggered by other protocols
+  - DIDComm credentials module API has been updated to use the term `credentialExchangeRecord` instead of `credentialRecord`, since it is usually confused with W3cCredentialRecords (and potentially other kind of credential records we might have). I took this opportunity to also update `declineOffer` options structure to match DIDComm proofs module API
+  - DIDComm-related records were renamed, but their type is still the original one (e.g. `CredentialRecord`, `BasicMessageRecord`). Probably it's worth to take this major release to do the migration, but I'm afraid that it will be a bit risky, so I'm hesitating to do so or leaving it for some other major upgrade (if we think it's actually needed)
+- e936068: when signing in Credo, it is now required to always reference a key id. For DIDs this is extracted from the DidRecord, and for JWKs (e.g. in holder binding) this is extracted form the `kid` of the JWK. For X509 certificates you need to make sure there is a key id attached to the certificate manually for now, since we don't have a X509 record like we have a DidRecord. For x509 certificates created before 0.6 you can use the legacy key id (`certificate.keyId = certificate.publicJwk.legacyKeyId`), for certificates created after 0.6 you need to manually store the key id and set it on the certificate after decoding.
+
+  For this reason, we now require instances of X509 certificates where we used to require encoded certificates, to allow you to set the keyId on the certificate beforehand.
+
+- 9f78a6e: upgrade anoncreds wrapper to 0.3
+- 2cace9c: The following modules are marked as deprecated and will be removed in version 0.7 of Credo:
+  - DIDComm Connection Protocol V1 - Update to the DID Exchange protocol instead.
+  - DIDComm V1 Credential Protocol - Update to the DIDComm V2 Credential Protocol instead.
+  - DIDComm Legacy Indy Credential Format - Update to the DIDComm AnonCreds Credential Format.
+  - DIDComm V1 Proof Protocol - Update to the DIDComm V2 Proof Protocol instead.
+  - DIDComm Legacy Indy Proof Format - Update to the DIDComm AnonCreds Proof Format.
+- e936068: The `Key` and `Jwk` classes have been removed in favour of a new `PublicJwk` class, and all APIs in Credo have been updated to use the new `PublicJwk` class. Leveraging Jwk as the base for all APIs provides more flexility and makes it easier to support key types where it's not always so easy to extract the raw public key bytes. In addition all the previous Jwk relatedfunctionality has been replaced with the new KMS jwk functionalty. For example `JwaSignatureAlgorithm` is now `Kms.KnownJwaSignatureAlgorithms`.
+- 0500765: **BREAKING**: Refactored credential storage to support batch credentials with KMS key tracking
+
+  This is a significant change to how credentials are stored and accessed in Credo. The main user-facing changes are:
+
+  ### Credential Records now support multiple credential instances
+
+  All credential record types (`W3cCredentialRecord`, `W3cV2CredentialRecord`, `SdJwtVcRecord`, `MdocRecord`) now support storing multiple credential instances in a single record. This enables:
+
+  - Batch issuance workflows where multiple credentials are issued together
+  - Tracking which KMS key was used to sign each credential instance
+  - Better support for credential refresh and reissuance scenarios
+
+  ### API Changes
+
+  **Storing Credentials:**
+
+  - The `storeCredential()` method now expects a `record` parameter instead of a `credential` parameter
+  - You must create the record first using `W3cCredentialRecord.fromCredential()` or similar constructors. Store credential expecting a record allows the OpenID4VC module to already return the credential record with the linked kms keys. In the future the OpenID4VC display metadata will also be added to the record automatically.
+
+  ```typescript
+  // Before
+  await agent.w3cCredentials.storeCredential({ credential });
+
+  // After
+  const record = W3cCredentialRecord.fromCredential(credential);
+  await agent.w3cCredentials.store({ record });
+  ```
+
+  **Accessing Credentials:**
+
+  - Records now use `firstCredential` property to access the primary credential instead of `credential`
+  - Use `credentialInstances` array to access all instances in a batch record
+  - The `multiInstanceState` property tracks the state of credential instances:
+    - `SingleInstanceUnused`: Single instance that has never been used
+    - `SingleInstanceUsed`: Single instance that has been used at least once
+    - `MultiInstanceFirstUnused`: Credential was originally a multi instance credential, where the first instance is unused.
+    - `MultiInstanceFirstUsed`: Credential was originally a multi instance credential, where the first instance is used. It may still have other instances that are unused (which can be detected if the length of credentialInstances > 1)
+
+  ```typescript
+  // Before
+  const credential = record.credential;
+
+  // After
+  const credential = record.firstCredential;
+
+  // Check credential state
+  if (
+    record.multiInstanceState ===
+    CredentialMultiInstanceState.MultiInstanceLastUnused
+  ) {
+    // Has unused instances available
+  }
+  ```
+
+  ### KMS Key Tracking
+
+  Credential instances now track which KMS key was used to sign them:
+
+  - Each credential instance can have an associated `kmsKeyId`
+  - This enables key rotation and multi-tenant scenarios where different keys are used
+  - The KMS key ID is stored in the credential record and synced with credential metadata
+
+  ### Storage Service Updates
+
+  - Added `lockedUpdate()` method to storage services for atomic updates with record locking
+  - Prevents race conditions when updating records concurrently
+  - Throws error if trying to update a record that has been modified since it was loaded
+
+  ### Migration Notes
+
+  If you have custom code that:
+
+  - Stores credentials using `storeCredential()` - update to use the new `store()` API
+  - Accesses `record.credential` - update to use `record.firstCredential`
+  - Directly constructs credential records - ensure you use the proper constructors with `credentialInstances` array
+
+- e936068: The wallet API has been completely rewritten to be more generic, support multiple backends at the same time, support generic encrypting and decryption, support symmetric keys, and enable backends that use key ids rather than the public key to identify a key. This has resulted in significant breaking changes, and all usages of the wallet api should be updated to use the new `agent.kms` APIs. In addition the wallet is not available anymore on the agentContext. If you used this, instead inject the KMS API using `agentContext.resolve(Kms.KeyManagementApi)`.
+- 9df09fa: - messagehandler should return undefined if it doesn't want to response with a message
+- 70c849d: update target for tsc compiler to ES2020. Generally this should not have an impact for the supported environments (Node.JS / React Native). However this will have to be tested in React Native
+- 897c834: DIDComm has been extracted out of the Core. This means that now all DIDComm related modules (e.g. proofs, credentials) must be explicitly added when creating an `Agent` instance. Therefore, their API will be accesable under `agent.modules.[moduleAPI]` instead of `agent.[moduleAPI]`. Some `Agent` DIDComm-related properties and methods where also moved to the API of a new DIDComm module (e.g. `agent.registerInboundTransport` turned into `agent.didcomm.registerInboundTransport`).
+
+  **Example of DIDComm Agent**
+
+  Previously:
+
+  ```ts
+       const config = {
+        label: name,
+        endpoints: ['https://myendpoint'],
+        walletConfig: {
+          id: name,
+          key: name,
+        },
+      } satisfies InitConfig
+
+      const agent = new Agent({
+        config,
+        dependencies: agentDependencies,
+        modules: {
+          connections: new DidCommConnectionsModule({
+             autoAcceptConnections: true,
+          })
+        })
+      this.agent.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
+      this.agent.registerOutboundTransport(new HttpOutboundTransport())
+
+  ```
+
+  Now:
+
+  ```ts
+       const config = {
+        label: name,
+        walletConfig: {
+          id: name,
+          key: name,
+        },
+      } satisfies InitConfig
+
+      const agent = new Agent({
+        config,
+        dependencies: agentDependencies,
+        modules: {
+          ...getDefaultDidcommModules({ endpoints: ['https://myendpoint'] }),
+          connections: new DidCommConnectionsModule({
+             autoAcceptConnections: true,
+          })
+        })
+      agent.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
+      agent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
+  ```
+
+- 81e3571: BREAKING CHANGE:
+
+  `label` and `connectionImageUrl` have been dropped from Agent configuration. Therefore, it must be specified manually in all DIDComm connection establishment related methods. If you don't want to specify any label, just use an empty value.
+
+  In the particular case of mediation provisioning through a `mediatorInvitationUrl`, the label will be always set to an empty value ('').
+
+- bc6f0c7: Add support for ESM module syntax.
+
+  - Use `tsdown` to bundle for ESM -> tsdown is based on rust, so it should help with performance
+  - Update to `vitest` since jest doesn't work well with ESM -> this should also help with performance
+  - Simplify type checking -> just a single type check script instead of one for all packages. This should help with performance.
+
+  NOTE: Since React Native bundles your code, the update to ESM should not cause issues. In addition all latest minor releases of Node 20 and 22 now support requiring ESM modules. This means that even if you project is still a CommonJS project, it can now depend on ESM modules. For this reason Credo is now fully an ESM module.
+
+  Initially we added support for both CJS and ESM in parallel. However this caused issues with some libraries requiring the CJS output, and other the ESM output. Since Credo is only meant to be installed a single time for the dependency injection to work correctly, this resulted in unexpected behavior.
+
+### Patch Changes
+
+- 297d209: - Remove usage of Big Number libraries and rely on native implementations
+  - By default rely on uncompressed keys instead of compressed (for P256, P384, P521 and K256)
+  - Utilze Uint8Array more instead of Buffer (i.e. for internally representing a key)
+- 13cd8cb: feat: support node 22
+- 5ff7bba: feat(didcomm): allow sending revocation notifications without the need of keeping the related Credential Exchange record
+- d06669c: feat: support DIDComm Out of Band proof proposals
+- 9befbcb: chore: update anoncreds library to support 16KB page size on Android
+- Updated dependencies [55318b2]
+- Updated dependencies [e936068]
+- Updated dependencies [43148b4]
+- Updated dependencies [2d10ec3]
+- Updated dependencies [6d83136]
+- Updated dependencies [312a7b2]
+- Updated dependencies [1495177]
+- Updated dependencies [1810764]
+- Updated dependencies [2cace9c]
+- Updated dependencies [879ed2c]
+- Updated dependencies [297d209]
+- Updated dependencies [2312bb8]
+- Updated dependencies [11827cc]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [297d209]
+- Updated dependencies [652ade8]
+- Updated dependencies [0500765]
+- Updated dependencies [2cace9c]
+- Updated dependencies [bea846b]
+- Updated dependencies [13cd8cb]
+- Updated dependencies [2cace9c]
+- Updated dependencies [15acc49]
+- Updated dependencies [df7580c]
+- Updated dependencies [e936068]
+- Updated dependencies [16f109f]
+- Updated dependencies [e936068]
+- Updated dependencies [617b523]
+- Updated dependencies [90caf61]
+- Updated dependencies [b5fc7a6]
+- Updated dependencies [e936068]
+- Updated dependencies [dca4fdf]
+- Updated dependencies [14673b1]
+- Updated dependencies [0c274fe]
+- Updated dependencies [2cace9c]
+- Updated dependencies [607659a]
+- Updated dependencies [44b1866]
+- Updated dependencies [5f08bc6]
+- Updated dependencies [27f971d]
+- Updated dependencies [cacd8ee]
+- Updated dependencies [0d877f5]
+- Updated dependencies [e936068]
+- Updated dependencies [2d10ec3]
+- Updated dependencies [09ea6e3]
+- Updated dependencies [0500765]
+- Updated dependencies [1a4182e]
+- Updated dependencies [8be3d67]
+- Updated dependencies [a4f443b]
+- Updated dependencies [90caf61]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [e936068]
+- Updated dependencies [290ff19]
+- Updated dependencies [8baa7d7]
+- Updated dependencies [decbcac]
+- Updated dependencies [9df09fa]
+- Updated dependencies [2cace9c]
+- Updated dependencies [70c849d]
+- Updated dependencies [0c274fe]
+- Updated dependencies [897c834]
+- Updated dependencies [5ff7bba]
+- Updated dependencies [a53fc54]
+- Updated dependencies [81e3571]
+- Updated dependencies [9ef54ba]
+- Updated dependencies [8533cd6]
+- Updated dependencies [e936068]
+- Updated dependencies [edd2edc]
+- Updated dependencies [e296877]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [1f74337]
+- Updated dependencies [c5e2a21]
+- Updated dependencies [d59e889]
+- Updated dependencies [e936068]
+- Updated dependencies [11545ce]
+- Updated dependencies [645363d]
+- Updated dependencies [e80794b]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [8baa7d7]
+- Updated dependencies [d06669c]
+- Updated dependencies [decbcac]
+- Updated dependencies [6c8ab94]
+- Updated dependencies [bc6f0c7]
+- Updated dependencies [676af7f]
+- Updated dependencies [d9e04db]
+- Updated dependencies [d6086e9]
+- Updated dependencies [8be3d67]
+- Updated dependencies [bd28bba]
+- Updated dependencies [0d49804]
+- Updated dependencies [27f971d]
+  - @credo-ts/core@0.6.0
+  - @credo-ts/didcomm@0.6.0
+
 ## 0.5.13
 
 ### Patch Changes

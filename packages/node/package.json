@@ -4,7 +4,7 @@
     "cli": "./build/index.mjs",
     "import": "./src/index.ts"
   },
-  "version": "0.5.13",
+  "version": "0.6.0",
   "files": [
     "build"
   ],
@@ -45,7 +45,6 @@
     "@types/node": "catalog:",
     "@types/ws": "catalog:",
     "nock": "catalog:",
-
     "typescript": "catalog:"
   }
 }
