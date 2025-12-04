@@ -1,5 +1,12 @@
 export interface SdJwtVcTypeMetadataClaim {
   path: Array<string | null>
+
+  /**
+   * A boolean indicating that the claim must be present in the issued credential.
+   * This property is OPTIONAL. If omitted, the default value is false
+   */
+  mandatory?: boolean
+
   display?: Array<{
     /**
      * @deprecated `locale` should be used
@@ -23,6 +30,7 @@ export interface SdJwtVcTypeMetadataRenderingMethodSimple {
     alt_text?: string
   }
   background_color?: string
+  background_image?: string
   text_color?: string
 }
 
@@ -53,6 +61,7 @@ export interface SdJwtVcTypeMetadataDisplay {
 }
 
 export interface SdJwtVcTypeMetadata {
+  vct: string
   name?: string
   description?: string
 
