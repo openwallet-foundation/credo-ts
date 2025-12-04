@@ -594,12 +594,22 @@ export class OpenId4VpVerifierService {
           )
         )
 
-        const presentationResult = await dcql.assertValidDcqlPresentation(agentContext, presentations, dcqlQuery)
+        try {
+          const presentationResult = await dcql.assertValidDcqlPresentation(agentContext, presentations, dcqlQuery)
 
-        dcqlResponse = {
-          presentations,
-          presentationResult,
-          query: dcqlQuery,
+          dcqlResponse = {
+            presentations,
+            presentationResult,
+            query: dcqlQuery,
+          }
+        } catch (error) {
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidRequest,
+              error_description: 'Presentation submission does not satisfy presentation request.',
+            },
+            { cause: error }
+          )
         }
       }
 
@@ -671,7 +681,7 @@ export class OpenId4VpVerifierService {
           throw new Oauth2ServerErrorResponseError(
             {
               error: Oauth2ErrorCodes.InvalidRequest,
-              error_description: 'Presentation submission does not satisy presentation request.',
+              error_description: 'Presentation submission does not satisfy presentation request.',
             },
             { cause: error }
           )
