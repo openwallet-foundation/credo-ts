@@ -20,6 +20,7 @@ import {
 } from '@credo-ts/core'
 import {
   type AuthorizationServerMetadata,
+  authorizationCodeGrantIdentifier,
   calculateJwkThumbprint,
   HashAlgorithm,
   type Jwk,
@@ -1058,6 +1059,8 @@ export class OpenId4VcIssuerService {
       'pre-authorized_grant_anonymous_access_supported': true,
 
       jwks_uri: joinUriParts(issuerUrl, [config.jwksEndpointPath]),
+
+      grant_types_supported: [authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier],
 
       authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
       authorization_endpoint: joinUriParts(issuerUrl, [config.authorizationEndpoint]),
