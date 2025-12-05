@@ -322,7 +322,7 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    if (credentialRequest.format && !format) {
+    if (credentialRequest.format && !format && !parsedCredentialRequest.credentialConfigurationId) {
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.UnsupportedCredentialFormat,
         error_description: `Unsupported credential request based on format '${credentialRequest.format}'`,
