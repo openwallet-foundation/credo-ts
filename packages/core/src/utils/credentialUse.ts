@@ -207,7 +207,7 @@ export async function useInstanceFromCredentialRecord<Record extends CredentialR
   }
 }
 
-export function extractInstanceAndUpdateRecord<Record extends CredentialRecord>({
+function extractInstanceAndUpdateRecord<Record extends CredentialRecord>({
   credentialRecord,
   useMode,
 }: Pick<UseInstanceFromCredentialRecordOptions<Record>, 'credentialRecord' | 'useMode'>) {
