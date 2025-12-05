@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.1
+
+### Patch Changes
+
+- 173ed6d: fix(openid4vc): add `grant_type_supported` to Credo hosted authorization server metadata
+- a27de81: fix(openid4vc): loosen validation for multi-validation credential request. Some wallets send both `credential_configuration_id` and `format` which should not cause an error
+- Updated dependencies [9f60e1b]
+  - @credo-ts/core@0.6.1
+
 ## 0.6.0
 
 ### Minor Changes

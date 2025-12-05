@@ -4,7 +4,7 @@
     "cli": "./build/index.mjs",
     "import": "./src/index.ts"
   },
-  "version": "0.6.0",
+  "version": "0.6.1",
   "files": [
     "build"
   ],

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1
+
+### Patch Changes
+
+- 9f60e1b: fix(core): update default document loader with Linked Verifiable Presentation v1 context
+
 ## 0.6.0
 
 ### Minor Changes
