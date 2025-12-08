@@ -22,7 +22,7 @@
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "express": "catalog:",
     "inquirer": "^8.2.7",
-    "jose": "^6.1.2",
+    "jose": "^6.1.3",
     "oidc-provider": "^9.5.2"
   },
   "devDependencies": {
