@@ -32,8 +32,6 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@2060.io/ffi-napi": "^4.0.9",
-    "@2060.io/ref-napi": "^3.0.6",
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
     "@types/express": "catalog:",
