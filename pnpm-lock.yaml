@@ -28,11 +28,11 @@ catalogs:
       specifier: ^0.2.3
       version: 0.2.3
     '@openwallet-foundation/askar-nodejs':
-      specifier: ^0.4.3
-      version: 0.4.3
+      specifier: 0.5.0-alpha-20251207073409
+      version: 0.5.0-alpha-20251207073409
     '@openwallet-foundation/askar-shared':
-      specifier: ^0.4.3
-      version: 0.4.3
+      specifier: 0.5.0-alpha-20251207073409
+      version: 0.5.0-alpha-20251207073409
     '@peculiar/x509':
       specifier: ^1.14.2
       version: 1.14.2
@@ -158,7 +158,7 @@ importers:
         version: link:packages/webvh
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       '@types/cors':
         specifier: ^2.8.19
         version: 2.8.19
@@ -236,7 +236,7 @@ importers:
         version: 0.2.3
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       inquirer:
         specifier: ^8.2.7
         version: 8.2.7(@types/node@24.10.1)
@@ -294,7 +294,7 @@ importers:
         version: 6.0.0(koa@3.1.1)
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       express:
         specifier: 'catalog:'
         version: 5.2.1
@@ -427,10 +427,10 @@ importers:
         version: link:../tenants
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       '@types/ref-array-di':
         specifier: ^1.2.8
         version: 1.2.8
@@ -461,7 +461,7 @@ importers:
     devDependencies:
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1078,7 +1078,7 @@ importers:
         version: link:../../packages/node
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       class-validator:
         specifier: 'catalog:'
         version: 0.14.3
@@ -2938,12 +2938,12 @@ packages:
   '@openid4vc/utils@0.4.1':
     resolution: {integrity: sha512-kxEtmnzjmq1TX+RtfFZ1myGIdOO9EgPKp7cRbnhzWus//dUa+qV5zhLzLZcK0S2r9IP9QpTEd8ilCUWh9Aia+g==}
 
-  '@openwallet-foundation/askar-nodejs@0.4.3':
-    resolution: {integrity: sha512-+7hJaCUz/GP9hhOdbLL+9OzYgb5vILcTmSyqSGTR3Qd/ba+j5HdN3BJfgRETK4Svz1jlbEKbjRLE7RwDqEr2RA==}
-    engines: {node: '>= 18'}
+  '@openwallet-foundation/askar-nodejs@0.5.0-alpha-20251207073409':
+    resolution: {integrity: sha512-3vHMKDXgeR561ogJ+W0UmO+ST/vHLJUZRpWIvzxHpQCZkJKcpou1tv3AegeMN0drZIDVupANwC1y3TSQres2bw==}
+    engines: {node: '>= 20'}
 
-  '@openwallet-foundation/askar-shared@0.4.3':
-    resolution: {integrity: sha512-Zt9zlvjJxNs8UWlnRydZH594Lak15YPHY72VT1+iDbXh0OjTdyq6Bf0FIsh9sfFnRYIgh2zd8+VoXxZ07GjADA==}
+  '@openwallet-foundation/askar-shared@0.5.0-alpha-20251207073409':
+    resolution: {integrity: sha512-IW7A+a9Q81XXuW8vpDFSTcVDAzA695LG97WDQ/1qDy0YKFLaRoc2xCZWIOiU7tXtW+ovLp5t80U9eFxDv26b3A==}
 
   '@oxc-project/runtime@0.98.0':
     resolution: {integrity: sha512-F0ldlBv2orG2YqNL0w77deq9yCaO4zEHbanGnW/jaJxGBR8ImekvZb8x42zAHvdzr8J76psibijvHtXfSjbEIQ==}
@@ -5941,6 +5941,9 @@ packages:
   koa@3.1.1:
     resolution: {integrity: sha512-KDDuvpfqSK0ZKEO2gCPedNjl5wYpfj+HNiuVRlbhd1A88S3M0ySkdf2V/EJ4NWt5dwh5PXCdcenrKK2IQJAxsg==}
     engines: {node: '>= 18'}
+
+  koffi@2.14.1:
+    resolution: {integrity: sha512-IMFL3IbRDXacSIjs7pPbPxgNlJ2hUtawQXU2QPdr6iw38jmv5AesAUG8HPX00xl0PPA2BbEa3noTw1YdHY+gHg==}
 
   ky@1.14.0:
     resolution: {integrity: sha512-Rczb6FMM6JT0lvrOlP5WUOCB7s9XKxzwgErzhKlKde1bEV90FXplV1o87fpt4PU/asJFiqjYJxAJyzJhcrxOsQ==}
@@ -10988,17 +10991,12 @@ snapshots:
       buffer: 6.0.3
       zod: 4.1.13
 
-  '@openwallet-foundation/askar-nodejs@0.4.3':
+  '@openwallet-foundation/askar-nodejs@0.5.0-alpha-20251207073409':
     dependencies:
-      '@2060.io/ffi-napi': 4.0.9
-      '@2060.io/ref-napi': 3.0.6
-      '@openwallet-foundation/askar-shared': 0.4.3
-      ref-array-di: 1.2.2
-      ref-struct-di: 1.1.1
-    transitivePeerDependencies:
-      - supports-color
+      '@openwallet-foundation/askar-shared': 0.5.0-alpha-20251207073409
+      koffi: 2.14.1
 
-  '@openwallet-foundation/askar-shared@0.4.3':
+  '@openwallet-foundation/askar-shared@0.5.0-alpha-20251207073409':
     dependencies:
       buffer: 6.0.3
       tar: 7.5.2
@@ -14542,6 +14540,8 @@ snapshots:
       statuses: 2.0.2
       type-is: 2.0.1
       vary: 1.1.2
+
+  koffi@2.14.1: {}
 
   ky@1.14.0: {}
 
