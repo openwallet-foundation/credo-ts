@@ -33,7 +33,7 @@
     "@cheqd/ts-proto": "^4.2.0",
     "@cosmjs/crypto": "^0.36.2",
     "@cosmjs/proto-signing": "^0.36.2",
-    "@cosmjs/stargate": "^0.36.2",
+    "@cosmjs/stargate": "^0.37.0",
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@stablelib/ed25519": "catalog:",
