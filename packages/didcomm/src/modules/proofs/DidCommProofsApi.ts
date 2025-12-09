@@ -554,7 +554,8 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       message: problemReport,
       connectionRecord,
       associatedRecord: proofRecord,
-      lastReceivedMessage: requestMessage ?? proposalMessage ?? undefined,
+      lastSentMessage: proposalMessage ?? undefined,
+      lastReceivedMessage: requestMessage ?? undefined,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
 
