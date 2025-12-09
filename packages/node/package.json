@@ -4,7 +4,7 @@
     "cli": "./build/index.mjs",
     "import": "./src/index.ts"
   },
-  "version": "0.5.13",
+  "version": "0.6.0",
   "files": [
     "build"
   ],
@@ -32,8 +32,6 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@2060.io/ffi-napi": "^4.0.9",
-    "@2060.io/ref-napi": "^3.0.6",
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
     "@types/express": "catalog:",
@@ -45,7 +43,6 @@
     "@types/node": "catalog:",
     "@types/ws": "catalog:",
     "nock": "catalog:",
-
     "typescript": "catalog:"
   }
 }

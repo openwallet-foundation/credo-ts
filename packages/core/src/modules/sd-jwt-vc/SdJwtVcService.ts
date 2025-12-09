@@ -238,14 +238,22 @@ export class SdJwtVcService {
     return compactDerivedSdJwtVc
   }
 
-  private assertValidX5cJwtIssuer(agentContext: AgentContext, iss: string, leafCertificate: X509Certificate) {
+  private assertValidX5cJwtIssuer(
+    agentContext: AgentContext,
+    iss: string | undefined,
+    leafCertificate: X509Certificate
+  ) {
+    // No 'iss' is allowed for X509
+    if (!iss) return
+
+    // If iss is present it MUST be an HTTPS url
     if (!iss.startsWith('https://') && !(iss.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)) {
       throw new SdJwtVcError('The X509 certificate issuer must be a HTTPS URI.')
     }
 
     if (!leafCertificate.sanUriNames?.includes(iss) && !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(iss))) {
       throw new SdJwtVcError(
-        `The 'iss' claim in the payload does not match a 'SAN-URI' name and the domain extracted from the HTTPS URI does not match a 'SAN-DNS' name in the x5c certificate.`
+        `The 'iss' claim in the payload does not match a 'SAN-URI' name and the domain extracted from the HTTPS URI does not match a 'SAN-DNS' name in the x5c certificate. Either remove the 'iss' claim or make it match with at least one SAN-URI or DNS-URI entry`
       )
     }
   }
@@ -461,14 +469,12 @@ export class SdJwtVcService {
       }
     }
 
-    // FIXME: probably need to make the input an x509 certificate so we can attach a key id
     if (issuer.method === 'x5c') {
       const leafCertificate = issuer.x5c[0]
       if (!leafCertificate) {
         throw new SdJwtVcError("Empty 'x5c' array provided")
       }
 
-      // TODO: We don't have an x509 certificate record so we expect the key id to already be set
       if (forSigning && !leafCertificate.publicJwk.hasKeyId) {
         throw new SdJwtVcError("Expected leaf certificate in 'x5c' array to have a key id configured.")
       }
@@ -506,11 +512,7 @@ export class SdJwtVcService {
       throw new SdJwtVcError('Credential not exist')
     }
 
-    if (!sdJwtVc.jwt?.payload.iss) {
-      throw new SdJwtVcError('Credential does not contain an issuer')
-    }
-
-    const iss = sdJwtVc.jwt.payload.iss as string
+    const iss = sdJwtVc.jwt.payload.iss as string | undefined
 
     if (sdJwtVc.jwt.header?.x5c) {
       if (!Array.isArray(sdJwtVc.jwt.header.x5c)) {
@@ -555,7 +557,7 @@ export class SdJwtVcService {
       }
     }
 
-    if (iss.startsWith('did:')) {
+    if (iss?.startsWith('did:')) {
       // If `did` is used, we require a relative KID to be present to identify
       // the key used by issuer to sign the sd-jwt-vc
 
@@ -592,7 +594,8 @@ export class SdJwtVcService {
         didUrl,
       }
     }
-    throw new SdJwtVcError("Unsupported 'iss' value. Only did is supported at the moment.")
+
+    throw new SdJwtVcError('Unsupported signing method for SD-JWT VC. Only did and x5c are supported at the moment.')
   }
 
   private getBaseSdJwtConfig(agentContext: AgentContext): SdJwtVcConfig {
