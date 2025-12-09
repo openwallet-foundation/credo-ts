@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [9f60e1b]
+- Updated dependencies [251cbe5]
+  - @credo-ts/core@0.6.1
+  - @credo-ts/didcomm@0.6.1
+
 ## 0.6.0
 
 ### Minor Changes

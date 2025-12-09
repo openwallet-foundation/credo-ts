@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1
+
+### Patch Changes
+
+- 4b7c38f: fix: throw `AskarError` instead of the removed `WalletError`
+- Updated dependencies [9f60e1b]
+  - @credo-ts/core@0.6.1
+
 ## 0.6.0
 
 ### Minor Changes
