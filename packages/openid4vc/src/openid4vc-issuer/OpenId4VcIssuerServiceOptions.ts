@@ -427,4 +427,5 @@ export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   | 'dpopSigningAlgValuesSupported'
   | 'credentialConfigurationsSupported'
   | 'batchCredentialIssuance'
+  | 'authorizationServerConfigs'
 >
