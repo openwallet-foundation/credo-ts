@@ -48,7 +48,7 @@ export const uriFromStoreConfig = (
       database.credentials.password
     )}@${database.config.host}/${encodeURIComponent(storeConfig.id)}`
   } else {
-    throw new AskarError(`Storage type not supported: ${database}`)
+    throw new AskarError('Storage type not supported')
   }
 
   // Common config options
