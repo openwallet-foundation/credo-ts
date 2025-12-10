@@ -321,7 +321,7 @@ export class SdJwtVcService {
           requiredClaimKeys: requiredClaimKeys ? [...requiredClaimKeys, 'vct'] : ['vct'],
           keyBindingNonce: keyBinding?.nonce,
           currentDate: dateToSeconds(now ?? new Date()),
-          skewSeconds: 0,
+          skewSeconds: agentContext.config.validitySkewSeconds,
         })
       } catch (error) {
         return {
@@ -342,7 +342,7 @@ export class SdJwtVcService {
       try {
         JwtPayload.fromJson(returnSdJwtVc.payload).validate({
           now: dateToSeconds(now ?? new Date()),
-          skewTime: 0,
+          skewSeconds: agentContext.config.validitySkewSeconds,
         })
       } catch (error) {
         return {

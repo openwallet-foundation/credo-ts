@@ -106,7 +106,9 @@ export class W3cV2JwtCredentialService {
             : W3cV2JwtVerifiableCredential.fromCompact(options.credential)
 
         // Verify the JWT payload (verifies whether it's not expired, etc...)
-        credential.jwt.payload.validate()
+        credential.jwt.payload.validate({
+          skewSeconds: agentContext.config.validitySkewSeconds,
+        })
 
         validationResults.validations.dataModel = {
           isValid: true,
@@ -259,7 +261,9 @@ export class W3cV2JwtCredentialService {
             : W3cV2JwtVerifiablePresentation.fromCompact(options.presentation)
 
         // Verify the JWT payload (verifies whether it's not expired, etc...)
-        presentation.jwt.payload.validate()
+        presentation.jwt.payload.validate({
+          skewSeconds: agentContext.config.validitySkewSeconds,
+        })
 
         // Make sure challenge matches nonce
         if (options.challenge !== presentation.jwt.payload.additionalClaims.nonce) {

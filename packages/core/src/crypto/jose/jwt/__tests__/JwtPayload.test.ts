@@ -36,16 +36,16 @@ describe('JwtPayload', () => {
     const jwtPayload = JwtPayload.fromJson({})
 
     jwtPayload.exp = 123
-    expect(() => jwtPayload.validate({ now: 200, skewTime: 1 })).toThrow('JWT expired at 123')
-    expect(() => jwtPayload.validate({ now: 100, skewTime: 1 })).not.toThrow()
+    expect(() => jwtPayload.validate({ now: 200, skewSeconds: 1 })).toThrow('JWT expired at 123')
+    expect(() => jwtPayload.validate({ now: 100, skewSeconds: 1 })).not.toThrow()
 
     jwtPayload.nbf = 80
-    expect(() => jwtPayload.validate({ now: 75, skewTime: 1 })).toThrow('JWT not valid before 80')
-    expect(() => jwtPayload.validate({ now: 100, skewTime: 1 })).not.toThrow()
+    expect(() => jwtPayload.validate({ now: 75, skewSeconds: 1 })).toThrow('JWT not valid before 80')
+    expect(() => jwtPayload.validate({ now: 100, skewSeconds: 1 })).not.toThrow()
 
     jwtPayload.iat = 90
-    expect(() => jwtPayload.validate({ now: 85, skewTime: 1 })).toThrow('JWT issued in the future at 90')
-    expect(() => jwtPayload.validate({ now: 100, skewTime: 1 })).not.toThrow()
+    expect(() => jwtPayload.validate({ now: 85, skewSeconds: 1 })).toThrow('JWT issued in the future at 90')
+    expect(() => jwtPayload.validate({ now: 100, skewSeconds: 1 })).not.toThrow()
   })
 
   test('throws error for invalid values', () => {

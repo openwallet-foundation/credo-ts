@@ -17,7 +17,7 @@ import { X509Certificate, X509ModuleConfig } from '../x509'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
-import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } from './mdocSupportedAlgs'
+import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
 
 /**
  * This class represents a IssuerSigned Mdoc Document,
@@ -163,7 +163,7 @@ export class Mdoc {
           issuerKey.jwkTypeHumanDescription
         }. Key supports algs ${issuerKey.supportedSignatureAlgorithms.join(
           ', '
-        )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`
+        )}. mdoc supports algs ${mdocSupportedSignatureAlgorithms.join(', ')}`
       )
     }
 

@@ -17,6 +17,15 @@ export interface InitConfig {
    * @default false
    */
   allowInsecureHttpUrls?: boolean
+
+  /**
+   * The allowed skew in seconds that should be allowed for validity time of a credentials and other signed
+   * objects (e.g. StatusList). Mobile devices especially can run a bit behind actual time, making validity
+   * checks fail based on a milliseconds / seconds.
+   *
+   * @default 60
+   */
+  validitySkewSeconds?: number
 }
 
 export type JsonValue = string | number | boolean | null | JsonObject | JsonArray
