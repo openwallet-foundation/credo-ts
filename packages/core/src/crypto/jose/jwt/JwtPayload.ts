@@ -8,7 +8,7 @@ import { dateToSeconds } from '../../../utils'
  *
  * See https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.5
  */
-export const DEFAULT_SKEW_TIME = 60
+export const DEFAULT_SKEW_TIME = 30
 
 export interface JwtPayloadJson {
   iss?: string
