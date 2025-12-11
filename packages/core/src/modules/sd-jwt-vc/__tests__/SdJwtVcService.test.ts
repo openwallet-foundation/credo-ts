@@ -1301,4 +1301,181 @@ describe('SdJwtVcService', () => {
       })
     })
   })
+
+  describe('SdJwtVcService.fetchTypeMetadata', () => {
+    test('Fetch type metadata from new vct URL path', async () => {
+      const fetchSpy = vi.spyOn(agentDependencies, 'fetch')
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+        description: 'A credential for identity verification',
+      }
+
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(mockMetadata),
+      } satisfies Partial<Response> as Response)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, 'https://example.com/credentials/identity')
+
+      expect(fetchSpy).toHaveBeenCalledWith('https://example.com/credentials/identity')
+      expect(result).toEqual(mockMetadata)
+      fetchSpy.mockReset()
+    })
+
+    test('Fetch type metadata from legacy vct URL path when new path fails', async () => {
+      const fetchSpy = vi.spyOn(agentDependencies, 'fetch')
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+        description: 'A credential for identity verification',
+      }
+
+      fetchSpy.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+      } satisfies Partial<Response> as Response)
+
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(mockMetadata),
+      } satisfies Partial<Response> as Response)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, 'https://example.com/credentials/identity')
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+      expect(fetchSpy).toHaveBeenNthCalledWith(1, 'https://example.com/credentials/identity')
+      expect(fetchSpy).toHaveBeenNthCalledWith(2, 'https://example.com/.well-known/vct/credentials/identity')
+      expect(result).toEqual(mockMetadata)
+      fetchSpy.mockReset()
+    })
+
+    test('Fetch type metadata from legacy vct URL path when new path throws error', async () => {
+      const fetchSpy = vi.spyOn(agentDependencies, 'fetch')
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+        description: 'A credential for identity verification',
+      }
+
+      fetchSpy.mockRejectedValueOnce(new Error('CORS error'))
+
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(mockMetadata),
+      } satisfies Partial<Response> as Response)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, 'https://example.com/credentials/identity')
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+      expect(fetchSpy).toHaveBeenNthCalledWith(1, 'https://example.com/credentials/identity')
+      expect(fetchSpy).toHaveBeenNthCalledWith(2, 'https://example.com/.well-known/vct/credentials/identity')
+      expect(result).toEqual(mockMetadata)
+      fetchSpy.mockReset()
+    })
+
+    test('Fetch type metadata with nested path', async () => {
+      const fetchSpy = vi.spyOn(agentDependencies, 'fetch')
+      const mockMetadata = {
+        vct: 'https://example.com/v1/credentials/identity/verified',
+        name: 'Verified Identity Credential',
+      }
+
+      fetchSpy.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+      } satisfies Partial<Response> as Response)
+
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(mockMetadata),
+      } satisfies Partial<Response> as Response)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(
+        agent.context,
+        'https://example.com/v1/credentials/identity/verified'
+      )
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+      expect(fetchSpy).toHaveBeenNthCalledWith(1, 'https://example.com/v1/credentials/identity/verified')
+      expect(fetchSpy).toHaveBeenNthCalledWith(
+        2,
+        'https://example.com/.well-known/vct/v1/credentials/identity/verified'
+      )
+      expect(result).toEqual(mockMetadata)
+      fetchSpy.mockReset()
+    })
+
+    test('Fetch type metadata throws error for non-https vct', async () => {
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, 'http://example.com/credentials/identity')
+      ).rejects.toThrow(
+        "Unable to resolve type metadata for vct 'http://example.com/credentials/identity'. Only https supported"
+      )
+    })
+
+    test('Fetch type metadata throws error for non-url vct', async () => {
+      await expect(sdJwtVcService.fetchTypeMetadata(agent.context, 'IdentityCredential')).rejects.toThrow(
+        "Unable to resolve type metadata for vct 'IdentityCredential'. Only https supported"
+      )
+    })
+
+    test('Fetch type metadata throws error when both new and legacy paths fail', async () => {
+      const fetchSpy = vi.spyOn(agentDependencies, 'fetch')
+
+      fetchSpy.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: () => Promise.resolve('Not Found'),
+      } satisfies Partial<Response> as Response)
+
+      fetchSpy.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+      } satisfies Partial<Response> as Response)
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, 'https://example.com/credentials/identity')
+      ).rejects.toThrow(
+        "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful 404 response. Not Found."
+      )
+      fetchSpy.mockReset()
+    })
+
+    test('Fetch type metadata throws error when new path throws and legacy path fails', async () => {
+      const fetchSpy = vi.spyOn(agentDependencies, 'fetch')
+
+      fetchSpy.mockRejectedValueOnce(new Error('Network error'))
+
+      fetchSpy.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      } satisfies Partial<Response> as Response)
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, 'https://example.com/credentials/identity')
+      ).rejects.toThrow(
+        "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful response."
+      )
+      fetchSpy.mockReset()
+    })
+
+    test('Fetch type metadata throws error when both paths throw', async () => {
+      const fetchSpy = vi.spyOn(agentDependencies, 'fetch')
+
+      fetchSpy.mockRejectedValueOnce(new Error('Network error'))
+      fetchSpy.mockRejectedValueOnce(new Error('Legacy network error'))
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, 'https://example.com/credentials/identity')
+      ).rejects.toThrow(
+        "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful response."
+      )
+      fetchSpy.mockReset()
+    })
+  })
 })
