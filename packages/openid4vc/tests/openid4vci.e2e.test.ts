@@ -30,6 +30,7 @@ import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import {
   universityDegreeCredentialConfigurationSupported,
+  universityDegreeCredentialConfigurationSupportedJwkOnly,
   universityDegreeCredentialConfigurationSupportedMdoc,
 } from './utilsVci'
 
@@ -326,9 +327,62 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     expect(credentialResponse.credentials).toHaveLength(1)
     const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+
+    // KMS key id should not be defined for did-based credentials
+    expect(firstSdJwtVcTenant1.holder?.method).toEqual('did')
+    expect(firstSdJwtVcTenant1.kmsKeyId).toBeUndefined()
+
     expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
     await holderTenant.endSession()
+    clearNock()
+  })
+
+  it('e2e flow with tenants, issuer endpoints requesting a sd-jwt-vc using pre-authorized code flow', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1.draft15',
+    })
+
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    // Bind to JWK
+    const tokenResponseTenant = await holderTenant.modules.openid4vc.holder.requestToken({
+      resolvedCredentialOffer,
+    })
+    const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponseTenant,
+      credentialBindingResolver,
+    })
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Completed,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
+    })
+
+    expect(credentialResponse.credentials).toHaveLength(1)
+    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+
+    // KMS key id Must be defined for jwk-based credentials
+    expect(firstSdJwtVcTenant1.holder?.method).toEqual('jwk')
+    expect(firstSdJwtVcTenant1.kmsKeyId).toBeDefined()
+
+    expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
+
     clearNock()
   })
 

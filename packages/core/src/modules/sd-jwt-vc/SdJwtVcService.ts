@@ -23,6 +23,7 @@ import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcError } from './SdJwtVcError'
 import type {
   SdJwtVcHeader,
+  SdJwtVcHolderBinding,
   SdJwtVcIssuer,
   SdJwtVcPayload,
   SdJwtVcPresentOptions,
@@ -56,6 +57,11 @@ export interface SdJwtVc<
   encoded: string
   compact: string
   header: Header
+
+  /**
+   * The holder of the credential
+   */
+  holder: SdJwtVcHolderBinding | undefined
 
   // TODO: payload type here is a lie, as it is the signed payload (so fields replaced with _sd)
   payload: Payload
@@ -123,7 +129,7 @@ export class SdJwtVcService {
       x5c: issuer.x5c?.map((cert) => cert.toString('base64')),
     } as const
 
-    const sdjwt = new SDJwtVcInstance({
+    const sdJwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       signer: getSdJwtSigner(agentContext, issuer.publicJwk),
       hashAlg: 'sha-256',
@@ -134,7 +140,7 @@ export class SdJwtVcService {
       throw new SdJwtVcError("Missing required parameter 'vct'")
     }
 
-    const compact = await sdjwt.issue(
+    const compact = await sdJwt.issue(
       {
         ...payload,
         cnf: holderBinding?.cnf,
@@ -146,10 +152,10 @@ export class SdJwtVcService {
       { header }
     )
 
-    const prettyClaims = (await sdjwt.getClaims(compact)) as Payload
-    const a = await sdjwt.decode(compact)
-    const sdjwtPayload = a.jwt?.payload as Payload | undefined
-    if (!sdjwtPayload) {
+    const prettyClaims = (await sdJwt.getClaims(compact)) as Payload
+    const decoded = await sdJwt.decode(compact)
+    const sdJwtPayload = decoded.jwt?.payload as Payload | undefined
+    if (!sdJwtPayload) {
       throw new SdJwtVcError('Invalid sd-jwt-vc state.')
     }
 
@@ -157,7 +163,8 @@ export class SdJwtVcService {
       compact,
       prettyClaims,
       header: header,
-      payload: sdjwtPayload,
+      holder: options.holder,
+      payload: sdJwtPayload,
       claimFormat: ClaimFormat.SdJwtDc,
       encoded: compact,
     } satisfies SdJwtVc<typeof header, Payload>
@@ -267,10 +274,12 @@ export class SdJwtVcService {
   > {
     const sdjwt = new SDJwtVcInstance(this.getBaseSdJwtConfig(agentContext))
     let sdJwtVc: SDJwt
+    let holderBinding: SdJwtVcHolderBinding | undefined
 
     try {
       sdJwtVc = await sdjwt.decode(compactSdJwtVc)
       if (!sdJwtVc.jwt) throw new CredoError('Invalid sd-jwt-vc')
+      holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt.payload) ?? undefined
     } catch (error) {
       return {
         isValid: false,
@@ -283,6 +292,7 @@ export class SdJwtVcService {
       header: sdJwtVc.jwt.header as Header,
       compact: compactSdJwtVc,
       prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
+      holder: holderBinding,
 
       kbJwt: sdJwtVc.kbJwt
         ? {
@@ -302,8 +312,9 @@ export class SdJwtVcService {
         trustedCertificates
       )
       const issuer = await this.extractKeyFromIssuer(agentContext, credentialIssuer)
-      const holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt.payload)
-      const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
+      const holder = returnSdJwtVc.holder
+        ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder)
+        : undefined
 
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, issuer.publicJwk),

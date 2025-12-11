@@ -1205,13 +1205,28 @@ export class OpenId4VciHolderService {
       if (format === OpenId4VciCredentialFormatProfile.SdJwtDc || credentialConfiguration.vct) {
         const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
         const verificationResults = await Promise.all(
-          credentials.map((compactSdJwtVc, index) =>
-            sdJwtVcApi.verify({
+          credentials.map(async (compactSdJwtVc, index) => {
+            const result = await sdJwtVcApi.verify({
               compactSdJwtVc,
               // Only load and verify it for the first instance
               fetchTypeMetadata: index === 0,
             })
-          )
+
+            // Link key id with credential
+            if (result.sdJwtVc?.holder?.method === 'jwk') {
+              const jwkThumbprint = TypedArrayEncoder.toBase64(result.sdJwtVc.holder.jwk.getJwkThumbprint())
+              const kmsKeyId = options.jwkThumbprintKmsKeyIdMapping?.[jwkThumbprint]
+              if (!kmsKeyId) {
+                throw new CredoError(
+                  `Missing kmsKeyId for jwk with thumbprint ${jwkThumbprint}. A credential was issued for a key that was not in the credential request.`
+                )
+              }
+
+              result.sdJwtVc.kmsKeyId = kmsKeyId
+            }
+
+            return result
+          })
         )
 
         if (!verificationResults.every((result) => result.isValid)) {
@@ -1387,10 +1402,10 @@ export class OpenId4VciHolderService {
             )
           }
 
+          mdoc.deviceKeyId = kmsKeyId
           return {
             result,
             mdoc,
-            kmsKeyId,
           }
         })
       )
@@ -1409,7 +1424,7 @@ export class OpenId4VciHolderService {
         record: new MdocRecord({
           credentialInstances: result.map((c) => ({
             issuerSignedBase64Url: c.mdoc.base64Url,
-            kmsKeyId: c.kmsKeyId,
+            kmsKeyId: c.mdoc.deviceKeyId,
           })) as MdocRecordInstances,
         }),
         notificationId,

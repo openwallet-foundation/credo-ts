@@ -129,6 +129,22 @@ describe('sd-jwt-vc end to end test', () => {
       compact: expect.any(String),
       encoded: expect.any(String),
       kbJwt: undefined,
+      holder: {
+        jwk: {
+          jwk: {
+            jwk: {
+              crv: 'Ed25519',
+              kid: expect.any(String),
+              kty: 'OKP',
+              x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
+            },
+            multicodecPrefix: 237,
+            supportdEncryptionKeyAgreementAlgorithms: [],
+            supportedSignatureAlgorithms: ['EdDSA', 'Ed25519'],
+          },
+        },
+        method: 'jwk',
+      },
       header: {
         alg: 'EdDSA',
         kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',

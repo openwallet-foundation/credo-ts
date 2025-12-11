@@ -283,6 +283,11 @@ describe('OpenID4VP Draft 21', () => {
               sd_hash: expect.any(String),
             },
           },
+          holder: {
+            didUrl:
+              'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+            method: 'did',
+          },
           payload: {
             _sd: [expect.any(String), expect.any(String)],
             _sd_alg: 'sha-256',
@@ -653,6 +658,11 @@ describe('OpenID4VP Draft 21', () => {
               nonce: verificationSession.requestPayload.nonce,
               sd_hash: expect.any(String),
             },
+          },
+          holder: {
+            didUrl:
+              'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+            method: 'did',
           },
           payload: {
             _sd: [expect.any(String), expect.any(String)],
