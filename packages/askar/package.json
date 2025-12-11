@@ -45,6 +45,6 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@openwallet-foundation/askar-shared": "catalog:"
+    "@openwallet-foundation/askar-shared": "^0.4.3 || ^0.5.0"
   }
 }
