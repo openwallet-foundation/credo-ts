@@ -1,9 +1,10 @@
-import type { AgentContext, Constructable } from '@credo-ts/core'
+import type { AgentContext, Constructable, SdJwtVc } from '@credo-ts/core'
 import {
   Agent,
   DidKey,
   DidsModule,
   getDomainFromUrl,
+  Hasher,
   JwsService,
   JwtPayload,
   KeyDidRegistrar,
@@ -16,10 +17,10 @@ import {
 import { createHeaderAndPayload, StatusList } from '@sd-jwt/jwt-status-list'
 import { SDJWTException } from '@sd-jwt/utils'
 import { randomUUID } from 'crypto'
+import nock from 'nock'
 import { vi } from 'vitest'
 import { transformSeedToPrivateJwk } from '../../../../../askar/src'
-import { agentDependencies, getAgentOptions } from '../../../../tests'
-import * as fetchUtils from '../../../utils/fetch'
+import { getAgentOptions } from '../../../../tests'
 import { PublicJwk } from '../../kms'
 import { SdJwtVcRecord, SdJwtVcRepository } from '../repository'
 import type { SdJwtVcHeader } from '../SdJwtVcOptions'
@@ -122,6 +123,10 @@ describe('SdJwtVcService', () => {
   let issuerKey: PublicJwk
   let holderKey: PublicJwk
   let sdJwtVcService: SdJwtVcService
+
+  afterEach(() => {
+    nock.cleanAll()
+  })
 
   beforeAll(async () => {
     await agent.initialize()
@@ -1043,15 +1048,13 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc with status where credential is not revoked', async () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
-      // Mock call to status list
-      const fetchSpy = vi.spyOn(fetchUtils, 'fetchWithTimeout')
+      const statusList = await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [])
 
-      // First time not revoked
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: () => generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, []),
-      } satisfies Partial<Response> as Response)
+      // Mock call to status list
+      nock('https://example.com')
+        .get('/status-list')
+        .matchHeader('accept', 'application/statuslist+jwt')
+        .reply(200, statusList, { 'Content-Type': 'application/statuslist+jwt' })
 
       const presentation = await sdJwtVcService.present(agent.context, {
         sdJwtVc: simpleSdJwtVcWithStatus,
@@ -1061,13 +1064,6 @@ describe('SdJwtVcService', () => {
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
       })
-      expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
-        agentDependencies.fetch,
-        'https://example.com/status-list',
-        {
-          headers: { Accept: 'application/statuslist+jwt' },
-        }
-      )
 
       expect(verificationResult).toEqual({
         isValid: true,
@@ -1078,15 +1074,13 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc with status where credential is revoked and fails', async () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
-      // Mock call to status list
-      const fetchSpy = vi.spyOn(fetchUtils, 'fetchWithTimeout')
+      const statusList = await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [12])
 
-      // First time not revoked
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: () => generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [12]),
-      } satisfies Partial<Response> as Response)
+      // Mock call to status list
+      nock('https://example.com')
+        .get('/status-list')
+        .matchHeader('accept', 'application/statuslist+jwt')
+        .reply(200, statusList, { 'Content-Type': 'application/statuslist+jwt' })
 
       const presentation = await sdJwtVcService.present(agent.context, {
         sdJwtVc: simpleSdJwtVcWithStatus,
@@ -1096,13 +1090,6 @@ describe('SdJwtVcService', () => {
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
       })
-      expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
-        agentDependencies.fetch,
-        'https://example.com/status-list',
-        {
-          headers: { Accept: 'application/statuslist+jwt' },
-        }
-      )
 
       expect(verificationResult).toEqual({
         isValid: false,
@@ -1114,15 +1101,13 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc with status where status list is not valid and fails', async () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
-      // Mock call to status list
-      const fetchSpy = vi.spyOn(fetchUtils, 'fetchWithTimeout')
+      const statusList = await generateStatusList(agent.context, issuerKey, issuerDidUrl, 8, [])
 
-      // First time not revoked
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: () => generateStatusList(agent.context, issuerKey, issuerDidUrl, 8, []),
-      } satisfies Partial<Response> as Response)
+      // Mock call to status list
+      nock('https://example.com')
+        .get('/status-list')
+        .matchHeader('accept', 'application/statuslist+jwt')
+        .reply(200, statusList, { 'Content-Type': 'application/statuslist+jwt' })
 
       const presentation = await sdJwtVcService.present(agent.context, {
         sdJwtVc: simpleSdJwtVcWithStatus,
@@ -1132,13 +1117,6 @@ describe('SdJwtVcService', () => {
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
       })
-      expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
-        agentDependencies.fetch,
-        'https://example.com/status-list',
-        {
-          headers: { Accept: 'application/statuslist+jwt' },
-        }
-      )
 
       expect(verificationResult).toEqual({
         isValid: false,
@@ -1299,6 +1277,340 @@ describe('SdJwtVcService', () => {
         error: new SDJWTException('Verify Error: Invalid JWT Signature'),
         sdJwtVc: expect.any(Object),
       })
+    })
+  })
+
+  describe('SdJwtVcService.fetchTypeMetadata', () => {
+    test('Fetch type metadata from new vct URL path', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+        description: 'A credential for identity verification',
+      }
+
+      nock('https://example.com').get('/credentials/identity').reply(200, mockMetadata)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual(mockMetadata)
+    })
+
+    test('Fetch type metadata from legacy vct URL path when new path fails', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+        description: 'A credential for identity verification',
+      }
+
+      nock('https://example.com').get('/credentials/identity').reply(404)
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').reply(200, mockMetadata)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual(mockMetadata)
+    })
+
+    test('Fetch type metadata from legacy vct URL path when new path throws error', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+        description: 'A credential for identity verification',
+      }
+
+      nock('https://example.com').get('/credentials/identity').replyWithError('CORS error')
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').reply(200, mockMetadata)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual(mockMetadata)
+    })
+
+    test('Fetch type metadata with nested path', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/v1/credentials/identity/verified',
+        name: 'Verified Identity Credential',
+      }
+
+      nock('https://example.com').get('/v1/credentials/identity/verified').reply(404)
+
+      nock('https://example.com').get('/.well-known/vct/v1/credentials/identity/verified').reply(200, mockMetadata)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/v1/credentials/identity/verified',
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual(mockMetadata)
+    })
+
+    test('Fetch type metadata throws error for non-https vct', async () => {
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'http://example.com/credentials/identity',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow(
+        "Unable to resolve type metadata for vct 'http://example.com/credentials/identity'. Only https supported"
+      )
+    })
+
+    test('Fetch type metadata returns undefined for non-url vct if throwErrorOnUnsupportedVctValue is set to false', async () => {
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(
+          agent.context,
+          {
+            payload: {
+              vct: 'IdentityCredential',
+            },
+          } as unknown as SdJwtVc,
+          {
+            throwErrorOnUnsupportedVctValue: false,
+          }
+        )
+      ).resolves.toBeUndefined()
+    })
+
+    test('Fetch type metadata throws error for non-url vct', async () => {
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'IdentityCredential',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow("Unable to resolve type metadata for vct 'IdentityCredential'. Only https supported")
+    })
+
+    test('Fetch type metadata throws error when both new and legacy paths fail', async () => {
+      nock('https://example.com').get('/credentials/identity').reply(404, 'Not Found')
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').reply(404)
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow(
+        "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful 404 response. Not Found."
+      )
+    })
+
+    test('Fetch type metadata throws error when new path throws and legacy path fails', async () => {
+      nock('https://example.com').get('/credentials/identity').replyWithError('Network error')
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').reply(500)
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow(
+        "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful response."
+      )
+    })
+
+    test('Fetch type metadata throws error when both paths throw', async () => {
+      nock('https://example.com').get('/credentials/identity').replyWithError('Network error')
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').replyWithError('Legacy network error')
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow(
+        "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful response."
+      )
+    })
+
+    test('Fetch type metadata with valid vct#integrity (sha256) should succeed', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+        description: 'A credential for identity verification',
+      }
+
+      const metadataJson = JSON.stringify(mockMetadata)
+      // Compute the actual sha256 hash of the metadata
+      const hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-256'))
+      const integrityMetadata = `sha256-${hash}`
+
+      nock('https://example.com').get('/credentials/identity').reply(200, metadataJson, {
+        'Content-Type': 'application/json',
+      })
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual(mockMetadata)
+    })
+
+    test('Fetch type metadata with valid vct#integrity (sha384) should succeed', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+      }
+
+      const metadataJson = JSON.stringify(mockMetadata)
+      const hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-384'))
+      const integrityMetadata = `sha384-${hash}`
+
+      nock('https://example.com').get('/credentials/identity').reply(200, metadataJson, {
+        'Content-Type': 'application/json',
+      })
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual(mockMetadata)
+    })
+
+    test('Fetch type metadata with valid vct#integrity (sha512) should succeed', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+      }
+
+      const metadataJson = JSON.stringify(mockMetadata)
+      const hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-512'))
+      const integrityMetadata = `sha512-${hash}`
+
+      nock('https://example.com').get('/credentials/identity').reply(200, metadataJson, {
+        'Content-Type': 'application/json',
+      })
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual(mockMetadata)
+    })
+
+    test('Fetch type metadata with invalid vct#integrity should fail', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+      }
+
+      const metadataJson = JSON.stringify(mockMetadata)
+      // Use an incorrect hash
+      const incorrectHash = 'invalidhash1234567890abcdef='
+      const integrityMetadata = `sha256-${incorrectHash}`
+
+      nock('https://example.com').get('/credentials/identity').reply(200, metadataJson, {
+        'Content-Type': 'application/json',
+      })
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+            'vct#integrity': integrityMetadata,
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow('Integrity check failed. None of the provided hashes match the computed hash for the response.')
+    })
+
+    test('Fetch type metadata with multiple integrity values (strongest algorithm wins)', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+      }
+
+      const metadataJson = JSON.stringify(mockMetadata)
+      const sha256Hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-256'))
+      const sha512Hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-512'))
+      // Provide both sha256 and sha512, the verifier should use sha512 as it's stronger
+      const integrityMetadata = `sha256-${sha256Hash} sha512-${sha512Hash}`
+
+      nock('https://example.com').get('/credentials/identity').reply(200, metadataJson, {
+        'Content-Type': 'application/json',
+      })
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual(mockMetadata)
+    })
+
+    test('Fetch type metadata with invalid vct#integrity type (non-string) should fail', async () => {
+      nock('https://example.com').get('/credentials/identity').reply(
+        200,
+        {},
+        {
+          'Content-Type': 'application/json',
+        }
+      )
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+            'vct#integrity': 12345,
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow("Found 'vct#integrity' with value '12345' but value was not of type 'string'.")
+    })
+
+    test('Fetch type metadata with vct#integrity where only sha256 is wrong but sha512 is correct', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+      }
+
+      const metadataJson = JSON.stringify(mockMetadata)
+      const incorrectSha256Hash = 'invalidhash1234567890abcdef='
+      const sha512Hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-512'))
+      // sha512 is stronger and correct, so it should succeed even if sha256 is wrong
+      const integrityMetadata = `sha256-${incorrectSha256Hash} sha512-${sha512Hash}`
+
+      nock('https://example.com').get('/credentials/identity').reply(200, metadataJson, {
+        'Content-Type': 'application/json',
+      })
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual(mockMetadata)
     })
   })
 })
