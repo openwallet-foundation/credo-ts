@@ -232,7 +232,7 @@ describe('OpenId4VcHolder', () => {
         // or determine the did dynamically we could use any signature algorithm
         allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
         credentialConfigurationIds: Object.entries(resolvedCredentialOffer.offeredCredentialConfigurations)
-          .filter(([, configuration]) => configuration.format === 'vc+sd-jwt')
+          .filter(([, configuration]) => configuration.format === 'dc+sd-jwt')
           .map(([id]) => id),
         credentialBindingResolver: () => ({ method: 'jwk', keys: [holderKey] }),
       })
