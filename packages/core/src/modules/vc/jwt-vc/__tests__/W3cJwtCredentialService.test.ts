@@ -283,7 +283,7 @@ describe('W3cJwtCredentialService', () => {
     test('returns invalid result when credential is expired', async () => {
       const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)
 
-      jwtVc.jwt.payload.exp = new Date('2020-01-01').getTime() / 1000
+      jwtVc.jwt.payload.exp = 1577836800
 
       const result = await w3cJwtCredentialService.verifyCredential(agentContext, {
         credential: jwtVc,
