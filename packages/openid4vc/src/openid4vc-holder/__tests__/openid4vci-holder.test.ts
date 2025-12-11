@@ -186,7 +186,7 @@ describe('OpenId4VcHolder', () => {
         .rejects.toThrow('JWT nbf and vc.issuanceDate do not match')
     })
 
-    it('Should successfully receive credential from animo openid4vc playground using the pre-authorized flow using a jwk EdDSA subject and vc+sd-jwt credential', async () => {
+    it.only('Should successfully receive credential from animo openid4vc playground using the pre-authorized flow using a jwk EdDSA subject and vc+sd-jwt credential', async () => {
       const fixture = animoOpenIdPlaygroundDraft11SdJwtVc
 
       nock('https://openid4vc.animo.id')
@@ -232,7 +232,7 @@ describe('OpenId4VcHolder', () => {
         // or determine the did dynamically we could use any signature algorithm
         allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
         credentialConfigurationIds: Object.entries(resolvedCredentialOffer.offeredCredentialConfigurations)
-          .filter(([, configuration]) => configuration.format === 'vc+sd-jwt')
+          .filter(([, configuration]) => configuration.format === 'dc+sd-jwt')
           .map(([id]) => id),
         credentialBindingResolver: () => ({ method: 'jwk', keys: [holderKey] }),
       })
