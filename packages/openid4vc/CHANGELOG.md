@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.2
+
+### Patch Changes
+
+- b9bd214: feat: add a (configurable) 30 seconds skew to JWT-based credentials and other JWT object verification. This is to prevent verification errors based on slight deviations in server time. This does not affect non-JWT credentials yet (mDOC, JSON-LD)
+- 657ec73: chore: update @openid4vc package to ^0.4.3. This includes several transformation logic fixes for transforming between drafts, that caused issues for projects updating from Credo 0.5
+- 2073110: fix: correctly extract and store the kms key id for JWK-bound sd-jwt credentials received over openid4vc
+- Updated dependencies [b9bd214]
+- Updated dependencies [1969c67]
+- Updated dependencies [2073110]
+  - @credo-ts/core@0.6.2
+
 ## 0.6.1
 
 ### Patch Changes
