@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.2
+
+### Patch Changes
+
+- b9bd214: feat: add a (configurable) 30 seconds skew to JWT-based credentials and other JWT object verification. This is to prevent verification errors based on slight deviations in server time. This does not affect non-JWT credentials yet (mDOC, JSON-LD)
+- 1969c67: feat: fetch updated sd-jwt-vc type metadata path for sd-jwt-vc. There is also a new `fetchTypeMetadata` method in the `SdJwtVcApi`, allowing to resolve the type metadata for an SD-JWT VC. It will also verify the `vct#integrity` if available on the credential. Only HTTPS urls are supported at the moment.
+- 2073110: fix: correctly extract and store the kms key id for JWK-bound sd-jwt credentials received over openid4vc
+
 ## 0.6.1
 
 ### Patch Changes
