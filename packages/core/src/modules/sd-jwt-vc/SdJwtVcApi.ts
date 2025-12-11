@@ -11,7 +11,8 @@ import type {
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
 
-import { SdJwtVcService } from './SdJwtVcService'
+import { type SdJwtVc, SdJwtVcService } from './SdJwtVcService'
+import type { SdJwtVcTypeMetadata } from './typeMetadata'
 
 /**
  * @public
@@ -52,6 +53,22 @@ export class SdJwtVcApi {
    */
   public async verify<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(options: SdJwtVcVerifyOptions) {
     return await this.sdJwtVcService.verify<Header, Payload>(this.agentContext, options)
+  }
+
+  /**
+   * Fetches the type metadata for the `vct`. Only supports `https` VCT url for now.
+   *
+   * If fetching the VCT directly fails, it will fallback to the legacy vct path. If both
+   * fail, an error will be thrown, unless `throwErrorOnFetchError` is set to `false`.
+   *
+   * The integrity will always be verified if the metadata was resolved. The `extends` keyword is
+   * not resolved yet.
+   */
+  public async fetchTypeMetadata(
+    sdJwtVc: SdJwtVc,
+    options?: { throwErrorOnFetchError?: boolean }
+  ): Promise<SdJwtVcTypeMetadata | undefined> {
+    return this.sdJwtVcService.fetchTypeMetadata(this.agentContext, sdJwtVc, options)
   }
 
   /**

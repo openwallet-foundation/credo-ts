@@ -10,7 +10,7 @@ import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
-import { dateToSeconds, nowInSeconds, TypedArrayEncoder } from '../../utils'
+import { dateToSeconds, IntegrityVerifier, nowInSeconds, TypedArrayEncoder } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
@@ -265,13 +265,7 @@ export class SdJwtVcService {
     | { isValid: true; sdJwtVc: SdJwtVc<Header, Payload> }
     | { isValid: false; sdJwtVc?: SdJwtVc<Header, Payload>; error: Error }
   > {
-    const sdjwt = new SDJwtVcInstance({
-      ...this.getBaseSdJwtConfig(agentContext),
-      // FIXME: will break if using url but no type metadata
-      // https://github.com/openwallet-foundation/sd-jwt-js/issues/258
-      // loadTypeMetadataFormat: false,
-    })
-
+    const sdjwt = new SDJwtVcInstance(this.getBaseSdJwtConfig(agentContext))
     let sdJwtVc: SDJwt
 
     try {
@@ -376,11 +370,13 @@ export class SdJwtVcService {
         }
       }
 
-      const vct = returnSdJwtVc.payload?.vct
-      if (fetchTypeMetadata && typeof vct === 'string' && vct.startsWith('https://')) {
+      if (fetchTypeMetadata) {
         // We allow vct without type metadata for now (and don't fail if the retrieval fails)
-        // will probably change the behavior in a future Credo version
-        returnSdJwtVc.typeMetadata = await this.fetchTypeMetadata(agentContext, vct).catch(() => undefined)
+        // Integrity check must pass though.
+        returnSdJwtVc.typeMetadata = await this.fetchTypeMetadata(agentContext, returnSdJwtVc, {
+          throwErrorOnFetchError: false,
+          throwErrorOnUnsupportedVctValue: false,
+        })
       }
     } catch (error) {
       return {
@@ -396,8 +392,18 @@ export class SdJwtVcService {
     }
   }
 
-  public async fetchTypeMetadata(agentContext: AgentContext, vct: string) {
-    if (!vct.startsWith('https://')) {
+  public async fetchTypeMetadata(
+    agentContext: AgentContext,
+    sdJwtVc: SdJwtVc,
+    {
+      throwErrorOnFetchError = true,
+      throwErrorOnUnsupportedVctValue = true,
+    }: { throwErrorOnFetchError?: boolean; throwErrorOnUnsupportedVctValue?: boolean } = {}
+  ) {
+    const vct = sdJwtVc.payload.vct
+    const vctIntegrity = sdJwtVc.payload['vct#integrity']
+    if (!vct || typeof vct !== 'string' || !vct.startsWith('https://')) {
+      if (!throwErrorOnUnsupportedVctValue) return undefined
       throw new SdJwtVcError(`Unable to resolve type metadata for vct '${vct}'. Only https supported`)
     }
 
@@ -423,6 +429,8 @@ export class SdJwtVcService {
     }
 
     if (!response?.ok) {
+      if (!throwErrorOnFetchError) return undefined
+
       if (firstResponse) {
         throw new SdJwtVcError(
           `Unable to resolve type metadata vct '${vct}'. Fetch returned a non-successful ${firstResponse.status} response. ${await firstResponse.text()}.`,
@@ -436,8 +444,16 @@ export class SdJwtVcService {
       }
     }
 
-    const typeMetadata = await response.json()
-    return typeMetadata as SdJwtVcTypeMetadata
+    const typeMetadata = (await response.clone().json()) as SdJwtVcTypeMetadata
+    if (vctIntegrity) {
+      if (typeof vctIntegrity !== 'string') {
+        throw new SdJwtVcError(`Found 'vct#integrity' with value '${vctIntegrity}' but value was not of type 'string'.`)
+      }
+
+      IntegrityVerifier.verifyIntegrity(new Uint8Array(await response.arrayBuffer()), vctIntegrity)
+    }
+
+    return typeMetadata
   }
 
   public async store(agentContext: AgentContext, options: SdJwtVcStoreOptions) {
