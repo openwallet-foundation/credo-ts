@@ -1,6 +1,6 @@
 import type { EnvelopeKeys } from '../DidCommEnvelopeService'
 import type { DidCommMessage } from '../DidCommMessage'
-import type { DidCommTransportSession } from '../DidCommTransportService'
+import type { DidCommTransportSession } from '../transport'
 
 export class DummyTransportSession implements DidCommTransportSession {
   public id: string
