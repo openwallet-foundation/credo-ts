@@ -61,7 +61,7 @@ export interface SdJwtVc<
   /**
    * The holder of the credential
    */
-  holder?: SdJwtVcHolderBinding
+  holder: SdJwtVcHolderBinding | undefined
 
   // TODO: payload type here is a lie, as it is the signed payload (so fields replaced with _sd)
   payload: Payload
@@ -280,10 +280,12 @@ export class SdJwtVcService {
     })
 
     let sdJwtVc: SDJwt
+    let holderBinding: SdJwtVcHolderBinding | undefined
 
     try {
       sdJwtVc = await sdjwt.decode(compactSdJwtVc)
       if (!sdJwtVc.jwt) throw new CredoError('Invalid sd-jwt-vc')
+      holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt.payload) ?? undefined
     } catch (error) {
       return {
         isValid: false,
@@ -296,6 +298,7 @@ export class SdJwtVcService {
       header: sdJwtVc.jwt.header as Header,
       compact: compactSdJwtVc,
       prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
+      holder: holderBinding,
 
       kbJwt: sdJwtVc.kbJwt
         ? {
@@ -315,8 +318,9 @@ export class SdJwtVcService {
         trustedCertificates
       )
       const issuer = await this.extractKeyFromIssuer(agentContext, credentialIssuer)
-      const holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt.payload)
-      const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
+      const holder = returnSdJwtVc.holder
+        ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder)
+        : undefined
 
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, issuer.publicJwk),

@@ -82,6 +82,21 @@ export const universityDegreeCredentialConfigurationSupported = {
   cryptographic_binding_methods_supported: ['did:key', 'jwk'],
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
+export const universityDegreeCredentialConfigurationSupportedJwkOnly = {
+  format: OpenId4VciCredentialFormatProfile.SdJwtVc,
+  scope: 'UniversityDegreeCredential',
+  vct: 'UniversityDegreeCredential',
+  proof_types_supported: {
+    jwt: {
+      proof_signing_alg_values_supported: [
+        Kms.KnownJwaSignatureAlgorithms.EdDSA,
+        Kms.KnownJwaSignatureAlgorithms.ES256,
+      ],
+    },
+  },
+  cryptographic_binding_methods_supported: ['jwk'],
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+
 export const universityDegreeCredentialConfigurationSupportedMdoc = {
   format: OpenId4VciCredentialFormatProfile.MsoMdoc,
   scope: 'UniversityDegreeCredential',
