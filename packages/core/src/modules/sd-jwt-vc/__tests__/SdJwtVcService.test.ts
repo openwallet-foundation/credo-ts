@@ -1219,11 +1219,12 @@ describe('SdJwtVcService', () => {
     })
 
     test('verify expired sd-jwt-vc and fails', async () => {
+      // 31 seconds due to the skew of 30 seconds
       Date.prototype.getTime = vi.fn(function () {
-        return 1716111919 * 1000 + 1000
+        return 1716111919 * 1000 + 31000
       })
       Date.now = vi.fn(function () {
-        return 1716111919 * 1000 + 1000
+        return 1716111919 * 1000 + 31000
       })
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: expiredSdJwtVc,
