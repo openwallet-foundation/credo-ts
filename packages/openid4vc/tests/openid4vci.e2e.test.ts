@@ -338,7 +338,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     clearNock()
   })
 
-  it.only('e2e flow with tenants, issuer endpoints requesting a sd-jwt-vc using pre-authorized code flow', async () => {
+  it('e2e flow with tenants, issuer endpoints requesting a sd-jwt-vc using pre-authorized code flow', async () => {
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
     const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
 
