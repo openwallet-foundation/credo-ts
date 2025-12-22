@@ -792,32 +792,32 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@hashgraph/sdk':
-        specifier: ^2.77.0
-        version: 2.77.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+        specifier: ^2.78.0
+        version: 2.78.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       '@hiero-did-sdk/anoncreds':
-        specifier: ^0.1.7
-        version: 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       '@hiero-did-sdk/cache':
-        specifier: ^0.1.7
-        version: 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       '@hiero-did-sdk/client':
-        specifier: ^0.1.7
-        version: 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       '@hiero-did-sdk/core':
-        specifier: ^0.1.7
-        version: 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       '@hiero-did-sdk/hcs':
-        specifier: ^0.1.7
-        version: 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       '@hiero-did-sdk/publisher-internal':
-        specifier: ^0.1.7
-        version: 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       '@hiero-did-sdk/registrar':
-        specifier: ^0.1.7
-        version: 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       '@hiero-did-sdk/resolver':
-        specifier: ^0.1.7
-        version: 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
     devDependencies:
       '@credo-ts/node':
         specifier: workspace:*
@@ -2601,61 +2601,90 @@ packages:
     peerDependencies:
       bn.js: 5.2.1
 
-  '@hiero-did-sdk/anoncreds@0.1.7':
-    resolution: {integrity: sha512-MVm2vH2zLpL9WIXJfiOeSU+owv+RBU0aANX/p4sVp4EoITn8Fdf0YIkeyabJ0P2GQhkpPbJ8rtwW4eYTtqhzEw==}
+  '@hashgraph/sdk@2.78.0':
+    resolution: {integrity: sha512-mhefCpseHduXwsSJvAItNjpgio0LwTxoEQ3qzGdtY1WybUurTe5XA+2PFVnbiutaXQ+mDsLo+LJzS3D1juaK1g==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      bn.js: 5.2.1
+
+  '@hiero-did-sdk/anoncreds@0.1.8':
+    resolution: {integrity: sha512-+IQzoU/SBcavspISi+8Wg0FpikpfClrLHNkdU3bmADHMH++my3qL71HE+XfXVVZ7RH914Z29MjEDQPV0eGvPtg==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/cache@0.1.7':
-    resolution: {integrity: sha512-Bl90SRdbB4gWhNLph52NZ4PpI6XKtTWg3WfQuDYJfsbR2cer2qN/nI8ouKSxjBIs12nix9p7NXkfJ0KT3glPhQ==}
+  '@hiero-did-sdk/cache@0.1.8':
+    resolution: {integrity: sha512-HGC4ckyzK6ollXzwliEcyy9398srz2eSmBbYBFQawc/D3wCqK1Dd2jHhhQoutsUp8s/7+EhpB4urZ3CSOHFjBA==}
     engines: {node: '>=20'}
 
   '@hiero-did-sdk/client@0.1.7':
     resolution: {integrity: sha512-69Gf3Qi3GUcGBgcHD8t8eWFZpy8f3ggWYMqv7D56nkzUHWEM8kkRBs9uzdQ9bDPFpyNHipsDi4T+ySMMTXH9qg==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/core@0.1.7':
-    resolution: {integrity: sha512-rdwv32s8+ZD57YvuojscmrrTwDJ03dkghyRYxRgTqhUzM5lfmgzUBwANijI28PraAWTVjtoOegTBkTXbglXdFA==}
+  '@hiero-did-sdk/client@0.1.8':
+    resolution: {integrity: sha512-1ZH9H7ESEjVTyCjzjQX7KIKUpyvMQnmV82EwpD8qO1LEuY4K1PUtHJx93sPQ5kBLRzbIwRhRfC8tH5f/1cNwZQ==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/crypto@0.1.7':
-    resolution: {integrity: sha512-GKnwlJYbQyL24qmQ24r8Vzhpw5sD174+Ox6qrG3i71B29eGPotTOoddXDNp3cLuzcxJL/aKA6fHX6tTd6M/8qQ==}
+  '@hiero-did-sdk/core@0.1.8':
+    resolution: {integrity: sha512-Nu/pf7yc4Nf5yiJ5KCP1puzeHSNFcANaqQePZMTz0OOV8BGGkNgJR7mDQhx/rtxCgTTQPOBbEyHEE8joIR6NCQ==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/hcs@0.1.7':
-    resolution: {integrity: sha512-TianBY6lGI91UosEK5g93AYkBpspxZioLKrpOJrTYf3mWEow+WAkh/3SpdMCoAp9/fAYa1HPAA0sQFn7h/wWaw==}
+  '@hiero-did-sdk/crypto@0.1.8':
+    resolution: {integrity: sha512-qqdM2gQBV2/dZco3SvkClq/anzLGGCFcaHGbw3gxr2IUT6WwoZXBTRDX8KPYbix56XW5MLdf2MPQ4JlOb06rXg==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/lifecycle@0.1.7':
-    resolution: {integrity: sha512-gE4E/c/awP3ChlE+rxmMGzMHHiTOG5Ak5W2FmpAPzxgSQsxOs/2afUPsNqXD93e40RoVS3SxkwCboEBKtNQBHQ==}
+  '@hiero-did-sdk/hcs@0.1.8':
+    resolution: {integrity: sha512-0lEFQPpp6YzPHJT/mRhRABnipeAZLnQRrkswwpgi58suPjSfSKPeRMFv13nu6vLAGZddtvOxPEhhpKW+QU0t8A==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/messages@0.1.7':
-    resolution: {integrity: sha512-Su1jMBx/b9XFN5yk8Ktb21sNLr7yf+7f00msxkfaANmzJKVhFxUhKfnfEyKVHGx/XYK2IUM6vBhkdwGDbfJ/OQ==}
+  '@hiero-did-sdk/lifecycle@0.1.8':
+    resolution: {integrity: sha512-mydU6Wd2uozDbOdtb10XiWRaLuIoLLiMGGv4nXDaYM5Hp01XccEvWl1p89Dqv/QLVMkIlZHBJWSaWWUW+4rfNQ==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/publisher-internal@0.1.7':
-    resolution: {integrity: sha512-5WnQZKcP7i8sVYcORonHwKVYvofoE5ocn3CiW/lwjZet6erUeFVKoPjh9HH3M2n5fCqYhr6LBk1CDJUn5iyQyQ==}
+  '@hiero-did-sdk/messages@0.1.8':
+    resolution: {integrity: sha512-L6G3q0ZPOcBFz2Klph9/3y+UR+Jdr7zuiHz2iAWkmDWQFyX/VPx2WI75cKrztBgPiEDIjrinar1qM6iS6uqsaQ==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/registrar@0.1.7':
-    resolution: {integrity: sha512-x61AcMzKGR1a/DQAnowmd7kvklYpsS38ndIx0d9FFSz17dqtdAI703NayUTSEP7wl4pKNEu6YIGacXeVrKKiyA==}
+  '@hiero-did-sdk/publisher-internal@0.1.8':
+    resolution: {integrity: sha512-1osOZIkv1trSTEV/lufh0zz+0GlItetC6tmoPpDSuq1w17HThq4n87PPBy2QCznxPLBcTYRxKLbTuOT+Fsl2vQ==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/resolver@0.1.7':
-    resolution: {integrity: sha512-XhwiiPL8ZV+jLDc/nfCac59ul0B8TLTuu1JpRAwOcfEKAEP8W+NaGcS2kR5HkPsVkmpEsmMTSmT5MNyqDCHAEw==}
+  '@hiero-did-sdk/registrar@0.1.8':
+    resolution: {integrity: sha512-VPgki1/ZwjQMBeWrqCkVVtkySzMpOqSW/Sxsosmi0jwso9Y1xpHQlawYA6WVq3282Ttrys30Z1L6foo8ZBo0AQ==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/signer-internal@0.1.7':
-    resolution: {integrity: sha512-I+NWZp8ygMGZkC0t8riF4/+54cVcgjD+iF3ncjZ7jMwv44L2Mk7FC3DqZHfzUN6fYkrSp10+eK6YerXB5rJ6Nw==}
+  '@hiero-did-sdk/resolver@0.1.8':
+    resolution: {integrity: sha512-z3hVY/lHkMcbcf3PGwqv8Vd6Vrd6IDVSHZ+l3q8v8Ie56ImtaW2XqwXaHYOCZrGakeTC+Ynq9dktMtln3GW2pA==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/verifier-internal@0.1.7':
-    resolution: {integrity: sha512-t+04rI7k0H3dA7/z4F3NtcEqHjK3ovTZRG1K5TTbyrz7bW036dpZR8ABV3k37+szvaRtnUhQUQQonvTlpmtgxg==}
+  '@hiero-did-sdk/signer-internal@0.1.8':
+    resolution: {integrity: sha512-IZY3CJL7wBEJ57n4Jb/s02pEmKcaZMJoywp9WIjyRBtKr8pwa8uX58dEBGvDmHWN1aCBSFrKbRiIRnkU04b17Q==}
     engines: {node: '>=20'}
 
-  '@hiero-did-sdk/zstd@0.1.7':
-    resolution: {integrity: sha512-FovR2yNNMAsplWLXjx1igyrgijHLevy6oZmni3oMUVqfDwddFqE4/vEMyocdIhJxeRQzayjQMH74wgRcgaOn+Q==}
+  '@hiero-did-sdk/verifier-internal@0.1.8':
+    resolution: {integrity: sha512-LzvWEJGlDmKGWNOMJbXw5pqiJNVE+h5boEV7E/82isrfdJjaup9TpB3+mdIx+TLmFQOLC60cm98xk8GHBvq4wA==}
     engines: {node: '>=20'}
+
+  '@hiero-did-sdk/zstd@0.1.8':
+    resolution: {integrity: sha512-P7q223JlO/BuZkZ2Ifkyqdul0O0ywa8xm88yJ0BmAIFBE0j4ft6Iw8Zg3kRMzYZX25vjl0ZssHJIA5LVUnBETg==}
+    engines: {node: '>=20'}
+
+  '@hiero-ledger/cryptography@1.15.0':
+    resolution: {integrity: sha512-KLbueVfPuTotZfGT+HxcA3zz455eIZW/dBGxkpj9MEp+J2pruR9TyWzenozkuFAzvQ+ouJexE8OmtJMwV5XBBg==}
+    engines: {node: '>=12.0.0'}
+    peerDependencies:
+      expo-crypto: '*'
+    peerDependenciesMeta:
+      expo-crypto:
+        optional: true
+
+  '@hiero-ledger/proto@2.25.0':
+    resolution: {integrity: sha512-yZ9gb/2FMUSvH+txR1g1Z/03vbl4T11H8qw1NQyIuKhXe4PE8Ct8iHAL62aS0BN+OcR6CaF2wkfkQa16kgIkSA==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      ansi-regex: 6.2.2
+      ansi-styles: 6.2.3
+      debug: 4.4.1
+      protobufjs: 7.5.4
+      strip-ansi: 7.1.2
 
   '@hyperledger/anoncreds-nodejs@0.3.4':
     resolution: {integrity: sha512-im5hRRvICM3hoyoJb4RJ7Mape7wIjDR8Tk+g/tHcg9GSPcEsJi+fJdxaHb7WVneycdZXeF6xky8BZwnQD2+Baw==}
@@ -10391,7 +10420,7 @@ snapshots:
   '@grpc/proto-loader@0.7.15':
     dependencies:
       lodash.camelcase: 4.3.0
-      long: 5.3.1
+      long: 5.3.2
       protobufjs: 7.5.4
       yargs: 17.7.2
 
@@ -10464,11 +10493,39 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/anoncreds@0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+  '@hashgraph/sdk@2.78.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
     dependencies:
-      '@hiero-did-sdk/core': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/hcs': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/zstd': 0.1.7
+      '@ethersproject/abi': 5.8.0
+      '@ethersproject/bignumber': 5.8.0
+      '@ethersproject/bytes': 5.8.0
+      '@ethersproject/rlp': 5.8.0
+      '@grpc/grpc-js': 1.12.6
+      '@hiero-ledger/cryptography': 1.15.0(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-ledger/proto': 2.25.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1)(protobufjs@7.5.4)(strip-ansi@7.1.2)
+      ansi-regex: 6.2.2
+      ansi-styles: 6.2.3
+      bignumber.js: 9.1.1
+      bn.js: 5.2.2
+      crypto-js: 4.2.0
+      debug: 4.4.1
+      js-base64: 3.7.4
+      long: 5.3.1
+      pino: 10.1.0
+      pino-pretty: 13.0.0
+      protobufjs: 7.5.4
+      rfc4648: 1.5.3
+      strip-ansi: 7.1.2
+      utf8: 3.0.0
+    transitivePeerDependencies:
+      - expo-crypto
+      - react-native
+      - supports-color
+
+  '@hiero-did-sdk/anoncreds@0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+    dependencies:
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/hcs': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/zstd': 0.1.8
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -10476,9 +10533,9 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/cache@0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+  '@hiero-did-sdk/cache@0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
     dependencies:
-      '@hiero-did-sdk/core': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
     transitivePeerDependencies:
       - bn.js
       - expo-crypto
@@ -10494,9 +10551,18 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/core@0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+  '@hiero-did-sdk/client@0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.77.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hashgraph/sdk': 2.78.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+    transitivePeerDependencies:
+      - bn.js
+      - expo-crypto
+      - react-native
+      - supports-color
+
+  '@hiero-did-sdk/core@0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+    dependencies:
+      '@hashgraph/sdk': 2.78.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       '@scure/base': 1.2.6
       buffer: 6.0.3
       cbor-x: 1.6.0
@@ -10507,28 +10573,18 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/crypto@0.1.7':
+  '@hiero-did-sdk/crypto@0.1.8':
     dependencies:
       buffer: 6.0.3
 
-  '@hiero-did-sdk/hcs@0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+  '@hiero-did-sdk/hcs@0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.77.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/cache': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/client': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/crypto': 0.1.7
-      '@hiero-did-sdk/zstd': 0.1.7
-      buffer: 6.0.3
-    transitivePeerDependencies:
-      - bn.js
-      - expo-crypto
-      - react-native
-      - supports-color
-
-  '@hiero-did-sdk/lifecycle@0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
-    dependencies:
-      '@hiero-did-sdk/core': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hashgraph/sdk': 2.78.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/cache': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/client': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/crypto': 0.1.8
+      '@hiero-did-sdk/zstd': 0.1.8
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -10536,12 +10592,9 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/messages@0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+  '@hiero-did-sdk/lifecycle@0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.77.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/lifecycle': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/resolver': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -10549,10 +10602,12 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/publisher-internal@0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+  '@hiero-did-sdk/messages@0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.77.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hashgraph/sdk': 2.78.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/lifecycle': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/resolver': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -10560,16 +10615,10 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/registrar@0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+  '@hiero-did-sdk/publisher-internal@0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.77.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/lifecycle': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/messages': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/publisher-internal': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/resolver': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/signer-internal': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/verifier-internal': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hashgraph/sdk': 2.78.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -10577,13 +10626,16 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/resolver@0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+  '@hiero-did-sdk/registrar@0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.77.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/client': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/hcs': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/verifier-internal': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hashgraph/sdk': 2.78.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/lifecycle': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/messages': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/publisher-internal': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/resolver': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/signer-internal': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/verifier-internal': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -10591,10 +10643,13 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/signer-internal@0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+  '@hiero-did-sdk/resolver@0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.77.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hashgraph/sdk': 2.78.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/client': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/hcs': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/verifier-internal': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -10602,10 +10657,10 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/verifier-internal@0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+  '@hiero-did-sdk/signer-internal@0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.77.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.7(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hashgraph/sdk': 2.78.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -10613,7 +10668,49 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/zstd@0.1.7': {}
+  '@hiero-did-sdk/verifier-internal@0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+    dependencies:
+      '@hashgraph/sdk': 2.78.0(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.2)(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      buffer: 6.0.3
+    transitivePeerDependencies:
+      - bn.js
+      - expo-crypto
+      - react-native
+      - supports-color
+
+  '@hiero-did-sdk/zstd@0.1.8': {}
+
+  '@hiero-ledger/cryptography@1.15.0(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))':
+    dependencies:
+      '@noble/curves': 1.8.1
+      ansi-regex: 6.2.2
+      ansi-styles: 6.2.3
+      asn1js: 3.0.6
+      bignumber.js: 9.1.1
+      bn.js: 5.2.1
+      buffer: 6.0.3
+      crypto-js: 4.2.0
+      debug: 4.4.1
+      forge-light: 1.1.4
+      js-base64: 3.7.7
+      react-native-get-random-values: 1.11.0(react-native@0.82.1(@babel/core@7.28.5)(@react-native-community/cli@10.2.7(@babel/core@7.28.5))(react@18.3.1))
+      spark-md5: 3.0.2
+      strip-ansi: 7.1.2
+      tweetnacl: 1.0.3
+      utf8: 3.0.0
+    transitivePeerDependencies:
+      - react-native
+      - supports-color
+
+  '@hiero-ledger/proto@2.25.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1)(protobufjs@7.5.4)(strip-ansi@7.1.2)':
+    dependencies:
+      ansi-regex: 6.2.2
+      ansi-styles: 6.2.3
+      debug: 4.4.1
+      long: 5.3.1
+      protobufjs: 7.5.4
+      strip-ansi: 7.1.2
 
   '@hyperledger/anoncreds-nodejs@0.3.4':
     dependencies:
