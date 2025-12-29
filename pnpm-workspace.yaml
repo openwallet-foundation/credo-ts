@@ -5,7 +5,7 @@ packages:
   - samples/*
 
 catalog:
-  '@biomejs/biome': ^2.3.8
+  '@biomejs/biome': ^2.3.10
   '@animo-id/pex': ^6.1.1
   '@astronautlabs/jsonpath': ^1.1.2
   '@hyperledger/anoncreds-nodejs': ^0.3.4
@@ -20,7 +20,7 @@ catalog:
   '@types/express': ^5.0.6
   '@types/node': ^20.19.25
   '@types/ws': ^8.18.1
-  '@vitest/coverage-v8': ^4.0.14
+  '@vitest/coverage-v8': ^4.0.16
   class-transformer: 0.5.1
   # We have locked the version in a lot of repos because 0.14.2 released
   # some breaking changes. We now account for that, but keep it at ^0.14.1
@@ -32,7 +32,7 @@ catalog:
   rxjs: ^7.8.2
   tsyringe: ^4.10.0
   typescript: ~5.9.3
-  vitest: ^4.0.14
+  vitest: ^4.0.16
   ws: ^8.18.3
   zod: ^4.1.12
 
