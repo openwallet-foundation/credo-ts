@@ -29,7 +29,7 @@ import type {
   MdocDeviceResponseVerifyOptions,
   MdocSessionTranscriptOptions,
 } from './MdocOptions'
-import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } from './mdocSupportedAlgs'
+import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
 import { nameSpacesRecordToMap } from './mdocUtil'
 
 export class MdocDeviceResponse {
@@ -441,7 +441,7 @@ export class MdocDeviceResponse {
           jwk.jwkTypeHumanDescription
         }. Key supports algs ${jwk.supportedSignatureAlgorithms.join(
           ', '
-        )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`
+        )}. mdoc supports algs ${mdocSupportedSignatureAlgorithms.join(', ')}`
       )
     }
 

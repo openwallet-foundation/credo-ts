@@ -55,6 +55,7 @@ export class OpenId4VcIssuerApi {
       display,
       dpopSigningAlgValuesSupported,
       batchCredentialIssuance,
+      authorizationServerConfigs,
     } = options
 
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
@@ -63,6 +64,7 @@ export class OpenId4VcIssuerApi {
     issuer.display = display
     issuer.dpopSigningAlgValuesSupported = dpopSigningAlgValuesSupported
     issuer.batchCredentialIssuance = batchCredentialIssuance
+    issuer.authorizationServerConfigs = authorizationServerConfigs
 
     return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
   }

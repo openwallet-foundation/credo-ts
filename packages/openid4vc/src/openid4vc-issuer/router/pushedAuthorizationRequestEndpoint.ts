@@ -48,6 +48,13 @@ export async function handlePushedAuthorizationRequest(
     })
   }
 
+  if (!parsedAuthorizationRequest.authorizationRequest.redirect_uri) {
+    throw new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.InvalidScope,
+      error_description: `Missing required 'redirect_uri' parameter.`,
+    })
+  }
+
   const allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
   if (!allowedStates.includes(issuanceSession.state)) {
     throw new Oauth2ServerErrorResponseError(

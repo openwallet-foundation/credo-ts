@@ -1,5 +1,13 @@
 # @credo-ts/didcomm
 
+## 0.6.1
+
+### Patch Changes
+
+- 251cbe5: fix: allow sending Problem Report when a DIDComm proofs flow is in proposal-sent state
+- Updated dependencies [9f60e1b]
+  - @credo-ts/core@0.6.1
+
 ## 0.6.0
 
 ### Minor Changes

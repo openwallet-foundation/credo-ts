@@ -941,6 +941,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'dc+sd-jwt',
             },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
+            },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
               _sd_alg: 'sha-256',
@@ -1281,6 +1286,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'vc+sd-jwt',
             },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
+            },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
               _sd_alg: 'sha-256',
@@ -1592,6 +1602,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'vc+sd-jwt',
             },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
+            },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
               _sd_alg: 'sha-256',
@@ -1637,6 +1652,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               alg: 'EdDSA',
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'vc+sd-jwt',
+            },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
             },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
@@ -2018,6 +2038,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'dc+sd-jwt',
             },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
+            },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
               _sd_alg: 'sha-256',
@@ -2065,6 +2090,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               alg: 'EdDSA',
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'dc+sd-jwt',
+            },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
             },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
@@ -2554,6 +2584,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 nonce: verificationSession.requestPayload.nonce,
                 sd_hash: expect.any(String),
               },
+            },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
             },
             payload: {
               _sd: [expect.any(String), expect.any(String)],

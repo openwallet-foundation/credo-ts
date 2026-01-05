@@ -10,7 +10,7 @@ import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
-import { dateToSeconds, nowInSeconds, TypedArrayEncoder } from '../../utils'
+import { dateToSeconds, IntegrityVerifier, nowInSeconds, TypedArrayEncoder } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
@@ -23,6 +23,7 @@ import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcError } from './SdJwtVcError'
 import type {
   SdJwtVcHeader,
+  SdJwtVcHolderBinding,
   SdJwtVcIssuer,
   SdJwtVcPayload,
   SdJwtVcPresentOptions,
@@ -56,6 +57,11 @@ export interface SdJwtVc<
   encoded: string
   compact: string
   header: Header
+
+  /**
+   * The holder of the credential
+   */
+  holder: SdJwtVcHolderBinding | undefined
 
   // TODO: payload type here is a lie, as it is the signed payload (so fields replaced with _sd)
   payload: Payload
@@ -123,7 +129,7 @@ export class SdJwtVcService {
       x5c: issuer.x5c?.map((cert) => cert.toString('base64')),
     } as const
 
-    const sdjwt = new SDJwtVcInstance({
+    const sdJwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       signer: getSdJwtSigner(agentContext, issuer.publicJwk),
       hashAlg: 'sha-256',
@@ -134,7 +140,7 @@ export class SdJwtVcService {
       throw new SdJwtVcError("Missing required parameter 'vct'")
     }
 
-    const compact = await sdjwt.issue(
+    const compact = await sdJwt.issue(
       {
         ...payload,
         cnf: holderBinding?.cnf,
@@ -146,10 +152,10 @@ export class SdJwtVcService {
       { header }
     )
 
-    const prettyClaims = (await sdjwt.getClaims(compact)) as Payload
-    const a = await sdjwt.decode(compact)
-    const sdjwtPayload = a.jwt?.payload as Payload | undefined
-    if (!sdjwtPayload) {
+    const prettyClaims = (await sdJwt.getClaims(compact)) as Payload
+    const decoded = await sdJwt.decode(compact)
+    const sdJwtPayload = decoded.jwt?.payload as Payload | undefined
+    if (!sdJwtPayload) {
       throw new SdJwtVcError('Invalid sd-jwt-vc state.')
     }
 
@@ -157,7 +163,8 @@ export class SdJwtVcService {
       compact,
       prettyClaims,
       header: header,
-      payload: sdjwtPayload,
+      holder: options.holder,
+      payload: sdJwtPayload,
       claimFormat: ClaimFormat.SdJwtDc,
       encoded: compact,
     } satisfies SdJwtVc<typeof header, Payload>
@@ -265,18 +272,14 @@ export class SdJwtVcService {
     | { isValid: true; sdJwtVc: SdJwtVc<Header, Payload> }
     | { isValid: false; sdJwtVc?: SdJwtVc<Header, Payload>; error: Error }
   > {
-    const sdjwt = new SDJwtVcInstance({
-      ...this.getBaseSdJwtConfig(agentContext),
-      // FIXME: will break if using url but no type metadata
-      // https://github.com/openwallet-foundation/sd-jwt-js/issues/258
-      // loadTypeMetadataFormat: false,
-    })
-
+    const sdjwt = new SDJwtVcInstance(this.getBaseSdJwtConfig(agentContext))
     let sdJwtVc: SDJwt
+    let holderBinding: SdJwtVcHolderBinding | undefined
 
     try {
       sdJwtVc = await sdjwt.decode(compactSdJwtVc)
       if (!sdJwtVc.jwt) throw new CredoError('Invalid sd-jwt-vc')
+      holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt.payload) ?? undefined
     } catch (error) {
       return {
         isValid: false,
@@ -289,6 +292,7 @@ export class SdJwtVcService {
       header: sdJwtVc.jwt.header as Header,
       compact: compactSdJwtVc,
       prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
+      holder: holderBinding,
 
       kbJwt: sdJwtVc.kbJwt
         ? {
@@ -308,8 +312,9 @@ export class SdJwtVcService {
         trustedCertificates
       )
       const issuer = await this.extractKeyFromIssuer(agentContext, credentialIssuer)
-      const holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt.payload)
-      const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
+      const holder = returnSdJwtVc.holder
+        ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder)
+        : undefined
 
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, issuer.publicJwk),
@@ -321,7 +326,7 @@ export class SdJwtVcService {
           requiredClaimKeys: requiredClaimKeys ? [...requiredClaimKeys, 'vct'] : ['vct'],
           keyBindingNonce: keyBinding?.nonce,
           currentDate: dateToSeconds(now ?? new Date()),
-          skewSeconds: 0,
+          skewSeconds: agentContext.config.validitySkewSeconds,
         })
       } catch (error) {
         return {
@@ -342,7 +347,7 @@ export class SdJwtVcService {
       try {
         JwtPayload.fromJson(returnSdJwtVc.payload).validate({
           now: dateToSeconds(now ?? new Date()),
-          skewTime: 0,
+          skewSeconds: agentContext.config.validitySkewSeconds,
         })
       } catch (error) {
         return {
@@ -376,22 +381,13 @@ export class SdJwtVcService {
         }
       }
 
-      try {
-        const vct = returnSdJwtVc.payload?.vct
-        if (fetchTypeMetadata && typeof vct === 'string' && vct.startsWith('https://')) {
-          // modify the uri based on https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-04.html#section-6.3.1
-          const vctElements = vct.split('/')
-          vctElements.splice(3, 0, '.well-known/vct')
-          const vctUrl = vctElements.join('/')
-
-          const response = await agentContext.config.agentDependencies.fetch(vctUrl)
-          if (response.ok) {
-            const typeMetadata = await response.json()
-            returnSdJwtVc.typeMetadata = typeMetadata as SdJwtVcTypeMetadata
-          }
-        }
-      } catch (_error) {
-        // we allow vct without type metadata for now
+      if (fetchTypeMetadata) {
+        // We allow vct without type metadata for now (and don't fail if the retrieval fails)
+        // Integrity check must pass though.
+        returnSdJwtVc.typeMetadata = await this.fetchTypeMetadata(agentContext, returnSdJwtVc, {
+          throwErrorOnFetchError: false,
+          throwErrorOnUnsupportedVctValue: false,
+        })
       }
     } catch (error) {
       return {
@@ -405,6 +401,70 @@ export class SdJwtVcService {
       isValid: true,
       sdJwtVc: returnSdJwtVc,
     }
+  }
+
+  public async fetchTypeMetadata(
+    agentContext: AgentContext,
+    sdJwtVc: SdJwtVc,
+    {
+      throwErrorOnFetchError = true,
+      throwErrorOnUnsupportedVctValue = true,
+    }: { throwErrorOnFetchError?: boolean; throwErrorOnUnsupportedVctValue?: boolean } = {}
+  ) {
+    const vct = sdJwtVc.payload.vct
+    const vctIntegrity = sdJwtVc.payload['vct#integrity']
+    if (!vct || typeof vct !== 'string' || !vct.startsWith('https://')) {
+      if (!throwErrorOnUnsupportedVctValue) return undefined
+      throw new SdJwtVcError(`Unable to resolve type metadata for vct '${vct}'. Only https supported`)
+    }
+
+    let firstError: Error | undefined
+
+    // Fist try the new type metadata URL
+    // We add a catch, so that if e.g. the request fails due to CORS (which throws an error
+    // we will still continue trying the legacy url)
+    const firstResponse = await agentContext.config.agentDependencies.fetch(vct).catch((error) => {
+      firstError = error
+      return undefined
+    })
+    let response = firstResponse
+
+    // If the response is not ok, try the legacy URL (will be removed in 0.7)
+    if (!response || !response?.ok) {
+      // modify the uri based on https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-04.html#section-6.3.1
+      const vctElements = vct.split('/')
+      vctElements.splice(3, 0, '.well-known/vct')
+      const legacyVctUrl = vctElements.join('/')
+
+      response = await agentContext.config.agentDependencies.fetch(legacyVctUrl).catch(() => undefined)
+    }
+
+    if (!response?.ok) {
+      if (!throwErrorOnFetchError) return undefined
+
+      if (firstResponse) {
+        throw new SdJwtVcError(
+          `Unable to resolve type metadata vct '${vct}'. Fetch returned a non-successful ${firstResponse.status} response. ${await firstResponse.text()}.`,
+          { cause: firstError }
+        )
+      } else {
+        throw new SdJwtVcError(
+          `Unable to resolve type metadata vct '${vct}'. Fetch returned a non-successful response.`,
+          { cause: firstError }
+        )
+      }
+    }
+
+    const typeMetadata = (await response.clone().json()) as SdJwtVcTypeMetadata
+    if (vctIntegrity) {
+      if (typeof vctIntegrity !== 'string') {
+        throw new SdJwtVcError(`Found 'vct#integrity' with value '${vctIntegrity}' but value was not of type 'string'.`)
+      }
+
+      IntegrityVerifier.verifyIntegrity(new Uint8Array(await response.arrayBuffer()), vctIntegrity)
+    }
+
+    return typeMetadata
   }
 
   public async store(agentContext: AgentContext, options: SdJwtVcStoreOptions) {

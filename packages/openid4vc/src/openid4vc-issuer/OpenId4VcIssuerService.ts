@@ -1121,7 +1121,9 @@ export class OpenId4VcIssuerService {
 
     const key = issuer.resolvedAccessTokenPublicJwk
     const jwt = Jwt.fromSerializedJwt(cNonce)
-    jwt.payload.validate()
+    jwt.payload.validate({
+      skewSeconds: agentContext.config.validitySkewSeconds,
+    })
 
     if (jwt.payload.iss !== issuerMetadata.credentialIssuer.credential_issuer) {
       throw new CredoError(`Invalid 'iss' claim in cNonce jwt`)
@@ -1189,9 +1191,11 @@ export class OpenId4VcIssuerService {
     return refreshToken
   }
 
-  public parseRefreshToken(token: string) {
+  public parseRefreshToken(agentContext: AgentContext, token: string) {
     const jwt = Jwt.fromSerializedJwt(token)
-    jwt.payload.validate()
+    jwt.payload.validate({
+      skewSeconds: agentContext.config.validitySkewSeconds,
+    })
 
     if (!jwt.payload.exp) {
       throw new CredoError(`Missing 'exp' claim in refresh token jwt`)

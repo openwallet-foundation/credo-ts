@@ -132,7 +132,9 @@ export class W3cV2SdJwtCredentialService {
             : W3cV2SdJwtVerifiableCredential.fromCompact(options.credential)
 
         // Validate JWT payload
-        JwtPayload.fromJson(credential.sdJwt.payload).validate()
+        JwtPayload.fromJson(credential.sdJwt.payload).validate({
+          skewSeconds: agentContext.config.validitySkewSeconds,
+        })
 
         validationResults.validations.dataModel = {
           isValid: true,
@@ -158,7 +160,9 @@ export class W3cV2SdJwtCredentialService {
       })
 
       try {
-        await sdJwt.verify(credential.encoded)
+        await sdJwt.verify(credential.encoded, {
+          skewSeconds: agentContext.config.validitySkewSeconds,
+        })
 
         validationResults.validations.signature = {
           isValid: true,
@@ -271,7 +275,9 @@ export class W3cV2SdJwtCredentialService {
             : W3cV2SdJwtVerifiablePresentation.fromCompact(options.presentation)
 
         // Validate JWT payload
-        JwtPayload.fromJson(presentation.sdJwt.payload).validate()
+        JwtPayload.fromJson(presentation.sdJwt.payload).validate({
+          skewSeconds: agentContext.config.validitySkewSeconds,
+        })
 
         validationResults.validations.dataModel = {
           isValid: true,
@@ -296,7 +302,9 @@ export class W3cV2SdJwtCredentialService {
       })
 
       try {
-        await sdjwt.verify(presentation.encoded)
+        await sdjwt.verify(presentation.encoded, {
+          skewSeconds: agentContext.config.validitySkewSeconds,
+        })
 
         validationResults.validations.presentationSignature = {
           isValid: true,

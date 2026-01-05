@@ -1,3 +1,4 @@
+import { DEFAULT_SKEW_TIME } from '../crypto/jose/jwt/JwtPayload'
 import type { Logger } from '../logger'
 import { ConsoleLogger, LogLevel } from '../logger'
 import type { InitConfig } from '../types'
@@ -20,6 +21,10 @@ export class AgentConfig {
 
   public get autoUpdateStorageOnStartup() {
     return this.initConfig.autoUpdateStorageOnStartup ?? false
+  }
+
+  public get validitySkewSeconds() {
+    return this.initConfig.validitySkewSeconds ?? DEFAULT_SKEW_TIME
   }
 
   public extend(config: Partial<InitConfig>): AgentConfig {

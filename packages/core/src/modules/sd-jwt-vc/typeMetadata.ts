@@ -70,8 +70,4 @@ export interface SdJwtVcTypeMetadata {
 
   display?: SdJwtVcTypeMetadataDisplay[]
   claims?: SdJwtVcTypeMetadataClaim[]
-
-  schema?: object
-  schema_uri?: string
-  'schema_uri#integrity'?: string
 }

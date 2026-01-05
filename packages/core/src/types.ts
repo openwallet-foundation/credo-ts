@@ -17,6 +17,24 @@ export interface InitConfig {
    * @default false
    */
   allowInsecureHttpUrls?: boolean
+
+  /**
+   * The allowed skew in seconds that should be allowed for validity time of a credentials and other signed
+   * objects (e.g. StatusList). Mobile devices especially can run a bit behind actual time, making validity
+   * checks fail based on a milliseconds / seconds.
+   *
+   * NOTE: this does currently only affects JWT based objects and credentials:
+   * - Token Status List
+   * - SD-JWT VC
+   * - W3C VCDM 1.1 and 2.0 with JWT/SD-JWT
+   *
+   * It does not cover
+   * - W3C VCDM 1.1 JSON-LD
+   * - mDOC
+   *
+   * @default 30
+   */
+  validitySkewSeconds?: number
 }
 
 export type JsonValue = string | number | boolean | null | JsonObject | JsonArray

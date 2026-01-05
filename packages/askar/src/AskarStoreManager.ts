@@ -122,7 +122,7 @@ export class AskarStoreManager {
     agentContext.config.logger.debug(`Provisioning store '${storeConfig.id}`)
 
     if (this.getStore(agentContext)) {
-      throw new AskarStoreError('Store already provisioned')
+      throw new AskarStoreDuplicateError('Store already provisioned')
     }
 
     try {

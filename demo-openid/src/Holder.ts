@@ -248,7 +248,7 @@ export class Holder extends BaseAgent<ReturnType<ReturnType<typeof getOpenIdHold
           }
         : undefined,
     })
-    return submissionResult.serverResponse
+    return submissionResult
   }
 
   public async exit() {

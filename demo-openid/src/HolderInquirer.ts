@@ -187,8 +187,26 @@ export class HolderInquirer extends BaseInquirer {
       dpop = resolvedAuthorization.dpop
       console.log(greenText('Authorization complete', true))
     } else if (resolvedAuthorization.authorizationFlow === 'PresentationDuringIssuance') {
-      console.log(redText('Presentation during issuance not supported yet', true))
-      return
+      await this.resolveProofRequest(resolvedAuthorization.openid4vpRequestUrl)
+      const result = await this.inquireConfirmation('Accept presentation?')
+
+      if (!result) {
+        console.log(redText('Not accepting presentation, aborting issuance flow', true))
+        this.resolvedCredentialOffer = undefined
+        this.resolvedPresentationRequest = undefined
+        return
+      }
+
+      const submissionResult = await this.acceptPresentationRequest()
+
+      authorizationCode = (
+        await this.holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+          authSession: resolvedAuthorization.authSession,
+          resolvedCredentialOffer: this.resolvedCredentialOffer,
+          dpop: resolvedAuthorization.dpop,
+          presentationDuringIssuanceSession: submissionResult.presentationDuringIssuanceSession,
+        })
+      ).authorizationCode
     } else if (resolvedAuthorization.authorizationFlow === 'PreAuthorized') {
       if (this.resolvedCredentialOffer.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.tx_code) {
         txCode = await this.inquireInput('Enter PIN')
@@ -213,8 +231,8 @@ export class HolderInquirer extends BaseInquirer {
     credentials.forEach(this.printCredential)
   }
 
-  public async resolveProofRequest() {
-    const proofRequestUri = await this.inquireInput('Enter proof request: ')
+  public async resolveProofRequest(_proofRequestUri?: string) {
+    const proofRequestUri = _proofRequestUri ?? (await this.inquireInput('Enter proof request: '))
     this.resolvedPresentationRequest = await this.holder.resolveProofRequest(proofRequestUri)
 
     if (this.resolvedPresentationRequest.presentationExchange) {
@@ -266,15 +284,23 @@ export class HolderInquirer extends BaseInquirer {
 
     console.log(greenText('Accepting the presentation request.'))
 
-    const serverResponse = await this.holder.acceptPresentationRequest(this.resolvedPresentationRequest)
+    const submissionResult = await this.holder.acceptPresentationRequest(this.resolvedPresentationRequest)
 
-    if (serverResponse && serverResponse.status >= 200 && serverResponse.status < 300) {
-      console.log(`received success status code '${serverResponse.status}'`)
+    if (
+      submissionResult.serverResponse &&
+      submissionResult.serverResponse.status >= 200 &&
+      submissionResult.serverResponse.status < 300
+    ) {
+      console.log(`received success status code '${submissionResult.serverResponse.status}'`)
     } else {
-      console.log(`received error status code '${serverResponse?.status}'. ${JSON.stringify(serverResponse?.body)}`)
+      console.log(
+        `received error status code '${submissionResult.serverResponse?.status}'. ${JSON.stringify(submissionResult.serverResponse?.body)}`
+      )
     }
 
     this.resolvedPresentationRequest = undefined
+
+    return submissionResult
   }
 
   public async exit() {

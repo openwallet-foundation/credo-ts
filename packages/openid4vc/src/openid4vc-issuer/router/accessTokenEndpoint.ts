@@ -70,7 +70,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             OpenId4VcIssuanceSessionState.CredentialRequestReceived,
             OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
           ]
-          parsedRefreshToken = openId4VcIssuerService.parseRefreshToken(grant.refreshToken)
+          parsedRefreshToken = openId4VcIssuerService.parseRefreshToken(agentContext, grant.refreshToken)
           query = {
             preAuthorizedCode: parsedRefreshToken.preAuthorizedCode,
             authorizationCode: parsedRefreshToken.issuerState,

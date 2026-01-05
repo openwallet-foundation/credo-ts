@@ -528,6 +528,8 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
 
     const requestMessage = await protocol.findRequestMessage(this.agentContext, proofRecord.id)
 
+    const proposalMessage = await protocol.findProposalMessage(this.agentContext, proofRecord.id)
+
     const { message: problemReport } = await protocol.createProblemReport(this.agentContext, {
       proofRecord,
       description: options.description,
@@ -539,12 +541,12 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       : undefined
     connectionRecord?.assertReady()
 
-    // If there's no connection (so connection-less, we require the state to be request received)
+    // If there's no connection (so connection-less, we require the state to be request received or proposal sent)
     if (!connectionRecord) {
-      proofRecord.assertState(DidCommProofState.RequestReceived)
+      proofRecord.assertState([DidCommProofState.RequestReceived, DidCommProofState.ProposalSent])
 
-      if (!requestMessage) {
-        throw new CredoError(`No request message found for proof record with id '${proofRecord.id}'`)
+      if (!requestMessage && !proposalMessage) {
+        throw new CredoError(`No request or proposal message found for proof record with id '${proofRecord.id}'`)
       }
     }
 
@@ -552,6 +554,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       message: problemReport,
       connectionRecord,
       associatedRecord: proofRecord,
+      lastSentMessage: proposalMessage ?? undefined,
       lastReceivedMessage: requestMessage ?? undefined,
     })
     await this.messageSender.sendMessage(outboundMessageContext)

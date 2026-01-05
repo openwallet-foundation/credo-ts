@@ -2,6 +2,7 @@
   "name": "afj-demo-openid",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/openwallet-foundation/credo-ts",

@@ -232,7 +232,7 @@ describe('OpenId4VcHolder', () => {
         // or determine the did dynamically we could use any signature algorithm
         allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
         credentialConfigurationIds: Object.entries(resolvedCredentialOffer.offeredCredentialConfigurations)
-          .filter(([, configuration]) => configuration.format === 'vc+sd-jwt')
+          .filter(([, configuration]) => configuration.format === 'dc+sd-jwt')
           .map(([id]) => id),
         credentialBindingResolver: () => ({ method: 'jwk', keys: [holderKey] }),
       })
@@ -260,6 +260,23 @@ describe('OpenId4VcHolder', () => {
           kid: '#z6Mkh5HNPCCJWZn6WRLjRPttyvYZBskZUdSJfTiZwcUSieqx',
           typ: 'vc+sd-jwt',
         },
+        holder: {
+          jwk: {
+            jwk: {
+              jwk: {
+                crv: 'Ed25519',
+                kty: 'OKP',
+                x: 'kc2tlphcZw1AIKykzM6pcci6QsKAocYzFL-5Fe36h6E',
+              },
+              multicodecPrefix: 237,
+              supportdEncryptionKeyAgreementAlgorithms: [],
+              supportedSignatureAlgorithms: ['EdDSA', 'Ed25519'],
+            },
+          },
+          method: 'jwk',
+        },
+        kbJwt: undefined,
+        kmsKeyId: expect.any(String),
         payload: {
           _sd_alg: 'sha-256',
           cnf: {
