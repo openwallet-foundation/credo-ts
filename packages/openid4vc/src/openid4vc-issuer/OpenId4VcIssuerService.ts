@@ -43,8 +43,8 @@ import {
   type DeferredCredentialResponse,
   extractScopesForCredentialConfigurationIds,
   getCredentialConfigurationsMatchingRequestFormat,
-  Openid4vciDraftVersion,
   Openid4vciIssuer,
+  Openid4vciVersion,
   type ParseCredentialRequestReturn,
 } from '@openid4vc/openid4vci'
 import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
@@ -220,8 +220,7 @@ export class OpenId4VcIssuerService {
       credentialOfferScheme: options.baseUri,
       issuerMetadata: {
         ...issuerMetadata,
-        originalDraftVersion:
-          version === 'v1.draft11-14' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft15,
+        originalDraftVersion: version === 'v1.draft11-14' ? Openid4vciVersion.Draft11 : Openid4vciVersion.Draft15,
       },
     })
 
@@ -1070,10 +1069,11 @@ export class OpenId4VcIssuerService {
 
       code_challenge_methods_supported: [PkceCodeChallengeMethod.S256],
       dpop_signing_alg_values_supported: issuerRecord.dpopSigningAlgValuesSupported,
+      authorization_response_iss_parameter_supported: true,
     } satisfies AuthorizationServerMetadata
 
     return {
-      originalDraftVersion: Openid4vciDraftVersion.V1,
+      originalDraftVersion: Openid4vciVersion.V1,
       credentialIssuer: credentialIssuerMetadata,
       authorizationServers: [issuerAuthorizationServer, ...extraAuthorizationServers],
       knownCredentialConfigurations: credentialIssuerMetadata.credential_configurations_supported,

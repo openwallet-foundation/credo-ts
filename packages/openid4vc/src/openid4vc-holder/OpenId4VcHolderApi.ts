@@ -19,6 +19,7 @@ import type {
   OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
   OpenId4VciSendNotificationOptions,
   OpenId4VciTokenRefreshOptions,
+  OpenId4VcParseAndVerifyAuthorizationResponseOptions,
 } from './OpenId4VciHolderServiceOptions'
 import { OpenId4VpHolderService } from './OpenId4vpHolderService'
 import type {
@@ -152,6 +153,10 @@ export class OpenId4VcHolderApi {
     options: OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions
   ) {
     return await this.openId4VciHolderService.retrieveAuthorizationCodeUsingPresentation(this.agentContext, options)
+  }
+
+  public parseAuthorizationCodeFromAuthorizationResponse(options: OpenId4VcParseAndVerifyAuthorizationResponseOptions) {
+    return this.openId4VciHolderService.parseAuthorizationCodeFromAuthorizationResponse(this.agentContext, options)
   }
 
   /**
