@@ -139,17 +139,16 @@ export class HolderInquirer extends BaseInquirer {
   }
 
   public async requestCredential() {
-    if (!this.resolvedCredentialOffer) {
+    const resolvedCredentialOffer = this.resolvedCredentialOffer
+
+    if (!resolvedCredentialOffer) {
       throw new Error('No credential offer resolved yet.')
     }
 
-    const credentialsThatCanBeRequested = Object.keys(this.resolvedCredentialOffer.offeredCredentialConfigurations)
+    const credentialsThatCanBeRequested = Object.keys(resolvedCredentialOffer.offeredCredentialConfigurations)
     const credentialsToRequest = await this.pickMultiple(credentialsThatCanBeRequested)
 
-    const resolvedAuthorization = await this.holder.initiateAuthorization(
-      this.resolvedCredentialOffer,
-      credentialsToRequest
-    )
+    const resolvedAuthorization = await this.holder.initiateAuthorization(resolvedCredentialOffer, credentialsToRequest)
     let authorizationCode: string | undefined
     let codeVerifier: string | undefined
     let txCode: string | undefined
@@ -162,8 +161,12 @@ export class HolderInquirer extends BaseInquirer {
 
       const code = new Promise<string>((resolve, reject) => {
         this.holder.app.get('/redirect', (req, res) => {
-          if (req.query.code) {
-            resolve(req.query.code as string)
+          try {
+            const result = this.holder.agent.openid4vc.holder.parseAuthorizationCodeFromAuthorizationResponse({
+              authorizationResponseRedirectUrl: `http://localhost:${this.holder.port}${req.originalUrl}`,
+              resolvedCredentialOffer,
+            })
+            resolve(result.authorizationCode)
             // Store original routes
             const originalStack = this.holder.app.router.stack
 
@@ -172,9 +175,10 @@ export class HolderInquirer extends BaseInquirer {
               (layer) => !(layer.route && layer.route.path === '/redirect')
             )
             res.send('Success! You can now go back to the terminal')
-          } else {
+          } catch (error) {
             console.log(redText('Error during authorization', true))
             console.log(JSON.stringify(req.query, null, 2))
+            console.error(error)
             res.status(500).send('Error during authentication')
             reject()
           }
@@ -202,20 +206,20 @@ export class HolderInquirer extends BaseInquirer {
       authorizationCode = (
         await this.holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
           authSession: resolvedAuthorization.authSession,
-          resolvedCredentialOffer: this.resolvedCredentialOffer,
+          resolvedCredentialOffer: resolvedCredentialOffer,
           dpop: resolvedAuthorization.dpop,
           presentationDuringIssuanceSession: submissionResult.presentationDuringIssuanceSession,
         })
       ).authorizationCode
     } else if (resolvedAuthorization.authorizationFlow === 'PreAuthorized') {
-      if (this.resolvedCredentialOffer.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.tx_code) {
+      if (resolvedCredentialOffer.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.tx_code) {
         txCode = await this.inquireInput('Enter PIN')
       }
     }
 
     console.log(greenText(`Requesting the following credential '${credentialsToRequest}'`))
 
-    const credentials = await this.holder.requestAndStoreCredentials(this.resolvedCredentialOffer, {
+    const credentials = await this.holder.requestAndStoreCredentials(resolvedCredentialOffer, {
       credentialsToRequest,
       clientId: authorizationCode ? this.holder.client.clientId : undefined,
       codeVerifier,
