@@ -1,3 +1,4 @@
+export * from './CertificateSigningRequest'
 export * from './extraction'
 export * from './utils'
 export * from './X509Api'

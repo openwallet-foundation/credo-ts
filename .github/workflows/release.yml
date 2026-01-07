@@ -16,6 +16,7 @@ on:
 permissions:
   pull-requests: write
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -32,6 +33,9 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Update npm
+        run: npm install -g npm@^11
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
@@ -45,7 +49,6 @@ jobs:
           version: pnpm changeset-version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
 
       - name: Get current package version
         id: get_version
@@ -87,18 +90,12 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Update npm
+        run: npm install -g npm@^11
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
         if: steps.should-run.outputs.run == 'true'
-
-      - name: Creating .npmrc
-        if: steps.should-run.outputs.run == 'true'
-        run: |
-          cat << EOF > ".npmrc"
-            //registry.npmjs.org/:_authToken=$NPM_TOKEN
-          EOF
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
 
       - name: Create unstable release
         if: steps.should-run.outputs.run == 'true'

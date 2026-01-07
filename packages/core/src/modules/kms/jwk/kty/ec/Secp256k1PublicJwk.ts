@@ -11,7 +11,7 @@ export class Secp256k1PublicJwk implements PublicJwkType<Jwk> {
   public static supportdEncryptionKeyAgreementAlgorithms = [KnownJwaKeyAgreementAlgorithms.ECDH_ES]
   public static multicodecPrefix = 231
 
-  public supportdEncryptionKeyAgreementAlgorithms = Secp256k1PublicJwk.supportdEncryptionKeyAgreementAlgorithms
+  public supportedEncryptionKeyAgreementAlgorithms = Secp256k1PublicJwk.supportdEncryptionKeyAgreementAlgorithms
   public supportedSignatureAlgorithms = Secp256k1PublicJwk.supportedSignatureAlgorithms
   public multicodecPrefix = Secp256k1PublicJwk.multicodecPrefix
 
