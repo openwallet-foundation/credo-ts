@@ -20,7 +20,7 @@ export class Ed25519PublicJwk implements PublicJwkType<Jwk> {
   public static supportdEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] = []
   public static multicodecPrefix = 237
 
-  public supportdEncryptionKeyAgreementAlgorithms = Ed25519PublicJwk.supportdEncryptionKeyAgreementAlgorithms
+  public supportedEncryptionKeyAgreementAlgorithms = Ed25519PublicJwk.supportdEncryptionKeyAgreementAlgorithms
   public supportedSignatureAlgorithms = Ed25519PublicJwk.supportedSignatureAlgorithms
   public multicodecPrefix = Ed25519PublicJwk.multicodecPrefix
 

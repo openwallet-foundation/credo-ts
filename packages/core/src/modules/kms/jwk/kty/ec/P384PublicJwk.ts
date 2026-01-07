@@ -11,7 +11,7 @@ export class P384PublicJwk implements PublicJwkType<Jwk> {
   public static supportdEncryptionKeyAgreementAlgorithms = [KnownJwaKeyAgreementAlgorithms.ECDH_ES]
   public static multicodecPrefix = 4609
 
-  public supportdEncryptionKeyAgreementAlgorithms = P384PublicJwk.supportdEncryptionKeyAgreementAlgorithms
+  public supportedEncryptionKeyAgreementAlgorithms = P384PublicJwk.supportdEncryptionKeyAgreementAlgorithms
   public supportedSignatureAlgorithms = P384PublicJwk.supportedSignatureAlgorithms
   public multicodecPrefix = P384PublicJwk.multicodecPrefix
 

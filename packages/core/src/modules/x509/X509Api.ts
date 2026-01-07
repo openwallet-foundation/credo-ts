@@ -3,7 +3,11 @@ import { injectable } from '../../plugins'
 
 import { X509ModuleConfig } from './X509ModuleConfig'
 import { X509Service } from './X509Service'
-import type { X509CreateCertificateOptions, X509ValidateCertificateChainOptions } from './X509ServiceOptions'
+import type {
+  X509CreateCertificateOptions,
+  X509CreateCertificateSigningRequestOptions,
+  X509ValidateCertificateChainOptions,
+} from './X509ServiceOptions'
 
 /**
  * @public
@@ -22,6 +26,10 @@ export class X509Api {
    */
   public async createCertificate(options: X509CreateCertificateOptions) {
     return await X509Service.createCertificate(this.agentContext, options)
+  }
+
+  public async createCertificateSigningRequest(options: X509CreateCertificateSigningRequestOptions) {
+    return await X509Service.createCertificateSigningRequest(this.agentContext, options)
   }
 
   /**

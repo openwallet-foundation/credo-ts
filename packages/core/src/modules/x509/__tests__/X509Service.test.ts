@@ -176,7 +176,7 @@ describe('X509Service', () => {
     )
   })
 
-  it('should create a valid self-signed certifcate as IACA Root + DCS for mDoc', async () => {
+  it('should create a valid self-signed certificate as IACA Root + DCS for mDoc', async () => {
     const authorityKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const documentSignerKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
 
@@ -555,5 +555,143 @@ describe('X509Service', () => {
     expect(chain.length).toStrictEqual(2)
     expect((chain[0].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual('P-384')
     expect((chain[1].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual('P-256')
+  })
+
+  describe('createCertificateSigningRequest', () => {
+    it('should create a valid CSR with basic options', async () => {
+      const subjectKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+      const csr = await X509Service.createCertificateSigningRequest(agentContext, {
+        subjectPublicKey: PublicJwk.fromPublicJwk(subjectKey.publicJwk),
+        subject: { commonName: 'Test CSR', countryName: 'NL' },
+      })
+
+      expect(csr).toBeDefined()
+      expect(csr.subject).toStrictEqual('CN=Test CSR, C=NL')
+
+      // Verify the CSR signature
+      const webCrypto = new CredoWebCrypto(agentContext)
+      const isValid = await csr.verify(webCrypto)
+      expect(isValid).toBe(true)
+    })
+
+    it('should create a CSR with extensions', async () => {
+      const subjectKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+      const csr = await X509Service.createCertificateSigningRequest(agentContext, {
+        subjectPublicKey: PublicJwk.fromPublicJwk(subjectKey.publicJwk),
+        subject: { commonName: 'Test CSR with Extensions', organizationalUnit: 'Engineering' },
+        extensions: {
+          subjectKeyIdentifier: {
+            include: true,
+          },
+          keyUsage: {
+            usages: [X509KeyUsage.DigitalSignature, X509KeyUsage.KeyEncipherment],
+          },
+          extendedKeyUsage: {
+            usages: [X509ExtendedKeyUsage.ClientAuth],
+          },
+          subjectAlternativeName: {
+            name: [
+              { type: 'dns', value: 'example.com' },
+              { type: 'url', value: 'https://example.com' },
+            ],
+          },
+        },
+      })
+
+      expect(csr).toBeDefined()
+      expect(csr.subject).toStrictEqual('CN=Test CSR with Extensions, OU=Engineering')
+      expect(csr.attributes.length).toBeGreaterThan(0)
+
+      const webCrypto = new CredoWebCrypto(agentContext)
+      const isValid = await csr.verify(webCrypto)
+      expect(isValid).toBe(true)
+    })
+
+    it('should create a certificate from a CSR', async () => {
+      const subjectKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const authorityKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+      const subjectPublicJwk = PublicJwk.fromPublicJwk(subjectKey.publicJwk)
+
+      // Create CSR
+      const csr = await X509Service.createCertificateSigningRequest(agentContext, {
+        subjectPublicKey: subjectPublicJwk,
+        subject: { commonName: 'CSR Subject', countryName: 'US', organizationalUnit: 'IT' },
+        extensions: {
+          subjectKeyIdentifier: {
+            include: true,
+          },
+          keyUsage: {
+            usages: [X509KeyUsage.DigitalSignature],
+          },
+          extendedKeyUsage: {
+            usages: [X509ExtendedKeyUsage.ClientAuth],
+          },
+          subjectAlternativeName: {
+            name: [{ type: 'dns', value: 'csr.example.com' }],
+          },
+        },
+      })
+
+      // Verify CSR is valid
+      const webCrypto = new CredoWebCrypto(agentContext)
+      const isValid = await csr.verify(webCrypto)
+      expect(isValid).toBe(true)
+
+      // Create certificate based on the CSR
+      const certificate = await X509Service.createCertificate(agentContext, {
+        serialNumber: '123456',
+        authorityKey: PublicJwk.fromPublicJwk(authorityKey.publicJwk),
+        subjectPublicKey: subjectPublicJwk,
+        issuer: { commonName: 'Certificate Authority', countryName: 'US' },
+        subject: csr.subject,
+        validity: {
+          notBefore: getLastMonth(),
+          notAfter: getNextMonth(),
+        },
+        extensions: {
+          subjectKeyIdentifier: {
+            include: true,
+          },
+          authorityKeyIdentifier: {
+            include: true,
+          },
+          keyUsage: {
+            usages: [X509KeyUsage.DigitalSignature],
+          },
+          extendedKeyUsage: {
+            usages: [X509ExtendedKeyUsage.ClientAuth],
+          },
+          subjectAlternativeName: {
+            name: [{ type: 'dns', value: 'csr.example.com' }],
+          },
+        },
+      })
+
+      expect(certificate).toBeDefined()
+      expect(certificate.subject).toStrictEqual(csr.subject)
+      expect(certificate.issuer).toStrictEqual('CN=Certificate Authority, C=US')
+      expect(certificate.sanDnsNames).toEqual(['csr.example.com'])
+      expect(certificate.keyUsage).toContain(X509KeyUsage.DigitalSignature)
+      expect(certificate.extendedKeyUsage).toContain(X509ExtendedKeyUsage.ClientAuth)
+    })
+
+    it('should create a CSR with string subject', async () => {
+      const subjectKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+      const csr = await X509Service.createCertificateSigningRequest(agentContext, {
+        subjectPublicKey: PublicJwk.fromPublicJwk(subjectKey.publicJwk),
+        subject: 'CN=String Subject, O=Test Org',
+      })
+
+      expect(csr).toBeDefined()
+      expect(csr.subject).toStrictEqual('CN=String Subject, O=Test Org')
+
+      const webCrypto = new CredoWebCrypto(agentContext)
+      const isValid = await csr.verify(webCrypto)
+      expect(isValid).toBe(true)
+    })
   })
 })

@@ -101,7 +101,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   // FIXME: all Jwk combinations should be separate types.
   // so not kty: EC, and crv: P-256 | P-384
   // but: kty: EC, and crv: P-256 | kty: EC, and crv: P-384
-  // As the first appraoch messes with TypeScript's type inference
+  // As the first approach messes with TypeScript's type inference
   public static fromPublicJwk<Jwk extends KmsJwkPublicAsymmetric>(jwk: Jwk) {
     return PublicJwk.fromUnknown(jwk) as PublicJwk<
       ExtractByJwk<SupportedPublicJwk, Jwk> extends never ? SupportedPublicJwk : ExtractByJwk<SupportedPublicJwk, Jwk>
@@ -116,12 +116,30 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     return jwk
   }
 
+  /**
+   * Get the signature algorithms supported for this jwk.
+   *
+   * If the jwk has an `alg` field defined it will only return that alg
+   * and otherwise return all known supported signature algorithm.
+   */
   public get supportedSignatureAlgorithms(): KnownJwaSignatureAlgorithm[] {
-    return this.jwk.supportedSignatureAlgorithms ?? []
+    const supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = this.jwk.supportedSignatureAlgorithms ?? []
+
+    if (this.jwk.jwk.alg) {
+      if (!supportedSignatureAlgorithms.includes(this.jwk.jwk.alg as KnownJwaSignatureAlgorithm)) {
+        throw new KeyManagementError(
+          `${this.jwkTypeHumanDescription} defines alg '${this.jwk.jwk.alg}' but this alg is not supported.`
+        )
+      }
+
+      return [this.jwk.jwk.alg] as this['supportedSignatureAlgorithms']
+    }
+
+    return supportedSignatureAlgorithms
   }
 
-  public get supportdEncryptionKeyAgreementAlgorithms(): KnownJwaKeyAgreementAlgorithm[] {
-    return this.jwk.supportdEncryptionKeyAgreementAlgorithms ?? []
+  public get supportedEncryptionKeyAgreementAlgorithms(): KnownJwaKeyAgreementAlgorithm[] {
+    return this.jwk.supportedEncryptionKeyAgreementAlgorithms ?? []
   }
 
   /**
@@ -179,28 +197,26 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   }
 
   /**
-   * Get the signature algorithm to use with this jwk. If the jwk has an `alg` field defined
+   * Get the first signature algorithm to use with this jwk. If the jwk has an `alg` field defined
    * it will use that alg, and otherwise fall back to the first supported signature algorithm.
    *
    * If no algorithm is supported it will throw an error
    */
   public get signatureAlgorithm() {
-    if (this.jwk.jwk.alg) {
-      if (!this.supportedSignatureAlgorithms.includes(this.jwk.jwk.alg as KnownJwaSignatureAlgorithm)) {
-        throw new KeyManagementError(
-          `${getJwkHumanDescription(this.jwk.jwk)} defines alg '${this.jwk.jwk.alg}' but this alg is not supported.`
-        )
-      }
-
-      return this.jwk.jwk.alg as this['supportedSignatureAlgorithms'][number]
-    }
-
     const alg = this.supportedSignatureAlgorithms[0]
     if (!alg) {
-      throw new KeyManagementError(`${getJwkHumanDescription(this.jwk.jwk)} has no supported signature algorithms`)
+      throw new KeyManagementError(`${this.jwkTypeHumanDescription} has no supported signature algorithms`)
     }
 
     return alg as this['supportedSignatureAlgorithms'][number]
+  }
+
+  public assertSignatureAlgorithmSupported(
+    alg: KnownJwaSignatureAlgorithm
+  ): asserts alg is this['supportedSignatureAlgorithms'][number] {
+    if (!this.supportedSignatureAlgorithms.includes(alg)) {
+      throw new KeyManagementError(`${this.jwkTypeHumanDescription} does not support signature alg '${alg}'.`)
+    }
   }
 
   public static fromPublicKey<Supported extends SupportedPublicJwk['publicKey']>(publicKey: Supported) {

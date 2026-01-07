@@ -11,7 +11,7 @@ export class P521PublicJwk implements PublicJwkType<Jwk> {
   public static supportdEncryptionKeyAgreementAlgorithms = [KnownJwaKeyAgreementAlgorithms.ECDH_ES]
   public static multicodecPrefix = 4610
 
-  public supportdEncryptionKeyAgreementAlgorithms = P521PublicJwk.supportdEncryptionKeyAgreementAlgorithms
+  public supportedEncryptionKeyAgreementAlgorithms = P521PublicJwk.supportdEncryptionKeyAgreementAlgorithms
   public supportedSignatureAlgorithms = P521PublicJwk.supportedSignatureAlgorithms
   public multicodecPrefix = P521PublicJwk.multicodecPrefix
 

@@ -19,15 +19,15 @@ export class RsaPublicJwk implements PublicJwkType<KmsJwkPublicRsa> {
   public static multicodecPrefix = 4613
 
   public multicodecPrefix = RsaPublicJwk.multicodecPrefix
-  public supportdEncryptionKeyAgreementAlgorithms = RsaPublicJwk.supportdEncryptionKeyAgreementAlgorithms
+  public supportedEncryptionKeyAgreementAlgorithms = RsaPublicJwk.supportdEncryptionKeyAgreementAlgorithms
 
   public get supportedSignatureAlgorithms() {
     const keyBits = TypedArrayEncoder.fromBase64(this.jwk.n).length * 8
 
     // RSA needs minimum bit lengths for each algorithm
-    const minBits2048: KnownJwaSignatureAlgorithm[] = ['PS256', 'RS256']
-    const minBits3072: KnownJwaSignatureAlgorithm[] = [...minBits2048, 'RS384', 'PS384']
-    const minBits4096: KnownJwaSignatureAlgorithm[] = [...minBits3072, 'RS512', 'PS512']
+    const minBits2048 = ['PS256', 'RS256'] satisfies KnownJwaSignatureAlgorithm[]
+    const minBits3072 = [...minBits2048, 'RS384', 'PS384'] satisfies KnownJwaSignatureAlgorithm[]
+    const minBits4096 = [...minBits3072, 'RS512', 'PS512'] satisfies KnownJwaSignatureAlgorithm[]
 
     return keyBits >= 4096 ? minBits4096 : keyBits >= 3072 ? minBits3072 : keyBits >= 2048 ? minBits2048 : []
   }

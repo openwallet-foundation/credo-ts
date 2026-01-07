@@ -11,7 +11,7 @@ export class X25519PublicJwk implements PublicJwkType<Jwk> {
   public static supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = []
   public static multicodecPrefix = 236
 
-  public supportdEncryptionKeyAgreementAlgorithms = X25519PublicJwk.supportdEncryptionKeyAgreementAlgorithms
+  public supportedEncryptionKeyAgreementAlgorithms = X25519PublicJwk.supportdEncryptionKeyAgreementAlgorithms
   public supportedSignatureAlgorithms = X25519PublicJwk.supportedSignatureAlgorithms
   public multicodecPrefix = X25519PublicJwk.multicodecPrefix
 

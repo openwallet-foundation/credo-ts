@@ -43,7 +43,7 @@ export function getJsonWebKey2020DidDocument(did: string, publicJwk: PublicJwk) 
 
   if (
     publicJwk.supportedSignatureAlgorithms.length === 0 &&
-    publicJwk.supportdEncryptionKeyAgreementAlgorithms.length === 0
+    publicJwk.supportedEncryptionKeyAgreementAlgorithms.length === 0
   ) {
     throw new CredoError('Key must support at least signing or encrypting')
   }
@@ -56,7 +56,7 @@ export function getJsonWebKey2020DidDocument(did: string, publicJwk: PublicJwk) 
       .addCapabilityInvocation(verificationMethod.id)
   }
 
-  if (publicJwk.supportdEncryptionKeyAgreementAlgorithms.length > 0) {
+  if (publicJwk.supportedEncryptionKeyAgreementAlgorithms.length > 0) {
     didDocumentBuilder.addKeyAgreement(verificationMethod.id)
   }
 

@@ -1,11 +1,24 @@
 import * as x509 from '@peculiar/x509'
 import { injectable } from 'tsyringe'
 import { AgentContext } from '../../agent'
-import { CredoWebCrypto } from '../../crypto/webcrypto'
+import {
+  CredoWebCrypto,
+  CredoWebCryptoKey,
+  jwaAlgorithmToKeySignParams,
+  publicJwkToCryptoKeyAlgorithm,
+} from '../../crypto/webcrypto'
+import {
+  convertName,
+  createExtendedKeyUsagesExtension,
+  createKeyUsagesExtension,
+  createSubjectAlternativeNameExtension,
+  createSubjectKeyIdentifierExtension,
+} from './utils'
 import { X509Certificate } from './X509Certificate'
 import { X509Error } from './X509Error'
 import type {
   X509CreateCertificateOptions,
+  X509CreateCertificateSigningRequestOptions,
   X509GetLeafCertificateOptions,
   X509ParseCertificateOptions,
   X509ValidateCertificateChainOptions,
@@ -25,11 +38,11 @@ export class X509Service {
    *
    * The Issuer of the certificate is found with the following algorithm:
    * - Check if there is an AuthorityKeyIdentifierExtension
-   * - Go through all the other certificates and see if the SubjectKeyIdentifier is equal to thje AuthorityKeyIdentifier
+   * - Go through all the other certificates and see if the SubjectKeyIdentifier is equal to the AuthorityKeyIdentifier
    * - If they are equal, the certificate is verified and returned as the issuer
    *
    * Additional validation:
-   *   - Make sure atleast a single certificate is in the chain
+   *   - Make sure at least a single certificate is in the chain
    *   - Check whether a certificate in the chain matches with a trusted certificate
    */
   public static async validateCertificateChain(
@@ -166,5 +179,55 @@ export class X509Service {
     const certificate = await X509Certificate.create(options, webCrypto)
 
     return certificate
+  }
+
+  public static async createCertificateSigningRequest(
+    agentContext: AgentContext,
+    options: X509CreateCertificateSigningRequestOptions
+  ) {
+    const webCrypto = new CredoWebCrypto(agentContext)
+
+    const signingKey = new CredoWebCryptoKey(
+      options.subjectPublicKey,
+      publicJwkToCryptoKeyAlgorithm(options.subjectPublicKey),
+      false,
+      'private',
+      ['sign']
+    )
+    const publicKey = new CredoWebCryptoKey(
+      options.subjectPublicKey,
+      publicJwkToCryptoKeyAlgorithm(options.subjectPublicKey),
+      true,
+      'public',
+      ['verify']
+    )
+
+    const extensions: Array<x509.Extension | undefined> = []
+    extensions.push(
+      createSubjectKeyIdentifierExtension(options.extensions?.subjectKeyIdentifier, {
+        publicJwk: options.subjectPublicKey,
+      })
+    )
+    extensions.push(createKeyUsagesExtension(options.extensions?.keyUsage))
+    extensions.push(createExtendedKeyUsagesExtension(options.extensions?.extendedKeyUsage))
+    extensions.push(createSubjectAlternativeNameExtension(options.extensions?.subjectAlternativeName))
+
+    const subjectName = convertName(options.subject)
+
+    // Get the JWA signature algorithm from the public key and convert to KeySignParams
+    const jwaAlgorithm = options.subjectPublicKey.signatureAlgorithm
+    const signingAlgorithm = jwaAlgorithmToKeySignParams(jwaAlgorithm)
+
+    const csr = await x509.Pkcs10CertificateRequestGenerator.create(
+      {
+        keys: { publicKey, privateKey: signingKey },
+        name: subjectName,
+        signingAlgorithm,
+        extensions: extensions.filter((e) => e !== undefined),
+      },
+      webCrypto
+    )
+
+    return csr
   }
 }

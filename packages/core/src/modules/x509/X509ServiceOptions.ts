@@ -72,6 +72,11 @@ export type X509CertificateExtensionsOptions = AddMarkAsCritical<{
   }
 }>
 
+export type X509CertificateSigningRequestExtensionsOptions = Pick<
+  X509CertificateExtensionsOptions,
+  'subjectKeyIdentifier' | 'keyUsage' | 'extendedKeyUsage' | 'subjectAlternativeName'
+>
+
 export interface X509CertificateIssuerAndSubjectOptions {
   countryName?: string
   stateOrProvinceName?: string
@@ -148,4 +153,24 @@ export interface X509CreateCertificateOptions {
    *
    */
   extensions?: X509CertificateExtensionsOptions
+}
+
+export interface X509CreateCertificateSigningRequestOptions {
+  /**
+   * The key that is the subject of the certificate signing request.
+   *
+   * If you want to influence the specific signature algorithm to use
+   * make sure to set the `alg` on the jwk.
+   */
+  subjectPublicKey: PublicJwk
+
+  /**
+   * The subject information of the certificate signing request
+   */
+  subject: string | X509CertificateIssuerAndSubjectOptions
+
+  /**
+   * X.509 v3 Extensions to be added to the certificate signing request
+   */
+  extensions?: X509CertificateSigningRequestExtensionsOptions
 }
