@@ -176,7 +176,7 @@ describe('X509Service', () => {
     )
   })
 
-  it('should create a valid self-signed certifcate as IACA Root + DCS for mDoc', async () => {
+  it('should create a valid self-signed certificate as IACA Root + DCS for mDoc', async () => {
     const authorityKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const documentSignerKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
 

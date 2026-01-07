@@ -139,7 +139,7 @@ describe('sd-jwt-vc end to end test', () => {
               x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
             },
             multicodecPrefix: 237,
-            supportdEncryptionKeyAgreementAlgorithms: [],
+            supportedEncryptionKeyAgreementAlgorithms: [],
             supportedSignatureAlgorithms: ['EdDSA', 'Ed25519'],
           },
         },
