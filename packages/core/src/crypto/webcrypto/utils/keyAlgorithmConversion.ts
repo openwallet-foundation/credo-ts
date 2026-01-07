@@ -12,7 +12,7 @@ import {
   x25519AlgorithmIdentifier,
 } from '../algorithmIdentifiers'
 import { CredoWebCryptoError } from '../CredoWebCryptoError'
-import type { KeyGenAlgorithm, KeyImportParams } from '../types'
+import type { EcKeyGenParams, KeyGenAlgorithm, KeyImportParams, RsaHashedKeyGenParams } from '../types'
 
 export const publicJwkToCryptoKeyAlgorithm = (key: PublicJwk): KeyImportParams => {
   const publicJwk = key.toJson()
