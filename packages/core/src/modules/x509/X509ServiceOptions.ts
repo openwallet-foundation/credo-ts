@@ -174,3 +174,7 @@ export interface X509CreateCertificateSigningRequestOptions {
    */
   extensions?: X509CertificateSigningRequestExtensionsOptions
 }
+
+export interface X509ParseCertificateSigningRequestOptions {
+  encodedCertificateSigningRequest: string
+}

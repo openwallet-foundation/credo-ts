@@ -186,7 +186,7 @@ export class X509Certificate {
       throw new X509Error('Multiple Key Usages are not allowed')
     }
 
-    return extendedKeyUsages?.[0] as X509ExtendedKeyUsage | undefined
+    return (extendedKeyUsages?.[0] as Array<X509ExtendedKeyUsage> | undefined) ?? []
   }
 
   public isExtensionCritical(id: string): boolean {

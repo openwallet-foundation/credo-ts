@@ -1,19 +1,8 @@
 import * as x509 from '@peculiar/x509'
 import { injectable } from 'tsyringe'
 import { AgentContext } from '../../agent'
-import {
-  CredoWebCrypto,
-  CredoWebCryptoKey,
-  jwaAlgorithmToKeySignParams,
-  publicJwkToCryptoKeyAlgorithm,
-} from '../../crypto/webcrypto'
-import {
-  convertName,
-  createExtendedKeyUsagesExtension,
-  createKeyUsagesExtension,
-  createSubjectAlternativeNameExtension,
-  createSubjectKeyIdentifierExtension,
-} from './utils'
+import { CredoWebCrypto } from '../../crypto/webcrypto'
+import { CertificateSigningRequest } from './CertificateSigningRequest'
 import { X509Certificate } from './X509Certificate'
 import { X509Error } from './X509Error'
 import type {
@@ -21,6 +10,7 @@ import type {
   X509CreateCertificateSigningRequestOptions,
   X509GetLeafCertificateOptions,
   X509ParseCertificateOptions,
+  X509ParseCertificateSigningRequestOptions,
   X509ValidateCertificateChainOptions,
 } from './X509ServiceOptions'
 
@@ -187,46 +177,15 @@ export class X509Service {
   ) {
     const webCrypto = new CredoWebCrypto(agentContext)
 
-    const signingKey = new CredoWebCryptoKey(
-      options.subjectPublicKey,
-      publicJwkToCryptoKeyAlgorithm(options.subjectPublicKey),
-      false,
-      'private',
-      ['sign']
-    )
-    const publicKey = new CredoWebCryptoKey(
-      options.subjectPublicKey,
-      publicJwkToCryptoKeyAlgorithm(options.subjectPublicKey),
-      true,
-      'public',
-      ['verify']
-    )
+    const csr = await CertificateSigningRequest.create(options, webCrypto)
 
-    const extensions: Array<x509.Extension | undefined> = []
-    extensions.push(
-      createSubjectKeyIdentifierExtension(options.extensions?.subjectKeyIdentifier, {
-        publicJwk: options.subjectPublicKey,
-      })
-    )
-    extensions.push(createKeyUsagesExtension(options.extensions?.keyUsage))
-    extensions.push(createExtendedKeyUsagesExtension(options.extensions?.extendedKeyUsage))
-    extensions.push(createSubjectAlternativeNameExtension(options.extensions?.subjectAlternativeName))
+    return csr
+  }
 
-    const subjectName = convertName(options.subject)
-
-    // Get the JWA signature algorithm from the public key and convert to KeySignParams
-    const jwaAlgorithm = options.subjectPublicKey.signatureAlgorithm
-    const signingAlgorithm = jwaAlgorithmToKeySignParams(jwaAlgorithm)
-
-    const csr = await x509.Pkcs10CertificateRequestGenerator.create(
-      {
-        keys: { publicKey, privateKey: signingKey },
-        name: subjectName,
-        signingAlgorithm,
-        extensions: extensions.filter((e) => e !== undefined),
-      },
-      webCrypto
-    )
+  public static parseCertificateSigningRequest({
+    encodedCertificateSigningRequest,
+  }: X509ParseCertificateSigningRequestOptions) {
+    const csr = CertificateSigningRequest.fromEncodedCertificateRequest(encodedCertificateSigningRequest)
 
     return csr
   }
