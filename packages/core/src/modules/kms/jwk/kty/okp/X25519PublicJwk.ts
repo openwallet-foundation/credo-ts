@@ -7,11 +7,11 @@ import { okpPublicJwkToPublicKey, okpPublicKeyToPublicJwk } from './okpPublicKey
 type Jwk = KmsJwkPublicOkp & { crv: 'X25519' }
 
 export class X25519PublicJwk implements PublicJwkType<Jwk> {
-  public static supportdEncryptionKeyAgreementAlgorithms = [KnownJwaKeyAgreementAlgorithms.ECDH_HSALSA20]
+  public static supportedEncryptionKeyAgreementAlgorithms = [KnownJwaKeyAgreementAlgorithms.ECDH_HSALSA20]
   public static supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = []
   public static multicodecPrefix = 236
 
-  public supportedEncryptionKeyAgreementAlgorithms = X25519PublicJwk.supportdEncryptionKeyAgreementAlgorithms
+  public supportedEncryptionKeyAgreementAlgorithms = X25519PublicJwk.supportedEncryptionKeyAgreementAlgorithms
   public supportedSignatureAlgorithms = X25519PublicJwk.supportedSignatureAlgorithms
   public multicodecPrefix = X25519PublicJwk.multicodecPrefix
 

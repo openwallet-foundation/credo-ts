@@ -7,7 +7,7 @@ import type { KmsJwkPublicRsa } from './rsaJwk'
 import { rsaPublicJwkToPublicKey, rsaPublicKeyToPublicJwk } from './rsaPublicKey'
 
 export class RsaPublicJwk implements PublicJwkType<KmsJwkPublicRsa> {
-  public static supportdEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] = []
+  public static supportedEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] = []
   public static supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = [
     'PS256',
     'RS256',
@@ -19,7 +19,7 @@ export class RsaPublicJwk implements PublicJwkType<KmsJwkPublicRsa> {
   public static multicodecPrefix = 4613
 
   public multicodecPrefix = RsaPublicJwk.multicodecPrefix
-  public supportedEncryptionKeyAgreementAlgorithms = RsaPublicJwk.supportdEncryptionKeyAgreementAlgorithms
+  public supportedEncryptionKeyAgreementAlgorithms = RsaPublicJwk.supportedEncryptionKeyAgreementAlgorithms
 
   public get supportedSignatureAlgorithms() {
     const keyBits = TypedArrayEncoder.fromBase64(this.jwk.n).length * 8

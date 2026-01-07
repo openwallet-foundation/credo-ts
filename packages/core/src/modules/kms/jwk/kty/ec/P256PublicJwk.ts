@@ -8,10 +8,10 @@ type Jwk = KmsJwkPublicEc & { crv: 'P-256' }
 
 export class P256PublicJwk implements PublicJwkType<Jwk> {
   public static supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = [KnownJwaSignatureAlgorithms.ES256]
-  public static supportdEncryptionKeyAgreementAlgorithms = [KnownJwaKeyAgreementAlgorithms.ECDH_ES]
+  public static supportedEncryptionKeyAgreementAlgorithms = [KnownJwaKeyAgreementAlgorithms.ECDH_ES]
   public static multicodecPrefix = 4608
 
-  public supportedEncryptionKeyAgreementAlgorithms = P256PublicJwk.supportdEncryptionKeyAgreementAlgorithms
+  public supportedEncryptionKeyAgreementAlgorithms = P256PublicJwk.supportedEncryptionKeyAgreementAlgorithms
   public supportedSignatureAlgorithms = P256PublicJwk.supportedSignatureAlgorithms
   public multicodecPrefix = P256PublicJwk.multicodecPrefix
 
