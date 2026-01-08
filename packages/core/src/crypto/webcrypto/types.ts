@@ -210,3 +210,45 @@ export function keyParamsToJwaAlgorithm(
 
   throw new CredoWebCryptoError(`Unsupported algorithm: ${params.name}`)
 }
+
+/**
+ * Converts a JWA signature algorithm to the appropriate KeySignParams
+ * This is the inverse of keyParamsToJwaAlgorithm
+ * @param algorithm - The JWA signature algorithm (e.g., 'ES256', 'RS256', 'EdDSA')
+ * @returns The signing parameters with the appropriate algorithm name and hash
+ */
+export function jwaAlgorithmToKeySignParams(algorithm: KnownJwaSignatureAlgorithm): KeySignParams {
+  switch (algorithm) {
+    // ECDSA algorithms
+    case 'ES256':
+    case 'ES256K':
+      return { name: 'ECDSA', hash: 'SHA-256' }
+    case 'ES384':
+      return { name: 'ECDSA', hash: 'SHA-384' }
+    case 'ES512':
+      return { name: 'ECDSA', hash: 'SHA-512' }
+
+    // EdDSA
+    case 'EdDSA':
+      return { name: 'Ed25519' }
+
+    // RSA PKCS1
+    case 'RS256':
+      return { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }
+    case 'RS384':
+      return { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-384' }
+    case 'RS512':
+      return { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-512' }
+
+    // RSA PSS
+    case 'PS256':
+      return { name: 'RSA-PSS', hash: 'SHA-256' }
+    case 'PS384':
+      return { name: 'RSA-PSS', hash: 'SHA-384' }
+    case 'PS512':
+      return { name: 'RSA-PSS', hash: 'SHA-512' }
+
+    default:
+      throw new CredoWebCryptoError(`Unsupported JWA algorithm: ${algorithm}`)
+  }
+}

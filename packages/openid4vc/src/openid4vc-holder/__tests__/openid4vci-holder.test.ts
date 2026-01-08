@@ -269,7 +269,7 @@ describe('OpenId4VcHolder', () => {
                 x: 'kc2tlphcZw1AIKykzM6pcci6QsKAocYzFL-5Fe36h6E',
               },
               multicodecPrefix: 237,
-              supportdEncryptionKeyAgreementAlgorithms: [],
+              supportedEncryptionKeyAgreementAlgorithms: [],
               supportedSignatureAlgorithms: ['EdDSA', 'Ed25519'],
             },
           },
