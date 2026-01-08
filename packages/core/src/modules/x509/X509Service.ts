@@ -2,12 +2,15 @@ import * as x509 from '@peculiar/x509'
 import { injectable } from 'tsyringe'
 import { AgentContext } from '../../agent'
 import { CredoWebCrypto } from '../../crypto/webcrypto'
+import { CertificateSigningRequest } from './CertificateSigningRequest'
 import { X509Certificate } from './X509Certificate'
 import { X509Error } from './X509Error'
 import type {
   X509CreateCertificateOptions,
+  X509CreateCertificateSigningRequestOptions,
   X509GetLeafCertificateOptions,
   X509ParseCertificateOptions,
+  X509ParseCertificateSigningRequestOptions,
   X509ValidateCertificateChainOptions,
 } from './X509ServiceOptions'
 
@@ -25,11 +28,11 @@ export class X509Service {
    *
    * The Issuer of the certificate is found with the following algorithm:
    * - Check if there is an AuthorityKeyIdentifierExtension
-   * - Go through all the other certificates and see if the SubjectKeyIdentifier is equal to thje AuthorityKeyIdentifier
+   * - Go through all the other certificates and see if the SubjectKeyIdentifier is equal to the AuthorityKeyIdentifier
    * - If they are equal, the certificate is verified and returned as the issuer
    *
    * Additional validation:
-   *   - Make sure atleast a single certificate is in the chain
+   *   - Make sure at least a single certificate is in the chain
    *   - Check whether a certificate in the chain matches with a trusted certificate
    */
   public static async validateCertificateChain(
@@ -166,5 +169,24 @@ export class X509Service {
     const certificate = await X509Certificate.create(options, webCrypto)
 
     return certificate
+  }
+
+  public static async createCertificateSigningRequest(
+    agentContext: AgentContext,
+    options: X509CreateCertificateSigningRequestOptions
+  ) {
+    const webCrypto = new CredoWebCrypto(agentContext)
+
+    const csr = await CertificateSigningRequest.create(options, webCrypto)
+
+    return csr
+  }
+
+  public static parseCertificateSigningRequest({
+    encodedCertificateSigningRequest,
+  }: X509ParseCertificateSigningRequestOptions) {
+    const csr = CertificateSigningRequest.fromEncodedCertificateRequest(encodedCertificateSigningRequest)
+
+    return csr
   }
 }
