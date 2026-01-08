@@ -68,6 +68,7 @@ export {
   deepEquality,
   equalsIgnoreOrder,
   equalsWithOrder,
+  IntegrityVerifier,
   IsStringOrInstance,
   IsStringOrInstanceOrArrayOfInstances,
   IsStringOrStringArray,
