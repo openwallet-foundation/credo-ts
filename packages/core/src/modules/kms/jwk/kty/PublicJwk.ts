@@ -6,7 +6,7 @@ export interface PublicJwkType<Jwk extends KmsJwkPublicAsymmetric = KmsJwkPublic
   readonly jwk: Jwk
 
   supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] | undefined
-  supportdEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] | undefined
+  supportedEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] | undefined
 
   multicodec: AnyUint8Array
 }

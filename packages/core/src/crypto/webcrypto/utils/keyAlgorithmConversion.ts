@@ -1,7 +1,7 @@
 import { RSAPublicKey } from '@peculiar/asn1-rsa'
 import { AsnParser, AsnSerializer } from '@peculiar/asn1-schema'
 import { AlgorithmIdentifier, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
-import { getJwkHumanDescription, type KmsCreateKeyType, PublicJwk } from '../../../modules/kms'
+import { type KmsCreateKeyType, PublicJwk } from '../../../modules/kms'
 import {
   ecPublicKeyWithK256AlgorithmIdentifier,
   ecPublicKeyWithP256AlgorithmIdentifier,
@@ -35,7 +35,7 @@ export const publicJwkToCryptoKeyAlgorithm = (key: PublicJwk): KeyGenAlgorithm =
   }
 
   // TODO: support RSA, but i think we need some extra params for this
-  throw new CredoWebCryptoError(`Unsupported ${getJwkHumanDescription(key.toJson())}`)
+  throw new CredoWebCryptoError(`Unsupported ${key.jwkTypeHumanDescription}`)
 }
 
 // TODO: support RSA
