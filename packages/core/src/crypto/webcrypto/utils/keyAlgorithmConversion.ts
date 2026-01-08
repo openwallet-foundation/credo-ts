@@ -12,9 +12,9 @@ import {
   x25519AlgorithmIdentifier,
 } from '../algorithmIdentifiers'
 import { CredoWebCryptoError } from '../CredoWebCryptoError'
-import type { EcKeyGenParams, KeyGenAlgorithm, KeyImportParams, RsaHashedKeyGenParams } from '../types'
+import type { EcKeyGenParams, KeyGenAlgorithm, RsaHashedKeyGenParams } from '../types'
 
-export const publicJwkToCryptoKeyAlgorithm = (key: PublicJwk): KeyImportParams => {
+export const publicJwkToCryptoKeyAlgorithm = (key: PublicJwk): KeyGenAlgorithm => {
   const publicJwk = key.toJson()
 
   if (publicJwk.kty === 'EC') {
@@ -34,26 +34,7 @@ export const publicJwkToCryptoKeyAlgorithm = (key: PublicJwk): KeyImportParams =
     }
   }
 
-  if (publicJwk.kty === 'RSA') {
-    const signatureAlg = key.signatureAlgorithm
-    switch (signatureAlg) {
-      case 'RS256':
-        return { name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } }
-      case 'RS384':
-        return { name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-384' } }
-      case 'RS512':
-        return { name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-512' } }
-      case 'PS256':
-        return { name: 'RSA-PSS', hash: { name: 'SHA-256' } }
-      case 'PS384':
-        return { name: 'RSA-PSS', hash: { name: 'SHA-384' } }
-      case 'PS512':
-        return { name: 'RSA-PSS', hash: { name: 'SHA-512' } }
-      default:
-        throw new CredoWebCryptoError(`Unsupported RSA signature algorithm: ${signatureAlg}`)
-    }
-  }
-
+  // TODO: support RSA, but i think we need some extra params for this
   throw new CredoWebCryptoError(`Unsupported ${key.jwkTypeHumanDescription}`)
 }
 
