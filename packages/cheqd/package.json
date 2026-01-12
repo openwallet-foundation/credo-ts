@@ -29,7 +29,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@cheqd/sdk": "npm:@cheqd/sdk-esm@~5.3.7",
+    "@cheqd/sdk": "5.4.1",
     "@cheqd/ts-proto": "^4.2.0",
     "@cosmjs/crypto": "^0.36.2",
     "@cosmjs/proto-signing": "^0.36.2",
