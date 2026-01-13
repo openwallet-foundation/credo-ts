@@ -370,6 +370,10 @@ export class X509Certificate {
     return this.x509Certificate.issuerName.getField(field)
   }
 
+  public getSubjectNameField(field: string) {
+    return this.x509Certificate.subjectName.getField(field)
+  }
+
   /**
    * @param format the format to export to, defaults to `pem`
    */
