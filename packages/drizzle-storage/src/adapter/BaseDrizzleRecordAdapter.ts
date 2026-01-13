@@ -117,29 +117,20 @@ export abstract class BaseDrizzleRecordAdapter<
 
         const whereConditions = [
           // Always filter by context
-          eq(
-            this.table.postgres.contextCorrelationId,
-            agentContext.contextCorrelationId
-          ),
+          eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId),
 
           // Existing query filters
-          query
-            ? queryToDrizzlePostgres(
-              query,
-              this.table.postgres,
-              this.tagKeyMapping
-            )
-            : undefined,
+          query ? queryToDrizzlePostgres(query, this.table.postgres, this.tagKeyMapping) : undefined,
 
           // Cursor condition (keyset pagination)
           cursor
             ? or(
-              (cursor.updatedAt ? gt(this.table.postgres.updatedAt, cursor.updatedAt) : undefined),
-              and(
-                (cursor.updatedAt ? eq(this.table.postgres.updatedAt, cursor.updatedAt) : undefined),
-                gt(this.table.postgres.id, cursor.id)
+                cursor.updatedAt ? gt(this.table.postgres.updatedAt, cursor.updatedAt) : undefined,
+                and(
+                  cursor.updatedAt ? eq(this.table.postgres.updatedAt, cursor.updatedAt) : undefined,
+                  gt(this.table.postgres.id, cursor.id)
+                )
               )
-            )
             : undefined,
         ].filter(Boolean)
 
@@ -147,18 +138,15 @@ export abstract class BaseDrizzleRecordAdapter<
           .select()
           .from(this.table.postgres as PgTable)
           .where(and(...whereConditions))
-          .orderBy(
-            asc(this.table.postgres.updatedAt),
-            asc(this.table.postgres.id)
-          )
+          .orderBy(asc(this.table.postgres.updatedAt), asc(this.table.postgres.id))
 
         if (queryOptions?.limit !== undefined) {
           queryResult = queryResult.limit(queryOptions.limit) as typeof queryResult
         }
 
         // Note: Offset should NOT be used with cursor pagination
-        // PS: This is also mentioned in the drizzle docs at the end of the page(search 'offset'): 
-        // https://orm.drizzle.team/docs/guides/cursor-based-pagination 
+        // PS: This is also mentioned in the drizzle docs at the end of the page(search 'offset'):
+        // https://orm.drizzle.team/docs/guides/cursor-based-pagination
         // So we skip offset in case we have cursor passed
         if (!cursor && queryOptions?.offset !== undefined) {
           queryResult = queryResult.offset(queryOptions.offset ?? 0) as typeof queryResult
@@ -175,33 +163,20 @@ export abstract class BaseDrizzleRecordAdapter<
 
         const whereConditions = [
           // Always filter by context
-          eq(
-            this.table.sqlite.contextCorrelationId,
-            agentContext.contextCorrelationId
-          ),
+          eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId),
 
           // Existing query filters
-          query
-            ? queryToDrizzleSqlite(
-              query,
-              this.table.sqlite,
-              this.tagKeyMapping
-            )
-            : undefined,
+          query ? queryToDrizzleSqlite(query, this.table.sqlite, this.tagKeyMapping) : undefined,
 
           // Cursor condition (keyset pagination)
           cursor
             ? or(
-              cursor.updatedAt
-                ? gt(this.table.sqlite.updatedAt, cursor.updatedAt)
-                : undefined,
-              and(
-                cursor.updatedAt
-                  ? eq(this.table.sqlite.updatedAt, cursor.updatedAt)
-                  : undefined,
-                gt(this.table.sqlite.id, cursor.id)
+                cursor.updatedAt ? gt(this.table.sqlite.updatedAt, cursor.updatedAt) : undefined,
+                and(
+                  cursor.updatedAt ? eq(this.table.sqlite.updatedAt, cursor.updatedAt) : undefined,
+                  gt(this.table.sqlite.id, cursor.id)
+                )
               )
-            )
             : undefined,
         ].filter(Boolean)
 
@@ -209,10 +184,7 @@ export abstract class BaseDrizzleRecordAdapter<
           .select()
           .from(this.table.sqlite as SQLiteTable)
           .where(and(...whereConditions))
-          .orderBy(
-            asc(this.table.sqlite.updatedAt),
-            asc(this.table.sqlite.id)
-          )
+          .orderBy(asc(this.table.sqlite.updatedAt), asc(this.table.sqlite.id))
 
         if (queryOptions?.limit !== undefined) {
           queryResult = queryResult.limit(queryOptions.limit) as typeof queryResult

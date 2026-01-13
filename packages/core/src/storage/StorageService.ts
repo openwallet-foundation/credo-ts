@@ -26,11 +26,11 @@ export type QueryOptions = {
   /**
    * Cursor and offset cannot be used together.
    * In case both are present 'cursor' based filtering is used.
-   * 
+   *
    * Cursor based pagination is currently only supported for records stored in drizzle-storage
    */
   cursor?: {
-    id: string,
+    id: string
     updatedAt?: Date
   }
 }
