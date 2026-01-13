@@ -8,7 +8,7 @@ import {
   RecordDuplicateError,
   RecordNotFoundError,
 } from '@credo-ts/core'
-import { and, asc, DrizzleQueryError, eq, gt, or, type Simplify } from 'drizzle-orm'
+import { and, asc, desc, DrizzleQueryError, eq, gt, or, type Simplify } from 'drizzle-orm'
 import { PgTransaction as _PgTransaction, PgTable, pgTable } from 'drizzle-orm/pg-core'
 import {
   SQLiteTable as _SQLiteTable,
@@ -125,9 +125,9 @@ export abstract class BaseDrizzleRecordAdapter<
           // Cursor condition (keyset pagination)
           cursor
             ? or(
-                cursor.updatedAt ? gt(this.table.postgres.updatedAt, cursor.updatedAt) : undefined,
+              gt(this.table.postgres.createdAt, cursor.createdAt),
                 and(
-                  cursor.updatedAt ? eq(this.table.postgres.updatedAt, cursor.updatedAt) : undefined,
+                  eq(this.table.postgres.createdAt, cursor.createdAt),
                   gt(this.table.postgres.id, cursor.id)
                 )
               )
@@ -138,7 +138,9 @@ export abstract class BaseDrizzleRecordAdapter<
           .select()
           .from(this.table.postgres as PgTable)
           .where(and(...whereConditions))
-          .orderBy(asc(this.table.postgres.updatedAt), asc(this.table.postgres.id))
+          // Order by `createdAt` descending for fetching latest created records first.
+          // `id` order direction should make much difference. So lets keep it asc for now.
+          .orderBy(desc(this.table.postgres.createdAt), asc(this.table.postgres.id))
 
         if (queryOptions?.limit !== undefined) {
           queryResult = queryResult.limit(queryOptions.limit) as typeof queryResult
@@ -171,11 +173,8 @@ export abstract class BaseDrizzleRecordAdapter<
           // Cursor condition (keyset pagination)
           cursor
             ? or(
-                cursor.updatedAt ? gt(this.table.sqlite.updatedAt, cursor.updatedAt) : undefined,
-                and(
-                  cursor.updatedAt ? eq(this.table.sqlite.updatedAt, cursor.updatedAt) : undefined,
-                  gt(this.table.sqlite.id, cursor.id)
-                )
+              gt(this.table.sqlite.createdAt, cursor.createdAt),
+              and(eq(this.table.sqlite.createdAt, cursor.createdAt), gt(this.table.sqlite.id, cursor.id))
               )
             : undefined,
         ].filter(Boolean)
@@ -184,7 +183,9 @@ export abstract class BaseDrizzleRecordAdapter<
           .select()
           .from(this.table.sqlite as SQLiteTable)
           .where(and(...whereConditions))
-          .orderBy(asc(this.table.sqlite.updatedAt), asc(this.table.sqlite.id))
+          // Order by `createdAt` descending for fetching latest created records first.
+          // `id` order direction should make much difference. So lets keep it asc for now.
+          .orderBy(desc(this.table.sqlite.createdAt), asc(this.table.sqlite.id))
 
         if (queryOptions?.limit !== undefined) {
           queryResult = queryResult.limit(queryOptions.limit) as typeof queryResult

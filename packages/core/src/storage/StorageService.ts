@@ -31,7 +31,7 @@ export type QueryOptions = {
    */
   cursor?: {
     id: string
-    updatedAt?: Date
+    createdAt: Date
   }
 }
 
