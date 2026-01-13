@@ -8,7 +8,7 @@ import {
   RecordDuplicateError,
   RecordNotFoundError,
 } from '@credo-ts/core'
-import { and, asc, desc, DrizzleQueryError, eq, gt, or, type Simplify } from 'drizzle-orm'
+import { and, asc, DrizzleQueryError, desc, eq, gt, or, type Simplify } from 'drizzle-orm'
 import { PgTransaction as _PgTransaction, PgTable, pgTable } from 'drizzle-orm/pg-core'
 import {
   SQLiteTable as _SQLiteTable,
@@ -125,11 +125,8 @@ export abstract class BaseDrizzleRecordAdapter<
           // Cursor condition (keyset pagination)
           cursor
             ? or(
-              gt(this.table.postgres.createdAt, cursor.createdAt),
-                and(
-                  eq(this.table.postgres.createdAt, cursor.createdAt),
-                  gt(this.table.postgres.id, cursor.id)
-                )
+                gt(this.table.postgres.createdAt, cursor.createdAt),
+                and(eq(this.table.postgres.createdAt, cursor.createdAt), gt(this.table.postgres.id, cursor.id))
               )
             : undefined,
         ].filter(Boolean)
@@ -173,8 +170,8 @@ export abstract class BaseDrizzleRecordAdapter<
           // Cursor condition (keyset pagination)
           cursor
             ? or(
-              gt(this.table.sqlite.createdAt, cursor.createdAt),
-              and(eq(this.table.sqlite.createdAt, cursor.createdAt), gt(this.table.sqlite.id, cursor.id))
+                gt(this.table.sqlite.createdAt, cursor.createdAt),
+                and(eq(this.table.sqlite.createdAt, cursor.createdAt), gt(this.table.sqlite.id, cursor.id))
               )
             : undefined,
         ].filter(Boolean)
