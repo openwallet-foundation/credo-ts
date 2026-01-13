@@ -45,6 +45,7 @@ export interface BaseRecordConstructor<T> extends Constructor<T> {
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 export interface StorageService<T extends BaseRecord<any, any, any>> {
+  supportsCursorPagination: boolean
   /**
    * Save record in storage
    *
