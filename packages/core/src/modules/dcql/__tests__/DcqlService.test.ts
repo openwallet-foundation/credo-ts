@@ -15,6 +15,7 @@ describe('DcqlService', () => {
           something: [
             {
               claimFormat: ClaimFormat.SdJwtDc,
+              header: {},
               prettyClaims: {
                 vct: 'something',
                 age_over_21: true,

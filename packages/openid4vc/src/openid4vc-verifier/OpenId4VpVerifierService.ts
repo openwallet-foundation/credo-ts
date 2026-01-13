@@ -968,7 +968,7 @@ export class OpenId4VpVerifierService {
             : {
                 authorization_encrypted_response_alg: 'ECDH-ES',
 
-                // NOTE: pre draft 24 we could only include one version. To maximize compatiblity we use
+                // NOTE: pre draft 24 we could only include one version. To maximize compatibility we use
                 // - A128GCM for draft 24 (HAIP)
                 // - A256GCM for draft 21 (18013-7)
                 authorization_encrypted_response_enc: options.version === 'v1.draft24' ? 'A128GCM' : 'A256GCM',
@@ -976,19 +976,19 @@ export class OpenId4VpVerifierService {
         }
       : undefined
 
-    const dclqQueryFormats = new Set(options.dcqlQuery?.credentials.map((c) => c.format))
+    const dcqlQueryFormats = new Set(options.dcqlQuery?.credentials.map((c) => c.format))
 
     return {
       ...jarmClientMetadata,
       ...verifier.clientMetadata,
       response_types_supported: ['vp_token'],
 
-      // for v1 version we only include the vp_formats_supported for formats we're
-      // requesting.
+      // for v1 version we only include the vp_formats_supported for formats we're requesting.
+      // TODO: should allow dynamically setting the supported algs
       ...(options.version === 'v1'
         ? {
             vp_formats_supported: {
-              ...(dclqQueryFormats.has('dc+sd-jwt')
+              ...(dcqlQueryFormats.has('dc+sd-jwt')
                 ? {
                     'dc+sd-jwt': {
                       'kb-jwt_alg_values': supportedAlgs,
@@ -997,17 +997,32 @@ export class OpenId4VpVerifierService {
                   }
                 : {}),
 
-              ...(dclqQueryFormats.has('mso_mdoc')
+              ...(dcqlQueryFormats.has('vc+sd-jwt')
                 ? {
-                    mso_mdoc: {
-                      // TODO: we need to add some generic utils for fully specified COSE algorithms
-                      deviceauth_alg_values: [/* P-256 */ -9, /* P-384 */ -51, /* Ed25519 */ -19],
-                      issuerauth_alg_values: [/* P-256 */ -9, /* P-384 */ -51, /* Ed25519 */ -19],
+                    'vc+sd-jwt': {
+                      alg_values: supportedAlgs,
                     },
                   }
                 : {}),
 
-              ...(dclqQueryFormats.has('jwt_vc_json')
+              ...(dcqlQueryFormats.has('mso_mdoc')
+                ? {
+                    mso_mdoc: {
+                      deviceauth_alg_values: [
+                        Kms.KnownCoseSignatureAlgorithms.ESP256,
+                        Kms.KnownCoseSignatureAlgorithms.ESP384,
+                        Kms.KnownCoseSignatureAlgorithms.Ed25519,
+                      ],
+                      issuerauth_alg_values: [
+                        Kms.KnownCoseSignatureAlgorithms.ESP256,
+                        Kms.KnownCoseSignatureAlgorithms.ESP384,
+                        Kms.KnownCoseSignatureAlgorithms.Ed25519,
+                      ],
+                    },
+                  }
+                : {}),
+
+              ...(dcqlQueryFormats.has('jwt_vc_json')
                 ? {
                     jwt_vc_json: {
                       alg_values: supportedAlgs,
@@ -1015,7 +1030,7 @@ export class OpenId4VpVerifierService {
                   }
                 : {}),
 
-              ...(dclqQueryFormats.has('ldp_vc')
+              ...(dcqlQueryFormats.has('ldp_vc')
                 ? {
                     ldp_vc: {
                       proof_type_values: supportedProofTypes as [string, ...string[]],
