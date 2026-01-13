@@ -118,7 +118,7 @@
     "@credo-ts/tenants": "workspace:*",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
-    "drizzle-kit": "^0.31.7",
+    "drizzle-kit": "^0.31.8",
     "shell": "^0.12.0",
     "tsyringe": "catalog:",
     "zod": "catalog:"
