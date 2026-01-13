@@ -378,8 +378,8 @@ importers:
         specifier: ~5.4.2
         version: 5.4.2
       '@cheqd/ts-proto':
-        specifier: ~2.5.0
-        version: 2.5.0
+        specifier: ~2.6.0
+        version: 2.6.0
       '@cosmjs/crypto':
         specifier: ~0.30.1
         version: 0.30.1
@@ -1887,10 +1887,6 @@ packages:
   '@cheqd/sdk@5.4.2':
     resolution: {integrity: sha512-uSvievQIlsivuJjVOgCKunFGJ+C3RSzn0rKwY1GQNeAejKlUiqI1UvStc+ohX/NPMWIhFkLkgdGEYH+KHGy5kg==}
     engines: {node: '>=22.0.0'}
-
-  '@cheqd/ts-proto@2.5.0':
-    resolution: {integrity: sha512-3KqyvcruFxvkz+p6LnSCyUnqBJ2bJeOnIDkaYoAMcmGcSNKti3VECOKGdjjEO3rG/0/gAR9bhEHu9j1mUKSFqA==}
-    engines: {node: '>=20'}
 
   '@cheqd/ts-proto@2.6.0':
     resolution: {integrity: sha512-0hbAFZzt4jvEQqCp0SjSM05f0l5HR4MhrWdlF4bk1jmHAz8U/FgCqXTBIJZ9nGG7RASX9t9MPbmhPOh6ED+4ow==}
@@ -9231,12 +9227,6 @@ snapshots:
       - debug
       - supports-color
       - utf-8-validate
-
-  '@cheqd/ts-proto@2.5.0':
-    dependencies:
-      '@bufbuild/protobuf': 2.6.2
-      long: 5.3.2
-      protobufjs: 7.5.4
 
   '@cheqd/ts-proto@2.6.0':
     dependencies:
