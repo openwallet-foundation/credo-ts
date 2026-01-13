@@ -23,6 +23,16 @@ interface AdvancedQuery<T extends BaseRecord<any, any, any>> {
 export type QueryOptions = {
   limit?: number
   offset?: number
+  /**
+   * Cursor and offset cannot be used together.
+   * In case both are present 'cursor' based filtering is used.
+   * 
+   * Cursor based pagination is currently only supported for records stored in drizzle-storage
+   */
+  cursor?: {
+    id: string,
+    updatedAt?: Date
+  }
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation

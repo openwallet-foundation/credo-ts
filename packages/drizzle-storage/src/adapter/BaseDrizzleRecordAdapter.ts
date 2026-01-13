@@ -8,7 +8,7 @@ import {
   RecordDuplicateError,
   RecordNotFoundError,
 } from '@credo-ts/core'
-import { and, DrizzleQueryError, eq, type Simplify } from 'drizzle-orm'
+import { and, asc, DrizzleQueryError, eq, gt, or, type Simplify } from 'drizzle-orm'
 import { PgTransaction as _PgTransaction, PgTable, pgTable } from 'drizzle-orm/pg-core'
 import {
   SQLiteTable as _SQLiteTable,
@@ -113,52 +113,121 @@ export abstract class BaseDrizzleRecordAdapter<
   public async query(agentContext: AgentContext, query?: Query<CredoRecord>, queryOptions?: QueryOptions) {
     try {
       if (isDrizzlePostgresDatabase(this.database)) {
+        const cursor = queryOptions?.cursor ?? undefined
+
+        const whereConditions = [
+          // Always filter by context
+          eq(
+            this.table.postgres.contextCorrelationId,
+            agentContext.contextCorrelationId
+          ),
+
+          // Existing query filters
+          query
+            ? queryToDrizzlePostgres(
+              query,
+              this.table.postgres,
+              this.tagKeyMapping
+            )
+            : undefined,
+
+          // Cursor condition (keyset pagination)
+          cursor
+            ? or(
+              (cursor.updatedAt ? gt(this.table.postgres.updatedAt, cursor.updatedAt) : undefined),
+              and(
+                (cursor.updatedAt ? eq(this.table.postgres.updatedAt, cursor.updatedAt) : undefined),
+                gt(this.table.postgres.id, cursor.id)
+              )
+            )
+            : undefined,
+        ].filter(Boolean)
+
         let queryResult = this.database
           .select()
           .from(this.table.postgres as PgTable)
-          .where(
-            and(
-              // Always filter based on context correlation id
-              eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId),
-              query ? queryToDrizzlePostgres(query, this.table.postgres, this.tagKeyMapping) : undefined
-            )
+          .where(and(...whereConditions))
+          .orderBy(
+            asc(this.table.postgres.updatedAt),
+            asc(this.table.postgres.id)
           )
 
         if (queryOptions?.limit !== undefined) {
           queryResult = queryResult.limit(queryOptions.limit) as typeof queryResult
         }
 
-        if (queryOptions?.offset !== undefined) {
+        // Note: Offset should NOT be used with cursor pagination
+        // PS: This is also mentioned in the drizzle docs at the end of the page(search 'offset'): 
+        // https://orm.drizzle.team/docs/guides/cursor-based-pagination 
+        // So we skip offset in case we have cursor passed
+        if (!cursor && queryOptions?.offset !== undefined) {
           queryResult = queryResult.offset(queryOptions.offset ?? 0) as typeof queryResult
         }
 
         const result = await queryResult
         return result.map(({ contextCorrelationId, ...item }) =>
-          this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+          this._toRecord(item as DrizzleAdapterRecordValues<PostgresTable>)
         )
       }
 
       if (isDrizzleSqliteDatabase(this.database)) {
+        const cursor = queryOptions?.cursor ?? undefined
+
+        const whereConditions = [
+          // Always filter by context
+          eq(
+            this.table.sqlite.contextCorrelationId,
+            agentContext.contextCorrelationId
+          ),
+
+          // Existing query filters
+          query
+            ? queryToDrizzleSqlite(
+              query,
+              this.table.sqlite,
+              this.tagKeyMapping
+            )
+            : undefined,
+
+          // Cursor condition (keyset pagination)
+          cursor
+            ? or(
+              cursor.updatedAt
+                ? gt(this.table.sqlite.updatedAt, cursor.updatedAt)
+                : undefined,
+              and(
+                cursor.updatedAt
+                  ? eq(this.table.sqlite.updatedAt, cursor.updatedAt)
+                  : undefined,
+                gt(this.table.sqlite.id, cursor.id)
+              )
+            )
+            : undefined,
+        ].filter(Boolean)
+
         let queryResult = this.database
           .select()
           .from(this.table.sqlite as SQLiteTable)
-          .where(
-            and(
-              // Always filter based on context correlation id
-              eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId),
-              query ? queryToDrizzleSqlite(query, this.table.sqlite, this.tagKeyMapping) : undefined
-            )
+          .where(and(...whereConditions))
+          .orderBy(
+            asc(this.table.sqlite.updatedAt),
+            asc(this.table.sqlite.id)
           )
 
         if (queryOptions?.limit !== undefined) {
-          queryResult = queryResult.limit(queryOptions.limit) as unknown as typeof queryResult
+          queryResult = queryResult.limit(queryOptions.limit) as typeof queryResult
         }
 
-        if (queryOptions?.offset !== undefined) {
-          queryResult = queryResult.offset(queryOptions.offset ?? 0) as unknown as typeof queryResult
+        // Note: Offset should NOT be used with cursor pagination
+        // PS: This is also mentioned in the drizzle docs at the end of the page(search 'offset'):
+        // https://orm.drizzle.team/docs/guides/cursor-based-pagination
+        // So we skip offset in case we have cursor passed
+        if (!cursor && queryOptions?.offset !== undefined) {
+          queryResult = queryResult.offset(queryOptions.offset ?? 0) as typeof queryResult
         }
 
         const result = await queryResult
+
         return result.map(({ contextCorrelationId, ...item }) =>
           this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
         )
