@@ -9,7 +9,7 @@ import type {
 import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 import type { DidDocumentMetadata } from '@credo-ts/core'
 
-import { createCheqdSDK, DIDModule, ResourceModule, CheqdNetwork, FeemarketModule } from '@cheqd/sdk'
+import { createCheqdSDK, DIDModule, ResourceModule, CheqdNetwork, FeemarketModule, OracleModule } from '@cheqd/sdk'
 import { CredoError, inject, injectable, InjectionSymbols, Logger } from '@credo-ts/core'
 
 import { CheqdModuleConfig } from '../CheqdModuleConfig'
@@ -91,6 +91,7 @@ export class CheqdLedgerService {
           FeemarketModule as unknown as AbstractCheqdSDKModule,
           DIDModule as unknown as AbstractCheqdSDKModule,
           ResourceModule as unknown as AbstractCheqdSDKModule,
+          OracleModule as unknown as AbstractCheqdSDKModule,
         ],
         rpcUrl: network.rpcUrl,
         wallet: await network.cosmosPayerWallet.catch((error) => {
