@@ -3,12 +3,14 @@ import {
   BaseRecord,
   type BaseRecordConstructor,
   CredoError,
+  decodeCursor,
+  encodeCursor,
   type Query,
   type QueryOptions,
   RecordDuplicateError,
   RecordNotFoundError,
 } from '@credo-ts/core'
-import { and, asc, DrizzleQueryError, desc, eq, gt, or, type Simplify } from 'drizzle-orm'
+import { and, asc, DrizzleQueryError, desc, eq, type Simplify } from 'drizzle-orm'
 import { PgTransaction as _PgTransaction, PgTable, pgTable } from 'drizzle-orm/pg-core'
 import {
   SQLiteTable as _SQLiteTable,
@@ -19,6 +21,7 @@ import { type DrizzleDatabase, isDrizzlePostgresDatabase, isDrizzleSqliteDatabas
 import { CredoDrizzleStorageError } from '../error'
 import { getPostgresBaseRecordTable } from '../postgres'
 import { getSqliteBaseRecordTable } from '../sqlite'
+import { cursorAfterCondition, cursorBeforeCondition } from '../util'
 import {
   DrizzlePostgresErrorCode,
   DrizzleSqliteErrorCode,
@@ -121,15 +124,20 @@ export abstract class BaseDrizzleRecordAdapter<
 
           // Existing query filters
           query ? queryToDrizzlePostgres(query, this.table.postgres, this.tagKeyMapping) : undefined,
+        ]
 
-          // Cursor condition (keyset pagination)
-          cursor
-            ? or(
-                gt(this.table.postgres.createdAt, cursor.createdAt),
-                and(eq(this.table.postgres.createdAt, cursor.createdAt), gt(this.table.postgres.id, cursor.id))
-              )
-            : undefined,
-        ].filter(Boolean)
+        if (cursor?.before) {
+          const beforeCursor = decodeCursor(cursor.before)
+
+          whereConditions.push(cursorBeforeCondition(this.table.postgres, beforeCursor))
+        }
+
+        if (cursor?.after) {
+          const afterCursor = decodeCursor(cursor.after)
+          whereConditions.push(cursorAfterCondition(this.table.postgres, afterCursor))
+        }
+
+        whereConditions.filter(Boolean)
 
         let queryResult = this.database
           .select()
@@ -139,6 +147,9 @@ export abstract class BaseDrizzleRecordAdapter<
           // `id` order direction should make much difference. So lets keep it asc for now.
           .orderBy(desc(this.table.postgres.createdAt), asc(this.table.postgres.id))
 
+        // TODO: I think since we are adding the cursor based pagination it makes more sense to add default limit even if no limit is passed
+        // This way we take the limit passed or the default limit. Maybe '100'
+        // Or we can add it as a default limit in the storageService itself
         if (queryOptions?.limit !== undefined) {
           queryResult = queryResult.limit(queryOptions.limit) as typeof queryResult
         }
@@ -152,9 +163,34 @@ export abstract class BaseDrizzleRecordAdapter<
         }
 
         const result = await queryResult
-        return result.map(({ contextCorrelationId, ...item }) =>
-          this._toRecord(item as DrizzleAdapterRecordValues<PostgresTable>)
-        )
+
+        const cursorMetadata = {
+          prev: '',
+          next: '',
+        }
+
+        if (result.length === 1) {
+          cursorMetadata.prev = encodeCursor({
+            createdAt: result[0]?.createdAt as Date,
+            id: result[0]?.id as string,
+          })
+        } else {
+          cursorMetadata.prev = encodeCursor({
+            createdAt: result[0]?.createdAt as Date,
+            id: result[0]?.id as string,
+          })
+          cursorMetadata.next = encodeCursor({
+            createdAt: result[result.length - 1]?.createdAt as Date,
+            id: result[result.length - 1]?.id as string,
+          })
+        }
+
+        return {
+          records: result.map(({ contextCorrelationId, ...item }) =>
+            this._toRecord(item as DrizzleAdapterRecordValues<PostgresTable>)
+          ),
+          pageInfo: cursorMetadata,
+        }
       }
 
       if (isDrizzleSqliteDatabase(this.database)) {
@@ -166,15 +202,20 @@ export abstract class BaseDrizzleRecordAdapter<
 
           // Existing query filters
           query ? queryToDrizzleSqlite(query, this.table.sqlite, this.tagKeyMapping) : undefined,
+        ]
 
-          // Cursor condition (keyset pagination)
-          cursor
-            ? or(
-                gt(this.table.sqlite.createdAt, cursor.createdAt),
-                and(eq(this.table.sqlite.createdAt, cursor.createdAt), gt(this.table.sqlite.id, cursor.id))
-              )
-            : undefined,
-        ].filter(Boolean)
+        if (cursor?.before) {
+          const beforeCursor = decodeCursor(cursor.before)
+
+          whereConditions.push(cursorBeforeCondition(this.table.sqlite, beforeCursor))
+        }
+
+        if (cursor?.after) {
+          const afterCursor = decodeCursor(cursor.after)
+          whereConditions.push(cursorAfterCondition(this.table.sqlite, afterCursor))
+        }
+
+        whereConditions.filter(Boolean)
 
         let queryResult = this.database
           .select()
@@ -184,6 +225,9 @@ export abstract class BaseDrizzleRecordAdapter<
           // `id` order direction should make much difference. So lets keep it asc for now.
           .orderBy(desc(this.table.sqlite.createdAt), asc(this.table.sqlite.id))
 
+        // TODO: I think since we are adding the cursor based pagination it makes more sense to add default limit even if no limit is passed
+        // This way we take the limit passed or the default limit. Maybe '100'
+        // Or we can add it as a default limit in the storageService itself
         if (queryOptions?.limit !== undefined) {
           queryResult = queryResult.limit(queryOptions.limit) as typeof queryResult
         }
@@ -198,9 +242,33 @@ export abstract class BaseDrizzleRecordAdapter<
 
         const result = await queryResult
 
-        return result.map(({ contextCorrelationId, ...item }) =>
-          this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
-        )
+        const cursorMetadata = {
+          prev: '',
+          next: '',
+        }
+
+        if (result.length === 1) {
+          cursorMetadata.prev = encodeCursor({
+            createdAt: result[0]?.createdAt as Date,
+            id: result[0]?.id as string,
+          })
+        } else {
+          cursorMetadata.prev = encodeCursor({
+            createdAt: result[0]?.createdAt as Date,
+            id: result[0]?.id as string,
+          })
+          cursorMetadata.next = encodeCursor({
+            createdAt: result[result.length - 1]?.createdAt as Date,
+            id: result[result.length - 1]?.id as string,
+          })
+        }
+
+        return {
+          records: result.map(({ contextCorrelationId, ...item }) =>
+            this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+          ),
+          pageInfo: cursorMetadata,
+        }
       }
     } catch (error) {
       if (error instanceof CredoError) throw error
