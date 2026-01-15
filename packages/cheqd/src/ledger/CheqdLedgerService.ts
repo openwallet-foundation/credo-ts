@@ -1,5 +1,5 @@
 import type { AbstractCheqdSDKModule, CheqdSDK, DIDDocument, DidStdFee } from '@cheqd/sdk'
-import { CheqdNetwork, createCheqdSDK, DIDModule, FeemarketModule, ResourceModule } from '@cheqd/sdk'
+import { CheqdNetwork, createCheqdSDK, DIDModule, FeemarketModule, OracleModule, ResourceModule } from '@cheqd/sdk'
 import type { QueryAllDidDocVersionsMetadataResponse, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import type {
   Metadata,
@@ -101,6 +101,7 @@ export class CheqdLedgerService {
           FeemarketModule as unknown as AbstractCheqdSDKModule,
           DIDModule as unknown as AbstractCheqdSDKModule,
           ResourceModule as unknown as AbstractCheqdSDKModule,
+          OracleModule as unknown as AbstractCheqdSDKModule
         ],
         rpcUrl: network.rpcUrl,
         wallet: await network.cosmosPayerWallet.catch((error) => {
