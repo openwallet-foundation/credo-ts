@@ -113,7 +113,7 @@ export class DidDocument {
     // TODO: once we use JSON-LD we should use that to resolve references in did documents.
     // for now we check whether the key id ends with the keyId.
     // so if looking for #123 and key.id is did:key:123#123, it is valid. But #123 as key.id is also valid
-    const verificationMethod = this.verificationMethod?.find((key) => key.id.endsWith(keyId))
+    const verificationMethod = this.verificationMethod?.find((key) => this.matchKeyId(keyId, key.id))
 
     if (!verificationMethod) {
       throw new CredoError(`Unable to locate verification method with id '${keyId}'`)
@@ -136,16 +136,26 @@ export class DidDocument {
 
     for (const purpose of purposes) {
       for (const key of this[purpose] ?? []) {
-        if (typeof key === 'string' && key.endsWith(keyId)) {
+        if (typeof key === 'string' && this.matchKeyId(keyId, key)) {
           return this.dereferenceVerificationMethod(key)
         }
-        if (typeof key !== 'string' && key.id.endsWith(keyId)) {
+        if (typeof key !== 'string' && this.matchKeyId(keyId, key.id)) {
           return key
         }
       }
     }
 
     throw new CredoError(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
+  }
+
+  private matchKeyId(externalKeyId: string, didDocumentKeyId: string) {
+    // Compact is did removed from start but only if it matches the id of this document.
+    const compactExternalKeyId = externalKeyId.startsWith(this.id) ? externalKeyId.slice(this.id.length) : externalKeyId
+    const compactDidDocumentKeyId = didDocumentKeyId.startsWith(this.id)
+      ? didDocumentKeyId.slice(this.id.length)
+      : didDocumentKeyId
+
+    return compactExternalKeyId === compactDidDocumentKeyId
   }
 
   public findVerificationMethodByPublicKey(publicJwk: PublicJwk, allowedPurposes?: DidVerificationMethods[]) {
