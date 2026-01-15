@@ -62,7 +62,7 @@
     "tsdown": "^0.16.8",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
-    "undici": "^6.22.0",
+    "undici": "^6.23.0",
     "vite": "npm:rolldown-vite@^7.2.7",
     "vite-node": "^5.2.0",
     "vitest": "catalog:",
