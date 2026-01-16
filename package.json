@@ -2,7 +2,7 @@
   "name": "credo-ts",
   "private": true,
   "license": "Apache-2.0",
-  "packageManager": "pnpm@10.22.0+sha512.bf049efe995b28f527fd2b41ae0474ce29186f7edcb3bf545087bd61fbbebb2bf75362d1307fda09c2d288e1e499787ac12d4fcb617a974718a6051f2eee741c",
+  "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48",
   "repository": {
     "url": "https://github.com/openwallet-foundation/credo-ts",
     "type": "git"
@@ -58,12 +58,12 @@
     "nock": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
-    "supertest": "^7.1.4",
-    "tsdown": "^0.16.8",
+    "supertest": "^7.2.2",
+    "tsdown": "^0.19.0",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
-    "undici": "^6.22.0",
-    "vite": "npm:rolldown-vite@^7.2.7",
+    "undici": "^6.23.0",
+    "vite": "npm:rolldown-vite@^7.3.1",
     "vite-node": "^5.2.0",
     "vitest": "catalog:",
     "ws": "catalog:"

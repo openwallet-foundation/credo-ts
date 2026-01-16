@@ -94,7 +94,7 @@
     "directory": "packages/drizzle-storage"
   },
   "scripts": {
-    "build": "tsdown --config-loader unconfig",
+    "build": "tsdown --config-loader unrun",
     "prepublishOnly": "pnpm run build",
     "cli:local:compiled": "node --conditions cli bin.mjs --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
     "cli:local": "vite-node cli/bin.ts --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
@@ -128,10 +128,10 @@
   },
   "devDependencies": {
     "@libsql/client": "^0.15.15",
-    "@types/pg": "^8.15.6",
+    "@types/pg": "^8.16.0",
     "@types/yargs": "^17.0.35",
     "drizzle-orm": "^0.44.7",
-    "pg": "^8.16.3",
+    "pg": "^8.17.1",
     "typescript": "catalog:"
   }
 }

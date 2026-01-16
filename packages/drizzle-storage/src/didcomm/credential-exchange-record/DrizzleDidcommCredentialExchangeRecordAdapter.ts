@@ -51,7 +51,6 @@ export class DrizzleDidcommCredentialExchangeRecordAdapter extends BaseDrizzleRe
   }
 
   public toRecord(values: DrizzleDidcommCredentialExchangeAdapterValues): DidCommCredentialExchangeRecord {
-    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { customTags, credentialIds, ...remainingValues } = values
 
     const record = JsonTransformer.fromJSON(remainingValues, DidCommCredentialExchangeRecord)

@@ -41,6 +41,8 @@ updates:
     ignore:
       # See pnpm-workspace.yml
       - dependency-name: class-validator
+      # Biome required biome.json schema to match, so auto-updates don't really work.
+      - dependency-name: "@biomejs/*"
 
   # GitHub Actions dependencies
   - package-ecosystem: "github-actions"
