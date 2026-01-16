@@ -25,12 +25,12 @@
     "directory": "packages/redis-cache"
   },
   "scripts": {
-    "build": "tsdown --config-loader unconfig",
+    "build": "tsdown --config-loader unrun",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
-    "ioredis": "^5.8.2"
+    "ioredis": "^5.9.2"
   },
   "devDependencies": {
     "typescript": "catalog:"

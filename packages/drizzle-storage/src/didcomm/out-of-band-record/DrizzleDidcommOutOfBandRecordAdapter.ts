@@ -35,7 +35,6 @@ export class DrizzleDidcommOutOfBandRecordAdapter extends BaseDrizzleRecordAdapt
       recipientRoutingKeyFingerprint,
 
       // Queried based on `outOfBandInvitation.@id`
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       invitationId,
 
       ...customTags
@@ -67,9 +66,7 @@ export class DrizzleDidcommOutOfBandRecordAdapter extends BaseDrizzleRecordAdapt
       customTags,
       recipientKeyFingerprints,
       recipientRoutingKeyFingerprint,
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       threadId,
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       invitationRequestsThreadIds,
       ...remainingValues
     } = values

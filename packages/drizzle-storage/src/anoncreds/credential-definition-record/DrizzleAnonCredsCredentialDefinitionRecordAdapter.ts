@@ -25,12 +25,9 @@ export class DrizzleAnonCredsCredentialDefinitionRecordAdapter extends BaseDrizz
 
   public getValues(record: AnonCredsCredentialDefinitionRecord) {
     const {
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       schemaId: schemaIdTag,
       credentialDefinitionId,
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       issuerId: issuerIdTag,
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       tag: tagTag,
       methodName,
       unqualifiedCredentialDefinitionId,

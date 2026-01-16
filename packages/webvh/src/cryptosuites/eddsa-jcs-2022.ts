@@ -109,9 +109,7 @@ export class EddsaJcs2022Cryptosuite {
 
   public async verifyProof(securedDocument: WebVhResource) {
     // https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
-    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { proof, ...unsecuredDocument } = securedDocument
-    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { proofValue, ...proofOptions } = securedDocument.proof
     const proofBytes = MultiBaseEncoder.decode(securedDocument.proof.proofValue)
     const transformedData = this.transformation(unsecuredDocument, proofOptions)

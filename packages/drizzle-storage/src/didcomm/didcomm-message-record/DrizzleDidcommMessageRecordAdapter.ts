@@ -30,10 +30,8 @@ export class DrizzleDidcommMessageRecordAdapter extends BaseDrizzleRecordAdapter
     const {
       role,
       associatedRecordId,
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       messageId,
       messageName,
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       messageType,
       protocolMajorVersion,
       protocolMinorVersion,
@@ -64,7 +62,6 @@ export class DrizzleDidcommMessageRecordAdapter extends BaseDrizzleRecordAdapter
   }
 
   public toRecord(values: DrizzleDidcommMessageAdapterValues): DidCommMessageRecord {
-    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { customTags, messageName, protocolMajorVersion, protocolMinorVersion, protocolName, ...remainingValues } =
       values
 

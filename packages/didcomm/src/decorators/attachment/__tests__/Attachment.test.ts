@@ -108,13 +108,11 @@ describe('Decorators | DidCommAttachment', () => {
 
       expect(attachment.data.jws).toBeUndefined()
 
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       const { payload, ...detachedJws } = didJwsz6Mkf.JWS_JSON
       attachment.addJws(didJwsz6Mkf.JWS_JSON)
       expect(attachment.data.jws).toEqual(detachedJws)
 
       attachment.addJws(didJwsz6Mkv.JWS_JSON)
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       const { payload: payload2, ...detachedJws2 } = didJwsz6Mkv.JWS_JSON
       expect(attachment.data.jws).toEqual({ signatures: [detachedJws, detachedJws2] })
 
