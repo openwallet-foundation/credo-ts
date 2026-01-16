@@ -1,3 +1,4 @@
+import { Buffer } from '@credo-ts/core'
 import type { AgentContext } from '../agent'
 import type { Constructor } from '../utils/mixins'
 import type { BaseRecord, TagsBase } from './BaseRecord'
@@ -23,6 +24,38 @@ interface AdvancedQuery<T extends BaseRecord<any, any, any>> {
 export type QueryOptions = {
   limit?: number
   offset?: number
+  /**
+   * Cursor and offset cannot be used together.
+   * In case both are present 'cursor' based filtering is used.
+   *
+   * Cursor based pagination is currently only supported for records stored in drizzle-storage
+   */
+  cursor?: {
+    before?: string
+    after?: string
+  }
+}
+
+type InternalCursor = {
+  createdAt: Date
+  id: string
+}
+
+export type CursorPage<T> = {
+  records: T[]
+  pageInfo: {
+    prev: string
+    next: string
+  }
+}
+
+export function encodeCursor(cursor: InternalCursor): string {
+  return Buffer.from(JSON.stringify(cursor)).toString('base64url')
+}
+
+export function decodeCursor(cursor: string): InternalCursor {
+  const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString())
+  return decoded?.createdAt ? { ...decoded, createdAt: new Date(decoded.createdAt) } : decoded
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
@@ -35,6 +68,7 @@ export interface BaseRecordConstructor<T> extends Constructor<T> {
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 export interface StorageService<T extends BaseRecord<any, any, any>> {
+  supportsCursorPagination: boolean
   /**
    * Save record in storage
    *
@@ -125,5 +159,5 @@ export interface StorageService<T extends BaseRecord<any, any, any>> {
     recordClass: BaseRecordConstructor<T>,
     query: Query<T>,
     queryOptions?: QueryOptions
-  ): Promise<T[]>
+  ): Promise<T[] | CursorPage<T>>
 }

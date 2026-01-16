@@ -9,6 +9,8 @@ import { CacheModuleConfig } from './CacheModuleConfig'
 @injectable()
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 export class CachedStorageService<T extends BaseRecord<any, any, any>> implements StorageService<T> {
+  public readonly supportsCursorPagination = false
+
   public constructor(@inject(InjectionSymbols.StorageService) private storageService: StorageService<T>) {}
 
   private cache(agentContext: AgentContext) {
