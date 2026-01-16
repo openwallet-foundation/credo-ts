@@ -1,4 +1,4 @@
-import type { Kms, SdJwtVcRecordInstances } from '@credo-ts/core'
+import type { Kms, NonEmptyArray, SdJwtVcRecordInstances, SdJwtVcTypeMetadata } from '@credo-ts/core'
 import { jsonb, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { credentialMultiInstanceStateEnum } from '../w3c-credential-record/postgres'
@@ -17,6 +17,9 @@ export const sdJwtVc = pgTable(
     multiInstanceState: credentialMultiInstanceStateEnum('multi_instance_state')
       .notNull()
       .default('SingleInstanceUsed'),
+
+    typeMetadata: jsonb('type_metadata').$type<SdJwtVcTypeMetadata>(),
+    typeMetadataChain: jsonb('type_metadata_chain').$type<NonEmptyArray<SdJwtVcTypeMetadata>>(),
   },
   (table) => postgresBaseRecordIndexes(table, 'sdJwtVc')
 )

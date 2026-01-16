@@ -47,8 +47,20 @@ export type SdJwtVcRecordStorageProps = {
   /**
    * Optional VCT type metadata associated with the SD JWT VC instances, this type metadata is used for
    * all SD JWT VC instances on this record.
+   *
+   * The type metadata is the result of resolving and merging the vct value and all `extends` values.
+   *
+   * NOTE: This may only include the latest VCT document, if the credential was stored before resolving
+   * `extends` claims was supported.
    */
   typeMetadata?: SdJwtVcTypeMetadata
+
+  /**
+   * The original chain of SD-JWT VC Type Metadata documents, ordered from the extending type to the last extended type.
+   * This is stored on the record to allow extensions to the type metadata (e.g. EUDI ARF TS12 for payments) to apply a
+   * custom merging strategy.
+   */
+  typeMetadataChain?: NonEmptyArray<SdJwtVcTypeMetadata>
 }
 
 export type SdJwtVcRecordInstances = NonEmptyArray<{
@@ -90,6 +102,13 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
 
   public typeMetadata?: SdJwtVcTypeMetadata
 
+  /**
+   * The original chain of SD-JWT VC Type Metadata documents, ordered from the extending type to the last extended type.
+   * This is stored on the record to allow extensions to the type metadata (e.g. EUDI ARF TS12 for payments) to apply a
+   * custom merging strategy.
+   */
+  public typeMetadataChain?: NonEmptyArray<SdJwtVcTypeMetadata>
+
   public constructor(props: SdJwtVcRecordStorageProps) {
     super()
 
@@ -107,6 +126,7 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
           : CredentialMultiInstanceState.MultiInstanceFirstUnused
 
       this.typeMetadata = props.typeMetadata
+      this.typeMetadataChain = props.typeMetadataChain
       this._tags = props.tags ?? {}
     }
   }
