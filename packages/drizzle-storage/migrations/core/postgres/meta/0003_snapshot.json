@@ -1,5 +1,5 @@
 {
-  "id": "a569e3a6-7094-463b-97aa-acea67778120",
+  "id": "2ff5cd1d-679c-41cb-8d5d-cf9b2277ea35",
   "prevId": "908b5b3e-a216-43b8-aa70-a08ea31c8c41",
   "version": "7",
   "dialect": "postgresql",
@@ -341,6 +341,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "extended_vct_values": {
+          "name": "extended_vct_values",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
         },
         "credential_instances": {
           "name": "credential_instances",

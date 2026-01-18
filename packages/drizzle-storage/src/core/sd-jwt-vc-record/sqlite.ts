@@ -14,6 +14,7 @@ export const sdJwtVc = sqliteTable(
     ...getSqliteBaseRecordTable(),
 
     vct: text().notNull(),
+    extendedVctValues: text('extended_vct_values', { mode: 'json' }).$type<string[]>(),
 
     credentialInstances: text('credential_instances', { mode: 'json' }).$type<SdJwtVcRecordInstances>().notNull(),
     alg: text().$type<Kms.KnownJwaSignatureAlgorithm>().notNull(),

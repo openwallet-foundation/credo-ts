@@ -9,6 +9,7 @@ export const sdJwtVc = pgTable(
     ...getPostgresBaseRecordTable(),
 
     vct: text().notNull(),
+    extendedVctValues: jsonb('extended_vct_values').$type<string[]>(),
 
     credentialInstances: jsonb('credential_instances').$type<SdJwtVcRecordInstances>().notNull(),
     alg: text().$type<Kms.KnownJwaSignatureAlgorithm>().notNull(),

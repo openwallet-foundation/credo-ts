@@ -150,6 +150,17 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
     })
   }
 
+  public get extendedVctValues() {
+    return this.typeMetadataChain
+      ? // Remove the first one, as that's not extended
+        this.typeMetadataChain
+          .slice(1)
+          .map(({ vct }) => vct)
+      : this.typeMetadata?.extends
+        ? [this.typeMetadata.extends]
+        : []
+  }
+
   public getTags() {
     const sdjwt = decodeSdJwtSync(this.credentialInstances[0].compactSdJwtVc, Hasher.hash)
     const vct = sdjwt.jwt.payload.vct as string
@@ -159,6 +170,7 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
     return {
       ...this._tags,
       vct,
+      extendedVctValues: this.extendedVctValues,
       sdAlg: sdAlg ?? 'sha-256',
       alg,
       multiInstanceState: this.multiInstanceState,

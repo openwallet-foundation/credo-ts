@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "3f4d2fdd-76ae-4a75-bc0b-9ec82a68b5b4",
+  "id": "f4ea04af-de04-4889-8571-c9162b4209d3",
   "prevId": "2d6c9666-523f-48ad-ac56-1efb28e3a04a",
   "tables": {
     "Context": {
@@ -364,6 +364,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "extended_vct_values": {
+          "name": "extended_vct_values",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "credential_instances": {
