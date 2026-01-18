@@ -225,14 +225,30 @@ export class DcqlService {
     // SD-JWT credential can be used as both dc+sd-jwt and vc+sd-jwt
     // At some point we might want to look at the header value of the sd-jwt (vc+sd-jwt vc dc+sd-jwt)
     if (presentation.claimFormat === ClaimFormat.SdJwtDc) {
+      const requestedVcts = queryCredential.format === 'dc+sd-jwt' ? queryCredential.meta?.vct_values : undefined
+
+      let presentationVctValues = [presentation.payload.vct]
+      // FIXME: we should probably add an option whether to resolve VCT if we didn't get a direct hit
+      if (!requestedVcts?.includes(presentation.payload.vct)) {
+        const typeMetadataChain = await agentContext
+          .resolve(SdJwtVcService)
+          .fetchTypeMetadata(agentContext, presentation, {
+            throwErrorOnFetchError: false,
+            throwErrorOnUnsupportedVctValue: false,
+          })
+
+        if (typeMetadataChain) {
+          presentationVctValues = typeMetadataChain?.vctValues
+        }
+      }
+
       return {
         credential_format: queryCredential.format === 'dc+sd-jwt' ? 'dc+sd-jwt' : 'vc+sd-jwt',
         authority: this.getAuthorityForCredential(presentation),
         cryptographic_holder_binding: true,
-        // FIXME: this will fail if we query for an extended VCT value, as we don't know which VCT values
-        // the SD-JWT extends without resolving the whole VCT chain. How should we go about this? Fetch the
-        // whole VCT chain proactively?
-        vct: presentation.prettyClaims.vct as string,
+        vct:
+          presentationVctValues.find((presentationVctValue) => requestedVcts?.includes(presentationVctValue)) ??
+          presentation.payload.vct,
         claims: presentation.prettyClaims as DcqlSdJwtVcCredential.Claims,
       } satisfies DcqlSdJwtVcCredential
     }
