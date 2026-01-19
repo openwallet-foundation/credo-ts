@@ -26,7 +26,7 @@ services:
       "
 
   cheqd-ledger:
-    image: ghcr.io/cheqd/cheqd-node:4.1.5
+    image: ghcr.io/cheqd/cheqd-node:4.2.0
     platform: linux/amd64
     ports:
       - '26657:26657'
