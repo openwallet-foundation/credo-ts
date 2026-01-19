@@ -30,7 +30,7 @@ services:
       "
 
   cheqd-ledger:
-    image: ghcr.io/cheqd/cheqd-node:4.1.7
+    image: ghcr.io/cheqd/cheqd-node:4.2.0
     container_name: cheqd-validator
     platform: linux/amd64
     ports:
