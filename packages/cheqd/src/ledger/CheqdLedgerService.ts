@@ -101,7 +101,7 @@ export class CheqdLedgerService {
           FeemarketModule as unknown as AbstractCheqdSDKModule,
           DIDModule as unknown as AbstractCheqdSDKModule,
           ResourceModule as unknown as AbstractCheqdSDKModule,
-          OracleModule as unknown as AbstractCheqdSDKModule
+          OracleModule as unknown as AbstractCheqdSDKModule,
         ],
         rpcUrl: network.rpcUrl,
         wallet: await network.cosmosPayerWallet.catch((error) => {
