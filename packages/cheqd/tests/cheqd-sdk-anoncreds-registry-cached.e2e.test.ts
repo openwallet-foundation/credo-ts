@@ -1,3 +1,3 @@
 import { cheqdAnonCredsRegistryTest } from './cheqd-sdk-anoncreds-registry-base'
 
-cheqdAnonCredsRegistryTest(false)
+cheqdAnonCredsRegistryTest(true)
