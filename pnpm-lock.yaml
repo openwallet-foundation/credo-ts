@@ -375,7 +375,7 @@ importers:
   packages/cheqd:
     dependencies:
       '@cheqd/sdk':
-        specifier: ~5.4.8
+        specifier: ~5.4.8-develop.2
         version: 5.4.8
       '@cheqd/ts-proto':
         specifier: ~2.6.0
