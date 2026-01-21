@@ -41,12 +41,16 @@ type InternalCursor = {
   id: string
 }
 
-export type CursorPage<T> = {
-  records: T[]
-  pageInfo: {
-    prev: string
-    next: string
-  }
+export type recordToCursorBody = {
+  createdAt: string
+  id: string
+} & Record<string, unknown>
+
+export function recordToCursor(record: recordToCursorBody): string {
+  return encodeCursor({
+    createdAt: new Date(record.createdAt),
+    id: record.id,
+  })
 }
 
 export function encodeCursor(cursor: InternalCursor): string {
@@ -159,5 +163,5 @@ export interface StorageService<T extends BaseRecord<any, any, any>> {
     recordClass: BaseRecordConstructor<T>,
     query: Query<T>,
     queryOptions?: QueryOptions
-  ): Promise<T[] | CursorPage<T>>
+  ): Promise<T[]>
 }

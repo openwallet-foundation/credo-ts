@@ -2,7 +2,6 @@ import type {
   AgentContext,
   BaseRecord,
   BaseRecordConstructor,
-  CursorPage,
   Query,
   QueryOptions,
   StorageService,
@@ -87,10 +86,7 @@ export class DrizzleStorageService<T extends BaseRecord> implements StorageServi
   public async getAll(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>): Promise<T[]> {
     const adapter = this.getAdapterForRecordType(recordClass.type)
 
-    const queryResult = await adapter.query(agentContext)
-    const { records } = queryResult
-    // The above separation is because the cursor metadata is returned in pageInfo
-    // This will be followed for all storage services that support cursor based pagination
+    const records = await adapter.query(agentContext)
     return records
   }
 
@@ -99,7 +95,7 @@ export class DrizzleStorageService<T extends BaseRecord> implements StorageServi
     recordClass: BaseRecordConstructor<T>,
     query: Query<T>,
     queryOptions?: QueryOptions
-  ): Promise<CursorPage<T>> {
+  ): Promise<T[]> {
     const adapter = this.getAdapterForRecordType(recordClass.type)
 
     const records = await adapter.query(agentContext, query, queryOptions)

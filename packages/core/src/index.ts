@@ -46,13 +46,12 @@ export { Repository } from './storage/Repository'
 export * from './storage/RepositoryEvents'
 export type {
   BaseRecordConstructor,
-  CursorPage,
   Query,
   QueryOptions,
   SimpleQuery,
   StorageService,
 } from './storage/StorageService'
-export { decodeCursor, encodeCursor } from './storage/StorageService'
+export { decodeCursor, encodeCursor, recordToCursor } from './storage/StorageService'
 export type {
   AnyUint8Array,
   CanBePromise,

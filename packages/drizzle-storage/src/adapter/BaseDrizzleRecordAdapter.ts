@@ -4,7 +4,6 @@ import {
   type BaseRecordConstructor,
   CredoError,
   decodeCursor,
-  encodeCursor,
   type Query,
   type QueryOptions,
   RecordDuplicateError,
@@ -179,30 +178,9 @@ export abstract class BaseDrizzleRecordAdapter<
           result = result.reverse()
         }
 
-        // Cursor metadata
-        const pageInfo = {
-          prev: '',
-          next: '',
-        }
-
-        if (result.length > 0) {
-          pageInfo.prev = encodeCursor({
-            createdAt: result[0].createdAt as Date,
-            id: result[0].id as string,
-          })
-
-          pageInfo.next = encodeCursor({
-            createdAt: result[result.length - 1].createdAt as Date,
-            id: result[result.length - 1].id as string,
-          })
-        }
-
-        return {
-          records: result.map(({ contextCorrelationId, ...item }) =>
-            this._toRecord(item as DrizzleAdapterRecordValues<PostgresTable>)
-          ),
-          pageInfo,
-        }
+        return result.map(({ contextCorrelationId, ...item }) =>
+          this._toRecord(item as DrizzleAdapterRecordValues<PostgresTable>)
+        )
       }
 
       if (isDrizzleSqliteDatabase(this.database)) {
@@ -269,30 +247,9 @@ export abstract class BaseDrizzleRecordAdapter<
           result = result.reverse()
         }
 
-        // Cursor metadata
-        const pageInfo = {
-          prev: '',
-          next: '',
-        }
-
-        if (result.length > 0) {
-          pageInfo.prev = encodeCursor({
-            createdAt: result[0].createdAt as Date,
-            id: result[0].id as string,
-          })
-
-          pageInfo.next = encodeCursor({
-            createdAt: result[result.length - 1].createdAt as Date,
-            id: result[result.length - 1].id as string,
-          })
-        }
-
-        return {
-          records: result.map(({ contextCorrelationId, ...item }) =>
-            this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
-          ),
-          pageInfo,
-        }
+        return result.map(({ contextCorrelationId, ...item }) =>
+          this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+        )
       }
     } catch (error) {
       if (error instanceof CredoError) throw error
