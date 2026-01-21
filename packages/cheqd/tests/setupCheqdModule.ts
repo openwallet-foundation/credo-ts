@@ -1,6 +1,7 @@
 import { AnonCredsModule } from '@credo-ts/anoncreds'
 import { DidsModule } from '@credo-ts/core'
 import { anoncreds } from '../../anoncreds/tests/helpers'
+import { InMemoryTailsFileService } from '../../anoncreds/tests/InMemoryTailsFileService'
 import type { CheqdModuleConfigOptions } from '../src'
 import { CheqdAnonCredsRegistry, CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../src'
 
@@ -34,6 +35,7 @@ export const getCheqdModules = (seed?: string, rpcUrl?: string) => ({
   anoncreds: new AnonCredsModule({
     anoncreds,
     registries: [new CheqdAnonCredsRegistry()],
+    tailsFileService: new InMemoryTailsFileService(),
   }),
   cheqdSdk: new CheqdModule(getCheqdModuleConfig(seed, rpcUrl)),
   dids: new DidsModule({
