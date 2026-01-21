@@ -37,7 +37,7 @@ services:
       - '26657:26657'
     command: >
       /bin/bash -c '
-      cheqd-noded init "validator-node" --chain-id "testnet" --home "/tmp/.single-node" &&
+        cheqd-noded init "validator-node" --chain-id "testnet" --home "/tmp/.single-node" &&
       (echo "12345678") | cheqd-noded keys add validator --keyring-backend test --home "/tmp/.single-node" &&
       cheqd-noded genesis add-genesis-account $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") 100000000000000000ncheq --home "/tmp/.single-node" &&
       cheqd-noded genesis gentx validator 5000000000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" &&
@@ -52,7 +52,11 @@ services:
       sed -i "s/timeout_precommit = \"1s\"/timeout_precommit = \"500ms\"/g" "/tmp/.single-node/config/config.toml" &&
       sed -i "s/timeout_commit = \"5s\"/timeout_commit = \"500ms\"/g" "/tmp/.single-node/config/config.toml" &&
       sed -i "s/log_level = \"info\"/log_level = \"debug\"/g" "/tmp/.single-node/config/config.toml" &&
-      cheqd-noded start --home "/tmp/.single-node" &
+      wget -O /tmp/.single-node/config/price-feeder.toml https://raw.githubusercontent.com/cheqd/cheqd-node/refs/tags/v4.2.0/pricefeeder/price-feeder.toml &&
+      sed -i "s|config_path = \"\"|config_path = \"/tmp/.single-node/config/price-feeder.toml\"|g" "/tmp/.single-node/config/app.toml" &&
+      sed -i "s|log_level = \"\"|log_level = \"info\"|g" "/tmp/.single-node/config/app.toml" &&
+      sed -i "s|enable = \"\"|enable = \"true\"|g" "/tmp/.single-node/config/app.toml" &&
+      cheqd-noded start --home "/tmp/.single-node"  --pricefeeder.enable=true --pricefeeder.config_path="/tmp/.single-node/config/price-feeder.toml" &
       RUN_TESTNET_PID=$! &&
       sleep 10 &&
       (echo "sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright"; echo "12345678";) | cheqd-noded keys add base --recover --keyring-backend test --home "/tmp/.single-node" &&
