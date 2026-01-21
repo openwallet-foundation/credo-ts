@@ -126,7 +126,7 @@ export class CheqdLedgerService {
     fee?: DidStdFee
   ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
-    return sdk.createDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
+    return sdk.createDidDocTx(signInputs, didPayload, '', fee, undefined, versionId, undefined, { sdk })
   }
 
   public async update(
@@ -136,7 +136,7 @@ export class CheqdLedgerService {
     fee?: DidStdFee
   ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
-    return sdk.updateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
+    return sdk.updateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId, undefined, { sdk })
   }
 
   public async deactivate(
@@ -146,12 +146,12 @@ export class CheqdLedgerService {
     fee?: DidStdFee
   ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
-    return sdk.deactivateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
+    return sdk.deactivateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId, undefined, { sdk })
   }
 
   public async resolve(did: string, version?: string) {
     const sdk = await this.getSdk(did)
-    return version ? sdk.queryDidDocVersion(did, version) : sdk.queryDidDoc(did)
+    return version ? sdk.queryDidDocVersion(did, version, { sdk }) : sdk.queryDidDoc(did, { sdk })
   }
 
   public async resolveMetadata(did: string): Promise<{
@@ -159,7 +159,7 @@ export class CheqdLedgerService {
     pagination: QueryAllDidDocVersionsMetadataResponse['pagination']
   }> {
     const sdk = await this.getSdk(did)
-    return sdk.queryAllDidDocVersionsMetadata(did)
+    return sdk.queryAllDidDocVersionsMetadata(did, { sdk })
   }
 
   public async createResource(
@@ -169,12 +169,12 @@ export class CheqdLedgerService {
     fee?: DidStdFee
   ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(did)
-    return sdk.createLinkedResourceTx(signInputs, resourcePayload, '', fee, undefined)
+    return sdk.createLinkedResourceTx(signInputs, resourcePayload, '', fee, undefined, undefined, { sdk })
   }
 
   public async resolveResource(did: string, collectionId: string, resourceId: string): Promise<ResourceWithMetadata> {
     const sdk = await this.getSdk(did)
-    return sdk.queryLinkedResource(collectionId, resourceId)
+    return sdk.queryLinkedResource(collectionId, resourceId, { sdk })
   }
 
   public async resolveCollectionResources(
@@ -182,11 +182,11 @@ export class CheqdLedgerService {
     collectionId: string
   ): Promise<QueryCollectionResourcesResponse> {
     const sdk = await this.getSdk(did)
-    return sdk.queryLinkedResources(collectionId)
+    return sdk.queryLinkedResources(collectionId, { sdk })
   }
 
   public async resolveResourceMetadata(did: string, collectionId: string, resourceId: string): Promise<Metadata> {
     const sdk = await this.getSdk(did)
-    return sdk.queryLinkedResourceMetadata(collectionId, resourceId)
+    return sdk.queryLinkedResourceMetadata(collectionId, resourceId, { sdk })
   }
 }
