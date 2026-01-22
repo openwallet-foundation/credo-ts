@@ -116,7 +116,7 @@ export class CheqdLedgerService {
     fee?: DidStdFee
   ) {
     const sdk = await this.getSdk(didPayload.id)
-    return sdk.createDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
+    return sdk.createDidDocTx(signInputs, didPayload, '', fee, undefined, versionId, { slippageBps: 1000 })
   }
 
   public async update(
@@ -126,7 +126,7 @@ export class CheqdLedgerService {
     fee?: DidStdFee
   ) {
     const sdk = await this.getSdk(didPayload.id)
-    return sdk.updateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
+    return sdk.updateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId, { slippageBps: 1000 })
   }
 
   public async deactivate(
@@ -136,7 +136,7 @@ export class CheqdLedgerService {
     fee?: DidStdFee
   ) {
     const sdk = await this.getSdk(didPayload.id)
-    return sdk.deactivateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
+    return sdk.deactivateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId, { slippageBps: 1000 })
   }
 
   public async resolve(did: string, version?: string) {
@@ -159,7 +159,7 @@ export class CheqdLedgerService {
     fee?: DidStdFee
   ) {
     const sdk = await this.getSdk(did)
-    return sdk.createLinkedResourceTx(signInputs, resourcePayload, '', fee, undefined)
+    return sdk.createLinkedResourceTx(signInputs, resourcePayload, '', fee, undefined, { slippageBps: 1000 })
   }
 
   public async resolveResource(did: string, collectionId: string, resourceId: string): Promise<ResourceWithMetadata> {
