@@ -1,33 +1,33 @@
 version: '3'
 services:
-  # postgres:
-  #   image: postgres:18-alpine
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: postgres
-  #   ports:
-  #     - '5432:5432'
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
 
-  # redis:
-  #   image: valkey/valkey
-  #   ports:
-  #     - '6379:6379'
+  redis:
+    image: valkey/valkey
+    ports:
+      - '6379:6379'
 
-  # indy-pool:
-  #   build:
-  #     context: .
-  #     dockerfile: network/indy-pool.dockerfile
-  #   ports:
-  #     - '9701-9708:9701-9708'
-  #   # Start supervisord in bg, run commands, bring supervisor to fg
-  #   command: >
-  #     /bin/bash -c "
-  #       /usr/bin/supervisord &
-  #       indy-cli-setup &&
-  #       add-did-from-seed 00000000000000000000000Endorser9 ENDORSER &&
-  #       add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE &&
-  #       /usr/bin/supervisord -n
-  #     "
+  indy-pool:
+    build:
+      context: .
+      dockerfile: network/indy-pool.dockerfile
+    ports:
+      - '9701-9708:9701-9708'
+    # Start supervisord in bg, run commands, bring supervisor to fg
+    command: >
+      /bin/bash -c "
+        /usr/bin/supervisord &
+        indy-cli-setup &&
+        add-did-from-seed 00000000000000000000000Endorser9 ENDORSER &&
+        add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE &&
+        /usr/bin/supervisord -n
+      "
 
   cheqd-ledger:
     image: ghcr.io/cheqd/cheqd-node:4.2.0
@@ -52,6 +52,7 @@ services:
       sed -i "/\"image\":/,/\"json\":/ { s/\"min_amount\": \"20000000000\"/\"min_amount\": \"100000000000000000\"/g; s/\"max_amount\": \"30000000000\"/\"max_amount\": \"100000000000000000\"/g }" "/tmp/.single-node/config/genesis.json" &&
       sed -i "/\"json\":/,/\"default\":/ { s/\"min_amount\": \"3500000000\"/\"min_amount\": \"400000000000000000\"/g; s/\"max_amount\": \"60000000000\"/\"max_amount\": \"400000000000000000\"/g }" "/tmp/.single-node/config/genesis.json" &&
       sed -i "/\"default\":/,/\"burn_factor\":/ { s/\"min_amount\": \"6000000000\"/\"min_amount\": \"200000000000000000\"/g; s/\"max_amount\": \"20000000000\"/\"max_amount\": \"200000000000000000\"/g }" "/tmp/.single-node/config/genesis.json" &&
+      sed -i "s/\"burn_factor\": \"0.500000000000000000\"/\"burn_factor\": \"0.990000000000000000\"/g" "/tmp/.single-node/config/genesis.json" &&
       sed -i "s/minimum-gas-prices = \"\"/minimum-gas-prices = \"50ncheq\"/g" "/tmp/.single-node/config/app.toml" &&
       sed -i "s/enable = false/enable = true/g" "/tmp/.single-node/config/app.toml" &&
       sed -i "s|laddr = \"tcp://127.0.0.1:26657\"|laddr = \"tcp://0.0.0.0:26657\"|g" "/tmp/.single-node/config/config.toml" &&
