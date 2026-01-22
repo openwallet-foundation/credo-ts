@@ -2,6 +2,7 @@ import {
   CheqdNetwork,
   createDidVerificationMethod,
   type DIDDocument,
+  type DidFeeOptions,
   type DidStdFee,
   MethodSpecificIdAlgo,
   VerificationMethods,
@@ -614,7 +615,13 @@ export class CheqdDidRegistrar implements DidRegistrar {
         didDocumentInstance.verificationMethod,
         didRecord.keys
       )
-      const response = await cheqdLedgerService.createResource(did, resourcePayload, signInputs)
+      const response = await cheqdLedgerService.createResource(
+        did,
+        resourcePayload,
+        signInputs,
+        resource.fee,
+        resource.feeOptions
+      )
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
@@ -687,6 +694,7 @@ export interface CheqdDidCreateWithoutDidDocumentOptions extends DidCreateOption
   options: {
     network: `${CheqdNetwork}`
     fee?: DidStdFee
+    feeOptions?: DidFeeOptions
     versionId?: string
     methodSpecificIdAlgo?: `${MethodSpecificIdAlgo}`
   } & XOR<{ createKey: KmsCreateKeyOptionsOkpEd25519 }, { keyId: string }>
@@ -703,6 +711,7 @@ export interface CheqdDidCreateFromDidDocumentOptions extends DidCreateOptions {
      */
     keys: DidDocumentKey[]
     fee?: DidStdFee
+    feeOptions?: DidFeeOptions
     versionId?: string
   }
 }
@@ -722,6 +731,7 @@ export interface CheqdDidUpdateOptions extends DidUpdateOptions {
     keys?: DidDocumentKey[]
 
     fee?: DidStdFee
+    feeOptions?: DidFeeOptions
     versionId?: string
   } & XOR<{ createKey?: KmsCreateKeyOptionsOkpEd25519 }, { keyId?: string }>
 }
@@ -731,6 +741,7 @@ export interface CheqdDidDeactivateOptions extends DidCreateOptions {
   did: string
   options: {
     fee?: DidStdFee
+    feeOptions?: DidFeeOptions
     versionId?: string
   }
 }
@@ -740,4 +751,6 @@ export interface CheqdCreateResourceOptions extends Pick<MsgCreateResourcePayloa
   collectionId?: MsgCreateResourcePayload['collectionId']
   version?: MsgCreateResourcePayload['version']
   alsoKnownAs?: MsgCreateResourcePayload['alsoKnownAs']
+  fee?: DidStdFee
+  feeOptions?: DidFeeOptions
 }
