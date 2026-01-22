@@ -106,6 +106,12 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean) {
       },
     })
 
+    if (credentialDefinitionResult.credentialDefinitionState.state !== 'finished') {
+      throw new Error(
+        `Credential definition creation failed ${JSON.stringify(credentialDefinitionResult.credentialDefinitionState, null, 2)}`
+      )
+    }
+
     expect(credentialDefinitionResult).toMatchObject({
       credentialDefinitionState: {
         credentialDefinition: {
@@ -199,8 +205,11 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean) {
       },
     })
 
-    if (!registerRevocationDefinitionResponse.revocationRegistryDefinitionState.revocationRegistryDefinitionId)
-      throw new Error('Revocation registry definition ID not found')
+    if (registerRevocationDefinitionResponse.revocationRegistryDefinitionState.state !== 'finished') {
+      throw new Error(
+        `Revocation registry definition creation failed ${JSON.stringify(registerRevocationDefinitionResponse.revocationRegistryDefinitionState, null, 2)}`
+      )
+    }
 
     const revocationRegistryDefinitionId =
       registerRevocationDefinitionResponse.revocationRegistryDefinitionState.revocationRegistryDefinitionId
@@ -232,8 +241,11 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean) {
       },
     })
 
-    if (!registerRevocationStatusListResponse.revocationStatusListState.revocationStatusList?.timestamp)
-      throw new Error('Revocation status list timestamp not found')
+    if (registerRevocationStatusListResponse.revocationStatusListState.state !== 'finished') {
+      throw new Error(
+        `Revocation status list creation failed ${JSON.stringify(registerRevocationStatusListResponse.registrationMetadata, null, 2)}`
+      )
+    }
 
     const statusListTimestamp =
       registerRevocationStatusListResponse.revocationStatusListState.revocationStatusList.timestamp
