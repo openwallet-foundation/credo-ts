@@ -50,8 +50,10 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean) {
         methodSpecificIdAlgo: 'uuid',
       },
     })
-    expect(did.didState).toMatchObject({ state: 'finished' })
-    issuerId = did.didState.did as string
+    if (did.didState.state !== 'finished') {
+      throw new Error(`Did creation failed ${JSON.stringify(did.didState, null, 2)}`)
+    }
+    issuerId = did.didState.did
 
     const dynamicVersion = `1.${Math.random() * 100}`
 
@@ -172,6 +174,10 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean) {
   // Should resolve query based url
   test('resolve query based url', async () => {
     const schemaResourceId = `${issuerId}?resourceName=test11-Schema&resourceType=anonCredsSchema`
+
+    if (!issuerId) {
+      throw new Error('Missing issuerId')
+    }
 
     const schemaResponse = await agent.modules.anoncreds.getSchema(schemaResourceId)
     expect(schemaResponse).toMatchObject({
