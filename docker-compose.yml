@@ -1,33 +1,33 @@
 version: '3'
 services:
-  postgres:
-    image: postgres:18-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - '5432:5432'
+  # postgres:
+  #   image: postgres:18-alpine
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #   ports:
+  #     - '5432:5432'
 
-  redis:
-    image: valkey/valkey
-    ports:
-      - '6379:6379'
+  # redis:
+  #   image: valkey/valkey
+  #   ports:
+  #     - '6379:6379'
 
-  indy-pool:
-    build:
-      context: .
-      dockerfile: network/indy-pool.dockerfile
-    ports:
-      - '9701-9708:9701-9708'
-    # Start supervisord in bg, run commands, bring supervisor to fg
-    command: >
-      /bin/bash -c "
-        /usr/bin/supervisord &
-        indy-cli-setup &&
-        add-did-from-seed 00000000000000000000000Endorser9 ENDORSER &&
-        add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE &&
-        /usr/bin/supervisord -n
-      "
+  # indy-pool:
+  #   build:
+  #     context: .
+  #     dockerfile: network/indy-pool.dockerfile
+  #   ports:
+  #     - '9701-9708:9701-9708'
+  #   # Start supervisord in bg, run commands, bring supervisor to fg
+  #   command: >
+  #     /bin/bash -c "
+  #       /usr/bin/supervisord &
+  #       indy-cli-setup &&
+  #       add-did-from-seed 00000000000000000000000Endorser9 ENDORSER &&
+  #       add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE &&
+  #       /usr/bin/supervisord -n
+  #     "
 
   cheqd-ledger:
     image: ghcr.io/cheqd/cheqd-node:4.2.0
@@ -37,12 +37,21 @@ services:
       - '26657:26657'
     command: >
       /bin/bash -c '
+      mock-price-feed &
       cheqd-noded init "validator-node" --chain-id "testnet" --home "/tmp/.single-node" &&
       (echo "12345678") | cheqd-noded keys add validator --keyring-backend test --home "/tmp/.single-node" &&
       cheqd-noded genesis add-genesis-account $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") 100000000000000000ncheq --home "/tmp/.single-node" &&
       cheqd-noded genesis gentx validator 5000000000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" &&
       cheqd-noded genesis collect-gentxs --home "/tmp/.single-node" &&
       sed -i 's/"stake"/"ncheq"/' "/tmp/.single-node/config/genesis.json" &&
+      sed -i "s/\"vote_extensions_enable_height\"[[:space:]]*:[[:space:]]*\"0\"/\"vote_extensions_enable_height\": \"1\"/g" "/tmp/.single-node/config/genesis.json" &&
+      sed -i "/\"fee_params\"/,/\"burn_factor\"/ s/\"ncheq\"/\"usd\"/g" "/tmp/.single-node/config/genesis.json" &&
+      sed -i "/\"create_did\":/,/\"update_did\":/ { s/\"min_amount\": \"50000000000\"/\"min_amount\": \"2000000000000000000\"/g; s/\"max_amount\": \"100000000000\"/\"max_amount\": \"2000000000000000000\"/g }" "/tmp/.single-node/config/genesis.json" &&
+      sed -i "/\"update_did\":/,/\"deactivate_did\":/ { s/\"min_amount\": \"25000000000\"/\"min_amount\": \"1000000000000000000\"/g }" "/tmp/.single-node/config/genesis.json" &&
+      sed -i "/\"deactivate_did\":/,/\"burn_factor\":/ { s/\"min_amount\": \"10000000000\"/\"min_amount\": \"400000000000000000\"/g; s/\"max_amount\": \"20000000000\"/\"max_amount\": \"400000000000000000\"/g }" "/tmp/.single-node/config/genesis.json" &&
+      sed -i "/\"image\":/,/\"json\":/ { s/\"min_amount\": \"20000000000\"/\"min_amount\": \"100000000000000000\"/g; s/\"max_amount\": \"30000000000\"/\"max_amount\": \"100000000000000000\"/g }" "/tmp/.single-node/config/genesis.json" &&
+      sed -i "/\"json\":/,/\"default\":/ { s/\"min_amount\": \"3500000000\"/\"min_amount\": \"400000000000000000\"/g; s/\"max_amount\": \"60000000000\"/\"max_amount\": \"400000000000000000\"/g }" "/tmp/.single-node/config/genesis.json" &&
+      sed -i "/\"default\":/,/\"burn_factor\":/ { s/\"min_amount\": \"6000000000\"/\"min_amount\": \"200000000000000000\"/g; s/\"max_amount\": \"20000000000\"/\"max_amount\": \"200000000000000000\"/g }" "/tmp/.single-node/config/genesis.json" &&
       sed -i "s/minimum-gas-prices = \"\"/minimum-gas-prices = \"50ncheq\"/g" "/tmp/.single-node/config/app.toml" &&
       sed -i "s/enable = false/enable = true/g" "/tmp/.single-node/config/app.toml" &&
       sed -i "s|laddr = \"tcp://127.0.0.1:26657\"|laddr = \"tcp://0.0.0.0:26657\"|g" "/tmp/.single-node/config/config.toml" &&
@@ -53,6 +62,8 @@ services:
       sed -i "s/timeout_commit = \"5s\"/timeout_commit = \"500ms\"/g" "/tmp/.single-node/config/config.toml" &&
       sed -i "s/log_level = \"info\"/log_level = \"debug\"/g" "/tmp/.single-node/config/config.toml" &&
       wget -O /tmp/.single-node/config/price-feeder.toml https://raw.githubusercontent.com/cheqd/cheqd-node/refs/tags/v4.2.0/pricefeeder/price-feeder.toml &&
+      sed -i "s|rest = \"https://api.mexc.com/\"|rest = \"http://localhost:8080\"|g" "/tmp/.single-node/config/price-feeder.toml" &&
+      sed -i "s|websocket = \"wbs-api.mexc.com\"|websocket = \"localhost:8080\"|g" "/tmp/.single-node/config/price-feeder.toml" &&
       sed -i "s|config_path = \"\"|config_path = \"/tmp/.single-node/config/price-feeder.toml\"|g" "/tmp/.single-node/config/app.toml" &&
       sed -i "s|log_level = \"\"|log_level = \"info\"|g" "/tmp/.single-node/config/app.toml" &&
       sed -i "s|enable = \"\"|enable = \"true\"|g" "/tmp/.single-node/config/app.toml" &&
