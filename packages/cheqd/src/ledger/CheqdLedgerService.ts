@@ -1,4 +1,4 @@
-import type { AbstractCheqdSDKModule, CheqdSDK, DIDDocument, DidStdFee } from '@cheqd/sdk'
+import type { AbstractCheqdSDKModule, CheqdSDK, DIDDocument, DidFeeOptions, DidStdFee } from '@cheqd/sdk'
 import { CheqdNetwork, createCheqdSDK, DIDModule, FeemarketModule, OracleModule, ResourceModule } from '@cheqd/sdk'
 import type { QueryAllDidDocVersionsMetadataResponse, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import type {
@@ -123,35 +123,62 @@ export class CheqdLedgerService {
     didPayload: DIDDocument,
     signInputs: SignInfo[],
     versionId?: string | undefined,
-    fee?: DidStdFee
+    fee?: DidStdFee,
+    feeOptions?: DidFeeOptions
   ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
-    return sdk.createDidDocTx(signInputs, didPayload, '', fee, undefined, versionId, { slippageBps: 1000 }, { sdk })
+    return sdk.createDidDocTx(
+      signInputs,
+      didPayload,
+      '',
+      fee,
+      undefined,
+      versionId,
+      feeOptions || { slippageBps: 1000 }
+    )
   }
 
   public async update(
     didPayload: DIDDocument,
     signInputs: SignInfo[],
     versionId?: string | undefined,
-    fee?: DidStdFee
+    fee?: DidStdFee,
+    feeOptions?: DidFeeOptions
   ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
-    return sdk.updateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId, { slippageBps: 1000 }, { sdk })
+    return sdk.updateDidDocTx(
+      signInputs,
+      didPayload,
+      '',
+      fee,
+      undefined,
+      versionId,
+      feeOptions || { slippageBps: 1000 }
+    )
   }
 
   public async deactivate(
     didPayload: DIDDocument,
     signInputs: SignInfo[],
     versionId?: string | undefined,
-    fee?: DidStdFee
+    fee?: DidStdFee,
+    feeOptions?: DidFeeOptions
   ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
-    return sdk.deactivateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId, { slippageBps: 1000 }, { sdk })
+    return sdk.deactivateDidDocTx(
+      signInputs,
+      didPayload,
+      '',
+      fee,
+      undefined,
+      versionId,
+      feeOptions || { slippageBps: 1000 }
+    )
   }
 
   public async resolve(did: string, version?: string) {
     const sdk = await this.getSdk(did)
-    return version ? sdk.queryDidDocVersion(did, version, { sdk }) : sdk.queryDidDoc(did, { sdk })
+    return version ? sdk.queryDidDocVersion(did, version) : sdk.queryDidDoc(did)
   }
 
   public async resolveMetadata(did: string): Promise<{
@@ -159,22 +186,30 @@ export class CheqdLedgerService {
     pagination: QueryAllDidDocVersionsMetadataResponse['pagination']
   }> {
     const sdk = await this.getSdk(did)
-    return sdk.queryAllDidDocVersionsMetadata(did, { sdk })
+    return sdk.queryAllDidDocVersionsMetadata(did)
   }
 
   public async createResource(
     did: string,
     resourcePayload: Partial<MsgCreateResourcePayload>,
     signInputs: SignInfo[],
-    fee?: DidStdFee
+    fee?: DidStdFee,
+    feeOptions?: DidFeeOptions
   ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(did)
-    return sdk.createLinkedResourceTx(signInputs, resourcePayload, '', fee, undefined, { slippageBps: 1000 }, { sdk })
+    return sdk.createLinkedResourceTx(
+      signInputs,
+      resourcePayload,
+      '',
+      fee,
+      undefined,
+      feeOptions || { slippageBps: 1000 }
+    )
   }
 
   public async resolveResource(did: string, collectionId: string, resourceId: string): Promise<ResourceWithMetadata> {
     const sdk = await this.getSdk(did)
-    return sdk.queryLinkedResource(collectionId, resourceId, { sdk })
+    return sdk.queryLinkedResource(collectionId, resourceId)
   }
 
   public async resolveCollectionResources(
@@ -182,11 +217,11 @@ export class CheqdLedgerService {
     collectionId: string
   ): Promise<QueryCollectionResourcesResponse> {
     const sdk = await this.getSdk(did)
-    return sdk.queryLinkedResources(collectionId, { sdk })
+    return sdk.queryLinkedResources(collectionId)
   }
 
   public async resolveResourceMetadata(did: string, collectionId: string, resourceId: string): Promise<Metadata> {
     const sdk = await this.getSdk(did)
-    return sdk.queryLinkedResourceMetadata(collectionId, resourceId, { sdk })
+    return sdk.queryLinkedResourceMetadata(collectionId, resourceId)
   }
 }
