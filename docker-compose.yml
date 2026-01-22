@@ -69,6 +69,7 @@ services:
       (echo "silk theme damp share lens select artefact orbit artwork weather mixture alarm remain oppose own wolf reduce melody cheap venture lady spy wise loud"; echo "12345678") | cheqd-noded keys add extra1 --recover --keyring-backend test --home "/tmp/.single-node" &&
       (echo "lobster pizza cost soft else rather rich find rose pride catch bar cube switch help joy stable dirt stumble voyage bind cabbage cram exist"; echo "12345678") | cheqd-noded keys add extra2 --recover --keyring-backend test --home "/tmp/.single-node" &&
       (echo "state online hedgehog turtle daring lab panda bottom agent pottery mixture venue letter decade bridge win snake mandate trust village emerge awkward fire mimic"; echo "12345678") | cheqd-noded keys add extra3 --recover --keyring-backend test --home "/tmp/.single-node" &&
+      (echo "sick burger service almost affair toss obtain client enough use scrap connect topic interest multiply black slot awake drift census modify elegant diamond hamster"; echo "12345678") | cheqd-noded keys add extra4 --recover --keyring-backend test --home "/tmp/.single-node" &&
       (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd1rnr5jrt4exl0samwj0yegv99jeskl0hsxmcz96 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
       sleep 2 &&
       (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd1yeahnxhfa583wwpm9xt452xzet4xsgsqacgjkr 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
@@ -76,5 +77,7 @@ services:
       (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd14y3xeqd2xmhl9sxn8cf974k6nntqrveufqpqrs 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
       sleep 2 &&
       (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd10qh2vl0jrax6yh2mzes03cm6vt27vd47geu375 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
+      sleep 2 &&
+      (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd195vjtatmuqv03utpykweyc253dakgrc6658vde 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
       wait $RUN_TESTNET_PID;
       '
