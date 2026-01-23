@@ -5,7 +5,7 @@ export type SdJwtVcTypeMetadataRenderingMethodSimple = NonNullable<
   NonNullable<TypeMetadataFormat['display']>[number]['rendering']
 >['simple']
 export type SdJwtVcTypeMetadataRenderingMethodSvgTemplate = NonNullable<
-  NonNullable<NonNullable<TypeMetadataFormat['display']>[number]['rendering']>['svg_template']
+  NonNullable<NonNullable<TypeMetadataFormat['display']>[number]['rendering']>['svg_templates']
 >
 
 export type SdJwtVcTypeMetadataDisplay = NonNullable<TypeMetadataFormat['display']>[number]
