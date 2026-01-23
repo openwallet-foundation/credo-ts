@@ -31,7 +31,14 @@ export { didDocumentToNumAlgo4Did } from './modules/dids/methods/peer/peerDidNum
 export { DidRecordMetadataKeys } from './modules/dids/repository/didRecordMetadataTypes'
 export * from './modules/dif-presentation-exchange'
 export * from './modules/generic-records'
-export * as Kms from './modules/kms'
+
+import * as _Kms from './modules/kms'
+
+/**
+ * @deprecated import from `@credo-ts/core/kms` instead
+ */
+export const Kms = _Kms
+
 export * from './modules/mdoc'
 export * from './modules/sd-jwt-vc'
 export * from './modules/vc'
