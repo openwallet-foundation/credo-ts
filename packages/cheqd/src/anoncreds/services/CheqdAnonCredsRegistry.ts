@@ -1,3 +1,4 @@
+import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 import {
   AnonCredsApi,
   type AnonCredsRegistry,
@@ -18,7 +19,6 @@ import {
 import type { AgentContext } from '@credo-ts/core'
 import { CredoError, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { CheqdCreateResourceOptions } from '../../dids'
-
 import { CheqdDidRegistrar, CheqdDidResolver } from '../../dids'
 import {
   cheqdAnonCredsResourceTypes,
@@ -181,7 +181,13 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
           credentialDefinitionId: `${credentialDefinition.issuerId}/resources/${credDefResource.id}`,
         },
         registrationMetadata: {},
-        credentialDefinitionMetadata: {},
+        // NOTE: some of these metadata fields are used for resolved items
+        credentialDefinitionMetadata: {
+          name: TypedArrayEncoder.toHex(credDefNameHashBuffer),
+          version: credDefResource.version,
+          resourceType: credDefResource.resourceType,
+          id: credDefResource.id,
+        } satisfies Partial<Metadata>,
       }
     } catch (error) {
       agentContext.config.logger.error(
@@ -199,7 +205,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
         credentialDefinitionState: {
           state: 'failed',
           credentialDefinition: options.credentialDefinition,
-          reason: `unknownError: ${error.message}`,
+          reason: `unknownError: ${error.message}. ${error.stack}`,
         },
       }
     }
@@ -352,7 +358,13 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
           revocationRegistryDefinitionId: `${revocationRegistryDefinition.issuerId}/resources/${revocationRegistryDefinitionResource.id}`,
         },
         registrationMetadata: {},
-        revocationRegistryDefinitionMetadata: (response.resourceMetadata ?? {}) as Record<string, unknown>,
+        // NOTE: some of these metadata fields are used for resolved items
+        revocationRegistryDefinitionMetadata: {
+          name: revocationRegistryDefinitionResource.name,
+          id: revocationRegistryDefinitionResource.id,
+          version: revocationRegistryDefinitionResource.version,
+          resourceType: revocationRegistryDefinitionResource.resourceType,
+        } satisfies Partial<Metadata>,
       }
     } catch (error) {
       agentContext.config.logger.error(
