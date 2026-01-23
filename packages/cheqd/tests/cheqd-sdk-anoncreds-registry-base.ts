@@ -3,11 +3,11 @@ import { Agent, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
 import { getAgentOptions } from '../../core/tests/helpers'
 import { CheqdAnonCredsRegistry, type CheqdDidCreateOptions } from '../src'
-import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
+import { getCheqdModules } from './setupCheqdModule'
 
-export function cheqdAnonCredsRegistryTest(useCache: boolean) {
+export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: string) {
   let issuerId: string
-  const agent = new Agent(getAgentOptions('cheqdAnonCredsRegistry', {}, {}, getCheqdModules(cheqdPayerSeeds[2])))
+  const agent = new Agent(getAgentOptions('cheqdAnonCredsRegistry', {}, {}, getCheqdModules(cheqdPayerSeed)))
   beforeAll(async () => {
     await agent.initialize()
 
