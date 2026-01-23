@@ -32,12 +32,10 @@ export { DidRecordMetadataKeys } from './modules/dids/repository/didRecordMetada
 export * from './modules/dif-presentation-exchange'
 export * from './modules/generic-records'
 
-import * as _Kms from './modules/kms'
-
 /**
  * @deprecated import from `@credo-ts/core/kms` instead
  */
-export const Kms = _Kms
+export * as Kms from './modules/kms'
 
 export * from './modules/mdoc'
 export * from './modules/sd-jwt-vc'
