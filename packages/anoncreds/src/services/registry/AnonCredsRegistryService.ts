@@ -105,6 +105,7 @@ export class AnonCredsRegistryService {
       return {
         ...result,
         resolutionMetadata: {
+          ...result.resolutionMetadata,
           servedFromCache: result.resolutionMetadata.servedFromCache ?? false,
         },
       }
@@ -199,6 +200,7 @@ export class AnonCredsRegistryService {
       return {
         ...result,
         resolutionMetadata: {
+          ...result.resolutionMetadata,
           servedFromCache: result.resolutionMetadata.servedFromCache ?? false,
         },
       }
@@ -299,6 +301,7 @@ export class AnonCredsRegistryService {
       return {
         ...result,
         resolutionMetadata: {
+          ...result.resolutionMetadata,
           servedFromCache: result.resolutionMetadata.servedFromCache ?? false,
         },
       }
@@ -372,6 +375,7 @@ export class AnonCredsRegistryService {
       return {
         ...result,
         resolutionMetadata: {
+          ...result.resolutionMetadata,
           servedFromCache: result.resolutionMetadata.servedFromCache ?? false,
         },
       }
