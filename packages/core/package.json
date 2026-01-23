@@ -1,8 +1,11 @@
 {
   "name": "@credo-ts/core",
   "exports": {
-    "cli": "./build/index.mjs",
-    "import": "./src/index.ts"
+    ".": {
+      "cli": "./build/index.mjs",
+      "import": "./src/index.ts"
+    },
+    "./kms": "./src/modules/kms/index.ts"
   },
   "version": "0.6.1",
   "files": [
@@ -15,7 +18,12 @@
     "module": "./build/index.mjs",
     "exports": {
       ".": "./build/index.mjs",
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./kms": {
+        "import": "./build/modules/kms/index.mjs",
+        "require": "./build/modules/kms/index.mjs",
+        "types": "./build/modules/kms/index.d.mts"
+      }
     }
   },
   "browser": {
