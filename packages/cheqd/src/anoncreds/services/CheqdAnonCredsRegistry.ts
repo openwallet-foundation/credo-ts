@@ -205,7 +205,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
         credentialDefinitionState: {
           state: 'failed',
           credentialDefinition: options.credentialDefinition,
-          reason: `unknownError: ${error.message}`,
+          reason: `unknownError: ${error.message}. ${error.stack}`,
         },
       }
     }
