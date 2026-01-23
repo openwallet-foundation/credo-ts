@@ -138,7 +138,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
             baseUrl: issuerBaseUrl,
             getVerificationSessionForIssuanceSessionAuthorization:
               getVerificationSessionForIssuanceSessionAuthorization('presentationDefinition'),
-            credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding, verification }) => {
+            credentialRequestToCredentialMapper: async ({ holderBinding, verification, credentialConfiguration }) => {
               if (!verification) {
                 throw new Error('Expected verification in credential request mapper')
               }
@@ -158,7 +158,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
               } else {
                 const [presentation] = verification.dcql.presentations[verification.dcql.query.credentials[0].id]
                 if (presentation.claimFormat !== ClaimFormat.SdJwtDc) {
-                  throw new Error('Expected preentation with sd-jwt vc format')
+                  throw new Error('Expected presentation with sd-jwt vc format')
                 }
 
                 credential = presentation
@@ -166,12 +166,12 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
               const fullName = `${credential.prettyClaims.given_name} ${credential.prettyClaims.family_name}`
 
-              if (credentialRequest.format === 'vc+sd-jwt') {
+              if (credentialConfiguration.format === 'vc+sd-jwt' && credentialConfiguration.vct) {
                 return {
                   type: 'credentials',
                   format: 'dc+sd-jwt',
                   credentials: holderBinding.keys.map((holderBinding) => ({
-                    payload: { vct: credentialRequest.vct, full_name: fullName, degree: 'Software Engineer' },
+                    payload: { vct: credentialConfiguration.vct, full_name: fullName, degree: 'Software Engineer' },
                     holder: holderBinding,
                     issuer: {
                       method: 'x5c',

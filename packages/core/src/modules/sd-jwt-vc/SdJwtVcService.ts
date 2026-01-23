@@ -1,7 +1,8 @@
+import type { NonEmptyArray } from '@animo-id/pex'
 import type { SDJwt } from '@sd-jwt/core'
 import { decodeSdJwtSync } from '@sd-jwt/decode'
 import { selectDisclosures } from '@sd-jwt/present'
-import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
+import { SDJwtVcInstance, type VcTFetcher } from '@sd-jwt/sd-jwt-vc'
 import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/types'
 import { injectable } from 'tsyringe'
 import { AgentContext } from '../../agent'
@@ -21,6 +22,7 @@ import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcError } from './SdJwtVcError'
+import { SdJwtVcModuleConfig } from './SdJwtVcModuleConfig'
 import type {
   SdJwtVcHeader,
   SdJwtVcHolderBinding,
@@ -79,6 +81,9 @@ export interface SdJwtVc<
    */
   kmsKeyId?: string
 
+  /**
+   * The merged/resolved type metadata of the SD-JWT VC.
+   */
   typeMetadata?: SdJwtVcTypeMetadata
 }
 
@@ -100,11 +105,7 @@ export interface VerificationResult {
  */
 @injectable()
 export class SdJwtVcService {
-  private sdJwtVcRepository: SdJwtVcRepository
-
-  public constructor(sdJwtVcRepository: SdJwtVcRepository) {
-    this.sdJwtVcRepository = sdJwtVcRepository
-  }
+  public constructor(private sdJwtVcRepository: SdJwtVcRepository) {}
 
   public async sign<Payload extends SdJwtVcPayload>(
     agentContext: AgentContext,
@@ -269,15 +270,29 @@ export class SdJwtVcService {
     agentContext: AgentContext,
     { compactSdJwtVc, keyBinding, requiredClaimKeys, fetchTypeMetadata, trustedCertificates, now }: SdJwtVcVerifyOptions
   ): Promise<
-    | { isValid: true; sdJwtVc: SdJwtVc<Header, Payload> }
+    | {
+        isValid: true
+        sdJwtVc: SdJwtVc<Header, Payload>
+        /**
+         * The full type metadata chain, can be used for further processing the type metadata.
+         *
+         * Only populated if `fetchTypeMetadata` is set to true, and the resolver returned a type
+         * metadata document.
+         */
+        typeMetadataChain?: NonEmptyArray<SdJwtVcTypeMetadata>
+      }
     | { isValid: false; sdJwtVc?: SdJwtVc<Header, Payload>; error: Error }
   > {
-    const sdjwt = new SDJwtVcInstance(this.getBaseSdJwtConfig(agentContext))
-    let sdJwtVc: SDJwt
+    const sdjwt = new SDJwtVcInstance({
+      ...this.getBaseSdJwtConfig(agentContext),
+      // We manually fetch later
+      loadTypeMetadataFormat: false,
+    })
+    let sdJwtVc: SDJwt<Header, Payload>
     let holderBinding: SdJwtVcHolderBinding | undefined
 
     try {
-      sdJwtVc = await sdjwt.decode(compactSdJwtVc)
+      sdJwtVc = (await sdjwt.decode(compactSdJwtVc)) as SDJwt<Header, Payload>
       if (!sdJwtVc.jwt) throw new CredoError('Invalid sd-jwt-vc')
       holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt.payload) ?? undefined
     } catch (error) {
@@ -304,6 +319,7 @@ export class SdJwtVcService {
       encoded: compactSdJwtVc,
     } satisfies SdJwtVc<Header, Payload>
 
+    let typeMetadataChain: NonEmptyArray<SdJwtVcTypeMetadata> | undefined
     try {
       const credentialIssuer = await this.parseIssuerFromCredential(
         agentContext,
@@ -384,10 +400,13 @@ export class SdJwtVcService {
       if (fetchTypeMetadata) {
         // We allow vct without type metadata for now (and don't fail if the retrieval fails)
         // Integrity check must pass though.
-        returnSdJwtVc.typeMetadata = await this.fetchTypeMetadata(agentContext, returnSdJwtVc, {
+        const resolvedTypeMetadata = await this.fetchTypeMetadata(agentContext, returnSdJwtVc, {
           throwErrorOnFetchError: false,
           throwErrorOnUnsupportedVctValue: false,
         })
+
+        returnSdJwtVc.typeMetadata = resolvedTypeMetadata?.mergedTypeMetadata
+        typeMetadataChain = resolvedTypeMetadata?.typeMetadataChain
       }
     } catch (error) {
       return {
@@ -400,9 +419,15 @@ export class SdJwtVcService {
     return {
       isValid: true,
       sdJwtVc: returnSdJwtVc,
+      typeMetadataChain,
     }
   }
 
+  /**
+   * Resolve the type metadata for an SD-JWT instance.
+   *
+   * This method resolves the `vct` value, and any `extends` values.
+   */
   public async fetchTypeMetadata(
     agentContext: AgentContext,
     sdJwtVc: SdJwtVc,
@@ -411,59 +436,16 @@ export class SdJwtVcService {
       throwErrorOnUnsupportedVctValue = true,
     }: { throwErrorOnFetchError?: boolean; throwErrorOnUnsupportedVctValue?: boolean } = {}
   ) {
-    const vct = sdJwtVc.payload.vct
-    const vctIntegrity = sdJwtVc.payload['vct#integrity']
-    if (!vct || typeof vct !== 'string' || !vct.startsWith('https://')) {
-      if (!throwErrorOnUnsupportedVctValue) return undefined
-      throw new SdJwtVcError(`Unable to resolve type metadata for vct '${vct}'. Only https supported`)
-    }
-
-    let firstError: Error | undefined
-
-    // Fist try the new type metadata URL
-    // We add a catch, so that if e.g. the request fails due to CORS (which throws an error
-    // we will still continue trying the legacy url)
-    const firstResponse = await agentContext.config.agentDependencies.fetch(vct).catch((error) => {
-      firstError = error
-      return undefined
+    const sdjwt = new SDJwtVcInstance({
+      ...this.getBaseSdJwtConfig(agentContext),
+      vctFetcher: this.getVctFetcher(agentContext, {
+        baseVct: sdJwtVc.payload.vct,
+        throwErrorOnFetchError,
+        throwErrorOnUnsupportedVctValue,
+      }),
     })
-    let response = firstResponse
 
-    // If the response is not ok, try the legacy URL (will be removed in 0.7)
-    if (!response || !response?.ok) {
-      // modify the uri based on https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-04.html#section-6.3.1
-      const vctElements = vct.split('/')
-      vctElements.splice(3, 0, '.well-known/vct')
-      const legacyVctUrl = vctElements.join('/')
-
-      response = await agentContext.config.agentDependencies.fetch(legacyVctUrl).catch(() => undefined)
-    }
-
-    if (!response?.ok) {
-      if (!throwErrorOnFetchError) return undefined
-
-      if (firstResponse) {
-        throw new SdJwtVcError(
-          `Unable to resolve type metadata vct '${vct}'. Fetch returned a non-successful ${firstResponse.status} response. ${await firstResponse.text()}.`,
-          { cause: firstError }
-        )
-      } else {
-        throw new SdJwtVcError(
-          `Unable to resolve type metadata vct '${vct}'. Fetch returned a non-successful response.`,
-          { cause: firstError }
-        )
-      }
-    }
-
-    const typeMetadata = (await response.clone().json()) as SdJwtVcTypeMetadata
-    if (vctIntegrity) {
-      if (typeof vctIntegrity !== 'string') {
-        throw new SdJwtVcError(`Found 'vct#integrity' with value '${vctIntegrity}' but value was not of type 'string'.`)
-      }
-
-      IntegrityVerifier.verifyIntegrity(new Uint8Array(await response.arrayBuffer()), vctIntegrity)
-    }
-
+    const typeMetadata = await sdjwt.getVct(sdJwtVc.compact)
     return typeMetadata
   }
 
@@ -686,5 +668,115 @@ export class SdJwtVcService {
 
       return await response.text()
     }
+  }
+
+  private getVctFetcher(
+    agentContext: AgentContext,
+    {
+      baseVct,
+      throwErrorOnFetchError = true,
+      throwErrorOnUnsupportedVctValue = true,
+    }: { baseVct: string; throwErrorOnFetchError?: boolean; throwErrorOnUnsupportedVctValue?: boolean }
+  ): VcTFetcher {
+    const sdJwtVcConfig = agentContext.dependencyManager.resolve(SdJwtVcModuleConfig)
+    return async (uri: string, integrity) => {
+      if (sdJwtVcConfig.customTypeMetadataResolver) {
+        const customTypeMetadata = await sdJwtVcConfig.customTypeMetadataResolver(uri, integrity, {
+          isExtendedVct: uri !== baseVct,
+          defaultResolver: (userOverrideOptions) =>
+            this.httpsTypeMetadataResolver(agentContext, uri, integrity, {
+              throwErrorOnFetchError: userOverrideOptions.throwErrorOnFetchError ?? throwErrorOnFetchError,
+              throwErrorOnUnsupportedVctValue:
+                userOverrideOptions.throwErrorOnUnsupportedVctValue ?? throwErrorOnUnsupportedVctValue,
+              isExtendedVct: uri !== baseVct,
+            }),
+        })
+
+        return customTypeMetadata as SdJwtVcTypeMetadata | undefined
+      }
+
+      if (!uri.startsWith('https://')) {
+        if (!throwErrorOnUnsupportedVctValue) return undefined
+        throw new SdJwtVcError(
+          `Unable to resolve type metadata for vct '${uri}'. Only https supported and no 'customTypeMetadataResolver' provided in agent config.`
+        )
+      }
+
+      const defaultTypeMetadata = await this.httpsTypeMetadataResolver(agentContext, uri, integrity, {
+        throwErrorOnFetchError,
+        throwErrorOnUnsupportedVctValue,
+        isExtendedVct: uri !== baseVct,
+      })
+      return defaultTypeMetadata as SdJwtVcTypeMetadata | undefined
+    }
+  }
+
+  private async httpsTypeMetadataResolver(
+    agentContext: AgentContext,
+    vct: string,
+    integrity: string | undefined,
+    {
+      throwErrorOnFetchError,
+      throwErrorOnUnsupportedVctValue,
+      isExtendedVct,
+    }: { throwErrorOnFetchError: boolean; throwErrorOnUnsupportedVctValue: boolean; isExtendedVct?: boolean }
+  ) {
+    if (!vct.startsWith('https://')) {
+      if (!throwErrorOnUnsupportedVctValue) return undefined
+      throw new SdJwtVcError(
+        `Unable to resolve type metadata for vct '${vct}'. Only https supported for default resolver`
+      )
+    }
+    let firstError: Error | undefined
+
+    // Fist try the new type metadata URL
+    // We add a catch, so that if e.g. the request fails due to CORS (which throws an error
+    // we will still continue trying the legacy url)
+    const firstResponse = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, vct).catch((error) => {
+      firstError = error
+      return undefined
+    })
+    let response = firstResponse
+
+    // If the response is not ok, try the legacy URL (will be removed in 0.7)
+    if (!response || !response?.ok) {
+      // modify the uri based on https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-04.html#section-6.3.1
+      const vctElements = vct.split('/')
+      vctElements.splice(3, 0, '.well-known/vct')
+      const legacyVctUrl = vctElements.join('/')
+
+      response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, legacyVctUrl).catch(
+        () => undefined
+      )
+    }
+
+    if (!response?.ok) {
+      if (!throwErrorOnFetchError) return undefined
+
+      if (firstResponse) {
+        throw new SdJwtVcError(
+          `Unable to resolve type metadata vct '${vct}'. Fetch returned a non-successful ${firstResponse.status} response. ${await firstResponse.text()}.`,
+          { cause: firstError }
+        )
+      } else {
+        throw new SdJwtVcError(
+          `Unable to resolve type metadata vct '${vct}'. Fetch returned a non-successful response.`,
+          { cause: firstError }
+        )
+      }
+    }
+
+    const typeMetadata = (await response.clone().json()) as Record<string, unknown>
+    if (integrity) {
+      if (typeof integrity !== 'string') {
+        throw new SdJwtVcError(
+          `Found '${isExtendedVct ? 'extends' : 'vct'}#integrity' with value '${integrity}' but value was not of type 'string'.`
+        )
+      }
+
+      IntegrityVerifier.verifyIntegrity(new Uint8Array(await response.arrayBuffer()), integrity)
+    }
+
+    return typeMetadata
   }
 }

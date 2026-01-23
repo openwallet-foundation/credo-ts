@@ -110,9 +110,16 @@ export class DcqlService {
     const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
     if (sdJwtVctValues.every((vct) => vct !== undefined)) {
       const sdjwtVcRecords = await sdJwtVcApi.findAllByQuery({
-        $or: sdJwtVctValues.map((vct) => ({
-          vct: vct as string,
-        })),
+        $or: [
+          // Look for direct vct match
+          ...sdJwtVctValues.map((vct) => ({
+            vct,
+          })),
+          // Or an extended vct value
+          ...sdJwtVctValues.map((vct) => ({
+            extendedVctValues: [vct],
+          })),
+        ],
       })
       allRecords.push(...sdjwtVcRecords)
     } else if (sdJwts.length > 0) {
@@ -218,11 +225,30 @@ export class DcqlService {
     // SD-JWT credential can be used as both dc+sd-jwt and vc+sd-jwt
     // At some point we might want to look at the header value of the sd-jwt (vc+sd-jwt vc dc+sd-jwt)
     if (presentation.claimFormat === ClaimFormat.SdJwtDc) {
+      const requestedVcts = queryCredential.format === 'dc+sd-jwt' ? queryCredential.meta?.vct_values : undefined
+
+      let presentationVctValues = [presentation.payload.vct]
+      // FIXME: we should probably add an option whether to resolve VCT if we didn't get a direct hit
+      if (!requestedVcts?.includes(presentation.payload.vct)) {
+        const typeMetadataChain = await agentContext
+          .resolve(SdJwtVcService)
+          .fetchTypeMetadata(agentContext, presentation, {
+            throwErrorOnFetchError: false,
+            throwErrorOnUnsupportedVctValue: false,
+          })
+
+        if (typeMetadataChain) {
+          presentationVctValues = typeMetadataChain?.vctValues
+        }
+      }
+
       return {
         credential_format: queryCredential.format === 'dc+sd-jwt' ? 'dc+sd-jwt' : 'vc+sd-jwt',
         authority: this.getAuthorityForCredential(presentation),
         cryptographic_holder_binding: true,
-        vct: presentation.prettyClaims.vct as string,
+        vct:
+          presentationVctValues.find((presentationVctValue) => requestedVcts?.includes(presentationVctValue)) ??
+          presentation.payload.vct,
         claims: presentation.prettyClaims as DcqlSdJwtVcCredential.Claims,
       } satisfies DcqlSdJwtVcCredential
     }
@@ -310,8 +336,16 @@ export class DcqlService {
         const sdJwtVc = record.firstCredential
         const claims = sdJwtVc.prettyClaims as DcqlSdJwtVcCredential.Claims
 
-        // To keep correct mapping of input credential index, we add it twice here (for dc+sd-jwt and vc+sd-jwt)
-        credentialRecordsWithFormatDuplicates.push(record, record)
+        // To keep correct mapping of input credential index, we add it multiple times here:
+        // - for dc+sd-jwt and vc+sd-jwt
+        // - for each extended VCT (until we have multi-vct support in DCQL)
+        credentialRecordsWithFormatDuplicates.push(
+          record,
+          record,
+          ...record.extendedVctValues.map(() => record),
+          ...record.extendedVctValues.map(() => record)
+        )
+
         return [
           {
             authority: this.getAuthorityForCredential(sdJwtVc),
@@ -320,6 +354,16 @@ export class DcqlService {
             claims,
             cryptographic_holder_binding: true,
           } satisfies DcqlSdJwtVcCredential,
+          ...record.extendedVctValues.map(
+            (extendedVctValue) =>
+              ({
+                authority: this.getAuthorityForCredential(sdJwtVc),
+                credential_format: 'dc+sd-jwt',
+                vct: extendedVctValue,
+                claims,
+                cryptographic_holder_binding: true,
+              }) satisfies DcqlSdJwtVcCredential
+          ),
           {
             authority: this.getAuthorityForCredential(sdJwtVc),
             credential_format: 'vc+sd-jwt',
@@ -327,7 +371,17 @@ export class DcqlService {
             claims,
             cryptographic_holder_binding: true,
           } satisfies DcqlSdJwtVcCredential,
-        ] satisfies [DcqlSdJwtVcCredential, DcqlSdJwtVcCredential]
+          ...record.extendedVctValues.map(
+            (extendedVctValue) =>
+              ({
+                authority: this.getAuthorityForCredential(sdJwtVc),
+                credential_format: 'vc+sd-jwt',
+                vct: extendedVctValue,
+                claims,
+                cryptographic_holder_binding: true,
+              }) satisfies DcqlSdJwtVcCredential
+          ),
+        ] satisfies DcqlSdJwtVcCredential[]
       }
 
       if (record.type === 'W3cCredentialRecord') {
