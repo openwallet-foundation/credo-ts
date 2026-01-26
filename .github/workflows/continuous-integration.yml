@@ -148,6 +148,26 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Wait for WMA calculation on Cheqd network
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          WAIT_TIME=300 # seconds
+          INTERVAL=20
+
+          echo "Waiting for WMA to be available..."
+
+          while ! docker exec cheqd-validator cheqd-noded q oracle wma CHEQ >/dev/null 2>&1; do
+            if [ "$WAIT_TIME" -le 0 ]; then
+              echo "Unable to compute WMA within timeout"
+              exit 1
+            fi
+
+            sleep "$INTERVAL"
+            WAIT_TIME=$((WAIT_TIME - INTERVAL))
+          done
+
       - name: Run tests
         run: COLLECT_FAILED_TEST_LOGS=true pnpm test:e2e --coverage
 
