@@ -45,7 +45,7 @@ import {
   X509ModuleConfig,
   X509Service,
 } from '@credo-ts/core'
-import { type Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   type ClientIdPrefix,
   type ClientMetadata,
@@ -941,12 +941,12 @@ export class OpenId4VpVerifierService {
     ]
     const supportedProofTypes = signatureSuiteRegistry.supportedProofTypes
 
-    type JarmEncryptionJwk = Kms.Jwk & { kid: string; use: 'enc' }
+    type JarmEncryptionJwk = Kms.Jwk & { kid: string; use: 'enc'; alg: 'ECDH-ES' }
     let jarmEncryptionJwk: JarmEncryptionJwk | undefined
 
     if (isJarmResponseMode(responseMode)) {
       const key = await kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })
-      jarmEncryptionJwk = { ...key.publicJwk, use: 'enc' }
+      jarmEncryptionJwk = { ...key.publicJwk, use: 'enc', alg: 'ECDH-ES' }
     }
 
     const jarmClientMetadata:
@@ -959,7 +959,7 @@ export class OpenId4VpVerifierService {
         >
       | undefined = jarmEncryptionJwk
       ? {
-          jwks: { keys: [jarmEncryptionJwk as Jwk] },
+          jwks: { keys: [jarmEncryptionJwk] },
 
           ...(options.version === 'v1'
             ? {
