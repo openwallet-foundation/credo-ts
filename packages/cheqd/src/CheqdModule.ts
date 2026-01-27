@@ -1,9 +1,7 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { CheqdModuleConfigOptions } from './CheqdModuleConfig'
-
-import { AgentConfig, Buffer } from '@credo-ts/core'
-
+import { Buffer } from '@credo-ts/core'
 import { CheqdApi } from './CheqdApi'
+import type { CheqdModuleConfigOptions } from './CheqdModuleConfig'
 import { CheqdModuleConfig } from './CheqdModuleConfig'
 import { CheqdLedgerService } from './ledger'
 
@@ -16,13 +14,6 @@ export class CheqdModule implements Module {
   }
 
   public register(dependencyManager: DependencyManager) {
-    // Warn about experimental module
-    dependencyManager
-      .resolve(AgentConfig)
-      .logger.warn(
-        "The '@credo-ts/cheqd' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-      )
-
     // Register config
     dependencyManager.registerInstance(CheqdModuleConfig, this.config)
 

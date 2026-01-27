@@ -1,11 +1,11 @@
-import { ConnectionInvitationMessage } from '../../../../didcomm/src'
+import { DidCommConnectionInvitationMessage } from '../../../../didcomm/src'
 import { DidDocument, VerificationMethod } from '../../modules/dids'
 import { JsonTransformer } from '../JsonTransformer'
 
 describe('JsonTransformer', () => {
   describe('toJSON', () => {
     it('transforms class instance to JSON object', () => {
-      const invitation = new ConnectionInvitationMessage({
+      const invitation = new DidCommConnectionInvitationMessage({
         did: 'did:sov:test1234',
         id: 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
         label: 'test-label',
@@ -31,19 +31,19 @@ describe('JsonTransformer', () => {
         did: 'did:sov:test1234',
       }
 
-      const invitation = new ConnectionInvitationMessage({
+      const invitation = new DidCommConnectionInvitationMessage({
         did: 'did:sov:test1234',
         id: 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
         label: 'test-label',
       })
 
-      expect(JsonTransformer.fromJSON(json, ConnectionInvitationMessage)).toEqual(invitation)
+      expect(JsonTransformer.fromJSON(json, DidCommConnectionInvitationMessage)).toEqual(invitation)
     })
   })
 
   describe('serialize', () => {
     it('transforms class instance to JSON string', () => {
-      const invitation = new ConnectionInvitationMessage({
+      const invitation = new DidCommConnectionInvitationMessage({
         did: 'did:sov:test1234',
         id: 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
         label: 'test-label',
@@ -61,13 +61,13 @@ describe('JsonTransformer', () => {
       const jsonString =
         '{"@type":"https://didcomm.org/connections/1.0/invitation","@id":"afe2867e-58c3-4a8d-85b2-23370dd9c9f0","label":"test-label","did":"did:sov:test1234"}'
 
-      const invitation = new ConnectionInvitationMessage({
+      const invitation = new DidCommConnectionInvitationMessage({
         did: 'did:sov:test1234',
         id: 'afe2867e-58c3-4a8d-85b2-23370dd9c9f0',
         label: 'test-label',
       })
 
-      expect(JsonTransformer.deserialize(jsonString, ConnectionInvitationMessage)).toEqual(invitation)
+      expect(JsonTransformer.deserialize(jsonString, DidCommConnectionInvitationMessage)).toEqual(invitation)
     })
 
     it('transforms JSON string to nested class instance', () => {

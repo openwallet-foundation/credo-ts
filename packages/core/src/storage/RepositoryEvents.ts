@@ -7,7 +7,7 @@ export enum RepositoryEventTypes {
   RecordDeleted = 'RecordDeleted',
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export interface RecordSavedEvent<T extends BaseRecord<any, any, any>> extends BaseEvent {
   type: typeof RepositoryEventTypes.RecordSaved
   payload: {
@@ -15,7 +15,7 @@ export interface RecordSavedEvent<T extends BaseRecord<any, any, any>> extends B
   }
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export interface RecordUpdatedEvent<T extends BaseRecord<any, any, any>> extends BaseEvent {
   type: typeof RepositoryEventTypes.RecordUpdated
   payload: {
@@ -23,7 +23,7 @@ export interface RecordUpdatedEvent<T extends BaseRecord<any, any, any>> extends
   }
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export interface RecordDeletedEvent<T extends BaseRecord<any, any, any>> extends BaseEvent {
   type: typeof RepositoryEventTypes.RecordDeleted
   payload: {

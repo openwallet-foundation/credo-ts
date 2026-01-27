@@ -1,4 +1,5 @@
 import { CredoError } from '../../../error'
+import { dateToSeconds } from '../../../utils'
 
 /**
  * The maximum allowed clock skew time in seconds. If an time based validation
@@ -7,7 +8,7 @@ import { CredoError } from '../../../error'
  *
  * See https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.5
  */
-const DEFAULT_SKEW_TIME = 300
+export const DEFAULT_SKEW_TIME = 30
 
 export interface JwtPayloadJson {
   iss?: string
@@ -123,8 +124,15 @@ export class JwtPayload {
    *  - if `iat` is present, it must be less than now
    *  - if `exp` is present, it must be greater than now
    */
-  public validate(options?: { skewTime?: number; now?: number }) {
-    const { nowSkewedFuture, nowSkewedPast } = getNowSkewed(options?.now, options?.skewTime)
+  public validate(options?: {
+    /**
+     * @deprecated use `skewSeconds` instead
+     */
+    skewTime?: number
+    skewSeconds?: number
+    now?: number
+  }) {
+    const { nowSkewedFuture, nowSkewedPast } = getNowSkewed(options?.now, options?.skewSeconds ?? options?.skewTime)
 
     // Validate nbf
     if (typeof this.nbf !== 'number' && typeof this.nbf !== 'undefined') {
@@ -220,12 +228,12 @@ export class JwtPayload {
   }
 }
 
-function getNowSkewed(now?: number, skewTime?: number) {
-  const _now = typeof now === 'number' ? now : Math.floor(Date.now() / 1000)
-  const _skewTime = typeof skewTime !== 'undefined' && skewTime >= 0 ? skewTime : DEFAULT_SKEW_TIME
+function getNowSkewed(now?: number, skewSeconds?: number) {
+  const _now = now ?? dateToSeconds(new Date())
+  const _skewSeconds = skewSeconds ?? DEFAULT_SKEW_TIME
 
   return {
-    nowSkewedPast: _now - _skewTime,
-    nowSkewedFuture: _now + _skewTime,
+    nowSkewedPast: _now - _skewSeconds,
+    nowSkewedFuture: _now + _skewSeconds,
   }
 }

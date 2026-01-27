@@ -1,8 +1,8 @@
-import { X25519_V1 } from './X25519_v1'
 import { CREDENTIALS_V1 } from './credentials_v1'
 import { DATA_INTEGRITY_V2 } from './dataIntegrity_v2'
 import { DID_V1 } from './did_v1'
 import { ED25519_V1 } from './ed25519_v1'
+import { LINKED_VP_V1 } from './linkedvp_v1'
 import { ODRL } from './odrl'
 import { PURL_OB_V3P0 } from './purl_ob_v3po'
 import { SCHEMA_ORG } from './schema_org'
@@ -11,6 +11,7 @@ import { SECURITY_V1 } from './security_v1'
 import { SECURITY_V2 } from './security_v2'
 import { PRESENTATION_SUBMISSION } from './submission'
 import { VC_REVOCATION_LIST_2020 } from './vc_revocation_list_2020'
+import { X25519_V1 } from './X25519_v1'
 
 export const DEFAULT_CONTEXTS = {
   'https://w3id.org/security/v1': SECURITY_V1,
@@ -28,4 +29,5 @@ export const DEFAULT_CONTEXTS = {
   'https://purl.imsglobal.org/spec/ob/v3p0/context.json': PURL_OB_V3P0,
   'https://w3c-ccg.github.io/vc-status-rl-2020/contexts/vc-revocation-list-2020/v1.jsonld': VC_REVOCATION_LIST_2020,
   'https://w3id.org/security/data-integrity/v2': DATA_INTEGRITY_V2,
+  'https://identity.foundation/linked-vp/contexts/v1': LINKED_VP_V1,
 }

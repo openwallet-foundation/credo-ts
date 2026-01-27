@@ -1,15 +1,18 @@
-import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../../didcomm/src'
-import {
-  CredentialEventTypes,
-  CredentialsModule,
-  DifPresentationExchangeProofFormatService,
-  JsonLdCredentialFormatService,
-  ProofEventTypes,
-  ProofsModule,
-  V2CredentialProtocol,
-  V2ProofProtocol,
+import type {
+  DidCommAutoAcceptCredential,
+  DidCommAutoAcceptProof,
+  DidCommConnectionRecord,
+  DidCommModuleConfigOptions,
 } from '../../didcomm/src'
-import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
+import {
+  DidCommCredentialEventTypes,
+  DidCommCredentialV2Protocol,
+  DidCommDifPresentationExchangeProofFormatService,
+  DidCommJsonLdCredentialFormatService,
+  DidCommModule,
+  DidCommProofEventTypes,
+  DidCommProofV2Protocol,
+} from '../../didcomm/src'
 import { Agent, CacheModule, InMemoryLruCache, W3cCredentialsModule } from '../src'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
 import type { EventReplaySubject } from './events'
@@ -18,26 +21,39 @@ import { setupEventReplaySubjects } from './events'
 import { getAgentOptions, makeConnection } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules> & DefaultAgentModulesInput>
+export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>
 
-export const getJsonLdModules = (
-  _name: string,
-  {
-    autoAcceptCredentials,
-    autoAcceptProofs,
-  }: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}
-) =>
+export const getJsonLdModules = ({
+  autoAcceptCredentials,
+  autoAcceptProofs,
+  extraDidCommConfig,
+}: {
+  autoAcceptCredentials?: DidCommAutoAcceptCredential
+  autoAcceptProofs?: DidCommAutoAcceptProof
+  extraDidCommConfig?: DidCommModuleConfigOptions
+} = {}) =>
   ({
-    credentials: new CredentialsModule({
-      credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
-      autoAcceptCredentials,
+    didcomm: new DidCommModule({
+      connections: {
+        autoAcceptConnections: true,
+      },
+      ...extraDidCommConfig,
+      credentials: {
+        credentialProtocols: [
+          new DidCommCredentialV2Protocol({ credentialFormats: [new DidCommJsonLdCredentialFormatService()] }),
+        ],
+        autoAcceptCredentials,
+      },
+      proofs: {
+        autoAcceptProofs,
+        proofProtocols: [
+          new DidCommProofV2Protocol({ proofFormats: [new DidCommDifPresentationExchangeProofFormatService()] }),
+        ],
+      },
     }),
+
     w3cCredentials: new W3cCredentialsModule({
       documentLoader: customDocumentLoader,
-    }),
-    proofs: new ProofsModule({
-      autoAcceptProofs,
-      proofProtocols: [new V2ProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
@@ -85,20 +101,21 @@ export async function setupJsonLdTests<
   issuerName: string
   holderName: string
   verifierName?: VerifierName
-  autoAcceptCredentials?: AutoAcceptCredential
-  autoAcceptProofs?: AutoAcceptProof
+  autoAcceptCredentials?: DidCommAutoAcceptCredential
+  autoAcceptProofs?: DidCommAutoAcceptProof
   createConnections?: CreateConnections
 }): Promise<SetupJsonLdTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
-      {
-        endpoints: ['rxjs:issuer'],
-      },
       {},
-      getJsonLdModules(issuerName, {
+      {},
+      getJsonLdModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:issuer'],
+        },
       }),
       { requireDidcomm: true }
     )
@@ -107,13 +124,14 @@ export async function setupJsonLdTests<
   const holderAgent = new Agent(
     getAgentOptions(
       holderName,
-      {
-        endpoints: ['rxjs:holder'],
-      },
       {},
-      getJsonLdModules(holderName, {
+      {},
+      getJsonLdModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:holder'],
+        },
       }),
       { requireDidcomm: true }
     )
@@ -123,13 +141,14 @@ export async function setupJsonLdTests<
     ? new Agent(
         getAgentOptions(
           verifierName,
-          {
-            endpoints: ['rxjs:verifier'],
-          },
           {},
-          getJsonLdModules(verifierName, {
+          {},
+          getJsonLdModules({
             autoAcceptCredentials,
             autoAcceptProofs,
+            extraDidCommConfig: {
+              endpoints: ['rxjs:verifier'],
+            },
           }),
           { requireDidcomm: true }
         )
@@ -139,17 +158,17 @@ export async function setupJsonLdTests<
   setupSubjectTransports(verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent])
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
     verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
-    [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+    [DidCommCredentialEventTypes.DidCommCredentialStateChanged, DidCommProofEventTypes.ProofStateChanged]
   )
 
   await issuerAgent.initialize()
   await holderAgent.initialize()
   if (verifierAgent) await verifierAgent.initialize()
 
-  let issuerHolderConnection: ConnectionRecord | undefined
-  let holderIssuerConnection: ConnectionRecord | undefined
-  let verifierHolderConnection: ConnectionRecord | undefined
-  let holderVerifierConnection: ConnectionRecord | undefined
+  let issuerHolderConnection: DidCommConnectionRecord | undefined
+  let holderIssuerConnection: DidCommConnectionRecord | undefined
+  let verifierHolderConnection: DidCommConnectionRecord | undefined
+  let holderVerifierConnection: DidCommConnectionRecord | undefined
 
   if (createConnections ?? true) {
     ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)

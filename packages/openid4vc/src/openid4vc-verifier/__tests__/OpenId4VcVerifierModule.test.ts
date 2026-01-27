@@ -1,18 +1,18 @@
 import type { DependencyManager } from '@credo-ts/core'
-import type { OpenId4VcVerifierModuleConfigOptions } from '../OpenId4VcVerifierModuleConfig'
-
-import { Router } from 'express'
-
+import express from 'express'
 import { OpenId4VcVerifierModule } from '../OpenId4VcVerifierModule'
-import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
+import {
+  type InternalOpenId4VcVerifierModuleConfigOptions,
+  OpenId4VcVerifierModuleConfig,
+} from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
 import { OpenId4VcVerifierRepository } from '../repository'
 
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
-  resolve: jest.fn().mockReturnValue({ logger: { warn: jest.fn() } }),
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
+  registerContextScoped: vi.fn(),
+  resolve: vi.fn().mockReturnValue({ logger: { warn: vi.fn() } }),
 } as unknown as DependencyManager
 
 describe('OpenId4VcVerifierModule', () => {
@@ -22,8 +22,8 @@ describe('OpenId4VcVerifierModule', () => {
       endpoints: {
         authorization: '/hello',
       },
-      router: Router(),
-    } satisfies OpenId4VcVerifierModuleConfigOptions
+      app: express(),
+    } satisfies InternalOpenId4VcVerifierModuleConfigOptions
     const openId4VcClientModule = new OpenId4VcVerifierModule(options)
     openId4VcClientModule.register(dependencyManager)
 

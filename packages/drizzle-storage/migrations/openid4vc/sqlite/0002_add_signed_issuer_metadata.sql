@@ -1,0 +1,1 @@
+ALTER TABLE `Openid4vcIssuer` ADD `signed_metadata` text;

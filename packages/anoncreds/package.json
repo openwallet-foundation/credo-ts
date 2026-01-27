@@ -1,14 +1,22 @@
 {
   "name": "@credo-ts/anoncreds",
-  "main": "src/index",
-  "types": "src/index",
-  "version": "0.5.13",
-  "files": ["build"],
+  "exports": {
+    "cli": "./build/index.mjs",
+    "import": "./src/index.ts"
+  },
+  "version": "0.6.1",
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
-    "main": "build/index",
-    "types": "build/index",
-    "access": "public"
+    "access": "public",
+    "types": "./build/index.d.mts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": "./build/index.mjs",
+      "./package.json": "./package.json"
+    }
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/anoncreds",
   "repository": {
@@ -17,11 +25,8 @@
     "directory": "packages/anoncreds"
   },
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile",
-    "clean": "rimraf ./build",
-    "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "build": "tsdown --config-loader unconfig",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@astronautlabs/jsonpath": "catalog:",
@@ -36,7 +41,6 @@
     "@credo-ts/node": "workspace:*",
     "@hyperledger/anoncreds-nodejs": "catalog:",
     "@hyperledger/anoncreds-shared": "catalog:",
-    "rimraf": "catalog:",
     "rxjs": "catalog:",
     "typescript": "catalog:"
   },

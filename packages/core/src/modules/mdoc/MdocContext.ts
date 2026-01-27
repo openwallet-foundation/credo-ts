@@ -1,13 +1,11 @@
 import type { MdocContext, X509Context } from '@animo-id/mdoc'
+import { p256 } from '@noble/curves/nist.js'
+import { hkdf } from '@noble/hashes/hkdf.js'
+import { sha256 } from '@noble/hashes/sha2.js'
 import type { AgentContext } from '../../agent'
-
-import { p256 } from '@noble/curves/p256'
-import { hkdf } from '@noble/hashes/hkdf'
-import { sha256 } from '@noble/hashes/sha2'
-
 import { CredoWebCrypto, Hasher } from '../../crypto'
-import { Buffer, TypedArrayEncoder } from '../../utils'
-import { KeyManagementApi, KmsJwkPublicAsymmetric, KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
+import { TypedArrayEncoder } from '../../utils'
+import { KeyManagementApi, type KmsJwkPublicAsymmetric, type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { X509Certificate, X509Service } from '../x509'
 
 export const getMdocContext = (agentContext: AgentContext): MdocContext => {
@@ -18,18 +16,24 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
     crypto: {
       digest: async (input) => {
         const { bytes, digestAlgorithm } = input
-        return new Uint8Array(crypto.digest(digestAlgorithm, bytes))
+
+        return new Uint8Array(
+          crypto.digest(
+            digestAlgorithm,
+            // NOTE: extra Uint8Array wrapping is needed here, somehow if we use `bytes.buffer` directly
+            // it's not working. Maybe due to Uint8array lengt
+            new Uint8Array(bytes).buffer
+          )
+        )
       },
       random: (length) => {
         return crypto.getRandomValues(new Uint8Array(length))
       },
       calculateEphemeralMacKeyJwk: async (input) => {
         const { privateKey, publicKey, sessionTranscriptBytes } = input
-        const ikm = p256
-          .getSharedSecret(TypedArrayEncoder.toHex(privateKey), TypedArrayEncoder.toHex(publicKey), true)
-          .slice(1)
+        const ikm = p256.getSharedSecret(privateKey, publicKey, true).slice(1)
         const salt = Hasher.hash(sessionTranscriptBytes, 'sha-256')
-        const info = Buffer.from('EMacKey', 'utf-8')
+        const info = TypedArrayEncoder.fromString('EMacKey')
         const hk1 = hkdf(sha256, ikm, salt, info, 32)
 
         return {
@@ -141,7 +145,7 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
         const x509Certificate = X509Certificate.fromRawCertificate(certificate)
         return {
           ...x509Certificate.data,
-          thumbprint: await x509Certificate.getThumprintInHex(agentContext),
+          thumbprint: await x509Certificate.getThumbprintInHex(agentContext),
         }
       },
     } satisfies X509Context,

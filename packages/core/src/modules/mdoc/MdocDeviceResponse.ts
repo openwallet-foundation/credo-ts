@@ -1,36 +1,35 @@
-import type { MdocContext } from '@animo-id/mdoc'
-import type { PresentationDefinition } from '@animo-id/mdoc'
+import type { MdocContext, PresentationDefinition } from '@animo-id/mdoc'
+import {
+  cborEncode,
+  DataItem,
+  DeviceRequest,
+  DeviceResponse,
+  DeviceSignedDocument,
+  MDoc,
+  MDocStatus,
+  limitDisclosureToInputDescriptor as mdocLimitDisclosureToInputDescriptor,
+  defaultCallback as onCheck,
+  parseDeviceResponse,
+  parseIssuerSigned,
+  Verifier,
+} from '@animo-id/mdoc'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import type { AgentContext } from '../../agent'
+import { TypedArrayEncoder } from './../../utils'
+import { uuid } from '../../utils/uuid'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
+import { PublicJwk } from '../kms'
+import { ClaimFormat } from '../vc'
+import { Mdoc } from './Mdoc'
+import { getMdocContext } from './MdocContext'
+import { MdocError } from './MdocError'
 import type {
   MdocDeviceResponseOptions,
   MdocDeviceResponsePresentationDefinitionOptions,
   MdocDeviceResponseVerifyOptions,
   MdocSessionTranscriptOptions,
 } from './MdocOptions'
-
-import {
-  DeviceRequest,
-  DeviceResponse,
-  DeviceSignedDocument,
-  MDoc,
-  MDocStatus,
-  Verifier,
-  cborEncode,
-  limitDisclosureToInputDescriptor as mdocLimitDisclosureToInputDescriptor,
-  defaultCallback as onCheck,
-  parseDeviceResponse,
-  parseIssuerSigned,
-} from '@animo-id/mdoc'
-import { uuid } from '../../utils/uuid'
-import { PublicJwk } from '../kms'
-import { ClaimFormat } from '../vc'
-import { TypedArrayEncoder } from './../../utils'
-import { Mdoc } from './Mdoc'
-import { getMdocContext } from './MdocContext'
-import { MdocError } from './MdocError'
-import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } from './mdocSupportedAlgs'
+import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
 import { nameSpacesRecordToMap } from './mdocUtil'
 
 export class MdocDeviceResponse {
@@ -180,10 +179,7 @@ export class MdocDeviceResponse {
     }
   }
 
-  public static limitDisclosureToInputDescriptor(options: {
-    inputDescriptor: InputDescriptorV2
-    mdoc: Mdoc
-  }) {
+  public static limitDisclosureToInputDescriptor(options: { inputDescriptor: InputDescriptorV2; mdoc: Mdoc }) {
     const { mdoc } = options
 
     const inputDescriptor = MdocDeviceResponse.assertMdocInputDescriptor(options.inputDescriptor)
@@ -233,19 +229,20 @@ export class MdocDeviceResponse {
         ),
       }
 
+      const mdocContext = getMdocContext(agentContext)
       const issuerSignedDocument = parseIssuerSigned(TypedArrayEncoder.fromBase64(document.base64Url), document.docType)
       const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
         .usingPresentationDefinition(presentationDefinitionForDocument)
-        // .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
         .authenticateWithSignature(deviceKeyJwk.toJson(), alg)
+        .usingSessionTranscriptBytes(
+          await MdocDeviceResponse.getSessionTranscriptBytesForOptions(mdocContext, options.sessionTranscriptOptions)
+        )
 
       for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
         deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
       }
 
-      MdocDeviceResponse.usingSessionTranscript(deviceResponseBuilder, options.sessionTranscriptOptions)
-
-      const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
+      const deviceResponseMdoc = await deviceResponseBuilder.sign(mdocContext)
       combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
     }
 
@@ -288,17 +285,19 @@ export class MdocDeviceResponse {
           }))
       )
 
+      const mdocContext = getMdocContext(agentContext)
       const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
         .authenticateWithSignature(deviceKeyJwk.toJson(), alg)
         .usingDeviceRequest(deviceRequestForDocument)
-
-      MdocDeviceResponse.usingSessionTranscript(deviceResponseBuilder, options.sessionTranscriptOptions)
+        .usingSessionTranscriptBytes(
+          await MdocDeviceResponse.getSessionTranscriptBytesForOptions(mdocContext, options.sessionTranscriptOptions)
+        )
 
       for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
         deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
       }
 
-      const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
+      const deviceResponseMdoc = await deviceResponseBuilder.sign(mdocContext)
       combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
     }
 
@@ -319,7 +318,7 @@ export class MdocDeviceResponse {
 
     // NOTE: we do not use the verification from mdoc library, as it checks all documents
     // based on the same trusted certificates
-    for (const documentIndex in this.documents) {
+    for (const documentIndex of this.documents.keys()) {
       const rawDocument = deviceResponse.documents[documentIndex]
       const document = this.documents[documentIndex]
 
@@ -372,34 +371,63 @@ export class MdocDeviceResponse {
       return options.sessionTranscriptBytes
     }
 
+    // NOTE: temporary until we have updated to the new major version of mdoc
+    // Based on https://github.com/animo/mdoc/blob/main/src/mdoc/models/session-transcript.ts#L84
     if (options.type === 'openId4Vp') {
+      return cborEncode(
+        DataItem.fromData([
+          null,
+          null,
+          [
+            'OpenID4VPHandover',
+            await context.crypto.digest({
+              digestAlgorithm: 'SHA-256',
+              bytes: cborEncode([
+                options.clientId,
+                options.verifierGeneratedNonce,
+                options.encryptionJwk?.getJwkThumbprint('sha-256') ?? null,
+                options.responseUri,
+              ]),
+            }),
+          ],
+        ])
+      )
+    }
+
+    if (options.type === 'openId4VpDraft18') {
       return await DeviceResponse.calculateSessionTranscriptBytesForOID4VP({
         ...options,
         context,
       })
     }
 
+    // NOTE: temporary until we have updated to the new major version of mdoc
+    // Based on https://github.com/animo/mdoc/blob/main/src/mdoc/models/session-transcript.ts#L65
     if (options.type === 'openId4VpDcApi') {
+      return cborEncode(
+        DataItem.fromData([
+          null,
+          null,
+          [
+            'OpenID4VPDCAPIHandover',
+            await context.crypto.digest({
+              digestAlgorithm: 'SHA-256',
+              bytes: cborEncode([
+                options.origin,
+                options.verifierGeneratedNonce,
+                options.encryptionJwk?.getJwkThumbprint('sha-256') ?? null,
+              ]),
+            }),
+          ],
+        ])
+      )
+    }
+
+    if (options.type === 'openId4VpDcApiDraft24') {
       return await DeviceResponse.calculateSessionTranscriptBytesForOID4VPDCApi({
         ...options,
         context,
       })
-    }
-
-    throw new MdocError('Unsupported session transcript option')
-  }
-
-  private static usingSessionTranscript(deviceResponse: DeviceResponse, options: MdocSessionTranscriptOptions) {
-    if (options.type === 'sesionTranscriptBytes') {
-      return deviceResponse.usingSessionTranscriptBytes(options.sessionTranscriptBytes)
-    }
-
-    if (options.type === 'openId4Vp') {
-      return deviceResponse.usingSessionTranscriptForOID4VP(options)
-    }
-
-    if (options.type === 'openId4VpDcApi') {
-      return deviceResponse.usingSessionTranscriptForForOID4VPDCApi(options)
     }
 
     throw new MdocError('Unsupported session transcript option')
@@ -410,10 +438,10 @@ export class MdocDeviceResponse {
     if (!signatureAlgorithm) {
       throw new MdocError(
         `Unable to create mdoc device response. No supported signature algorithm found to sign device response for jwk  ${
-          jwk.jwkTypehumanDescription
+          jwk.jwkTypeHumanDescription
         }. Key supports algs ${jwk.supportedSignatureAlgorithms.join(
           ', '
-        )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`
+        )}. mdoc supports algs ${mdocSupportedSignatureAlgorithms.join(', ')}`
       )
     }
 

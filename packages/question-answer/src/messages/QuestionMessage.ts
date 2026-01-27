@@ -1,10 +1,10 @@
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { ValidResponse } from '../models'
 
-export class QuestionMessage extends AgentMessage {
+export class QuestionMessage extends DidCommMessage {
   /**
    * Create new QuestionMessage instance.
    * @param options

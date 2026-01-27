@@ -1,6 +1,5 @@
-import type { AnonCredsNonRevokedInterval } from '../models'
-
 import { CredoError } from '@credo-ts/core'
+import type { AnonCredsNonRevokedInterval } from '../models'
 
 // This sets the `to` value to be required. We do this check in the `assertBestPracticeRevocationInterval` method,
 // and it makes it easier to work with the object in TS

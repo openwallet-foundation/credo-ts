@@ -1,53 +1,50 @@
-import type {
-  DiscoverFeaturesDisclosureReceivedEvent,
-  DiscoverFeaturesQueryReceivedEvent,
-} from '../../../DiscoverFeaturesEvents'
-import type { DiscoverFeaturesProtocolMsgReturnType } from '../../../DiscoverFeaturesServiceOptions'
-
 import { Subject } from 'rxjs'
-
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { ConsoleLogger } from '../../../../../../../core/src/logger'
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../../core/tests/helpers'
-import { FeatureRegistry } from '../../../../../FeatureRegistry'
-import { MessageHandlerRegistry } from '../../../../../MessageHandlerRegistry'
-import { GoalCode, InboundMessageContext, Protocol } from '../../../../../models'
-import { DidExchangeState } from '../../../../connections'
-import { DiscoverFeaturesEventTypes } from '../../../DiscoverFeaturesEvents'
-import { DiscoverFeaturesModuleConfig } from '../../../DiscoverFeaturesModuleConfig'
-import { V2DiscoverFeaturesService } from '../V2DiscoverFeaturesService'
-import { V2DisclosuresMessage, V2QueriesMessage } from '../messages'
+import { DidCommFeatureRegistry } from '../../../../../DidCommFeatureRegistry'
+import { DidCommGoalCode, DidCommInboundMessageContext, DidCommProtocol } from '../../../../../models'
+import { DidCommDidExchangeState } from '../../../../connections'
+import type {
+  DidCommDiscoverFeaturesDisclosureReceivedEvent,
+  DidCommDiscoverFeaturesQueryReceivedEvent,
+} from '../../../DidCommDiscoverFeaturesEvents'
+import { DidCommDiscoverFeaturesEventTypes } from '../../../DidCommDiscoverFeaturesEvents'
+import { DidCommDiscoverFeaturesModuleConfig } from '../../../DidCommDiscoverFeaturesModuleConfig'
+import type { DiscoverFeaturesProtocolMsgReturnType } from '../../../DidCommDiscoverFeaturesServiceOptions'
+import { DidCommDiscoverFeaturesV2Service } from '../DidCommDiscoverFeaturesV2Service'
+import { DidCommFeaturesDisclosuresMessage, DidCommFeaturesQueriesMessage } from '../messages'
 
-jest.mock('../../../../../MessageHandlerRegistry')
-const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
-const featureRegistry = new FeatureRegistry()
-featureRegistry.register(new Protocol({ id: 'https://didcomm.org/connections/1.0' }))
-featureRegistry.register(new Protocol({ id: 'https://didcomm.org/notification/1.0', roles: ['role-1', 'role-2'] }))
-featureRegistry.register(new Protocol({ id: 'https://didcomm.org/issue-credential/1.0' }))
-featureRegistry.register(new GoalCode({ id: 'aries.vc.1' }))
-featureRegistry.register(new GoalCode({ id: 'aries.vc.2' }))
-featureRegistry.register(new GoalCode({ id: 'caries.vc.3' }))
+const featureRegistry = new DidCommFeatureRegistry()
+featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/connections/1.0' }))
+featureRegistry.register(
+  new DidCommProtocol({ id: 'https://didcomm.org/notification/1.0', roles: ['role-1', 'role-2'] })
+)
+featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/issue-credential/1.0' }))
+featureRegistry.register(new DidCommGoalCode({ id: 'aries.vc.1' }))
+featureRegistry.register(new DidCommGoalCode({ id: 'aries.vc.2' }))
+featureRegistry.register(new DidCommGoalCode({ id: 'caries.vc.3' }))
 
-jest.mock('../../../../../../../core/src/logger')
-const LoggerMock = ConsoleLogger as jest.Mock<ConsoleLogger>
+vi.mock('../../../../../../../core/src/logger')
+const LoggerMock = ConsoleLogger as MockedClassConstructor<typeof ConsoleLogger>
 
 describe('V2DiscoverFeaturesService - auto accept queries', () => {
-  const discoverFeaturesModuleConfig = new DiscoverFeaturesModuleConfig({ autoAcceptQueries: true })
+  const discoverFeaturesModuleConfig = new DidCommDiscoverFeaturesModuleConfig({ autoAcceptQueries: true })
 
-  const discoverFeaturesService = new V2DiscoverFeaturesService(
+  const discoverFeaturesService = new DidCommDiscoverFeaturesV2Service(
     featureRegistry,
     eventEmitter,
-    new MessageHandlerRegistryMock(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )
   describe('createDisclosure', () => {
     it('should return all items when query is *', async () => {
-      const queryMessage = new V2QueriesMessage({
+      const queryMessage = new DidCommFeaturesQueriesMessage({
         queries: [
-          { featureType: Protocol.type, match: '*' },
-          { featureType: GoalCode.type, match: '*' },
+          { featureType: DidCommProtocol.type, match: '*' },
+          { featureType: DidCommGoalCode.type, match: '*' },
         ],
       })
 
@@ -67,7 +64,7 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should return only one protocol if the query specifies a specific protocol', async () => {
-      const queryMessage = new V2QueriesMessage({
+      const queryMessage = new DidCommFeaturesQueriesMessage({
         queries: [{ featureType: 'protocol', match: 'https://didcomm.org/connections/1.0' }],
       })
 
@@ -80,7 +77,7 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should respect a wild card at the end of the query', async () => {
-      const queryMessage = new V2QueriesMessage({
+      const queryMessage = new DidCommFeaturesQueriesMessage({
         queries: [
           { featureType: 'protocol', match: 'https://didcomm.org/connections/*' },
           { featureType: 'goal-code', match: 'aries*' },
@@ -100,7 +97,7 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should send an empty array if no feature matches query', async () => {
-      const queryMessage = new V2QueriesMessage({
+      const queryMessage = new DidCommFeaturesQueriesMessage({
         queries: [{ featureType: 'anything', match: 'not-supported' }],
       })
 
@@ -162,23 +159,29 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
 
   describe('processQuery', () => {
     it('should emit event and create disclosure message', async () => {
-      const eventListenerMock = jest.fn()
-      eventEmitter.on<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived, eventListenerMock)
+      const eventListenerMock = vi.fn()
+      eventEmitter.on<DidCommDiscoverFeaturesQueryReceivedEvent>(
+        DidCommDiscoverFeaturesEventTypes.QueryReceived,
+        eventListenerMock
+      )
 
-      const queryMessage = new V2QueriesMessage({ queries: [{ featureType: 'protocol', match: '*' }] })
+      const queryMessage = new DidCommFeaturesQueriesMessage({ queries: [{ featureType: 'protocol', match: '*' }] })
 
-      const connection = getMockConnection({ state: DidExchangeState.Completed })
-      const messageContext = new InboundMessageContext(queryMessage, {
+      const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
+      const messageContext = new DidCommInboundMessageContext(queryMessage, {
         agentContext: getAgentContext(),
         connection,
       })
       const outboundMessage = await discoverFeaturesService.processQuery(messageContext)
 
-      eventEmitter.off<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived, eventListenerMock)
+      eventEmitter.off<DidCommDiscoverFeaturesQueryReceivedEvent>(
+        DidCommDiscoverFeaturesEventTypes.QueryReceived,
+        eventListenerMock
+      )
 
       expect(eventListenerMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: DiscoverFeaturesEventTypes.QueryReceived,
+          type: DidCommDiscoverFeaturesEventTypes.QueryReceived,
           payload: expect.objectContaining({
             connection,
             protocolVersion: 'v2',
@@ -189,9 +192,9 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
       )
       expect(outboundMessage).toBeDefined()
       expect(
-        (outboundMessage as DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage>).message.disclosures.map(
-          (p) => p.id
-        )
+        (
+          outboundMessage as DiscoverFeaturesProtocolMsgReturnType<DidCommFeaturesDisclosuresMessage>
+        ).message.disclosures.map((p) => p.id)
       ).toStrictEqual([
         'https://didcomm.org/connections/1.0',
         'https://didcomm.org/notification/1.0',
@@ -202,32 +205,35 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
 
   describe('processDisclosure', () => {
     it('should emit event', async () => {
-      const eventListenerMock = jest.fn()
-      eventEmitter.on<DiscoverFeaturesDisclosureReceivedEvent>(
-        DiscoverFeaturesEventTypes.DisclosureReceived,
+      const eventListenerMock = vi.fn()
+      eventEmitter.on<DidCommDiscoverFeaturesDisclosureReceivedEvent>(
+        DidCommDiscoverFeaturesEventTypes.DisclosureReceived,
         eventListenerMock
       )
 
-      const discloseMessage = new V2DisclosuresMessage({
-        features: [new Protocol({ id: 'prot1', roles: ['role1', 'role2'] }), new Protocol({ id: 'prot2' })],
+      const discloseMessage = new DidCommFeaturesDisclosuresMessage({
+        features: [
+          new DidCommProtocol({ id: 'prot1', roles: ['role1', 'role2'] }),
+          new DidCommProtocol({ id: 'prot2' }),
+        ],
         threadId: '1234',
       })
 
-      const connection = getMockConnection({ state: DidExchangeState.Completed })
-      const messageContext = new InboundMessageContext(discloseMessage, {
+      const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
+      const messageContext = new DidCommInboundMessageContext(discloseMessage, {
         agentContext: getAgentContext(),
         connection,
       })
       await discoverFeaturesService.processDisclosure(messageContext)
 
-      eventEmitter.off<DiscoverFeaturesDisclosureReceivedEvent>(
-        DiscoverFeaturesEventTypes.DisclosureReceived,
+      eventEmitter.off<DidCommDiscoverFeaturesDisclosureReceivedEvent>(
+        DidCommDiscoverFeaturesEventTypes.DisclosureReceived,
         eventListenerMock
       )
 
       expect(eventListenerMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: DiscoverFeaturesEventTypes.DisclosureReceived,
+          type: DidCommDiscoverFeaturesEventTypes.DisclosureReceived,
           payload: expect.objectContaining({
             connection,
             protocolVersion: 'v2',
@@ -245,35 +251,40 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
 })
 
 describe('V2DiscoverFeaturesService - auto accept disabled', () => {
-  const discoverFeaturesModuleConfig = new DiscoverFeaturesModuleConfig({ autoAcceptQueries: false })
+  const discoverFeaturesModuleConfig = new DidCommDiscoverFeaturesModuleConfig({ autoAcceptQueries: false })
 
-  const discoverFeaturesService = new V2DiscoverFeaturesService(
+  const discoverFeaturesService = new DidCommDiscoverFeaturesV2Service(
     featureRegistry,
     eventEmitter,
-    new MessageHandlerRegistryMock(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )
 
   describe('processQuery', () => {
     it('should emit event and not send any message', async () => {
-      const eventListenerMock = jest.fn()
-      eventEmitter.on<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived, eventListenerMock)
+      const eventListenerMock = vi.fn()
+      eventEmitter.on<DidCommDiscoverFeaturesQueryReceivedEvent>(
+        DidCommDiscoverFeaturesEventTypes.QueryReceived,
+        eventListenerMock
+      )
 
-      const queryMessage = new V2QueriesMessage({ queries: [{ featureType: 'protocol', match: '*' }] })
+      const queryMessage = new DidCommFeaturesQueriesMessage({ queries: [{ featureType: 'protocol', match: '*' }] })
 
-      const connection = getMockConnection({ state: DidExchangeState.Completed })
-      const messageContext = new InboundMessageContext(queryMessage, {
+      const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
+      const messageContext = new DidCommInboundMessageContext(queryMessage, {
         agentContext: getAgentContext(),
         connection,
       })
       const outboundMessage = await discoverFeaturesService.processQuery(messageContext)
 
-      eventEmitter.off<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived, eventListenerMock)
+      eventEmitter.off<DidCommDiscoverFeaturesQueryReceivedEvent>(
+        DidCommDiscoverFeaturesEventTypes.QueryReceived,
+        eventListenerMock
+      )
 
       expect(eventListenerMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: DiscoverFeaturesEventTypes.QueryReceived,
+          type: DidCommDiscoverFeaturesEventTypes.QueryReceived,
           payload: expect.objectContaining({
             connection,
             protocolVersion: 'v2',

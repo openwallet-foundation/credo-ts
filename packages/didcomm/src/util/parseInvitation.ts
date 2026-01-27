@@ -1,13 +1,13 @@
 import type { AgentDependencies } from '@credo-ts/core'
 
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
-import { parseUrl } from 'query-string'
+import queryString from 'query-string'
 
-import { AgentMessage } from '../AgentMessage'
-import { ConnectionInvitationMessage } from '../modules/connections/messages'
+import { DidCommMessage } from '../DidCommMessage'
+import { DidCommConnectionInvitationMessage } from '../modules/connections/messages'
 import { convertToNewInvitation } from '../modules/oob/converters'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
-import { InvitationType, OutOfBandInvitation } from '../modules/oob/messages'
+import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../modules/oob/messages'
 
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
 
@@ -31,12 +31,12 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
 }
 
 /**
- * Parses a JSON containing an invitation message and returns an OutOfBandInvitation instance
+ * Parses a JSON containing an invitation message and returns an DidCommOutOfBandInvitation instance
  *
  * @param invitationJson JSON object containing message
- * @returns OutOfBandInvitation
+ * @returns DidCommOutOfBandInvitation
  */
-export const parseInvitationJson = (invitationJson: Record<string, unknown>): OutOfBandInvitation => {
+export const parseInvitationJson = (invitationJson: Record<string, unknown>): DidCommOutOfBandInvitation => {
   const messageType = invitationJson['@type'] as string
 
   if (!messageType) {
@@ -44,17 +44,17 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Ou
   }
 
   const parsedMessageType = parseMessageType(messageType)
-  if (supportsIncomingMessageType(parsedMessageType, OutOfBandInvitation.type)) {
-    const invitation = JsonTransformer.fromJSON(invitationJson, OutOfBandInvitation)
+  if (supportsIncomingMessageType(parsedMessageType, DidCommOutOfBandInvitation.type)) {
+    const invitation = JsonTransformer.fromJSON(invitationJson, DidCommOutOfBandInvitation)
     MessageValidator.validateSync(invitation)
-    invitation.invitationType = InvitationType.OutOfBand
+    invitation.invitationType = DidCommInvitationType.OutOfBand
     return invitation
   }
-  if (supportsIncomingMessageType(parsedMessageType, ConnectionInvitationMessage.type)) {
-    const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
+  if (supportsIncomingMessageType(parsedMessageType, DidCommConnectionInvitationMessage.type)) {
+    const invitation = JsonTransformer.fromJSON(invitationJson, DidCommConnectionInvitationMessage)
     MessageValidator.validateSync(invitation)
     const outOfBandInvitation = convertToNewInvitation(invitation)
-    outOfBandInvitation.invitationType = InvitationType.Connection
+    outOfBandInvitation.invitationType = DidCommInvitationType.Connection
     return outOfBandInvitation
   }
   if (invitationJson['~service']) {
@@ -69,10 +69,10 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Ou
  *
  * @param invitationUrl URL containing encoded invitation
  *
- * @returns OutOfBandInvitation
+ * @returns DidCommOutOfBandInvitation
  */
-export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation => {
-  const parsedUrl = parseUrl(invitationUrl).query
+export const parseInvitationUrl = (invitationUrl: string): DidCommOutOfBandInvitation => {
+  const parsedUrl = queryString.parseUrl(invitationUrl).query
 
   const encodedInvitation = parsedUrl.oob ?? parsedUrl.c_i ?? parsedUrl.d_m
 
@@ -86,7 +86,7 @@ export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation =
 }
 
 // This currently does not follow the RFC because of issues with fetch, currently uses a janky work around
-export const oobInvitationFromShortUrl = async (response: Response): Promise<OutOfBandInvitation> => {
+export const oobInvitationFromShortUrl = async (response: Response): Promise<DidCommOutOfBandInvitation> => {
   if (response) {
     if (response.headers.get('Content-Type')?.startsWith('application/json') && response.ok) {
       const invitationJson = (await response.json()) as Record<string, unknown>
@@ -107,7 +107,7 @@ export const oobInvitationFromShortUrl = async (response: Response): Promise<Out
 }
 
 export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(messageJson: Record<string, unknown>) {
-  const agentMessage = JsonTransformer.fromJSON(messageJson, AgentMessage)
+  const agentMessage = JsonTransformer.fromJSON(messageJson, DidCommMessage)
 
   // ~service is required for legacy connectionless invitations
   if (!agentMessage.service) {
@@ -116,15 +116,16 @@ export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(mes
 
   // This destructuring removes the ~service property from the message, and
   // we can can use messageWithoutService to create the out of band invitation
+  // biome-ignore lint/correctness/noUnusedVariables: no explanation
   const { '~service': service, ...messageWithoutService } = messageJson
 
   // transform into out of band invitation
-  const invitation = new OutOfBandInvitation({
+  const invitation = new DidCommOutOfBandInvitation({
     services: [OutOfBandDidCommService.fromResolvedDidCommService(agentMessage.service.resolvedDidCommService)],
   })
 
-  invitation.invitationType = InvitationType.Connectionless
-  invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, AgentMessage))
+  invitation.invitationType = DidCommInvitationType.Connectionless
+  invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, DidCommMessage))
 
   return invitation
 }
@@ -137,13 +138,13 @@ export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(mes
  *
  * @param dependencies Agent dependencies containing fetch
  *
- * @returns OutOfBandInvitation
+ * @returns DidCommOutOfBandInvitation
  */
 export const parseInvitationShortUrl = async (
   invitationUrl: string,
   dependencies: AgentDependencies
-): Promise<OutOfBandInvitation> => {
-  const parsedUrl = parseUrl(invitationUrl).query
+): Promise<DidCommOutOfBandInvitation> => {
+  const parsedUrl = queryString.parseUrl(invitationUrl).query
   if (parsedUrl.oob || parsedUrl.c_i) {
     return parseInvitationUrl(invitationUrl)
   }
@@ -154,7 +155,7 @@ export const parseInvitationShortUrl = async (
   }
   try {
     const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
-    outOfBandInvitation.invitationType = InvitationType.OutOfBand
+    outOfBandInvitation.invitationType = DidCommInvitationType.OutOfBand
     return outOfBandInvitation
   } catch (_error) {
     throw new CredoError(

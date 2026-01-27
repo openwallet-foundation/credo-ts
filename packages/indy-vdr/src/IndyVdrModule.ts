@@ -1,7 +1,6 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { IndyVdrModuleConfigOptions } from './IndyVdrModuleConfig'
-
 import { IndyVdrApi } from './IndyVdrApi'
+import type { IndyVdrModuleConfigOptions } from './IndyVdrModuleConfig'
 import { IndyVdrModuleConfig } from './IndyVdrModuleConfig'
 import { IndyVdrPoolService } from './pool/IndyVdrPoolService'
 

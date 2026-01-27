@@ -1,8 +1,7 @@
-import type { Kms } from '@credo-ts/core'
-import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
-
 import { parseIndyDid } from '@credo-ts/anoncreds'
+import type { Kms } from '@credo-ts/core'
 import { AgentContext, injectable } from '@credo-ts/core'
+import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
 import { CustomRequest } from '@hyperledger/indy-vdr-shared'
 
 import { verificationPublicJwkForIndyDid } from './dids/didIndyUtil'

@@ -1,5 +1,10 @@
 import type { AgentContext } from '../../../agent'
+import { InjectionSymbols } from '../../../constants'
+import type { Logger } from '../../../logger'
+import { inject, injectable } from '../../../plugins'
+import { DidsModuleConfig } from '../DidsModuleConfig'
 import type { DidRegistrar } from '../domain/DidRegistrar'
+import { tryParseDid } from '../domain/parse'
 import type {
   DidCreateOptions,
   DidCreateResult,
@@ -8,12 +13,6 @@ import type {
   DidUpdateOptions,
   DidUpdateResult,
 } from '../types'
-
-import { InjectionSymbols } from '../../../constants'
-import { Logger } from '../../../logger'
-import { inject, injectable } from '../../../plugins'
-import { DidsModuleConfig } from '../DidsModuleConfig'
-import { tryParseDid } from '../domain/parse'
 
 import { DidResolverService } from './DidResolverService'
 

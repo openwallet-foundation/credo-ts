@@ -1,4 +1,4 @@
-import * as z from '../../../utils/zod'
+import { z } from 'zod'
 
 function recordToUnion<T>(record: Record<string, T>) {
   return Object.values(record) as [
@@ -22,6 +22,7 @@ export const KnownJwaSignatureAlgorithms = {
   PS384: 'PS384',
   PS512: 'PS512',
   EdDSA: 'EdDSA',
+  Ed25519: 'Ed25519',
   ES256K: 'ES256K',
 } as const
 

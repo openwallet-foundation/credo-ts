@@ -1,6 +1,5 @@
-import type { AgentContext } from '../../../../../agent'
-
 import { getAgentContext } from '../../../../../../tests/helpers'
+import type { AgentContext } from '../../../../../agent'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import didKeyEd25519Fixture from '../../../__tests__/__fixtures__/didKeyEd25519.json'
 import { DidKey } from '../DidKey'
@@ -17,7 +16,7 @@ describe('DidResolver', () => {
     })
 
     it('should correctly resolve a did:key document', async () => {
-      const fromDidSpy = jest.spyOn(DidKey, 'fromDid')
+      const fromDidSpy = vi.spyOn(DidKey, 'fromDid')
       const result = await keyDidResolver.resolve(
         agentContext,
         'did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'

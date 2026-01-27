@@ -1,14 +1,25 @@
 {
   "name": "@credo-ts/node",
-  "main": "src/index",
-  "types": "src/index",
-  "version": "0.5.13",
-  "files": ["build"],
+  "exports": {
+    "cli": "./build/index.mjs",
+    "import": "./src/index.ts"
+  },
+  "version": "0.6.1",
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20.19"
+  },
   "publishConfig": {
-    "main": "build/index",
-    "types": "build/index",
-    "access": "public"
+    "access": "public",
+    "types": "./build/index.d.mts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": "./build/index.mjs",
+      "./package.json": "./package.json"
+    }
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/node",
   "repository": {
@@ -17,15 +28,10 @@
     "directory": "packages/node"
   },
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile",
-    "clean": "rimraf ./build",
-    "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "build": "tsdown --config-loader unconfig",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@2060.io/ffi-napi": "^4.0.9",
-    "@2060.io/ref-napi": "^3.0.6",
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
     "@types/express": "catalog:",
@@ -37,7 +43,6 @@
     "@types/node": "catalog:",
     "@types/ws": "catalog:",
     "nock": "catalog:",
-    "rimraf": "catalog:",
     "typescript": "catalog:"
   }
 }

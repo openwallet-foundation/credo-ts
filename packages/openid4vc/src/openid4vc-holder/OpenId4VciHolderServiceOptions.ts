@@ -1,5 +1,13 @@
-import type { AgentContext, Kms, VerifiableCredential } from '@credo-ts/core'
+import type {
+  AgentContext,
+  Kms,
+  MdocRecord,
+  SdJwtVcRecord,
+  W3cCredentialRecord,
+  W3cV2CredentialRecord,
+} from '@credo-ts/core'
 import type { CredentialOfferObject, IssuerMetadataResult } from '@openid4vc/openid4vci'
+import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@openid4vc/openid4vci'
 import type {
   OpenId4VcCredentialHolderBinding,
   OpenId4VciAccessTokenResponse,
@@ -7,9 +15,6 @@ import type {
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciMetadata,
 } from '../shared'
-
-import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@openid4vc/openid4vci'
-
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
 
 export { OpenId4VciAuthorizationFlow }
@@ -46,20 +51,44 @@ export type OpenId4VciNotificationEvent = 'credential_accepted' | 'credential_fa
 
 export type OpenId4VciRequestTokenResponse = {
   accessToken: string
+  refreshToken?: string
   cNonce?: string
   dpop?: OpenId4VciDpopRequestOptions
+  authorizationServer?: string
 
   accessTokenResponse: OpenId4VciAccessTokenResponse
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-type UnionToArrayUnion<T> = T extends any ? T[] : never
-
 export interface OpenId4VciCredentialResponse {
   credentialConfigurationId: string
   credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
-  credentials: UnionToArrayUnion<VerifiableCredential>
+
+  /**
+   * The record containing the credentials returned in the OpenID4VCI credential response
+   *
+   * The credential is returned as a record, which can be provided to the
+   * respective `store()` method of each credential-specific API.
+   *
+   * The record contains the credential instance (instances in case of batch issuance)
+   * along with metadata such as the VCT Type Metadata (in case of SD-JWT)
+   */
+  record: SdJwtVcRecord | MdocRecord | W3cCredentialRecord | W3cV2CredentialRecord
+
   notificationId?: string
+}
+
+export interface OpenId4VciDeferredCredentialResponse {
+  credentialConfigurationId: string
+  credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
+  transactionId: string
+  interval?: number
+  notificationId?: string
+  /**
+   * Mapping from JWK thumbprint values to KMS key ids that were submitted in the credential request.
+   * These should be used when retrieving the deferred credentials, to store the associated kms key id
+   * for each received credential.
+   */
+  jwkThumbprintKmsKeyIdMapping?: Record<string, string>
 }
 
 export interface OpenId4VciResolvedCredentialOffer {
@@ -116,6 +145,11 @@ export interface OpenId4VciSendNotificationOptions {
   dpop?: OpenId4VciDpopRequestOptions
 }
 
+export interface OpenId4VcParseAndVerifyAuthorizationResponseOptions {
+  authorizationResponseRedirectUrl: string
+  resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
+}
+
 export interface OpenId4VcAuthorizationCodeTokenRequestOptions {
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
   code: string
@@ -138,7 +172,7 @@ export interface OpenId4VcAuthorizationCodeTokenRequestOptions {
    * if client attestations are supported by the issuer, and should be provided
    * if wallet attestation was provided in the authorization request as well.
    *
-   * A Proof of Possesion will be created based on the wallet attestation,
+   * A Proof of Possession will be created based on the wallet attestation,
    * so the key bound to the wallet attestation must be in the wallet.
    */
   walletAttestationJwt?: string
@@ -160,7 +194,7 @@ export interface OpenId4VciPreAuthorizedTokenRequestOptions {
    * The wallet attestation to send to the issuer. This will only be used
    * if client attestations are supported by the issuer.
    *
-   * A Proof of Possesion will be created based on the wallet attestation,
+   * A Proof of Possession will be created based on the wallet attestation,
    * so the key bound to the wallet attestation must be in the wallet.
    */
   walletAttestationJwt?: string
@@ -169,6 +203,40 @@ export interface OpenId4VciPreAuthorizedTokenRequestOptions {
 export type OpenId4VciTokenRequestOptions =
   | OpenId4VciPreAuthorizedTokenRequestOptions
   | OpenId4VcAuthorizationCodeTokenRequestOptions
+
+export type OpenId4VciTokenRefreshOptions = {
+  refreshToken: string
+
+  /**
+   * The issuer metadata.
+   */
+  issuerMetadata: IssuerMetadataResult
+
+  /**
+   * The authorization server where the refresh token was obtained from.
+   */
+  authorizationServer?: string
+
+  /**
+   * DPoP parameters to use in the request if supported by the authorization server.
+   */
+  dpop?: OpenId4VciDpopRequestOptions
+
+  /**
+   * The client id used for authorization. Only required if authorization_code flow was used.
+   */
+  clientId?: string
+
+  /**
+   * The wallet attestation to send to the issuer. This will only be used
+   * if client attestations are supported by the issuer, and should be provided
+   * if wallet attestation was provided in the authorization request as well.
+   *
+   * A Proof of Possession will be created based on the wallet attestation,
+   * so the key bound to the wallet attestation must be in the wallet.
+   */
+  walletAttestationJwt?: string
+}
 
 export interface OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions {
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
@@ -179,7 +247,7 @@ export interface OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions {
    * if client attestations are supported by the issuer, and should be provided
    * if wallet attestation was provided in the authorization request as well.
    *
-   * A Proof of Possesion will be created based on the wallet attestation,
+   * A Proof of Possession will be created based on the wallet attestation,
    * so the key bound to the wallet attestation must be in the wallet.
    */
   walletAttestationJwt?: string
@@ -249,6 +317,26 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
    * for the proof of possession signature.
    */
   credentialBindingResolver: OpenId4VciCredentialBindingResolver
+}
+
+/**
+ * Options to request deferred credentials from the issuer.
+ */
+export interface OpenId4VciDeferredCredentialRequestOptions {
+  issuerMetadata: IssuerMetadataResult
+  transactionId: string
+  credentialConfigurationId: string
+  credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
+  verifyCredentialStatus?: boolean
+  accessToken: string
+  dpop?: OpenId4VciDpopRequestOptions
+
+  /**
+   * Mapping from JWK thumbprint values to KMS key ids that were submitted in the credential request.
+   * These were returned in the deferred credential return value in case JWKs were used in the proof
+   * of possession of the credential request
+   */
+  jwkThumbprintKmsKeyIdMapping?: Record<string, string>
 }
 
 /**
@@ -352,6 +440,12 @@ export interface OpenId4VciCredentialBindingOptions {
    * indicating they support proof of possession signatures bound to a jwk.
    */
   supportsJwk: boolean
+
+  /**
+   * The cNonce that will be used for the credential request. May be used if dynamically creating a key attestation
+   * that must include the cNonce.
+   */
+  cNonce: string
 }
 
 /**

@@ -1,0 +1,137 @@
+{
+  "name": "@credo-ts/drizzle-storage",
+  "version": "0.6.1",
+  "files": [
+    "build",
+    "cli-build",
+    "migrations",
+    "types",
+    "bin.mjs"
+  ],
+  "license": "Apache-2.0",
+  "description": "Credo storage service implementation based on Drizzle ORM, supporting PostgreSQL and SQLite",
+  "bin": "./bin.mjs",
+  "exports": {
+    ".": {
+      "cli": "./build/index.mjs",
+      "import": "./src/index.ts"
+    },
+    "./didcomm": {
+      "cli": "./build/didcomm/bundle.mjs",
+      "import": "./src/didcomm/bundle.ts"
+    },
+    "./action-menu": {
+      "cli": "./build/action-menu/bundle.mjs",
+      "import": "./src/action-menu/bundle.ts"
+    },
+    "./core": {
+      "cli": "./build/core/bundle.mjs",
+      "import": "./src/core/bundle.ts"
+    },
+    "./drpc": {
+      "cli": "./build/drpc/bundle.mjs",
+      "import": "./src/drpc/bundle.ts"
+    },
+    "./tenants": {
+      "cli": "./build/tenants/bundle.mjs",
+      "import": "./src/tenants/bundle.ts"
+    },
+    "./openid4vc": {
+      "cli": "./build/openid4vc/bundle.mjs",
+      "import": "./src/openid4vc/bundle.ts"
+    },
+    "./anoncreds": {
+      "cli": "./build/anoncreds/bundle.mjs",
+      "import": "./src/anoncreds/bundle.ts"
+    },
+    "./question-answer": {
+      "cli": "./build/question-answer/bundle.mjs",
+      "import": "./src/question-answer/bundle.ts"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "types": "./build/index.d.mts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": "./build/index.mjs",
+      "./*/migrations/sqlite": {
+        "import": "./migrations/*/sqlite/migrations.js",
+        "require": "./migrations/*/sqlite/migrations.js",
+        "types": "./types/migrations.d.ts"
+      },
+      "./didcomm": "./build/didcomm/bundle.mjs",
+      "./didcomm/sqlite": "./build/didcomm/sqlite.mjs",
+      "./didcomm/postgres": "./build/didcomm/postgres.mjs",
+      "./action-menu": "./build/action-menu/bundle.mjs",
+      "./action-menu/sqlite": "./build/action-menu/sqlite.mjs",
+      "./action-menu/postgres": "./build/action-menu/postgres.mjs",
+      "./core": "./build/core/bundle.mjs",
+      "./core/sqlite": "./build/core/sqlite.mjs",
+      "./core/postgres": "./build/core/postgres.mjs",
+      "./drpc": "./build/drpc/bundle.mjs",
+      "./drpc/sqlite": "./build/drpc/sqlite.mjs",
+      "./drpc/postgres": "./build/drpc/postgres.mjs",
+      "./tenants": "./build/tenants/bundle.mjs",
+      "./tenants/sqlite": "./build/tenants/sqlite.mjs",
+      "./tenants/postgres": "./build/tenants/postgres.mjs",
+      "./openid4vc": "./build/openid4vc/bundle.mjs",
+      "./openid4vc/sqlite": "./build/openid4vc/sqlite.mjs",
+      "./openid4vc/postgres": "./build/openid4vc/postgres.mjs",
+      "./anoncreds": "./build/anoncreds/bundle.mjs",
+      "./anoncreds/sqlite": "./build/anoncreds/sqlite.mjs",
+      "./anoncreds/postgres": "./build/anoncreds/postgres.mjs",
+      "./question-answer": "./build/question-answer/bundle.mjs",
+      "./question-answer/sqlite": "./build/question-answer/sqlite.mjs",
+      "./question-answer/postgres": "./build/question-answer/postgres.mjs",
+      "./package.json": "./package.json"
+    }
+  },
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/drizzle-storage",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
+    "directory": "packages/drizzle-storage"
+  },
+  "scripts": {
+    "build": "tsdown --config-loader unconfig",
+    "prepublishOnly": "pnpm run build",
+    "cli:local:compiled": "node --conditions cli bin.mjs --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
+    "cli:local": "vite-node cli/bin.ts --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
+    "cli:local:generate": "pnpm cli:local generate",
+    "cli:local:compiled:generate": "pnpm cli:local:compiled generate",
+    "cli:local:migrate:postgres": "pnpm cli:local migrate --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
+    "cli:local:compiled:migrate:postgres": "pnpm cli:local:compiled migrate --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
+    "cli:local:migrate:sqlite": "pnpm cli:local migrate --dialect sqlite --database-url \"file:local.db\"",
+    "cli:local:compiled:migrate:sqlite": "pnpm cli:local:compiled migrate --dialect sqlite --database-url \"file:local.db\"",
+    "cli:local:studio:postgres": "pnpm cli:local studio --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
+    "cli:local:studio:sqlite": "pnpm cli:local studio --dialect sqlite --database-url \"file:../../db.db\""
+  },
+  "dependencies": {
+    "@credo-ts/action-menu": "workspace:*",
+    "@credo-ts/anoncreds": "workspace:*",
+    "@credo-ts/core": "workspace:*",
+    "@credo-ts/didcomm": "workspace:*",
+    "@credo-ts/drpc": "workspace:*",
+    "@credo-ts/openid4vc": "workspace:*",
+    "@credo-ts/question-answer": "workspace:*",
+    "@credo-ts/tenants": "workspace:*",
+    "class-transformer": "catalog:",
+    "class-validator": "catalog:",
+    "drizzle-kit": "^0.31.7",
+    "shell": "^0.12.0",
+    "tsyringe": "catalog:",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "drizzle-orm": "^0.44.6"
+  },
+  "devDependencies": {
+    "@libsql/client": "^0.15.15",
+    "@types/pg": "^8.15.6",
+    "@types/yargs": "^17.0.35",
+    "drizzle-orm": "^0.44.7",
+    "pg": "^8.16.3",
+    "typescript": "catalog:"
+  }
+}

@@ -1,6 +1,7 @@
-import * as z from '../../../utils/zod'
+import { z } from 'zod'
+import type { zBaseSchema } from '../../../utils/zod'
 
-export const zWithBackend = <Schema extends z.BaseSchema>(schema: Schema) =>
+export const zWithBackend = <Schema extends zBaseSchema>(schema: Schema) =>
   schema.and(z.object({ backend: z.optional(z.string()) }))
 
 export type WithBackend<T> = T & {

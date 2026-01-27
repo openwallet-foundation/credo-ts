@@ -1,33 +1,32 @@
+import { Subject } from 'rxjs'
+import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
+import { transformPrivateKeyToPrivateJwk } from '../../../../../../askar/src'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
-import { TypedArrayEncoder, asArray } from '../../../../utils'
+import { EventEmitter } from '../../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../../constants'
+import { ConsoleLogger, LogLevel } from '../../../../logger'
+import { asArray, TypedArrayEncoder } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import {
   DidKey,
   DidRepository,
   DidsApi,
   DidsModuleConfig,
-  KeyDidCreateOptions,
+  type KeyDidCreateOptions,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../../dids'
-import { W3cCredentialsModuleConfig } from '../../W3cCredentialsModuleConfig'
+import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../../kms'
 import { ClaimFormat, W3cCredential } from '../../models'
 import { W3cPresentation } from '../../models/presentation/W3cPresentation'
-import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
-import { W3cJsonLdCredentialService } from '../W3cJsonLdCredentialService'
+import { W3cCredentialsModuleConfig } from '../../W3cCredentialsModuleConfig'
 import { W3cJsonLdVerifiableCredential } from '../models'
 import { LinkedDataProof } from '../models/LinkedDataProof'
 import { W3cJsonLdVerifiablePresentation } from '../models/W3cJsonLdVerifiablePresentation'
 import { CredentialIssuancePurpose } from '../proof-purposes/CredentialIssuancePurpose'
+import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
 import { Ed25519Signature2018 } from '../signature-suites'
-
-import { Subject } from 'rxjs'
-import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
-import { transformPrivateKeyToPrivateJwk } from '../../../../../../askar/src'
-import { EventEmitter } from '../../../../agent/EventEmitter'
-import { InjectionSymbols } from '../../../../constants'
-import { ConsoleLogger, LogLevel } from '../../../../logger'
-import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../../kms'
+import { W3cJsonLdCredentialService } from '../W3cJsonLdCredentialService'
 import { customDocumentLoader } from './documentLoader'
 import { Ed25519Signature2018Fixtures } from './fixtures'
 
@@ -44,7 +43,7 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
   },
 ])
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 const inMemoryStorage = new InMemoryStorageService<any>()
 const agentConfig = getAgentConfig('W3cJsonLdCredentialServiceTest')
 const agentContext = getAgentContext({
@@ -136,7 +135,7 @@ describe('W3cJsonLdCredentialsService', () => {
 
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
-        expect(async () => {
+        await expect(async () => {
           await w3cJsonLdCredentialService.signCredential(agentContext, {
             format: ClaimFormat.LdpVc,
             credential,
@@ -145,7 +144,7 @@ describe('W3cJsonLdCredentialsService', () => {
               'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV#z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
           })
         }).rejects.toThrow(
-          `No key management service supports 'sign' operation with algorithm 'EdDSA' that has a key with keyId 'HC8vuuvP8x9kVJizh2eujQjo2JwFQJz6w63szzdbu1Q7`
+          `Error issuing W3C JSON-LD VC. Key with key id 'HC8vuuvP8x9kVJizh2eujQjo2JwFQJz6w63szzdbu1Q7' not found in backend 'node'. The key may exist in one of the key management services in which case the key management service does not support the 'sign' operation with algorithm 'EdDSA'`
         )
       })
     })
@@ -167,10 +166,6 @@ describe('W3cJsonLdCredentialsService', () => {
               results: expect.any(Array),
               log: [
                 {
-                  id: 'expiration',
-                  valid: true,
-                },
-                {
                   id: 'valid_signature',
                   valid: true,
                 },
@@ -179,13 +174,10 @@ describe('W3cJsonLdCredentialsService', () => {
                   valid: true,
                 },
                 {
-                  id: 'revocation_status',
+                  id: 'expiration',
                   valid: true,
                 },
               ],
-              statusResult: {
-                verified: true,
-              },
             },
           },
         })

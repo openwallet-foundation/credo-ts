@@ -1,6 +1,5 @@
-import type { AskarModuleConfigStoreOptions } from '../AskarModuleConfig'
-
 import { KdfMethod, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
+import type { AskarModuleConfigStoreOptions } from '../AskarModuleConfig'
 
 import { isAskarPostgresStorageConfig, isAskarSqliteStorageConfig } from '../AskarStorageConfig'
 import { AskarError } from '../error'
@@ -49,8 +48,7 @@ export const uriFromStoreConfig = (
       database.credentials.password
     )}@${database.config.host}/${encodeURIComponent(storeConfig.id)}`
   } else {
-    // @ts-expect-error
-    throw new WalletError(`Storage type not supported: ${database.type}`)
+    throw new AskarError('Storage type not supported')
   }
 
   // Common config options

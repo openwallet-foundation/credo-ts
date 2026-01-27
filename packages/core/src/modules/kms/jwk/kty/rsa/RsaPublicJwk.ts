@@ -1,12 +1,13 @@
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../../../types'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { KeyManagementError } from '../../../error/KeyManagementError'
-import { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from '../../jwa'
-import { PublicJwkType } from '../PublicJwk'
-import { KmsJwkPublicRsa } from './rsaJwk'
+import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from '../../jwa'
+import type { PublicJwkType } from '../PublicJwk'
+import type { KmsJwkPublicRsa } from './rsaJwk'
 import { rsaPublicJwkToPublicKey, rsaPublicKeyToPublicJwk } from './rsaPublicKey'
 
 export class RsaPublicJwk implements PublicJwkType<KmsJwkPublicRsa> {
-  public static supportdEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] = []
+  public static supportedEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] = []
   public static supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = [
     'PS256',
     'RS256',
@@ -18,15 +19,15 @@ export class RsaPublicJwk implements PublicJwkType<KmsJwkPublicRsa> {
   public static multicodecPrefix = 4613
 
   public multicodecPrefix = RsaPublicJwk.multicodecPrefix
-  public supportdEncryptionKeyAgreementAlgorithms = RsaPublicJwk.supportdEncryptionKeyAgreementAlgorithms
+  public supportedEncryptionKeyAgreementAlgorithms = RsaPublicJwk.supportedEncryptionKeyAgreementAlgorithms
 
   public get supportedSignatureAlgorithms() {
     const keyBits = TypedArrayEncoder.fromBase64(this.jwk.n).length * 8
 
     // RSA needs minimum bit lengths for each algorithm
-    const minBits2048: KnownJwaSignatureAlgorithm[] = ['PS256', 'RS256']
-    const minBits3072: KnownJwaSignatureAlgorithm[] = [...minBits2048, 'RS384', 'PS384']
-    const minBits4096: KnownJwaSignatureAlgorithm[] = [...minBits3072, 'RS512', 'PS512']
+    const minBits2048 = ['PS256', 'RS256'] satisfies KnownJwaSignatureAlgorithm[]
+    const minBits3072 = [...minBits2048, 'RS384', 'PS384'] satisfies KnownJwaSignatureAlgorithm[]
+    const minBits4096 = [...minBits3072, 'RS512', 'PS512'] satisfies KnownJwaSignatureAlgorithm[]
 
     return keyBits >= 4096 ? minBits4096 : keyBits >= 3072 ? minBits3072 : keyBits >= 2048 ? minBits2048 : []
   }
@@ -40,15 +41,22 @@ export class RsaPublicJwk implements PublicJwkType<KmsJwkPublicRsa> {
     }
   }
 
-  public get multicodec(): Uint8Array {
+  /**
+   * Not supported for RSA
+   */
+  public get compressedPublicKey() {
+    return null
+  }
+
+  public get multicodec(): Uint8ArrayBuffer {
     throw new KeyManagementError('multicodec not supported for RsaPublicJwk')
   }
 
-  public static fromPublicKey(publicKey: { modulus: Uint8Array; exponent: Uint8Array }) {
+  public static fromPublicKey(publicKey: { modulus: AnyUint8Array; exponent: AnyUint8Array }) {
     return new RsaPublicJwk(rsaPublicKeyToPublicJwk(publicKey))
   }
 
-  public static fromMulticodec(_multicodec: Uint8Array): RsaPublicJwk {
+  public static fromMulticodec(_multicodec: AnyUint8Array): RsaPublicJwk {
     throw new KeyManagementError('fromMulticodec not supported for RsaPublicJwk')
   }
 }

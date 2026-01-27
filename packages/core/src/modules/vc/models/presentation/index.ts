@@ -1,3 +1,6 @@
-export * from './W3cPresentation'
 export * from './W3cJsonPresentation'
+export * from './W3cPresentation'
+export * from './W3cV2EnvelopedVerifiablePresentation'
+export * from './W3cV2JsonPresentation'
+export * from './W3cV2Presentation'
 export * from './W3cVerifiablePresentation'

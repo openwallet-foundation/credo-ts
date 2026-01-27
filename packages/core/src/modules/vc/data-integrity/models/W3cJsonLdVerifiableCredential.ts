@@ -1,16 +1,13 @@
+import { ValidateNested } from 'class-validator'
+import type { SingleOrArray } from '../../../../types'
+import { asArray, IsInstanceOrArrayOfInstances, JsonTransformer, mapSingleOrArray } from '../../../../utils'
+import { ClaimFormat } from '../../models/ClaimFormat'
 import type { W3cCredentialOptions } from '../../models/credential/W3cCredential'
+import { W3cCredential } from '../../models/credential/W3cCredential'
 import type { W3cJsonCredential } from '../../models/credential/W3cJsonCredential'
 import type { DataIntegrityProofOptions } from './DataIntegrityProof'
-import type { LinkedDataProofOptions } from './LinkedDataProof'
-
-import { ValidateNested } from 'class-validator'
-
-import { IsInstanceOrArrayOfInstances, JsonTransformer, asArray, mapSingleOrArray } from '../../../../utils'
-import { ClaimFormat } from '../../models/ClaimFormat'
-import { W3cCredential } from '../../models/credential/W3cCredential'
-
-import { SingleOrArray } from '../../../../types'
 import { DataIntegrityProof } from './DataIntegrityProof'
+import type { LinkedDataProofOptions } from './LinkedDataProof'
 import { LinkedDataProof } from './LinkedDataProof'
 import { ProofTransformer } from './ProofTransformer'
 
@@ -47,7 +44,7 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
   }
 
   public toJson() {
-    return JsonTransformer.toJSON(this)
+    return JsonTransformer.toJSON(this) as W3cJsonCredential
   }
 
   public static fromJson(json: Record<string, unknown>) {

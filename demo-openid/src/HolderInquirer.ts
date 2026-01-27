@@ -1,22 +1,20 @@
-import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord } from '@credo-ts/core'
+import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord, W3cV2CredentialRecord } from '@credo-ts/core'
 import type {
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VciDpopRequestOptions,
   OpenId4VciResolvedCredentialOffer,
   OpenId4VpResolvedAuthorizationRequest,
 } from '@credo-ts/openid4vc'
-
-import { Mdoc } from '@credo-ts/core'
 import { preAuthorizedCodeGrantIdentifier } from '@credo-ts/openid4vc'
-import { textSync } from 'figlet'
-
 import { clear } from 'console'
+import figlet from 'figlet'
 import { BaseInquirer } from './BaseInquirer'
 import { Holder } from './Holder'
-import { Title, greenText, redText } from './OutputClass'
+import { greenText, redText, Title } from './OutputClass'
 
 export const runHolder = async () => {
   clear()
-  console.log(textSync('Holder', { horizontalLayout: 'full' }))
+  console.log(figlet.textSync('Holder', { horizontalLayout: 'full' }))
   const holder = await HolderInquirer.build()
   await holder.processAnswer()
 }
@@ -109,9 +107,9 @@ export class HolderInquirer extends BaseInquirer {
   public async dynamicCredentialRequest() {
     const credentialOffer = await this.inquireInput('Enter issuer url: ')
     const issuerMetadata = await this.holder.resolveIssuerMetadata(credentialOffer)
-    const configurationsWithScope = Object.entries(
-      issuerMetadata.credentialIssuer.credential_configurations_supported
-    ).filter(([, configuration]) => configuration.scope)
+    const configurationsWithScope = Object.entries(issuerMetadata.knownCredentialConfigurations).filter(
+      ([, configuration]) => configuration.scope
+    )
 
     this.resolvedCredentialOffer = {
       credentialOfferPayload: {
@@ -141,20 +139,20 @@ export class HolderInquirer extends BaseInquirer {
   }
 
   public async requestCredential() {
-    if (!this.resolvedCredentialOffer) {
+    const resolvedCredentialOffer = this.resolvedCredentialOffer
+
+    if (!resolvedCredentialOffer) {
       throw new Error('No credential offer resolved yet.')
     }
 
-    const credentialsThatCanBeRequested = Object.keys(this.resolvedCredentialOffer.offeredCredentialConfigurations)
+    const credentialsThatCanBeRequested = Object.keys(resolvedCredentialOffer.offeredCredentialConfigurations)
     const credentialsToRequest = await this.pickMultiple(credentialsThatCanBeRequested)
 
-    const resolvedAuthorization = await this.holder.initiateAuthorization(
-      this.resolvedCredentialOffer,
-      credentialsToRequest
-    )
-    let authorizationCode: string | undefined = undefined
-    let codeVerifier: string | undefined = undefined
-    let txCode: string | undefined = undefined
+    const resolvedAuthorization = await this.holder.initiateAuthorization(resolvedCredentialOffer, credentialsToRequest)
+    let authorizationCode: string | undefined
+    let codeVerifier: string | undefined
+    let txCode: string | undefined
+    let dpop: OpenId4VciDpopRequestOptions | undefined
 
     if (resolvedAuthorization.authorizationFlow === 'Oauth2Redirect') {
       console.log(redText('Authorization required for credential issuance', true))
@@ -163,20 +161,24 @@ export class HolderInquirer extends BaseInquirer {
 
       const code = new Promise<string>((resolve, reject) => {
         this.holder.app.get('/redirect', (req, res) => {
-          if (req.query.code) {
-            resolve(req.query.code as string)
+          try {
+            const result = this.holder.agent.openid4vc.holder.parseAuthorizationCodeFromAuthorizationResponse({
+              authorizationResponseRedirectUrl: `http://localhost:${this.holder.port}${req.originalUrl}`,
+              resolvedCredentialOffer,
+            })
+            resolve(result.authorizationCode)
             // Store original routes
-            const originalStack = this.holder.app._router.stack
+            const originalStack = this.holder.app.router.stack
 
             // Remove specific GET route by path
-            this.holder.app._router.stack = originalStack.filter(
-              (layer: { route?: { path: string; methods: { get?: unknown } } }) =>
-                !(layer.route && layer.route.path === '/redirect' && layer.route.methods.get)
+            this.holder.app.router.stack = originalStack.filter(
+              (layer) => !(layer.route && layer.route.path === '/redirect')
             )
             res.send('Success! You can now go back to the terminal')
-          } else {
+          } catch (error) {
             console.log(redText('Error during authorization', true))
             console.log(JSON.stringify(req.query, null, 2))
+            console.error(error)
             res.status(500).send('Error during authentication')
             reject()
           }
@@ -186,25 +188,45 @@ export class HolderInquirer extends BaseInquirer {
       console.log('\n\n')
       codeVerifier = resolvedAuthorization.codeVerifier
       authorizationCode = await code
+      dpop = resolvedAuthorization.dpop
       console.log(greenText('Authorization complete', true))
     } else if (resolvedAuthorization.authorizationFlow === 'PresentationDuringIssuance') {
-      console.log(redText('Presentation during issuance not supported yet', true))
-      return
+      await this.resolveProofRequest(resolvedAuthorization.openid4vpRequestUrl)
+      const result = await this.inquireConfirmation('Accept presentation?')
+
+      if (!result) {
+        console.log(redText('Not accepting presentation, aborting issuance flow', true))
+        this.resolvedCredentialOffer = undefined
+        this.resolvedPresentationRequest = undefined
+        return
+      }
+
+      const submissionResult = await this.acceptPresentationRequest()
+
+      authorizationCode = (
+        await this.holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+          authSession: resolvedAuthorization.authSession,
+          resolvedCredentialOffer: resolvedCredentialOffer,
+          dpop: resolvedAuthorization.dpop,
+          presentationDuringIssuanceSession: submissionResult.presentationDuringIssuanceSession,
+        })
+      ).authorizationCode
     } else if (resolvedAuthorization.authorizationFlow === 'PreAuthorized') {
-      if (this.resolvedCredentialOffer.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.tx_code) {
+      if (resolvedCredentialOffer.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.tx_code) {
         txCode = await this.inquireInput('Enter PIN')
       }
     }
 
     console.log(greenText(`Requesting the following credential '${credentialsToRequest}'`))
 
-    const credentials = await this.holder.requestAndStoreCredentials(this.resolvedCredentialOffer, {
+    const credentials = await this.holder.requestAndStoreCredentials(resolvedCredentialOffer, {
       credentialsToRequest,
       clientId: authorizationCode ? this.holder.client.clientId : undefined,
       codeVerifier,
       code: authorizationCode,
       redirectUri: authorizationCode ? this.holder.client.redirectUri : undefined,
       txCode,
+      dpop,
     })
 
     console.log(greenText('Received and stored the following credentials.', true))
@@ -213,8 +235,8 @@ export class HolderInquirer extends BaseInquirer {
     credentials.forEach(this.printCredential)
   }
 
-  public async resolveProofRequest() {
-    const proofRequestUri = await this.inquireInput('Enter proof request: ')
+  public async resolveProofRequest(_proofRequestUri?: string) {
+    const proofRequestUri = _proofRequestUri ?? (await this.inquireInput('Enter proof request: '))
     this.resolvedPresentationRequest = await this.holder.resolveProofRequest(proofRequestUri)
 
     if (this.resolvedPresentationRequest.presentationExchange) {
@@ -225,7 +247,7 @@ export class HolderInquirer extends BaseInquirer {
 
       if (this.resolvedPresentationRequest.presentationExchange.credentialsForRequest.areRequirementsSatisfied) {
         const selectedCredentials = Object.values(
-          this.holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+          this.holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
             this.resolvedPresentationRequest.presentationExchange.credentialsForRequest
           )
         ).flat()
@@ -242,12 +264,12 @@ export class HolderInquirer extends BaseInquirer {
     } else if (this.resolvedPresentationRequest.dcql) {
       console.log(greenText('Received DCQL request'))
 
-      if (this.resolvedPresentationRequest.dcql.queryResult.canBeSatisfied) {
+      if (this.resolvedPresentationRequest.dcql.queryResult.can_be_satisfied) {
         const selectedCredentials = Object.values(
-          this.holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+          this.holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
             this.resolvedPresentationRequest.dcql.queryResult
           )
-        ).flatMap((e) => e.credentialRecord)
+        ).flatMap((e) => e[0].credentialRecord)
         console.log(
           greenText(
             'All requirements for creating the presentation are satisfied. The following credentials will be shared',
@@ -266,15 +288,23 @@ export class HolderInquirer extends BaseInquirer {
 
     console.log(greenText('Accepting the presentation request.'))
 
-    const serverResponse = await this.holder.acceptPresentationRequest(this.resolvedPresentationRequest)
+    const submissionResult = await this.holder.acceptPresentationRequest(this.resolvedPresentationRequest)
 
-    if (serverResponse && serverResponse.status >= 200 && serverResponse.status < 300) {
-      console.log(`received success status code '${serverResponse.status}'`)
+    if (
+      submissionResult.serverResponse &&
+      submissionResult.serverResponse.status >= 200 &&
+      submissionResult.serverResponse.status < 300
+    ) {
+      console.log(`received success status code '${submissionResult.serverResponse.status}'`)
     } else {
-      console.log(`received error status code '${serverResponse?.status}'. ${JSON.stringify(serverResponse?.body)}`)
+      console.log(
+        `received error status code '${submissionResult.serverResponse?.status}'. ${JSON.stringify(submissionResult.serverResponse?.body)}`
+      )
     }
 
     this.resolvedPresentationRequest = undefined
+
+    return submissionResult
   }
 
   public async exit() {
@@ -293,19 +323,29 @@ export class HolderInquirer extends BaseInquirer {
     }
   }
 
-  private printCredential = (credential: W3cCredentialRecord | SdJwtVcRecord | MdocRecord) => {
-    if (credential.type === 'W3cCredentialRecord') {
-      console.log(greenText(`W3cCredentialRecord with claim format ${credential.credential.claimFormat}`, true))
-      console.log(JSON.stringify(credential.credential.jsonCredential, null, 2))
+  private printCredential = (
+    credentialRecord: W3cCredentialRecord | W3cV2CredentialRecord | SdJwtVcRecord | MdocRecord
+  ) => {
+    if (credentialRecord.type === 'W3cCredentialRecord') {
+      console.log(
+        greenText(`W3cCredentialRecord with claim format ${credentialRecord.firstCredential.claimFormat}`, true)
+      )
+      console.log(JSON.stringify(credentialRecord.firstCredential.jsonCredential, null, 2))
       console.log('')
-    } else if (credential.type === 'MdocRecord') {
+    } else if (credentialRecord.type === 'W3cV2CredentialRecord') {
+      console.log(
+        greenText(`W3cCredentialRecord with claim format ${credentialRecord.firstCredential.claimFormat}`, true)
+      )
+      console.log(JSON.stringify(credentialRecord.firstCredential.resolvedCredential.toJSON(), null, 2))
+      console.log('')
+    } else if (credentialRecord.type === 'MdocRecord') {
       console.log(greenText('MdocRecord', true))
-      const namespaces = Mdoc.fromBase64Url(credential.base64Url).issuerSignedNamespaces
+      const namespaces = credentialRecord.firstCredential.issuerSignedNamespaces
       console.log(JSON.stringify(namespaces, null, 2))
       console.log('')
     } else {
       console.log(greenText('SdJwtVcRecord', true))
-      const prettyClaims = this.holder.agent.sdJwtVc.fromCompact(credential.compactSdJwtVc).prettyClaims
+      const prettyClaims = credentialRecord.firstCredential.prettyClaims
       console.log(JSON.stringify(prettyClaims, null, 2))
       console.log('')
     }

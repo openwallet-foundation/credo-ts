@@ -1,4 +1,5 @@
 import type { SimpleQuery } from '@credo-ts/core'
+import { AgentContext, inject, injectable } from '@credo-ts/core'
 import type {
   AnonCredsCreateLinkSecretOptions,
   AnonCredsRegisterCredentialDefinitionOptions,
@@ -6,25 +7,9 @@ import type {
   AnonCredsRegisterRevocationStatusListOptions,
   AnonCredsUpdateRevocationStatusListOptions,
 } from './AnonCredsApiOptions'
-import type { AnonCredsCredentialDefinition, AnonCredsSchema } from './models'
-import type {
-  AnonCredsRegistry,
-  GetCredentialDefinitionReturn,
-  GetCredentialsOptions,
-  GetRevocationRegistryDefinitionReturn,
-  GetRevocationStatusListReturn,
-  GetSchemaReturn,
-  RegisterCredentialDefinitionReturn,
-  RegisterRevocationRegistryDefinitionReturn,
-  RegisterRevocationStatusListReturn,
-  RegisterSchemaReturn,
-} from './services'
-import type { Extensible } from './services/registry/base'
-
-import { AgentContext, inject, injectable } from '@credo-ts/core'
-
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
 import { AnonCredsStoreRecordError } from './error'
+import type { AnonCredsCredentialDefinition, AnonCredsSchema } from './models'
 import {
   AnonCredsCredentialDefinitionPrivateRecord,
   AnonCredsCredentialDefinitionPrivateRepository,
@@ -43,13 +28,26 @@ import { AnonCredsSchemaRecord } from './repository/AnonCredsSchemaRecord'
 import { AnonCredsSchemaRepository } from './repository/AnonCredsSchemaRepository'
 import { AnonCredsCredentialDefinitionRecordMetadataKeys } from './repository/anonCredsCredentialDefinitionRecordMetadataTypes'
 import { AnonCredsRevocationRegistryDefinitionRecordMetadataKeys } from './repository/anonCredsRevocationRegistryDefinitionRecordMetadataTypes'
+import type {
+  AnonCredsRegistry,
+  GetCredentialDefinitionReturn,
+  GetCredentialsOptions,
+  GetRevocationRegistryDefinitionReturn,
+  GetRevocationStatusListReturn,
+  GetSchemaReturn,
+  RegisterCredentialDefinitionReturn,
+  RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListReturn,
+  RegisterSchemaReturn,
+} from './services'
 import {
-  AnonCredsHolderService,
+  type AnonCredsHolderService,
   AnonCredsHolderServiceSymbol,
-  AnonCredsIssuerService,
+  type AnonCredsIssuerService,
   AnonCredsIssuerServiceSymbol,
 } from './services'
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'
+import type { AnonCredsResolutionOptions, Extensible } from './services/registry/base'
 import { dateToTimestamp, storeLinkSecret } from './utils'
 
 @injectable()
@@ -128,30 +126,8 @@ export class AnonCredsApi {
    * Retrieve a {@link AnonCredsSchema} from the registry associated
    * with the {@link schemaId}
    */
-  public async getSchema(schemaId: string): Promise<GetSchemaReturn> {
-    const failedReturnBase = {
-      resolutionMetadata: {
-        error: 'error',
-        message: `Unable to resolve schema ${schemaId}`,
-      },
-      schemaId,
-      schemaMetadata: {},
-    }
-
-    const registry = this.findRegistryForIdentifier(schemaId)
-    if (!registry) {
-      failedReturnBase.resolutionMetadata.error = 'unsupportedAnonCredsMethod'
-      failedReturnBase.resolutionMetadata.message = `Unable to resolve schema ${schemaId}: No registry found for identifier ${schemaId}`
-      return failedReturnBase
-    }
-
-    try {
-      const result = await registry.getSchema(this.agentContext, schemaId)
-      return result
-    } catch (error) {
-      failedReturnBase.resolutionMetadata.message = `Unable to resolve schema ${schemaId}: ${error.message}`
-      return failedReturnBase
-    }
+  public async getSchema(schemaId: string, options: AnonCredsResolutionOptions = {}): Promise<GetSchemaReturn> {
+    return this.anonCredsRegistryService.getSchema(this.agentContext, schemaId, options)
   }
 
   public async registerSchema<T extends Extensible = Extensible>(
@@ -201,30 +177,11 @@ export class AnonCredsApi {
    * Retrieve a {@link GetCredentialDefinitionReturn} from the registry associated
    * with the {@link credentialDefinitionId}
    */
-  public async getCredentialDefinition(credentialDefinitionId: string): Promise<GetCredentialDefinitionReturn> {
-    const failedReturnBase = {
-      resolutionMetadata: {
-        error: 'error',
-        message: `Unable to resolve credential definition ${credentialDefinitionId}`,
-      },
-      credentialDefinitionId,
-      credentialDefinitionMetadata: {},
-    }
-
-    const registry = this.findRegistryForIdentifier(credentialDefinitionId)
-    if (!registry) {
-      failedReturnBase.resolutionMetadata.error = 'unsupportedAnonCredsMethod'
-      failedReturnBase.resolutionMetadata.message = `Unable to resolve credential definition ${credentialDefinitionId}: No registry found for identifier ${credentialDefinitionId}`
-      return failedReturnBase
-    }
-
-    try {
-      const result = await registry.getCredentialDefinition(this.agentContext, credentialDefinitionId)
-      return result
-    } catch (error) {
-      failedReturnBase.resolutionMetadata.message = `Unable to resolve credential definition ${credentialDefinitionId}: ${error.message}`
-      return failedReturnBase
-    }
+  public async getCredentialDefinition(
+    credentialDefinitionId: string,
+    options: AnonCredsResolutionOptions = {}
+  ): Promise<GetCredentialDefinitionReturn> {
+    return this.anonCredsRegistryService.getCredentialDefinition(this.agentContext, credentialDefinitionId, options)
   }
 
   public async registerCredentialDefinition<T extends Extensible>(
@@ -246,24 +203,14 @@ export class AnonCredsApi {
     }
 
     let credentialDefinition: AnonCredsCredentialDefinition
-    let credentialDefinitionPrivate: Record<string, unknown> | undefined = undefined
-    let keyCorrectnessProof: Record<string, unknown> | undefined = undefined
+    let credentialDefinitionPrivate: Record<string, unknown> | undefined
+    let keyCorrectnessProof: Record<string, unknown> | undefined
 
     try {
       if (isFullCredentialDefinitionInput(options.credentialDefinition)) {
         credentialDefinition = options.credentialDefinition
       } else {
-        // If the input credential definition is not a full credential definition, we need to create one first
-        // There's a caveat to when the input contains a full credential, that the credential definition private
-        // and key correctness proof must already be stored in the wallet
-        const schemaRegistry = this.findRegistryForIdentifier(options.credentialDefinition.schemaId)
-        if (!schemaRegistry) {
-          failedReturnBase.credentialDefinitionState.reason = `Unable to register credential definition. No registry found for schemaId ${options.credentialDefinition.schemaId}`
-          return failedReturnBase
-        }
-
-        const schemaResult = await schemaRegistry.getSchema(this.agentContext, options.credentialDefinition.schemaId)
-
+        const schemaResult = await this.getSchema(options.credentialDefinition.schemaId)
         if (!schemaResult.schema) {
           failedReturnBase.credentialDefinitionState.reason = `error resolving schema with id ${options.credentialDefinition.schemaId}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
           return failedReturnBase
@@ -277,12 +224,6 @@ export class AnonCredsApi {
             tag: options.credentialDefinition.tag,
             supportRevocation: options.options.supportRevocation,
             schema: schemaResult.schema,
-          },
-          // NOTE: indy-sdk support has been removed from main repo, but keeping
-          // this in place to allow the indy-sdk to still be used as a custom package for some time
-          // FIXME: Indy SDK requires the schema seq no to be passed in here. This is not ideal.
-          {
-            indyLedgerSchemaSeqNo: schemaResult.schemaMetadata.indyLedgerSeqNo,
           }
         )
 
@@ -330,31 +271,14 @@ export class AnonCredsApi {
    * with the {@link revocationRegistryDefinitionId}
    */
   public async getRevocationRegistryDefinition(
-    revocationRegistryDefinitionId: string
+    revocationRegistryDefinitionId: string,
+    options: AnonCredsResolutionOptions = {}
   ): Promise<GetRevocationRegistryDefinitionReturn> {
-    const failedReturnBase = {
-      resolutionMetadata: {
-        error: 'error',
-        message: `Unable to resolve revocation registry ${revocationRegistryDefinitionId}`,
-      },
+    return this.anonCredsRegistryService.getRevocationRegistryDefinition(
+      this.agentContext,
       revocationRegistryDefinitionId,
-      revocationRegistryDefinitionMetadata: {},
-    }
-
-    const registry = this.findRegistryForIdentifier(revocationRegistryDefinitionId)
-    if (!registry) {
-      failedReturnBase.resolutionMetadata.error = 'unsupportedAnonCredsMethod'
-      failedReturnBase.resolutionMetadata.message = `Unable to resolve revocation registry ${revocationRegistryDefinitionId}: No registry found for identifier ${revocationRegistryDefinitionId}`
-      return failedReturnBase
-    }
-
-    try {
-      const result = await registry.getRevocationRegistryDefinition(this.agentContext, revocationRegistryDefinitionId)
-      return result
-    } catch (error) {
-      failedReturnBase.resolutionMetadata.message = `Unable to resolve revocation registry ${revocationRegistryDefinitionId}: ${error.message}`
-      return failedReturnBase
-    }
+      options
+    )
   }
 
   public async registerRevocationRegistryDefinition<T extends Extensible = Extensible>(
@@ -381,7 +305,7 @@ export class AnonCredsApi {
       return failedReturnBase
     }
 
-    const { credentialDefinition } = await registry.getCredentialDefinition(this.agentContext, credentialDefinitionId)
+    const { credentialDefinition } = await this.getCredentialDefinition(credentialDefinitionId)
 
     if (!credentialDefinition) {
       failedReturnBase.revocationRegistryDefinitionState.reason = `Unable to register revocation registry definition. No credential definition found for id ${credentialDefinitionId}`
@@ -438,34 +362,15 @@ export class AnonCredsApi {
    */
   public async getRevocationStatusList(
     revocationRegistryDefinitionId: string,
-    timestamp: number
+    timestamp: number,
+    options: Omit<AnonCredsResolutionOptions, 'useLocalRecord'> = {}
   ): Promise<GetRevocationStatusListReturn> {
-    const failedReturnBase = {
-      resolutionMetadata: {
-        error: 'error',
-        message: `Unable to resolve revocation status list for revocation registry ${revocationRegistryDefinitionId}`,
-      },
-      revocationStatusListMetadata: {},
-    }
-
-    const registry = this.findRegistryForIdentifier(revocationRegistryDefinitionId)
-    if (!registry) {
-      failedReturnBase.resolutionMetadata.error = 'unsupportedAnonCredsMethod'
-      failedReturnBase.resolutionMetadata.message = `Unable to resolve revocation status list for revocation registry ${revocationRegistryDefinitionId}: No registry found for identifier ${revocationRegistryDefinitionId}`
-      return failedReturnBase
-    }
-
-    try {
-      const result = await registry.getRevocationStatusList(
-        this.agentContext,
-        revocationRegistryDefinitionId,
-        timestamp
-      )
-      return result
-    } catch (error) {
-      failedReturnBase.resolutionMetadata.message = `Unable to resolve revocation status list for revocation registry ${revocationRegistryDefinitionId}: ${error.message}`
-      return failedReturnBase
-    }
+    return this.anonCredsRegistryService.getRevocationStatusList(
+      this.agentContext,
+      revocationRegistryDefinitionId,
+      timestamp,
+      options
+    )
   }
 
   public async registerRevocationStatusList<T extends Extensible = Extensible>(
@@ -488,10 +393,7 @@ export class AnonCredsApi {
       return failedReturnBase
     }
 
-    const { revocationRegistryDefinition } = await registry.getRevocationRegistryDefinition(
-      this.agentContext,
-      revocationRegistryDefinitionId
-    )
+    const { revocationRegistryDefinition } = await this.getRevocationRegistryDefinition(revocationRegistryDefinitionId)
 
     if (!revocationRegistryDefinition) {
       failedReturnBase.revocationStatusListState.reason = `Unable to register revocation status list. No revocation registry definition found for ${revocationRegistryDefinitionId}`
@@ -549,10 +451,7 @@ export class AnonCredsApi {
       return failedReturnBase
     }
 
-    const { revocationRegistryDefinition } = await registry.getRevocationRegistryDefinition(
-      this.agentContext,
-      revocationRegistryDefinitionId
-    )
+    const { revocationRegistryDefinition } = await this.getRevocationRegistryDefinition(revocationRegistryDefinitionId)
 
     if (!revocationRegistryDefinition) {
       failedReturnBase.revocationStatusListState.reason = `Unable to update revocation status list. No revocation registry definition found for ${revocationRegistryDefinitionId}`
@@ -561,7 +460,11 @@ export class AnonCredsApi {
 
     const { revocationStatusList: previousRevocationStatusList } = await this.getRevocationStatusList(
       revocationRegistryDefinitionId,
-      dateToTimestamp(new Date())
+      dateToTimestamp(new Date()),
+      // We want the latest state here.
+      {
+        useCache: false,
+      }
     )
 
     if (!previousRevocationStatusList) {

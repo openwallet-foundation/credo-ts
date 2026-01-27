@@ -1,24 +1,25 @@
-import { AgentContextProvider, Kms, TypedArrayEncoder, UpdateAssistantUpdateOptions } from '@credo-ts/core'
-import type { EncryptedMessage, RoutingCreatedEvent } from '@credo-ts/didcomm'
-import type { TenantRecord } from '../repository'
-
 import {
   AgentContext,
+  type AgentContextProvider,
   CredoError,
   EventEmitter,
   InjectionSymbols,
-  JsonEncoder,
-  Logger,
-  UpdateAssistant,
   inject,
   injectable,
   isJsonObject,
   isStorageUpToDate,
+  JsonEncoder,
+  Kms,
+  type Logger,
+  TypedArrayEncoder,
+  UpdateAssistant,
+  type UpdateAssistantUpdateOptions,
 } from '@credo-ts/core'
-import { RoutingEventTypes, isValidJweStructure } from '@credo-ts/didcomm'
-
-import { TenantAgent } from '../TenantAgent'
+import type { DidCommEncryptedMessage, DidCommRoutingCreatedEvent } from '@credo-ts/didcomm'
+import { DidCommRoutingEventTypes, isValidJweStructure } from '@credo-ts/didcomm'
+import type { TenantRecord } from '../repository'
 import { TenantRecordService } from '../services'
+import { TenantAgent } from '../TenantAgent'
 
 import { TenantSessionCoordinator } from './TenantSessionCoordinator'
 
@@ -145,7 +146,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     await this.tenantSessionCoordinator.deleteAgentContext(agentContext)
   }
 
-  private getRecipientKeysFromEncryptedMessage(jwe: EncryptedMessage): Kms.PublicJwk[] {
+  private getRecipientKeysFromEncryptedMessage(jwe: DidCommEncryptedMessage): Kms.PublicJwk[] {
     const jweProtected = JsonEncoder.fromBase64(jwe.protected)
     if (!Array.isArray(jweProtected.recipients)) return []
 
@@ -177,7 +178,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
 
   private listenForRoutingKeyCreatedEvents() {
     this.logger.debug('Listening for routing key created events in tenant agent context provider')
-    this.eventEmitter.on<RoutingCreatedEvent>(RoutingEventTypes.RoutingCreatedEvent, async (event) => {
+    this.eventEmitter.on<DidCommRoutingCreatedEvent>(DidCommRoutingEventTypes.RoutingCreatedEvent, async (event) => {
       const contextCorrelationId = event.metadata.contextCorrelationId
       const recipientKey = event.payload.routing.recipientKey
 

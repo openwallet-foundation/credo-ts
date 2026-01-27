@@ -1,66 +1,75 @@
 import {
   AgentContext,
   ClaimFormat,
-  DifPresentationExchangeDefinition,
-  DifPresentationExchangeSubmission,
-  HashName,
-  Kms,
-  MdocSessionTranscriptOptions,
-  Query,
-  QueryOptions,
-  VerifiablePresentation,
-} from '@credo-ts/core'
-import {
   CredoError,
+  type DcqlEncodedPresentations,
+  type DcqlQuery,
   DcqlService,
+  type DifPresentationExchangeDefinition,
   DifPresentationExchangeService,
+  type DifPresentationExchangeSubmission,
   EventEmitter,
-  InjectionSymbols,
-  JsonEncoder,
-  JsonTransformer,
-  Jwt,
-  Logger,
-  MdocDeviceResponse,
-  SdJwtVcApi,
-  SignatureSuiteRegistry,
-  TypedArrayEncoder,
-  W3cCredentialService,
-  W3cJsonLdVerifiablePresentation,
-  W3cJwtVerifiablePresentation,
-  X509Certificate,
-  X509ModuleConfig,
-  X509Service,
   extractPresentationsWithDescriptorsFromSubmission,
   extractX509CertificatesFromJwt,
   getDomainFromUrl,
+  Hasher,
+  type HashName,
+  InjectionSymbols,
   inject,
   injectable,
   isMdocSupportedSignatureAlgorithm,
+  JsonEncoder,
+  JsonTransformer,
+  Jwt,
   joinUriParts,
+  Kms,
+  type Logger,
+  MdocDeviceResponse,
+  type MdocSessionTranscriptOptions,
+  type MdocSupportedSignatureAlgorithm,
+  mapNonEmptyArray,
+  type NonEmptyArray,
+  type Query,
+  type QueryOptions,
+  SdJwtVcApi,
+  SignatureSuiteRegistry,
+  TypedArrayEncoder,
   utils,
+  type VerifiablePresentation,
+  W3cCredentialService,
+  W3cJsonLdVerifiablePresentation,
+  W3cJwtVerifiablePresentation,
+  W3cV2CredentialService,
+  W3cV2SdJwtVerifiablePresentation,
+  X509Certificate,
+  X509ModuleConfig,
+  X509Service,
 } from '@credo-ts/core'
-import { Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
-  ClientIdScheme,
-  ClientMetadata,
-  JarmClientMetadata,
-  JarmMode,
-  Openid4vpVerifier,
-  ParsedOpenid4vpAuthorizationResponse,
-  TransactionDataHashesCredentials,
-  VpTokenDcql,
+  type ClientIdPrefix,
+  type ClientMetadata,
+  calculateX509HashClientIdPrefixValue,
   getOpenid4vpClientId,
   isJarmResponseMode,
   isOpenid4vpAuthorizationRequestDcApi,
+  JarmMode,
+  Openid4vpVerifier,
+  type ParsedOpenid4vpAuthorizationResponse,
+  type TransactionDataHashesCredentials,
   zOpenid4vpAuthorizationResponse,
 } from '@openid4vc/openid4vp'
 import { getOid4vcCallbacks } from '../shared/callbacks'
-import { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
+import type { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
-import { addSecondsToDate, getSupportedJwaSignatureAlgorithms, requestSignerToJwtIssuer } from '../shared/utils'
+import {
+  credoJwtIssuerToOpenId4VcJwtIssuer,
+  dcqlCredentialQueryToPresentationFormat,
+  getSupportedJwaSignatureAlgorithms,
+} from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
-import { OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
+import { type OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import type {
   OpenId4VpCreateAuthorizationRequestOptions,
@@ -71,6 +80,7 @@ import type {
   OpenId4VpVerifiedAuthorizationResponsePresentationExchange,
   OpenId4VpVerifiedAuthorizationResponseTransactionData,
   OpenId4VpVerifyAuthorizationResponseOptions,
+  OpenId4VpVersion,
   ResponseMode,
 } from './OpenId4VpVerifierServiceOptions'
 import {
@@ -88,6 +98,7 @@ export class OpenId4VpVerifierService {
   public constructor(
     @inject(InjectionSymbols.Logger) private logger: Logger,
     private w3cCredentialService: W3cCredentialService,
+    private w3cV2CredentialService: W3cV2CredentialService,
     private openId4VcVerifierRepository: OpenId4VcVerifierRepository,
     private config: OpenId4VcVerifierModuleConfig,
     private openId4VcVerificationSessionRepository: OpenId4VcVerificationSessionRepository
@@ -111,50 +122,68 @@ export class OpenId4VpVerifierService {
     const responseMode = options.responseMode ?? 'direct_post.jwt'
     const isDcApiRequest = responseMode === 'dc_api' || responseMode === 'dc_api.jwt'
 
-    const version = options.version ?? 'v1.draft24'
+    const version = options.version ?? 'v1'
     if (version === 'v1.draft21' && isDcApiRequest) {
       throw new CredoError(
-        `OpenID4VP version '${version}' cannot be used with responseMode '${options.responseMode}'. Use version 'v1.draft24' instead.`
+        `OpenID4VP version '${version}' cannot be used with responseMode '${options.responseMode}'. Use version 'v1' or 'v1.draft24' instead.`
       )
     }
     if (version === 'v1.draft21' && options.transactionData) {
       throw new CredoError(
-        `OpenID4VP version '${version}' cannot be used with transactionData. Use version 'v1.draft24' instead.`
+        `OpenID4VP version '${version}' cannot be used with transactionData. Use version 'v1' or 'v1.draft24' instead.`
       )
     }
     if (version === 'v1.draft21' && options.dcql) {
-      throw new CredoError(`OpenID4VP version '${version}' cannot be used with dcql. Use version 'v1.draft24' instead.`)
+      throw new CredoError(
+        `OpenID4VP version '${version}' cannot be used with dcql. Use version 'v1' or 'v1.draft24' instead.`
+      )
+    }
+    if (version !== 'v1' && options.verifierInfo) {
+      throw new CredoError(`OpenID4VP version '${version}' cannot be used with verifierInfo. Use version 'v1' instead.`)
+    }
+    if (version === 'v1' && options.presentationExchange) {
+      throw new CredoError(
+        `OpenID4VP version '${version}' cannot be used with presentationExchange. Use dcql instead (recommended), or use older versions 'v1.draft24' and 'v1.draft21'.`
+      )
+    }
+
+    // For now we only support presentations with holder binding.
+    if (options.dcql?.query.credentials.some((c) => c.require_cryptographic_holder_binding === false)) {
+      throw new CredoError(
+        `Setting 'require_cryptographic_holder_binding' to false in DCQL Query is not supported by Credo at the moment. Only presentations with cryptographic holder binding are supported.`
+      )
+    }
+
+    if (isDcApiRequest && options.authorizationResponseRedirectUri) {
+      throw new CredoError(
+        "'authorizationResponseRedirectUri' cannot be be used with response mode 'dc_api' and 'dc_api.jwt'."
+      )
     }
 
     // Check to prevent direct_post from being used with mDOC
     const hasMdocRequest =
       options.presentationExchange?.definition.input_descriptors.some((i) => i.format?.mso_mdoc) ||
       options.dcql?.query.credentials.some((c) => c.format === 'mso_mdoc')
-    if (responseMode === 'direct_post' && hasMdocRequest) {
+    // Up to draft 24 we use the 18013-7 mdoc session transcript which needs values from APU/APV
+    if ((version === 'v1.draft21' || version === 'v1.draft24') && responseMode === 'direct_post' && hasMdocRequest) {
       throw new CredoError(
-        "Unable to create authorization request with response mode 'direct_post' containing mDOC credentials. ISO 18013-7 requires the usage of response mode 'direct_post.jwt', and needs parameters from the encrypted response header to verify the mDOC sigature."
+        "Unable to create authorization request with response mode 'direct_post' containing mDOC credentials. ISO 18013-7 requires the usage of response mode 'direct_post.jwt', and needs parameters from the encrypted response header to verify the mDOC sigature. Either use version 'v1', or update the response mode to 'direct_post.jwt'"
       )
     }
 
-    if (options.verifierAttestations) {
-      const hasValidCredentialIdsForDcql =
-        options?.dcql?.query.credentials.every(({ id }) =>
-          options.verifierAttestations?.every((va) => va.credential_ids?.includes(id))
-        ) ?? true
+    if (options.verifierInfo) {
+      const queryIds =
+        options?.dcql?.query.credentials.map(({ id }) => id) ??
+        options?.presentationExchange?.definition.input_descriptors.map(({ id }) => id) ??
+        []
 
-      if (!hasValidCredentialIdsForDcql) {
-        throw new CredoError(
-          'Dcql is used as query language and verifier attestations were provided, but the dcql query used credential ids that are not supported by the verifier attestations'
-        )
-      }
-
-      const hasValidCredentialIdsForPex = options?.presentationExchange?.definition.input_descriptors.every(({ id }) =>
-        options.verifierAttestations?.every((va) => va.credential_ids?.includes(id))
+      const hasValidCredentialIds = options.verifierInfo.every(
+        (vi) => !vi.credential_ids || vi.credential_ids.every((credentialId) => queryIds.includes(credentialId))
       )
 
-      if (!hasValidCredentialIdsForPex) {
+      if (!hasValidCredentialIds) {
         throw new CredoError(
-          'Presentation Exchange is used as query language and verifier attestations were provided, but the presentation exchange query used credential ids that are not supported by the verifier attestations'
+          'Verifier info (attestations) were provided, but the verifier info used credential ids that are not present in the query'
         )
       }
     }
@@ -165,39 +194,55 @@ export class OpenId4VpVerifierService {
     const authorizationResponseUrl = `${joinUriParts(this.config.baseUrl, [options.verifier.verifierId, this.config.authorizationEndpoint])}?session=${authorizationRequestId}`
 
     const jwtIssuer =
-      options.requestSigner.method === 'none'
-        ? undefined
-        : options.requestSigner.method === 'x5c'
-          ? await requestSignerToJwtIssuer(agentContext, {
-              ...options.requestSigner,
-              issuer: authorizationResponseUrl,
-            })
-          : await requestSignerToJwtIssuer(agentContext, options.requestSigner)
+      options.requestSigner.method !== 'none'
+        ? await credoJwtIssuerToOpenId4VcJwtIssuer(agentContext, options.requestSigner)
+        : undefined
 
-    let clientIdScheme: ClientIdScheme
+    let clientIdPrefix: ClientIdPrefix
     let clientId: string | undefined
 
     if (!jwtIssuer) {
-      if (!isDcApiRequest) {
-        throw new Error("requestSigner method 'none' is only supported for response mode 'dc_api' and 'dc_api.jwt'")
+      if (isDcApiRequest) {
+        clientIdPrefix = version === 'v1' ? 'origin' : 'web-origin'
+        clientId = undefined
+      } else {
+        clientIdPrefix = 'redirect_uri'
+        clientId = authorizationResponseUrl
       }
-
-      clientIdScheme = 'web-origin'
-      clientId = undefined
     } else if (jwtIssuer?.method === 'x5c') {
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
 
-      if (leafCertificate.sanDnsNames.includes(getDomainFromUrl(jwtIssuer.issuer))) {
-        clientIdScheme = 'x509_san_dns'
-        clientId = getDomainFromUrl(jwtIssuer.issuer)
+      if (
+        !authorizationResponseUrl.startsWith('https://') &&
+        !(authorizationResponseUrl.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)
+      ) {
+        throw new CredoError('The X509 certificate issuer must be a HTTPS URI.')
+      }
+
+      if (options.requestSigner.method === 'x5c' && options.requestSigner.clientIdPrefix === 'x509_hash') {
+        clientIdPrefix = 'x509_hash'
+        clientId = await calculateX509HashClientIdPrefixValue({
+          x509Certificate: leafCertificate.rawCertificate,
+          hash: Hasher.hash,
+        })
       } else {
-        throw new CredoError(
-          `With jwtIssuer method 'x5c' the jwtIssuer's 'issuer' field must match a sanDnsName (FQDN) in the leaf x509 chain's leaf certificate.`
-        )
+        if (!leafCertificate.sanDnsNames.includes(getDomainFromUrl(authorizationResponseUrl))) {
+          const sanDnsMessage =
+            leafCertificate.sanDnsNames.length > 0
+              ? `SAN-DNS names are ${leafCertificate.sanDnsNames.join(', ')}`
+              : 'there are no SAN-DNS names'
+
+          throw new CredoError(
+            `The domain of the OpenID4VCI issuer does not match a SAN DNS name in the x5c certificate. The OpenID4VCI domain is '${getDomainFromUrl(authorizationResponseUrl)}', $${sanDnsMessage}`
+          )
+        }
+
+        clientIdPrefix = 'x509_san_dns'
+        clientId = getDomainFromUrl(authorizationResponseUrl)
       }
     } else if (jwtIssuer?.method === 'did') {
       clientId = jwtIssuer.didUrl.split('#')[0]
-      clientIdScheme = 'did'
+      clientIdPrefix = version === 'v1' ? 'decentralized_identifier' : 'did'
     } else {
       throw new CredoError(
         `Unsupported jwt issuer method '${options.requestSigner.method}'. Only 'did' and 'x5c' are supported.`
@@ -205,30 +250,39 @@ export class OpenId4VpVerifierService {
     }
 
     // We always use shortened URIs currently
-    const hostedAuthorizationRequestUri = !isDcApiRequest
-      ? joinUriParts(this.config.baseUrl, [
-          options.verifier.verifierId,
-          this.config.authorizationRequestEndpoint,
-          authorizationRequestId,
-        ])
-      : // No hosted request needed when using DC API
-        undefined
+    const hostedAuthorizationRequestUri =
+      !isDcApiRequest && jwtIssuer
+        ? joinUriParts(this.config.baseUrl, [
+            options.verifier.verifierId,
+            this.config.authorizationRequestEndpoint,
+            authorizationRequestId,
+          ])
+        : // No hosted request needed when using DC API or using unsigned request
+          undefined
 
     const client_id =
       // For did/https and draft 21 the client id has no special prefix
-      clientIdScheme === 'did' || (clientIdScheme as string) === 'https' || version === 'v1.draft21'
+      clientIdPrefix === 'did' || (clientIdPrefix as string) === 'https' || version === 'v1.draft21'
         ? clientId
-        : `${clientIdScheme}:${clientId}`
+        : `${clientIdPrefix}:${clientId}`
 
     // for did the client_id is same in draft 21 and 24 so we could support both at the same time
     const legacyClientIdScheme =
-      version === 'v1.draft21' && clientIdScheme !== 'web-origin' ? clientIdScheme : undefined
+      version === 'v1.draft21' &&
+      clientIdPrefix !== 'web-origin' &&
+      clientIdPrefix !== 'origin' &&
+      clientIdPrefix !== 'decentralized_identifier'
+        ? clientIdPrefix
+        : undefined
 
     const client_metadata = await this.getClientMetadata(agentContext, {
       responseMode,
       verifier: options.verifier,
       authorizationResponseUrl,
       version,
+
+      // TODO: we don't validate the DCQL query when creating a request i think?
+      dcqlQuery: options.dcql?.query,
     })
 
     const requestParamsBase = {
@@ -239,7 +293,7 @@ export class OpenId4VpVerifierService {
       response_mode: responseMode,
       response_type: 'vp_token',
       client_metadata,
-      verifier_attestations: options.verifierAttestations,
+      verifier_info: options.verifierInfo,
     } as const
 
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
@@ -255,7 +309,7 @@ export class OpenId4VpVerifierService {
         requestParamsBase.response_mode === 'dc_api.jwt' || requestParamsBase.response_mode === 'dc_api'
           ? {
               ...requestParamsBase,
-              // No client_id for unsigned requests
+              // No client_id for unsigned DC API requests
               client_id: jwtIssuer ? client_id : undefined,
               response_mode: requestParamsBase.response_mode,
               expected_origins: options.expectedOrigins,
@@ -271,6 +325,8 @@ export class OpenId4VpVerifierService {
     })
 
     const verificationSession = new OpenId4VcVerificationSessionRecord({
+      authorizationResponseRedirectUri: options.authorizationResponseRedirectUri,
+
       // Only store payload for unsiged requests
       authorizationRequestPayload: authorizationRequest.jar
         ? undefined
@@ -280,7 +336,8 @@ export class OpenId4VpVerifierService {
       authorizationRequestId,
       state: OpenId4VcVerificationSessionState.RequestCreated,
       verifierId: options.verifier.verifierId,
-      expiresAt: addSecondsToDate(new Date(), this.config.authorizationRequestExpiresInSeconds),
+      expiresAt: utils.addSecondsToDate(new Date(), this.config.authorizationRequestExpiresInSeconds),
+      openId4VpVersion: version,
     })
     await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
     this.emitStateChangedEvent(agentContext, verificationSession, null)
@@ -292,13 +349,17 @@ export class OpenId4VpVerifierService {
     }
   }
 
-  private getDcqlVerifiedResponse(agentContext: AgentContext, _dcqlQuery: unknown, presentations: VpTokenDcql) {
+  private async getDcqlVerifiedResponse(
+    agentContext: AgentContext,
+    _dcqlQuery: unknown,
+    presentations: DcqlEncodedPresentations
+  ) {
     const dcqlService = agentContext.dependencyManager.resolve(DcqlService)
     const dcqlQuery = dcqlService.validateDcqlQuery(_dcqlQuery)
 
     const dcqlPresentationEntries = Object.entries(presentations)
     const dcqlPresentation = Object.fromEntries(
-      dcqlPresentationEntries.map(([credentialId, presentation]) => {
+      dcqlPresentationEntries.map(([credentialId, presentations]) => {
         const queryCredential = dcqlQuery.credentials.find((c) => c.id === credentialId)
         if (!queryCredential) {
           throw new CredoError(
@@ -308,20 +369,21 @@ export class OpenId4VpVerifierService {
 
         return [
           credentialId,
-          this.decodePresentation(agentContext, {
-            presentation,
-            format:
-              queryCredential.format === 'mso_mdoc'
-                ? ClaimFormat.MsoMdoc
-                : queryCredential.format === 'dc+sd-jwt' || queryCredential.format === 'vc+sd-jwt'
-                  ? ClaimFormat.SdJwtVc
-                  : ClaimFormat.JwtVc,
-          }),
+          mapNonEmptyArray(presentations, (presentation) =>
+            this.decodePresentation(agentContext, {
+              presentation,
+              format: dcqlCredentialQueryToPresentationFormat(queryCredential),
+            })
+          ),
         ]
       })
     )
 
-    const dcqlPresentationResult = dcqlService.assertValidDcqlPresentation(dcqlPresentation, dcqlQuery)
+    const dcqlPresentationResult = await dcqlService.assertValidDcqlPresentation(
+      agentContext,
+      dcqlPresentation,
+      dcqlQuery
+    )
 
     return {
       query: dcqlQuery,
@@ -341,7 +403,7 @@ export class OpenId4VpVerifierService {
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
 
     const { authorizationResponse, verificationSession, origin } = options
-    let parsedAuthorizationResponse: ParsedOpenid4vpAuthorizationResponse | undefined = undefined
+    let parsedAuthorizationResponse: ParsedOpenid4vpAuthorizationResponse | undefined
 
     try {
       parsedAuthorizationResponse = await openid4vpVerifier.parseOpenid4vpAuthorizationResponse({
@@ -351,7 +413,6 @@ export class OpenId4VpVerifierService {
         callbacks: getOid4vcCallbacks(agentContext),
       })
 
-      // FIXME: use JarmMode enum when new release of oid4vp
       if (parsedAuthorizationResponse.jarm && parsedAuthorizationResponse.jarm.type !== JarmMode.Encrypted) {
         throw new Oauth2ServerErrorResponseError({
           error: Oauth2ErrorCodes.InvalidRequest,
@@ -391,14 +452,24 @@ export class OpenId4VpVerifierService {
     }
   ): Promise<OpenId4VpVerifiedAuthorizationResponse> {
     const { verificationSession, authorizationResponse, origin } = options
-    const authorizationRequest = options.verificationSession.requestPayload
+    const authorizationRequest = verificationSession.requestPayload
+    const openid4vpVersion =
+      verificationSession.openId4VpVersion ??
+      (authorizationRequest.client_id_scheme !== undefined ? 'v1.draft21' : 'v1.draft24')
 
-    verificationSession.assertState([
-      OpenId4VcVerificationSessionState.RequestUriRetrieved,
-      OpenId4VcVerificationSessionState.RequestCreated,
-    ])
+    if (
+      verificationSession.state !== OpenId4VcVerificationSessionState.RequestUriRetrieved &&
+      verificationSession.state !== OpenId4VcVerificationSessionState.RequestCreated
+    ) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidRequest,
+        error_description: 'Invalid session',
+      })
+    }
 
     if (verificationSession.expiresAt && Date.now() > verificationSession.expiresAt.getTime()) {
+      verificationSession.errorMessage = 'session expired'
+      await this.updateState(agentContext, verificationSession, OpenId4VcVerificationSessionState.Error)
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidRequest,
         error_description: 'session expired',
@@ -411,9 +482,15 @@ export class OpenId4VpVerifierService {
       origin,
     })
 
-    let dcqlResponse: OpenId4VpVerifiedAuthorizationResponseDcql | undefined = undefined
-    let pexResponse: OpenId4VpVerifiedAuthorizationResponsePresentationExchange | undefined = undefined
-    let transactionData: OpenId4VpVerifiedAuthorizationResponseTransactionData[] | undefined = undefined
+    // NOTE: we always currently include only one key, and also use 'use=enc'. If we change
+    // that, we should change this. I think we should return the jarm key in the openid4vp lib
+    // and match against that (and also ensure then it's present in client_metadata -> should not conflict with federation)
+    const encryptionJwk = authorizationRequest.client_metadata?.jwks?.keys.find((key) => key.use === 'enc')
+    const encryptionPublicJwk = encryptionJwk ? Kms.PublicJwk.fromUnknown(encryptionJwk) : undefined
+
+    let dcqlResponse: OpenId4VpVerifiedAuthorizationResponseDcql | undefined
+    let pexResponse: OpenId4VpVerifiedAuthorizationResponsePresentationExchange | undefined
+    let transactionData: OpenId4VpVerifiedAuthorizationResponseTransactionData[] | undefined
 
     try {
       const parsedClientId = getOpenid4vpClientId({
@@ -421,16 +498,22 @@ export class OpenId4VpVerifierService {
         clientId: authorizationRequest.client_id,
         legacyClientIdScheme: authorizationRequest.client_id_scheme,
         origin: options.origin,
+        version: openid4vpVersion === 'v1' ? 100 : openid4vpVersion === 'v1.draft24' ? 24 : 21,
       })
 
-      // If client_id_scheme was used we need to use the legacy client id.
-      const clientId = parsedClientId.legacyClientId ?? parsedClientId.clientId
+      const clientId = parsedClientId.effectiveClientId
+      const isDcApiRequest = isOpenid4vpAuthorizationRequestDcApi(authorizationRequest)
+
+      // TODO: we should return the effectiveAudience in the returned value of openid4vp lib
+      // Since it differs based on the version of openid4vp used
+      // NOTE: in v1 DC API request the audience is always origin: (not the client id)
+      const audience = openid4vpVersion === 'v1' && isDcApiRequest ? `origin:${options.origin}` : clientId
 
       const responseUri = isOpenid4vpAuthorizationRequestDcApi(authorizationRequest)
         ? undefined
         : authorizationRequest.response_uri
 
-      // NOTE: apu is needed for mDOC over OID4VP without DC API
+      // NOTE: apu is needed for mDOC over OID4VP without DC API up to draft 24
       const mdocGeneratedNonce = result.jarm?.jarmHeader.apu
         ? TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64(result.jarm?.jarmHeader.apu))
         : undefined
@@ -438,62 +521,95 @@ export class OpenId4VpVerifierService {
       if (result.type === 'dcql') {
         const dcqlPresentationEntries = Object.entries(result.dcql.presentations)
         if (!authorizationRequest.dcql_query) {
-          throw new CredoError('Missing required dcql query')
+          throw new Oauth2ServerErrorResponseError({
+            error: Oauth2ErrorCodes.InvalidRequest,
+            error_description: 'DCQL response provided but no dcql_query found in the authorization request.',
+          })
         }
 
         const dcql = agentContext.dependencyManager.resolve(DcqlService)
         const dcqlQuery = dcql.validateDcqlQuery(authorizationRequest.dcql_query)
 
         const presentationVerificationResults = await Promise.all(
-          dcqlPresentationEntries.map(async ([credentialId, presentation]) => {
+          dcqlPresentationEntries.map(async ([credentialId, presentations]) => {
             const queryCredential = dcqlQuery.credentials.find((c) => c.id === credentialId)
             if (!queryCredential) {
-              throw new CredoError(
-                `vp_token contains presentation for credential query id '${credentialId}', but this credential is not present in the dcql query.`
-              )
+              throw new Oauth2ServerErrorResponseError({
+                error: Oauth2ErrorCodes.InvalidRequest,
+                error_description: `vp_token contains presentation for credential query id '${credentialId}', but this credential is not present in the dcql query.`,
+              })
             }
 
-            return {
-              ...(await this.verifyPresentation(agentContext, {
-                format:
-                  queryCredential.format === 'mso_mdoc'
-                    ? ClaimFormat.MsoMdoc
-                    : queryCredential.format === 'dc+sd-jwt' || queryCredential.format === 'vc+sd-jwt'
-                      ? ClaimFormat.SdJwtVc
-                      : ClaimFormat.JwtVc,
-                nonce: authorizationRequest.nonce,
-                audience: clientId,
-                origin: options.origin,
-                responseUri,
-                mdocGeneratedNonce,
-                verificationSessionId: result.verificationSession.id,
-                presentation,
-              })),
-              credentialId,
-            }
+            const verifiedPresentations = await Promise.all(
+              mapNonEmptyArray(presentations, (presentation) =>
+                this.verifyPresentation(agentContext, {
+                  format: dcqlCredentialQueryToPresentationFormat(queryCredential),
+                  nonce: authorizationRequest.nonce,
+                  audience,
+                  version: openid4vpVersion,
+                  clientId,
+                  encryptionJwk: encryptionPublicJwk,
+                  origin: options.origin,
+                  responseUri,
+                  mdocGeneratedNonce,
+                  verificationSessionId: result.verificationSession.id,
+                  presentation,
+                })
+              )
+            )
+            return [credentialId, verifiedPresentations] as const
           })
         )
 
-        const presentations = presentationVerificationResults.reduce(
-          (all, p) => {
-            if (p.verified) all[p.credentialId] = p.presentation
-            return all
-          },
-          {} as Record<string, VerifiablePresentation>
-        )
-        const presentationResult = dcql.assertValidDcqlPresentation(presentations, dcqlQuery)
-
         const errorMessages = presentationVerificationResults
-          .map((result, index) => (!result.verified ? `\t- [${index}]: ${result.reason}` : undefined))
+          .flatMap(([credentialId, presentations], index) =>
+            presentations.map((result) =>
+              !result.verified ? `\t- ${credentialId}[${index}]: ${result.reason}` : undefined
+            )
+          )
           .filter((i) => i !== undefined)
         if (errorMessages.length > 0) {
-          throw new CredoError(`One or more presentations failed verification. \n\t${errorMessages.join('\n')}`)
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidRequest,
+              error_description: 'One or more presentations failed verification.',
+            },
+            { internalMessage: errorMessages.join('\n') }
+          )
         }
 
-        dcqlResponse = {
-          presentations,
-          presentationResult,
-          query: dcqlQuery,
+        // We can be certain here that all presentations passed verification
+        const presentations = Object.fromEntries(
+          presentationVerificationResults.map(
+            ([credentialId, presentations]) =>
+              [
+                credentialId,
+                presentations
+                  .map((p) => (p.verified ? p.presentation : undefined))
+                  // NOTE: we add NonEmpty cast here since it's needed for DCQL, and because we
+                  // previously ensured all items are valid, we can be sure this arary is non empty
+                  // even after the filter.
+                  .filter((p) => p !== undefined) as NonEmptyArray<VerifiablePresentation>,
+              ] as const
+          )
+        )
+
+        try {
+          const presentationResult = await dcql.assertValidDcqlPresentation(agentContext, presentations, dcqlQuery)
+
+          dcqlResponse = {
+            presentations,
+            presentationResult,
+            query: dcqlQuery,
+          }
+        } catch (error) {
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidRequest,
+              error_description: 'Presentation submission does not satisfy presentation request.',
+            },
+            { cause: error }
+          )
         }
       }
 
@@ -505,14 +621,28 @@ export class OpenId4VpVerifierService {
         const definition = result.pex.presentationDefinition as unknown as DifPresentationExchangeDefinition
 
         pex.validatePresentationDefinition(definition)
-        pex.validatePresentationSubmission(submission)
+
+        try {
+          pex.validatePresentationSubmission(submission)
+        } catch (error) {
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidRequest,
+              error_description: 'Invalid presentation submission.',
+            },
+            { cause: error }
+          )
+        }
 
         const presentationsArray = Array.isArray(encodedPresentations) ? encodedPresentations : [encodedPresentations]
         const presentationVerificationResults = await Promise.all(
           presentationsArray.map((presentation) => {
             return this.verifyPresentation(agentContext, {
               nonce: authorizationRequest.nonce,
-              audience: clientId,
+              audience,
+              clientId,
+              version: openid4vpVersion,
+              encryptionJwk: encryptionPublicJwk,
               responseUri,
               mdocGeneratedNonce,
               verificationSessionId: result.verificationSession.id,
@@ -527,19 +657,35 @@ export class OpenId4VpVerifierService {
           .map((result, index) => (!result.verified ? `\t- [${index}]: ${result.reason}` : undefined))
           .filter((i) => i !== undefined)
         if (errorMessages.length > 0) {
-          throw new CredoError(`One or more presentations failed verification. \n\t${errorMessages.join('\n')}`)
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidRequest,
+              error_description: 'One or more presentations failed verification.',
+            },
+            { internalMessage: errorMessages.join('\n') }
+          )
         }
 
         const verifiablePresentations = presentationVerificationResults
           .map((p) => (p.verified ? p.presentation : undefined))
           .filter((p) => p !== undefined)
 
-        pex.validatePresentation(
-          definition,
-          // vp_token MUST not be an array if only one entry
-          verifiablePresentations.length === 1 ? verifiablePresentations[0] : verifiablePresentations,
-          submission
-        )
+        try {
+          pex.validatePresentation(
+            definition,
+            // vp_token MUST not be an array if only one entry
+            verifiablePresentations.length === 1 ? verifiablePresentations[0] : verifiablePresentations,
+            submission
+          )
+        } catch (error) {
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidRequest,
+              error_description: 'Presentation submission does not satisfy presentation request.',
+            },
+            { cause: error }
+          )
+        }
 
         const descriptors = extractPresentationsWithDescriptorsFromSubmission(
           // vp_token MUST not be an array if only one entry
@@ -584,10 +730,10 @@ export class OpenId4VpVerifierService {
    */
   private claimFormatFromEncodedPresentation(
     presentation: string | Record<string, unknown>
-  ): ClaimFormat.JwtVc | ClaimFormat.LdpVc | ClaimFormat.SdJwtVc | ClaimFormat.MsoMdoc {
-    if (typeof presentation === 'object') return ClaimFormat.LdpVc
-    if (presentation.includes('~')) return ClaimFormat.SdJwtVc
-    if (Jwt.format.test(presentation)) return ClaimFormat.JwtVc
+  ): ClaimFormat.JwtVp | ClaimFormat.LdpVp | ClaimFormat.SdJwtDc | ClaimFormat.MsoMdoc {
+    if (typeof presentation === 'object') return ClaimFormat.LdpVp
+    if (presentation.includes('~')) return ClaimFormat.SdJwtDc
+    if (Jwt.format.test(presentation)) return ClaimFormat.JwtVp
 
     // Fallback, we tried all other formats
     return ClaimFormat.MsoMdoc
@@ -612,10 +758,14 @@ export class OpenId4VpVerifierService {
       authorizationResponsePayload: openid4vpAuthorizationResponsePayload,
     })
 
-    let presentationExchange: OpenId4VpVerifiedAuthorizationResponsePresentationExchange | undefined = undefined
+    let presentationExchange: OpenId4VpVerifiedAuthorizationResponsePresentationExchange | undefined
     const dcql =
       result.type === 'dcql'
-        ? this.getDcqlVerifiedResponse(agentContext, authorizationRequestPayload.dcql_query, result.dcql.presentations)
+        ? await this.getDcqlVerifiedResponse(
+            agentContext,
+            authorizationRequestPayload.dcql_query,
+            result.dcql.presentations
+          )
         : undefined
 
     if (result.type === 'pex') {
@@ -688,14 +838,28 @@ export class OpenId4VpVerifierService {
     const idToCredential = dcql
       ? Object.entries(dcql.presentations)
       : (presentationExchange?.descriptors.map(
-          (descriptor) => [descriptor.descriptor.id, descriptor.presentation] as const
+          (descriptor) => [descriptor.descriptor.id, [descriptor.presentation]] as const
         ) ?? [])
 
-    for (const [credentialId, presentation] of idToCredential) {
+    for (const [credentialId, presentations] of idToCredential) {
       // Only SD-JWT VC supported for now
-      if (presentation.claimFormat === ClaimFormat.SdJwtVc) {
-        transactionDataHashesCredentials[credentialId] = getSdJwtVcTransactionDataHashes(presentation)
+      const transactionDataHashes = presentations.map((presentation) =>
+        presentation.claimFormat === ClaimFormat.SdJwtDc ? getSdJwtVcTransactionDataHashes(presentation) : undefined
+      )
+
+      const firstHasHash = transactionDataHashes[0] !== undefined
+      if (!transactionDataHashes.every((hash) => (firstHasHash ? hash !== undefined : hash === undefined))) {
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidTransactionData,
+          error_description: `Multipe presentations were submitted for credential query ${credentialId} but not all presentations includes a transaction data hash. Either all or none of the presentations for a credential query id should include a transaction data hash.`,
+        })
       }
+
+      if (!firstHasHash) continue
+
+      transactionDataHashesCredentials[credentialId] = transactionDataHashes as [
+        Exclude<(typeof transactionDataHashes)[number], undefined>,
+      ]
     }
 
     // Verify the transaction data
@@ -704,15 +868,17 @@ export class OpenId4VpVerifierService {
       transactionData: authorizationRequest.transaction_data,
     })
 
-    return transactionData.map(({ hash, hashAlg, credentialHashIndex, credentialId, transactionDataEntry }) => ({
-      credentialHashIndex,
+    return transactionData.map(({ credentialId, transactionDataEntry, presentations }) => ({
       credentialId,
       encoded: transactionDataEntry.encoded,
       decoded: transactionDataEntry.transactionData,
       transactionDataIndex: transactionDataEntry.transactionDataIndex,
-      hash,
-      // We only support the values supported by Credo hasher, so it can't be any other value than those.
-      hashAlg: hashAlg as HashName,
+      presentations: presentations.map((presentation) => ({
+        presentationHashIndex: presentation.credentialHashIndex,
+        hash: presentation.hash,
+        // We only support the values supported by Credo hasher, so it can't be any other value than those.
+        hashAlg: presentation.hashAlg as HashName,
+      })) as OpenId4VpVerifiedAuthorizationResponseTransactionData['presentations'],
     }))
   }
 
@@ -757,71 +923,155 @@ export class OpenId4VpVerifierService {
       responseMode: ResponseMode
       verifier: OpenId4VcVerifierRecord
       authorizationResponseUrl: string
+      dcqlQuery?: DcqlQuery
       version: NonNullable<OpenId4VpCreateAuthorizationRequestOptions['version']>
     }
-  ) {
+  ): Promise<ClientMetadata> {
     const { responseMode, verifier } = options
 
     const signatureSuiteRegistry = agentContext.resolve(SignatureSuiteRegistry)
     const kms = agentContext.resolve(Kms.KeyManagementApi)
-    const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext)
-    const supportedMdocAlgs = supportedAlgs.filter(isMdocSupportedSignatureAlgorithm)
+    const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext) as [
+      Kms.KnownJwaSignatureAlgorithm,
+      ...Kms.KnownJwaSignatureAlgorithm[],
+    ]
+    const supportedMdocAlgs = supportedAlgs.filter(isMdocSupportedSignatureAlgorithm) as [
+      MdocSupportedSignatureAlgorithm,
+      ...MdocSupportedSignatureAlgorithm[],
+    ]
     const supportedProofTypes = signatureSuiteRegistry.supportedProofTypes
 
-    type JarmEncryptionJwk = Kms.Jwk & { kid: string; use: 'enc' }
+    type JarmEncryptionJwk = Kms.Jwk & { kid: string; use: 'enc'; alg: 'ECDH-ES' }
     let jarmEncryptionJwk: JarmEncryptionJwk | undefined
 
     if (isJarmResponseMode(responseMode)) {
       const key = await kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })
-      jarmEncryptionJwk = { ...key.publicJwk, use: 'enc' }
+      jarmEncryptionJwk = { ...key.publicJwk, use: 'enc', alg: 'ECDH-ES' }
     }
 
-    const jarmClientMetadata: (JarmClientMetadata & Pick<ClientMetadata, 'jwks'>) | undefined = jarmEncryptionJwk
+    const jarmClientMetadata:
+      | Pick<
+          ClientMetadata,
+          | 'jwks'
+          | 'encrypted_response_enc_values_supported'
+          | 'authorization_encrypted_response_alg'
+          | 'authorization_encrypted_response_enc'
+        >
+      | undefined = jarmEncryptionJwk
       ? {
-          jwks: { keys: [jarmEncryptionJwk as Jwk] },
-          authorization_encrypted_response_alg: 'ECDH-ES',
-          // FIXME: we need to support dynamically setting this by letting the wallet post their supported values
-          // by posting to `request_uri`
-          // For ISO 18013-7 compliance we use A128GCM. But otherwise we use the value described in HAIP.
-          authorization_encrypted_response_enc: options.version === 'v1.draft24' ? 'A128GCM' : 'A256GCM',
+          jwks: { keys: [jarmEncryptionJwk] },
+
+          ...(options.version === 'v1'
+            ? {
+                encrypted_response_enc_values_supported: ['A128GCM', 'A256GCM', 'A128CBC-HS256'],
+              }
+            : {
+                authorization_encrypted_response_alg: 'ECDH-ES',
+
+                // NOTE: pre draft 24 we could only include one version. To maximize compatibility we use
+                // - A128GCM for draft 24 (HAIP)
+                // - A256GCM for draft 21 (18013-7)
+                authorization_encrypted_response_enc: options.version === 'v1.draft24' ? 'A128GCM' : 'A256GCM',
+              }),
         }
       : undefined
+
+    const dcqlQueryFormats = new Set(options.dcqlQuery?.credentials.map((c) => c.format))
 
     return {
       ...jarmClientMetadata,
       ...verifier.clientMetadata,
       response_types_supported: ['vp_token'],
-      vp_formats: {
-        mso_mdoc: {
-          alg: supportedMdocAlgs,
-        },
-        jwt_vc: {
-          alg: supportedAlgs,
-        },
-        jwt_vc_json: {
-          alg: supportedAlgs,
-        },
-        jwt_vp_json: {
-          alg: supportedAlgs,
-        },
-        jwt_vp: {
-          alg: supportedAlgs,
-        },
-        ldp_vc: {
-          proof_type: supportedProofTypes,
-        },
-        ldp_vp: {
-          proof_type: supportedProofTypes,
-        },
-        'vc+sd-jwt': {
-          'kb-jwt_alg_values': supportedAlgs,
-          'sd-jwt_alg_values': supportedAlgs,
-        },
-        'dc+sd-jwt': {
-          'kb-jwt_alg_values': supportedAlgs,
-          'sd-jwt_alg_values': supportedAlgs,
-        },
-      },
+
+      // for v1 version we only include the vp_formats_supported for formats we're requesting.
+      // TODO: should allow dynamically setting the supported algs
+      ...(options.version === 'v1'
+        ? {
+            vp_formats_supported: {
+              ...(dcqlQueryFormats.has('dc+sd-jwt')
+                ? {
+                    'dc+sd-jwt': {
+                      'kb-jwt_alg_values': supportedAlgs,
+                      'sd-jwt_alg_values': supportedAlgs,
+                    },
+                  }
+                : {}),
+
+              ...(dcqlQueryFormats.has('vc+sd-jwt')
+                ? {
+                    'vc+sd-jwt': {
+                      alg_values: supportedAlgs,
+                    },
+                  }
+                : {}),
+
+              ...(dcqlQueryFormats.has('mso_mdoc')
+                ? {
+                    mso_mdoc: {
+                      deviceauth_alg_values: [
+                        Kms.KnownCoseSignatureAlgorithms.ESP256,
+                        Kms.KnownCoseSignatureAlgorithms.ESP384,
+                        Kms.KnownCoseSignatureAlgorithms.Ed25519,
+                      ],
+                      issuerauth_alg_values: [
+                        Kms.KnownCoseSignatureAlgorithms.ESP256,
+                        Kms.KnownCoseSignatureAlgorithms.ESP384,
+                        Kms.KnownCoseSignatureAlgorithms.Ed25519,
+                      ],
+                    },
+                  }
+                : {}),
+
+              ...(dcqlQueryFormats.has('jwt_vc_json')
+                ? {
+                    jwt_vc_json: {
+                      alg_values: supportedAlgs,
+                    },
+                  }
+                : {}),
+
+              ...(dcqlQueryFormats.has('ldp_vc')
+                ? {
+                    ldp_vc: {
+                      proof_type_values: supportedProofTypes as [string, ...string[]],
+                    },
+                  }
+                : {}),
+            },
+          }
+        : {
+            vp_formats: {
+              mso_mdoc: {
+                alg: supportedMdocAlgs,
+              },
+              jwt_vc: {
+                alg: supportedAlgs,
+              },
+              jwt_vc_json: {
+                alg: supportedAlgs,
+              },
+              jwt_vp_json: {
+                alg: supportedAlgs,
+              },
+              jwt_vp: {
+                alg: supportedAlgs,
+              },
+              ldp_vc: {
+                proof_type: supportedProofTypes,
+              },
+              ldp_vp: {
+                proof_type: supportedProofTypes,
+              },
+              'vc+sd-jwt': {
+                'kb-jwt_alg_values': supportedAlgs,
+                'sd-jwt_alg_values': supportedAlgs,
+              },
+              'dc+sd-jwt': {
+                'kb-jwt_alg_values': supportedAlgs,
+                'sd-jwt_alg_values': supportedAlgs,
+              },
+            },
+          }),
     }
   }
 
@@ -829,12 +1079,12 @@ export class OpenId4VpVerifierService {
     agentContext: AgentContext,
     options: {
       presentation: string | Record<string, unknown>
-      format: ClaimFormat.JwtVc | ClaimFormat.LdpVc | ClaimFormat.SdJwtVc | ClaimFormat.MsoMdoc
+      format: ClaimFormat.JwtVp | ClaimFormat.LdpVp | ClaimFormat.SdJwtDc | ClaimFormat.MsoMdoc | ClaimFormat.SdJwtW3cVp
     }
   ): VerifiablePresentation {
     const { presentation, format } = options
 
-    if (format === ClaimFormat.SdJwtVc) {
+    if (format === ClaimFormat.SdJwtDc) {
       if (typeof presentation !== 'string') {
         throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
       }
@@ -850,11 +1100,17 @@ export class OpenId4VpVerifierService {
       const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(presentation)
       return mdocDeviceResponse
     }
-    if (ClaimFormat.JwtVc) {
+    if (format === ClaimFormat.JwtVp) {
       if (typeof presentation !== 'string') {
         throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
       }
       return W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
+    }
+    if (format === ClaimFormat.SdJwtW3cVp) {
+      if (typeof presentation !== 'string') {
+        throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
+      }
+      return W3cV2SdJwtVerifiablePresentation.fromCompact(presentation)
     }
 
     return JsonTransformer.fromJSON(presentation, W3cJsonLdVerifiablePresentation)
@@ -865,12 +1121,15 @@ export class OpenId4VpVerifierService {
     options: {
       nonce: string
       audience: string
+      clientId: string
       responseUri?: string
       mdocGeneratedNonce?: string
       origin?: string
       verificationSessionId: string
       presentation: string | Record<string, unknown>
-      format: ClaimFormat.LdpVc | ClaimFormat.JwtVc | ClaimFormat.SdJwtVc | ClaimFormat.MsoMdoc
+      format: ClaimFormat.LdpVp | ClaimFormat.JwtVp | ClaimFormat.SdJwtW3cVp | ClaimFormat.SdJwtDc | ClaimFormat.MsoMdoc
+      version: OpenId4VpVersion
+      encryptionJwk?: Kms.PublicJwk
     }
   ): Promise<
     | {
@@ -889,10 +1148,10 @@ export class OpenId4VpVerifierService {
       this.logger.trace('Presentation response', JsonTransformer.toJSON(presentation))
 
       let isValid: boolean
-      let cause: Error | undefined = undefined
+      let cause: Error | undefined
       let verifiablePresentation: VerifiablePresentation
 
-      if (format === ClaimFormat.SdJwtVc) {
+      if (format === ClaimFormat.SdJwtDc) {
         if (typeof presentation !== 'string') {
           throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
         }
@@ -901,7 +1160,7 @@ export class OpenId4VpVerifierService {
         const jwt = Jwt.fromSerializedJwt(presentation.split('~')[0])
         const certificateChain = extractX509CertificatesFromJwt(jwt)
 
-        let trustedCertificates: string[] | undefined = undefined
+        let trustedCertificates: string[] | undefined
         if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
           trustedCertificates = await x509Config.getTrustedCertificatesForVerification(agentContext, {
             certificateChain,
@@ -927,7 +1186,7 @@ export class OpenId4VpVerifierService {
           trustedCertificates,
         })
 
-        isValid = verificationResult.verification.isValid
+        isValid = verificationResult.isValid
         cause = verificationResult.isValid ? undefined : verificationResult.error
         verifiablePresentation = sdJwtVc
       } else if (format === ClaimFormat.MsoMdoc) {
@@ -941,7 +1200,7 @@ export class OpenId4VpVerifierService {
 
         const deviceResponses = mdocDeviceResponse.splitIntoSingleDocumentResponses()
 
-        for (const deviceResponseIndex in deviceResponses) {
+        for (const deviceResponseIndex of deviceResponses.keys()) {
           const mdocDeviceResponse = deviceResponses[deviceResponseIndex]
 
           const document = mdocDeviceResponse.documents[0]
@@ -959,12 +1218,31 @@ export class OpenId4VpVerifierService {
           })
 
           let sessionTranscriptOptions: MdocSessionTranscriptOptions
-          if (options.origin) {
+          if (options.origin && options.version === 'v1') {
             sessionTranscriptOptions = {
               type: 'openId4VpDcApi',
-              clientId: options.audience,
               verifierGeneratedNonce: options.nonce,
               origin: options.origin,
+              encryptionJwk: options.encryptionJwk,
+            }
+          } else if (options.origin) {
+            sessionTranscriptOptions = {
+              type: 'openId4VpDcApiDraft24',
+              clientId: options.clientId,
+              verifierGeneratedNonce: options.nonce,
+              origin: options.origin,
+            }
+          } else if (options.version === 'v1') {
+            if (!options.responseUri) {
+              throw new CredoError('responseUri is required for mdoc openid4vp session transcript calculation')
+            }
+
+            sessionTranscriptOptions = {
+              type: 'openId4Vp',
+              clientId: options.clientId,
+              responseUri: options.responseUri,
+              verifierGeneratedNonce: options.nonce,
+              encryptionJwk: options.encryptionJwk,
             }
           } else {
             if (!options.mdocGeneratedNonce || !options.responseUri) {
@@ -972,9 +1250,10 @@ export class OpenId4VpVerifierService {
                 'mdocGeneratedNonce and responseUri are required for mdoc openid4vp session transcript calculation'
               )
             }
+
             sessionTranscriptOptions = {
-              type: 'openId4Vp',
-              clientId: options.audience,
+              type: 'openId4VpDraft18',
+              clientId: options.clientId,
               mdocGeneratedNonce: options.mdocGeneratedNonce,
               responseUri: options.responseUri,
               verifierGeneratedNonce: options.nonce,
@@ -990,7 +1269,7 @@ export class OpenId4VpVerifierService {
 
         isValid = true
         verifiablePresentation = mdocDeviceResponse
-      } else if (format === ClaimFormat.JwtVc) {
+      } else if (format === ClaimFormat.JwtVp) {
         if (typeof presentation !== 'string') {
           throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
         }
@@ -998,6 +1277,20 @@ export class OpenId4VpVerifierService {
         verifiablePresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
           presentation,
+          challenge: options.nonce,
+          domain: options.audience,
+        })
+
+        isValid = verificationResult.isValid
+        cause = verificationResult.error
+      } else if (format === ClaimFormat.SdJwtW3cVp) {
+        if (typeof presentation !== 'string') {
+          throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
+        }
+
+        verifiablePresentation = W3cV2SdJwtVerifiablePresentation.fromCompact(presentation)
+        const verificationResult = await this.w3cV2CredentialService.verifyPresentation(agentContext, {
+          presentation: verifiablePresentation,
           challenge: options.nonce,
           domain: options.audience,
         })

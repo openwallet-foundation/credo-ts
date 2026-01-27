@@ -1,0 +1,168 @@
+CREATE TABLE `DidcommBasicMessage` (
+	`context_correlation_id` text NOT NULL,
+	`id` text NOT NULL,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`metadata` text,
+	`custom_tags` text,
+	`content` text NOT NULL,
+	`sent_time` text NOT NULL,
+	`connection_id` text,
+	`role` text NOT NULL,
+	`thread_id` text,
+	`parent_thread_id` text,
+	PRIMARY KEY(`context_correlation_id`, `id`),
+	FOREIGN KEY (`context_correlation_id`) REFERENCES `Context`(`context_correlation_id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`connection_id`,`context_correlation_id`) REFERENCES `DidcommConnection`(`id`,`context_correlation_id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `DidcommConnection` (
+	`context_correlation_id` text NOT NULL,
+	`id` text NOT NULL,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`metadata` text,
+	`custom_tags` text,
+	`state` text NOT NULL,
+	`role` text NOT NULL,
+	`did` text,
+	`their_did` text,
+	`their_label` text,
+	`alias` text,
+	`auto_accept_connection` integer,
+	`image_url` text,
+	`thread_id` text,
+	`invitation_did` text,
+	`mediator_id` text,
+	`out_of_band_id` text,
+	`error_message` text,
+	`protocol` text,
+	`connection_types` text,
+	`previous_dids` text,
+	`previous_their_dids` text,
+	PRIMARY KEY(`context_correlation_id`, `id`),
+	FOREIGN KEY (`context_correlation_id`) REFERENCES `Context`(`context_correlation_id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `DidcommConnection_context_correlation_id_thread_id_unique` ON `DidcommConnection` (`context_correlation_id`,`thread_id`);--> statement-breakpoint
+CREATE TABLE `DidcommCredentialExchange` (
+	`context_correlation_id` text NOT NULL,
+	`id` text NOT NULL,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`metadata` text,
+	`custom_tags` text,
+	`connection_id` text,
+	`thread_id` text NOT NULL,
+	`parent_thread_id` text,
+	`state` text NOT NULL,
+	`role` text NOT NULL,
+	`auto_accept_credential` text,
+	`revocation_notification` text,
+	`error_message` text,
+	`protocol_version` text,
+	`credentials` text,
+	`credential_ids` text,
+	`credential_attributes` text,
+	`linked_attachments` text,
+	PRIMARY KEY(`context_correlation_id`, `id`),
+	FOREIGN KEY (`context_correlation_id`) REFERENCES `Context`(`context_correlation_id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `DidcommMessage` (
+	`context_correlation_id` text NOT NULL,
+	`id` text NOT NULL,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`metadata` text,
+	`custom_tags` text,
+	`message` text NOT NULL,
+	`role` text NOT NULL,
+	`associated_record_id` text,
+	`thread_id` text NOT NULL,
+	`protocol_name` text NOT NULL,
+	`message_name` text NOT NULL,
+	`protocol_major_version` text NOT NULL,
+	`protocol_minor_version` text NOT NULL,
+	PRIMARY KEY(`context_correlation_id`, `id`),
+	FOREIGN KEY (`context_correlation_id`) REFERENCES `Context`(`context_correlation_id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `DidcommMediation` (
+	`context_correlation_id` text NOT NULL,
+	`id` text NOT NULL,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`metadata` text,
+	`custom_tags` text,
+	`state` text NOT NULL,
+	`role` text NOT NULL,
+	`connection_id` text NOT NULL,
+	`thread_id` text NOT NULL,
+	`endpoint` text,
+	`recipient_keys` text NOT NULL,
+	`routing_keys` text NOT NULL,
+	`pickup_strategy` text,
+	`default` integer,
+	PRIMARY KEY(`context_correlation_id`, `id`),
+	FOREIGN KEY (`context_correlation_id`) REFERENCES `Context`(`context_correlation_id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`connection_id`,`context_correlation_id`) REFERENCES `DidcommConnection`(`id`,`context_correlation_id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `DidcommMediatorRouting` (
+	`context_correlation_id` text NOT NULL,
+	`id` text NOT NULL,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`metadata` text,
+	`custom_tags` text,
+	`routing_keys` text NOT NULL,
+	`routing_key_fingerprints` text NOT NULL,
+	PRIMARY KEY(`context_correlation_id`, `id`),
+	FOREIGN KEY (`context_correlation_id`) REFERENCES `Context`(`context_correlation_id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `DidcommOutOfBand` (
+	`context_correlation_id` text NOT NULL,
+	`id` text NOT NULL,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`metadata` text,
+	`custom_tags` text,
+	`out_of_band_invitation` text NOT NULL,
+	`role` text NOT NULL,
+	`state` text NOT NULL,
+	`alias` text,
+	`reusable` integer NOT NULL,
+	`auto_accept_connection` integer,
+	`mediator_id` text,
+	`reuse_connection_id` text,
+	`invitation_inline_service_keys` text,
+	`thread_id` text NOT NULL,
+	`invitation_requests_thread_ids` text,
+	`recipient_key_fingerprints` text,
+	`recipient_routing_key_fingerprint` text,
+	PRIMARY KEY(`context_correlation_id`, `id`),
+	FOREIGN KEY (`context_correlation_id`) REFERENCES `Context`(`context_correlation_id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `DidcommProofExchange` (
+	`context_correlation_id` text NOT NULL,
+	`id` text NOT NULL,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`metadata` text,
+	`custom_tags` text,
+	`connection_id` text,
+	`thread_id` text NOT NULL,
+	`protocol_version` text NOT NULL,
+	`parent_thread_id` text,
+	`is_verified` integer,
+	`state` text NOT NULL,
+	`role` text NOT NULL,
+	`auto_accept_proof` text,
+	`error_message` text,
+	PRIMARY KEY(`context_correlation_id`, `id`),
+	FOREIGN KEY (`context_correlation_id`) REFERENCES `Context`(`context_correlation_id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`connection_id`,`context_correlation_id`) REFERENCES `DidcommConnection`(`id`,`context_correlation_id`) ON UPDATE no action ON DELETE cascade
+);

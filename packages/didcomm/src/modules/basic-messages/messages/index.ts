@@ -1,1 +1,1 @@
-export * from './BasicMessage'
+export * from './DidCommBasicMessage'

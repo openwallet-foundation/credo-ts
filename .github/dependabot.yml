@@ -1,39 +1,115 @@
-########################################################################################################################################
-# GitHub Dependabot Config info                                                                                                        #
-# For details on how this file works refer to:                                                                                         #
-#   - https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file #
-########################################################################################################################################
-
 version: 2
 updates:
-  # Maintain dependencies for NPM
-  - package-ecosystem: 'npm'
-    directory: '/'
+    # NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
-      interval: 'monthly'
-    allow:
-      # Focus on main dependencies, not devDependencies
-      - dependency-type: 'production'
-
-  # Maintain dependencies for GitHub Actions
-  #  - Check for updates once a month
-  #  - Group all updates into a single PR
-  - package-ecosystem: 'github-actions'
-    directory: '/'
-    schedule:
-      interval: 'monthly'
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 10
+    # Group updates
     groups:
-      all-actions:
-        patterns: ['*']
+      # Group patch updates together
+      patch-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+      # Group minor updates together
+      minor-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+      # Major updates will be created individually by default
 
-  # Maintain dependencies for Docker
-  - package-ecosystem: 'docker'
-    directory: '/'
-    schedule:
-      interval: 'monthly'
+    # Enable version updates for all severity levels
+    allow:
+      - dependency-type: "all"
+    # Labels for PRs
+    labels:
+      - "dependencies"
+      - "npm"
 
-  # Maintain dependencies for Cargo
-  - package-ecosystem: 'cargo'
-    directory: '/'
+    # Commit message configuration
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    ignore:
+      # See pnpm-workspace.yml
+      - dependency-name: class-validator
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: 'monthly'
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+    groups:
+      all-updates:
+        patterns:
+          - "*"
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directories:
+      - /**/*
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "build"
+    groups:
+      major-updates:
+        patterns:
+          - "*"
+        update-types:
+          - major
+      non-breaking-updates:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  # Docker dependencies
+  - package-ecosystem: "docker-compose"
+    directories:
+      - /**/*
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "build"
+    groups:
+      major-updates:
+        patterns:
+          - "*"
+        update-types:
+          - major
+      non-breaking-updates:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch

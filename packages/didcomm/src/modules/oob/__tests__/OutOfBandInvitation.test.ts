@@ -3,10 +3,10 @@ import type { ClassValidationError } from '../../../../../core/src/error/ClassVa
 import { MessageValidator } from '../../../../../core/src/utils'
 import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
 import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
-import { Attachment } from '../../../decorators/attachment/Attachment'
-import { HandshakeProtocol } from '../../connections'
+import { DidCommAttachment } from '../../../decorators/attachment/DidCommAttachment'
+import { DidCommHandshakeProtocol } from '../../connections'
 import { OutOfBandDidCommService } from '../domain'
-import { OutOfBandInvitation } from '../messages/OutOfBandInvitation'
+import { DidCommOutOfBandInvitation } from '../messages/DidCommOutOfBandInvitation'
 
 describe('toUrl', () => {
   test('encode the message into the URL containing the base64 encoded invitation as the oob query parameter', async () => {
@@ -20,7 +20,7 @@ describe('toUrl', () => {
       goal: 'To issue a Faber College Graduate credential',
       handshake_protocols: ['https://didcomm.org/didexchange/1.0', 'https://didcomm.org/connections/1.0'],
     }
-    const invitation = JsonTransformer.fromJSON(json, OutOfBandInvitation)
+    const invitation = JsonTransformer.fromJSON(json, DidCommOutOfBandInvitation)
     const invitationUrl = invitation.toUrl({
       domain,
     })
@@ -31,18 +31,18 @@ describe('toUrl', () => {
 
 describe('validation', () => {
   test('Out-of-Band Invitation instance with did as service', async () => {
-    const invitation = new OutOfBandInvitation({
+    const invitation = new DidCommOutOfBandInvitation({
       id: '69212a3a-d068-4f9d-a2dd-4741bca89af3',
       label: 'Faber College',
       services: ['did:sov:LjgpST2rjsoxYegQDRm7EL'],
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     expect(() => MessageValidator.validateSync(invitation)).not.toThrow()
   })
 
   test('Out-of-Band Invitation instance with object as service', async () => {
-    const invitation = new OutOfBandInvitation({
+    const invitation = new DidCommOutOfBandInvitation({
       id: '69212a3a-d068-4f9d-a2dd-4741bca89af3',
       label: 'Faber College',
       services: [
@@ -52,14 +52,14 @@ describe('validation', () => {
           recipientKeys: ['did:key:z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv'],
         }),
       ],
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     expect(() => MessageValidator.validateSync(invitation)).not.toThrow()
   })
 
   test('Out-of-Band Invitation instance with string and object as services', async () => {
-    const invitation = new OutOfBandInvitation({
+    const invitation = new DidCommOutOfBandInvitation({
       id: '69212a3a-d068-4f9d-a2dd-4741bca89af3',
       label: 'Faber College',
       services: [
@@ -70,7 +70,7 @@ describe('validation', () => {
           recipientKeys: ['did:key:z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv'],
         }),
       ],
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     expect(() => MessageValidator.validateSync(invitation)).not.toThrow()
@@ -78,11 +78,11 @@ describe('validation', () => {
 })
 
 describe('fromUrl', () => {
-  test('decode the URL containing the base64 encoded invitation as the oob parameter into an `OutOfBandInvitation`', () => {
+  test('decode the URL containing the base64 encoded invitation as the oob parameter into an `DidCommOutOfBandInvitation`', () => {
     const invitationUrl =
       'http://example.com/ssi?oob=eyJAdHlwZSI6Imh0dHBzOi8vZGlkY29tbS5vcmcvb3V0LW9mLWJhbmQvMS4xL2ludml0YXRpb24iLCJAaWQiOiI2OTIxMmEzYS1kMDY4LTRmOWQtYTJkZC00NzQxYmNhODlhZjMiLCJsYWJlbCI6IkZhYmVyIENvbGxlZ2UiLCJnb2FsX2NvZGUiOiJpc3N1ZS12YyIsImdvYWwiOiJUbyBpc3N1ZSBhIEZhYmVyIENvbGxlZ2UgR3JhZHVhdGUgY3JlZGVudGlhbCIsImhhbmRzaGFrZV9wcm90b2NvbHMiOlsiaHR0cHM6Ly9kaWRjb21tLm9yZy9kaWRleGNoYW5nZS8xLjAiLCJodHRwczovL2RpZGNvbW0ub3JnL2Nvbm5lY3Rpb25zLzEuMCJdLCJzZXJ2aWNlcyI6WyJkaWQ6c292OkxqZ3BTVDJyanNveFllZ1FEUm03RUwiXX0K'
 
-    const invitation = OutOfBandInvitation.fromUrl(invitationUrl)
+    const invitation = DidCommOutOfBandInvitation.fromUrl(invitationUrl)
     const json = JsonTransformer.toJSON(invitation)
     expect(json).toEqual({
       '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
@@ -97,7 +97,7 @@ describe('fromUrl', () => {
 })
 
 describe('fromJson', () => {
-  test('create an instance of `OutOfBandInvitation` from JSON object', () => {
+  test('create an instance of `DidCommOutOfBandInvitation` from JSON object', () => {
     const json = {
       '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
       '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
@@ -108,13 +108,13 @@ describe('fromJson', () => {
       services: ['did:sov:LjgpST2rjsoxYegQDRm7EL'],
     }
 
-    const invitation = OutOfBandInvitation.fromJson(json)
+    const invitation = DidCommOutOfBandInvitation.fromJson(json)
 
     expect(invitation).toBeDefined()
-    expect(invitation).toBeInstanceOf(OutOfBandInvitation)
+    expect(invitation).toBeInstanceOf(DidCommOutOfBandInvitation)
   })
 
-  test('create an instance of `OutOfBandInvitation` from JSON object with inline service', () => {
+  test('create an instance of `DidCommOutOfBandInvitation` from JSON object with inline service', () => {
     const json = {
       '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
       '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
@@ -132,12 +132,12 @@ describe('fromJson', () => {
       ],
     }
 
-    const invitation = OutOfBandInvitation.fromJson(json)
+    const invitation = DidCommOutOfBandInvitation.fromJson(json)
     expect(invitation).toBeDefined()
-    expect(invitation).toBeInstanceOf(OutOfBandInvitation)
+    expect(invitation).toBeInstanceOf(DidCommOutOfBandInvitation)
   })
 
-  test('create an instance of `OutOfBandInvitation` from JSON object with appended attachments', () => {
+  test('create an instance of `DidCommOutOfBandInvitation` from JSON object with appended attachments', () => {
     const json = {
       '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
       '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
@@ -170,13 +170,13 @@ describe('fromJson', () => {
       ],
     }
 
-    const invitation = OutOfBandInvitation.fromJson(json)
+    const invitation = DidCommOutOfBandInvitation.fromJson(json)
     expect(invitation).toBeDefined()
-    expect(invitation).toBeInstanceOf(OutOfBandInvitation)
+    expect(invitation).toBeInstanceOf(DidCommOutOfBandInvitation)
     expect(invitation.appendedAttachments).toBeDefined()
     expect(invitation.appendedAttachments?.length).toEqual(2)
     expect(invitation.getAppendedAttachmentById('view-1')).toEqual(
-      new Attachment({
+      new DidCommAttachment({
         id: 'view-1',
         mimeType: 'image/png',
         filename: 'IMG1092348.png',
@@ -188,7 +188,7 @@ describe('fromJson', () => {
       })
     )
     expect(invitation.getAppendedAttachmentById('view-2')).toEqual(
-      new Attachment({
+      new DidCommAttachment({
         id: 'view-2',
         mimeType: 'image/png',
         filename: 'IMG1092349.png',
@@ -214,7 +214,7 @@ describe('fromJson', () => {
 
     expect.assertions(1)
     try {
-      OutOfBandInvitation.fromJson(json)
+      DidCommOutOfBandInvitation.fromJson(json)
     } catch (error) {
       const firstError = error as ClassValidationError
       expect(firstError.validationErrors[0]).toMatchObject({
@@ -245,7 +245,7 @@ describe('fromJson', () => {
       services: ['did:sov:123'],
     }
 
-    const invitation = OutOfBandInvitation.fromJson(json)
+    const invitation = DidCommOutOfBandInvitation.fromJson(json)
 
     expect(invitation.type).toBe('https://didcomm.org/out-of-band/1.1/invitation')
     expect(invitation.handshakeProtocols).toEqual([
@@ -265,7 +265,7 @@ describe('fromJson', () => {
       services: ['did:sov:123'],
     }
 
-    const invitation = OutOfBandInvitation.fromJson(json)
+    const invitation = DidCommOutOfBandInvitation.fromJson(json)
 
     expect(invitation.type).toBe('https://didcomm.org/out-of-band/1.1/invitation')
     expect(invitation.handshakeProtocols).toBeUndefined()
@@ -290,7 +290,7 @@ describe('fromJson', () => {
 
     expect.assertions(1)
     try {
-      OutOfBandInvitation.fromJson(json)
+      DidCommOutOfBandInvitation.fromJson(json)
     } catch (error) {
       const firstError = error as ClassValidationError
       expect(firstError.validationErrors[0]).toMatchObject({

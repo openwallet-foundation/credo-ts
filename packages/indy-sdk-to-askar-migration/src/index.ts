@@ -1,1 +1,0 @@
-export { IndySdkToAskarMigrationUpdater } from './IndySdkToAskarMigrationUpdater'

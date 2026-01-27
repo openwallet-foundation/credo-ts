@@ -1,6 +1,5 @@
-import type { DidRegistrar, DidResolver } from '../domain'
-
 import { DidsModuleConfig } from '../DidsModuleConfig'
+import type { DidRegistrar, DidResolver } from '../domain'
 import {
   JwkDidRegistrar,
   JwkDidResolver,
