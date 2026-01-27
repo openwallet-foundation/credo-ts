@@ -1,4 +1,4 @@
-import { TokenStatusListRegistry } from './credential-status'
+import type { TokenStatusListRegistry } from './credential-status'
 import { HttpTokenStatusListRegistry } from './credential-status/token-status-list/http/HttpTokenStatusListRegistry'
 
 /**

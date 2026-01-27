@@ -1,4 +1,4 @@
-import { Agent, SdJwtVcIssuer, TokenStatusListService } from '@credo-ts/core'
+import { Agent, type SdJwtVcIssuer, TokenStatusListService } from '@credo-ts/core'
 import { getAgentOptions } from '../../core/tests/helpers'
 import type { CheqdDidCreateOptions } from '../src'
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'

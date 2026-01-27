@@ -1,6 +1,6 @@
-import { BitsPerStatus } from '@sd-jwt/jwt-status-list'
+import type { BitsPerStatus } from '@sd-jwt/jwt-status-list'
 import type { AgentContext } from '../../../../agent'
-import { SdJwtVcIssuer } from '../../SdJwtVcOptions'
+import type { SdJwtVcIssuer } from '../../SdJwtVcOptions'
 
 export interface PublishTokenStatusListOptions {
   uri?: string

@@ -6,10 +6,10 @@ import { CredoError } from '../../../../error'
 import { dateToSeconds } from '../../../../utils'
 import { DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../../../dids'
 import { SdJwtVcModuleConfig } from '../../SdJwtVcModuleConfig'
-import { SdJwtVcIssuer } from '../../SdJwtVcOptions'
+import type { SdJwtVcIssuer } from '../../SdJwtVcOptions'
 import { extractKeyFromIssuer } from '../../utils'
 import { TokenStatusListError } from './TokenStatusListError'
-import {
+import type {
   PublishTokenStatusListOptions,
   TokenStatusListJwtPayload,
   TokenStatusListRegistry,

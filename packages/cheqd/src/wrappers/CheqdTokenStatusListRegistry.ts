@@ -2,15 +2,15 @@ import {
   type AgentContext,
   CredoError,
   Jwt,
-  PublishTokenStatusListOptions,
+  type PublishTokenStatusListOptions,
   parseDid,
-  SdJwtVcIssuerDid,
-  TokenStatusListRegistry,
+  type SdJwtVcIssuerDid,
+  type TokenStatusListRegistry,
   TypedArrayEncoder,
   utils,
 } from '@credo-ts/core'
 import { cheqdSdkAnonCredsRegistryIdentifierRegex, parseCheqdDid } from '../anoncreds/utils/identifiers'
-import { CheqdCreateResourceOptions, CheqdDidRegistrar, CheqdDidResolver } from '../dids'
+import { type CheqdCreateResourceOptions, CheqdDidRegistrar, CheqdDidResolver } from '../dids'
 
 export class CheqdTokenStatusListRegistry implements TokenStatusListRegistry {
   methodName = 'cheqd'

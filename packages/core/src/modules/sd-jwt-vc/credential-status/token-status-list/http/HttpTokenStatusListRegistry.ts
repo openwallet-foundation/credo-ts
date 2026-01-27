@@ -1,8 +1,8 @@
 import { AgentContext } from '../../../../../agent'
 import { CredoError } from '../../../../../error'
 import { fetchWithTimeout } from '../../../../../utils/fetch'
-import { SdJwtVcIssuerX5c } from '../../../SdJwtVcOptions'
-import { PublishTokenStatusListOptions, TokenStatusListRegistry } from '../TokenStatusListRegistry'
+import type { SdJwtVcIssuerX5c } from '../../../SdJwtVcOptions'
+import type { PublishTokenStatusListOptions, TokenStatusListRegistry } from '../TokenStatusListRegistry'
 
 export class HttpTokenStatusListRegistry implements TokenStatusListRegistry {
   public readonly methodName = 'http'
