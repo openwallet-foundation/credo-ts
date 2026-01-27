@@ -11,12 +11,11 @@ import { X509Service } from '../../modules/x509/X509Service'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
 import { dateToSeconds, IntegrityVerifier, nowInSeconds, TypedArrayEncoder } from '../../utils'
-import { getDomainFromUrl } from '../../utils/domain'
-import { fetchWithTimeout } from '../../utils/fetch'
-import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
-import { KeyManagementApi, PublicJwk } from '../kms'
+import { parseDid } from '../dids'
+import { KeyManagementApi } from '../kms'
 import { ClaimFormat } from '../vc/index'
 import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
+import { TokenStatusListService } from './credential-status'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
@@ -34,11 +33,10 @@ import type {
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
   extractKeyFromHolderBinding,
+  extractKeyFromIssuer,
   getSdJwtSigner,
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
-  resolveDidUrl,
-  resolveSigningPublicJwkFromDidUrl,
 } from './utils'
 
 type SdJwtVcConfig = SDJwtVcInstance['userConfig']
@@ -117,7 +115,7 @@ export class SdJwtVcService {
       throw new SdJwtVcError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
     }
 
-    const issuer = await this.extractKeyFromIssuer(agentContext, options.issuer, true)
+    const issuer = await extractKeyFromIssuer(agentContext, options.issuer, true)
 
     // holer binding is optional
     const holderBinding = options.holder ? await extractKeyFromHolderBinding(agentContext, options.holder) : undefined
@@ -245,26 +243,6 @@ export class SdJwtVcService {
     return compactDerivedSdJwtVc
   }
 
-  private assertValidX5cJwtIssuer(
-    agentContext: AgentContext,
-    iss: string | undefined,
-    leafCertificate: X509Certificate
-  ) {
-    // No 'iss' is allowed for X509
-    if (!iss) return
-
-    // If iss is present it MUST be an HTTPS url
-    if (!iss.startsWith('https://') && !(iss.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)) {
-      throw new SdJwtVcError('The X509 certificate issuer must be a HTTPS URI.')
-    }
-
-    if (!leafCertificate.sanUriNames?.includes(iss) && !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(iss))) {
-      throw new SdJwtVcError(
-        `The 'iss' claim in the payload does not match a 'SAN-URI' name and the domain extracted from the HTTPS URI does not match a 'SAN-DNS' name in the x5c certificate. Either remove the 'iss' claim or make it match with at least one SAN-URI or DNS-URI entry`
-      )
-    }
-  }
-
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
     { compactSdJwtVc, keyBinding, requiredClaimKeys, fetchTypeMetadata, trustedCertificates, now }: SdJwtVcVerifyOptions
@@ -311,7 +289,7 @@ export class SdJwtVcService {
         returnSdJwtVc,
         trustedCertificates
       )
-      const issuer = await this.extractKeyFromIssuer(agentContext, credentialIssuer)
+      const issuer = await extractKeyFromIssuer(agentContext, credentialIssuer)
       const holder = returnSdJwtVc.holder
         ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder)
         : undefined
@@ -496,71 +474,6 @@ export class SdJwtVcService {
     await this.sdJwtVcRepository.update(agentContext, sdJwtVcRecord)
   }
 
-  private async extractKeyFromIssuer(agentContext: AgentContext, issuer: SdJwtVcIssuer, forSigning = false) {
-    if (issuer.method === 'did') {
-      const parsedDid = parseDid(issuer.didUrl)
-      if (!parsedDid.fragment) {
-        throw new SdJwtVcError(
-          `didUrl '${issuer.didUrl}' does not contain a '#'. Unable to derive key from did document`
-        )
-      }
-
-      let publicJwk: PublicJwk
-      if (forSigning) {
-        publicJwk = await resolveSigningPublicJwkFromDidUrl(agentContext, issuer.didUrl)
-      } else {
-        const { verificationMethod } = await resolveDidUrl(agentContext, issuer.didUrl)
-        publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-      }
-
-      const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
-      if (supportedSignatureAlgorithms.length === 0) {
-        throw new SdJwtVcError(
-          `No supported JWA signature algorithms found for key ${publicJwk.jwkTypeHumanDescription}`
-        )
-      }
-      const alg = supportedSignatureAlgorithms[0]
-
-      return {
-        alg,
-        publicJwk,
-        iss: parsedDid.did,
-        kid: `#${parsedDid.fragment}`,
-      }
-    }
-
-    if (issuer.method === 'x5c') {
-      const leafCertificate = issuer.x5c[0]
-      if (!leafCertificate) {
-        throw new SdJwtVcError("Empty 'x5c' array provided")
-      }
-
-      if (forSigning && !leafCertificate.publicJwk.hasKeyId) {
-        throw new SdJwtVcError("Expected leaf certificate in 'x5c' array to have a key id configured.")
-      }
-
-      const publicJwk = leafCertificate.publicJwk
-      const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
-      if (supportedSignatureAlgorithms.length === 0) {
-        throw new SdJwtVcError(
-          `No supported JWA signature algorithms found for key ${publicJwk.jwkTypeHumanDescription}`
-        )
-      }
-      const alg = supportedSignatureAlgorithms[0]
-
-      this.assertValidX5cJwtIssuer(agentContext, issuer.issuer, leafCertificate)
-
-      return {
-        publicJwk,
-        iss: issuer.issuer,
-        x5c: issuer.x5c,
-        alg,
-      }
-    }
-
-    throw new SdJwtVcError("Unsupported credential issuer. Only 'did' and 'x5c' is supported at the moment.")
-  }
-
   private async parseIssuerFromCredential<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
     agentContext: AgentContext,
     sdJwtVc: SDJwt<Header, Payload>,
@@ -660,31 +573,11 @@ export class SdJwtVcService {
 
   private getBaseSdJwtConfig(agentContext: AgentContext): SdJwtVcConfig {
     const kms = agentContext.resolve(KeyManagementApi)
-
+    const tokenStatusListService = agentContext.dependencyManager.resolve(TokenStatusListService)
     return {
       hasher: sdJwtVcHasher,
-      statusListFetcher: this.getStatusListFetcher(agentContext),
+      statusListFetcher: tokenStatusListService.getStatusListFetcher(agentContext),
       saltGenerator: (length) => TypedArrayEncoder.toBase64URL(kms.randomBytes({ length })).slice(0, length),
-    }
-  }
-
-  private getStatusListFetcher(agentContext: AgentContext) {
-    return async (uri: string) => {
-      const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
-        headers: {
-          Accept: 'application/statuslist+jwt',
-        },
-      })
-
-      if (!response.ok) {
-        throw new CredoError(
-          `Received invalid response with status ${
-            response.status
-          } when fetching status list from ${uri}. ${await response.text()}`
-        )
-      }
-
-      return await response.text()
     }
   }
 }

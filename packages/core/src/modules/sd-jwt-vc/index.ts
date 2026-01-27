@@ -1,3 +1,4 @@
+export * from './credential-status'
 export * from './repository'
 export * from './SdJwtVcApi'
 export * from './SdJwtVcError'

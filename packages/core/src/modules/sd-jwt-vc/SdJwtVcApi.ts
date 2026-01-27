@@ -10,7 +10,6 @@ import type {
   SdJwtVcStoreOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
-
 import { type SdJwtVc, SdJwtVcService } from './SdJwtVcService'
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 
