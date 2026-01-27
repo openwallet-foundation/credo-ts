@@ -11,10 +11,11 @@ import { X509Service } from '../../modules/x509/X509Service'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
 import { dateToSeconds, IntegrityVerifier, nowInSeconds, TypedArrayEncoder } from '../../utils'
-import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
-import { KeyManagementApi, PublicJwk } from '../kms'
+import { parseDid } from '../dids'
+import { KeyManagementApi } from '../kms'
 import { ClaimFormat } from '../vc/index'
 import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
+import { TokenStatusListService } from './credential-status'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
@@ -32,12 +33,11 @@ import type {
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
   extractKeyFromHolderBinding,
+  extractKeyFromIssuer,
   getSdJwtSigner,
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
-  extractKeyFromIssuer
 } from './utils'
-import { TokenStatusListService } from './credential-status'
 
 type SdJwtVcConfig = SDJwtVcInstance['userConfig']
 
@@ -242,7 +242,6 @@ export class SdJwtVcService {
 
     return compactDerivedSdJwtVc
   }
-
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
@@ -474,7 +473,6 @@ export class SdJwtVcService {
   public async update(agentContext: AgentContext, sdJwtVcRecord: SdJwtVcRecord) {
     await this.sdJwtVcRepository.update(agentContext, sdJwtVcRecord)
   }
-
 
   private async parseIssuerFromCredential<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
     agentContext: AgentContext,

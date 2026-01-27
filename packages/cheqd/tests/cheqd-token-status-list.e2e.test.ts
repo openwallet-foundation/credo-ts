@@ -1,12 +1,9 @@
-import type { CheqdDidCreateOptions } from '../src'
-
 import { Agent, SdJwtVcIssuer, TokenStatusListService } from '@credo-ts/core'
-
 import { getAgentOptions } from '../../core/tests/helpers'
+import type { CheqdDidCreateOptions } from '../src'
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
-// biome-ignore lint/suspicious/noExportsInTest: <explanation>
-export const agent = new Agent(
+const agent = new Agent(
   getAgentOptions('Cheqd Token Status List Registry', {}, {}, getCheqdModules(cheqdPayerSeeds[3]))
 )
 

@@ -1,9 +1,9 @@
 import type { DependencyManager, Module } from '../../plugins'
+import { TokenStatusListService } from './credential-status'
 import { SdJwtVcRepository } from './repository'
 import { SdJwtVcApi } from './SdJwtVcApi'
 import { SdJwtVcModuleConfig, SdJwtVcModuleConfigOptions } from './SdJwtVcModuleConfig'
 import { SdJwtVcService } from './SdJwtVcService'
-import { TokenStatusListService } from './credential-status'
 
 /**
  * @public

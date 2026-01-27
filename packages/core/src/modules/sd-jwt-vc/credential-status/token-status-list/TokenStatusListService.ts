@@ -1,4 +1,4 @@
-import { StatusList, getListFromStatusListJWT } from '@sd-jwt/jwt-status-list'
+import { getListFromStatusListJWT, StatusList } from '@sd-jwt/jwt-status-list'
 import { injectable } from 'tsyringe'
 import { AgentContext } from '../../../../agent'
 import { JwsService, Jwt, JwtPayload } from '../../../../crypto'
@@ -7,13 +7,13 @@ import { dateToSeconds } from '../../../../utils'
 import { DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../../../dids'
 import { SdJwtVcModuleConfig } from '../../SdJwtVcModuleConfig'
 import { SdJwtVcIssuer } from '../../SdJwtVcOptions'
+import { extractKeyFromIssuer } from '../../utils'
 import { TokenStatusListError } from './TokenStatusListError'
 import {
   PublishTokenStatusListOptions,
   TokenStatusListJwtPayload,
   TokenStatusListRegistry,
 } from './TokenStatusListRegistry'
-import { extractKeyFromIssuer } from '../../utils'
 
 export interface CreateTokenStatusListOptions extends PublishTokenStatusListOptions {
   size: number
@@ -92,7 +92,7 @@ export class TokenStatusListService {
   ): Promise<boolean> {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
-    const { indices, publish, ...publishOptions } = options
+    const { ...publishOptions } = options
 
     const currentStatusListJwt = await this.getStatusList(agentContext, options.uri)
     const parsedStatusListJwt = Jwt.fromSerializedJwt(currentStatusListJwt)

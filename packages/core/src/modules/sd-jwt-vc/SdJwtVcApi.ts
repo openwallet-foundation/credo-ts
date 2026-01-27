@@ -10,9 +10,6 @@ import type {
   SdJwtVcStoreOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
-
-
-import { TokenStatusListService } from './credential-status'
 import { type SdJwtVc, SdJwtVcService } from './SdJwtVcService'
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 
@@ -24,10 +21,7 @@ export class SdJwtVcApi {
   private agentContext: AgentContext
   private sdJwtVcService: SdJwtVcService
 
-  public constructor(
-    agentContext: AgentContext,
-    sdJwtVcService: SdJwtVcService,
-  ) {
+  public constructor(agentContext: AgentContext, sdJwtVcService: SdJwtVcService) {
     this.agentContext = agentContext
     this.sdJwtVcService = sdJwtVcService
   }

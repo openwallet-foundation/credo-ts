@@ -1,8 +1,8 @@
 import type { DependencyManager } from '@credo-ts/core'
+import { TokenStatusListService } from '../credential-status'
 import { SdJwtVcRepository } from '../repository'
 import { SdJwtVcModule } from '../SdJwtVcModule'
 import { SdJwtVcService } from '../SdJwtVcService'
-import { TokenStatusListService } from '../credential-status'
 
 const dependencyManager = {
   registerInstance: vi.fn(),

@@ -3,10 +3,10 @@ import {
   CredoError,
   Jwt,
   PublishTokenStatusListOptions,
+  parseDid,
   SdJwtVcIssuerDid,
   TokenStatusListRegistry,
   TypedArrayEncoder,
-  parseDid,
   utils,
 } from '@credo-ts/core'
 import { cheqdSdkAnonCredsRegistryIdentifierRegex, parseCheqdDid } from '../anoncreds/utils/identifiers'
