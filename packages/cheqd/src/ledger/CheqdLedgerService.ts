@@ -178,7 +178,7 @@ export class CheqdLedgerService {
 
   public async resolve(did: string, version?: string) {
     const sdk = await this.getSdk(did)
-    return version ? sdk.queryDidDocVersion(did, version) : sdk.queryDidDoc(did, { sdk })
+    return version ? sdk.queryDidDocVersion(did, version) : sdk.queryDidDoc(did)
   }
 
   public async resolveMetadata(did: string): Promise<{
