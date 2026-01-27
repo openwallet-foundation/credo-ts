@@ -7,13 +7,13 @@ import { dateToSeconds } from '../../../../utils'
 import { DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../../../dids'
 import { SdJwtVcModuleConfig } from '../../SdJwtVcModuleConfig'
 import { SdJwtVcIssuer } from '../../SdJwtVcOptions'
-import { extractKeyFromIssuer } from '../../helpers'
 import { TokenStatusListError } from './TokenStatusListError'
 import {
   PublishTokenStatusListOptions,
   TokenStatusListJwtPayload,
   TokenStatusListRegistry,
 } from './TokenStatusListRegistry'
+import { extractKeyFromIssuer } from '../../utils'
 
 export interface CreateTokenStatusListOptions extends PublishTokenStatusListOptions {
   size: number

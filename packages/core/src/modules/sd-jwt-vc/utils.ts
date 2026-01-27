@@ -4,7 +4,11 @@ import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
 import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { type Jwk, KeyManagementApi, PublicJwk } from '../kms'
-import type { SdJwtVcHolderBinding } from './SdJwtVcOptions'
+import type { SdJwtVcHolderBinding, SdJwtVcIssuer } from './SdJwtVcOptions'
+import { SdJwtVcError } from './SdJwtVcError'
+import { X509Certificate } from '../x509'
+import { getDomainFromUrl } from '../../utils/domain'
+
 
 export async function resolveSigningPublicJwkFromDidUrl(agentContext: AgentContext, didUrl: string) {
   const dids = agentContext.dependencyManager.resolve(DidsApi)
@@ -152,3 +156,88 @@ export function parseHolderBindingFromCredential(payload?: Record<string, unknow
 
   throw new CredoError("Unsupported credential holder binding. Only 'did' and 'jwk' are supported at the moment.")
 }
+
+export async function extractKeyFromIssuer(agentContext: AgentContext, issuer: SdJwtVcIssuer, forSigning = false) {
+    if (issuer.method === 'did') {
+      const parsedDid = parseDid(issuer.didUrl)
+      if (!parsedDid.fragment) {
+        throw new SdJwtVcError(
+          `didUrl '${issuer.didUrl}' does not contain a '#'. Unable to derive key from did document`
+        )
+      }
+
+      let publicJwk: PublicJwk
+      if (forSigning) {
+        publicJwk = await resolveSigningPublicJwkFromDidUrl(agentContext, issuer.didUrl)
+      } else {
+        const { verificationMethod } = await resolveDidUrl(agentContext, issuer.didUrl)
+        publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      }
+
+      const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
+      if (supportedSignatureAlgorithms.length === 0) {
+        throw new SdJwtVcError(
+          `No supported JWA signature algorithms found for key ${publicJwk.jwkTypeHumanDescription}`
+        )
+      }
+      const alg = supportedSignatureAlgorithms[0]
+
+      return {
+        alg,
+        publicJwk,
+        iss: parsedDid.did,
+        kid: `#${parsedDid.fragment}`,
+      }
+    }
+
+    if (issuer.method === 'x5c') {
+      const leafCertificate = issuer.x5c[0]
+      if (!leafCertificate) {
+        throw new SdJwtVcError("Empty 'x5c' array provided")
+      }
+
+      if (forSigning && !leafCertificate.publicJwk.hasKeyId) {
+        throw new SdJwtVcError("Expected leaf certificate in 'x5c' array to have a key id configured.")
+      }
+
+      const publicJwk = leafCertificate.publicJwk
+      const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
+      if (supportedSignatureAlgorithms.length === 0) {
+        throw new SdJwtVcError(
+          `No supported JWA signature algorithms found for key ${publicJwk.jwkTypeHumanDescription}`
+        )
+      }
+      const alg = supportedSignatureAlgorithms[0]
+
+      assertValidX5cJwtIssuer(agentContext, issuer.issuer, leafCertificate)
+
+      return {
+        publicJwk,
+        iss: issuer.issuer,
+        x5c: issuer.x5c,
+        alg,
+      }
+    }
+
+    throw new SdJwtVcError("Unsupported credential issuer. Only 'did' and 'x5c' is supported at the moment.")
+  }
+
+function  assertValidX5cJwtIssuer(
+      agentContext: AgentContext,
+      iss: string | undefined,
+      leafCertificate: X509Certificate
+    ) {
+      // No 'iss' is allowed for X509
+      if (!iss) return
+  
+      // If iss is present it MUST be an HTTPS url
+      if (!iss.startsWith('https://') && !(iss.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)) {
+        throw new SdJwtVcError('The X509 certificate issuer must be a HTTPS URI.')
+      }
+  
+      if (!leafCertificate.sanUriNames?.includes(iss) && !leafCertificate.sanDnsNames?.includes(getDomainFromUrl(iss))) {
+        throw new SdJwtVcError(
+          `The 'iss' claim in the payload does not match a 'SAN-URI' name and the domain extracted from the HTTPS URI does not match a 'SAN-DNS' name in the x5c certificate. Either remove the 'iss' claim or make it match with at least one SAN-URI or DNS-URI entry`
+        )
+      }
+    }
