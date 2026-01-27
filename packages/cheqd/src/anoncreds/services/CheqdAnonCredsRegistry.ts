@@ -164,6 +164,9 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
           schemaId: credentialDefinition.schemaId,
         },
         version: utils.uuid(),
+        feeOptions: {
+          slippageBps: 2000,
+        },
       } satisfies CheqdCreateResourceOptions
 
       const response = await cheqdDidRegistrar.createResource(
