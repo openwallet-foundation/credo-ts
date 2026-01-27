@@ -23,16 +23,13 @@ import type { SdJwtVcTypeMetadata } from './typeMetadata'
 export class SdJwtVcApi {
   private agentContext: AgentContext
   private sdJwtVcService: SdJwtVcService
-  public statusList: TokenStatusListService
 
   public constructor(
     agentContext: AgentContext,
     sdJwtVcService: SdJwtVcService,
-    tokenStatusListService: TokenStatusListService
   ) {
     this.agentContext = agentContext
     this.sdJwtVcService = sdJwtVcService
-    this.statusList = tokenStatusListService
   }
 
   public async sign<Payload extends SdJwtVcPayload>(options: SdJwtVcSignOptions<Payload>) {
