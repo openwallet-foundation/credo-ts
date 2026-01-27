@@ -40,7 +40,6 @@ import {
   resolveDidUrl,
   resolveSigningPublicJwkFromDidUrl,
 } from './utils'
-import { extractKeyFromIssuer } from './helpers'
 import { TokenStatusListService } from './credential-status'
 
 type SdJwtVcConfig = SDJwtVcInstance['userConfig']
@@ -119,7 +118,7 @@ export class SdJwtVcService {
       throw new SdJwtVcError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
     }
 
-    const issuer = await extractKeyFromIssuer(agentContext, options.issuer, true)
+    const issuer = await this.extractKeyFromIssuer(agentContext, options.issuer, true)
 
     // holer binding is optional
     const holderBinding = options.holder ? await extractKeyFromHolderBinding(agentContext, options.holder) : undefined
