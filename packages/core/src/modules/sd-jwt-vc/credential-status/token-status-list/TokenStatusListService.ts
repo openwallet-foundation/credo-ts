@@ -184,7 +184,7 @@ export class TokenStatusListService {
 
   private findRegistry({ uri, issuer }: { uri?: string; issuer?: SdJwtVcIssuer }): TokenStatusListRegistry {
     if (!uri && issuer && issuer.method === 'did') {
-      uri = parseDid(issuer.didUrl).method
+      uri = issuer.didUrl
     }
 
     if (!uri) {

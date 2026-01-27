@@ -34,7 +34,6 @@ import {
   utils,
   VerificationMethod,
   type XOR,
-  parseDid
 } from '@credo-ts/core'
 
 import {
@@ -599,7 +598,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
       }
 
       const resourcePayload = MsgCreateResourcePayload.fromPartial({
-        collectionId: parseDid(did).id,
+        collectionId: did.split(':')[3],
         id: resource.id,
         resourceType: resource.resourceType,
         name: resource.name,
