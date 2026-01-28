@@ -1,8 +1,9 @@
-import type { CheqdModuleConfigOptions } from '../src'
-
+import { AnonCredsModule } from '@credo-ts/anoncreds'
 import { DidsModule } from '@credo-ts/core'
-
-import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../src'
+import { anoncreds } from '../../anoncreds/tests/helpers'
+import { InMemoryTailsFileService } from '../../anoncreds/tests/InMemoryTailsFileService'
+import type { CheqdModuleConfigOptions } from '../src'
+import { CheqdAnonCredsRegistry, CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../src'
 
 export const cheqdPayerSeeds = [
   'sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright',
@@ -15,6 +16,9 @@ export const cheqdPayerSeeds = [
 
   // cheqd10qh2vl0jrax6yh2mzes03cm6vt27vd47geu375
   'state online hedgehog turtle daring lab panda bottom agent pottery mixture venue letter decade bridge win snake mandate trust village emerge awkward fire mimic',
+
+  // cheqd18kgq9rycwmdluyjtnkv3jn57ttspu639fug2s2
+  'hire violin basic rare nerve demand sea drastic pet bench glass salad steak between action field diamond recipe bind success erase sleep next mirror',
 ] as const
 
 export const getCheqdModuleConfig = (seed?: string, rpcUrl?: string) =>
@@ -31,6 +35,11 @@ export const getCheqdModuleConfig = (seed?: string, rpcUrl?: string) =>
   }) satisfies CheqdModuleConfigOptions
 
 export const getCheqdModules = (seed?: string, rpcUrl?: string) => ({
+  anoncreds: new AnonCredsModule({
+    anoncreds,
+    registries: [new CheqdAnonCredsRegistry()],
+    tailsFileService: new InMemoryTailsFileService(),
+  }),
   cheqdSdk: new CheqdModule(getCheqdModuleConfig(seed, rpcUrl)),
   dids: new DidsModule({
     registrars: [new CheqdDidRegistrar()],

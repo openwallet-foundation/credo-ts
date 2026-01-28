@@ -1,6 +1,6 @@
 import type { DownloadToFileOptions, FileSystem } from '@credo-ts/core'
 
-import { Buffer, CredoError, TypedArrayEncoder, getDirFromFilePath } from '@credo-ts/core'
+import { Buffer, CredoError, getDirFromFilePath, TypedArrayEncoder } from '@credo-ts/core'
 import { Platform } from 'react-native'
 import * as RNFS from 'react-native-fs'
 

@@ -1,16 +1,15 @@
+import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../../../../../../../anoncreds/src/models/AnonCredsProofRequest'
 import type { AnonCredsProofRequest } from '../../../../../../../anoncreds/src/models/exchange'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import type { EventReplaySubject } from '../../../../../../../core/tests'
-import type { V2ProposePresentationMessage, V2RequestPresentationMessage } from '../messages'
-
-import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../../../../../../../anoncreds/src/models/AnonCredsProofRequest'
 import {
   issueLegacyAnonCredsCredential,
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransformer'
+import type { EventReplaySubject } from '../../../../../../../core/tests'
 import { testLogger, waitForProofExchangeRecordSubject } from '../../../../../../../core/tests'
-import { ProofState } from '../../../models/ProofState'
+import { DidCommProofState } from '../../../models/DidCommProofState'
+import type { DidCommProposePresentationV2Message, DidCommRequestPresentationV2Message } from '../messages'
 
 describe('V2 Proofs Negotiation - Indy', () => {
   let faberAgent: AnonCredsTestsAgent
@@ -69,7 +68,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
   test('Proof negotiation between Alice and Faber', async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    let aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
+    let aliceProofExchangeRecord = await aliceAgent.didcomm.proofs.proposeProof({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -92,11 +91,11 @@ describe('V2 Proofs Negotiation - Indy', () => {
 
     testLogger.test('Faber waits for presentation from Alice')
     let faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
       threadId: aliceProofExchangeRecord.threadId,
     })
 
-    const proposal = await faberAgent.modules.proofs.findProposalMessage(faberProofExchangeRecord.id)
+    const proposal = await faberAgent.didcomm.proofs.findProposalMessage(faberProofExchangeRecord.id)
     expect(proposal).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/propose-presentation',
       formats: [
@@ -119,7 +118,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
     })
 
     const proposalAttach = (
-      proposal as V2ProposePresentationMessage
+      proposal as DidCommProposePresentationV2Message
     )?.proposalAttachments?.[0].getDataAsJson<AnonCredsProofRequest>()
 
     expect(proposalAttach).toMatchObject({
@@ -140,13 +139,13 @@ describe('V2 Proofs Negotiation - Indy', () => {
     expect(faberProofExchangeRecord).toMatchObject({
       id: expect.anything(),
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
       protocolVersion: 'v2',
     })
 
     testLogger.test('Faber sends new proof request to Alice')
-    faberProofExchangeRecord = await faberAgent.modules.proofs.negotiateProposal({
-      proofRecordId: faberProofExchangeRecord.id,
+    faberProofExchangeRecord = await faberAgent.didcomm.proofs.negotiateProposal({
+      proofExchangeRecordId: faberProofExchangeRecord.id,
       proofFormats: {
         indy: {
           name: 'proof-request',
@@ -180,10 +179,10 @@ describe('V2 Proofs Negotiation - Indy', () => {
     testLogger.test('Alice waits for proof request from Faber')
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
-    const request = await faberAgent.modules.proofs.findRequestMessage(faberProofExchangeRecord.id)
+    const request = await faberAgent.didcomm.proofs.findRequestMessage(faberProofExchangeRecord.id)
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/request-presentation',
       id: expect.any(String),
@@ -203,14 +202,14 @@ describe('V2 Proofs Negotiation - Indy', () => {
     expect(aliceProofExchangeRecord).toMatchObject({
       id: expect.anything(),
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
       protocolVersion: 'v2',
     })
 
     testLogger.test('Alice sends proof proposal to Faber')
 
-    aliceProofExchangeRecord = await aliceAgent.modules.proofs.negotiateRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+    aliceProofExchangeRecord = await aliceAgent.didcomm.proofs.negotiateRequest({
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
       proofFormats: {
         indy: {
           name: 'proof-request',
@@ -231,13 +230,13 @@ describe('V2 Proofs Negotiation - Indy', () => {
 
     testLogger.test('Faber waits for presentation from Alice')
     faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
       threadId: aliceProofExchangeRecord.threadId,
       // Negotiation so this will be the second proposal
       count: 2,
     })
 
-    const proposal2 = await faberAgent.modules.proofs.findProposalMessage(faberProofExchangeRecord.id)
+    const proposal2 = await faberAgent.didcomm.proofs.findProposalMessage(faberProofExchangeRecord.id)
     expect(proposal2).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/propose-presentation',
       formats: [
@@ -260,7 +259,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
     })
 
     const proposalAttach2 = (
-      proposal as V2ProposePresentationMessage
+      proposal as DidCommProposePresentationV2Message
     )?.proposalAttachments[0].getDataAsJson<AnonCredsProofRequest>()
     expect(proposalAttach2).toMatchObject({
       requested_attributes: {},
@@ -280,25 +279,25 @@ describe('V2 Proofs Negotiation - Indy', () => {
     expect(faberProofExchangeRecord).toMatchObject({
       id: expect.anything(),
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
       protocolVersion: 'v2',
     })
 
     // Accept Proposal
     testLogger.test('Faber accepts presentation proposal from Alice')
-    faberProofExchangeRecord = await faberAgent.modules.proofs.acceptProposal({
-      proofRecordId: faberProofExchangeRecord.id,
+    faberProofExchangeRecord = await faberAgent.didcomm.proofs.acceptProposal({
+      proofExchangeRecordId: faberProofExchangeRecord.id,
     })
 
     testLogger.test('Alice waits for proof request from Faber')
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
       // Negotiation so this will be the second request
       count: 2,
     })
 
-    const request2 = await faberAgent.modules.proofs.findRequestMessage(faberProofExchangeRecord.id)
+    const request2 = await faberAgent.didcomm.proofs.findRequestMessage(faberProofExchangeRecord.id)
     expect(request2).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/request-presentation',
       formats: [
@@ -324,11 +323,11 @@ describe('V2 Proofs Negotiation - Indy', () => {
     expect(aliceProofExchangeRecord).toMatchObject({
       id: expect.anything(),
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
       protocolVersion: 'v2',
     })
 
-    const proposalMessage = await aliceAgent.modules.proofs.findProposalMessage(aliceProofExchangeRecord.id)
+    const proposalMessage = await aliceAgent.didcomm.proofs.findProposalMessage(aliceProofExchangeRecord.id)
     expect(proposalMessage).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/propose-presentation',
       formats: [
@@ -351,7 +350,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
     })
 
     const proposalAttach3 = (
-      proposal as V2ProposePresentationMessage
+      proposal as DidCommProposePresentationV2Message
     )?.proposalAttachments[0].getDataAsJson<AnonCredsProofRequest>()
     expect(proposalAttach3).toMatchObject({
       requested_attributes: {},
@@ -369,15 +368,15 @@ describe('V2 Proofs Negotiation - Indy', () => {
       },
     })
 
-    const proofRequestMessage = (await aliceAgent.modules.proofs.findRequestMessage(
+    const proofRequestMessage = (await aliceAgent.didcomm.proofs.findRequestMessage(
       aliceProofExchangeRecord.id
-    )) as V2RequestPresentationMessage
+    )) as DidCommRequestPresentationV2Message
 
     const proofRequest = JsonTransformer.fromJSON(
       proofRequestMessage.requestAttachments[0].getDataAsJson(),
       AnonCredsProofRequestClass
     )
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     const predicateKey = proofRequest.requestedPredicates?.keys().next().value as any
 
     expect(JsonTransformer.toJSON(proofRequest)).toMatchObject({

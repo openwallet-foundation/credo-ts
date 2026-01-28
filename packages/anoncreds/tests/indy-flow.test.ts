@@ -1,34 +1,4 @@
 import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
-import type { DidRepository } from '@credo-ts/core'
-
-import {
-  CacheModuleConfig,
-  DidResolverService,
-  DidsModuleConfig,
-  InMemoryLruCache,
-  InjectionSymbols,
-  SignatureSuiteToken,
-  W3cCredentialsModuleConfig,
-} from '@credo-ts/core'
-import {
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  CredentialRole,
-  CredentialState,
-  ProofExchangeRecord,
-  ProofRole,
-  ProofState,
-} from '@credo-ts/didcomm'
-import { Subject } from 'rxjs'
-
-import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
-import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
-import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
-
-import { anoncreds } from './helpers'
-
 import {
   AnonCredsCredentialDefinitionPrivateRecord,
   AnonCredsCredentialDefinitionPrivateRepository,
@@ -44,13 +14,39 @@ import {
   AnonCredsSchemaRecord,
   AnonCredsSchemaRepository,
   AnonCredsVerifierServiceSymbol,
-  LegacyIndyCredentialFormatService,
-  LegacyIndyProofFormatService,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
+  LegacyIndyDidCommCredentialFormatService,
+  LegacyIndyDidCommProofFormatService,
   parseIndyCredentialDefinitionId,
   parseIndySchemaId,
 } from '@credo-ts/anoncreds'
+import type { DidRepository } from '@credo-ts/core'
+import {
+  CacheModuleConfig,
+  DidResolverService,
+  DidsModuleConfig,
+  InjectionSymbols,
+  InMemoryLruCache,
+  SignatureSuiteToken,
+  W3cCredentialsModuleConfig,
+} from '@credo-ts/core'
+import {
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialPreviewAttribute,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+  DidCommProofExchangeRecord,
+  DidCommProofRole,
+  DidCommProofState,
+} from '@credo-ts/didcomm'
+import { Subject } from 'rxjs'
+import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
+import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
+import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
+import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
+import { anoncreds } from './helpers'
 
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
@@ -58,7 +54,7 @@ const anonCredsModuleConfig = new AnonCredsModuleConfig({
   anoncreds,
 })
 
-const agentConfig = getAgentConfig('LegacyIndyCredentialFormatService using anoncreds-rs')
+const agentConfig = getAgentConfig('LegacyIndyDidCommCredentialFormatService using anoncreds-rs')
 const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
@@ -88,8 +84,8 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
-const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
+const legacyIndyCredentialFormatService = new LegacyIndyDidCommCredentialFormatService()
+const legacyIndyProofFormatService = new LegacyIndyDidCommProofFormatService()
 
 // This is just so we don't have to register an actually indy did (as we don't have the indy did registrar configured)
 const indyDid = 'did:indy:bcovrin:test:LjgpST2rjsoxYegQDRm7EL'
@@ -189,26 +185,26 @@ describe('Legacy indy format services using anoncreds-rs', () => {
       })
     )
 
-    const holderCredentialRecord = new CredentialExchangeRecord({
+    const holderCredentialRecord = new DidCommCredentialExchangeRecord({
       protocolVersion: 'v1',
-      state: CredentialState.ProposalSent,
-      role: CredentialRole.Holder,
+      state: DidCommCredentialState.ProposalSent,
+      role: DidCommCredentialRole.Holder,
       threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
     })
 
-    const issuerCredentialRecord = new CredentialExchangeRecord({
+    const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
       protocolVersion: 'v1',
-      state: CredentialState.ProposalReceived,
-      role: CredentialRole.Issuer,
+      state: DidCommCredentialState.ProposalReceived,
+      role: DidCommCredentialRole.Issuer,
       threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
     })
 
     const credentialAttributes = [
-      new CredentialPreviewAttribute({
+      new DidCommCredentialPreviewAttribute({
         name: 'name',
         value: 'John',
       }),
-      new CredentialPreviewAttribute({
+      new DidCommCredentialPreviewAttribute({
         name: 'age',
         value: '25',
       }),
@@ -231,7 +227,7 @@ describe('Legacy indy format services using anoncreds-rs', () => {
     // Holder creates proposal
     holderCredentialRecord.credentialAttributes = credentialAttributes
     const { attachment: proposalAttachment } = await legacyIndyCredentialFormatService.createProposal(agentContext, {
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       credentialFormats: {
         indy: {
           attributes: credentialAttributes,
@@ -242,23 +238,23 @@ describe('Legacy indy format services using anoncreds-rs', () => {
 
     // Issuer processes and accepts proposal
     await legacyIndyCredentialFormatService.processProposal(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       attachment: proposalAttachment,
     })
     // Set attributes on the credential record, this is normally done by the protocol service
     issuerCredentialRecord.credentialAttributes = credentialAttributes
     const { attachment: offerAttachment } = await legacyIndyCredentialFormatService.acceptProposal(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       proposalAttachment: proposalAttachment,
     })
 
     // Holder processes and accepts offer
     await legacyIndyCredentialFormatService.processOffer(agentContext, {
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       attachment: offerAttachment,
     })
     const { attachment: requestAttachment } = await legacyIndyCredentialFormatService.acceptOffer(agentContext, {
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       offerAttachment,
       credentialFormats: {
         indy: {
@@ -272,11 +268,11 @@ describe('Legacy indy format services using anoncreds-rs', () => {
 
     // Issuer processes and accepts request
     await legacyIndyCredentialFormatService.processRequest(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       attachment: requestAttachment,
     })
     const { attachment: credentialAttachment } = await legacyIndyCredentialFormatService.acceptRequest(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       requestAttachment,
       offerAttachment,
     })
@@ -284,7 +280,7 @@ describe('Legacy indy format services using anoncreds-rs', () => {
     // Holder processes and accepts credential
     await legacyIndyCredentialFormatService.processCredential(agentContext, {
       offerAttachment,
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       attachment: credentialAttachment,
       requestAttachment,
     })
@@ -333,16 +329,16 @@ describe('Legacy indy format services using anoncreds-rs', () => {
       },
     })
 
-    const holderProofRecord = new ProofExchangeRecord({
+    const holderProofRecord = new DidCommProofExchangeRecord({
       protocolVersion: 'v1',
-      state: ProofState.ProposalSent,
-      role: ProofRole.Prover,
+      state: DidCommProofState.ProposalSent,
+      role: DidCommProofRole.Prover,
       threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
     })
-    const verifierProofRecord = new ProofExchangeRecord({
+    const verifierProofRecord = new DidCommProofExchangeRecord({
       protocolVersion: 'v1',
-      state: ProofState.ProposalReceived,
-      role: ProofRole.Verifier,
+      state: DidCommProofState.ProposalReceived,
+      role: DidCommProofRole.Verifier,
       threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
     })
 

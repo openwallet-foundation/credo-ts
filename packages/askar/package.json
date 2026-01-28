@@ -1,14 +1,22 @@
 {
   "name": "@credo-ts/askar",
-  "main": "src/index",
-  "types": "src/index",
-  "version": "0.5.13",
-  "files": ["build"],
+  "exports": {
+    "cli": "./build/index.mjs",
+    "import": "./src/index.ts"
+  },
+  "version": "0.6.1",
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
-    "main": "build/index",
-    "types": "build/index",
-    "access": "public"
+    "access": "public",
+    "types": "./build/index.d.mts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": "./build/index.mjs",
+      "./package.json": "./package.json"
+    }
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/askar",
   "repository": {
@@ -17,30 +25,26 @@
     "directory": "packages/askar"
   },
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile",
-    "clean": "rimraf ./build",
-    "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "build": "tsdown --config-loader unconfig",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
-    "class-transformer": "0.5.1",
-    "class-validator": "0.14.1",
-    "rxjs": "^7.8.0",
-    "tsyringe": "^4.8.0"
+    "class-transformer": "catalog:",
+    "class-validator": "catalog:",
+    "rxjs": "catalog:",
+    "tsyringe": "catalog:"
   },
   "devDependencies": {
     "@credo-ts/tenants": "workspace:*",
-    "@openwallet-foundation/askar-nodejs": "^0.3.1",
-    "@openwallet-foundation/askar-shared": "^0.3.1",
-    "@types/ref-array-di": "^1.2.6",
-    "@types/ref-struct-di": "^1.1.10",
-    "reflect-metadata": "^0.1.13",
-    "rimraf": "^4.4.0",
-    "typescript": "~5.5.2"
+    "@openwallet-foundation/askar-nodejs": "catalog:",
+    "@openwallet-foundation/askar-shared": "catalog:",
+    "@types/ref-array-di": "^1.2.8",
+    "@types/ref-struct-di": "^1.1.12",
+    "reflect-metadata": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@openwallet-foundation/askar-shared": "^0.3.1"
+    "@openwallet-foundation/askar-shared": "catalog:"
   }
 }

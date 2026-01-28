@@ -29,11 +29,8 @@ import type {
   RegisterSchemaReturnStateFinished,
   RegisterSchemaReturnStateWait,
 } from '@credo-ts/anoncreds'
-import type { AgentContext } from '@credo-ts/core'
-import type { SchemaResponse } from '@hyperledger/indy-vdr-shared'
-import type { RevocationRegistryDelta } from './utils/transform'
-
 import {
+  AnonCredsRegistryService,
   dateToTimestamp,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedRevocationRegistryDefinitionId,
@@ -43,7 +40,9 @@ import {
   parseIndyRevocationRegistryId,
   parseIndySchemaId,
 } from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 import { CredoError } from '@credo-ts/core'
+import type { SchemaResponse } from '@hyperledger/indy-vdr-shared'
 import {
   CredentialDefinitionRequest,
   CustomRequest,
@@ -56,11 +55,9 @@ import {
   RevocationRegistryEntryRequest,
   SchemaRequest,
 } from '@hyperledger/indy-vdr-shared'
-
 import { verificationPublicJwkForIndyDid } from '../dids/didIndyUtil'
 import { IndyVdrPoolService } from '../pool'
 import { multiSignRequest } from '../utils/sign'
-
 import {
   getDidIndyCredentialDefinitionId,
   getDidIndyRevocationRegistryDefinitionId,
@@ -68,12 +65,16 @@ import {
   getDidIndySchemaId,
   indyVdrAnonCredsRegistryIdentifierRegex,
 } from './utils/identifiers'
+import type { RevocationRegistryDelta } from './utils/transform'
 import { anonCredsRevocationStatusListFromIndyVdr, indyVdrCreateLatestRevocationDelta } from './utils/transform'
 
 export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
   public readonly methodName = 'indy'
 
   public readonly supportedIdentifier = indyVdrAnonCredsRegistryIdentifierRegex
+
+  public allowsCaching = true
+  public allowsLocalRecord = true
 
   public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     try {
@@ -364,7 +365,15 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         )
       } else {
         // TODO: this will bypass caching if done on a higher level.
-        const { schemaMetadata, resolutionMetadata } = await this.getSchema(agentContext, schemaId)
+        const anoncredsRegistryService = agentContext.resolve(AnonCredsRegistryService)
+        const { schemaMetadata, resolutionMetadata } = await anoncredsRegistryService.getSchema(
+          agentContext,
+          schemaId,
+          {
+            // Local record does not have the 'indyLedgerSeqNo', which we need to register the credential definition
+            useLocalRecord: false,
+          }
+        )
 
         if (!schemaMetadata?.indyLedgerSeqNo || typeof schemaMetadata.indyLedgerSeqNo !== 'number') {
           return {
@@ -753,8 +762,9 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         }
       }
 
+      const anoncredsRegistryService = agentContext.resolve(AnonCredsRegistryService)
       const { revocationRegistryDefinition, resolutionMetadata, revocationRegistryDefinitionMetadata } =
-        await this.getRevocationRegistryDefinition(agentContext, revocationRegistryDefinitionId)
+        await anoncredsRegistryService.getRevocationRegistryDefinition(agentContext, revocationRegistryDefinitionId)
 
       if (
         !revocationRegistryDefinition ||

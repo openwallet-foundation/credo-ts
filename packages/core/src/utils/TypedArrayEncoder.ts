@@ -1,15 +1,16 @@
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../types'
 import { decodeFromBase58, encodeToBase58 } from './base58'
 import { base64ToBase64URL } from './base64'
 import { Buffer } from './buffer'
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class TypedArrayEncoder {
   /**
    * Encode buffer into base64 string.
    *
    * @param buffer the buffer to encode into base64 string
    */
-  public static toBase64(buffer: Buffer | Uint8Array) {
+  public static toBase64(buffer: Buffer | AnyUint8Array) {
     return Buffer.from(buffer).toString('base64')
   }
 
@@ -18,7 +19,7 @@ export class TypedArrayEncoder {
    *
    * @param buffer the buffer to encode into base64url string
    */
-  public static toBase64URL(buffer: Buffer | Uint8Array) {
+  public static toBase64URL(buffer: Buffer | AnyUint8Array) {
     return base64ToBase64URL(TypedArrayEncoder.toBase64(buffer))
   }
 
@@ -27,7 +28,7 @@ export class TypedArrayEncoder {
    *
    * @param buffer the buffer to encode into base58 string
    */
-  public static toBase58(buffer: Buffer | Uint8Array) {
+  public static toBase58(buffer: Buffer | AnyUint8Array) {
     return encodeToBase58(buffer)
   }
 
@@ -54,7 +55,7 @@ export class TypedArrayEncoder {
    *
    * @param buffer the buffer to encode into base64 string
    */
-  public static toHex(buffer: Buffer | Uint8Array) {
+  public static toHex(buffer: Buffer | AnyUint8Array) {
     return Buffer.from(buffer).toString('hex')
   }
 
@@ -72,12 +73,20 @@ export class TypedArrayEncoder {
    *
    * @param str the string to decode into buffer format
    */
-  public static fromString(str: string): Buffer {
+  public static fromString(str: string): Uint8ArrayBuffer {
     return Buffer.from(str)
   }
 
-  public static toUtf8String(buffer: Buffer | Uint8Array) {
+  public static toUtf8String(buffer: Buffer | AnyUint8Array) {
     return Buffer.from(buffer).toString()
+  }
+
+  public static concat(entries: AnyUint8Array[]): Uint8ArrayBuffer {
+    return Buffer.concat(entries)
+  }
+
+  public static equals(firstBuffer: AnyUint8Array, otherBuffer: AnyUint8Array): boolean {
+    return Buffer.from(firstBuffer).equals(otherBuffer)
   }
 
   /**

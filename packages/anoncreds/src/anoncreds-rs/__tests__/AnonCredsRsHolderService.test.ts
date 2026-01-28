@@ -5,11 +5,13 @@ import type {
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
 } from '@credo-ts/anoncreds'
-import type { DidRepository } from '@credo-ts/core'
-import type { JsonObject } from '@hyperledger/anoncreds-shared'
-import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
-import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
-
+import {
+  AnonCredsCredentialRepository,
+  AnonCredsHolderServiceSymbol,
+  AnonCredsLinkSecretRecord,
+  AnonCredsModuleConfig,
+} from '@credo-ts/anoncreds'
+import type { DidRepository, W3cJsonCredential } from '@credo-ts/core'
 import {
   DidResolverService,
   DidsModuleConfig,
@@ -20,19 +22,22 @@ import {
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
+  w3cDate,
 } from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
+import type { JsonObject } from '@hyperledger/anoncreds-shared'
 import { Subject } from 'rxjs'
-
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { AnonCredsCredentialDefinitionRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsLinkSecretRepository } from '../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { testLogger } from '../../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
+import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
+import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
-
 import {
   createCredentialDefinition,
   createCredentialForHolder,
@@ -41,32 +46,31 @@ import {
   storeCredential,
 } from './helpers'
 
-import {
-  AnonCredsCredentialRepository,
-  AnonCredsHolderServiceSymbol,
-  AnonCredsLinkSecretRecord,
-  AnonCredsModuleConfig,
-} from '@credo-ts/anoncreds'
-
 const agentConfig = getAgentConfig('AnonCredsRsHolderServiceTest')
 const anonCredsHolderService = new AnonCredsRsHolderService()
 
-jest.mock('../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository')
-const CredentialDefinitionRepositoryMock =
-  AnonCredsCredentialDefinitionRepository as jest.Mock<AnonCredsCredentialDefinitionRepository>
+vi.mock('../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository')
+const CredentialDefinitionRepositoryMock = AnonCredsCredentialDefinitionRepository as MockedClassConstructor<
+  typeof AnonCredsCredentialDefinitionRepository
+>
 const credentialDefinitionRepositoryMock = new CredentialDefinitionRepositoryMock()
 
-jest.mock('../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository')
-const AnonCredsLinkSecretRepositoryMock = AnonCredsLinkSecretRepository as jest.Mock<AnonCredsLinkSecretRepository>
+vi.mock('../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository')
+const AnonCredsLinkSecretRepositoryMock = AnonCredsLinkSecretRepository as MockedClassConstructor<
+  typeof AnonCredsLinkSecretRepository
+>
 const anoncredsLinkSecretRepositoryMock = new AnonCredsLinkSecretRepositoryMock()
 
-jest.mock('../../../../core/src/modules/vc/repository/W3cCredentialRepository')
-const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
+vi.mock('../../../../core/src/modules/vc/repository/W3cCredentialRepository')
+const W3cCredentialRepositoryMock = W3cCredentialRepository as MockedClassConstructor<typeof W3cCredentialRepository>
 const w3cCredentialRepositoryMock = new W3cCredentialRepositoryMock()
 
-jest.mock('../../../../anoncreds/src/repository/AnonCredsCredentialRepository')
-const AnonCredsCredentialRepositoryMock = AnonCredsCredentialRepository as jest.Mock<AnonCredsCredentialRepository>
+vi.mock('../../../../anoncreds/src/repository/AnonCredsCredentialRepository')
+const AnonCredsCredentialRepositoryMock = AnonCredsCredentialRepository as MockedClassConstructor<
+  typeof AnonCredsCredentialRepository
+>
 const anoncredsCredentialRepositoryMock = new AnonCredsCredentialRepositoryMock()
+mockFunction(anoncredsCredentialRepositoryMock.findByQuery).mockResolvedValue([])
 
 const inMemoryStorageService = new InMemoryStorageService()
 
@@ -96,9 +100,9 @@ const agentContext = getAgentContext({
 })
 
 describe('AnonCredsRsHolderService', () => {
-  const getByCredentialIdMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
-  const findByIdMock = jest.spyOn(w3cCredentialRepositoryMock, 'findById')
-  const findByQueryMock = jest.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
+  const getByCredentialIdMock = vi.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
+  const findByIdMock = vi.spyOn(w3cCredentialRepositoryMock, 'findById')
+  const findByQueryMock = vi.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
 
   beforeEach(() => {
     findByIdMock.mockClear()
@@ -316,8 +320,8 @@ describe('AnonCredsRsHolderService', () => {
   })
 
   describe('getCredentialsForProofRequest', () => {
-    const findByQueryMock = jest.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
-    const anonCredsFindByQueryMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'findByQuery')
+    const findByQueryMock = vi.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
+    const anonCredsFindByQueryMock = vi.spyOn(anoncredsCredentialRepositoryMock, 'findByQuery')
 
     const proofRequest: AnonCredsProofRequest = {
       nonce: anoncreds.generateNonce(),
@@ -361,7 +365,7 @@ describe('AnonCredsRsHolderService', () => {
           proofRequest,
           attributeReferent: 'name',
         })
-      ).rejects.toThrowError()
+      ).rejects.toThrow()
     })
 
     test('referent with single restriction', async () => {
@@ -461,8 +465,11 @@ describe('AnonCredsRsHolderService', () => {
 
   test('deleteCredential', async () => {
     const record = new W3cCredentialRecord({
-      credential: {} as W3cJsonLdVerifiableCredential,
-      tags: {},
+      credentialInstances: [
+        {
+          credential: {} as W3cJsonCredential,
+        },
+      ],
     })
     findByIdMock.mockResolvedValueOnce(null).mockResolvedValueOnce(record)
     getByCredentialIdMock.mockRejectedValueOnce(new Error())
@@ -473,21 +480,20 @@ describe('AnonCredsRsHolderService', () => {
   })
 
   test('get single Credential', async () => {
-    const record = new W3cCredentialRecord({
-      credential: new W3cJsonLdVerifiableCredential({
+    const record = W3cCredentialRecord.fromCredential(
+      new W3cJsonLdVerifiableCredential({
         credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
-        issuer: 'test',
-        issuanceDate: Date.now().toString(),
+        issuer: 'uri:test',
+        issuanceDate: w3cDate(Date.now()),
         type: ['VerifiableCredential'],
         proof: {
-          created: Date.now().toString(),
+          created: w3cDate(Date.now()),
           type: 'test',
           proofPurpose: 'test',
           verificationMethod: 'test',
         },
-      }),
-      tags: {},
-    })
+      })
+    )
 
     const tags: AnonCredsCredentialTags = {
       anonCredsLinkSecretId: 'linkSecretId',
@@ -513,7 +519,7 @@ describe('AnonCredsRsHolderService', () => {
     findByIdMock.mockResolvedValueOnce(null).mockResolvedValueOnce(record)
     getByCredentialIdMock.mockRejectedValueOnce(new Error())
 
-    await expect(anonCredsHolderService.getCredential(agentContext, { id: 'myCredentialId' })).rejects.toThrowError()
+    await expect(anonCredsHolderService.getCredential(agentContext, { id: 'myCredentialId' })).rejects.toThrow()
 
     const credentialInfo = await anonCredsHolderService.getCredential(agentContext, { id: 'myCredentialId' })
 
@@ -528,21 +534,20 @@ describe('AnonCredsRsHolderService', () => {
   })
 
   test('getCredentials', async () => {
-    const record = new W3cCredentialRecord({
-      credential: new W3cJsonLdVerifiableCredential({
+    const record = W3cCredentialRecord.fromCredential(
+      new W3cJsonLdVerifiableCredential({
         credentialSubject: new W3cCredentialSubject({ claims: { attr1: 'value1', attr2: 'value2' } }),
-        issuer: 'test',
-        issuanceDate: Date.now().toString(),
+        issuer: 'uri:test',
+        issuanceDate: w3cDate(Date.now()),
         type: ['VerifiableCredential'],
         proof: {
-          created: Date.now().toString(),
+          created: w3cDate(Date.now()),
           type: 'test',
           proofPurpose: 'test',
           verificationMethod: 'test',
         },
-      }),
-      tags: {},
-    })
+      })
+    )
     const records = [record]
 
     const tags: AnonCredsCredentialTags = {
@@ -578,7 +583,7 @@ describe('AnonCredsRsHolderService', () => {
       methodName: 'inMemory',
     })
 
-    expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
+    expect(w3cCredentialRepositoryMock.findByQuery).toHaveBeenCalledWith(agentContext, {
       anonCredsCredentialDefinitionId: 'credDefId',
       anonCredsSchemaId: 'schemaId',
       anonCredsSchemaIssuerId: 'schemaIssuerDid',
@@ -611,7 +616,7 @@ describe('AnonCredsRsHolderService', () => {
       new AnonCredsLinkSecretRecord({ linkSecretId: 'linkSecretId', value: linkSecret })
     )
 
-    const saveCredentialMock = jest.spyOn(w3cCredentialRepositoryMock, 'save')
+    const saveCredentialMock = vi.spyOn(w3cCredentialRepositoryMock, 'save')
 
     const { credential } = await createCredentialForHolder({
       agentContext,
@@ -644,6 +649,15 @@ describe('AnonCredsRsHolderService', () => {
       credentialDefinitionId: 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/CLAIM_DEF/104/default',
     })
 
-    expect(saveCredentialMock).toHaveBeenCalledWith(agentContext, expect.objectContaining({ credential }))
+    expect(saveCredentialMock).toHaveBeenCalledWith(
+      agentContext,
+      expect.objectContaining({
+        credentialInstances: [
+          {
+            credential: credential.encoded,
+          },
+        ],
+      })
+    )
   })
 })

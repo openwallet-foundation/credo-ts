@@ -1,7 +1,6 @@
 import type { ValidationArguments, ValidationOptions } from 'class-validator'
-import type { PlaintextMessage } from '../types'
-
-import { ValidateBy, buildMessage } from 'class-validator'
+import { buildMessage, ValidateBy } from 'class-validator'
+import type { DidCommPlaintextMessage } from '../types'
 
 const PROTOCOL_URI_REGEX = /^(.+)\/([^/\\]+)\/(\d+).(\d+)$/
 const MESSAGE_TYPE_REGEX = /^(.+)\/([^/\\]+)\/(\d+).(\d+)\/([^/\\]+)$/
@@ -84,8 +83,8 @@ export function parseMessageType(messageType: string): ParsedMessageType {
     documentUri,
     protocolName,
     protocolVersion: `${protocolVersionMajor}.${protocolVersionMinor}`,
-    protocolMajorVersion: Number.parseInt(protocolVersionMajor),
-    protocolMinorVersion: Number.parseInt(protocolVersionMinor),
+    protocolMajorVersion: Number.parseInt(protocolVersionMajor, 10),
+    protocolMinorVersion: Number.parseInt(protocolVersionMinor, 10),
     messageName,
     protocolUri: `${documentUri}/${protocolName}/${protocolVersionMajor}.${protocolVersionMinor}`,
     messageTypeUri: messageType,
@@ -105,8 +104,8 @@ export function parseDidCommProtocolUri(didCommProtocolUri: string): ParsedDidCo
     documentUri,
     protocolName,
     protocolVersion: `${protocolVersionMajor}.${protocolVersionMinor}`,
-    protocolMajorVersion: Number.parseInt(protocolVersionMajor),
-    protocolMinorVersion: Number.parseInt(protocolVersionMinor),
+    protocolMajorVersion: Number.parseInt(protocolVersionMajor, 10),
+    protocolMinorVersion: Number.parseInt(protocolVersionMinor, 10),
     protocolUri: `${documentUri}/${protocolName}/${protocolVersionMajor}.${protocolVersionMinor}`,
   }
 }
@@ -249,7 +248,7 @@ export function IsValidMessageType(
   )
 }
 
-export function replaceLegacyDidSovPrefixOnMessage(message: PlaintextMessage | Record<string, unknown>) {
+export function replaceLegacyDidSovPrefixOnMessage(message: DidCommPlaintextMessage | Record<string, unknown>) {
   message['@type'] = replaceLegacyDidSovPrefix(message['@type'] as string)
 }
 

@@ -1,4 +1,4 @@
-import { Ed25519PublicJwk, PublicJwk, X25519PublicJwk, assymetricPublicJwkMatches } from '../kms'
+import { asymmetricPublicJwkMatches, Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../kms'
 import { DidDocument } from './domain/DidDocument'
 import { getPublicJwkFromVerificationMethod } from './domain/key-type/keyDidMapping'
 import { VerificationMethod } from './domain/verificationMethod'
@@ -35,6 +35,6 @@ export function findMatchingEd25519Key(
       if (!v.publicJwk.is(Ed25519PublicJwk)) return false
 
       const keyX25519 = v.publicJwk.convertTo(X25519PublicJwk)
-      return assymetricPublicJwkMatches(keyX25519.toJson(), x25519Key.toJson())
+      return asymmetricPublicJwkMatches(keyX25519.toJson(), x25519Key.toJson())
     })
 }

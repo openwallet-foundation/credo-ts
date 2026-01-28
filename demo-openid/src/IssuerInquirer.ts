@@ -1,13 +1,13 @@
 import { clear } from 'console'
-import { textSync } from 'figlet'
+import figlet from 'figlet'
 
 import { BaseInquirer } from './BaseInquirer'
-import { Issuer, credentialConfigurationsSupported } from './Issuer'
-import { Title, greenText, purpleText, redText } from './OutputClass'
+import { credentialConfigurationsSupported, GOOGLE_ENABLED, Issuer } from './Issuer'
+import { greenText, purpleText, redText, Title } from './OutputClass'
 
 export const runIssuer = async () => {
   clear()
-  console.log(textSync('Issuer', { horizontalLayout: 'full' }))
+  console.log(figlet.textSync('Issuer', { horizontalLayout: 'full' }))
   const issuer = await IssuerInquirer.build()
   await issuer.processAnswer()
 }
@@ -56,7 +56,7 @@ export class IssuerInquirer extends BaseInquirer {
     }
 
     const authorizationMethod = await this.pickOne(
-      ['Transaction Code', 'Browser', 'Presentation', 'None'],
+      ['Transaction Code', 'Browser', ...(GOOGLE_ENABLED ? ['Browser (Google Account)'] : []), 'Presentation', 'None'],
       'Authorization method'
     )
     const { credentialOffer, issuanceSession } = await this.issuer.createCredentialOffer({
@@ -64,9 +64,11 @@ export class IssuerInquirer extends BaseInquirer {
       requireAuthorization:
         authorizationMethod === 'Browser'
           ? 'browser'
-          : authorizationMethod === 'Presentation'
-            ? 'presentation'
-            : undefined,
+          : authorizationMethod === 'Browser (Google Account)'
+            ? 'browser-external'
+            : authorizationMethod === 'Presentation'
+              ? 'presentation'
+              : undefined,
       requirePin: authorizationMethod === 'Transaction Code',
     })
 

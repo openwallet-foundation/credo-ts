@@ -1,9 +1,13 @@
-import { AgentContext, FileSystem, InjectionSymbols, JsonTransformer, StorageVersionRecord } from '@credo-ts/core'
+import { AgentContext, type FileSystem, InjectionSymbols, JsonTransformer, StorageVersionRecord } from '@credo-ts/core'
 import { KdfMethod, Session, Store, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
 import { inject, injectable } from 'tsyringe'
 
-import { AskarStoreExportOptions, AskarStoreImportOptions, AskarStoreRotateKeyOptions } from './AskarApiOptions'
-import { AskarModuleConfig, AskarModuleConfigStoreOptions, AskarMultiWalletDatabaseScheme } from './AskarModuleConfig'
+import type { AskarStoreExportOptions, AskarStoreImportOptions, AskarStoreRotateKeyOptions } from './AskarApiOptions'
+import {
+  AskarModuleConfig,
+  type AskarModuleConfigStoreOptions,
+  AskarMultiWalletDatabaseScheme,
+} from './AskarModuleConfig'
 import {
   AskarError,
   AskarStoreDuplicateError,
@@ -118,7 +122,7 @@ export class AskarStoreManager {
     agentContext.config.logger.debug(`Provisioning store '${storeConfig.id}`)
 
     if (this.getStore(agentContext)) {
-      throw new AskarStoreError('Store already provisioned')
+      throw new AskarStoreDuplicateError('Store already provisioned')
     }
 
     try {
@@ -322,7 +326,7 @@ export class AskarStoreManager {
     const sourceAskarStoreConfig = this.getAskarStoreConfig(options.importFromStore)
     const destinationAskarStoreConfig = this.getAskarStoreConfig(destinationStoreConfig)
 
-    let sourceWalletStore: Store | undefined = undefined
+    let sourceWalletStore: Store | undefined
     try {
       if (destinationAskarStoreConfig.path) {
         // Import path already exists
@@ -494,33 +498,11 @@ export class AskarStoreManager {
     callback: (session: Session) => Return,
     transaction = false
   ): Promise<Awaited<Return>> {
-    let session: Session | undefined = undefined
+    let session: Session | undefined
     try {
       const { store, profile } = await this.getInitializedStoreWithProfile(agentContext)
 
-      session = await (transaction ? store.transaction(profile) : store.session(profile))
-        .open()
-        .catch(async (error) => {
-          // If the profile does not exist yet we create it
-          // TODO: do we want some guards around this? I think this is really the easist approach to
-          // just create it if it doesn't exist yet.
-          if (isAskarError(error, AskarErrorCode.NotFound) && profile) {
-            await store.createProfile(profile)
-            const session = await store.session(profile).open()
-
-            try {
-              // For new profiles we need to set the framework storage version
-              await this.setCurrentFrameworkStorageVersionOnSession(session)
-            } catch (error) {
-              await session.close()
-              throw error
-            }
-
-            return session
-          }
-
-          throw error
-        })
+      session = await (transaction ? store.transaction(profile) : store.session(profile)).open()
 
       const result = await callback(session)
       if (transaction && session.handle) {
@@ -529,7 +511,9 @@ export class AskarStoreManager {
 
       return result
     } catch (error) {
-      agentContext.config.logger.error('Error occured during tranaction, rollback')
+      agentContext.config.logger.error('Error occurred during transaction, rollback', {
+        error,
+      })
       if (transaction && session?.handle) {
         await session.rollback()
       }

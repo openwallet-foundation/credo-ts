@@ -61,7 +61,7 @@ const getRevocationStatus = async (
     requestNonRevoked.to ?? dateToTimestamp(new Date())
   )
 
-  const isRevoked = revocationStatusList.revocationList[Number.parseInt(credentialRevocationId)] === 1
+  const isRevoked = revocationStatusList.revocationList[Number.parseInt(credentialRevocationId, 10)] === 1
 
   agentContext.config.logger.trace(
     `Credential with credential revocation index '${credentialRevocationId}' is ${

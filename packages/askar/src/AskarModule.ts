@@ -1,14 +1,14 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { AskarModuleConfigOptions } from './AskarModuleConfig'
-
 import { AgentConfig, CredoError, InjectionSymbols, Kms } from '@credo-ts/core'
-
+import { AskarError } from '@openwallet-foundation/askar-shared'
 import { AskarApi } from './AskarApi'
+import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from './AskarModuleConfig'
 import { AskarStoreManager } from './AskarStoreManager'
 import { AskarKeyManagementService } from './kms/AskarKeyManagementService'
 import { AskarStorageService } from './storage'
 import { storeAskarStoreConfigForContextCorrelationId } from './tenants'
+import { AskarErrorCode } from './utils'
 
 export class AskarModule implements Module {
   public readonly config: AskarModuleConfig
@@ -58,8 +58,28 @@ export class AskarModule implements Module {
 
   public async onProvisionContext(agentContext: AgentContext) {
     // We don't have any side effects to run
-    if (agentContext.isRootAgentContext) return
-    if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) return
+    if (agentContext.isRootAgentContext) {
+      return
+    }
+
+    // Ensure we have a profile for context
+    if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) {
+      const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
+      const { store, profile } = await storeManager.getInitializedStoreWithProfile(agentContext)
+      if (!profile) return
+
+      try {
+        await store.createProfile(profile)
+      } catch (err) {
+        if (err instanceof AskarError && err.code === AskarErrorCode.Duplicate) {
+          return
+        }
+
+        throw err
+      }
+
+      return
+    }
 
     // For new stores (so not profiles) we need to generate a wallet key
     await storeAskarStoreConfigForContextCorrelationId(agentContext, {

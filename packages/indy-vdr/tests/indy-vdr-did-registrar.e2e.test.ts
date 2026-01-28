@@ -1,5 +1,3 @@
-import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
-
 import { didIndyRegex } from '@credo-ts/anoncreds'
 import {
   Agent,
@@ -14,14 +12,14 @@ import {
 } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
+import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
 
 import { getAgentOptions, importExistingIndyDidFromPrivateKey, retryUntilResult } from '../../core/tests/helpers'
 import { IndyVdrModule, IndyVdrSovDidResolver } from '../src'
+import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
+import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidResolver } from '../src/dids/IndyVdrIndyDidResolver'
-import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
-
-import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
 import { indyVdrModuleConfig } from './helpers'
 
 const endorser = new Agent(
@@ -476,7 +474,7 @@ describe('Indy VDR Indy Did Registrar', () => {
         .slice(0, 32)
     )
 
-    const key = await endorser.kms.importKey(
+    const key = await agent.kms.importKey(
       transformPrivateKeyToPrivateJwk({ type: { kty: 'OKP', crv: 'Ed25519' }, privateKey })
     )
     const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
@@ -485,14 +483,13 @@ describe('Indy VDR Indy Did Registrar', () => {
 
     const { did } = indyDidFromNamespaceAndInitialKey('pool:localtest', publicJwk)
 
-    const didCreateTobeEndorsedResult = (await endorser.dids.create<IndyVdrDidCreateOptions>({
+    const didCreateTobeEndorsedResult = (await agent.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
         endorserMode: 'external',
         endorserDid: endorserDid,
         useEndpointAttrib: true,
         keyId: key.keyId,
-        // keyId: key.keyId
         services: [
           new DidDocumentService({
             id: `${did}#endpoint`,

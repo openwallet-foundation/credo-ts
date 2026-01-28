@@ -1,24 +1,21 @@
-import type { EventReplaySubject } from '../../core/tests'
-import type { AnonCredsTestsAgent } from './anoncredsSetup'
-
 import { JsonTransformer } from '@credo-ts/core'
 import {
-  CredentialExchangeRecord,
-  CredentialRole,
-  CredentialState,
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+  DidCommCredentialV2Preview,
   DidCommMessageRepository,
-  V2CredentialPreview,
-  V2OfferCredentialMessage,
+  DidCommOfferCredentialV2Message,
 } from '@credo-ts/didcomm'
-
+import type { EventReplaySubject } from '../../core/tests'
 import { waitForCredentialRecordSubject } from '../../core/tests'
 import { waitForRevocationNotification } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-
-import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
+import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import { setupAnonCredsTests } from './anoncredsSetup'
+import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 
-const credentialPreview = V2CredentialPreview.fromRecord({
+const credentialPreview = DidCommCredentialV2Preview.fromRecord({
   name: 'John',
   age: '99',
   'x-ray': 'some x-ray',
@@ -66,7 +63,7 @@ describe('IC v2 credential revocation', () => {
   test('Alice starts with V2 credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2) credential proposal to Faber')
 
-    const credentialExchangeRecord = await aliceAgent.modules.credentials.proposeCredential({
+    const credentialExchangeRecord = await aliceAgent.didcomm.credentials.proposeCredential({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       credentialFormats: {
@@ -86,19 +83,19 @@ describe('IC v2 credential revocation', () => {
     expect(credentialExchangeRecord).toMatchObject({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
-      state: CredentialState.ProposalSent,
+      state: DidCommCredentialState.ProposalSent,
       threadId: expect.any(String),
     })
 
     testLogger.test('Faber waits for credential proposal from Alice')
     let faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: credentialExchangeRecord.threadId,
-      state: CredentialState.ProposalReceived,
+      state: DidCommCredentialState.ProposalReceived,
     })
 
     testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.modules.credentials.acceptProposal({
-      credentialRecordId: faberCredentialRecord.id,
+    await faberAgent.didcomm.credentials.acceptProposal({
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 AnonCreds Proposal',
       credentialFormats: {
         anoncreds: {
@@ -113,13 +110,13 @@ describe('IC v2 credential revocation', () => {
     testLogger.test('Alice waits for credential offer from Faber')
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.OfferReceived,
+      state: DidCommCredentialState.OfferReceived,
     })
 
     const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
     const offerMessage = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
-      messageClass: V2OfferCredentialMessage,
+      messageClass: DidCommOfferCredentialV2Message,
     })
 
     expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
@@ -157,55 +154,55 @@ describe('IC v2 credential revocation', () => {
     expect(aliceCredentialRecord).toMatchObject({
       id: expect.any(String),
       connectionId: expect.any(String),
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
     })
 
     // below values are not in json object
     expect(aliceCredentialRecord.getTags()).toEqual({
       threadId: faberCredentialRecord.threadId,
       connectionId: aliceCredentialRecord.connectionId,
-      role: CredentialRole.Holder,
+      role: DidCommCredentialRole.Holder,
       state: aliceCredentialRecord.state,
       credentialIds: [],
     })
 
-    const offerCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
-      credentialRecordId: aliceCredentialRecord.id,
+    const offerCredentialExchangeRecord = await aliceAgent.didcomm.credentials.acceptOffer({
+      credentialExchangeRecordId: aliceCredentialRecord.id,
     })
 
     expect(offerCredentialExchangeRecord).toMatchObject({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
-      state: CredentialState.RequestSent,
+      state: DidCommCredentialState.RequestSent,
       threadId: expect.any(String),
     })
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: aliceCredentialRecord.threadId,
-      state: CredentialState.RequestReceived,
+      state: DidCommCredentialState.RequestReceived,
     })
 
     testLogger.test('Faber sends credential to Alice')
-    await faberAgent.modules.credentials.acceptRequest({
-      credentialRecordId: faberCredentialRecord.id,
+    await faberAgent.didcomm.credentials.acceptRequest({
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 AnonCreds Credential',
     })
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.CredentialReceived,
+      state: DidCommCredentialState.CredentialReceived,
     })
 
-    await aliceAgent.modules.credentials.acceptCredential({
-      credentialRecordId: aliceCredentialRecord.id,
+    await aliceAgent.didcomm.credentials.acceptCredential({
+      credentialExchangeRecordId: aliceCredentialRecord.id,
     })
 
     testLogger.test('Faber waits for state done')
     const doneCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
     })
 
     // Now revoke the credential
@@ -213,6 +210,7 @@ describe('IC v2 credential revocation', () => {
       'anonCredsRevocationRegistryId'
     ) as string
     const credentialRevocationIndex = doneCredentialRecord.getTag('anonCredsCredentialRevocationId') as string
+    const connectionId = doneCredentialRecord.getTag('connectionId') as string
 
     expect(credentialRevocationRegistryDefinitionId).toBeDefined()
     expect(credentialRevocationIndex).toBeDefined()
@@ -226,8 +224,8 @@ describe('IC v2 credential revocation', () => {
       options: {},
     })
 
-    await faberAgent.modules.credentials.sendRevocationNotification({
-      credentialRecordId: doneCredentialRecord.id,
+    await faberAgent.didcomm.credentials.sendRevocationNotification({
+      connectionId,
       revocationFormat: 'anoncreds',
       revocationId: `${credentialRevocationRegistryDefinitionId}::${credentialRevocationIndex}`,
     })

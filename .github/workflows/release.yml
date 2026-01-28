@@ -16,6 +16,7 @@ on:
 permissions:
   pull-requests: write
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -23,14 +24,17 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.1
       - uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
+
+      - name: Update npm
+        run: npm install -g npm@^11
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -45,7 +49,6 @@ jobs:
           version: pnpm changeset-version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
 
       - name: Get current package version
         id: get_version
@@ -66,30 +69,37 @@ jobs:
         if: github.event_name == 'pull_request'
 
       # exit if pull request and no alpha-release tag
-      - if: github.event_name == 'pull_request' && !contains(fromJSON(env.LABELS), 'alpha-release')
-        run: exit 0
+      - id: should-run
+        name: Check if should run
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]] && [[ ! "${{ contains(fromJSON(env.LABELS || '[]'), 'alpha-release') }}" == "true" ]]; then
+            echo "run=false" >> $GITHUB_OUTPUT
+          else
+            echo "run=true" >> $GITHUB_OUTPUT
+          fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.1
+        if: steps.should-run.outputs.run == 'true'
       - uses: pnpm/action-setup@v4
+        if: steps.should-run.outputs.run == 'true'
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
+        if: steps.should-run.outputs.run == 'true'
         with:
           node-version: 22
           cache: pnpm
 
+      - name: Update npm
+        if: steps.should-run.outputs.run == 'true'
+        run: npm install -g npm@^11
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Creating .npmrc
-        run: |
-          cat << EOF > ".npmrc"
-            //registry.npmjs.org/:_authToken=$NPM_TOKEN
-          EOF
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
+        if: steps.should-run.outputs.run == 'true'
 
       - name: Create unstable release
+        if: steps.should-run.outputs.run == 'true'
         env:
           TAG: ${{ github.event_name == 'push' && 'alpha' || format('pr-{0}', github.event.number) }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

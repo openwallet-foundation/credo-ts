@@ -1,10 +1,9 @@
+import { KeyManagementError } from '../../error/KeyManagementError'
+import { getJwkHumanDescription } from '../humanDescription'
 import type { KnownJwaKeyAgreementAlgorithm } from '../jwa'
 import type { KmsJwkPrivate, KmsJwkPublic, KmsJwkPublicCrv } from '../knownJwk'
 import type { KmsJwkPrivateOct, KmsJwkPublicOct } from '../kty/oct/octJwk'
 import type { KmsJwkPrivateRsa, KmsJwkPublicRsa } from '../kty/rsa/rsaJwk'
-
-import { KeyManagementError } from '../../error/KeyManagementError'
-import { getJwkHumanDescription } from '../humanDescription'
 
 function isCrvJwk<Jwk extends KmsJwkPrivate | KmsJwkPublic>(
   jwk: Jwk

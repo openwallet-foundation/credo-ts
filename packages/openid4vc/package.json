@@ -1,14 +1,30 @@
 {
   "name": "@credo-ts/openid4vc",
-  "main": "src/index",
-  "types": "src/index",
-  "version": "0.5.13",
-  "files": ["build"],
+  "exports": {
+    "cli": "./build/index.mjs",
+    "import": "./src/index.ts"
+  },
+  "version": "0.6.1",
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
-    "main": "build/index",
-    "types": "build/index",
-    "access": "public"
+    "access": "public",
+    "types": "./build/index.d.mts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": "./build/index.mjs",
+      "./package.json": "./package.json"
+    }
+  },
+  "browser": {
+    "./build/shared/router/express.mjs": "./build/shared/router/express.browser.mjs",
+    "./build/shared/router/express.js": "./build/shared/router/express.browser.js"
+  },
+  "react-native": {
+    "./build/shared/router/express.mjs": "./build/shared/router/express.native.mjs",
+    "./build/shared/router/express.js": "./build/shared/router/express.native.js"
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/openid4vc",
   "repository": {
@@ -17,28 +33,24 @@
     "directory": "packages/openid4vc"
   },
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile",
-    "clean": "rimraf ./build",
-    "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "build": "tsdown --config-loader unconfig",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
-    "class-transformer": "^0.5.1",
-    "rxjs": "^7.8.0",
-    "zod": "^3.24.2",
-    "@openid4vc/openid4vci": "0.3.0-alpha-20250511195407",
-    "@openid4vc/oauth2": "0.3.0-alpha-20250511195407",
-    "@openid4vc/openid4vp": "0.3.0-alpha-20250511195407",
-    "@openid4vc/utils": "0.3.0-alpha-20250511195407"
+    "class-transformer": "catalog:",
+    "rxjs": "catalog:",
+    "zod": "catalog:",
+    "@openid4vc/openid4vci": "^0.4.4",
+    "@openid4vc/oauth2": "^0.4.4",
+    "@openid4vc/openid4vp": "^0.4.4",
+    "@openid4vc/utils": "^0.4.4",
+    "@types/express": "catalog:",
+    "express": "catalog:"
   },
   "devDependencies": {
     "@credo-ts/tenants": "workspace:*",
-    "@types/express": "^4.17.21",
-    "express": "^4.21.2",
-    "nock": "^14.0.0-beta.19",
-    "rimraf": "^4.4.0",
-    "typescript": "~5.5.2"
+    "nock": "catalog:",
+    "typescript": "catalog:"
   }
 }

@@ -1,4 +1,7 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
+import { AgentContext, injectable } from '@credo-ts/core'
+import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
+import { OpenId4VpVerifierService } from './OpenId4VpVerifierService'
 import type {
   OpenId4VcUpdateVerifierRecordOptions,
   OpenId4VpCreateAuthorizationRequestOptions,
@@ -7,11 +10,6 @@ import type {
   OpenId4VpVerifyAuthorizationResponseOptions,
 } from './OpenId4VpVerifierServiceOptions'
 import type { OpenId4VcVerificationSessionRecord } from './repository'
-
-import { AgentContext, injectable } from '@credo-ts/core'
-
-import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
-import { OpenId4VpVerifierService } from './OpenId4VpVerifierService'
 
 /**
  * @public

@@ -1,5 +1,5 @@
-import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 import { defaultDocumentLoader } from '../data-integrity/libraries/documentLoader'
+import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 
 describe('W3cCredentialsModuleConfig', () => {
   test('sets default values', () => {
@@ -9,7 +9,7 @@ describe('W3cCredentialsModuleConfig', () => {
   })
 
   test('sets values', () => {
-    const documentLoader = jest.fn()
+    const documentLoader = vi.fn()
     const config = new W3cCredentialsModuleConfig({
       documentLoader,
     })

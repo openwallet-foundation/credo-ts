@@ -1,6 +1,6 @@
 import { areObjectsEqual } from './objectEquality'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export function deepEquality(x: any, y: any): boolean {
   // We do a simple equals here to check primitives, functions, regex, etc.
   // This will only happen if the typing of the function is ignored
@@ -31,8 +31,16 @@ export function equalsIgnoreOrder<Item = string>(a: Array<Item>, b: Array<Item>)
   return a.every((k) => b.includes(k))
 }
 
+/**
+ * @note This will only work for primitive array equality
+ */
+export function equalsWithOrder<Item = string>(lhs: Array<Item>, rhs: Array<Item>): boolean {
+  if (lhs.length !== rhs.length) return false
+  return lhs.every((k, i) => k === rhs[i])
+}
+
 // We take any here as we have to check some properties, they will be undefined if they do not exist
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 function simpleEqual(x: any, y: any) {
   // short circuit for easy equality
   if (x === y) return true

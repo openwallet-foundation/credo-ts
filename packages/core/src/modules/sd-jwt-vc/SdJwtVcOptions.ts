@@ -1,6 +1,12 @@
 import type { HashName } from '../../crypto'
 import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate, X509Certificate } from '../x509'
+import { SdJwtVcRecord } from './repository'
+import type { SdJwtVc } from './SdJwtVcService'
+
+export interface SdJwtVcStoreOptions {
+  record: SdJwtVcRecord
+}
 
 // TODO: extend with required claim names for input (e.g. vct)
 export type SdJwtVcPayload = Record<string, unknown>
@@ -38,26 +44,31 @@ export interface SdJwtVcIssuerX5c {
 
   /**
    *
-   * Array of base64-encoded certificate strings in the DER-format.
+   * Array of X509 certificates.
    *
    * The certificate containing the public key corresponding to the key used to digitally sign the JWS MUST be the first certificate.
    */
   x5c: X509Certificate[]
 
   /**
-   * The issuer of the JWT. Should be a HTTPS URI.
+   * The issuer of the SD-JWT VC.
    *
-   * The issuer value must either match a `uniformResourceIdentifier` SAN entry of the leaf entity certificate
-   * or the domain name in the `iss` value matches a `dNSName` SAN entry of the leaf-entity certificate.
+   * NOTE: in the latest draft of SD-JWT VC the issuer field is optional when using an X509 certificates
+   * to sign the SD-JWT VC.
+   *
+   * Since it's not clear what the iss value should be Credo will likely require
+   * the value to be undefined in a future version, but for now if the issuer value
+   * is defined it MUST match an SAN URI or DNS entry in the leaf certificate, mimicking
+   * previous behavior.
    */
-  issuer: string
+  issuer?: string
 }
 
 // We support jwk and did based binding for the holder at the moment
 export type SdJwtVcHolderBinding = SdJwtVcHolderDidBinding | SdJwtVcHolderJwkBinding
 
-// We only support did based issuance currently, but we might want to add support
-// for x509 or issuer metadata (as defined in SD-JWT VC) in the future
+// We only support did and x509 based issuance currently, but we might want to add support
+// for issuer metadata (as defined in SD-JWT VC) in the future
 export type SdJwtVcIssuer = SdJwtVcIssuerDid | SdJwtVcIssuerX5c
 
 export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> {
@@ -87,7 +98,7 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
 
 // TODO: use the payload type once types are fixed
 export type SdJwtVcPresentOptions<_Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
-  compactSdJwtVc: string
+  sdJwtVc: string | SdJwtVc
 
   /**
    * Use true to disclose everything
@@ -140,8 +151,23 @@ export type SdJwtVcVerifyOptions = {
    * Whether to fetch the `vct` type metadata if the `vct` is an https URL.
    *
    * It will will not influence the verification result if fetching of type metadata fails
+   *
+   * @default false
    */
   fetchTypeMetadata?: boolean
 
+  /**
+   * Whether to verify the status of the credential. If set to false and the credential
+   * has a status, it will not be fetched and verified.
+   *
+   * @default true
+   */
+  verifyCredentialStatus?: boolean
+
   trustedCertificates?: EncodedX509Certificate[]
+
+  /**
+   * Date that should be used as the current time. If not provided, current time will be used.
+   */
+  now?: Date
 }

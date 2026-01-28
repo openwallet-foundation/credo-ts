@@ -9,6 +9,7 @@ import type {
   CredentialRequest,
   CredentialRequestFormatSpecific,
   CredentialRequestWithFormats,
+  DeferredCredentialRequest,
   IssuerMetadataResult,
   ParseCredentialRequestReturn,
 } from '@openid4vc/openid4vci'
@@ -20,7 +21,7 @@ import type {
 } from '@openid4vc/openid4vp'
 
 export { authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier } from '@openid4vc/oauth2'
-export { Openid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
+export type { Openid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 
 export type OpenId4VciCredentialConfigurationSupportedWithFormats = CredentialConfigurationSupportedWithFormats
 export type OpenId4VciCredentialConfigurationSupported = CredentialConfigurationSupported
@@ -44,6 +45,8 @@ export type OpenId4VciCredentialIssuerMetadataDisplay = CredentialIssuerMetadata
 
 export type OpenId4VciCredentialRequest = CredentialRequest
 export type OpenId4VciCredentialRequestWithFormats = CredentialRequestWithFormats
+
+export type OpenId4VciDeferredCredentialRequest = DeferredCredentialRequest
 
 export type OpenId4VciCredentialOfferPayload = CredentialOfferObject
 

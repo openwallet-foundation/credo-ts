@@ -1,8 +1,5 @@
 import type { DependencyManager } from '@credo-ts/core'
-import type { AnonCredsRegistry } from '../services'
-
 import { AnonCredsDataIntegrityServiceSymbol } from '@credo-ts/core'
-
 import { anoncreds } from '../../tests/helpers'
 import { AnonCredsModule } from '../AnonCredsModule'
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
@@ -17,12 +14,13 @@ import {
   AnonCredsRevocationRegistryDefinitionRepository,
   AnonCredsSchemaRepository,
 } from '../repository'
+import type { AnonCredsRegistry } from '../services'
 import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol, AnonCredsVerifierServiceSymbol } from '../services'
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
 
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
 } as unknown as DependencyManager
 
 const registry = {} as AnonCredsRegistry

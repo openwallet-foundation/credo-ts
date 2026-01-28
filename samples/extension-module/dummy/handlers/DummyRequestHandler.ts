@@ -1,11 +1,9 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
+import { DummyRequestMessage } from '../messages'
 import type { DummyService } from '../services'
 
-import { getOutboundMessageContext } from '@credo-ts/didcomm'
-
-import { DummyRequestMessage } from '../messages'
-
-export class DummyRequestHandler implements MessageHandler {
+export class DummyRequestHandler implements DidCommMessageHandler {
   public supportedMessages = [DummyRequestMessage]
   private dummyService: DummyService
 
@@ -13,12 +11,12 @@ export class DummyRequestHandler implements MessageHandler {
     this.dummyService = dummyService
   }
 
-  public async handle(inboundMessage: MessageHandlerInboundMessage<DummyRequestHandler>) {
+  public async handle(inboundMessage: DidCommMessageHandlerInboundMessage<DummyRequestHandler>) {
     const connectionRecord = inboundMessage.assertReadyConnection()
     const responseMessage = await this.dummyService.processRequest(inboundMessage)
 
     if (responseMessage) {
-      return getOutboundMessageContext(inboundMessage.agentContext, {
+      return getOutboundDidCommMessageContext(inboundMessage.agentContext, {
         connectionRecord,
         message: responseMessage,
       })

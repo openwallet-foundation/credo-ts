@@ -1,9 +1,8 @@
 import type { AgentContext } from '../../../agent'
-import type { Query, QueryOptions } from '../../../storage/StorageService'
-import type { SaveGenericRecordOption } from '../repository/GenericRecord'
-
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
+import type { Query, QueryOptions } from '../../../storage/StorageService'
+import type { SaveGenericRecordOption } from '../repository/GenericRecord'
 import { GenericRecord } from '../repository/GenericRecord'
 import { GenericRecordsRepository } from '../repository/GenericRecordsRepository'
 
@@ -46,7 +45,9 @@ export class GenericRecordService {
     try {
       await this.genericRecordsRepository.update(agentContext, record)
     } catch (error) {
-      throw new CredoError(`Unable to update the genericRecord record with id ${record.id}. Message: ${error}`)
+      throw new CredoError(`Unable to update the genericRecord record with id ${record.id}. Message: ${error}`, {
+        cause: error,
+      })
     }
   }
 

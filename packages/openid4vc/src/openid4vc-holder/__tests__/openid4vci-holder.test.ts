@@ -1,22 +1,28 @@
-import { KeyDidCreateOptions, Kms, SdJwtVc } from '@credo-ts/core'
-
-import { Agent, DidKey, TypedArrayEncoder, W3cCredentialService, W3cJwtVerifiableCredential } from '@credo-ts/core'
+import '@openwallet-foundation/askar-nodejs'
+import {
+  Agent,
+  DidKey,
+  type KeyDidCreateOptions,
+  Kms,
+  SdJwtVcRecord,
+  TypedArrayEncoder,
+  W3cCredentialRecord,
+  W3cCredentialService,
+  W3cJwtVerifiableCredential,
+} from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
-import { agentDependencies } from '../../../../node/src'
-import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
-import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
-
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import { agentDependencies } from '../../../../node/src'
+import { OpenId4VcModule } from '../../OpenId4VcModule'
+import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
 const holder = new Agent({
-  config: {
-    label: 'OpenId4VcHolder Test28',
-  },
+  config: {},
   dependencies: agentDependencies,
   modules: {
-    openId4VcHolder: new OpenId4VcHolderModule(),
+    openid4vc: new OpenId4VcModule(),
     inMemory: new InMemoryWalletModule(),
   },
 })
@@ -100,18 +106,19 @@ describe('OpenId4VcHolder', () => {
         .post('/oidc/v1/auth/credential')
         .reply(200, fixture.credentialResponse)
 
-      const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
-      const accessTokenResponse = await holder.modules.openId4VcHolder.requestToken({
+      const resolved = await holder.openid4vc.holder.resolveCredentialOffer(fixture.credentialOffer)
+      const accessTokenResponse = await holder.openid4vc.holder.requestToken({
         resolvedCredentialOffer: resolved,
       })
 
       // The credential issued by mattr launchpad is expired, so we mock the verification...
       const w3cCredentialService = holder.dependencyManager.resolve(W3cCredentialService)
-      jest
-        .spyOn(w3cCredentialService, 'verifyCredential')
-        .mockImplementationOnce(async () => ({ isValid: true, validations: {} }))
+      vi.spyOn(w3cCredentialService, 'verifyCredential').mockImplementationOnce(async () => ({
+        isValid: true,
+        validations: {},
+      }))
 
-      const credentialsResult = await holder.modules.openId4VcHolder.requestCredentials({
+      const credentialsResult = await holder.openid4vc.holder.requestCredentials({
         resolvedCredentialOffer: resolved,
         ...accessTokenResponse,
 
@@ -126,11 +133,11 @@ describe('OpenId4VcHolder', () => {
       })
 
       expect(credentialsResult.credentials).toHaveLength(1)
-      const w3cCredential = credentialsResult.credentials[0].credentials[0] as W3cJwtVerifiableCredential
+      const w3cCredential = (credentialsResult.credentials[0].record as W3cCredentialRecord).firstCredential
       expect(w3cCredential).toBeInstanceOf(W3cJwtVerifiableCredential)
 
-      expect(w3cCredential.credential.type).toEqual(['VerifiableCredential', 'OpenBadgeCredential'])
-      expect(w3cCredential.credential.credentialSubjectIds[0]).toEqual(holderDid)
+      expect(w3cCredential.type).toEqual(['VerifiableCredential', 'OpenBadgeCredential'])
+      expect(w3cCredential.credentialSubjectIds[0]).toEqual(holderDid)
     })
 
     it('Should successfully receive credential from walt.id using the pre-authorized flow using a did:key Ed25519 subject and jwt_vc_json credential', async () => {
@@ -156,13 +163,13 @@ describe('OpenId4VcHolder', () => {
         .post('/credential')
         .reply(200, fixture.credentialResponse)
 
-      const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOfferPreAuth)
-      const accessTokenResponse = await holder.modules.openId4VcHolder.requestToken({
+      const resolved = await holder.openid4vc.holder.resolveCredentialOffer(fixture.credentialOfferPreAuth)
+      const accessTokenResponse = await holder.openid4vc.holder.requestToken({
         resolvedCredentialOffer: resolved,
       })
 
       await expect(() =>
-        holder.modules.openId4VcHolder.requestCredentials({
+        holder.openid4vc.holder.requestCredentials({
           resolvedCredentialOffer: resolved,
           ...accessTokenResponse,
           verifyCredentialStatus: false,
@@ -184,6 +191,9 @@ describe('OpenId4VcHolder', () => {
 
       nock('https://openid4vc.animo.id')
         .get('/.well-known/oauth-authorization-server/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37')
+        .reply(404)
+
+        .get('/.well-known/openid-credential-issuer/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37')
         .reply(404)
 
       // setup server metadata response
@@ -208,15 +218,13 @@ describe('OpenId4VcHolder', () => {
         .post('/notification')
         .reply(204, 'No Content')
 
-      const resolvedCredentialOffer = await holder.modules.openId4VcHolder.resolveCredentialOffer(
-        fixture.credentialOffer
-      )
+      const resolvedCredentialOffer = await holder.openid4vc.holder.resolveCredentialOffer(fixture.credentialOffer)
 
-      const tokenResponse = await holder.modules.openId4VcHolder.requestToken({
+      const tokenResponse = await holder.openid4vc.holder.requestToken({
         resolvedCredentialOffer,
       })
 
-      const credentialResponse = await holder.modules.openId4VcHolder.requestCredentials({
+      const credentialResponse = await holder.openid4vc.holder.requestCredentials({
         resolvedCredentialOffer,
         ...tokenResponse,
         verifyCredentialStatus: false,
@@ -224,14 +232,14 @@ describe('OpenId4VcHolder', () => {
         // or determine the did dynamically we could use any signature algorithm
         allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
         credentialConfigurationIds: Object.entries(resolvedCredentialOffer.offeredCredentialConfigurations)
-          .filter(([, configuration]) => configuration.format === 'vc+sd-jwt')
+          .filter(([, configuration]) => configuration.format === 'dc+sd-jwt')
           .map(([id]) => id),
         credentialBindingResolver: () => ({ method: 'jwk', keys: [holderKey] }),
       })
 
       if (!credentialResponse.credentials[0]?.notificationId) throw new Error("Notification metadata wasn't returned")
 
-      await holder.modules.openId4VcHolder.sendNotification({
+      await holder.openid4vc.holder.sendNotification({
         accessToken: tokenResponse.accessToken,
         notificationEvent: 'credential_accepted',
         notificationId: credentialResponse.credentials[0]?.notificationId,
@@ -240,9 +248,9 @@ describe('OpenId4VcHolder', () => {
       })
 
       expect(credentialResponse.credentials).toHaveLength(1)
-      const credential = credentialResponse.credentials[0].credentials[0] as SdJwtVc
+      const credential = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
       expect(credential).toEqual({
-        claimFormat: 'vc+sd-jwt',
+        claimFormat: 'dc+sd-jwt',
         compact:
           'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6IiN6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgifQ.eyJ2Y3QiOiJBbmltb09wZW5JZDRWY1BsYXlncm91bmQiLCJwbGF5Z3JvdW5kIjp7ImZyYW1ld29yayI6IkFyaWVzIEZyYW1ld29yayBKYXZhU2NyaXB0IiwiY3JlYXRlZEJ5IjoiQW5pbW8gU29sdXRpb25zIiwiX3NkIjpbImZZM0ZqUHpZSEZOcHlZZnRnVl9kX25DMlRHSVh4UnZocE00VHdrMk1yMDQiLCJwTnNqdmZJeVBZOEQwTks1c1l0alR2Nkc2R0FNVDNLTjdaZDNVNDAwZ1pZIl19LCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoia2MydGxwaGNadzFBSUt5a3pNNnBjY2k2UXNLQW9jWXpGTC01RmUzNmg2RSJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgiLCJpYXQiOjE3MDU4NDM1NzQsIl9zZF9hbGciOiJzaGEtMjU2In0.2iAjaCFcuiHXTfQsrxXo6BghtwzqTrfDmhmarAAJAhY8r9yKXY3d10JY1dry2KnaEYWpq2R786thjdA5BXlPAQ~WyI5MzM3MTM0NzU4NDM3MjYyODY3NTE4NzkiLCJsYW5ndWFnZSIsIlR5cGVTY3JpcHQiXQ~WyIxMTQ3MDA5ODk2Nzc2MDYzOTc1MDUwOTMxIiwidmVyc2lvbiIsIjEuMCJd~',
         encoded:
@@ -252,6 +260,23 @@ describe('OpenId4VcHolder', () => {
           kid: '#z6Mkh5HNPCCJWZn6WRLjRPttyvYZBskZUdSJfTiZwcUSieqx',
           typ: 'vc+sd-jwt',
         },
+        holder: {
+          jwk: {
+            jwk: {
+              jwk: {
+                crv: 'Ed25519',
+                kty: 'OKP',
+                x: 'kc2tlphcZw1AIKykzM6pcci6QsKAocYzFL-5Fe36h6E',
+              },
+              multicodecPrefix: 237,
+              supportedEncryptionKeyAgreementAlgorithms: [],
+              supportedSignatureAlgorithms: ['EdDSA', 'Ed25519'],
+            },
+          },
+          method: 'jwk',
+        },
+        kbJwt: undefined,
+        kmsKeyId: expect.any(String),
         payload: {
           _sd_alg: 'sha-256',
           cnf: {
@@ -321,11 +346,9 @@ describe('OpenId4VcHolder', () => {
         .get('/.well-known/oauth-authorization-server')
         .reply(404)
 
-      const resolvedCredentialOffer = await holder.modules.openId4VcHolder.resolveCredentialOffer(
-        fixture.credentialOfferAuth
-      )
+      const resolvedCredentialOffer = await holder.openid4vc.holder.resolveCredentialOffer(fixture.credentialOfferAuth)
 
-      const resolvedAuthorizationRequest = await holder.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
+      const resolvedAuthorizationRequest = await holder.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
         resolvedCredentialOffer,
         {
           clientId: 'test-client',
@@ -338,7 +361,7 @@ describe('OpenId4VcHolder', () => {
         throw new Error('unexpected authorization flow')
       }
 
-      const tokenResponse = await holder.modules.openId4VcHolder.requestToken({
+      const tokenResponse = await holder.openid4vc.holder.requestToken({
         resolvedCredentialOffer,
         clientId: 'test-client',
         redirectUri: 'https://example.com',
@@ -346,7 +369,7 @@ describe('OpenId4VcHolder', () => {
       })
 
       await expect(
-        holder.modules.openId4VcHolder.requestCredentials({
+        holder.openid4vc.holder.requestCredentials({
           resolvedCredentialOffer,
           ...tokenResponse,
           allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],

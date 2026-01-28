@@ -7,8 +7,8 @@ import {
   EddsaSaSigSecp256k1,
   PublicKey,
   PublicKeyTransformer,
-  RsaSig2018,
   publicKeyTypes,
+  RsaSig2018,
 } from '../publicKey'
 
 const publicKeysJson = [
@@ -73,31 +73,29 @@ describe('Did | PublicKey', () => {
 
   const publicKeyJsonToClassTests: [string, ClassConstructor<PublicKey>, Record<string, string | undefined>, string][] =
     publicKeysJson.map((pk) => [pk.class.name, pk.class, pk.json, pk.valueKey])
-  test.each(publicKeyJsonToClassTests)(
-    'should correctly transform Json to %s class',
-    async (_, publicKeyClass, json, valueKey) => {
-      const publicKey = plainToInstance(publicKeyClass, json)
+  test.each(
+    publicKeyJsonToClassTests
+  )('should correctly transform Json to %s class', async (_, publicKeyClass, json, valueKey) => {
+    const publicKey = plainToInstance(publicKeyClass, json)
 
-      expect(publicKey.id).toBe(json.id)
-      expect(publicKey.type).toBe(json.type)
-      expect(publicKey.controller).toBe(json.controller)
-      expect(publicKey.value).toBe(json[valueKey])
-    }
-  )
+    expect(publicKey.id).toBe(json.id)
+    expect(publicKey.type).toBe(json.type)
+    expect(publicKey.controller).toBe(json.controller)
+    expect(publicKey.value).toBe(json[valueKey])
+  })
 
   const publicKeyClassToJsonTests: [string, PublicKey, Record<string, string | undefined>, string][] =
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     publicKeysJson.map((pk) => [pk.class.name, new pk.class({ ...(pk.json as any) }), pk.json, pk.valueKey])
 
-  test.each(publicKeyClassToJsonTests)(
-    'should correctly transform %s class to Json',
-    async (_, publicKey, json, valueKey) => {
-      const publicKeyJson = instanceToPlain(publicKey)
+  test.each(
+    publicKeyClassToJsonTests
+  )('should correctly transform %s class to Json', async (_, publicKey, json, valueKey) => {
+    const publicKeyJson = instanceToPlain(publicKey)
 
-      expect(publicKey.value).toBe(json[valueKey])
-      expect(publicKeyJson).toMatchObject(json)
-    }
-  )
+    expect(publicKey.value).toBe(json[valueKey])
+    expect(publicKeyJson).toMatchObject(json)
+  })
 
   describe('PublicKeyTransformer', () => {
     class PublicKeyTransformerTest {

@@ -1,7 +1,6 @@
-import { DeviceRequest, cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
-
-import { Agent, X509Certificate } from '../../..'
+import { cborEncode, DeviceRequest, parseDeviceResponse } from '@animo-id/mdoc'
 import { getAgentOptions } from '../../../../tests'
+import { Agent, X509Certificate } from '../../..'
 import { TypedArrayEncoder } from '../../../utils'
 import { PublicJwk } from '../../kms'
 import { Mdoc } from '../Mdoc'

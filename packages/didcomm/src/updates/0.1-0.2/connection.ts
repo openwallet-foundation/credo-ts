@@ -1,6 +1,4 @@
 import type { BaseAgent, JsonObject } from '@credo-ts/core'
-import type { ConnectionRecord } from '../../modules/connections'
-
 import {
   DidDocumentRole,
   DidKey,
@@ -10,25 +8,26 @@ import {
   JsonEncoder,
   JsonTransformer,
 } from '@credo-ts/core'
+import type { DidCommConnectionRecord } from '../../modules/connections'
 
 import {
-  ConnectionInvitationMessage,
-  ConnectionRepository,
-  ConnectionRole,
-  ConnectionState,
+  DidCommConnectionInvitationMessage,
+  DidCommConnectionRepository,
+  DidCommConnectionRole,
+  DidCommConnectionState,
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
   DidDoc,
-  DidExchangeRole,
-  DidExchangeState,
 } from '../../modules/connections'
 import { convertToNewDidDocument } from '../../modules/connections/services/helpers'
 import { convertToNewInvitation } from '../../modules/oob/converters'
-import { OutOfBandRole } from '../../modules/oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../../modules/oob/domain/OutOfBandState'
+import { DidCommOutOfBandRole } from '../../modules/oob/domain/DidCommOutOfBandRole'
+import { DidCommOutOfBandState } from '../../modules/oob/domain/DidCommOutOfBandState'
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from '../../modules/oob/helpers'
-import { OutOfBandRecord, OutOfBandRepository } from '../../modules/oob/repository'
+import { DidCommOutOfBandRecord, DidCommOutOfBandRepository } from '../../modules/oob/repository'
 
 /**
- * Migrates the {@link ConnectionRecord} to 0.2 compatible format. It fetches all records from storage
+ * Migrates the {@link DidCommConnectionRecord} to 0.2 compatible format. It fetches all records from storage
  * and applies the needed updates to the records. After a record has been transformed, it is updated
  * in storage and the next record will be transformed.
  *
@@ -39,7 +38,7 @@ import { OutOfBandRecord, OutOfBandRepository } from '../../modules/oob/reposito
  */
 export async function migrateConnectionRecordToV0_2<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating connection records to storage version 0.2')
-  const connectionRepository = agent.dependencyManager.resolve(ConnectionRepository)
+  const connectionRepository = agent.dependencyManager.resolve(DidCommConnectionRepository)
 
   agent.config.logger.debug('Fetching all connection records from storage')
   const allConnections = await connectionRepository.getAll(agent.context)
@@ -69,10 +68,10 @@ export async function migrateConnectionRecordToV0_2<Agent extends BaseAgent>(age
 
 /**
  * With the addition of the did exchange protocol there are now two states and roles related to the connection record; for the did exchange protocol and for the connection protocol.
- * To keep it easy to work with the connection record, all state and role values are updated to those of the {@link DidExchangeRole} and {@link DidExchangeState}.
+ * To keep it easy to work with the connection record, all state and role values are updated to those of the {@link DidCommDidExchangeRole} and {@link DidCommDidExchangeState}.
  *
- * This migration method transforms all connection record state and role values to their respective values of the {@link DidExchangeRole} and {@link DidExchangeState}. For convenience a getter
- * property `rfc0160ConnectionState` is added to the connection record which returns the {@link ConnectionState} value.
+ * This migration method transforms all connection record state and role values to their respective values of the {@link DidCommDidExchangeRole} and {@link DidCommDidExchangeState}. For convenience a getter
+ * property `rfc0160ConnectionState` is added to the connection record which returns the {@link DidCommConnectionState} value.
  *
  * The following 0.1.0 connection record structure (unrelated keys omitted):
  *
@@ -94,7 +93,7 @@ export async function migrateConnectionRecordToV0_2<Agent extends BaseAgent>(age
  */
 export async function updateConnectionRoleAndState<Agent extends BaseAgent>(
   agent: Agent,
-  connectionRecord: ConnectionRecord
+  connectionRecord: DidCommConnectionRecord
 ) {
   agent.config.logger.debug(
     `Extracting 'didDoc' and 'theirDidDoc' from connection record into separate DidRecord and updating unqualified dids to did:peer dids`
@@ -148,7 +147,10 @@ export async function updateConnectionRoleAndState<Agent extends BaseAgent>(
  * }
  * ```
  */
-export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, connectionRecord: ConnectionRecord) {
+export async function extractDidDocument<Agent extends BaseAgent>(
+  agent: Agent,
+  connectionRecord: DidCommConnectionRecord
+) {
   agent.config.logger.debug(
     `Extracting 'didDoc' and 'theirDidDoc' from connection record into separate DidRecord and updating unqualified dids to did:peer dids`
   )
@@ -199,7 +201,7 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
 
     agent.config.logger.debug('Deleting old did document from connection record and storing new did:peer did')
     // Remove didDoc and assign the new did:peer did to did
-    // biome-ignore lint/performance/noDelete: <explanation>
+    // biome-ignore lint/performance/noDelete: no explanation
     delete untypedConnectionRecord.didDoc
     connectionRecord.did = newOurDidDocument.id
   } else {
@@ -251,7 +253,7 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
 
     agent.config.logger.debug('Deleting old theirDidDoc from connection record and storing new did:peer theirDid')
     // Remove theirDidDoc and assign the new did:peer did to theirDid
-    // biome-ignore lint/performance/noDelete: <explanation>
+    // biome-ignore lint/performance/noDelete: no explanation
     delete untypedConnectionRecord.theirDidDoc
     connectionRecord.theirDid = newTheirDidDocument.id
   } else {
@@ -261,15 +263,15 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
   }
 
   // Delete legacy verkey property
-  // biome-ignore lint/performance/noDelete: <explanation>
+  // biome-ignore lint/performance/noDelete: no explanation
   delete untypedConnectionRecord.verkey
 }
 
 /**
- * With the addition of the out of band protocol, invitations are now stored in the {@link OutOfBandRecord}. In addition a new field `invitationDid` is added to the connection record that
+ * With the addition of the out of band protocol, invitations are now stored in the {@link DidCommOutOfBandRecord}. In addition a new field `invitationDid` is added to the connection record that
  * is generated based on the invitation service or did. This allows to reuse existing connections.
  *
- * This migration method extracts the invitation and other relevant data into a separate {@link OutOfBandRecord}. By doing so it converts the old connection protocol invitation into the new
+ * This migration method extracts the invitation and other relevant data into a separate {@link DidCommOutOfBandRecord}. By doing so it converts the old connection protocol invitation into the new
  * Out of band invitation message. Based on the service or did of the invitation, the `invitationDid` is populated.
  *
  * Previously when creating a multi use invitation, a connection record would be created with the `multiUseInvitation` set to true. The connection record would always be in state `invited`.
@@ -303,14 +305,14 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
  */
 export async function migrateToOobRecord<Agent extends BaseAgent>(
   agent: Agent,
-  connectionRecord: ConnectionRecord
-): Promise<ConnectionRecord | undefined> {
+  connectionRecord: DidCommConnectionRecord
+): Promise<DidCommConnectionRecord | undefined> {
   agent.config.logger.debug(
     `Migrating properties from connection record with id ${connectionRecord.id} to out of band record`
   )
 
-  const oobRepository = agent.dependencyManager.resolve(OutOfBandRepository)
-  const connectionRepository = agent.dependencyManager.resolve(ConnectionRepository)
+  const oobRepository = agent.dependencyManager.resolve(DidCommOutOfBandRepository)
+  const connectionRepository = agent.dependencyManager.resolve(DidCommConnectionRepository)
 
   const untypedConnectionRecord = connectionRecord as unknown as JsonObject
   const oldInvitationJson = untypedConnectionRecord.invitation as JsonObject | undefined
@@ -318,7 +320,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
 
   // Only migrate if there is an invitation stored
   if (oldInvitationJson) {
-    const oldInvitation = JsonTransformer.fromJSON(oldInvitationJson, ConnectionInvitationMessage)
+    const oldInvitation = JsonTransformer.fromJSON(oldInvitationJson, DidCommConnectionInvitationMessage)
 
     agent.config.logger.debug('Found a legacy invitation in connection record. Migrating it to an out of band record.')
 
@@ -328,27 +330,30 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
     const recipientKeyFingerprints = outOfBandInvitation
       .getInlineServices()
       .map((s) => s.recipientKeys)
-      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+      // biome-ignore lint/performance/noAccumulatingSpread: no explanation
       .reduce((acc, curr) => [...acc, ...curr], [])
       .map((didKey) => DidKey.fromDid(didKey).publicJwk.fingerprint)
 
-    const oobRole = connectionRecord.role === DidExchangeRole.Responder ? OutOfBandRole.Sender : OutOfBandRole.Receiver
+    const oobRole =
+      connectionRecord.role === DidCommDidExchangeRole.Responder
+        ? DidCommOutOfBandRole.Sender
+        : DidCommOutOfBandRole.Receiver
     const oobRecords = await oobRepository.findByQuery(agent.context, {
       invitationId: oldInvitation.id,
       recipientKeyFingerprints,
       role: oobRole,
     })
 
-    let oobRecord: OutOfBandRecord | undefined = oobRecords[0]
+    let oobRecord: DidCommOutOfBandRecord | undefined = oobRecords[0]
 
     if (!oobRecord) {
       agent.config.logger.debug('Create out of band record.')
 
-      const connectionRole = connectionRecord.role as DidExchangeRole
-      const connectionState = connectionRecord.state as DidExchangeState
+      const connectionRole = connectionRecord.role as DidCommDidExchangeRole
+      const connectionState = connectionRecord.state as DidCommDidExchangeState
       const oobState = oobStateFromDidExchangeRoleAndState(connectionRole, connectionState)
 
-      oobRecord = new OutOfBandRecord({
+      oobRecord = new DidCommOutOfBandRecord({
         role: oobRole,
         state: oobState,
         alias: connectionRecord.alias,
@@ -372,7 +377,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
     // only when we find the multiUseInvitation we can update it.
     if (oldMultiUseInvitation) {
       oobRecord.reusable = true
-      oobRecord.state = OutOfBandState.AwaitResponse
+      oobRecord.state = DidCommOutOfBandState.AwaitResponse
       oobRecord.mediatorId = connectionRecord.mediatorId
       oobRecord.autoAcceptConnection = connectionRecord.autoAcceptConnection
 
@@ -396,14 +401,14 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
     connectionRecord.invitationDid = invitationDid
 
     // Remove invitation and assign the oob id to the connection record
-    // biome-ignore lint/performance/noDelete: <explanation>
+    // biome-ignore lint/performance/noDelete: no explanation
     delete untypedConnectionRecord.invitation
     connectionRecord.outOfBandId = oobRecord.id
   }
 
   agent.config.logger.debug('Removing multiUseInvitation property from connection record')
   // multiUseInvitation is now stored as reusable in the out of band record
-  // biome-ignore lint/performance/noDelete: <explanation>
+  // biome-ignore lint/performance/noDelete: no explanation
   delete untypedConnectionRecord.multiUseInvitation
 
   return connectionRecord
@@ -412,23 +417,25 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
 /**
  * Determine the out of band state based on the did exchange role and state.
  */
-export function oobStateFromDidExchangeRoleAndState(role: DidExchangeRole, state: DidExchangeState) {
+export function oobStateFromDidExchangeRoleAndState(role: DidCommDidExchangeRole, state: DidCommDidExchangeState) {
   const stateMapping = {
-    [DidExchangeState.InvitationReceived]: OutOfBandState.PrepareResponse,
-    [DidExchangeState.InvitationSent]: OutOfBandState.AwaitResponse,
+    [DidCommDidExchangeState.InvitationReceived]: DidCommOutOfBandState.PrepareResponse,
+    [DidCommDidExchangeState.InvitationSent]: DidCommOutOfBandState.AwaitResponse,
 
-    [DidExchangeState.RequestReceived]: OutOfBandState.Done,
-    [DidExchangeState.RequestSent]: OutOfBandState.Done,
+    [DidCommDidExchangeState.RequestReceived]: DidCommOutOfBandState.Done,
+    [DidCommDidExchangeState.RequestSent]: DidCommOutOfBandState.Done,
 
-    [DidExchangeState.ResponseReceived]: OutOfBandState.Done,
-    [DidExchangeState.ResponseSent]: OutOfBandState.Done,
+    [DidCommDidExchangeState.ResponseReceived]: DidCommOutOfBandState.Done,
+    [DidCommDidExchangeState.ResponseSent]: DidCommOutOfBandState.Done,
 
-    [DidExchangeState.Completed]: OutOfBandState.Done,
-    [DidExchangeState.Abandoned]: OutOfBandState.Done,
+    [DidCommDidExchangeState.Completed]: DidCommOutOfBandState.Done,
+    [DidCommDidExchangeState.Abandoned]: DidCommOutOfBandState.Done,
   }
 
-  if (state === DidExchangeState.Start) {
-    return role === DidExchangeRole.Requester ? OutOfBandState.PrepareResponse : OutOfBandState.AwaitResponse
+  if (state === DidCommDidExchangeState.Start) {
+    return role === DidCommDidExchangeRole.Requester
+      ? DidCommOutOfBandState.PrepareResponse
+      : DidCommOutOfBandState.AwaitResponse
   }
 
   return stateMapping[state]
@@ -438,35 +445,35 @@ export function oobStateFromDidExchangeRoleAndState(role: DidExchangeRole, state
  * Determine the did exchange state based on the connection/did-exchange role and state.
  */
 export function didExchangeStateAndRoleFromRoleAndState(
-  role: ConnectionRole | DidExchangeRole,
-  state: ConnectionState | DidExchangeState
-): [DidExchangeRole, DidExchangeState] {
+  role: DidCommConnectionRole | DidCommDidExchangeRole,
+  state: DidCommConnectionState | DidCommDidExchangeState
+): [DidCommDidExchangeRole, DidCommDidExchangeState] {
   const roleMapping = {
     // Responder / Inviter
-    [DidExchangeRole.Responder]: DidExchangeRole.Responder,
-    [ConnectionRole.Inviter]: DidExchangeRole.Responder,
+    [DidCommDidExchangeRole.Responder]: DidCommDidExchangeRole.Responder,
+    [DidCommConnectionRole.Inviter]: DidCommDidExchangeRole.Responder,
 
     // Request / Invitee
-    [DidExchangeRole.Requester]: DidExchangeRole.Requester,
-    [ConnectionRole.Invitee]: DidExchangeRole.Requester,
+    [DidCommDidExchangeRole.Requester]: DidCommDidExchangeRole.Requester,
+    [DidCommConnectionRole.Invitee]: DidCommDidExchangeRole.Requester,
   }
 
   const roleStateMapping = {
-    [DidExchangeRole.Requester]: {
-      // DidExchangeRole.Requester
-      [ConnectionState.Invited]: DidExchangeState.InvitationReceived,
-      [ConnectionState.Requested]: DidExchangeState.RequestSent,
-      [ConnectionState.Responded]: DidExchangeState.ResponseReceived,
-      [ConnectionState.Complete]: DidExchangeState.Completed,
-      [ConnectionState.Null]: DidExchangeState.Start,
+    [DidCommDidExchangeRole.Requester]: {
+      // DidCommDidExchangeRole.Requester
+      [DidCommConnectionState.Invited]: DidCommDidExchangeState.InvitationReceived,
+      [DidCommConnectionState.Requested]: DidCommDidExchangeState.RequestSent,
+      [DidCommConnectionState.Responded]: DidCommDidExchangeState.ResponseReceived,
+      [DidCommConnectionState.Complete]: DidCommDidExchangeState.Completed,
+      [DidCommConnectionState.Null]: DidCommDidExchangeState.Start,
     },
-    [DidExchangeRole.Responder]: {
-      // DidExchangeRole.Responder
-      [ConnectionState.Invited]: DidExchangeState.InvitationSent,
-      [ConnectionState.Requested]: DidExchangeState.RequestReceived,
-      [ConnectionState.Responded]: DidExchangeState.ResponseSent,
-      [ConnectionState.Complete]: DidExchangeState.Completed,
-      [ConnectionState.Null]: DidExchangeState.Start,
+    [DidCommDidExchangeRole.Responder]: {
+      // DidCommDidExchangeRole.Responder
+      [DidCommConnectionState.Invited]: DidCommDidExchangeState.InvitationSent,
+      [DidCommConnectionState.Requested]: DidCommDidExchangeState.RequestReceived,
+      [DidCommConnectionState.Responded]: DidCommDidExchangeState.ResponseSent,
+      [DidCommConnectionState.Complete]: DidCommDidExchangeState.Completed,
+      [DidCommConnectionState.Null]: DidCommDidExchangeState.Start,
     },
   }
 
@@ -487,6 +494,6 @@ export function didExchangeStateAndRoleFromRoleAndState(
   return [didExchangeRole, state]
 }
 
-function isConnectionState(state: string): state is ConnectionState {
-  return Object.values(ConnectionState).includes(state as ConnectionState)
+function isConnectionState(state: string): state is DidCommConnectionState {
+  return Object.values(DidCommConnectionState).includes(state as DidCommConnectionState)
 }

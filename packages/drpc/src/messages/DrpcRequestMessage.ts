@@ -1,4 +1,4 @@
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose } from 'class-transformer'
 
 import { IsValidDrpcRequest } from '../models'
@@ -6,14 +6,14 @@ import { IsValidDrpcRequest } from '../models'
 export interface DrpcRequestObject {
   jsonrpc: string
   method: string
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   params?: any[] | object
   id: string | number | null
 }
 
 export type DrpcRequest = DrpcRequestObject | DrpcRequestObject[]
 
-export class DrpcRequestMessage extends AgentMessage {
+export class DrpcRequestMessage extends DidCommMessage {
   public constructor(options: { request: DrpcRequest }) {
     super()
     if (options) {

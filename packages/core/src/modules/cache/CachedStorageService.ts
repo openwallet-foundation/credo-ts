@@ -2,12 +2,12 @@ import { AgentContext } from '../../agent'
 import { InjectionSymbols } from '../../constants'
 import { inject, injectable } from '../../plugins'
 import { BaseRecord } from '../../storage/BaseRecord'
-import { BaseRecordConstructor, Query, QueryOptions, StorageService } from '../../storage/StorageService'
+import type { BaseRecordConstructor, Query, QueryOptions, StorageService } from '../../storage/StorageService'
 import { JsonTransformer } from '../../utils'
 import { CacheModuleConfig } from './CacheModuleConfig'
 
 @injectable()
-// biome-ignore lint/suspicious/noExplicitAny:
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export class CachedStorageService<T extends BaseRecord<any, any, any>> implements StorageService<T> {
   public constructor(@inject(InjectionSymbols.StorageService) private storageService: StorageService<T>) {}
 

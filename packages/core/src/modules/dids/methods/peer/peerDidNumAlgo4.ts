@@ -97,7 +97,7 @@ export function didDocumentToNumAlgo4Did(didDocument: DidDocument) {
   // Construct encoded document by prefixing did document with multicodec prefix for JSON
   const buffer = Buffer.concat([
     VarintEncoder.encode(JSON_MULTICODEC_VARINT),
-    Buffer.from(JSON.stringify(didDocumentJson)),
+    TypedArrayEncoder.fromString(JSON.stringify(didDocumentJson)),
   ])
 
   const encodedDocument = MultiBaseEncoder.encode(buffer, 'base58btc')

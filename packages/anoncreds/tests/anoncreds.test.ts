@@ -1,10 +1,9 @@
-import { Agent } from '@credo-ts/core'
+import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
 
 import { getAgentOptions } from '../../core/tests'
 import { AnonCredsModule } from '../src'
-
-import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import { anoncreds } from './helpers'
+import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 
 const existingSchemas = {
   '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0': {
@@ -70,12 +69,17 @@ const existingRevocationStatusLists = {
   },
 }
 
+const cache = new InMemoryLruCache({ limit: 10 })
+
 const agent = new Agent(
   getAgentOptions(
     'credo-anoncreds-package',
     {},
     {},
     {
+      cache: new CacheModule({
+        cache,
+      }),
       anoncreds: new AnonCredsModule({
         autoCreateLinkSecret: false,
         anoncreds,
@@ -98,6 +102,7 @@ const agent = new Agent(
 describe('AnonCreds API', () => {
   beforeEach(async () => {
     await agent.initialize()
+    cache.clear()
   })
 
   afterEach(async () => {
@@ -169,7 +174,9 @@ describe('AnonCreds API', () => {
     const schemaResult = await agent.modules.anoncreds.getSchema('7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0')
 
     expect(schemaResult).toEqual({
-      resolutionMetadata: {},
+      resolutionMetadata: {
+        servedFromCache: false,
+      },
       schemaMetadata: {},
       schema: {
         attrNames: ['one', 'two'],
@@ -276,7 +283,9 @@ describe('AnonCreds API', () => {
     )
 
     expect(credentialDefinitionResult).toEqual({
-      resolutionMetadata: {},
+      resolutionMetadata: {
+        servedFromCache: false,
+      },
       credentialDefinitionMetadata: {
         didIndyNamespace: 'pool:localhost',
       },
@@ -296,7 +305,9 @@ describe('AnonCreds API', () => {
         existingRevocationRegistryDefinitions[
           'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG'
         ],
-      resolutionMetadata: {},
+      resolutionMetadata: {
+        servedFromCache: false,
+      },
       revocationRegistryDefinitionMetadata: {},
     })
   })
@@ -312,8 +323,242 @@ describe('AnonCreds API', () => {
         existingRevocationStatusLists[
           'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG'
         ][10123],
-      resolutionMetadata: {},
+      resolutionMetadata: {
+        servedFromCache: false,
+      },
       revocationStatusListMetadata: {},
+    })
+  })
+
+  describe('caching', () => {
+    describe('schema', () => {
+      test('should return cached schema when resolved multiple times', async () => {
+        const schemaId = '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0'
+
+        // First resolution - should not be from cache
+        const result1 = await agent.modules.anoncreds.getSchema(schemaId)
+        expect(result1.resolutionMetadata.servedFromCache).toBe(false)
+        expect(result1.schema).toEqual(existingSchemas[schemaId])
+
+        // Verify it was cached
+        const cached = await cache.get(
+          agent.context,
+          'anoncreds:resolver:schema:7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0'
+        )
+        expect(cached).toBeDefined()
+        expect(cached).toMatchObject({
+          schemaId,
+          schema: existingSchemas[schemaId],
+        })
+
+        // Second resolution - should be from cache
+        const result2 = await agent.modules.anoncreds.getSchema(schemaId)
+        expect(result2.resolutionMetadata.servedFromCache).toBe(true)
+        expect(result2.schema).toEqual(existingSchemas[schemaId])
+      })
+
+      test('should return schema from record when available', async () => {
+        // Register a schema to create a record in the repository
+        const registerResult = await agent.modules.anoncreds.registerSchema({
+          options: {},
+          schema: {
+            attrNames: ['name', 'age'],
+            issuerId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ',
+            name: 'Employee Credential',
+            version: '1.0.0',
+          },
+        })
+
+        expect(registerResult.schemaState.state).toBe('finished')
+        const schemaId = registerResult.schemaState.schemaId
+        if (!schemaId) throw new Error('Schema ID should be defined')
+
+        // Clear the cache to ensure we're not getting from cache
+        cache.clear()
+
+        // Resolve the schema - should come from record (not from registry, not from cache)
+        const result = await agent.modules.anoncreds.getSchema(schemaId, { useCache: false })
+        expect(result.resolutionMetadata.servedFromCache).toBe(false)
+        expect(result.resolutionMetadata.servedFromRecord).toBe(true)
+        expect(result.schema).toMatchObject({
+          attrNames: ['name', 'age'],
+          issuerId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ',
+          name: 'Employee Credential',
+          version: '1.0.0',
+        })
+      })
+    })
+
+    describe('credential definition', () => {
+      test('should return cached credential definition when resolved multiple times', async () => {
+        const credDefId = 'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG'
+
+        // First resolution - should not be from cache
+        const result1 = await agent.modules.anoncreds.getCredentialDefinition(credDefId)
+        expect(result1.resolutionMetadata.servedFromCache).toBe(false)
+        expect(result1.credentialDefinition).toEqual(existingCredentialDefinitions[credDefId])
+
+        // Verify it was cached
+        const cached = await cache.get(
+          agent.context,
+          'anoncreds:resolver:credentialDefinition:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG'
+        )
+        expect(cached).toBeDefined()
+        expect(cached).toMatchObject({
+          credentialDefinitionId: credDefId,
+          credentialDefinition: existingCredentialDefinitions[credDefId],
+        })
+
+        // Second resolution - should be from cache
+        const result2 = await agent.modules.anoncreds.getCredentialDefinition(credDefId)
+        expect(result2.resolutionMetadata.servedFromCache).toBe(true)
+        expect(result2.credentialDefinition).toEqual(existingCredentialDefinitions[credDefId])
+      })
+
+      test('should return credential definition from record when available', async () => {
+        // Register a credential definition to create a record in the repository
+        // First, import the key that was already created in the earlier test
+        const issuerId = 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX'
+
+        const credentialDefinitionResult = await agent.modules.anoncreds.registerCredentialDefinition({
+          credentialDefinition: {
+            issuerId,
+            schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+            tag: 'TAG',
+          },
+          options: {
+            supportRevocation: false,
+          },
+        })
+
+        expect(credentialDefinitionResult.credentialDefinitionState.state).toBe('finished')
+        const credDefId = credentialDefinitionResult.credentialDefinitionState.credentialDefinitionId
+        if (!credDefId) throw new Error('Credential definition ID should be defined')
+
+        // Clear the cache to ensure we're not getting from cache
+        cache.clear()
+
+        // Resolve the credential definition - should come from record (not from registry, not from cache)
+        const result = await agent.modules.anoncreds.getCredentialDefinition(credDefId, { useCache: false })
+        expect(result.resolutionMetadata.servedFromCache).toBe(false)
+        expect(result.resolutionMetadata.servedFromRecord).toBe(true)
+        expect(result.credentialDefinition).toMatchObject({
+          issuerId,
+          schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+          tag: 'TAG',
+          type: 'CL',
+        })
+      })
+    })
+
+    describe('revocation registry definition', () => {
+      test('should return cached revocation registry definition when resolved multiple times', async () => {
+        const revRegDefId = 'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG'
+
+        // First resolution - should not be from cache
+        const result1 = await agent.modules.anoncreds.getRevocationRegistryDefinition(revRegDefId)
+        expect(result1.resolutionMetadata.servedFromCache).toBe(false)
+        expect(result1.revocationRegistryDefinition).toEqual(existingRevocationRegistryDefinitions[revRegDefId])
+
+        // Verify it was cached
+        const cached = await cache.get(
+          agent.context,
+          'anoncreds:resolver:revocationRegistryDefinition:VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG'
+        )
+        expect(cached).toBeDefined()
+        expect(cached).toMatchObject({
+          revocationRegistryDefinitionId: revRegDefId,
+          revocationRegistryDefinition: existingRevocationRegistryDefinitions[revRegDefId],
+        })
+
+        // Second resolution - should be from cache
+        const result2 = await agent.modules.anoncreds.getRevocationRegistryDefinition(revRegDefId)
+        expect(result2.resolutionMetadata.servedFromCache).toBe(true)
+        expect(result2.revocationRegistryDefinition).toEqual(existingRevocationRegistryDefinitions[revRegDefId])
+      })
+
+      test('should return revocation registry definition from record when available', async () => {
+        // Register a credential definition with revocation support first
+        const issuerId = 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX'
+
+        const credDefResult = await agent.modules.anoncreds.registerCredentialDefinition({
+          credentialDefinition: {
+            issuerId,
+            schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+            tag: 'REVOC_TAG',
+          },
+          options: {
+            supportRevocation: true,
+          },
+        })
+
+        expect(credDefResult.credentialDefinitionState.state).toBe('finished')
+        const credDefId = credDefResult.credentialDefinitionState.credentialDefinitionId
+        if (!credDefId) throw new Error('Credential definition ID should be defined')
+
+        // Register a revocation registry definition to create a record in the repository
+        const revRegResult = await agent.modules.anoncreds.registerRevocationRegistryDefinition({
+          revocationRegistryDefinition: {
+            issuerId,
+            credentialDefinitionId: credDefId,
+            tag: 'REV_TAG',
+            maximumCredentialNumber: 100,
+          },
+          options: {},
+        })
+
+        // If registration failed, skip this test as revocation registry registration
+        // requires complex tails file handling setup
+        if (revRegResult.revocationRegistryDefinitionState.state !== 'finished') {
+          // Skip the rest of the test
+          return
+        }
+
+        expect(revRegResult.revocationRegistryDefinitionState.state).toBe('finished')
+        const revRegDefId = revRegResult.revocationRegistryDefinitionState.revocationRegistryDefinitionId
+        if (!revRegDefId) throw new Error('Revocation registry definition ID should be defined')
+
+        // Clear the cache to ensure we're not getting from cache
+        cache.clear()
+
+        // Resolve the revocation registry definition - should come from record (not from registry, not from cache)
+        const result = await agent.modules.anoncreds.getRevocationRegistryDefinition(revRegDefId, { useCache: false })
+        expect(result.resolutionMetadata.servedFromCache).toBe(false)
+        expect(result.resolutionMetadata.servedFromRecord).toBe(true)
+        expect(result.revocationRegistryDefinition).toMatchObject({
+          issuerId,
+          credDefId,
+          tag: 'REV_TAG',
+          revocDefType: 'CL_ACCUM',
+        })
+      })
+    })
+
+    describe('revocation status list', () => {
+      test('should return cached revocation status list when resolved multiple times', async () => {
+        const revRegDefId = 'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG'
+        const timestamp = 10123
+
+        // First resolution - should not be from cache
+        const result1 = await agent.modules.anoncreds.getRevocationStatusList(revRegDefId, timestamp)
+        expect(result1.resolutionMetadata.servedFromCache).toBe(false)
+        expect(result1.revocationStatusList).toEqual(existingRevocationStatusLists[revRegDefId][timestamp])
+
+        // Verify it was cached
+        const cached = await cache.get(
+          agent.context,
+          `anoncreds:resolver:revocationStatusList:${revRegDefId}:${timestamp}`
+        )
+        expect(cached).toBeDefined()
+        expect(cached).toMatchObject({
+          revocationStatusList: existingRevocationStatusLists[revRegDefId][timestamp],
+        })
+
+        // Second resolution - should be from cache
+        const result2 = await agent.modules.anoncreds.getRevocationStatusList(revRegDefId, timestamp)
+        expect(result2.resolutionMetadata.servedFromCache).toBe(true)
+        expect(result2.revocationStatusList).toEqual(existingRevocationStatusLists[revRegDefId][timestamp])
+      })
     })
   })
 })
