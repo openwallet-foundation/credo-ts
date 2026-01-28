@@ -1,3 +1,4 @@
+// TODO: Maybe fix this for environment apart from node
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { and, eq, gt, lt, or } from 'drizzle-orm'
