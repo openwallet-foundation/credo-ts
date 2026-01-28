@@ -50,7 +50,6 @@ import {
   getVerificationMethodId,
   validateSpecCompliantPayload,
 } from './didCheqdUtil'
-import { KmsJwkPublicOkp } from '@credo-ts/core/src/modules/kms'
 
 export class CheqdDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['cheqd']
@@ -292,118 +291,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     let didRecord: DidRecord | null
 
     try {
-      if (options.didDocument) {
-        const isSpecCompliantPayload = validateSpecCompliantPayload(options.didDocument)
-        if (!isSpecCompliantPayload.valid) {
-          return {
-            didDocumentMetadata: {},
-            didRegistrationMetadata: {},
-            didState: {
-              state: 'failed',
-              reason: `Invalid did document provided. ${isSpecCompliantPayload.error}`,
-            },
-          }
-        }
-
-        didDocument = options.didDocument
-        const resolvedDocument = await cheqdLedgerService.resolve(didDocument.id)
-        didRecord = await didRepository.findCreatedDid(agentContext, didDocument.id)
-        if (!resolvedDocument.didDocument || resolvedDocument.didDocumentMetadata.deactivated || !didRecord) {
-          return {
-            didDocumentMetadata: {},
-            didRegistrationMetadata: {},
-            didState: {
-              state: 'failed',
-              reason: 'Did not found',
-            },
-          }
-        }
-
-        const keys = didRecord.keys ?? []
-        if (options.options?.createKey || options.options?.keyId) {
-          const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-          let createdKey: DidDocumentKey
-
-          let publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }
-          if (options.options.createKey) {
-            const createKeyResult = await kms.createKey(options.options.createKey)
-            publicJwk = createKeyResult.publicJwk
-
-            createdKey = {
-              didDocumentRelativeKeyId: `#${utils.uuid()}-1`,
-              kmsKeyId: createKeyResult.keyId,
-            }
-          } else if (options.options.keyId) {
-            const _publicJwk = await kms.getPublicKey({
-              keyId: options.options.keyId,
-            })
-            createdKey = {
-              didDocumentRelativeKeyId: `#${utils.uuid()}-1`,
-              kmsKeyId: options.options.keyId,
-            }
-            if (!_publicJwk) {
-              return {
-                didDocumentMetadata: {},
-                didRegistrationMetadata: {},
-                didState: {
-                  state: 'failed',
-                  reason: `notFound: key with key id '${options.options.keyId}' not found`,
-                },
-              }
-            }
-
-            if (_publicJwk.kty !== 'OKP' || _publicJwk.crv !== 'Ed25519') {
-              return {
-                didDocumentMetadata: {},
-                didRegistrationMetadata: {},
-                didState: {
-                  state: 'failed',
-                  reason: `key with key id '${options.options.keyId}' uses unsupported ${Kms.getJwkHumanDescription(
-                    _publicJwk
-                  )} for did:cheqd`,
-                },
-              }
-            }
-
-            publicJwk = {
-              ..._publicJwk,
-              crv: _publicJwk.crv,
-            }
-          } else {
-            // This will never happen, but to make TS happy
-            return {
-              didDocumentMetadata: {},
-              didRegistrationMetadata: {},
-              didState: {
-                state: 'failed',
-                reason: 'Expect options.createKey or options.keyId',
-              },
-            }
-          }
-
-          // TODO: make this configureable
-          const verificationMethod = VerificationMethods.JWK
-          const jwk = Kms.PublicJwk.fromPublicJwk(publicJwk)
-
-          keys.push(createdKey)
-          didDocument.verificationMethod?.concat(
-            JsonTransformer.fromJSON(
-              createDidVerificationMethod(
-                [verificationMethod],
-                [
-                  {
-                    methodSpecificId: didDocument.id.split(':')[3],
-                    didUrl: didDocument.id,
-                    keyId: `${didDocument.id}${createdKey.didDocumentRelativeKeyId}` as `${string}#${string}-${number}`,
-                    publicKey: TypedArrayEncoder.toHex(jwk.publicKey.publicKey),
-                  },
-                ]
-              ),
-              VerificationMethod
-            )
-          )
-        }
-      } else {
+      if (!options.didDocument) {
         return {
           didDocumentMetadata: {},
           didRegistrationMetadata: {},
@@ -445,7 +333,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
         let createdKey: DidDocumentKey
 
-        let publicJwk: KmsJwkPublicOkp & { crv: 'Ed25519' }
+        let publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }
         if (options.options.createKey) {
           const createKeyResult = await kms.createKey(options.options.createKey)
           publicJwk = createKeyResult.publicJwk
