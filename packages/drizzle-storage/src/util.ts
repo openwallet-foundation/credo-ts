@@ -1,12 +1,16 @@
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { and, eq, gt, lt, or } from 'drizzle-orm'
 import type { ExtraConfigColumn } from 'drizzle-orm/pg-core'
 import type { SQLiteColumn } from 'drizzle-orm/sqlite-core'
 import type { DrizzleRecordBundle } from './DrizzleRecord'
 
-export const dirname = import.meta.dirname
+const __filename = fileURLToPath(import.meta.url)
+const dirname = join(__filename, '..')
+
 export const rootDirectory = `${dirname}/..`
 
-const addSchemaExtension = (path: string) => (dirname.endsWith('/src') ? `${path}.ts` : `${path}.mjs`)
+const addSchemaExtension = (schemaPath: string) => (dirname.endsWith('/src') ? `${schemaPath}.ts` : `${schemaPath}.mjs`)
 
 export const bundleMigrationDefinition = (bundle: string): DrizzleRecordBundle['migrations'] => ({
   postgres: {
