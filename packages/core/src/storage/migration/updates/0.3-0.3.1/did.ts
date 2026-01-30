@@ -47,6 +47,6 @@ export async function migrateDidRecordToV0_3_1<Agent extends BaseAgent>(agent: A
             throw new Error(`Invalid DID after migration: ${didRecord.did}`);
         }
 
-        agent.config.logger.debug(`Successfully migrated did record with old id ${oldId} to new id ${newId}`);
+        agent.config.logger.debug(`Successfully migrated did record with old id ${oldId} to new id ${newId} to storage version 0.3.1`);
     }
 }
