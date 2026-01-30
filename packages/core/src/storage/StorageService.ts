@@ -41,12 +41,12 @@ type InternalCursor = {
   id: string
 }
 
-export type recordToCursorBody = {
+export type RecordToCursorBody = {
   createdAt: string
   id: string
 } & Record<string, unknown>
 
-export function recordToCursor(record: recordToCursorBody): string {
+export function recordToCursor(record: RecordToCursorBody): string {
   return encodeCursor({
     createdAt: new Date(record.createdAt),
     id: record.id,
