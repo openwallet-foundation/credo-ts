@@ -16,6 +16,7 @@ on:
 permissions:
   pull-requests: write
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -36,6 +37,9 @@ jobs:
           node-version: 20.x
           cache: 'pnpm'
 
+      - name: Update npm
+        run: npm install -g npm@^11
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
@@ -50,7 +54,6 @@ jobs:
           createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
 
       - name: Get current package version
         id: get_version
@@ -74,38 +77,44 @@ jobs:
         if: github.event_name == 'pull_request'
 
       # exit if pull request and no alpha-release tag
-      - if: github.event_name == 'pull_request' && !contains(fromJSON(env.LABELS), 'alpha-release')
-        run: exit 0
+      - id: should-run
+        name: Check if should run
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]] && [[ ! "${{ contains(fromJSON(env.LABELS || '[]'), 'alpha-release') }}" == "true" ]]; then
+            echo "run=false" >> $GITHUB_OUTPUT
+          else
+            echo "run=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Checkout Repo
+        if: steps.should-run.outputs.run == 'true'
         uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v2
+        if: steps.should-run.outputs.run == 'true'
         with:
           version: 9.1.0
 
       - name: Setup Node.js 20.x
+        if: steps.should-run.outputs.run == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
           cache: 'pnpm'
 
+      - name: Update npm
+        if: steps.should-run.outputs.run == 'true'
+        run: npm install -g npm@^11
+
       - name: Install Dependencies
+        if: steps.should-run.outputs.run == 'true'
         run: pnpm install --frozen-lockfile
 
-      - name: Creating .npmrc
-        run: |
-          cat << EOF > ".npmrc"
-            //registry.npmjs.org/:_authToken=$NPM_TOKEN
-          EOF
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
-
       - name: Create unstable release
+        if: steps.should-run.outputs.run == 'true'
         env:
           TAG: ${{ github.event_name == 'push' && 'alpha' || format('pr-{0}', github.event.number) }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
         run: |
           # this ensures there's always a patch release created
           cat << 'EOF' > .changeset/snapshot-template-changeset.md
