@@ -656,7 +656,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
     // Prepare the generic resource payload to be signed
     const resourcePayload = {
-      '@context': ['https://opsecid.github.io/attested-resource/v1', 'https://w3id.org/security/data-integrity/v2'],
+      '@context': [
+        'https://identity.foundation/did-attested-resources/context/v0.1',
+        'https://w3id.org/security/data-integrity/v2',
+      ],
       type: ['AttestedResource'],
       id,
       content,

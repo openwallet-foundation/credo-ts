@@ -1,5 +1,6 @@
 import type { InitConfig } from '@credo-ts/core'
 import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
+import type { HederaNetwork } from '@hiero-did-sdk/client'
 
 import {
   AnonCredsCredentialFormatService,
@@ -30,6 +31,7 @@ import {
   Agent,
   HttpOutboundTransport,
 } from '@credo-ts/core'
+import { HederaAnonCredsRegistry, HederaDidRegistrar, HederaDidResolver, HederaModule } from '@credo-ts/hedera'
 import { IndyVdrIndyDidResolver, IndyVdrAnonCredsRegistry, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { agentDependencies, HttpInboundTransport } from '@credo-ts/node'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
@@ -120,7 +122,7 @@ function getAskarAnonCredsIndyModules() {
       ],
     }),
     anoncreds: new AnonCredsModule({
-      registries: [new IndyVdrAnonCredsRegistry(), new CheqdAnonCredsRegistry()],
+      registries: [new IndyVdrAnonCredsRegistry(), new CheqdAnonCredsRegistry(), new HederaAnonCredsRegistry()],
       anoncreds,
     }),
     indyVdr: new IndyVdrModule({
@@ -139,11 +141,22 @@ function getAskarAnonCredsIndyModules() {
       })
     ),
     dids: new DidsModule({
-      resolvers: [new IndyVdrIndyDidResolver(), new CheqdDidResolver()],
-      registrars: [new CheqdDidRegistrar()],
+      resolvers: [new IndyVdrIndyDidResolver(), new CheqdDidResolver(), new HederaDidResolver()],
+      registrars: [new CheqdDidRegistrar(), new HederaDidRegistrar()],
     }),
     askar: new AskarModule({
       ariesAskar,
+    }),
+    hedera: new HederaModule({
+      networks: [
+        {
+          network: (process.env.HEDERA_NETWORK as HederaNetwork) ?? 'testnet',
+          operatorId: process.env.HEDERA_OPERATOR_ID ?? '0.0.5489553',
+          operatorKey:
+            process.env.HEDERA_OPERATOR_KEY ??
+            '302e020100300506032b6570042204209f54b75b6238ced43e41b1463999cb40bf2f7dd2c9fd4fd3ef780027c016a138',
+        },
+      ],
     }),
   } as const
 }

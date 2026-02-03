@@ -2,7 +2,7 @@
   "name": "@credo-ts/core",
   "main": "src/index",
   "types": "src/index",
-  "version": "0.5.17",
+  "version": "0.5.19",
   "files": [
     "build"
   ],
@@ -47,7 +47,6 @@
     "@sphereon/ssi-types": "0.30.2-next.135",
     "@stablelib/ed25519": "^1.0.2",
     "@types/ws": "^8.5.4",
-    "abort-controller": "^3.0.0",
     "big-integer": "^1.6.51",
     "borc": "^3.0.0",
     "buffer": "^6.0.3",

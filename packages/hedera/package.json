@@ -1,0 +1,48 @@
+{
+  "name": "@credo-ts/hedera",
+  "main": "src/index",
+  "types": "src/index",
+  "version": "0.5.19",
+  "files": [
+    "build"
+  ],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "main": "build/index",
+    "types": "build/index",
+    "access": "public"
+  },
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/hedera",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
+    "directory": "packages/hedera"
+  },
+  "scripts": {
+    "build": "pnpm run clean && pnpm run compile",
+    "clean": "rimraf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run build",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "dependencies": {
+    "@credo-ts/anoncreds": "workspace:*",
+    "@credo-ts/core": "workspace:*",
+    "@hashgraph/sdk": "^2.72.0",
+    "@hiero-did-sdk/anoncreds": "^0.1.5",
+    "@hiero-did-sdk/client": "^0.1.5",
+    "@hiero-did-sdk/core": "^0.1.5",
+    "@hiero-did-sdk/hcs": "^0.1.5",
+    "@hiero-did-sdk/cache": "^0.1.5",
+    "@hiero-did-sdk/publisher-internal": "^0.1.5",
+    "@hiero-did-sdk/registrar": "^0.1.5",
+    "@hiero-did-sdk/resolver": "^0.1.5"
+  },
+  "devDependencies": {
+    "@credo-ts/node": "workspace:*",
+    "@hyperledger/anoncreds-nodejs": "^0.3.3",
+    "rimraf": "^4.4.0",
+    "zstd-napi": "^0.0.10"
+  }
+}

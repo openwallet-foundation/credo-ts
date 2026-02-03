@@ -2,7 +2,7 @@
   "name": "@credo-ts/cheqd",
   "main": "src/index",
   "types": "src/index",
-  "version": "0.5.17",
+  "version": "0.5.19",
   "files": [
     "build"
   ],
@@ -26,8 +26,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@cheqd/sdk": "^5.2.1",
-    "@cheqd/ts-proto": "~2.4.1",
+    "@cheqd/sdk": "~5.4.8-develop.2",
+    "@cheqd/ts-proto": "~2.6.0",
     "@cosmjs/crypto": "~0.30.1",
     "@cosmjs/proto-signing": "~0.30.1",
     "@cosmjs/stargate": "~0.30.1",

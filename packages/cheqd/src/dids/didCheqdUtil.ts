@@ -11,7 +11,14 @@ import {
 import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload } from '@cheqd/ts-proto/cheqd/did/v2'
 import { EnglishMnemonic as _ } from '@cosmjs/crypto'
 import { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
-import { DidDocument, CredoError, JsonEncoder, TypedArrayEncoder, JsonTransformer } from '@credo-ts/core'
+import {
+  DidDocument,
+  CredoError,
+  JsonEncoder,
+  TypedArrayEncoder,
+  JsonTransformer,
+  DidCommV1Service,
+} from '@credo-ts/core'
 
 export function validateSpecCompliantPayload(didDocument: DidDocument): SpecValidationResult {
   // id is required, validated on both compile and runtime
@@ -58,7 +65,14 @@ export async function createMsgCreateDidDocPayloadToSign(didPayload: DIDDocument
   didPayload.service = didPayload.service?.map((e) => {
     return {
       ...e,
-      serviceEndpoint: Array.isArray(e.serviceEndpoint) ? e.serviceEndpoint : [e.serviceEndpoint],
+      // For DIDComm V1 services (V2 already supports array), keep serviceEndpoint as string
+      // For other services, convert to array if not already
+      serviceEndpoint:
+        e.type === DidCommV1Service.type
+          ? e.serviceEndpoint
+          : Array.isArray(e.serviceEndpoint)
+          ? e.serviceEndpoint
+          : [e.serviceEndpoint],
     }
   })
   const { protobufVerificationMethod, protobufService } = await DIDModule.validateSpecCompliantPayload(didPayload)

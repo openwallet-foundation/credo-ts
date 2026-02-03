@@ -1,4 +1,11 @@
-import type { CheqdNetwork, DIDDocument, DidStdFee, TVerificationKey, VerificationMethods } from '@cheqd/sdk'
+import type {
+  CheqdNetwork,
+  DIDDocument,
+  DidFeeOptions,
+  DidStdFee,
+  TVerificationKey,
+  VerificationMethods,
+} from '@cheqd/sdk'
 import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import type {
   AgentContext,
@@ -459,7 +466,13 @@ export class CheqdDidRegistrar implements DidRegistrar {
       }
 
       const signInputs = await this.signPayload(agentContext, payloadToSign, authentication)
-      const response = await cheqdLedgerService.createResource(did, resourcePayload, signInputs)
+      const response = await cheqdLedgerService.createResource(
+        did,
+        resourcePayload,
+        signInputs,
+        resource.fee,
+        resource.feeOptions
+      )
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
@@ -509,6 +522,7 @@ export interface CheqdDidCreateWithoutDidDocumentOptions extends DidCreateOption
   options: {
     network: `${CheqdNetwork}`
     fee?: DidStdFee
+    feeOptions?: DidFeeOptions
     versionId?: string
     methodSpecificIdAlgo?: `${MethodSpecificIdAlgo}`
   }
@@ -523,6 +537,7 @@ export interface CheqdDidCreateFromDidDocumentOptions extends DidCreateOptions {
   didDocument: DidDocument
   options?: {
     fee?: DidStdFee
+    feeOptions?: DidFeeOptions
     versionId?: string
   }
 }
@@ -534,6 +549,7 @@ export interface CheqdDidUpdateOptions extends DidUpdateOptions {
   didDocument: DidDocument
   options: {
     fee?: DidStdFee
+    feeOptions?: DidFeeOptions
     versionId?: string
   }
   secret?: {
@@ -546,6 +562,7 @@ export interface CheqdDidDeactivateOptions extends DidCreateOptions {
   did: string
   options: {
     fee?: DidStdFee
+    feeOptions?: DidFeeOptions
     versionId?: string
   }
 }
@@ -555,6 +572,8 @@ export interface CheqdCreateResourceOptions extends Pick<MsgCreateResourcePayloa
   collectionId?: MsgCreateResourcePayload['collectionId']
   version?: MsgCreateResourcePayload['version']
   alsoKnownAs?: MsgCreateResourcePayload['alsoKnownAs']
+  fee?: DidStdFee
+  feeOptions?: DidFeeOptions
 }
 
 interface IVerificationMethod {

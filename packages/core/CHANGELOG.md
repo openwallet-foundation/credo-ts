@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.19
+
+## 0.5.18
+
+### Patch Changes
+
+- 6f7912a: fix: allow selecting proof purpose for Verifiable Presentations
+- 61f2e03: fix: Native AbortController compatibility for Node.JS 18+ environments
+- f56e098: fix(didcomm): allow did URLs in thread ids
+- 8c5f6f6: feat(core): support sha-512 in Hasher
+
 ## 0.5.17
 
 ### Patch Changes

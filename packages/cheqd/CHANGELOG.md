@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.19
+
+### Patch Changes
+
+- 8072afb: fix: handle string serviceEndpoint for DidCommV1Service.type
+  - @credo-ts/anoncreds@0.5.19
+  - @credo-ts/core@0.5.19
+
+## 0.5.18
+
+### Patch Changes
+
+- Updated dependencies [6f7912a]
+- Updated dependencies [61f2e03]
+- Updated dependencies [f56e098]
+- Updated dependencies [8c5f6f6]
+  - @credo-ts/core@0.5.18
+  - @credo-ts/anoncreds@0.5.18
+
 ## 0.5.17
 
 ### Patch Changes

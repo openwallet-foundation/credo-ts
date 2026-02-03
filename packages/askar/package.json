@@ -2,7 +2,7 @@
   "name": "@credo-ts/askar",
   "main": "src/index",
   "types": "src/index",
-  "version": "0.5.17",
+  "version": "0.5.19",
   "files": [
     "build"
   ],
@@ -33,12 +33,12 @@
     "rxjs": "^7.8.0",
     "tsyringe": "^4.8.0",
     "@hyperledger/aries-askar-shared": "^0.2.3",
-    "@openwallet-foundation/askar-shared": "^0.4.1"
+    "@openwallet-foundation/askar-shared": "^0.4.2"
   },
   "devDependencies": {
     "@animo-id/expo-secure-environment": "^0.0.1-alpha.0",
     "@hyperledger/aries-askar-nodejs": "^0.2.3",
-    "@openwallet-foundation/askar-nodejs": "^0.4.1",
+    "@openwallet-foundation/askar-nodejs": "^0.4.2",
     "@types/bn.js": "^5.1.0",
     "@types/ref-array-di": "^1.2.6",
     "@types/ref-struct-di": "^1.1.10",
@@ -49,8 +49,8 @@
   "peerDependencies": {
     "@hyperledger/aries-askar-nodejs": "^0.2.3",
     "@hyperledger/aries-askar-react-native": "^0.2.3",
-    "@openwallet-foundation/askar-nodejs": "^0.4.1",
-    "@openwallet-foundation/askar-react-native": "^0.4.1",
+    "@openwallet-foundation/askar-nodejs": "^0.4.2",
+    "@openwallet-foundation/askar-react-native": "^0.4.2",
     "@animo-id/expo-secure-environment": "^0.0.1-alpha.0"
   },
   "peerDependenciesMeta": {
