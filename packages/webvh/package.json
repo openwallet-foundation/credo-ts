@@ -1,6 +1,6 @@
 {
   "name": "@credo-ts/webvh",
-  "version": "0.5.19",
+  "version": "0.5.20",
   "description": "Credo WebVH DID method implementation",
   "main": "build/index.js",
   "types": "build/index.d.ts",
