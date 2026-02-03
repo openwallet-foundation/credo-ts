@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.20
+
+### Patch Changes
+
+- 9f9c815: fix(pex): use found signature suite proof type instead of default
+
 ## 0.5.19
 
 ## 0.5.18
