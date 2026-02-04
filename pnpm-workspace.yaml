@@ -5,7 +5,8 @@ packages:
   - samples/*
 
 catalog:
-  '@biomejs/biome': ^2.3.13
+  # Biome recommends installing exact version
+  '@biomejs/biome': 2.3.14
   '@animo-id/pex': ^6.1.1
   '@astronautlabs/jsonpath': ^1.1.2
   '@hyperledger/anoncreds-nodejs': ^0.3.4
