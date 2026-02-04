@@ -449,7 +449,7 @@ export class DifPresentationExchangeService {
         )
       }
 
-      return supportedSignatureSuites[0].proofType
+      return foundSignatureSuite.proofType
     }
 
     return supportedSignatureSuites[0].proofType
