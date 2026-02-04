@@ -150,7 +150,6 @@ export class DidCommAttachment {
 
   public addJws(jws: JwsDetachedFormat) {
     // Remove payload if user provided a non-detached JWS
-    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { payload, ...detachedJws } = jws as JwsGeneralFormat
 
     // If no JWS yet, assign to current JWS

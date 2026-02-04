@@ -53,7 +53,6 @@ export class DrizzleOpenId4VcVerificationSessionRecordAdapter extends BaseDrizzl
   }
 
   public toRecord(values: DrizzleOpenId4VcVerificationSessionAdapterValues): OpenId4VcVerificationSessionRecord {
-    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { customTags, nonce, payloadState, ...remainingValues } = values
 
     const record = JsonTransformer.fromJSON(remainingValues, OpenId4VcVerificationSessionRecord)

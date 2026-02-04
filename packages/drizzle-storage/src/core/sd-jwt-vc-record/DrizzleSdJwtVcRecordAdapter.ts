@@ -19,28 +19,26 @@ export class DrizzleSdJwtVcRecordAdapter extends BaseDrizzleRecordAdapter<
   }
 
   public getValues(record: SdJwtVcRecord) {
-    const { alg, sdAlg, vct, multiInstanceState: _, ...customTags } = record.getTags()
+    const { alg, sdAlg, vct, multiInstanceState: _, extendedVctValues, ...customTags } = record.getTags()
 
     return {
       alg,
       sdAlg,
       vct,
+      extendedVctValues,
       credentialInstances: record.credentialInstances,
       multiInstanceState: record.multiInstanceState,
+      typeMetadata: record.typeMetadata,
+      typeMetadataChain: record.typeMetadataChain,
       customTags,
     }
   }
 
   public toRecord(values: DrizzleSdJwtVcAdapterValues): SdJwtVcRecord {
-    const { sdAlg, alg, vct, customTags, ...remainingValues } = values
+    const { sdAlg, alg, vct, customTags, extendedVctValues, ...remainingValues } = values
 
+    // All tags inferred from the record state itself
     const record = JsonTransformer.fromJSON(remainingValues, SdJwtVcRecord)
-    record.setTags({
-      alg,
-      vct,
-      sdAlg,
-      ...customTags,
-    })
 
     return record
   }

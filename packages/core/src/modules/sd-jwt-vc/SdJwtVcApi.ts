@@ -1,3 +1,4 @@
+import type { ResolvedTypeMetadata } from '@sd-jwt/sd-jwt-vc'
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
@@ -12,7 +13,6 @@ import type {
 } from './SdJwtVcOptions'
 
 import { type SdJwtVc, SdJwtVcService } from './SdJwtVcService'
-import type { SdJwtVcTypeMetadata } from './typeMetadata'
 
 /**
  * @public
@@ -56,18 +56,19 @@ export class SdJwtVcApi {
   }
 
   /**
-   * Fetches the type metadata for the `vct`. Only supports `https` VCT url for now.
+   * Fetches the type metadata for the `vct`. The default resolver only supports HTTPs,
+   * but you can register a custom resolver on the SdJwtVcModule config.
    *
-   * If fetching the VCT directly fails, it will fallback to the legacy vct path. If both
-   * fail, an error will be thrown, unless `throwErrorOnFetchError` is set to `false`.
+   * If the default resolver is used and fetching the VCT directly fails, it will fallback to the legacy vct path.
+   * If both fail, an error will be thrown, unless `throwErrorOnFetchError` is set to `false`.
    *
    * The integrity will always be verified if the metadata was resolved. The `extends` keyword is
    * not resolved yet.
    */
   public async fetchTypeMetadata(
     sdJwtVc: SdJwtVc,
-    options?: { throwErrorOnFetchError?: boolean }
-  ): Promise<SdJwtVcTypeMetadata | undefined> {
+    options?: { throwErrorOnFetchError?: boolean; throwErrorOnUnsupportedVctValue?: boolean }
+  ): Promise<ResolvedTypeMetadata | undefined> {
     return this.sdJwtVcService.fetchTypeMetadata(this.agentContext, sdJwtVc, options)
   }
 

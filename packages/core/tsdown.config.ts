@@ -23,5 +23,7 @@ export default defineConfig(
         },
       },
     ],
+    // We import events package types, but the implementation is
+    external: ['events'],
   }))
 )

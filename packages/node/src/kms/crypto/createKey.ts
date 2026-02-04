@@ -101,7 +101,6 @@ export async function createOctKey(options: Kms.KmsCreateKeyTypeOct & { algorith
     k: secretBytes.toString('base64url'),
   }
 
-  // biome-ignore lint/correctness/noUnusedVariables: no explanation
   const { k, ...publicJwk } = privateJwk
 
   return {
