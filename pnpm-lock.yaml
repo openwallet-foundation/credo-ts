@@ -478,8 +478,8 @@ importers:
         specifier: ^0.38.1
         version: 0.38.1
       '@cosmjs/proto-signing':
-        specifier: ^0.36.2
-        version: 0.36.2
+        specifier: ^0.38.1
+        version: 0.38.1
       '@cosmjs/stargate':
         specifier: ^0.36.2
         version: 0.36.2
@@ -1158,6 +1158,10 @@ packages:
 
   '@babel/generator@7.29.0':
     resolution: {integrity: sha512-vSH118/wwM/pLR38g/Sgk05sNtro6TlTJKuiMXDaZqPUfjTFcudpCOt00IhOfj+1BFAX+UFAlzCU+6WXr3GLFQ==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/generator@7.29.1':
+    resolution: {integrity: sha512-qsaF+9Qcm2Qv8SRIMMscAvG4O3lJ0F1GuMo5HR/Bp02LopNgnZBC/EkbevHFeGs4ls/oPz9v+Bsmzbkbe+0dUw==}
     engines: {node: '>=6.9.0'}
 
   '@babel/generator@8.0.0-rc.1':
@@ -2075,6 +2079,9 @@ packages:
   '@cosmjs/amino@0.36.2':
     resolution: {integrity: sha512-r4yV1bhl412gwHGlyaUaJHIJnmldtyGsAwyz3oHHVxduiECj06Rv6wqeyLZfQa9W6hU+MlZwy7LabSUkkyGwjA==}
 
+  '@cosmjs/amino@0.38.1':
+    resolution: {integrity: sha512-WaThDpq2JwUyKuazq08Xa+FHzQ3jh1HcYnGL4xsyfqFwOlAvnl0EDvSSz9WSwz1oopIxFE9Qtf3OUKOlxBZbYA==}
+
   '@cosmjs/crypto@0.36.2':
     resolution: {integrity: sha512-QL4NHtcqR6DEKIN200aLeR8gKO433K0f5avKV0TVFP/g12UtnEGSk79PJq5Gv1PLc9GtATHgLLQI/3D8TEe+ig==}
 
@@ -2098,6 +2105,9 @@ packages:
 
   '@cosmjs/proto-signing@0.36.2':
     resolution: {integrity: sha512-dyZsgZBQgGkaE4cazHVX8GDwrRJVKUVDnrODkyFXVNbxMnm4t6nxpK1qwgY9GHlWUhck3Dh9NT3BoMbXiMYTZQ==}
+
+  '@cosmjs/proto-signing@0.38.1':
+    resolution: {integrity: sha512-J7jELTwk39wYAZUan48eTLBKzx3/max1NIQSlaerdrUkIqhk9ZzC2+p94RnlFUBkvsWZ4ORbhNLYPjwuf2oM0g==}
 
   '@cosmjs/socket@0.36.2':
     resolution: {integrity: sha512-Pb7JcTFWnq6yfY0IEejHrpSxNDJYcqjjAa1D29a6b/obk4qa4o3oIV5bIx6zAbdRq8uLoBfvWs0bHTNnVuBWJg==}
@@ -4647,6 +4657,10 @@ packages:
 
   cosmjs-types@0.10.1:
     resolution: {integrity: sha512-CENXb4O5GN+VyB68HYXFT2SOhv126Z59631rZC56m8uMWa6/cSlFeai8BwZGT1NMepw0Ecf+U8XSOnBzZUWh9Q==}
+
+  cosmjs-types@0.11.0:
+    resolution: {integrity: sha512-kDSkgHpRTrg1413jCNehT3P21+EBxZWFMBr9JEzVfmPiNdtuwAoLAkCYo7c7i/pTakAwyHsXbxOg8kkD+AN33w==}
+    engines: {node: '>=20.19'}
 
   credentials-context@2.0.0:
     resolution: {integrity: sha512-/mFKax6FK26KjgV2KW2D4YqKgoJ5DVJpNt87X2Jc9IxT2HBMy7nEIlc+n7pEi+YFFe721XqrvZPd+jbyyBjsvQ==}
@@ -8728,6 +8742,14 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.31
       jsesc: 3.1.0
 
+  '@babel/generator@7.29.1':
+    dependencies:
+      '@babel/parser': 7.29.0
+      '@babel/types': 7.29.0
+      '@jridgewell/gen-mapping': 0.3.13
+      '@jridgewell/trace-mapping': 0.3.31
+      jsesc: 3.1.0
+
   '@babel/generator@8.0.0-rc.1':
     dependencies:
       '@babel/parser': 8.0.0-rc.1
@@ -9894,6 +9916,13 @@ snapshots:
       '@cosmjs/math': 0.36.2
       '@cosmjs/utils': 0.36.2
 
+  '@cosmjs/amino@0.38.1':
+    dependencies:
+      '@cosmjs/crypto': 0.38.1
+      '@cosmjs/encoding': 0.38.1
+      '@cosmjs/math': 0.38.1
+      '@cosmjs/utils': 0.38.1
+
   '@cosmjs/crypto@0.36.2':
     dependencies:
       '@cosmjs/encoding': 0.36.2
@@ -9944,6 +9973,15 @@ snapshots:
       '@cosmjs/math': 0.36.2
       '@cosmjs/utils': 0.36.2
       cosmjs-types: 0.10.1
+
+  '@cosmjs/proto-signing@0.38.1':
+    dependencies:
+      '@cosmjs/amino': 0.38.1
+      '@cosmjs/crypto': 0.38.1
+      '@cosmjs/encoding': 0.38.1
+      '@cosmjs/math': 0.38.1
+      '@cosmjs/utils': 0.38.1
+      cosmjs-types: 0.11.0
 
   '@cosmjs/socket@0.36.2':
     dependencies:
@@ -10581,7 +10619,7 @@ snapshots:
   '@expo/metro-config@0.18.11':
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.0
+      '@babel/generator': 7.29.1
       '@babel/parser': 7.29.0
       '@babel/types': 7.29.0
       '@expo/config': 9.0.3
@@ -13174,6 +13212,8 @@ snapshots:
 
   cosmjs-types@0.10.1: {}
 
+  cosmjs-types@0.11.0: {}
+
   credentials-context@2.0.0: {}
 
   cross-fetch@3.2.0:
@@ -15409,7 +15449,7 @@ snapshots:
   metro-transform-plugins@0.73.10:
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.0
+      '@babel/generator': 7.29.1
       '@babel/template': 7.28.6
       '@babel/traverse': 7.29.0
       nullthrows: 1.1.1
@@ -15431,7 +15471,7 @@ snapshots:
   metro-transform-worker@0.73.10:
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.0
+      '@babel/generator': 7.29.1
       '@babel/parser': 7.29.0
       '@babel/types': 7.29.0
       babel-preset-fbjs: 3.4.0(@babel/core@7.29.0)
@@ -15474,7 +15514,7 @@ snapshots:
     dependencies:
       '@babel/code-frame': 7.29.0
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.0
+      '@babel/generator': 7.29.1
       '@babel/parser': 7.29.0
       '@babel/template': 7.28.6
       '@babel/traverse': 7.29.0
