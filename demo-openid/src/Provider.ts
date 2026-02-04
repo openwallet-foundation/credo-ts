@@ -112,7 +112,9 @@ oidc.use(async (ctx, next) => {
 
   // We hack the client secret (to allow public client with unregistered redirect uri)
   if (ctx.path === '/request' || ctx.path === '/token') {
+    // @ts-expect-error
     ctx.request.body.client_id = 'wallet'
+    // @ts-expect-error
     ctx.request.body.client_secret = 'wallet'
   }
 
