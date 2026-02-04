@@ -144,7 +144,10 @@ function getCredentialRequestToCredentialMapper({
       }
     }
 
-    if (credentialConfigurationId === 'PresentationAuthorization') {
+    if (
+      credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtDc &&
+      credentialConfigurationId === 'PresentationAuthorization'
+    ) {
       return {
         type: 'credentials',
         format: ClaimFormat.SdJwtDc,
@@ -193,7 +196,7 @@ function getCredentialRequestToCredentialMapper({
       } satisfies OpenId4VciSignW3cCredentials
     }
 
-    if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
+    if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc && credentialConfiguration.vct) {
       return {
         type: 'credentials',
         format: ClaimFormat.SdJwtDc,
