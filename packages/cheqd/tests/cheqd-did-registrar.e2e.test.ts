@@ -41,7 +41,6 @@ describe('Cheqd DID registrar', () => {
     const { privateJwk } = transformPrivateKeyToPrivateJwk({ type: { crv: 'Ed25519', kty: 'OKP' }, privateKey })
     const createdKey = await agent.kms.importKey({ privateJwk })
 
-    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { kid, d, ...publicJwk } = createdKey.publicJwk
 
     const did = await agent.dids.create<CheqdDidCreateOptions>({

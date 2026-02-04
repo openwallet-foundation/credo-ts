@@ -153,9 +153,7 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
   public get extendedVctValues() {
     return this.typeMetadataChain
       ? // Remove the first one, as that's not extended
-        this.typeMetadataChain
-          .slice(1)
-          .map(({ vct }) => vct)
+        this.typeMetadataChain.slice(1).map(({ vct }) => vct)
       : this.typeMetadata?.extends
         ? [this.typeMetadata.extends]
         : []

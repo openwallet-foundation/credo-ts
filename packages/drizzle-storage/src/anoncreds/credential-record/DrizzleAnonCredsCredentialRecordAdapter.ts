@@ -37,7 +37,6 @@ export class DrizzleAnonCredsCredentialRecordAdapter extends BaseDrizzleRecordAd
       ...customTags
     } = record.getTags()
 
-    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { schema_id, cred_def_id, rev_reg_id, ...credentialRest } = record.credential
 
     return {

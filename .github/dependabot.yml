@@ -41,6 +41,8 @@ updates:
     ignore:
       # See pnpm-workspace.yml
       - dependency-name: class-validator
+      - dependency-name: "@biomejs/biome"
+      - dependency-name: "@types/node"
 
   # GitHub Actions dependencies
   - package-ecosystem: "github-actions"

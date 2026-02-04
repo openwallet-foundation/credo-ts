@@ -35,7 +35,6 @@ export class DrizzleSdJwtVcRecordAdapter extends BaseDrizzleRecordAdapter<
   }
 
   public toRecord(values: DrizzleSdJwtVcAdapterValues): SdJwtVcRecord {
-    // biome-ignore lint/correctness/noUnusedVariables: tags are computed
     const { sdAlg, alg, vct, customTags, extendedVctValues, ...remainingValues } = values
 
     // All tags inferred from the record state itself

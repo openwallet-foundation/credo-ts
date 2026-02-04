@@ -25,13 +25,13 @@
     "directory": "packages/hedera"
   },
   "scripts": {
-    "build": "tsdown --config-loader unconfig",
+    "build": "tsdown --config-loader unrun",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
-    "@hashgraph/sdk": "^2.78.0",
+    "@hashgraph/sdk": "^2.80.0",
     "@hiero-did-sdk/anoncreds": "^0.1.8",
     "@hiero-did-sdk/cache": "^0.1.8",
     "@hiero-did-sdk/client": "^0.1.8",

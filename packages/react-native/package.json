@@ -25,7 +25,7 @@
     "directory": "packages/react-native"
   },
   "scripts": {
-    "build": "tsdown --config-loader unconfig",
+    "build": "tsdown --config-loader unrun",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
@@ -33,7 +33,7 @@
     "events": "^3.3.0"
   },
   "devDependencies": {
-    "react-native": "^0.82.1",
+    "react-native": "^0.83.1",
     "react-native-fs": "^2.20.0",
     "react-native-get-random-values": "^2.0.0",
     "typescript": "catalog:"

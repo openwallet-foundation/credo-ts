@@ -92,7 +92,7 @@ app.put('/:tailsFileId', multer({ storage: fileStorage }).single('file'), async 
     return res.status(400).send('No files were uploaded.')
   }
 
-  const tailsFileId = req.params.tailsFileId
+  const tailsFileId = req.params.tailsFileId as string
   if (!tailsFileId) {
     // Clean up temporary file
     fs.rmSync(file.path)
