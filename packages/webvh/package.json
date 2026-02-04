@@ -25,7 +25,7 @@
     }
   },
   "scripts": {
-    "build": "tsdown --config-loader unconfig",
+    "build": "tsdown --config-loader unrun",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
@@ -33,7 +33,7 @@
     "@credo-ts/core": "workspace:*",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
-    "didwebvh-ts": "^2.5.6",
+    "didwebvh-ts": "^2.7.1",
     "json-canonicalize": "^2.0.0",
     "tsyringe": "catalog:"
   },

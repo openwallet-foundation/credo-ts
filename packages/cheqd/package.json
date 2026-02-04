@@ -25,11 +25,11 @@
     "directory": "packages/cheqd"
   },
   "scripts": {
-    "build": "tsdown --config-loader unconfig",
+    "build": "tsdown --config-loader unrun",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@cheqd/sdk": "npm:@cheqd/sdk-esm@~5.4.8",
+    "@cheqd/sdk": "npm:@cheqd/sdk-esm@~5.4.9",
     "@cheqd/ts-proto": "^4.2.0",
     "@cosmjs/crypto": "^0.36.2",
     "@cosmjs/proto-signing": "^0.36.2",
