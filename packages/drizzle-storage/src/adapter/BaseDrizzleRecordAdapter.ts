@@ -134,12 +134,18 @@ export abstract class BaseDrizzleRecordAdapter<
         // AFTER cursor (lower bound)
         if (cursor?.after) {
           const afterCursor = decodeCursor(cursor.after)
+          if (!afterCursor) {
+            return []
+          }
           whereConditions.push(cursorAfterCondition(this.table.postgres, afterCursor))
         }
 
         // BEFORE cursor (upper bound)
         if (cursor?.before) {
           const beforeCursor = decodeCursor(cursor.before)
+          if (!beforeCursor) {
+            return []
+          }
           whereConditions.push(cursorBeforeCondition(this.table.postgres, beforeCursor))
         }
 
@@ -147,7 +153,7 @@ export abstract class BaseDrizzleRecordAdapter<
 
         // Order must flip ONLY for backward pagination
         const orderBy = isBackward
-          ? [asc(this.table.postgres.createdAt), asc(this.table.postgres.id)]
+          ? [asc(this.table.postgres.createdAt), desc(this.table.postgres.id)]
           : [desc(this.table.postgres.createdAt), asc(this.table.postgres.id)]
 
         let queryResult = this.database
@@ -203,12 +209,20 @@ export abstract class BaseDrizzleRecordAdapter<
         // AFTER cursor (lower bound)
         if (cursor?.after) {
           const afterCursor = decodeCursor(cursor.after)
+
+          if (!afterCursor) {
+            return []
+          }
           whereConditions.push(cursorAfterCondition(this.table.sqlite, afterCursor))
         }
 
         // BEFORE cursor (upper bound)
         if (cursor?.before) {
           const beforeCursor = decodeCursor(cursor.before)
+
+          if (!beforeCursor) {
+            return []
+          }
           whereConditions.push(cursorBeforeCondition(this.table.sqlite, beforeCursor))
         }
 
@@ -216,7 +230,7 @@ export abstract class BaseDrizzleRecordAdapter<
 
         // Flip ordering ONLY for backward pagination
         const orderBy = isBackward
-          ? [asc(this.table.sqlite.createdAt), asc(this.table.sqlite.id)]
+          ? [asc(this.table.sqlite.createdAt), desc(this.table.sqlite.id)]
           : [desc(this.table.sqlite.createdAt), asc(this.table.sqlite.id)]
 
         let queryResult = this.database
@@ -288,6 +302,7 @@ export abstract class BaseDrizzleRecordAdapter<
           })
         }
 
+        // biome-ignore lint/correctness/noUnusedVariables: <explanation>
         const { contextCorrelationId, ...item } = result
         return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
       }
@@ -312,6 +327,7 @@ export abstract class BaseDrizzleRecordAdapter<
           })
         }
 
+        // biome-ignore lint/correctness/noUnusedVariables: <explanation>
         const { contextCorrelationId, ...item } = result
         return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
       }
