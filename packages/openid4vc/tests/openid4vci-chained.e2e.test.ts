@@ -48,7 +48,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
             baseUrl: issuanceBaseUrl,
             credentialRequestToCredentialMapper: async ({
               agentContext,
-              credentialRequest,
+              credentialConfiguration,
               issuanceSession,
               holderBinding,
               authorization,
@@ -73,12 +73,12 @@ describe('OpenId4Vc (Chained Authorization)', () => {
                 }
               }
 
-              if (credentialRequest.format === 'vc+sd-jwt') {
+              if (credentialConfiguration.format === 'vc+sd-jwt' && credentialConfiguration.vct) {
                 return {
                   type: 'credentials',
                   format: 'dc+sd-jwt',
                   credentials: holderBinding.keys.map((holderBinding) => ({
-                    payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor', name },
+                    payload: { vct: credentialConfiguration.vct, university: 'innsbruck', degree: 'bachelor', name },
                     holder: holderBinding,
                     issuer: {
                       method: 'did',
