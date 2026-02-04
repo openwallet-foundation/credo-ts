@@ -117,7 +117,7 @@ describe('OpenId4Vci (Deferred)', () => {
                   type: 'credentials',
                   format: 'dc+sd-jwt',
                   credentials: holderBinding.keys.map((holderBinding) => ({
-                    payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
+                    payload: { vct: credentialRequest.vct as string, university: 'innsbruck', degree: 'bachelor' },
                     holder: holderBinding,
                     issuer: {
                       method: 'did',
