@@ -7,7 +7,7 @@ import type {
   W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
   W3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
-import { injectable } from 'tsyringe'
+import { injectable } from '../../plugins'
 import type { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
 import type { Query } from '../../storage/StorageService'

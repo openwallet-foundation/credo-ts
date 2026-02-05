@@ -1,4 +1,4 @@
-import { injectable } from 'tsyringe'
+import { injectable } from '../../plugins'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import {
   DidCommBasicMessageRepository,

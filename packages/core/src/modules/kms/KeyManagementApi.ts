@@ -1,4 +1,4 @@
-import { injectable } from 'tsyringe'
+import { injectable } from '../../plugins'
 
 import { AgentContext } from '../../agent'
 import { zParseWithErrorHandling } from '../../utils/zod'
