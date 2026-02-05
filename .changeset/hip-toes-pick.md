@@ -1,5 +1,5 @@
 ---
-"@credo-ts/openid4vc": minor
+"@credo-ts/openid4vc": patch
 ---
 
 Introduces a new callback in the issuer configuration (`getChainedAuthorizationRequestPayload`), which can be used
