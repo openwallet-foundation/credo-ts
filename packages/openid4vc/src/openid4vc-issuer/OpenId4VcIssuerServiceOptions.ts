@@ -27,7 +27,10 @@ import type {
   OpenId4VcJwtIssuer,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
-import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
+import type {
+  OpenId4VciAuthorizationServerConfig,
+  OpenId4VciChainedAuthorizationServerConfig,
+} from '../shared/models/OpenId4VciAuthorizationServerConfig'
 import { OpenId4VcIssuanceSessionRecord, type OpenId4VcIssuerRecordProps } from './repository'
 
 export interface OpenId4VciCredentialRequestAuthorization {
@@ -74,7 +77,7 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
   /**
    * Whether presentation using OpenID4VP is required as part of the authorization flow. The presentation
    * request will be created dynamically when the wallet initiates the authorization flow using the
-   * `getVerificationSessionForIssuanceSessionAuthorization` callback in the issuer module config.
+   * `getVerificationSession` callback in the issuer module config.
    *
    * You can dynamically create the verification session based on the provided issuance session, or you
    * can have a more generic implementation based on credential configurations and scopes that are being
@@ -83,7 +86,7 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
    * In case this parameter is set to true, `authorizationServerUrl` MUST be undefined or match the
    * `credential_issuer` value, as only Credo can handle this flow.
    *
-   * In case this parameter is set to true, and `getVerificationSessionForIssuanceSessionAuthorization` is
+   * In case this parameter is set to true, and `getVerificationSession` is
    * not configured on the issuer module an error will be thrown.
    *
    * @default false
@@ -200,12 +203,15 @@ export interface OpenId4VciCreateDeferredCredentialResponseOptions {
 }
 
 /**
+ * @deprecated use OpenId4VciGetVerificationSession instead.
+ */
+export type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization = OpenId4VciGetVerificationSession
+
+/**
  * Callback that is called when a verification session needs to be created to complete
  * authorization of credential issuance.
- *
- *
  */
-export type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization = (options: {
+export type OpenId4VciGetVerificationSession = (options: {
   agentContext: AgentContext
   issuanceSession: OpenId4VcIssuanceSessionRecord
 
@@ -233,6 +239,37 @@ export type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization = (o
     scopes: string[]
   }
 >
+
+export type OpenId4VciGetChainedAuthorizationRequestPayload = (options: {
+  agentContext: AgentContext
+  issuanceSession: OpenId4VcIssuanceSessionRecord
+
+  /**
+   * The credential configurations for which authorization has been requested based on the **scope**
+   * values. It doesn't mean the wallet will request all credentials to be issued.
+   */
+  requestedCredentialConfigurations: OpenId4VciCredentialConfigurationsSupportedWithFormats
+
+  /**
+   * The configuration of the chained authorization server that is being used with this request.
+   */
+  chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
+}) => Promise<{
+  /**
+   * The scopes to request to the chained authorization server. If no scopes are required,
+   * an empty array should be returned.
+   */
+  scopes: string[]
+
+  /**
+   * Additional properties that will be sent as payload in the authorization request to
+   * the chained authorization server.
+   *
+   * Please note that this additionalPayload will override any existing properties
+   * with the same name in the authorization request. Please use it carefully.
+   */
+  additionalPayload?: Record<string, string>
+}>
 
 export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
   agentContext: AgentContext
