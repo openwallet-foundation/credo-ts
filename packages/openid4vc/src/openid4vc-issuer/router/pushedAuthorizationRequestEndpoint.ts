@@ -184,20 +184,46 @@ export async function handlePushedAuthorizationRequest(
   const redirectUri = joinUriParts(config.baseUrl, [issuer.issuerId, 'redirect'])
   const chainedIdentityState = utils.uuid()
 
-  const scopes = requestedScopes.flatMap((scope) => {
-    if (scope in authorizationServerConfig.scopesMapping) {
-      return authorizationServerConfig.scopesMapping[scope]
+  let scopes: string[] = []
+  let additionalRequestPayload: Record<string, unknown> | undefined
+
+  if (authorizationServerConfig.scopesMapping) {
+    for (const scope of requestedScopes) {
+      if (scope in authorizationServerConfig.scopesMapping) {
+        scopes.push(...authorizationServerConfig.scopesMapping[scope])
+      } else {
+        throw new Oauth2ServerErrorResponseError(
+          {
+            error: Oauth2ErrorCodes.ServerError,
+          },
+          {
+            internalMessage: `Issuer '${issuer.issuerId}' does not have a scope mapping for scope '${scope}' for external authorization server '${authorizationServerConfig.issuer}'`,
+          }
+        )
+      }
+    }
+  } else {
+    if (!config.getChainedAuthorizationOptionsForIssuanceSessionAuthorization) {
+      throw new Oauth2ServerErrorResponseError(
+        {
+          error: Oauth2ErrorCodes.ServerError,
+        },
+        {
+          internalMessage: `Issuer '${issuer.issuerId}' does not have getChainedAuthorizationOptionsForIssuanceSessionAuthorization configured.`,
+        }
+      )
     }
 
-    throw new Oauth2ServerErrorResponseError(
-      {
-        error: Oauth2ErrorCodes.ServerError,
-      },
-      {
-        internalMessage: `Issuer '${issuer.issuerId}' does not have a scope mapping for scope '${scope}' for external authorization server '${authorizationServerConfig.issuer}'`,
-      }
-    )
-  })
+    const dynamicConfiguration = await config.getChainedAuthorizationOptionsForIssuanceSessionAuthorization({
+      agentContext,
+      issuanceSession,
+      chainedAuthorizationServerConfig: authorizationServerConfig,
+      requestedCredentialConfigurations,
+    })
+
+    scopes = dynamicConfiguration.scopes
+    additionalRequestPayload = dynamicConfiguration.additionalPayload
+  }
 
   // TODO: add support for DPoP
   const { authorizationRequestUrl, pkce } = await oauth2Client.initiateAuthorization({
@@ -206,6 +232,7 @@ export async function handlePushedAuthorizationRequest(
     redirectUri,
     state: chainedIdentityState,
     scope: scopes.join(' '),
+    additionalRequestPayload,
   })
 
   issuanceSession.chainedIdentity = {
