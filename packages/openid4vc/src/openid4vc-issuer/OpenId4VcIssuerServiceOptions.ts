@@ -27,7 +27,10 @@ import type {
   OpenId4VcJwtIssuer,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
-import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
+import type {
+  OpenId4VciAuthorizationServerConfig,
+  OpenId4VciChainedAuthorizationServerConfig,
+} from '../shared/models/OpenId4VciAuthorizationServerConfig'
 import { OpenId4VcIssuanceSessionRecord, type OpenId4VcIssuerRecordProps } from './repository'
 
 export interface OpenId4VciCredentialRequestAuthorization {
@@ -233,6 +236,37 @@ export type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization = (o
     scopes: string[]
   }
 >
+
+export type OpenId4VciGetChainedAuthorizationOptionsForIssuanceSessionAuthorization = (options: {
+  agentContext: AgentContext
+  issuanceSession: OpenId4VcIssuanceSessionRecord
+
+  /**
+   * The credential configurations for which authorization has been requested based on the **scope**
+   * values. It doesn't mean the wallet will request all credentials to be issued.
+   */
+  requestedCredentialConfigurations: OpenId4VciCredentialConfigurationsSupportedWithFormats
+
+  /**
+   * The configuration of the chained authorization server that is being used with this request.
+   */
+  chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
+}) => Promise<{
+  /**
+   * The scopes to request to the chained authorization server. If no scopes are required,
+   * an empty array should be returned.
+   */
+  scopes: string[]
+
+  /**
+   * Additional properties that will be sent as payload in the authorization request to
+   * the chained authorization server.
+   *
+   * Please note that this additionalPayload will override any existing properties
+   * with the same name in the authorization request. Please use it carefully.
+   */
+  additionalPayload?: Record<string, string>
+}>
 
 export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
   agentContext: AgentContext
