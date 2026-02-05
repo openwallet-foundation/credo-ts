@@ -266,7 +266,7 @@ export class Issuer extends BaseAgent<{
             baseUrl: `${url}/oid4vci`,
             credentialRequestToCredentialMapper: (...args) =>
               getCredentialRequestToCredentialMapper({ issuerDidKey: this.didKey })(...args),
-            getVerificationSessionForIssuanceSessionAuthorization: async ({ agentContext, scopes }) => {
+            getVerificationSession: async ({ agentContext, scopes }) => {
               const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
               const authorizationRequest = await verifierApi.createAuthorizationRequest({
                 verifierId: this.verifierRecord.verifierId,

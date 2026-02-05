@@ -2,7 +2,8 @@ import type { Express } from 'express'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciDeferredCredentialRequestToCredentialMapper,
-  OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
+  OpenId4VciGetChainedAuthorizationRequestPayload,
+  OpenId4VciGetVerificationSession,
 } from './OpenId4VcIssuerServiceOptions'
 
 const DEFAULT_C_NONCE_EXPIRES_IN = 1 * 60 // 1 minute
@@ -116,13 +117,27 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   deferredCredentialRequestToCredentialMapper?: OpenId4VciDeferredCredentialRequestToCredentialMapper
 
   /**
+   * @deprecated use `getVerificationSession` instead.
+   */
+  getVerificationSessionForIssuanceSessionAuthorization?: OpenId4VciGetVerificationSession
+
+  /**
    * Callback to get a verification session that needs to be fulfilled for the authorization of
    * of a credential issuance session. Once the verification session has been completed the user can
    * retrieve an authorization code and access token and retrieve the credential(s).
    *
    * Required if presentation during issuance flow is used
    */
-  getVerificationSessionForIssuanceSessionAuthorization?: OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization
+  getVerificationSession?: OpenId4VciGetVerificationSession
+
+  /**
+   * Callback to get additional details for the chained authorization server flow.
+   * This will be called when a credential offer request is configured to use a chained
+   * authorization server, but the scopesMapping configuration is not defined.
+   *
+   * Required if chained authorization server flow is used without a static scopes mapping configuration.
+   */
+  getChainedAuthorizationRequestPayload?: OpenId4VciGetChainedAuthorizationRequestPayload
 
   /**
    * Custom the paths used for endpoints
@@ -190,12 +205,22 @@ export class OpenId4VcIssuerModuleConfig {
    *
    * Required if presentation during issuance flow is used
    */
-  public getVerificationSessionForIssuanceSessionAuthorization?: OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization
+  public getVerificationSession?: OpenId4VciGetVerificationSession
+
+  /**
+   * Callback to get additional details for the chained authorization server flow.
+   * This will be called when a credential offer request is configured to use a chained
+   * authorization server, but the scopesMapping configuration is not defined.
+   *
+   * Required if chained authorization server flow is used without a static scopes mapping configuration.
+   */
+  public getChainedAuthorizationRequestPayload?: OpenId4VciGetChainedAuthorizationRequestPayload
 
   public constructor(options: InternalOpenId4VcIssuerModuleConfigOptions) {
     this.options = options
-    this.getVerificationSessionForIssuanceSessionAuthorization =
-      options.getVerificationSessionForIssuanceSessionAuthorization
+    this.getVerificationSession =
+      options.getVerificationSession ?? options.getVerificationSessionForIssuanceSessionAuthorization
+    this.getChainedAuthorizationRequestPayload = options.getChainedAuthorizationRequestPayload
   }
 
   public get app() {
@@ -381,5 +406,21 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get jwksEndpointPath(): string {
     return this.options.endpoints?.jwks ?? '/jwks'
+  }
+
+  /**
+   * @deprecated use `getVerificationSession` instead.
+   */
+  public get getVerificationSessionForIssuanceSessionAuthorization() {
+    return this.getVerificationSession
+  }
+
+  /**
+   * @deprecated use `getVerificationSession` instead.
+   */
+  public set getVerificationSessionForIssuanceSessionAuthorization(value:
+    | OpenId4VciGetVerificationSession
+    | undefined,) {
+    this.getVerificationSession = value
   }
 }

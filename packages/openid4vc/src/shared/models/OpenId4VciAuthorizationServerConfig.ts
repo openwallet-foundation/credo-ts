@@ -70,8 +70,10 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
   /**
    * Mapping between credential scopes and authorization server scopes.
    *
-   * This is mandatory. If a scope is missing, an error will be thrown when making
-   * a credential offer. If no additional scope is needed, use an empty array.
+   * If a scope is missing, an error will be thrown when making a credential offer.
+   * If no additional scope is needed, use an empty array.
+   *
+   * Required if the callback `getChainedAuthorizationRequestPayload` is not provided.
    */
-  scopesMapping: Record<string, string[]>
+  scopesMapping?: Record<string, string[]>
 }
