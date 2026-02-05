@@ -7,8 +7,8 @@ import {
   DcqlSdJwtVcCredential,
   DcqlW3cVcCredential,
 } from 'dcql'
-import { injectable } from '../../plugins'
 import type { AgentContext } from '../../agent'
+import { injectable } from '../../plugins'
 import { isNonEmptyArray, type JsonObject, type JsonValue, mapNonEmptyArray } from '../../types'
 import { asArray, TypedArrayEncoder } from '../../utils'
 import {
