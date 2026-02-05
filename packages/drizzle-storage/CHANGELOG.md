@@ -1,5 +1,19 @@
 # @credo-ts/drizzle-storage
 
+## 0.6.3
+
+### Patch Changes
+
+- Updated dependencies [e2cbb15]
+  - @credo-ts/openid4vc@0.6.3
+  - @credo-ts/action-menu@0.6.3
+  - @credo-ts/anoncreds@0.6.3
+  - @credo-ts/core@0.6.3
+  - @credo-ts/didcomm@0.6.3
+  - @credo-ts/drpc@0.6.3
+  - @credo-ts/question-answer@0.6.3
+  - @credo-ts/tenants@0.6.3
+
 ## 0.6.2
 
 ### Patch Changes
