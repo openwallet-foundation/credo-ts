@@ -2,6 +2,7 @@ import type { Express } from 'express'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciDeferredCredentialRequestToCredentialMapper,
+  OpenId4VciGetChainedAuthorizationOptionsForIssuanceSessionAuthorization,
   OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
 } from './OpenId4VcIssuerServiceOptions'
 
@@ -125,6 +126,15 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   getVerificationSessionForIssuanceSessionAuthorization?: OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization
 
   /**
+   * Callback to get additional details for the chained authorization server flow.
+   * This will be called when a credential offer request is configured to use a chained
+   * authorization server, but the scopesMapping configuration is not defined.
+   *
+   * Required if chained authorization server flow is used without a static scopes mapping configuration.
+   */
+  getChainedAuthorizationOptionsForIssuanceSessionAuthorization?: OpenId4VciGetChainedAuthorizationOptionsForIssuanceSessionAuthorization
+
+  /**
    * Custom the paths used for endpoints
    */
   endpoints?: {
@@ -192,10 +202,21 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public getVerificationSessionForIssuanceSessionAuthorization?: OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization
 
+  /**
+   * Callback to get additional details for the chained authorization server flow.
+   * This will be called when a credential offer request is configured to use a chained
+   * authorization server, but the scopesMapping configuration is not defined.
+   *
+   * Required if chained authorization server flow is used without a static scopes mapping configuration.
+   */
+  public getChainedAuthorizationOptionsForIssuanceSessionAuthorization?: OpenId4VciGetChainedAuthorizationOptionsForIssuanceSessionAuthorization
+
   public constructor(options: InternalOpenId4VcIssuerModuleConfigOptions) {
     this.options = options
     this.getVerificationSessionForIssuanceSessionAuthorization =
       options.getVerificationSessionForIssuanceSessionAuthorization
+    this.getChainedAuthorizationOptionsForIssuanceSessionAuthorization =
+      options.getChainedAuthorizationOptionsForIssuanceSessionAuthorization
   }
 
   public get app() {
