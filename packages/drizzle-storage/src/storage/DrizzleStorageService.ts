@@ -13,6 +13,8 @@ import { CredoDrizzleStorageError } from '../error/CredoDrizzleStorageError'
 
 @injectable()
 export class DrizzleStorageService<T extends BaseRecord> implements StorageService<T> {
+  public readonly supportsCursorPagination = true
+
   public constructor(public config: DrizzleStorageModuleConfig) {}
 
   private getAdapterForRecordType(recordType: string) {
