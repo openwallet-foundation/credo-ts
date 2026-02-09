@@ -130,7 +130,7 @@
     "@libsql/client": "^0.15.15",
     "@types/pg": "^8.16.0",
     "@types/yargs": "^17.0.35",
-    "drizzle-orm": "^0.44.7",
+    "drizzle-orm": "^0.45.1",
     "pg": "^8.18.0",
     "typescript": "catalog:"
   }
