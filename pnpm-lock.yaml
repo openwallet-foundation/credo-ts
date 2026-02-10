@@ -28,11 +28,11 @@ catalogs:
       specifier: ^0.2.3
       version: 0.2.3
     '@openwallet-foundation/askar-nodejs':
-      specifier: ^0.4.3
-      version: 0.4.3
+      specifier: 0.5.0-alpha-20251207073409
+      version: 0.5.0-alpha-20251207073409
     '@openwallet-foundation/askar-shared':
-      specifier: ^0.4.3
-      version: 0.4.3
+      specifier: 0.5.0-alpha-20251207073409
+      version: 0.5.0-alpha-20251207073409
     '@peculiar/x509':
       specifier: ^1.14.3
       version: 1.14.3
@@ -158,7 +158,7 @@ importers:
         version: link:packages/webvh
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       '@types/cors':
         specifier: ^2.8.19
         version: 2.8.19
@@ -179,7 +179,7 @@ importers:
         version: 8.18.1
       '@vitest/coverage-v8':
         specifier: 'catalog:'
-        version: 4.0.18(vitest@4.0.18(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.0.18(vitest@4.0.18(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       cors:
         specifier: ^2.8.6
         version: 2.8.6
@@ -215,13 +215,13 @@ importers:
         version: 6.23.0
       vite:
         specifier: npm:rolldown-vite@latest
-        version: rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+        version: rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
       vite-node:
         specifier: ^5.3.0
-        version: 5.3.0(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+        version: 5.3.0(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
       vitest:
         specifier: 'catalog:'
-        version: 4.0.18(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.0.18(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
       ws:
         specifier: 'catalog:'
         version: 8.19.0
@@ -236,10 +236,10 @@ importers:
         version: 0.2.3
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       inquirer:
         specifier: ^8.2.7
-        version: 8.2.7(@types/node@25.2.2)
+        version: 8.2.7(@types/node@25.2.0)
     devDependencies:
       '@credo-ts/anoncreds':
         specifier: workspace:*
@@ -294,13 +294,13 @@ importers:
         version: 6.1.0(koa@3.1.1)
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       express:
         specifier: 'catalog:'
         version: 5.2.1
       inquirer:
         specifier: ^8.2.7
-        version: 8.2.7(@types/node@25.2.2)
+        version: 8.2.7(@types/node@25.2.0)
       jose:
         specifier: ^6.1.3
         version: 6.1.3
@@ -427,10 +427,10 @@ importers:
         version: link:../tenants
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       '@types/ref-array-di':
         specifier: ^1.2.8
         version: 1.2.8
@@ -461,7 +461,7 @@ importers:
     devDependencies:
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1072,7 +1072,7 @@ importers:
         version: link:../../packages/node
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.3
+        version: 0.5.0-alpha-20251207073409
       class-validator:
         specifier: 'catalog:'
         version: 0.14.3
@@ -1156,12 +1156,8 @@ packages:
   '@babel/generator@7.2.0':
     resolution: {integrity: sha512-BA75MVfRlFQG2EZgFYIwyT1r6xSkwfP2bdkY/kLZusEYWiJs4xCowab/alaEaT0wSvmVuXGqiefeBlP+7V1yKg==}
 
-  '@babel/generator@7.29.1':
-    resolution: {integrity: sha512-qsaF+9Qcm2Qv8SRIMMscAvG4O3lJ0F1GuMo5HR/Bp02LopNgnZBC/EkbevHFeGs4ls/oPz9v+Bsmzbkbe+0dUw==}
-    engines: {node: '>=6.9.0'}
-
-  '@babel/generator@7.29.1':
-    resolution: {integrity: sha512-qsaF+9Qcm2Qv8SRIMMscAvG4O3lJ0F1GuMo5HR/Bp02LopNgnZBC/EkbevHFeGs4ls/oPz9v+Bsmzbkbe+0dUw==}
+  '@babel/generator@7.29.0':
+    resolution: {integrity: sha512-vSH118/wwM/pLR38g/Sgk05sNtro6TlTJKuiMXDaZqPUfjTFcudpCOt00IhOfj+1BFAX+UFAlzCU+6WXr3GLFQ==}
     engines: {node: '>=6.9.0'}
 
   '@babel/generator@8.0.0-rc.1':
@@ -3135,12 +3131,12 @@ packages:
   '@openid4vc/utils@0.4.5':
     resolution: {integrity: sha512-9F5CPdWnBKlPz/z8CtfSnp+XjaMso6qvcFFihjQp3vWSxyFAAQiTjJUvtwXZKKx4ZX0g9O28QVoYmJF/5jQmjA==}
 
-  '@openwallet-foundation/askar-nodejs@0.4.3':
-    resolution: {integrity: sha512-+7hJaCUz/GP9hhOdbLL+9OzYgb5vILcTmSyqSGTR3Qd/ba+j5HdN3BJfgRETK4Svz1jlbEKbjRLE7RwDqEr2RA==}
-    engines: {node: '>= 18'}
+  '@openwallet-foundation/askar-nodejs@0.5.0-alpha-20251207073409':
+    resolution: {integrity: sha512-3vHMKDXgeR561ogJ+W0UmO+ST/vHLJUZRpWIvzxHpQCZkJKcpou1tv3AegeMN0drZIDVupANwC1y3TSQres2bw==}
+    engines: {node: '>= 20'}
 
-  '@openwallet-foundation/askar-shared@0.4.3':
-    resolution: {integrity: sha512-Zt9zlvjJxNs8UWlnRydZH594Lak15YPHY72VT1+iDbXh0OjTdyq6Bf0FIsh9sfFnRYIgh2zd8+VoXxZ07GjADA==}
+  '@openwallet-foundation/askar-shared@0.5.0-alpha-20251207073409':
+    resolution: {integrity: sha512-IW7A+a9Q81XXuW8vpDFSTcVDAzA695LG97WDQ/1qDy0YKFLaRoc2xCZWIOiU7tXtW+ovLp5t80U9eFxDv26b3A==}
 
   '@oxc-project/runtime@0.101.0':
     resolution: {integrity: sha512-t3qpfVZIqSiLQ5Kqt/MC4Ge/WCOGrrcagAdzTcDaggupjiGxUx4nJF2v6wUCXWSzWHn5Ns7XLv13fCJEwCOERQ==}
@@ -3706,6 +3702,7 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
     resolution: {integrity: sha512-QXJ6R8ENiZV2rPMbn06cw5JKwqUYN1kzVRbYfONqE1PEXx1noQ4md7uxr2zSczi0ubKkNcbyYDNtIMTZIhGzmQ==}
+    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
@@ -3863,9 +3860,6 @@ packages:
 
   '@types/node@25.2.0':
     resolution: {integrity: sha512-DZ8VwRFUNzuqJ5khrvwMXHmvPe+zGayJhr2CDNiKB1WBE1ST8Djl00D0IC4vvNmHMdj6DlbYRIaFE7WHjlDl5w==}
-
-  '@types/node@25.2.2':
-    resolution: {integrity: sha512-BkmoP5/FhRYek5izySdkOneRyXYN35I860MFAGupTdebyE66uZaR+bXLHq8k4DirE5DwQi3NuhvRU1jqTVwUrQ==}
 
   '@types/object-inspect@1.13.0':
     resolution: {integrity: sha512-lwGTVESDDV+XsQ1pH4UifpJ1f7OtXzQ6QBOX2Afq2bM/T3oOt8hF6exJMjjIjtEWeAN2YAo25J7HxWh97CCz9w==}
@@ -5492,9 +5486,6 @@ packages:
   get-tsconfig@4.13.1:
     resolution: {integrity: sha512-EoY1N2xCn44xU6750Sx7OjOIT59FkmstNc3X6y5xpz7D5cBtZRe/3pSlTkDJgqsOk3WwZPkWfonhhUJfttQo3w==}
 
-  get-tsconfig@4.13.6:
-    resolution: {integrity: sha512-shZT/QMiSHc/YBLxxOkMtgSid5HFoauqCE3/exfsEcwg1WkeqjG+V40yBbBrsD+jW2HDXcs28xOfcbm2jI8Ddw==}
-
   get-uv-event-loop-napi-h@1.0.6:
     resolution: {integrity: sha512-t5c9VNR84nRoF+eLiz6wFrEp1SE2Acg0wS+Ysa2zF0eROes+LzOfuTaVHxGy8AbS8rq7FHEJzjnCZo1BupwdJg==}
 
@@ -6150,6 +6141,9 @@ packages:
   koa@3.1.1:
     resolution: {integrity: sha512-KDDuvpfqSK0ZKEO2gCPedNjl5wYpfj+HNiuVRlbhd1A88S3M0ySkdf2V/EJ4NWt5dwh5PXCdcenrKK2IQJAxsg==}
     engines: {node: '>= 18'}
+
+  koffi@2.14.1:
+    resolution: {integrity: sha512-IMFL3IbRDXacSIjs7pPbPxgNlJ2hUtawQXU2QPdr6iw38jmv5AesAUG8HPX00xl0PPA2BbEa3noTw1YdHY+gHg==}
 
   ky@1.14.3:
     resolution: {integrity: sha512-9zy9lkjac+TR1c2tG+mkNSVlyOpInnWdSMiue4F+kq8TwJSgv6o8jhLRg8Ho6SnZ9wOYUq/yozts9qQCfk7bIw==}
@@ -7637,11 +7631,6 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  semver@7.7.4:
-    resolution: {integrity: sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA==}
-    engines: {node: '>=10'}
-    hasBin: true
-
   send@0.18.0:
     resolution: {integrity: sha512-qqWzuOjSFOuqPjFe4NOsMLafToQQwBSOEpS+FwEt3A2V3vKubTquT3vmLTQpFgMXp8AlFWFuP1qKaJZOtPpVXg==}
     engines: {node: '>= 0.8.0'}
@@ -8710,7 +8699,7 @@ snapshots:
   '@babel/core@7.29.0':
     dependencies:
       '@babel/code-frame': 7.29.0
-      '@babel/generator': 7.29.1
+      '@babel/generator': 7.29.0
       '@babel/helper-compilation-targets': 7.28.6
       '@babel/helper-module-transforms': 7.28.6(@babel/core@7.29.0)
       '@babel/helpers': 7.28.6
@@ -8735,15 +8724,7 @@ snapshots:
       source-map: 0.5.7
       trim-right: 1.0.1
 
-  '@babel/generator@7.29.1':
-    dependencies:
-      '@babel/parser': 7.29.0
-      '@babel/types': 7.29.0
-      '@jridgewell/gen-mapping': 0.3.13
-      '@jridgewell/trace-mapping': 0.3.31
-      jsesc: 3.1.0
-
-  '@babel/generator@7.29.1':
+  '@babel/generator@7.29.0':
     dependencies:
       '@babel/parser': 7.29.0
       '@babel/types': 7.29.0
@@ -9655,7 +9636,7 @@ snapshots:
   '@babel/traverse@7.29.0':
     dependencies:
       '@babel/code-frame': 7.29.0
-      '@babel/generator': 7.29.1
+      '@babel/generator': 7.29.0
       '@babel/helper-globals': 7.28.0
       '@babel/parser': 7.29.0
       '@babel/template': 7.28.6
@@ -10494,7 +10475,7 @@ snapshots:
       resolve: 1.22.11
       resolve-from: 5.0.0
       resolve.exports: 2.0.3
-      semver: 7.7.4
+      semver: 7.7.3
       send: 0.18.0
       slugify: 1.6.6
       source-map-support: 0.5.21
@@ -10532,7 +10513,7 @@ snapshots:
       getenv: 1.0.0
       glob: 7.1.6
       resolve-from: 5.0.0
-      semver: 7.7.4
+      semver: 7.7.3
       slash: 3.0.0
       slugify: 1.6.6
       xcode: 3.0.1
@@ -10552,7 +10533,7 @@ snapshots:
       glob: 7.1.6
       require-from-string: 2.0.2
       resolve-from: 5.0.0
-      semver: 7.7.4
+      semver: 7.7.3
       slugify: 1.6.6
       sucrase: 3.34.0
     transitivePeerDependencies:
@@ -10585,7 +10566,7 @@ snapshots:
       node-fetch: 2.7.0
       parse-png: 2.1.0
       resolve-from: 5.0.0
-      semver: 7.7.4
+      semver: 7.7.3
       tempy: 0.3.0
     transitivePeerDependencies:
       - encoding
@@ -10604,7 +10585,7 @@ snapshots:
   '@expo/metro-config@0.18.11':
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.1
+      '@babel/generator': 7.29.0
       '@babel/parser': 7.29.0
       '@babel/types': 7.29.0
       '@expo/config': 9.0.3
@@ -10656,7 +10637,7 @@ snapshots:
       expo-modules-autolinking: 1.11.2
       fs-extra: 9.1.0
       resolve-from: 5.0.0
-      semver: 7.7.4
+      semver: 7.7.3
       xml2js: 0.6.0
     transitivePeerDependencies:
       - encoding
@@ -10706,7 +10687,7 @@ snapshots:
   '@grpc/proto-loader@0.7.15':
     dependencies:
       lodash.camelcase: 4.3.0
-      long: 5.3.1
+      long: 5.3.2
       protobufjs: 7.5.4
       yargs: 17.7.2
 
@@ -10966,12 +10947,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.19.31
 
-  '@inquirer/external-editor@1.0.3(@types/node@25.2.2)':
+  '@inquirer/external-editor@1.0.3(@types/node@25.2.0)':
     dependencies:
       chardet: 2.1.1
       iconv-lite: 0.7.2
     optionalDependencies:
-      '@types/node': 25.2.2
+      '@types/node': 25.2.0
 
   '@ioredis/commands@1.5.0': {}
 
@@ -11060,7 +11041,7 @@ snapshots:
     dependencies:
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 25.2.2
+      '@types/node': 25.2.0
       '@types/yargs': 15.0.20
       chalk: 4.1.2
     optional: true
@@ -11069,7 +11050,7 @@ snapshots:
     dependencies:
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 25.2.2
+      '@types/node': 25.2.0
       '@types/yargs': 16.0.11
       chalk: 4.1.2
     optional: true
@@ -11271,7 +11252,7 @@ snapshots:
 
   '@npmcli/fs@3.1.1':
     dependencies:
-      semver: 7.7.4
+      semver: 7.7.3
 
   '@open-draft/deferred-promise@2.2.0': {}
 
@@ -11305,17 +11286,12 @@ snapshots:
       zod: 4.3.6
       zod-validation-error: 5.0.0(zod@4.3.6)
 
-  '@openwallet-foundation/askar-nodejs@0.4.3':
+  '@openwallet-foundation/askar-nodejs@0.5.0-alpha-20251207073409':
     dependencies:
-      '@2060.io/ffi-napi': 4.0.9
-      '@2060.io/ref-napi': 3.0.6
-      '@openwallet-foundation/askar-shared': 0.4.3
-      ref-array-di: 1.2.2
-      ref-struct-di: 1.1.1
-    transitivePeerDependencies:
-      - supports-color
+      '@openwallet-foundation/askar-shared': 0.5.0-alpha-20251207073409
+      koffi: 2.14.1
 
-  '@openwallet-foundation/askar-shared@0.4.3':
+  '@openwallet-foundation/askar-shared@0.5.0-alpha-20251207073409':
     dependencies:
       buffer: 6.0.3
       tar: 7.5.7
@@ -12248,7 +12224,7 @@ snapshots:
 
   '@types/node-forge@1.3.14':
     dependencies:
-      '@types/node': 25.2.2
+      '@types/node': 25.2.0
 
   '@types/node@12.20.55': {}
 
@@ -12261,10 +12237,6 @@ snapshots:
       undici-types: 6.21.0
 
   '@types/node@25.2.0':
-    dependencies:
-      undici-types: 7.16.0
-
-  '@types/node@25.2.2':
     dependencies:
       undici-types: 7.16.0
 
@@ -12371,7 +12343,7 @@ snapshots:
       graphql: 15.8.0
       wonka: 4.0.15
 
-  '@vitest/coverage-v8@4.0.18(vitest@4.0.18(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
+  '@vitest/coverage-v8@4.0.18(vitest@4.0.18(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
       '@vitest/utils': 4.0.18
@@ -12383,7 +12355,7 @@ snapshots:
       obug: 2.1.1
       std-env: 3.10.0
       tinyrainbow: 3.0.3
-      vitest: 4.0.18(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+      vitest: 4.0.18(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
   '@vitest/expect@4.0.18':
     dependencies:
@@ -12394,13 +12366,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.0.3
 
-  '@vitest/mocker@4.0.18(rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
+  '@vitest/mocker@4.0.18(rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
       '@vitest/spy': 4.0.18
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+      vite: rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
   '@vitest/pretty-format@4.0.18':
     dependencies:
@@ -14151,10 +14123,6 @@ snapshots:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
-  get-tsconfig@4.13.6:
-    dependencies:
-      resolve-pkg-maps: 1.0.0
-
   get-uv-event-loop-napi-h@1.0.6:
     dependencies:
       get-symbol-from-current-process-h: 1.0.2
@@ -14390,9 +14358,9 @@ snapshots:
 
   ini@1.3.8: {}
 
-  inquirer@8.2.7(@types/node@25.2.2):
+  inquirer@8.2.7(@types/node@25.2.0):
     dependencies:
-      '@inquirer/external-editor': 1.0.3(@types/node@25.2.2)
+      '@inquirer/external-editor': 1.0.3(@types/node@25.2.0)
       ansi-escapes: 4.3.2
       chalk: 4.1.2
       cli-cursor: 3.1.0
@@ -14710,14 +14678,14 @@ snapshots:
 
   jest-serializer@27.5.1:
     dependencies:
-      '@types/node': 25.2.2
+      '@types/node': 25.2.0
       graceful-fs: 4.2.11
     optional: true
 
   jest-util@27.5.1:
     dependencies:
       '@jest/types': 27.5.1
-      '@types/node': 25.2.2
+      '@types/node': 25.2.0
       chalk: 4.1.2
       ci-info: 3.9.0
       graceful-fs: 4.2.11
@@ -14754,7 +14722,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 25.2.2
+      '@types/node': 25.2.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
     optional: true
@@ -14906,6 +14874,8 @@ snapshots:
       statuses: 2.0.2
       type-is: 2.0.1
       vary: 1.1.2
+
+  koffi@2.14.1: {}
 
   ky@1.14.3: {}
 
@@ -15114,7 +15084,7 @@ snapshots:
 
   make-dir@4.0.0:
     dependencies:
-      semver: 7.7.4
+      semver: 7.7.3
 
   make-error@1.3.6: {}
 
@@ -15440,7 +15410,7 @@ snapshots:
   metro-transform-plugins@0.73.10:
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.1
+      '@babel/generator': 7.29.0
       '@babel/template': 7.28.6
       '@babel/traverse': 7.29.0
       nullthrows: 1.1.1
@@ -15451,7 +15421,7 @@ snapshots:
   metro-transform-plugins@0.83.3:
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.1
+      '@babel/generator': 7.29.0
       '@babel/template': 7.28.6
       '@babel/traverse': 7.29.0
       flow-enums-runtime: 0.0.6
@@ -15462,7 +15432,7 @@ snapshots:
   metro-transform-worker@0.73.10:
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.1
+      '@babel/generator': 7.29.0
       '@babel/parser': 7.29.0
       '@babel/types': 7.29.0
       babel-preset-fbjs: 3.4.0(@babel/core@7.29.0)
@@ -15484,7 +15454,7 @@ snapshots:
   metro-transform-worker@0.83.3:
     dependencies:
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.1
+      '@babel/generator': 7.29.0
       '@babel/parser': 7.29.0
       '@babel/types': 7.29.0
       flow-enums-runtime: 0.0.6
@@ -15505,7 +15475,7 @@ snapshots:
     dependencies:
       '@babel/code-frame': 7.29.0
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.1
+      '@babel/generator': 7.29.0
       '@babel/parser': 7.29.0
       '@babel/template': 7.28.6
       '@babel/traverse': 7.29.0
@@ -15565,7 +15535,7 @@ snapshots:
     dependencies:
       '@babel/code-frame': 7.29.0
       '@babel/core': 7.29.0
-      '@babel/generator': 7.29.1
+      '@babel/generator': 7.29.0
       '@babel/parser': 7.29.0
       '@babel/template': 7.28.6
       '@babel/traverse': 7.29.0
@@ -15758,7 +15728,7 @@ snapshots:
 
   node-abi@3.87.0:
     dependencies:
-      semver: 7.7.4
+      semver: 7.7.3
 
   node-addon-api@3.2.1: {}
 
@@ -15804,7 +15774,7 @@ snapshots:
     dependencies:
       hosted-git-info: 7.0.2
       proc-log: 4.2.0
-      semver: 7.7.4
+      semver: 7.7.3
       validate-npm-package-name: 5.0.1
 
   npm-package-arg@7.0.0:
@@ -16598,7 +16568,7 @@ snapshots:
       ast-kit: 3.0.0-beta.1
       birpc: 4.0.0
       dts-resolver: 2.1.3(oxc-resolver@11.9.0)
-      get-tsconfig: 4.13.6
+      get-tsconfig: 4.13.1
       obug: 2.1.1
       rolldown: 1.0.0-rc.3
     optionalDependencies:
@@ -16606,7 +16576,7 @@ snapshots:
     transitivePeerDependencies:
       - oxc-resolver
 
-  rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2):
+  rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2):
     dependencies:
       '@oxc-project/runtime': 0.101.0
       fdir: 6.5.0(picomatch@4.0.3)
@@ -16617,7 +16587,7 @@ snapshots:
       tinyglobby: 0.2.15
     optionalDependencies:
       '@types/node': 20.19.31
-      esbuild: 0.27.2
+      esbuild: 0.25.12
       fsevents: 2.3.3
       jiti: 2.6.1
       terser: 5.46.0
@@ -16732,8 +16702,6 @@ snapshots:
   semver@6.3.1: {}
 
   semver@7.7.3: {}
-
-  semver@7.7.4: {}
 
   send@0.18.0:
     dependencies:
@@ -17283,7 +17251,7 @@ snapshots:
       picomatch: 4.0.3
       rolldown: 1.0.0-rc.3
       rolldown-plugin-dts: 0.22.1(oxc-resolver@11.9.0)(rolldown@1.0.0-rc.3)(typescript@5.9.3)
-      semver: 7.7.4
+      semver: 7.7.3
       tinyexec: 1.0.2
       tinyglobby: 0.2.15
       tree-kill: 1.2.2
@@ -17515,13 +17483,13 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite-node@5.3.0(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2):
+  vite-node@5.3.0(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2):
     dependencies:
       cac: 6.7.14
       es-module-lexer: 2.0.0
       obug: 2.1.1
       pathe: 2.0.3
-      vite: rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+      vite: rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
     transitivePeerDependencies:
       - '@types/node'
       - esbuild
@@ -17535,10 +17503,10 @@ snapshots:
       - tsx
       - yaml
 
-  vitest@4.0.18(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2):
+  vitest@4.0.18(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2):
     dependencies:
       '@vitest/expect': 4.0.18
-      '@vitest/mocker': 4.0.18(rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      '@vitest/mocker': 4.0.18(rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       '@vitest/pretty-format': 4.0.18
       '@vitest/runner': 4.0.18
       '@vitest/snapshot': 4.0.18
@@ -17555,7 +17523,7 @@ snapshots:
       tinyexec: 1.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vite: rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+      vite: rolldown-vite@7.3.1(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.19.31
