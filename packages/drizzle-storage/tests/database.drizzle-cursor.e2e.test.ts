@@ -159,10 +159,7 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
   })
 
   test('cursor pagination: results are strictly ordered by createdAt + id', async () => {
-    const page = await agent.genericRecords.findAllByQuery(
-      { something: 'cool' },
-      { limit: 3 }
-    )
+    const page = await agent.genericRecords.findAllByQuery({ something: 'cool' }, { limit: 3 })
 
     for (let i = 1; i < page.length; i++) {
       const prev = page[i - 1]
@@ -171,13 +168,9 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
       const prevDate = new Date(prev.createdAt)
       const currDate = new Date(curr.createdAt)
 
-      expect(
-        prevDate > currDate ||
-        (prevDate.getTime() === currDate.getTime() && prev.id < curr.id)
-      ).toBe(true)
+      expect(prevDate > currDate || (prevDate.getTime() === currDate.getTime() && prev.id < curr.id)).toBe(true)
     }
   })
-
 
   test('cursor pagination: invalid cursor returns empty result', async () => {
     const result = await agent.genericRecords.findAllByQuery(
