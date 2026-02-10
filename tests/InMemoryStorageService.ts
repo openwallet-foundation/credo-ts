@@ -37,6 +37,8 @@ interface ContextCorrelationIdToRecords {
 export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRecord<any, any, any>>
   implements StorageService<T>
 {
+  public readonly supportsCursorPagination = false
+
   public contextCorrelationIdToRecords: ContextCorrelationIdToRecords = {}
 
   private recordToInstance(record: StorageRecord, recordClass: BaseRecordConstructor<T>): T {
