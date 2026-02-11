@@ -71,18 +71,7 @@
   "pnpm": {
     "overrides": {
       "vite": "npm:rolldown-vite@latest"
-    },
-    "onlyBuiltDependencies": [
-      "@2060.io/ffi-napi",
-      "@2060.io/ref-napi",
-      "@biomejs/biome",
-      "@hyperledger/anoncreds-nodejs",
-      "@hyperledger/indy-vdr-nodejs",
-      "@openwallet-foundation/askar-nodejs",
-      "cbor-extract",
-      "koffi",
-      "zstd-napi"
-    ]
+    }
   },
   "resolutions": {
     "undici": "^6.20.1"
