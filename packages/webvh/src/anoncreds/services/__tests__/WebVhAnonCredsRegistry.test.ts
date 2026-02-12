@@ -376,6 +376,62 @@ describe('WebVhAnonCredsRegistry', () => {
         schemaMetadata: mockSchemaResource.metadata,
       })
     })
+
+    it('should register and retrieve a schema with extra metadata', async () => {
+      const schemaId = mockSchemaResource.id
+
+      const mockSchemaResourceWIthExtraMetadata = {
+        ...mockSchemaResource,
+        metadata: {
+          ...mockSchemaResource.metadata,
+          extraField1: 'extraValue1',
+          extraField2: 42,
+        },
+      }
+
+      const mockResolverResponse = {
+        content: mockSchemaResourceWIthExtraMetadata,
+
+        schemaId: schemaId,
+        schemaMetadata: mockSchemaResourceWIthExtraMetadata.metadata || {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+      const schema = mockSchemaResource.content
+
+      const result = await registry.registerSchema(agentContext, {
+        schema,
+        options: {
+          extraMetadata: {
+            extraField1: 'extraValue1',
+            extraField2: 42,
+          },
+        },
+      })
+      expect(result).toMatchObject({
+        schemaState: {
+          state: 'finished',
+          schemaId,
+        },
+      })
+
+      const schemaResponse = await registry.getSchema(agentContext, schemaId)
+
+      expect(mockResolveResource).toHaveBeenCalledWith(agentContext, schemaId)
+      expect(schemaResponse).toEqual({
+        schema: {
+          attrNames: mockSchemaResourceWIthExtraMetadata.content.attrNames,
+          name: mockSchemaResourceWIthExtraMetadata.content.name,
+          version: mockSchemaResourceWIthExtraMetadata.content.version,
+          issuerId: issuerId,
+        },
+        schemaId,
+        resolutionMetadata: mockResolverResponse.dereferencingMetadata,
+        schemaMetadata: mockSchemaResourceWIthExtraMetadata.metadata,
+      })
+    })
   })
 
   describe('getCredentialDefinition', () => {
@@ -438,6 +494,44 @@ describe('WebVhAnonCredsRegistry', () => {
         credentialDefinitionId: mockCredDefResource.id,
         resolutionMetadata: { contentType: 'application/json' },
         credentialDefinitionMetadata: mockCredDefResource.metadata,
+      })
+    })
+
+    it('should register and retrieve a credential definition with extra metadata', async () => {
+      const credentialDefinition = mockCredDefResource.content as AnonCredsCredentialDefinition
+      const mockCredDefResourceWithExtraMetadata = {
+        ...mockCredDefResource,
+        metadata: {
+          ...mockCredDefResource.metadata,
+          extraFieldA: 'extraValueA',
+          extraFieldB: 100,
+        },
+      }
+      const mockResolverResponse = {
+        content: mockCredDefResourceWithExtraMetadata,
+        contentMetadata: {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+
+      const result = await registry.registerCredentialDefinition(agentContext, { credentialDefinition, options: {} })
+      const credDef = await registry.getCredentialDefinition(agentContext, mockCredDefResourceWithExtraMetadata.id)
+
+      expect(result).toMatchObject({
+        credentialDefinitionState: {
+          state: 'finished',
+          credentialDefinition,
+        },
+        credentialDefinitionMetadata: {},
+        registrationMetadata: {},
+      })
+      expect(credDef).toMatchObject({
+        credentialDefinition,
+        credentialDefinitionId: mockCredDefResourceWithExtraMetadata.id,
+        resolutionMetadata: { contentType: 'application/json' },
+        credentialDefinitionMetadata: mockCredDefResourceWithExtraMetadata.metadata,
       })
     })
   })

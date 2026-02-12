@@ -459,6 +459,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         resourceId,
         resourceType: 'anonCredsSchema',
         resourceName: options.schema.name,
+        ...options.options?.extraMetadata,
       },
       issuerId: options.schema.issuerId,
       verificationMethod: options?.options?.verificationMethod,
@@ -488,6 +489,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         resourceId,
         resourceType: 'anonCredsCredDef',
         resourceName: options.credentialDefinition.tag,
+        ...options.options?.extraMetadata,
       },
       issuerId: options.credentialDefinition.issuerId,
       verificationMethod: options.options?.verificationMethod,
@@ -522,6 +524,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         resourceId,
         resourceType: 'anonCredsRevocRegDef',
         resourceName: options.revocationRegistryDefinition.tag,
+        ...options.options?.extraMetadata,
       },
       issuerId: options.revocationRegistryDefinition.issuerId,
       verificationMethod: options.options?.verificationMethod,
@@ -579,6 +582,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         resourceId,
         resourceType: 'anonCredsStatusList',
         resourceName: '0',
+        ...options.options?.extraMetadata,
       },
       issuerId: options.revocationStatusList.issuerId,
       verificationMethod: options?.options?.verificationMethod,
@@ -703,12 +707,14 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 export type WebVhRegisterSchemaOptions = Omit<RegisterSchemaOptions, 'options'> & {
   options?: {
     verificationMethod?: string
+    extraMetadata?: Record<string, unknown>
   }
 }
 
 export type WebVhRegisterCredentialDefinitionOptions = Omit<RegisterCredentialDefinitionOptions, 'options'> & {
   options?: {
     verificationMethod?: string
+    extraMetadata?: Record<string, unknown>
   }
 }
 
@@ -718,11 +724,13 @@ export type WebVhRegisterRevocationRegistryDefinitionOptions = Omit<
 > & {
   options?: {
     verificationMethod?: string
+    extraMetadata?: Record<string, unknown>
   }
 }
 
 export type WebVhRegisterRevocationStatusListOptions = Omit<RegisterRevocationStatusListOptions, 'options'> & {
   options?: {
     verificationMethod?: string
+    extraMetadata?: Record<string, unknown>
   }
 }
