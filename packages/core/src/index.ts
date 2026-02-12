@@ -49,7 +49,14 @@ export * from './storage/migration'
 export type { UpdateConfig, V0_1ToV0_2UpdateConfig } from './storage/migration/updates'
 export { Repository } from './storage/Repository'
 export * from './storage/RepositoryEvents'
-export type { BaseRecordConstructor, Query, QueryOptions, SimpleQuery, StorageService } from './storage/StorageService'
+export type {
+  BaseRecordConstructor,
+  Query,
+  QueryOptions,
+  SimpleQuery,
+  StorageService,
+} from './storage/StorageService'
+export { decodeCursor, encodeCursor, recordToCursor } from './storage/StorageService'
 export type {
   AnyUint8Array,
   CanBePromise,
