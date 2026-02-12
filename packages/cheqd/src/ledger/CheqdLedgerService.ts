@@ -9,7 +9,7 @@ import type {
 import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 import type { DidDocumentMetadata } from '@credo-ts/core'
 
-import { createCheqdSDK, DIDModule, ResourceModule, CheqdNetwork, FeemarketModule, OracleModule } from '@cheqd/sdk'
+import { createCheqdSDK, DIDModule, ResourceModule, CheqdNetwork } from '@cheqd/sdk'
 import { CredoError, inject, injectable, InjectionSymbols, Logger } from '@credo-ts/core'
 
 import { CheqdModuleConfig } from '../CheqdModuleConfig'
