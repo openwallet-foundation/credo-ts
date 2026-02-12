@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.6.3
+
+### Patch Changes
+
+- 8f1b343: The state of the issuance session is now correctly updated to 'Error' if an error happens while creating a credential response.
+- e2cbb15: Introduces a new callback in the issuer configuration (`getChainedAuthorizationRequestPayload`), which can be used
+  to dynamically provide the request scopes and additional payload to the chained authorization server that is being used with the request.
+
+  This means that the `scopesMapping` configuration is now optional. Either `scopesMapping` ot the new callback must be defined in order to fullfil
+  a chained authorization request.
+
+  The option `getVerificationSessionForIssuanceSessionAuthorization` has been deprecated and replaced with `getVerificationSession`. Please update your usage.
+
+- Updated dependencies [73d2d59]
+  - @credo-ts/core@0.6.3
+
 ## 0.6.2
 
 ### Patch Changes
