@@ -532,7 +532,7 @@ export class AskarStoreManager {
     }
   }
 
-  public async getInitializedStoreWithProfile(agentContext: AgentContext) {
+  public async getInitializedStoreWithProfile(agentContext: AgentContext, options: { provisionIfNotExists?: boolean } = {}) {
     let store = this.getStore(agentContext, {
       // In case we use a profile per wallet, we want to use the parent store, otherwise we only
       // want to use a store that is directly registered on this context.
@@ -543,7 +543,7 @@ export class AskarStoreManager {
       try {
         store = await this.openStore(agentContext)
       } catch (error) {
-        if (error instanceof AskarStoreNotFoundError) {
+        if (error instanceof AskarStoreNotFoundError && options.provisionIfNotExists) {
           store = await this.provisionStore(agentContext)
         } else {
           throw error
