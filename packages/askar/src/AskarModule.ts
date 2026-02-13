@@ -53,7 +53,7 @@ export class AskarModule implements Module {
 
   public async onInitializeContext(agentContext: AgentContext) {
     const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
-    await storeManager.getInitializedStoreWithProfile(agentContext)
+    await storeManager.getInitializedStoreWithProfile(agentContext, { provisionIfNotExists: true })
   }
 
   public async onProvisionContext(agentContext: AgentContext) {
@@ -65,7 +65,7 @@ export class AskarModule implements Module {
     // Ensure we have a profile for context
     if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) {
       const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
-      const { store, profile } = await storeManager.getInitializedStoreWithProfile(agentContext)
+      const { store, profile } = await storeManager.getInitializedStoreWithProfile(agentContext, { provisionIfNotExists: true })
       if (!profile) return
 
       try {
