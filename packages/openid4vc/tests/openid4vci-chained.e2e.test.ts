@@ -397,7 +397,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
           issuer: {
             baseUrl: issuanceBaseUrl,
             credentialRequestToCredentialMapper,
-            getChainedAuthorizationRequestPayload: async () => {
+            getChainedAuthorizationRequestParameters: async () => {
               return {
                 scopes: ['ScopeFoo', 'ScopeBar'],
                 additionalPayload: {
@@ -647,6 +647,237 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
     expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
     expect(firstSdJwtVcTenant1.payload.name).toEqual('John Doe')
+
+    await holderTenant.endSession()
+
+    clearIdpNock()
+    clearHolderNock()
+  })
+
+  it('e2e flow with tenants, issuer endpoints fails when redirect uri is not allowed', async () => {
+    issuer = (await createAgentFromModules(
+      {
+        inMemory: new InMemoryWalletModule(),
+        openid4vc: new OpenId4VcModule({
+          app: expressApp,
+          issuer: {
+            baseUrl: issuanceBaseUrl,
+            credentialRequestToCredentialMapper,
+          },
+        }),
+        tenants: new TenantsModule(),
+      },
+      '96213c3d7fc8d4d6754c7a0fd969598g',
+      global.fetch
+    )) as unknown as typeof issuer
+    issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
+
+    const walletClientId = 'wallet'
+    const idpClientId = 'foo'
+    const idpClientSecret = 'bar'
+
+    // Setup External IDP Authorization Server
+    const idpServerKey = await issuer.agent.kms.createKey({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
+    })
+    const idpServerJwk = Kms.PublicJwk.fromPublicJwk(idpServerKey.publicJwk)
+
+    const idpApp = express()
+    idpApp.get('/.well-known/oauth-authorization-server', (_req, res) =>
+      res.json({
+        jwks_uri: 'http://localhost:4747/jwks.json',
+        issuer: 'http://localhost:4747',
+        token_endpoint: 'http://localhost:4747/token',
+        authorization_endpoint: 'http://localhost:4747/authorize',
+      } satisfies AuthorizationServerMetadata)
+    )
+    idpApp.get('/jwks.json', (_req, res) =>
+      res.setHeader('Content-Type', 'application/jwk-set+json').send(
+        JSON.stringify({
+          keys: [{ ...idpServerJwk.toJson(), kid: 'first' }],
+        })
+      )
+    )
+    const clearIdpNock = setupNockToExpress('http://localhost:4747', idpApp)
+
+    // Setup Holder Redirect
+    const holderApp = express()
+    holderApp.get('/redirect', (req, res) => {
+      // For testing, we just return the code directly. On a real use case, the user
+      // will see this page, and therefore should be provided with some HTML.
+      res.json({
+        code: req.query.code,
+      })
+    })
+    const clearHolderNock = setupNockToExpress('http://localhost:5757', holderApp)
+
+    // Setup issuer and holder
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+      authorizationServerConfigs: [
+        {
+          type: 'chained',
+          issuer: 'http://localhost:4747',
+          clientAuthentication: {
+            type: 'clientSecret',
+            clientId: idpClientId,
+            clientSecret: idpClientSecret,
+          },
+          scopesMapping: {
+            UniversityDegreeCredential: ['ScopeFoo', 'ScopeBar'],
+          },
+          redirectUris: ['http://localhost:5757/the-other-one'],
+        },
+      ],
+    })
+
+    const { credentialOffer } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      authorizationCodeFlowConfig: {
+        authorizationServerUrl: 'http://localhost:4747',
+        issuerState: utils.uuid(),
+      },
+    })
+
+    await issuerTenant.endSession()
+
+    const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    await expect(
+      holderTenant.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(resolvedCredentialOffer, {
+        clientId: walletClientId,
+        redirectUri: 'http://localhost:5757/redirect',
+        scope: ['UniversityDegreeCredential'],
+      })
+    ).to.rejects.toThrow(`Invalid 'redirect_uri' parameter`)
+
+    await holderTenant.endSession()
+
+    clearIdpNock()
+    clearHolderNock()
+  })
+
+  it('e2e flow with tenants, issuer endpoints fails when redirect uri is not allowed (callback)', async () => {
+    issuer = (await createAgentFromModules(
+      {
+        inMemory: new InMemoryWalletModule(),
+        openid4vc: new OpenId4VcModule({
+          app: expressApp,
+          issuer: {
+            baseUrl: issuanceBaseUrl,
+            credentialRequestToCredentialMapper,
+            getChainedAuthorizationRequestParameters: async () => {
+              return {
+                scopes: ['ScopeFoo', 'ScopeBar'],
+                additionalPayload: {
+                  foo: 'bar',
+                },
+                redirectUris: ['http://localhost:5757/the-other-one'],
+              }
+            },
+          },
+        }),
+        tenants: new TenantsModule(),
+      },
+      '96213c3d7fc8d4d6754c7a0fd969598g',
+      global.fetch
+    )) as unknown as typeof issuer
+    issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
+
+    const walletClientId = 'wallet'
+    const idpClientId = 'foo'
+    const idpClientSecret = 'bar'
+
+    // Setup External IDP Authorization Server
+    const idpServerKey = await issuer.agent.kms.createKey({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
+    })
+    const idpServerJwk = Kms.PublicJwk.fromPublicJwk(idpServerKey.publicJwk)
+
+    const idpApp = express()
+    idpApp.get('/.well-known/oauth-authorization-server', (_req, res) =>
+      res.json({
+        jwks_uri: 'http://localhost:4747/jwks.json',
+        issuer: 'http://localhost:4747',
+        token_endpoint: 'http://localhost:4747/token',
+        authorization_endpoint: 'http://localhost:4747/authorize',
+      } satisfies AuthorizationServerMetadata)
+    )
+    idpApp.get('/jwks.json', (_req, res) =>
+      res.setHeader('Content-Type', 'application/jwk-set+json').send(
+        JSON.stringify({
+          keys: [{ ...idpServerJwk.toJson(), kid: 'first' }],
+        })
+      )
+    )
+    const clearIdpNock = setupNockToExpress('http://localhost:4747', idpApp)
+
+    // Setup Holder Redirect
+    const holderApp = express()
+    holderApp.get('/redirect', (req, res) => {
+      // For testing, we just return the code directly. On a real use case, the user
+      // will see this page, and therefore should be provided with some HTML.
+      res.json({
+        code: req.query.code,
+      })
+    })
+    const clearHolderNock = setupNockToExpress('http://localhost:5757', holderApp)
+
+    // Setup issuer and holder
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+      authorizationServerConfigs: [
+        {
+          type: 'chained',
+          issuer: 'http://localhost:4747',
+          clientAuthentication: {
+            type: 'clientSecret',
+            clientId: idpClientId,
+            clientSecret: idpClientSecret,
+          },
+        },
+      ],
+    })
+
+    const { credentialOffer } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      authorizationCodeFlowConfig: {
+        authorizationServerUrl: 'http://localhost:4747',
+        issuerState: utils.uuid(),
+      },
+    })
+
+    await issuerTenant.endSession()
+
+    const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    await expect(
+      holderTenant.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(resolvedCredentialOffer, {
+        clientId: walletClientId,
+        redirectUri: 'http://localhost:5757/redirect',
+        scope: ['UniversityDegreeCredential'],
+      })
+    ).to.rejects.toThrow(`Invalid 'redirect_uri' parameter`)
 
     await holderTenant.endSession()
 
