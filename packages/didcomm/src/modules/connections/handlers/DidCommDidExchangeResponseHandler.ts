@@ -1,5 +1,5 @@
 import type { DidResolverService } from '@credo-ts/core'
-import { CredoError } from '@credo-ts/core'
+import { CredoError, Kms } from '@credo-ts/core'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import { DidCommOutboundMessageContext } from '../../../models'
@@ -58,8 +58,17 @@ export class DidCommDidExchangeResponseHandler implements DidCommMessageHandler 
     }
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
-    // connection record did
-    if (!ourDidDocument.recipientKeys.find((key) => key.fingerprint === recipientKey.fingerprint)) {
+    // connection record did. DIDComm v2 uses X25519 for decryption; did document may have Ed25519.
+    const recipientX25519 = recipientKey.is(Kms.X25519PublicJwk)
+      ? recipientKey
+      : (recipientKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+    const recipientKeyFound = ourDidDocument.recipientKeys.some((key) => {
+      const keyX25519 = key.is(Kms.X25519PublicJwk)
+        ? key
+        : (key as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+      return recipientX25519.equals(keyX25519)
+    })
+    if (!recipientKeyFound) {
       throw new CredoError(`Recipient key ${recipientKey.fingerprint} not found in did document recipient keys.`)
     }
 

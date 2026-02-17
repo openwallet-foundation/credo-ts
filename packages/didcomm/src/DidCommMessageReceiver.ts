@@ -2,6 +2,7 @@ import type { AgentContext } from '@credo-ts/core'
 import {
   type AgentContextProvider,
   CredoError,
+  DidKey,
   InjectionSymbols,
   inject,
   injectable,
@@ -30,6 +31,7 @@ import {
 } from './modules/connections'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import { DidCommOutOfBandService } from './modules/oob/DidCommOutOfBandService'
+import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { normalizeV2PlaintextToV1 } from './v2'
 import { DidCommV2EnvelopeService } from './v2'
@@ -172,26 +174,27 @@ export class DidCommMessageReceiver {
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
     if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
       this.logger.debug(`Storing session for inbound message '${message.id}'`)
-      const keys: {
-        recipientKeys: (typeof senderKey)[]
-        routingKeys: unknown[]
-        senderKey: typeof recipientKey
-        senderKeySkid?: string
-      } = {
+      const keys = {
         recipientKeys: [senderKey],
-        routingKeys: [],
+        routingKeys: [] as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
         senderKey: recipientKey,
+        senderKeySkid: undefined as string | undefined,
       }
-      // For v2: skid must be our DID URL so recipient can resolve. Keep senderKey.keyId as kmsKeyId for KMS lookup.
-      if (connection && isDidCommV2EncryptedMessage(encryptedMessage)) {
-        const to = Array.isArray(plaintextMessage.to) ? plaintextMessage.to : undefined
-        const ourDid = to?.[0] ?? connection.did
-        if (ourDid) {
-          const keyRef = recipientKey.is(Kms.X25519PublicJwk) ? '#key-2' : '#key-1'
-          keys.senderKeySkid = `${ourDid}${keyRef}`
+      // For v2: skid must be resolvable so recipient can resolve sender key.
+      if (isDidCommV2EncryptedMessage(encryptedMessage)) {
+        if (connection) {
+          const to = Array.isArray(plaintextMessage.to) ? plaintextMessage.to : undefined
+          const ourDid = to?.[0] ?? connection.did
+          if (ourDid) {
+            const keyRef = recipientKey.is(Kms.X25519PublicJwk) ? '#key-2' : '#key-1'
+            keys.senderKeySkid = `${ourDid}${keyRef}`
+          }
+        } else {
+          // Connectionless: use did:key so recipient can resolve via tryParseKidAsPublicJwk
+          keys.senderKeySkid = new DidKey(recipientKey).did
         }
       }
-      session.keys = keys
+      session.keys = keys as EnvelopeKeys
       session.inboundMessage = message
       // We allow unready connections to be attached to the session as we want to be able to
       // use return routing to make connections. This is especially useful for creating connections
@@ -250,8 +253,8 @@ export class DidCommMessageReceiver {
         this.logger.debug('Unpacked DIDComm v2 message', { type: plaintext.type })
         return {
           plaintextMessage,
-          senderKey: senderKey as DecryptedDidCommMessageContext['senderKey'],
-          recipientKey: recipientKey as DecryptedDidCommMessageContext['recipientKey'],
+          senderKey: senderKey as unknown as DecryptedDidCommMessageContext['senderKey'],
+          recipientKey: recipientKey as unknown as DecryptedDidCommMessageContext['recipientKey'],
         }
       }
       return await this.envelopeService.unpackMessage(agentContext, message)

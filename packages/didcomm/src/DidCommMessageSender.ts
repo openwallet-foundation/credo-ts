@@ -164,7 +164,8 @@ export class DidCommMessageSender {
         const recipientX25519 = keys.recipientKeys[0].is(Kms.X25519PublicJwk)
           ? (keys.recipientKeys[0] as Kms.PublicJwk<Kms.X25519PublicJwk>)
           : keys.recipientKeys[0].convertTo(Kms.X25519PublicJwk)
-        recipientX25519.keyId = keys.recipientKeys[0].hasKeyId ? keys.recipientKeys[0].keyId : keys.recipientKeys[0].legacyKeyId
+        // Use did:key as kid so recipient can resolve via tryParseKidAsPublicJwk (connectionless return route)
+        recipientX25519.keyId = new DidKey(keys.recipientKeys[0]).did
         const senderX25519 = keys.senderKey.is(Kms.X25519PublicJwk)
           ? (keys.senderKey as Kms.PublicJwk<Kms.X25519PublicJwk>)
           : keys.senderKey.convertTo(Kms.X25519PublicJwk)
@@ -549,8 +550,18 @@ export class DidCommMessageSender {
       service: { ...service, recipientKeys: 'omitted...', routingKeys: 'omitted...' },
     })
 
+    // For connectionless v2: use did:key as kid so recipient can resolve via tryParseKidAsPublicJwk
+    const recipientKeys =
+      !connection && this.didCommModuleConfig.sendDidCommV2
+        ? service.recipientKeys.map((k) => {
+            const copy = Kms.PublicJwk.fromPublicJwk(k.toJson())
+            copy.keyId = new DidKey(k).did
+            return copy
+          })
+        : service.recipientKeys
+
     const keys = {
-      recipientKeys: service.recipientKeys,
+      recipientKeys,
       routingKeys: service.routingKeys,
       senderKey,
       senderKeySkid: serviceParams.senderKeySkid,

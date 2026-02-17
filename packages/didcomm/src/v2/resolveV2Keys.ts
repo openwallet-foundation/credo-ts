@@ -11,6 +11,7 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { DidCommMediatorRoutingRepository } from '../modules/routing/repository/DidCommMediatorRoutingRepository'
+import type { DidCommOutOfBandRecord } from '../modules/oob/repository'
 import { DidCommOutOfBandRepository } from '../modules/oob/repository/DidCommOutOfBandRepository'
 import { DidCommOutOfBandRole } from '../modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRecordMetadataKeys } from '../modules/oob/repository/outOfBandRecordMetadataTypes'
@@ -79,7 +80,7 @@ export class DidCommV2KeyResolver {
           throw err
         })
         if (kmsPublic) {
-          publicJwk = Kms.PublicJwk.fromPublicJwk(kmsPublic)
+          publicJwk = Kms.PublicJwk.fromPublicJwk(kmsPublic as Kms.KmsJwkPublicOkp)
           resolvedViaKmsKid = true
         }
       }
@@ -139,8 +140,8 @@ export class DidCommV2KeyResolver {
       if (mediatorRoutingRecord) {
         const routingKey = mediatorRoutingRecord.routingKeysWithKeyId.find((rk) => publicJwk!.equals(rk))
         if (routingKey) {
-          const x25519 = routingKey.is(Kms.X25519PublicJwk)
-            ? routingKey
+          const x25519: Kms.PublicJwk<Kms.X25519PublicJwk> = routingKey.is(Kms.X25519PublicJwk)
+            ? (routingKey as Kms.PublicJwk<Kms.X25519PublicJwk>)
             : (routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
           x25519.keyId = routingKey.hasKeyId ? routingKey.keyId : routingKey.legacyKeyId
           return { recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }, matchedKid: kid }
@@ -148,16 +149,39 @@ export class DidCommV2KeyResolver {
       }
 
       const outOfBandRepository = agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
-      let outOfBandRecord
+      let outOfBandRecord: DidCommOutOfBandRecord | null = null
       try {
         outOfBandRecord = await outOfBandRepository.findSingleByQuery(agentContext, {
-          $or: [
-            { role: DidCommOutOfBandRole.Sender, recipientKeyFingerprints: [publicJwk.fingerprint] },
-            { role: DidCommOutOfBandRole.Receiver, recipientRoutingKeyFingerprint: publicJwk.fingerprint },
-          ],
+          role: DidCommOutOfBandRole.Sender,
+          recipientKeyFingerprints: [publicJwk.fingerprint],
         })
       } catch {
-        outOfBandRecord = null
+        // Continue to Receiver check
+      }
+      if (!outOfBandRecord) {
+        const receiverRecords = await outOfBandRepository.findByQuery(agentContext, {
+          role: DidCommOutOfBandRole.Receiver,
+        })
+        for (const rec of receiverRecords) {
+          const recipientRouting = rec.metadata.get(DidCommOutOfBandRecordMetadataKeys.RecipientRouting)
+          if (recipientRouting?.recipientKeyFingerprint) {
+            try {
+              const storedKey = Kms.PublicJwk.fromFingerprint(recipientRouting.recipientKeyFingerprint)
+              const storedX25519 = storedKey.is(Kms.X25519PublicJwk)
+                ? storedKey
+                : (storedKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+              const parsedX25519 = publicJwk.is(Kms.X25519PublicJwk)
+                ? publicJwk
+                : (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+              if (storedX25519.equals(parsedX25519)) {
+                outOfBandRecord = rec
+                break
+              }
+            } catch {
+              // Conversion can fail (invalid key); skip
+            }
+          }
+        }
       }
 
       if (outOfBandRecord?.role === DidCommOutOfBandRole.Sender) {
@@ -168,8 +192,8 @@ export class DidCommV2KeyResolver {
           )
           const match = resolvedService.recipientKeys.find((rk) => rk.equals(publicJwk!))
           if (match) {
-            const x25519 = match.is(Kms.X25519PublicJwk)
-              ? match
+            const x25519: Kms.PublicJwk<Kms.X25519PublicJwk> = match.is(Kms.X25519PublicJwk)
+              ? (match as Kms.PublicJwk<Kms.X25519PublicJwk>)
               : (match as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
             // Use match's keyId (kmsKeyId from invitationInlineServiceKeys); convertTo creates new JWK and may not preserve kid
             x25519.keyId = match.hasKeyId ? match.keyId : match.legacyKeyId
@@ -178,10 +202,10 @@ export class DidCommV2KeyResolver {
         }
       } else if (outOfBandRecord?.role === DidCommOutOfBandRole.Receiver) {
         const recipientRouting = outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.RecipientRouting)
-        if (recipientRouting?.recipientKeyFingerprint === publicJwk.fingerprint) {
+        if (recipientRouting?.recipientKeyFingerprint) {
           const keyIdToUse = recipientRouting.recipientKeyId ?? publicJwk.legacyKeyId
-          const x25519 = publicJwk.is(Kms.X25519PublicJwk)
-            ? publicJwk
+          const x25519: Kms.PublicJwk<Kms.X25519PublicJwk> = publicJwk.is(Kms.X25519PublicJwk)
+            ? (publicJwk as Kms.PublicJwk<Kms.X25519PublicJwk>)
             : (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
           x25519.keyId = keyIdToUse
           return { recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }, matchedKid: kid }
@@ -262,9 +286,13 @@ export class DidCommV2KeyResolver {
           let keys: Kms.PublicJwk<Kms.Ed25519PublicJwk | Kms.X25519PublicJwk>[] = []
           if (typeof service === 'string') {
             const resolved = await this.didcommDocumentService.resolveServicesFromDid(agentContext, service)
-            keys = resolved.flatMap((s) => s.recipientKeys)
+            keys = resolved.flatMap((s) => s.recipientKeys) as unknown as Kms.PublicJwk<
+              Kms.Ed25519PublicJwk | Kms.X25519PublicJwk
+            >[]
           } else {
-            keys = service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).publicJwk)
+            keys = service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).publicJwk) as unknown as Kms.PublicJwk<
+              Kms.Ed25519PublicJwk | Kms.X25519PublicJwk
+            >[]
           }
           for (const key of keys) {
             const x25519 = key.is(Kms.X25519PublicJwk)

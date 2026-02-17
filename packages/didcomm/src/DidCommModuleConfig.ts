@@ -34,7 +34,7 @@ export interface DidCommModuleConfigOptions {
   /**
    * Accept inbound DIDComm v2 encrypted messages. When false, v2 messages are rejected.
    *
-   * @default false
+   * @default true
    */
   acceptDidCommV2?: boolean
 
@@ -42,7 +42,7 @@ export interface DidCommModuleConfigOptions {
    * Send outbound messages using DIDComm v2 envelope (authcrypt only) when supported.
    * Connection request/response always use v1 for compatibility.
    *
-   * @default false
+   * @default true
    */
   sendDidCommV2?: boolean
 
