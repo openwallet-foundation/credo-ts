@@ -1,11 +1,12 @@
 import {
   AgentContext,
   CredoError,
-  DidCommV2Service,
   DidKey,
   DidsApi,
+  NewDidCommV2Service,
   didKeyToEd25519PublicJwk,
   didToNumAlgo2DidDocument,
+  didToNumAlgo4DidDocument,
   EventEmitter,
   getPublicJwkFromVerificationMethod,
   injectable,
@@ -652,20 +653,29 @@ export class DidCommMessageSender {
         didCommServices = []
       }
 
-      // Fallback for responder (e.g. v2 OOB): resolveServicesFromDid may return [] for did:peer:2; parse peer DID directly
-      if (
-        didCommServices.length === 0 &&
-        connection.theirDid?.startsWith('did:peer:2') &&
-        connection.outOfBandId &&
-        !connection.isRequester
-      ) {
+      // Fallback (e.g. v2 OOB): resolveServicesFromDid may return [] or services with empty recipientKeys
+      // for did:peer:2/4; parse peer DID directly to extract keys.
+      // Applies to both requester and responder since v2 OOB invitations use services: [from] (DID string),
+      // so getInlineServices() is empty and the requester cannot use inline services.
+      const hasNoUsableRecipientKeys =
+        didCommServices.length === 0 ||
+        didCommServices.every((s) => !s.recipientKeys || s.recipientKeys.length === 0)
+      const isPeer2 = connection.theirDid?.startsWith('did:peer:2')
+      const isPeer4LongForm =
+        connection.theirDid?.startsWith('did:peer:4') && connection.theirDid?.includes(':')
+      if (hasNoUsableRecipientKeys && connection.outOfBandId && (isPeer2 || isPeer4LongForm)) {
+        if (didCommServices.length > 0) {
+          didCommServices = []
+        }
         try {
-          const didDocument = didToNumAlgo2DidDocument(connection.theirDid)
+          const didDocument = isPeer2
+            ? didToNumAlgo2DidDocument(connection.theirDid!)
+            : didToNumAlgo4DidDocument(connection.theirDid!)
           const allServices = didDocument.service ?? []
           for (const svc of allServices) {
             const endpoint =
               'firstServiceEndpointUri' in svc
-                ? (svc as DidCommV2Service).firstServiceEndpointUri
+                ? (svc as NewDidCommV2Service).firstServiceEndpointUri
                 : typeof svc.serviceEndpoint === 'string'
                   ? svc.serviceEndpoint
                   : (svc.serviceEndpoint as { uri?: string })?.uri
@@ -704,12 +714,12 @@ export class DidCommMessageSender {
           }
           if (didCommServices.length > 0) {
             agentContext.config.logger.debug(
-              `Used did:peer:2 parse fallback for responder connection ${connection.id}.`
+              `Used did:peer:2/4 parse fallback for connection ${connection.id}.`
             )
           }
         } catch (err) {
           agentContext.config.logger.debug(
-            `did:peer:2 parse fallback failed for ${connection.id}: ${err instanceof Error ? err.message : String(err)}`
+            `did:peer:2/4 parse fallback failed for ${connection.id}: ${err instanceof Error ? err.message : String(err)}`
           )
         }
       }
