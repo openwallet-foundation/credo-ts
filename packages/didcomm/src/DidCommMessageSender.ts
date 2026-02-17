@@ -706,7 +706,7 @@ export class DidCommMessageSender {
               }
               didCommServices.push({
                 id: svc.id,
-                recipientKeys,
+                recipientKeys: recipientKeys as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
                 routingKeys: [],
                 serviceEndpoint: endpoint,
               })

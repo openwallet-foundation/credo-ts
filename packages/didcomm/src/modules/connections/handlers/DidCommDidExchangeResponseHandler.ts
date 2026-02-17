@@ -59,15 +59,12 @@ export class DidCommDidExchangeResponseHandler implements DidCommMessageHandler 
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
     // connection record did. DIDComm v2 uses X25519 for decryption; did document may have Ed25519.
-    const recipientX25519 = recipientKey.is(Kms.X25519PublicJwk)
-      ? recipientKey
-      : (recipientKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-    const recipientKeyFound = ourDidDocument.recipientKeys.some((key) => {
-      const keyX25519 = key.is(Kms.X25519PublicJwk)
-        ? key
-        : (key as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-      return recipientX25519.equals(keyX25519)
-    })
+    const toX25519 = (jwk: Kms.PublicJwk): Kms.PublicJwk<Kms.X25519PublicJwk> =>
+      jwk.is(Kms.X25519PublicJwk) ? jwk : (jwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+    const recipientX25519 = toX25519(recipientKey)
+    const recipientKeyFound = ourDidDocument.recipientKeys.some((key) =>
+      recipientX25519.equals(toX25519(key))
+    )
     if (!recipientKeyFound) {
       throw new CredoError(`Recipient key ${recipientKey.fingerprint} not found in did document recipient keys.`)
     }
