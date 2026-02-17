@@ -369,6 +369,8 @@ export async function setupAnonCredsTests<
         autoAcceptProofs,
         extraDidCommConfig: {
           endpoints: ['rxjs:issuer'],
+          acceptDidCommV2: true,
+          sendDidCommV2: true,
         },
       }),
       { requireDidcomm: true, drizzle: issuerDrizzle }
@@ -392,6 +394,8 @@ export async function setupAnonCredsTests<
         autoAcceptProofs,
         extraDidCommConfig: {
           endpoints: ['rxjs:holder'],
+          acceptDidCommV2: true,
+          sendDidCommV2: true,
         },
       }),
       { requireDidcomm: true, drizzle: holderDrizzle }
@@ -417,6 +421,8 @@ export async function setupAnonCredsTests<
             autoAcceptProofs,
             extraDidCommConfig: {
               endpoints: ['rxjs:verifier'],
+              acceptDidCommV2: true,
+              sendDidCommV2: true,
             },
           }),
           { requireDidcomm: true, drizzle: verifierDrizzle }

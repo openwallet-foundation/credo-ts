@@ -1,6 +1,6 @@
 import type { AgentDependencies } from '@credo-ts/core'
 
-import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
+import { base64URLToBase64, CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 import queryString from 'query-string'
 
 import { DidCommMessage } from '../DidCommMessage'
@@ -8,6 +8,7 @@ import { DidCommConnectionInvitationMessage } from '../modules/connections/messa
 import { convertToNewInvitation } from '../modules/oob/converters'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../modules/oob/messages'
+import { DidCommOutOfBandInvitationV2 } from '../modules/oob/messages/DidCommOutOfBandInvitationV2'
 
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
 
@@ -31,12 +32,35 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
 }
 
 /**
+ * Converts a v2 OOB invitation to the unified DidCommOutOfBandInvitation format.
+ * The resulting invitation has services: [from] so resolution works for v2 DIDs.
+ */
+function convertV2ToOutOfBandInvitation(v2Invitation: DidCommOutOfBandInvitationV2): DidCommOutOfBandInvitation {
+  const invitation = new DidCommOutOfBandInvitation({
+    id: v2Invitation.id,
+    goal: v2Invitation.body?.goal,
+    goalCode: v2Invitation.body?.goalCode,
+    services: [v2Invitation.from],
+  })
+  invitation.invitationType = DidCommInvitationType.V2OutOfBand
+  invitation.v2Invitation = v2Invitation
+  return invitation
+}
+
+/**
  * Parses a JSON containing an invitation message and returns an DidCommOutOfBandInvitation instance
  *
  * @param invitationJson JSON object containing message
  * @returns DidCommOutOfBandInvitation
  */
 export const parseInvitationJson = (invitationJson: Record<string, unknown>): DidCommOutOfBandInvitation => {
+  // DIDComm v2 OOB uses "type" not "@type"
+  const v2Type = invitationJson['type'] as string
+  if (v2Type === DidCommOutOfBandInvitationV2.type) {
+    const v2Invitation = DidCommOutOfBandInvitationV2.fromJson(invitationJson)
+    return convertV2ToOutOfBandInvitation(v2Invitation)
+  }
+
   const messageType = invitationJson['@type'] as string
 
   if (!messageType) {
@@ -77,6 +101,11 @@ export const parseInvitationUrl = (invitationUrl: string): DidCommOutOfBandInvit
   const encodedInvitation = parsedUrl.oob ?? parsedUrl.c_i ?? parsedUrl.d_m
 
   if (typeof encodedInvitation === 'string') {
+    // // oob param uses base64url encoding (both v1 and v2 invitations)
+    // const base64 =
+    //   encodedInvitation.includes('-') || encodedInvitation.includes('_')
+    //     ? base64URLToBase64(encodedInvitation)
+    //     : encodedInvitation
     const invitationJson = JsonEncoder.fromBase64(encodedInvitation) as Record<string, unknown>
     return parseInvitationJson(invitationJson)
   }

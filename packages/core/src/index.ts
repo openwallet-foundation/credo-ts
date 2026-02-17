@@ -26,7 +26,10 @@ export {
   verkeyToPublicJwk,
 } from './modules/dids/helpers'
 export { didDocumentJsonToNumAlgo1Did } from './modules/dids/methods/peer/peerDidNumAlgo1'
-export { didDocumentToNumAlgo2Did } from './modules/dids/methods/peer/peerDidNumAlgo2'
+export {
+  didDocumentToNumAlgo2Did,
+  didToNumAlgo2DidDocument,
+} from './modules/dids/methods/peer/peerDidNumAlgo2'
 export { didDocumentToNumAlgo4Did } from './modules/dids/methods/peer/peerDidNumAlgo4'
 export { DidRecordMetadataKeys } from './modules/dids/repository/didRecordMetadataTypes'
 export * from './modules/dif-presentation-exchange'
@@ -93,7 +96,7 @@ export {
   MultiHashEncoder,
   TypedArrayEncoder,
 } from './utils'
-export { base64ToBase64URL } from './utils/base64'
+export { base64ToBase64URL, base64URLToBase64 } from './utils/base64'
 export type {
   CredentialMultiInstanceUseUpdateMode,
   UseInstanceFromCredentialRecordOptions,

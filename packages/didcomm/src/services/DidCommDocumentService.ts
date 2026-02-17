@@ -2,6 +2,7 @@ import {
   AgentContext,
   CredoError,
   DidCommV1Service,
+  DidCommV2Service,
   DidRecord,
   DidRepository,
   DidResolverService,
@@ -32,9 +33,15 @@ export class DidCommDocumentService {
     const resolvedServices: ResolvedDidCommService[] = []
 
     // If did specifies a particular service, filter by its id
+    const allDidCommServices = didDocument.service?.filter(
+      (s) =>
+        s.type === IndyAgentService.type ||
+        s.type === DidCommV1Service.type ||
+        s.type === DidCommV2Service.type
+    ) ?? []
     const didCommServices = parseDid(did).fragment
-      ? didDocument.didCommServices.filter((service) => service.id === did)
-      : didDocument.didCommServices
+      ? allDidCommServices.filter((service) => service.id === did)
+      : allDidCommServices
 
     // FIXME: we currently retrieve did documents for all didcomm services in the did document, and we don't have caching
     // yet so this will re-trigger ledger resolves for each one. Should we only resolve the first service, then the second service, etc...?
@@ -96,6 +103,26 @@ export class DidCommDocumentService {
           routingKeys,
           serviceEndpoint: didCommService.serviceEndpoint,
         })
+      } else if (didCommService.type === DidCommV2Service.type) {
+        // DidCommV2Service: keys from DID document keyAgreement, endpoint from service
+        const recipientKeysFromDoc = didDocument.getRecipientKeysWithVerificationMethod({
+          mapX25519ToEd25519: false,
+        })
+        // firstServiceEndpointUri exists on DidCommV2Service; peer DID decoding may produce DidDocumentService
+        const endpoint =
+          'firstServiceEndpointUri' in didCommService
+            ? (didCommService as DidCommV2Service).firstServiceEndpointUri
+            : typeof didCommService.serviceEndpoint === 'string'
+              ? didCommService.serviceEndpoint
+              : (didCommService.serviceEndpoint as { uri?: string })?.uri
+        if (endpoint) {
+          resolvedServices.push({
+            id: didCommService.id,
+            recipientKeys: recipientKeysFromDoc.map(({ publicJwk }) => publicJwk),
+            routingKeys: [],
+            serviceEndpoint: endpoint,
+          })
+        }
       }
     }
 

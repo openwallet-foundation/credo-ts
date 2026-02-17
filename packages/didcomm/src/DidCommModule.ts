@@ -5,6 +5,7 @@ import { mergeMap, takeUntil } from 'rxjs'
 import { DidCommApi } from './DidCommApi'
 import { DidCommDispatcher } from './DidCommDispatcher'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
+import { DidCommV2EnvelopeService, DidCommV2KeyResolver } from './v2'
 import type { DidCommMessageReceivedEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
@@ -145,6 +146,8 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
     dependencyManager.registerSingleton(DidCommTransportService)
     dependencyManager.registerSingleton(DidCommDispatcher)
     dependencyManager.registerSingleton(DidCommEnvelopeService)
+    dependencyManager.registerSingleton(DidCommV2EnvelopeService)
+    dependencyManager.registerSingleton(DidCommV2KeyResolver)
 
     // Repositories
     dependencyManager.registerSingleton(DidCommMessageRepository)

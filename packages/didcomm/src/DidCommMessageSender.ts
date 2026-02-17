@@ -1,9 +1,11 @@
 import {
   AgentContext,
   CredoError,
+  DidCommV2Service,
   DidKey,
   DidsApi,
   didKeyToEd25519PublicJwk,
+  didToNumAlgo2DidDocument,
   EventEmitter,
   getPublicJwkFromVerificationMethod,
   injectable,
@@ -16,6 +18,8 @@ import {
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
+import { buildV2PlaintextFromMessage } from './v2'
+import { DidCommV2EnvelopeService } from './v2'
 import type { DidCommMessageSentEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import type { DidCommMessage } from './DidCommMessage'
@@ -26,6 +30,7 @@ import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
+import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
@@ -38,6 +43,7 @@ export interface TransportPriorityOptions {
 @injectable()
 export class DidCommMessageSender {
   private envelopeService: DidCommEnvelopeService
+  private v2EnvelopeService: DidCommV2EnvelopeService
   private transportService: DidCommTransportService
   private didCommModuleConfig: DidCommModuleConfig
   private didCommDocumentService: DidCommDocumentService
@@ -45,12 +51,14 @@ export class DidCommMessageSender {
 
   public constructor(
     envelopeService: DidCommEnvelopeService,
+    v2EnvelopeService: DidCommV2EnvelopeService,
     transportService: DidCommTransportService,
     didCommModuleConfig: DidCommModuleConfig,
     didCommDocumentService: DidCommDocumentService,
     eventEmitter: EventEmitter
   ) {
     this.envelopeService = envelopeService
+    this.v2EnvelopeService = v2EnvelopeService
     this.transportService = transportService
     this.didCommModuleConfig = didCommModuleConfig
     this.didCommDocumentService = didCommDocumentService
@@ -63,13 +71,62 @@ export class DidCommMessageSender {
       keys,
       message,
       endpoint,
+      connection,
     }: {
       keys: EnvelopeKeys
       message: DidCommMessage
       endpoint: string
+      connection?: DidCommConnectionRecord
     }
   ): Promise<DidCommOutboundPackage> {
-    const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
+    let encryptedMessage: DidCommEncryptedMessage
+    // Connection request/response: use v1 so recipient can decrypt (v1 authcrypt embeds sender key; v2 requires skid resolution which fails for did:peer:1 before connection).
+    const isConnectionRequest = typeof message.type === 'string' && message.type.endsWith('connections/1.0/request')
+    const isConnectionResponse = typeof message.type === 'string' && message.type.endsWith('connections/1.0/response')
+    const useV1ForConnection = isConnectionRequest || isConnectionResponse
+
+    if (
+      !useV1ForConnection &&
+      this.didCommModuleConfig.sendDidCommV2 &&
+      keys.recipientKeys.length >= 1 &&
+      keys.routingKeys.length === 0 &&
+      keys.senderKey
+    ) {
+      try {
+        const recipientX25519 = keys.recipientKeys[0].is(Kms.X25519PublicJwk)
+          ? (keys.recipientKeys[0] as Kms.PublicJwk<Kms.X25519PublicJwk>)
+          : keys.recipientKeys[0].convertTo(Kms.X25519PublicJwk)
+        recipientX25519.keyId = keys.recipientKeys[0].hasKeyId ? keys.recipientKeys[0].keyId : keys.recipientKeys[0].legacyKeyId
+        const senderX25519 = keys.senderKey.is(Kms.X25519PublicJwk)
+          ? (keys.senderKey as Kms.PublicJwk<Kms.X25519PublicJwk>)
+          : keys.senderKey.convertTo(Kms.X25519PublicJwk)
+        senderX25519.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
+        const plaintext = buildV2PlaintextFromMessage(message, {
+          useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,
+          ...(connection?.did && connection?.theirDid
+            ? { from: connection.did, to: [connection.theirDid] }
+            : undefined),
+        })
+        agentContext.config.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before encrypt)', {
+          id: plaintext.id,
+          type: plaintext.type,
+          from: plaintext.from,
+          to: plaintext.to,
+          thid: plaintext.thid,
+          bodyKeys: plaintext.body ? Object.keys(plaintext.body) : undefined,
+        })
+        encryptedMessage = await this.v2EnvelopeService.pack(agentContext, plaintext, {
+          recipientKey: recipientX25519,
+          senderKey: senderX25519,
+          senderKeySkid: keys.senderKeySkid,
+        })
+      } catch (error) {
+        agentContext.config.logger.debug('DIDComm v2 authcrypt pack failed, falling back to v1', { error })
+        encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
+      }
+    } else {
+      encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
+    }
 
     return {
       payload: encryptedMessage,
@@ -81,13 +138,63 @@ export class DidCommMessageSender {
   private async sendMessageToSession(
     agentContext: AgentContext,
     session: DidCommTransportSession,
-    message: DidCommMessage
+    message: DidCommMessage,
+    connection?: DidCommConnectionRecord
   ) {
     agentContext.config.logger.debug(`Packing message and sending it via existing session ${session.type}...`)
     if (!session.keys) {
       throw new CredoError(`There are no keys for the given ${session.type} transport session.`)
     }
-    const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
+    const { keys } = session
+    let encryptedMessage: DidCommEncryptedMessage
+    const isConnectionRequestSession =
+      typeof message.type === 'string' && message.type.endsWith('connections/1.0/request')
+    const isConnectionResponseSession =
+      typeof message.type === 'string' && message.type.endsWith('connections/1.0/response')
+    const useV1ForConnectionSession = isConnectionRequestSession || isConnectionResponseSession
+
+    if (
+      !useV1ForConnectionSession &&
+      this.didCommModuleConfig.sendDidCommV2 &&
+      keys.recipientKeys.length >= 1 &&
+      keys.routingKeys.length === 0 &&
+      keys.senderKey
+    ) {
+      try {
+        const recipientX25519 = keys.recipientKeys[0].is(Kms.X25519PublicJwk)
+          ? (keys.recipientKeys[0] as Kms.PublicJwk<Kms.X25519PublicJwk>)
+          : keys.recipientKeys[0].convertTo(Kms.X25519PublicJwk)
+        recipientX25519.keyId = keys.recipientKeys[0].hasKeyId ? keys.recipientKeys[0].keyId : keys.recipientKeys[0].legacyKeyId
+        const senderX25519 = keys.senderKey.is(Kms.X25519PublicJwk)
+          ? (keys.senderKey as Kms.PublicJwk<Kms.X25519PublicJwk>)
+          : keys.senderKey.convertTo(Kms.X25519PublicJwk)
+        senderX25519.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
+        const plaintext = buildV2PlaintextFromMessage(message, {
+          useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,
+          ...(connection?.did && connection?.theirDid
+            ? { from: connection.did, to: [connection.theirDid] }
+            : undefined),
+        })
+        agentContext.config.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before encrypt)', {
+          id: plaintext.id,
+          type: plaintext.type,
+          from: plaintext.from,
+          to: plaintext.to,
+          thid: plaintext.thid,
+          bodyKeys: plaintext.body ? Object.keys(plaintext.body) : undefined,
+        })
+        encryptedMessage = await this.v2EnvelopeService.pack(agentContext, plaintext, {
+          recipientKey: recipientX25519,
+          senderKey: senderX25519,
+          senderKeySkid: keys.senderKeySkid,
+        })
+      } catch (error) {
+        agentContext.config.logger.debug('DIDComm v2 authcrypt pack failed, falling back to v1', { error })
+        encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
+      }
+    } else {
+      encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
+    }
     agentContext.config.logger.debug('Sending message')
     await session.send(agentContext, encryptedMessage)
   }
@@ -221,7 +328,7 @@ export class DidCommMessageSender {
       )
 
       try {
-        await this.sendMessageToSession(agentContext, session, message)
+        await this.sendMessageToSession(agentContext, session, message, connection)
         this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
         return
       } catch (error) {
@@ -320,6 +427,13 @@ export class DidCommMessageSender {
               service,
               senderKey: senderVerificationMethod.publicJwk,
               returnRoute: shouldAddReturnRoute,
+              senderKeySkid: (() => {
+                const id = senderVerificationMethod.verificationMethod.id
+                if (typeof id !== 'string') return undefined
+                if (id.startsWith('did:')) return id
+                if (id.startsWith('#')) return `${didDocument.id}${id}`
+                return undefined
+              })(),
             },
             connection,
           })
@@ -439,6 +553,7 @@ export class DidCommMessageSender {
       recipientKeys: service.recipientKeys,
       routingKeys: service.routingKeys,
       senderKey,
+      senderKeySkid: serviceParams.senderKeySkid,
     }
 
     // Set return routing for message if requested
@@ -460,7 +575,12 @@ export class DidCommMessageSender {
       throw error
     }
 
-    const outboundPackage = await this.packMessage(agentContext, { message, keys, endpoint: service.serviceEndpoint })
+    const outboundPackage = await this.packMessage(agentContext, {
+      message,
+      keys,
+      endpoint: service.serviceEndpoint,
+      connection,
+    })
     outboundPackage.endpoint = service.serviceEndpoint
     outboundPackage.connectionId = connection?.id
     for (const transport of this.didCommModuleConfig.outboundTransports) {
@@ -514,7 +634,97 @@ export class DidCommMessageSender {
 
     if (connection.theirDid) {
       agentContext.config.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
-      didCommServices = await this.didCommDocumentService.resolveServicesFromDid(agentContext, connection.theirDid)
+      try {
+        didCommServices = await this.didCommDocumentService.resolveServicesFromDid(agentContext, connection.theirDid)
+      } catch {
+        // did:peer:1 may not yet be resolvable (e.g. immediately after connection response)
+        didCommServices = []
+      }
+
+      // Fallback for responder (e.g. v2 OOB): resolveServicesFromDid may return [] for did:peer:2; parse peer DID directly
+      if (
+        didCommServices.length === 0 &&
+        connection.theirDid?.startsWith('did:peer:2') &&
+        connection.outOfBandId &&
+        !connection.isRequester
+      ) {
+        try {
+          const didDocument = didToNumAlgo2DidDocument(connection.theirDid)
+          const allServices = didDocument.service ?? []
+          for (const svc of allServices) {
+            const endpoint =
+              'firstServiceEndpointUri' in svc
+                ? (svc as DidCommV2Service).firstServiceEndpointUri
+                : typeof svc.serviceEndpoint === 'string'
+                  ? svc.serviceEndpoint
+                  : (svc.serviceEndpoint as { uri?: string })?.uri
+            if (endpoint) {
+              // Use keyAgreement (X25519 for v2) and authentication (Ed25519 for v1 fallback)
+              const recipientKeys: Kms.PublicJwk[] = []
+              // authentication (Ed25519) first - v2 converts to X25519; v1 uses Ed25519 directly
+              const keyRefs = [
+                ...(didDocument.authentication ?? []),
+                ...(didDocument.keyAgreement ?? []),
+              ]
+              const seen = new Set<string>()
+              for (const keyRef of keyRefs) {
+                const verificationMethod =
+                  typeof keyRef === 'string'
+                    ? didDocument.dereferenceVerificationMethod(keyRef)
+                    : keyRef
+                if (seen.has(verificationMethod.id)) continue
+                const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+                if (publicJwk.is(Kms.Ed25519PublicJwk) || publicJwk.is(Kms.X25519PublicJwk)) {
+                  seen.add(verificationMethod.id)
+                  const jwk = publicJwk
+                  if (verificationMethod?.id && !jwk.hasKeyId) {
+                    jwk.keyId = verificationMethod.id
+                  }
+                  recipientKeys.push(jwk)
+                }
+              }
+              didCommServices.push({
+                id: svc.id,
+                recipientKeys,
+                routingKeys: [],
+                serviceEndpoint: endpoint,
+              })
+            }
+          }
+          if (didCommServices.length > 0) {
+            agentContext.config.logger.debug(
+              `Used did:peer:2 parse fallback for responder connection ${connection.id}.`
+            )
+          }
+        } catch (err) {
+          agentContext.config.logger.debug(
+            `did:peer:2 parse fallback failed for ${connection.id}: ${err instanceof Error ? err.message : String(err)}`
+          )
+        }
+      }
+
+      // Fallback: did:peer:1 may not yet be resolvable; use invitation creator's inline services from OOB record when we're the requester
+      if (didCommServices.length === 0 && connection.outOfBandId && connection.isRequester) {
+        try {
+          const outOfBandRepository = agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
+          const oobRecord = await outOfBandRepository.findById(agentContext, connection.outOfBandId)
+          if (oobRecord) {
+            agentContext.config.logger.debug(
+              `Using OOB invitation services as fallback for connection ${connection.id} (theirDid not yet resolvable).`
+            )
+            for (const service of oobRecord.outOfBandInvitation.getInlineServices()) {
+              didCommServices.push({
+                id: service.id,
+                recipientKeys: service.recipientKeys.map(didKeyToEd25519PublicJwk),
+                routingKeys: service.routingKeys?.map(didKeyToEd25519PublicJwk) || [],
+                serviceEndpoint: service.serviceEndpoint,
+              })
+            }
+          }
+        } catch {
+          // Ignore: proceed with empty services
+        }
+      }
     } else if (outOfBand) {
       agentContext.config.logger.debug(`Resolving services from out-of-band record ${outOfBand.id}.`)
       if (connection.isRequester) {
@@ -533,6 +743,27 @@ export class DidCommMessageSender {
             })
           }
         }
+      }
+    } else if (connection.outOfBandId && connection.isRequester) {
+      // theirDid may be null (e.g. before response processed, or race); use OOB invitation services
+      try {
+        const outOfBandRepository = agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
+        const oobRecord = await outOfBandRepository.findById(agentContext, connection.outOfBandId)
+        if (oobRecord) {
+          agentContext.config.logger.debug(
+            `Resolving services from connection outOfBandId ${connection.outOfBandId}.`
+          )
+          for (const service of oobRecord.outOfBandInvitation.getInlineServices()) {
+            didCommServices.push({
+              id: service.id,
+              recipientKeys: service.recipientKeys.map(didKeyToEd25519PublicJwk),
+              routingKeys: service.routingKeys?.map(didKeyToEd25519PublicJwk) || [],
+              serviceEndpoint: service.serviceEndpoint,
+            })
+          }
+        }
+      } catch {
+        // Ignore
       }
     }
 

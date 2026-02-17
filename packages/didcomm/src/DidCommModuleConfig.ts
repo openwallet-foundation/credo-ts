@@ -32,6 +32,21 @@ export interface DidCommModuleConfigOptions {
   queueTransportRepository?: DidCommQueueTransportRepository
 
   /**
+   * Accept inbound DIDComm v2 encrypted messages. When false, v2 messages are rejected.
+   *
+   * @default false
+   */
+  acceptDidCommV2?: boolean
+
+  /**
+   * Send outbound messages using DIDComm v2 envelope (authcrypt only) when supported.
+   * Connection request/response always use v1 for compatibility.
+   *
+   * @default false
+   */
+  sendDidCommV2?: boolean
+
+  /**
    * Configuration for the connection module.
    *
    * The connection module is always enabled
@@ -212,5 +227,15 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
    */
   public get queueTransportRepository() {
     return this._queueTransportRepository
+  }
+
+  /** {@inheritDoc DidCommModuleConfigOptions.acceptDidCommV2} */
+  public get acceptDidCommV2() {
+    return this.options.acceptDidCommV2 ?? false
+  }
+
+  /** {@inheritDoc DidCommModuleConfigOptions.sendDidCommV2} */
+  public get sendDidCommV2() {
+    return this.options.sendDidCommV2 ?? false
   }
 }

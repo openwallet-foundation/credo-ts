@@ -355,7 +355,14 @@ export class DidCommConnectionService {
     // as the recipient key(s) in the connection invitation message
     const signerVerkey = message.connectionSig.signer
 
-    const invitationKey = Kms.PublicJwk.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0])
+    const recipientKeyFingerprints = outOfBandRecord.getTags().recipientKeyFingerprints
+    if (!recipientKeyFingerprints?.length) {
+      throw new ConnectionProblemReportError(
+        'Out-of-band record has no recipient key fingerprints for invitation key verification',
+        { problemCode: ConnectionProblemReportReason.ResponseProcessingError }
+      )
+    }
+    const invitationKey = Kms.PublicJwk.fromFingerprint(recipientKeyFingerprints[0])
     if (!invitationKey.is(Kms.Ed25519PublicJwk)) {
       throw new ConnectionProblemReportError(
         `Expected invitation key to be an Ed25519 key, found ${invitationKey.jwkTypeHumanDescription}`,
@@ -856,10 +863,14 @@ export class DidCommConnectionService {
 
   public async createConnection(
     agentContext: AgentContext,
-    options: DidCommConnectionRecordProps
+    options: DidCommConnectionRecordProps,
+    emitStateChanged = false
   ): Promise<DidCommConnectionRecord> {
     const connectionRecord = new DidCommConnectionRecord(options)
     await this.connectionRepository.save(agentContext, connectionRecord)
+    if (emitStateChanged) {
+      this.emitStateChangedEvent(agentContext, connectionRecord, null)
+    }
     return connectionRecord
   }
 

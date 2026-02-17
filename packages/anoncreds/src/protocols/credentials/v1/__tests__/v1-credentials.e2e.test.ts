@@ -1,10 +1,13 @@
-import { JsonTransformer } from '@credo-ts/core'
+import { JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
   DidCommCredentialRole,
   DidCommCredentialState,
   DidCommMessageRepository,
+  DidCommModuleConfig,
 } from '@credo-ts/didcomm'
+import { DidCommEventTypes } from '@credo-ts/didcomm'
+import type { EventReplaySubject } from '../../../../../../core/tests'
 import { waitForCredentialRecord } from '../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../core/tests/logger'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
@@ -20,6 +23,8 @@ import {
 describe('V1 Credentials', () => {
   let faberAgent: AnonCredsTestsAgent
   let aliceAgent: AnonCredsTestsAgent
+  let faberReplay: EventReplaySubject
+  let aliceReplay: EventReplaySubject
   let credentialDefinitionId: string
   let aliceConnectionId: string
 
@@ -27,6 +32,8 @@ describe('V1 Credentials', () => {
     ;({
       issuerAgent: faberAgent,
       holderAgent: aliceAgent,
+      issuerReplay: faberReplay,
+      holderReplay: aliceReplay,
       credentialDefinitionId,
       holderIssuerConnectionId: aliceConnectionId,
     } = await setupAnonCredsTests({
@@ -34,6 +41,45 @@ describe('V1 Credentials', () => {
       holderName: 'Alice Agent Credentials V1',
       attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],
     }))
+
+    const faberDidCommConfig = faberAgent.dependencyManager.resolve(DidCommModuleConfig)
+    const aliceDidCommConfig = aliceAgent.dependencyManager.resolve(DidCommModuleConfig)
+
+    testLogger.test(
+      `Faber DidComm config: acceptDidCommV2=${faberDidCommConfig.acceptDidCommV2}, sendDidCommV2=${faberDidCommConfig.sendDidCommV2}`
+    )
+    testLogger.test(
+      `Alice DidComm config: acceptDidCommV2=${aliceDidCommConfig.acceptDidCommV2}, sendDidCommV2=${aliceDidCommConfig.sendDidCommV2}`
+    )
+
+    // Log DIDComm v2 envelopes for this test (protected header typ/alg/enc/skid) for issuer & holder
+    faberReplay.subscribe((event) => {
+      if (event.type === DidCommEventTypes.DidCommMessageProcessed && event.payload.encryptedMessage) {
+        const protectedJson = JsonEncoder.fromBase64(event.payload.encryptedMessage.protected) as {
+          typ?: string
+          alg?: string
+          enc?: string
+          skid?: string
+        }
+        testLogger.test(
+          `Faber processed encrypted message: typ=${protectedJson.typ}, alg=${protectedJson.alg}, enc=${protectedJson.enc}, skid=${protectedJson.skid}`
+        )
+      }
+    })
+
+    aliceReplay.subscribe((event) => {
+      if (event.type === DidCommEventTypes.DidCommMessageProcessed && event.payload.encryptedMessage) {
+        const protectedJson = JsonEncoder.fromBase64(event.payload.encryptedMessage.protected) as {
+          typ?: string
+          alg?: string
+          enc?: string
+          skid?: string
+        }
+        testLogger.test(
+          `Alice processed encrypted message: typ=${protectedJson.typ}, alg=${protectedJson.alg}, enc=${protectedJson.enc}, skid=${protectedJson.skid}`
+        )
+      }
+    })
   })
 
   afterAll(async () => {
@@ -42,6 +88,7 @@ describe('V1 Credentials', () => {
   })
 
   test('Alice starts with V1 credential proposal to Faber', async () => {
+    console.log('Alice starts with V1 credential proposal to Faber loggin')
     const credentialPreview = DidCommCredentialV1Preview.fromRecord({
       name: 'John',
       age: '99',

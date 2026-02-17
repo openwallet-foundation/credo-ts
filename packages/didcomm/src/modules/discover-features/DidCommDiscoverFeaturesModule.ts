@@ -1,6 +1,7 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommProtocol } from '../../models'
 import { DidCommDiscoverFeaturesApi } from './DidCommDiscoverFeaturesApi'
 import type { DidCommDiscoverFeaturesModuleConfigOptions } from './DidCommDiscoverFeaturesModuleConfig'
@@ -48,5 +49,15 @@ export class DidCommDiscoverFeaturesModule implements Module {
         roles: ['requester', 'responder'],
       })
     )
+
+    const didCommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
+    if (didCommConfig.acceptDidCommV2 || didCommConfig.sendDidCommV2) {
+      featureRegistry.register(
+        new DidCommProtocol({
+          id: 'https://didcomm.org/didcomm/v2',
+          roles: ['requester', 'responder'],
+        })
+      )
+    }
   }
 }

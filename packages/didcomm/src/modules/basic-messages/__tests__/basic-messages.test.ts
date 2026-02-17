@@ -15,6 +15,8 @@ const faberConfig = getAgentOptions(
   'Faber Basic Messages',
   {
     endpoints: ['rxjs:faber'],
+    acceptDidCommV2: true,
+    sendDidCommV2: true,
   },
   undefined,
   undefined,
@@ -25,6 +27,8 @@ const aliceConfig = getAgentOptions(
   'Alice Basic Messages',
   {
     endpoints: ['rxjs:alice'],
+    acceptDidCommV2: true,
+    sendDidCommV2: true,
   },
   undefined,
   undefined,

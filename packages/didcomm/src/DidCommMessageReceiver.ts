@@ -5,7 +5,9 @@ import {
   InjectionSymbols,
   inject,
   injectable,
+  JsonEncoder,
   JsonTransformer,
+  Kms,
   type Logger,
 } from '@credo-ts/core'
 import { DidCommDispatcher } from './DidCommDispatcher'
@@ -19,37 +21,64 @@ import { DidCommTransportService } from './DidCommTransportService'
 import { DidCommProblemReportError } from './errors'
 import { DidCommProblemReportMessage } from './messages'
 import { DidCommInboundMessageContext, DidCommOutboundMessageContext, DidCommProblemReportReason } from './models'
+import {
+  DidCommConnectionService,
+  DidCommConnectionsModuleConfig,
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+  DidCommHandshakeProtocol,
+} from './modules/connections'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
-import { DidCommConnectionService } from './modules/connections/services'
+import { DidCommOutOfBandService } from './modules/oob/DidCommOutOfBandService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
+import { normalizeV2PlaintextToV1 } from './v2'
+import { DidCommV2EnvelopeService } from './v2'
+import { DidCommV2KeyResolver } from './v2'
+import { isDidCommV2EncryptedMessage } from './util/didcommVersion'
 import { isValidJweStructure } from './util/JWE'
+import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
 
 @injectable()
 export class DidCommMessageReceiver {
   private envelopeService: DidCommEnvelopeService
+  private v2EnvelopeService: DidCommV2EnvelopeService
+  private v2KeyResolver: DidCommV2KeyResolver
+  private config: DidCommModuleConfig
   private transportService: DidCommTransportService
   private messageSender: DidCommMessageSender
   private dispatcher: DidCommDispatcher
   private logger: Logger
   private connectionService: DidCommConnectionService
+  private outOfBandService: DidCommOutOfBandService
+  private connectionsModuleConfig: DidCommConnectionsModuleConfig
   private messageHandlerRegistry: DidCommMessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
 
   public constructor(
     envelopeService: DidCommEnvelopeService,
+    v2EnvelopeService: DidCommV2EnvelopeService,
+    v2KeyResolver: DidCommV2KeyResolver,
+    config: DidCommModuleConfig,
     transportService: DidCommTransportService,
     messageSender: DidCommMessageSender,
     connectionService: DidCommConnectionService,
+    outOfBandService: DidCommOutOfBandService,
+    connectionsModuleConfig: DidCommConnectionsModuleConfig,
     dispatcher: DidCommDispatcher,
     messageHandlerRegistry: DidCommMessageHandlerRegistry,
     @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.envelopeService = envelopeService
+    this.v2EnvelopeService = v2EnvelopeService
+    this.v2KeyResolver = v2KeyResolver
+    this.config = config
     this.transportService = transportService
     this.messageSender = messageSender
     this.connectionService = connectionService
+    this.outOfBandService = outOfBandService
+    this.connectionsModuleConfig = connectionsModuleConfig
     this.dispatcher = dispatcher
     this.messageHandlerRegistry = messageHandlerRegistry
     this.agentContextProvider = agentContextProvider
@@ -122,7 +151,7 @@ export class DidCommMessageReceiver {
       plaintextMessage
     )
 
-    const connection = await this.findConnectionByMessageKeys(agentContext, decryptedMessage)
+    const connection = await this.findConnection(agentContext, decryptedMessage)
 
     const message = await this.transformAndValidate(agentContext, plaintextMessage, connection)
 
@@ -143,10 +172,24 @@ export class DidCommMessageReceiver {
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
     if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
       this.logger.debug(`Storing session for inbound message '${message.id}'`)
-      const keys = {
+      const keys: {
+        recipientKeys: (typeof senderKey)[]
+        routingKeys: unknown[]
+        senderKey: typeof recipientKey
+        senderKeySkid?: string
+      } = {
         recipientKeys: [senderKey],
         routingKeys: [],
         senderKey: recipientKey,
+      }
+      // For v2: skid must be our DID URL so recipient can resolve. Keep senderKey.keyId as kmsKeyId for KMS lookup.
+      if (connection && isDidCommV2EncryptedMessage(encryptedMessage)) {
+        const to = Array.isArray(plaintextMessage.to) ? plaintextMessage.to : undefined
+        const ourDid = to?.[0] ?? connection.did
+        if (ourDid) {
+          const keyRef = recipientKey.is(Kms.X25519PublicJwk) ? '#key-2' : '#key-1'
+          keys.senderKeySkid = `${ourDid}${keyRef}`
+        }
       }
       session.keys = keys
       session.inboundMessage = message
@@ -165,7 +208,7 @@ export class DidCommMessageReceiver {
   }
 
   /**
-   * Decrypt a message using the envelope service.
+   * Decrypt a message using the envelope service. Supports DIDComm v1 and v2 (when enabled).
    *
    * @param message the received inbound message to decrypt
    */
@@ -174,6 +217,43 @@ export class DidCommMessageReceiver {
     message: DidCommEncryptedMessage
   ): Promise<DecryptedDidCommMessageContext> {
     try {
+      if (isDidCommV2EncryptedMessage(message)) {
+        if (!this.config.acceptDidCommV2) {
+          throw new CredoError(
+            'Received DIDComm v2 encrypted message but acceptDidCommV2 is disabled. Enable acceptDidCommV2 in DidCommModuleConfig to accept v2 messages.'
+          )
+        }
+        const resolved = await this.v2KeyResolver.resolveRecipientKey(agentContext, message)
+        if (!resolved) {
+          throw new CredoError('No matching recipient key found for DIDComm v2 message')
+        }
+        const { recipientKey, matchedKid } = resolved
+        const protectedJson = JsonEncoder.fromBase64(message.protected) as { skid?: string }
+        const skid = protectedJson.skid
+        if (!skid) {
+          throw new CredoError('DIDComm v2 authcrypt requires skid in protected header')
+        }
+        const { plaintext, senderKey } = await this.v2EnvelopeService.unpack(agentContext, message, {
+          recipientKey,
+          matchedKid,
+          resolveSenderKey: (sid) => this.v2KeyResolver.resolveSenderKey(agentContext, sid),
+        })
+        this.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before normalization)', {
+          id: plaintext.id,
+          type: plaintext.type,
+          from: plaintext.from,
+          to: plaintext.to,
+          thid: plaintext.thid,
+          bodyKeys: plaintext.body ? Object.keys(plaintext.body) : undefined,
+        })
+        const plaintextMessage = normalizeV2PlaintextToV1(plaintext)
+        this.logger.debug('Unpacked DIDComm v2 message', { type: plaintext.type })
+        return {
+          plaintextMessage,
+          senderKey: senderKey as DecryptedDidCommMessageContext['senderKey'],
+          recipientKey: recipientKey as DecryptedDidCommMessageContext['recipientKey'],
+        }
+      }
       return await this.envelopeService.unpackMessage(agentContext, message)
     } catch (error) {
       this.logger.error('Error while decrypting message', {
@@ -213,18 +293,47 @@ export class DidCommMessageReceiver {
     return message
   }
 
-  private async findConnectionByMessageKeys(
+  private async findConnection(
     agentContext: AgentContext,
-    { recipientKey, senderKey }: DecryptedDidCommMessageContext
+    decryptedMessage: DecryptedDidCommMessageContext
   ): Promise<DidCommConnectionRecord | null> {
-    // We only fetch connections that are sent in AuthCrypt mode
-    if (!recipientKey || !senderKey) return null
+    const { plaintextMessage, recipientKey, senderKey } = decryptedMessage
 
-    // Try to find the did records that holds the sender and recipient keys
-    return this.connectionService.findByKeys(agentContext, {
-      senderKey,
-      recipientKey,
-    })
+    // DIDComm v2: plaintext has from/to (normalized from v2 shape). Try findByTheirDid first.
+    const from = plaintextMessage.from as string | undefined
+    const to = Array.isArray(plaintextMessage.to) ? plaintextMessage.to : undefined
+
+    if (from !== undefined) {
+      let connection = await this.connectionService.findByTheirDid(agentContext, from)
+      if (connection) return connection
+
+      if (to?.length && this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
+        const recipient = to[0]
+        const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipient)
+        if (outOfBandRecord) {
+          // Inviter receives first message → Responder (so retrieveServicesByConnection uses theirDid parse fallback)
+          connection = await this.connectionService.createConnection(
+            agentContext,
+            {
+              protocol: DidCommHandshakeProtocol.None,
+              role: DidCommDidExchangeRole.Responder,
+              state: DidCommDidExchangeState.Completed,
+              theirDid: from,
+              did: recipient,
+              outOfBandId: outOfBandRecord.id,
+            },
+            true
+          )
+          return connection
+        }
+      }
+
+      return null
+    }
+
+    // v1: use sender/recipient keys
+    if (!recipientKey || !senderKey) return null
+    return this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
   }
 
   /**

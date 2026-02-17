@@ -16,3 +16,6 @@ cli-build
 *.db
 test-logs
 testlogs
+
+docs
+.env*

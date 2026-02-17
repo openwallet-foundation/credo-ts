@@ -1,10 +1,18 @@
 import type { AgentContext } from '../../../../agent'
 import type { XOR } from '../../../../types'
 import { JsonTransformer } from '../../../../utils'
-import { KeyManagementApi, type KmsCreateKeyOptions, type KmsCreateKeyTypeAssymetric, PublicJwk } from '../../../kms'
+import {
+  Ed25519PublicJwk,
+  KeyManagementApi,
+  type KmsCreateKeyOptions,
+  type KmsCreateKeyTypeAssymetric,
+  PublicJwk,
+  X25519PublicJwk,
+} from '../../../kms'
 import type { DidDocumentKey } from '../../DidsApiOptions'
 import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
+import { getPublicJwkFromVerificationMethod } from '../../domain/key-type'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import { DidRecord, DidRepository } from '../../repository'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
@@ -13,6 +21,33 @@ import { publicJwkToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didDocumentJsonToNumAlgo1Did } from './peerDidNumAlgo1'
 import { didDocumentToNumAlgo2Did } from './peerDidNumAlgo2'
 import { didDocumentToNumAlgo4Did } from './peerDidNumAlgo4'
+
+/**
+ * Collect recipient key fingerprints from authentication and keyAgreement.
+ * Includes X25519 conversion for Ed25519 keys so DIDComm v2 lookup works when
+ * message uses authentication kid (#key-1) but DidRecord stores keyAgreement.
+ */
+function getRecipientKeyFingerprintsIncludingAuthAndKeyAgreement(didDocument: DidDocument): string[] {
+  const prints = new Set<string>()
+  const keyRefs = [
+    ...(didDocument.authentication ?? []),
+    ...(didDocument.keyAgreement ?? []),
+  ]
+  const seen = new Set<string>()
+  for (const keyRef of keyRefs) {
+    const vm = typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
+    if (seen.has(vm.id)) continue
+    seen.add(vm.id)
+    const publicJwk = getPublicJwkFromVerificationMethod(vm)
+    if (publicJwk.is(Ed25519PublicJwk) || publicJwk.is(X25519PublicJwk)) {
+      prints.add(publicJwk.fingerprint)
+      if (publicJwk.is(Ed25519PublicJwk)) {
+        prints.add((publicJwk as PublicJwk<Ed25519PublicJwk>).convertTo(X25519PublicJwk).fingerprint)
+      }
+    }
+  }
+  return [...prints]
+}
 
 export class PeerDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['peer']
@@ -129,6 +164,13 @@ export class PeerDidRegistrar implements DidRegistrar {
         }
       }
 
+      // Build recipientKeyFingerprints. For numAlgo 2 (v2 OOB peer DIDs), include both
+      // authentication and keyAgreement so lookup works when message uses #key-1 (Ed25519).
+      const recipientKeyFingerprints =
+        isPeerDidNumAlgo2CreateOptions(options) || isPeerDidNumAlgo4CreateOptions(options)
+          ? getRecipientKeyFingerprintsIncludingAuthAndKeyAgreement(didDocument)
+          : didDocument.recipientKeys.map((key) => key.fingerprint)
+
       // Save the did so we know we created it and can use it for didcomm
       const didRecord = new DidRecord({
         did,
@@ -136,9 +178,7 @@ export class PeerDidRegistrar implements DidRegistrar {
         didDocument: isPeerDidNumAlgo1CreateOptions(options) ? didDocument : undefined,
         keys,
         tags: {
-          // We need to save the recipientKeys, so we can find the associated did
-          // of a key when we receive a message from another connection.
-          recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+          recipientKeyFingerprints,
           alternativeDids: getAlternativeDidsForPeerDid(did),
         },
       })

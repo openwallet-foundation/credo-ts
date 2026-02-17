@@ -47,11 +47,21 @@ const zKmsKeyAgreementDecryptEcdhHsalsa20 = z.object({
 })
 export type KmsKeyAgreementDecryptEcdhHsalsa20 = z.output<typeof zKmsKeyAgreementDecryptEcdhHsalsa20>
 
+const zKmsKeyAgreementDecryptEcdh1Pu = z.object({
+  keyId: zKmsKeyId,
+  algorithm: z.literal('ECDH-1PU+A256KW'),
+  encryptedKey: zKmsEncryptedKey,
+  ephemeralPublicJwk: zKmsJwkPublicEcdh,
+  senderPublicJwk: zKmsJwkPublicEcdh,
+})
+export type KmsKeyAgreementDecryptEcdh1Pu = z.output<typeof zKmsKeyAgreementDecryptEcdh1Pu>
+
 export const zKmsKeyAgreementDecryptOptions = z
   .discriminatedUnion('algorithm', [
     zKmsKeyAgreementEcdhEs,
     zKmsKeyAgreementDecryptEcdhEsKw,
     zKmsKeyAgreementDecryptEcdhHsalsa20,
+    zKmsKeyAgreementDecryptEcdh1Pu,
   ])
   .describe('Options for key agreement based on an assymetric key.')
 export type KmsKeyAgreementDecryptOptions = z.output<typeof zKmsKeyAgreementDecryptOptions>

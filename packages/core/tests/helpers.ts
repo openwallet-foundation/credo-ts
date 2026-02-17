@@ -149,15 +149,29 @@ export function getAgentOptions<
   const _modules = {
     ...(storage === 'drizzle' ? drizzleModules : {}),
     ...(requireDidcomm
+      // ? {
+      //     didcomm: new DidCommModule({
+      //       // DIDComm v2 defaults for tests (individual tests can override via didcommConfig)
+      //       acceptDidCommV2: true,
+      //       sendDidCommV2: true,
+      //       ...didcommConfig,
+      //       connections: {
+      //         autoAcceptConnections: true,
+      //         autoCreateConnectionOnFirstMessage: true,
+      //         ...didcommConfig?.connections,
+      //       },
+      //     }),
+      //   }
+      // : {}),
       ? {
-          didcomm: new DidCommModule({
-            connections: {
-              autoAcceptConnections: true,
-            },
-            ...didcommConfig,
-          }),
-        }
-      : {}),
+        didcomm: new DidCommModule({
+          connections: {
+            autoAcceptConnections: true,
+          },
+          ...didcommConfig,
+        }),
+      }
+    : {}),
     ...m,
 
     ...(kms === 'askar' || storage === 'askar'
