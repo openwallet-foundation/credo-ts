@@ -1,5 +1,5 @@
 ---
-"@credo-ts/cheqd": minor
+"@credo-ts/cheqd": patch
 ---
 
 Dynamic module initialization
