@@ -31,6 +31,7 @@ import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
+import { toX25519 } from './modules/connections/services/helpers'
 import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
@@ -94,13 +95,9 @@ export class DidCommMessageSender {
       keys.senderKey
     ) {
       try {
-        const recipientX25519 = keys.recipientKeys[0].is(Kms.X25519PublicJwk)
-          ? (keys.recipientKeys[0] as Kms.PublicJwk<Kms.X25519PublicJwk>)
-          : keys.recipientKeys[0].convertTo(Kms.X25519PublicJwk)
+        const recipientX25519 = toX25519(keys.recipientKeys[0])
         recipientX25519.keyId = keys.recipientKeys[0].hasKeyId ? keys.recipientKeys[0].keyId : keys.recipientKeys[0].legacyKeyId
-        const senderX25519 = keys.senderKey.is(Kms.X25519PublicJwk)
-          ? (keys.senderKey as Kms.PublicJwk<Kms.X25519PublicJwk>)
-          : keys.senderKey.convertTo(Kms.X25519PublicJwk)
+        const senderX25519 = toX25519(keys.senderKey)
         senderX25519.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
         const plaintext = buildV2PlaintextFromMessage(message, {
           useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,
@@ -162,14 +159,10 @@ export class DidCommMessageSender {
       keys.senderKey
     ) {
       try {
-        const recipientX25519 = keys.recipientKeys[0].is(Kms.X25519PublicJwk)
-          ? (keys.recipientKeys[0] as Kms.PublicJwk<Kms.X25519PublicJwk>)
-          : keys.recipientKeys[0].convertTo(Kms.X25519PublicJwk)
+        const recipientX25519 = toX25519(keys.recipientKeys[0])
         // Use did:key as kid so recipient can resolve via tryParseKidAsPublicJwk (connectionless return route)
         recipientX25519.keyId = new DidKey(keys.recipientKeys[0]).did
-        const senderX25519 = keys.senderKey.is(Kms.X25519PublicJwk)
-          ? (keys.senderKey as Kms.PublicJwk<Kms.X25519PublicJwk>)
-          : keys.senderKey.convertTo(Kms.X25519PublicJwk)
+        const senderX25519 = toX25519(keys.senderKey)
         senderX25519.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
         const plaintext = buildV2PlaintextFromMessage(message, {
           useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,

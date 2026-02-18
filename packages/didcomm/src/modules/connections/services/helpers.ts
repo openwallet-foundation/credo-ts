@@ -26,6 +26,15 @@ import type { DidCommOutOfBandInlineServiceKey } from '../../oob/repository/DidC
 import type { DidDoc, PublicKey } from '../models'
 import { EmbeddedAuthentication } from '../models'
 
+/**
+ * Normalize a PublicJwk to X25519 for comparison. DIDComm v2 uses X25519 for decryption;
+ * services may have Ed25519 keys. Centralizes the type assertion needed because
+ * PublicJwk.convertTo() only narrows when the instance is known to be Ed25519.
+ */
+export function toX25519(jwk: Kms.PublicJwk): Kms.PublicJwk<Kms.X25519PublicJwk> {
+  return jwk.is(Kms.X25519PublicJwk) ? jwk : (jwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+}
+
 export function convertToNewDidDocument(didDoc: DidDoc, keys?: DidDocumentKey[]) {
   const didDocumentBuilder = new DidDocumentBuilder('')
 

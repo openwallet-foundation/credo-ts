@@ -56,6 +56,7 @@ import {
   assertNoCreatedDidExistsForKeys,
   convertToNewDidDocument,
   getResolvedDidcommServiceWithSigningKeyId,
+  toX25519,
 } from './helpers'
 
 export interface ConnectionRequestParams {
@@ -619,16 +620,10 @@ export class DidCommConnectionService {
       // Check if recipientKey is in ourService
       // DIDComm v2 decrypt returns X25519; ourService may have Ed25519. Normalize both to X25519 for comparison.
       if (recipientKey && ourService) {
-        const recipientX25519: Kms.PublicJwk<Kms.X25519PublicJwk> =
-          recipientKey.is(Kms.X25519PublicJwk)
-            ? (recipientKey as Kms.PublicJwk<Kms.X25519PublicJwk>)
-            : (recipientKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-        const recipientKeyFound = ourService.recipientKeys.some((key) => {
-          const keyX25519: Kms.PublicJwk<Kms.X25519PublicJwk> = key.is(Kms.X25519PublicJwk)
-            ? (key as Kms.PublicJwk<Kms.X25519PublicJwk>)
-            : (key as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-          return recipientX25519.equals(keyX25519)
-        })
+        const recipientX25519 = toX25519(recipientKey)
+        const recipientKeyFound = ourService.recipientKeys.some((key) =>
+          recipientX25519.equals(toX25519(key))
+        )
         if (!recipientKeyFound) {
           throw new CredoError(`Recipient key ${recipientKey.fingerprint} not found in our service`)
         }
@@ -637,15 +632,10 @@ export class DidCommConnectionService {
       // Check if senderKey is in theirService
       // DIDComm v2 returns X25519; theirService may have Ed25519. Normalize both to X25519 for comparison.
       if (senderKey && theirService) {
-        const senderX25519: Kms.PublicJwk<Kms.X25519PublicJwk> = senderKey.is(Kms.X25519PublicJwk)
-          ? (senderKey as Kms.PublicJwk<Kms.X25519PublicJwk>)
-          : (senderKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-        const senderKeyFound = theirService.recipientKeys.some((key) => {
-          const keyX25519: Kms.PublicJwk<Kms.X25519PublicJwk> = key.is(Kms.X25519PublicJwk)
-            ? (key as Kms.PublicJwk<Kms.X25519PublicJwk>)
-            : (key as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-          return senderX25519.equals(keyX25519)
-        })
+        const senderX25519 = toX25519(senderKey)
+        const senderKeyFound = theirService.recipientKeys.some((key) =>
+          senderX25519.equals(toX25519(key))
+        )
         if (!senderKeyFound) {
           throw new CredoError(`Sender key ${senderKey.fingerprint} not found in their service.`)
         }

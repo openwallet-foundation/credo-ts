@@ -1,5 +1,5 @@
 import type { DidResolverService } from '@credo-ts/core'
-import { CredoError, Kms } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import { DidCommOutboundMessageContext } from '../../../models'
@@ -9,6 +9,7 @@ import type { DidCommConnectionsModuleConfig, DidExchangeProtocol } from '..'
 import { DidCommDidExchangeResponseMessage } from '../messages'
 import { DidCommDidExchangeRole, DidCommHandshakeProtocol } from '../models'
 import type { DidCommConnectionService } from '../services'
+import { toX25519 } from '../services/helpers'
 
 export class DidCommDidExchangeResponseHandler implements DidCommMessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
@@ -59,8 +60,6 @@ export class DidCommDidExchangeResponseHandler implements DidCommMessageHandler 
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
     // connection record did. DIDComm v2 uses X25519 for decryption; did document may have Ed25519.
-    const toX25519 = (jwk: Kms.PublicJwk): Kms.PublicJwk<Kms.X25519PublicJwk> =>
-      jwk.is(Kms.X25519PublicJwk) ? jwk : (jwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
     const recipientX25519 = toX25519(recipientKey)
     const recipientKeyFound = ourDidDocument.recipientKeys.some((key) =>
       recipientX25519.equals(toX25519(key))
