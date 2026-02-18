@@ -137,9 +137,24 @@ export interface KmsEncryptReturn {
 }
 
 export const zKmsEncryptedKey = z.object({
+  /**
+     * Optional authentication tag
+     */
   tag: zAnyUint8Array.optional(),
+
+  /**
+   * The initialization vector.
+   */
   iv: zAnyUint8Array.optional(),
+
+  /**
+   * The encrypted key
+   */
   encrypted: zAnyUint8Array,
+
+  /**
+   * The ephemeral public key
+   */
   ephemeralPublicKey: zKmsJwkPublicEcdh.optional(),
 })
 
