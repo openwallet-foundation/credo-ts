@@ -71,7 +71,7 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
 
     it('invitee sends trust-ping and receives response over v2', async () => {
       const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
         multiUseInvitation: true,
       })
 
@@ -92,7 +92,7 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
 
     it('inviter sends trust-ping and receives response over v2', async () => {
       const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
         multiUseInvitation: true,
       })
 
@@ -117,7 +117,7 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
 
     it('sends trust-ping without response (responseRequested: false) over v2', async () => {
       const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
         multiUseInvitation: true,
       })
 
@@ -145,7 +145,7 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
 
     it('bidirectional trust-ping over v2', async () => {
       const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
         multiUseInvitation: true,
       })
 
@@ -220,7 +220,7 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       await alice.initialize()
 
       const faberOob = await faber.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
         multiUseInvitation: true,
       })
       const invitationUrl = faberOob.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
@@ -256,7 +256,7 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       await alice.initialize()
 
       const faberOob = await faber.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
         multiUseInvitation: true,
       })
       const invitationUrl = faberOob.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
@@ -286,7 +286,7 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       await alice.initialize()
 
       const faberOob = await faber.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
         multiUseInvitation: true,
       })
       const invitationUrl = faberOob.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
@@ -321,7 +321,7 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       await alice.initialize()
 
       const faberOob = await faber.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
         multiUseInvitation: true,
       })
       const invitationUrl = faberOob.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
@@ -356,7 +356,7 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       await alice.initialize()
 
       const faberOob = await faber.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
         multiUseInvitation: true,
       })
       const invitationUrl = faberOob.outOfBandInvitation.toUrl({ domain: 'https://example.com' })

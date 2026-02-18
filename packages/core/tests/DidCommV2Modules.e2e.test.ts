@@ -113,7 +113,7 @@ describe('DIDComm v2 modules', () => {
       await aliceAgent.initialize()
 
       const faberOob = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
         multiUseInvitation: true,
       })
 
