@@ -33,16 +33,6 @@ export class DidCommConnectionResponseHandler implements DidCommMessageHandler {
   public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommConnectionResponseHandler>) {
     let { recipientKey, senderKey, message } = messageContext
 
-    // Anoncrypt (e.g. DIDComm v2 connection response): no senderKey; derive from connection~sig.signer
-    if (!senderKey && message.connectionSig?.signer) {
-      senderKey = Kms.PublicJwk.fromPublicKey({
-        kty: 'OKP',
-        crv: 'Ed25519',
-        publicKey: TypedArrayEncoder.fromBase58(message.connectionSig.signer),
-      }) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
-      ;(messageContext as { senderKey?: typeof senderKey }).senderKey = senderKey
-    }
-
     if (!recipientKey || !senderKey) {
       throw new CredoError('Unable to process connection response without senderKey or recipientKey')
     }

@@ -36,19 +36,6 @@ export class DidCommConnectionRequestHandler implements DidCommMessageHandler {
   public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommConnectionRequestHandler>) {
     let { agentContext, connection, recipientKey, senderKey, message, sessionId } = messageContext
 
-    // Anoncrypt (e.g. DIDComm v2 connection request): no senderKey; derive from decrypted didDoc
-    if (!senderKey && message.connection?.didDoc?.authentication?.length) {
-      const auth = message.connection.didDoc.authentication[0]
-      const pk = auth?.publicKey
-      if (pk?.value) {
-        senderKey = Kms.PublicJwk.fromPublicKey({
-          kty: 'OKP',
-          crv: 'Ed25519',
-          publicKey: TypedArrayEncoder.fromBase58(pk.value),
-        }) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
-      }
-    }
-
     if (!recipientKey || !senderKey) {
       throw new CredoError('Unable to process connection request without senderVerkey or recipientKey')
     }
