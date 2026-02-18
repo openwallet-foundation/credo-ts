@@ -32,7 +32,7 @@
     "@cheqd/sdk": "npm:@cheqd/sdk-esm@~5.5.0",
     "@cheqd/ts-proto": "^4.2.0",
     "@cosmjs/crypto": "^0.38.1",
-    "@cosmjs/proto-signing": "^0.36.2",
+    "@cosmjs/proto-signing": "^0.38.1",
     "@cosmjs/stargate": "^0.36.2",
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
