@@ -16,7 +16,7 @@ catalog:
   '@openwallet-foundation/askar-shared': ^0.4.3
   '@peculiar/x509': ^1.14.3
   '@sphereon/pex-models': ^2.3.2
-  '@stablelib/ed25519': 2.0.2
+  '@stablelib/ed25519': ^2.0.2
   '@types/express': ^5.0.6
   '@types/node': ^20.19.31
   '@types/ws': ^8.18.1
