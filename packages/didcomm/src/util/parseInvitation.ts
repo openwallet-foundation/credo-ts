@@ -101,11 +101,6 @@ export const parseInvitationUrl = (invitationUrl: string): DidCommOutOfBandInvit
   const encodedInvitation = parsedUrl.oob ?? parsedUrl.c_i ?? parsedUrl.d_m
 
   if (typeof encodedInvitation === 'string') {
-    // // oob param uses base64url encoding (both v1 and v2 invitations)
-    // const base64 =
-    //   encodedInvitation.includes('-') || encodedInvitation.includes('_')
-    //     ? base64URLToBase64(encodedInvitation)
-    //     : encodedInvitation
     const invitationJson = JsonEncoder.fromBase64(encodedInvitation) as Record<string, unknown>
     return parseInvitationJson(invitationJson)
   }
