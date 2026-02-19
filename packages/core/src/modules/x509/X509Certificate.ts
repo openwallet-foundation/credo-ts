@@ -1,13 +1,5 @@
 import { AsnParser } from '@peculiar/asn1-schema'
-import {
-  id_ce_authorityKeyIdentifier,
-  id_ce_extKeyUsage,
-  id_ce_issuerAltName,
-  id_ce_keyUsage,
-  id_ce_subjectAltName,
-  id_ce_subjectKeyIdentifier,
-  SubjectPublicKeyInfo,
-} from '@peculiar/asn1-x509'
+import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
@@ -25,7 +17,9 @@ import {
   createKeyUsagesExtension,
   createSubjectAlternativeNameExtension,
   createSubjectKeyIdentifierExtension,
+  X509ExtensionIdentifier,
 } from './utils'
+import type { X509CrlDistributionPoint, X509RevocationReason } from './X509CrlDistributionPoint'
 import { X509Error } from './X509Error'
 import type { X509CreateCertificateOptions } from './X509ServiceOptions'
 
@@ -112,12 +106,12 @@ export class X509Certificate {
   }
 
   public get subjectAlternativeNames() {
-    const san = this.getMatchingExtensions<x509.SubjectAlternativeNameExtension>(id_ce_subjectAltName)
+    const san = this.getMatchingExtensions<x509.SubjectAlternativeNameExtension>(X509ExtensionIdentifier.SubjectAltName)
     return san?.flatMap((s) => s.names.items).map((i) => ({ type: i.type, value: i.value })) ?? []
   }
 
   public get issuerAlternativeNames() {
-    const ian = this.getMatchingExtensions<x509.IssuerAlternativeNameExtension>(id_ce_issuerAltName)
+    const ian = this.getMatchingExtensions<x509.IssuerAlternativeNameExtension>(X509ExtensionIdentifier.IssuerAltName)
     return ian?.flatMap((i) => i.names.items).map((i) => ({ type: i.type, value: i.value })) ?? []
   }
 
@@ -138,9 +132,9 @@ export class X509Certificate {
   }
 
   public get authorityKeyIdentifier() {
-    const keyIds = this.getMatchingExtensions<x509.AuthorityKeyIdentifierExtension>(id_ce_authorityKeyIdentifier)?.map(
-      (e) => e.keyId
-    )
+    const keyIds = this.getMatchingExtensions<x509.AuthorityKeyIdentifierExtension>(
+      X509ExtensionIdentifier.AuthorityKeyIdentifier
+    )?.map((e) => e.keyId)
 
     if (keyIds && keyIds.length > 1) {
       throw new X509Error('Multiple Authority Key Identifiers are not allowed')
@@ -150,9 +144,9 @@ export class X509Certificate {
   }
 
   public get subjectKeyIdentifier() {
-    const keyIds = this.getMatchingExtensions<x509.SubjectKeyIdentifierExtension>(id_ce_subjectKeyIdentifier)?.map(
-      (e) => e.keyId
-    )
+    const keyIds = this.getMatchingExtensions<x509.SubjectKeyIdentifierExtension>(
+      X509ExtensionIdentifier.SubjectKeyIdentifier
+    )?.map((e) => e.keyId)
 
     if (keyIds && keyIds.length > 1) {
       throw new X509Error('Multiple Subject Key Identifiers are not allowed')
@@ -163,24 +157,29 @@ export class X509Certificate {
 
   // biome-ignore lint/suspicious/useGetterReturn: no explanation
   public get keyUsage() {
-    const keyUsages = this.getMatchingExtensions<x509.KeyUsagesExtension>(id_ce_keyUsage)?.map((e) => e.usages)
+    const keyUsages = this.getMatchingExtensions<x509.KeyUsagesExtension>(X509ExtensionIdentifier.KeyUsage)?.map(
+      (e) => e.usages
+    )
 
     if (keyUsages && keyUsages.length > 1) {
       throw new X509Error('Multiple Key Usages are not allowed')
     }
 
     if (keyUsages) {
-      return Object.values(X509KeyUsage)
-        .filter((key): key is number => typeof key === 'number')
-        .filter((flagValue) => (keyUsages[0] & flagValue) === flagValue)
-        .map((flagValue) => flagValue as X509KeyUsage)
+      return (
+        Object.values(X509KeyUsage)
+          .filter((key): key is number => typeof key === 'number')
+          // KeyUsage is stored as bit value
+          .filter((flagValue) => (keyUsages[0] & flagValue) === flagValue)
+          .map((flagValue) => flagValue as X509KeyUsage)
+      )
     }
   }
 
   public get extendedKeyUsage() {
-    const extendedKeyUsages = this.getMatchingExtensions<x509.ExtendedKeyUsageExtension>(id_ce_extKeyUsage)?.map(
-      (e) => e.usages
-    )
+    const extendedKeyUsages = this.getMatchingExtensions<x509.ExtendedKeyUsageExtension>(
+      X509ExtensionIdentifier.ExtendedKeyUsage
+    )?.map((e) => e.usages)
 
     if (extendedKeyUsages && extendedKeyUsages.length > 1) {
       throw new X509Error('Multiple Key Usages are not allowed')
@@ -189,7 +188,82 @@ export class X509Certificate {
     return (extendedKeyUsages?.[0] as Array<X509ExtendedKeyUsage> | undefined) ?? []
   }
 
-  public isExtensionCritical(id: string): boolean {
+  /**
+   * Get CRL Distribution Points with full structure including URLs, reasons, and CRL issuer.
+   * Based on RFC 5280 Section 4.2.1.13
+   *
+   * NOTE: cRLIssuer is currently not supported and will always be undefined.
+   * Only fullName (URI) distribution points are supported, not nameRelativeToCRLIssuer.
+   */
+  public get crlDistributionPoints(): X509CrlDistributionPoint[] {
+    const crlDistributionPointsExt = this.getMatchingExtensions<x509.CRLDistributionPointsExtension>(
+      X509ExtensionIdentifier.CrlDistributionPoints
+    )
+
+    if (crlDistributionPointsExt && crlDistributionPointsExt.length > 1) {
+      throw new X509Error('Multiple CRL Distribution Points extensions are not allowed')
+    }
+
+    const ext = crlDistributionPointsExt?.[0]
+    if (!ext) {
+      return []
+    }
+
+    const distributionPoints = ext.distributionPoints
+    if (!distributionPoints || distributionPoints.length === 0) {
+      return []
+    }
+
+    const result: X509CrlDistributionPoint[] = []
+
+    for (const dp of distributionPoints) {
+      // Extract URLs - @peculiar library stores these as uniformResourceIdentifier in fullName
+      const urls: string[] = []
+
+      // fullName is an array of GeneralName objects
+      if (dp.distributionPoint?.fullName) {
+        for (const generalName of dp.distributionPoint.fullName) {
+          // GeneralName has uniformResourceIdentifier property for URLs
+          if (generalName.uniformResourceIdentifier) {
+            urls.push(generalName.uniformResourceIdentifier)
+          }
+        }
+      }
+
+      // Skip distribution points with no URLs
+      if (urls.length === 0) {
+        continue
+      }
+
+      // Extract reasons if present
+      // If reasons is undefined/null, this is a "full" distribution point covering all reasons
+      let reasons: X509RevocationReason[] | undefined
+      if (dp.reasons !== undefined && dp.reasons !== null) {
+        // The reasons field is a bit string (number) representing which reason codes are covered
+        // Convert to array of reason code numbers
+        const reasonBits = Number(dp.reasons)
+        if (!Number.isNaN(reasonBits)) {
+          reasons = []
+          for (let i = 0; i <= 8; i++) {
+            // Check if bit i is set (reasons 0-8)
+            if ((reasonBits & (1 << i)) !== 0) {
+              reasons.push(i)
+            }
+          }
+        }
+      }
+
+      result.push({
+        urls,
+        reasons,
+        crlIssuer: undefined, // Not currently supported
+      })
+    }
+
+    return result
+  }
+
+  public isExtensionCritical(id: X509ExtensionIdentifier | string): boolean {
     const extension = this.getMatchingExtensions(id)
     if (!extension) {
       throw new X509Error(`extension with id '${id}' is not found`)

@@ -1,10 +1,17 @@
-import { CredoWebCrypto, Hasher, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
-import { id_ce_basicConstraints, id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
+import {
+  CredoWebCrypto,
+  Hasher,
+  TypedArrayEncoder,
+  X509ExtendedKeyUsage,
+  X509ExtensionIdentifier,
+  X509KeyUsage,
+} from '@credo-ts/core'
 import * as x509 from '@peculiar/x509'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { KeyManagementApi, KeyManagementModuleConfig, type KmsJwkPublicEc, P256PublicJwk, PublicJwk } from '../../kms'
 import { X509Error } from '../X509Error'
+import { X509ModuleConfig } from '../X509ModuleConfig'
 import { X509Service } from '../X509Service'
 
 /**
@@ -49,6 +56,10 @@ const kmsApi = new KeyManagementApi(
 )
 agentContext.dependencyManager.registerInstance(KeyManagementApi, kmsApi)
 
+// Register X509ModuleConfig
+const x509ModuleConfig = new X509ModuleConfig({})
+agentContext.dependencyManager.registerInstance(X509ModuleConfig, x509ModuleConfig)
+
 describe('X509Service', () => {
   let certificateChain: Array<string>
 
@@ -69,6 +80,12 @@ describe('X509Service', () => {
         notBefore: getLastMonth(),
         notAfter: getNextMonth(),
       },
+      extensions: {
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 2,
+        },
+      },
     })
 
     const intermediateCert = await X509Service.createCertificate(agentContext, {
@@ -80,6 +97,12 @@ describe('X509Service', () => {
       validity: {
         notBefore: getLastMonth(),
         notAfter: getNextMonth(),
+      },
+      extensions: {
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 1,
+        },
       },
     })
 
@@ -101,6 +124,7 @@ describe('X509Service', () => {
         new x509.X509Certificate(intermediateCert.rawCertificate),
       ],
     })
+    // The builder returns [Root, Intermediate, Leaf]
     certificateChain = (await builder.build(new x509.X509Certificate(leafCert.rawCertificate))).map((c) =>
       c.toString('base64')
     )
@@ -137,8 +161,8 @@ describe('X509Service', () => {
       },
     })
 
-    expect(certificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
-    expect(certificate.isExtensionCritical(id_ce_extKeyUsage)).toStrictEqual(false)
+    expect(certificate.isExtensionCritical(X509ExtensionIdentifier.KeyUsage)).toStrictEqual(true)
+    expect(certificate.isExtensionCritical(X509ExtensionIdentifier.ExtendedKeyUsage)).toStrictEqual(false)
   })
 
   it('should create a valid self-signed certifcate with extensions', async () => {
@@ -209,8 +233,16 @@ describe('X509Service', () => {
       },
     })
 
-    expect(mdocRootCertificate.isExtensionCritical(id_ce_basicConstraints)).toStrictEqual(true)
-    expect(mdocRootCertificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
+    // Verify CRL distribution points structure
+    expect(mdocRootCertificate.crlDistributionPoints).toHaveLength(1)
+    expect(mdocRootCertificate.crlDistributionPoints[0]).toMatchObject({
+      urls: ['https://animo.id'],
+      reasons: undefined, // Full distribution point (covers all reasons)
+      crlIssuer: undefined,
+    })
+
+    expect(mdocRootCertificate.isExtensionCritical(X509ExtensionIdentifier.BasicConstraints)).toStrictEqual(true)
+    expect(mdocRootCertificate.isExtensionCritical(X509ExtensionIdentifier.KeyUsage)).toStrictEqual(true)
 
     expect(mdocRootCertificate).toMatchObject({
       ianUriNames: expect.arrayContaining(['animo.id']),
@@ -266,8 +298,10 @@ describe('X509Service', () => {
       },
     })
 
-    expect(mdocDocumentSignerCertificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
-    expect(mdocDocumentSignerCertificate.isExtensionCritical(id_ce_extKeyUsage)).toStrictEqual(true)
+    expect(mdocDocumentSignerCertificate.isExtensionCritical(X509ExtensionIdentifier.KeyUsage)).toStrictEqual(true)
+    expect(mdocDocumentSignerCertificate.isExtensionCritical(X509ExtensionIdentifier.ExtendedKeyUsage)).toStrictEqual(
+      true
+    )
 
     expect(mdocDocumentSignerCertificate).toMatchObject({
       ianUriNames: expect.arrayContaining(['animo.id']),

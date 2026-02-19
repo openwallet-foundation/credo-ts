@@ -1,11 +1,5 @@
 import { AsnParser } from '@peculiar/asn1-schema'
-import {
-  id_ce_extKeyUsage,
-  id_ce_keyUsage,
-  id_ce_subjectAltName,
-  id_ce_subjectKeyIdentifier,
-  SubjectPublicKeyInfo,
-} from '@peculiar/asn1-x509'
+import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 import {
   CredoWebCrypto,
@@ -22,6 +16,7 @@ import {
   createKeyUsagesExtension,
   createSubjectAlternativeNameExtension,
   createSubjectKeyIdentifierExtension,
+  X509ExtensionIdentifier,
 } from './utils'
 import { X509ExtendedKeyUsage, X509KeyUsage } from './X509Certificate'
 import { X509Error } from './X509Error'
@@ -84,7 +79,7 @@ export class CertificateSigningRequest {
   }
 
   public get subjectAlternativeNames() {
-    const san = this.getMatchingExtensions<x509.SubjectAlternativeNameExtension>(id_ce_subjectAltName)
+    const san = this.getMatchingExtensions<x509.SubjectAlternativeNameExtension>(X509ExtensionIdentifier.SubjectAltName)
     return san?.flatMap((s) => s.names.items ?? []).map((i) => ({ type: i.type, value: i.value })) ?? []
   }
 
@@ -97,9 +92,9 @@ export class CertificateSigningRequest {
   }
 
   public get subjectKeyIdentifier() {
-    const keyIds = this.getMatchingExtensions<x509.SubjectKeyIdentifierExtension>(id_ce_subjectKeyIdentifier)?.map(
-      (e) => e.keyId
-    )
+    const keyIds = this.getMatchingExtensions<x509.SubjectKeyIdentifierExtension>(
+      X509ExtensionIdentifier.SubjectKeyIdentifier
+    )?.map((e) => e.keyId)
 
     if (keyIds && keyIds.length > 1) {
       throw new X509Error('Multiple Subject Key Identifiers are not allowed')
@@ -109,7 +104,9 @@ export class CertificateSigningRequest {
   }
 
   public get keyUsage() {
-    const keyUsages = this.getMatchingExtensions<x509.KeyUsagesExtension>(id_ce_keyUsage)?.map((e) => e.usages)
+    const keyUsages = this.getMatchingExtensions<x509.KeyUsagesExtension>(X509ExtensionIdentifier.KeyUsage)?.map(
+      (e) => e.usages
+    )
 
     if (keyUsages && keyUsages.length > 1) {
       throw new X509Error('Multiple Key Usages are not allowed')
@@ -126,9 +123,9 @@ export class CertificateSigningRequest {
   }
 
   public get extendedKeyUsage() {
-    const extendedKeyUsages = this.getMatchingExtensions<x509.ExtendedKeyUsageExtension>(id_ce_extKeyUsage)?.map(
-      (e) => e.usages
-    )
+    const extendedKeyUsages = this.getMatchingExtensions<x509.ExtendedKeyUsageExtension>(
+      X509ExtensionIdentifier.ExtendedKeyUsage
+    )?.map((e) => e.usages)
 
     if (extendedKeyUsages && extendedKeyUsages.length > 1) {
       throw new X509Error('Multiple Extended Key Usages are not allowed')
@@ -137,7 +134,7 @@ export class CertificateSigningRequest {
     return (extendedKeyUsages?.[0] as Array<X509ExtendedKeyUsage> | undefined) ?? []
   }
 
-  public isExtensionCritical(id: string): boolean {
+  public isExtensionCritical(id: X509ExtensionIdentifier | string): boolean {
     const extension = this.getMatchingExtensions(id)
     if (!extension) {
       throw new X509Error(`extension with id '${id}' is not found`)
