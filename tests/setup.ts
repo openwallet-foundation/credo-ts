@@ -7,13 +7,9 @@ import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import { LogLevel } from '../packages/core/src/logger/Logger'
 import testLogger from '../packages/core/tests/logger'
 
-// Get test file path at module load (may be undefined when setup runs before test context in Vitest 4)
-let testPath: string | undefined
-try {
-  testPath = expect.getState?.()?.testPath
-} catch {
-  testPath = undefined
-}
+// Get test file path at module load
+const testPath = expect.getState()?.testPath
+
 const relativeTestPath = testPath ? path.relative(process.cwd(), testPath) : undefined
 
 // Create a log file name based on test file
