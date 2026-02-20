@@ -172,6 +172,15 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
    * Whether this issuance session allows to generate refresh tokens.
    */
   generateRefreshTokens?: boolean
+
+  /**
+   * Expiration time in seconds for the credential offer. This will be used to
+   * calculate the expiration time of the issuance session.
+   *
+   * If not provided, the `statefulCredentialOfferExpirationInSeconds` value from
+   * the issuer config will be used.
+   */
+  expirationInSeconds?: number
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {

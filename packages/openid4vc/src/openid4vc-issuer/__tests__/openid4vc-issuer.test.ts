@@ -1095,4 +1095,17 @@ describe('OpenId4VcIssuer', () => {
 
     await handleCredentialResponse(holder.context, credentialResponse2.credential, universityDegreeCredential)
   })
+
+  it('custom expiration is correctly applied', async () => {
+    const { issuanceSession } = await issuer.openid4vc.issuer.createCredentialOffer({
+      credentialConfigurationIds: [openBadgeCredential.id, universityDegreeCredential.id],
+      issuerId: openId4VcIssuer.issuerId,
+      preAuthorizedCodeFlowConfig: {
+        preAuthorizedCode: '1234567890',
+      },
+      expirationInSeconds: 60 * 60,
+    })
+
+    expect(issuanceSession.expiresAt).toEqual(utils.addSecondsToDate(issuanceSession.createdAt, 60 * 60))
+  })
 })

@@ -113,6 +113,15 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
    * @default `v1`
    */
   version?: OpenId4VpVersion
+
+  /**
+   * Expiration time in seconds for the authorization request. This will be used to
+   * calculate the expiration time of the verification session.
+   *
+   * If not provided, the `authorizationRequestExpiresInSeconds` value from
+   * the verifier service config will be used.
+   */
+  expirationInSeconds?: number
 }
 
 export type OpenId4VpVersion = 'v1' | 'v1.draft21' | 'v1.draft24'
