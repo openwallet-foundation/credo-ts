@@ -8,7 +8,7 @@ import { TypedArrayEncoder } from '../../utils'
 import { KeyManagementApi, type KmsJwkPublicAsymmetric, type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { X509Certificate, X509Service } from '../x509'
 
-export const getMdocContext = (agentContext: AgentContext): MdocContext => {
+export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date } = {}): MdocContext => {
   const crypto = new CredoWebCrypto(agentContext)
   const kms = agentContext.resolve(KeyManagementApi)
 
@@ -138,6 +138,7 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
         await X509Service.validateCertificateChain(agentContext, {
           certificateChain,
           trustedCertificates,
+          verificationDate: now,
         })
       },
       getCertificateData: async (input) => {
