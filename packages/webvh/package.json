@@ -4,7 +4,7 @@
     "cli": "./build/index.mjs",
     "import": "./src/index.ts"
   },
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Credo WebVH DID method implementation",
   "files": [
     "build"
