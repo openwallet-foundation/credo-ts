@@ -532,7 +532,10 @@ export class AskarStoreManager {
     }
   }
 
-  public async getInitializedStoreWithProfile(agentContext: AgentContext, options: { provisionIfNotExists?: boolean } = {}) {
+  public async getInitializedStoreWithProfile(
+    agentContext: AgentContext,
+    options: { provisionIfNotExists?: boolean } = {}
+  ) {
     let store = this.getStore(agentContext, {
       // In case we use a profile per wallet, we want to use the parent store, otherwise we only
       // want to use a store that is directly registered on this context.
