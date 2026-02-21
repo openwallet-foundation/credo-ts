@@ -160,6 +160,10 @@ export class OpenId4VpVerifierService {
       )
     }
 
+    if (typeof options.expirationInSeconds !== 'undefined' && options.expirationInSeconds <= 0) {
+      throw new CredoError('Authorization request expiration must be a positive integer if provided.')
+    }
+
     // Check to prevent direct_post from being used with mDOC
     const hasMdocRequest =
       options.presentationExchange?.definition.input_descriptors.some((i) => i.format?.mso_mdoc) ||
@@ -296,13 +300,17 @@ export class OpenId4VpVerifierService {
       verifier_info: options.verifierInfo,
     } as const
 
+    const expiresInSeconds = options.expirationInSeconds ?? this.config.authorizationRequestExpiresInSeconds
+    const createdAt = new Date()
+    const expiresAt = utils.addSecondsToDate(createdAt, expiresInSeconds)
+
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
     const authorizationRequest = await openid4vpVerifier.createOpenId4vpAuthorizationRequest({
       jar: jwtIssuer
         ? {
             jwtSigner: jwtIssuer,
             requestUri: hostedAuthorizationRequestUri,
-            expiresInSeconds: this.config.authorizationRequestExpiresInSeconds,
+            expiresInSeconds,
           }
         : undefined,
       authorizationRequestPayload:
@@ -336,7 +344,8 @@ export class OpenId4VpVerifierService {
       authorizationRequestId,
       state: OpenId4VcVerificationSessionState.RequestCreated,
       verifierId: options.verifier.verifierId,
-      expiresAt: utils.addSecondsToDate(new Date(), this.config.authorizationRequestExpiresInSeconds),
+      createdAt,
+      expiresAt,
       openId4VpVersion: version,
     })
     await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
