@@ -45,11 +45,11 @@ export class DidCommConnectionRequestHandler implements DidCommMessageHandler {
     const outOfBandRecord =
       parentThreadId && tryParseDid(parentThreadId)
         ? await this.outOfBandService.createFromImplicitInvitation(agentContext, {
-            did: parentThreadId,
-            threadId: message.threadId,
-            recipientKey,
-            handshakeProtocols: [DidCommHandshakeProtocol.Connections],
-          })
+          did: parentThreadId,
+          threadId: message.threadId,
+          recipientKey,
+          handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+        })
         : await this.outOfBandService.findCreatedByRecipientKey(agentContext, recipientKey)
 
     if (!outOfBandRecord) {
@@ -74,7 +74,7 @@ export class DidCommConnectionRequestHandler implements DidCommMessageHandler {
     // Associate the new connection with the session created for the inbound message
     if (sessionId) {
       const transportService = agentContext.dependencyManager.resolve(DidCommTransportService)
-      transportService.setConnectionIdForSession(sessionId, connectionRecord.id)
+      await transportService.setConnectionIdForSession(sessionId, connectionRecord.id)
     }
 
     if (!outOfBandRecord.reusable) {

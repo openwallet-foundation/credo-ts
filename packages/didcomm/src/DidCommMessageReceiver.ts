@@ -1,4 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
+
 import {
   type AgentContextProvider,
   CredoError,
@@ -14,7 +15,6 @@ import { DidCommEnvelopeService } from './DidCommEnvelopeService'
 import { DidCommMessage } from './DidCommMessage'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from './DidCommMessageSender'
-import type { DidCommTransportSession } from './DidCommTransportService'
 import { DidCommTransportService } from './DidCommTransportService'
 import { DidCommProblemReportError } from './errors'
 import { DidCommProblemReportMessage } from './messages'
@@ -24,6 +24,7 @@ import { DidCommConnectionService } from './modules/connections/services'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isValidJweStructure } from './util/JWE'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
+import type { DidCommTransportSession } from './transport'
 
 @injectable()
 export class DidCommMessageReceiver {
@@ -149,13 +150,13 @@ export class DidCommMessageReceiver {
         senderKey: recipientKey,
       }
       session.keys = keys
-      session.inboundMessage = message
+      session.hasReturnRoute = message.hasAnyReturnRoute()
       // We allow unready connections to be attached to the session as we want to be able to
       // use return routing to make connections. This is especially useful for creating connections
       // with mediators when you don't have a public endpoint yet.
       session.connectionId = connection?.id
       messageContext.sessionId = session.id
-      this.transportService.saveSession(session)
+      await this.transportService.saveSession(session)
     } else if (session) {
       // No need to wait for session to stay open if we're not actually going to respond to the message.
       await session.close()

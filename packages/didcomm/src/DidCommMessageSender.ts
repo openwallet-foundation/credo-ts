@@ -20,7 +20,6 @@ import type { DidCommMessageSentEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import type { DidCommMessage } from './DidCommMessage'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
-import type { DidCommTransportSession } from './DidCommTransportService'
 import { DidCommTransportService } from './DidCommTransportService'
 import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 import { MessageSendingError } from './errors'
@@ -29,6 +28,7 @@ import type { DidCommConnectionRecord } from './modules/connections/repository'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
+import type { DidCommTransportSession } from './transport'
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -109,8 +109,8 @@ export class DidCommMessageSender {
     const errors: Error[] = []
 
     // Try to send to already open session
-    const session = this.transportService.findSessionByConnectionId(connection.id)
-    if (session?.inboundMessage?.hasReturnRouting()) {
+    const session = await this.transportService.findSessionByConnectionId(connection.id)
+    if (session?.hasReturnRoute) {
       try {
         await session.send(agentContext, encryptedMessage)
         return
@@ -213,7 +213,7 @@ export class DidCommMessageSender {
       connectionId: connection.id,
     })
 
-    const session = this.findSessionForOutboundContext(outboundMessageContext)
+    const session = await this.findSessionForOutboundContext(outboundMessageContext)
 
     if (session) {
       agentContext.config.logger.debug(
@@ -238,7 +238,7 @@ export class DidCommMessageSender {
     let queueService: ResolvedDidCommService | undefined
 
     try {
-      ;({ services, queueService } = await this.retrieveServicesByConnection(
+      ; ({ services, queueService } = await this.retrieveServicesByConnection(
         agentContext,
         connection,
         options?.transportPriority,
@@ -379,7 +379,7 @@ export class DidCommMessageSender {
   }
 
   private async sendMessageToService(outboundMessageContext: DidCommOutboundMessageContext) {
-    const session = this.findSessionForOutboundContext(outboundMessageContext)
+    const session = await this.findSessionForOutboundContext(outboundMessageContext)
 
     if (session) {
       outboundMessageContext.agentContext.config.logger.debug(
@@ -477,7 +477,7 @@ export class DidCommMessageSender {
     })
   }
 
-  private findSessionForOutboundContext(outboundContext: DidCommOutboundMessageContext) {
+  private async findSessionForOutboundContext(outboundContext: DidCommOutboundMessageContext) {
     let session: DidCommTransportSession | undefined
 
     // Use session id from outbound context if present, or use the session from the inbound message context
@@ -485,15 +485,15 @@ export class DidCommMessageSender {
 
     // Try to find session by id
     if (sessionId) {
-      session = this.transportService.findSessionById(sessionId)
+      session = await this.transportService.findSessionById(sessionId)
     }
 
     // Try to find session by connection id
     if (!session && outboundContext.connection?.id) {
-      session = this.transportService.findSessionByConnectionId(outboundContext.connection.id)
+      session = await this.transportService.findSessionByConnectionId(outboundContext.connection.id)
     }
 
-    return session?.inboundMessage?.hasAnyReturnRoute() ? session : null
+    return session?.hasReturnRoute ? session : null
   }
 
   private async retrieveServicesByConnection(

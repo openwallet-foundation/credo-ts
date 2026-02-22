@@ -15,7 +15,9 @@ import {
   type DidCommInboundTransport,
   type DidCommOutboundTransport,
   type DidCommQueueTransportRepository,
-  InMemoryQueueTransportRepository,
+  type DidCommTransportSessionRepository,
+  InMemoryDidCommQueueTransportRepository,
+  InMemoryDidCommTransportSessionRepository,
 } from './transport'
 import { DidCommMimeType } from './types'
 
@@ -29,6 +31,12 @@ export interface DidCommModuleConfigOptions {
   processDidCommMessagesConcurrently?: boolean
   didCommMimeType?: string
   useDidKeyInProtocols?: boolean
+  /**
+   * Allows to specify a custom transport session repository. It defaults to an in-memory transport session table
+   *
+   */
+  transportSessionRepository?: DidCommTransportSessionRepository
+
   queueTransportRepository?: DidCommQueueTransportRepository
 
   /**
@@ -120,6 +128,7 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
   private _endpoints?: string[]
   private _inboundTransports: DidCommInboundTransport[]
   private _outboundTransports: DidCommOutboundTransport[]
+  private _transportSessionRepository: DidCommTransportSessionRepository
   private _queueTransportRepository: DidCommQueueTransportRepository
 
   public readonly enabledModules: {
@@ -137,9 +146,10 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
   public constructor(options?: Options) {
     this.options = (options ?? {}) as Options
     this._endpoints = options?.endpoints
+    this._transportSessionRepository = options?.transportSessionRepository ?? new InMemoryDidCommTransportSessionRepository()
     this._inboundTransports = options?.transports?.inbound ?? []
     this._outboundTransports = options?.transports?.outbound ?? []
-    this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryQueueTransportRepository()
+    this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryDidCommQueueTransportRepository()
 
     this.enabledModules = {
       connections: true,
@@ -204,6 +214,11 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
    */
   public get useDidKeyInProtocols() {
     return this.options.useDidKeyInProtocols ?? true
+  }
+
+  /** See {@link DidCommModuleConfig.transportSessionRepository} */
+  public get transportSessionRepository() {
+    return this._transportSessionRepository
   }
 
   /**

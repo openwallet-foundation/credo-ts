@@ -43,9 +43,9 @@ export class DidCommWsInboundTransport implements DidCommInboundTransport {
         this.socketIds[socketId] = socket
         const session = new WebSocketTransportSession(socketId, socket, this.logger)
         this.listenOnWebSocketMessages(agentContext, socket, session)
-        socket.on('close', () => {
+        socket.on('close', async () => {
           this.logger.debug('Socket closed.')
-          transportService.removeSession(session)
+          await transportService.removeSession(session)
         })
       } else {
         this.logger.debug(`Socket with id ${socketId} already exists.`)

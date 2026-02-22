@@ -8,15 +8,15 @@ import type {
   TakeFromQueueOptions,
 } from './QueueTransportRepositoryOptions'
 
-interface InMemoryQueuedMessage extends QueuedDidCommMessage {
+interface InMemoryQueuedDidCommMessage extends QueuedDidCommMessage {
   connectionId: string
   recipientDids: string[]
   state: 'pending' | 'sending'
 }
 
 @injectable()
-export class InMemoryQueueTransportRepository implements DidCommQueueTransportRepository {
-  private messages: InMemoryQueuedMessage[]
+export class InMemoryDidCommQueueTransportRepository implements DidCommQueueTransportRepository {
+  private messages: InMemoryQueuedDidCommMessage[]
 
   public constructor() {
     this.messages = []
