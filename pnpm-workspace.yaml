@@ -12,8 +12,8 @@ catalog:
   '@hyperledger/anoncreds-shared': ^0.3.4
   '@hyperledger/indy-vdr-nodejs': ^0.2.3
   '@hyperledger/indy-vdr-shared': ^0.2.3
-  '@openwallet-foundation/askar-nodejs': ^0.4.3
-  '@openwallet-foundation/askar-shared': ^0.4.3
+  '@openwallet-foundation/askar-nodejs': ^0.6.0
+  '@openwallet-foundation/askar-shared': ^0.6.0
   '@peculiar/x509': ^1.14.3
   '@sphereon/pex-models': ^2.3.2
   '@stablelib/ed25519': ^2.0.2
@@ -46,5 +46,7 @@ onlyBuiltDependencies:
   - '@hyperledger/anoncreds-nodejs'
   - '@hyperledger/indy-vdr-nodejs'
   - '@openwallet-foundation/askar-nodejs'
-  - zstd-napi
   - cbor-extract
+  - koffi
+  - zstd-napi
+
