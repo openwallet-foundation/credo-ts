@@ -6,7 +6,12 @@ import { StorageUpdateError } from './error/StorageUpdateError'
 
 import { StorageUpdateService } from './StorageUpdateService'
 import type { Update, UpdateConfig, UpdateToVersion } from './updates'
-import { CURRENT_FRAMEWORK_STORAGE_VERSION, DEFAULT_UPDATE_CONFIG, supportedUpdates } from './updates'
+import {
+  CURRENT_FRAMEWORK_STORAGE_VERSION,
+  DEFAULT_UPDATE_CONFIG,
+  PREVIOUS_FRAMEWORK_STORAGE_VERSION,
+  supportedUpdates,
+} from './updates'
 
 export interface UpdateAssistantUpdateOptions {
   updateToVersion?: UpdateToVersion
@@ -41,6 +46,10 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
 
   public static get frameworkStorageVersion() {
     return CURRENT_FRAMEWORK_STORAGE_VERSION
+  }
+
+  public static get previousFrameworkStorageVersion() {
+    return PREVIOUS_FRAMEWORK_STORAGE_VERSION
   }
 
   public async getNeededUpdates(toVersion?: UpdateToVersion) {
