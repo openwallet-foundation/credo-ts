@@ -3,12 +3,13 @@ import {
   BaseRecord,
   type BaseRecordConstructor,
   CredoError,
+  decodeCursor,
   type Query,
   type QueryOptions,
   RecordDuplicateError,
   RecordNotFoundError,
 } from '@credo-ts/core'
-import { and, DrizzleQueryError, eq, type Simplify } from 'drizzle-orm'
+import { and, asc, DrizzleQueryError, desc, eq, type Simplify } from 'drizzle-orm'
 import { PgTransaction as _PgTransaction, PgTable, pgTable } from 'drizzle-orm/pg-core'
 import {
   SQLiteTable as _SQLiteTable,
@@ -19,6 +20,7 @@ import { type DrizzleDatabase, isDrizzlePostgresDatabase, isDrizzleSqliteDatabas
 import { CredoDrizzleStorageError } from '../error'
 import { getPostgresBaseRecordTable } from '../postgres'
 import { getSqliteBaseRecordTable } from '../sqlite'
+import { cursorAfterCondition, cursorBeforeCondition } from '../util'
 import {
   DrizzlePostgresErrorCode,
   DrizzleSqliteErrorCode,
@@ -113,52 +115,152 @@ export abstract class BaseDrizzleRecordAdapter<
   public async query(agentContext: AgentContext, query?: Query<CredoRecord>, queryOptions?: QueryOptions) {
     try {
       if (isDrizzlePostgresDatabase(this.database)) {
+        const cursor = queryOptions?.cursor
+
+        const hasAfter = !!cursor?.after
+        const hasBefore = !!cursor?.before
+
+        // Backward pagination ONLY when we have before but NOT after
+        const isBackward = hasBefore && !hasAfter
+
+        const whereConditions = [
+          // Always filter by context
+          eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId),
+
+          // Existing query filters
+          query ? queryToDrizzlePostgres(query, this.table.postgres, this.tagKeyMapping) : undefined,
+        ]
+
+        // AFTER cursor (lower bound)
+        if (cursor?.after) {
+          const afterCursor = decodeCursor(cursor.after)
+          if (!afterCursor) {
+            return []
+          }
+          whereConditions.push(cursorAfterCondition(this.table.postgres, afterCursor))
+        }
+
+        // BEFORE cursor (upper bound)
+        if (cursor?.before) {
+          const beforeCursor = decodeCursor(cursor.before)
+          if (!beforeCursor) {
+            return []
+          }
+          whereConditions.push(cursorBeforeCondition(this.table.postgres, beforeCursor))
+        }
+
+        const filteredWhere = whereConditions.filter(Boolean)
+
+        // Order must flip ONLY for backward pagination
+        const orderBy = isBackward
+          ? [asc(this.table.postgres.createdAt), desc(this.table.postgres.id)]
+          : [desc(this.table.postgres.createdAt), asc(this.table.postgres.id)]
+
         let queryResult = this.database
           .select()
           .from(this.table.postgres as PgTable)
-          .where(
-            and(
-              // Always filter based on context correlation id
-              eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId),
-              query ? queryToDrizzlePostgres(query, this.table.postgres, this.tagKeyMapping) : undefined
-            )
-          )
+          .where(and(...filteredWhere))
+          .orderBy(...orderBy)
 
+        // TODO: I think since we are adding the cursor based pagination it makes more sense to add default limit even if no limit is passed
+        // This way we take the limit passed or the default limit. Maybe '100'
+        // Or we can add it as a default limit in the storageService itself
         if (queryOptions?.limit !== undefined) {
           queryResult = queryResult.limit(queryOptions.limit) as typeof queryResult
         }
 
-        if (queryOptions?.offset !== undefined) {
+        // Note: Offset should NOT be used with cursor pagination
+        // PS: This is also mentioned in the drizzle docs at the end of the page(search 'offset'):
+        // https://orm.drizzle.team/docs/guides/cursor-based-pagination
+        // So we skip offset in case we have cursor passed
+        if (!cursor && queryOptions?.offset !== undefined) {
           queryResult = queryResult.offset(queryOptions.offset ?? 0) as typeof queryResult
         }
 
-        const result = await queryResult
+        let result = await queryResult
+
+        // Restore canonical order for backward pagination
+        if (isBackward) {
+          result = result.reverse()
+        }
+
         return result.map(({ contextCorrelationId, ...item }) =>
-          this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+          this._toRecord(item as DrizzleAdapterRecordValues<PostgresTable>)
         )
       }
 
       if (isDrizzleSqliteDatabase(this.database)) {
+        const cursor = queryOptions?.cursor
+
+        const hasAfter = !!cursor?.after
+        const hasBefore = !!cursor?.before
+
+        // Backward pagination ONLY when we have before but NOT after
+        const isBackward = hasBefore && !hasAfter
+
+        const whereConditions = [
+          // Always filter by context
+          eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId),
+
+          // Existing query filters
+          query ? queryToDrizzleSqlite(query, this.table.sqlite, this.tagKeyMapping) : undefined,
+        ]
+
+        // AFTER cursor (lower bound)
+        if (cursor?.after) {
+          const afterCursor = decodeCursor(cursor.after)
+
+          if (!afterCursor) {
+            return []
+          }
+          whereConditions.push(cursorAfterCondition(this.table.sqlite, afterCursor))
+        }
+
+        // BEFORE cursor (upper bound)
+        if (cursor?.before) {
+          const beforeCursor = decodeCursor(cursor.before)
+
+          if (!beforeCursor) {
+            return []
+          }
+          whereConditions.push(cursorBeforeCondition(this.table.sqlite, beforeCursor))
+        }
+
+        const filteredWhere = whereConditions.filter(Boolean)
+
+        // Flip ordering ONLY for backward pagination
+        const orderBy = isBackward
+          ? [asc(this.table.sqlite.createdAt), desc(this.table.sqlite.id)]
+          : [desc(this.table.sqlite.createdAt), asc(this.table.sqlite.id)]
+
         let queryResult = this.database
           .select()
           .from(this.table.sqlite as SQLiteTable)
-          .where(
-            and(
-              // Always filter based on context correlation id
-              eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId),
-              query ? queryToDrizzleSqlite(query, this.table.sqlite, this.tagKeyMapping) : undefined
-            )
-          )
+          .where(and(...filteredWhere))
+          .orderBy(...orderBy)
 
+        // TODO: I think since we are adding the cursor based pagination it makes more sense to add default limit even if no limit is passed
+        // This way we take the limit passed or the default limit. Maybe '100'
+        // Or we can add it as a default limit in the storageService itself
         if (queryOptions?.limit !== undefined) {
-          queryResult = queryResult.limit(queryOptions.limit) as unknown as typeof queryResult
+          queryResult = queryResult.limit(queryOptions.limit) as typeof queryResult
         }
 
-        if (queryOptions?.offset !== undefined) {
-          queryResult = queryResult.offset(queryOptions.offset ?? 0) as unknown as typeof queryResult
+        // Note: Offset should NOT be used with cursor pagination
+        // PS: This is also mentioned in the drizzle docs at the end of the page(search 'offset'):
+        // https://orm.drizzle.team/docs/guides/cursor-based-pagination
+        // So we skip offset in case we have cursor passed
+        if (!cursor && queryOptions?.offset !== undefined) {
+          queryResult = queryResult.offset(queryOptions.offset ?? 0) as typeof queryResult
         }
 
-        const result = await queryResult
+        let result = await queryResult
+
+        // Restore canonical order for backward pagination
+        if (isBackward) {
+          result = result.reverse()
+        }
+
         return result.map(({ contextCorrelationId, ...item }) =>
           this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
         )
@@ -200,7 +302,7 @@ export abstract class BaseDrizzleRecordAdapter<
           })
         }
 
-        // biome-ignore lint/correctness/noUnusedVariables: no explanation
+        // biome-ignore lint/correctness/noUnusedVariables: <explanation>
         const { contextCorrelationId, ...item } = result
         return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
       }
@@ -225,7 +327,7 @@ export abstract class BaseDrizzleRecordAdapter<
           })
         }
 
-        // biome-ignore lint/correctness/noUnusedVariables: no explanation
+        // biome-ignore lint/correctness/noUnusedVariables: <explanation>
         const { contextCorrelationId, ...item } = result
         return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
       }

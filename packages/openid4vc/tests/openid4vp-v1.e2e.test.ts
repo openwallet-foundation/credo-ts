@@ -7,6 +7,7 @@ import {
   MdocRecord,
   parseDid,
   SdJwtVcRecord,
+  TypedArrayEncoder,
   W3cCredential,
   W3cCredentialRecord,
   W3cCredentialSubject,
@@ -16,6 +17,8 @@ import {
   W3cV2CredentialSubject,
   W3cV2Issuer,
   w3cDate,
+  X509ExtendedKeyUsage,
+  X509KeyUsage,
   X509Module,
   X509Service,
 } from '@credo-ts/core'
@@ -31,6 +34,25 @@ import { openBadgeDcqlQuery, universityDegreeDcqlQuery } from './utilsVp'
 const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const verificationBaseUrl = `${baseUrl}/oid4vp`
+
+// Create ISO 18013-5 compliant root and leaf certificates
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
+
+const getLastMonth = () => {
+  const now = new Date()
+  let lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  if (now.getMonth() === 0) {
+    lastMonth = new Date(now.getFullYear() - 1, 0, 1)
+  }
+  return lastMonth
+}
 
 describe('OpenID4VP 1.0', () => {
   let expressApp: Express
@@ -552,7 +574,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [expect.any(String)],
       },
     })
-    expect(serverResponse1).toMatchObject({
+    expect(serverResponse1).toEqual({
+      body: {},
       status: 200,
     })
 
@@ -2975,5 +2998,511 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         degree: 'bachelor',
       },
     })
+  })
+
+  it('e2e flow with verifier endpoints verifying sd-jwt-vc and mdoc with trusted_authorities (aki) - success case', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    // Create root certificate
+    const rootAuthorityKey = await verifier.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const rootCertificate = await X509Service.createCertificate(verifier.agent.context, {
+      authorityKey: Kms.PublicJwk.fromPublicJwk(rootAuthorityKey.publicJwk),
+      issuer: { commonName: 'Test Root CA', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign],
+          markAsCritical: true,
+        },
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 0,
+          markAsCritical: true,
+        },
+      },
+    })
+
+    // Create leaf certificate
+    const leafKey = await verifier.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const leafCertificate = await X509Service.createCertificate(verifier.agent.context, {
+      authorityKey: Kms.PublicJwk.fromPublicJwk(rootAuthorityKey.publicJwk),
+      subjectPublicKey: Kms.PublicJwk.fromPublicJwk(leafKey.publicJwk),
+      issuer: rootCertificate.issuer,
+      subject: { commonName: 'Test Document Signer', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        authorityKeyIdentifier: {
+          include: true,
+        },
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.DigitalSignature],
+          markAsCritical: true,
+        },
+        extendedKeyUsage: {
+          usages: [X509ExtendedKeyUsage.MdlDs],
+          markAsCritical: true,
+        },
+      },
+    })
+
+    // Get the AKI value from the leaf certificate for use in trusted_authorities
+    const akiValue = leafCertificate.authorityKeyIdentifier
+    if (!akiValue) {
+      throw new Error('Leaf certificate must have an authorityKeyIdentifier')
+    }
+    const akiBase64Url = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiValue))
+
+    // Set trusted certificates
+    verifier.agent.x509.config.setTrustedCertificates([rootCertificate.toString('pem')])
+    holder.agent.x509.config.setTrustedCertificates([rootCertificate.toString('pem')])
+
+    // Sign and store SD-JWT-VC with x5c containing only the leaf certificate
+    const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
+      holder: { method: 'did', didUrl: holder.kid },
+      issuer: {
+        method: 'x5c',
+        x5c: [leafCertificate], // Only include leaf certificate
+      },
+      payload: {
+        vct: 'OpenBadgeCredential',
+        university: 'innsbruck',
+        degree: 'bachelor',
+        name: 'John Doe',
+      },
+      disclosureFrame: {
+        _sd: ['university', 'name'],
+      },
+    })
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
+
+    // Create holder key for mDoc
+    const holderKey = Kms.PublicJwk.fromPublicJwk(
+      (
+        await holder.agent.kms.createKey({
+          type: {
+            kty: 'EC',
+            crv: 'P-256',
+          },
+        })
+      ).publicJwk
+    )
+
+    // Sign and store mDoc with only leaf certificate
+    const signedMdoc = await verifier.agent.mdoc.sign({
+      docType: 'org.eu.university',
+      holderKey,
+      issuerCertificate: leafCertificate,
+      namespaces: {
+        'eu.europa.ec.eudi.pid.1': {
+          university: 'innsbruck',
+          degree: 'bachelor',
+          name: 'John Doe',
+        },
+      },
+    })
+
+    signedMdoc.deviceKeyId = holderKey.keyId
+    await holder.agent.mdoc.store({
+      record: MdocRecord.fromMdoc(signedMdoc),
+    })
+
+    // Create verifier certificate for request signing
+    const verifierCertificate = await verifier.agent.x509.createCertificate({
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
+      issuer: { commonName: 'Verifier' },
+      extensions: {
+        subjectAlternativeName: {
+          name: [{ type: 'dns', value: 'localhost' }],
+        },
+      },
+    })
+
+    holder.agent.x509.config.addTrustedCertificate(verifierCertificate.toString('base64'))
+    verifier.agent.x509.config.addTrustedCertificate(verifierCertificate.toString('base64'))
+
+    // Create DCQL query with trusted_authorities specifying the AKI
+    const dcqlQuery = {
+      credentials: [
+        {
+          id: 'OpenBadgeCredentialDescriptor',
+          format: 'dc+sd-jwt',
+          meta: {
+            vct_values: ['OpenBadgeCredential'],
+          },
+          claims: [
+            {
+              path: ['university'],
+            },
+          ],
+          trusted_authorities: [
+            {
+              type: 'aki',
+              values: [akiBase64Url],
+            },
+          ],
+        },
+        {
+          format: 'mso_mdoc',
+          id: 'university',
+          meta: { doctype_value: 'org.eu.university' },
+          claims: [
+            {
+              path: ['eu.europa.ec.eudi.pid.1', 'name'],
+            },
+            {
+              path: ['eu.europa.ec.eudi.pid.1', 'degree'],
+            },
+          ],
+          trusted_authorities: [
+            {
+              type: 'aki',
+              values: [akiBase64Url],
+            },
+          ],
+        },
+      ],
+    } satisfies DcqlQuery
+
+    // Create authorization request
+    const { authorizationRequest, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        responseMode: 'direct_post.jwt',
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: {
+          method: 'x5c',
+          x5c: [verifierCertificate],
+        },
+        dcql: {
+          query: dcqlQuery,
+        },
+        version: 'v1',
+      })
+
+    // Resolve authorization request
+    const resolvedAuthorizationRequest =
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+
+    // Verify that credentials match with trusted_authorities validation
+    expect(resolvedAuthorizationRequest.dcql?.queryResult.can_be_satisfied).toBe(true)
+    expect(
+      resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor.success
+    ).toBe(true)
+    expect(resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.university.success).toBe(true)
+
+    const sdJwtMatch =
+      resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor
+        .valid_credentials?.[0]
+    expect(sdJwtMatch?.trusted_authorities).toEqual({
+      success: true,
+      failed_trusted_authority: undefined,
+      valid_trusted_authority: {
+        output: {
+          type: 'aki',
+          value: akiBase64Url,
+        },
+        success: true,
+        trusted_authority_index: 0,
+      },
+    })
+
+    const mdocMatch =
+      resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.university.valid_credentials?.[0]
+    expect(mdocMatch?.trusted_authorities).toEqual({
+      success: true,
+      failed_trusted_authority: undefined,
+      valid_trusted_authority: {
+        output: {
+          type: 'aki',
+          value: akiBase64Url,
+        },
+        success: true,
+        trusted_authority_index: 0,
+      },
+    })
+
+    if (!resolvedAuthorizationRequest.dcql) {
+      throw new Error('Expected DCQL')
+    }
+
+    // Select and present credentials
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
+      resolvedAuthorizationRequest.dcql.queryResult
+    )
+
+    const { serverResponse } = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
+      dcql: {
+        credentials: selectedCredentials,
+      },
+    })
+
+    expect(serverResponse).toMatchObject({ status: 200 })
+
+    // Wait for verification to complete
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.ResponseVerified,
+      verificationSessionId: verificationSession.id,
+    })
+
+    // Get verified response
+    const { dcql } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
+
+    expect(dcql).toBeDefined()
+    expect(dcql?.presentations.OpenBadgeCredentialDescriptor).toHaveLength(1)
+    expect(dcql?.presentations.university).toHaveLength(1)
+  })
+
+  it('e2e flow with verifier endpoints verifying sd-jwt-vc with trusted_authorities (aki) - failure case with mismatched aki', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    // Create root certificate
+    const rootAuthorityKey = await verifier.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const rootCertificate = await X509Service.createCertificate(verifier.agent.context, {
+      authorityKey: Kms.PublicJwk.fromPublicJwk(rootAuthorityKey.publicJwk),
+      issuer: { commonName: 'Test Root CA', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign],
+          markAsCritical: true,
+        },
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 0,
+          markAsCritical: true,
+        },
+      },
+    })
+
+    // Create leaf certificate
+    const leafKey = await verifier.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const leafCertificate = await X509Service.createCertificate(verifier.agent.context, {
+      authorityKey: Kms.PublicJwk.fromPublicJwk(rootAuthorityKey.publicJwk),
+      subjectPublicKey: Kms.PublicJwk.fromPublicJwk(leafKey.publicJwk),
+      issuer: rootCertificate.issuer,
+      subject: { commonName: 'Test Document Signer', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        authorityKeyIdentifier: {
+          include: true,
+        },
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.DigitalSignature],
+          markAsCritical: true,
+        },
+        extendedKeyUsage: {
+          usages: [X509ExtendedKeyUsage.MdlDs],
+          markAsCritical: true,
+        },
+      },
+    })
+
+    // Set trusted certificates
+    verifier.agent.x509.config.setTrustedCertificates([rootCertificate.toString('pem')])
+    holder.agent.x509.config.setTrustedCertificates([rootCertificate.toString('pem')])
+
+    // Sign and store SD-JWT-VC with x5c containing only the leaf certificate
+    const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
+      holder: { method: 'did', didUrl: holder.kid },
+      issuer: {
+        method: 'x5c',
+        x5c: [leafCertificate], // Only include leaf certificate
+      },
+      payload: {
+        vct: 'OpenBadgeCredential',
+        university: 'innsbruck',
+        degree: 'bachelor',
+        name: 'John Doe',
+      },
+      disclosureFrame: {
+        _sd: ['university', 'name'],
+      },
+    })
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
+
+    // Create verifier certificate for request signing
+    const verifierCertificate = await verifier.agent.x509.createCertificate({
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
+      issuer: { commonName: 'Verifier' },
+      extensions: {
+        subjectAlternativeName: {
+          name: [{ type: 'dns', value: 'localhost' }],
+        },
+      },
+    })
+
+    holder.agent.x509.config.addTrustedCertificate(verifierCertificate.toString('base64'))
+    verifier.agent.x509.config.addTrustedCertificate(verifierCertificate.toString('base64'))
+
+    // Create DCQL query with DIFFERENT AKI value that doesn't match the credential
+    const wrongAkiValue = TypedArrayEncoder.toBase64URL(new Uint8Array(20).fill(0xff))
+
+    // Get the AKI value from the leaf certificate for use in trusted_authorities
+    const akiValue = leafCertificate.authorityKeyIdentifier
+    if (!akiValue) {
+      throw new Error('Leaf certificate must have an authorityKeyIdentifier')
+    }
+    const akiBase64Url = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiValue))
+
+    const dcqlQuery = {
+      credentials: [
+        {
+          id: 'OpenBadgeCredentialDescriptor',
+          format: 'dc+sd-jwt',
+          meta: {
+            vct_values: ['OpenBadgeCredential'],
+          },
+          claims: [
+            {
+              path: ['university'],
+            },
+          ],
+          trusted_authorities: [
+            {
+              type: 'aki',
+              values: [wrongAkiValue], // Wrong AKI value
+            },
+          ],
+        },
+      ],
+    } satisfies DcqlQuery
+
+    // Create authorization request
+    const {
+      authorizationRequest,
+      verificationSession: { id: verificationSessionId },
+    } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+      responseMode: 'direct_post.jwt',
+      verifierId: openIdVerifier.verifierId,
+      requestSigner: {
+        method: 'x5c',
+        x5c: [verifierCertificate],
+      },
+      dcql: {
+        query: dcqlQuery,
+      },
+      version: 'v1',
+    })
+
+    // Remove trusted authorities
+    // @ts-expect-error
+    dcqlQuery.credentials[0].trusted_authorities = undefined
+
+    // Create authorization request
+    const { authorizationRequest: authorizationRequest2 } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        responseMode: 'direct_post.jwt',
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: {
+          method: 'x5c',
+          x5c: [verifierCertificate],
+        },
+        dcql: {
+          query: dcqlQuery,
+        },
+        version: 'v1',
+      })
+
+    // Resolve authorization request
+    const resolvedAuthorizationRequest =
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+
+    const resolveAuthorizationWithCredentials =
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest2)
+
+    // Verify that the request cannot be satisfied due to mismatched AKI
+    expect(resolvedAuthorizationRequest.dcql?.queryResult.can_be_satisfied).toBe(false)
+
+    // Verify that the credential failed trusted_authorities validation
+    const credentialMatch =
+      resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor
+
+    expect(credentialMatch?.success).toBe(false)
+
+    // Check that there are failed credentials with trusted_authorities failure
+    const failedCredentials = credentialMatch?.failed_credentials
+    expect(failedCredentials).toBeDefined()
+    expect(failedCredentials?.length).toBeGreaterThan(0)
+
+    const failedCredential = failedCredentials?.[0]
+    expect(failedCredential?.trusted_authorities?.success).toBe(false)
+
+    // Overwrite failed query with success query credentials
+    resolvedAuthorizationRequest.dcql = resolveAuthorizationWithCredentials.dcql
+
+    if (!resolvedAuthorizationRequest.dcql) {
+      throw new Error('Expected DCQL')
+    }
+
+    // Select and present credentials
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
+      resolvedAuthorizationRequest.dcql.queryResult
+    )
+
+    const { serverResponse } = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
+      dcql: {
+        credentials: selectedCredentials,
+      },
+    })
+
+    expect(serverResponse).toEqual({
+      status: 400,
+      body: {
+        error: 'invalid_request',
+        error_description: 'Presentation submission does not satisfy presentation request.',
+      },
+    })
+
+    // Wait for verification to complete
+    const verificationSession = await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.Error,
+      verificationSessionId,
+    })
+
+    expect(verificationSession.errorMessage).toEqual(`Presentation submission does not satisfy presentation request.
+{
+  "error": "invalid_request",
+  "error_description": "Presentation submission does not satisfy presentation request."
+} Presentations do not satisfy the DCQL query.
+ - Presentation at index 0 does not match query credential 'OpenBadgeCredentialDescriptor'. {
+  "trusted_authorities": [
+    {
+      "values": [
+        "Expected one of the trusted authority values to be '__________________________8' but received '${akiBase64Url}'"
+      ]
+    }
+  ]
+}`)
   })
 })

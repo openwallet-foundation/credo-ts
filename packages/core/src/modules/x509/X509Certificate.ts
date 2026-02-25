@@ -186,7 +186,7 @@ export class X509Certificate {
       throw new X509Error('Multiple Key Usages are not allowed')
     }
 
-    return extendedKeyUsages?.[0] as X509ExtendedKeyUsage | undefined
+    return (extendedKeyUsages?.[0] as Array<X509ExtendedKeyUsage> | undefined) ?? []
   }
 
   public isExtensionCritical(id: string): boolean {
@@ -303,7 +303,7 @@ export class X509Certificate {
        * as whether the certificate is not expired).
        *
        * This can be useful when an non-self-signed certificate is directly trusted, and it may
-       * not be possible to verify the certifcate as the root/intermediate certificate containing
+       * not be possible to verify the certificate as the root/intermediate certificate containing
        * the key of the signer/intermediate is not present.
        *
        * @default false
@@ -341,9 +341,9 @@ export class X509Certificate {
   }
 
   /**
-   * Get the thumprint of the X509 certificate in hex format.
+   * Get the thumbprint of the X509 certificate in hex format.
    */
-  public async getThumprintInHex(agentContext: AgentContext) {
+  public async getThumbprintInHex(agentContext: AgentContext) {
     const thumbprint = await this.x509Certificate.getThumbprint(new CredoWebCrypto(agentContext))
     const thumbprintHex = TypedArrayEncoder.toHex(new Uint8Array(thumbprint))
 
@@ -368,6 +368,10 @@ export class X509Certificate {
 
   public getIssuerNameField(field: string) {
     return this.x509Certificate.issuerName.getField(field)
+  }
+
+  public getSubjectNameField(field: string) {
+    return this.x509Certificate.subjectName.getField(field)
   }
 
   /**

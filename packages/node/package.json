@@ -4,7 +4,7 @@
     "cli": "./build/index.mjs",
     "import": "./src/index.ts"
   },
-  "version": "0.6.1",
+  "version": "0.6.2",
   "files": [
     "build"
   ],
@@ -28,7 +28,7 @@
     "directory": "packages/node"
   },
   "scripts": {
-    "build": "tsdown --config-loader unconfig",
+    "build": "tsdown --config-loader unrun",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {

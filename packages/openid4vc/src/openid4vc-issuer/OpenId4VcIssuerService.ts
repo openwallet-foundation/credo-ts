@@ -43,8 +43,8 @@ import {
   type DeferredCredentialResponse,
   extractScopesForCredentialConfigurationIds,
   getCredentialConfigurationsMatchingRequestFormat,
-  Openid4vciDraftVersion,
   Openid4vciIssuer,
+  Openid4vciVersion,
   type ParseCredentialRequestReturn,
 } from '@openid4vc/openid4vci'
 import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
@@ -177,6 +177,10 @@ export class OpenId4VcIssuerService {
       throw new CredoError('Authorization Config or Pre-Authorized Config must be provided.')
     }
 
+    if (typeof options.expirationInSeconds !== 'undefined' && options.expirationInSeconds <= 0) {
+      throw new CredoError('Credential offer expiration must be a positive integer if provided.')
+    }
+
     const vcIssuer = this.getIssuer(agentContext)
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
@@ -220,15 +224,14 @@ export class OpenId4VcIssuerService {
       credentialOfferScheme: options.baseUri,
       issuerMetadata: {
         ...issuerMetadata,
-        originalDraftVersion:
-          version === 'v1.draft11-14' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft15,
+        originalDraftVersion: version === 'v1.draft11-14' ? Openid4vciVersion.Draft11 : Openid4vciVersion.Draft15,
       },
     })
 
     const createdAt = new Date()
     const expiresAt = utils.addSecondsToDate(
       createdAt,
-      this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds
+      options.expirationInSeconds ?? this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds
     )
 
     const chainedAuthorizationServerConfig = issuer.chainedAuthorizationServerConfigs?.find(
@@ -1070,10 +1073,11 @@ export class OpenId4VcIssuerService {
 
       code_challenge_methods_supported: [PkceCodeChallengeMethod.S256],
       dpop_signing_alg_values_supported: issuerRecord.dpopSigningAlgValuesSupported,
+      authorization_response_iss_parameter_supported: true,
     } satisfies AuthorizationServerMetadata
 
     return {
-      originalDraftVersion: Openid4vciDraftVersion.V1,
+      originalDraftVersion: Openid4vciVersion.V1,
       credentialIssuer: credentialIssuerMetadata,
       authorizationServers: [issuerAuthorizationServer, ...extraAuthorizationServers],
       knownCredentialConfigurations: credentialIssuerMetadata.credential_configurations_supported,

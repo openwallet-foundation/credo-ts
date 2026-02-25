@@ -136,16 +136,7 @@ function getCredentialRequestToCredentialMapper({
     // Example of how to use the the access token information from the chained identity server.
     let authorizedUser = authorization.accessToken.payload.sub
 
-    const isOpenId = issuanceSession.chainedIdentity?.externalAccessTokenResponse?.scope?.split(' ').includes('openid')
-    if (isOpenId) {
-      if (
-        !issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token ||
-        typeof issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token !== 'string'
-      ) {
-        // This should never happen, as Credo already validated the id_token when there is an openid scope.
-        throw new Error('No id_token present in the external access token response')
-      }
-
+    if (typeof issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token === 'string') {
       // This token has already been validated by Credo, so we can just decode it.
       const claims = decodeJwt(issuanceSession.chainedIdentity.externalAccessTokenResponse.id_token)
       if (typeof claims.email === 'string') {
@@ -153,7 +144,10 @@ function getCredentialRequestToCredentialMapper({
       }
     }
 
-    if (credentialConfigurationId === 'PresentationAuthorization') {
+    if (
+      credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtDc &&
+      credentialConfigurationId === 'PresentationAuthorization'
+    ) {
       return {
         type: 'credentials',
         format: ClaimFormat.SdJwtDc,
@@ -202,7 +196,7 @@ function getCredentialRequestToCredentialMapper({
       } satisfies OpenId4VciSignW3cCredentials
     }
 
-    if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
+    if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc && credentialConfiguration.vct) {
       return {
         type: 'credentials',
         format: ClaimFormat.SdJwtDc,
@@ -272,7 +266,7 @@ export class Issuer extends BaseAgent<{
             baseUrl: `${url}/oid4vci`,
             credentialRequestToCredentialMapper: (...args) =>
               getCredentialRequestToCredentialMapper({ issuerDidKey: this.didKey })(...args),
-            getVerificationSessionForIssuanceSessionAuthorization: async ({ agentContext, scopes }) => {
+            getVerificationSession: async ({ agentContext, scopes }) => {
               const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
               const authorizationRequest = await verifierApi.createAuthorizationRequest({
                 verifierId: this.verifierRecord.verifierId,

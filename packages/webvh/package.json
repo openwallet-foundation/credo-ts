@@ -4,11 +4,16 @@
     "cli": "./build/index.mjs",
     "import": "./src/index.ts"
   },
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Credo WebVH DID method implementation",
   "files": [
     "build"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
+    "directory": "packages/webvh"
+  },
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public",
@@ -20,7 +25,7 @@
     }
   },
   "scripts": {
-    "build": "tsdown --config-loader unconfig",
+    "build": "tsdown --config-loader unrun",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
@@ -28,7 +33,7 @@
     "@credo-ts/core": "workspace:*",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
-    "didwebvh-ts": "^2.5.6",
+    "didwebvh-ts": "^2.7.1",
     "json-canonicalize": "^2.0.0",
     "tsyringe": "catalog:"
   },

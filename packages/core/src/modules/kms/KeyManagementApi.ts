@@ -1,6 +1,5 @@
-import { injectable } from 'tsyringe'
-
 import { AgentContext } from '../../agent'
+import { injectable } from '../../plugins'
 import { zParseWithErrorHandling } from '../../utils/zod'
 import { KeyManagementError } from './error/KeyManagementError'
 import { KeyManagementKeyNotFoundError } from './error/KeyManagementKeyNotFoundError'

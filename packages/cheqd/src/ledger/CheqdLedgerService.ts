@@ -1,5 +1,5 @@
-import type { AbstractCheqdSDKModule, CheqdSDK, DIDDocument, DidStdFee } from '@cheqd/sdk'
-import { CheqdNetwork, createCheqdSDK, DIDModule, FeemarketModule, ResourceModule } from '@cheqd/sdk'
+import type { AbstractCheqdSDKModule, CheqdSDK, DIDDocument, DidFeeOptions, DidStdFee } from '@cheqd/sdk'
+import { CheqdNetwork, createCheqdSDK, DIDModule, ResourceModule } from '@cheqd/sdk'
 import type { QueryAllDidDocVersionsMetadataResponse, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import type {
   Metadata,
@@ -97,11 +97,7 @@ export class CheqdLedgerService {
     try {
       // Initialize cheqd sdk with promise
       network.sdk = createCheqdSDK({
-        modules: [
-          FeemarketModule as unknown as AbstractCheqdSDKModule,
-          DIDModule as unknown as AbstractCheqdSDKModule,
-          ResourceModule as unknown as AbstractCheqdSDKModule,
-        ],
+        modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
         rpcUrl: network.rpcUrl,
         wallet: await network.cosmosPayerWallet.catch((error) => {
           throw new CredoError(`Error initializing cosmos payer wallet: ${error.message}`, { cause: error })
@@ -122,30 +118,57 @@ export class CheqdLedgerService {
     didPayload: DIDDocument,
     signInputs: SignInfo[],
     versionId?: string | undefined,
-    fee?: DidStdFee
+    fee?: DidStdFee,
+    feeOptions?: DidFeeOptions
   ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
-    return sdk.createDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
+    return sdk.createDidDocTx(
+      signInputs,
+      didPayload,
+      '',
+      fee,
+      undefined,
+      versionId,
+      feeOptions || { slippageBps: 1000 }
+    )
   }
 
   public async update(
     didPayload: DIDDocument,
     signInputs: SignInfo[],
     versionId?: string | undefined,
-    fee?: DidStdFee
+    fee?: DidStdFee,
+    feeOptions?: DidFeeOptions
   ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
-    return sdk.updateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
+    return sdk.updateDidDocTx(
+      signInputs,
+      didPayload,
+      '',
+      fee,
+      undefined,
+      versionId,
+      feeOptions || { slippageBps: 1000 }
+    )
   }
 
   public async deactivate(
     didPayload: DIDDocument,
     signInputs: SignInfo[],
     versionId?: string | undefined,
-    fee?: DidStdFee
+    fee?: DidStdFee,
+    feeOptions?: DidFeeOptions
   ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
-    return sdk.deactivateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
+    return sdk.deactivateDidDocTx(
+      signInputs,
+      didPayload,
+      '',
+      fee,
+      undefined,
+      versionId,
+      feeOptions || { slippageBps: 1000 }
+    )
   }
 
   public async resolve(did: string, version?: string) {
@@ -165,10 +188,18 @@ export class CheqdLedgerService {
     did: string,
     resourcePayload: Partial<MsgCreateResourcePayload>,
     signInputs: SignInfo[],
-    fee?: DidStdFee
+    fee?: DidStdFee,
+    feeOptions?: DidFeeOptions
   ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(did)
-    return sdk.createLinkedResourceTx(signInputs, resourcePayload, '', fee, undefined)
+    return sdk.createLinkedResourceTx(
+      signInputs,
+      resourcePayload,
+      '',
+      fee,
+      undefined,
+      feeOptions || { slippageBps: 1000 }
+    )
   }
 
   public async resolveResource(did: string, collectionId: string, resourceId: string): Promise<ResourceWithMetadata> {

@@ -190,13 +190,13 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     )
   }
 
-  if (!config.getVerificationSessionForIssuanceSessionAuthorization) {
+  if (!config.getVerificationSession) {
     throw new Oauth2ServerErrorResponseError(
       {
         error: Oauth2ErrorCodes.ServerError,
       },
       {
-        internalMessage: `Missing required 'getVerificationSessionForIssuanceSessionAuthorization' callback in openid4vc issuer module config. This callback is required for presentation during issuance flows.`,
+        internalMessage: `Missing required 'getVerificationSession' callback in openid4vc issuer module config. This callback is required for presentation during issuance flows.`,
       }
     )
   }
@@ -259,7 +259,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     authorizationRequest,
     verificationSession,
     scopes: presentationScopes,
-  } = await config.getVerificationSessionForIssuanceSessionAuthorization({
+  } = await config.getVerificationSession({
     agentContext,
     issuanceSession,
     requestedCredentialConfigurations,

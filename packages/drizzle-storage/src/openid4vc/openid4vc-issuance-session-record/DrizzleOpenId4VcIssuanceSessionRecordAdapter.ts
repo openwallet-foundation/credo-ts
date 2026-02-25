@@ -40,21 +40,15 @@ export class DrizzleOpenId4VcIssuanceSessionRecordAdapter extends BaseDrizzleRec
     record: OpenId4VcIssuanceSessionRecord
   ): DrizzleAdapterValues<(typeof sqlite)['openId4VcIssuanceSession']> {
     const {
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       authorizationCode,
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       authorizationSubject,
       credentialOfferId,
       credentialOfferUri,
       issuerId,
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       issuerState,
       preAuthorizedCode,
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       presentationAuthSession,
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       chainedIdentityRequestUriReferenceValue,
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       chainedIdentityState,
       state,
       ...customTags

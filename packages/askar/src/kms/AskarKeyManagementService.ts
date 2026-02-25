@@ -716,7 +716,6 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     // TODO: the JWK class in JS Askar wrapper is too limiting
     // so we use this method directly. should update it
     // We extract alg, as Askar doesn't always use the same algs
-    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { alg, ...jwkSecret } = JsonEncoder.fromBuffer(
       askar.keyGetJwkSecret({
         localKeyHandle: key.handle,

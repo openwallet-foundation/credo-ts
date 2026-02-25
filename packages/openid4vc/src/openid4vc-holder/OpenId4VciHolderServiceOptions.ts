@@ -145,6 +145,11 @@ export interface OpenId4VciSendNotificationOptions {
   dpop?: OpenId4VciDpopRequestOptions
 }
 
+export interface OpenId4VcParseAndVerifyAuthorizationResponseOptions {
+  authorizationResponseRedirectUrl: string
+  resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
+}
+
 export interface OpenId4VcAuthorizationCodeTokenRequestOptions {
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
   code: string

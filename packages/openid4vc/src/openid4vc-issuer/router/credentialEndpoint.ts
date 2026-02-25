@@ -4,7 +4,7 @@ import { Oauth2ErrorCodes, Oauth2ResourceUnauthorizedError, Oauth2ServerErrorRes
 import {
   type CredentialConfigurationsSupportedWithFormats,
   getCredentialConfigurationsMatchingRequestFormat,
-  Openid4vciDraftVersion,
+  Openid4vciVersion,
 } from '@openid4vc/openid4vci'
 import type { Response, Router } from 'express'
 import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
@@ -273,9 +273,9 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           subject: tokenPayload.sub,
         },
         openId4VciVersion:
-          issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.V1
+          issuerMetadata.originalDraftVersion === Openid4vciVersion.V1
             ? 'v1'
-            : issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft15
+            : issuerMetadata.originalDraftVersion === Openid4vciVersion.Draft15
               ? 'v1.draft15'
               : 'v1.draft11-14',
       })
@@ -320,6 +320,9 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         credentialResponse.transaction_id ? 202 : 200
       )
     } catch (error) {
+      issuanceSession.errorMessage = 'Failed to create a credential response'
+      await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
+
       if (error instanceof Oauth2ServerErrorResponseError) {
         return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
       }

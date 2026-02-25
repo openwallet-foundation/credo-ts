@@ -45,7 +45,7 @@ import {
   X509ModuleConfig,
   X509Service,
 } from '@credo-ts/core'
-import { type Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   type ClientIdPrefix,
   type ClientMetadata,
@@ -158,6 +158,10 @@ export class OpenId4VpVerifierService {
       throw new CredoError(
         "'authorizationResponseRedirectUri' cannot be be used with response mode 'dc_api' and 'dc_api.jwt'."
       )
+    }
+
+    if (typeof options.expirationInSeconds !== 'undefined' && options.expirationInSeconds <= 0) {
+      throw new CredoError('Authorization request expiration must be a positive integer if provided.')
     }
 
     // Check to prevent direct_post from being used with mDOC
@@ -296,13 +300,17 @@ export class OpenId4VpVerifierService {
       verifier_info: options.verifierInfo,
     } as const
 
+    const expiresInSeconds = options.expirationInSeconds ?? this.config.authorizationRequestExpiresInSeconds
+    const createdAt = new Date()
+    const expiresAt = utils.addSecondsToDate(createdAt, expiresInSeconds)
+
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
     const authorizationRequest = await openid4vpVerifier.createOpenId4vpAuthorizationRequest({
       jar: jwtIssuer
         ? {
             jwtSigner: jwtIssuer,
             requestUri: hostedAuthorizationRequestUri,
-            expiresInSeconds: this.config.authorizationRequestExpiresInSeconds,
+            expiresInSeconds,
           }
         : undefined,
       authorizationRequestPayload:
@@ -336,7 +344,8 @@ export class OpenId4VpVerifierService {
       authorizationRequestId,
       state: OpenId4VcVerificationSessionState.RequestCreated,
       verifierId: options.verifier.verifierId,
-      expiresAt: utils.addSecondsToDate(new Date(), this.config.authorizationRequestExpiresInSeconds),
+      createdAt,
+      expiresAt,
       openId4VpVersion: version,
     })
     await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
@@ -941,12 +950,12 @@ export class OpenId4VpVerifierService {
     ]
     const supportedProofTypes = signatureSuiteRegistry.supportedProofTypes
 
-    type JarmEncryptionJwk = Kms.Jwk & { kid: string; use: 'enc' }
+    type JarmEncryptionJwk = Kms.Jwk & { kid: string; use: 'enc'; alg: 'ECDH-ES' }
     let jarmEncryptionJwk: JarmEncryptionJwk | undefined
 
     if (isJarmResponseMode(responseMode)) {
       const key = await kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })
-      jarmEncryptionJwk = { ...key.publicJwk, use: 'enc' }
+      jarmEncryptionJwk = { ...key.publicJwk, use: 'enc', alg: 'ECDH-ES' }
     }
 
     const jarmClientMetadata:
@@ -959,7 +968,7 @@ export class OpenId4VpVerifierService {
         >
       | undefined = jarmEncryptionJwk
       ? {
-          jwks: { keys: [jarmEncryptionJwk as Jwk] },
+          jwks: { keys: [jarmEncryptionJwk] },
 
           ...(options.version === 'v1'
             ? {
@@ -968,7 +977,7 @@ export class OpenId4VpVerifierService {
             : {
                 authorization_encrypted_response_alg: 'ECDH-ES',
 
-                // NOTE: pre draft 24 we could only include one version. To maximize compatiblity we use
+                // NOTE: pre draft 24 we could only include one version. To maximize compatibility we use
                 // - A128GCM for draft 24 (HAIP)
                 // - A256GCM for draft 21 (18013-7)
                 authorization_encrypted_response_enc: options.version === 'v1.draft24' ? 'A128GCM' : 'A256GCM',
@@ -976,19 +985,19 @@ export class OpenId4VpVerifierService {
         }
       : undefined
 
-    const dclqQueryFormats = new Set(options.dcqlQuery?.credentials.map((c) => c.format))
+    const dcqlQueryFormats = new Set(options.dcqlQuery?.credentials.map((c) => c.format))
 
     return {
       ...jarmClientMetadata,
       ...verifier.clientMetadata,
       response_types_supported: ['vp_token'],
 
-      // for v1 version we only include the vp_formats_supported for formats we're
-      // requesting.
+      // for v1 version we only include the vp_formats_supported for formats we're requesting.
+      // TODO: should allow dynamically setting the supported algs
       ...(options.version === 'v1'
         ? {
             vp_formats_supported: {
-              ...(dclqQueryFormats.has('dc+sd-jwt')
+              ...(dcqlQueryFormats.has('dc+sd-jwt')
                 ? {
                     'dc+sd-jwt': {
                       'kb-jwt_alg_values': supportedAlgs,
@@ -997,17 +1006,32 @@ export class OpenId4VpVerifierService {
                   }
                 : {}),
 
-              ...(dclqQueryFormats.has('mso_mdoc')
+              ...(dcqlQueryFormats.has('vc+sd-jwt')
                 ? {
-                    mso_mdoc: {
-                      // TODO: we need to add some generic utils for fully specified COSE algorithms
-                      deviceauth_alg_values: [/* P-256 */ -9, /* P-384 */ -51, /* Ed25519 */ -19],
-                      issuerauth_alg_values: [/* P-256 */ -9, /* P-384 */ -51, /* Ed25519 */ -19],
+                    'vc+sd-jwt': {
+                      alg_values: supportedAlgs,
                     },
                   }
                 : {}),
 
-              ...(dclqQueryFormats.has('jwt_vc_json')
+              ...(dcqlQueryFormats.has('mso_mdoc')
+                ? {
+                    mso_mdoc: {
+                      deviceauth_alg_values: [
+                        Kms.KnownCoseSignatureAlgorithms.ESP256,
+                        Kms.KnownCoseSignatureAlgorithms.ESP384,
+                        Kms.KnownCoseSignatureAlgorithms.Ed25519,
+                      ],
+                      issuerauth_alg_values: [
+                        Kms.KnownCoseSignatureAlgorithms.ESP256,
+                        Kms.KnownCoseSignatureAlgorithms.ESP384,
+                        Kms.KnownCoseSignatureAlgorithms.Ed25519,
+                      ],
+                    },
+                  }
+                : {}),
+
+              ...(dcqlQueryFormats.has('jwt_vc_json')
                 ? {
                     jwt_vc_json: {
                       alg_values: supportedAlgs,
@@ -1015,7 +1039,7 @@ export class OpenId4VpVerifierService {
                   }
                 : {}),
 
-              ...(dclqQueryFormats.has('ldp_vc')
+              ...(dcqlQueryFormats.has('ldp_vc')
                 ? {
                     ldp_vc: {
                       proof_type_values: supportedProofTypes as [string, ...string[]],

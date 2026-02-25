@@ -609,7 +609,6 @@ export class DataIntegrityDidCommCredentialFormatService
 
     let credentialToBeSigned = credential
     if (credential instanceof W3cJsonLdVerifiableCredential) {
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       const { proof, ..._credentialToBeSigned } = credential
       credentialToBeSigned = _credentialToBeSigned as W3cCredential
     }

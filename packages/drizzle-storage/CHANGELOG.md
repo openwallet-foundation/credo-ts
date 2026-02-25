@@ -1,5 +1,33 @@
 # @credo-ts/drizzle-storage
 
+## 0.6.2
+
+### Patch Changes
+
+- 620bb38: feat: resolve, merge and store type metadata chain for SD-JWT VC
+- Updated dependencies [df82d40]
+- Updated dependencies [b9bd214]
+- Updated dependencies [69acbc3]
+- Updated dependencies [4a4473c]
+- Updated dependencies [2c15356]
+- Updated dependencies [4989dd9]
+- Updated dependencies [0f7171a]
+- Updated dependencies [e441cc1]
+- Updated dependencies [657ec73]
+- Updated dependencies [8f63ac3]
+- Updated dependencies [1969c67]
+- Updated dependencies [620bb38]
+- Updated dependencies [2073110]
+- Updated dependencies [620bb38]
+  - @credo-ts/openid4vc@0.6.2
+  - @credo-ts/core@0.6.2
+  - @credo-ts/action-menu@0.6.2
+  - @credo-ts/anoncreds@0.6.2
+  - @credo-ts/didcomm@0.6.2
+  - @credo-ts/drpc@0.6.2
+  - @credo-ts/question-answer@0.6.2
+  - @credo-ts/tenants@0.6.2
+
 ## 0.6.1
 
 ### Patch Changes

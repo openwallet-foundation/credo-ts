@@ -3,7 +3,6 @@ import {
   Oauth2ClientErrorResponseError,
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
-  parseAuthorizationResponseRedirectUrl,
   verifyIdTokenJwt,
 } from '@openid4vc/oauth2'
 import { addSecondsToDate } from '@openid4vc/utils'
@@ -24,11 +23,14 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
       const { agentContext, issuer } = requestContext
       const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
       const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+      const oauth2Client = openId4VcIssuerService.getOauth2Client(agentContext, issuer)
+      const authorizationServerIssuer = issuerMetadata.authorizationServers[0].issuer
 
       let issuanceSession: OpenId4VcIssuanceSessionRecord | null = null
       try {
         const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [request.originalUrl])
-        const authorizationResponse = parseAuthorizationResponseRedirectUrl({
+
+        const authorizationResponse = oauth2Client.parseAuthorizationResponseRedirectUrl({
           url: fullRequestUrl,
         })
 
@@ -63,6 +65,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
 
         if (
           !issuanceSession.chainedIdentity?.externalAuthorizationServerUrl ||
+          !issuanceSession.chainedIdentity?.externalAuthorizationServerMetadata ||
           !issuanceSession.chainedIdentity.redirectUri
         ) {
           throw new Oauth2ServerErrorResponseError(
@@ -76,6 +79,11 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           )
         }
 
+        oauth2Client.verifyAuthorizationResponse({
+          authorizationResponse,
+          authorizationServerMetadata: issuanceSession.chainedIdentity.externalAuthorizationServerMetadata,
+        })
+
         // Throw the error. This will be caught and processed below.
         if (authorizationResponse.error) {
           throw new Oauth2ServerErrorResponseError(authorizationResponse)
@@ -88,7 +96,6 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           })
         }
 
-        const oauth2Client = openId4VcIssuerService.getOauth2Client(agentContext, issuer)
         const authorizationServerUrl = issuanceSession.chainedIdentity.externalAuthorizationServerUrl
         const authorizationServerConfig = issuer.chainedAuthorizationServerConfigs?.find(
           (config) => config.issuer === authorizationServerUrl
@@ -195,6 +202,9 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
         const authorizationCodeExpiresAt = addSecondsToDate(new Date(), config.authorizationCodeExpiresInSeconds)
 
         const redirectUri = new URL(issuanceSession.chainedIdentity.redirectUri)
+
+        // First authorization server is the internal authorization server (always used with chained authorization)
+        redirectUri.searchParams.set('iss', authorizationServerIssuer)
         redirectUri.searchParams.set('code', authorizationCode)
 
         if (issuanceSession.chainedIdentity.state) {
@@ -228,6 +238,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           if (issuanceSession?.chainedIdentity?.redirectUri) {
             const redirectUri = new URL(issuanceSession.chainedIdentity.redirectUri)
             redirectUri.searchParams.set('error', error.errorResponse.error)
+            redirectUri.searchParams.set('iss', authorizationServerIssuer)
             if (error.errorResponse.error_description) {
               redirectUri.searchParams.set('error_description', error.errorResponse.error_description)
             }

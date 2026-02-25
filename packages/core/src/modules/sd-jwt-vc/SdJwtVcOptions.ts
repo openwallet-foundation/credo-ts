@@ -1,3 +1,4 @@
+import type { SdJwtVcPayload } from '@sd-jwt/sd-jwt-vc'
 import type { HashName } from '../../crypto'
 import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate, X509Certificate } from '../x509'
@@ -8,8 +9,7 @@ export interface SdJwtVcStoreOptions {
   record: SdJwtVcRecord
 }
 
-// TODO: extend with required claim names for input (e.g. vct)
-export type SdJwtVcPayload = Record<string, unknown>
+export type { SdJwtVcPayload }
 export type SdJwtVcHeader = Record<string, unknown>
 
 export interface IDisclosureFrame {
@@ -148,7 +148,7 @@ export type SdJwtVcVerifyOptions = {
   requiredClaimKeys?: Array<string>
 
   /**
-   * Whether to fetch the `vct` type metadata if the `vct` is an https URL.
+   * Whether to fetch the `vct` type metadata
    *
    * It will will not influence the verification result if fetching of type metadata fails
    *

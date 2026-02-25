@@ -1,5 +1,5 @@
-import { injectable } from 'tsyringe'
 import { AgentContext } from '../../agent'
+import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import { Mdoc } from './Mdoc'
 import { MdocDeviceResponse } from './MdocDeviceResponse'

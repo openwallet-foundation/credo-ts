@@ -113,7 +113,7 @@ The following bundles are provided out of the box by the Drizzle storage module:
 The following defines the bundles for an agent using the `didcomm` and `anoncreds` extension modules, but doesn't use the `action-menu` extension module:
 
 ```ts
-const bundles = [coreBundle, didcommBundle, anonCredsBundle] as const;
+const bundles = [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle, questionAnswerBundle] as const;
 ```
 
 ### Migrations
@@ -139,7 +139,15 @@ If the `@credo-ts/drizzle-storage` package is already installed in your project,
 
 ```sh
 # or npm or yarn
-pnpm drizzle-storage migrate --bundle core --bundle didcomm --bundle anoncreds --database-url postgresql://postgres:postgres@localhost:5432/postgres`
+# Postgres
+pnpm drizzle-storage --bundle core --bundle didcomm --bundle action-menu --bundle anoncreds --bundle question-answer migrate --dialect postgres --database-url "postgresql://postgres:postgres@localhost:5432/postgres"
+
+# SQL
+pnpm drizzle-storage --bundle core --bundle didcomm --bundle action-menu --bundle anoncreds --bundle question-answer migrate --dialect sqlite --database-url "file:./sqlite_agent.db"
+
+# using npx
+npx @credo-ts/drizzle-storage@^x.x migrate
+```
 
 # using npx
 npx @credo-ts/drizzle-storage@^x.x migrate
