@@ -30,22 +30,6 @@ export interface W3cCredentialsModuleConfigOptions {
    * @default {@link defaultDocumentLoader}
    */
   documentLoader?: DocumentLoaderWithContext
-
-  /**
-   * Additional JSON-LD contexts to include alongside the default contexts.
-   * These will be merged with DEFAULT_CONTEXTS.
-   *
-   * @example
-   * ```
-   * {
-   *   customContexts: {
-   *     'https://my-org.com/contexts/v1': { ... },
-   *     'https://example.org/custom-context': { ... }
-   *   }
-   * }
-   * ```
-   */
-  customContexts?: Record<string, unknown>
 }
 
 export class W3cCredentialsModuleConfig {
@@ -58,10 +42,5 @@ export class W3cCredentialsModuleConfig {
   /** See {@link W3cCredentialsModuleConfigOptions.documentLoader} */
   public get documentLoader() {
     return this.options.documentLoader ?? defaultDocumentLoader
-  }
-
-  /** See {@link W3cCredentialsModuleConfigOptions.customContexts} */
-  public get customContexts() {
-    return this.options.customContexts ?? {}
   }
 }
