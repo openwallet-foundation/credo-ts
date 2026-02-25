@@ -1,19 +1,18 @@
+// No type definitions available for this package
+// @ts-expect-error
+import * as vc from '@digitalcredentials/vc'
 import type { JsonObject } from '../../../../types'
 
-// No type definitions available for this package
-// @ts-ignore
-import vc from '@digitalcredentials/vc'
-
 export interface VC {
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   issue(options: any): Promise<Record<string, unknown>>
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   verifyCredential(options: any): Promise<W3cVerifyCredentialResult>
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   createPresentation(options: any): Promise<Record<string, unknown>>
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   signPresentation(options: any): Promise<Record<string, unknown>>
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   verify(options: any): Promise<W3cVerifyPresentationResult>
 }
 

@@ -8,7 +8,7 @@ interface Validate {
   validate?: boolean
 }
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class JsonTransformer {
   public static toJSON<T>(classInstance: T) {
     return instanceToPlain(classInstance, {
@@ -17,9 +17,9 @@ export class JsonTransformer {
   }
 
   public static fromJSON<T>(
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     json: any,
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     cls: { new (...args: any[]): T },
     { validate = true }: Validate = {}
   ): T {
@@ -51,7 +51,7 @@ export class JsonTransformer {
 
   public static deserialize<T>(
     jsonString: string,
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     cls: { new (...args: any[]): T },
     { validate = true }: Validate = {}
   ): T {

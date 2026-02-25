@@ -1,1 +1,1 @@
-export * from './V1PresentationProblemReportError'
+export * from './DidCommPresentationV1ProblemReportError'

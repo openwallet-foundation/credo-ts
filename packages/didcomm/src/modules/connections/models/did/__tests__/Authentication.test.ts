@@ -1,6 +1,5 @@
-import type { Authentication } from '../authentication'
-
 import { instanceToPlain, plainToInstance } from 'class-transformer'
+import type { Authentication } from '../authentication'
 
 import { AuthenticationTransformer, EmbeddedAuthentication, ReferencedAuthentication } from '../authentication'
 import { PublicKey, RsaSig2018 } from '../publicKey'
@@ -98,7 +97,7 @@ describe('Did | Authentication', () => {
         authentication: [referencedAuthenticationJson],
       }
 
-      expect(() => plainToInstance(AuthenticationTransformerTest, authenticationWrapperJson)).toThrowError(
+      expect(() => plainToInstance(AuthenticationTransformerTest, authenticationWrapperJson)).toThrow(
         `Invalid public key referenced ${referencedAuthenticationJson.publicKey}`
       )
     })

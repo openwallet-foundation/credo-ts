@@ -1,4 +1,4 @@
-import type { Mdoc, SdJwtVc } from '@credo-ts/core'
+import type { MdocRecord, SdJwtVcRecord } from '@credo-ts/core'
 import {
   ClaimFormat,
   CredoError,
@@ -9,13 +9,12 @@ import {
   Kms,
   X509Certificate,
   X509Module,
-  getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
 import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import {
+  calculateJwkThumbprint,
   HashAlgorithm,
   Oauth2AuthorizationServer,
-  calculateJwkThumbprint,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
@@ -23,36 +22,36 @@ import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
-import type { OpenId4VciSignMdocCredentials } from '../src'
-import { OpenId4VcHolderModule, OpenId4VcIssuanceSessionState, OpenId4VcIssuerModule } from '../src'
+import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciSignMdocCredentials } from '../src'
+import { OpenId4VcIssuanceSessionState, OpenId4VciCredentialFormatProfile, OpenId4VcModule } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import {
   universityDegreeCredentialConfigurationSupported,
+  universityDegreeCredentialConfigurationSupportedJwkOnly,
   universityDegreeCredentialConfigurationSupportedMdoc,
 } from './utilsVci'
 
 const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
-const _verificationBaseUrl = `${baseUrl}/oid4vp`
 
 describe('OpenId4Vc', () => {
   let expressApp: Express
   let clearNock: () => void
 
   let issuer: AgentType<{
-    openId4VcIssuer: OpenId4VcIssuerModule
-    tenants: TenantsModule<{ openId4VcIssuer: OpenId4VcIssuerModule }>
+    openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions, undefined>
+    tenants: TenantsModule<{ openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions, undefined> }>
     x509: X509Module
   }>
   let issuer1: TenantType
 
   let holder: AgentType<{
-    openId4VcHolder: OpenId4VcHolderModule
-    tenants: TenantsModule<{ openId4VcHolder: OpenId4VcHolderModule }>
+    openid4vc: OpenId4VcModule<undefined, undefined>
+    tenants: TenantsModule<{ openid4vc: OpenId4VcModule<undefined, undefined> }>
   }>
   let holder1: TenantType
 
@@ -62,55 +61,66 @@ describe('OpenId4Vc', () => {
     expressApp = express()
 
     issuer = (await createAgentFromModules(
-      'issuer',
       {
         x509: new X509Module(),
         inMemory: new InMemoryWalletModule(),
-        openId4VcIssuer: new OpenId4VcIssuerModule({
-          baseUrl: issuanceBaseUrl,
-
-          credentialRequestToCredentialMapper: async ({ agentContext, credentialRequest, holderBinding }) => {
-            // We sign the request with the first did:key did we have
-            const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-            const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
-            const didDocument = await didsApi.resolveDidDocument(firstDidKeyDid.did)
-            const verificationMethod = didDocument.verificationMethod?.[0]
-            if (!verificationMethod) {
-              throw new Error('No verification method found')
-            }
-
-            if (credentialRequest.format === 'vc+sd-jwt') {
-              return {
-                type: 'credentials',
-                format: credentialRequest.format,
-                credentials: holderBinding.keys.map((holderBinding) => ({
-                  payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
-                  holder: holderBinding,
-                  issuer: {
-                    method: 'did',
-                    didUrl: verificationMethod.id,
-                  },
-                  disclosureFrame: { _sd: ['university', 'degree'] },
-                })),
+        openid4vc: new OpenId4VcModule({
+          app: expressApp,
+          issuer: {
+            baseUrl: issuanceBaseUrl,
+            credentialRequestToCredentialMapper: async ({
+              agentContext,
+              credentialRequest,
+              holderBinding,
+              credentialConfiguration,
+            }) => {
+              // We sign the request with the first did:key did we have
+              const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+              const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
+              const didDocument = await didsApi.resolveDidDocument(firstDidKeyDid.did)
+              const verificationMethod = didDocument.verificationMethod?.[0]
+              if (!verificationMethod) {
+                throw new Error('No verification method found')
               }
-            }
-            if (credentialRequest.format === 'mso_mdoc') {
-              return {
-                type: 'credentials',
-                format: ClaimFormat.MsoMdoc,
-                credentials: holderBinding.keys.map((holderBinding) => ({
-                  docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
-                  issuerCertificate: credentialIssuerCertificate,
-                  holderKey: holderBinding.jwk,
-                  namespaces: {
-                    'Leopold-Franzens-University': {
-                      degree: 'bachelor',
+
+              if (
+                (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc ||
+                  credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtDc) &&
+                credentialConfiguration.vct
+              ) {
+                return {
+                  type: 'credentials',
+                  format: 'dc+sd-jwt',
+                  credentials: holderBinding.keys.map((holderBinding) => ({
+                    payload: { vct: credentialConfiguration.vct, university: 'innsbruck', degree: 'bachelor' },
+                    holder: holderBinding,
+                    issuer: {
+                      method: 'did',
+                      didUrl: verificationMethod.id,
                     },
-                  },
-                })),
-              } satisfies OpenId4VciSignMdocCredentials
-            }
-            throw new Error('Invalid request')
+                    disclosureFrame: { _sd: ['university', 'degree'] },
+                  })),
+                }
+              }
+
+              if (credentialRequest.format === 'mso_mdoc') {
+                return {
+                  type: 'credentials',
+                  format: ClaimFormat.MsoMdoc,
+                  credentials: holderBinding.keys.map((holderBinding) => ({
+                    docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
+                    issuerCertificate: credentialIssuerCertificate,
+                    holderKey: holderBinding.jwk,
+                    namespaces: {
+                      'Leopold-Franzens-University': {
+                        degree: 'bachelor',
+                      },
+                    },
+                  })),
+                } satisfies OpenId4VciSignMdocCredentials
+              }
+              throw new Error('Invalid request')
+            },
           },
         }),
         tenants: new TenantsModule(),
@@ -121,9 +131,8 @@ describe('OpenId4Vc', () => {
     issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
 
     holder = (await createAgentFromModules(
-      'holder',
       {
-        openId4VcHolder: new OpenId4VcHolderModule(),
+        openid4vc: new OpenId4VcModule(),
         inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
         x509: new X509Module({
@@ -145,9 +154,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       global.fetch
     )) as unknown as typeof holder
     holder1 = await createTenantForAgent(holder.agent, 'hTenant1')
-
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
@@ -172,7 +178,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     if (supportsJwk) {
       return {
         method: 'jwk',
-        keys: [getPublicJwkFromVerificationMethod(holder1.verificationMethod)],
+        keys: [holder1.publicJwk],
       }
     }
 
@@ -254,19 +260,20 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     const clearNock = setupNockToExpress('http://localhost:4747', app)
 
-    const openIdIssuerTenant = await issuerTenant.modules.openId4VcIssuer.createIssuer({
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
       issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupported,
       },
       authorizationServerConfigs: [
         {
+          type: 'direct',
           issuer: 'http://localhost:4747',
         },
       ],
     })
 
-    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openId4VcIssuer.createCredentialOffer({
+    const { issuanceSession, credentialOffer } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
       issuerId: openIdIssuerTenant.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
@@ -278,8 +285,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     await issuerTenant.endSession()
 
-    const resolvedCredentialOffer = await holderTenant.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
-    const resolvedAuthorization = await holderTenant.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
+    const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const resolvedAuthorization = await holderTenant.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
       resolvedCredentialOffer,
       {
         clientId: 'foo',
@@ -292,7 +299,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     }
 
     // Bind to JWK
-    const tokenResponseTenant = await holderTenant.modules.openId4VcHolder.requestToken({
+    const tokenResponseTenant = await holderTenant.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       // Mock the authorization code flow part,
       code: 'some-authorization-code',
@@ -300,7 +307,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       redirectUri: 'http://localhost:1234/redirect',
       codeVerifier: resolvedAuthorization.codeVerifier,
     })
-    const credentialResponse = await holderTenant.modules.openId4VcHolder.requestCredentials({
+    const credentialResponse = await holderTenant.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponseTenant,
       credentialBindingResolver,
@@ -313,11 +320,63 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const compactSdJwtVcTenant1 = (credentialResponse.credentials[0].credentials[0] as SdJwtVc).compact
-    const sdJwtVcTenant1 = holderTenant.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
-    expect(sdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
+    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+
+    // KMS key id should not be defined for did-based credentials
+    expect(firstSdJwtVcTenant1.holder?.method).toEqual('did')
+    expect(firstSdJwtVcTenant1.kmsKeyId).toBeUndefined()
+
+    expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
     await holderTenant.endSession()
+    clearNock()
+  })
+
+  it('e2e flow with tenants, issuer endpoints requesting a sd-jwt-vc using pre-authorized code flow', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1.draft15',
+    })
+
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    // Bind to JWK
+    const tokenResponseTenant = await holderTenant.modules.openid4vc.holder.requestToken({
+      resolvedCredentialOffer,
+    })
+    const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponseTenant,
+      credentialBindingResolver,
+    })
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Completed,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
+    })
+
+    expect(credentialResponse.credentials).toHaveLength(1)
+    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+
+    // KMS key id Must be defined for jwk-based credentials
+    expect(firstSdJwtVcTenant1.holder?.method).toEqual('jwk')
+    expect(firstSdJwtVcTenant1.kmsKeyId).toBeDefined()
+
+    expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
+
     clearNock()
   })
 
@@ -332,19 +391,19 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
     credentialIssuerCertificate = issuerCertificate
 
-    const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
+    const openIdIssuerTenant1 = await issuerTenant1.openid4vc.issuer.createIssuer({
       dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupportedMdoc,
       },
     })
-    const issuer1Record = await issuerTenant1.modules.openId4VcIssuer.getIssuerByIssuerId(openIdIssuerTenant1.issuerId)
+    const issuer1Record = await issuerTenant1.openid4vc.issuer.getIssuerByIssuerId(openIdIssuerTenant1.issuerId)
     expect(issuer1Record.dpopSigningAlgValuesSupported).toEqual(['ES256'])
 
     expect(issuer1Record.credentialConfigurationsSupported).toEqual({
       universityDegree: {
         format: 'mso_mdoc',
-        cryptographic_binding_methods_supported: ['did:key', 'jwk'],
+        cryptographic_binding_methods_supported: ['jwk'],
         proof_types_supported: {
           jwt: {
             proof_signing_alg_values_supported: ['ES256', 'EdDSA'],
@@ -356,7 +415,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const { issuanceSession: issuanceSession1, credentialOffer: credentialOffer1 } =
-      await issuerTenant1.modules.openId4VcIssuer.createCredentialOffer({
+      await issuerTenant1.openid4vc.issuer.createCredentialOffer({
         issuerId: openIdIssuerTenant1.issuerId,
         credentialConfigurationIds: ['universityDegree'],
         preAuthorizedCodeFlowConfig: {},
@@ -374,14 +433,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const holderTenant1 = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
     holderTenant1.x509.config.setTrustedCertificates([issuerCertificate.toString('pem')])
 
-    const resolvedCredentialOffer1 =
-      await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer1)
+    const resolvedCredentialOffer1 = await holderTenant1.openid4vc.holder.resolveCredentialOffer(credentialOffer1)
 
     expect(resolvedCredentialOffer1.metadata.credentialIssuer?.dpop_signing_alg_values_supported).toEqual(['ES256'])
     expect(resolvedCredentialOffer1.offeredCredentialConfigurations).toEqual({
       universityDegree: {
         doctype: 'UniversityDegreeCredential',
-        cryptographic_binding_methods_supported: ['did:key', 'jwk'],
+        cryptographic_binding_methods_supported: ['jwk'],
         format: 'mso_mdoc',
         scope: universityDegreeCredentialConfigurationSupportedMdoc.scope,
         proof_types_supported: {
@@ -403,7 +461,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     // Bind to JWK
-    const tokenResponseTenant1 = await holderTenant1.modules.openId4VcHolder.requestToken({
+    const tokenResponseTenant1 = await holderTenant1.openid4vc.holder.requestToken({
       resolvedCredentialOffer: resolvedCredentialOffer1,
     })
 
@@ -433,7 +491,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       sub: expect.stringContaining('credo:'),
     })
 
-    const credentialsTenant1 = await holderTenant1.modules.openId4VcHolder.requestCredentials({
+    const credentialsTenant1 = await holderTenant1.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer: resolvedCredentialOffer1,
       ...tokenResponseTenant1,
       credentialBindingResolver,
@@ -462,9 +520,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     expect(credentialsTenant1.credentials).toHaveLength(1)
-    const mdocBase64Url = (credentialsTenant1.credentials[0].credentials[0] as Mdoc).base64Url
-    const mdoc = holderTenant1.mdoc.fromBase64Url(mdocBase64Url)
-    expect(mdoc.docType).toEqual('UniversityDegreeCredential')
+    const firstMdoc = (credentialsTenant1.credentials[0].record as MdocRecord).firstCredential
+    expect(firstMdoc.docType).toEqual('UniversityDegreeCredential')
 
     await holderTenant1.endSession()
   })

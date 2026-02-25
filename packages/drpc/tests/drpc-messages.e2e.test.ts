@@ -1,11 +1,10 @@
-import type { ConnectionRecord } from '@credo-ts/didcomm'
-import type { DrpcRequest, DrpcRequestObject, DrpcResponseObject } from '../src/messages'
-
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import { Agent } from '../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../core/tests'
 import { getAgentOptions, makeConnection } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { DrpcModule } from '../src/DrpcModule'
+import type { DrpcRequest, DrpcRequestObject, DrpcResponseObject } from '../src/messages'
 import { DrpcErrorCode } from '../src/models'
 
 const modules = {
@@ -50,7 +49,7 @@ const handleMessageOrError = async (
 const sendAndRecieve = async (
   sender: Agent,
   receiver: Agent,
-  connectionRecord: ConnectionRecord,
+  connectionRecord: DidCommConnectionRecord,
   message: DrpcRequestObject,
   messageHandlers: Map<string, (message: DrpcRequestObject) => Promise<DrpcResponseObject | Record<string, never>>>
 ) => {
@@ -66,7 +65,7 @@ const sendAndRecieve = async (
 const sendAndRecieveBatch = async (
   sender: Agent,
   receiver: Agent,
-  connectionRecord: ConnectionRecord,
+  connectionRecord: DidCommConnectionRecord,
   message: DrpcRequestObject[],
   messageHandlers: Map<string, (message: DrpcRequestObject) => Promise<DrpcResponseObject | Record<string, never>>>
 ) => {
@@ -85,7 +84,7 @@ const sendAndRecieveBatch = async (
 describe('Drpc Messages E2E', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let aliceConnection: ConnectionRecord
+  let aliceConnection: DidCommConnectionRecord
   let messageHandlers: Map<string, (message: DrpcRequestObject) => Promise<DrpcResponseObject | Record<string, never>>>
 
   beforeEach(async () => {

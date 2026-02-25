@@ -1,9 +1,8 @@
 import type { NextFunction, Response, Router } from 'express'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-
 import { getRequestContext, sendJsonResponse, sendUnknownServerErrorResponse } from '../../shared/router'
+import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 export function configureNonceEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.post(

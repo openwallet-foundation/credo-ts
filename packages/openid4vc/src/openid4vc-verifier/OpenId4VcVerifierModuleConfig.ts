@@ -1,8 +1,6 @@
-import type { Router } from 'express'
+import type { Express } from 'express'
 
-import { importExpress } from '../shared/router'
-
-export interface OpenId4VcVerifierModuleConfigOptions {
+export interface InternalOpenId4VcVerifierModuleConfigOptions {
   /**
    * Base url at which the verifier endpoints will be hosted. All endpoints will be exposed with
    * this path as prefix.
@@ -10,13 +8,9 @@ export interface OpenId4VcVerifierModuleConfigOptions {
   baseUrl: string
 
   /**
-   * Express router on which the verifier endpoints will be registered. If
-   * no router is provided, a new one will be created.
-   *
-   * NOTE: you must manually register the router on your express app and
-   * expose this on a public url that is reachable when `baseUrl` is called.
+   * Express app on which the openid4vp endpoints will be registered.
    */
-  router?: Router
+  app: Express
 
   /**
    * The number of seconds after which a created authorization request will expire.
@@ -41,17 +35,18 @@ export interface OpenId4VcVerifierModuleConfigOptions {
 }
 
 export class OpenId4VcVerifierModuleConfig {
-  private options: OpenId4VcVerifierModuleConfigOptions
-  public readonly router: Router
+  private options: InternalOpenId4VcVerifierModuleConfigOptions
 
-  public constructor(options: OpenId4VcVerifierModuleConfigOptions) {
+  public constructor(options: InternalOpenId4VcVerifierModuleConfigOptions) {
     this.options = options
-
-    this.router = options.router ?? importExpress().Router()
   }
 
   public get baseUrl() {
     return this.options.baseUrl
+  }
+
+  public get app() {
+    return this.options.app
   }
 
   /**

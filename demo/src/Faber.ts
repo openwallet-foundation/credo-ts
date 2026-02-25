@@ -1,19 +1,18 @@
 import type { RegisterCredentialDefinitionReturnStateFinished } from '@credo-ts/anoncreds'
-import type { ConnectionRecord, ConnectionStateChangedEvent } from '@credo-ts/didcomm'
-import type { IndyVdrRegisterCredentialDefinitionOptions, IndyVdrRegisterSchemaOptions } from '@credo-ts/indy-vdr'
-import type BottomBar from 'inquirer/lib/ui/bottom-bar'
-
-import { TypedArrayEncoder, utils } from '@credo-ts/core'
-import { ConnectionEventTypes } from '@credo-ts/didcomm'
-import { ui } from 'inquirer'
-
 import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
+import { TypedArrayEncoder, utils } from '@credo-ts/core'
+import type { DidCommConnectionRecord, DidCommConnectionStateChangedEvent } from '@credo-ts/didcomm'
+import { DidCommConnectionEventTypes } from '@credo-ts/didcomm'
+import type { IndyVdrRegisterCredentialDefinitionOptions, IndyVdrRegisterSchemaOptions } from '@credo-ts/indy-vdr'
+import { ui } from 'inquirer'
+import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 import { BaseAgent, indyNetworkConfig } from './BaseAgent'
-import { Color, Output, greenText, purpleText, redText } from './OutputClass'
+import { Color, greenText, Output, purpleText, redText } from './OutputClass'
 
 export enum RegistryOptions {
   indy = 'did:indy',
   cheqd = 'did:cheqd',
+  hedera = 'did:hedera',
 }
 
 export class Faber extends BaseAgent {
@@ -38,11 +37,22 @@ export class Faber extends BaseAgent {
     // and store the existing did in the wallet
     // indy did is based on private key (seed)
     const unqualifiedIndyDid = '2jEvRuKmfBJTRa7QowDpNN'
-    const cheqdDid = 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675'
-    const indyDid = `did:indy:${indyNetworkConfig.indyNamespace}:${unqualifiedIndyDid}`
-    const didDocumentRelativeKeyId = registry === RegistryOptions.indy ? '#verkey' : '#key-1'
 
-    const did = registry === RegistryOptions.indy ? indyDid : cheqdDid
+    const rootKeyIds: Record<string, string> = {
+      [RegistryOptions.indy]: '#verkey',
+      [RegistryOptions.cheqd]: '#key-1',
+      [RegistryOptions.hedera]: '#did-root-key',
+    }
+
+    const Dids: Record<string, string> = {
+      [RegistryOptions.indy]: `did:indy:${indyNetworkConfig.indyNamespace}:${unqualifiedIndyDid}`,
+      [RegistryOptions.cheqd]: 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675',
+      [RegistryOptions.hedera]: 'did:hedera:testnet:44eesExqdsUvLZ35FpnBPErqRGRnYbzzyG3wgCCYxkmq_0.0.6231121',
+    }
+
+    const didDocumentRelativeKeyId = rootKeyIds[registry]
+    const did = Dids[registry]
+
     const { privateJwk } = transformPrivateKeyToPrivateJwk({
       type: {
         crv: 'Ed25519',
@@ -73,7 +83,7 @@ export class Faber extends BaseAgent {
       throw Error(redText(Output.MissingConnectionRecord))
     }
 
-    const [connection] = await this.agent.modules.connections.findAllByOutOfBandId(this.outOfBandId)
+    const [connection] = await this.agent.didcomm.connections.findAllByOutOfBandId(this.outOfBandId)
 
     if (!connection) {
       throw Error(redText(Output.MissingConnectionRecord))
@@ -83,7 +93,7 @@ export class Faber extends BaseAgent {
   }
 
   private async printConnectionInvite() {
-    const outOfBand = await this.agent.modules.oob.createInvitation()
+    const outOfBand = await this.agent.didcomm.oob.createInvitation()
     this.outOfBandId = outOfBand.id
 
     console.log(
@@ -103,20 +113,23 @@ export class Faber extends BaseAgent {
     console.log('Waiting for Alice to finish connection...')
 
     const getConnectionRecord = (outOfBandId: string) =>
-      new Promise<ConnectionRecord>((resolve, reject) => {
+      new Promise<DidCommConnectionRecord>((resolve, reject) => {
         // Timeout of 20 seconds
         const timeoutId = setTimeout(() => reject(new Error(redText(Output.MissingConnectionRecord))), 20000)
 
         // Start listener
-        this.agent.events.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, (e) => {
-          if (e.payload.connectionRecord.outOfBandId !== outOfBandId) return
+        this.agent.events.on<DidCommConnectionStateChangedEvent>(
+          DidCommConnectionEventTypes.DidCommConnectionStateChanged,
+          (e) => {
+            if (e.payload.connectionRecord.outOfBandId !== outOfBandId) return
 
-          clearTimeout(timeoutId)
-          resolve(e.payload.connectionRecord)
-        })
+            clearTimeout(timeoutId)
+            resolve(e.payload.connectionRecord)
+          }
+        )
 
         // Also retrieve the connection record by invitation if the event has already fired
-        void this.agent.modules.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {
+        void this.agent.didcomm.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {
           if (connectionRecord) {
             clearTimeout(timeoutId)
             resolve(connectionRecord)
@@ -127,7 +140,7 @@ export class Faber extends BaseAgent {
     const connectionRecord = await getConnectionRecord(this.outOfBandId)
 
     try {
-      await this.agent.modules.connections.returnWhenIsConnected(connectionRecord.id)
+      await this.agent.didcomm.connections.returnWhenIsConnected(connectionRecord.id)
     } catch (_e) {
       console.log(redText('\nTimeout of 20 seconds reached.. Returning to home screen.\n'))
       return
@@ -217,7 +230,7 @@ export class Faber extends BaseAgent {
 
     this.ui.updateBottomBar('\nSending credential offer...\n')
 
-    await this.agent.modules.credentials.offerCredential({
+    await this.agent.didcomm.credentials.offerCredential({
       connectionId: connectionRecord.id,
       protocolVersion: 'v2',
       credentialFormats: {
@@ -271,7 +284,7 @@ export class Faber extends BaseAgent {
     const proofAttribute = await this.newProofAttribute()
     await this.printProofFlow(greenText('\nRequesting proof...\n', false))
 
-    await this.agent.modules.proofs.requestProof({
+    await this.agent.didcomm.proofs.requestProof({
       protocolVersion: 'v2',
       connectionId: connectionRecord.id,
       proofFormats: {
@@ -289,7 +302,7 @@ export class Faber extends BaseAgent {
 
   public async sendMessage(message: string) {
     const connectionRecord = await this.getConnectionRecord()
-    await this.agent.modules.basicMessages.sendMessage(connectionRecord.id, message)
+    await this.agent.didcomm.basicMessages.sendMessage(connectionRecord.id, message)
   }
 
   public async exit() {

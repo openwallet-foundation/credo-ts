@@ -54,7 +54,7 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
       verificationMethod: string
       documentLoader?: DocumentLoader
     }
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
   ): Promise<{ valid: boolean; error?: any }> {
     try {
       const result = await super.validate(proof, options)
@@ -63,8 +63,8 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
         throw result.error
       }
 
-      // This @ts-ignore is necessary because the .getValues() method is not part of the public API.
-      //@ts-ignore
+      // This @ts-expect-error is necessary because the .getValues() method is not part of the public API.
+      //@ts-expect-error
       const issuer = jsonld.util.getValues(options.document, 'issuer')
 
       if (!issuer || issuer.length === 0) {

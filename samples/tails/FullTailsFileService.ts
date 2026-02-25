@@ -1,10 +1,9 @@
 import type { AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
-import type { AgentContext } from '@credo-ts/core'
-
-import fs from 'fs'
 import { BasicTailsFileService } from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 import { utils } from '@credo-ts/core'
 import FormData from 'form-data'
+import fs from 'fs'
 
 export class FullTailsFileService extends BasicTailsFileService {
   private tailsServerBaseUrl?: string
@@ -30,7 +29,7 @@ export class FullTailsFileService extends BasicTailsFileService {
       `${this.tailsServerBaseUrl}/${encodeURIComponent(tailsFileId)}`,
       {
         method: 'PUT',
-        body: data,
+        body: data.getBuffer(),
       }
     )
     if (response.status !== 200) {

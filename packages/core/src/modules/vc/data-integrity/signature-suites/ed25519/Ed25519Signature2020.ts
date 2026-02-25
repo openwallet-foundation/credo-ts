@@ -1,12 +1,12 @@
+import type { AnyUint8Array } from '../../../../../types'
 import { MultiBaseEncoder, TypedArrayEncoder } from '../../../../../utils'
+import { Ed25519PublicJwk, PublicJwk } from '../../../../kms'
 import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../constants'
 import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../jsonldUtil'
 import { _includesContext } from '../../jsonldUtil'
 import jsonld from '../../libraries/jsonld'
 import type { JwsLinkedDataSignatureOptions } from '../JwsLinkedDataSignature'
 import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
-
-import { Ed25519PublicJwk, PublicJwk } from '../../../../kms'
 import { ED25519_SUITE_CONTEXT_URL_2020 } from './constants'
 import { ed25519Signature2020Context } from './context2020'
 
@@ -153,7 +153,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
   public async matchProof(options: {
     proof: Proof
     document: VerificationMethod
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     purpose: any
     documentLoader?: DocumentLoader
   }) {
@@ -177,7 +177,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
    *
    * @returns The proof containing the signature value.
    */
-  public async sign(options: { verifyData: Uint8Array; proof: Proof }) {
+  public async sign(options: { verifyData: AnyUint8Array; proof: Proof }) {
     if (!(this.signer && typeof this.signer.sign === 'function')) {
       throw new Error('A signer API has not been specified.')
     }
@@ -198,7 +198,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
    * @returns Resolves with the verification result.
    */
   public async verifySignature(options: {
-    verifyData: Uint8Array
+    verifyData: AnyUint8Array
     verificationMethod: VerificationMethod
     proof: Proof
   }) {
@@ -230,7 +230,7 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
 }
 
 function _isEd2020Key(verificationMethod: JsonLdDoc) {
-  // @ts-ignore - .hasValue is not part of the public API
+  // @ts-expect-error - .hasValue is not part of the public API
   return jsonld.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2020')
 }
 

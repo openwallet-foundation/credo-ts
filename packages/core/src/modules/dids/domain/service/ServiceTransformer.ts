@@ -8,13 +8,13 @@ import { DidCommV1Service } from './DidCommV1Service'
 import { DidCommV2Service } from './DidCommV2Service'
 import { DidDocumentService } from './DidDocumentService'
 import { IndyAgentService } from './IndyAgentService'
-import { NewDidCommV2Service } from './NewDidCommV2Service'
+import { LegacyDidCommV2Service } from './LegacyDidCommV2Service'
 
 export const serviceTypes: { [key: string]: unknown | undefined } = {
   [IndyAgentService.type]: IndyAgentService,
   [DidCommV1Service.type]: DidCommV1Service,
-  [NewDidCommV2Service.type]: NewDidCommV2Service,
   [DidCommV2Service.type]: DidCommV2Service,
+  [LegacyDidCommV2Service.type]: LegacyDidCommV2Service,
 }
 
 /**
@@ -36,11 +36,11 @@ export function ServiceTransformer() {
         // NOTE: deal with `DIDCommMessaging` type but using `serviceEndpoint` string value, parse it using the
         // legacy class type
         if (
-          serviceJson.type === NewDidCommV2Service.type &&
+          serviceJson.type === DidCommV2Service.type &&
           'serviceEndpoint' in serviceJson &&
           typeof serviceJson.serviceEndpoint === 'string'
         ) {
-          serviceClass = DidCommV2Service
+          serviceClass = LegacyDidCommV2Service
         }
 
         const service = JsonTransformer.fromJSON(serviceJson, serviceClass)

@@ -1,0 +1,1 @@
+ALTER TABLE `DidcommCredentialExchange` DROP COLUMN `linked_attachments`;

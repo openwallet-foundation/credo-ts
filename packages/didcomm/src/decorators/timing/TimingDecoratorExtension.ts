@@ -1,7 +1,6 @@
-import type { BaseMessageConstructor } from '../../BaseMessage'
-
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, ValidateNested } from 'class-validator'
+import type { BaseMessageConstructor } from '../../BaseDidCommMessage'
 
 import { TimingDecorator } from './TimingDecorator'
 

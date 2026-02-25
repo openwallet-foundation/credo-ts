@@ -1,6 +1,6 @@
 import type { AgentContext, Kms } from '@credo-ts/core'
 
-import { EventEmitter, InjectionSymbols, Repository, StorageService, inject, injectable } from '@credo-ts/core'
+import { EventEmitter, InjectionSymbols, inject, injectable, Repository, type StorageService } from '@credo-ts/core'
 
 import { TenantRoutingRecord } from './TenantRoutingRecord'
 

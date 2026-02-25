@@ -4,10 +4,10 @@ import { DcqlModule } from '../DcqlModule'
 import { DcqlService } from '../DcqlService'
 
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
-  resolve: jest.fn().mockReturnValue({ logger: { warn: jest.fn() } }),
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
+  registerContextScoped: vi.fn(),
+  resolve: vi.fn().mockReturnValue({ logger: { warn: vi.fn() } }),
 } as unknown as DependencyManager
 
 describe('DcqlModule', () => {

@@ -1,7 +1,6 @@
-import type { ActionMenuFormParameterOptions } from './ActionMenuOptionFormParameter'
-
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsString } from 'class-validator'
+import type { ActionMenuFormParameterOptions } from './ActionMenuOptionFormParameter'
 
 import { ActionMenuFormParameter } from './ActionMenuOptionFormParameter'
 

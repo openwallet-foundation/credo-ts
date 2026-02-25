@@ -21,7 +21,7 @@ import type {
 } from '@openid4vc/openid4vp'
 
 export { authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier } from '@openid4vc/oauth2'
-export { Openid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
+export type { Openid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 
 export type OpenId4VciCredentialConfigurationSupportedWithFormats = CredentialConfigurationSupportedWithFormats
 export type OpenId4VciCredentialConfigurationSupported = CredentialConfigurationSupported

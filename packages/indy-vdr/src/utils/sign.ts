@@ -1,10 +1,7 @@
-import { AgentContext, Kms } from '@credo-ts/core'
+import { AgentContext, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
-import type { IndyVdrPool } from '../pool'
-
-import { TypedArrayEncoder } from '@credo-ts/core'
-
 import { verificationPublicJwkForIndyDid } from '../dids/didIndyUtil'
+import type { IndyVdrPool } from '../pool'
 
 export async function multiSignRequest<Request extends IndyVdrRequest>(
   agentContext: AgentContext,

@@ -1,16 +1,14 @@
+import { AgentContext, injectable } from '@credo-ts/core'
+import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
+import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 import type {
-  OpenId4VcUpdateIssuerRecordOptions,
   OpenId4VciCreateCredentialOfferOptions,
   OpenId4VciCreateCredentialResponseOptions,
   OpenId4VciCreateDeferredCredentialResponseOptions,
   OpenId4VciCreateIssuerOptions,
   OpenId4VciCreateStatelessCredentialOfferOptions,
+  OpenId4VcUpdateIssuerRecordOptions,
 } from './OpenId4VcIssuerServiceOptions'
-
-import { AgentContext, injectable } from '@credo-ts/core'
-
-import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
-import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 
 /**
  * @public
@@ -57,6 +55,7 @@ export class OpenId4VcIssuerApi {
       display,
       dpopSigningAlgValuesSupported,
       batchCredentialIssuance,
+      authorizationServerConfigs,
     } = options
 
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
@@ -65,6 +64,7 @@ export class OpenId4VcIssuerApi {
     issuer.display = display
     issuer.dpopSigningAlgValuesSupported = dpopSigningAlgValuesSupported
     issuer.batchCredentialIssuance = batchCredentialIssuance
+    issuer.authorizationServerConfigs = authorizationServerConfigs
 
     return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
   }

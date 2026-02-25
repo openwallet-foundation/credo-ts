@@ -2,7 +2,7 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
-import { StorageService } from '../../../storage/StorageService'
+import type { StorageService } from '../../../storage/StorageService'
 
 import { MdocRecord } from './MdocRecord'
 

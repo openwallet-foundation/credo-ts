@@ -1,23 +1,32 @@
-import type { DcqlQuery, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
+import type { DcqlQuery, MdocDeviceResponse, SdJwtVc, W3cV2SdJwtVerifiablePresentation } from '@credo-ts/core'
 import {
+  asArray,
   ClaimFormat,
   DateOnly,
   Kms,
   MdocRecord,
+  parseDid,
   SdJwtVcRecord,
+  TypedArrayEncoder,
   W3cCredential,
+  W3cCredentialRecord,
   W3cCredentialSubject,
   W3cIssuer,
+  W3cV2Credential,
+  W3cV2CredentialRecord,
+  W3cV2CredentialSubject,
+  W3cV2Issuer,
+  w3cDate,
+  X509ExtendedKeyUsage,
+  X509KeyUsage,
   X509Module,
   X509Service,
-  parseDid,
-  w3cDate,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcHolderModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
+import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
 import { openBadgeDcqlQuery, universityDegreeDcqlQuery } from './utilsVp'
@@ -26,19 +35,38 @@ const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const verificationBaseUrl = `${baseUrl}/oid4vp`
 
+// Create ISO 18013-5 compliant root and leaf certificates
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
+
+const getLastMonth = () => {
+  const now = new Date()
+  let lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  if (now.getMonth() === 0) {
+    lastMonth = new Date(now.getFullYear() - 1, 0, 1)
+  }
+  return lastMonth
+}
+
 describe('OpenID4VP 1.0', () => {
   let expressApp: Express
   let clearNock: () => void
 
   let holder: AgentType<{
-    openId4VcHolder: OpenId4VcHolderModule
-    tenants: TenantsModule<{ openId4VcHolder: OpenId4VcHolderModule }>
+    openid4vc: OpenId4VcModule
+    tenants: TenantsModule<{ openid4vc: OpenId4VcModule }>
   }>
   let holder1: TenantType
 
   let verifier: AgentType<{
-    openId4VcVerifier: OpenId4VcVerifierModule
-    tenants: TenantsModule<{ openId4VcVerifier: OpenId4VcVerifierModule }>
+    openid4vc: OpenId4VcModule<undefined, OpenId4VcVerifierModuleConfigOptions>
+    tenants: TenantsModule<{ openid4vc: OpenId4VcModule<undefined, OpenId4VcVerifierModuleConfigOptions> }>
   }>
   let verifier1: TenantType
   let verifier2: TenantType
@@ -47,9 +75,8 @@ describe('OpenID4VP 1.0', () => {
     expressApp = express()
 
     holder = (await createAgentFromModules(
-      'holder',
       {
-        openId4VcHolder: new OpenId4VcHolderModule(),
+        openid4vc: new OpenId4VcModule(),
         inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
         x509: new X509Module({
@@ -73,10 +100,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     holder1 = await createTenantForAgent(holder.agent, 'hTenant1')
 
     verifier = (await createAgentFromModules(
-      'verifier',
       {
-        openId4VcVerifier: new OpenId4VcVerifierModule({
-          baseUrl: verificationBaseUrl,
+        openid4vc: new OpenId4VcModule({
+          app: expressApp,
+          verifier: {
+            baseUrl: verificationBaseUrl,
+          },
         }),
         inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
@@ -86,8 +115,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )) as unknown as typeof verifier
     verifier1 = await createTenantForAgent(verifier.agent, 'vTenant1')
     verifier2 = await createTenantForAgent(verifier.agent, 'vTenant2')
-
-    expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
@@ -104,8 +131,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
     const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
 
-    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
-    const openIdVerifierTenant2 = await verifierTenant2.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifierTenant1 = await verifierTenant1.openid4vc.verifier.createVerifier()
+    const openIdVerifierTenant2 = await verifierTenant2.openid4vc.verifier.createVerifier()
 
     const signedCredential1 = await verifier.agent.w3cCredentials.signCredential({
       format: ClaimFormat.JwtVc,
@@ -131,11 +158,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationMethod: verifier.verificationMethod.id,
     })
 
-    await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential1 })
-    await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
+    await holderTenant.w3cCredentials.store({ record: W3cCredentialRecord.fromCredential(signedCredential1) })
+    await holderTenant.w3cCredentials.store({ record: W3cCredentialRecord.fromCredential(signedCredential2) })
 
     const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
-      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant1.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifierTenant1.verifierId,
         requestSigner: {
           method: 'did',
@@ -154,7 +181,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
-      await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant2.openid4vc.verifier.createAuthorizationRequest({
         requestSigner: {
           method: 'did',
           didUrl: verifier2.verificationMethod.id,
@@ -176,7 +203,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await verifierTenant2.endSession()
 
     const resolvedProofRequest1 =
-      await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1)
+      await holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1)
 
     expect(resolvedProofRequest1.dcql?.queryResult).toMatchObject({
       can_be_satisfied: true,
@@ -186,9 +213,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
           valid_credentials: [
             {
               record: {
-                credential: {
-                  type: ['VerifiableCredential', 'OpenBadgeCredential'],
-                },
+                credentialInstances: [
+                  {
+                    credential: expect.stringContaining('ey'),
+                  },
+                ],
               },
             },
           ],
@@ -196,8 +225,17 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     })
 
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
+    const validCredential: any =
+      resolvedProofRequest1.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor.valid_credentials?.[0]
+
+    expect((validCredential.record as W3cCredentialRecord).firstCredential.type).toEqual([
+      'VerifiableCredential',
+      'OpenBadgeCredential',
+    ])
+
     const resolvedProofRequest2 =
-      await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
+      await holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
 
     expect(resolvedProofRequest2.dcql?.queryResult).toMatchObject({
       can_be_satisfied: true,
@@ -207,9 +245,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
           valid_credentials: [
             {
               record: {
-                credential: {
-                  type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-                },
+                credentialInstances: [
+                  {
+                    credential: expect.stringContaining('ey'),
+                  },
+                ],
               },
             },
           ],
@@ -217,16 +257,25 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     })
 
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
+    const validCredential2: any =
+      resolvedProofRequest2.dcql?.queryResult.credential_matches.UniversityDegree.valid_credentials?.[0]
+
+    expect((validCredential2.record as W3cCredentialRecord).firstCredential.type).toEqual([
+      'VerifiableCredential',
+      'UniversityDegreeCredential',
+    ])
+
     if (!resolvedProofRequest1.dcql || !resolvedProofRequest2.dcql) {
       throw new Error('dcql not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedProofRequest1.dcql.queryResult
     )
 
     const { authorizationResponsePayload: authorizationREsponsePayload1, serverResponse: serverResponse1 } =
-      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holderTenant.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedProofRequest1.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -253,7 +302,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationSessionId: verificationSession1.id,
     })
 
-    const { dcql } = await verifierTenant1_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+    const { dcql } = await verifierTenant1_2.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession1.id
     )
     expect(dcql).toMatchObject({
@@ -274,17 +323,18 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     })
 
-    const selectedCredentials2 = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials2 = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedProofRequest2.dcql.queryResult
     )
 
-    const { serverResponse: serverResponse2 } =
-      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const { serverResponse: serverResponse2 } = await holderTenant.openid4vc.holder.acceptOpenId4VpAuthorizationRequest(
+      {
         authorizationRequestPayload: resolvedProofRequest2.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials2,
         },
-      })
+      }
+    )
     expect(serverResponse2).toMatchObject({
       status: 200,
     })
@@ -298,7 +348,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession2.id,
     })
-    const { dcql: dcql2 } = await verifierTenant2_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+    const { dcql: dcql2 } = await verifierTenant2_2.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession2.id
     )
 
@@ -321,8 +371,334 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
   })
 
+  it('e2e flow with tenants, verifier endpoints verifying a W3C V2 SD-JWT', async () => {
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+    const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
+    const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
+
+    const openIdVerifierTenant1 = await verifierTenant1.modules.openid4vc.verifier.createVerifier()
+    const openIdVerifierTenant2 = await verifierTenant2.modules.openid4vc.verifier.createVerifier()
+
+    const signedCredential1 = await verifier.agent.w3cV2Credentials.signCredential({
+      format: ClaimFormat.SdJwtW3cVc,
+      credential: new W3cV2Credential({
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: new W3cV2Issuer({ id: verifier.did }),
+        credentialSubject: new W3cV2CredentialSubject({ id: holder1.did, name: 'Hello' }),
+        validFrom: w3cDate(Date.now()),
+      }),
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
+      verificationMethod: verifier.verificationMethod.id,
+      disclosureFrame: {
+        credentialSubject: {
+          _sd: ['name'],
+        },
+      },
+      holder: { method: 'did', didUrl: holder1.kid },
+    })
+
+    const signedCredential2 = await verifier.agent.w3cV2Credentials.signCredential({
+      format: ClaimFormat.SdJwtW3cVc,
+      credential: new W3cV2Credential({
+        type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+        issuer: new W3cV2Issuer({ id: verifier.did }),
+        credentialSubject: new W3cV2CredentialSubject({ id: holder1.did, name: 'World' }),
+        issuanceDate: w3cDate(Date.now()),
+      }),
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
+      verificationMethod: verifier.verificationMethod.id,
+      disclosureFrame: {
+        credentialSubject: {
+          _sd: ['name'],
+        },
+      },
+      holder: { method: 'did', didUrl: holder1.kid },
+    })
+
+    await holderTenant.w3cV2Credentials.store({ record: W3cV2CredentialRecord.fromCredential(signedCredential1) })
+    await holderTenant.w3cV2Credentials.store({ record: W3cV2CredentialRecord.fromCredential(signedCredential2) })
+
+    const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
+      await verifierTenant1.modules.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifierTenant1.verifierId,
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier1.verificationMethod.id,
+        },
+        dcql: {
+          query: {
+            credentials: [
+              {
+                id: 'OpenBadgeCredentialDescriptor',
+                format: 'vc+sd-jwt',
+                meta: {
+                  type_values: [['OpenBadgeCredential']],
+                },
+                claims: [
+                  {
+                    path: ['credentialSubject', 'name'],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        version: 'v1',
+      })
+
+    expect(authorizationRequestUri1).toEqual(
+      `openid4vp://?client_id=decentralized_identifier%3A${encodeURIComponent(verifier1.did)}&request_uri=${encodeURIComponent(
+        verificationSession1.authorizationRequestUri as string
+      )}`
+    )
+
+    const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
+      await verifierTenant2.modules.openid4vc.verifier.createAuthorizationRequest({
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier2.verificationMethod.id,
+        },
+        dcql: {
+          query: {
+            credentials: [
+              {
+                id: 'UniversityDegree',
+                format: 'vc+sd-jwt',
+                meta: {
+                  type_values: [['UniversityDegreeCredential']],
+                },
+                claims: [
+                  {
+                    path: ['credentialSubject', 'name'],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        verifierId: openIdVerifierTenant2.verifierId,
+        version: 'v1',
+      })
+
+    expect(authorizationRequestUri2).toEqual(
+      `openid4vp://?client_id=decentralized_identifier%3A${encodeURIComponent(verifier2.did)}&request_uri=${encodeURIComponent(
+        verificationSession2.authorizationRequestUri as string
+      )}`
+    )
+
+    await verifierTenant1.endSession()
+    await verifierTenant2.endSession()
+
+    const resolvedProofRequest1 =
+      await holderTenant.modules.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1)
+
+    expect(resolvedProofRequest1.dcql?.queryResult).toMatchObject({
+      can_be_satisfied: true,
+      credential_matches: {
+        OpenBadgeCredentialDescriptor: {
+          success: true,
+          valid_credentials: [
+            {
+              record: {
+                credentialInstances: [
+                  {
+                    credential: expect.stringContaining('ey'),
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    })
+
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
+    const validCredential: any =
+      resolvedProofRequest1.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor.valid_credentials?.[0]
+
+    expect((validCredential.record as W3cV2CredentialRecord).firstCredential.resolvedCredential.type).toEqual([
+      'VerifiableCredential',
+      'OpenBadgeCredential',
+    ])
+
+    const resolvedProofRequest2 =
+      await holderTenant.modules.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
+
+    expect(resolvedProofRequest2.dcql?.queryResult).toMatchObject({
+      can_be_satisfied: true,
+      credential_matches: {
+        UniversityDegree: {
+          success: true,
+          valid_credentials: [
+            {
+              record: {
+                credentialInstances: [
+                  {
+                    credential: expect.stringContaining('ey'),
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    })
+
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
+    const validCredential2: any =
+      resolvedProofRequest2.dcql?.queryResult.credential_matches.UniversityDegree.valid_credentials?.[0]
+    expect((validCredential2.record as W3cV2CredentialRecord).firstCredential.resolvedCredential.type).toEqual([
+      'VerifiableCredential',
+      'UniversityDegreeCredential',
+    ])
+
+    if (!resolvedProofRequest1.dcql || !resolvedProofRequest2.dcql) {
+      throw new Error('dcql not defined')
+    }
+
+    const selectedCredentials = holder.agent.modules.openid4vc.holder.selectCredentialsForDcqlRequest(
+      resolvedProofRequest1.dcql.queryResult
+    )
+
+    const { authorizationResponsePayload: authorizationREsponsePayload1, serverResponse: serverResponse1 } =
+      await holderTenant.modules.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedProofRequest1.authorizationRequestPayload,
+        dcql: {
+          credentials: selectedCredentials,
+        },
+      })
+
+    expect(authorizationREsponsePayload1).toEqual({
+      state: expect.any(String),
+      vp_token: {
+        OpenBadgeCredentialDescriptor: [expect.any(String)],
+      },
+    })
+    expect(serverResponse1).toEqual({
+      body: {},
+      status: 200,
+    })
+
+    // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
+    // that the RP sent in the Authorization Request as an audience.
+    // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
+    const verifierTenant1_2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifierTenant1_2.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.ResponseVerified,
+      verificationSessionId: verificationSession1.id,
+    })
+
+    const { dcql } = await verifierTenant1_2.modules.openid4vc.verifier.getVerifiedAuthorizationResponse(
+      verificationSession1.id
+    )
+    expect(dcql).toMatchObject({
+      query: {
+        credentials: [
+          {
+            format: 'vc+sd-jwt',
+            meta: {
+              type_values: [['OpenBadgeCredential']],
+            },
+            id: 'OpenBadgeCredentialDescriptor',
+          },
+        ],
+      },
+      presentations: {
+        OpenBadgeCredentialDescriptor: [
+          {
+            resolvedPresentation: {
+              verifiableCredential: [
+                {
+                  type: 'EnvelopedVerifiableCredential',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    })
+    expect(
+      asArray(
+        (dcql?.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+          .verifiableCredential
+      )[0].resolvedCredential
+    ).toMatchObject({
+      type: ['VerifiableCredential', 'OpenBadgeCredential'],
+      credentialSubject: {
+        id: holder1.did,
+      },
+    })
+
+    const selectedCredentials2 = holder.agent.modules.openid4vc.holder.selectCredentialsForDcqlRequest(
+      resolvedProofRequest2.dcql.queryResult
+    )
+
+    const { serverResponse: serverResponse2 } =
+      await holderTenant.modules.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedProofRequest2.authorizationRequestPayload,
+        dcql: {
+          credentials: selectedCredentials2,
+        },
+      })
+    expect(serverResponse2).toMatchObject({
+      status: 200,
+    })
+
+    // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
+    // that the RP sent in the Authorization Request as an audience.
+    // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
+    const verifierTenant2_2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifierTenant2_2.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.ResponseVerified,
+      verificationSessionId: verificationSession2.id,
+    })
+    const { dcql: dcql2 } = await verifierTenant2_2.modules.openid4vc.verifier.getVerifiedAuthorizationResponse(
+      verificationSession2.id
+    )
+
+    expect(dcql2).toMatchObject({
+      query: {
+        credentials: [
+          {
+            format: 'vc+sd-jwt',
+            meta: {
+              type_values: [['UniversityDegreeCredential']],
+            },
+            id: 'UniversityDegree',
+          },
+        ],
+      },
+      presentations: {
+        UniversityDegree: [
+          {
+            resolvedPresentation: {
+              verifiableCredential: [
+                {
+                  type: 'EnvelopedVerifiableCredential',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    })
+    expect(
+      asArray(
+        (dcql2?.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+          .verifiableCredential
+      )[0].resolvedCredential
+    ).toMatchObject({
+      type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+      credentialSubject: {
+        id: holder1.did,
+      },
+    })
+  })
+
   it('Invalid verifier attestation in combination with dcql', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const certificate = await verifier.agent.x509.createCertificate({
       issuer: { commonName: 'Credo', countryName: 'NL' },
@@ -335,7 +711,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     verifier.agent.x509.config.addTrustedCertificate(certificate.toString('base64'))
 
     await expect(
-      verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         responseMode: 'direct_post.jwt',
         requestSigner: {
@@ -364,7 +740,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow (jarm) with verifier endpoints verifying a sd-jwt-vc with selective disclosure (transaction data)', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -392,7 +768,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -415,7 +791,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         responseMode: 'direct_post.jwt',
         requestSigner: {
@@ -444,7 +820,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
     expect(resolvedAuthorizationRequest.authorizationRequestPayload.response_mode).toEqual('direct_post.jwt')
 
     expect(resolvedAuthorizationRequest.authorizationRequestPayload).toMatchObject({
@@ -502,12 +878,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('DCQL not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -534,7 +910,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationSessionId: verificationSession.id,
     })
     const { dcql, transactionData: _transactionData } =
-      await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
+      await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     const presentation = dcql?.presentations.OpenBadgeCredentialDescriptor[0] as SdJwtVc
     expect(_transactionData).toEqual([
@@ -581,12 +957,17 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'dc+sd-jwt',
+            },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
             },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
@@ -631,7 +1012,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with unsiged request (redirect_uri)', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -651,7 +1032,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     })
 
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
     const dcqlQuery = {
       credentials: [
         {
@@ -670,7 +1051,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, authorizationRequestObject, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'none',
@@ -683,11 +1064,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?response_type=vp_token&client_id=redirect_uri%3A${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_uri=${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_mode=direct_post&nonce=${authorizationRequestObject.nonce}&dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22OpenBadgeCredentialDescriptor%22%2C%22format%22%3A%22dc%2Bsd-jwt%22%2C%22meta%22%3A%7B%22vct_values%22%3A%5B%22OpenBadgeCredential%22%5D%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22university%22%5D%7D%5D%7D%5D%7D&client_metadata=%7B%22vp_formats_supported%22%3A%7B%22dc%2Bsd-jwt%22%3A%7B%22sd-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22ES256K%22%5D%2C%22kb-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22ES256K%22%5D%7D%7D%2C%22response_types_supported%22%3A%5B%22vp_token%22%5D%7D&state=${authorizationRequestObject.state}`
+      `openid4vp://?response_type=vp_token&client_id=redirect_uri%3A${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_uri=${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_mode=direct_post&nonce=${authorizationRequestObject.nonce}&dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22OpenBadgeCredentialDescriptor%22%2C%22format%22%3A%22dc%2Bsd-jwt%22%2C%22meta%22%3A%7B%22vct_values%22%3A%5B%22OpenBadgeCredential%22%5D%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22university%22%5D%7D%5D%7D%5D%7D&client_metadata=%7B%22vp_formats_supported%22%3A%7B%22dc%2Bsd-jwt%22%3A%7B%22sd-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%2C%22kb-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%7D%7D%2C%22response_types_supported%22%3A%5B%22vp_token%22%5D%7D&state=${authorizationRequestObject.state}`
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.signedAuthorizationRequest).toBeUndefined()
     expect(resolvedAuthorizationRequest.verifier).toEqual({
@@ -700,12 +1081,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('dcql not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -733,7 +1114,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -762,7 +1143,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -785,7 +1166,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'x5c',
@@ -811,7 +1192,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.dcql?.queryResult).toEqual({
       can_be_satisfied: true,
@@ -864,12 +1245,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('DCQL not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -895,9 +1276,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { dcql } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
-      verificationSession.id
-    )
+    const { dcql } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     const presentation = dcql?.presentations.OpenBadgeCredentialDescriptor[0] as SdJwtVc
 
@@ -923,12 +1302,17 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'vc+sd-jwt',
+            },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
             },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
@@ -973,7 +1357,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying multiple sd-jwt-vc for a single credential query', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -1019,8 +1403,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
-    await holder.agent.sdJwtVc.store(signedSdJwtVc2.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc2) })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -1044,7 +1428,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'x5c',
@@ -1070,7 +1454,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.dcql?.queryResult).toEqual({
       can_be_satisfied: true,
@@ -1159,23 +1543,23 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor.valid_credentials
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: {
             OpenBadgeCredentialDescriptor: [
               {
-                claimFormat: ClaimFormat.SdJwtVc,
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                claimFormat: ClaimFormat.SdJwtDc,
+                // biome-ignore lint/suspicious/noExplicitAny: no explanation
                 credentialRecord: (validCredentials?.[0] as any).record,
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                // biome-ignore lint/suspicious/noExplicitAny: no explanation
                 disclosedPayload: (validCredentials?.[0] as any).claims.valid_claim_sets[0].output,
               },
               {
-                claimFormat: ClaimFormat.SdJwtVc,
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                claimFormat: ClaimFormat.SdJwtDc,
+                // biome-ignore lint/suspicious/noExplicitAny: no explanation
                 credentialRecord: (validCredentials?.[1] as any).record,
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                // biome-ignore lint/suspicious/noExplicitAny: no explanation
                 disclosedPayload: (validCredentials?.[1] as any).claims.valid_claim_sets[0].output,
               },
             ],
@@ -1202,9 +1586,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { dcql } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
-      verificationSession.id
-    )
+    const { dcql } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     const presentation = dcql?.presentations.OpenBadgeCredentialDescriptor[0] as SdJwtVc
     const presentation1 = dcql?.presentations.OpenBadgeCredentialDescriptor[1] as SdJwtVc
@@ -1236,12 +1618,17 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'vc+sd-jwt',
+            },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
             },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
@@ -1282,12 +1669,17 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
           },
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'vc+sd-jwt',
+            },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
             },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
@@ -1332,7 +1724,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying two sd-jwt-vcs with selective disclosure', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -1377,8 +1769,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
-    await holder.agent.sdJwtVc.store(signedSdJwtVc2.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc2) })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -1413,7 +1805,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
 
         requestSigner: {
@@ -1437,7 +1829,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.transactionData).toEqual([
       {
@@ -1554,12 +1946,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('DCQL not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -1594,7 +1986,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationSessionId: verificationSession.id,
     })
     const { dcql, transactionData: tdResult } =
-      await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
+      await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     expect(tdResult).toEqual([
       {
@@ -1662,12 +2054,17 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'dc+sd-jwt',
+            },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
             },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
@@ -1710,12 +2107,17 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor2: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'dc+sd-jwt',
+            },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
             },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
@@ -1760,7 +2162,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc allowed with direct_post', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const issuerCertificate = await X509Service.createCertificate(verifier.agent.context, {
       authorityKey: Kms.PublicJwk.fromPublicJwk(
@@ -1804,7 +2206,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.mdoc.store(signedMdoc)
+    signedMdoc.deviceKeyId = holderKey.keyId
+    await holder.agent.mdoc.store({
+      record: MdocRecord.fromMdoc(signedMdoc),
+    })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -1828,7 +2233,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'direct_post',
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
@@ -1840,17 +2245,17 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       })
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     if (!resolvedAuthorizationRequest.dcql) {
       throw new Error('DCQL not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
-    const result = await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const result = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
       authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
       dcql: {
         credentials: selectedCredentials,
@@ -1873,7 +2278,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc and sd-jwt (jarm)', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -1891,7 +2296,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         _sd: ['university', 'name'],
       },
     })
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
 
     const issuerCertificate = await X509Service.createCertificate(verifier.agent.context, {
       authorityKey: Kms.PublicJwk.fromPublicJwk(
@@ -1941,7 +2346,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.mdoc.store(signedMdoc)
+    signedMdoc.deviceKeyId = holderKey.keyId
+    await holder.agent.mdoc.store({
+      record: MdocRecord.fromMdoc(signedMdoc),
+    })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -1977,7 +2385,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'direct_post.jwt',
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
@@ -1997,7 +2405,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.dcql?.queryResult).toEqual({
       credentials: [
@@ -2124,12 +2532,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('DCQL not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -2157,9 +2565,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { dcql } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
-      verificationSession.id
-    )
+    const { dcql } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     const mdocPresentation = dcql?.presentations.university[0] as MdocDeviceResponse
     expect(mdocPresentation.documents).toHaveLength(1)
@@ -2183,7 +2589,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -2201,6 +2607,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 nonce: verificationSession.requestPayload.nonce,
                 sd_hash: expect.any(String),
               },
+            },
+            holder: {
+              didUrl:
+                'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+              method: 'did',
             },
             payload: {
               _sd: [expect.any(String), expect.any(String)],
@@ -2249,7 +2660,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc and sd-jwt (jarm) (dcql) (transaction data)', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -2267,7 +2678,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         _sd: ['university', 'name'],
       },
     })
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
 
     const selfSignedCertificate = await X509Service.createCertificate(verifier.agent.context, {
       authorityKey: Kms.PublicJwk.fromPublicJwk(
@@ -2326,7 +2737,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.mdoc.store(signedMdoc)
+    signedMdoc.deviceKeyId = holderKey.keyId
+    await holder.agent.mdoc.store({
+      record: MdocRecord.fromMdoc(signedMdoc),
+    })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
@@ -2353,7 +2767,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'direct_post.jwt',
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
@@ -2374,7 +2788,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       })
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.dcql).toEqual({
       queryResult: {
@@ -2508,12 +2922,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('Dcql not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -2535,7 +2949,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationSessionId: verificationSession.id,
     })
 
-    const { dcql, transactionData } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+    const { dcql, transactionData } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession.id
     )
 
@@ -2584,5 +2998,511 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         degree: 'bachelor',
       },
     })
+  })
+
+  it('e2e flow with verifier endpoints verifying sd-jwt-vc and mdoc with trusted_authorities (aki) - success case', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    // Create root certificate
+    const rootAuthorityKey = await verifier.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const rootCertificate = await X509Service.createCertificate(verifier.agent.context, {
+      authorityKey: Kms.PublicJwk.fromPublicJwk(rootAuthorityKey.publicJwk),
+      issuer: { commonName: 'Test Root CA', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign],
+          markAsCritical: true,
+        },
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 0,
+          markAsCritical: true,
+        },
+      },
+    })
+
+    // Create leaf certificate
+    const leafKey = await verifier.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const leafCertificate = await X509Service.createCertificate(verifier.agent.context, {
+      authorityKey: Kms.PublicJwk.fromPublicJwk(rootAuthorityKey.publicJwk),
+      subjectPublicKey: Kms.PublicJwk.fromPublicJwk(leafKey.publicJwk),
+      issuer: rootCertificate.issuer,
+      subject: { commonName: 'Test Document Signer', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        authorityKeyIdentifier: {
+          include: true,
+        },
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.DigitalSignature],
+          markAsCritical: true,
+        },
+        extendedKeyUsage: {
+          usages: [X509ExtendedKeyUsage.MdlDs],
+          markAsCritical: true,
+        },
+      },
+    })
+
+    // Get the AKI value from the leaf certificate for use in trusted_authorities
+    const akiValue = leafCertificate.authorityKeyIdentifier
+    if (!akiValue) {
+      throw new Error('Leaf certificate must have an authorityKeyIdentifier')
+    }
+    const akiBase64Url = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiValue))
+
+    // Set trusted certificates
+    verifier.agent.x509.config.setTrustedCertificates([rootCertificate.toString('pem')])
+    holder.agent.x509.config.setTrustedCertificates([rootCertificate.toString('pem')])
+
+    // Sign and store SD-JWT-VC with x5c containing only the leaf certificate
+    const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
+      holder: { method: 'did', didUrl: holder.kid },
+      issuer: {
+        method: 'x5c',
+        x5c: [leafCertificate], // Only include leaf certificate
+      },
+      payload: {
+        vct: 'OpenBadgeCredential',
+        university: 'innsbruck',
+        degree: 'bachelor',
+        name: 'John Doe',
+      },
+      disclosureFrame: {
+        _sd: ['university', 'name'],
+      },
+    })
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
+
+    // Create holder key for mDoc
+    const holderKey = Kms.PublicJwk.fromPublicJwk(
+      (
+        await holder.agent.kms.createKey({
+          type: {
+            kty: 'EC',
+            crv: 'P-256',
+          },
+        })
+      ).publicJwk
+    )
+
+    // Sign and store mDoc with only leaf certificate
+    const signedMdoc = await verifier.agent.mdoc.sign({
+      docType: 'org.eu.university',
+      holderKey,
+      issuerCertificate: leafCertificate,
+      namespaces: {
+        'eu.europa.ec.eudi.pid.1': {
+          university: 'innsbruck',
+          degree: 'bachelor',
+          name: 'John Doe',
+        },
+      },
+    })
+
+    signedMdoc.deviceKeyId = holderKey.keyId
+    await holder.agent.mdoc.store({
+      record: MdocRecord.fromMdoc(signedMdoc),
+    })
+
+    // Create verifier certificate for request signing
+    const verifierCertificate = await verifier.agent.x509.createCertificate({
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
+      issuer: { commonName: 'Verifier' },
+      extensions: {
+        subjectAlternativeName: {
+          name: [{ type: 'dns', value: 'localhost' }],
+        },
+      },
+    })
+
+    holder.agent.x509.config.addTrustedCertificate(verifierCertificate.toString('base64'))
+    verifier.agent.x509.config.addTrustedCertificate(verifierCertificate.toString('base64'))
+
+    // Create DCQL query with trusted_authorities specifying the AKI
+    const dcqlQuery = {
+      credentials: [
+        {
+          id: 'OpenBadgeCredentialDescriptor',
+          format: 'dc+sd-jwt',
+          meta: {
+            vct_values: ['OpenBadgeCredential'],
+          },
+          claims: [
+            {
+              path: ['university'],
+            },
+          ],
+          trusted_authorities: [
+            {
+              type: 'aki',
+              values: [akiBase64Url],
+            },
+          ],
+        },
+        {
+          format: 'mso_mdoc',
+          id: 'university',
+          meta: { doctype_value: 'org.eu.university' },
+          claims: [
+            {
+              path: ['eu.europa.ec.eudi.pid.1', 'name'],
+            },
+            {
+              path: ['eu.europa.ec.eudi.pid.1', 'degree'],
+            },
+          ],
+          trusted_authorities: [
+            {
+              type: 'aki',
+              values: [akiBase64Url],
+            },
+          ],
+        },
+      ],
+    } satisfies DcqlQuery
+
+    // Create authorization request
+    const { authorizationRequest, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        responseMode: 'direct_post.jwt',
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: {
+          method: 'x5c',
+          x5c: [verifierCertificate],
+        },
+        dcql: {
+          query: dcqlQuery,
+        },
+        version: 'v1',
+      })
+
+    // Resolve authorization request
+    const resolvedAuthorizationRequest =
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+
+    // Verify that credentials match with trusted_authorities validation
+    expect(resolvedAuthorizationRequest.dcql?.queryResult.can_be_satisfied).toBe(true)
+    expect(
+      resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor.success
+    ).toBe(true)
+    expect(resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.university.success).toBe(true)
+
+    const sdJwtMatch =
+      resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor
+        .valid_credentials?.[0]
+    expect(sdJwtMatch?.trusted_authorities).toEqual({
+      success: true,
+      failed_trusted_authority: undefined,
+      valid_trusted_authority: {
+        output: {
+          type: 'aki',
+          value: akiBase64Url,
+        },
+        success: true,
+        trusted_authority_index: 0,
+      },
+    })
+
+    const mdocMatch =
+      resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.university.valid_credentials?.[0]
+    expect(mdocMatch?.trusted_authorities).toEqual({
+      success: true,
+      failed_trusted_authority: undefined,
+      valid_trusted_authority: {
+        output: {
+          type: 'aki',
+          value: akiBase64Url,
+        },
+        success: true,
+        trusted_authority_index: 0,
+      },
+    })
+
+    if (!resolvedAuthorizationRequest.dcql) {
+      throw new Error('Expected DCQL')
+    }
+
+    // Select and present credentials
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
+      resolvedAuthorizationRequest.dcql.queryResult
+    )
+
+    const { serverResponse } = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
+      dcql: {
+        credentials: selectedCredentials,
+      },
+    })
+
+    expect(serverResponse).toMatchObject({ status: 200 })
+
+    // Wait for verification to complete
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.ResponseVerified,
+      verificationSessionId: verificationSession.id,
+    })
+
+    // Get verified response
+    const { dcql } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
+
+    expect(dcql).toBeDefined()
+    expect(dcql?.presentations.OpenBadgeCredentialDescriptor).toHaveLength(1)
+    expect(dcql?.presentations.university).toHaveLength(1)
+  })
+
+  it('e2e flow with verifier endpoints verifying sd-jwt-vc with trusted_authorities (aki) - failure case with mismatched aki', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    // Create root certificate
+    const rootAuthorityKey = await verifier.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const rootCertificate = await X509Service.createCertificate(verifier.agent.context, {
+      authorityKey: Kms.PublicJwk.fromPublicJwk(rootAuthorityKey.publicJwk),
+      issuer: { commonName: 'Test Root CA', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign],
+          markAsCritical: true,
+        },
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 0,
+          markAsCritical: true,
+        },
+      },
+    })
+
+    // Create leaf certificate
+    const leafKey = await verifier.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const leafCertificate = await X509Service.createCertificate(verifier.agent.context, {
+      authorityKey: Kms.PublicJwk.fromPublicJwk(rootAuthorityKey.publicJwk),
+      subjectPublicKey: Kms.PublicJwk.fromPublicJwk(leafKey.publicJwk),
+      issuer: rootCertificate.issuer,
+      subject: { commonName: 'Test Document Signer', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        authorityKeyIdentifier: {
+          include: true,
+        },
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.DigitalSignature],
+          markAsCritical: true,
+        },
+        extendedKeyUsage: {
+          usages: [X509ExtendedKeyUsage.MdlDs],
+          markAsCritical: true,
+        },
+      },
+    })
+
+    // Set trusted certificates
+    verifier.agent.x509.config.setTrustedCertificates([rootCertificate.toString('pem')])
+    holder.agent.x509.config.setTrustedCertificates([rootCertificate.toString('pem')])
+
+    // Sign and store SD-JWT-VC with x5c containing only the leaf certificate
+    const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
+      holder: { method: 'did', didUrl: holder.kid },
+      issuer: {
+        method: 'x5c',
+        x5c: [leafCertificate], // Only include leaf certificate
+      },
+      payload: {
+        vct: 'OpenBadgeCredential',
+        university: 'innsbruck',
+        degree: 'bachelor',
+        name: 'John Doe',
+      },
+      disclosureFrame: {
+        _sd: ['university', 'name'],
+      },
+    })
+    await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
+
+    // Create verifier certificate for request signing
+    const verifierCertificate = await verifier.agent.x509.createCertificate({
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
+      issuer: { commonName: 'Verifier' },
+      extensions: {
+        subjectAlternativeName: {
+          name: [{ type: 'dns', value: 'localhost' }],
+        },
+      },
+    })
+
+    holder.agent.x509.config.addTrustedCertificate(verifierCertificate.toString('base64'))
+    verifier.agent.x509.config.addTrustedCertificate(verifierCertificate.toString('base64'))
+
+    // Create DCQL query with DIFFERENT AKI value that doesn't match the credential
+    const wrongAkiValue = TypedArrayEncoder.toBase64URL(new Uint8Array(20).fill(0xff))
+
+    // Get the AKI value from the leaf certificate for use in trusted_authorities
+    const akiValue = leafCertificate.authorityKeyIdentifier
+    if (!akiValue) {
+      throw new Error('Leaf certificate must have an authorityKeyIdentifier')
+    }
+    const akiBase64Url = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiValue))
+
+    const dcqlQuery = {
+      credentials: [
+        {
+          id: 'OpenBadgeCredentialDescriptor',
+          format: 'dc+sd-jwt',
+          meta: {
+            vct_values: ['OpenBadgeCredential'],
+          },
+          claims: [
+            {
+              path: ['university'],
+            },
+          ],
+          trusted_authorities: [
+            {
+              type: 'aki',
+              values: [wrongAkiValue], // Wrong AKI value
+            },
+          ],
+        },
+      ],
+    } satisfies DcqlQuery
+
+    // Create authorization request
+    const {
+      authorizationRequest,
+      verificationSession: { id: verificationSessionId },
+    } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+      responseMode: 'direct_post.jwt',
+      verifierId: openIdVerifier.verifierId,
+      requestSigner: {
+        method: 'x5c',
+        x5c: [verifierCertificate],
+      },
+      dcql: {
+        query: dcqlQuery,
+      },
+      version: 'v1',
+    })
+
+    // Remove trusted authorities
+    // @ts-expect-error
+    dcqlQuery.credentials[0].trusted_authorities = undefined
+
+    // Create authorization request
+    const { authorizationRequest: authorizationRequest2 } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        responseMode: 'direct_post.jwt',
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: {
+          method: 'x5c',
+          x5c: [verifierCertificate],
+        },
+        dcql: {
+          query: dcqlQuery,
+        },
+        version: 'v1',
+      })
+
+    // Resolve authorization request
+    const resolvedAuthorizationRequest =
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+
+    const resolveAuthorizationWithCredentials =
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest2)
+
+    // Verify that the request cannot be satisfied due to mismatched AKI
+    expect(resolvedAuthorizationRequest.dcql?.queryResult.can_be_satisfied).toBe(false)
+
+    // Verify that the credential failed trusted_authorities validation
+    const credentialMatch =
+      resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor
+
+    expect(credentialMatch?.success).toBe(false)
+
+    // Check that there are failed credentials with trusted_authorities failure
+    const failedCredentials = credentialMatch?.failed_credentials
+    expect(failedCredentials).toBeDefined()
+    expect(failedCredentials?.length).toBeGreaterThan(0)
+
+    const failedCredential = failedCredentials?.[0]
+    expect(failedCredential?.trusted_authorities?.success).toBe(false)
+
+    // Overwrite failed query with success query credentials
+    resolvedAuthorizationRequest.dcql = resolveAuthorizationWithCredentials.dcql
+
+    if (!resolvedAuthorizationRequest.dcql) {
+      throw new Error('Expected DCQL')
+    }
+
+    // Select and present credentials
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
+      resolvedAuthorizationRequest.dcql.queryResult
+    )
+
+    const { serverResponse } = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
+      dcql: {
+        credentials: selectedCredentials,
+      },
+    })
+
+    expect(serverResponse).toEqual({
+      status: 400,
+      body: {
+        error: 'invalid_request',
+        error_description: 'Presentation submission does not satisfy presentation request.',
+      },
+    })
+
+    // Wait for verification to complete
+    const verificationSession = await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.Error,
+      verificationSessionId,
+    })
+
+    expect(verificationSession.errorMessage).toEqual(`Presentation submission does not satisfy presentation request.
+{
+  "error": "invalid_request",
+  "error_description": "Presentation submission does not satisfy presentation request."
+} Presentations do not satisfy the DCQL query.
+ - Presentation at index 0 does not match query credential 'OpenBadgeCredentialDescriptor'. {
+  "trusted_authorities": [
+    {
+      "values": [
+        "Expected one of the trusted authority values to be '__________________________8' but received '${akiBase64Url}'"
+      ]
+    }
+  ]
+}`)
   })
 })

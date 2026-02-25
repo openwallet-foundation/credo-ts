@@ -1,8 +1,6 @@
-import type { IndyVdrPoolConfig } from '../pool'
-
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
-
 import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'
+import type { IndyVdrPoolConfig } from '../pool'
 
 describe('IndyVdrModuleConfig', () => {
   test('sets values', () => {

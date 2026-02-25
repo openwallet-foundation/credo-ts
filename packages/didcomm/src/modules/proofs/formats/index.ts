@@ -1,9 +1,9 @@
-export * from './ProofFormat'
-export * from './ProofFormatService'
-export * from './ProofFormatServiceOptions'
+export * from './DidCommProofFormat'
+export * from './DidCommProofFormatService'
+export * from './DidCommProofFormatServiceOptions'
 
 export * from './dif-presentation-exchange'
 
-import * as ProofFormatServiceOptions from './ProofFormatServiceOptions'
+import * as ProofFormatServiceOptions from './DidCommProofFormatServiceOptions'
 
 export { ProofFormatServiceOptions }

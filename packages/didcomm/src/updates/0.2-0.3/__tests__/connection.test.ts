@@ -1,92 +1,103 @@
-import type { MediationRecordProps } from '../../../modules'
-import type { ConnectionRecordProps, CustomConnectionTags } from '../../../modules/connections'
-
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { Agent } from '../../../../..//core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
-import { MediationRecord, MediationRole, MediationState } from '../../../modules'
-import { ConnectionRecord, ConnectionType, DidExchangeRole, DidExchangeState } from '../../../modules/connections'
-import { ConnectionRepository } from '../../../modules/connections/repository/ConnectionRepository'
-import { MediationRepository } from '../../../modules/routing/repository/MediationRepository'
+import type { DidCommMediationRecordProps } from '../../../modules'
+import { DidCommMediationRecord, DidCommMediationRole, DidCommMediationState } from '../../../modules'
+import type { CustomDidCommConnectionTags, DidCommConnectionRecordProps } from '../../../modules/connections'
+import {
+  DidCommConnectionRecord,
+  DidCommConnectionType,
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+} from '../../../modules/connections'
+import { DidCommConnectionRepository } from '../../../modules/connections/repository/DidCommConnectionRepository'
+import { DidCommMediationRepository } from '../../../modules/routing/repository/DidCommMediationRepository'
 import * as testModule from '../connection'
 
-const agentConfig = getAgentConfig('Migration ConnectionRecord 0.2-0.3')
+const agentConfig = getAgentConfig('Migration DidCommConnectionRecord 0.2-0.3')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/connections/repository/ConnectionRepository')
-const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
+vi.mock('../../../modules/connections/repository/DidCommConnectionRepository')
+const ConnectionRepositoryMock = DidCommConnectionRepository as MockedClassConstructor<
+  typeof DidCommConnectionRepository
+>
 const connectionRepository = new ConnectionRepositoryMock()
 
-jest.mock('../../../modules/routing/repository/MediationRepository')
-const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
+vi.mock('../../../modules/routing/repository/DidCommMediationRepository')
+const MediationRepositoryMock = DidCommMediationRepository as MockedClassConstructor<typeof DidCommMediationRepository>
 const mediationRepository = new MediationRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
-      config: agentConfig,
-      context: agentContext,
-      dependencyManager: {
-        resolve: jest.fn((token) => (token === ConnectionRepositoryMock ? connectionRepository : mediationRepository)),
-      },
-    })),
+    Agent: vi.fn(function () {
+      return {
+        config: agentConfig,
+        context: agentContext,
+        dependencyManager: {
+          resolve: vi.fn(function (token) {
+            return token === ConnectionRepositoryMock ? connectionRepository : mediationRepository
+          }),
+        },
+      }
+    }),
   }
 })
 
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.2-0.3 | Connection', () => {
   let agent: Agent
 
   beforeEach(() => {
-    agent = AgentMock()
+    agent = new AgentMock()
   })
 
   describe('migrateConnectionRecordToV0_3', () => {
     it('should fetch all records and apply the needed updates', async () => {
       const connectionRecordsProps = [
         getConnection({
-          state: DidExchangeState.Completed,
-          role: DidExchangeRole.Responder,
+          state: DidCommDidExchangeState.Completed,
+          role: DidCommDidExchangeRole.Responder,
           id: 'theConnectionId',
         }),
         getConnection({
-          state: DidExchangeState.Completed,
-          role: DidExchangeRole.Responder,
+          state: DidCommDidExchangeState.Completed,
+          role: DidCommDidExchangeRole.Responder,
           id: 'theConnectionId2',
         }),
       ]
 
       const mediationRecordsProps = [
         getMediator({
-          state: MediationState.Granted,
-          role: MediationRole.Recipient,
+          state: DidCommMediationState.Granted,
+          role: DidCommMediationRole.Recipient,
           connectionId: 'theConnectionId',
           threadId: 'theThreadId',
         }),
       ]
 
-      const connectionRecords: ConnectionRecord[] = connectionRecordsProps
+      const connectionRecords: DidCommConnectionRecord[] = connectionRecordsProps
 
       mockFunction(connectionRepository.getAll).mockResolvedValue(connectionRecords)
 
-      const mediationRecords: MediationRecord[] = mediationRecordsProps
+      const mediationRecords: DidCommMediationRecord[] = mediationRecordsProps
 
       mockFunction(mediationRepository.getAll).mockResolvedValue(mediationRecords)
 
       await testModule.migrateConnectionRecordToV0_3(agent)
 
-      expect(connectionRepository.getAll).toBeCalledTimes(1)
-      expect(mediationRepository.getAll).toBeCalledTimes(1)
-      expect(connectionRepository.update).toBeCalledTimes(connectionRecords.length)
+      expect(connectionRepository.getAll).toHaveBeenCalledTimes(1)
+      expect(mediationRepository.getAll).toHaveBeenCalledTimes(1)
+      expect(connectionRepository.update).toHaveBeenCalledTimes(connectionRecords.length)
     })
   })
 
   describe('migrateConnectionRecordMediatorTags', () => {
     it('should set the mediator connection type on the record, connection type tags should be undefined', async () => {
       const connectionRecordProps = {
-        state: DidExchangeState.Completed,
-        role: DidExchangeRole.Responder,
+        state: DidCommDidExchangeState.Completed,
+        role: DidCommDidExchangeRole.Responder,
         id: 'theConnectionId',
       }
 
@@ -96,7 +107,7 @@ describe('0.2-0.3 | Connection', () => {
 
       expect(connectionRecord.toJSON()).toEqual({
         ...connectionRecordProps,
-        connectionTypes: [ConnectionType.Mediator],
+        connectionTypes: [DidCommConnectionType.Mediator],
         _tags: {
           connectionType: undefined,
         },
@@ -108,8 +119,8 @@ describe('0.2-0.3 | Connection', () => {
 
     it('should add the mediator connection type to existing types on the record, connection type tags should be undefined', async () => {
       const connectionRecordProps = {
-        state: DidExchangeState.Completed,
-        role: DidExchangeRole.Responder,
+        state: DidCommDidExchangeState.Completed,
+        role: DidCommDidExchangeRole.Responder,
         id: 'theConnectionId',
         _tags: {
           connectionType: ['theConnectionType'],
@@ -122,7 +133,7 @@ describe('0.2-0.3 | Connection', () => {
 
       expect(connectionRecord.toJSON()).toEqual({
         ...connectionRecordProps,
-        connectionTypes: ['theConnectionType', ConnectionType.Mediator],
+        connectionTypes: ['theConnectionType', DidCommConnectionType.Mediator],
         _tags: {
           connectionType: undefined,
         },
@@ -134,8 +145,8 @@ describe('0.2-0.3 | Connection', () => {
 
     it('should not set the mediator connection type on the record, connection type tags should be undefined', async () => {
       const connectionRecordProps = {
-        state: DidExchangeState.Completed,
-        role: DidExchangeRole.Responder,
+        state: DidCommDidExchangeState.Completed,
+        role: DidCommDidExchangeRole.Responder,
         id: 'theConnectionId',
       }
 
@@ -157,8 +168,8 @@ describe('0.2-0.3 | Connection', () => {
 
     it('should not add the mediator connection type to existing types on the record, connection type tags should be undefined', async () => {
       const connectionRecordProps = {
-        state: DidExchangeState.Completed,
-        role: DidExchangeRole.Responder,
+        state: DidCommDidExchangeState.Completed,
+        role: DidCommDidExchangeRole.Responder,
         id: 'theConnectionId',
         _tags: {
           connectionType: ['theConnectionType'],
@@ -183,10 +194,15 @@ describe('0.2-0.3 | Connection', () => {
   })
 })
 
-function getConnection({ state, role, id, _tags }: ConnectionRecordProps & { _tags?: CustomConnectionTags }) {
-  return JsonTransformer.fromJSON({ state, role, id, _tags }, ConnectionRecord)
+function getConnection({
+  state,
+  role,
+  id,
+  _tags,
+}: DidCommConnectionRecordProps & { _tags?: CustomDidCommConnectionTags }) {
+  return JsonTransformer.fromJSON({ state, role, id, _tags }, DidCommConnectionRecord)
 }
 
-function getMediator({ state, role, connectionId, threadId }: MediationRecordProps) {
-  return JsonTransformer.fromJSON({ state, role, connectionId, threadId }, MediationRecord)
+function getMediator({ state, role, connectionId, threadId }: DidCommMediationRecordProps) {
+  return JsonTransformer.fromJSON({ state, role, connectionId, threadId }, DidCommMediationRecord)
 }

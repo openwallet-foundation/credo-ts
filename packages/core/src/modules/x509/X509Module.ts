@@ -1,9 +1,6 @@
 import type { DependencyManager, Module } from '../../plugins'
-import type { X509ModuleConfigOptions } from './X509ModuleConfig'
-
-import { AgentConfig } from '../../agent/AgentConfig'
-
 import { X509Api } from './X509Api'
+import type { X509ModuleConfigOptions } from './X509ModuleConfig'
 import { X509ModuleConfig } from './X509ModuleConfig'
 import { X509Service } from './X509Service'
 
@@ -23,13 +20,6 @@ export class X509Module implements Module {
    * Registers the dependencies of the sd-jwt-vc module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
-    // Warn about experimental module
-    dependencyManager
-      .resolve(AgentConfig)
-      .logger.warn(
-        "The 'X509' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-      )
-
     // Register config
     dependencyManager.registerInstance(X509ModuleConfig, this.config)
 

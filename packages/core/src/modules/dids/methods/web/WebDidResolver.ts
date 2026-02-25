@@ -1,12 +1,10 @@
-import type { AgentContext } from '../../../../agent'
-import type { DidResolver } from '../../domain/DidResolver'
-import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../../types'
-
 import { Resolver } from 'did-resolver'
 import * as didWeb from 'web-did-resolver'
-
+import type { AgentContext } from '../../../../agent'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { DidDocument } from '../../domain'
+import type { DidResolver } from '../../domain/DidResolver'
+import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../../types'
 
 export class WebDidResolver implements DidResolver {
   public readonly supportedMethods

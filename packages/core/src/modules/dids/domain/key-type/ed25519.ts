@@ -2,15 +2,15 @@ import { CredoError } from '../../../../error'
 import { Ed25519PublicJwk } from '../../../kms'
 import type { VerificationMethod } from '../verificationMethod'
 import {
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-  VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
-  VERIFICATION_METHOD_TYPE_MULTIKEY,
   getEd25519VerificationKey2018,
   getPublicJwkFromEd25519VerificationKey2018,
   getPublicJwkFromEd25519VerificationKey2020,
   isEd25519VerificationKey2018,
   isEd25519VerificationKey2020,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+  VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
+  VERIFICATION_METHOD_TYPE_MULTIKEY,
 } from '../verificationMethod'
 import type { KeyDidMapping } from './keyDidMapping'
 

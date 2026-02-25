@@ -4,7 +4,7 @@ import { Provider } from 'oidc-provider'
 // I can't figure out how to bind a custom request parameter to the session
 // so it can be bound to the access token. This is a very hacky 'global' issuer_state
 // and only works if only person is authenticating. Of course very unsecure, but it's a demo
-let issuer_state: string | undefined = undefined
+let issuer_state: string | undefined
 
 const PROVIDER_HOST = process.env.PROVIDER_HOST ?? 'http://localhost:3042'
 const ISSUER_HOST = process.env.ISSUER_HOST ?? 'http://localhost:2000'
@@ -41,10 +41,6 @@ const oidc = new Provider(PROVIDER_HOST, {
     ],
   },
   scopes: [],
-  pkce: {
-    methods: ['S256'],
-    required: () => true,
-  },
   extraTokenClaims: async (_context, token) => {
     if (token.kind === 'AccessToken') {
       return {
@@ -116,7 +112,9 @@ oidc.use(async (ctx, next) => {
 
   // We hack the client secret (to allow public client with unregistered redirect uri)
   if (ctx.path === '/request' || ctx.path === '/token') {
+    // @ts-expect-error
     ctx.request.body.client_id = 'wallet'
+    // @ts-expect-error
     ctx.request.body.client_secret = 'wallet'
   }
 

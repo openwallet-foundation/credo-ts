@@ -1,4 +1,4 @@
-import { JsonObject, JsonTransformer, W3cCredential } from '@credo-ts/core'
+import { type JsonObject, JsonTransformer, W3cCredential } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsBoolean, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator'
 

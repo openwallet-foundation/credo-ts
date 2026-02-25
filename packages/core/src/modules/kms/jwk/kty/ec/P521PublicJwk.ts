@@ -1,16 +1,17 @@
-import { KnownJwaKeyAgreementAlgorithms, KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../../jwa'
-import { PublicJwkType } from '../PublicJwk'
-import { KmsJwkPublicEc } from './ecJwk'
+import type { AnyUint8Array } from '../../../../../types'
+import { KnownJwaKeyAgreementAlgorithms, type KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../../jwa'
+import type { PublicJwkType } from '../PublicJwk'
+import type { KmsJwkPublicEc } from './ecJwk'
 import { ecPublicJwkToPublicKey, ecPublicKeyToPublicJwk } from './ecPublicKey'
 
 type Jwk = KmsJwkPublicEc & { crv: 'P-521' }
 
 export class P521PublicJwk implements PublicJwkType<Jwk> {
   public static supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = [KnownJwaSignatureAlgorithms.ES512]
-  public static supportdEncryptionKeyAgreementAlgorithms = [KnownJwaKeyAgreementAlgorithms.ECDH_ES]
+  public static supportedEncryptionKeyAgreementAlgorithms = [KnownJwaKeyAgreementAlgorithms.ECDH_ES]
   public static multicodecPrefix = 4610
 
-  public supportdEncryptionKeyAgreementAlgorithms = P521PublicJwk.supportdEncryptionKeyAgreementAlgorithms
+  public supportedEncryptionKeyAgreementAlgorithms = P521PublicJwk.supportedEncryptionKeyAgreementAlgorithms
   public supportedSignatureAlgorithms = P521PublicJwk.supportedSignatureAlgorithms
   public multicodecPrefix = P521PublicJwk.multicodecPrefix
 
@@ -36,12 +37,12 @@ export class P521PublicJwk implements PublicJwkType<Jwk> {
     return ecPublicJwkToPublicKey(this.jwk, { compressed: true })
   }
 
-  public static fromPublicKey(publicKey: Uint8Array) {
+  public static fromPublicKey(publicKey: AnyUint8Array) {
     const jwk = ecPublicKeyToPublicJwk(publicKey, 'P-521')
     return new P521PublicJwk(jwk)
   }
 
-  public static fromMulticodec(multicodec: Uint8Array) {
+  public static fromMulticodec(multicodec: AnyUint8Array) {
     const jwk = ecPublicKeyToPublicJwk(multicodec, 'P-521')
     return new P521PublicJwk(jwk)
   }

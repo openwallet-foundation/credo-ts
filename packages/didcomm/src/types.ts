@@ -1,5 +1,5 @@
 export type ProtocolVersion = `${number}.${number}`
-export interface PlaintextMessage {
+export interface DidCommPlaintextMessage {
   '@type': string
   '@id': string
   '~thread'?: {
@@ -9,7 +9,7 @@ export interface PlaintextMessage {
   [key: string]: unknown
 }
 
-export type EncryptedMessage = {
+export type DidCommEncryptedMessage = {
   /**
    * The "protected" member MUST be present and contain the value
    * BASE64URL(UTF8(JWE Protected Header)) when the JWE Protected
@@ -44,8 +44,8 @@ export enum DidCommMimeType {
   V1 = 'application/didcomm-envelope-enc',
 }
 
-export interface OutboundPackage {
-  payload: EncryptedMessage
+export interface DidCommOutboundPackage {
+  payload: DidCommEncryptedMessage
   responseRequested?: boolean
   endpoint?: string
   connectionId?: string

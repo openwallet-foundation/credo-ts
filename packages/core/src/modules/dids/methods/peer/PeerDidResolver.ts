@@ -1,12 +1,11 @@
 import type { AgentContext } from '../../../../agent'
+import { CredoError } from '../../../../error'
 import type { DidDocument } from '../../domain'
 import type { DidResolver } from '../../domain/DidResolver'
+import { DidRepository } from '../../repository'
 import type { DidResolutionResult } from '../../types'
 
-import { CredoError } from '../../../../error'
-import { DidRepository } from '../../repository'
-
-import { PeerDidNumAlgo, getNumAlgoFromPeerDid, isValidPeerDid } from './didPeer'
+import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from './didPeer'
 import { didToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
 import { didToNumAlgo4DidDocument, isShortFormDidPeer4 } from './peerDidNumAlgo4'

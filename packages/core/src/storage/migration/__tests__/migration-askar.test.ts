@@ -1,7 +1,10 @@
 import { readFileSync } from 'fs'
 import path from 'path'
 
-import { CredentialExchangeRecord, CredentialRepository } from '../../../../../didcomm/src/modules/credentials'
+import {
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialExchangeRepository,
+} from '../../../../../didcomm/src/modules/credentials'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
@@ -18,7 +21,7 @@ const aliceCredentialRecordsString = readFileSync(
 )
 
 const backupDate = new Date('2022-03-22T22:50:20.522Z')
-jest.useFakeTimers().setSystemTime(backupDate)
+vi.useFakeTimers().setSystemTime(backupDate)
 
 describe('UpdateAssistant | Aries Askar', () => {
   let updateAssistant: UpdateAssistant
@@ -42,15 +45,15 @@ describe('UpdateAssistant | Aries Askar', () => {
   it('should create a backup', async () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
-      const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
+      const record = JsonTransformer.fromJSON(data.value, DidCommCredentialExchangeRecord)
 
       record.setTags(data.tags)
       return record
     })
 
-    const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
+    const credentialRepository = agent.dependencyManager.resolve(DidCommCredentialExchangeRepository)
     const storageUpdateService = agent.dependencyManager.resolve(StorageUpdateService)
 
     // Add 0.1 data and set version to 0.1

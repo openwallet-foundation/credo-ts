@@ -1,13 +1,11 @@
-import { AgentContext, Kms } from '@credo-ts/core'
-import type { IndyVdrRequest, RequestResponseType, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
-
 import { parseIndyDid } from '@credo-ts/anoncreds'
-import { TypedArrayEncoder } from '@credo-ts/core'
+import { AgentContext, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import type { IndyVdrRequest, IndyVdrPool as indyVdrPool, RequestResponseType } from '@hyperledger/indy-vdr-shared'
 import {
   GetAcceptanceMechanismsRequest,
   GetTransactionAuthorAgreementRequest,
-  PoolCreate,
   indyVdr,
+  PoolCreate,
 } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError } from '../error'
@@ -179,7 +177,7 @@ export class IndyVdrPool {
       text: authorAgreement.text,
       version: authorAgreement.version,
       taaDigest: authorAgreement.digest,
-      time: Math.floor(new Date().getTime() / 1000),
+      time: Math.floor(Date.now() / 1000),
       acceptanceMechanismType: poolTaa.acceptanceMechanism,
     })
 

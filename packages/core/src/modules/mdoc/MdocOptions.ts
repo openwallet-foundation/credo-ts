@@ -1,12 +1,18 @@
-import type { ValidityInfoOptions } from '@animo-id/mdoc'
+import type {  ValidityInfoOptions } from '@animo-id/mdoc'
+import type { AnyUint8Array } from '../../types'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate, X509Certificate } from '../x509'
 import { Mdoc } from './Mdoc'
+import { MdocRecord } from './repository'
 
 export { DateOnly } from '@animo-id/mdoc'
 
 export type MdocNameSpaces = Record<string, Record<string, unknown>>
+
+export interface MdocStoreOptions {
+  record: MdocRecord
+}
 
 export type MdocVerifyOptions = {
   trustedCertificates?: EncodedX509Certificate[]
@@ -31,7 +37,7 @@ export type MdocOpenId4VpDraft18SessionTranscriptOptions = {
 
 export type MdocSessionTranscriptByteOptions = {
   type: 'sesionTranscriptBytes'
-  sessionTranscriptBytes: Uint8Array
+  sessionTranscriptBytes: AnyUint8Array
 }
 
 export type MdocOpenId4VpDcApiSessionTranscriptOptions = {

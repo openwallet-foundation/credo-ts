@@ -1,4 +1,21 @@
 import type { AgentContext } from '../agent'
+import { CredoError } from '../error'
+import {
+  assertJwkAsymmetric,
+  asymmetricPublicJwkMatches,
+  getJwkHumanDescription,
+  KeyManagementApi,
+  KeyManagementError,
+  type KnownJwaSignatureAlgorithm,
+  PublicJwk,
+} from '../modules/kms'
+import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
+import { type EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
+import { X509Service } from './../modules/x509/X509Service'
+import { injectable } from '../plugins'
+import { type AnyUint8Array, isJsonObject } from '../types'
+import { JsonEncoder, TypedArrayEncoder } from '../utils'
+import type { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
 import type {
   Jws,
   JwsDetachedFormat,
@@ -6,25 +23,6 @@ import type {
   JwsGeneralFormat,
   JwsProtectedHeaderOptions,
 } from './JwsTypes'
-
-import { CredoError } from '../error'
-import { EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
-import { injectable } from '../plugins'
-import { Buffer, JsonEncoder, TypedArrayEncoder } from '../utils'
-
-import {
-  KeyManagementApi,
-  KeyManagementError,
-  KnownJwaSignatureAlgorithm,
-  PublicJwk,
-  assertJwkAsymmetric,
-  assymetricPublicJwkMatches,
-  getJwkHumanDescription,
-} from '../modules/kms'
-import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
-import { isJsonObject } from '../types'
-import { X509Service } from './../modules/x509/X509Service'
-import { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
 import { JWS_COMPACT_FORMAT_MATCHER } from './JwsTypes'
 import { JwtPayload } from './jose/jwt'
 
@@ -46,21 +44,21 @@ export class JwsService {
         certificateChain: x5c,
       })
 
-      if (!assymetricPublicJwkMatches(certificate.publicJwk.toJson(), key)) {
+      if (!asymmetricPublicJwkMatches(certificate.publicJwk.toJson(), key)) {
         throw new CredoError('Protected header x5c does not match key for signing.')
       }
     }
 
     const jwkInstance = jwk instanceof PublicJwk ? jwk : jwk ? PublicJwk.fromUnknown(jwk) : undefined
     // Make sure the options.key and jwk from protectedHeader are the same.
-    if (jwkInstance && !assymetricPublicJwkMatches(jwkInstance.toJson(), key)) {
+    if (jwkInstance && !asymmetricPublicJwkMatches(jwkInstance.toJson(), key)) {
       throw new CredoError('Protected header JWK does not match key for signing.')
     }
 
     // Validate the options.key used for signing against the jws options
     if (!publicJwk.supportedSignatureAlgorithms.includes(alg)) {
       throw new CredoError(
-        `alg '${alg}' is not a valid JWA signature algorithm for this jwk with ${publicJwk.jwkTypehumanDescription}. Supported algorithms are ${publicJwk.supportedSignatureAlgorithms.join(
+        `alg '${alg}' is not a valid JWA signature algorithm for this jwk with ${publicJwk.jwkTypeHumanDescription}. Supported algorithms are ${publicJwk.supportedSignatureAlgorithms.join(
           ', '
         )}`
       )
@@ -362,7 +360,7 @@ export class JwsService {
 }
 
 export interface CreateJwsOptions {
-  payload: Buffer | JwtPayload
+  payload: AnyUint8Array | JwtPayload
   keyId: string
   header: Record<string, unknown>
   protectedHeaderOptions: JwsProtectedHeaderOptions

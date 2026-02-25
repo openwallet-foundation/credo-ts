@@ -1,14 +1,13 @@
 import type { DependencyManager } from '@credo-ts/core'
-
+import { SdJwtVcRepository } from '../repository'
 import { SdJwtVcModule } from '../SdJwtVcModule'
 import { SdJwtVcService } from '../SdJwtVcService'
-import { SdJwtVcRepository } from '../repository'
 
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
-  resolve: jest.fn().mockReturnValue({ logger: { warn: jest.fn() } }),
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
+  registerContextScoped: vi.fn(),
+  resolve: vi.fn().mockReturnValue({ logger: { warn: vi.fn() } }),
 } as unknown as DependencyManager
 
 describe('SdJwtVcModule', () => {

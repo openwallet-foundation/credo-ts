@@ -10,7 +10,7 @@ describe('peerDidNumAlgo1', () => {
     })
 
     // FIXME: we need some input data from AFGO for this test to succeed (we create a hash of the document, so any inconsistency is fatal)
-    xtest('transforms a did document from aries-framework-go into a valid method 1 did', () => {
+    test.skip('transforms a did document from aries-framework-go into a valid method 1 did', () => {
       expect(didDocumentJsonToNumAlgo1Did(didPeer1zQmZ)).toEqual(didPeer1zQmZ.id)
     })
   })

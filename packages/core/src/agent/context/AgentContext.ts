@@ -1,8 +1,7 @@
-import type { DependencyManager, InjectionToken } from '../../plugins'
-import type { AgentContextProvider } from './AgentContextProvider'
-
 import { InjectionSymbols } from '../../constants'
+import type { DependencyManager, InjectionToken } from '../../plugins'
 import { AgentConfig } from '../AgentConfig'
+import type { AgentContextProvider } from './AgentContextProvider'
 
 export class AgentContext {
   /**

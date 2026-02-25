@@ -1,9 +1,7 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { DummyModuleConfigOptions } from './DummyModuleConfig'
-
-import { FeatureRegistry, MessageHandlerRegistry, Protocol } from '@credo-ts/didcomm'
-
+import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry, DidCommProtocol } from '@credo-ts/didcomm'
 import { DummyApi } from './DummyApi'
+import type { DummyModuleConfigOptions } from './DummyModuleConfig'
 import { DummyModuleConfig } from './DummyModuleConfig'
 import { DummyRequestHandler, DummyResponseHandler } from './handlers'
 import { DummyRepository } from './repository'
@@ -30,8 +28,8 @@ export class DummyModule implements Module {
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    const messageHandlerRegistry = agentContext.dependencyManager.resolve(MessageHandlerRegistry)
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const messageHandlerRegistry = agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry)
+    const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
     const dummyService = agentContext.dependencyManager.resolve(DummyService)
 
     messageHandlerRegistry.registerMessageHandlers([
@@ -40,7 +38,7 @@ export class DummyModule implements Module {
     ])
 
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/dummy/1.0',
         roles: ['requester', 'responder'],
       })

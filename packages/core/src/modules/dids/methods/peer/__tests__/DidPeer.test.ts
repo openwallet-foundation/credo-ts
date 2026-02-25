@@ -1,4 +1,4 @@
-import { PeerDidNumAlgo, getNumAlgoFromPeerDid, isValidPeerDid } from '../didPeer'
+import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from '../didPeer'
 
 describe('didPeer', () => {
   test('isValidPeerDid', () => {

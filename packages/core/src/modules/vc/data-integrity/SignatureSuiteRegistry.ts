@@ -1,6 +1,6 @@
 import { CredoError } from '../../../error'
 import { injectAll, injectable } from '../../../plugins'
-import { PublicJwk, SupportedPublicJwkClass } from '../../kms/jwk/PublicJwk'
+import { PublicJwk, type SupportedPublicJwkClass } from '../../kms/jwk/PublicJwk'
 
 import { suites } from './libraries/jsonld-signatures'
 

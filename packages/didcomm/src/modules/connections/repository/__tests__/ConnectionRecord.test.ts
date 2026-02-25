@@ -1,13 +1,13 @@
 import { JsonTransformer } from '../../../../../../core/src/utils'
-import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from '../../models'
-import { ConnectionRecord } from '../ConnectionRecord'
+import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../models'
+import { DidCommConnectionRecord } from '../DidCommConnectionRecord'
 
-describe('ConnectionRecord', () => {
+describe('DidCommConnectionRecord', () => {
   describe('getTags', () => {
     it('should return default tags', () => {
-      const connectionRecord = new ConnectionRecord({
-        state: DidExchangeState.Completed,
-        role: DidExchangeRole.Requester,
+      const connectionRecord = new DidCommConnectionRecord({
+        state: DidCommDidExchangeState.Completed,
+        role: DidCommDidExchangeRole.Requester,
         threadId: 'a-thread-id',
         mediatorId: 'a-mediator-id',
         did: 'a-did',
@@ -17,8 +17,8 @@ describe('ConnectionRecord', () => {
       })
 
       expect(connectionRecord.getTags()).toEqual({
-        state: DidExchangeState.Completed,
-        role: DidExchangeRole.Requester,
+        state: DidCommDidExchangeState.Completed,
+        role: DidCommDidExchangeRole.Requester,
         threadId: 'a-thread-id',
         mediatorId: 'a-mediator-id',
         did: 'a-did',
@@ -37,10 +37,10 @@ describe('ConnectionRecord', () => {
       {
         protocol: 'https://didcomm.org/didexchange/1.0',
       },
-      ConnectionRecord
+      DidCommConnectionRecord
     )
 
-    expect(connectionRecord.protocol).toEqual(HandshakeProtocol.DidExchange)
+    expect(connectionRecord.protocol).toEqual(DidCommHandshakeProtocol.DidExchange)
   })
 
   it('should not transform handshake protocol when minor version is .x', () => {
@@ -48,9 +48,9 @@ describe('ConnectionRecord', () => {
       {
         protocol: 'https://didcomm.org/didexchange/1.x',
       },
-      ConnectionRecord
+      DidCommConnectionRecord
     )
 
-    expect(connectionRecord.protocol).toEqual(HandshakeProtocol.DidExchange)
+    expect(connectionRecord.protocol).toEqual(DidCommHandshakeProtocol.DidExchange)
   })
 })

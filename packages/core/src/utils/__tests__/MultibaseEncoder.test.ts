@@ -1,6 +1,6 @@
+import { Buffer } from '../buffer'
 import { MultiBaseEncoder } from '../MultiBaseEncoder'
 import { TypedArrayEncoder } from '../TypedArrayEncoder'
-import { Buffer } from '../buffer'
 
 const validData = Buffer.from('Hello World!')
 const validMultiBase = 'zKWfinQuRQ3ekD1danFHqvKRg9koFp8vpokUeREEgjSyHwweeKDFaxVHi'

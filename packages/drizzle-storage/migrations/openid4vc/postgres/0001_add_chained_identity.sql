@@ -1,0 +1,1 @@
+ALTER TABLE "OpenId4VcIssuanceSession" ADD COLUMN "chainedIdentity" jsonb;

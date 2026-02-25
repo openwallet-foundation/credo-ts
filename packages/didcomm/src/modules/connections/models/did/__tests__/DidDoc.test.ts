@@ -1,8 +1,8 @@
 import { instanceToPlain, plainToInstance } from 'class-transformer'
 
 import { DidCommV1Service, DidDocumentService, IndyAgentService } from '../../../../../../../core/src/modules/dids'
-import { DidDoc } from '../DidDoc'
 import { EmbeddedAuthentication, ReferencedAuthentication } from '../authentication'
+import { DidDoc } from '../DidDoc'
 import { Ed25119Sig2018, EddsaSaSigSecp256k1, RsaSig2018 } from '../publicKey'
 
 import diddoc from './diddoc.json'

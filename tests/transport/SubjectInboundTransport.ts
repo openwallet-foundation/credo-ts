@@ -1,16 +1,18 @@
 import type { Subscription } from 'rxjs'
-import type { AgentContext } from '../../packages/core/src'
-import type { EncryptedMessage, InboundTransport, TransportSession } from '../../packages/didcomm/src'
-
 import { Subject } from 'rxjs'
-
+import type { AgentContext } from '../../packages/core/src'
 import { EventEmitter } from '../../packages/core/src'
 import { uuid } from '../../packages/core/src/utils/uuid'
-import { MessageReceiver, TransportService } from '../../packages/didcomm/src'
+import type {
+  DidCommEncryptedMessage,
+  DidCommInboundTransport,
+  DidCommTransportSession,
+} from '../../packages/didcomm/src'
+import { DidCommMessageReceiver, DidCommTransportService } from '../../packages/didcomm/src'
 
-export type SubjectMessage = { message: EncryptedMessage; replySubject?: Subject<SubjectMessage> }
+export type SubjectMessage = { message: DidCommEncryptedMessage; replySubject?: Subject<SubjectMessage> }
 
-export class SubjectInboundTransport implements InboundTransport {
+export class SubjectInboundTransport implements DidCommInboundTransport {
   public readonly ourSubject: Subject<SubjectMessage>
   private subscription?: Subscription
 
@@ -28,8 +30,8 @@ export class SubjectInboundTransport implements InboundTransport {
 
   private subscribe(agentContext: AgentContext) {
     const logger = agentContext.config.logger
-    const transportService = agentContext.dependencyManager.resolve(TransportService)
-    const messageReceiver = agentContext.dependencyManager.resolve(MessageReceiver)
+    const transportService = agentContext.dependencyManager.resolve(DidCommTransportService)
+    const messageReceiver = agentContext.dependencyManager.resolve(DidCommMessageReceiver)
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
 
     this.subscription = this.ourSubject.subscribe({
@@ -63,7 +65,7 @@ export class SubjectInboundTransport implements InboundTransport {
   }
 }
 
-export class SubjectTransportSession implements TransportSession {
+export class SubjectTransportSession implements DidCommTransportSession {
   public id: string
   public readonly type = 'subject'
   private replySubject: Subject<SubjectMessage>
@@ -73,7 +75,7 @@ export class SubjectTransportSession implements TransportSession {
     this.replySubject = replySubject
   }
 
-  public async send(_agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
+  public async send(_agentContext: AgentContext, encryptedMessage: DidCommEncryptedMessage): Promise<void> {
     this.replySubject.next({ message: encryptedMessage })
   }
 

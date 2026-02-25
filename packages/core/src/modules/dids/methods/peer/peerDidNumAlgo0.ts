@@ -3,7 +3,7 @@ import { PublicJwk } from '../../../kms'
 import { getDidDocumentForPublicJwk } from '../../domain/keyDidDocument'
 import { parseDid } from '../../domain/parse'
 
-import { PeerDidNumAlgo, getNumAlgoFromPeerDid, isValidPeerDid } from './didPeer'
+import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from './didPeer'
 
 export function publicJwkToNumAlgo0DidDocument(publicJwk: PublicJwk) {
   const did = `did:peer:0${publicJwk.fingerprint}`

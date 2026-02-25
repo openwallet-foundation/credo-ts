@@ -1,15 +1,32 @@
-import type { AgentContext } from '@credo-ts/core'
-import type { SdJwtVcHeader } from '../SdJwtVcOptions'
-
-import { randomUUID } from 'crypto'
-import { StatusList, createHeaderAndPayload } from '@sd-jwt/jwt-status-list'
+import type { AgentContext, Constructable, SdJwtVc } from '@credo-ts/core'
+import {
+  Agent,
+  DidKey,
+  DidsModule,
+  getDomainFromUrl,
+  Hasher,
+  JwsService,
+  JwtPayload,
+  KeyDidRegistrar,
+  KeyDidResolver,
+  parseDid,
+  TypedArrayEncoder,
+  X509Certificate,
+  X509ModuleConfig,
+} from '@credo-ts/core'
+import { Jwt, SDJwt } from '@sd-jwt/core'
+import { createHeaderAndPayload, StatusList } from '@sd-jwt/jwt-status-list'
 import { SDJWTException } from '@sd-jwt/utils'
-
-import { agentDependencies, getAgentOptions } from '../../../../tests'
-import * as fetchUtils from '../../../utils/fetch'
+import { randomUUID } from 'crypto'
+import nock from 'nock'
+import { vi } from 'vitest'
+import { transformSeedToPrivateJwk } from '../../../../../askar/src'
+import { getAgentOptions, mockProperty } from '../../../../tests'
+import { PublicJwk } from '../../kms'
+import { SdJwtVcRecord, SdJwtVcRepository } from '../repository'
+import { type CustomTypeMetadataResolver, SdJwtVcModuleConfig } from '../SdJwtVcModuleConfig'
+import type { SdJwtVcHeader, SdJwtVcPayload } from '../SdJwtVcOptions'
 import { SdJwtVcService } from '../SdJwtVcService'
-import { SdJwtVcRepository } from '../repository'
-
 import {
   complexSdJwtVc,
   complexSdJwtVcPresentation,
@@ -26,25 +43,25 @@ import {
   simpleJwtVcWithoutHolderBinding,
   simpleSdJwtVcWithStatus,
   simpleX509,
+  simpleX509WithoutIss,
 } from './sdjwtvc.fixtures'
 
-import {
-  Agent,
-  CredoError,
-  DidKey,
-  DidsModule,
-  JwsService,
-  JwtPayload,
-  KeyDidRegistrar,
-  KeyDidResolver,
-  TypedArrayEncoder,
-  X509Certificate,
-  X509ModuleConfig,
-  getDomainFromUrl,
-  parseDid,
-} from '@credo-ts/core'
-import { transformSeedToPrivateJwk } from '../../../../../askar/src'
-import { PublicJwk } from '../../kms'
+const mockJwtDecode = (mockedPayload: Partial<Jwt>) =>
+  mockProperty(
+    SDJwt,
+    'extractJwt',
+    async <Header extends Record<string, unknown>, Payload extends Record<string, unknown>>() =>
+      mockedPayload as Jwt<Header, Payload>
+  )
+
+vi.mock('../repository/SdJwtVcRepository', () => ({
+  SdJwtVcRepository: vi.fn(
+    class SdJwtVcRepository {
+      save = vi.fn()
+    }
+  ),
+}))
+const SdJwtVcRepositoryMock = SdJwtVcRepository as unknown as Constructable<SdJwtVcRepository>
 
 const agent = new Agent(
   getAgentOptions(
@@ -60,13 +77,17 @@ const agent = new Agent(
   )
 )
 
-agent.kms.randomBytes = jest.fn(() => TypedArrayEncoder.fromString('salt'))
-Date.prototype.getTime = jest.fn(() => 1698151532000)
+agent.kms.randomBytes = vi.fn(function () {
+  return TypedArrayEncoder.fromString('salt')
+})
+Date.prototype.getTime = vi.fn(function () {
+  return 1698151532000
+})
+Date.now = vi.fn(function () {
+  return 1698151532000
+})
 
-jest.mock('../repository/SdJwtVcRepository')
-const SdJwtVcRepositoryMock = SdJwtVcRepository as jest.Mock<SdJwtVcRepository>
-
-const simpleX509Certificate = X509Certificate.fromEncodedCertificate(simpleX509.trustedCertficate)
+const simpleX509Certificate = X509Certificate.fromEncodedCertificate(simpleX509.trustedCertificate)
 
 const generateStatusList = async (
   agentContext: AgentContext,
@@ -86,7 +107,7 @@ const generateStatusList = async (
     {
       iss: did,
       sub: 'https://example.com/status/1',
-      iat: new Date().getTime() / 1000,
+      iat: Date.now() / 1000,
     },
     {
       alg: 'EdDSA',
@@ -112,6 +133,10 @@ describe('SdJwtVcService', () => {
   let issuerKey: PublicJwk
   let holderKey: PublicJwk
   let sdJwtVcService: SdJwtVcService
+
+  afterEach(() => {
+    nock.cleanAll()
+  })
 
   beforeAll(async () => {
     await agent.initialize()
@@ -229,14 +254,48 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.header).toEqual({
         typ: 'vc+sd-jwt',
         alg: 'EdDSA',
-        x5c: [simpleX509.trustedCertficate],
+        x5c: [simpleX509.trustedCertificate],
       })
 
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: simpleX509.certificateIssuer,
+        cnf: { jwk: holderKey.toJson() },
+      })
+    })
+
+    test('Sign (x509) sd-jwt-vc without issuer claim', async () => {
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          claim: 'some-claim',
+          vct: 'IdentityCredential',
+        },
+        holder: {
+          method: 'jwk',
+          jwk: holderKey,
+        },
+        issuer: {
+          method: 'x5c',
+          x5c: [simpleX509Certificate],
+        },
+      })
+
+      expect(compact).toStrictEqual(simpleX509WithoutIss.sdJwtVc)
+
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
+      expect(sdJwtVc.header).toEqual({
+        typ: 'dc+sd-jwt',
+        alg: 'EdDSA',
+        x5c: [simpleX509WithoutIss.trustedCertificate],
+      })
+
+      expect(sdJwtVc.prettyClaims).toEqual({
+        claim: 'some-claim',
+        vct: 'IdentityCredential',
+        iat: Math.floor(Date.now() / 1000),
+        iss: undefined,
         cnf: { jwk: holderKey.toJson() },
       })
     })
@@ -248,8 +307,6 @@ describe('SdJwtVcService', () => {
           vct: 'IdentityCredential',
         },
         holder: {
-          // FIXME: is it nicer API to just pass either didUrl or JWK?
-          // Or none if you don't want to bind it?
           method: 'jwk',
           jwk: holderKey,
         },
@@ -273,7 +330,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: parseDid(issuerDidUrl).did,
         cnf: {
           jwk: holderKey.toJson(),
@@ -307,7 +364,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: parseDid(issuerDidUrl).did,
       })
     })
@@ -341,7 +398,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: parseDid(issuerDidUrl).did,
         value: false,
         discloseableValue: false,
@@ -376,7 +433,7 @@ describe('SdJwtVcService', () => {
 
       expect(payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
         _sd: ['LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M'],
         _sd_alg: 'sha-256',
@@ -387,7 +444,7 @@ describe('SdJwtVcService', () => {
 
       expect(prettyClaims).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
         claim: 'some-claim',
         cnf: {
@@ -442,7 +499,7 @@ describe('SdJwtVcService', () => {
 
       expect(payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         address: {
           _sd: ['8Kl-6KGl7JjFrlN0ZKDPKzeRfo0oJ5Tv0F6cXgpmOCY', 'cxH6g51BOh8vDiQXW88Kq896DEVLZZ4mbuLO6z__5ds'],
           locality: 'Anytown',
@@ -467,7 +524,7 @@ describe('SdJwtVcService', () => {
 
       expect(prettyClaims).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         address: {
           region: 'Anystate',
           country: 'US',
@@ -532,7 +589,7 @@ describe('SdJwtVcService', () => {
 
       expect(payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         phone_number: '+1-202-555-0101',
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
@@ -553,7 +610,7 @@ describe('SdJwtVcService', () => {
 
       expect(prettyClaims).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         address: {
           region: 'Anystate',
           country: 'US',
@@ -579,8 +636,16 @@ describe('SdJwtVcService', () => {
   describe('SdJwtVcService.receive', () => {
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
       const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVc)
-      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, sdJwtVc.compact)
-      expect(sdJwtVcRecord.compactSdJwtVc).toEqual(simpleJwtVc)
+      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, {
+        record: new SdJwtVcRecord({
+          credentialInstances: [
+            {
+              compactSdJwtVc: simpleJwtVc,
+            },
+          ],
+        }),
+      })
+      expect(sdJwtVcRecord.encoded).toEqual(simpleJwtVc)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -591,7 +656,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.payload).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
         cnf: {
           jwk: holderKey.toJson(),
@@ -601,8 +666,16 @@ describe('SdJwtVcService', () => {
 
     test('Receive sd-jwt-vc without holder binding', async () => {
       const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVcWithoutHolderBinding)
-      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, simpleJwtVcWithoutHolderBinding)
-      expect(sdJwtVcRecord.compactSdJwtVc).toEqual(simpleJwtVcWithoutHolderBinding)
+      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, {
+        record: new SdJwtVcRecord({
+          credentialInstances: [
+            {
+              compactSdJwtVc: simpleJwtVcWithoutHolderBinding,
+            },
+          ],
+        }),
+      })
+      expect(sdJwtVcRecord.encoded).toEqual(simpleJwtVcWithoutHolderBinding)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -613,7 +686,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.payload).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
       })
     })
@@ -629,7 +702,7 @@ describe('SdJwtVcService', () => {
 
       expect(sdJwtVc.payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
         _sd: ['LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M'],
         _sd_alg: 'sha-256',
@@ -638,9 +711,7 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      expect(sdJwtVc.payload).not.toContain({
-        claim: 'some-claim',
-      })
+      expect(sdJwtVc.payload).not.toHaveProperty('claim')
     })
 
     test('Receive sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
@@ -654,7 +725,7 @@ describe('SdJwtVcService', () => {
 
       expect(sdJwtVc.payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         address: {
@@ -677,24 +748,23 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      expect(sdJwtVc.payload).not.toContain({
-        address: {
-          region: 'Anystate',
-          country: 'US',
-        },
-        family_name: 'Doe',
-        phone_number: '+1-202-555-0101',
-        email: 'johndoe@example.com',
-        given_name: 'John',
-        birthdate: '1940-01-01',
-        is_over_18: true,
-        is_over_21: true,
-        is_over_65: true,
-      })
+      const unwantedKeys = [
+        'address.region',
+        'address.country',
+        'email',
+        'given_name',
+        'birthdate',
+        'is_over_18',
+        'is_over_21',
+        'is_over_65',
+      ]
+      for (const key of unwantedKeys) {
+        expect(sdJwtVc.payload).not.toHaveProperty(key)
+      }
 
       expect(sdJwtVc.prettyClaims).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         phone_number: '+1-202-555-0101',
@@ -748,15 +818,38 @@ describe('SdJwtVcService', () => {
         family_name: 'MUSTERMANN',
       })
     })
+
+    test('Supports payload that results in no disclosures', async () => {
+      const presentation = sdJwtVcService.applyDisclosuresForPayload(simpleJwtVc, {
+        claim: 'some-claim',
+      })
+
+      expect(presentation.prettyClaims).toStrictEqual({
+        claim: 'some-claim',
+        vct: 'IdentityCredential',
+        cnf: {
+          jwk: {
+            kty: 'OKP',
+            crv: 'Ed25519',
+            kid: 'BnbnQW5VWoys6x6qYxEUVrEKGYW2GS5vG71vCMwwfsYm',
+            x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
+          },
+        },
+        iss: 'did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        iat: 1698151532,
+      })
+
+      expect(presentation.compact).toEqual(simpleJwtVc)
+    })
   })
 
   describe('SdJwtVcService.present', () => {
     test('Present sd-jwt-vc from a basic payload without disclosures', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleJwtVc,
+        sdJwtVc: simpleJwtVc,
         presentationFrame: {},
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -767,7 +860,7 @@ describe('SdJwtVcService', () => {
 
     test('Present sd-jwt-vc without holder binding', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleJwtVcWithoutHolderBinding,
+        sdJwtVc: simpleJwtVcWithoutHolderBinding,
         presentationFrame: {},
       })
 
@@ -778,7 +871,7 @@ describe('SdJwtVcService', () => {
     test('Errors when providing verifier metadata but SD-JWT VC has no cnf claim', async () => {
       await expect(
         sdJwtVcService.present(agent.context, {
-          compactSdJwtVc: simpleJwtVcWithoutHolderBinding,
+          sdJwtVc: simpleJwtVcWithoutHolderBinding,
           presentationFrame: {},
           verifierMetadata: {
             audience: 'verifier',
@@ -791,10 +884,10 @@ describe('SdJwtVcService', () => {
 
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+        sdJwtVc: sdJwtVcWithSingleDisclosure,
         presentationFrame: { claim: true },
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -804,16 +897,18 @@ describe('SdJwtVcService', () => {
     })
 
     test('Present sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const presentation = await sdJwtVcService.present<{
-        is_over_65: boolean
-        is_over_21: boolean
-        email: boolean
-        address: { country: string }
-        given_name: boolean
-      }>(agent.context, {
-        compactSdJwtVc: complexSdJwtVc,
+      const presentation = await sdJwtVcService.present<
+        {
+          is_over_65: boolean
+          is_over_21: boolean
+          email: boolean
+          address: { country: string }
+          given_name: boolean
+        } & SdJwtVcPayload
+      >(agent.context, {
+        sdJwtVc: complexSdJwtVc,
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -835,11 +930,11 @@ describe('SdJwtVcService', () => {
   describe('SdJwtVcService.verify', () => {
     test('Verify sd-jwt-vc without disclosures', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleJwtVc,
+        sdJwtVc: simpleJwtVc,
         // no disclosures
         presentationFrame: {},
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -854,33 +949,23 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          containsRequiredVcProperties: true,
-          containsExpectedKeyBinding: true,
-          areRequiredClaimsIncluded: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          isKeyBindingValid: true,
-        },
       })
     })
 
     test('Verify x509 protected sd-jwt-vc without disclosures', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleX509.sdJwtVc,
+        sdJwtVc: simpleX509.sdJwtVc,
         // no disclosures
         presentationFrame: {},
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
       })
 
       const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
-      x509ModuleConfig.addTrustedCertificate(simpleX509.trustedCertficate)
+      x509ModuleConfig.addTrustedCertificate(simpleX509.trustedCertificate)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
@@ -891,22 +976,39 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          containsRequiredVcProperties: true,
-          containsExpectedKeyBinding: true,
-          areRequiredClaimsIncluded: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          isKeyBindingValid: true,
+      })
+    })
+
+    test('Verify x509 protected sd-jwt-vc without iss', async () => {
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleX509WithoutIss.sdJwtVc,
+        // no disclosures
+        presentationFrame: {},
+        verifierMetadata: {
+          issuedAt: Date.now() / 1000,
+          audience: verifierDid,
+          nonce: 'salt',
         },
+      })
+
+      const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
+      x509ModuleConfig.addTrustedCertificate(simpleX509WithoutIss.trustedCertificate)
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: true,
+        sdJwtVc: expect.any(Object),
       })
     })
 
     test('Verify sd-jwt-vc without holder binding', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleJwtVcWithoutHolderBinding,
+        sdJwtVc: simpleJwtVcWithoutHolderBinding,
         // no disclosures
         presentationFrame: {},
       })
@@ -919,23 +1021,30 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          areRequiredClaimsIncluded: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-        },
       })
     })
 
     test('Verify x509 chain protected sd-jwt-vc', async () => {
       const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
-      await x509ModuleConfig.addTrustedCertificate(funkeX509.trustedCertificate)
+      x509ModuleConfig.addTrustedCertificate(funkeX509.trustedCertificate)
+
+      Date.prototype.getTime = vi.fn(function () {
+        return 1717498204 * 1000
+      })
+      Date.now = vi.fn(function () {
+        return 1717498204 * 1000
+      })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: funkeX509.sdJwtVc,
         requiredClaimKeys: ['issuing_country'],
+      })
+
+      Date.prototype.getTime = vi.fn(function () {
+        return 1698151532000
+      })
+      Date.now = vi.fn(function () {
+        return 1698151532000
       })
 
       const sdJwtIss = verificationResult.sdJwtVc?.payload.iss
@@ -943,100 +1052,60 @@ describe('SdJwtVcService', () => {
       expect(getDomainFromUrl(sdJwtIss as string)).toEqual('demo.pid-issuer.bundesdruckerei.de')
 
       expect(verificationResult).toEqual({
-        isValid: false,
-        error: new CredoError('JWT expired at 1718707804'),
+        isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          areRequiredClaimsIncluded: true,
-          isValid: false,
-          isValidJwtPayload: false,
-          isStatusValid: true,
-        },
       })
     })
 
     test('Verify sd-jwt-vc with status where credential is not revoked', async () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
-      // Mock call to status list
-      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+      const statusList = await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [])
 
-      // First time not revoked
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: () => generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, []),
-      } satisfies Partial<Response> as Response)
+      // Mock call to status list
+      nock('https://example.com')
+        .get('/status-list')
+        .matchHeader('accept', 'application/statuslist+jwt')
+        .reply(200, statusList, { 'Content-Type': 'application/statuslist+jwt' })
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: simpleSdJwtVcWithStatus,
         presentationFrame: {},
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
       })
-      expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
-        agentDependencies.fetch,
-        'https://example.com/status-list',
-        {
-          headers: { Accept: 'application/statuslist+jwt' },
-        }
-      )
 
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          areRequiredClaimsIncluded: true,
-        },
       })
     })
 
     test('Verify sd-jwt-vc with status where credential is revoked and fails', async () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
-      // Mock call to status list
-      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+      const statusList = await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [12])
 
-      // First time not revoked
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: () => generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [12]),
-      } satisfies Partial<Response> as Response)
+      // Mock call to status list
+      nock('https://example.com')
+        .get('/status-list')
+        .matchHeader('accept', 'application/statuslist+jwt')
+        .reply(200, statusList, { 'Content-Type': 'application/statuslist+jwt' })
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: simpleSdJwtVcWithStatus,
         presentationFrame: {},
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
       })
-      expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
-        agentDependencies.fetch,
-        'https://example.com/status-list',
-        {
-          headers: { Accept: 'application/statuslist+jwt' },
-        }
-      )
 
       expect(verificationResult).toEqual({
         isValid: false,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isValid: false,
-          areRequiredClaimsIncluded: false,
-          isSignatureValid: false,
-          isStatusValid: false,
-          isValidJwtPayload: true,
-        },
         error: new SDJWTException('Status is not valid'),
       })
     })
@@ -1044,51 +1113,35 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc with status where status list is not valid and fails', async () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
-      // Mock call to status list
-      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+      const statusList = await generateStatusList(agent.context, issuerKey, issuerDidUrl, 8, [])
 
-      // First time not revoked
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: () => generateStatusList(agent.context, issuerKey, issuerDidUrl, 8, []),
-      } satisfies Partial<Response> as Response)
+      // Mock call to status list
+      nock('https://example.com')
+        .get('/status-list')
+        .matchHeader('accept', 'application/statuslist+jwt')
+        .reply(200, statusList, { 'Content-Type': 'application/statuslist+jwt' })
 
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: simpleSdJwtVcWithStatus,
+        sdJwtVc: simpleSdJwtVcWithStatus,
         presentationFrame: {},
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
       })
-      expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
-        agentDependencies.fetch,
-        'https://example.com/status-list',
-        {
-          headers: { Accept: 'application/statuslist+jwt' },
-        }
-      )
 
       expect(verificationResult).toEqual({
         isValid: false,
         sdJwtVc: expect.any(Object),
-        verification: {
-          areRequiredClaimsIncluded: false,
-          isSignatureValid: false,
-          isStatusValid: false,
-          isValid: false,
-          isValidJwtPayload: true,
-        },
         error: new Error('Index out of bounds'),
       })
     })
 
     test('Verify sd-jwt-vc with a disclosure', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
-        compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+        sdJwtVc: sdJwtVcWithSingleDisclosure,
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -1104,30 +1157,22 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          containsRequiredVcProperties: true,
-          areRequiredClaimsIncluded: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          isKeyBindingValid: true,
-          containsExpectedKeyBinding: true,
-        },
       })
     })
 
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
-      const presentation = await sdJwtVcService.present<{
-        is_over_65: boolean
-        is_over_21: boolean
-        email: boolean
-        address: { country: string }
-        given_name: boolean
-      }>(agent.context, {
-        compactSdJwtVc: complexSdJwtVc,
+      const presentation = await sdJwtVcService.present<
+        {
+          is_over_65: boolean
+          is_over_21: boolean
+          email: boolean
+          address: { country: string }
+          given_name: boolean
+        } & SdJwtVcPayload
+      >(agent.context, {
+        sdJwtVc: complexSdJwtVc,
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -1168,50 +1213,47 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          areRequiredClaimsIncluded: true,
-          containsExpectedKeyBinding: true,
-          containsRequiredVcProperties: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          isKeyBindingValid: true,
-        },
       })
     })
 
     test('Verify did holder-bound sd-jwt-vc with disclosures and kb-jwt', async () => {
-      const verificationResult = await sdJwtVcService.verify<SdJwtVcHeader, { address: { country: string } }>(
-        agent.context,
-        {
-          compactSdJwtVc:
-            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFZERTQSIsImtpZCI6IiN6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlcifQ.eyJ2Y3QiOiJPcGVuQmFkZ2VDcmVkZW50aWFsIiwiZGVncmVlIjoiYmFjaGVsb3IiLCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoib0VOVnN4T1VpSDU0WDh3SkxhVmtpY0NSazAwd0JJUTRzUmdiazU0TjhNbyJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlciLCJpYXQiOjE2OTgxNTE1MzIsIl9zZCI6WyJLbE5PM0VfYjRmdUwyOUd2QXdwTGczTGZHZTlxdDdhakUxMzlfU1pIbWk4Il0sIl9zZF9hbGciOiJzaGEtMjU2In0.TBWIECIMmNKNqVtjwHARSnR0Ii9Fefy871sXEK-zfThbTBALdvXBTBQ6iKvvI-CxsniSH1hJMEJTu1vK7esTDg~WyJzYWx0IiwidW5pdmVyc2l0eSIsImlubnNicnVjayJd~eyJ0eXAiOiJrYitqd3QiLCJhbGciOiJFZERTQSJ9.eyJpYXQiOjE2OTgxNTE1MzIsIm5vbmNlIjoic2FsdCIsImF1ZCI6ImRpZDprZXk6elVDNzRWRXFxaEVIUWNndjR6YWdTUGtxRkp4dU5XdW9CUEtqSnVIRVRFVWVITG9TcVd0OTJ2aVNzbWFXank4MnkiLCJzZF9oYXNoIjoiODlyX3JrSjdvb3RuSGJ3TXdjMW9sNzZncU03WU1zNVUzVnpkMHN6N3VkbyJ9.VkrxL06aP8t-G_lVtlAZNgJC2gouqR__rXDgJQPParq5OGxna3ZoQQbjv7e3I2TUaVaMV6xUpJY1KufZlPDwAg',
-          keyBinding: {
-            audience: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y',
-            nonce: 'salt',
-          },
-        }
-      )
+      const verificationResult = await sdJwtVcService.verify<
+        SdJwtVcHeader,
+        { address: { country: string } } & SdJwtVcPayload
+      >(agent.context, {
+        compactSdJwtVc:
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFZERTQSIsImtpZCI6IiN6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlcifQ.eyJ2Y3QiOiJPcGVuQmFkZ2VDcmVkZW50aWFsIiwiZGVncmVlIjoiYmFjaGVsb3IiLCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoib0VOVnN4T1VpSDU0WDh3SkxhVmtpY0NSazAwd0JJUTRzUmdiazU0TjhNbyJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlciLCJpYXQiOjE2OTgxNTE1MzIsIl9zZCI6WyJLbE5PM0VfYjRmdUwyOUd2QXdwTGczTGZHZTlxdDdhakUxMzlfU1pIbWk4Il0sIl9zZF9hbGciOiJzaGEtMjU2In0.TBWIECIMmNKNqVtjwHARSnR0Ii9Fefy871sXEK-zfThbTBALdvXBTBQ6iKvvI-CxsniSH1hJMEJTu1vK7esTDg~WyJzYWx0IiwidW5pdmVyc2l0eSIsImlubnNicnVjayJd~eyJ0eXAiOiJrYitqd3QiLCJhbGciOiJFZERTQSJ9.eyJpYXQiOjE2OTgxNTE1MzIsIm5vbmNlIjoic2FsdCIsImF1ZCI6ImRpZDprZXk6elVDNzRWRXFxaEVIUWNndjR6YWdTUGtxRkp4dU5XdW9CUEtqSnVIRVRFVWVITG9TcVd0OTJ2aVNzbWFXank4MnkiLCJzZF9oYXNoIjoiODlyX3JrSjdvb3RuSGJ3TXdjMW9sNzZncU03WU1zNVUzVnpkMHN6N3VkbyJ9.VkrxL06aP8t-G_lVtlAZNgJC2gouqR__rXDgJQPParq5OGxna3ZoQQbjv7e3I2TUaVaMV6xUpJY1KufZlPDwAg',
+        keyBinding: {
+          audience: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y',
+          nonce: 'salt',
+        },
+      })
 
-      expect(verificationResult.verification.isValid).toBe(true)
+      expect(verificationResult.isValid).toBe(true)
     })
 
     test('verify expired sd-jwt-vc and fails', async () => {
+      // 31 seconds due to the skew of 30 seconds
+      Date.prototype.getTime = vi.fn(function () {
+        return 1716111919 * 1000 + 31000
+      })
+      Date.now = vi.fn(function () {
+        return 1716111919 * 1000 + 31000
+      })
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: expiredSdJwtVc,
       })
 
+      Date.prototype.getTime = vi.fn(function () {
+        return 1698151532000
+      })
+      Date.now = vi.fn(function () {
+        return 1698151532000
+      })
+
       expect(verificationResult).toEqual({
         isValid: false,
-        verification: {
-          areRequiredClaimsIncluded: true,
-          isSignatureValid: true,
-          isStatusValid: true,
-          isValid: false,
-          isValidJwtPayload: false,
-        },
-        error: new CredoError('JWT expired at 1716111919'),
+        error: new SDJWTException('Verify Error: JWT is expired'),
         sdJwtVc: expect.any(Object),
       })
     })
@@ -1223,14 +1265,7 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        verification: {
-          areRequiredClaimsIncluded: true,
-          isSignatureValid: true,
-          isStatusValid: true,
-          isValid: false,
-          isValidJwtPayload: false,
-        },
-        error: new CredoError('JWT not valid before 4078944000'),
+        error: new SDJWTException('Verify Error: JWT is not yet valid'),
         sdJwtVc: expect.any(Object),
       })
     })
@@ -1242,13 +1277,6 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        verification: {
-          areRequiredClaimsIncluded: false,
-          isSignatureValid: false,
-          isStatusValid: false,
-          isValid: false,
-          isValidJwtPayload: true,
-        },
         error: new SDJWTException('Verify Error: Invalid JWT Signature'),
         sdJwtVc: expect.any(Object),
       })
@@ -1261,16 +1289,795 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        verification: {
-          isValid: false,
-          areRequiredClaimsIncluded: false,
-          isSignatureValid: false,
-          isStatusValid: false,
-          isValidJwtPayload: true,
-        },
         error: new SDJWTException('Verify Error: Invalid JWT Signature'),
         sdJwtVc: expect.any(Object),
       })
+    })
+  })
+
+  describe('SdJwtVcService.fetchTypeMetadata', () => {
+    test('Fetch type metadata from new vct URL path', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+        description: 'A credential for identity verification',
+      }
+
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').reply(200, mockMetadata)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['https://example.com/credentials/identity'],
+      })
+    })
+
+    test('Fetch type metadata from legacy vct URL path when new path fails', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+        description: 'A credential for identity verification',
+      }
+
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').reply(404)
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').reply(200, mockMetadata)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['https://example.com/credentials/identity'],
+      })
+    })
+
+    test('Fetch type metadata from legacy vct URL path when new path throws error', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+        description: 'A credential for identity verification',
+      }
+
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').replyWithError('CORS error')
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').reply(200, mockMetadata)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['https://example.com/credentials/identity'],
+      })
+    })
+
+    test('Fetch type metadata with nested path', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/v1/credentials/identity/verified',
+        name: 'Verified Identity Credential',
+      }
+
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/v1/credentials/identity/verified',
+        },
+      })
+
+      nock('https://example.com').get('/v1/credentials/identity/verified').reply(404)
+
+      nock('https://example.com').get('/.well-known/vct/v1/credentials/identity/verified').reply(200, mockMetadata)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/v1/credentials/identity/verified',
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['https://example.com/v1/credentials/identity/verified'],
+      })
+    })
+
+    test('Fetch type metadata throws error for non-https vct', async () => {
+      mockJwtDecode({
+        payload: {
+          vct: 'http://example.com/credentials/identity',
+        },
+      })
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'http://example.com/credentials/identity',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow(
+        "Unable to resolve type metadata for vct 'http://example.com/credentials/identity'. Only https supported"
+      )
+    })
+
+    test('Fetch type metadata returns undefined for non-url vct if throwErrorOnUnsupportedVctValue is set to false', async () => {
+      mockJwtDecode({
+        payload: {
+          vct: 'IdentityCredential',
+        },
+      })
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(
+          agent.context,
+          {
+            payload: {
+              vct: 'IdentityCredential',
+            },
+          } as unknown as SdJwtVc,
+          {
+            throwErrorOnUnsupportedVctValue: false,
+          }
+        )
+      ).resolves.toBeUndefined()
+    })
+
+    test('Fetch type metadata throws error for non-url vct', async () => {
+      mockJwtDecode({
+        payload: {
+          vct: 'IdentityCredential',
+        },
+      })
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'IdentityCredential',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow("Unable to resolve type metadata for vct 'IdentityCredential'. Only https supported")
+    })
+
+    test('Fetch type metadata throws error when both new and legacy paths fail', async () => {
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').reply(404, 'Not Found')
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').reply(404)
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow(
+        "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful 404 response. Not Found."
+      )
+    })
+
+    test('Fetch type metadata throws error when new path throws and legacy path fails', async () => {
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').replyWithError('Network error')
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').reply(500)
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow(
+        "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful response."
+      )
+    })
+
+    test('Fetch type metadata throws error when both paths throw', async () => {
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').replyWithError('Network error')
+
+      nock('https://example.com').get('/.well-known/vct/credentials/identity').replyWithError('Legacy network error')
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow(
+        "Unable to resolve type metadata vct 'https://example.com/credentials/identity'. Fetch returned a non-successful response."
+      )
+    })
+
+    test('Fetch type metadata with valid vct#integrity (sha256) should succeed', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+        description: 'A credential for identity verification',
+      }
+
+      const metadataJson = JSON.stringify(mockMetadata)
+      // Compute the actual sha256 hash of the metadata
+      const hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-256'))
+      const integrityMetadata = `sha256-${hash}`
+
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').reply(200, metadataJson, {
+        'Content-Type': 'application/json',
+      })
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['https://example.com/credentials/identity'],
+      })
+    })
+
+    test('Fetch type metadata with valid vct#integrity (sha384) should succeed', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+      }
+
+      const metadataJson = JSON.stringify(mockMetadata)
+      const hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-384'))
+      const integrityMetadata = `sha384-${hash}`
+
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').reply(200, metadataJson, {
+        'Content-Type': 'application/json',
+      })
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['https://example.com/credentials/identity'],
+      })
+    })
+
+    test('Fetch type metadata with valid vct#integrity (sha512) should succeed', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+      }
+
+      const metadataJson = JSON.stringify(mockMetadata)
+      const hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-512'))
+      const integrityMetadata = `sha512-${hash}`
+
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').reply(200, metadataJson, {
+        'Content-Type': 'application/json',
+      })
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['https://example.com/credentials/identity'],
+      })
+    })
+
+    test('Fetch type metadata with invalid vct#integrity should fail', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+      }
+
+      const metadataJson = JSON.stringify(mockMetadata)
+      // Use an incorrect hash
+      const incorrectHash = 'invalidhash1234567890abcdef='
+      const integrityMetadata = `sha256-${incorrectHash}`
+
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').reply(200, metadataJson, {
+        'Content-Type': 'application/json',
+      })
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+            'vct#integrity': integrityMetadata,
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow('Integrity check failed. None of the provided hashes match the computed hash for the response.')
+    })
+
+    test('Fetch type metadata with multiple integrity values (strongest algorithm wins)', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+      }
+
+      const metadataJson = JSON.stringify(mockMetadata)
+      const sha256Hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-256'))
+      const sha512Hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-512'))
+      // Provide both sha256 and sha512, the verifier should use sha512 as it's stronger
+      const integrityMetadata = `sha256-${sha256Hash} sha512-${sha512Hash}`
+
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').reply(200, metadataJson, {
+        'Content-Type': 'application/json',
+      })
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['https://example.com/credentials/identity'],
+      })
+    })
+
+    test('Fetch type metadata with invalid vct#integrity type (non-string) should fail', async () => {
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': 12345,
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').reply(
+        200,
+        {},
+        {
+          'Content-Type': 'application/json',
+        }
+      )
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'https://example.com/credentials/identity',
+            'vct#integrity': 12345,
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow("Found 'vct#integrity' with value '12345' but value was not of type 'string'.")
+    })
+
+    test('Fetch type metadata with vct#integrity where only sha256 is wrong but sha512 is correct', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+      }
+
+      const metadataJson = JSON.stringify(mockMetadata)
+      const incorrectSha256Hash = 'invalidhash1234567890abcdef='
+      const sha512Hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-512'))
+      // sha512 is stronger and correct, so it should succeed even if sha256 is wrong
+      const integrityMetadata = `sha256-${incorrectSha256Hash} sha512-${sha512Hash}`
+
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').reply(200, metadataJson, {
+        'Content-Type': 'application/json',
+      })
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+          'vct#integrity': integrityMetadata,
+        },
+      } as unknown as SdJwtVc)
+
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['https://example.com/credentials/identity'],
+      })
+    })
+
+    test('Fetch type metadata with custom resolver for non-https vct', async () => {
+      const mockMetadata = {
+        vct: 'urn:custom:namespace:identity',
+        name: 'Custom Identity Credential',
+        description: 'A custom credential type',
+      }
+
+      const customResolver = vi.fn((async (vct, integrity, options) => {
+        if (vct === 'urn:custom:namespace:identity') {
+          return mockMetadata
+        }
+        throw new Error('Unsupported vct')
+      }) satisfies CustomTypeMetadataResolver)
+
+      mockJwtDecode({
+        payload: {
+          vct: 'urn:custom:namespace:identity',
+        },
+      })
+
+      const customConfig = new SdJwtVcModuleConfig({ customTypeMetadataResolver: customResolver })
+      agent.context.dependencyManager.registerInstance(SdJwtVcModuleConfig, customConfig)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'urn:custom:namespace:identity',
+        },
+      } as unknown as SdJwtVc)
+
+      expect(customResolver).toHaveBeenCalledWith(
+        'urn:custom:namespace:identity',
+        undefined,
+        expect.objectContaining({
+          isExtendedVct: false,
+          defaultResolver: expect.any(Function),
+        })
+      )
+
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['urn:custom:namespace:identity'],
+      })
+    })
+
+    test('Fetch type metadata with custom resolver that uses default resolver for https URLs', async () => {
+      const mockMetadata = {
+        vct: 'https://example.com/credentials/identity',
+        name: 'Identity Credential',
+      }
+
+      const customResolver = vi.fn((async (vct, integrity, options) => {
+        // Use default resolver for HTTPS URLs
+        if (vct.startsWith('https://')) {
+          return options.defaultResolver({})
+        }
+        throw new Error('Unsupported vct')
+      }) satisfies CustomTypeMetadataResolver)
+
+      mockJwtDecode({
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      })
+
+      nock('https://example.com').get('/credentials/identity').reply(200, mockMetadata)
+
+      const customConfig = new SdJwtVcModuleConfig({ customTypeMetadataResolver: customResolver })
+      agent.context.dependencyManager.registerInstance(SdJwtVcModuleConfig, customConfig)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'https://example.com/credentials/identity',
+        },
+      } as unknown as SdJwtVc)
+
+      expect(customResolver).toHaveBeenCalledWith(
+        'https://example.com/credentials/identity',
+        undefined,
+        expect.objectContaining({
+          isExtendedVct: false,
+          defaultResolver: expect.any(Function),
+        })
+      )
+
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['https://example.com/credentials/identity'],
+      })
+    })
+
+    test('Fetch type metadata with custom resolver and extends field', async () => {
+      const baseMetadata = {
+        vct: 'urn:base:credential',
+        name: 'Base Credential',
+        claims: [{ path: ['claim1'] }],
+      }
+
+      const extendedMetadata = {
+        vct: 'urn:extended:credential',
+        name: 'Extended Credential',
+        extends: 'urn:base:credential',
+        claims: [{ path: ['claim2'] }],
+      }
+
+      const customResolver = vi.fn(async (vct: string, _integrity, _options) => {
+        if (vct === 'urn:extended:credential') {
+          return extendedMetadata
+        }
+        if (vct === 'urn:base:credential') {
+          return baseMetadata
+        }
+        throw new Error('Unsupported vct')
+      })
+
+      mockJwtDecode({
+        payload: {
+          vct: 'urn:extended:credential',
+        },
+      })
+
+      const customConfig = new SdJwtVcModuleConfig({ customTypeMetadataResolver: customResolver })
+      agent.context.dependencyManager.registerInstance(SdJwtVcModuleConfig, customConfig)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'urn:extended:credential',
+        },
+      } as unknown as SdJwtVc)
+
+      // Should be called twice: once for the extended vct, once for the base vct
+      expect(customResolver).toHaveBeenCalledTimes(2)
+      expect(customResolver).toHaveBeenCalledWith(
+        'urn:extended:credential',
+        undefined,
+        expect.objectContaining({
+          isExtendedVct: false,
+        })
+      )
+      expect(customResolver).toHaveBeenCalledWith(
+        'urn:base:credential',
+        undefined,
+        expect.objectContaining({
+          isExtendedVct: true,
+        })
+      )
+
+      expect(result?.vctValues).toEqual(['urn:extended:credential', 'urn:base:credential'])
+      expect(result?.typeMetadataChain).toEqual([extendedMetadata, baseMetadata])
+      // Merged metadata should combine claims from both
+      expect(result?.mergedTypeMetadata.claims).toHaveLength(2)
+    })
+
+    test('Fetch type metadata with custom resolver that throws error', async () => {
+      const customResolver = vi.fn(async (_vct: string, _integrity, _options) => {
+        throw new Error('Custom resolver error')
+      })
+
+      mockJwtDecode({
+        payload: {
+          vct: 'urn:custom:namespace:identity',
+        },
+      })
+
+      const customConfig = new SdJwtVcModuleConfig({ customTypeMetadataResolver: customResolver })
+      agent.context.dependencyManager.registerInstance(SdJwtVcModuleConfig, customConfig)
+
+      await expect(
+        sdJwtVcService.fetchTypeMetadata(agent.context, {
+          payload: {
+            vct: 'urn:custom:namespace:identity',
+          },
+        } as unknown as SdJwtVc)
+      ).rejects.toThrow('Custom resolver error')
+
+      expect(customResolver).toHaveBeenCalledWith(
+        'urn:custom:namespace:identity',
+        undefined,
+        expect.objectContaining({
+          isExtendedVct: false,
+        })
+      )
+    })
+
+    test('Fetch type metadata with custom resolver that returns undefined for non-extended vct', async () => {
+      const customResolver = vi.fn((async (vct, integrity, options) => {
+        // Only return undefined if not extended (as extended vcts must return a value)
+        if (!options.isExtendedVct && !options.throwErrorOnUnsupportedVctValue) {
+          return undefined
+        }
+
+        throw new Error('Unsupported vct')
+      }) satisfies CustomTypeMetadataResolver)
+
+      mockJwtDecode({
+        payload: {
+          vct: 'urn:custom:namespace:identity',
+        },
+      })
+
+      const customConfig = new SdJwtVcModuleConfig({ customTypeMetadataResolver: customResolver })
+      agent.context.dependencyManager.registerInstance(SdJwtVcModuleConfig, customConfig)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(
+        agent.context,
+        {
+          payload: {
+            vct: 'urn:custom:namespace:identity',
+          },
+        } as unknown as SdJwtVc,
+        {
+          throwErrorOnUnsupportedVctValue: false,
+        }
+      )
+
+      expect(customResolver).toHaveBeenCalledWith(
+        'urn:custom:namespace:identity',
+        undefined,
+        expect.objectContaining({
+          isExtendedVct: false,
+        })
+      )
+
+      expect(result).toBeUndefined()
+    })
+
+    test('Fetch type metadata with custom resolver handling integrity', async () => {
+      const mockMetadata = {
+        vct: 'urn:custom:namespace:identity',
+        name: 'Custom Identity Credential',
+      }
+
+      const customIntegrity = 'sha256-abc123'
+
+      const customResolver = vi.fn(async (_vct: string, integrity: string | undefined, _options) => {
+        expect(integrity).toBe(customIntegrity)
+        return mockMetadata
+      })
+
+      mockJwtDecode({
+        payload: {
+          vct: 'urn:custom:namespace:identity',
+          'vct#integrity': customIntegrity,
+        },
+      })
+
+      const customConfig = new SdJwtVcModuleConfig({ customTypeMetadataResolver: customResolver })
+      agent.context.dependencyManager.registerInstance(SdJwtVcModuleConfig, customConfig)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(agent.context, {
+        payload: {
+          vct: 'urn:custom:namespace:identity',
+          'vct#integrity': customIntegrity,
+        },
+      } as unknown as SdJwtVc)
+
+      expect(customResolver).toHaveBeenCalledWith('urn:custom:namespace:identity', customIntegrity, expect.any(Object))
+
+      expect(result).toEqual({
+        mergedTypeMetadata: mockMetadata,
+        typeMetadataChain: [mockMetadata],
+        vctValues: ['urn:custom:namespace:identity'],
+      })
+    })
+
+    test('Fetch type metadata with custom resolver respecting throwErrorOnUnsupportedVctValue option', async () => {
+      const customResolver = vi.fn((async (vct, integrity, options) => {
+        if (!options.throwErrorOnUnsupportedVctValue) {
+          return undefined
+        }
+        throw new Error('Unsupported vct')
+      }) satisfies CustomTypeMetadataResolver)
+
+      mockJwtDecode({
+        payload: {
+          vct: 'urn:unsupported',
+        },
+      })
+
+      const customConfig = new SdJwtVcModuleConfig({ customTypeMetadataResolver: customResolver })
+      agent.context.dependencyManager.registerInstance(SdJwtVcModuleConfig, customConfig)
+
+      const result = await sdJwtVcService.fetchTypeMetadata(
+        agent.context,
+        {
+          payload: {
+            vct: 'urn:unsupported',
+          },
+        } as unknown as SdJwtVc,
+        {
+          throwErrorOnUnsupportedVctValue: false,
+        }
+      )
+
+      expect(customResolver).toHaveBeenCalledWith(
+        'urn:unsupported',
+        undefined,
+        expect.objectContaining({
+          isExtendedVct: false,
+          defaultResolver: expect.any(Function),
+        })
+      )
+
+      expect(result).toBeUndefined()
     })
   })
 })

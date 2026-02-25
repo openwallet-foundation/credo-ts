@@ -1,19 +1,19 @@
-import type { Router } from 'express'
+import type { Express } from 'express'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciDeferredCredentialRequestToCredentialMapper,
-  OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
+  OpenId4VciGetChainedAuthorizationRequestParameters,
+  OpenId4VciGetVerificationSession,
 } from './OpenId4VcIssuerServiceOptions'
-
-import { importExpress } from '../shared/router'
 
 const DEFAULT_C_NONCE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
 const DEFAULT_REFRESH_TOKEN_EXPIRES_IN = 90 * 24 * 60 * 60 // 90 days
 const DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
+const DEFAULT_REQUEST_URI_EXPIRES_IN = 1 * 60 // 1 minute
 
-export interface OpenId4VcIssuerModuleConfigOptions {
+export interface InternalOpenId4VcIssuerModuleConfigOptions {
   /**
    * Base url at which the issuer endpoints will be hosted. All endpoints will be exposed with
    * this path as prefix.
@@ -21,13 +21,9 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   baseUrl: string
 
   /**
-   * Express router on which the openid4vci endpoints will be registered. If
-   * no router is provided, a new one will be created.
-   *
-   * NOTE: you must manually register the router on your express app and
-   * expose this on a public url that is reachable when `baseUrl` is called.
+   * Express app on which the openid4vci endpoints will be registered.
    */
-  router?: Router
+  app: Express
 
   /**
    * The time after which a cNonce will expire.
@@ -65,6 +61,13 @@ export interface OpenId4VcIssuerModuleConfigOptions {
    * @default 7776000 (90 days)
    */
   refreshTokenExpiresInSeconds?: number
+
+  /**
+   * The time after which a pushed authorization request URI will expire.
+   *
+   * @default 60 (1 minute)
+   */
+  requestUriExpiresInSeconds?: number
 
   /**
    * Whether DPoP is required for all issuance sessions. This value can be overridden when creating
@@ -114,13 +117,27 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   deferredCredentialRequestToCredentialMapper?: OpenId4VciDeferredCredentialRequestToCredentialMapper
 
   /**
+   * @deprecated use `getVerificationSession` instead.
+   */
+  getVerificationSessionForIssuanceSessionAuthorization?: OpenId4VciGetVerificationSession
+
+  /**
    * Callback to get a verification session that needs to be fulfilled for the authorization of
    * of a credential issuance session. Once the verification session has been completed the user can
    * retrieve an authorization code and access token and retrieve the credential(s).
    *
    * Required if presentation during issuance flow is used
    */
-  getVerificationSessionForIssuanceSessionAuthorization?: OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization
+  getVerificationSession?: OpenId4VciGetVerificationSession
+
+  /**
+   * Callback to get additional details for the chained authorization server flow.
+   * This will be called when a credential offer request is configured to use a chained
+   * authorization server, but the scopesMapping configuration is not defined.
+   *
+   * Required if chained authorization server flow is used without a static scopes mapping configuration.
+   */
+  getChainedAuthorizationRequestParameters?: OpenId4VciGetChainedAuthorizationRequestParameters
 
   /**
    * Custom the paths used for endpoints
@@ -157,6 +174,21 @@ export interface OpenId4VcIssuerModuleConfigOptions {
     accessToken?: string
 
     /**
+     * @default /par
+     */
+    pushedAuthorizationRequest?: string
+
+    /**
+     * @default /authorize
+     */
+    authorization?: string
+
+    /**
+     * @default /redirect
+     */
+    redirect?: string
+
+    /**
      * @default /jwks
      */
     jwks: string
@@ -164,8 +196,7 @@ export interface OpenId4VcIssuerModuleConfigOptions {
 }
 
 export class OpenId4VcIssuerModuleConfig {
-  private options: OpenId4VcIssuerModuleConfigOptions
-  public readonly router: Router
+  private options: InternalOpenId4VcIssuerModuleConfigOptions
 
   /**
    * Callback to get a verification session that needs to be fulfilled for the authorization of
@@ -174,14 +205,27 @@ export class OpenId4VcIssuerModuleConfig {
    *
    * Required if presentation during issuance flow is used
    */
-  public getVerificationSessionForIssuanceSessionAuthorization?: OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization
+  public getVerificationSession?: OpenId4VciGetVerificationSession
 
-  public constructor(options: OpenId4VcIssuerModuleConfigOptions) {
+  /**
+   * Callback to get additional details for the chained authorization server flow.
+   * This will be called when a credential offer request is configured to use a chained
+   * authorization server. If not defined, `scopesMapping` and `redirectUris` from
+   * the authorization server configuration will be used.
+   *
+   * Required if chained authorization server flow is used without a static scopes mapping configuration.
+   */
+  public getChainedAuthorizationRequestParameters?: OpenId4VciGetChainedAuthorizationRequestParameters
+
+  public constructor(options: InternalOpenId4VcIssuerModuleConfigOptions) {
     this.options = options
-    this.getVerificationSessionForIssuanceSessionAuthorization =
-      options.getVerificationSessionForIssuanceSessionAuthorization
+    this.getVerificationSession =
+      options.getVerificationSession ?? options.getVerificationSessionForIssuanceSessionAuthorization
+    this.getChainedAuthorizationRequestParameters = options.getChainedAuthorizationRequestParameters
+  }
 
-    this.router = options.router ?? importExpress().Router()
+  public get app() {
+    return this.options.app
   }
 
   public get baseUrl() {
@@ -250,6 +294,15 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
+   * The time after which a pushed authorization request URI will expire.
+   *
+   * @default 60 (1 minute)
+   */
+  public get requestUriExpiresInSeconds(): number {
+    return this.options.requestUriExpiresInSeconds ?? DEFAULT_REQUEST_URI_EXPIRES_IN
+  }
+
+  /**
    * Whether DPoP is required for all issuance sessions. This value can be overridden when creating
    * a credential offer. If dpop is not required, but used by a client in the first request to credo,
    * DPoP will be required going forward.
@@ -294,6 +347,27 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
+   * @default /par
+   */
+  public get pushedAuthorizationRequestEndpoint(): string {
+    return this.options.endpoints?.pushedAuthorizationRequest ?? '/par'
+  }
+
+  /**
+   * @default /authorize
+   */
+  public get authorizationEndpoint(): string {
+    return this.options.endpoints?.authorization ?? '/authorize'
+  }
+
+  /**
+   * @default /redirect
+   */
+  public get redirectEndpoint(): string {
+    return this.options.endpoints?.redirect ?? '/redirect'
+  }
+
+  /**
    * @default /challenge
    */
   public get authorizationChallengeEndpointPath(): string {
@@ -333,5 +407,21 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get jwksEndpointPath(): string {
     return this.options.endpoints?.jwks ?? '/jwks'
+  }
+
+  /**
+   * @deprecated use `getVerificationSession` instead.
+   */
+  public get getVerificationSessionForIssuanceSessionAuthorization() {
+    return this.getVerificationSession
+  }
+
+  /**
+   * @deprecated use `getVerificationSession` instead.
+   */
+  public set getVerificationSessionForIssuanceSessionAuthorization(value:
+    | OpenId4VciGetVerificationSession
+    | undefined,) {
+    this.getVerificationSession = value
   }
 }

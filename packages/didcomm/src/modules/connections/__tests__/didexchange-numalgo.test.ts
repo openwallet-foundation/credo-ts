@@ -1,46 +1,47 @@
-import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
-
-import { firstValueFrom } from 'rxjs'
 import { filter, first, map, timeout } from 'rxjs/operators'
-
 import { Agent } from '../../../../../core/src/agent/Agent'
-import { DidsModule, PeerDidNumAlgo, createPeerDidDocumentFromServices } from '../../../../../core/src/modules/dids'
+import { createPeerDidDocumentFromServices, DidsModule, PeerDidNumAlgo } from '../../../../../core/src/modules/dids'
 import { uuid } from '../../../../../core/src/utils/uuid'
 import { setupSubjectTransports } from '../../../../../core/tests'
-import { getAgentOptions } from '../../../../../core/tests/helpers'
-import { ConnectionEventTypes } from '../ConnectionEvents'
-import { ConnectionsModule } from '../ConnectionsModule'
-import { DidExchangeState } from '../models'
+import { firstValueWithStackTrace, getAgentOptions } from '../../../../../core/tests/helpers'
+import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
+import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
+import { DidCommDidExchangeState } from '../models'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
 function waitForRequest(agent: Agent, theirLabel: string) {
-  return firstValueFrom(
-    agent.events.observable<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged).pipe(
-      map((event) => event.payload.connectionRecord),
-      // Wait for request received
-      filter(
-        (connectionRecord) =>
-          connectionRecord.state === DidExchangeState.RequestReceived && connectionRecord.theirLabel === theirLabel
-      ),
-      first(),
-      timeout(5000)
-    )
+  return firstValueWithStackTrace(
+    agent.events
+      .observable<DidCommConnectionStateChangedEvent>(DidCommConnectionEventTypes.DidCommConnectionStateChanged)
+      .pipe(
+        map((event) => event.payload.connectionRecord),
+        // Wait for request received
+        filter(
+          (connectionRecord) =>
+            connectionRecord.state === DidCommDidExchangeState.RequestReceived &&
+            connectionRecord.theirLabel === theirLabel
+        ),
+        first(),
+        timeout(5000)
+      )
   )
 }
 
 function waitForResponse(agent: Agent, connectionId: string) {
-  return firstValueFrom(
-    agent.events.observable<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged).pipe(
-      // Wait for response received
-      map((event) => event.payload.connectionRecord),
-      filter(
-        (connectionRecord) =>
-          connectionRecord.state === DidExchangeState.ResponseReceived && connectionRecord.id === connectionId
-      ),
-      first(),
-      timeout(5000)
-    )
+  return firstValueWithStackTrace(
+    agent.events
+      .observable<DidCommConnectionStateChangedEvent>(DidCommConnectionEventTypes.DidCommConnectionStateChanged)
+      .pipe(
+        // Wait for response received
+        map((event) => event.payload.connectionRecord),
+        filter(
+          (connectionRecord) =>
+            connectionRecord.state === DidCommDidExchangeState.ResponseReceived && connectionRecord.id === connectionId
+        ),
+        first(),
+        timeout(5000)
+      )
   )
 }
 
@@ -98,15 +99,13 @@ async function didExchangeNumAlgoBaseTest(options: {
     'DID Exchange numalgo settings Alice',
     {
       endpoints: ['rxjs:alice'],
-    },
-    {
-      label: 'alice',
-    },
-    {
-      connections: new ConnectionsModule({
+      connections: {
         autoAcceptConnections: false,
         peerNumAlgoForDidExchangeRequests: options.requesterNumAlgoSetting,
-      }),
+      },
+    },
+    {},
+    {
       dids: new DidsModule({ registrars: [didRegistry], resolvers: [didRegistry] }),
     },
     { requireDidcomm: true }
@@ -115,13 +114,13 @@ async function didExchangeNumAlgoBaseTest(options: {
     'DID Exchange numalgo settings Alice',
     {
       endpoints: ['rxjs:faber'],
+      connections: {
+        autoAcceptConnections: false,
+        peerNumAlgoForDidExchangeRequests: options.responderNumAlgoSetting,
+      },
     },
     {},
     {
-      connections: new ConnectionsModule({
-        autoAcceptConnections: false,
-        peerNumAlgoForDidExchangeRequests: options.responderNumAlgoSetting,
-      }),
       dids: new DidsModule({ registrars: [didRegistry], resolvers: [didRegistry] }),
     },
     { requireDidcomm: true }
@@ -134,18 +133,18 @@ async function didExchangeNumAlgoBaseTest(options: {
   await aliceAgent.initialize()
   await faberAgent.initialize()
 
-  const faberOutOfBandRecord = await faberAgent.modules.oob.createInvitation({
+  const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
     autoAcceptConnection: false,
     multiUseInvitation: false,
   })
 
   const waitForAliceRequest = waitForRequest(faberAgent, 'alice')
 
-  let ourDid: string | undefined = undefined
+  let ourDid: string | undefined
 
   if (options.createExternalDidForRequester) {
     // Create did externally
-    const didRouting = await aliceAgent.modules.mediationRecipient.getRouting({})
+    const didRouting = await aliceAgent.didcomm.mediationRecipient.getRouting({})
     ourDid = `did:inmemory:${uuid()}`
     const { didDocument, keys } = createPeerDidDocumentFromServices(
       [
@@ -169,9 +168,10 @@ async function didExchangeNumAlgoBaseTest(options: {
     })
   }
 
-  let { connectionRecord: aliceConnectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
+  let { connectionRecord: aliceConnectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
     faberOutOfBandRecord.outOfBandInvitation,
     {
+      label: 'alice',
       autoAcceptInvitation: true,
       autoAcceptConnection: false,
       ourDid,
@@ -180,16 +180,16 @@ async function didExchangeNumAlgoBaseTest(options: {
 
   let faberAliceConnectionRecord = await waitForAliceRequest
 
-  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  // biome-ignore lint/style/noNonNullAssertion: no explanation
   const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord?.id!)
 
-  await faberAgent.modules.connections.acceptRequest(faberAliceConnectionRecord.id)
+  await faberAgent.didcomm.connections.acceptRequest(faberAliceConnectionRecord.id)
 
   aliceConnectionRecord = await waitForAliceResponse
-  await aliceAgent.modules.connections.acceptResponse(aliceConnectionRecord?.id)
+  await aliceAgent.didcomm.connections.acceptResponse(aliceConnectionRecord?.id)
 
-  aliceConnectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnectionRecord?.id)
-  faberAliceConnectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(
+  aliceConnectionRecord = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceConnectionRecord?.id)
+  faberAliceConnectionRecord = await faberAgent.didcomm.connections.returnWhenIsConnected(
     faberAliceConnectionRecord?.id
   )
 

@@ -1,6 +1,5 @@
-import type { KmsJwkPrivate, KmsJwkPublic } from './knownJwk'
-
 import { TypedArrayEncoder } from '../../../utils'
+import type { KmsJwkPrivate, KmsJwkPublic } from './knownJwk'
 
 /**
  * Gets text description of a key.

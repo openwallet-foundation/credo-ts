@@ -1,7 +1,6 @@
-import type { AnonCredsRestrictionOptions } from './AnonCredsRestriction'
-
 import { Expose, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsString, ValidateIf, ValidateNested } from 'class-validator'
+import type { AnonCredsRestrictionOptions } from './AnonCredsRestriction'
 
 import { AnonCredsRestriction, AnonCredsRestrictionTransformer } from './AnonCredsRestriction'
 import { AnonCredsRevocationInterval } from './AnonCredsRevocationInterval'

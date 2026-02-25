@@ -1,4 +1,4 @@
-import { ConnectionInvitationMessage } from '../../modules'
+import { DidCommConnectionInvitationMessage } from '../../modules'
 import { DidCommMessageRecord } from '../DidCommMessageRecord'
 import { DidCommMessageRole } from '../DidCommMessageRole'
 
@@ -49,8 +49,8 @@ describe('DidCommMessageRecord', () => {
       associatedRecordId: '16ca6665-29f6-4333-a80e-d34db6bfe0b0',
     })
 
-    const invitation = didCommeMessageRecord.getMessageInstance(ConnectionInvitationMessage)
+    const invitation = didCommeMessageRecord.getMessageInstance(DidCommConnectionInvitationMessage)
 
-    expect(invitation).toBeInstanceOf(ConnectionInvitationMessage)
+    expect(invitation).toBeInstanceOf(DidCommConnectionInvitationMessage)
   })
 })

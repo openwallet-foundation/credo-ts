@@ -1,13 +1,12 @@
-import type { DidResolver } from '../../domain'
-import type { DidRepository } from '../../repository'
-
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
-import { DidsModuleConfig } from '../../DidsModuleConfig'
 import didKeyEd25519Fixture from '../../__tests__/__fixtures__/didKeyEd25519.json'
+import { DidsModuleConfig } from '../../DidsModuleConfig'
+import type { DidResolver } from '../../domain'
 import { DidDocument, DidDocumentRole } from '../../domain'
 import { parseDid } from '../../domain/parse'
+import type { DidRepository } from '../../repository'
 import { DidRecord } from '../../repository'
 import { DidResolverService } from '../DidResolverService'
 
@@ -15,18 +14,18 @@ const didResolverMock = {
   allowsCaching: true,
   allowsLocalDidRecord: false,
   supportedMethods: ['key'],
-  resolve: jest.fn(),
+  resolve: vi.fn(),
 } as DidResolver
 
 const recordResolverMock = {
   allowsCaching: false,
   allowsLocalDidRecord: true,
   supportedMethods: ['record'],
-  resolve: jest.fn(),
+  resolve: vi.fn(),
 } as DidResolver
 
 const didRepositoryMock = {
-  getCreatedDids: jest.fn(),
+  getCreatedDids: vi.fn(),
 } as unknown as DidRepository
 
 const cache = new InMemoryLruCache({ limit: 10 })
@@ -43,7 +42,7 @@ describe('DidResolverService', () => {
   )
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should correctly find and call the correct resolver for a specified did', async () => {

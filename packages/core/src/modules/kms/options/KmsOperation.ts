@@ -1,10 +1,10 @@
 import { KeyManagementError } from '../error/KeyManagementError'
-import { KmsJwkPrivate, KnownJwaSignatureAlgorithm, getJwkHumanDescription } from '../jwk'
-import { KmsCreateKeyType } from './KmsCreateKeyOptions'
-import { KmsDecryptDataDecryption } from './KmsDecryptOptions'
-import { KmsEncryptDataEncryption } from './KmsEncryptOptions'
-import { KmsKeyAgreementDecryptOptions } from './KmsKeyAgreementDecryptOptions'
-import { KmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
+import { getJwkHumanDescription, type KmsJwkPrivate, type KnownJwaSignatureAlgorithm } from '../jwk'
+import type { KmsCreateKeyType } from './KmsCreateKeyOptions'
+import type { KmsDecryptDataDecryption } from './KmsDecryptOptions'
+import type { KmsEncryptDataEncryption } from './KmsEncryptOptions'
+import type { KmsKeyAgreementDecryptOptions } from './KmsKeyAgreementDecryptOptions'
+import type { KmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
 
 export type KmsOperationCreateKey = {
   operation: 'createKey'

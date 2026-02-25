@@ -3,12 +3,12 @@ import { Agent } from '@credo-ts/core'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { getAgentOptions } from '../../core/tests/helpers'
 
-import { getWebvhModules } from './setupWebvhModule'
+import { getWebVhModules } from './setupWebVhModule'
 import { validDid } from './utils'
 
 // Simplified mock
-jest.mock('didwebvh-ts', () => ({
-  resolveDID: jest.fn().mockResolvedValue({
+vi.mock('didwebvh-ts', () => ({
+  resolveDID: vi.fn().mockResolvedValue({
     doc: {
       '@context': ['https://www.w3.org/ns/did/v1'],
       id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
@@ -24,26 +24,26 @@ jest.mock('didwebvh-ts', () => ({
     },
     did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
   }),
-  createDID: jest.fn().mockResolvedValue({
+  createDID: vi.fn().mockResolvedValue({
     did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
   }),
-  updateDID: jest.fn().mockResolvedValue({
+  updateDID: vi.fn().mockResolvedValue({
     did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
   }),
-  AbstractCrypto: jest.fn().mockImplementation(() => ({
-    sign: jest.fn().mockResolvedValue({
+  AbstractCrypto: vi.fn().mockImplementation(() => ({
+    sign: vi.fn().mockResolvedValue({
       signature: 'signature',
     }),
-    verify: jest.fn().mockResolvedValue(true),
+    verify: vi.fn().mockResolvedValue(true),
   })),
 }))
 
 describe('WebVH DID resolver', () => {
-  let agent: Agent<ReturnType<typeof getWebvhModules>>
+  let agent: Agent<ReturnType<typeof getWebVhModules>>
 
   beforeAll(async () => {
-    const agentOptions = getAgentOptions('WebVH DID Resolver Test', {}, {}, getWebvhModules())
-    agent = new Agent({ ...agentOptions, modules: { ...getWebvhModules(), inMemory: new InMemoryWalletModule() } })
+    const agentOptions = getAgentOptions('WebVH DID Resolver Test', {}, {}, getWebVhModules())
+    agent = new Agent({ ...agentOptions, modules: { ...getWebVhModules(), inMemory: new InMemoryWalletModule() } })
 
     await agent.initialize()
   })

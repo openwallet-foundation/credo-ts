@@ -1,7 +1,6 @@
-import { AgentContext } from '@credo-ts/core'
-import { injectable } from 'tsyringe'
+import { AgentContext, injectable } from '@credo-ts/core'
 
-import { CheqdCreateResourceOptions, CheqdDidRegistrar, CheqdDidResolver } from './dids'
+import { type CheqdCreateResourceOptions, CheqdDidRegistrar, CheqdDidResolver } from './dids'
 
 @injectable()
 export class CheqdApi {

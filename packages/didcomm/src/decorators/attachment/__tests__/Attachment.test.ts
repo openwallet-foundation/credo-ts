@@ -2,7 +2,7 @@ import * as didJwsz6Mkf from '../../../../../core/src/crypto/__tests__/__fixture
 import * as didJwsz6Mkv from '../../../../../core/src/crypto/__tests__/__fixtures__/didJwsz6Mkv'
 import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
 import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
-import { Attachment, AttachmentData } from '../Attachment'
+import { DidCommAttachment, DidCommAttachmentData } from '../DidCommAttachment'
 
 const mockJson = {
   '@id': 'ceffce22-6471-43e4-8945-b604091981c9',
@@ -43,11 +43,11 @@ const data = {
   },
   sha256: '00d7b2068a0b237f14a7979bbfc01ad62f60792e459467bfc4a7d3b9a6dbbe3e',
 }
-const dataInstance = new AttachmentData(data)
+const dataInstance = new DidCommAttachmentData(data)
 
-describe('Decorators | Attachment', () => {
-  it('should correctly transform Json to Attachment class', () => {
-    const decorator = JsonTransformer.fromJSON(mockJson, Attachment)
+describe('Decorators | DidCommAttachment', () => {
+  it('should correctly transform Json to DidCommAttachment class', () => {
+    const decorator = JsonTransformer.fromJSON(mockJson, DidCommAttachment)
 
     expect(decorator.id).toBe(mockJson['@id'])
     expect(decorator.description).toBe(mockJson.description)
@@ -57,8 +57,8 @@ describe('Decorators | Attachment', () => {
     expect(decorator.data).toMatchObject(mockJson.data)
   })
 
-  it('should correctly transform Attachment class to Json', () => {
-    const decorator = new Attachment({
+  it('should correctly transform DidCommAttachment class to Json', () => {
+    const decorator = new DidCommAttachment({
       id,
       description,
       filename,
@@ -83,14 +83,14 @@ describe('Decorators | Attachment', () => {
   })
 
   it('should return the data correctly if only JSON exists', () => {
-    const decorator = JsonTransformer.fromJSON(mockJson, Attachment)
+    const decorator = JsonTransformer.fromJSON(mockJson, DidCommAttachment)
 
     const gotData = decorator.getDataAsJson()
     expect(decorator.data.json).toEqual(gotData)
   })
 
   it('should return the data correctly if only Base64 exists', () => {
-    const decorator = JsonTransformer.fromJSON(mockJsonBase64, Attachment)
+    const decorator = JsonTransformer.fromJSON(mockJsonBase64, DidCommAttachment)
 
     const gotData = decorator.getDataAsJson()
     expect(mockJson.data.json).toEqual(gotData)
@@ -99,9 +99,9 @@ describe('Decorators | Attachment', () => {
   describe('addJws', () => {
     it('correctly adds the jws to the data', async () => {
       const base64 = JsonEncoder.toBase64(didJwsz6Mkf.DATA_JSON)
-      const attachment = new Attachment({
+      const attachment = new DidCommAttachment({
         id: 'some-uuid',
-        data: new AttachmentData({
+        data: new DidCommAttachmentData({
           base64,
         }),
       })

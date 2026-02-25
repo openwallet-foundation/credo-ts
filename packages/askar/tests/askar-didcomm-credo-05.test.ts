@@ -1,5 +1,5 @@
 import { Agent, TypedArrayEncoder } from '@credo-ts/core'
-import { EnvelopeService } from '@credo-ts/didcomm'
+import { DidCommEnvelopeService } from '@credo-ts/didcomm'
 import { transformPrivateKeyToPrivateJwk } from '../src'
 import { getAskarSqliteAgentOptions } from './helpers'
 
@@ -39,7 +39,7 @@ describe('Askar KMS | DIDComm Credo 0.5 Interop', () => {
       tag: 'bOflaQwnOsUngIeoh9adww',
     }
 
-    const envelopeService = agent.context.resolve(EnvelopeService)
+    const envelopeService = agent.context.resolve(DidCommEnvelopeService)
     const decrypted = await envelopeService.unpackMessage(agent.context, encryptedMessage)
 
     expect(decrypted.plaintextMessage).toEqual({
@@ -67,7 +67,7 @@ describe('Askar KMS | DIDComm Credo 0.5 Interop', () => {
       tag: 'op_xOrKdtJVhCa0u1hBJ7A',
     }
 
-    const envelopeService = agent.context.resolve(EnvelopeService)
+    const envelopeService = agent.context.resolve(DidCommEnvelopeService)
     const decrypted = await envelopeService.unpackMessage(agent.context, encryptedMessage)
 
     expect(decrypted.plaintextMessage).toEqual({

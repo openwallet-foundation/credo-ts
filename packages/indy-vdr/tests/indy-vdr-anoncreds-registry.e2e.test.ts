@@ -1,19 +1,18 @@
-import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
-
 import {
+  AnonCredsModule,
   getUnqualifiedRevocationRegistryDefinitionId,
   parseIndyDid,
   parseIndyRevocationRegistryId,
 } from '@credo-ts/anoncreds'
 import { Agent, DidsModule, TypedArrayEncoder } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
-
+import { anoncreds } from '../../anoncreds/tests/helpers'
 import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
 import { IndyVdrIndyDidResolver, IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
+import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrPoolService } from '../src/pool'
-
 import { credentialDefinitionValue, revocationRegistryDefinitionValue } from './__fixtures__/anoncreds'
 import { indyVdrModuleConfig } from './helpers'
 
@@ -25,6 +24,10 @@ const endorser = new Agent(
     {},
     {},
     {
+      anoncreds: new AnonCredsModule({
+        anoncreds,
+        registries: [indyVdrAnonCredsRegistry],
+      }),
       indyVdr: new IndyVdrModule({
         indyVdr,
         networks: indyVdrModuleConfig.networks,
@@ -43,6 +46,10 @@ const agent = new Agent(
     {},
     {},
     {
+      anoncreds: new AnonCredsModule({
+        anoncreds,
+        registries: [indyVdrAnonCredsRegistry],
+      }),
       indyVdr: new IndyVdrModule({
         indyVdr,
         networks: indyVdrModuleConfig.networks,

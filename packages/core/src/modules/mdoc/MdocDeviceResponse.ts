@@ -1,15 +1,4 @@
-import type { MdocContext } from '@animo-id/mdoc'
-import type { PresentationDefinition } from '@animo-id/mdoc'
-import type { InputDescriptorV2 } from '@sphereon/pex-models'
-import type { AgentContext } from '../../agent'
-import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
-import type {
-  MdocDeviceResponseOptions,
-  MdocDeviceResponsePresentationDefinitionOptions,
-  MdocDeviceResponseVerifyOptions,
-  MdocSessionTranscriptOptions,
-} from './MdocOptions'
-
+import type { MdocContext, PresentationDefinition } from '@animo-id/mdoc'
 import {
   CoseKey,
   DeviceRequest,
@@ -17,19 +6,32 @@ import {
   DeviceSignedDocument,
   Document,
   IssuerSigned,
+  limitDisclosureToInputDescriptor,
+  MDoc,
+  MDocStatus,
+  defaultCallback as onCheck,
+  parseDeviceResponse,
+  parseIssuerSigned,
   SessionTranscript,
   Verifier,
-  limitDisclosureToInputDescriptor,
-  defaultCallback as onCheck,
 } from '@animo-id/mdoc'
+import type { InputDescriptorV2 } from '@sphereon/pex-models'
+import type { AgentContext } from '../../agent'
+import { TypedArrayEncoder } from './../../utils'
 import { uuid } from '../../utils/uuid'
+import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import { PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc'
-import { TypedArrayEncoder } from './../../utils'
 import { Mdoc } from './Mdoc'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
-import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } from './mdocSupportedAlgs'
+import type {
+  MdocDeviceResponseOptions,
+  MdocDeviceResponsePresentationDefinitionOptions,
+  MdocDeviceResponseVerifyOptions,
+  MdocSessionTranscriptOptions,
+} from './MdocOptions'
+import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
 import { nameSpacesRecordToMap } from './mdocUtil'
 
 export class MdocDeviceResponse {
@@ -161,10 +163,7 @@ export class MdocDeviceResponse {
     }
   }
 
-  public static limitDisclosureToInputDescriptor(options: {
-    inputDescriptor: InputDescriptorV2
-    mdoc: Mdoc
-  }) {
+  public static limitDisclosureToInputDescriptor(options: { inputDescriptor: InputDescriptorV2; mdoc: Mdoc }) {
     const { mdoc } = options
 
     const inputDescriptor = MdocDeviceResponse.assertMdocInputDescriptor(options.inputDescriptor)
@@ -327,7 +326,7 @@ export class MdocDeviceResponse {
 
     // NOTE: we do not use the verification from mdoc library, as it checks all documents
     // based on the same trusted certificates
-    for (const documentIndex in this.documents) {
+    for (const documentIndex of this.documents.keys()) {
       const rawDocument = deviceResponse.documents[documentIndex]
       const document = this.documents[documentIndex]
 
@@ -418,10 +417,10 @@ export class MdocDeviceResponse {
     if (!signatureAlgorithm) {
       throw new MdocError(
         `Unable to create mdoc device response. No supported signature algorithm found to sign device response for jwk  ${
-          jwk.jwkTypehumanDescription
+          jwk.jwkTypeHumanDescription
         }. Key supports algs ${jwk.supportedSignatureAlgorithms.join(
           ', '
-        )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`
+        )}. mdoc supports algs ${mdocSupportedSignatureAlgorithms.join(', ')}`
       )
     }
 

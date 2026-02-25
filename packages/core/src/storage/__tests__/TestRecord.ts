@@ -1,6 +1,5 @@
-import type { TagsBase } from '../BaseRecord'
-
 import { uuid } from '../../utils/uuid'
+import type { TagsBase } from '../BaseRecord'
 import { BaseRecord } from '../BaseRecord'
 
 export interface TestRecordProps {

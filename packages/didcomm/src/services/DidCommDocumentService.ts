@@ -1,17 +1,18 @@
-import { AgentContext, ResolvedDidCommService, findMatchingEd25519Key } from '@credo-ts/core'
-
 import {
+  AgentContext,
   CredoError,
   DidCommV1Service,
   DidRecord,
   DidRepository,
   DidResolverService,
-  IndyAgentService,
-  Kms,
-  RecordNotFoundError,
+  findMatchingEd25519Key,
   getPublicJwkFromVerificationMethod,
+  IndyAgentService,
   injectable,
+  Kms,
   parseDid,
+  RecordNotFoundError,
+  type ResolvedDidCommService,
   verkeyToPublicJwk,
 } from '@credo-ts/core'
 
@@ -102,10 +103,17 @@ export class DidCommDocumentService {
   }
 
   public async resolveCreatedDidDocumentWithKeysByRecipientKey(agentContext: AgentContext, publicJwk: Kms.PublicJwk) {
-    const didRecord = await this.didRepository.findCreatedDidByRecipientKey(agentContext, publicJwk)
+    let didRecord = await this.didRepository.findCreatedDidByRecipientKey(agentContext, publicJwk)
+
+    // DIDComm v1 messages are sent with the Ed25519 key. However a did document may contain the X25519 key
+    // In that case we transform it to an X25519 key
+    if (!didRecord && publicJwk.is(Kms.Ed25519PublicJwk)) {
+      const x25519PublicJwk = publicJwk.convertTo(Kms.X25519PublicJwk)
+      didRecord = await this.didRepository.findCreatedDidByRecipientKey(agentContext, x25519PublicJwk)
+    }
 
     if (!didRecord) {
-      throw new RecordNotFoundError(`Created did for public jwk ${publicJwk.jwkTypehumanDescription} not found`, {
+      throw new RecordNotFoundError(`Created did for public jwk ${publicJwk.jwkTypeHumanDescription} not found`, {
         recordType: DidRecord.type,
       })
     }

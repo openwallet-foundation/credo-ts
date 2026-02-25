@@ -1,2 +1,2 @@
-export * from './DiscloseMessage'
-export * from './QueryMessage'
+export * from './DidCommFeaturesDiscloseMessage'
+export * from './DidCommFeaturesQueryMessage'

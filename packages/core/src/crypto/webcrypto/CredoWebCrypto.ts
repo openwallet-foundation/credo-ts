@@ -1,6 +1,5 @@
-import type { AgentContext } from '../../agent'
-
 import * as core from 'webcrypto-core'
+import type { AgentContext } from '../../agent'
 
 import { Hasher } from '../hashes'
 
@@ -22,6 +21,6 @@ export class CredoWebCrypto extends core.Crypto {
   }
 
   public digest(algorithm: string, data: ArrayBuffer): ArrayBuffer {
-    return Hasher.hash(new Uint8Array(data), algorithm)
+    return Hasher.hash(new Uint8Array(data), algorithm).buffer
   }
 }

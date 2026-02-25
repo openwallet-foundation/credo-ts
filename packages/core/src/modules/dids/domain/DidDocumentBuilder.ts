@@ -1,8 +1,6 @@
-import type { DidDocumentService } from './service'
-
 import { asArray } from '../../../utils'
-
 import { DidDocument } from './DidDocument'
+import type { DidDocumentService } from './service'
 import { VerificationMethod } from './verificationMethod'
 
 export class DidDocumentBuilder {

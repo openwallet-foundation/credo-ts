@@ -1,7 +1,6 @@
 import type { VersionString } from '../../utils/version'
-import type { UpdateToVersion } from './updates'
-
 import { isFirstVersionEqualToSecond, isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
+import type { UpdateToVersion } from './updates'
 
 import { CURRENT_FRAMEWORK_STORAGE_VERSION } from './updates'
 

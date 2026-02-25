@@ -1,9 +1,6 @@
-import type { AgentContext } from '@credo-ts/core'
-import type { NodeKeyManagementStorage } from './NodeKeyManagementStorage'
-
 import { createPrivateKey, createSecretKey, randomBytes, randomUUID } from 'node:crypto'
+import type { AgentContext } from '@credo-ts/core'
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
-
 import {
   assertNodeSupportedEcCrv,
   assertNodeSupportedOctAlgorithm,
@@ -18,6 +15,7 @@ import { deriveDecryptionKey, deriveEncryptionKey, nodeSupportedKeyAgreementAlgo
 import { nodeSupportedEncryptionAlgorithms, performEncrypt } from './crypto/encrypt'
 import { nodeSupportedJwaAlgorithm, performSign } from './crypto/sign'
 import { performVerify } from './crypto/verify'
+import type { NodeKeyManagementStorage } from './NodeKeyManagementStorage'
 
 export class NodeKeyManagementService implements Kms.KeyManagementService {
   public readonly backend = 'node'
@@ -301,7 +299,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
     Kms.assertSupportedEncryptionAlgorithm(encryption, nodeSupportedEncryptionAlgorithms, this.backend)
 
     let encryptionKey: Kms.KmsJwkPrivate
-    let encryptedKey: Kms.KmsEncryptedKey | undefined = undefined
+    let encryptedKey: Kms.KmsEncryptedKey | undefined
 
     if (key.keyId) {
       encryptionKey = await this.getKeyAsserted(agentContext, key.keyId)
@@ -411,7 +409,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
   private async getKeyAsserted(agentContext: AgentContext, keyId: string) {
     const storageKey = await this.#storage.get(agentContext, keyId)
     if (!storageKey) {
-      throw new Kms.KeyManagementKeyNotFoundError(keyId, this.backend)
+      throw new Kms.KeyManagementKeyNotFoundError(keyId, [this.backend])
     }
 
     return storageKey

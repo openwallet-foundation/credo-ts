@@ -1,7 +1,16 @@
 import type { AgentContext, Logger, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundMessageContext } from '@credo-ts/didcomm'
+import { AgentConfig, CredoError, EventEmitter, injectable } from '@credo-ts/core'
+import type { DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
+import { ActionMenuEventTypes } from '../ActionMenuEvents'
+import { ActionMenuRole } from '../ActionMenuRole'
+import { ActionMenuState } from '../ActionMenuState'
+import { ActionMenuProblemReportError } from '../errors/ActionMenuProblemReportError'
+import { ActionMenuProblemReportReason } from '../errors/ActionMenuProblemReportReason'
 import type { ActionMenuProblemReportMessage } from '../messages'
+import { MenuMessage, MenuRequestMessage, PerformMessage } from '../messages'
+import { ActionMenu, ActionMenuSelection } from '../models'
+import { ActionMenuRecord, ActionMenuRepository } from '../repository'
 import type {
   ClearMenuOptions,
   CreateMenuOptions,
@@ -9,17 +18,6 @@ import type {
   CreateRequestOptions,
   FindMenuOptions,
 } from './ActionMenuServiceOptions'
-
-import { AgentConfig, CredoError, EventEmitter, injectable } from '@credo-ts/core'
-
-import { ActionMenuEventTypes } from '../ActionMenuEvents'
-import { ActionMenuRole } from '../ActionMenuRole'
-import { ActionMenuState } from '../ActionMenuState'
-import { ActionMenuProblemReportError } from '../errors/ActionMenuProblemReportError'
-import { ActionMenuProblemReportReason } from '../errors/ActionMenuProblemReportReason'
-import { MenuMessage, MenuRequestMessage, PerformMessage } from '../messages'
-import { ActionMenu, ActionMenuSelection } from '../models'
-import { ActionMenuRecord, ActionMenuRepository } from '../repository'
 
 /**
  * @internal
@@ -74,7 +72,7 @@ export class ActionMenuService {
     return { message: menuRequestMessage, record: actionMenuRecord }
   }
 
-  public async processRequest(messageContext: InboundMessageContext<MenuRequestMessage>) {
+  public async processRequest(messageContext: DidCommInboundMessageContext<MenuRequestMessage>) {
     const { message: menuRequestMessage, agentContext } = messageContext
 
     this.logger.debug(`Processing menu request with id ${menuRequestMessage.id}`)
@@ -168,7 +166,7 @@ export class ActionMenuService {
     return { message: menuMessage, record: actionMenuRecord }
   }
 
-  public async processMenu(messageContext: InboundMessageContext<MenuMessage>) {
+  public async processMenu(messageContext: DidCommInboundMessageContext<MenuMessage>) {
     const { message: menuMessage, agentContext } = messageContext
 
     this.logger.debug(`Processing action menu with id ${menuMessage.id}`)
@@ -250,7 +248,7 @@ export class ActionMenuService {
     return { message: menuMessage, record }
   }
 
-  public async processPerform(messageContext: InboundMessageContext<PerformMessage>) {
+  public async processPerform(messageContext: DidCommInboundMessageContext<PerformMessage>) {
     const { message: performMessage, agentContext } = messageContext
 
     this.logger.debug(`Processing action menu perform with id ${performMessage.id}`)
@@ -312,7 +310,7 @@ export class ActionMenuService {
   }
 
   public async processProblemReport(
-    messageContext: InboundMessageContext<ActionMenuProblemReportMessage>
+    messageContext: DidCommInboundMessageContext<ActionMenuProblemReportMessage>
   ): Promise<ActionMenuRecord> {
     const { message: actionMenuProblemReportMessage, agentContext } = messageContext
 

@@ -1,1 +1,1 @@
-export * from './ProblemReportReason'
+export * from './DidCommProblemReportReason'

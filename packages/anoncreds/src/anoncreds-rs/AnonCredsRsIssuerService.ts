@@ -1,5 +1,17 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, injectable } from '@credo-ts/core'
 import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
+import {
+  Credential,
+  CredentialDefinition,
+  CredentialOffer,
+  CredentialRevocationConfig,
+  RevocationRegistryDefinition,
+  RevocationRegistryDefinitionPrivate,
+  RevocationStatusList,
+  Schema,
+} from '@hyperledger/anoncreds-shared'
+import { AnonCredsRsError } from '../error'
 import type {
   AnonCredsCredential,
   AnonCredsCredentialDefinition,
@@ -8,6 +20,14 @@ import type {
   AnonCredsRevocationStatusList,
   AnonCredsSchema,
 } from '../models'
+import {
+  AnonCredsCredentialDefinitionPrivateRepository,
+  AnonCredsCredentialDefinitionRepository,
+  AnonCredsKeyCorrectnessProofRepository,
+  AnonCredsRevocationRegistryDefinitionPrivateRepository,
+  AnonCredsRevocationRegistryDefinitionRepository,
+  AnonCredsRevocationRegistryState,
+} from '../repository'
 import type {
   AnonCredsIssuerService,
   CreateCredentialDefinitionOptions,
@@ -21,28 +41,6 @@ import type {
   CreateSchemaOptions,
   UpdateRevocationStatusListOptions,
 } from '../services'
-
-import { CredoError, injectable } from '@credo-ts/core'
-import {
-  Credential,
-  CredentialDefinition,
-  CredentialOffer,
-  CredentialRevocationConfig,
-  RevocationRegistryDefinition,
-  RevocationRegistryDefinitionPrivate,
-  RevocationStatusList,
-  Schema,
-} from '@hyperledger/anoncreds-shared'
-
-import { AnonCredsRsError } from '../error'
-import {
-  AnonCredsCredentialDefinitionPrivateRepository,
-  AnonCredsCredentialDefinitionRepository,
-  AnonCredsKeyCorrectnessProofRepository,
-  AnonCredsRevocationRegistryDefinitionPrivateRepository,
-  AnonCredsRevocationRegistryDefinitionRepository,
-  AnonCredsRevocationRegistryState,
-} from '../repository'
 import {
   getUnqualifiedSchemaId,
   isUnqualifiedCredentialDefinitionId,

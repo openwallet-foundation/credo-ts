@@ -1,12 +1,8 @@
-import type { ConnectionRecord } from '@credo-ts/didcomm'
-
 import { Agent } from '@credo-ts/core'
-
-import { getAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
-
-import { waitForQuestionAnswerRecord } from './helpers'
-
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import { QuestionAnswerModule, QuestionAnswerRole, QuestionAnswerState } from '@credo-ts/question-answer'
+import { getAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
+import { waitForQuestionAnswerRecord } from './helpers'
 
 const modules = {
   questionAnswer: new QuestionAnswerModule(),
@@ -35,7 +31,7 @@ const aliceAgentOptions = getAgentOptions(
 describe('Question Answer', () => {
   let bobAgent: Agent<typeof bobAgentOptions.modules>
   let aliceAgent: Agent<typeof aliceAgentOptions.modules>
-  let aliceConnection: ConnectionRecord
+  let aliceConnection: DidCommConnectionRecord
 
   beforeEach(async () => {
     bobAgent = new Agent(bobAgentOptions)

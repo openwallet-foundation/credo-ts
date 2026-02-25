@@ -1,16 +1,15 @@
-import type { Agent } from '../../../../../../../core'
-import type { getJsonLdModules } from '../../../../../../../core/tests'
+import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
+import type { Agent } from '../../../../../../../core/src/index'
 
-import { CREDENTIALS_CONTEXT_V1_URL, TypedArrayEncoder } from '../../../../../../../core'
+import { CREDENTIALS_CONTEXT_V1_URL, TypedArrayEncoder } from '../../../../../../../core/src/index'
+import type { getJsonLdModules } from '../../../../../../../core/tests'
 import { setupJsonLdTests, waitForCredentialRecord, waitForProofExchangeRecord } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommMessageRepository } from '../../../../../repository'
-import { AutoAcceptCredential, CredentialState } from '../../../../credentials'
-import { ProofState } from '../../../models/ProofState'
-import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
-import { V2ProposePresentationMessage } from '../messages/V2ProposePresentationMessage'
-
-import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
+import { DidCommAutoAcceptCredential, DidCommCredentialState } from '../../../../credentials'
+import { DidCommProofState } from '../../../models/DidCommProofState'
+import { DidCommPresentationV2Message, DidCommRequestPresentationV2Message } from '../messages'
+import { DidCommProposePresentationV2Message } from '../messages/DidCommProposePresentationV2Message'
 import { TEST_INPUT_DESCRIPTORS_CITIZENSHIP } from './fixtures'
 
 const jsonld = {
@@ -54,7 +53,7 @@ describe('Present Proof', () => {
       issuerName: 'presentation exchange issuer agent',
       verifierName: 'presentation exchange verifier agent',
       createConnections: true,
-      autoAcceptCredentials: AutoAcceptCredential.Always,
+      autoAcceptCredentials: DidCommAutoAcceptCredential.Always,
     }))
 
     const issuerKey = await issuerAgent.kms.importKey({
@@ -91,13 +90,13 @@ describe('Present Proof', () => {
       ],
     })
 
-    await issuerAgent.modules.credentials.offerCredential({
+    await issuerAgent.didcomm.credentials.offerCredential({
       connectionId: issuerProverConnectionId,
       protocolVersion: 'v2',
       credentialFormats: { jsonld },
     })
 
-    await waitForCredentialRecord(proverAgent, { state: CredentialState.Done })
+    await waitForCredentialRecord(proverAgent, { state: DidCommCredentialState.Done })
   })
 
   afterAll(async () => {
@@ -110,10 +109,10 @@ describe('Present Proof', () => {
     testLogger.test('Prover sends proof proposal to a Verifier')
 
     const verifierPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
-    await proverAgent.modules.proofs.proposeProof({
+    await proverAgent.didcomm.proofs.proposeProof({
       connectionId: proverVerifierConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -135,7 +134,7 @@ describe('Present Proof', () => {
 
     const proposal = await didCommMessageRepository.findAgentMessage(verifierAgent.context, {
       associatedRecordId: verifierProofExchangeRecord.id,
-      messageClass: V2ProposePresentationMessage,
+      messageClass: DidCommProposePresentationV2Message,
     })
 
     expect(proposal).toMatchObject({
@@ -163,7 +162,7 @@ describe('Present Proof', () => {
     expect(verifierProofExchangeRecord.id).not.toBeNull()
     expect(verifierProofExchangeRecord).toMatchObject({
       threadId: verifierProofExchangeRecord.threadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
       protocolVersion: 'v2',
     })
   })
@@ -171,7 +170,7 @@ describe('Present Proof', () => {
   test('Verifier accepts the Proposal send by the Prover', async () => {
     testLogger.test('Prover sends proof proposal to a Verifier')
 
-    let proverProofExchangeRecord = await proverAgent.modules.proofs.proposeProof({
+    let proverProofExchangeRecord = await proverAgent.didcomm.proofs.proposeProof({
       connectionId: proverVerifierConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -186,18 +185,18 @@ describe('Present Proof', () => {
     })
 
     const verifierPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
     const proverPresentationRecordPromise = waitForProofExchangeRecord(proverAgent, {
       threadId: proverProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     testLogger.test('Verifier accepts presentation proposal from the Prover')
     let verifierProofExchangeRecord = await verifierPresentationRecordPromise
-    verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptProposal({
-      proofRecordId: verifierProofExchangeRecord.id,
+    verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.acceptProposal({
+      proofExchangeRecordId: verifierProofExchangeRecord.id,
     })
 
     testLogger.test('Prover waits for proof request from the Verifier')
@@ -208,7 +207,7 @@ describe('Present Proof', () => {
 
     const request = await didCommMessageRepository.findAgentMessage(proverAgent.context, {
       associatedRecordId: proverProofExchangeRecord.id,
-      messageClass: V2RequestPresentationMessage,
+      messageClass: DidCommRequestPresentationV2Message,
     })
 
     expect(request).toMatchObject({
@@ -246,7 +245,7 @@ describe('Present Proof', () => {
     expect(proverProofExchangeRecord).toMatchObject({
       id: expect.any(String),
       threadId: verifierProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
       protocolVersion: 'v2',
     })
   })
@@ -254,7 +253,7 @@ describe('Present Proof', () => {
   test('Prover accepts presentation request from the Verifier', async () => {
     testLogger.test('Prover sends proof proposal to a Verifier')
 
-    let proverProofExchangeRecord = await proverAgent.modules.proofs.proposeProof({
+    let proverProofExchangeRecord = await proverAgent.didcomm.proofs.proposeProof({
       connectionId: proverVerifierConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -269,18 +268,18 @@ describe('Present Proof', () => {
     })
 
     const verifierProposalReceivedPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
     const proverPresentationRecordPromise = waitForProofExchangeRecord(proverAgent, {
       threadId: proverProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     testLogger.test('Verifier accepts presentation proposal from the Prover')
     let verifierProofExchangeRecord = await verifierProposalReceivedPresentationRecordPromise
-    verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptProposal({
-      proofRecordId: verifierProofExchangeRecord.id,
+    verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.acceptProposal({
+      proofExchangeRecordId: verifierProofExchangeRecord.id,
     })
 
     testLogger.test('Prover waits for proof request from the Verifier')
@@ -291,11 +290,11 @@ describe('Present Proof', () => {
 
     const verifierPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
       threadId: verifierProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
-    await proverAgent.modules.proofs.acceptRequest({
-      proofRecordId: proverProofExchangeRecord.id,
+    await proverAgent.didcomm.proofs.acceptRequest({
+      proofExchangeRecordId: proverProofExchangeRecord.id,
     })
 
     // Verifier waits for the presentation from the Prover
@@ -307,7 +306,7 @@ describe('Present Proof', () => {
 
     const presentation = await didCommMessageRepository.findAgentMessage(verifierAgent.context, {
       associatedRecordId: verifierProofExchangeRecord.id,
-      messageClass: V2PresentationMessage,
+      messageClass: DidCommPresentationV2Message,
     })
 
     expect(presentation).toMatchObject({
@@ -383,7 +382,7 @@ describe('Present Proof', () => {
     expect(verifierProofExchangeRecord.id).not.toBeNull()
     expect(verifierProofExchangeRecord).toMatchObject({
       threadId: verifierProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
       protocolVersion: 'v2',
     })
   })
@@ -391,7 +390,7 @@ describe('Present Proof', () => {
   test('Verifier accepts the presentation provided by the Prover', async () => {
     testLogger.test('Prover sends proof proposal to a Verifier')
 
-    let proverProofExchangeRecord = await proverAgent.modules.proofs.proposeProof({
+    let proverProofExchangeRecord = await proverAgent.didcomm.proofs.proposeProof({
       connectionId: proverVerifierConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -406,18 +405,18 @@ describe('Present Proof', () => {
     })
 
     const verifierProposalReceivedPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
     const proverPresentationRecordPromise = waitForProofExchangeRecord(proverAgent, {
       threadId: proverProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     testLogger.test('Verifier accepts presentation proposal from the Prover')
     let verifierProofExchangeRecord = await verifierProposalReceivedPresentationRecordPromise
-    verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptProposal({
-      proofRecordId: verifierProofExchangeRecord.id,
+    verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.acceptProposal({
+      proofExchangeRecordId: verifierProofExchangeRecord.id,
     })
 
     testLogger.test('Prover waits for proof request from the Verifier')
@@ -428,11 +427,11 @@ describe('Present Proof', () => {
 
     const verifierPresentationRecordPromise = waitForProofExchangeRecord(verifierAgent, {
       threadId: verifierProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
-    await proverAgent.modules.proofs.acceptRequest({
-      proofRecordId: proverProofExchangeRecord.id,
+    await proverAgent.didcomm.proofs.acceptRequest({
+      proofExchangeRecordId: proverProofExchangeRecord.id,
     })
 
     // Verifier waits for the presentation from the Prover
@@ -441,12 +440,12 @@ describe('Present Proof', () => {
 
     const proverProofExchangeRecordPromise = waitForProofExchangeRecord(proverAgent, {
       threadId: proverProofExchangeRecord.threadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
 
     // Verifier accepts the presentation provided by by the Prover
     testLogger.test('Verifier accepts the presentation provided by the Prover')
-    await verifierAgent.modules.proofs.acceptPresentation({ proofRecordId: verifierProofExchangeRecord.id })
+    await verifierAgent.didcomm.proofs.acceptPresentation({ proofExchangeRecordId: verifierProofExchangeRecord.id })
 
     // Prover waits until she received a presentation acknowledgement
     testLogger.test('Prover waits until she receives a presentation acknowledgement')
@@ -458,7 +457,7 @@ describe('Present Proof', () => {
       threadId: proverProofExchangeRecord.threadId,
       connectionId: expect.any(String),
       isVerified: true,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     expect(proverProofExchangeRecord).toMatchObject({
@@ -466,7 +465,7 @@ describe('Present Proof', () => {
       createdAt: expect.any(Date),
       threadId: verifierProofExchangeRecord.threadId,
       connectionId: expect.any(String),
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 })

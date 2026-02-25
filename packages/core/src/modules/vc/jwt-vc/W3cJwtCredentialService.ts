@@ -1,30 +1,28 @@
 import type { AgentContext } from '../../../agent/context'
 import type { VerifyJwsResult } from '../../../crypto/JwsService'
+import { JwsService } from '../../../crypto/JwsService'
+import { CredoError } from '../../../error'
+import { injectable } from '../../../plugins'
+import { asArray, isDid, MessageValidator } from '../../../utils'
 import type { DidPurpose, VerificationMethod } from '../../dids'
+import { DidResolverService, DidsApi, parseDid } from '../../dids'
+import {
+  getPublicJwkFromVerificationMethod,
+  getSupportedVerificationMethodTypesForPublicJwk,
+} from '../../dids/domain/key-type/keyDidMapping'
+import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../../kms'
+import { W3cJsonLdVerifiableCredential } from '../data-integrity'
+import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 import type {
   W3cJwtSignCredentialOptions,
   W3cJwtSignPresentationOptions,
   W3cJwtVerifyCredentialOptions,
   W3cJwtVerifyPresentationOptions,
 } from '../W3cCredentialServiceOptions'
-import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
-
-import { JwsService } from '../../../crypto'
-import { CredoError } from '../../../error'
-import { injectable } from '../../../plugins'
-import { MessageValidator, asArray, isDid } from '../../../utils'
-import { DidResolverService, DidsApi, parseDid } from '../../dids'
-import { W3cJsonLdVerifiableCredential } from '../data-integrity'
-
-import {
-  getPublicJwkFromVerificationMethod,
-  getSupportedVerificationMethodTypesForPublicJwk,
-} from '../../dids/domain/key-type/keyDidMapping'
-import { KnownJwaSignatureAlgorithm, PublicJwk } from '../../kms'
-import { W3cJwtVerifiableCredential } from './W3cJwtVerifiableCredential'
-import { W3cJwtVerifiablePresentation } from './W3cJwtVerifiablePresentation'
 import { getJwtPayloadFromCredential } from './credentialTransformer'
 import { getJwtPayloadFromPresentation } from './presentationTransformer'
+import { W3cJwtVerifiableCredential } from './W3cJwtVerifiableCredential'
+import { W3cJwtVerifiablePresentation } from './W3cJwtVerifiablePresentation'
 
 /**
  * Supports signing and verification of credentials according to the [Verifiable Credential Data Model](https://www.w3.org/TR/vc-data-model)
@@ -111,7 +109,9 @@ export class W3cJwtCredentialService {
             : W3cJwtVerifiableCredential.fromSerializedJwt(options.credential)
 
         // Verify the JWT payload (verifies whether it's not expired, etc...)
-        credential.jwt.payload.validate()
+        credential.jwt.payload.validate({
+          skewSeconds: agentContext.config.validitySkewSeconds,
+        })
 
         validationResults.validations.dataModel = {
           isValid: true,
@@ -131,7 +131,7 @@ export class W3cJwtCredentialService {
       })
       const issuerPublicKey = getPublicJwkFromVerificationMethod(issuerVerificationMethod)
 
-      let signatureResult: VerifyJwsResult | undefined = undefined
+      let signatureResult: VerifyJwsResult | undefined
       try {
         // Verify the JWS signature
         signatureResult = await this.jwsService.verifyJws(agentContext, {
@@ -281,7 +281,9 @@ export class W3cJwtCredentialService {
             : W3cJwtVerifiablePresentation.fromSerializedJwt(options.presentation)
 
         // Verify the JWT payload (verifies whether it's not expired, etc...)
-        presentation.jwt.payload.validate()
+        presentation.jwt.payload.validate({
+          skewSeconds: agentContext.config.validitySkewSeconds,
+        })
 
         // Make sure challenge matches nonce
         if (options.challenge !== presentation.jwt.payload.additionalClaims.nonce) {
@@ -311,7 +313,7 @@ export class W3cJwtCredentialService {
       })
       const proverPublicKey = getPublicJwkFromVerificationMethod(proverVerificationMethod)
 
-      let signatureResult: VerifyJwsResult | undefined = undefined
+      let signatureResult: VerifyJwsResult | undefined
       try {
         // Verify the JWS signature
         signatureResult = await this.jwsService.verifyJws(agentContext, {

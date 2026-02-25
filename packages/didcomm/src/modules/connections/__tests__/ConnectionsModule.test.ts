@@ -1,55 +1,75 @@
+import { DidRepository, DidResolverService } from '@credo-ts/core'
 import type { DependencyManager } from '../../../../../core/src/plugins/DependencyManager'
 
 import { getAgentContext } from '../../../../../core/tests'
-import { FeatureRegistry } from '../../../FeatureRegistry'
-import { Protocol } from '../../../models'
-import { ConnectionsModule } from '../ConnectionsModule'
-import { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
+import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
+import { DidCommProtocol } from '../../../models'
+import { DidCommOutOfBandService } from '../../oob'
+import { DidCommRoutingService } from '../../routing'
+import { DidCommConnectionsModule } from '../DidCommConnectionsModule'
+import { DidCommConnectionsModuleConfig } from '../DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from '../DidExchangeProtocol'
-import { ConnectionRole, DidExchangeRole, DidRotateRole } from '../models'
-import { ConnectionRepository } from '../repository'
-import { ConnectionService, TrustPingService } from '../services'
-import { DidRotateService } from '../services/DidRotateService'
+import { DidCommConnectionRole, DidCommDidExchangeRole, DidCommDidRotateRole } from '../models'
+import { DidCommConnectionRepository } from '../repository'
+import { DidCommConnectionService, DidCommTrustPingService } from '../services'
+import { DidCommDidRotateService } from '../services/DidCommDidRotateService'
 
-describe('ConnectionsModule', () => {
+describe('DidCommConnectionsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const dependencyManager = {
-      registerInstance: jest.fn(),
-      registerSingleton: jest.fn(),
-      registerContextScoped: jest.fn(),
+      registerInstance: vi.fn(),
+      registerSingleton: vi.fn(),
+      registerContextScoped: vi.fn(),
     } as unknown as DependencyManager
 
-    const connectionsModule = new ConnectionsModule()
+    const connectionsModule = new DidCommConnectionsModule()
     connectionsModule.register(dependencyManager)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(ConnectionsModuleConfig, connectionsModule.config)
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(
+      DidCommConnectionsModuleConfig,
+      connectionsModule.config
+    )
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(5)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ConnectionService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommConnectionService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidExchangeProtocol)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TrustPingService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidRotateService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ConnectionRepository)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommTrustPingService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommDidRotateService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommConnectionRepository)
   })
 
   test('registers features on the feature registry', async () => {
-    const featureRegistry = new FeatureRegistry()
-    const agentContext = getAgentContext({ registerInstances: [[FeatureRegistry, featureRegistry]] })
-    await new ConnectionsModule().initialize(agentContext)
+    const featureRegistry = new DidCommFeatureRegistry()
+    const agentContext = getAgentContext({
+      registerInstances: [
+        [DidCommFeatureRegistry, featureRegistry],
+        [DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry()],
+        [DidCommConnectionService, {} as unknown as DidCommConnectionService],
+        [DidCommOutOfBandService, {} as unknown as DidCommOutOfBandService],
+        [DidCommRoutingService, {} as unknown as DidCommRoutingService],
+        [DidRepository, {} as unknown as DidRepository],
+        [DidResolverService, {} as unknown as DidResolverService],
+        [DidCommTrustPingService, {} as unknown as DidCommTrustPingService],
+        [DidExchangeProtocol, {} as unknown as DidExchangeProtocol],
+        [DidCommDidRotateService, {} as unknown as DidCommDidRotateService],
+      ],
+    })
+    await new DidCommConnectionsModule().initialize(agentContext)
 
     expect(featureRegistry.query({ featureType: 'protocol', match: '*' })).toEqual([
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/connections/1.0',
-        roles: [ConnectionRole.Invitee, ConnectionRole.Inviter],
+        roles: [DidCommConnectionRole.Invitee, DidCommConnectionRole.Inviter],
       }),
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/didexchange/1.1',
-        roles: [DidExchangeRole.Requester, DidExchangeRole.Responder],
+        roles: [DidCommDidExchangeRole.Requester, DidCommDidExchangeRole.Responder],
       }),
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/did-rotate/1.0',
-        roles: [DidRotateRole.RotatingParty, DidRotateRole.ObservingParty],
+        roles: [DidCommDidRotateRole.RotatingParty, DidCommDidRotateRole.ObservingParty],
       }),
     ])
   })

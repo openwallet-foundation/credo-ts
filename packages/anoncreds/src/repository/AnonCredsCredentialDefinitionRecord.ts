@@ -1,14 +1,12 @@
 import type { TagsBase } from '@credo-ts/core'
-import type { AnonCredsCredentialDefinition } from '../models'
-import type { AnonCredsCredentialDefinitionRecordMetadata } from './anonCredsCredentialDefinitionRecordMetadataTypes'
-
 import { BaseRecord, utils } from '@credo-ts/core'
-
+import type { AnonCredsCredentialDefinition } from '../models'
 import {
   getUnqualifiedCredentialDefinitionId,
   isDidIndyCredentialDefinitionId,
   parseIndyCredentialDefinitionId,
 } from '../utils/indyIdentifiers'
+import type { AnonCredsCredentialDefinitionRecordMetadata } from './anonCredsCredentialDefinitionRecordMetadataTypes'
 
 export interface AnonCredsCredentialDefinitionRecordProps {
   id?: string
@@ -61,7 +59,7 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
   }
 
   public getTags() {
-    let unqualifiedCredentialDefinitionId: string | undefined = undefined
+    let unqualifiedCredentialDefinitionId: string | undefined
     if (isDidIndyCredentialDefinitionId(this.credentialDefinitionId)) {
       const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(this.credentialDefinitionId)
 

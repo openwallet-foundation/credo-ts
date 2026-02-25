@@ -1,4 +1,4 @@
-export * from './internal'
-export * from './exchange'
-export * from './registry'
 export * from './AnonCredsRestrictionWrapper'
+export * from './exchange'
+export * from './internal'
+export * from './registry'

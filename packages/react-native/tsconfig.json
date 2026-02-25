@@ -1,8 +1,0 @@
-{
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    // FIXME https://github.com/openwallet-foundation/credo-ts/pull/327
-    "skipLibCheck": true,
-    "types": ["react-native", "jest"]
-  }
-}

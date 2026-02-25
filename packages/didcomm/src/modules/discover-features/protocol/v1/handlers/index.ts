@@ -1,2 +1,2 @@
-export * from './V1DiscloseMessageHandler'
-export * from './V1QueryMessageHandler'
+export * from './DidCommFeaturesDiscloseMessageHandler'
+export * from './DidCommFeaturesQueryMessageHandler'

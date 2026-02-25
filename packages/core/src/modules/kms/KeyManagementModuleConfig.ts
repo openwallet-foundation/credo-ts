@@ -1,6 +1,5 @@
-import type { KeyManagementService } from './KeyManagementService'
-
 import { KeyManagementError } from './error/KeyManagementError'
+import type { KeyManagementService } from './KeyManagementService'
 
 export interface KeyManagementModuleConfigOptions {
   /**
@@ -53,12 +52,5 @@ export class KeyManagementModuleConfig {
     }
 
     return backend
-  }
-
-  private toJSON() {
-    return {
-      defaultBackend: this.#defaultBackend,
-      backends: this.backends.map((backend) => backend.backend),
-    }
   }
 }

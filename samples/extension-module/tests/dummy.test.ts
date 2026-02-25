@@ -1,11 +1,9 @@
-import type { ConnectionRecord } from '@credo-ts/didcomm'
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-
 import { Agent } from '@credo-ts/core'
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
-
 import { getAgentOptions, makeConnection } from '../../../packages/core/tests/helpers'
 import testLogger from '../../../packages/core/tests/logger'
+import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { DummyModule } from '../dummy/DummyModule'
@@ -40,7 +38,7 @@ const aliceAgentOptions = getAgentOptions(
 describe('Dummy extension module test', () => {
   let bobAgent: Agent<typeof bobAgentOptions.modules>
   let aliceAgent: Agent<typeof aliceAgentOptions.modules>
-  let aliceConnection: ConnectionRecord
+  let aliceConnection: DidCommConnectionRecord
 
   beforeEach(async () => {
     const bobMessages = new Subject<SubjectMessage>()
@@ -51,14 +49,14 @@ describe('Dummy extension module test', () => {
     }
 
     bobAgent = new Agent(bobAgentOptions)
-    bobAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    bobAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(bobMessages))
+    bobAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
     aliceAgent = new Agent(aliceAgentOptions)
 
-    aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
     ;[aliceConnection] = await makeConnection(aliceAgent, bobAgent)
   })

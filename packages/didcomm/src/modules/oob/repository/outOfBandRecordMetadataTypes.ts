@@ -1,12 +1,12 @@
-import type { InvitationType } from '../messages'
+import type { DidCommInvitationType } from '../messages'
 
-export enum OutOfBandRecordMetadataKeys {
+export enum DidCommOutOfBandRecordMetadataKeys {
   RecipientRouting = '_internal/recipientRouting',
   LegacyInvitation = '_internal/legacyInvitation',
 }
 
-export type OutOfBandRecordMetadata = {
-  [OutOfBandRecordMetadataKeys.RecipientRouting]: {
+export type DidCommOutOfBandRecordMetadata = {
+  [DidCommOutOfBandRecordMetadataKeys.RecipientRouting]: {
     recipientKeyFingerprint: string
     /**
      * Optional key id to use for the recipient key. If not configured the legacy base58 encoded public key will be used as the key id
@@ -16,10 +16,10 @@ export type OutOfBandRecordMetadata = {
     endpoints: string[]
     mediatorId?: string
   }
-  [OutOfBandRecordMetadataKeys.LegacyInvitation]: {
+  [DidCommOutOfBandRecordMetadataKeys.LegacyInvitation]: {
     /**
      * Indicates the type of the legacy invitation that was used for this out of band exchange.
      */
-    legacyInvitationType?: Exclude<InvitationType, InvitationType.OutOfBand>
+    legacyInvitationType?: Exclude<DidCommInvitationType, DidCommInvitationType.OutOfBand>
   }
 }

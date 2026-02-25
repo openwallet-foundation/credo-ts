@@ -1,12 +1,11 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
-import type { ActionMenuService } from '../services'
-
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
 import { ActionMenuProblemReportMessage } from '../messages'
+import type { ActionMenuService } from '../services'
 
 /**
  * @internal
  */
-export class ActionMenuProblemReportHandler implements MessageHandler {
+export class ActionMenuProblemReportHandler implements DidCommMessageHandler {
   private actionMenuService: ActionMenuService
   public supportedMessages = [ActionMenuProblemReportMessage]
 
@@ -14,7 +13,7 @@ export class ActionMenuProblemReportHandler implements MessageHandler {
     this.actionMenuService = actionMenuService
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<ActionMenuProblemReportHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<ActionMenuProblemReportHandler>) {
     await this.actionMenuService.processProblemReport(messageContext)
 
     return undefined

@@ -1,1 +1,1 @@
-export * from './HandshakeReuseHandler'
+export * from './DidCommHandshakeReuseHandler'

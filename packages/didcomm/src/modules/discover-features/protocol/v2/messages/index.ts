@@ -1,2 +1,2 @@
-export * from './V2DisclosuresMessage'
-export * from './V2QueriesMessage'
+export * from './DidCommFeaturesDisclosuresMessage'
+export * from './DidCommFeaturesQueriesMessage'

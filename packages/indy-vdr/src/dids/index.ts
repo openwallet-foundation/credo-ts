@@ -1,3 +1,7 @@
-export { IndyVdrIndyDidRegistrar, IndyVdrDidCreateResult, IndyVdrDidCreateOptions } from './IndyVdrIndyDidRegistrar'
+export {
+  type IndyVdrDidCreateOptions,
+  type IndyVdrDidCreateResult,
+  IndyVdrIndyDidRegistrar,
+} from './IndyVdrIndyDidRegistrar'
 export { IndyVdrIndyDidResolver } from './IndyVdrIndyDidResolver'
 export { IndyVdrSovDidResolver } from './IndyVdrSovDidResolver'

@@ -1,9 +1,8 @@
-import type { BaseMessageConstructor } from '../../BaseMessage'
-
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, ValidateNested } from 'class-validator'
+import type { BaseMessageConstructor } from '../../BaseDidCommMessage'
 
-import { Attachment } from './Attachment'
+import { DidCommAttachment } from './DidCommAttachment'
 
 export function AttachmentDecorated<T extends BaseMessageConstructor>(Base: T) {
   class AttachmentDecoratorExtension extends Base {
@@ -11,17 +10,17 @@ export function AttachmentDecorated<T extends BaseMessageConstructor>(Base: T) {
      * The ~attach decorator is required for appending attachments to a message
      */
     @Expose({ name: '~attach' })
-    @Type(() => Attachment)
+    @Type(() => DidCommAttachment)
     @ValidateNested()
-    @IsInstance(Attachment, { each: true })
+    @IsInstance(DidCommAttachment, { each: true })
     @IsOptional()
-    public appendedAttachments?: Attachment[]
+    public appendedAttachments?: DidCommAttachment[]
 
-    public getAppendedAttachmentById(id: string): Attachment | undefined {
+    public getAppendedAttachmentById(id: string): DidCommAttachment | undefined {
       return this.appendedAttachments?.find((attachment) => attachment.id === id)
     }
 
-    public addAppendedAttachment(attachment: Attachment): void {
+    public addAppendedAttachment(attachment: DidCommAttachment): void {
       if (this.appendedAttachments) {
         this.appendedAttachments.push(attachment)
       } else {

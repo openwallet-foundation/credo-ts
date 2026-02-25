@@ -1,4 +1,5 @@
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import type { AgentContext } from '../../../..//core/src/agent'
 import type { VerificationMethod } from '../../../../core/src/modules/dids'
 import { DidCommV1Service, DidDocument, IndyAgentService } from '../../../../core/src/modules/dids'
@@ -8,11 +9,11 @@ import { DidResolverService } from '../../../../core/src/modules/dids/services/D
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { DidCommDocumentService } from '../DidCommDocumentService'
 
-jest.mock('../../../../core/src/modules/dids/services/DidResolverService')
-const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
+vi.mock('../../../../core/src/modules/dids/services/DidResolverService')
+const DidResolverServiceMock = DidResolverService as MockedClassConstructor<typeof DidResolverService>
 
-jest.mock('../../../../core/src/modules/dids/services/DidResolverService')
-const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+vi.mock('../../../../core/src/modules/dids/services/DidResolverService')
+const DidRepositoryMock = DidRepository as MockedClassConstructor<typeof DidRepository>
 
 describe('DidCommDocumentService', () => {
   let didCommDocumentService: DidCommDocumentService
@@ -32,7 +33,7 @@ describe('DidCommDocumentService', () => {
       const error = new Error('test')
       mockFunction(didResolverService.resolveDidDocument).mockRejectedValue(error)
 
-      await expect(didCommDocumentService.resolveServicesFromDid(agentContext, 'did')).rejects.toThrowError(error)
+      await expect(didCommDocumentService.resolveServicesFromDid(agentContext, 'did')).rejects.toThrow(error)
     })
 
     test('resolves IndyAgentService', async () => {

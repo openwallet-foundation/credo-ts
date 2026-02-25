@@ -1,1 +1,1 @@
-export * from './RoutingProblemReportReason'
+export * from './DidCommRoutingProblemReportReason'

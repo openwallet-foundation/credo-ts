@@ -3,9 +3,8 @@ import { outOfBandServiceToNumAlgo4Did } from '../../../../../../../didcomm/src/
 import { JsonTransformer } from '../../../../../utils'
 import { DidDocument } from '../../../domain'
 import { didDocumentToNumAlgo4Did, didToNumAlgo4DidDocument } from '../peerDidNumAlgo4'
-
-import didPeer4zQmUJdJ from './__fixtures__/didPeer4zQmUJdJ.json'
 import didPeer4zQmd8Cp from './__fixtures__/didPeer4zQmd8Cp.json'
+import didPeer4zQmUJdJ from './__fixtures__/didPeer4zQmUJdJ.json'
 
 describe('peerDidNumAlgo4', () => {
   describe('didToNumAlgo4DidDocument', () => {

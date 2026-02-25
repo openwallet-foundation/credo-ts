@@ -1,27 +1,27 @@
 import type { DependencyManager, Module } from '../../plugins'
-
-import { AgentConfig } from '../../agent/AgentConfig'
-
-import { SdJwtVcApi } from './SdJwtVcApi'
-import { SdJwtVcService } from './SdJwtVcService'
 import { SdJwtVcRepository } from './repository'
+import { SdJwtVcApi } from './SdJwtVcApi'
+import { SdJwtVcModuleConfig, type SdJwtVcModuleConfigOptions } from './SdJwtVcModuleConfig'
+import { SdJwtVcService } from './SdJwtVcService'
 
 /**
  * @public
  */
 export class SdJwtVcModule implements Module {
+  public readonly config: SdJwtVcModuleConfig
+
   public readonly api = SdJwtVcApi
+
+  public constructor(options?: SdJwtVcModuleConfigOptions) {
+    this.config = new SdJwtVcModuleConfig(options)
+  }
 
   /**
    * Registers the dependencies of the sd-jwt-vc module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
-    // Warn about experimental module
-    dependencyManager
-      .resolve(AgentConfig)
-      .logger.warn(
-        "The 'SdJwtVc' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-      )
+    // Config
+    dependencyManager.registerInstance(SdJwtVcModuleConfig, this.config)
 
     // Services
     dependencyManager.registerSingleton(SdJwtVcService)

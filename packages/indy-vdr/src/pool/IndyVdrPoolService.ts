@@ -1,12 +1,10 @@
-import type { AgentContext } from '@credo-ts/core'
-import type { GetNymResponse } from '@hyperledger/indy-vdr-shared'
-
 import { didIndyRegex } from '@credo-ts/anoncreds'
-import { CacheModuleConfig, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
+import { CacheModuleConfig, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
+import type { GetNymResponse } from '@hyperledger/indy-vdr-shared'
 import { GetNymRequest } from '@hyperledger/indy-vdr-shared'
-
-import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'
 import { IndyVdrError, IndyVdrNotConfiguredError, IndyVdrNotFoundError } from '../error'
+import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'
 import { isSelfCertifiedDid } from '../utils/did'
 import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
 

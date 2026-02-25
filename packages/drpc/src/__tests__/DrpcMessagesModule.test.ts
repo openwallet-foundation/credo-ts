@@ -1,6 +1,5 @@
+import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry, DidCommProtocol } from '@credo-ts/didcomm'
 import type { DependencyManager } from '../../../core/src/plugins/DependencyManager'
-
-import { FeatureRegistry, Protocol } from '@credo-ts/didcomm'
 
 import { getAgentConfig, getAgentContext } from '../../../core/tests'
 import { DrpcModule } from '../DrpcModule'
@@ -11,9 +10,9 @@ import { DrpcService } from '../services'
 describe('DrpcModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const dependencyManager = {
-      registerInstance: jest.fn(),
-      registerSingleton: jest.fn(),
-      registerContextScoped: jest.fn(),
+      registerInstance: vi.fn(),
+      registerSingleton: vi.fn(),
+      registerContextScoped: vi.fn(),
       resolve: () => {
         return getAgentConfig('dprc')
       },
@@ -27,12 +26,18 @@ describe('DrpcModule', () => {
   })
 
   test('registers features on the feature registry', async () => {
-    const featureRegistry = new FeatureRegistry()
-    const agentContext = getAgentContext({ registerInstances: [[FeatureRegistry, featureRegistry]] })
+    const featureRegistry = new DidCommFeatureRegistry()
+    const agentContext = getAgentContext({
+      registerInstances: [
+        [DidCommFeatureRegistry, featureRegistry],
+        [DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry()],
+        [DrpcService, {} as DrpcService],
+      ],
+    })
     await new DrpcModule().initialize(agentContext)
 
     expect(featureRegistry.query({ featureType: 'protocol', match: '*' })).toEqual([
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/drpc/1.0',
         roles: [DrpcRole.Client, DrpcRole.Server],
       }),

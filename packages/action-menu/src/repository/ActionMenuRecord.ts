@@ -1,9 +1,8 @@
 import type { TagsBase } from '@credo-ts/core'
-import type { ActionMenuRole } from '../ActionMenuRole'
-import type { ActionMenuState } from '../ActionMenuState'
-
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Type } from 'class-transformer'
+import type { ActionMenuRole } from '../ActionMenuRole'
+import type { ActionMenuState } from '../ActionMenuState'
 
 import { ActionMenu, ActionMenuSelection } from '../models'
 
@@ -84,7 +83,6 @@ export class ActionMenuRecord
 
   public assertState(expectedStates: ActionMenuState | ActionMenuState[]) {
     if (!Array.isArray(expectedStates)) {
-      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

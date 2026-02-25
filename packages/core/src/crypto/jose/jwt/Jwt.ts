@@ -1,10 +1,8 @@
-import type { Buffer } from '../../../utils'
-
 import { CredoError } from '../../../error'
-import { JsonEncoder, TypedArrayEncoder } from '../../../utils'
-
 import { replaceError } from '../../../logger/replaceError'
-import { Jwk } from '../../../modules/kms'
+import type { Jwk } from '../../../modules/kms'
+import type { Buffer } from '../../../utils'
+import { JsonEncoder, TypedArrayEncoder } from '../../../utils'
 import { JwtPayload } from './JwtPayload'
 
 // TODO: JWT Header typing

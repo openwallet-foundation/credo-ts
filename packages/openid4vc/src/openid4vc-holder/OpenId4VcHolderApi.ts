@@ -1,3 +1,14 @@
+import {
+  AgentContext,
+  type DcqlQueryResult,
+  type DcqlSelectCredentialsForRequestOptions,
+  DcqlService,
+  type DifPexCredentialsForRequest,
+  DifPresentationExchangeService,
+  injectable,
+} from '@credo-ts/core'
+import type { OpenId4VciMetadata } from '../shared'
+import { OpenId4VciHolderService } from './OpenId4VciHolderService'
 import type {
   OpenId4VciAuthCodeFlowOptions,
   OpenId4VciDeferredCredentialRequestOptions,
@@ -8,25 +19,13 @@ import type {
   OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
   OpenId4VciSendNotificationOptions,
   OpenId4VciTokenRefreshOptions,
+  OpenId4VcParseAndVerifyAuthorizationResponseOptions,
 } from './OpenId4VciHolderServiceOptions'
+import { OpenId4VpHolderService } from './OpenId4vpHolderService'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
   ResolveOpenId4VpAuthorizationRequestOptions,
 } from './OpenId4vpHolderServiceOptions'
-
-import {
-  AgentContext,
-  DcqlQueryResult,
-  DcqlService,
-  DifPexCredentialsForRequest,
-  DifPresentationExchangeService,
-  injectable,
-} from '@credo-ts/core'
-
-import { OpenId4VciMetadata } from '../shared'
-
-import { OpenId4VciHolderService } from './OpenId4VciHolderService'
-import { OpenId4VpHolderService } from './OpenId4vpHolderService'
 
 /**
  * @public
@@ -92,8 +91,11 @@ export class OpenId4VcHolderApi {
    * Automatically select credentials from available credentials for a dcql request. Can be called after calling
    * @see resolveOpenId4VpAuthorizationRequest.
    */
-  public selectCredentialsForDcqlRequest(dcqlQueryResult: DcqlQueryResult) {
-    return this.dcqlService.selectCredentialsForRequest(dcqlQueryResult)
+  public selectCredentialsForDcqlRequest(
+    dcqlQueryResult: DcqlQueryResult,
+    options?: DcqlSelectCredentialsForRequestOptions
+  ) {
+    return this.dcqlService.selectCredentialsForRequest(dcqlQueryResult, options)
   }
 
   public async resolveIssuerMetadata(credentialIssuer: string): Promise<OpenId4VciMetadata> {
@@ -151,6 +153,10 @@ export class OpenId4VcHolderApi {
     options: OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions
   ) {
     return await this.openId4VciHolderService.retrieveAuthorizationCodeUsingPresentation(this.agentContext, options)
+  }
+
+  public parseAuthorizationCodeFromAuthorizationResponse(options: OpenId4VcParseAndVerifyAuthorizationResponseOptions) {
+    return this.openId4VciHolderService.parseAuthorizationCodeFromAuthorizationResponse(this.agentContext, options)
   }
 
   /**

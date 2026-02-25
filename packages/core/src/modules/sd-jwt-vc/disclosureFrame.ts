@@ -1,6 +1,5 @@
-import type { JsonObject } from '../../types'
-
 import { isObject } from 'class-validator'
+import type { JsonObject } from '../../types'
 
 type DisclosureFrame = {
   [key: string]: boolean | DisclosureFrame

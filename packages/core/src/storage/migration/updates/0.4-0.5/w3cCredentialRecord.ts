@@ -1,8 +1,7 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
-import type { W3cCredentialRecord } from '../../../../modules/vc/repository'
-
 import { W3cJsonLdVerifiableCredential } from '../../../../modules/vc'
 import { W3cJsonLdCredentialService } from '../../../../modules/vc/data-integrity/W3cJsonLdCredentialService'
+import type { W3cCredentialRecord } from '../../../../modules/vc/repository'
 import { W3cCredentialRepository } from '../../../../modules/vc/repository'
 
 /**
@@ -54,8 +53,9 @@ export async function fixIncorrectExpandedTypesWithAskarStorage<Agent extends Ba
   agent: Agent,
   w3cCredentialRecord: W3cCredentialRecord
 ) {
+  const firstCredential = w3cCredentialRecord.firstCredential
   // We don't store the expanded types for JWT credentials (should we? As you can have jwt_vc with json-ld)
-  if (!(w3cCredentialRecord.credential instanceof W3cJsonLdVerifiableCredential)) return
+  if (!(firstCredential instanceof W3cJsonLdVerifiableCredential)) return
 
   const expandedTypes = (w3cCredentialRecord.getTag('expandedTypes') ?? []) as string[]
 
@@ -73,7 +73,7 @@ export async function fixIncorrectExpandedTypesWithAskarStorage<Agent extends Ba
     // JsonLd credentials need expanded types to be stored.
     const newExpandedTypes = await w3cJsonLdCredentialService.getExpandedTypesForCredential(
       agent.context,
-      w3cCredentialRecord.credential
+      firstCredential
     )
 
     w3cCredentialRecord.setTag('expandedTypes', newExpandedTypes)

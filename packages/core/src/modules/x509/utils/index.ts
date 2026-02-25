@@ -1,2 +1,2 @@
-export * from './nameConversion'
 export * from './extensions'
+export * from './nameConversion'

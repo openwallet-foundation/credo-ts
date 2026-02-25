@@ -171,7 +171,7 @@ function expandServiceAbbreviations(service: JsonObject) {
     if (typeof json === 'object')
       return Object.entries(json as Record<string, unknown>).reduce(
         (jsonBody, [key, value]) => ({
-          // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+          // biome-ignore lint/performance/noAccumulatingSpread: no explanation
           ...jsonBody,
           [expand(key)]: expandJson(value),
         }),
@@ -198,7 +198,7 @@ function abbreviateServiceJson(service: JsonObject) {
 
   const abbreviatedService = Object.entries(service).reduce(
     (serviceBody, [key, value]) => ({
-      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+      // biome-ignore lint/performance/noAccumulatingSpread: no explanation
       ...serviceBody,
       [abbreviate(key)]: abbreviate(value as string),
     }),

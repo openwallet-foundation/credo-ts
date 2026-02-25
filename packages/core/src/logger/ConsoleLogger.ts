@@ -2,7 +2,7 @@ import { BaseLogger } from './BaseLogger'
 import { LogLevel } from './Logger'
 import { replaceError } from './replaceError'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 type LogData = Record<string, any>
 
 export class ConsoleLogger extends BaseLogger {

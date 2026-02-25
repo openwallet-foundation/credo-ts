@@ -1,8 +1,7 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
-import type { StorageService } from '../../../StorageService'
-
 import { InjectionSymbols } from '../../../../constants'
 import { BaseRecord } from '../../../BaseRecord'
+import type { StorageService } from '../../../StorageService'
 
 /**
  * removes the all cache records as used in 0.3.0, as they have been updated to use the new cache interface.

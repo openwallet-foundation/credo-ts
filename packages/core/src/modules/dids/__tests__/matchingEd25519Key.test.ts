@@ -41,7 +41,7 @@ describe('findMatchingEd25519Key', () => {
         publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58X25519),
       })
       const ed25519Key = findMatchingEd25519Key(x25519Key, didDocument)
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       expect(TypedArrayEncoder.toBase58(ed25519Key?.publicJwk.publicKey.publicKey!)).toBe(
         Ed25519VerificationMethod.publicKeyBase58
       )
@@ -86,7 +86,7 @@ describe('findMatchingEd25519Key', () => {
         crv: 'X25519',
       })
       const ed25519Key = findMatchingEd25519Key(x25519Key, didDocument)
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       expect(TypedArrayEncoder.toBase58(ed25519Key?.publicJwk.publicKey.publicKey!)).toBe(
         Ed25519VerificationMethod.publicKeyBase58
       )

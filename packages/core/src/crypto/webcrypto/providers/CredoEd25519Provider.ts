@@ -1,4 +1,7 @@
+import * as core from 'webcrypto-core'
+import { PublicJwk } from '../../../modules/kms'
 import type { CredoWalletWebCrypto } from '../CredoWalletWebCrypto'
+import { CredoWebCryptoKey } from '../CredoWebCryptoKey'
 import type {
   CredoWebCryptoKeyPair,
   Ed25519KeyGenParams,
@@ -9,18 +12,13 @@ import type {
   KeyUsage,
 } from '../types'
 
-import * as core from 'webcrypto-core'
-
-import { PublicJwk } from '../../../modules/kms'
-import { CredoWebCryptoKey } from '../CredoWebCryptoKey'
-
 export class CredoEd25519Provider extends core.Ed25519Provider {
   public constructor(private walletWebCrypto: CredoWalletWebCrypto) {
     super()
   }
 
   public async onSign(algorithm: Ed25519Params, key: CredoWebCryptoKey, data: ArrayBuffer): Promise<ArrayBuffer> {
-    return this.walletWebCrypto.sign(key, new Uint8Array(data), algorithm)
+    return new Uint8Array(await this.walletWebCrypto.sign(key, new Uint8Array(data), algorithm)).buffer
   }
 
   public async onVerify(
@@ -47,7 +45,9 @@ export class CredoEd25519Provider extends core.Ed25519Provider {
   }
 
   public async onExportKey(format: KeyFormat, key: CredoWebCryptoKey): Promise<JsonWebKey | ArrayBuffer> {
-    return this.walletWebCrypto.exportKey(format, key)
+    const exported = await this.walletWebCrypto.exportKey(format, key)
+    if (exported instanceof Uint8Array) return new Uint8Array(exported).buffer
+    return exported
   }
 
   public async onImportKey(

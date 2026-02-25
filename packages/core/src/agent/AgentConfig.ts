@@ -1,18 +1,16 @@
+import { DEFAULT_SKEW_TIME } from '../crypto/jose/jwt/JwtPayload'
 import type { Logger } from '../logger'
+import { ConsoleLogger, LogLevel } from '../logger'
 import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
 
-import { ConsoleLogger, LogLevel } from '../logger'
-
 export class AgentConfig {
   private initConfig: InitConfig
-  public label: string
   public logger: Logger
   public readonly agentDependencies: AgentDependencies
 
   public constructor(initConfig: InitConfig, agentDependencies: AgentDependencies) {
     this.initConfig = initConfig
-    this.label = initConfig.label
     this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off)
     this.agentDependencies = agentDependencies
   }
@@ -25,11 +23,12 @@ export class AgentConfig {
     return this.initConfig.autoUpdateStorageOnStartup ?? false
   }
 
+  public get validitySkewSeconds() {
+    return this.initConfig.validitySkewSeconds ?? DEFAULT_SKEW_TIME
+  }
+
   public extend(config: Partial<InitConfig>): AgentConfig {
-    return new AgentConfig(
-      { ...this.initConfig, logger: this.logger, label: this.label, ...config },
-      this.agentDependencies
-    )
+    return new AgentConfig({ ...this.initConfig, logger: this.logger, ...config }, this.agentDependencies)
   }
 
   public toJSON() {
@@ -37,7 +36,6 @@ export class AgentConfig {
       ...this.initConfig,
       logger: this.logger.logLevel,
       agentDependencies: Boolean(this.agentDependencies),
-      label: this.label,
     }
   }
 }

@@ -1,10 +1,11 @@
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { GenericRecordsModule } from '../GenericRecordsModule'
 import { GenericRecordsRepository } from '../repository/GenericRecordsRepository'
 import { GenericRecordService } from '../services/GenericRecordService'
 
-jest.mock('../../../plugins/DependencyManager')
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
+vi.mock('../../../plugins/DependencyManager')
+const DependencyManagerMock = DependencyManager as MockedClassConstructor<typeof DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 

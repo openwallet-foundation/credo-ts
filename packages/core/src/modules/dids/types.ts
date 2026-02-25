@@ -34,7 +34,7 @@ export interface DidResolutionOptions extends DIDResolutionOptions {
   /**
    * How many seconds to persist the resolved document
    *
-   * @default 3600
+   * @default 300
    */
   cacheDurationInSeconds?: number
 }

@@ -1,7 +1,8 @@
-import { HashName, Hasher } from '../../../crypto/hashes/Hasher'
+import { Hasher, type HashName } from '../../../crypto/hashes/Hasher'
+import type { Uint8ArrayBuffer } from '../../../types'
 import { TypedArrayEncoder } from '../../../utils'
-import { parseWithErrorHandling } from '../../../utils/zod'
-import { KmsJwkPublic, zKmsJwkPublic } from './knownJwk'
+import { zParseWithErrorHandling } from '../../../utils/zod'
+import { type KmsJwkPublic, zKmsJwkPublic } from './knownJwk'
 
 export const zJwkThumbprintComponents = zKmsJwkPublic.transform((data) => {
   if (data.kty === 'EC') {
@@ -35,8 +36,8 @@ export interface CalculateJwkThumbprintOptions {
   hashAlgorithm: HashName
 }
 
-export function calculateJwkThumbprint(options: CalculateJwkThumbprintOptions): Uint8Array {
-  const jwkThumbprintComponents = parseWithErrorHandling(
+export function calculateJwkThumbprint(options: CalculateJwkThumbprintOptions): Uint8ArrayBuffer {
+  const jwkThumbprintComponents = zParseWithErrorHandling(
     zJwkThumbprintComponents,
     options.jwk,
     `Provided jwk does not match a supported jwk structure. Either the 'kty' is not supported, or required values are missing.`

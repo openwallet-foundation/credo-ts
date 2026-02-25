@@ -1,9 +1,8 @@
 import type { AnonCredsTestsAgent } from '../../anoncreds/tests/legacyAnonCredsSetup'
-import type { EventReplaySubject } from './events'
-
 import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../anoncreds/tests/legacyAnonCredsSetup'
-import { ProofState } from '../../didcomm/src/modules/proofs'
+import { DidCommProofState } from '../../didcomm/src/modules/proofs'
 import { uuid } from '../src/utils/uuid'
+import type { EventReplaySubject } from './events'
 
 import { waitForProofExchangeRecord } from './helpers'
 import testLogger from './logger'
@@ -69,10 +68,10 @@ describe('Present Proof Subprotocol', () => {
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       parentThreadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
-    const aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
+    const aliceProofExchangeRecord = await aliceAgent.didcomm.proofs.proposeProof({
       connectionId: aliceConnectionId,
       protocolVersion: 'v1',
       parentThreadId,
@@ -100,7 +99,7 @@ describe('Present Proof Subprotocol', () => {
     })
 
     expect(aliceProofExchangeRecord.parentThreadId).toBe(parentThreadId)
-    const proofsByParentThread = await aliceAgent.modules.proofs.getByParentThreadAndConnectionId(parentThreadId)
+    const proofsByParentThread = await aliceAgent.didcomm.proofs.getByParentThreadAndConnectionId(parentThreadId)
     expect(proofsByParentThread.length).toEqual(1)
     expect(proofsByParentThread[0].parentThreadId).toBe(parentThreadId)
 
@@ -111,22 +110,22 @@ describe('Present Proof Subprotocol', () => {
 
     // Faber accepts the presentation proposal from Alice
     testLogger.test('Faber accepts the presentation proposal from Alice')
-    await faberAgent.modules.proofs.acceptProposal({ proofRecordId: faberProofExchangeRecord.id })
+    await faberAgent.didcomm.proofs.acceptProposal({ proofExchangeRecordId: faberProofExchangeRecord.id })
 
     testLogger.test('Alice waits till it receives presentation ack')
     await waitForProofExchangeRecord(aliceAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.modules.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+    const requestedCredentials = await aliceAgent.didcomm.proofs.selectCredentialsForRequest({
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
-    await aliceAgent.modules.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+    await aliceAgent.didcomm.proofs.acceptRequest({
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
       proofFormats: requestedCredentials.proofFormats,
     })
 
@@ -134,19 +133,19 @@ describe('Present Proof Subprotocol', () => {
     faberProofExchangeRecord = await waitForProofExchangeRecord(faberAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     // Faber accepts the presentation provided by Alice
     testLogger.test('Faber accepts the presentation provided by Alice')
-    await faberAgent.modules.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
+    await faberAgent.didcomm.proofs.acceptPresentation({ proofExchangeRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
     await waitForProofExchangeRecord(aliceAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 
@@ -156,12 +155,12 @@ describe('Present Proof Subprotocol', () => {
 
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       parentThreadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Faber sends a presentation request to Alice
     testLogger.test('Faber sends a presentation request to Alice')
-    const faberProofExchangeRecord = await faberAgent.modules.proofs.requestProof({
+    const faberProofExchangeRecord = await faberAgent.didcomm.proofs.requestProof({
       connectionId: faberConnectionId,
       parentThreadId,
       protocolVersion: 'v1',
@@ -196,7 +195,7 @@ describe('Present Proof Subprotocol', () => {
     })
 
     expect(faberProofExchangeRecord.parentThreadId).toBe(parentThreadId)
-    const proofsByParentThread = await faberAgent.modules.proofs.getByParentThreadAndConnectionId(parentThreadId)
+    const proofsByParentThread = await faberAgent.didcomm.proofs.getByParentThreadAndConnectionId(parentThreadId)
     expect(proofsByParentThread.length).toEqual(1)
     expect(proofsByParentThread[0].parentThreadId).toBe(parentThreadId)
 
@@ -208,11 +207,11 @@ describe('Present Proof Subprotocol', () => {
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.modules.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+    const requestedCredentials = await aliceAgent.didcomm.proofs.selectCredentialsForRequest({
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
-    await aliceAgent.modules.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+    await aliceAgent.didcomm.proofs.acceptRequest({
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
       proofFormats: requestedCredentials.proofFormats,
     })
 
@@ -221,19 +220,19 @@ describe('Present Proof Subprotocol', () => {
     await waitForProofExchangeRecord(faberAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     // Faber accepts the presentation
     testLogger.test('Faber accept the presentation from Alice')
-    await faberAgent.modules.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
+    await faberAgent.didcomm.proofs.acceptPresentation({ proofExchangeRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until she receives a presentation acknowledgement
     testLogger.test('Alice waits for acceptance by Faber')
     await waitForProofExchangeRecord(aliceAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 
@@ -245,10 +244,10 @@ describe('Present Proof Subprotocol', () => {
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       parentThreadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
-    const aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
+    const aliceProofExchangeRecord = await aliceAgent.didcomm.proofs.proposeProof({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       parentThreadId,
@@ -276,7 +275,7 @@ describe('Present Proof Subprotocol', () => {
     })
 
     expect(aliceProofExchangeRecord.parentThreadId).toBe(parentThreadId)
-    const proofsByParentThread = await aliceAgent.modules.proofs.getByParentThreadAndConnectionId(parentThreadId)
+    const proofsByParentThread = await aliceAgent.didcomm.proofs.getByParentThreadAndConnectionId(parentThreadId)
     expect(proofsByParentThread.length).toEqual(1)
     expect(proofsByParentThread[0].parentThreadId).toBe(parentThreadId)
 
@@ -287,22 +286,22 @@ describe('Present Proof Subprotocol', () => {
 
     // Faber accepts the presentation proposal from Alice
     testLogger.test('Faber accepts the presentation proposal from Alice')
-    await faberAgent.modules.proofs.acceptProposal({ proofRecordId: faberProofExchangeRecord.id })
+    await faberAgent.didcomm.proofs.acceptProposal({ proofExchangeRecordId: faberProofExchangeRecord.id })
 
     testLogger.test('Alice waits till it receives presentation ack')
     await waitForProofExchangeRecord(aliceAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.modules.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+    const requestedCredentials = await aliceAgent.didcomm.proofs.selectCredentialsForRequest({
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
-    await aliceAgent.modules.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+    await aliceAgent.didcomm.proofs.acceptRequest({
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
       proofFormats: requestedCredentials.proofFormats,
     })
 
@@ -310,19 +309,19 @@ describe('Present Proof Subprotocol', () => {
     faberProofExchangeRecord = await waitForProofExchangeRecord(faberAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     // Faber accepts the presentation provided by Alice
     testLogger.test('Faber accepts the presentation provided by Alice')
-    await faberAgent.modules.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
+    await faberAgent.didcomm.proofs.acceptPresentation({ proofExchangeRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
     await waitForProofExchangeRecord(aliceAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 
@@ -332,12 +331,12 @@ describe('Present Proof Subprotocol', () => {
 
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       parentThreadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Faber sends a presentation request to Alice
     testLogger.test('Faber sends a presentation request to Alice')
-    const faberProofExchangeRecord = await faberAgent.modules.proofs.requestProof({
+    const faberProofExchangeRecord = await faberAgent.didcomm.proofs.requestProof({
       connectionId: faberConnectionId,
       parentThreadId,
       protocolVersion: 'v2',
@@ -372,7 +371,7 @@ describe('Present Proof Subprotocol', () => {
     })
 
     expect(faberProofExchangeRecord.parentThreadId).toBe(parentThreadId)
-    const proofsByParentThread = await faberAgent.modules.proofs.getByParentThreadAndConnectionId(parentThreadId)
+    const proofsByParentThread = await faberAgent.didcomm.proofs.getByParentThreadAndConnectionId(parentThreadId)
     expect(proofsByParentThread.length).toEqual(1)
     expect(proofsByParentThread[0].parentThreadId).toBe(parentThreadId)
 
@@ -384,11 +383,11 @@ describe('Present Proof Subprotocol', () => {
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.modules.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+    const requestedCredentials = await aliceAgent.didcomm.proofs.selectCredentialsForRequest({
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
-    await aliceAgent.modules.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+    await aliceAgent.didcomm.proofs.acceptRequest({
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
       proofFormats: requestedCredentials.proofFormats,
     })
 
@@ -397,19 +396,19 @@ describe('Present Proof Subprotocol', () => {
     await waitForProofExchangeRecord(faberAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     // Faber accepts the presentation
     testLogger.test('Faber accept the presentation from Alice')
-    await faberAgent.modules.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
+    await faberAgent.didcomm.proofs.acceptPresentation({ proofExchangeRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until she receives a presentation acknowledgement
     testLogger.test('Alice waits for acceptance by Faber')
     await waitForProofExchangeRecord(aliceAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 })

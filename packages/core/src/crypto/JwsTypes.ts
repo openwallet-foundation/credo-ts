@@ -1,4 +1,4 @@
-import { Jwk, KnownJwaSignatureAlgorithm, PublicJwk } from '../modules/kms'
+import { type Jwk, type KnownJwaSignatureAlgorithm, PublicJwk } from '../modules/kms'
 
 export type Kid = string
 

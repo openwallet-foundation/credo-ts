@@ -1,16 +1,16 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-
-import { InMemoryStorageService } from './InMemoryStorageService'
-
 import { CredoError, InjectionSymbols, Kms } from '@credo-ts/core'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../packages/node/src'
+import { InMemoryStorageService } from './InMemoryStorageService'
 
 export class InMemoryWalletModule implements Module {
   private inMemoryStorageService = new InMemoryStorageService()
   private enableKms: boolean
+  private enableStorage: boolean
 
-  public constructor(config: { enableKms?: boolean } = {}) {
+  public constructor(config: { enableKms?: boolean; enableStorage?: boolean } = {}) {
     this.enableKms = config.enableKms ?? true
+    this.enableStorage = config.enableStorage ?? true
   }
 
   public register(dependencyManager: DependencyManager) {
@@ -18,7 +18,9 @@ export class InMemoryWalletModule implements Module {
       throw new CredoError('There is an instance of StorageService already registered')
     }
 
-    dependencyManager.registerInstance(InjectionSymbols.StorageService, this.inMemoryStorageService)
+    if (this.enableStorage) {
+      dependencyManager.registerInstance(InjectionSymbols.StorageService, this.inMemoryStorageService)
+    }
 
     if (this.enableKms) {
       const kmsConfig = dependencyManager.resolve(Kms.KeyManagementModuleConfig)
@@ -29,10 +31,14 @@ export class InMemoryWalletModule implements Module {
   }
 
   public async onProvisionContext(agentContext: AgentContext): Promise<void> {
-    this.inMemoryStorageService.createRecordsForContext(agentContext)
+    if (this.enableStorage) {
+      this.inMemoryStorageService.createRecordsForContext(agentContext)
+    }
   }
 
   public async onDeleteContext(agentContext: AgentContext): Promise<void> {
-    this.inMemoryStorageService.deleteRecordsForContext(agentContext)
+    if (this.enableStorage) {
+      this.inMemoryStorageService.deleteRecordsForContext(agentContext)
+    }
   }
 }

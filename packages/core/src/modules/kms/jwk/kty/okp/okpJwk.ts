@@ -1,4 +1,5 @@
-import * as z from '../../../../../utils/zod'
+import { z } from 'zod'
+import { zBase64Url, zOptionalToUndefined } from '../../../../../utils/zod'
 import { vJwkCommon } from '../../jwk'
 
 // TODO: we should probably create a separate Jwk type for each crv, so we
@@ -9,22 +10,22 @@ export const zKmsJwkPublicOkp = z.object({
   crv: z.enum(['X25519', 'Ed25519']),
 
   // Public
-  x: z.base64Url,
+  x: zBase64Url,
 
   // Private
-  d: z.optional(z.base64Url),
+  d: z.optional(zBase64Url),
 })
 export type KmsJwkPublicOkp = z.output<typeof zKmsJwkPublicOkp>
 
 export const zKmsJwkPrivateToPublicOkp = z.object({
   ...zKmsJwkPublicOkp.shape,
-  d: z.optionalToUndefined(z.base64Url),
+  d: zOptionalToUndefined(zBase64Url),
 })
 
 export const zKmsJwkPrivateOkp = z.object({
   ...zKmsJwkPublicOkp.shape,
 
   // Private
-  d: z.base64Url,
+  d: zBase64Url,
 })
 export type KmsJwkPrivateOkp = z.output<typeof zKmsJwkPrivateOkp>

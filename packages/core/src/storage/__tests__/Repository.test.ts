@@ -1,23 +1,23 @@
-import type { AgentContext } from '../../agent'
-import type { TagsBase } from '../BaseRecord'
-import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from '../RepositoryEvents'
-import type { StorageService } from '../StorageService'
-
 import { Subject } from 'rxjs'
-
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../tests/helpers'
+import type { AgentContext } from '../../agent'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { CredoError, RecordDuplicateError, RecordNotFoundError } from '../../error'
-import { Repository } from '../Repository'
-import { RepositoryEventTypes } from '../RepositoryEvents'
-
 import { CacheModuleConfig, InMemoryLruCache } from '../../modules/cache'
+import type { TagsBase } from '../BaseRecord'
+import { Repository } from '../Repository'
+import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from '../RepositoryEvents'
+import { RepositoryEventTypes } from '../RepositoryEvents'
+import type { StorageService } from '../StorageService'
 import { TestRecord } from './TestRecord'
 
-jest.mock('../../../../../tests/InMemoryStorageService')
+vi.mock('../../../../../tests/InMemoryStorageService')
 
-const StorageMock = InMemoryStorageService as unknown as jest.Mock<InMemoryStorageService<TestRecord>>
+const StorageMock = InMemoryStorageService as unknown as MockedClassConstructor<
+  typeof InMemoryStorageService<TestRecord>
+>
 
 const config = getAgentConfig('Repository')
 
@@ -56,11 +56,11 @@ describe('Repository', () => {
       const record = getRecord({ id: 'test-id' })
       await repository.save(agentContext, record)
 
-      expect(storageMock.save).toBeCalledWith(agentContext, record)
+      expect(storageMock.save).toHaveBeenCalledWith(agentContext, record)
     })
 
     it('should emit saved event', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<RecordSavedEvent<TestRecord>>(RepositoryEventTypes.RecordSaved, eventListenerMock)
 
       // given
@@ -89,11 +89,11 @@ describe('Repository', () => {
       const record = getRecord({ id: 'test-id' })
       await repository.update(agentContext, record)
 
-      expect(storageMock.update).toBeCalledWith(agentContext, record)
+      expect(storageMock.update).toHaveBeenCalledWith(agentContext, record)
     })
 
     it('should emit updated event', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<RecordUpdatedEvent<TestRecord>>(RepositoryEventTypes.RecordUpdated, eventListenerMock)
 
       // given
@@ -122,11 +122,11 @@ describe('Repository', () => {
       const record = getRecord({ id: 'test-id' })
       await repository.delete(agentContext, record)
 
-      expect(storageMock.delete).toBeCalledWith(agentContext, record)
+      expect(storageMock.delete).toHaveBeenCalledWith(agentContext, record)
     })
 
     it('should emit deleted event', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<RecordDeletedEvent<TestRecord>>(RepositoryEventTypes.RecordDeleted, eventListenerMock)
 
       // given
@@ -154,11 +154,11 @@ describe('Repository', () => {
     it('should delete the record by record id', async () => {
       await repository.deleteById(agentContext, 'test-id')
 
-      expect(storageMock.deleteById).toBeCalledWith(agentContext, TestRecord, 'test-id')
+      expect(storageMock.deleteById).toHaveBeenCalledWith(agentContext, TestRecord, 'test-id')
     })
 
     it('should emit deleted event', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<RecordDeletedEvent<TestRecord>>(RepositoryEventTypes.RecordDeleted, eventListenerMock)
 
       const record = getRecord({ id: 'test-id' })
@@ -187,7 +187,7 @@ describe('Repository', () => {
 
       const returnValue = await repository.getById(agentContext, 'test-id')
 
-      expect(storageMock.getById).toBeCalledWith(agentContext, TestRecord, 'test-id')
+      expect(storageMock.getById).toHaveBeenCalledWith(agentContext, TestRecord, 'test-id')
       expect(returnValue).toBe(record)
     })
   })
@@ -199,7 +199,7 @@ describe('Repository', () => {
 
       const returnValue = await repository.findById(agentContext, 'test-id')
 
-      expect(storageMock.getById).toBeCalledWith(agentContext, TestRecord, 'test-id')
+      expect(storageMock.getById).toHaveBeenCalledWith(agentContext, TestRecord, 'test-id')
       expect(returnValue).toBe(record)
     })
 
@@ -210,15 +210,15 @@ describe('Repository', () => {
 
       const returnValue = await repository.findById(agentContext, 'test-id')
 
-      expect(storageMock.getById).toBeCalledWith(agentContext, TestRecord, 'test-id')
+      expect(storageMock.getById).toHaveBeenCalledWith(agentContext, TestRecord, 'test-id')
       expect(returnValue).toBeNull()
     })
 
     it('should return null if the storage service throws an error that is not RecordNotFoundError', async () => {
       mockFunction(storageMock.getById).mockReturnValue(Promise.reject(new CredoError('Not found')))
 
-      expect(repository.findById(agentContext, 'test-id')).rejects.toThrowError(CredoError)
-      expect(storageMock.getById).toBeCalledWith(agentContext, TestRecord, 'test-id')
+      await expect(repository.findById(agentContext, 'test-id')).rejects.toThrow(CredoError)
+      expect(storageMock.getById).toHaveBeenCalledWith(agentContext, TestRecord, 'test-id')
     })
   })
 
@@ -230,7 +230,7 @@ describe('Repository', () => {
 
       const returnValue = await repository.getAll(agentContext)
 
-      expect(storageMock.getAll).toBeCalledWith(agentContext, TestRecord)
+      expect(storageMock.getAll).toHaveBeenCalledWith(agentContext, TestRecord)
       expect(returnValue).toEqual(expect.arrayContaining([record, record2]))
     })
   })
@@ -243,7 +243,7 @@ describe('Repository', () => {
 
       const returnValue = await repository.findByQuery(agentContext, { something: 'interesting' }, { limit: 10 })
 
-      expect(storageMock.findByQuery).toBeCalledWith(
+      expect(storageMock.findByQuery).toHaveBeenCalledWith(
         agentContext,
         TestRecord,
         { something: 'interesting' },
@@ -260,7 +260,12 @@ describe('Repository', () => {
 
       const returnValue = await repository.findSingleByQuery(agentContext, { something: 'interesting' })
 
-      expect(storageMock.findByQuery).toBeCalledWith(agentContext, TestRecord, { something: 'interesting' }, undefined)
+      expect(storageMock.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        TestRecord,
+        { something: 'interesting' },
+        undefined
+      )
       expect(returnValue).toBe(record)
     })
 
@@ -269,7 +274,12 @@ describe('Repository', () => {
 
       const returnValue = await repository.findSingleByQuery(agentContext, { something: 'interesting' })
 
-      expect(storageMock.findByQuery).toBeCalledWith(agentContext, TestRecord, { something: 'interesting' }, undefined)
+      expect(storageMock.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        TestRecord,
+        { something: 'interesting' },
+        undefined
+      )
       expect(returnValue).toBeNull()
     })
 
@@ -278,10 +288,15 @@ describe('Repository', () => {
       const record2 = getRecord({ id: 'test-id2' })
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record, record2]))
 
-      expect(repository.findSingleByQuery(agentContext, { something: 'interesting' })).rejects.toThrowError(
+      await expect(repository.findSingleByQuery(agentContext, { something: 'interesting' })).rejects.toThrow(
         RecordDuplicateError
       )
-      expect(storageMock.findByQuery).toBeCalledWith(agentContext, TestRecord, { something: 'interesting' }, undefined)
+      expect(storageMock.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        TestRecord,
+        { something: 'interesting' },
+        undefined
+      )
     })
   })
 
@@ -292,17 +307,27 @@ describe('Repository', () => {
 
       const returnValue = await repository.getSingleByQuery(agentContext, { something: 'interesting' })
 
-      expect(storageMock.findByQuery).toBeCalledWith(agentContext, TestRecord, { something: 'interesting' }, undefined)
+      expect(storageMock.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        TestRecord,
+        { something: 'interesting' },
+        undefined
+      )
       expect(returnValue).toBe(record)
     })
 
     it('should throw RecordNotFoundError if no records are returned by the storage service', async () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([]))
 
-      expect(repository.getSingleByQuery(agentContext, { something: 'interesting' })).rejects.toThrowError(
+      await expect(repository.getSingleByQuery(agentContext, { something: 'interesting' })).rejects.toThrow(
         RecordNotFoundError
       )
-      expect(storageMock.findByQuery).toBeCalledWith(agentContext, TestRecord, { something: 'interesting' }, undefined)
+      expect(storageMock.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        TestRecord,
+        { something: 'interesting' },
+        undefined
+      )
     })
 
     it('should throw RecordDuplicateError if more than one record is returned by the storage service', async () => {
@@ -310,10 +335,15 @@ describe('Repository', () => {
       const record2 = getRecord({ id: 'test-id2' })
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record, record2]))
 
-      expect(repository.getSingleByQuery(agentContext, { something: 'interesting' })).rejects.toThrowError(
+      await expect(repository.getSingleByQuery(agentContext, { something: 'interesting' })).rejects.toThrow(
         RecordDuplicateError
       )
-      expect(storageMock.findByQuery).toBeCalledWith(agentContext, TestRecord, { something: 'interesting' }, undefined)
+      expect(storageMock.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        TestRecord,
+        { something: 'interesting' },
+        undefined
+      )
     })
   })
 })

@@ -1,7 +1,7 @@
-import { KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../kms'
+import { type KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../kms'
 
-export type MdocSupportedSignatureAlgorithm = (typeof mdocSupporteSignatureAlgorithms)[number]
-export const mdocSupporteSignatureAlgorithms = [
+export type MdocSupportedSignatureAlgorithm = (typeof mdocSupportedSignatureAlgorithms)[number]
+export const mdocSupportedSignatureAlgorithms = [
   KnownJwaSignatureAlgorithms.ES256,
   KnownJwaSignatureAlgorithms.ES384,
   KnownJwaSignatureAlgorithms.ES512,
@@ -11,5 +11,5 @@ export const mdocSupporteSignatureAlgorithms = [
 export function isMdocSupportedSignatureAlgorithm(
   alg: KnownJwaSignatureAlgorithm
 ): alg is MdocSupportedSignatureAlgorithm {
-  return mdocSupporteSignatureAlgorithms.includes(alg as MdocSupportedSignatureAlgorithm)
+  return mdocSupportedSignatureAlgorithms.includes(alg as MdocSupportedSignatureAlgorithm)
 }

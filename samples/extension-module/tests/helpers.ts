@@ -1,9 +1,8 @@
 import type { Agent } from '@credo-ts/core'
 import type { Observable } from 'rxjs'
+import { catchError, filter, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 import type { DummyState } from '../dummy/repository'
 import type { DummyStateChangedEvent } from '../dummy/services'
-
-import { ReplaySubject, catchError, filter, firstValueFrom, map, timeout } from 'rxjs'
 
 import { DummyEventTypes } from '../dummy/services'
 

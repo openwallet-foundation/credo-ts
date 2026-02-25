@@ -1,5 +1,5 @@
-import { TypedArrayEncoder } from '../TypedArrayEncoder'
 import { Buffer } from '../buffer'
+import { TypedArrayEncoder } from '../TypedArrayEncoder'
 
 describe('TypedArrayEncoder', () => {
   const mockCredentialRequestBuffer = Buffer.from(

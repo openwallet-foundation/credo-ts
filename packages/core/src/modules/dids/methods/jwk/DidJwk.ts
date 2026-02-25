@@ -11,7 +11,7 @@ export class DidJwk {
   ) {}
 
   public get allowsEncrypting() {
-    return this.publicJwk.toJson().use === 'enc' || this.publicJwk.supportdEncryptionKeyAgreementAlgorithms.length > 0
+    return this.publicJwk.toJson().use === 'enc' || this.publicJwk.supportedEncryptionKeyAgreementAlgorithms.length > 0
   }
 
   public get allowsSigning() {

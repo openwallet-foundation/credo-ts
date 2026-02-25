@@ -1,4 +1,4 @@
-import { Kms } from '@credo-ts/core'
+import { type AnyUint8Array, Kms } from '@credo-ts/core'
 import { Key } from '@openwallet-foundation/askar-shared'
 import { jwkEncToAskarAlg } from '../../utils'
 
@@ -10,7 +10,7 @@ type AskarSupportedDecryptionOptions = Kms.KmsDecryptDataDecryption & {
 export function aeadDecrypt(options: {
   key: Key
   decryption: AskarSupportedDecryptionOptions
-  encrypted: Uint8Array
+  encrypted: AnyUint8Array
 }) {
   const { key, decryption, encrypted } = options
 
@@ -20,11 +20,11 @@ export function aeadDecrypt(options: {
   }
 
   const decrypted = key.aeadDecrypt({
-    ciphertext: encrypted,
-    tag: decryption.tag,
-    aad: decryption.aad,
-    nonce: decryption.iv,
+    ciphertext: new Uint8Array(encrypted),
+    tag: new Uint8Array(decryption.tag),
+    aad: decryption.aad ? new Uint8Array(decryption.aad) : undefined,
+    nonce: new Uint8Array(decryption.iv),
   })
 
-  return decrypted
+  return new Uint8Array(decrypted)
 }

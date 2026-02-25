@@ -1,19 +1,18 @@
 import type { BaseAgent } from '../../agent/BaseAgent'
-import type { Module } from '../../plugins'
-import type { Update, UpdateConfig, UpdateToVersion } from './updates'
-
 import { CredoError } from '../../error'
+import type { Module } from '../../plugins'
 import { isFirstVersionEqualToSecond, isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
+import { StorageUpdateError } from './error/StorageUpdateError'
 
 import { StorageUpdateService } from './StorageUpdateService'
-import { StorageUpdateError } from './error/StorageUpdateError'
+import type { Update, UpdateConfig, UpdateToVersion } from './updates'
 import { CURRENT_FRAMEWORK_STORAGE_VERSION, DEFAULT_UPDATE_CONFIG, supportedUpdates } from './updates'
 
 export interface UpdateAssistantUpdateOptions {
   updateToVersion?: UpdateToVersion
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
   private agent: Agent
   private storageUpdateService: StorageUpdateService

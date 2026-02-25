@@ -1,10 +1,9 @@
-import type { KnownJwaContentEncryptionAlgorithm, KnownJwaKeyEncryptionAlgorithm } from '../jwa'
-import type { KmsJwkPrivate, KmsJwkPublic } from '../knownJwk'
-import type { KmsJwkPublicOct } from '../kty/oct/octJwk'
-
 import { TypedArrayEncoder } from '../../../../utils'
 import { KeyManagementError } from '../../error/KeyManagementError'
 import { getJwkHumanDescription } from '../humanDescription'
+import type { KnownJwaContentEncryptionAlgorithm, KnownJwaKeyEncryptionAlgorithm } from '../jwa'
+import type { KmsJwkPrivate, KmsJwkPublic } from '../knownJwk'
+import type { KmsJwkPublicOct } from '../kty/oct/octJwk'
 
 export function supportedEncryptionAlgsForKey(jwk: KmsJwkPrivate | Exclude<KmsJwkPublic, KmsJwkPublicOct>) {
   const algs: Array<KnownJwaContentEncryptionAlgorithm | KnownJwaKeyEncryptionAlgorithm> = []

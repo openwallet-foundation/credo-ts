@@ -1,8 +1,15 @@
+import {
+  AgentConfig,
+  AgentContext,
+  CredoError,
+  InjectionSymbols,
+  inject,
+  injectable,
+  type Logger,
+} from '@credo-ts/core'
 import type { MutexInterface } from 'async-mutex'
-import type { TenantRecord } from '../repository'
-
-import { AgentConfig, AgentContext, CredoError, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 import { Mutex, withTimeout } from 'async-mutex'
+import type { TenantRecord } from '../repository'
 
 import { TenantsModuleConfig } from '../TenantsModuleConfig'
 
@@ -303,9 +310,7 @@ export class TenantSessionCoordinator {
 
   private async createAgentContext(tenantRecord: TenantRecord, { provisionContext }: { provisionContext: boolean }) {
     const tenantDependencyManager = this.rootAgentContext.dependencyManager.createChild()
-    const tenantConfig = this.rootAgentContext.config.extend({
-      label: tenantRecord.config.label,
-    })
+    const tenantConfig = this.rootAgentContext.config.extend({})
 
     const agentContext = new AgentContext({
       contextCorrelationId: this.getContextCorrelationIdForTenantId(tenantRecord.id),

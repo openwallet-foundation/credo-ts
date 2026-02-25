@@ -1,18 +1,18 @@
 import { ClassValidationError } from '../../../../../core/src/error/ClassValidationError'
 import { MessageValidator } from '../../../../../core/src/utils'
-import { ConnectionRequestMessage } from '../messages/ConnectionRequestMessage'
+import { DidCommConnectionRequestMessage } from '../messages/DidCommConnectionRequestMessage'
 
 describe('ConnectionRequestMessage', () => {
   it('throws an error when the message does not contain a connection parameter', () => {
-    const connectionRequest = new ConnectionRequestMessage({
+    const connectionRequest = new DidCommConnectionRequestMessage({
       did: 'did',
       label: 'test-label',
     })
 
-    // @ts-ignore
-    // biome-ignore lint/performance/noDelete: <explanation>
+    // @ts-expect-error
+    // biome-ignore lint/performance/noDelete: no explanation
     delete connectionRequest.connection
 
-    expect(() => MessageValidator.validateSync(connectionRequest)).toThrowError(ClassValidationError)
+    expect(() => MessageValidator.validateSync(connectionRequest)).toThrow(ClassValidationError)
   })
 })

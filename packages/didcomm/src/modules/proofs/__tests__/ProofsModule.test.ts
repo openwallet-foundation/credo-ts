@@ -1,58 +1,57 @@
-import type { DependencyManager } from '../../../../../core'
-import type { ProofProtocol } from '../protocol/ProofProtocol'
-
+import type { DependencyManager } from '../../../../../core/src/index'
 import { getAgentContext } from '../../../../../core/tests'
-import { FeatureRegistry } from '../../../FeatureRegistry'
-import { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
-import { ProofsModule } from '../ProofsModule'
-import { ProofsModuleConfig } from '../ProofsModuleConfig'
-import { V2ProofProtocol } from '../protocol/v2/V2ProofProtocol'
-import { ProofRepository } from '../repository'
+import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
+import { DidCommProofsModule } from '../DidCommProofsModule'
+import { DidCommProofsModuleConfig } from '../DidCommProofsModuleConfig'
+import type { DidCommProofProtocol } from '../protocol/DidCommProofProtocol'
+import { DidCommProofV2Protocol } from '../protocol/v2/DidCommProofV2Protocol'
+import { DidCommProofExchangeRepository } from '../repository'
 
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
+  registerContextScoped: vi.fn(),
 } as unknown as DependencyManager
 
-describe('ProofsModule', () => {
+describe('DidCommProofsModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    const proofsModule = new ProofsModule({
+    const proofsModule = new DidCommProofsModule({
       proofProtocols: [],
     })
     proofsModule.register(dependencyManager)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(ProofsModuleConfig, proofsModule.config)
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(DidCommProofsModuleConfig, proofsModule.config)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ProofRepository)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommProofExchangeRepository)
   })
 
-  test('registers V2ProofProtocol if no proofProtocols are configured', () => {
-    const proofsModule = new ProofsModule()
+  test('registers DidCommProofV2Protocol if no proofProtocols are configured', () => {
+    const proofsModule = new DidCommProofsModule()
 
-    expect(proofsModule.config.proofProtocols).toEqual([expect.any(V2ProofProtocol)])
+    expect(proofsModule.config.proofProtocols).toEqual([expect.any(DidCommProofV2Protocol)])
   })
 
   test('calls register on the provided ProofProtocols', async () => {
-    const registerMock = jest.fn()
+    const registerMock = vi.fn()
     const proofProtocol = {
       register: registerMock,
-    } as unknown as ProofProtocol
+    } as unknown as DidCommProofProtocol
 
-    const proofsModule = new ProofsModule({
+    const proofsModule = new DidCommProofsModule({
       proofProtocols: [proofProtocol],
     })
 
     expect(proofsModule.config.proofProtocols).toEqual([proofProtocol])
 
-    const featureRegistry = new FeatureRegistry()
-    const messageHandlerRegistry = new MessageHandlerRegistry()
+    const featureRegistry = new DidCommFeatureRegistry()
+    const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
     const agentContext = getAgentContext({
       registerInstances: [
-        [MessageHandlerRegistry, messageHandlerRegistry],
-        [FeatureRegistry, featureRegistry],
+        [DidCommMessageHandlerRegistry, messageHandlerRegistry],
+        [DidCommFeatureRegistry, featureRegistry],
       ],
     })
     await proofsModule.initialize(agentContext)

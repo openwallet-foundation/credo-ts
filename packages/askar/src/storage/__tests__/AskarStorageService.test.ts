@@ -42,13 +42,7 @@ describe('AskarStorageService', () => {
     await storeManager.deleteStore(agentContext)
   })
 
-  const insertRecord = async ({
-    id,
-    tags,
-  }: {
-    id?: string
-    tags?: TagsBase
-  }) => {
+  const insertRecord = async ({ id, tags }: { id?: string; tags?: TagsBase }) => {
     const props = {
       id,
       foo: 'bar',
@@ -79,7 +73,7 @@ describe('AskarStorageService', () => {
         askar.sessionFetch({
           category: record.type,
           name: record.id,
-          // biome-ignore lint/style/noNonNullAssertion: <explanation>
+          // biome-ignore lint/style/noNonNullAssertion: no explanation
           sessionHandle: session.handle!,
           forUpdate: false,
         })
@@ -105,7 +99,7 @@ describe('AskarStorageService', () => {
           await askar.sessionUpdate({
             category: TestRecord.type,
             name: 'some-id',
-            // biome-ignore lint/style/noNonNullAssertion: <explanation>
+            // biome-ignore lint/style/noNonNullAssertion: no explanation
             sessionHandle: session.handle!,
             value: TypedArrayEncoder.fromString('{}'),
             tags: {
@@ -206,6 +200,99 @@ describe('AskarStorageService', () => {
     })
   })
 
+  describe('updateByIdWithLock()', () => {
+    it('should throw RecordNotFoundError if the record does not exist', async () => {
+      return expect(() =>
+        storageService.updateByIdWithLock(agentContext, TestRecord, 'does-not-exist', async (record) => {
+          record.foo = 'updated'
+          return record
+        })
+      ).rejects.toThrow(RecordNotFoundError)
+    })
+
+    it('should update the record using the callback', async () => {
+      const record = await insertRecord({ id: 'test-id', tags: { myTag: 'original' } })
+      const originalUpdatedAt = record.updatedAt
+
+      // Wait a bit to ensure updatedAt will be different
+      await new Promise((resolve) => setTimeout(resolve, 10))
+
+      const updatedRecord = await storageService.updateByIdWithLock(agentContext, TestRecord, 'test-id', async (r) => {
+        r.foo = 'updated-foo'
+        r.replaceTags({ myTag: 'updated', newTag: 'added' })
+        return r
+      })
+
+      expect(updatedRecord.foo).toBe('updated-foo')
+      expect(updatedRecord.getTags()).toEqual({ myTag: 'updated', newTag: 'added' })
+      expect(updatedRecord.updatedAt?.getTime()).toBeGreaterThan(originalUpdatedAt?.getTime() ?? 0)
+
+      // Verify the record is actually updated in storage
+      const retrievedRecord = await storageService.getById(agentContext, TestRecord, 'test-id')
+      expect(retrievedRecord.foo).toBe('updated-foo')
+      expect(retrievedRecord.getTags()).toEqual({ myTag: 'updated', newTag: 'added' })
+    })
+
+    it('should pass the correct record to the callback', async () => {
+      const originalRecord = await insertRecord({ id: 'test-id', tags: { myTag: 'foobar' } })
+
+      await storageService.updateByIdWithLock(agentContext, TestRecord, 'test-id', async (record) => {
+        expect(record.id).toBe(originalRecord.id)
+        expect(record.foo).toBe(originalRecord.foo)
+        expect(record.getTags()).toEqual(originalRecord.getTags())
+        return record
+      })
+    })
+
+    it('should update updatedAt timestamp', async () => {
+      const record = await insertRecord({ id: 'test-id' })
+      const originalUpdatedAt = record.updatedAt
+
+      // Wait a bit to ensure updatedAt will be different
+      await new Promise((resolve) => setTimeout(resolve, 10))
+
+      const updatedRecord = await storageService.updateByIdWithLock(agentContext, TestRecord, 'test-id', async (r) => {
+        r.foo = 'modified'
+        return r
+      })
+
+      expect(updatedRecord.updatedAt?.getTime()).toBeGreaterThan(originalUpdatedAt?.getTime() ?? 0)
+      expect(updatedRecord.updatedAt?.getTime()).toBeGreaterThan(startDate)
+    })
+
+    it('should execute within a transaction', async () => {
+      await insertRecord({ id: 'test-id' })
+
+      // This test verifies the transaction behavior by checking that the record
+      // is locked during the update (forUpdate: true in the implementation)
+      const updatedRecord = await storageService.updateByIdWithLock(agentContext, TestRecord, 'test-id', async (r) => {
+        r.foo = 'transaction-test'
+        return r
+      })
+
+      expect(updatedRecord.foo).toBe('transaction-test')
+
+      // Verify the update persisted
+      const retrievedRecord = await storageService.getById(agentContext, TestRecord, 'test-id')
+      expect(retrievedRecord.foo).toBe('transaction-test')
+    })
+
+    it('should return the updated record', async () => {
+      await insertRecord({ id: 'test-id', tags: { myTag: 'original' } })
+
+      const result = await storageService.updateByIdWithLock(agentContext, TestRecord, 'test-id', async (record) => {
+        record.foo = 'new-value'
+        record.replaceTags({ myTag: 'new-tag' })
+        return record
+      })
+
+      expect(result).toBeInstanceOf(TestRecord)
+      expect(result.id).toBe('test-id')
+      expect(result.foo).toBe('new-value')
+      expect(result.getTags()).toEqual({ myTag: 'new-tag' })
+    })
+  })
+
   describe('delete()', () => {
     it('should throw RecordNotFoundError if the record does not exist', async () => {
       const record = new TestRecord({
@@ -250,6 +337,18 @@ describe('AskarStorageService', () => {
 
       expect(records.length).toBe(2)
       expect(records).toEqual(expect.arrayContaining([expectedRecord, expectedRecord2]))
+    })
+
+    // FIXME: this should actually return 1 record, but we currently return 2
+    // See https://github.com/openwallet-foundation/credo-ts/issues/2315
+    it.fails('should not return records with null tag values', async () => {
+      const expectedRecord = await insertRecord({ tags: { myTag: 'foobar' } })
+      await insertRecord({ tags: { myTag: null } })
+
+      const records = await storageService.findByQuery(agentContext, TestRecord, { myTag: null })
+
+      expect(records.length).toBe(1)
+      expect(records).toEqual(expect.arrayContaining([expectedRecord]))
     })
 
     it('finds records using $and statements', async () => {

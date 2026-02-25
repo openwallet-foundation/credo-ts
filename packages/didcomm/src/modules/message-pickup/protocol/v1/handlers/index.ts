@@ -1,2 +1,2 @@
-export * from './V1BatchHandler'
-export * from './V1BatchPickupHandler'
+export * from './DidCommBatchHandler'
+export * from './DidCommBatchPickupHandler'

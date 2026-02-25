@@ -1,16 +1,14 @@
-import type { ConnectionRecord } from '../../connections'
-import type {
-  DiscoverFeaturesDisclosureReceivedEvent,
-  DiscoverFeaturesQueryReceivedEvent,
-} from '../DiscoverFeaturesEvents'
-
 import { ReplaySubject } from 'rxjs'
-
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import { getAgentOptions, makeConnection } from '../../../../../core/tests/helpers'
-import { Feature, GoalCode } from '../../../models'
-import { DiscoverFeaturesEventTypes } from '../DiscoverFeaturesEvents'
+import { DidCommFeature, DidCommGoalCode } from '../../../models'
+import type { DidCommConnectionRecord } from '../../connections'
+import type {
+  DidCommDiscoverFeaturesDisclosureReceivedEvent,
+  DidCommDiscoverFeaturesQueryReceivedEvent,
+} from '../DidCommDiscoverFeaturesEvents'
+import { DidCommDiscoverFeaturesEventTypes } from '../DidCommDiscoverFeaturesEvents'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
 
@@ -37,8 +35,8 @@ const aliceAgentOptions = getAgentOptions(
 describe('v2 discover features', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let aliceConnection: ConnectionRecord
-  let faberConnection: ConnectionRecord
+  let aliceConnection: DidCommConnectionRecord
+  let faberConnection: DidCommConnectionRecord
 
   beforeAll(async () => {
     faberAgent = new Agent(faberAgentOptions)
@@ -56,18 +54,18 @@ describe('v2 discover features', () => {
   })
 
   test('Faber asks Alice for issue credential protocol support', async () => {
-    const faberReplay = new ReplaySubject<DiscoverFeaturesDisclosureReceivedEvent>()
-    const aliceReplay = new ReplaySubject<DiscoverFeaturesQueryReceivedEvent>()
+    const faberReplay = new ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>()
+    const aliceReplay = new ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>()
 
-    faberAgent.modules.discovery.config.autoAcceptQueries
+    faberAgent.didcomm.discovery.config.autoAcceptQueries
     faberAgent.events
-      .observable<DiscoverFeaturesDisclosureReceivedEvent>(DiscoverFeaturesEventTypes.DisclosureReceived)
+      .observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>(DidCommDiscoverFeaturesEventTypes.DisclosureReceived)
       .subscribe(faberReplay)
     aliceAgent.events
-      .observable<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived)
+      .observable<DidCommDiscoverFeaturesQueryReceivedEvent>(DidCommDiscoverFeaturesEventTypes.QueryReceived)
       .subscribe(aliceReplay)
 
-    await faberAgent.modules.discovery.queryFeatures({
+    await faberAgent.didcomm.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v2',
       queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
@@ -92,23 +90,23 @@ describe('v2 discover features', () => {
   })
 
   test('Faber defines a supported goal code and Alice queries', async () => {
-    const faberReplay = new ReplaySubject<DiscoverFeaturesQueryReceivedEvent>()
-    const aliceReplay = new ReplaySubject<DiscoverFeaturesDisclosureReceivedEvent>()
+    const faberReplay = new ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>()
+    const aliceReplay = new ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>()
 
     aliceAgent.events
-      .observable<DiscoverFeaturesDisclosureReceivedEvent>(DiscoverFeaturesEventTypes.DisclosureReceived)
+      .observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>(DidCommDiscoverFeaturesEventTypes.DisclosureReceived)
       .subscribe(aliceReplay)
     faberAgent.events
-      .observable<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived)
+      .observable<DidCommDiscoverFeaturesQueryReceivedEvent>(DidCommDiscoverFeaturesEventTypes.QueryReceived)
       .subscribe(faberReplay)
 
     // Register some goal codes
-    faberAgent.modules.didcomm.features.register(
-      new GoalCode({ id: 'faber.vc.issuance' }),
-      new GoalCode({ id: 'faber.vc.query' })
+    faberAgent.didcomm.features.register(
+      new DidCommGoalCode({ id: 'faber.vc.issuance' }),
+      new DidCommGoalCode({ id: 'faber.vc.query' })
     )
 
-    await aliceAgent.modules.discovery.queryFeatures({
+    await aliceAgent.didcomm.discovery.queryFeatures({
       connectionId: aliceConnection.id,
       protocolVersion: 'v2',
       queries: [{ featureType: 'goal-code', match: '*' }],
@@ -133,18 +131,18 @@ describe('v2 discover features', () => {
   })
 
   test('Faber defines a custom feature and Alice queries', async () => {
-    const faberReplay = new ReplaySubject<DiscoverFeaturesQueryReceivedEvent>()
-    const aliceReplay = new ReplaySubject<DiscoverFeaturesDisclosureReceivedEvent>()
+    const faberReplay = new ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>()
+    const aliceReplay = new ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>()
 
     aliceAgent.events
-      .observable<DiscoverFeaturesDisclosureReceivedEvent>(DiscoverFeaturesEventTypes.DisclosureReceived)
+      .observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>(DidCommDiscoverFeaturesEventTypes.DisclosureReceived)
       .subscribe(aliceReplay)
     faberAgent.events
-      .observable<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived)
+      .observable<DidCommDiscoverFeaturesQueryReceivedEvent>(DidCommDiscoverFeaturesEventTypes.QueryReceived)
       .subscribe(faberReplay)
 
     // Define a custom feature type
-    class GenericFeature extends Feature {
+    class GenericFeature extends DidCommFeature {
       public 'generic-field'!: string
 
       public constructor(options: { id: string; genericField: string }) {
@@ -154,11 +152,9 @@ describe('v2 discover features', () => {
     }
 
     // Register a custom feature
-    faberAgent.modules.didcomm.features.register(
-      new GenericFeature({ id: 'custom-feature', genericField: 'custom-field' })
-    )
+    faberAgent.didcomm.features.register(new GenericFeature({ id: 'custom-feature', genericField: 'custom-field' }))
 
-    await aliceAgent.modules.discovery.queryFeatures({
+    await aliceAgent.didcomm.discovery.queryFeatures({
       connectionId: aliceConnection.id,
       protocolVersion: 'v2',
       queries: [{ featureType: 'generic', match: 'custom-feature' }],
@@ -186,24 +182,24 @@ describe('v2 discover features', () => {
   })
 
   test('Faber proactively sends a set of features to Alice', async () => {
-    const faberReplay = new ReplaySubject<DiscoverFeaturesQueryReceivedEvent>()
-    const aliceReplay = new ReplaySubject<DiscoverFeaturesDisclosureReceivedEvent>()
+    const faberReplay = new ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>()
+    const aliceReplay = new ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>()
 
     aliceAgent.events
-      .observable<DiscoverFeaturesDisclosureReceivedEvent>(DiscoverFeaturesEventTypes.DisclosureReceived)
+      .observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>(DidCommDiscoverFeaturesEventTypes.DisclosureReceived)
       .subscribe(aliceReplay)
     faberAgent.events
-      .observable<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived)
+      .observable<DidCommDiscoverFeaturesQueryReceivedEvent>(DidCommDiscoverFeaturesEventTypes.QueryReceived)
       .subscribe(faberReplay)
 
     // Register a custom feature
-    faberAgent.modules.didcomm.features.register(
-      new Feature({ id: 'AIP2.0', type: 'aip' }),
-      new Feature({ id: 'AIP2.0/INDYCRED', type: 'aip' }),
-      new Feature({ id: 'AIP2.0/MEDIATE', type: 'aip' })
+    faberAgent.didcomm.features.register(
+      new DidCommFeature({ id: 'AIP2.0', type: 'aip' }),
+      new DidCommFeature({ id: 'AIP2.0/INDYCRED', type: 'aip' }),
+      new DidCommFeature({ id: 'AIP2.0/MEDIATE', type: 'aip' })
     )
 
-    await faberAgent.modules.discovery.discloseFeatures({
+    await faberAgent.didcomm.discovery.discloseFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v2',
       disclosureQueries: [{ featureType: 'aip', match: '*' }],
@@ -222,7 +218,7 @@ describe('v2 discover features', () => {
   })
 
   test('Faber asks Alice for issue credential protocol support synchronously', async () => {
-    const matchingFeatures = await faberAgent.modules.discovery.queryFeatures({
+    const matchingFeatures = await faberAgent.didcomm.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v2',
       queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],

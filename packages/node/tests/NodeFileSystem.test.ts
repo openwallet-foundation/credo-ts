@@ -1,6 +1,6 @@
-import path from 'path'
 import { TypedArrayEncoder } from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
+import path from 'path'
 
 import { NodeFileSystem } from '../src/NodeFileSystem'
 

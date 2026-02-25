@@ -1,5 +1,5 @@
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { Key, askar } from '@openwallet-foundation/askar-shared'
+import { askar, Key } from '@openwallet-foundation/askar-shared'
 import { jwkEncToAskarAlg } from '../../utils'
 
 export const askarSupportedKeyAgreementAlgorithms = [
@@ -52,14 +52,14 @@ export function deriveEncryptionKey(options: {
         keyAgreement.algorithm === 'ECDH-ES' ? encryption.algorithm : keyAgreement.algorithm
       ),
       receive: false,
-      apv: keyAgreement.apv ?? new Uint8Array([]),
-      apu: keyAgreement.apu ?? new Uint8Array([]),
+      apv: keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array([]),
+      apu: keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array([]),
       algorithm: askarKeyWrappingAlgorithm ?? askarEncryptionAlgorithm,
       ephemeralKey: senderKey,
       recipientKey: recipientKey,
     })
   )
-  let contentEncryptionKey: Key | undefined = undefined
+  let contentEncryptionKey: Key | undefined
   let encryptedContentEncryptionKey: Kms.KmsEncryptedKey | undefined
   try {
     // Key wrapping
@@ -70,9 +70,9 @@ export function deriveEncryptionKey(options: {
         other: contentEncryptionKey,
       })
       encryptedContentEncryptionKey = {
-        encrypted: wrappedKey.ciphertext,
-        iv: wrappedKey.nonce,
-        tag: wrappedKey.tag,
+        encrypted: new Uint8Array(wrappedKey.ciphertext),
+        iv: new Uint8Array(wrappedKey.nonce),
+        tag: new Uint8Array(wrappedKey.tag),
       }
     }
 
@@ -135,23 +135,23 @@ export function deriveDecryptionKey(options: {
         keyAgreement.algorithm === 'ECDH-ES' ? decryption.algorithm : keyAgreement.algorithm
       ),
       receive: true,
-      apv: keyAgreement.apv ?? new Uint8Array(),
-      apu: keyAgreement.apu ?? new Uint8Array(),
+      apv: keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array(),
+      apu: keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array(),
       algorithm: askarKeyWrappingAlgorithm ?? askarEncryptionAlgorithm,
       ephemeralKey: senderKey,
       recipientKey: recipientKey,
     })
   )
 
-  let contentEncryptionKey: Key | undefined = undefined
+  let contentEncryptionKey: Key | undefined
   try {
     // Key unwrapping
     if (keyAgreement.algorithm !== 'ECDH-ES') {
       contentEncryptionKey = derivedKey.unwrapKey({
-        ciphertext: keyAgreement.encryptedKey.encrypted,
+        ciphertext: new Uint8Array(keyAgreement.encryptedKey.encrypted),
         algorithm: askarEncryptionAlgorithm,
-        nonce: keyAgreement.encryptedKey.iv,
-        tag: keyAgreement.encryptedKey.tag,
+        nonce: keyAgreement.encryptedKey.iv ? new Uint8Array(keyAgreement.encryptedKey.iv) : undefined,
+        tag: keyAgreement.encryptedKey.tag ? new Uint8Array(keyAgreement.encryptedKey.tag) : undefined,
       })
     }
 

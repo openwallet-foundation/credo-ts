@@ -1,14 +1,12 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { ConnectionRecord, InboundMessageContext } from '@credo-ts/didcomm'
-import type { DummyStateChangedEvent } from './DummyEvents'
-
 import { EventEmitter, injectable } from '@credo-ts/core'
-
+import type { DidCommConnectionRecord, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import { DummyModuleConfig } from '../DummyModuleConfig'
 import { DummyRequestMessage, DummyResponseMessage } from '../messages'
 import { DummyRecord } from '../repository/DummyRecord'
 import { DummyRepository } from '../repository/DummyRepository'
 import { DummyState } from '../repository/DummyState'
+import type { DummyStateChangedEvent } from './DummyEvents'
 
 import { DummyEventTypes } from './DummyEvents'
 
@@ -35,7 +33,7 @@ export class DummyService {
    * @returns Object containing dummy request message and associated dummy record
    *
    */
-  public async createRequest(agentContext: AgentContext, connectionRecord: ConnectionRecord) {
+  public async createRequest(agentContext: AgentContext, connectionRecord: DidCommConnectionRecord) {
     // Create message
     const message = new DummyRequestMessage({})
 
@@ -74,7 +72,7 @@ export class DummyService {
    * @returns dummy record associated with the dummy request message
    *
    */
-  public async processRequest(messageContext: InboundMessageContext<DummyRequestMessage>) {
+  public async processRequest(messageContext: DidCommInboundMessageContext<DummyRequestMessage>) {
     const connectionRecord = messageContext.assertReadyConnection()
 
     // Create record
@@ -100,7 +98,7 @@ export class DummyService {
    * @returns dummy record associated with the dummy response message
    *
    */
-  public async processResponse(messageContext: InboundMessageContext<DummyResponseMessage>) {
+  public async processResponse(messageContext: DidCommInboundMessageContext<DummyResponseMessage>) {
     const { message } = messageContext
 
     const connection = messageContext.assertReadyConnection()

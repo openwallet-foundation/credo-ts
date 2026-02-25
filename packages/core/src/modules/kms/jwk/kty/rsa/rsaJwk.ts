@@ -1,14 +1,15 @@
-import * as z from '../../../../../utils/zod'
+import { z } from 'zod'
+import { zBase64Url, zOptionalToUndefined } from '../../../../../utils/zod'
 import { vJwkCommon } from '../../jwk'
 
 const zKmsJwkPrivateRsaOth = z.array(
   z
     .object({
-      d: z.optional(z.base64Url),
-      r: z.optional(z.base64Url),
-      t: z.optional(z.base64Url),
+      d: z.optional(zBase64Url),
+      r: z.optional(zBase64Url),
+      t: z.optional(zBase64Url),
     })
-    .passthrough()
+    .loose()
 )
 
 export const zKmsJwkPublicRsa = z.object({
@@ -16,8 +17,8 @@ export const zKmsJwkPublicRsa = z.object({
   kty: z.literal('RSA'),
 
   // Public
-  n: z.base64Url, // Modulus
-  e: z.base64Url, // Public exponent
+  n: zBase64Url, // Modulus
+  e: zBase64Url, // Public exponent
 
   // Private
   d: z.optional(z.undefined()), // Private exponent
@@ -33,25 +34,25 @@ export type KmsJwkPublicRsa = z.output<typeof zKmsJwkPublicRsa>
 export const zKmsJwkPrivateToPublicRsa = z.object({
   ...zKmsJwkPublicRsa.shape,
 
-  d: z.optionalToUndefined(z.base64Url), // Private exponent
-  p: z.optionalToUndefined(z.base64Url), // First prime factor
-  q: z.optionalToUndefined(z.base64Url), // Second prime factor
-  dp: z.optionalToUndefined(z.base64Url), // First factor CRT exponent
-  dq: z.optionalToUndefined(z.base64Url), // Second factor CRT exponent
-  qi: z.optionalToUndefined(z.base64Url), // First CRT coefficient
-  oth: z.optionalToUndefined(zKmsJwkPrivateRsaOth),
+  d: zOptionalToUndefined(zBase64Url), // Private exponent
+  p: zOptionalToUndefined(zBase64Url), // First prime factor
+  q: zOptionalToUndefined(zBase64Url), // Second prime factor
+  dp: zOptionalToUndefined(zBase64Url), // First factor CRT exponent
+  dq: zOptionalToUndefined(zBase64Url), // Second factor CRT exponent
+  qi: zOptionalToUndefined(zBase64Url), // First CRT coefficient
+  oth: zOptionalToUndefined(zKmsJwkPrivateRsaOth),
 })
 
 export const zKmsJwkPrivateRsa = z.object({
   ...zKmsJwkPublicRsa.shape,
 
   // Private
-  d: z.base64Url, // Private exponent
-  p: z.base64Url, // First prime factor
-  q: z.base64Url, // Second prime factor
-  dp: z.base64Url, // First factor CRT exponent
-  dq: z.base64Url, // Second factor CRT exponent
-  qi: z.base64Url, // First CRT coefficient
+  d: zBase64Url, // Private exponent
+  p: zBase64Url, // First prime factor
+  q: zBase64Url, // Second prime factor
+  dp: zBase64Url, // First factor CRT exponent
+  dq: zBase64Url, // Second factor CRT exponent
+  qi: zBase64Url, // First CRT coefficient
   oth: z.optional(zKmsJwkPrivateRsaOth),
 })
 export type KmsJwkPrivateRsa = z.output<typeof zKmsJwkPrivateRsa>

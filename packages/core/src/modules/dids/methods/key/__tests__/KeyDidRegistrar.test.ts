@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { TypedArrayEncoder } from '../../../../../utils'
@@ -9,8 +10,8 @@ import { KeyDidRegistrar } from '../KeyDidRegistrar'
 
 import didKeyz6MksLeFixture from './__fixtures__/didKeyz6MksLe.json'
 
-jest.mock('../../../repository/DidRepository')
-const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+vi.mock('../../../repository/DidRepository')
+const DidRepositoryMock = DidRepository as MockedClassConstructor<typeof DidRepository>
 
 const didRepositoryMock = new DidRepositoryMock()
 const keyDidRegistrar = new KeyDidRegistrar()
@@ -23,7 +24,7 @@ const kms = agentContext.resolve(KeyManagementApi)
 
 describe('DidRegistrar', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('KeyDidRegistrar', () => {
@@ -61,7 +62,7 @@ describe('DidRegistrar', () => {
     it('should return an error state if no key or key type is provided', async () => {
       const result = await keyDidRegistrar.create(agentContext, {
         method: 'key',
-        // @ts-ignore
+        // @ts-expect-error
         options: {},
       })
 
@@ -70,7 +71,8 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: 'unknownError: Invalid options provided to getPublicKey method\n\t- Required at "keyId"',
+          reason:
+            'unknownError: Invalid options provided to getPublicKey method\n✖ Invalid input: expected string, received undefined\n  → at keyId',
         },
       })
     })

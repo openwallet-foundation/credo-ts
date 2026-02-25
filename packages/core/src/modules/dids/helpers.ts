@@ -1,5 +1,5 @@
 import { CredoError } from '../../error'
-import { TypedArrayEncoder, isDid } from '../../utils'
+import { isDid, TypedArrayEncoder } from '../../utils'
 import { Ed25519PublicJwk, PublicJwk } from '../kms'
 
 import { DidKey } from './methods/key/DidKey'
@@ -37,7 +37,7 @@ export function didKeyToEd25519PublicJwk(key: string) {
   }
 
   throw new CredoError(
-    `Expected public jwk to have kty OKP with crv Ed25519, found ${didKey.publicJwk.jwkTypehumanDescription}`
+    `Expected public jwk to have kty OKP with crv Ed25519, found ${didKey.publicJwk.jwkTypeHumanDescription}`
   )
 }
 

@@ -1,4 +1,4 @@
-import { JsonTransformer } from '../../../../core'
+import { JsonTransformer } from '../../../../core/src/index'
 
 import { TimingDecorator } from './TimingDecorator'
 

@@ -1,10 +1,8 @@
-import type { DifPresentationExchangeDefinition } from '../../dif-presentation-exchange'
-
 import { cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
-
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { TypedArrayEncoder } from '../../../utils'
+import type { DifPresentationExchangeDefinition } from '../../dif-presentation-exchange'
 import { PublicJwk } from '../../kms'
 import { X509Certificate } from '../../x509'
 import { Mdoc } from '../Mdoc'

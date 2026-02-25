@@ -176,6 +176,38 @@ describe('Did | DidDocument', () => {
     }
   })
 
+  it('should resolve both relative and absolute keyId combinations', () => {
+    const didDocument = DidDocument.fromJSON({
+      '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
+      id: 'did:web:verifier.dev.eduid.nl',
+      verificationMethod: [
+        {
+          id: 'did:web:verifier.dev.eduid.nl#0',
+          type: 'JsonWebKey2020',
+          publicKeyJwk: {
+            kty: 'EC',
+            crv: 'P-256',
+            kid: '02435f281d2d4a2bc2eed6a87bc24a4e7ba1f7f7276c9bc1ffdd6e27b58638d9be',
+            use: 'sig',
+            key_ops: ['verify'],
+            alg: 'ES256',
+            x: 'Q18oHS1KK8Lu1qh7wkpOe6H39ydsm8H_3W4ntYY42b4',
+            y: 'zF-vLyHCwUNlVjf8xC4vgZzZ6mJFEACXe-A4jOU3YJI',
+          },
+          controller: 'did:web:verifier.dev.eduid.nl',
+        },
+      ],
+      authentication: ['#0'],
+      assertionMethod: ['#0'],
+      capabilityDelegation: ['#0'],
+      capabilityInvocation: ['#0'],
+    })
+
+    expect(didDocument.dereferenceKey('did:web:verifier.dev.eduid.nl#0', ['authentication'])).toEqual(
+      didDocument.verificationMethod?.[0]
+    )
+  })
+
   it('should correctly transforms DidDoc class to Json', () => {
     const didDocumentJson = JsonTransformer.toJSON(didDocumentInstance)
 

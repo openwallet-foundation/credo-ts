@@ -1,2 +1,2 @@
-export * from './V2DiscoverFeaturesService'
+export * from './DidCommDiscoverFeaturesV2Service'
 export * from './messages'

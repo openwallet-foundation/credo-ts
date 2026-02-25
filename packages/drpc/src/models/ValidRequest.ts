@@ -1,15 +1,15 @@
 import type { ValidationOptions } from 'class-validator'
 
-import { ValidateBy, ValidationError, buildMessage } from 'class-validator'
+import { buildMessage, ValidateBy, ValidationError } from 'class-validator'
 
 export function IsValidDrpcRequest(validationOptions?: ValidationOptions): PropertyDecorator {
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   return (target: any, propertyKey: string | symbol) => {
     ValidateBy(
       {
         name: 'isValidDrpcRequest',
         validator: {
-          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+          // biome-ignore lint/suspicious/noExplicitAny: no explanation
           validate: (value: any): boolean => {
             // Check if value is a DrpcRequestObject or an array of DrpcRequestObject
             let isValid = false
@@ -36,7 +36,7 @@ export function IsValidDrpcRequest(validationOptions?: ValidationOptions): Prope
   }
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export function isValidDrpcRequest(value: any): boolean {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false

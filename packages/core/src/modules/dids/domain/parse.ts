@@ -1,8 +1,6 @@
-import type { ParsedDid } from '../types'
-
 import { parse } from 'did-resolver'
-
 import { CredoError } from '../../../error'
+import type { ParsedDid } from '../types'
 
 export function parseDid(did: string): ParsedDid {
   const parsed = tryParseDid(did)

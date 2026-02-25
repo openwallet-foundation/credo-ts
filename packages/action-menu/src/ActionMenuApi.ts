@@ -1,3 +1,5 @@
+import { AgentContext, CredoError, injectable } from '@credo-ts/core'
+import { DidCommConnectionService, DidCommMessageSender, getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 import type {
   ClearActiveMenuOptions,
   FindActiveMenuOptions,
@@ -6,16 +8,7 @@ import type {
   SendMenuOptions,
 } from './ActionMenuApiOptions'
 
-import { AgentContext, CredoError, injectable } from '@credo-ts/core'
-import { ConnectionService, MessageHandlerRegistry, MessageSender, getOutboundMessageContext } from '@credo-ts/didcomm'
-
 import { ActionMenuRole } from './ActionMenuRole'
-import {
-  ActionMenuProblemReportHandler,
-  MenuMessageHandler,
-  MenuRequestMessageHandler,
-  PerformMessageHandler,
-} from './handlers'
 import { ActionMenuService } from './services'
 
 /**
@@ -23,14 +16,14 @@ import { ActionMenuService } from './services'
  */
 @injectable()
 export class ActionMenuApi {
-  private connectionService: ConnectionService
-  private messageSender: MessageSender
+  private connectionService: DidCommConnectionService
+  private messageSender: DidCommMessageSender
   private actionMenuService: ActionMenuService
   private agentContext: AgentContext
 
   public constructor(
-    connectionService: ConnectionService,
-    messageSender: MessageSender,
+    connectionService: DidCommConnectionService,
+    messageSender: DidCommMessageSender,
     actionMenuService: ActionMenuService,
     agentContext: AgentContext
   ) {
@@ -38,15 +31,6 @@ export class ActionMenuApi {
     this.messageSender = messageSender
     this.actionMenuService = actionMenuService
     this.agentContext = agentContext
-
-    this.agentContext.dependencyManager
-      .resolve(MessageHandlerRegistry)
-      .registerMessageHandlers([
-        new ActionMenuProblemReportHandler(this.actionMenuService),
-        new MenuMessageHandler(this.actionMenuService),
-        new MenuRequestMessageHandler(this.actionMenuService),
-        new PerformMessageHandler(this.actionMenuService),
-      ])
   }
 
   /**
@@ -62,7 +46,7 @@ export class ActionMenuApi {
       connection,
     })
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: record,
       connectionRecord: connection,
@@ -88,7 +72,7 @@ export class ActionMenuApi {
       menu: options.menu,
     })
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: record,
       connectionRecord: connection,
@@ -122,7 +106,7 @@ export class ActionMenuApi {
       performedAction: options.performedAction,
     })
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: record,
       connectionRecord: connection,

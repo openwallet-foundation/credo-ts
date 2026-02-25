@@ -10,12 +10,12 @@ An extension module could be used for different purposes, such as storing data i
 
 This example consists of a module that implements a very simple request-response protocol called Dummy. In order to do so and be able to be injected into an Credo instance, some steps were followed:
 
-- Define Dummy protocol message classes (inherited from `AgentMessage`)
-- Create handlers for those messages (inherited from `MessageHandler`)
+- Define Dummy protocol message classes (inherited from `DidCommMessage`)
+- Create handlers for those messages (inherited from `DidCommMessageHandler`)
 - Define records (inherited from `BaseRecord`) and a singleton repository (inherited from `Repository`) for state persistance
 - Define events (inherited from `BaseEvent`)
 - Create a singleton service class that manages records and repository, and also trigger events using Agent's `EventEmitter`
-- Create a singleton api class that registers handlers in Agent's `Dispatcher` and provides a simple API to do requests and responses, with the aid of service classes and Agent's `MessageSender`
+- Create a singleton api class that registers handlers in Agent's `Dispatcher` and provides a simple API to do requests and responses, with the aid of service classes and Agent's `DidCommMessageSender`
 - Create a module class that registers all the above on the dependency manager so it can be be injected from the `Agent` instance, and also register the features (such as protocols) the module adds to the Agent.
 
 ## Usage

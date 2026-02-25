@@ -1,9 +1,7 @@
-import type { AgentContextProvider } from './AgentContextProvider'
-
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
-
 import { AgentContext } from './AgentContext'
+import type { AgentContextProvider } from './AgentContextProvider'
 
 /**
  * Default implementation of AgentContextProvider.

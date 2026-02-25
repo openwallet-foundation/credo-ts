@@ -1,7 +1,6 @@
-import type { ValidationOptions } from 'class-validator'
-
 import { Transform, TransformationType } from 'class-transformer'
-import { ValidateBy, buildMessage, isInstance, isString } from 'class-validator'
+import type { ValidationOptions } from 'class-validator'
+import { buildMessage, isInstance, isString, ValidateBy } from 'class-validator'
 
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 

@@ -6,6 +6,7 @@ import type {
   MdocSignOptions,
   SdJwtVcSignOptions,
   W3cCredential,
+  W3cV2SignCredentialOptions,
 } from '@credo-ts/core'
 import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 import type {
@@ -23,10 +24,14 @@ import type {
   OpenId4VciCredentialRequestFormatSpecific,
   OpenId4VciDeferredCredentialRequest,
   OpenId4VciTxCode,
+  OpenId4VcJwtIssuer,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
-import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
-import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecordProps } from './repository'
+import type {
+  OpenId4VciAuthorizationServerConfig,
+  OpenId4VciChainedAuthorizationServerConfig,
+} from '../shared/models/OpenId4VciAuthorizationServerConfig'
+import { OpenId4VcIssuanceSessionRecord, type OpenId4VcIssuerRecordProps } from './repository'
 
 export interface OpenId4VciCredentialRequestAuthorization {
   authorizationServer: string
@@ -35,6 +40,8 @@ export interface OpenId4VciCredentialRequestAuthorization {
     value: string
   }
 }
+
+export type OpenId4VciVersion = 'v1.draft11-14' | 'v1.draft15' | 'v1'
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string
@@ -59,24 +66,27 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
   issuerState?: string
 
   /**
-   * OPTIONAL string that the Wallet can use to identify the Authorization Server to use with this grant
-   * type when authorization_servers parameter in the Credential Issuer metadata has multiple entries.
+   * OPTIONAL. String value that the wallet can use to identify the authorization server to use with
+   * this grant type when multiple authorization servers have been configured in the Credential Issuer
+   * metadata.
+   *
+   * When using a chained authorization server, this option is mutually exclusive with `requirePresentationDuringIssuance`.
    */
   authorizationServerUrl?: string
 
   /**
    * Whether presentation using OpenID4VP is required as part of the authorization flow. The presentation
    * request will be created dynamically when the wallet initiates the authorization flow using the
-   * `getVerificationSessionForIssuanceSessionAuthorization` callback in the issuer module config.
+   * `getVerificationSession` callback in the issuer module config.
    *
-   * You can dynamically create the verification session based on the provided issuace session, or you
+   * You can dynamically create the verification session based on the provided issuance session, or you
    * can have a more generic implementation based on credential configurations and scopes that are being
    * requested.
    *
    * In case this parameter is set to true, `authorizationServerUrl` MUST be undefined or match the
    * `credential_issuer` value, as only Credo can handle this flow.
    *
-   * In case this parameter is set to true, and `getVerificationSessionForIssuanceSessionAuthorization` is
+   * In case this parameter is set to true, and `getVerificationSession` is
    * not configured on the issuer module an error will be thrown.
    *
    * @default false
@@ -99,12 +109,9 @@ interface OpenId4VciCreateCredentialOfferOptionsBase {
   baseUri?: string
 
   /**
-   * @default v1.draft11-15
-   *
-   * NOTE: `v1.draft15` credential is compatible with draft 13 credential offer as well. Only the issuer metadata
-   * is different, so ensure you configure the issuer metadata in a compatible way based on the provided draft version.
+   * @default v1
    */
-  version?: 'v1.draft11-15' | 'v1.draft15'
+  version?: OpenId4VciVersion
 }
 
 export interface OpenId4VciCreateStatelessCredentialOfferOptions extends OpenId4VciCreateCredentialOfferOptionsBase {
@@ -114,12 +121,12 @@ export interface OpenId4VciCreateStatelessCredentialOfferOptions extends OpenId4
    * For stateless credential offers we need an external authorization server, which also means we need to
    * support `authorization_servers`.
    *
-   * NOTE: `v1.draft15` credential is compatible with draft 13 credential offer as well. Only the issuer metadata
+   * NOTE: `v1` credential is compatible with draft 13 credential offer as well. Only the issuer metadata
    * is different, so ensure you configure the issuer metadata in a compatible way based on the provided draft version.
    *
-   * @default v1.draft15
+   * @default v1
    */
-  version?: 'v1.draft15'
+  version?: 'v1'
 }
 
 export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreateCredentialOfferOptionsBase {
@@ -127,7 +134,7 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
   authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
 
   /**
-   * Options related to authorization, for both the pre-authorized and authorizat_code flows.
+   * Options related to authorization, for both the pre-authorized and authorization_code flows.
    */
   authorization?: {
     /**
@@ -165,6 +172,15 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
    * Whether this issuance session allows to generate refresh tokens.
    */
   generateRefreshTokens?: boolean
+
+  /**
+   * Expiration time in seconds for the credential offer. This will be used to
+   * calculate the expiration time of the issuance session.
+   *
+   * If not provided, the `statefulCredentialOfferExpirationInSeconds` value from
+   * the issuer config will be used.
+   */
+  expirationInSeconds?: number
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {
@@ -196,12 +212,15 @@ export interface OpenId4VciCreateDeferredCredentialResponseOptions {
 }
 
 /**
+ * @deprecated use OpenId4VciGetVerificationSession instead.
+ */
+export type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization = OpenId4VciGetVerificationSession
+
+/**
  * Callback that is called when a verification session needs to be created to complete
  * authorization of credential issuance.
- *
- *
  */
-export type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization = (options: {
+export type OpenId4VciGetVerificationSession = (options: {
   agentContext: AgentContext
   issuanceSession: OpenId4VcIssuanceSessionRecord
 
@@ -229,6 +248,43 @@ export type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization = (o
     scopes: string[]
   }
 >
+
+export type OpenId4VciGetChainedAuthorizationRequestParameters = (options: {
+  agentContext: AgentContext
+  issuanceSession: OpenId4VcIssuanceSessionRecord
+
+  /**
+   * The credential configurations for which authorization has been requested based on the **scope**
+   * values. It doesn't mean the wallet will request all credentials to be issued.
+   */
+  requestedCredentialConfigurations: OpenId4VciCredentialConfigurationsSupportedWithFormats
+
+  /**
+   * The configuration of the chained authorization server that is being used with this request.
+   */
+  chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
+}) => Promise<{
+  /**
+   * The scopes to request to the chained authorization server. If no scopes are required,
+   * an empty array should be returned.
+   */
+  scopes: string[]
+
+  /**
+   * Allowed wallet redirect URIs for this issuance session. If not provided,
+   * all redirect Uris are accepted.
+   */
+  redirectUris?: string[]
+
+  /**
+   * Additional properties that will be sent as payload in the authorization request to
+   * the chained authorization server.
+   *
+   * Please note that this additionalPayload will override any existing properties
+   * with the same name in the authorization request. Please use it carefully.
+   */
+  additionalPayload?: Record<string, string>
+}>
 
 export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
   agentContext: AgentContext
@@ -304,7 +360,7 @@ export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
 
 export type OpenId4VciCredentialRequestToCredentialMapper = (
   options: OpenId4VciCredentialRequestToCredentialMapperOptions
-) => CanBePromise<OpenId4VciSignCredentials> | CanBePromise<OpenId4VciDeferredCredentials>
+) => CanBePromise<OpenId4VciSignCredentials | OpenId4VciDeferredCredentials>
 
 export interface OpenId4VciDeferredCredentialRequestToCredentialMapperOptions {
   agentContext: AgentContext
@@ -328,16 +384,17 @@ export interface OpenId4VciDeferredCredentialRequestToCredentialMapperOptions {
 
 export type OpenId4VciDeferredCredentialRequestToCredentialMapper = (
   options: OpenId4VciDeferredCredentialRequestToCredentialMapperOptions
-) => CanBePromise<OpenId4VciSignCredentials> | CanBePromise<OpenId4VciDeferredCredentials>
+) => CanBePromise<OpenId4VciSignCredentials | OpenId4VciDeferredCredentials>
 
 export type OpenId4VciSignCredentials =
   | OpenId4VciSignSdJwtCredentials
   | OpenId4VciSignW3cCredentials
+  | OpenId4VciSignW3cV2Credentials
   | OpenId4VciSignMdocCredentials
 
 export interface OpenId4VciSignSdJwtCredentials {
   type: 'credentials'
-  format: ClaimFormat.SdJwtVc | `${ClaimFormat.SdJwtVc}`
+  format: ClaimFormat.SdJwtDc | `${ClaimFormat.SdJwtDc}`
   credentials: SdJwtVcSignOptions[]
 }
 
@@ -354,6 +411,12 @@ export interface OpenId4VciSignW3cCredentials {
     verificationMethod: string
     credential: W3cCredential
   }>
+}
+
+export interface OpenId4VciSignW3cV2Credentials {
+  type: 'credentials'
+  format: ClaimFormat.SdJwtW3cVc | `${ClaimFormat.SdJwtW3cVc}`
+  credentials: Omit<W3cV2SignCredentialOptions<ClaimFormat.SdJwtW3cVc>, 'format'>[]
 }
 
 export type OpenId4VciDeferredCredentials = {
@@ -398,6 +461,15 @@ export type OpenId4VciCreateIssuerOptions = {
    * Indicate support for batch issuance of credentials
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
+
+  /**
+   * When provided, allows wallets to fetch signed metadata.
+   *
+   * Currently the metadata is signed when the issuer metadata is created or updated, but
+   * it won't be updated for each wallet that resolves the metadata. This also mean that no exp
+   * is added to the signed metadata.
+   */
+  metadataSigner?: OpenId4VcJwtIssuer
 }
 
 export type OpenId4VcUpdateIssuerRecordOptions = Pick<
@@ -407,4 +479,5 @@ export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   | 'dpopSigningAlgValuesSupported'
   | 'credentialConfigurationsSupported'
   | 'batchCredentialIssuance'
+  | 'authorizationServerConfigs'
 >

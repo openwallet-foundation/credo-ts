@@ -1,7 +1,6 @@
 import type { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
+import { injectable, UpdateAssistant, utils } from '@credo-ts/core'
 import type { TenantConfig } from '../models/TenantConfig'
-
-import { UpdateAssistant, injectable, utils } from '@credo-ts/core'
 
 import { TenantRecord, TenantRepository, TenantRoutingRecord, TenantRoutingRepository } from '../repository'
 

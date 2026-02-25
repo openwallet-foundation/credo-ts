@@ -1,7 +1,7 @@
 import type { AnonCredsNonRevokedInterval, AnonCredsProofRequest, AnonCredsProofRequestRestriction } from '../models'
 
 // Copied from the core package so we don't have to export these silly utils. We should probably move these to a separate package.
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 function areObjectsEqual(a: any, b: any): boolean {
   if (typeof a === 'object' && a != null && typeof b === 'object' && b != null) {
     if (Object.keys(a).length !== Object.keys(b).length) return false

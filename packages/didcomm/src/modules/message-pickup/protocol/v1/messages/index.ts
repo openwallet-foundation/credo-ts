@@ -1,2 +1,2 @@
-export * from './V1BatchMessage'
-export * from './V1BatchPickupMessage'
+export * from './DidCommBatchMessage'
+export * from './DidCommBatchPickupMessage'

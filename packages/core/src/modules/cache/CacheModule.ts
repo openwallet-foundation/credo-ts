@@ -1,6 +1,6 @@
 import type { DependencyManager, Module } from '../../plugins'
-import type { CacheModuleConfigOptions } from './CacheModuleConfig'
 import { CachedStorageService } from './CachedStorageService'
+import type { CacheModuleConfigOptions } from './CacheModuleConfig'
 
 import { CacheModuleConfig } from './CacheModuleConfig'
 import { SingleContextLruCacheRepository } from './singleContextLruCache/SingleContextLruCacheRepository'

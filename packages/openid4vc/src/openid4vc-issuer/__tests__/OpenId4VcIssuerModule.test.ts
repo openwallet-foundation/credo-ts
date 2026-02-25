@@ -1,6 +1,6 @@
 import type { DependencyManager } from '@credo-ts/core'
 
-import { Router } from 'express'
+import express from 'express'
 
 import { getAgentContext } from '../../../../core/tests'
 import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
@@ -10,22 +10,23 @@ import { OpenId4VcIssuanceSessionRepository } from '../repository'
 import { OpenId4VcIssuerRepository } from '../repository/OpenId4VcIssuerRepository'
 
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
-  resolve: jest.fn().mockReturnValue({ logger: { warn: jest.fn() } }),
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
+  registerContextScoped: vi.fn(),
+  resolve: vi.fn().mockReturnValue({ logger: { warn: vi.fn() } }),
 } as unknown as DependencyManager
 
 const agentContext = getAgentContext()
 
 describe('OpenId4VcIssuerModule', () => {
   test('registers dependencies on the dependency manager', async () => {
+    const app = express()
     const options = {
       baseUrl: 'http://localhost:3000',
       credentialRequestToCredentialMapper: () => {
         throw new Error('Not implemented')
       },
-      router: Router(),
+      app,
     } as const
     const openId4VcClientModule = new OpenId4VcIssuerModule(options)
     openId4VcClientModule.register(dependencyManager)
@@ -43,6 +44,6 @@ describe('OpenId4VcIssuerModule', () => {
 
     await openId4VcClientModule.initialize(agentContext)
 
-    expect(openId4VcClientModule.config.router).toBeDefined()
+    expect(openId4VcClientModule.config.app).toBe(app)
   })
 })

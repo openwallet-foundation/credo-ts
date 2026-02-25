@@ -1,12 +1,12 @@
-import type { CredentialPreviewAttributeOptions } from '@credo-ts/didcomm'
+import type { DidCommCredentialPreviewAttributeOptions } from '@credo-ts/didcomm'
 
 export function areCredentialPreviewAttributesEqual(
-  firstAttributes: CredentialPreviewAttributeOptions[],
-  secondAttributes: CredentialPreviewAttributeOptions[]
+  firstAttributes: DidCommCredentialPreviewAttributeOptions[],
+  secondAttributes: DidCommCredentialPreviewAttributeOptions[]
 ) {
   if (firstAttributes.length !== secondAttributes.length) return false
 
-  const secondAttributeMap = secondAttributes.reduce<Record<string, CredentialPreviewAttributeOptions>>(
+  const secondAttributeMap = secondAttributes.reduce<Record<string, DidCommCredentialPreviewAttributeOptions>>(
     (attributeMap, attribute) => {
       attributeMap[attribute.name] = attribute
       return attributeMap

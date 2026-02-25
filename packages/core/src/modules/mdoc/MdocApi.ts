@@ -1,12 +1,10 @@
-import type { Query, QueryOptions } from '../../storage/StorageService'
-import type { MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
-import type { MdocRecord } from './repository'
-
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
-
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import { Mdoc } from './Mdoc'
+import type { MdocSignOptions, MdocStoreOptions, MdocVerifyOptions } from './MdocOptions'
 import { MdocService } from './MdocService'
+import type { MdocRecord } from './repository'
 
 /**
  * @public
@@ -49,8 +47,8 @@ export class MdocApi {
     return Mdoc.fromBase64Url(base64Url)
   }
 
-  public async store(issuerSigned: Mdoc) {
-    return await this.mdocService.store(this.agentContext, issuerSigned)
+  public async store(options: MdocStoreOptions) {
+    return await this.mdocService.store(this.agentContext, options)
   }
 
   public async getById(id: string): Promise<MdocRecord> {

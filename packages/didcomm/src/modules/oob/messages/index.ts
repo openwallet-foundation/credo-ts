@@ -1,3 +1,3 @@
-export * from './OutOfBandInvitation'
-export * from './HandshakeReuseAcceptedMessage'
-export * from './HandshakeReuseMessage'
+export * from './DidCommHandshakeReuseAcceptedMessage'
+export * from './DidCommHandshakeReuseMessage'
+export * from './DidCommOutOfBandInvitation'

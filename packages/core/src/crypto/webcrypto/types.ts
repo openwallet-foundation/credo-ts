@@ -5,14 +5,15 @@
 
 import {
   Ed25519PublicJwk,
-  Jwk,
-  KnownJwaSignatureAlgorithm,
+  type Jwk,
+  type KnownJwaSignatureAlgorithm,
   P256PublicJwk,
   P384PublicJwk,
   P521PublicJwk,
   RsaPublicJwk,
   Secp256k1PublicJwk,
 } from '../../modules/kms'
+import type { AnyUint8Array } from '../../types'
 import { CredoWebCryptoError } from './CredoWebCryptoError'
 import type { CredoWebCryptoKey } from './CredoWebCryptoKey'
 
@@ -58,7 +59,7 @@ export type EcKeyGenParams = {
 export type RsaHashedKeyGenParams = {
   name: 'RSASSA-PKCS1-v1_5' | 'RSA-PSS'
   modulusLength: number
-  publicExponent: Uint8Array
+  publicExponent: AnyUint8Array
   hash: { name: HashAlgorithmIdentifier }
 }
 
@@ -105,7 +106,7 @@ export function keyParamsToJwaAlgorithm(
   if (params.name === 'Ed25519') {
     if (!key.publicJwk.is(Ed25519PublicJwk)) {
       throw new CredoWebCryptoError(
-        `Unsupported key for algorithm for Ed25519: ${key.publicJwk.jwkTypehumanDescription}`
+        `Unsupported key for algorithm for Ed25519: ${key.publicJwk.jwkTypeHumanDescription}`
       )
     }
 
@@ -157,7 +158,7 @@ export function keyParamsToJwaAlgorithm(
     }
 
     throw new CredoWebCryptoError(
-      `Unsupported key ${key.publicJwk.jwkTypehumanDescription} or hash algorithm '${hashName}' for ECDSA`
+      `Unsupported key ${key.publicJwk.jwkTypeHumanDescription} or hash algorithm '${hashName}' for ECDSA`
     )
   }
 
@@ -167,7 +168,7 @@ export function keyParamsToJwaAlgorithm(
 
     if (!key.publicJwk.is(RsaPublicJwk)) {
       throw new CredoWebCryptoError(
-        `Unsupported key for algorithm for RSASSA-PKCS1-v1_5: ${key.publicJwk.jwkTypehumanDescription}`
+        `Unsupported key for algorithm for RSASSA-PKCS1-v1_5: ${key.publicJwk.jwkTypeHumanDescription}`
       )
     }
 
@@ -190,7 +191,7 @@ export function keyParamsToJwaAlgorithm(
 
     if (!key.publicJwk.is(RsaPublicJwk)) {
       throw new CredoWebCryptoError(
-        `Unsupported key for algorithm for RSA-PSS: ${key.publicJwk.jwkTypehumanDescription}`
+        `Unsupported key for algorithm for RSA-PSS: ${key.publicJwk.jwkTypeHumanDescription}`
       )
     }
 
@@ -208,4 +209,46 @@ export function keyParamsToJwaAlgorithm(
   }
 
   throw new CredoWebCryptoError(`Unsupported algorithm: ${params.name}`)
+}
+
+/**
+ * Converts a JWA signature algorithm to the appropriate KeySignParams
+ * This is the inverse of keyParamsToJwaAlgorithm
+ * @param algorithm - The JWA signature algorithm (e.g., 'ES256', 'RS256', 'EdDSA')
+ * @returns The signing parameters with the appropriate algorithm name and hash
+ */
+export function jwaAlgorithmToKeySignParams(algorithm: KnownJwaSignatureAlgorithm): KeySignParams {
+  switch (algorithm) {
+    // ECDSA algorithms
+    case 'ES256':
+    case 'ES256K':
+      return { name: 'ECDSA', hash: 'SHA-256' }
+    case 'ES384':
+      return { name: 'ECDSA', hash: 'SHA-384' }
+    case 'ES512':
+      return { name: 'ECDSA', hash: 'SHA-512' }
+
+    // EdDSA
+    case 'EdDSA':
+      return { name: 'Ed25519' }
+
+    // RSA PKCS1
+    case 'RS256':
+      return { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }
+    case 'RS384':
+      return { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-384' }
+    case 'RS512':
+      return { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-512' }
+
+    // RSA PSS
+    case 'PS256':
+      return { name: 'RSA-PSS', hash: 'SHA-256' }
+    case 'PS384':
+      return { name: 'RSA-PSS', hash: 'SHA-384' }
+    case 'PS512':
+      return { name: 'RSA-PSS', hash: 'SHA-512' }
+
+    default:
+      throw new CredoWebCryptoError(`Unsupported JWA algorithm: ${algorithm}`)
+  }
 }

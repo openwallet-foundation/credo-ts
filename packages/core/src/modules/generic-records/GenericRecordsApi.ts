@@ -1,10 +1,9 @@
-import type { Query, QueryOptions } from '../../storage/StorageService'
-import type { GenericRecord, SaveGenericRecordOption } from './repository/GenericRecord'
-
 import { AgentContext } from '../../agent'
 import { InjectionSymbols } from '../../constants'
-import { Logger } from '../../logger'
+import type { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
+import type { Query, QueryOptions } from '../../storage/StorageService'
+import type { GenericRecord, SaveGenericRecordOption } from './repository/GenericRecord'
 
 import { GenericRecordService } from './services/GenericRecordService'
 

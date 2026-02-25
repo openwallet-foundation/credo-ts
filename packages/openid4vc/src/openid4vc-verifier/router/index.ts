@@ -1,2 +1,2 @@
 export { configureAuthorizationEndpoint } from './authorizationEndpoint'
-export { OpenId4VcVerificationRequest } from './requestContext'
+export type { OpenId4VcVerificationRequest } from './requestContext'

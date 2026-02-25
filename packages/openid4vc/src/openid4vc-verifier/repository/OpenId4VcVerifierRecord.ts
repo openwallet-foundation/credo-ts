@@ -1,7 +1,6 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
-import type { OpenId4VpVerifierClientMetadata } from '../OpenId4VpVerifierServiceOptions'
-
 import { BaseRecord, utils } from '@credo-ts/core'
+import type { OpenId4VpVerifierClientMetadata } from '../OpenId4VpVerifierServiceOptions'
 
 export type OpenId4VcVerifierRecordTags = RecordTags<OpenId4VcVerifierRecord>
 

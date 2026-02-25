@@ -1,19 +1,15 @@
-import type { ValidationOptions } from 'class-validator'
-import type { JsonObject, SingleOrArray } from '../../../../types'
-import type { W3cCredentialSubjectOptions } from './W3cCredentialSubject'
-import type { W3cIssuerOptions } from './W3cIssuer'
-
 import { Expose, Type } from 'class-transformer'
-import { IsInstance, IsOptional, IsRFC3339, ValidateBy, ValidateNested, buildMessage } from 'class-validator'
-
-import { JsonTransformer, asArray, mapSingleOrArray } from '../../../../utils'
+import { IsInstance, IsOptional, IsRFC3339, ValidateNested } from 'class-validator'
+import type { JsonObject, SingleOrArray } from '../../../../types'
+import { asArray, JsonTransformer, mapSingleOrArray } from '../../../../utils'
 import { IsInstanceOrArrayOfInstances, IsUri } from '../../../../utils/validators'
-import { CREDENTIALS_CONTEXT_V1_URL, VERIFIABLE_CREDENTIAL_TYPE } from '../../constants'
-import { IsCredentialJsonLdContext } from '../../validators'
-
+import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
+import { IsCredentialJsonLdContext, IsCredentialType } from '../../validators'
 import { W3cCredentialSchema } from './W3cCredentialSchema'
 import { W3cCredentialStatus } from './W3cCredentialStatus'
+import type { W3cCredentialSubjectOptions } from './W3cCredentialSubject'
 import { IsW3cCredentialSubject, W3cCredentialSubject, W3cCredentialSubjectTransformer } from './W3cCredentialSubject'
+import type { W3cIssuerOptions } from './W3cIssuer'
 import { IsW3cIssuer, W3cIssuer, W3cIssuerTransformer } from './W3cIssuer'
 
 export interface W3cCredentialOptions {
@@ -128,27 +124,4 @@ export class W3cCredential {
   public static fromJson(json: Record<string, unknown>) {
     return JsonTransformer.fromJSON(json, W3cCredential)
   }
-}
-
-// Custom validator
-
-export function IsCredentialType(validationOptions?: ValidationOptions): PropertyDecorator {
-  return ValidateBy(
-    {
-      name: 'IsVerifiableCredentialType',
-      validator: {
-        validate: (value): boolean => {
-          if (Array.isArray(value)) {
-            return value.includes(VERIFIABLE_CREDENTIAL_TYPE)
-          }
-          return false
-        },
-        defaultMessage: buildMessage(
-          (eachPrefix) => `${eachPrefix}$property must be an array of strings which includes "VerifiableCredential"`,
-          validationOptions
-        ),
-      },
-    },
-    validationOptions
-  )
 }

@@ -1,17 +1,14 @@
 // Dids
-export {
-  CheqdDidRegistrar,
-  CheqdDidCreateOptions,
-  CheqdDidDeactivateOptions,
-  CheqdDidUpdateOptions,
-  CheqdDidResolver,
-} from './dids'
 
 // AnonCreds
 export { CheqdAnonCredsRegistry } from './anoncreds'
-
-export { CheqdLedgerService } from './ledger'
-
 export { CheqdModule } from './CheqdModule'
-
-export { CheqdModuleConfig, CheqdModuleConfigOptions } from './CheqdModuleConfig'
+export { CheqdModuleConfig, type CheqdModuleConfigOptions } from './CheqdModuleConfig'
+export {
+  type CheqdDidCreateOptions,
+  type CheqdDidDeactivateOptions,
+  CheqdDidRegistrar,
+  CheqdDidResolver,
+  type CheqdDidUpdateOptions,
+} from './dids'
+export { CheqdLedgerService } from './ledger'

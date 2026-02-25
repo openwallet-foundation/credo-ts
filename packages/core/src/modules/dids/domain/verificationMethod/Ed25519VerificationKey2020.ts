@@ -1,5 +1,5 @@
 import { CredoError } from '../../../../error'
-import { Ed25519PublicJwk, PublicJwk, getJwkHumanDescription } from '../../../kms'
+import { Ed25519PublicJwk, getJwkHumanDescription, PublicJwk } from '../../../kms'
 
 import { VerificationMethod } from './VerificationMethod'
 
@@ -15,7 +15,11 @@ export function getEd25519VerificationKey2020({
   publicJwk,
   id,
   controller,
-}: { id: string; publicJwk: PublicJwk<Ed25519PublicJwk>; controller: string }) {
+}: {
+  id: string
+  publicJwk: PublicJwk<Ed25519PublicJwk>
+  controller: string
+}) {
   return new VerificationMethod({
     id,
     type: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,

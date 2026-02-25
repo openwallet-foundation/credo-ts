@@ -1,6 +1,5 @@
-import type { AnonCredsProofRequest } from '../models'
-
 import { CredoError } from '@credo-ts/core'
+import type { AnonCredsProofRequest } from '../models'
 
 function attributeNamesToArray(proofRequest: AnonCredsProofRequest) {
   // Attributes can contain either a `name` string value or an `names` string array. We reduce it to a single array

@@ -1,4 +1,5 @@
-import * as z from '../../../../../utils/zod'
+import { z } from 'zod'
+import { zBase64Url, zOptionalToUndefined } from '../../../../../utils/zod'
 import { vJwkCommon } from '../../jwk'
 
 export const zKmsJwkPublicOct = z.object({
@@ -13,13 +14,13 @@ export type KmsJwkPublicOct = z.output<typeof zKmsJwkPublicOct>
 export const zKmsJwkPrivateToPublicOct = z.object({
   ...zKmsJwkPublicOct.shape,
 
-  k: z.optionalToUndefined(z.base64Url), // Key
+  k: zOptionalToUndefined(zBase64Url), // Key
 })
 
 export const zKmsJwkPrivateOct = z.object({
   ...zKmsJwkPublicOct.shape,
 
   // Private
-  k: z.base64Url, // Key
+  k: zBase64Url, // Key
 })
 export type KmsJwkPrivateOct = z.output<typeof zKmsJwkPrivateOct>

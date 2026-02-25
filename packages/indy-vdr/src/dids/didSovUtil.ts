@@ -1,6 +1,7 @@
 import {
   Buffer,
   CredoError,
+  convertPublicKeyToX25519,
   DidCommV1Service,
   DidCommV2Service,
   DidDocumentBuilder,
@@ -8,7 +9,6 @@ import {
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
   TypedArrayEncoder,
-  convertPublicKeyToX25519,
 } from '@credo-ts/core'
 
 export type CommEndpointType = 'endpoint' | 'did-communication' | 'DIDComm' | 'DIDCommMessaging'

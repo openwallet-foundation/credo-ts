@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { CacheModule } from '../CacheModule'
 import { CacheModuleConfig } from '../CacheModuleConfig'
@@ -5,14 +6,14 @@ import { InMemoryLruCache } from '../InMemoryLruCache'
 import { SingleContextStorageLruCache } from '../singleContextLruCache'
 import { SingleContextLruCacheRepository } from '../singleContextLruCache/SingleContextLruCacheRepository'
 
-jest.mock('../../../plugins/DependencyManager')
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
+vi.mock('../../../plugins/DependencyManager')
+const DependencyManagerMock = DependencyManager as MockedClassConstructor<typeof DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
 describe('CacheModule', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   test('registers dependencies on the dependency manager', () => {

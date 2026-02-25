@@ -1,12 +1,11 @@
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import type { EventReplaySubject } from '../../../../../../../core/tests'
-
 import {
   issueLegacyAnonCredsCredential,
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { EventReplaySubject } from '../../../../../../../core/tests'
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../../core/tests'
-import { AutoAcceptProof, ProofState } from '../../../models'
+import { DidCommAutoAcceptProof, DidCommProofState } from '../../../models'
 
 describe('Auto accept present proof', () => {
   let faberAgent: AnonCredsTestsAgent
@@ -31,7 +30,7 @@ describe('Auto accept present proof', () => {
         issuerName: 'Faber Auto Accept Always Proofs',
         holderName: 'Alice Auto Accept Always Proofs',
         attributeNames: ['name', 'age'],
-        autoAcceptProofs: AutoAcceptProof.Always,
+        autoAcceptProofs: DidCommAutoAcceptProof.Always,
       }))
 
       await issueLegacyAnonCredsCredential({
@@ -64,7 +63,7 @@ describe('Auto accept present proof', () => {
     test("Alice starts with proof proposal to Faber, both with autoAcceptProof on 'always'", async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
-      await aliceAgent.modules.proofs.proposeProof({
+      await aliceAgent.didcomm.proofs.proposeProof({
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         proofFormats: {
@@ -93,15 +92,15 @@ describe('Auto accept present proof', () => {
       testLogger.test('Faber waits for presentation from Alice')
       testLogger.test('Alice waits till it receives presentation ack')
       await Promise.all([
-        waitForProofExchangeRecord(faberAgent, { state: ProofState.Done }),
-        waitForProofExchangeRecord(aliceAgent, { state: ProofState.Done }),
+        waitForProofExchangeRecord(faberAgent, { state: DidCommProofState.Done }),
+        waitForProofExchangeRecord(aliceAgent, { state: DidCommProofState.Done }),
       ])
     })
 
     test("Faber starts with proof requests to Alice, both with autoAcceptProof on 'always'", async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
-      await faberAgent.modules.proofs.requestProof({
+      await faberAgent.didcomm.proofs.requestProof({
         protocolVersion: 'v2',
         connectionId: faberConnectionId,
         proofFormats: {
@@ -137,8 +136,8 @@ describe('Auto accept present proof', () => {
       testLogger.test('Alice waits for presentation from Faber')
       testLogger.test('Faber waits till it receives presentation ack')
       await Promise.all([
-        waitForProofExchangeRecord(faberAgent, { state: ProofState.Done }),
-        waitForProofExchangeRecord(aliceAgent, { state: ProofState.Done }),
+        waitForProofExchangeRecord(faberAgent, { state: DidCommProofState.Done }),
+        waitForProofExchangeRecord(aliceAgent, { state: DidCommProofState.Done }),
       ])
     })
   })
@@ -158,7 +157,7 @@ describe('Auto accept present proof', () => {
         issuerName: 'Faber Auto Accept ContentApproved Proofs',
         holderName: 'Alice Auto Accept ContentApproved Proofs',
         attributeNames: ['name', 'age'],
-        autoAcceptProofs: AutoAcceptProof.ContentApproved,
+        autoAcceptProofs: DidCommAutoAcceptProof.ContentApproved,
       }))
 
       await issueLegacyAnonCredsCredential({
@@ -193,10 +192,10 @@ describe('Auto accept present proof', () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
       const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
-        state: ProofState.ProposalReceived,
+        state: DidCommProofState.ProposalReceived,
       })
 
-      await aliceAgent.modules.proofs.proposeProof({
+      await aliceAgent.didcomm.proofs.proposeProof({
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         proofFormats: {
@@ -223,13 +222,13 @@ describe('Auto accept present proof', () => {
       })
 
       const faberProofExchangeRecord = await faberProofExchangeRecordPromise
-      await faberAgent.modules.proofs.acceptProposal({
-        proofRecordId: faberProofExchangeRecord.id,
+      await faberAgent.didcomm.proofs.acceptProposal({
+        proofExchangeRecordId: faberProofExchangeRecord.id,
       })
 
       await Promise.all([
-        waitForProofExchangeRecord(aliceAgent, { state: ProofState.Done }),
-        waitForProofExchangeRecord(faberAgent, { state: ProofState.Done }),
+        waitForProofExchangeRecord(aliceAgent, { state: DidCommProofState.Done }),
+        waitForProofExchangeRecord(faberAgent, { state: DidCommProofState.Done }),
       ])
     })
 
@@ -237,10 +236,10 @@ describe('Auto accept present proof', () => {
       testLogger.test('Faber sends presentation request to Alice')
 
       const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-        state: ProofState.RequestReceived,
+        state: DidCommProofState.RequestReceived,
       })
 
-      await faberAgent.modules.proofs.requestProof({
+      await faberAgent.didcomm.proofs.requestProof({
         protocolVersion: 'v2',
         connectionId: faberConnectionId,
         proofFormats: {
@@ -274,13 +273,13 @@ describe('Auto accept present proof', () => {
       })
 
       const aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
-      await aliceAgent.modules.proofs.acceptRequest({
-        proofRecordId: aliceProofExchangeRecord.id,
+      await aliceAgent.didcomm.proofs.acceptRequest({
+        proofExchangeRecordId: aliceProofExchangeRecord.id,
       })
 
       await Promise.all([
-        waitForProofExchangeRecord(faberAgent, { state: ProofState.Done }),
-        waitForProofExchangeRecord(aliceAgent, { state: ProofState.Done }),
+        waitForProofExchangeRecord(faberAgent, { state: DidCommProofState.Done }),
+        waitForProofExchangeRecord(aliceAgent, { state: DidCommProofState.Done }),
       ])
     })
   })

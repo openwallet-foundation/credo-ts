@@ -1,10 +1,9 @@
 import type { ActionMenuRole, ActionMenuState, ActionMenuStateChangedEvent } from '@credo-ts/action-menu'
+import { ActionMenuEventTypes } from '@credo-ts/action-menu'
 import type { Agent } from '@credo-ts/core'
 import type { Observable } from 'rxjs'
-
-import { ReplaySubject, catchError, filter, firstValueFrom, map, timeout } from 'rxjs'
-
-import { ActionMenuEventTypes } from '@credo-ts/action-menu'
+import { catchError, filter, map, ReplaySubject, timeout } from 'rxjs'
+import { firstValueWithStackTrace } from '../../core/tests'
 
 export async function waitForActionMenuRecord(
   agent: Agent,
@@ -37,8 +36,9 @@ export function waitForActionMenuRecordSubject(
     timeoutMs?: number
   }
 ) {
-  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
-  return firstValueFrom(
+  const observable: Observable<ActionMenuStateChangedEvent> =
+    subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueWithStackTrace(
     observable.pipe(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
       filter((e) => threadId === undefined || e.payload.actionMenuRecord.threadId === threadId),

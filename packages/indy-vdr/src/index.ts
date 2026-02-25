@@ -1,11 +1,11 @@
+export * from './anoncreds'
 export {
+  type IndyVdrDidCreateOptions,
+  type IndyVdrDidCreateResult,
   IndyVdrIndyDidRegistrar,
   IndyVdrIndyDidResolver,
   IndyVdrSovDidResolver,
-  IndyVdrDidCreateResult,
-  IndyVdrDidCreateOptions,
 } from './dids'
-export { IndyVdrPoolConfig, IndyVdrPoolService } from './pool'
 export * from './IndyVdrModule'
 export * from './IndyVdrModuleConfig'
-export * from './anoncreds'
+export { type IndyVdrPoolConfig, IndyVdrPoolService } from './pool'

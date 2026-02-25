@@ -1,18 +1,30 @@
-import type { AgentContext } from '../../agent'
-import type { VerifiablePresentation } from '../dif-presentation-exchange/index'
-
 import {
   DcqlCredential,
+  DcqlCredentialQuery,
   DcqlMdocCredential,
   DcqlPresentationResult,
   DcqlQuery,
   DcqlSdJwtVcCredential,
   DcqlW3cVcCredential,
 } from 'dcql'
-import { injectable } from 'tsyringe'
-
-import { TypedArrayEncoder } from '../../utils'
-import { Mdoc, MdocApi, MdocDeviceResponse, MdocNameSpaces, MdocRecord, MdocSessionTranscriptOptions } from '../mdoc'
+import type { AgentContext } from '../../agent'
+import { injectable } from '../../plugins'
+import { isNonEmptyArray, type JsonObject, type JsonValue, mapNonEmptyArray } from '../../types'
+import { asArray, TypedArrayEncoder } from '../../utils'
+import {
+  CredentialMultiInstanceUseMode,
+  canUseInstanceFromCredentialRecord,
+  useInstanceFromCredentialRecord,
+} from '../../utils/credentialUse'
+import { DidsApi, getPublicJwkFromVerificationMethod, VerificationMethod } from '../dids'
+import type { VerifiableCredential, VerifiablePresentation } from '../dif-presentation-exchange/index'
+import {
+  MdocApi,
+  MdocDeviceResponse,
+  type MdocNameSpaces,
+  MdocRecord,
+  type MdocSessionTranscriptOptions,
+} from '../mdoc'
 import { SdJwtVcApi, SdJwtVcRecord, SdJwtVcService } from '../sd-jwt-vc'
 import { buildDisclosureFrameForPayload } from '../sd-jwt-vc/disclosureFrame'
 import {
@@ -24,13 +36,17 @@ import {
   W3cJsonLdCredentialService,
   W3cJsonLdVerifiableCredential,
   W3cPresentation,
+  W3cV2CredentialRecord,
+  W3cV2CredentialRepository,
+  W3cV2CredentialService,
+  W3cV2EnvelopedVerifiableCredential,
+  W3cV2Presentation,
 } from '../vc'
-
-import { JsonObject, JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
-import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
+import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
+import { W3cV2SdJwtCredentialService, W3cV2SdJwtVerifiableCredential } from '../vc/sd-jwt-vc'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
-import {
+import type {
   DcqlCredentialsForRequest,
   DcqlEncodedPresentations,
   DcqlFailedCredential,
@@ -39,6 +55,19 @@ import {
   DcqlValidCredential,
 } from './models'
 import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from './utils'
+
+export interface DcqlSelectCredentialsForRequestOptions {
+  /**
+   * The usage mode to apply to the credentials when selecting credentials.
+   *
+   * If and usage mode is selected that require a new instance to be used, and there's no
+   * new instances available, an error will be thrown.
+   *
+   * It does not actually select the credential from the record yet, it just filters
+   *  out records that don't match the filter.
+   */
+  useMode?: CredentialMultiInstanceUseMode
+}
 
 @injectable()
 export class DcqlService {
@@ -49,9 +78,9 @@ export class DcqlService {
   private async queryCredentialsForDcqlQuery(
     agentContext: AgentContext,
     dcqlQuery: DcqlQuery
-  ): Promise<Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord>> {
+  ): Promise<Array<SdJwtVcRecord | W3cCredentialRecord | W3cV2CredentialRecord | MdocRecord>> {
     const formats = new Set(dcqlQuery.credentials.map((c) => c.format))
-    const allRecords: Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord> = []
+    const allRecords: Array<SdJwtVcRecord | W3cCredentialRecord | W3cV2CredentialRecord | MdocRecord> = []
 
     const mdocDoctypes = dcqlQuery.credentials
       .filter((credentialQuery) => credentialQuery.format === 'mso_mdoc')
@@ -70,22 +99,30 @@ export class DcqlService {
       allRecords.push(...mdocRecords)
     }
 
-    const sdJwtVctValues = dcqlQuery.credentials
-      .filter(
-        (credentialQuery): credentialQuery is typeof credentialQuery & { format: 'vc+sd-jwt' | 'dc+sd-jwt' } =>
-          credentialQuery.format === 'vc+sd-jwt' || credentialQuery.format === 'dc+sd-jwt'
-      )
-      .flatMap((c) => c.meta?.vct_values)
+    const sdJwts = dcqlQuery.credentials.filter(
+      (credentialQuery): credentialQuery is DcqlCredentialQuery.SdJwtVc =>
+        (credentialQuery.format === 'vc+sd-jwt' && !(credentialQuery.meta && 'type_values' in credentialQuery.meta)) ||
+        credentialQuery.format === 'dc+sd-jwt'
+    )
+
+    const sdJwtVctValues = sdJwts.flatMap((c) => c.meta?.vct_values)
 
     const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
     if (sdJwtVctValues.every((vct) => vct !== undefined)) {
       const sdjwtVcRecords = await sdJwtVcApi.findAllByQuery({
-        $or: sdJwtVctValues.map((vct) => ({
-          vct: vct as string,
-        })),
+        $or: [
+          // Look for direct vct match
+          ...sdJwtVctValues.map((vct) => ({
+            vct,
+          })),
+          // Or an extended vct value
+          ...sdJwtVctValues.map((vct) => ({
+            extendedVctValues: [vct],
+          })),
+        ],
       })
       allRecords.push(...sdjwtVcRecords)
-    } else if (formats.has('dc+sd-jwt') || formats.has('vc+sd-jwt')) {
+    } else if (sdJwts.length > 0) {
       const sdJwtVcRecords = await sdJwtVcApi.getAll()
       allRecords.push(...sdJwtVcRecords)
     }
@@ -95,7 +132,7 @@ export class DcqlService {
       const w3cRecords = await w3cCredentialRepository.findByQuery(agentContext, {
         claimFormat: ClaimFormat.JwtVc,
 
-        // For jwt_vc_json we query the non-exapnded types
+        // For jwt_vc_json we query the non-expanded types
         $or: dcqlQuery.credentials
           .flatMap((c) => (c.format === 'jwt_vc_json' ? c.meta.type_values : []))
           .map((typeValues) => ({
@@ -119,7 +156,65 @@ export class DcqlService {
       allRecords.push(...w3cRecords)
     }
 
+    const w3cSdJwts = dcqlQuery.credentials.filter(
+      (credentialQuery): credentialQuery is DcqlCredentialQuery.W3cVc & { format: 'vc+sd-jwt' } =>
+        credentialQuery.format === 'vc+sd-jwt' && !!credentialQuery.meta && 'type_values' in credentialQuery.meta
+    )
+
+    if (w3cSdJwts.length > 0) {
+      const w3cV2CredentialRepository = agentContext.dependencyManager.resolve(W3cV2CredentialRepository)
+
+      const w3cV2Records = await w3cV2CredentialRepository.findByQuery(agentContext, {
+        claimFormat: ClaimFormat.SdJwtW3cVc,
+        $or: dcqlQuery.credentials
+          .flatMap((c) => (c.format === 'vc+sd-jwt' && c.meta && 'type_values' in c.meta ? c.meta.type_values : []))
+          .map((typeValues) => ({
+            types: typeValues,
+          })),
+      })
+
+      allRecords.push(...w3cV2Records)
+    }
+
     return allRecords
+  }
+
+  private getAuthorityForCredential(
+    credential: VerifiableCredential | W3cV2EnvelopedVerifiableCredential
+  ): DcqlCredential['authority'] {
+    if (credential.claimFormat === ClaimFormat.SdJwtDc) {
+      const akiValues = (credential.header.x5c as string[] | undefined)
+        ?.map((c) => {
+          const akiHex = X509Certificate.fromEncodedCertificate(c).authorityKeyIdentifier
+          return akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
+        })
+        .filter((aki) => aki !== undefined)
+
+      return akiValues && isNonEmptyArray(akiValues)
+        ? ({
+            type: 'aki',
+            values: akiValues,
+          } as const)
+        : undefined
+    }
+
+    if (credential.claimFormat === ClaimFormat.MsoMdoc) {
+      const akiValues = credential.issuerSignedCertificateChain
+        .map((c) => {
+          const akiHex = X509Certificate.fromRawCertificate(c).authorityKeyIdentifier
+          return akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
+        })
+        .filter((aki) => aki !== undefined)
+
+      return akiValues && isNonEmptyArray(akiValues)
+        ? ({
+            type: 'aki',
+            values: akiValues,
+          } as const)
+        : undefined
+    }
+
+    return undefined
   }
 
   public async getDcqlCredentialRepresentation(
@@ -129,11 +224,31 @@ export class DcqlService {
   ): Promise<DcqlCredential> {
     // SD-JWT credential can be used as both dc+sd-jwt and vc+sd-jwt
     // At some point we might want to look at the header value of the sd-jwt (vc+sd-jwt vc dc+sd-jwt)
-    if (presentation.claimFormat === ClaimFormat.SdJwtVc) {
+    if (presentation.claimFormat === ClaimFormat.SdJwtDc) {
+      const requestedVcts = queryCredential.format === 'dc+sd-jwt' ? queryCredential.meta?.vct_values : undefined
+
+      let presentationVctValues = [presentation.payload.vct]
+      // FIXME: we should probably add an option whether to resolve VCT if we didn't get a direct hit
+      if (!requestedVcts?.includes(presentation.payload.vct)) {
+        const typeMetadataChain = await agentContext
+          .resolve(SdJwtVcService)
+          .fetchTypeMetadata(agentContext, presentation, {
+            throwErrorOnFetchError: false,
+            throwErrorOnUnsupportedVctValue: false,
+          })
+
+        if (typeMetadataChain) {
+          presentationVctValues = typeMetadataChain?.vctValues
+        }
+      }
+
       return {
-        cryptographic_holder_binding: true,
         credential_format: queryCredential.format === 'dc+sd-jwt' ? 'dc+sd-jwt' : 'vc+sd-jwt',
-        vct: presentation.prettyClaims.vct as string,
+        authority: this.getAuthorityForCredential(presentation),
+        cryptographic_holder_binding: true,
+        vct:
+          presentationVctValues.find((presentationVctValue) => requestedVcts?.includes(presentationVctValue)) ??
+          presentation.payload.vct,
         claims: presentation.prettyClaims as DcqlSdJwtVcCredential.Claims,
       } satisfies DcqlSdJwtVcCredential
     }
@@ -141,26 +256,28 @@ export class DcqlService {
       if (presentation.documents.length !== 1) {
         throw new DcqlError('MDOC presentations must contain exactly one document')
       }
+
       return {
         cryptographic_holder_binding: true,
         credential_format: 'mso_mdoc',
+        authority: this.getAuthorityForCredential(presentation.documents[0]),
         doctype: presentation.documents[0].docType,
         namespaces: presentation.documents[0].issuerSignedNamespaces,
       } satisfies DcqlMdocCredential
     }
     if (presentation.claimFormat === ClaimFormat.JwtVp) {
       const vc = Array.isArray(presentation.verifiableCredential)
-        ? presentation.verifiableCredential[0].jsonCredential
+        ? presentation.verifiableCredential[0]
         : presentation.verifiableCredential
 
       return {
         cryptographic_holder_binding: true,
         credential_format: 'jwt_vc_json',
+        authority: this.getAuthorityForCredential(vc),
         claims: vc.jsonCredential as { [key: string]: JsonValue },
         type: vc.type,
       } satisfies DcqlW3cVcCredential
     }
-
     if (presentation.claimFormat === ClaimFormat.LdpVp) {
       const vc = Array.isArray(presentation.verifiableCredential)
         ? (presentation.verifiableCredential[0] as W3cJsonLdVerifiableCredential)
@@ -172,8 +289,22 @@ export class DcqlService {
       return {
         cryptographic_holder_binding: true,
         credential_format: 'ldp_vc',
+        authority: this.getAuthorityForCredential(vc),
         claims: vc.jsonCredential as DcqlW3cVcCredential.Claims,
         type: expandedTypes,
+      } satisfies DcqlW3cVcCredential
+    }
+    if (presentation.claimFormat === ClaimFormat.SdJwtW3cVp) {
+      const envelopedVc = Array.isArray(presentation.resolvedPresentation.verifiableCredential)
+        ? presentation.resolvedPresentation.verifiableCredential[0]
+        : presentation.resolvedPresentation.verifiableCredential
+
+      return {
+        cryptographic_holder_binding: true,
+        credential_format: 'vc+sd-jwt',
+        authority: this.getAuthorityForCredential(envelopedVc),
+        type: asArray(envelopedVc.resolvedCredential.type),
+        claims: envelopedVc.resolvedCredential.toJSON() as { [key: string]: JsonValue },
       } satisfies DcqlW3cVcCredential
     }
 
@@ -183,87 +314,107 @@ export class DcqlService {
   public async getCredentialsForRequest(agentContext: AgentContext, dcqlQuery: DcqlQuery): Promise<DcqlQueryResult> {
     const credentialRecords = await this.queryCredentialsForDcqlQuery(agentContext, dcqlQuery)
     const credentialRecordsWithFormatDuplicates: typeof credentialRecords = []
+    const parsedQuery = DcqlQuery.parse(dcqlQuery)
 
     const dcqlCredentials: DcqlCredential[] = credentialRecords.flatMap((record): DcqlCredential | DcqlCredential[] => {
       if (record.type === 'MdocRecord') {
         credentialRecordsWithFormatDuplicates.push(record)
-        const mdoc = Mdoc.fromBase64Url(record.base64Url)
 
-        const akiValues = mdoc.issuerSignedCertificateChain
-          .map((c) => {
-            const akiHex = X509Certificate.fromRawCertificate(c).authorityKeyIdentifier
-            return akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
-          })
-          .filter((aki) => aki !== undefined)
+        // We always extract the first mdoc for querying
+        const mdoc = record.firstCredential
 
         return {
-          authority: isNonEmptyArray(akiValues)
-            ? {
-                type: 'aki',
-                values: akiValues,
-              }
-            : undefined,
+          authority: this.getAuthorityForCredential(mdoc),
           credential_format: 'mso_mdoc',
-          doctype: record.getTags().docType,
+          doctype: mdoc.docType,
           namespaces: mdoc.issuerSignedNamespaces,
           cryptographic_holder_binding: true,
         } satisfies DcqlCredential
       }
 
       if (record.type === 'SdJwtVcRecord') {
-        const sdJwtVc = this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
+        const sdJwtVc = record.firstCredential
         const claims = sdJwtVc.prettyClaims as DcqlSdJwtVcCredential.Claims
 
-        const akiValues = (sdJwtVc.header.x5c as string[] | undefined)
-          ?.map((c) => {
-            const akiHex = X509Certificate.fromEncodedCertificate(c).authorityKeyIdentifier
-            return akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
-          })
-          .filter((aki) => aki !== undefined)
+        // To keep correct mapping of input credential index, we add it multiple times here:
+        // - for dc+sd-jwt and vc+sd-jwt
+        // - for each extended VCT (until we have multi-vct support in DCQL)
+        credentialRecordsWithFormatDuplicates.push(
+          record,
+          record,
+          ...record.extendedVctValues.map(() => record),
+          ...record.extendedVctValues.map(() => record)
+        )
 
-        const authority =
-          akiValues && isNonEmptyArray(akiValues)
-            ? ({
-                type: 'aki',
-                values: akiValues,
-              } as const)
-            : undefined
-
-        // To keep correct mapping of input credential index, we add it twice here (for dc+sd-jwt and vc+sd-jwt)
-        credentialRecordsWithFormatDuplicates.push(record, record)
         return [
           {
-            authority,
+            authority: this.getAuthorityForCredential(sdJwtVc),
             credential_format: 'dc+sd-jwt',
             vct: record.getTags().vct,
             claims,
             cryptographic_holder_binding: true,
           } satisfies DcqlSdJwtVcCredential,
+          ...record.extendedVctValues.map(
+            (extendedVctValue) =>
+              ({
+                authority: this.getAuthorityForCredential(sdJwtVc),
+                credential_format: 'dc+sd-jwt',
+                vct: extendedVctValue,
+                claims,
+                cryptographic_holder_binding: true,
+              }) satisfies DcqlSdJwtVcCredential
+          ),
           {
-            authority,
+            authority: this.getAuthorityForCredential(sdJwtVc),
             credential_format: 'vc+sd-jwt',
             vct: record.getTags().vct,
             claims,
             cryptographic_holder_binding: true,
           } satisfies DcqlSdJwtVcCredential,
-        ] satisfies [DcqlSdJwtVcCredential, DcqlSdJwtVcCredential]
+          ...record.extendedVctValues.map(
+            (extendedVctValue) =>
+              ({
+                authority: this.getAuthorityForCredential(sdJwtVc),
+                credential_format: 'vc+sd-jwt',
+                vct: extendedVctValue,
+                claims,
+                cryptographic_holder_binding: true,
+              }) satisfies DcqlSdJwtVcCredential
+          ),
+        ] satisfies DcqlSdJwtVcCredential[]
       }
 
       if (record.type === 'W3cCredentialRecord') {
+        const firstCredential = record.firstCredential
         credentialRecordsWithFormatDuplicates.push(record)
-        if (record.credential.claimFormat === ClaimFormat.LdpVc) {
+        if (firstCredential.claimFormat === ClaimFormat.LdpVc) {
           return {
             credential_format: 'ldp_vc',
+            authority: this.getAuthorityForCredential(firstCredential),
             type: record.getTags().expandedTypes ?? [],
-            claims: record.credential.jsonCredential as DcqlW3cVcCredential.Claims,
+            claims: firstCredential.jsonCredential as DcqlW3cVcCredential.Claims,
             cryptographic_holder_binding: true,
           } satisfies DcqlW3cVcCredential
         }
 
         return {
           credential_format: 'jwt_vc_json',
-          type: record.credential.type,
-          claims: record.credential.jsonCredential as DcqlW3cVcCredential.Claims,
+          authority: this.getAuthorityForCredential(firstCredential),
+          type: firstCredential.type,
+          claims: firstCredential.jsonCredential as DcqlW3cVcCredential.Claims,
+          cryptographic_holder_binding: true,
+        } satisfies DcqlW3cVcCredential
+      }
+
+      if (record.type === 'W3cV2CredentialRecord') {
+        credentialRecordsWithFormatDuplicates.push(record)
+        const firstCredential = record.firstCredential
+
+        return {
+          credential_format: 'vc+sd-jwt',
+          authority: this.getAuthorityForCredential(firstCredential),
+          type: asArray(firstCredential.resolvedCredential.type),
+          claims: firstCredential.resolvedCredential.toJSON() as DcqlW3cVcCredential.Claims,
           cryptographic_holder_binding: true,
         } satisfies DcqlW3cVcCredential
       }
@@ -271,7 +422,7 @@ export class DcqlService {
       throw new DcqlError('Unsupported record type')
     })
 
-    const queryResult = DcqlQuery.query(DcqlQuery.parse(dcqlQuery), dcqlCredentials)
+    const queryResult = DcqlQuery.query(parsedQuery, dcqlCredentials)
 
     const matchesWithRecord = Object.fromEntries(
       Object.entries(queryResult.credential_matches).map(([credential_query_id, result]) => {
@@ -288,15 +439,25 @@ export class DcqlService {
                       valid_claim_sets: mapNonEmptyArray(credential.claims.valid_claim_sets, (claimSet) => ({
                         ...claimSet,
                         ...(record.type === 'SdJwtVcRecord'
-                          ? {
-                              // NOTE: we cast from SdJwtVcPayload (which is Record<string, unknown> to { [key: string]: JsonValue })
-                              // Otherwise TypeScript explains, but I'm not sure why Record<string, unknown> wouldn't be applicable to { [key: string]: JsonValue }
+                          ? // NOTE: we cast from SdJwtVcPayload (which is Record<string, unknown> to { [key: string]: JsonValue })
+                            // Otherwise TypeScript explains, but I'm not sure why Record<string, unknown> wouldn't be applicable to { [key: string]: JsonValue }
+                            {
                               output: agentContext.dependencyManager
                                 .resolve(SdJwtVcService)
-                                .applyDisclosuresForPayload(record.compactSdJwtVc, claimSet.output as JsonObject)
-                                .prettyClaims as DcqlSdJwtVcCredential.Claims,
+                                .applyDisclosuresForPayload(record.encoded, claimSet.output as JsonObject)
+                                .prettyClaims as { [key: string]: JsonValue },
                             }
-                          : {}),
+                          : record.type === 'W3cV2CredentialRecord' &&
+                              record.firstCredential instanceof W3cV2SdJwtVerifiableCredential
+                            ? {
+                                output: agentContext.dependencyManager
+                                  .resolve(SdJwtVcService)
+                                  .applyDisclosuresForPayload(
+                                    record.firstCredential.encoded,
+                                    claimSet.output as JsonObject
+                                  ).prettyClaims as { [key: string]: JsonValue },
+                              }
+                            : {}),
                       })),
                     }
                   : credential.claims,
@@ -331,15 +492,24 @@ export class DcqlService {
                   valid_claim_sets: mapNonEmptyArray(credential.claims.valid_claim_sets, (claimSet) => ({
                     ...claimSet,
                     ...(record.type === 'SdJwtVcRecord'
-                      ? {
-                          // NOTE: we cast from SdJwtVcPayload (which is Record<string, unknown> to { [key: string]: JsonValue })
-                          // Otherwise TypeScript explains, but I'm not sure why Record<string, unknown> wouldn't be applicable to { [key: string]: JsonValue }
+                      ? // NOTE: we cast from SdJwtVcPayload (which is Record<string, unknown> to { [key: string]: JsonValue })
+                        // Otherwise TypeScript explains, but I'm not sure why Record<string, unknown> wouldn't be applicable to { [key: string]: JsonValue }
+                        {
                           output: agentContext.dependencyManager
                             .resolve(SdJwtVcService)
-                            .applyDisclosuresForPayload(record.compactSdJwtVc, claimSet.output as JsonObject)
-                            .prettyClaims as { [key: string]: JsonValue },
+                            .applyDisclosuresForPayload(record.encoded, claimSet.output as JsonObject).prettyClaims as {
+                            [key: string]: JsonValue
+                          },
                         }
-                      : {}),
+                      : record.type === 'W3cV2CredentialRecord' &&
+                          record.firstCredential instanceof W3cV2SdJwtVerifiableCredential
+                        ? {
+                            output: agentContext.dependencyManager
+                              .resolve(SdJwtVcService)
+                              .applyDisclosuresForPayload(record.firstCredential.encoded, claimSet.output as JsonObject)
+                              .prettyClaims as { [key: string]: JsonValue },
+                          }
+                        : {}),
                   })),
                 },
               }
@@ -382,6 +552,7 @@ export class DcqlService {
         })
       )
     )
+
     const presentationResult = DcqlPresentationResult.fromDcqlPresentation(internalDcqlPresentation, { dcqlQuery })
 
     if (!presentationResult.can_be_satisfied) {
@@ -431,7 +602,7 @@ export class DcqlService {
     }
     if (validCredential.record.type === 'SdJwtVcRecord') {
       return {
-        claimFormat: ClaimFormat.SdJwtVc,
+        claimFormat: ClaimFormat.SdJwtDc,
         credentialRecord: validCredential.record,
         disclosedPayload: validCredential.claims.valid_claim_sets[0].output as JsonObject,
       } as const
@@ -439,9 +610,17 @@ export class DcqlService {
 
     if (validCredential.record.type === 'W3cCredentialRecord') {
       return {
-        claimFormat: validCredential.record.credential.claimFormat,
+        claimFormat: validCredential.record.firstCredential.claimFormat,
         credentialRecord: validCredential.record,
-        disclosedPayload: validCredential.record.credential.jsonCredential as JsonObject,
+        disclosedPayload: validCredential.record.firstCredential.jsonCredential as JsonObject,
+      } as const
+    }
+
+    if (validCredential.record.type === 'W3cV2CredentialRecord') {
+      return {
+        claimFormat: validCredential.record.firstCredential.claimFormat,
+        credentialRecord: validCredential.record,
+        disclosedPayload: validCredential.claims.valid_claim_sets[0].output as JsonObject,
       } as const
     }
 
@@ -452,7 +631,10 @@ export class DcqlService {
    * Selects the credentials to use based on the output from `getCredentialsForRequest`
    * Use this method if you don't want to manually select the credentials yourself.
    */
-  public selectCredentialsForRequest(dcqlQueryResult: DcqlQueryResult): DcqlCredentialsForRequest {
+  public selectCredentialsForRequest(
+    dcqlQueryResult: DcqlQueryResult,
+    { useMode = CredentialMultiInstanceUseMode.NewOrFirst }: DcqlSelectCredentialsForRequestOptions = {}
+  ): DcqlCredentialsForRequest {
     if (!dcqlQueryResult.can_be_satisfied) {
       throw new DcqlError(
         'Cannot select the credentials for the dcql query presentation if the request cannot be satisfied'
@@ -462,36 +644,61 @@ export class DcqlService {
     const credentials: DcqlCredentialsForRequest = {}
 
     if (dcqlQueryResult.credential_sets) {
-      for (const credentialSet of dcqlQueryResult.credential_sets) {
+      credentialSetLoop: for (const credentialSet of dcqlQueryResult.credential_sets) {
         // undefined defaults to true
         if (credentialSet.required === false) continue
-        const firstFullFillableOption = credentialSet.options.find((option) =>
-          option.every((credential_id) => dcqlQueryResult.credential_matches[credential_id].success)
-        )
+        const fullfillableOptions = credentialSet.matching_options
 
-        if (!firstFullFillableOption) {
+        if (!fullfillableOptions) {
           throw new DcqlError('Invalid dcql query result. No option is fullfillable')
         }
 
-        for (const credentialQueryId of firstFullFillableOption) {
-          const credentialMatch = dcqlQueryResult.credential_matches[credentialQueryId]
+        for (const fullfillableOption of fullfillableOptions) {
+          const optionMatches = fullfillableOption.map((credentialQueryId) => {
+            const credentialMatch = dcqlQueryResult.credential_matches[credentialQueryId]
+            if (!credentialMatch.success) return undefined
+            const match = credentialMatch.valid_credentials.find((match: DcqlValidCredential) =>
+              canUseInstanceFromCredentialRecord({ credentialRecord: match.record, useMode })
+            )
 
-          if (!credentialMatch.success) {
-            throw new DcqlError('Invalid dcql query result. Cannot auto-select credentials')
+            if (!match) return undefined
+            return {
+              match,
+              credentialQueryId,
+            }
+          })
+
+          if (optionMatches.every((c) => c !== undefined)) {
+            for (const { match, credentialQueryId } of optionMatches) {
+              credentials[credentialQueryId] = [this.dcqlCredentialForRequestForValidCredential(match)]
+            }
+
+            continue credentialSetLoop
           }
-
-          const credential = credentialMatch.valid_credentials[0]
-          credentials[credentialQueryId] = [this.dcqlCredentialForRequestForValidCredential(credential)]
         }
+
+        throw new DcqlError(
+          'Unable to select credentials for credential set. No new credential instance available on any of the available credentials.'
+        )
       }
     } else {
       for (const credentialQuery of dcqlQueryResult.credentials) {
         const credentialMatch = dcqlQueryResult.credential_matches[credentialQuery.id]
         if (!credentialMatch.success) {
-          throw new DcqlError('Invalid dcql query result. Cannot auto-select credentials')
+          throw new DcqlError(
+            `Invalid dcql query result for credential query id '${credentialQuery.id}'. Cannot auto-select credentials`
+          )
         }
 
-        const credential = credentialMatch.valid_credentials[0]
+        const credential = credentialMatch.valid_credentials.find((match: DcqlValidCredential) =>
+          canUseInstanceFromCredentialRecord({ credentialRecord: match.record, useMode })
+        )
+        if (!credential) {
+          throw new DcqlError(
+            `Unable to select credential for credential query id '${credentialQuery.id}'. No new credential instance available on any of the available credentials.`
+          )
+        }
+
         credentials[credentialQuery.id] = [this.dcqlCredentialForRequestForValidCredential(credential)]
       }
     }
@@ -521,8 +728,8 @@ export class DcqlService {
 
     const dcqlPresentation: DcqlPresentation = {}
     const encodedDcqlPresentation: DcqlEncodedPresentations = {}
-
     const vcPresentationsToCreate = getDcqlVcPresentationsToCreate(options.credentialQueryToCredential)
+
     for (const [credentialQueryId, presentationsToCreate] of Object.entries(vcPresentationsToCreate)) {
       for (const presentationToCreate of presentationsToCreate) {
         let createdPresentation: VerifiablePresentation
@@ -534,8 +741,14 @@ export class DcqlService {
             throw new DcqlError('Missing mdoc session transcript options for creating MDOC presentation.')
           }
 
+          const { credentialInstance } = await useInstanceFromCredentialRecord({
+            agentContext,
+            useMode: presentationToCreate.useMode,
+            credentialRecord: mdocRecord,
+          })
+
           const deviceResponse = await MdocDeviceResponse.createDeviceResponse(agentContext, {
-            mdocs: [Mdoc.fromBase64Url(mdocRecord.base64Url)],
+            mdocs: [credentialInstance],
             documentRequests: [
               {
                 docType: mdocRecord.getTags().docType,
@@ -553,16 +766,22 @@ export class DcqlService {
 
           encodedCreatedPresentation = deviceResponseBase64Url
           createdPresentation = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
-        } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtVc) {
+        } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtDc) {
           const presentationFrame = buildDisclosureFrameForPayload(presentationToCreate.disclosedPayload)
 
           if (!domain) {
             throw new DcqlError('Missing domain property for creating SdJwtVc presentation.')
           }
 
+          const { credentialInstance } = await useInstanceFromCredentialRecord({
+            agentContext,
+            useMode: presentationToCreate.useMode,
+            credentialRecord: presentationToCreate.credentialRecord,
+          })
+
           const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
           const presentation = await sdJwtVcApi.present({
-            compactSdJwtVc: presentationToCreate.credentialRecord.compactSdJwtVc,
+            sdJwtVc: credentialInstance,
             presentationFrame,
             verifierMetadata: {
               audience: domain,
@@ -575,19 +794,25 @@ export class DcqlService {
           encodedCreatedPresentation = presentation
           createdPresentation = sdJwtVcApi.fromCompact(presentation)
         } else if (presentationToCreate.claimFormat === ClaimFormat.JwtVp) {
-          if (!presentationToCreate.subjectIds) {
+          const { credentialInstance } = await useInstanceFromCredentialRecord({
+            agentContext,
+            useMode: presentationToCreate.useMode,
+            credentialRecord: presentationToCreate.credentialRecord,
+          })
+
+          if (!credentialInstance.credentialSubjectIds[0]) {
             throw new DcqlError('Cannot create presentation for credentials without subject id')
           }
 
           // Determine a suitable verification method for the presentation
           const verificationMethod = await this.getVerificationMethodForSubjectId(
             agentContext,
-            presentationToCreate.subjectIds[0]
+            credentialInstance.credentialSubjectIds[0]
           )
 
           const w3cCredentialService = agentContext.resolve(W3cCredentialService)
           const w3cPresentation = new W3cPresentation({
-            verifiableCredential: [presentationToCreate.credentialRecord.credential],
+            verifiableCredential: [credentialInstance],
             holder: verificationMethod.controller,
           })
 
@@ -605,18 +830,25 @@ export class DcqlService {
           encodedCreatedPresentation = signedPresentation.encoded
           createdPresentation = signedPresentation
         } else if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
-          if (!presentationToCreate.subjectIds) {
+          const { credentialInstance } = await useInstanceFromCredentialRecord({
+            agentContext,
+            useMode: presentationToCreate.useMode,
+            credentialRecord: presentationToCreate.credentialRecord,
+          })
+
+          if (!credentialInstance.credentialSubjectIds[0]) {
             throw new DcqlError('Cannot create presentation for credentials without subject id')
           }
+
           // Determine a suitable verification method for the presentation
           const verificationMethod = await this.getVerificationMethodForSubjectId(
             agentContext,
-            presentationToCreate.subjectIds[0]
+            credentialInstance.credentialSubjectIds[0]
           )
 
           const w3cCredentialService = agentContext.resolve(W3cCredentialService)
           const w3cPresentation = new W3cPresentation({
-            verifiableCredential: [presentationToCreate.credentialRecord.credential],
+            verifiableCredential: [credentialInstance],
             holder: verificationMethod.controller,
           })
 
@@ -626,12 +858,62 @@ export class DcqlService {
             // as then we know when determining which VPs to submit already if the proof types are supported
             // by the verifier, and we can then just add this to the vpToCreate interface
             proofType: this.getProofTypeForLdpVc(agentContext, verificationMethod),
-            proofPurpose: 'authentication',
+            proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
             verificationMethod: verificationMethod.id,
             presentation: w3cPresentation,
             challenge,
             domain,
           })
+
+          encodedCreatedPresentation = signedPresentation.encoded
+          createdPresentation = signedPresentation
+        } else if (presentationToCreate.claimFormat === ClaimFormat.JwtW3cVp) {
+          const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
+          const w3cV2Presentation = new W3cV2Presentation({
+            holder: presentationToCreate.credentialRecord.firstCredential.resolvedCredential.credentialSubjectIds[0],
+            verifiableCredential: [
+              W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(
+                presentationToCreate.credentialRecord.firstCredential
+              ),
+            ],
+          })
+
+          const signedPresentation = await w3cV2CredentialService.signPresentation<ClaimFormat.JwtW3cVp>(agentContext, {
+            format: ClaimFormat.JwtW3cVp,
+            presentation: w3cV2Presentation,
+            challenge,
+            domain,
+          })
+
+          encodedCreatedPresentation = signedPresentation.encoded
+          createdPresentation = signedPresentation
+        } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtW3cVp) {
+          const presentationFrame = buildDisclosureFrameForPayload(presentationToCreate.disclosedPayload)
+          if (!domain) {
+            throw new DcqlError('Missing domain property for creating SdJwtVc presentation.')
+          }
+
+          const w3cV2SdJwtCredentialService = agentContext.resolve(W3cV2SdJwtCredentialService)
+          const sdJwtVc = await w3cV2SdJwtCredentialService.present(agentContext, {
+            credential: presentationToCreate.credentialRecord.firstCredential.encoded,
+            presentationFrame,
+          })
+
+          const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
+          const w3cV2Presentation = new W3cV2Presentation({
+            holder: presentationToCreate.credentialRecord.firstCredential.resolvedCredential.credentialSchemaIds[0],
+            verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(sdJwtVc)],
+          })
+
+          const signedPresentation = await w3cV2CredentialService.signPresentation<ClaimFormat.SdJwtW3cVp>(
+            agentContext,
+            {
+              format: ClaimFormat.SdJwtW3cVp,
+              presentation: w3cV2Presentation,
+              challenge,
+              domain,
+            }
+          )
 
           encodedCreatedPresentation = signedPresentation.encoded
           createdPresentation = signedPresentation
@@ -699,7 +981,7 @@ export class DcqlService {
     const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(publicJwk)
     if (supportedSignatureSuites.length === 0) {
       throw new DcqlError(
-        `Couldn't find a supported signature suite for the given jwk ${publicJwk.jwkTypehumanDescription}`
+        `Couldn't find a supported signature suite for the given jwk ${publicJwk.jwkTypeHumanDescription}`
       )
     }
 

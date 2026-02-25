@@ -1,7 +1,6 @@
-import type { W3cPresentation } from '../models'
-
 import { Jwt } from '../../../crypto/jose/jwt/Jwt'
 import { CredoError } from '../../../error'
+import type { W3cPresentation } from '../models'
 import { ClaimFormat } from '../models'
 
 import { getPresentationFromJwtPayload } from './presentationTransformer'

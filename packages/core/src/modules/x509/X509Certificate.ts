@@ -1,23 +1,20 @@
-import type { AgentContext } from '../../agent'
-import type { X509CreateCertificateOptions } from './X509ServiceOptions'
-
 import { AsnParser } from '@peculiar/asn1-schema'
 import {
-  SubjectPublicKeyInfo,
   id_ce_authorityKeyIdentifier,
   id_ce_extKeyUsage,
   id_ce_issuerAltName,
   id_ce_keyUsage,
   id_ce_subjectAltName,
   id_ce_subjectKeyIdentifier,
+  SubjectPublicKeyInfo,
 } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
+import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { publicJwkToCryptoKeyAlgorithm, spkiToPublicJwk } from '../../crypto/webcrypto/utils'
+import type { AnyUint8Array } from '../../types'
 import { TypedArrayEncoder } from '../../utils'
-
-import { PublicJwk, assymetricPublicJwkMatches } from '../kms'
-import { X509Error } from './X509Error'
+import { asymmetricPublicJwkMatches, PublicJwk } from '../kms'
 import {
   convertName,
   createAuthorityKeyIdentifierExtension,
@@ -29,6 +26,8 @@ import {
   createSubjectAlternativeNameExtension,
   createSubjectKeyIdentifierExtension,
 } from './utils'
+import { X509Error } from './X509Error'
+import type { X509CreateCertificateOptions } from './X509ServiceOptions'
 
 export enum X509KeyUsage {
   DigitalSignature = 1,
@@ -54,13 +53,13 @@ export enum X509ExtendedKeyUsage {
 
 export type X509CertificateOptions = {
   publicJwk: PublicJwk
-  privateKey?: Uint8Array
+  privateKey?: AnyUint8Array
   x509Certificate: x509.X509Certificate
 }
 
 export class X509Certificate {
   public publicJwk: PublicJwk
-  public privateKey?: Uint8Array
+  public privateKey?: AnyUint8Array
   private x509Certificate: x509.X509Certificate
 
   private constructor(options: X509CertificateOptions) {
@@ -81,7 +80,7 @@ export class X509Certificate {
     return this.publicJwk.hasKeyId
   }
 
-  public static fromRawCertificate(rawCertificate: Uint8Array): X509Certificate {
+  public static fromRawCertificate(rawCertificate: AnyUint8Array): X509Certificate {
     const certificate = new x509.X509Certificate(rawCertificate)
     return X509Certificate.parseCertificate(certificate)
   }
@@ -162,7 +161,7 @@ export class X509Certificate {
     return keyIds?.[0]
   }
 
-  // biome-ignore lint/suspicious/useGetterReturn: <explanation>
+  // biome-ignore lint/suspicious/useGetterReturn: no explanation
   public get keyUsage() {
     const keyUsages = this.getMatchingExtensions<x509.KeyUsagesExtension>(id_ce_keyUsage)?.map((e) => e.usages)
 
@@ -187,7 +186,7 @@ export class X509Certificate {
       throw new X509Error('Multiple Key Usages are not allowed')
     }
 
-    return extendedKeyUsages?.[0] as X509ExtendedKeyUsage | undefined
+    return (extendedKeyUsages?.[0] as Array<X509ExtendedKeyUsage> | undefined) ?? []
   }
 
   public isExtensionCritical(id: string): boolean {
@@ -201,7 +200,7 @@ export class X509Certificate {
 
   public static async create(options: X509CreateCertificateOptions, webCrypto: CredoWebCrypto) {
     const subjectPublicKey = options.subjectPublicKey ?? options.authorityKey
-    const isSelfSignedCertificate = assymetricPublicJwkMatches(options.authorityKey.toJson(), subjectPublicKey.toJson())
+    const isSelfSignedCertificate = asymmetricPublicJwkMatches(options.authorityKey.toJson(), subjectPublicKey.toJson())
 
     const signingKey = new CredoWebCryptoKey(
       options.authorityKey,
@@ -304,7 +303,7 @@ export class X509Certificate {
        * as whether the certificate is not expired).
        *
        * This can be useful when an non-self-signed certificate is directly trusted, and it may
-       * not be possible to verify the certifcate as the root/intermediate certificate containing
+       * not be possible to verify the certificate as the root/intermediate certificate containing
        * the key of the signer/intermediate is not present.
        *
        * @default false
@@ -342,9 +341,9 @@ export class X509Certificate {
   }
 
   /**
-   * Get the thumprint of the X509 certificate in hex format.
+   * Get the thumbprint of the X509 certificate in hex format.
    */
-  public async getThumprintInHex(agentContext: AgentContext) {
+  public async getThumbprintInHex(agentContext: AgentContext) {
     const thumbprint = await this.x509Certificate.getThumbprint(new CredoWebCrypto(agentContext))
     const thumbprintHex = TypedArrayEncoder.toHex(new Uint8Array(thumbprint))
 
@@ -371,15 +370,15 @@ export class X509Certificate {
     return this.x509Certificate.issuerName.getField(field)
   }
 
+  public getSubjectNameField(field: string) {
+    return this.x509Certificate.subjectName.getField(field)
+  }
+
   /**
    * @param format the format to export to, defaults to `pem`
    */
   public toString(format?: 'asn' | 'pem' | 'hex' | 'base64' | 'text' | 'base64url') {
     return this.x509Certificate.toString(format ?? 'pem')
-  }
-
-  private toJSON() {
-    return this.toString()
   }
 
   public equal(certificate: X509Certificate) {

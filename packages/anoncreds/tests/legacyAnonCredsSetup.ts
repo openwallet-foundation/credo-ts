@@ -1,33 +1,25 @@
-import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/didcomm'
-import type { DefaultAgentModulesInput } from '../..//didcomm/src/util/modules'
-import type { EventReplaySubject } from '../../core/tests'
-import type {
-  AnonCredsOfferCredentialFormat,
-  AnonCredsRegisterCredentialDefinitionOptions,
-  AnonCredsRequestedAttribute,
-  AnonCredsRequestedPredicate,
-  AnonCredsSchema,
-  RegisterCredentialDefinitionReturnStateFinished,
-  RegisterSchemaReturnStateFinished,
-} from '../src'
-import type { PreCreatedAnonCredsDefinition } from './preCreatedAnonCredsDefinition'
-
-import { randomUUID } from 'crypto'
 import { Agent, CacheModule, CredoError, DidsModule, InMemoryLruCache, TypedArrayEncoder } from '@credo-ts/core'
-import {
-  AgentEventTypes,
-  AutoAcceptCredential,
-  CredentialEventTypes,
-  CredentialState,
-  CredentialsModule,
-  ProofEventTypes,
-  ProofState,
-  ProofsModule,
-  V2CredentialProtocol,
-  V2ProofProtocol,
+import type {
+  DidCommAutoAcceptProof,
+  DidCommConnectionRecord,
+  DidCommCredentialFormatService,
+  DidCommModuleConfigOptions,
+  DidCommProofFormatService,
 } from '@credo-ts/didcomm'
-
+import {
+  DidCommAutoAcceptCredential,
+  DidCommCredentialEventTypes,
+  DidCommCredentialState,
+  DidCommCredentialV2Protocol,
+  DidCommEventTypes,
+  DidCommModule,
+  DidCommProofEventTypes,
+  DidCommProofState,
+  DidCommProofV2Protocol,
+} from '@credo-ts/didcomm'
+import { randomUUID } from 'crypto'
 import { sleep } from '../../core/src/utils/sleep'
+import type { EventReplaySubject } from '../../core/tests'
 import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
 import {
   getAgentOptions,
@@ -38,6 +30,12 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
+import { DrizzleStorageModule } from '../../drizzle-storage/src'
+import {
+  createDrizzlePostgresTestDatabase,
+  inMemoryDrizzleSqliteDatabase,
+  pushDrizzleSchema,
+} from '../../drizzle-storage/tests/testDatabase'
 import {
   IndyVdrAnonCredsRegistry,
   IndyVdrIndyDidRegistrar,
@@ -46,36 +44,54 @@ import {
   IndyVdrSovDidResolver,
 } from '../../indy-vdr/src'
 import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
+import type {
+  AnonCredsDidCommOfferCredentialFormat,
+  AnonCredsRegisterCredentialDefinitionOptions,
+  AnonCredsRequestedAttribute,
+  AnonCredsRequestedPredicate,
+  AnonCredsSchema,
+  RegisterCredentialDefinitionReturnStateFinished,
+  RegisterSchemaReturnStateFinished,
+} from '../src'
 import {
-  AnonCredsCredentialFormatService,
+  AnonCredsDidCommCredentialFormatService,
+  AnonCredsDidCommProofFormatService,
   AnonCredsModule,
-  AnonCredsProofFormatService,
-  LegacyIndyCredentialFormatService,
-  LegacyIndyProofFormatService,
-  V1CredentialProtocol,
-  V1ProofProtocol,
+  DidCommCredentialV1Protocol,
+  DidCommProofV1Protocol,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
+  LegacyIndyDidCommCredentialFormatService,
+  LegacyIndyDidCommProofFormatService,
   parseIndyCredentialDefinitionId,
   parseIndySchemaId,
 } from '../src'
-
-import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import { anoncreds } from './helpers'
+import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
+import type { PreCreatedAnonCredsDefinition } from './preCreatedAnonCredsDefinition'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
   storePreCreatedAnonCredsDefinition,
 } from './preCreatedAnonCredsDefinition'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
-export type AnonCredsTestsAgent = Agent<ReturnType<typeof getAnonCredsIndyModules> & DefaultAgentModulesInput>
+export type AnonCredsTestsAgent = Agent<ReturnType<typeof getAnonCredsIndyModules>>
 
-export const getAnonCredsIndyModules = ({
+export const getAnonCredsIndyModules = <
+  ProofServices extends DidCommProofFormatService[] = [],
+  CredentialServices extends DidCommCredentialFormatService[] = [],
+>({
   autoAcceptCredentials,
   autoAcceptProofs,
+  extraDidCommConfig = {},
+  extraCredentialFormatServices,
+  extraProofFormatServices,
 }: {
-  autoAcceptCredentials?: AutoAcceptCredential
-  autoAcceptProofs?: AutoAcceptProof
+  autoAcceptCredentials?: DidCommAutoAcceptCredential
+  autoAcceptProofs?: DidCommAutoAcceptProof
+  extraCredentialFormatServices?: CredentialServices
+  extraProofFormatServices?: ProofServices
+  extraDidCommConfig?: DidCommModuleConfigOptions
 } = {}) => {
   // Add support for resolving pre-created credential definitions and schemas
   const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
@@ -88,32 +104,47 @@ export const getAnonCredsIndyModules = ({
     },
   })
 
-  const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
-  const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
+  const legacyIndyCredentialFormatService = new LegacyIndyDidCommCredentialFormatService()
+  const legacyIndyProofFormatService = new LegacyIndyDidCommProofFormatService()
 
   const modules = {
-    credentials: new CredentialsModule({
-      autoAcceptCredentials,
-      credentialProtocols: [
-        new V1CredentialProtocol({
-          indyCredentialFormat: legacyIndyCredentialFormatService,
-        }),
-        new V2CredentialProtocol({
-          credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsCredentialFormatService()],
-        }),
-      ],
+    didcomm: new DidCommModule({
+      connections: {
+        autoAcceptConnections: true,
+      },
+      ...extraDidCommConfig,
+      credentials: {
+        autoAcceptCredentials,
+        credentialProtocols: [
+          new DidCommCredentialV1Protocol({
+            indyCredentialFormat: legacyIndyCredentialFormatService,
+          }),
+          new DidCommCredentialV2Protocol({
+            credentialFormats: [
+              legacyIndyCredentialFormatService,
+              new AnonCredsDidCommCredentialFormatService(),
+              ...(extraCredentialFormatServices ?? []),
+            ],
+          }),
+        ],
+      },
+      proofs: {
+        autoAcceptProofs,
+        proofProtocols: [
+          new DidCommProofV1Protocol({
+            indyProofFormat: legacyIndyProofFormatService,
+          }),
+          new DidCommProofV2Protocol({
+            proofFormats: [
+              legacyIndyProofFormatService,
+              new AnonCredsDidCommProofFormatService(),
+              ...(extraProofFormatServices ?? []),
+            ],
+          }),
+        ],
+      },
     }),
-    proofs: new ProofsModule({
-      autoAcceptProofs,
-      proofProtocols: [
-        new V1ProofProtocol({
-          indyProofFormat: legacyIndyProofFormatService,
-        }),
-        new V2ProofProtocol({
-          proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
-        }),
-      ],
-    }),
+
     anoncreds: new AnonCredsModule({
       registries: [new IndyVdrAnonCredsRegistry(), inMemoryAnonCredsRegistry],
       anoncreds,
@@ -155,10 +186,10 @@ export async function presentLegacyAnonCredsProof({
   }
 }) {
   let holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
-    state: ProofState.RequestReceived,
+    state: DidCommProofState.RequestReceived,
   })
 
-  let verifierProofExchangeRecord = await verifierAgent.modules.proofs.requestProof({
+  let verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.requestProof({
     connectionId: verifierHolderConnectionId,
     proofFormats: {
       indy: {
@@ -173,17 +204,17 @@ export async function presentLegacyAnonCredsProof({
 
   let holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
-  const selectedCredentials = await holderAgent.modules.proofs.selectCredentialsForRequest({
-    proofRecordId: holderProofExchangeRecord.id,
+  const selectedCredentials = await holderAgent.didcomm.proofs.selectCredentialsForRequest({
+    proofExchangeRecordId: holderProofExchangeRecord.id,
   })
 
   const verifierProofExchangeRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
     threadId: holderProofExchangeRecord.threadId,
-    state: ProofState.PresentationReceived,
+    state: DidCommProofState.PresentationReceived,
   })
 
-  await holderAgent.modules.proofs.acceptRequest({
-    proofRecordId: holderProofExchangeRecord.id,
+  await holderAgent.didcomm.proofs.acceptRequest({
+    proofExchangeRecordId: holderProofExchangeRecord.id,
     proofFormats: { indy: selectedCredentials.proofFormats.indy },
   })
 
@@ -194,11 +225,11 @@ export async function presentLegacyAnonCredsProof({
 
   holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
     threadId: holderProofExchangeRecord.threadId,
-    state: ProofState.Done,
+    state: DidCommProofState.Done,
   })
 
-  verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptPresentation({
-    proofRecordId: verifierProofExchangeRecord.id,
+  verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.acceptPresentation({
+    proofExchangeRecordId: verifierProofExchangeRecord.id,
   })
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
@@ -225,37 +256,37 @@ export async function issueLegacyAnonCredsCredential({
   holderReplay: EventReplaySubject
 
   issuerHolderConnectionId: string
-  offer: AnonCredsOfferCredentialFormat
+  offer: AnonCredsDidCommOfferCredentialFormat
 }) {
-  let issuerCredentialExchangeRecord = await issuerAgent.modules.credentials.offerCredential({
+  let issuerCredentialExchangeRecord = await issuerAgent.didcomm.credentials.offerCredential({
     comment: 'some comment about credential',
     connectionId: issuerHolderConnectionId,
     protocolVersion: 'v1',
     credentialFormats: {
       indy: offer,
     },
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+    autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
   })
 
   let holderCredentialExchangeRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialExchangeRecord.threadId,
-    state: CredentialState.OfferReceived,
+    state: DidCommCredentialState.OfferReceived,
   })
 
-  await holderAgent.modules.credentials.acceptOffer({
-    credentialRecordId: holderCredentialExchangeRecord.id,
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+  await holderAgent.didcomm.credentials.acceptOffer({
+    credentialExchangeRecordId: holderCredentialExchangeRecord.id,
+    autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
   })
 
   // Because we use auto-accept it can take a while to have the whole credential flow finished
   // Both parties need to interact with the ledger and sign/verify the credential
   holderCredentialExchangeRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialExchangeRecord.threadId,
-    state: CredentialState.Done,
+    state: DidCommCredentialState.Done,
   })
   issuerCredentialExchangeRecord = await waitForCredentialRecordSubject(issuerReplay, {
     threadId: issuerCredentialExchangeRecord.threadId,
-    state: CredentialState.Done,
+    state: DidCommCredentialState.Done,
   })
 
   return {
@@ -290,6 +321,8 @@ interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, Cre
 
   schemaId: string
   credentialDefinitionId: string
+
+  teardown: () => Promise<void>
 }
 
 export async function setupAnonCredsTests<
@@ -304,61 +337,89 @@ export async function setupAnonCredsTests<
   attributeNames,
   preCreatedDefinition,
   createConnections,
+  useDrizzleStorage,
 }: {
   issuerName: string
   holderName: string
   verifierName?: VerifierName
-  autoAcceptCredentials?: AutoAcceptCredential
-  autoAcceptProofs?: AutoAcceptProof
+  autoAcceptCredentials?: DidCommAutoAcceptCredential
+  autoAcceptProofs?: DidCommAutoAcceptProof
   attributeNames?: string[]
   preCreatedDefinition?: PreCreatedAnonCredsDefinition
   createConnections?: CreateConnections
+  useDrizzleStorage?: 'postgres' | 'sqlite'
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
+  const issuerPostgresDrizzle = useDrizzleStorage === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
+  const issuerDrizzle =
+    useDrizzleStorage === 'postgres'
+      ? issuerPostgresDrizzle?.drizzle
+      : useDrizzleStorage === 'sqlite'
+        ? await inMemoryDrizzleSqliteDatabase()
+        : undefined
+
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
-      {
-        endpoints: ['rxjs:issuer'],
-      },
+      {},
       {
         logger: testLogger,
       },
       getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:issuer'],
+        },
       }),
-      { requireDidcomm: true }
+      { requireDidcomm: true, drizzle: issuerDrizzle }
     )
   )
 
+  const holderPostgresDrizzle = useDrizzleStorage === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
+  const holderDrizzle =
+    useDrizzleStorage === 'postgres'
+      ? holderPostgresDrizzle?.drizzle
+      : useDrizzleStorage === 'sqlite'
+        ? await inMemoryDrizzleSqliteDatabase()
+        : undefined
   const holderAgent = new Agent(
     getAgentOptions(
       holderName,
-      {
-        endpoints: ['rxjs:holder'],
-      },
+      {},
       {},
       getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:holder'],
+        },
       }),
-      { requireDidcomm: true }
+      { requireDidcomm: true, drizzle: holderDrizzle }
     )
   )
 
+  const verifierPostgresDrizzle =
+    useDrizzleStorage === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
+  const verifierDrizzle =
+    useDrizzleStorage === 'postgres'
+      ? verifierPostgresDrizzle?.drizzle
+      : useDrizzleStorage === 'sqlite'
+        ? await inMemoryDrizzleSqliteDatabase()
+        : undefined
   const verifierAgent = verifierName
     ? new Agent(
         getAgentOptions(
           verifierName,
-          {
-            endpoints: ['rxjs:verifier'],
-          },
+          {},
           {},
           getAnonCredsIndyModules({
             autoAcceptCredentials,
             autoAcceptProofs,
+            extraDidCommConfig: {
+              endpoints: ['rxjs:verifier'],
+            },
           }),
-          { requireDidcomm: true }
+          { requireDidcomm: true, drizzle: verifierDrizzle }
         )
       )
     : undefined
@@ -367,11 +428,21 @@ export async function setupAnonCredsTests<
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
     verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
     [
-      CredentialEventTypes.CredentialStateChanged,
-      ProofEventTypes.ProofStateChanged,
-      AgentEventTypes.AgentMessageProcessed,
+      DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+      DidCommProofEventTypes.ProofStateChanged,
+      DidCommEventTypes.DidCommMessageProcessed,
     ]
   )
+
+  if (issuerAgent.dependencyManager.registeredModules.drizzle) {
+    await pushDrizzleSchema(issuerAgent.dependencyManager.registeredModules.drizzle as DrizzleStorageModule)
+  }
+  if (holderAgent.dependencyManager.registeredModules.drizzle) {
+    await pushDrizzleSchema(holderAgent.dependencyManager.registeredModules.drizzle as DrizzleStorageModule)
+  }
+  if (verifierAgent?.dependencyManager.registeredModules.drizzle) {
+    await pushDrizzleSchema(verifierAgent.dependencyManager.registeredModules.drizzle as DrizzleStorageModule)
+  }
 
   await issuerAgent.initialize()
   await holderAgent.initialize()
@@ -394,10 +465,10 @@ export async function setupAnonCredsTests<
     throw new CredoError('Either attributeNames or preCreatedDefinition must be provided')
   }
 
-  let issuerHolderConnection: ConnectionRecord | undefined
-  let holderIssuerConnection: ConnectionRecord | undefined
-  let verifierHolderConnection: ConnectionRecord | undefined
-  let holderVerifierConnection: ConnectionRecord | undefined
+  let issuerHolderConnection: DidCommConnectionRecord | undefined
+  let holderIssuerConnection: DidCommConnectionRecord | undefined
+  let verifierHolderConnection: DidCommConnectionRecord | undefined
+  let holderVerifierConnection: DidCommConnectionRecord | undefined
 
   if (createConnections ?? true) {
     ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)
@@ -424,6 +495,12 @@ export async function setupAnonCredsTests<
     holderIssuerConnectionId: holderIssuerConnection?.id,
     holderVerifierConnectionId: holderVerifierConnection?.id,
     verifierHolderConnectionId: verifierHolderConnection?.id,
+
+    teardown: async () => {
+      await issuerPostgresDrizzle?.teardown()
+      await holderPostgresDrizzle?.teardown()
+      await verifierPostgresDrizzle?.teardown()
+    },
   } as unknown as SetupAnonCredsTestsReturn<VerifierName, CreateConnections>
 }
 

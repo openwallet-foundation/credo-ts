@@ -1,23 +1,21 @@
-import type { AgentContext } from '@credo-ts/core'
-import type { IndyVdrPool } from '../pool'
-import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
-
 import { parseIndyDid } from '@credo-ts/anoncreds'
+import type { AgentContext } from '@credo-ts/core'
 import {
   CredoError,
+  convertPublicKeyToX25519,
   DidDocument,
   DidDocumentBuilder,
   DidsApi,
+  getPublicJwkFromVerificationMethod,
   Hasher,
   JsonTransformer,
   Kms,
   TypedArrayEncoder,
-  convertPublicKeyToX25519,
-  getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
 import { GetAttribRequest, GetNymRequest } from '@hyperledger/indy-vdr-shared'
-
 import { IndyVdrError, IndyVdrNotFoundError } from '../error'
+import type { IndyVdrPool } from '../pool'
+import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
 
 import { addServicesFromEndpointsAttrib, getFullVerkey } from './didSovUtil'
 
@@ -70,12 +68,12 @@ const deepMerge = (a: Record<string, unknown>, b: Record<string, unknown>) => {
 
           output[key] = Array.from(element)
         } else {
-          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+          // biome-ignore lint/suspicious/noExplicitAny: no explanation
           const arr = a[key] as Array<any>
           output[key] = Array.from(new Set(...arr, b[key]))
         }
       } else if (Array.isArray(b[key])) {
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        // biome-ignore lint/suspicious/noExplicitAny: no explanation
         const arr = b[key] as Array<any>
         output[key] = Array.from(new Set(...arr, a[key]))
         // Both elements are objects: recursive merge
@@ -120,9 +118,9 @@ export function didDocDiff(extra: Record<string, unknown>, base: Record<string, 
       if (Array.isArray(extra[key]) && Array.isArray(base[key])) {
         // Different types: return the extra
         output[key] = []
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        // biome-ignore lint/suspicious/noExplicitAny: no explanation
         const baseAsArray = base[key] as Array<any>
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        // biome-ignore lint/suspicious/noExplicitAny: no explanation
         const extraAsArray = extra[key] as Array<any>
         for (const element of extraAsArray) {
           if (!baseAsArray.find((item) => item.id === element.id)) {

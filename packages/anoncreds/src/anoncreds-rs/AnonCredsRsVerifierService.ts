@@ -1,16 +1,15 @@
 import type { AgentContext } from '@credo-ts/core'
+import { injectable, JsonTransformer } from '@credo-ts/core'
 import type {
   JsonObject,
   NonRevokedIntervalOverride,
   RevocationRegistryDefinition,
   VerifyW3cPresentationOptions as VerifyAnonCredsW3cPresentationOptions,
 } from '@hyperledger/anoncreds-shared'
+import { W3cCredential as AnonCredsW3cCredential, Presentation, W3cPresentation } from '@hyperledger/anoncreds-shared'
 import type { AnonCredsNonRevokedInterval, AnonCredsProof, AnonCredsProofRequest } from '../models'
 import type { CredentialWithRevocationMetadata } from '../models/utils'
 import type { AnonCredsVerifierService, VerifyProofOptions, VerifyW3cPresentationOptions } from '../services'
-
-import { JsonTransformer, injectable } from '@credo-ts/core'
-import { W3cCredential as AnonCredsW3cCredential, Presentation, W3cPresentation } from '@hyperledger/anoncreds-shared'
 
 import { fetchRevocationStatusList } from '../utils'
 

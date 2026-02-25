@@ -1,14 +1,12 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundMessageContext } from '@credo-ts/didcomm'
-import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
+import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
+import type { DidCommInboundMessageContext } from '@credo-ts/didcomm'
+import { AnswerMessage, QuestionMessage } from '../messages'
 import type { ValidResponse } from '../models'
-
-import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
-
+import { QuestionAnswerState } from '../models'
+import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'
-import { AnswerMessage, QuestionMessage } from '../messages'
-import { QuestionAnswerState } from '../models'
 import { QuestionAnswerRecord, QuestionAnswerRepository } from '../repository'
 
 @injectable()
@@ -79,7 +77,7 @@ export class QuestionAnswerService {
    * @returns QuestionAnswer record
    */
   public async processReceiveQuestion(
-    messageContext: InboundMessageContext<QuestionMessage>
+    messageContext: DidCommInboundMessageContext<QuestionMessage>
   ): Promise<QuestionAnswerRecord> {
     const { message: questionMessage } = messageContext
 
@@ -143,7 +141,9 @@ export class QuestionAnswerService {
    * @param messageContext the message context containing an answer message message
    * @returns QuestionAnswer record
    */
-  public async receiveAnswer(messageContext: InboundMessageContext<AnswerMessage>): Promise<QuestionAnswerRecord> {
+  public async receiveAnswer(
+    messageContext: DidCommInboundMessageContext<AnswerMessage>
+  ): Promise<QuestionAnswerRecord> {
     const { message: answerMessage } = messageContext
 
     this.logger.debug(`Receiving answer message with id ${answerMessage.id}`)

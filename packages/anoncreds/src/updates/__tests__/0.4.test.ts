@@ -1,19 +1,19 @@
-import { readFileSync } from 'fs'
-import path from 'path'
 import {
   Agent,
   CacheModule,
   DependencyManager,
-  InMemoryLruCache,
   InjectionSymbols,
+  InMemoryLruCache,
   UpdateAssistant,
   W3cCredentialRecord,
 } from '@credo-ts/core'
+import { readFileSync } from 'fs'
+import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { agentDependencies } from '../../../../core/tests'
-import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { anoncreds } from '../../../tests/helpers'
+import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModule } from '../../AnonCredsModule'
 import {
   AnonCredsHolderServiceSymbol,
@@ -23,13 +23,15 @@ import {
 
 // Backup date / time is the unique identifier for a backup, needs to be unique for every test
 const backupDate = new Date('2024-02-28T22:50:20.522Z')
-jest.useFakeTimers().setSystemTime(backupDate)
+vi.useFakeTimers().setSystemTime(backupDate)
 
 // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
 let uuidCounter = 1
-jest.mock('../../../../core/src/utils/uuid', () => {
+vi.mock('../../../../core/src/utils/uuid', async (importOriginal) => {
+  const actual: object = await importOriginal()
   return {
-    uuid: jest.fn().mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`),
+    ...actual,
+    uuid: vi.fn().mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`),
   }
 })
 
@@ -49,9 +51,7 @@ describe('UpdateAssistant | AnonCreds | v0.4 - v0.5', () => {
 
     const agent = new Agent(
       {
-        config: {
-          label: 'Test Agent',
-        },
+        config: {},
         dependencies: agentDependencies,
         modules: {
           cache: new CacheModule({
@@ -105,9 +105,9 @@ describe('UpdateAssistant | AnonCreds | v0.4 - v0.5', () => {
     )) {
       if (record.type !== W3cCredentialRecord.type) continue
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       const recordValue = record.value as any
-      recordValue.credential.issuanceDate = new Date()
+      recordValue.credentialInstances[0].credential.issuanceDate = new Date()
     }
 
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()

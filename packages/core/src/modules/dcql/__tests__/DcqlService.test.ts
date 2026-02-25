@@ -1,5 +1,5 @@
 import { AgentContext } from '../../../agent'
-import { SdJwtVc } from '../../sd-jwt-vc'
+import type { SdJwtVc, SdJwtVcPayload } from '../../sd-jwt-vc'
 import { ClaimFormat } from '../../vc'
 import { DcqlError } from '../DcqlError'
 import { DcqlService } from '../DcqlService'
@@ -14,7 +14,11 @@ describe('DcqlService', () => {
         {
           something: [
             {
-              claimFormat: ClaimFormat.SdJwtVc,
+              claimFormat: ClaimFormat.SdJwtDc,
+              header: {},
+              payload: {
+                vct: 'something',
+              } as SdJwtVcPayload,
               prettyClaims: {
                 vct: 'something',
                 age_over_21: true,

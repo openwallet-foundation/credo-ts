@@ -1,7 +1,6 @@
-import type { AnonCredsRegistry } from '../services'
-
 import { anoncreds } from '../../tests/helpers'
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
+import type { AnonCredsRegistry } from '../services'
 
 describe('AnonCredsModuleConfig', () => {
   test('sets values', () => {

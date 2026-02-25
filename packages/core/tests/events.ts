@@ -1,6 +1,5 @@
-import type { Agent, BaseEvent } from '../src'
-
 import { ReplaySubject } from 'rxjs'
+import type { Agent, BaseEvent } from '../src'
 
 export type EventReplaySubject = ReplaySubject<BaseEvent>
 

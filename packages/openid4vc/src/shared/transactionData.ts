@@ -1,4 +1,4 @@
-import { CredoError, SdJwtVc } from '@credo-ts/core'
+import { CredoError, type SdJwtVc } from '@credo-ts/core'
 
 export function getSdJwtVcTransactionDataHashes(sdJwtVc: SdJwtVc) {
   if (!sdJwtVc.kbJwt) {

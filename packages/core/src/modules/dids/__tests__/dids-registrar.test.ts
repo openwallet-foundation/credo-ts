@@ -1,12 +1,10 @@
-import type { KeyDidCreateOptions } from '../methods/key/KeyDidRegistrar'
-import type { PeerDidNumAlgo0CreateOptions } from '../methods/peer/PeerDidRegistrar'
-
 import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
+import { JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
+import type { KeyDidCreateOptions } from '../methods/key/KeyDidRegistrar'
 import { PeerDidNumAlgo } from '../methods/peer/didPeer'
-
-import { JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
+import type { PeerDidNumAlgo0CreateOptions } from '../methods/peer/PeerDidRegistrar'
 
 const agentOptions = getAgentOptions('Faber Dids Registrar')
 

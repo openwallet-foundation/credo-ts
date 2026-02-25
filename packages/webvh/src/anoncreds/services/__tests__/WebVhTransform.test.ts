@@ -19,7 +19,7 @@ describe('WebVhTransform', () => {
       expect(Array.isArray(resource.content.attrNames)).toBe(true)
       expect(resource.content.attrNames).toContain(mockSchemaResource.content.attrNames[0])
     } else {
-      fail('Content should be a schema')
+      throw new Error('Content should be a schema')
     }
   })
 
@@ -27,7 +27,7 @@ describe('WebVhTransform', () => {
     const resource = JsonTransformer.fromJSON(mockCredDefResource, WebVhResource)
 
     expect(resource).toBeInstanceOf(WebVhResource)
-    expect(resource['@context']).toContain('https://opsecid.github.io/attested-resource/v1')
+    expect(resource['@context']).toContain('https://identity.foundation/did-attested-resources/context/v0.1')
     expect(resource.type).toEqual(['AttestedResource'])
 
     // Type guard to check if content is a credential definition
@@ -36,7 +36,7 @@ describe('WebVhTransform', () => {
       expect(resource.content.tag).toBe(mockCredDefResource.content.tag)
       expect(resource.content.schemaId).toBe(mockSchemaResource.id)
     } else {
-      fail('Content should be a credential definition')
+      throw new Error('Content should be a credential definition')
     }
   })
 })

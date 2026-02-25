@@ -1,11 +1,6 @@
-import type { default as Express } from 'express'
+import express from 'express'
 
+// In React Native the express.native.ts file will be used which will throw when actuall called.
 export function importExpress() {
-  try {
-    // NOTE: 'express' is added as a peer-dependency, and is required when using this module
-    const express = require('express') as typeof Express
-    return express
-  } catch (_error) {
-    throw new Error('Express must be installed as a peer dependency')
-  }
+  return express
 }
