@@ -177,6 +177,10 @@ export class OpenId4VcIssuerService {
       throw new CredoError('Authorization Config or Pre-Authorized Config must be provided.')
     }
 
+    if (typeof options.expirationInSeconds !== 'undefined' && options.expirationInSeconds <= 0) {
+      throw new CredoError('Credential offer expiration must be a positive integer if provided.')
+    }
+
     const vcIssuer = this.getIssuer(agentContext)
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
@@ -227,7 +231,7 @@ export class OpenId4VcIssuerService {
     const createdAt = new Date()
     const expiresAt = utils.addSecondsToDate(
       createdAt,
-      this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds
+      options.expirationInSeconds ?? this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds
     )
 
     const chainedAuthorizationServerConfig = issuer.chainedAuthorizationServerConfigs?.find(
