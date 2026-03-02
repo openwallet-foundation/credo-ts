@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.6.2
+
+### Patch Changes
+
+- b9bd214: feat: add a (configurable) 30 seconds skew to JWT-based credentials and other JWT object verification. This is to prevent verification errors based on slight deviations in server time. This does not affect non-JWT credentials yet (mDOC, JSON-LD)
+- 69acbc3: feat: add a method to create an x509 certificate signing request
+- 4a4473c: chore: use sub export for kms module
+- 2c15356: fix: correctly extract authority of vc when verifying presentations against DCQL query
+- 4989dd9: fix(pex): use found signature suite proof type instead of default
+- 0f7171a: chore: updates sd-jwt-js to 0.18.x
+- e441cc1: fix: improve did key id resolving. We used `startsWith` to match, but that has loopholes, and did not correctly handle all relative key ids. We now 'compact' each key id (remove the did prefix) but only if the keyId starts with the did document id, and compares them.
+- 1969c67: feat: fetch updated sd-jwt-vc type metadata path for sd-jwt-vc. There is also a new `fetchTypeMetadata` method in the `SdJwtVcApi`, allowing to resolve the type metadata for an SD-JWT VC. It will also verify the `vct#integrity` if available on the credential. Only HTTPS urls are supported at the moment.
+- 620bb38: chore: update `@sd-jwt/*` dependencies to 0.19.x. If you're only using Credo for SD-JWT this has no impact, but if you're using @sd-jwt directly in your project, it's good to update
+- 2073110: fix: correctly extract and store the kms key id for JWK-bound sd-jwt credentials received over openid4vc
+- 620bb38: feat: resolve, merge and store type metadata chain for SD-JWT VC
+
 ## 0.6.1
 
 ### Patch Changes

@@ -204,7 +204,9 @@ export class Mdoc {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
     }
 
-    const mdocContext = getMdocContext(agentContext)
+    const mdocContext = getMdocContext(agentContext, {
+      now: options?.now,
+    })
     try {
       const verifier = new Verifier()
       await verifier.verifyIssuerSignature(

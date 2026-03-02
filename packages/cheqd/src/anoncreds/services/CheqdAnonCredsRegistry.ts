@@ -1,8 +1,12 @@
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 import {
   AnonCredsApi,
+  AnonCredsCredentialDefinitionRecordMetadataKeys,
+  AnonCredsCredentialDefinitionRepository,
   type AnonCredsRegistry,
   AnonCredsRegistryService,
+  AnonCredsRevocationRegistryDefinitionRecordMetadataKeys,
+  AnonCredsRevocationRegistryDefinitionRepository,
   type GetCredentialDefinitionReturn,
   type GetRevocationRegistryDefinitionReturn,
   type GetRevocationStatusListReturn,
@@ -314,16 +318,30 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
   ): Promise<RegisterRevocationRegistryDefinitionReturn> {
     try {
       const anoncredsRegistryService = agentContext.resolve(AnonCredsRegistryService)
-      const credentialDefinition = await anoncredsRegistryService.getCredentialDefinition(
+      let credentialDefinition = await anoncredsRegistryService.getCredentialDefinition(
         agentContext,
         revocationRegistryDefinition.credDefId
       )
       if (!credentialDefinition.credentialDefinition)
         throw new CredoError(`Credential definition not found for id: ${revocationRegistryDefinition.credDefId}`)
 
-      const credentialDefinitionName = credentialDefinition.credentialDefinitionMetadata.name
-      if (!credentialDefinitionName)
-        throw new CredoError(`Credential definition name not found for id: ${revocationRegistryDefinition.credDefId}`)
+      let credentialDefinitionName = credentialDefinition.credentialDefinitionMetadata.name
+      if (!credentialDefinitionName) {
+        // We need to handle the case where we didn't store the metadata yet on the record. In that case we resolve
+        // the fresh object and store the metadata on the record locally
+        if (credentialDefinition.resolutionMetadata.servedFromRecord) {
+          credentialDefinition = await this.updateLocalCredentialDefinitionRecordMetadata(
+            agentContext,
+            credentialDefinition
+          )
+
+          credentialDefinitionName = credentialDefinition.credentialDefinitionMetadata.name
+        }
+
+        if (!credentialDefinitionName) {
+          throw new CredoError(`Credential definition name not found for id: ${revocationRegistryDefinition.credDefId}`)
+        }
+      }
 
       const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
 
@@ -403,16 +421,30 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       const anoncredsRegistryService = agentContext.resolve(AnonCredsRegistryService)
-      const revocationRegistryDefinition = await anoncredsRegistryService.getRevocationRegistryDefinition(
+      let revocationRegistryDefinition = await anoncredsRegistryService.getRevocationRegistryDefinition(
         agentContext,
         revocationRegistryId
       )
       if (!revocationRegistryDefinition.revocationRegistryDefinition)
         throw new CredoError(`Revocation registry definition not found for id: ${revocationRegistryId}`)
 
-      const revocationRegistryDefinitionName = revocationRegistryDefinition.revocationRegistryDefinitionMetadata.name
-      if (!revocationRegistryDefinitionName)
-        throw new CredoError(`Revocation registry definition name not found for id: ${revocationRegistryId}`)
+      let revocationRegistryDefinitionName = revocationRegistryDefinition.revocationRegistryDefinitionMetadata.name
+      if (!revocationRegistryDefinitionName) {
+        // We need to handle the case where we didn't store the metadata yet on the record. In that case we resolve
+        // the fresh object and store the metadata on the record locally
+        if (revocationRegistryDefinition.resolutionMetadata.servedFromRecord) {
+          revocationRegistryDefinition = await this.updateLocalRevocationRegistryDefinitionRecordMetadata(
+            agentContext,
+            revocationRegistryDefinition
+          )
+
+          revocationRegistryDefinitionName = revocationRegistryDefinition.revocationRegistryDefinitionMetadata.name
+        }
+
+        if (!revocationRegistryDefinitionName) {
+          throw new CredoError(`Revocation registry definition name not found for id: ${revocationRegistryId}`)
+        }
+      }
 
       const response = await cheqdDidResolver.resolveResource(
         agentContext,
@@ -452,13 +484,80 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
+  private async updateLocalCredentialDefinitionRecordMetadata(
+    agentContext: AgentContext,
+    credentialDefinition: GetCredentialDefinitionReturn
+  ): Promise<GetCredentialDefinitionReturn> {
+    const anoncredsRegistryService = agentContext.resolve(AnonCredsRegistryService)
+
+    const freshCredentialDefinition = await anoncredsRegistryService.getCredentialDefinition(
+      agentContext,
+      credentialDefinition.credentialDefinitionId,
+      { useLocalRecord: false, useCache: false }
+    )
+
+    if (!credentialDefinition.credentialDefinition) {
+      throw new CredoError(`Credential definition not found for id: ${credentialDefinition.credentialDefinitionId}`)
+    }
+
+    const credentialDefinitionRepository = agentContext.resolve(AnonCredsCredentialDefinitionRepository)
+    const credentialDefinitionRecord = await credentialDefinitionRepository.getByCredentialDefinitionId(
+      agentContext,
+      credentialDefinition.credentialDefinitionId
+    )
+
+    credentialDefinitionRecord.metadata.set(
+      AnonCredsCredentialDefinitionRecordMetadataKeys.CredentialDefinitionMetadata,
+      freshCredentialDefinition.credentialDefinitionMetadata
+    )
+
+    await credentialDefinitionRepository.update(agentContext, credentialDefinitionRecord)
+
+    return freshCredentialDefinition
+  }
+
+  private async updateLocalRevocationRegistryDefinitionRecordMetadata(
+    agentContext: AgentContext,
+    revocationRegistryDefinition: GetRevocationRegistryDefinitionReturn
+  ): Promise<GetRevocationRegistryDefinitionReturn> {
+    const anoncredsRegistryService = agentContext.resolve(AnonCredsRegistryService)
+
+    const freshRevocationRegistryDefinition = await anoncredsRegistryService.getRevocationRegistryDefinition(
+      agentContext,
+      revocationRegistryDefinition.revocationRegistryDefinitionId,
+      { useLocalRecord: false, useCache: false }
+    )
+
+    if (!revocationRegistryDefinition.revocationRegistryDefinition) {
+      throw new CredoError(
+        `Revocation registry definition not found for id: ${revocationRegistryDefinition.revocationRegistryDefinitionId}`
+      )
+    }
+
+    const revocationRegistryDefinitionRepository = agentContext.resolve(AnonCredsRevocationRegistryDefinitionRepository)
+    const revocationRegistryDefinitionRecord =
+      await revocationRegistryDefinitionRepository.getByRevocationRegistryDefinitionId(
+        agentContext,
+        revocationRegistryDefinition.revocationRegistryDefinitionId
+      )
+
+    revocationRegistryDefinitionRecord.metadata.set(
+      AnonCredsRevocationRegistryDefinitionRecordMetadataKeys.RevocationRegistryDefinitionMetadata,
+      freshRevocationRegistryDefinition.revocationRegistryDefinitionMetadata
+    )
+
+    await revocationRegistryDefinitionRepository.update(agentContext, revocationRegistryDefinitionRecord)
+
+    return freshRevocationRegistryDefinition
+  }
+
   public async registerRevocationStatusList(
     agentContext: AgentContext,
     { revocationStatusList, options }: RegisterRevocationStatusListOptions
   ): Promise<RegisterRevocationStatusListReturn> {
     try {
       const anoncredsRegistryService = agentContext.resolve(AnonCredsRegistryService)
-      const revocationRegistryDefinition = await anoncredsRegistryService.getRevocationRegistryDefinition(
+      let revocationRegistryDefinition = await anoncredsRegistryService.getRevocationRegistryDefinition(
         agentContext,
         revocationStatusList.revRegDefId
       )
@@ -466,11 +565,25 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
         throw new CredoError(`Revocation registry definition not found for id: ${revocationStatusList.revRegDefId}`)
       }
 
-      const revocationRegistryDefinitionName = revocationRegistryDefinition.revocationRegistryDefinitionMetadata.name
-      if (!revocationRegistryDefinitionName)
-        throw new CredoError(
-          `Revocation registry definition name not found for id: ${revocationStatusList.revRegDefId}`
-        )
+      let revocationRegistryDefinitionName = revocationRegistryDefinition.revocationRegistryDefinitionMetadata.name
+      if (!revocationRegistryDefinitionName) {
+        // We need to handle the case where we didn't store the metadata yet on the record. In that case we resolve
+        // the fresh object and store the metadata on the record locally
+        if (revocationRegistryDefinition.resolutionMetadata.servedFromRecord) {
+          revocationRegistryDefinition = await this.updateLocalRevocationRegistryDefinitionRecordMetadata(
+            agentContext,
+            revocationRegistryDefinition
+          )
+
+          revocationRegistryDefinitionName = revocationRegistryDefinition.revocationRegistryDefinitionMetadata.name
+        }
+
+        if (!revocationRegistryDefinitionName) {
+          throw new CredoError(
+            `Revocation registry definition name not found for id: ${revocationStatusList.revRegDefId}`
+          )
+        }
+      }
 
       const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
       const revocationStatusListResource = {

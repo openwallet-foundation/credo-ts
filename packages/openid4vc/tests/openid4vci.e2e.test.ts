@@ -23,7 +23,7 @@ import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
 import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciSignMdocCredentials } from '../src'
-import { OpenId4VcIssuanceSessionState, OpenId4VcModule } from '../src'
+import { OpenId4VcIssuanceSessionState, OpenId4VciCredentialFormatProfile, OpenId4VcModule } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'
@@ -68,7 +68,12 @@ describe('OpenId4Vc', () => {
           app: expressApp,
           issuer: {
             baseUrl: issuanceBaseUrl,
-            credentialRequestToCredentialMapper: async ({ agentContext, credentialRequest, holderBinding }) => {
+            credentialRequestToCredentialMapper: async ({
+              agentContext,
+              credentialRequest,
+              holderBinding,
+              credentialConfiguration,
+            }) => {
               // We sign the request with the first did:key did we have
               const didsApi = agentContext.dependencyManager.resolve(DidsApi)
               const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
@@ -78,12 +83,16 @@ describe('OpenId4Vc', () => {
                 throw new Error('No verification method found')
               }
 
-              if (credentialRequest.format === 'vc+sd-jwt') {
+              if (
+                (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc ||
+                  credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtDc) &&
+                credentialConfiguration.vct
+              ) {
                 return {
                   type: 'credentials',
                   format: 'dc+sd-jwt',
                   credentials: holderBinding.keys.map((holderBinding) => ({
-                    payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
+                    payload: { vct: credentialConfiguration.vct, university: 'innsbruck', degree: 'bachelor' },
                     holder: holderBinding,
                     issuer: {
                       method: 'did',
@@ -94,21 +103,6 @@ describe('OpenId4Vc', () => {
                 }
               }
 
-              if (credentialRequest.format === 'vc+sd-jwt') {
-                return {
-                  type: 'credentials',
-                  format: 'dc+sd-jwt',
-                  credentials: holderBinding.keys.map((holderBinding) => ({
-                    payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
-                    holder: holderBinding,
-                    issuer: {
-                      method: 'did',
-                      didUrl: verificationMethod.id,
-                    },
-                    disclosureFrame: { _sd: ['university', 'degree'] },
-                  })),
-                }
-              }
               if (credentialRequest.format === 'mso_mdoc') {
                 return {
                   type: 'credentials',

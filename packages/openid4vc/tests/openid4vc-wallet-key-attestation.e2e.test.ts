@@ -72,7 +72,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
           app: expressApp,
           issuer: {
             baseUrl: issuerBaseUrl,
-            getVerificationSessionForIssuanceSessionAuthorization: async ({ issuanceSession, scopes }) => {
+            getVerificationSession: async ({ issuanceSession, scopes }) => {
               if (scopes.includes(universityDegreeCredentialConfigurationSupportedMdoc.scope)) {
                 const createRequestReturn = await issuer.agent.openid4vc.verifier.createAuthorizationRequest({
                   verifierId: issuanceSession.issuerId,

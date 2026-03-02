@@ -1,7 +1,7 @@
-import { Jwt } from '@credo-ts/core'
+import { Jwt, utils } from '@credo-ts/core'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { type AgentType, createAgentFromModules } from '../../../tests/utils'
-import { universityDegreePresentationDefinition } from '../../../tests/utilsVp'
+import { openBadgeDcqlQuery, universityDegreePresentationDefinition } from '../../../tests/utilsVp'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
 
 const modules = {
@@ -16,11 +16,11 @@ const modules = {
 describe('OpenId4VcVerifier', () => {
   let verifier: AgentType<typeof modules>
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     verifier = await createAgentFromModules(modules, '96213c3d7fc8d4d6754c7a0fd969598f')
   })
 
-  afterEach(async () => {
+  afterAll(async () => {
     await verifier.agent.shutdown()
   })
 
@@ -64,6 +64,23 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.payload.additionalClaims.nonce).toBeDefined()
       expect(jwt.payload.additionalClaims.state).toBeDefined()
       expect(jwt.payload.additionalClaims.response_type).toEqual('vp_token')
+    })
+
+    it('custom expiration is correctly applied', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier.kid,
+        },
+        verifierId: openIdVerifier.verifierId,
+        dcql: {
+          query: openBadgeDcqlQuery,
+        },
+        expirationInSeconds: 60 * 60,
+      })
+
+      expect(verificationSession.expiresAt).toEqual(utils.addSecondsToDate(verificationSession.createdAt, 60 * 60))
     })
   })
 })

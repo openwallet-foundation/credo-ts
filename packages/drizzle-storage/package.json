@@ -1,6 +1,6 @@
 {
   "name": "@credo-ts/drizzle-storage",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "files": [
     "build",
     "cli-build",
@@ -94,7 +94,7 @@
     "directory": "packages/drizzle-storage"
   },
   "scripts": {
-    "build": "tsdown --config-loader unconfig",
+    "build": "tsdown --config-loader unrun",
     "prepublishOnly": "pnpm run build",
     "cli:local:compiled": "node --conditions cli bin.mjs --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
     "cli:local": "vite-node cli/bin.ts --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
@@ -118,7 +118,7 @@
     "@credo-ts/tenants": "workspace:*",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
-    "drizzle-kit": "^0.31.7",
+    "drizzle-kit": "^0.31.8",
     "shell": "^0.12.0",
     "tsyringe": "catalog:",
     "zod": "catalog:"
@@ -128,10 +128,10 @@
   },
   "devDependencies": {
     "@libsql/client": "^0.15.15",
-    "@types/pg": "^8.15.6",
+    "@types/pg": "^8.16.0",
     "@types/yargs": "^17.0.35",
-    "drizzle-orm": "^0.44.7",
-    "pg": "^8.16.3",
+    "drizzle-orm": "^0.45.1",
+    "pg": "^8.18.0",
     "typescript": "catalog:"
   }
 }

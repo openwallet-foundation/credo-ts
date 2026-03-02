@@ -8,7 +8,7 @@ import {
   getScopesFromCredentialConfigurationsSupported,
   OpenId4VcIssuanceSessionState,
   type OpenId4VcIssuerModuleConfigOptions,
-  type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
+  type OpenId4VciGetVerificationSession,
   type OpenId4VciSignSdJwtCredentials,
   OpenId4VcModule,
   type OpenId4VcVerifierModuleConfigOptions,
@@ -85,8 +85,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions, OpenId4VcVerifierModuleConfigOptions>
   }>
 
-  const getVerificationSessionForIssuanceSessionAuthorization =
-    (queryMethod: 'dcql' | 'presentationDefinition'): OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization =>
+  const getVerificationSession =
+    (queryMethod: 'dcql' | 'presentationDefinition'): OpenId4VciGetVerificationSession =>
     async ({ issuanceSession, scopes }) => {
       if (scopes.includes(universityDegreeCredentialConfigurationSupported.scope)) {
         const createRequestReturn = await issuer.agent.openid4vc.verifier.createAuthorizationRequest({
@@ -136,9 +136,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
           },
           issuer: {
             baseUrl: issuerBaseUrl,
-            getVerificationSessionForIssuanceSessionAuthorization:
-              getVerificationSessionForIssuanceSessionAuthorization('presentationDefinition'),
-            credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding, verification }) => {
+            getVerificationSession: getVerificationSession('presentationDefinition'),
+            credentialRequestToCredentialMapper: async ({ holderBinding, verification, credentialConfiguration }) => {
               if (!verification) {
                 throw new Error('Expected verification in credential request mapper')
               }
@@ -158,7 +157,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
               } else {
                 const [presentation] = verification.dcql.presentations[verification.dcql.query.credentials[0].id]
                 if (presentation.claimFormat !== ClaimFormat.SdJwtDc) {
-                  throw new Error('Expected preentation with sd-jwt vc format')
+                  throw new Error('Expected presentation with sd-jwt vc format')
                 }
 
                 credential = presentation
@@ -166,12 +165,12 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
               const fullName = `${credential.prettyClaims.given_name} ${credential.prettyClaims.family_name}`
 
-              if (credentialRequest.format === 'vc+sd-jwt') {
+              if (credentialConfiguration.format === 'vc+sd-jwt' && credentialConfiguration.vct) {
                 return {
                   type: 'credentials',
                   format: 'dc+sd-jwt',
                   credentials: holderBinding.keys.map((holderBinding) => ({
-                    payload: { vct: credentialRequest.vct, full_name: fullName, degree: 'Software Engineer' },
+                    payload: { vct: credentialConfiguration.vct, full_name: fullName, degree: 'Software Engineer' },
                     holder: holderBinding,
                     issuer: {
                       method: 'x5c',
@@ -340,8 +339,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   })
 
   it('e2e flow with requesting presentation of credentials before issuance succeeds with dcql query', async () => {
-    issuer.agent.openid4vc.issuer.config.getVerificationSessionForIssuanceSessionAuthorization =
-      getVerificationSessionForIssuanceSessionAuthorization('dcql')
+    issuer.agent.openid4vc.issuer.config.getVerificationSession = getVerificationSession('dcql')
 
     const issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
       issuerId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',

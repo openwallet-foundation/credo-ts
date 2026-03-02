@@ -1273,6 +1273,7 @@ export class OpenId4VciHolderService {
               kmsKeyId: r.sdJwtVc.kmsKeyId,
             })) as SdJwtVcRecordInstances,
             typeMetadata: verificationResults[0].sdJwtVc.typeMetadata,
+            typeMetadataChain: verificationResults[0].typeMetadataChain,
           }),
           notificationId,
           credentialConfigurationId,

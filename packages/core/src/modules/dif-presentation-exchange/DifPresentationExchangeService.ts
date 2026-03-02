@@ -7,9 +7,9 @@ import type {
   W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
   W3CVerifiablePresentation,
 } from '@sphereon/ssi-types'
-import { injectable } from 'tsyringe'
 import type { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
+import { injectable } from '../../plugins'
 import type { Query } from '../../storage/StorageService'
 import { JsonTransformer } from '../../utils'
 import type { VerificationMethod } from '../dids'
@@ -449,7 +449,7 @@ export class DifPresentationExchangeService {
         )
       }
 
-      return supportedSignatureSuites[0].proofType
+      return foundSignatureSuite.proofType
     }
 
     return supportedSignatureSuites[0].proofType

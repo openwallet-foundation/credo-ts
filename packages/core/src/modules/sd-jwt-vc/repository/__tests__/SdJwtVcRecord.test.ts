@@ -27,6 +27,7 @@ describe('SdJwtVcRecord', () => {
       alg: 'EdDSA',
       sdAlg: 'sha-256',
       vct: 'IdentityCredential',
+      extendedVctValues: [],
       multiInstanceState: CredentialMultiInstanceState.SingleInstanceUnused,
     })
     expect(sdJwtVcRecord.encoded).toEqual(compactSdJwtVc)
@@ -74,6 +75,7 @@ describe('SdJwtVcRecord', () => {
       alg: 'EdDSA',
       sdAlg: 'sha-256',
       vct: 'IdentityCredential',
+      extendedVctValues: [],
       multiInstanceState: CredentialMultiInstanceState.SingleInstanceUnused,
     })
     expect(instance.encoded).toBe(compactSdJwtVc)

@@ -1,7 +1,7 @@
 import * as x509 from '@peculiar/x509'
-import { injectable } from 'tsyringe'
 import { AgentContext } from '../../agent'
 import { CredoWebCrypto } from '../../crypto/webcrypto'
+import { injectable } from '../../plugins'
 import { CertificateSigningRequest } from './CertificateSigningRequest'
 import { X509Certificate } from './X509Certificate'
 import { X509Error } from './X509Error'

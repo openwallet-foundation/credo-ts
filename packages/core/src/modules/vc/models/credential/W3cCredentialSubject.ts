@@ -19,7 +19,6 @@ export class W3cCredentialSubject {
     if (options) {
       this.id = options.id
 
-      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       const { id, ...claims } = options.claims ?? {}
       this.claims = Object.keys(claims).length > 0 ? claims : undefined
     }

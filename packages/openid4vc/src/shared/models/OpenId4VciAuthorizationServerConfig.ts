@@ -70,8 +70,19 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
   /**
    * Mapping between credential scopes and authorization server scopes.
    *
-   * This is mandatory. If a scope is missing, an error will be thrown when making
-   * a credential offer. If no additional scope is needed, use an empty array.
+   * If a scope is missing, an error will be thrown when making a credential offer.
+   * If no additional scope is needed, use an empty array.
+   *
+   * Required if the callback `getChainedAuthorizationRequestParameters` is not provided.
    */
-  scopesMapping: Record<string, string[]>
+  scopesMapping?: Record<string, string[]>
+
+  /**
+   * Allowed wallet redirect URIs for this chained authorization server. If not provided,
+   * all redirect URIs are accepted.
+   *
+   * If the callback `getChainedAuthorizationRequestParameters` is provided,
+   * this property is ignored and the redirect URIs must be returned by the callback.
+   */
+  redirectUris?: string[]
 }

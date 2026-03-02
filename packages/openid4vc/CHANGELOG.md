@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.6.2
+
+### Patch Changes
+
+- df82d40: fix: add alg to OpenID4VP client_metadata jwk for encryption
+- b9bd214: feat: add a (configurable) 30 seconds skew to JWT-based credentials and other JWT object verification. This is to prevent verification errors based on slight deviations in server time. This does not affect non-JWT credentials yet (mDOC, JSON-LD)
+- 2c15356: fix: correctly extract authority of vc when verifying presentations against DCQL query
+- 657ec73: chore: update @openid4vc package to ^0.4.3. This includes several transformation logic fixes for transforming between drafts, that caused issues for projects updating from Credo 0.5
+- 8f63ac3: feat: add support for RFC 9207 OAuth 2.0 Authorization Server Issuer Identification, as required by HAIP/FAPI. For the Credo authorization server this is automatically handled (chained authorization). For external authorization servers this needs to be done manually. For wallets you need to parse the oid4vci authorization response using the new `agent.openid4vc.holder.parseAuthorizationCodeFromAuthorizationResponse` method.
+- 2073110: fix: correctly extract and store the kms key id for JWK-bound sd-jwt credentials received over openid4vc
+- 620bb38: feat: resolve, merge and store type metadata chain for SD-JWT VC
+- Updated dependencies [b9bd214]
+- Updated dependencies [69acbc3]
+- Updated dependencies [4a4473c]
+- Updated dependencies [2c15356]
+- Updated dependencies [4989dd9]
+- Updated dependencies [0f7171a]
+- Updated dependencies [e441cc1]
+- Updated dependencies [1969c67]
+- Updated dependencies [620bb38]
+- Updated dependencies [2073110]
+- Updated dependencies [620bb38]
+  - @credo-ts/core@0.6.2
+
 ## 0.6.1
 
 ### Patch Changes

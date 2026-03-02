@@ -88,16 +88,14 @@ export type AgentApi<Modules extends ModulesMap> = {
  * module type and use that for the typing. This will contain the default typing, and thus provide the correct agent api
  * interface
  */
-export type CustomOrDefaultApi<
-  CustomModuleType,
-  DefaultModuleType extends ApiModule,
-> = IsAny<CustomModuleType> extends true
-  ? InstanceType<DefaultModuleType['api']>
-  : CustomModuleType extends ApiModule
-    ? InstanceType<CustomModuleType['api']>
-    : CustomModuleType extends Module
-      ? never
-      : InstanceType<DefaultModuleType['api']>
+export type CustomOrDefaultApi<CustomModuleType, DefaultModuleType extends ApiModule> =
+  IsAny<CustomModuleType> extends true
+    ? InstanceType<DefaultModuleType['api']>
+    : CustomModuleType extends ApiModule
+      ? InstanceType<CustomModuleType['api']>
+      : CustomModuleType extends Module
+        ? never
+        : InstanceType<DefaultModuleType['api']>
 
 /**
  * Method to get the default agent modules to be registered on any agent instance. It doens't configure the modules in any way,

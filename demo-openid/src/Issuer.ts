@@ -144,7 +144,10 @@ function getCredentialRequestToCredentialMapper({
       }
     }
 
-    if (credentialConfigurationId === 'PresentationAuthorization') {
+    if (
+      credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtDc &&
+      credentialConfigurationId === 'PresentationAuthorization'
+    ) {
       return {
         type: 'credentials',
         format: ClaimFormat.SdJwtDc,
@@ -193,7 +196,7 @@ function getCredentialRequestToCredentialMapper({
       } satisfies OpenId4VciSignW3cCredentials
     }
 
-    if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
+    if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc && credentialConfiguration.vct) {
       return {
         type: 'credentials',
         format: ClaimFormat.SdJwtDc,
@@ -263,7 +266,7 @@ export class Issuer extends BaseAgent<{
             baseUrl: `${url}/oid4vci`,
             credentialRequestToCredentialMapper: (...args) =>
               getCredentialRequestToCredentialMapper({ issuerDidKey: this.didKey })(...args),
-            getVerificationSessionForIssuanceSessionAuthorization: async ({ agentContext, scopes }) => {
+            getVerificationSession: async ({ agentContext, scopes }) => {
               const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
               const authorizationRequest = await verifierApi.createAuthorizationRequest({
                 verifierId: this.verifierRecord.verifierId,

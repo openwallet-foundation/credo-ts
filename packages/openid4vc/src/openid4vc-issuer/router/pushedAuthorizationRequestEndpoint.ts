@@ -184,20 +184,60 @@ export async function handlePushedAuthorizationRequest(
   const redirectUri = joinUriParts(config.baseUrl, [issuer.issuerId, 'redirect'])
   const chainedIdentityState = utils.uuid()
 
-  const scopes = requestedScopes.flatMap((scope) => {
-    if (scope in authorizationServerConfig.scopesMapping) {
-      return authorizationServerConfig.scopesMapping[scope]
-    }
+  let scopes: string[] = []
+  let additionalRequestPayload: Record<string, unknown> | undefined
+  let redirectUris: string[] | undefined = authorizationServerConfig.redirectUris
 
+  if (config.getChainedAuthorizationRequestParameters) {
+    const dynamicConfiguration = await config.getChainedAuthorizationRequestParameters({
+      agentContext,
+      issuanceSession,
+      chainedAuthorizationServerConfig: authorizationServerConfig,
+      requestedCredentialConfigurations,
+    })
+
+    scopes = dynamicConfiguration.scopes
+    additionalRequestPayload = dynamicConfiguration.additionalPayload
+    redirectUris = dynamicConfiguration.redirectUris
+  } else {
+    for (const scope of requestedScopes) {
+      if (!authorizationServerConfig.scopesMapping) {
+        throw new Oauth2ServerErrorResponseError(
+          {
+            error: Oauth2ErrorCodes.ServerError,
+          },
+          {
+            internalMessage: `Issuer '${issuer.issuerId}' does not have a scope mapping for scope '${scope}' for external authorization server '${authorizationServerConfig.issuer}'`,
+          }
+        )
+      }
+
+      if (scope in authorizationServerConfig.scopesMapping) {
+        scopes.push(...authorizationServerConfig.scopesMapping[scope])
+      } else {
+        throw new Oauth2ServerErrorResponseError(
+          {
+            error: Oauth2ErrorCodes.ServerError,
+          },
+          {
+            internalMessage: `Issuer '${issuer.issuerId}' does not have a scope mapping for scope '${scope}' for external authorization server '${authorizationServerConfig.issuer}'`,
+          }
+        )
+      }
+    }
+  }
+
+  if (redirectUris && !redirectUris.includes(parsedAuthorizationRequest.authorizationRequest.redirect_uri)) {
     throw new Oauth2ServerErrorResponseError(
       {
-        error: Oauth2ErrorCodes.ServerError,
+        error: Oauth2ErrorCodes.InvalidRequest,
+        error_description: `Invalid 'redirect_uri' parameter.`,
       },
       {
-        internalMessage: `Issuer '${issuer.issuerId}' does not have a scope mapping for scope '${scope}' for external authorization server '${authorizationServerConfig.issuer}'`,
+        internalMessage: `Redirect URI '${parsedAuthorizationRequest.authorizationRequest.redirect_uri}' is not allowed for external authorization server '${authorizationServerConfig.issuer}'`,
       }
     )
-  })
+  }
 
   // TODO: add support for DPoP
   const { authorizationRequestUrl, pkce } = await oauth2Client.initiateAuthorization({
@@ -206,6 +246,7 @@ export async function handlePushedAuthorizationRequest(
     redirectUri,
     state: chainedIdentityState,
     scope: scopes.join(' '),
+    additionalRequestPayload,
   })
 
   issuanceSession.chainedIdentity = {
