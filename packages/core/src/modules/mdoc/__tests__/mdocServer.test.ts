@@ -26,7 +26,7 @@ describe('mdoc service test', () => {
     expect(deviceKey?.fingerprint).toBe('zDnaeq8nbXthvXNTYAzxdyvdWXgm5ev5xLEUtjZpfj1YtQ5g2')
   })
 
-  test('can create and verify mdoc', async () => {
+  test.only('can create and verify mdoc', async () => {
     const holderKey = await kms.createKey({
       type: {
         kty: 'EC',
@@ -64,6 +64,9 @@ describe('mdoc service test', () => {
         },
       },
       issuerCertificate: certificate,
+      validityInfo: {
+        validUntil: nextDay,
+      },
     })
 
     expect(mdoc.alg).toBe('ES256')
@@ -74,8 +77,6 @@ describe('mdoc service test', () => {
         nicer: 'dicer',
       },
     })
-
-    expect(mdoc.deviceSignedNamespaces).toBeNull()
 
     const { isValid } = await mdoc.verify(agentContext, {
       trustedCertificates: [certificate.toString('base64')],

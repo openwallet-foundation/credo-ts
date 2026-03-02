@@ -1,16 +1,5 @@
-import type { IssuerSignedDocument } from '@animo-id/mdoc'
-import {
-  COSEKey,
-  cborEncode,
-  DeviceKey,
-  DeviceSignedDocument,
-  Holder,
-  Issuer,
-  IssuerSigned,
-  SignatureAlgorithm,
-} from '@animo-id/mdoc'
+import { DeviceKey, Holder, Issuer, IssuerSigned, SignatureAlgorithm } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
-import { TypedArrayEncoder } from './../../utils'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { ClaimFormat } from '../vc/index'
@@ -25,13 +14,13 @@ import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } f
  * which are the actual credentials being issued to holders.
  */
 export class Mdoc {
-  public base64Url: string
+  public get base64Url() {
+    return this.issuerSigned.encodedForOid4Vci
+  }
+
   #deviceKeyId?: string
 
-  private constructor(public issuerSignedDocument: IssuerSignedDocument | DeviceSignedDocument) {
-    const issuerSigned = issuerSignedDocument.prepare().get('issuerSigned')
-    this.base64Url = TypedArrayEncoder.toBase64URL(cborEncode(issuerSigned))
-  }
+  private constructor(public issuerSigned: IssuerSigned) {}
 
   /**
    * claim format is convenience method added to all credential instances
@@ -51,10 +40,10 @@ export class Mdoc {
    * Get the device key to which the mdoc is bound
    */
   public get deviceKey(): PublicJwk {
-    const deviceKeyRaw = this.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
-    if (!deviceKeyRaw) throw new MdocError('Could not extract device key from mdoc')
+    const publicJwk = PublicJwk.fromUnknown(
+      this.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.deviceKey.jwk
+    )
 
-    const publicJwk = PublicJwk.fromUnknown(COSEKey.import(deviceKeyRaw).toJWK())
     if (this.#deviceKeyId) publicJwk.keyId = this.#deviceKeyId
     return publicJwk
   }
@@ -179,7 +168,7 @@ export class Mdoc {
       now: options?.now,
     })
     try {
-      await Holder.validateIssuerSigned(
+      await Holder.verifyIssuerSigned(
         {
           trustedCertificates: trustedCertificates.map(
             (cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate
@@ -195,13 +184,5 @@ export class Mdoc {
     } catch (error) {
       return { isValid: false, error: error.message }
     }
-  }
-
-  private toJSON() {
-    return this.encoded
-  }
-
-  private toString() {
-    return this.encoded
   }
 }
