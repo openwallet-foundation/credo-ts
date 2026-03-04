@@ -7,6 +7,10 @@ on:
       - edited
       - synchronize
 
+permissions:
+  pull-requests: read
+  statuses: write
+
 jobs:
   main:
     name: Validate PR title
@@ -14,7 +18,8 @@ jobs:
     steps:
       # Please look up the latest version from
       # https://github.com/amannn/action-semantic-pull-request/releases
-      - uses: amannn/action-semantic-pull-request@v6.1.1
+      # v6.1.1 - pinned by commit hash for supply-chain safety
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

@@ -186,9 +186,10 @@ export async function handlePushedAuthorizationRequest(
 
   let scopes: string[] = []
   let additionalRequestPayload: Record<string, unknown> | undefined
+  let redirectUris: string[] | undefined = authorizationServerConfig.redirectUris
 
-  if (config.getChainedAuthorizationRequestPayload) {
-    const dynamicConfiguration = await config.getChainedAuthorizationRequestPayload({
+  if (config.getChainedAuthorizationRequestParameters) {
+    const dynamicConfiguration = await config.getChainedAuthorizationRequestParameters({
       agentContext,
       issuanceSession,
       chainedAuthorizationServerConfig: authorizationServerConfig,
@@ -197,6 +198,7 @@ export async function handlePushedAuthorizationRequest(
 
     scopes = dynamicConfiguration.scopes
     additionalRequestPayload = dynamicConfiguration.additionalPayload
+    redirectUris = dynamicConfiguration.redirectUris
   } else {
     for (const scope of requestedScopes) {
       if (!authorizationServerConfig.scopesMapping) {
@@ -223,6 +225,18 @@ export async function handlePushedAuthorizationRequest(
         )
       }
     }
+  }
+
+  if (redirectUris && !redirectUris.includes(parsedAuthorizationRequest.authorizationRequest.redirect_uri)) {
+    throw new Oauth2ServerErrorResponseError(
+      {
+        error: Oauth2ErrorCodes.InvalidRequest,
+        error_description: `Invalid 'redirect_uri' parameter.`,
+      },
+      {
+        internalMessage: `Redirect URI '${parsedAuthorizationRequest.authorizationRequest.redirect_uri}' is not allowed for external authorization server '${authorizationServerConfig.issuer}'`,
+      }
+    )
   }
 
   // TODO: add support for DPoP

@@ -172,6 +172,15 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
    * Whether this issuance session allows to generate refresh tokens.
    */
   generateRefreshTokens?: boolean
+
+  /**
+   * Expiration time in seconds for the credential offer. This will be used to
+   * calculate the expiration time of the issuance session.
+   *
+   * If not provided, the `statefulCredentialOfferExpirationInSeconds` value from
+   * the issuer config will be used.
+   */
+  expirationInSeconds?: number
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {
@@ -240,7 +249,7 @@ export type OpenId4VciGetVerificationSession = (options: {
   }
 >
 
-export type OpenId4VciGetChainedAuthorizationRequestPayload = (options: {
+export type OpenId4VciGetChainedAuthorizationRequestParameters = (options: {
   agentContext: AgentContext
   issuanceSession: OpenId4VcIssuanceSessionRecord
 
@@ -260,6 +269,12 @@ export type OpenId4VciGetChainedAuthorizationRequestPayload = (options: {
    * an empty array should be returned.
    */
   scopes: string[]
+
+  /**
+   * Allowed wallet redirect URIs for this issuance session. If not provided,
+   * all redirect Uris are accepted.
+   */
+  redirectUris?: string[]
 
   /**
    * Additional properties that will be sent as payload in the authorization request to
