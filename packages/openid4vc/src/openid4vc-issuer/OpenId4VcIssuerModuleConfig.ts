@@ -2,7 +2,7 @@ import type { Express } from 'express'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciDeferredCredentialRequestToCredentialMapper,
-  OpenId4VciGetChainedAuthorizationRequestPayload,
+  OpenId4VciGetChainedAuthorizationRequestParameters,
   OpenId4VciGetVerificationSession,
 } from './OpenId4VcIssuerServiceOptions'
 
@@ -137,7 +137,7 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
    *
    * Required if chained authorization server flow is used without a static scopes mapping configuration.
    */
-  getChainedAuthorizationRequestPayload?: OpenId4VciGetChainedAuthorizationRequestPayload
+  getChainedAuthorizationRequestParameters?: OpenId4VciGetChainedAuthorizationRequestParameters
 
   /**
    * Custom the paths used for endpoints
@@ -210,17 +210,18 @@ export class OpenId4VcIssuerModuleConfig {
   /**
    * Callback to get additional details for the chained authorization server flow.
    * This will be called when a credential offer request is configured to use a chained
-   * authorization server, but the scopesMapping configuration is not defined.
+   * authorization server. If not defined, `scopesMapping` and `redirectUris` from
+   * the authorization server configuration will be used.
    *
    * Required if chained authorization server flow is used without a static scopes mapping configuration.
    */
-  public getChainedAuthorizationRequestPayload?: OpenId4VciGetChainedAuthorizationRequestPayload
+  public getChainedAuthorizationRequestParameters?: OpenId4VciGetChainedAuthorizationRequestParameters
 
   public constructor(options: InternalOpenId4VcIssuerModuleConfigOptions) {
     this.options = options
     this.getVerificationSession =
       options.getVerificationSession ?? options.getVerificationSessionForIssuanceSessionAuthorization
-    this.getChainedAuthorizationRequestPayload = options.getChainedAuthorizationRequestPayload
+    this.getChainedAuthorizationRequestParameters = options.getChainedAuthorizationRequestParameters
   }
 
   public get app() {
