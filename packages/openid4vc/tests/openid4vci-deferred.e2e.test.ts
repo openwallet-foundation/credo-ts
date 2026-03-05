@@ -28,7 +28,6 @@ import {
   type OpenId4VcIssuerModuleConfigOptions,
   type OpenId4VciSignMdocCredentials,
   OpenId4VcModule,
-  type VerifiedOpenId4VcCredentialHolderBinding,
 } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
@@ -66,7 +65,6 @@ describe('OpenId4Vci (Deferred)', () => {
     string,
     {
       credentialRequest: CredentialRequest
-      holderBinding: VerifiedOpenId4VcCredentialHolderBinding
     }
   > = {}
 
@@ -87,7 +85,6 @@ describe('OpenId4Vci (Deferred)', () => {
 
               storage[uuid] = {
                 credentialRequest,
-                holderBinding,
               }
 
               return {
@@ -97,11 +94,19 @@ describe('OpenId4Vci (Deferred)', () => {
               }
             },
 
-            deferredCredentialRequestToCredentialMapper: async ({ agentContext, deferredCredentialRequest }) => {
+            deferredCredentialRequestToCredentialMapper: async ({
+              agentContext,
+              transaction,
+              deferredCredentialRequest,
+            }) => {
               if (!storage[deferredCredentialRequest.transaction_id]) {
                 throw new Error('No credential request found for transaction id')
               }
-              const { credentialRequest, holderBinding } = storage[deferredCredentialRequest.transaction_id]
+              const { credentialRequest } = storage[deferredCredentialRequest.transaction_id]
+
+              if (!transaction.holderBinding) {
+                throw new Error('No holder binding found for transaction')
+              }
 
               // We sign the request with the first did:key did we have
               const didsApi = agentContext.dependencyManager.resolve(DidsApi)
@@ -116,7 +121,7 @@ describe('OpenId4Vci (Deferred)', () => {
                 return {
                   type: 'credentials',
                   format: 'dc+sd-jwt',
-                  credentials: holderBinding.keys.map((holderBinding) => ({
+                  credentials: transaction.holderBinding.keys.map((holderBinding) => ({
                     payload: { vct: credentialRequest.vct as string, university: 'innsbruck', degree: 'bachelor' },
                     holder: holderBinding,
                     issuer: {
@@ -131,7 +136,7 @@ describe('OpenId4Vci (Deferred)', () => {
                 return {
                   type: 'credentials',
                   format: ClaimFormat.MsoMdoc,
-                  credentials: holderBinding.keys.map((holderBinding) => ({
+                  credentials: transaction.holderBinding.keys.map((holderBinding) => ({
                     docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
                     issuerCertificate: credentialIssuerCertificate,
                     holderKey: holderBinding.jwk,
