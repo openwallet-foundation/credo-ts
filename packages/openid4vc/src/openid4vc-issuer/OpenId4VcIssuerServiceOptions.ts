@@ -204,7 +204,6 @@ export interface OpenId4VciCreateCredentialResponseOptions {
 export interface OpenId4VciCreateDeferredCredentialResponseOptions {
   deferredCredentialRequest: OpenId4VciDeferredCredentialRequest
   authorization: OpenId4VciCredentialRequestAuthorization
-  transaction: OpenId4VcIssuanceSessionRecordTransaction
 
   /**
    * You can optionally provide a deferred credential request to credential mapper that will be

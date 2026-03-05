@@ -90,7 +90,7 @@ describe('OpenId4Vci (Deferred)', () => {
               return {
                 type: 'deferral',
                 transactionId: uuid,
-                interval: 2000,
+                interval: 1,
               }
             },
 
@@ -352,7 +352,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     expect(credentialResponse.deferredCredentials).toHaveLength(1)
     expect(credentialResponse.credentials).toHaveLength(0)
-    expect(credentialResponse.deferredCredentials[0].interval).toEqual(2000)
+    expect(credentialResponse.deferredCredentials[0].interval).toEqual(1)
 
     const refreshTokenTenant = await holderTenant.openid4vc.holder.refreshToken({
       issuerMetadata: resolvedCredentialOffer.metadata,
@@ -361,6 +361,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       dpop: tokenResponseTenant.dpop,
       clientId: 'foo',
     })
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     const deferredCredentialResponse = await holderTenant.openid4vc.holder.requestDeferredCredentials({
       ...refreshTokenTenant,
@@ -548,7 +550,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     expect(credentialsTenant1.deferredCredentials).toHaveLength(1)
     expect(credentialsTenant1.credentials).toHaveLength(0)
-    expect(credentialsTenant1.deferredCredentials[0].interval).toEqual(2000)
+    expect(credentialsTenant1.deferredCredentials[0].interval).toEqual(1)
 
     const refreshTokenTenant = await holderTenant.openid4vc.holder.refreshToken({
       issuerMetadata: resolvedCredentialOffer.metadata,
@@ -557,6 +559,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       dpop: tokenResponseTenant.dpop,
       clientId: 'foo',
     })
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     const deferredCredentialResponse = await holderTenant.openid4vc.holder.requestDeferredCredentials({
       ...refreshTokenTenant,
