@@ -95,11 +95,7 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
         issuerState,
       })
 
-      const transaction = issuanceSession?.transactions?.find(
-        (tx) => tx.transactionId === parsedCredentialRequest.deferredCredentialRequest.transaction_id
-      )
-
-      if (!issuanceSession || !transaction) {
+      if (!issuanceSession) {
         agentContext.config.logger.warn(
           `No issuance session found for incoming deferred credential request for issuer ${
             issuer.issuerId
@@ -181,7 +177,6 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
           {
             issuanceSession,
             deferredCredentialRequest: parsedCredentialRequest.deferredCredentialRequest,
-            transaction,
             authorization: {
               authorizationServer,
               accessToken: {

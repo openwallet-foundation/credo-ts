@@ -431,6 +431,7 @@ export class OpenId4VcIssuerService {
       issuanceSession.transactions.push({
         transactionId: signOptionsOrDeferral.transactionId,
         numberOfCredentials: verifiedCredentialRequestProofs.keys.length,
+        deferredUntil: utils.addSecondsToDate(new Date(), signOptionsOrDeferral.interval),
         credentialConfigurationId,
         holderBinding: verifiedCredentialRequestProofs,
       })
@@ -487,20 +488,43 @@ export class OpenId4VcIssuerService {
     issuanceSession: OpenId4VcIssuanceSessionRecord
     deferredCredentialResponse: DeferredCredentialResponse
   }> {
-    options.issuanceSession.assertState([
+    const { issuanceSession, deferredCredentialRequest, authorization, deferredCredentialRequestToCredentialMapper } =
+      options
+
+    issuanceSession.assertState([
       OpenId4VcIssuanceSessionState.CredentialRequestReceived,
       OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
     ])
-    const transaction = options.issuanceSession.transactions.find(
-      (tx) => tx.transactionId === options.deferredCredentialRequest.transaction_id
+
+    const transaction = issuanceSession.transactions.find(
+      (tx) => tx.transactionId === deferredCredentialRequest.transaction_id
     )
     if (!transaction) {
-      throw new CredoError('OpenId4VcIssuanceSessionRecord does not contain transaction with given transaction_id.')
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidTransactionId,
+        error_description: `No issuance session found for incoming credential request for issuer ${issuanceSession.issuerId}, access token data and transaction id`,
+      })
     }
 
-    const { issuanceSession } = options
-    const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
+    const issuer = await this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
+
+    // Optimization: if the deferral interval hasn't passed yet, we immediately
+    // return a new deferral response with the remaining interval. This avoids
+    // calling the mapper earlier than necessary, which could trigger expensive
+    // operations.
+    const deferredUntil = transaction.deferredUntil?.getTime()
+    const now = Date.now()
+    const remainingInterval = deferredUntil ? Math.round((deferredUntil - now) / 1000) : undefined
+    if (remainingInterval && remainingInterval > 0) {
+      return {
+        deferredCredentialResponse: vcIssuer.createDeferredCredentialResponse({
+          interval: remainingInterval,
+          transactionId: transaction.transactionId,
+        }),
+        issuanceSession,
+      }
+    }
 
     const credentialConfigurationId = transaction.credentialConfigurationId
     const credentialConfiguration = issuer.credentialConfigurationsSupported[transaction.credentialConfigurationId]
@@ -511,7 +535,7 @@ export class OpenId4VcIssuerService {
     }
 
     const mapper =
-      options.deferredCredentialRequestToCredentialMapper ??
+      deferredCredentialRequestToCredentialMapper ??
       this.openId4VcIssuerConfig.deferredCredentialRequestToCredentialMapper
     if (!mapper) {
       throw new CredoError(
@@ -522,9 +546,9 @@ export class OpenId4VcIssuerService {
     const signOptionsOrDeferral = await mapper({
       agentContext,
       issuanceSession,
-      deferredCredentialRequest: options.deferredCredentialRequest,
-      authorization: options.authorization,
-      transaction: options.transaction,
+      deferredCredentialRequest,
+      authorization,
+      transaction,
     })
 
     let deferredCredentialResponse: DeferredCredentialResponse
@@ -532,6 +556,18 @@ export class OpenId4VcIssuerService {
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
         interval: signOptionsOrDeferral.interval,
         transactionId: signOptionsOrDeferral.transactionId,
+      })
+
+      // Update transaction with the new deferredUntil value
+      issuanceSession.transactions = issuanceSession.transactions.map((tx) => {
+        if (tx.transactionId === transaction.transactionId) {
+          return {
+            ...tx,
+            deferredUntil: utils.addSecondsToDate(new Date(), signOptionsOrDeferral.interval),
+          }
+        }
+
+        return tx
       })
 
       // Update expiry time to allow for re-check

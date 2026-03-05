@@ -182,6 +182,14 @@ export interface OpenId4VcIssuanceSessionRecordTransaction {
    * @since 0.6.3
    */
   holderBinding?: VerifiedOpenId4VcCredentialHolderBinding
+
+  /**
+   * The time until which this transaction is deferred. This is based on
+   * the previously returned interval.
+   *
+   * @since 0.6.3
+   */
+  deferredUntil?: Date
 }
 
 export interface OpenId4VcIssuanceSessionRecordProps {
@@ -303,6 +311,9 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       ) {
         return {
           ...transaction,
+          ...(typeof transaction.deferredUntil === 'string'
+            ? { deferredUntil: new Date(transaction.deferredUntil) }
+            : {}),
           holderBinding: {
             ...transaction.holderBinding,
             keys: transaction.holderBinding.keys.map((key) => {
@@ -326,6 +337,9 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       ) {
         return {
           ...transaction,
+          ...(transaction.deferredUntil instanceof Date
+            ? { deferredUntil: transaction.deferredUntil.toISOString() }
+            : {}),
           holderBinding: {
             ...transaction.holderBinding,
             keys: transaction.holderBinding.keys.map((key) => {
