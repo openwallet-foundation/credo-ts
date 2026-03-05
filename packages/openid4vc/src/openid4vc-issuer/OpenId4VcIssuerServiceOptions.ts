@@ -31,7 +31,11 @@ import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciChainedAuthorizationServerConfig,
 } from '../shared/models/OpenId4VciAuthorizationServerConfig'
-import { OpenId4VcIssuanceSessionRecord, type OpenId4VcIssuerRecordProps } from './repository'
+import {
+  OpenId4VcIssuanceSessionRecord,
+  type OpenId4VcIssuanceSessionRecordTransaction,
+  type OpenId4VcIssuerRecordProps,
+} from './repository'
 
 export interface OpenId4VciCredentialRequestAuthorization {
   authorizationServer: string
@@ -375,6 +379,11 @@ export interface OpenId4VciDeferredCredentialRequestToCredentialMapperOptions {
    * issuance metadata from this record if passed in the offer creation method.
    */
   issuanceSession: OpenId4VcIssuanceSessionRecord
+
+  /**
+   * The transaction associated with this request.
+   */
+  transaction: OpenId4VcIssuanceSessionRecordTransaction
 
   /**
    * The deferred credential request received from the wallet
