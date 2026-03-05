@@ -432,6 +432,7 @@ export class OpenId4VcIssuerService {
         transactionId: signOptionsOrDeferral.transactionId,
         numberOfCredentials: verifiedCredentialRequestProofs.keys.length,
         credentialConfigurationId,
+        holderBinding: verifiedCredentialRequestProofs,
       })
 
       // Determine new state
@@ -523,6 +524,7 @@ export class OpenId4VcIssuerService {
       issuanceSession,
       deferredCredentialRequest: options.deferredCredentialRequest,
       authorization: options.authorization,
+      transaction: options.transaction,
     })
 
     let deferredCredentialResponse: DeferredCredentialResponse

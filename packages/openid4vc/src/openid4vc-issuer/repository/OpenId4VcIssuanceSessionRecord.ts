@@ -1,8 +1,8 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
-import { BaseRecord, CredoError, DateTransformer, isJsonObject, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, DateTransformer, isJsonObject, Kms, utils } from '@credo-ts/core'
 import { type AccessTokenResponse, type AuthorizationServerMetadata, PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { Transform, TransformationType } from 'class-transformer'
-import type { OpenId4VciCredentialOfferPayload } from '../../shared'
+import type { OpenId4VciCredentialOfferPayload, VerifiedOpenId4VcCredentialHolderBinding } from '../../shared'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { OpenId4VciVersion } from '../OpenId4VcIssuerServiceOptions'
 
@@ -174,6 +174,14 @@ export interface OpenId4VcIssuanceSessionRecordTransaction {
 
   // The credential configuration that is used for this transaction.
   credentialConfigurationId: string
+
+  /**
+   * The holder binding that should be used for the credentials in this
+   * transaction.
+   *
+   * @since 0.6.3
+   */
+  holderBinding?: VerifiedOpenId4VcCredentialHolderBinding
 }
 
 export interface OpenId4VcIssuanceSessionRecordProps {
@@ -281,6 +289,66 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   /**
    * The credential transactions for deferred credentials.
    */
+  @Transform(({ type, value }) => {
+    if (!Array.isArray(value)) {
+      return value
+    }
+
+    return value.map((transaction) => {
+      if (
+        type === TransformationType.PLAIN_TO_CLASS &&
+        isJsonObject(transaction) &&
+        isJsonObject(transaction.holderBinding) &&
+        Array.isArray(transaction.holderBinding.keys)
+      ) {
+        return {
+          ...transaction,
+          holderBinding: {
+            ...transaction.holderBinding,
+            keys: transaction.holderBinding.keys.map((key) => {
+              if (!isJsonObject(key)) {
+                throw new CredoError('Key is not json object.')
+              }
+
+              return {
+                ...key,
+                jwk: Kms.PublicJwk.fromUnknown(key.jwk),
+              }
+            }),
+          },
+        }
+      }
+      if (
+        type === TransformationType.CLASS_TO_PLAIN &&
+        isJsonObject(transaction) &&
+        isJsonObject(transaction.holderBinding) &&
+        Array.isArray(transaction.holderBinding.keys)
+      ) {
+        return {
+          ...transaction,
+          holderBinding: {
+            ...transaction.holderBinding,
+            keys: transaction.holderBinding.keys.map((key) => {
+              if (!isJsonObject(key)) {
+                throw new CredoError('Key is not json object.')
+              }
+
+              if (!(key.jwk instanceof Kms.PublicJwk)) {
+                throw new CredoError('JWK is not instance of PublicKey')
+              }
+
+              return {
+                ...key,
+                jwk: key.jwk.toJson(),
+              }
+            }),
+          },
+        }
+      }
+
+      return transaction
+    })
+  })
   public transactions: OpenId4VcIssuanceSessionRecordTransaction[] = []
 
   /**
