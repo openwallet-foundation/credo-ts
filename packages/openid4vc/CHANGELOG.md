@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.6.3
+
+### Patch Changes
+
+- d7c08a1: Adds support for setting a custom expiration for individual credential offers and authorization requests.
+- 8f1b343: The state of the issuance session is now correctly updated to 'Error' if an error happens while creating a credential response.
+- e2cbb15: Introduces a new callback in the issuer configuration (`getChainedAuthorizationRequestParameters`),
+  which can be used to dynamically provide:
+
+  - The scopes to request to the chained authorization server.
+  - Any additional payload to add to the request to the chained authorization server.
+  - An allowed list of redirect URIs, if you want to limit to which wallets you're issuing to.
+
+  The following has been changed in `OpenId4VciChainedAuthorizationServerConfig`:
+
+  - The `scopesMapping` option is now optional. Either `scopesMapping` or the new callback
+    must be defined in order to fullfil a chained authorization request.
+  - A new `redirectUris` option has been added. This can be used when you want to statically
+    define the allowed `redirectUris`, instead of using the callback. If the callback is
+    provided, this option will not be used.
+
+  The option `getVerificationSessionForIssuanceSessionAuthorization` has been deprecated and replaced with `getVerificationSession`. Please update your usage.
+
+- 7a79b99: fix: update @openid4vci package to fix an issue where did-based proofs would not work in OpenID4VCI authorization code flow
+- 55389c4: The state of the issuance session is now correctly updated to 'Error' if an error happens while creating a deferred credential response.
+- 7f24d03: For new credential deferrals, Credo keeps track of until when the transaction is deferred.
+  If the wallet calls the endpoint before the interval has passed by, we automatically
+  return a new deferral response with the remaining interval.
+- 5358453: Adds an `holderBinding` object to the `OpenId4VcIssuanceSessionRecordTransaction`,
+  allowing you to easily use the holder binding in the deferred credential response
+  endpoint.
+
+  In addition, we now pass the respective `transaction` to `OpenId4VciDeferredCredentialRequestToCredentialMapperOptions`
+  when called. This simplifies the user logic, since you no longer need to retrieve the transaction manually.
+
+- Updated dependencies [73d2d59]
+  - @credo-ts/core@0.6.3
+
 ## 0.6.2
 
 ### Patch Changes
