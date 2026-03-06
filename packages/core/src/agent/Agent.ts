@@ -3,7 +3,7 @@ import { InjectionSymbols } from '../constants'
 import { JwsService } from '../crypto/JwsService'
 import { CredoError } from '../error'
 import { DependencyManager } from '../plugins'
-import { StorageUpdateService, StorageVersionRepository, UpdateAssistant } from '../storage'
+import { isStorageUpToDate, StorageUpdateService, StorageVersionRepository, UpdateAssistant } from '../storage'
 import type { InitConfig } from '../types'
 import { AgentConfig } from './AgentConfig'
 import type { AgentDependencies } from './AgentDependencies'
@@ -87,23 +87,29 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
 
     // Make sure the storage is up to date
     const storageUpdateService = this.dependencyManager.resolve(StorageUpdateService)
-    const isStorageUpToDate = await storageUpdateService.isUpToDate(this.agentContext)
-    this.logger.info(`Agent storage is ${isStorageUpToDate ? '' : 'not '}up to date.`)
+    const currentStorageVersion = await storageUpdateService.getCurrentStorageVersion(this.agentContext)
+    const mustUpdate = !isStorageUpToDate(currentStorageVersion, StorageUpdateService.previousFrameworkStorageVersion)
+    const canUpdate = !isStorageUpToDate(currentStorageVersion, StorageUpdateService.frameworkStorageVersion)
+    if (canUpdate) {
+      this.logger.info(
+        `Agent storage is not up to date. Current storage version is ${currentStorageVersion}, latest storage version is ${StorageUpdateService.frameworkStorageVersion}`
+      )
+    } else {
+      this.logger.info(`Agent storage is up to date. `)
+    }
 
-    if (!isStorageUpToDate && this.agentConfig.autoUpdateStorageOnStartup) {
+    if (canUpdate && this.agentConfig.autoUpdateStorageOnStartup) {
       const updateAssistant = new UpdateAssistant(this)
 
       await updateAssistant.initialize()
       await updateAssistant.update()
-    } else if (!isStorageUpToDate) {
-      const currentVersion = await storageUpdateService.getCurrentStorageVersion(this.agentContext)
-
+    } else if (mustUpdate) {
       // Close agent context to prevent un-initialized agent with initialized agent context
       await this.dependencyManager.closeAgentContext(this.agentContext)
 
       throw new CredoError(
         // TODO: add link to where documentation on how to update can be found.
-        `Current agent storage is not up to date. To prevent the framework state from getting corrupted the agent initialization is aborted. Make sure to update the agent storage (currently at ${currentVersion}) to the latest version (${UpdateAssistant.frameworkStorageVersion}). You can also downgrade your version of Credo.`
+        `Current agent storage is not up to date. To prevent the framework state from getting corrupted the agent initialization is aborted. Make sure to update the agent storage (currently at ${currentStorageVersion}) to the latest or previous version (${UpdateAssistant.frameworkStorageVersion} or ${UpdateAssistant.previousFrameworkStorageVersion}). You can also downgrade your version of Credo.`
       )
     }
 
