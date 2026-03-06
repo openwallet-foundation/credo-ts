@@ -1,4 +1,4 @@
-import type { ValidityInfo } from '@animo-id/mdoc'
+import type { ValidityInfoOptions } from '@owf/mdoc'
 import type { AnyUint8Array } from '../../types'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import { PublicJwk } from '../kms'
@@ -6,7 +6,7 @@ import type { EncodedX509Certificate, X509Certificate } from '../x509'
 import { Mdoc } from './Mdoc'
 import { MdocRecord } from './repository'
 
-export { DateOnly } from '@animo-id/mdoc'
+export { DateOnly } from '@owf/mdoc'
 
 export type MdocNameSpaces = Record<string, Record<string, unknown>>
 
@@ -92,7 +92,8 @@ export type MdocDeviceResponseVerifyOptions = {
 
 export type MdocSignOptions = {
   docType: 'org.iso.18013.5.1.mDL' | (string & {})
-  validityInfo?: Partial<ValidityInfo>
+  validityInfo: Omit<ValidityInfoOptions, 'validFrom' | 'signed'> &
+    Partial<Pick<ValidityInfoOptions, 'signed' | 'validFrom'>>
   namespaces: MdocNameSpaces
 
   /**

@@ -1,7 +1,6 @@
-import { cborEncode, DeviceRequest, parseDeviceResponse } from '@animo-id/mdoc'
+import { cborEncode, DeviceRequest, DocRequest, ItemsRequest } from '@owf/mdoc'
 import { getAgentOptions } from '../../../../tests'
 import { Agent, X509Certificate } from '../../..'
-import { TypedArrayEncoder } from '../../../utils'
 import { PublicJwk } from '../../kms'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
@@ -44,36 +43,39 @@ PQQDAgNIADBFAiAJ/Qyrl7A+ePZOdNfc7ohmjEdqCvxaos6//gfTvncuqQIhANo4
 q8mKCA9J8k/+zh//yKbN1bLAtdqPx7dnrDqV3Lg+
 -----END CERTIFICATE-----`
 
-const DEVICE_REQUEST_1 = DeviceRequest.from('1.0', [
-  {
-    itemsRequestData: {
-      docType: 'org.iso.18013.5.1.mDL',
-      nameSpaces: new Map([
-        [
-          'org.iso.18013.5.1',
-          new Map([
-            ['family_name', false],
-            ['given_name', false],
-            ['birth_date', false],
-            ['issue_date', false],
-            ['expiry_date', false],
-            ['issuing_country', false],
-            ['issuing_authority', false],
-            ['issuing_jurisdiction', false],
-            ['document_number', false],
-            ['portrait', false],
-            ['driving_privileges', false],
-            ['un_distinguishing_sign', false],
-          ]),
-        ],
-      ]),
-    },
-  },
-])
+const DEVICE_REQUEST_1 = DeviceRequest.create({
+  version: '1.0',
+  docRequests: [
+    DocRequest.create({
+      itemsRequest: ItemsRequest.create({
+        docType: 'org.iso.18013.5.1.mDL',
+        namespaces: new Map([
+          [
+            'org.iso.18013.5.1',
+            new Map([
+              ['family_name', false],
+              ['given_name', false],
+              ['birth_date', false],
+              ['issue_date', false],
+              ['expiry_date', false],
+              ['issuing_country', false],
+              ['issuing_authority', false],
+              ['issuing_jurisdiction', false],
+              ['document_number', false],
+              ['portrait', false],
+              ['driving_privileges', false],
+              ['un_distinguishing_sign', false],
+            ]),
+          ],
+        ]),
+      }),
+    }),
+  ],
+})
 
 describe('mdoc device-response proximity test', () => {
   let mdoc: Mdoc
-  let parsedDocument: Mdoc
+  let parsedDeviceResponse: MdocDeviceResponse
   let agent: Agent
 
   beforeEach(async () => {
@@ -132,44 +134,27 @@ describe('mdoc device-response proximity test', () => {
         },
       },
     })
+    parsedDeviceResponse = await MdocDeviceResponse.createDeviceResponse(agent.context, {
+      mdocs: [mdoc],
 
-    //  This is the Device side
-    {
-      const result = await MdocDeviceResponse.createDeviceResponse(agent.context, {
-        mdocs: [mdoc],
-
-        documentRequests: DEVICE_REQUEST_1.docRequests.map((v) => {
-          return {
-            docType: v.itemsRequest.data.docType,
-            nameSpaces: namespacesMapToRecord(v.itemsRequest.data.nameSpaces),
-          }
-        }),
-        sessionTranscriptOptions: {
-          type: 'sesionTranscriptBytes',
-          sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])),
-        },
-        deviceNameSpaces: {
-          'com.foobar-device': { test: 1234 },
-        },
-      })
-
-      const parsed = parseDeviceResponse(result)
-      expect(parsed.documents).toHaveLength(1)
-
-      const prepared = parsed.documents[0].prepare()
-      const docType = prepared.get('docType') as string
-      const issuerSigned = cborEncode(prepared.get('issuerSigned'))
-      const deviceSigned = cborEncode(prepared.get('deviceSigned'))
-      parsedDocument = Mdoc.fromDeviceSignedDocument(
-        TypedArrayEncoder.toBase64URL(issuerSigned),
-        TypedArrayEncoder.toBase64URL(deviceSigned),
-        docType
-      )
-    }
+      documentRequests: DEVICE_REQUEST_1.docRequests.map((v) => {
+        return {
+          docType: v.itemsRequest.docType,
+          nameSpaces: namespacesMapToRecord(v.itemsRequest.namespaces),
+        }
+      }),
+      sessionTranscriptOptions: {
+        type: 'sesionTranscriptBytes',
+        sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])),
+      },
+      deviceNameSpaces: {
+        'com.foobar-device': { test: 1234 },
+      },
+    })
   })
 
   it('should contain the device namespaces', () => {
-    expect(parsedDocument.deviceSignedNamespaces).toEqual({
+    expect(parsedDeviceResponse.deviceResponse.documents?.[0].deviceSigned.deviceNamespaces).toEqual({
       'com.foobar-device': {
         test: 1234,
       },

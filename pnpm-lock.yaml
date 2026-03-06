@@ -511,9 +511,6 @@ importers:
 
   packages/core:
     dependencies:
-      '@animo-id/mdoc':
-        specifier: ^0.5.2
-        version: 0.5.2
       '@animo-id/pex':
         specifier: 'catalog:'
         version: 6.1.1
@@ -538,6 +535,9 @@ importers:
       '@noble/hashes':
         specifier: ^2.0.1
         version: 2.0.1
+      '@owf/mdoc':
+        specifier: ^0.6.0-alpha-20260225223459
+        version: 0.6.0-alpha-20260225223459
       '@peculiar/asn1-ecc':
         specifier: ^2.6.0
         version: 2.6.0
@@ -3137,6 +3137,9 @@ packages:
 
   '@openwallet-foundation/askar-shared@0.4.3':
     resolution: {integrity: sha512-Zt9zlvjJxNs8UWlnRydZH594Lak15YPHY72VT1+iDbXh0OjTdyq6Bf0FIsh9sfFnRYIgh2zd8+VoXxZ07GjADA==}
+
+  '@owf/mdoc@0.6.0-alpha-20260225223459':
+    resolution: {integrity: sha512-j3F/301TSUa5JeEtlwNO0FfLyCeOYyiBtkETPLGnVOt7HSBoYpSdcm3Ot2+MfnGldi2qmo8HGC6Ul2uib70bTw==}
 
   '@oxc-project/runtime@0.101.0':
     resolution: {integrity: sha512-t3qpfVZIqSiLQ5Kqt/MC4Ge/WCOGrrcagAdzTcDaggupjiGxUx4nJF2v6wUCXWSzWHn5Ns7XLv13fCJEwCOERQ==}
@@ -7968,6 +7971,7 @@ packages:
   tar@7.5.7:
     resolution: {integrity: sha512-fov56fJiRuThVFXD6o6/Q354S7pnWMJIVlDBYijsTNx6jKSE4pvrDTs6lUnmGvNyfJwFQQwWy3owKz1ucIhveQ==}
     engines: {node: '>=18'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   temp-dir@1.0.0:
     resolution: {integrity: sha512-xZFXEGbG7SNC3itwBzI3RYjq/cEhBkx2hJuKGIUOcEULmkQExXiHat2z/qkISYsuR+IKumhEfKKbV5qXmhICFQ==}
@@ -11297,6 +11301,12 @@ snapshots:
     dependencies:
       buffer: 6.0.3
       tar: 7.5.7
+
+  '@owf/mdoc@0.6.0-alpha-20260225223459':
+    dependencies:
+      cbor-x: 1.6.0
+      zod: 4.3.6
+      zod-validation-error: 5.0.0(zod@4.3.6)
 
   '@oxc-project/runtime@0.101.0': {}
 
