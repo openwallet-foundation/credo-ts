@@ -48,11 +48,11 @@ export class DidCommDidExchangeRequestHandler implements DidCommMessageHandler {
 
     const outOfBandRecord = tryParseDid(parentThreadId)
       ? await this.outOfBandService.createFromImplicitInvitation(agentContext, {
-          did: parentThreadId,
-          threadId: message.threadId,
-          recipientKey,
-          handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        })
+        did: parentThreadId,
+        threadId: message.threadId,
+        recipientKey,
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+      })
       : await this.outOfBandService.findByCreatedInvitationId(agentContext, parentThreadId)
     if (!outOfBandRecord) {
       throw new CredoError(`OutOfBand record for message ID ${parentThreadId} not found!`)
@@ -78,7 +78,7 @@ export class DidCommDidExchangeRequestHandler implements DidCommMessageHandler {
     // Associate the new connection with the session created for the inbound message
     if (sessionId) {
       const transportService = agentContext.dependencyManager.resolve(DidCommTransportService)
-      transportService.setConnectionIdForSession(sessionId, connectionRecord.id)
+      await transportService.setConnectionIdForSession(sessionId, connectionRecord.id)
     }
 
     if (!outOfBandRecord.reusable) {
