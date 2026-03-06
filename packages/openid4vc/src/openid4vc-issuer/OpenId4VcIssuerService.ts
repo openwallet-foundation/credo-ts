@@ -311,12 +311,7 @@ export class OpenId4VcIssuerService {
       issuerMetadata,
       credentialRequest: options.credentialRequest,
     })
-    const {
-      credentialRequest,
-      credentialIdentifier,
-
-      format,
-    } = parsedCredentialRequest
+    const { credentialRequest, credentialIdentifier, format } = parsedCredentialRequest
 
     if (credentialIdentifier) {
       throw new Oauth2ServerErrorResponseError({
