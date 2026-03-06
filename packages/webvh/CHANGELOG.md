@@ -1,5 +1,14 @@
 # @credo-ts/webvh
 
+## 0.6.3
+
+### Patch Changes
+
+- 63802e7: feat: allow adding extra metadata to AnonCreds objects
+- Updated dependencies [73d2d59]
+  - @credo-ts/core@0.6.3
+  - @credo-ts/anoncreds@0.6.3
+
 ## 0.6.2
 
 ### Patch Changes
