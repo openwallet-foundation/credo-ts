@@ -33,7 +33,7 @@
     "@credo-ts/core": "workspace:*",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
-    "didwebvh-ts": "^2.7.1",
+    "didwebvh-ts": "^2.7.2",
     "json-canonicalize": "^2.0.0",
     "tsyringe": "catalog:"
   },
