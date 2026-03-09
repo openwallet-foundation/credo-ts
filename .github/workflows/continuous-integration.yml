@@ -93,13 +93,13 @@ jobs:
 
       # Upload coverage for shard
       - run: mv coverage/coverage-final.json coverage/${{ matrix.shard }}.json
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.0
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-unit-${{ matrix.shard }}
           path: coverage/${{ matrix.shard }}.json
           overwrite: true
 
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.0
         if: failure()
         with:
           name: failed-tests-${{ matrix.node-version }}-unit-${{ matrix.shard }}
@@ -153,13 +153,13 @@ jobs:
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/e2e.json
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.0
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-e2e
           path: coverage/e2e.json
           overwrite: true
 
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.0
         if: failure()
         with:
           name: failed-tests-${{ matrix.node-version }}-e2e
@@ -217,13 +217,13 @@ jobs:
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/drizzle.json
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.0
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-drizzle
           path: coverage/drizzle.json
           overwrite: true
 
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.0
         if: failure()
         with:
           name: failed-tests-${{ matrix.node-version }}-drizzle
@@ -235,7 +235,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [e2e-tests, unit-tests, drizzle-tests]
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: coverage-artifacts-20-*
           path: coverage
