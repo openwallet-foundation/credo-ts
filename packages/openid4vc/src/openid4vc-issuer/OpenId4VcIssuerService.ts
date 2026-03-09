@@ -1352,15 +1352,16 @@ export class OpenId4VcIssuerService {
 
   /**
    * Update the expiresAt field of the issuance session to ensure it remains
-   * valid during the deferral process. We set it to the maximum between the
-   * current expiresAt and the current time plus the configured expiration
-   * time or the interval multiplied by 2. This accounts for the chance of multiple
-   * deferrals happening, with longer intervals.
+   * valid during the deferral process.
+   *
+   * We set it to the maximum between the current expiresAt and the current time
+   * plus interval and the grace period. This accounts for the chance of multiple
+   * deferrals happening, always retaining the longer interval.
    */
   private async updateExpiresAt(
     agentContext: AgentContext,
     issuanceSession: OpenId4VcIssuanceSessionRecord,
-    interval: number
+    intervalInSeconds: number
   ) {
     const expiresAt =
       issuanceSession.expiresAt ??
@@ -1375,7 +1376,7 @@ export class OpenId4VcIssuerService {
         utils
           .addSecondsToDate(
             new Date(),
-            Math.max(this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds, interval * 2)
+            intervalInSeconds + this.openId4VcIssuerConfig.deferralIntervalGracePeriodInSeconds
           )
           .getTime()
       )
