@@ -431,6 +431,10 @@ export interface OpenId4VciSignW3cV2Credentials {
 export type OpenId4VciDeferredCredentials = {
   type: 'deferral'
   transactionId: string
+
+  /**
+   * The interval in seconds that the wallet should wait before trying to check the status of the issuance again.
+   */
   interval: number
 }
 
