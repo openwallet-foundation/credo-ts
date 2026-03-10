@@ -39,7 +39,7 @@ const baseUrl = `http://localhost:${serverPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
 
 // Create ISO 18013-5 compliant root and leaf certificates
-const _getNextMonth = () => {
+const getNextMonth = () => {
   const now = new Date()
   let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
   if (now.getMonth() === 11) {
@@ -119,6 +119,7 @@ describe('OpenId4Vc', () => {
                   format: ClaimFormat.MsoMdoc,
                   credentials: holderBinding.keys.map((holderBinding) => ({
                     docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
+                    validityInfo: { validUntil: getNextMonth() },
                     issuerCertificate: credentialIssuerCertificate,
                     holderKey: holderBinding.jwk,
                     namespaces: {
