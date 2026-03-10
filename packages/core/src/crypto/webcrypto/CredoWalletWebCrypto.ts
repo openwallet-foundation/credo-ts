@@ -72,6 +72,7 @@ export class CredoWalletWebCrypto {
         return p256.verify(signature, Hasher.hash(message, hashAlg.toLowerCase()), publicKey.publicKey, {
           // we use a custom hash
           prehash: false,
+          lowS: false,
         })
       }
       if (publicKey.kty === 'EC' && publicKey.crv === 'P-384' && hashAlg !== 'SHA-384') {
@@ -84,6 +85,7 @@ export class CredoWalletWebCrypto {
         return p384.verify(signature, Hasher.hash(message, hashAlg.toLowerCase()), publicKey.publicKey, {
           // we use a custom hash
           prehash: false,
+          lowS: false,
         })
       }
     }
