@@ -11,6 +11,10 @@ import {
   ItemsRequest,
   SessionTranscript,
 } from '@owf/mdoc'
+import {
+  convertDcqlQueryToDeviceRequest,
+  convertPresentationDefinitionToDeviceRequest,
+} from '@verifiables/request-converter'
 import type { AgentContext } from '../../agent'
 import { TypedArrayEncoder } from './../../utils'
 import { PublicJwk } from '../kms'
@@ -19,12 +23,15 @@ import { X509Certificate } from '../x509'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
 import type {
+  MdocDeviceResponseDcqlQueryOptions,
   MdocDeviceResponseOptions,
+  MdocDeviceResponsePresentationDefinitionOptions,
   MdocDeviceResponseVerifyOptions,
   MdocSessionTranscriptOptions,
 } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
 import { nameSpacesRecordToMap } from './mdocUtil'
+import { convertDocumentRequest } from './utils/convertDocumentRequest'
 
 export class MdocDeviceResponse {
   private constructor(public readonly deviceResponse: DeviceResponse) {}
@@ -73,6 +80,28 @@ export class MdocDeviceResponse {
     const parsed = DeviceResponse.decode(TypedArrayEncoder.fromBase64(base64Url))
 
     return new MdocDeviceResponse(parsed)
+  }
+
+  public static async createDeviceResponseWithPresentationDefinition(
+    agentContext: AgentContext,
+    options: MdocDeviceResponsePresentationDefinitionOptions
+  ) {
+    // @ts-expect-error: we need to match the types credo uses and the converter expects
+    const { deviceRequest } = convertPresentationDefinitionToDeviceRequest(options.presentationDefinition)
+    const documentRequests = convertDocumentRequest(deviceRequest.docRequests)
+
+    return MdocDeviceResponse.createDeviceResponse(agentContext, { ...options, documentRequests })
+  }
+
+  public static async createDeviceResponseWithDcqlQuery(
+    agentContext: AgentContext,
+    options: MdocDeviceResponseDcqlQueryOptions
+  ) {
+    // @ts-expect-error: we need to match the types credo uses and the converter expects
+    const { deviceRequest } = convertDcqlQueryToDeviceRequest(options.dcqlQuery)
+    const documentRequests = convertDocumentRequest(deviceRequest.docRequests)
+
+    return MdocDeviceResponse.createDeviceResponse(agentContext, { ...options, documentRequests })
   }
 
   public static async createDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOptions) {

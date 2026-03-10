@@ -1,4 +1,4 @@
-import type { ValidityInfoOptions } from '@owf/mdoc'
+import { type ValidityInfoOptions } from '@owf/mdoc'
 import type { DcqlQuery } from 'dcql'
 import type { AnyUint8Array } from '../../types'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
@@ -81,7 +81,7 @@ export type MdocDeviceResponsePresentationDefinitionOptions = {
   sessionTranscriptOptions: MdocSessionTranscriptOptions
 }
 
-export type MdocDeviceResponseDcqlOptions = {
+export type MdocDeviceResponseDcqlQueryOptions = {
   mdocs: [Mdoc, ...Mdoc[]]
   dcqlQuery: DcqlQuery
   deviceNameSpaces?: MdocNameSpaces

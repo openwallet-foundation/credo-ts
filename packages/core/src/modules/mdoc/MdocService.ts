@@ -4,6 +4,7 @@ import type { Query, QueryOptions } from '../../storage/StorageService'
 import { Mdoc } from './Mdoc'
 import { MdocDeviceResponse } from './MdocDeviceResponse'
 import type {
+  MdocDeviceResponseDcqlQueryOptions,
   MdocDeviceResponseOptions,
   MdocDeviceResponsePresentationDefinitionOptions,
   MdocDeviceResponseVerifyOptions,
@@ -44,7 +45,11 @@ export class MdocService {
     agentContext: AgentContext,
     options: MdocDeviceResponsePresentationDefinitionOptions
   ) {
-    return MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agentContext, options)
+    return MdocDeviceResponse.createDeviceResponseWithPresentationDefinition(agentContext, options)
+  }
+
+  public async createDcqlQueryDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseDcqlQueryOptions) {
+    return MdocDeviceResponse.createDeviceResponseWithDcqlQuery(agentContext, options)
   }
 
   public async verifyDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseVerifyOptions) {

@@ -152,45 +152,42 @@ describe('mdoc service test', () => {
       isValid: false,
     })
 
-    const { deviceResponseBase64Url } = await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(
-      agentContext,
-      {
-        mdocs: [mdoc],
-        presentationDefinition: {
-          id: 'something',
-          input_descriptors: [
-            {
-              id: 'org.iso.18013.5.1.mDL',
-              format: {
-                mso_mdoc: {
-                  alg: ['EdDSA', 'ES256'],
-                },
-              },
-              constraints: {
-                limit_disclosure: 'required',
-                fields: [
-                  {
-                    path: ["$['hello']['world']"],
-                    intent_to_retain: false,
-                  },
-                ],
+    const deviceResponse = await MdocDeviceResponse.createDeviceResponseWithPresentationDefinition(agentContext, {
+      mdocs: [mdoc],
+      presentationDefinition: {
+        id: 'something',
+        input_descriptors: [
+          {
+            id: 'org.iso.18013.5.1.mDL',
+            format: {
+              mso_mdoc: {
+                alg: ['EdDSA', 'ES256'],
               },
             },
-          ],
-        },
-        sessionTranscriptOptions: {
-          type: 'openId4VpDraft18',
-          mdocGeneratedNonce: 'something',
-          verifierGeneratedNonce: 'something-else',
-          clientId: 'something',
-          responseUri: 'something',
-        },
-      }
-    )
+            constraints: {
+              limit_disclosure: 'required',
+              fields: [
+                {
+                  path: ["$['hello']['world']"],
+                  intent_to_retain: false,
+                },
+              ],
+            },
+          },
+        ],
+      },
+      sessionTranscriptOptions: {
+        type: 'openId4VpDraft18',
+        mdocGeneratedNonce: 'something',
+        verifierGeneratedNonce: 'something-else',
+        clientId: 'something',
+        responseUri: 'something',
+      },
+    })
 
-    const deviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
+    const dr = MdocDeviceResponse.fromBase64Url(deviceResponse.encoded)
     await expect(
-      deviceResponse.verify(agentContext, {
+      dr.verify(agentContext, {
         sessionTranscriptOptions: {
           type: 'openId4VpDraft18',
           mdocGeneratedNonce: 'something',
