@@ -221,9 +221,9 @@ export class DidCommMessageReceiver {
   ): Promise<DecryptedDidCommMessageContext> {
     try {
       if (isDidCommV2EncryptedMessage(message)) {
-        if (!this.config.acceptDidCommV2) {
+        if (!this.config.didcommVersions.includes('v2')) {
           throw new CredoError(
-            'Received DIDComm v2 encrypted message but acceptDidCommV2 is disabled. Enable acceptDidCommV2 in DidCommModuleConfig to accept v2 messages.'
+            'Received DIDComm v2 encrypted message but v2 is not enabled. Add "v2" to didcommVersions in DidCommModuleConfig to accept v2 messages.'
           )
         }
         const resolved = await this.v2KeyResolver.resolveRecipientKey(agentContext, message)
@@ -310,6 +310,13 @@ export class DidCommMessageReceiver {
       let connection = await this.connectionService.findByTheirDid(agentContext, from)
       if (connection) return connection
 
+      // Fallback: try findByKeys. With v1 connections + v2 envelope, findByTheirDid can fail in edge cases.
+      // With v2 OOB, findByKeys may work if DidRecords exist for the keys.
+      if (recipientKey && senderKey) {
+        connection = await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
+        if (connection) return connection
+      }
+
       if (to?.length && this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
         const recipient = to[0]
         const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipient)
@@ -324,6 +331,7 @@ export class DidCommMessageReceiver {
               theirDid: from,
               did: recipient,
               outOfBandId: outOfBandRecord.id,
+              didcommVersion: 'v2',
             },
             true
           )

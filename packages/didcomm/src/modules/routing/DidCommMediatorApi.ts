@@ -1,5 +1,6 @@
 import { AgentContext, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { assertDidCommV1Connection } from '../../util/didcommVersion'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections'
 import { DidCommMediatorModuleConfig } from './DidCommMediatorModuleConfig'
@@ -32,6 +33,7 @@ export class DidCommMediatorApi {
   public async grantRequestedMediation(mediationRecordId: string): Promise<DidCommMediationRecord> {
     const record = await this.mediatorService.getById(this.agentContext, mediationRecordId)
     const connectionRecord = await this.connectionService.getById(this.agentContext, record.connectionId)
+    assertDidCommV1Connection(connectionRecord, 'Mediation')
 
     const { message, mediationRecord } = await this.mediatorService.createGrantMediationMessage(
       this.agentContext,

@@ -14,6 +14,7 @@ import {
 import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
 import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { assertDidCommV1Connection } from '../../util/didcommVersion'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommOutboundMessageContext } from '../../models'
 import type { DidCommOutboundWebSocketClosedEvent, DidCommOutboundWebSocketOpenedEvent } from '../../transport'
@@ -250,6 +251,7 @@ export class DidCommMediationRecipientApi {
 
     const mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediatorRecord))
     const mediatorConnection = await this.connectionService.getById(this.agentContext, mediatorRecord.connectionId)
+    assertDidCommV1Connection(mediatorConnection, 'Mediation')
 
     switch (mediatorPickupStrategy) {
       case DidCommMediatorPickupStrategy.PickUpV1:
@@ -359,6 +361,7 @@ export class DidCommMediationRecipientApi {
   }
 
   public async requestMediation(connection: DidCommConnectionRecord): Promise<DidCommMediationRecord> {
+    assertDidCommV1Connection(connection, 'Mediation')
     const { mediationRecord, message } = await this.mediationRecipientService.createRequest(
       this.agentContext,
       connection
@@ -377,6 +380,7 @@ export class DidCommMediationRecipientApi {
     verkey: string,
     action?: DidCommKeylistUpdateAction
   ) {
+    assertDidCommV1Connection(connection, 'Mediation')
     // Use our useDidKey configuration unless we know the key formatting other party is using
     const didcommConfig = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
     let useDidKey = didcommConfig.useDidKeyInProtocols
@@ -476,6 +480,7 @@ export class DidCommMediationRecipientApi {
    */
   // TODO: we should rename this method, to something that is more descriptive
   public async provision(connection: DidCommConnectionRecord) {
+    assertDidCommV1Connection(connection, 'Mediation')
     this.logger.debug('Connection completed, requesting mediation')
 
     let mediation = await this.findByConnectionId(connection.id)

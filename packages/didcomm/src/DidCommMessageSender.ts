@@ -83,13 +83,28 @@ export class DidCommMessageSender {
   ): Promise<DidCommOutboundPackage> {
     let encryptedMessage: DidCommEncryptedMessage
     // Connection request/response: use v1 so recipient can decrypt (v1 authcrypt embeds sender key; v2 requires skid resolution which fails for did:peer:1 before connection).
+    // Throw when sending v2-only message over v1 connection (skip check for connectionless)
+    if (connection) {
+      const connVersion = connection.didcommVersion ?? 'v1'
+      const supported = message.supportedDidCommVersions
+      if (supported && supported.length > 0 && !supported.includes(connVersion)) {
+        throw new CredoError(
+          `Message type ${message.type} only supports DIDComm ${supported.join(', ')} but connection uses ${connVersion}`
+        )
+      }
+    }
+
     const isConnectionRequest = typeof message.type === 'string' && message.type.endsWith('connections/1.0/request')
     const isConnectionResponse = typeof message.type === 'string' && message.type.endsWith('connections/1.0/response')
     const useV1ForConnection = isConnectionRequest || isConnectionResponse
 
+    const useV2ForPacking = connection
+      ? (connection.didcommVersion ?? 'v1') === 'v2'
+      : this.didCommModuleConfig.sendsV2
+
     if (
       !useV1ForConnection &&
-      this.didCommModuleConfig.sendDidCommV2 &&
+      useV2ForPacking &&
       keys.recipientKeys.length >= 1 &&
       keys.routingKeys.length === 0 &&
       keys.senderKey
@@ -151,9 +166,13 @@ export class DidCommMessageSender {
       typeof message.type === 'string' && message.type.endsWith('connections/1.0/response')
     const useV1ForConnectionSession = isConnectionRequestSession || isConnectionResponseSession
 
+    const useV2ForSessionPacking = connection
+      ? (connection.didcommVersion ?? 'v1') === 'v2'
+      : this.didCommModuleConfig.sendsV2
+
     if (
       !useV1ForConnectionSession &&
-      this.didCommModuleConfig.sendDidCommV2 &&
+      useV2ForSessionPacking &&
       keys.recipientKeys.length >= 1 &&
       keys.routingKeys.length === 0 &&
       keys.senderKey
@@ -546,7 +565,7 @@ export class DidCommMessageSender {
 
     // For connectionless v2: use did:key as kid so recipient can resolve via tryParseKidAsPublicJwk
     const recipientKeys =
-      !connection && this.didCommModuleConfig.sendDidCommV2
+      !connection && this.didCommModuleConfig.sendsV2
         ? service.recipientKeys.map((k) => {
             const copy = Kms.PublicJwk.fromPublicJwk(k.toJson())
             copy.keyId = new DidKey(k).did
@@ -692,7 +711,9 @@ export class DidCommMessageSender {
                   seen.add(verificationMethod.id)
                   const jwk = publicJwk
                   if (verificationMethod?.id && !jwk.hasKeyId) {
-                    jwk.keyId = verificationMethod.id
+                    // Use full DID URL as kid so recipient can resolve without trying multiple DIDs
+                    const vmId = verificationMethod.id as string
+                    jwk.keyId = vmId.startsWith('#') ? `${didDocument.id}${vmId}` : vmId
                   }
                   recipientKeys.push(jwk)
                 }

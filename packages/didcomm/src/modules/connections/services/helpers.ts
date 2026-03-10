@@ -20,6 +20,7 @@ import {
   type ResolvedDidCommService,
   TypedArrayEncoder,
 } from '@credo-ts/core'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
 import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import type { DidCommOutOfBandInlineServiceKey } from '../../oob/repository/DidCommOutOfBandRecord'
@@ -189,12 +190,14 @@ export async function assertNoCreatedDidExistsForKeys(agentContext: AgentContext
 }
 
 /**
- * Creates a did:peer:2 for DIDComm v2 OOB (invitation creation or accept).
+ * Creates a did:peer (2 or 4) for DIDComm v2 OOB (invitation creation or accept).
  * Uses DidCommV2Service with accept: ['didcomm/v2'].
+ * Defaults to did:peer:4; use numAlgo override for did:peer:2 (legacy).
  */
 export async function createPeerDidForV2OOB(
   agentContext: AgentContext,
-  routing: DidCommRouting
+  routing: DidCommRouting,
+  numAlgoOverride?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
 ): Promise<{ did: string; didDocument: import('@credo-ts/core').DidDocument }> {
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
   const recipientKey = routing.recipientKey
@@ -244,11 +247,16 @@ export async function createPeerDidForV2OOB(
 
   await assertNoCreatedDidExistsForKeys(agentContext, [recipientKey])
 
+  const numAlgo =
+    numAlgoOverride ??
+    agentContext.dependencyManager.resolve(DidCommModuleConfig).peerDidNumAlgoForV2OOB ??
+    PeerDidNumAlgo.ShortFormAndLongForm
+
   const result = await didsApi.create({
     method: 'peer',
     didDocument,
     options: {
-      numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc,
+      numAlgo,
       keys,
     },
   })

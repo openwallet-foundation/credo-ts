@@ -11,6 +11,7 @@ import type { DidCommDiscoverFeaturesModuleConfigOptions } from './modules/disco
 import type { DidCommProofProtocol } from './modules/proofs/protocol/DidCommProofProtocol'
 import type { DidCommMediationRecipientModuleConfigOptions } from './modules/routing/DidCommMediationRecipientModuleConfig'
 import type { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCommMediatorModuleConfig'
+import { PeerDidNumAlgo } from '@credo-ts/core'
 import {
   type DidCommInboundTransport,
   type DidCommOutboundTransport,
@@ -32,19 +33,20 @@ export interface DidCommModuleConfigOptions {
   queueTransportRepository?: DidCommQueueTransportRepository
 
   /**
-   * Accept inbound DIDComm v2 encrypted messages. When false, v2 messages are rejected.
+   * DIDComm versions to support. When v2 is included, the agent accepts and sends v2 envelopes
+   * (when the connection supports it). Connection request/response always use v1 for compatibility.
    *
-   * @default false
+   * @default ['v1']
    */
-  acceptDidCommV2?: boolean
+  didcommVersions?: ('v1' | 'v2')[]
 
   /**
-   * Send outbound messages using DIDComm v2 envelope (authcrypt only) when supported.
-   * Connection request/response always use v1 for compatibility.
+   * Peer DID numAlgo for V2 OOB invitation creation. did:peer:4 (ShortFormAndLongForm) uses a shorter
+   * identifier; did:peer:2 (MultipleInceptionKeyWithoutDoc) embeds endpoints in the DID. Use peer:2 for legacy.
    *
-   * @default false
+   * @default PeerDidNumAlgo.ShortFormAndLongForm (did:peer:4)
    */
-  sendDidCommV2?: boolean
+  peerDidNumAlgoForV2OOB?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
 
   /**
    * Configuration for the connection module.
@@ -229,13 +231,25 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
     return this._queueTransportRepository
   }
 
-  /** {@inheritDoc DidCommModuleConfigOptions.acceptDidCommV2} */
-  public get acceptDidCommV2() {
-    return this.options.acceptDidCommV2 ?? false
+  /** DIDComm versions the agent supports. */
+  public get didcommVersions(): ('v1' | 'v2')[] {
+    return this.options.didcommVersions ?? ['v1']
   }
 
-  /** {@inheritDoc DidCommModuleConfigOptions.sendDidCommV2} */
-  public get sendDidCommV2() {
-    return this.options.sendDidCommV2 ?? false
+  /** Whether the agent accepts inbound DIDComm v2 encrypted messages. */
+  public get acceptsV2() {
+    return this.didcommVersions.includes('v2')
+  }
+
+  /** Whether the agent sends outbound messages using DIDComm v2 envelope when supported. */
+  public get sendsV2() {
+    return this.didcommVersions.includes('v2')
+  }
+
+  /** Peer DID numAlgo for V2 OOB. Defaults to did:peer:4. */
+  public get peerDidNumAlgoForV2OOB() {
+    return (
+      this.options.peerDidNumAlgoForV2OOB ?? PeerDidNumAlgo.ShortFormAndLongForm
+    )
   }
 }

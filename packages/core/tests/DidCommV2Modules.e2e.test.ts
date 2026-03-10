@@ -1,8 +1,4 @@
-import {
-  DidCommDiscoverFeaturesEventTypes,
-  DidCommHandshakeProtocol,
-  DidCommGoalCode,
-} from '../../didcomm/src'
+import { DidCommDiscoverFeaturesEventTypes, DidCommGoalCode } from '../../didcomm/src'
 import type {
   DidCommDiscoverFeaturesDisclosureReceivedEvent,
   DidCommDiscoverFeaturesQueryReceivedEvent,
@@ -20,7 +16,7 @@ import { ReplaySubject } from 'rxjs'
 const faberAgent = new Agent(
   getAgentOptions(
     'Faber DIDComm v2 Modules',
-    { endpoints: ['rxjs:faber-v2mod'], acceptDidCommV2: true, sendDidCommV2: true },
+    { endpoints: ['rxjs:faber-v2mod'], didcommVersions: ['v1', 'v2'] },
     undefined,
     undefined,
     { requireDidcomm: true }
@@ -30,7 +26,7 @@ const faberAgent = new Agent(
 const aliceAgent = new Agent(
   getAgentOptions(
     'Alice DIDComm v2 Modules',
-    { endpoints: ['rxjs:alice-v2mod'], acceptDidCommV2: true, sendDidCommV2: true },
+    { endpoints: ['rxjs:alice-v2mod'], didcommVersions: ['v1', 'v2'] },
     undefined,
     undefined,
     { requireDidcomm: true }
@@ -112,19 +108,7 @@ describe('DIDComm v2 modules', () => {
       await faberAgent.initialize()
       await aliceAgent.initialize()
 
-      const faberOob = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
-      })
-
-      let { connectionRecord: aliceConn } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        faberOob.outOfBandInvitation.toUrl({ domain: 'https://example.com' }),
-        { label: 'alice' }
-      )
-      aliceConn = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceConn!.id)
-      const [faberConn] = await faberAgent.didcomm.connections.findAllByOutOfBandId(faberOob.id)
-      faberConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
-      aliceConnection = aliceConn
+      ;[faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
     })
 
     afterEach(async () => {

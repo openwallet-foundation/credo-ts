@@ -85,14 +85,46 @@ export class DidCommV2KeyResolver {
         }
       }
       if (!publicJwk && (kid.includes('#') || kid.startsWith('did:'))) {
-        try {
-          const didOnly = kid.includes('#') ? kid.split('#')[0] : kid
-          const keyRef = kid.includes('#') ? kid : `${kid}#${parseDid(kid).id}`
-          const didDocument = await this.didResolverService.resolveDidDocument(agentContext, didOnly)
-          const verificationMethod = didDocument.dereferenceKey(keyRef, ['authentication', 'keyAgreement'])
-          publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-        } catch {
-          // Fall through
+        const didOnly = kid.includes('#') ? kid.split('#')[0] : kid
+        const keyRef = kid.includes('#') ? kid : `${kid}#${parseDid(kid).id}`
+        if (didOnly) {
+          try {
+            const didDocument = await this.didResolverService.resolveDidDocument(agentContext, didOnly)
+            const verificationMethod = didDocument.dereferenceKey(keyRef, ['authentication', 'keyAgreement'])
+            publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+          } catch {
+            // Fall through
+          }
+        } else if (kid.startsWith('#')) {
+          // Relative kid (#key-1): try our created peer DIDs. Prefer OOB Sender recipientDids first
+          // (invitation DIDs) so we match the DID the message was encrypted to when we have multiple.
+          const oobRepo = agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
+          const oobSenderRecords = await oobRepo.findByQuery(agentContext, {
+            role: DidCommOutOfBandRole.Sender,
+          })
+          const preferredDids = [
+            ...new Set(
+              oobSenderRecords
+                .map((r) => r.getTags().recipientDid)
+                .filter((d): d is string => typeof d === 'string')
+            ),
+          ]
+          const ourDids = await this.didcommDocumentService.getCreatedPeerDidStrings(agentContext)
+          const orderedDids = [
+            ...preferredDids.filter((d) => ourDids.includes(d)),
+            ...ourDids.filter((d) => !preferredDids.includes(d)),
+          ]
+          for (const ourDid of orderedDids) {
+            try {
+              const didUrl = `${ourDid}${kid}`
+              const didDocument = await this.didResolverService.resolveDidDocument(agentContext, ourDid)
+              const verificationMethod = didDocument.dereferenceKey(didUrl, ['authentication', 'keyAgreement'])
+              publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+              break
+            } catch {
+              continue
+            }
+          }
         }
       }
       if (!publicJwk) continue
@@ -198,6 +230,30 @@ export class DidCommV2KeyResolver {
             // Use match's keyId (kmsKeyId from invitationInlineServiceKeys); convertTo creates new JWK and may not preserve kid
             x25519.keyId = match.hasKeyId ? match.keyId : match.legacyKeyId
             return { recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }, matchedKid: kid }
+          }
+        }
+        // V2 OOB: services are [did], getInlineServices() is empty. Use recipientDid to get kmsKeyId from our DidRecord.
+        const recipientDid = outOfBandRecord.getTags().recipientDid
+        if (recipientDid) {
+          try {
+            const { didDocument, keys } = await this.didcommDocumentService.resolveCreatedDidDocumentWithKeysByDid(
+              agentContext,
+              recipientDid,
+              publicJwk
+            )
+            const verificationMethod = didDocument.findVerificationMethodByPublicKey(publicJwk)
+            const kmsKeyId =
+              keys?.find(({ didDocumentRelativeKeyId }) =>
+                verificationMethod?.id.endsWith(didDocumentRelativeKeyId ?? '')
+              )?.kmsKeyId ?? publicJwk.legacyKeyId
+            const keyId = kmsKeyId ?? (publicJwk.hasKeyId ? publicJwk.keyId : publicJwk.legacyKeyId)
+            const x25519 = publicJwk.is(Kms.X25519PublicJwk)
+              ? (publicJwk as Kms.PublicJwk<Kms.X25519PublicJwk>)
+              : (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+            x25519.keyId = keyId
+            return { recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }, matchedKid: kid }
+          } catch {
+            // Fall through
           }
         }
       } else if (outOfBandRecord?.role === DidCommOutOfBandRole.Receiver) {

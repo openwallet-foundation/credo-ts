@@ -9,6 +9,7 @@ import {
 } from '@credo-ts/core'
 import { filter, first, firstValueFrom, ReplaySubject, Subject, takeUntil, timeout } from 'rxjs'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { assertDidCommV1Connection } from '../../util/didcommVersion'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections/services'
@@ -99,6 +100,7 @@ export class DidCommMessagePickupApi<
     this.logger.debug('Queuing message...')
     const { connectionId, message, recipientDids } = options
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
+    assertDidCommV1Connection(connectionRecord, 'Message Pickup')
 
     const queueTransportRepository =
       this.agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
@@ -139,6 +141,7 @@ export class DidCommMessagePickupApi<
     }
 
     const connectionRecord = await this.connectionService.getById(this.agentContext, session.connectionId)
+    assertDidCommV1Connection(connectionRecord, 'Message Pickup')
 
     const protocol = this.getProtocol(session.protocolVersion)
 
@@ -177,6 +180,7 @@ export class DidCommMessagePickupApi<
       throw new CredoError(`No active live mode session found with id ${pickupSessionId}`)
     }
     const connectionRecord = await this.connectionService.getById(this.agentContext, session.connectionId)
+    assertDidCommV1Connection(connectionRecord, 'Message Pickup')
 
     const protocol = this.getProtocol(session.protocolVersion)
 
@@ -209,6 +213,7 @@ export class DidCommMessagePickupApi<
    */
   public async pickupMessages(options: PickupMessagesOptions<MPPs>): Promise<PickupMessagesReturnType> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
+    assertDidCommV1Connection(connectionRecord, 'Message Pickup')
 
     const protocol = this.getProtocol(options.protocolVersion)
     const { message } = await protocol.createPickupMessage(this.agentContext, {
@@ -260,6 +265,7 @@ export class DidCommMessagePickupApi<
    */
   public async setLiveDeliveryMode(options: SetLiveDeliveryModeOptions): Promise<SetLiveDeliveryModeReturnType> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
+    assertDidCommV1Connection(connectionRecord, 'Message Pickup')
     const protocol = this.getProtocol(options.protocolVersion)
     const { message } = await protocol.setLiveDeliveryMode(this.agentContext, {
       connectionRecord,

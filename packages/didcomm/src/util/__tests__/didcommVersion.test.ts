@@ -1,9 +1,11 @@
-import { JsonEncoder } from '@credo-ts/core'
+import { CredoError, JsonEncoder } from '@credo-ts/core'
 import {
+  assertDidCommV1Connection,
   isDidCommV1EncryptedMessage,
   isDidCommV2AuthcryptMessage,
   isDidCommV2EncryptedMessage,
 } from '../didcommVersion'
+import { DidCommConnectionRecord } from '../../modules/connections/repository'
 
 describe('didcommVersion', () => {
   const v1Protected = JsonEncoder.toBase64URL({
@@ -115,6 +117,26 @@ describe('didcommVersion', () => {
 
     it('returns false for non-JWE input', () => {
       expect(isDidCommV2AuthcryptMessage('invalid')).toBe(false)
+    })
+  })
+
+  describe('assertDidCommV1Connection', () => {
+    it('does not throw for v1 connection', () => {
+      const connection = { didcommVersion: 'v1' } as DidCommConnectionRecord
+      expect(() => assertDidCommV1Connection(connection, 'Message Pickup')).not.toThrow()
+    })
+
+    it('does not throw when didcommVersion is undefined (defaults to v1)', () => {
+      const connection = {} as DidCommConnectionRecord
+      expect(() => assertDidCommV1Connection(connection, 'Mediation')).not.toThrow()
+    })
+
+    it('throws for v2 connection', () => {
+      const connection = { didcommVersion: 'v2' } as DidCommConnectionRecord
+      expect(() => assertDidCommV1Connection(connection, 'Message Pickup')).toThrow(CredoError)
+      expect(() => assertDidCommV1Connection(connection, 'Message Pickup')).toThrow(
+        'Message Pickup is restricted for DIDComm v2 connections'
+      )
     })
   })
 })

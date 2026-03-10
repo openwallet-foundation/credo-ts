@@ -10,7 +10,7 @@ import {
 } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-type DidCommV2Config = { endpoints: string[]; acceptDidCommV2: boolean; sendDidCommV2: boolean }
+type DidCommV2Config = { endpoints: string[]; didcommVersions: ('v1' | 'v2')[] }
 
 function createAgents(
   faberName: string,
@@ -32,8 +32,7 @@ const faberAgent = new Agent(
     'Faber Agent DIDComm v2',
     {
       endpoints: ['rxjs:faber'],
-      acceptDidCommV2: true,
-      sendDidCommV2: true,
+      didcommVersions: ['v1', 'v2'],
       connections: { autoAcceptConnections: true, autoCreateConnectionOnFirstMessage: true },
     },
     undefined,
@@ -46,8 +45,7 @@ const aliceAgent = new Agent(
     'Alice Agent DIDComm v2',
     {
       endpoints: ['rxjs:alice'],
-      acceptDidCommV2: true,
-      sendDidCommV2: true,
+      didcommVersions: ['v1', 'v2'],
       connections: { autoAcceptConnections: true, autoCreateConnectionOnFirstMessage: true },
     },
     undefined,
@@ -212,8 +210,8 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       const { faber, alice } = createAgents(
         'Faber v1 sender',
         'Alice v2 receiver',
-        { endpoints: ['rxjs:faber-v1'], acceptDidCommV2: true, sendDidCommV2: false },
-        { endpoints: ['rxjs:alice-v1'], acceptDidCommV2: true, sendDidCommV2: true }
+        { endpoints: ['rxjs:faber-v1'], didcommVersions: ['v1', 'v2'] },
+        { endpoints: ['rxjs:alice-v1'], didcommVersions: ['v1', 'v2'] }
       )
       setupSubjectTransports([faber, alice])
       await faber.initialize()
@@ -248,8 +246,8 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       const { faber, alice } = createAgents(
         'Faber v1 only',
         'Alice v1 only',
-        { endpoints: ['rxjs:faber-v1only'], acceptDidCommV2: false, sendDidCommV2: false },
-        { endpoints: ['rxjs:alice-v1only'], acceptDidCommV2: false, sendDidCommV2: false }
+        { endpoints: ['rxjs:faber-v1only'], didcommVersions: ['v1'] },
+        { endpoints: ['rxjs:alice-v1only'], didcommVersions: ['v1'] }
       )
       setupSubjectTransports([faber, alice])
       await faber.initialize()
@@ -278,8 +276,8 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       const { faber, alice } = createAgents(
         'Faber v1 inviter',
         'Alice v1',
-        { endpoints: ['rxjs:faber-v1inv'], acceptDidCommV2: true, sendDidCommV2: false },
-        { endpoints: ['rxjs:alice-v1inv'], acceptDidCommV2: true, sendDidCommV2: false }
+        { endpoints: ['rxjs:faber-v1inv'], didcommVersions: ['v1', 'v2'] },
+        { endpoints: ['rxjs:alice-v1inv'], didcommVersions: ['v1', 'v2'] }
       )
       setupSubjectTransports([faber, alice])
       await faber.initialize()
@@ -313,8 +311,8 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       const { faber, alice } = createAgents(
         'Faber v1 no-resp',
         'Alice v1 no-resp',
-        { endpoints: ['rxjs:faber-v1nr'], acceptDidCommV2: true, sendDidCommV2: false },
-        { endpoints: ['rxjs:alice-v1nr'], acceptDidCommV2: true, sendDidCommV2: false }
+        { endpoints: ['rxjs:faber-v1nr'], didcommVersions: ['v1', 'v2'] },
+        { endpoints: ['rxjs:alice-v1nr'], didcommVersions: ['v1', 'v2'] }
       )
       setupSubjectTransports([faber, alice])
       await faber.initialize()
@@ -348,8 +346,8 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       const { faber, alice } = createAgents(
         'Faber v1 bi',
         'Alice v1 bi',
-        { endpoints: ['rxjs:faber-v1bi'], acceptDidCommV2: true, sendDidCommV2: false },
-        { endpoints: ['rxjs:alice-v1bi'], acceptDidCommV2: true, sendDidCommV2: false }
+        { endpoints: ['rxjs:faber-v1bi'], didcommVersions: ['v1', 'v2'] },
+        { endpoints: ['rxjs:alice-v1bi'], didcommVersions: ['v1', 'v2'] }
       )
       setupSubjectTransports([faber, alice])
       await faber.initialize()

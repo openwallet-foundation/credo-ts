@@ -1037,6 +1037,9 @@ export class DidCommConnectionService {
     connectionId: string,
     timeoutMs = 20000
   ): Promise<DidCommConnectionRecord> {
+    if (!connectionId) {
+      throw new CredoError('connectionId is required for returnWhenIsConnected')
+    }
     const isConnected = (connection: DidCommConnectionRecord) => {
       return connection.id === connectionId && connection.state === DidCommDidExchangeState.Completed
     }

@@ -3,6 +3,8 @@ import {
   AgentContext,
   CredoError,
   DidKey,
+  DidsApi,
+  PeerDidNumAlgo,
   EventEmitter,
   filterContextCorrelationId,
   InjectionSymbols,
@@ -16,6 +18,7 @@ import {
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 import { DidCommEventTypes, type DidCommMessageReceivedEvent } from '../../DidCommEvents'
 import type { DidCommMessage } from '../../DidCommMessage'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import type { DidCommAttachment } from '../../decorators/attachment/DidCommAttachment'
@@ -78,10 +81,22 @@ export interface CreateOutOfBandInvitationConfig {
 
   /**
    * DIDComm version for the invitation. When 'v2', creates out-of-band/2.0 invitation
-   * with did:peer:2 (no handshake, first-message connection establishment).
-   * @default 'v1'
+   * (no handshake, first-message connection establishment).
+   * @default from didcommVersions (v2 when enabled, else v1)
    */
   didCommVersion?: 'v1' | 'v2'
+
+  /**
+   * Peer DID numAlgo for V2 OOB invitation. Overrides module config peerDidNumAlgoForV2OOB.
+   * Use did:peer:2 (MultipleInceptionKeyWithoutDoc) for legacy; did:peer:4 (ShortFormAndLongForm) is default.
+   */
+  peerDidNumAlgoForV2OOB?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
+
+  /**
+   * For v2 OOB: reuse this DID as the inviter's "from" instead of creating a new one.
+   * Used in bidirectional connection setup so both agents have matching DIDs for lookup.
+   */
+  ourDid?: string
 }
 
 export interface CreateLegacyInvitationConfig {
@@ -125,6 +140,7 @@ export class DidCommOutOfBandApi {
   private eventEmitter: EventEmitter
   private agentContext: AgentContext
   private logger: Logger
+  private didCommModuleConfig: DidCommModuleConfig
 
   public constructor(
     messageHandlerRegistry: DidCommMessageHandlerRegistry,
@@ -135,7 +151,8 @@ export class DidCommOutOfBandApi {
     messageSender: DidCommMessageSender,
     eventEmitter: EventEmitter,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    agentContext: AgentContext
+    agentContext: AgentContext,
+    didCommModuleConfig: DidCommModuleConfig
   ) {
     this.messageHandlerRegistry = messageHandlerRegistry
     this.didCommDocumentService = didCommDocumentService
@@ -146,6 +163,7 @@ export class DidCommOutOfBandApi {
     this.connectionsApi = connectionsApi
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
+    this.didCommModuleConfig = didCommModuleConfig
   }
 
   /**
@@ -164,7 +182,21 @@ export class DidCommOutOfBandApi {
    * @returns out-of-band record
    */
   public async createInvitation(config: CreateOutOfBandInvitationConfig = {}): Promise<DidCommOutOfBandRecord> {
-    const didCommVersion = config.didCommVersion ?? 'v1'
+    const handshake = config.handshake ?? true
+    const hasMessages = (config.messages && config.messages.length > 0) || false
+    const hasAppendedAttachments = (config.appendedAttachments && config.appendedAttachments.length > 0) || false
+    if (!handshake && !hasMessages && !hasAppendedAttachments) {
+      throw new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
+    }
+    const hasAttachments = hasMessages || hasAppendedAttachments
+    // V2 OOB has no handshake; use v1 when caller explicitly requests handshake or includes messages/attachments.
+    // When routing is provided, use v1 so invitation DIDs stay consistent for connection reuse flows.
+    const hasExplicitHandshakeProtocols =
+      config.handshakeProtocols !== undefined && config.handshakeProtocols.length > 0
+    const hasRouting = config.routing !== undefined
+    const didCommVersion =
+      config.didCommVersion ??
+      (hasAttachments || hasExplicitHandshakeProtocols || hasRouting ? 'v1' : this.didCommModuleConfig.sendsV2 ? 'v2' : 'v1')
     const autoAcceptConnection = config.autoAcceptConnection ?? this.connectionsApi.config.autoAcceptConnections
 
     // V2 OOB path: no handshake, did:peer:2, first-message connection establishment
@@ -173,7 +205,6 @@ export class DidCommOutOfBandApi {
     }
 
     const multiUseInvitation = config.multiUseInvitation ?? false
-    const handshake = config.handshake ?? true
     const customHandshakeProtocols = config.handshakeProtocols
     // We don't want to treat an empty array as messages being provided
     const messages = config.messages && config.messages.length > 0 ? config.messages : undefined
@@ -181,10 +212,6 @@ export class DidCommOutOfBandApi {
     const imageUrl = config.imageUrl
     const appendedAttachments =
       config.appendedAttachments && config.appendedAttachments.length > 0 ? config.appendedAttachments : undefined
-
-    if (!handshake && !messages) {
-      throw new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
-    }
 
     if (!handshake && customHandshakeProtocols) {
       throw new CredoError(`Attribute 'handshake' can not be 'false' when 'handshakeProtocols' is defined.`)
@@ -295,7 +322,7 @@ export class DidCommOutOfBandApi {
   }
 
   /**
-   * Creates a v2 OOB invitation (out-of-band/2.0) with did:peer:2.
+   * Creates a v2 OOB invitation (out-of-band/2.0) with did:peer (default did:peer:4).
    * No handshake; connection is established on first encrypted message.
    */
   private async createV2Invitation(
@@ -309,7 +336,34 @@ export class DidCommOutOfBandApi {
     }
 
     const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
-    const { did } = await createPeerDidForV2OOB(this.agentContext, routing)
+
+    let did: string
+    let recipientKeyFingerprints: string[]
+
+    if (config.ourDid) {
+      // Reuse existing DID (e.g. from first connection in bidirectional setup)
+      const didsApi = this.agentContext.dependencyManager.resolve(DidsApi)
+      const { didDocument } = await didsApi.resolveCreatedDidDocumentWithKeys(config.ourDid)
+      did = config.ourDid
+      const recipientKeys = didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+      recipientKeyFingerprints = recipientKeys.map((k) => k.publicJwk.fingerprint)
+      const ed25519Key = recipientKeys.find((k) => k.publicJwk.is(Kms.Ed25519PublicJwk))
+      if (ed25519Key) {
+        recipientKeyFingerprints.push(
+          (ed25519Key.publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk).fingerprint
+        )
+      }
+    } else {
+      const numAlgo = config.peerDidNumAlgoForV2OOB ?? this.didCommModuleConfig.peerDidNumAlgoForV2OOB
+      const result = await createPeerDidForV2OOB(this.agentContext, routing, numAlgo)
+      did = result.did
+      recipientKeyFingerprints = [routing.recipientKey.fingerprint]
+      if (routing.recipientKey.is(Kms.Ed25519PublicJwk)) {
+        recipientKeyFingerprints.push(
+          (routing.recipientKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk).fingerprint
+        )
+      }
+    }
 
     const v2Invitation = new DidCommOutOfBandInvitationV2({
       from: did,
@@ -329,7 +383,7 @@ export class DidCommOutOfBandApi {
       reusable: multiUseInvitation,
       autoAcceptConnection,
       tags: {
-        recipientKeyFingerprints: [routing.recipientKey.fingerprint],
+        recipientKeyFingerprints,
         recipientDid: did,
       },
     })
@@ -377,9 +431,11 @@ export class DidCommOutOfBandApi {
     domain: string
     routing?: DidCommRouting
   }): Promise<{ message: Message; invitationUrl: string; outOfBandRecord: DidCommOutOfBandRecord }> {
+    // Legacy connectionless uses v1 ~service (recipientKeys); v2 OOB format does not map to it.
     const outOfBandRecord = await this.createInvitation({
       messages: [config.message],
       routing: config.routing,
+      didCommVersion: 'v1',
     })
 
     // Set legacy invitation type

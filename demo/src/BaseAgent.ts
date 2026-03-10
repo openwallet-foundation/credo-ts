@@ -16,7 +16,7 @@ import {
   CheqdModule,
   CheqdModuleConfig,
 } from '@credo-ts/cheqd'
-import { Agent, BaseLogger, ConsoleLogger, DidsModule, LogLevel } from '@credo-ts/core'
+import { Agent, ConsoleLogger, DidsModule, LogLevel, PeerDidNumAlgo } from '@credo-ts/core'
 import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import {
   DidCommAutoAcceptCredential,
@@ -113,8 +113,7 @@ function getAskarAnonCredsIndyModules(
     didcomm: new DidCommModule({
       ...didcommConfig,
       ...(useDidCommV2 && {
-        acceptDidCommV2: true,
-        sendDidCommV2: true,
+        didcommVersions: ['v1', 'v2'],
       }),
       connections: {
         autoAcceptConnections: true,

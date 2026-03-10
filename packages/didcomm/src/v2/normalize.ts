@@ -46,8 +46,10 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidComm
     if (pthid !== undefined) v1['~thread']!.pthid = pthid
   }
 
-  if (lang !== undefined) v1['~l10n'] = { locale: lang }
-  
+  if (lang !== undefined) {
+    v1['~l10n'] = { locale: lang }
+  }
+
   if (attachments !== undefined && Array.isArray(attachments) && attachments.length > 0) {
     v1['~attach'] = attachments.map(mapV2AttachmentToV1)
   }

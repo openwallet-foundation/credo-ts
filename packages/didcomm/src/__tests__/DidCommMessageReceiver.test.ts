@@ -7,9 +7,9 @@ import { isDidCommV2EncryptedMessage } from '../util/didcommVersion'
 
 describe('DidCommMessageReceiver', () => {
   describe('v2 message handling', () => {
-    it('throws when receiving v2 encrypted message and acceptDidCommV2 is disabled', async () => {
+    it('throws when receiving v2 encrypted message and v2 is not in didcommVersions', async () => {
       const agent = new Agent(
-        getAgentOptions('ReceiverTest', { acceptDidCommV2: false }, {}, undefined, { requireDidcomm: true })
+        getAgentOptions('ReceiverTest', { didcommVersions: ['v1'] }, {}, undefined, { requireDidcomm: true })
       )
       setupSubjectTransports([agent])
       await agent.initialize()
@@ -33,7 +33,7 @@ describe('DidCommMessageReceiver', () => {
 
       const receiver = agent.dependencyManager.resolve(DidCommMessageReceiver)
       await expect(receiver.receiveMessage(v2Message, { contextCorrelationId: 'default' })).rejects.toThrow(
-        /acceptDidCommV2 is disabled/
+        /v2 is not enabled/
       )
 
       await agent.shutdown()

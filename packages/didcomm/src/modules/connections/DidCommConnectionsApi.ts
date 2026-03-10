@@ -126,6 +126,7 @@ export class DidCommConnectionsApi {
           invitationDid: outOfBandRecord.outOfBandInvitation.v2Invitation!.from,
           alias: config.alias,
           theirLabel: outOfBandRecord.outOfBandInvitation.v2Invitation?.body?.goal,
+          didcommVersion: 'v2',
         })
         return connectionRecord
       }
@@ -143,6 +144,7 @@ export class DidCommConnectionsApi {
         invitationDid: outOfBandRecord.outOfBandInvitation.v2Invitation!.from,
         alias: config.alias,
         theirLabel: outOfBandRecord.outOfBandInvitation.v2Invitation?.body?.goal,
+        didcommVersion: 'v2',
       })
       return connectionRecord
     } else {

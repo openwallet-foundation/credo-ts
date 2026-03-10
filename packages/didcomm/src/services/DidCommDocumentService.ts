@@ -122,9 +122,19 @@ export class DidCommDocumentService {
               ? didCommService.serviceEndpoint
               : (didCommService.serviceEndpoint as { uri?: string })?.uri
         if (endpoint) {
+          const recipientKeys = recipientKeysFromDoc.map(({ publicJwk, verificationMethod }) => {
+            const jwk = publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+            if (verificationMethod?.id && !jwk.hasKeyId) {
+              const vmId = verificationMethod.id
+              jwk.keyId = typeof vmId === 'string' && vmId.startsWith('#')
+                ? `${didDocument.id}${vmId}`
+                : vmId
+            }
+            return jwk
+          }) as Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
           resolvedServices.push({
             id: didCommService.id,
-            recipientKeys: recipientKeysFromDoc.map(({ publicJwk }) => publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
+            recipientKeys,
             routingKeys: [],
             serviceEndpoint: endpoint,
           })
@@ -172,5 +182,38 @@ export class DidCommDocumentService {
       keys: didRecord.keys,
       didDocument,
     }
+  }
+
+  /**
+   * Get DIDs we created (peer method) for resolving relative kid (e.g. #key-1).
+   */
+  public async getCreatedPeerDidStrings(agentContext: AgentContext): Promise<string[]> {
+    const created = await this.didRepository.getCreatedDids(agentContext, { method: 'peer' })
+    const dids = new Set<string>()
+    for (const rec of created) {
+      dids.add(rec.did)
+      for (const alt of rec.getTags().alternativeDids ?? []) {
+        dids.add(alt)
+      }
+    }
+    return [...dids]
+  }
+
+  /**
+   * Resolve our created DID by did string (e.g. from v2 OOB recipientDid).
+   * Used when findCreatedDidByRecipientKey fails (e.g. storage tag matching) but we know the did.
+   */
+  public async resolveCreatedDidDocumentWithKeysByDid(
+    agentContext: AgentContext,
+    did: string,
+    publicJwk: Kms.PublicJwk
+  ): Promise<{ didDocument: import('@credo-ts/core').DidDocument; keys?: import('@credo-ts/core').DidDocumentKey[] }> {
+    const didRecord = await this.didRepository.findCreatedDid(agentContext, did)
+    if (!didRecord) {
+      throw new RecordNotFoundError(`Created did for ${did} not found`, { recordType: DidRecord.type })
+    }
+    const didDocument = didRecord.didDocument ?? (await this.didResolverService.resolveDidDocument(agentContext, did))
+    didDocument.findVerificationMethodByPublicKey(publicJwk)
+    return { didDocument, keys: didRecord.keys }
   }
 }

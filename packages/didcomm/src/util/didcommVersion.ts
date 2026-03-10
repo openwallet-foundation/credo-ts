@@ -1,4 +1,5 @@
-import { JsonEncoder } from '@credo-ts/core'
+import { CredoError, JsonEncoder } from '@credo-ts/core'
+import type { DidCommConnectionRecord } from '../modules/connections/repository'
 import { isValidJweStructure } from './JWE'
 
 const DIDCOMM_V2_TYP = 'application/didcomm-encrypted+json'
@@ -58,5 +59,23 @@ export function isDidCommV1EncryptedMessage(message: unknown): boolean {
     return protectedJson?.typ === DIDCOMM_V1_TYP
   } catch {
     return false
+  }
+}
+
+/**
+ * Throws if the connection uses DIDComm v2. Use for protocols restricted to v1 (e.g. Message Pickup, Mediation).
+ *
+ * @param connection - The connection record to check
+ * @param protocolName - Name of the protocol for the error message
+ * @throws CredoError when connection.didcommVersion is 'v2'
+ */
+export function assertDidCommV1Connection(
+  connection: DidCommConnectionRecord,
+  protocolName: string
+): void {
+  if ((connection.didcommVersion ?? 'v1') === 'v2') {
+    throw new CredoError(
+      `${protocolName} is restricted for DIDComm v2 connections. Use a v1 connection (handshake-based) instead.`
+    )
   }
 }
