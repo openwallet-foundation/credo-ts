@@ -880,7 +880,7 @@ export class OpenId4VciHolderService {
             : { jwk: (await dids.resolveVerificationMethodFromCreatedDidRecord(didUrl)).publicJwk, didUrl }
         )
       )
-      if (!keys.every((key) => Kms.assymetricJwkKeyTypeMatches(key.jwk.toJson(), firstKey.toJson()))) {
+      if (!keys.every((key) => Kms.asymmetricJwkKeyTypeMatches(key.jwk.toJson(), firstKey.toJson()))) {
         throw new CredoError('Expected all did urls to point to the same key type')
       }
 
@@ -951,7 +951,7 @@ export class OpenId4VciHolderService {
 
       const firstJwk = credentialBinding.keys[0]
 
-      if (!credentialBinding.keys.every((key) => Kms.assymetricJwkKeyTypeMatches(key.toJson(), firstJwk.toJson()))) {
+      if (!credentialBinding.keys.every((key) => Kms.asymmetricJwkKeyTypeMatches(key.toJson(), firstJwk.toJson()))) {
         throw new CredoError('Expected all keys for binding method jwk to use the same key type')
       }
 

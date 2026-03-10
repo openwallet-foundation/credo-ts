@@ -462,7 +462,7 @@ export type OpenId4VciCreateIssuerOptions = {
    * }
    * ```
    */
-  accessTokenSignerKeyType?: Kms.KmsCreateKeyTypeAssymetric
+  accessTokenSignerKeyType?: Kms.KmsCreateKeyTypeAsymmetric
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
