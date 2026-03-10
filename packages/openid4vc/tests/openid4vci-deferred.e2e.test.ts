@@ -43,6 +43,16 @@ const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
 
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+
+  return nextMonth
+}
+
 describe('OpenId4Vci (Deferred)', () => {
   let expressApp: Express
   let clearNock: () => void
@@ -133,6 +143,7 @@ describe('OpenId4Vci (Deferred)', () => {
                   format: ClaimFormat.MsoMdoc,
                   credentials: holderBinding.keys.map((holderBinding) => ({
                     docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
+                    validityInfo: { validUntil: getNextMonth() },
                     issuerCertificate: credentialIssuerCertificate,
                     holderKey: holderBinding.jwk,
                     namespaces: {

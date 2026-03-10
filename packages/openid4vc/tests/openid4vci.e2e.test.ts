@@ -38,6 +38,16 @@ const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
 
+// Create ISO 18013-5 compliant root and leaf certificates
+const _getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
+
 describe('OpenId4Vc', () => {
   let expressApp: Express
   let clearNock: () => void

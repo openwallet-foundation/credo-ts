@@ -45,7 +45,6 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@owf/mdoc": "^0.6.0-alpha-20260225223459",
     "@animo-id/pex": "catalog:",
     "@astronautlabs/jsonpath": "catalog:",
     "@digitalcredentials/jsonld": "^9.0.0",
@@ -54,6 +53,7 @@
     "@multiformats/base-x": "^4.0.1",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
+    "@owf/mdoc": "^0.6.0-alpha-20260225223459",
     "@peculiar/asn1-ecc": "^2.6.0",
     "@peculiar/asn1-rsa": "^2.6.0",
     "@peculiar/asn1-schema": "^2.6.0",
@@ -70,6 +70,7 @@
     "@sphereon/ssi-types": "0.33.0",
     "@stablelib/ed25519": "catalog:",
     "@types/ws": "catalog:",
+    "@verifiables/request-converter": "^0.1.1",
     "buffer": "^6.0.3",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",

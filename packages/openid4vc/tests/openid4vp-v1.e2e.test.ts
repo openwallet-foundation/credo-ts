@@ -2183,8 +2183,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         })
       ).publicJwk
     )
+
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate,
       namespaces: {
@@ -2326,6 +2328,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
       holderKey,
+      validityInfo: { validUntil: getNextMonth() },
       issuerCertificate,
       namespaces: {
         'eu.europa.ec.eudi.pid.1': {
@@ -2568,12 +2571,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const { dcql } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     const mdocPresentation = dcql?.presentations.university[0] as MdocDeviceResponse
-    expect(mdocPresentation.documents).toHaveLength(1)
+    expect(mdocPresentation.deviceResponse.documents).toHaveLength(1)
 
-    const mdocResponse = mdocPresentation.documents[0]
+    const mdocResponse = mdocPresentation.deviceResponse.documents?.[0]
 
     // name SHOULD NOT be disclosed
-    expect(mdocResponse.issuerSignedNamespaces).toStrictEqual({
+    expect(mdocResponse?.issuerSigned.issuerNamespaces.issuerNamespaces).toStrictEqual({
       'eu.europa.ec.eudi.pid.1': {
         degree: 'bachelor',
         name: 'John Doe',
@@ -2711,6 +2714,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate: selfSignedCertificate,
       namespaces: {
@@ -2989,9 +2993,9 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const presentation = dcql?.presentations.university?.[0] as MdocDeviceResponse
-    expect(presentation.documents).toHaveLength(1)
+    expect(presentation.deviceResponse.documents).toHaveLength(1)
 
-    expect(presentation.documents[0].issuerSignedNamespaces).toEqual({
+    expect(presentation.deviceResponse.documents?.[0].issuerSigned.issuerNamespaces.issuerNamespaces).toEqual({
       'eu.europa.ec.eudi.pid.1': {
         date,
         name: 'John Doe',
@@ -3102,6 +3106,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     // Sign and store mDoc with only leaf certificate
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate: leafCertificate,
       namespaces: {

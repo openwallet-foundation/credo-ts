@@ -1,10 +1,20 @@
-import { Kms, MdocDeviceResponse, TypedArrayEncoder } from '@credo-ts/core'
+import { Kms, MdocDeviceResponse } from '@credo-ts/core'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
 import type { AgentType } from './utils'
 import { createAgentFromModules } from './utils'
 
 const baseUrl = 'https://credo.com/oid4vp'
+
+// Create ISO 18013-5 compliant root and leaf certificates
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
 
 describe('OpenId4Vc', () => {
   let verifier: AgentType<{
@@ -57,6 +67,7 @@ describe('OpenId4Vc', () => {
     )
     const mdocOne = await verifier.agent.mdoc.sign({
       docType: 'one',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate: certificate,
       namespaces: {
@@ -79,6 +90,7 @@ describe('OpenId4Vc', () => {
     const mdocTwo = await verifier.agent.mdoc.sign({
       docType: 'two',
       holderKey: holderKey2,
+      validityInfo: { validUntil: getNextMonth() },
       issuerCertificate: certificate,
       namespaces: {
         two: {
@@ -146,7 +158,7 @@ describe('OpenId4Vc', () => {
     const verified = await verifier.agent.openid4vc.verifier.verifyAuthorizationResponse({
       verificationSessionId: verificationSession.id,
       authorizationResponse: {
-        vp_token: TypedArrayEncoder.toBase64URL(deviceResponse),
+        vp_token: deviceResponse.encoded,
         presentation_submission: {
           id: 'submission_id',
           definition_id: 'random',
@@ -183,6 +195,7 @@ describe('OpenId4Vc', () => {
 
     const mdocOne = await verifier.agent.mdoc.sign({
       docType: 'one',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey: Kms.PublicJwk.fromPublicJwk(
         (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
       ),
@@ -196,6 +209,7 @@ describe('OpenId4Vc', () => {
 
     const mdocTwo = await verifier.agent.mdoc.sign({
       docType: 'two',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey: Kms.PublicJwk.fromPublicJwk(
         (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
       ),
@@ -268,7 +282,7 @@ describe('OpenId4Vc', () => {
       verifier.agent.openid4vc.verifier.verifyAuthorizationResponse({
         verificationSessionId: verificationSession.id,
         authorizationResponse: {
-          vp_token: TypedArrayEncoder.toBase64URL(deviceResponse),
+          vp_token: deviceResponse.encoded,
           presentation_submission: {
             id: 'submission_id',
             definition_id: 'random',

@@ -20,7 +20,7 @@ export class Mdoc {
 
   #deviceKeyId?: string
 
-  private constructor(public issuerSigned: IssuerSigned) {}
+  public constructor(public issuerSigned: IssuerSigned) {}
 
   /**
    * claim format is convenience method added to all credential instances

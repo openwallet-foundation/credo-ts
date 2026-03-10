@@ -19,7 +19,6 @@ import {
   extractX509CertificatesFromJwt,
   JsonTransformer,
   Kms,
-  MdocDeviceResponse,
   TypedArrayEncoder,
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
@@ -234,14 +233,7 @@ export class DidCommDifPresentationExchangeProofFormatService
 
     const firstPresentation = presentation.verifiablePresentations[0]
 
-    // TODO: they should all have `encoded` property so it's easy to use the resulting VP
-    const encodedFirstPresentation =
-      firstPresentation instanceof W3cJwtVerifiablePresentation ||
-      firstPresentation instanceof W3cJsonLdVerifiablePresentation
-        ? firstPresentation.encoded
-        : firstPresentation instanceof MdocDeviceResponse
-          ? firstPresentation.base64Url
-          : firstPresentation?.compact
+    const encodedFirstPresentation = firstPresentation.encoded
     const attachment = this.getFormatData(encodedFirstPresentation, format.attachmentId)
 
     return { attachment, format }

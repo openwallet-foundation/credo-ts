@@ -12,6 +12,16 @@ const serverPort = 1236
 const baseUrl = `http://localhost:${serverPort}`
 const verificationBaseUrl = `${baseUrl}/oid4vp`
 
+// Create ISO 18013-5 compliant root and leaf certificates
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
+
 describe('OpenID4VP Draft 21', () => {
   let expressApp: Express
   let clearNock: () => void
@@ -359,6 +369,7 @@ describe('OpenID4VP Draft 21', () => {
 
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate,
       namespaces: {
@@ -591,12 +602,12 @@ describe('OpenID4VP Draft 21', () => {
     )
 
     const presentation = presentationExchange?.presentations[0] as MdocDeviceResponse
-    expect(presentation.documents).toHaveLength(1)
+    expect(presentation.deviceResponse.documents).toHaveLength(1)
 
-    const mdocResponse = presentation.documents[0]
+    const mdocResponse = presentation.deviceResponse.documents?.[0]
 
     // name SHOULD NOT be disclosed
-    expect(mdocResponse.issuerSignedNamespaces).toStrictEqual({
+    expect(mdocResponse?.issuerSigned.issuerNamespaces.issuerNamespaces).toStrictEqual({
       'eu.europa.ec.eudi.pid.1': {
         degree: 'bachelor',
         name: 'John Doe',

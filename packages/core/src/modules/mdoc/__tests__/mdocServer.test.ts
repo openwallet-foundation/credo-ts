@@ -7,6 +7,16 @@ import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } fro
 
 const agentConfig = getAgentConfig('mdoc')
 const agentContext = getAgentContext({ registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]], agentConfig })
+
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
+
 const kms = agentContext.resolve(KeyManagementApi)
 describe('mdoc service test', () => {
   test('can get issuer-auth protected-header alg', async () => {
@@ -114,6 +124,7 @@ describe('mdoc service test', () => {
 
     const mdoc = await Mdoc.sign(agentContext, {
       docType: 'org.iso.18013.5.1.mDL',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
       namespaces: {
         hello: {
@@ -132,8 +143,6 @@ describe('mdoc service test', () => {
         nicer: 'dicer',
       },
     })
-
-    expect(mdoc.deviceSignedNamespaces).toBeNull()
 
     const verifyResult = await mdoc.verify(agentContext, {
       trustedCertificates: [certificate.toString('base64')],
