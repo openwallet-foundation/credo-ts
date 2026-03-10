@@ -10,6 +10,7 @@ const DEFAULT_C_NONCE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
 const DEFAULT_REFRESH_TOKEN_EXPIRES_IN = 90 * 24 * 60 * 60 // 90 days
+const DEFAULT_DEFERRAL_INTERVAL_GRACE_PERIOD = 7 * 24 * 60 * 60 // 7 days
 const DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
 const DEFAULT_REQUEST_URI_EXPIRES_IN = 1 * 60 // 1 minute
 
@@ -40,6 +41,15 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
    * @default 180 (3 minutes)
    */
   statefulCredentialOfferExpirationInSeconds?: number
+
+  /**
+   * For how long should the issuance session be kept alive after the deferral interval
+   * has passed. This is to allow for allow some time for the holder to recheck whether
+   * the credential is ready or not.
+   *
+   * @default 604800 (7 days)
+   */
+  deferralIntervalGracePeriodInSeconds?: number
 
   /**
    * The time after which an authorization code will expire.
@@ -264,6 +274,17 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get statefulCredentialOfferExpirationInSeconds(): number {
     return this.options.statefulCredentialOfferExpirationInSeconds ?? DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN
+  }
+
+  /**
+   * For how long should the issuance session be kept alive after the deferral interval
+   * has passed. This is to allow for allow some time for the holder to recheck whether
+   * the credential is ready or not.
+   *
+   * @default 604800 (7 days)
+   */
+  public get deferralIntervalGracePeriodInSeconds(): number {
+    return this.options.deferralIntervalGracePeriodInSeconds ?? DEFAULT_DEFERRAL_INTERVAL_GRACE_PERIOD
   }
 
   /**

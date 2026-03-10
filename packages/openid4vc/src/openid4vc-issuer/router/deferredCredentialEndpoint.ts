@@ -95,12 +95,7 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
         issuerState,
       })
 
-      if (
-        !issuanceSession ||
-        !issuanceSession.transactions?.find(
-          (tx) => tx.transactionId === parsedCredentialRequest.deferredCredentialRequest.transaction_id
-        )
-      ) {
+      if (!issuanceSession) {
         agentContext.config.logger.warn(
           `No issuance session found for incoming deferred credential request for issuer ${
             issuer.issuerId
@@ -200,6 +195,9 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
           deferredCredentialResponse.interval ? 202 : 200
         )
       } catch (error) {
+        issuanceSession.errorMessage = 'Failed to create a deferred credential response'
+        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
+
         if (error instanceof Oauth2ServerErrorResponseError) {
           return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
         }

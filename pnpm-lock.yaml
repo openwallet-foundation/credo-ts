@@ -1046,8 +1046,8 @@ importers:
         specifier: 'catalog:'
         version: 0.14.3
       didwebvh-ts:
-        specifier: ^2.7.1
-        version: 2.7.1
+        specifier: ^2.7.2
+        version: 2.7.2
       json-canonicalize:
         specifier: ^2.0.0
         version: 2.0.0
@@ -3970,7 +3970,7 @@ packages:
     resolution: {integrity: sha512-HhVd0MDnzzsgevnOWCBj5Otnzobjy5wLBe4EdeeFGv8luMsGcYqDuFRMcttKWZA5vVO8RFjexVovXvAM4JoJDQ==}
     peerDependencies:
       msw: ^2.4.9
-      vite: ^6.0.0 || ^7.0.0-0
+      vite: npm:rolldown-vite@latest
     peerDependenciesMeta:
       msw:
         optional: true
@@ -4864,8 +4864,8 @@ packages:
   did-resolver@4.1.0:
     resolution: {integrity: sha512-S6fWHvCXkZg2IhS4RcVHxwuyVejPR7c+a4Go0xbQ9ps5kILa8viiYQgrM4gfTyeTjJ0ekgJH9gk/BawTpmkbZA==}
 
-  didwebvh-ts@2.7.1:
-    resolution: {integrity: sha512-wsii4M8cQdPuIgc8wV1kg4fqWZD52pwp6asXqpUhAbYTjxE78jOUzKtmV2Xpc4NXyqyfZyGR6xDoUhj3BKmFaA==}
+  didwebvh-ts@2.7.2:
+    resolution: {integrity: sha512-aCv+VhsXvczn5qZ235Q6nvnEzwDxrPYTYC1pTioYM7LAit/RcQp6rtpI7H/MOAGwwTM/udxen2NYzgOVEd3rWg==}
     hasBin: true
 
   dir-glob@3.0.1:
@@ -13388,7 +13388,7 @@ snapshots:
 
   did-resolver@4.1.0: {}
 
-  didwebvh-ts@2.7.1:
+  didwebvh-ts@2.7.2:
     dependencies:
       '@noble/hashes': 1.8.0
       cookie: 1.1.1

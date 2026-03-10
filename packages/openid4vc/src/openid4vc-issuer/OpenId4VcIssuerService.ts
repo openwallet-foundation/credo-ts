@@ -311,12 +311,7 @@ export class OpenId4VcIssuerService {
       issuerMetadata,
       credentialRequest: options.credentialRequest,
     })
-    const {
-      credentialRequest,
-      credentialIdentifier,
-
-      format,
-    } = parsedCredentialRequest
+    const { credentialRequest, credentialIdentifier, format } = parsedCredentialRequest
 
     if (credentialIdentifier) {
       throw new Oauth2ServerErrorResponseError({
@@ -431,7 +426,9 @@ export class OpenId4VcIssuerService {
       issuanceSession.transactions.push({
         transactionId: signOptionsOrDeferral.transactionId,
         numberOfCredentials: verifiedCredentialRequestProofs.keys.length,
+        deferredUntil: utils.addSecondsToDate(new Date(), signOptionsOrDeferral.interval),
         credentialConfigurationId,
+        holderBinding: verifiedCredentialRequestProofs,
       })
 
       // Determine new state
@@ -486,20 +483,43 @@ export class OpenId4VcIssuerService {
     issuanceSession: OpenId4VcIssuanceSessionRecord
     deferredCredentialResponse: DeferredCredentialResponse
   }> {
-    options.issuanceSession.assertState([
+    const { issuanceSession, deferredCredentialRequest, authorization, deferredCredentialRequestToCredentialMapper } =
+      options
+
+    issuanceSession.assertState([
       OpenId4VcIssuanceSessionState.CredentialRequestReceived,
       OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
     ])
-    const transaction = options.issuanceSession.transactions.find(
-      (tx) => tx.transactionId === options.deferredCredentialRequest.transaction_id
+
+    const transaction = issuanceSession.transactions.find(
+      (tx) => tx.transactionId === deferredCredentialRequest.transaction_id
     )
     if (!transaction) {
-      throw new CredoError('OpenId4VcIssuanceSessionRecord does not contain transaction with given transaction_id.')
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidTransactionId,
+        error_description: `No issuance session found for incoming credential request for issuer ${issuanceSession.issuerId}, access token data and transaction id`,
+      })
     }
 
-    const { issuanceSession } = options
-    const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
+    const issuer = await this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
+
+    // Optimization: if the deferral interval hasn't passed yet, we immediately
+    // return a new deferral response with the remaining interval. This avoids
+    // calling the mapper earlier than necessary, which could trigger expensive
+    // operations.
+    const deferredUntil = transaction.deferredUntil?.getTime()
+    const now = Date.now()
+    const remainingInterval = deferredUntil ? Math.round((deferredUntil - now) / 1000) : undefined
+    if (remainingInterval && remainingInterval > 0) {
+      return {
+        deferredCredentialResponse: vcIssuer.createDeferredCredentialResponse({
+          interval: remainingInterval,
+          transactionId: transaction.transactionId,
+        }),
+        issuanceSession,
+      }
+    }
 
     const credentialConfigurationId = transaction.credentialConfigurationId
     const credentialConfiguration = issuer.credentialConfigurationsSupported[transaction.credentialConfigurationId]
@@ -510,7 +530,7 @@ export class OpenId4VcIssuerService {
     }
 
     const mapper =
-      options.deferredCredentialRequestToCredentialMapper ??
+      deferredCredentialRequestToCredentialMapper ??
       this.openId4VcIssuerConfig.deferredCredentialRequestToCredentialMapper
     if (!mapper) {
       throw new CredoError(
@@ -521,8 +541,9 @@ export class OpenId4VcIssuerService {
     const signOptionsOrDeferral = await mapper({
       agentContext,
       issuanceSession,
-      deferredCredentialRequest: options.deferredCredentialRequest,
-      authorization: options.authorization,
+      deferredCredentialRequest,
+      authorization,
+      transaction,
     })
 
     let deferredCredentialResponse: DeferredCredentialResponse
@@ -530,6 +551,18 @@ export class OpenId4VcIssuerService {
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
         interval: signOptionsOrDeferral.interval,
         transactionId: signOptionsOrDeferral.transactionId,
+      })
+
+      // Update transaction with the new deferredUntil value
+      issuanceSession.transactions = issuanceSession.transactions.map((tx) => {
+        if (tx.transactionId === transaction.transactionId) {
+          return {
+            ...tx,
+            deferredUntil: utils.addSecondsToDate(new Date(), signOptionsOrDeferral.interval),
+          }
+        }
+
+        return tx
       })
 
       // Update expiry time to allow for re-check
@@ -1319,15 +1352,16 @@ export class OpenId4VcIssuerService {
 
   /**
    * Update the expiresAt field of the issuance session to ensure it remains
-   * valid during the deferral process. We set it to the maximum between the
-   * current expiresAt and the current time plus the configured expiration
-   * time or the interval multiplied by 2. This accounts for the chance of multiple
-   * deferrals happening, with longer intervals.
+   * valid during the deferral process.
+   *
+   * We set it to the maximum between the current expiresAt and the current time
+   * plus interval and the grace period. This accounts for the chance of multiple
+   * deferrals happening, always retaining the longer interval.
    */
   private async updateExpiresAt(
     agentContext: AgentContext,
     issuanceSession: OpenId4VcIssuanceSessionRecord,
-    interval: number
+    intervalInSeconds: number
   ) {
     const expiresAt =
       issuanceSession.expiresAt ??
@@ -1342,7 +1376,7 @@ export class OpenId4VcIssuerService {
         utils
           .addSecondsToDate(
             new Date(),
-            Math.max(this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds, interval * 2)
+            intervalInSeconds + this.openId4VcIssuerConfig.deferralIntervalGracePeriodInSeconds
           )
           .getTime()
       )

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.3
+
+### Patch Changes
+
+- 73d2d59: Introduced cursor-based pagination for Drizzle-backed storage with support for before and after cursors. This ensures stable ordering using (createdAt, id) and enables efficient bidirectional pagination for large number of records.
+- Updated dependencies [73d2d59]
+  - @credo-ts/core@0.6.3
+
 ## 0.6.2
 
 ### Patch Changes
