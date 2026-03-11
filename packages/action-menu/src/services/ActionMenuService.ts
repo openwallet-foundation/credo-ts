@@ -18,6 +18,7 @@ import type {
   CreateRequestOptions,
   FindMenuOptions,
 } from './ActionMenuServiceOptions'
+import { ActionMenuModuleConfig } from '../ActionMenuModuleConfig'
 
 /**
  * @internal
@@ -27,11 +28,18 @@ export class ActionMenuService {
   private actionMenuRepository: ActionMenuRepository
   private eventEmitter: EventEmitter
   private logger: Logger
+  private config: ActionMenuModuleConfig
 
-  public constructor(actionMenuRepository: ActionMenuRepository, agentConfig: AgentConfig, eventEmitter: EventEmitter) {
+  public constructor(
+    actionMenuRepository: ActionMenuRepository,
+    agentConfig: AgentConfig,
+    eventEmitter: EventEmitter,
+    config: ActionMenuModuleConfig
+  ) {
     this.actionMenuRepository = actionMenuRepository
     this.eventEmitter = eventEmitter
     this.logger = agentConfig.logger
+    this.config = config
   }
 
   public async createRequest(agentContext: AgentContext, options: CreateRequestOptions) {
@@ -135,7 +143,10 @@ export class ActionMenuService {
 
     // If so, continue existing flow
     if (actionMenuRecord) {
-      actionMenuRecord.assertState([ActionMenuState.Null, ActionMenuState.PreparingRootMenu, ActionMenuState.Done])
+      if (this.config.strictStateChecking) {
+        actionMenuRecord.assertState([ActionMenuState.Null, ActionMenuState.PreparingRootMenu, ActionMenuState.Done])
+      }
+
       // The new menu will be bound to the existing thread
       // unless it is in null state (protocol reset)
       if (actionMenuRecord.state !== ActionMenuState.Null) {
@@ -221,7 +232,9 @@ export class ActionMenuService {
 
     // Assert
     record.assertRole(ActionMenuRole.Requester)
-    record.assertState([ActionMenuState.PreparingSelection])
+    if (this.config.strictStateChecking) {
+      record.assertState([ActionMenuState.PreparingSelection])
+    }
 
     const validSelection = record.menu?.options.some((item) => item.name === performedSelection.name)
     if (!validSelection) {
@@ -272,7 +285,9 @@ export class ActionMenuService {
           problemCode: ActionMenuProblemReportReason.Timeout,
         })
       }
-      record.assertState([ActionMenuState.AwaitingSelection])
+      if (this.config.strictStateChecking) {
+        record.assertState([ActionMenuState.AwaitingSelection])
+      }
 
       const validSelection = record.menu?.options.some((item) => item.name === performMessage.name)
       if (!validSelection) {

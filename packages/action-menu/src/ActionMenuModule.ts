@@ -12,17 +12,25 @@ import {
 } from './handlers'
 import { ActionMenuRepository } from './repository'
 import { ActionMenuService } from './services'
+import { ActionMenuModuleConfig, type ActionMenuModuleConfigOptions } from './ActionMenuModuleConfig'
 
 /**
  * @public
  */
 export class ActionMenuModule implements Module {
   public readonly api = ActionMenuApi
+  public readonly config: ActionMenuModuleConfig
+
+  public constructor(config?: ActionMenuModuleConfigOptions) {
+    this.config = new ActionMenuModuleConfig(config ?? {})
+  }
 
   /**
    * Registers the dependencies of the question answer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
+    dependencyManager.registerInstance(ActionMenuModuleConfig, this.config)
+    
     // Services
     dependencyManager.registerSingleton(ActionMenuService)
 
