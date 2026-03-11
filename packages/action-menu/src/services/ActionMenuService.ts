@@ -3,6 +3,7 @@ import { AgentConfig, CredoError, EventEmitter, injectable } from '@credo-ts/cor
 import type { DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
 import { ActionMenuEventTypes } from '../ActionMenuEvents'
+import { ActionMenuModuleConfig } from '../ActionMenuModuleConfig'
 import { ActionMenuRole } from '../ActionMenuRole'
 import { ActionMenuState } from '../ActionMenuState'
 import { ActionMenuProblemReportError } from '../errors/ActionMenuProblemReportError'
@@ -18,7 +19,6 @@ import type {
   CreateRequestOptions,
   FindMenuOptions,
 } from './ActionMenuServiceOptions'
-import { ActionMenuModuleConfig } from '../ActionMenuModuleConfig'
 
 /**
  * @internal

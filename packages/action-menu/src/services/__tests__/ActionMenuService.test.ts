@@ -12,6 +12,7 @@ import {
 } from '../../../../core/tests/helpers'
 import type { ActionMenuStateChangedEvent } from '../../ActionMenuEvents'
 import { ActionMenuEventTypes } from '../../ActionMenuEvents'
+import { ActionMenuModuleConfig } from '../../ActionMenuModuleConfig'
 import { ActionMenuRole } from '../../ActionMenuRole'
 import { ActionMenuState } from '../../ActionMenuState'
 import { ActionMenuProblemReportError } from '../../errors/ActionMenuProblemReportError'
@@ -20,7 +21,6 @@ import type { ActionMenuSelection } from '../../models'
 import { ActionMenu } from '../../models'
 import { ActionMenuRecord, ActionMenuRepository } from '../../repository'
 import { ActionMenuService } from '../ActionMenuService'
-import { ActionMenuModuleConfig } from '../../ActionMenuModuleConfig'
 
 vi.mock('../../repository/ActionMenuRepository')
 const ActionMenuRepositoryMock = ActionMenuRepository as MockedClassConstructor<typeof ActionMenuRepository>
@@ -64,8 +64,12 @@ describe('ActionMenuService', () => {
   beforeEach(async () => {
     actionMenuRepository = new ActionMenuRepositoryMock()
     eventEmitter = new EventEmitter(agentDependencies, new Subject())
-    actionMenuService = new ActionMenuService(actionMenuRepository, agentConfig, eventEmitter, new ActionMenuModuleConfig({}))
-
+    actionMenuService = new ActionMenuService(
+      actionMenuRepository,
+      agentConfig,
+      eventEmitter,
+      new ActionMenuModuleConfig({})
+    )
   })
 
   afterEach(() => {
