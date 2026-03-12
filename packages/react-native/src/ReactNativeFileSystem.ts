@@ -1,8 +1,9 @@
 import type { DownloadToFileOptions, FileSystem } from '@credo-ts/core'
-
 import { Buffer, CredoError, getDirFromFilePath, TypedArrayEncoder } from '@credo-ts/core'
-import * as RNFS from '@dr.pogodin/react-native-fs'
 import { Platform } from 'react-native'
+import { rnfs } from './rnfs'
+
+const RNFS = rnfs()
 
 export class ReactNativeFileSystem implements FileSystem {
   public readonly dataPath

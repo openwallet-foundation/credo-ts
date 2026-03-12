@@ -986,6 +986,9 @@ importers:
       react-native:
         specifier: ^0.83.1
         version: 0.83.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1)
+      react-native-fs:
+        specifier: ^2.20.0
+        version: 2.20.0(react-native@0.83.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1))
       react-native-get-random-values:
         specifier: ^2.0.0
         version: 2.0.0(react-native@0.83.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1))
@@ -4253,6 +4256,9 @@ packages:
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
 
+  base-64@0.1.0:
+    resolution: {integrity: sha512-Y5gU45svrR5tI2Vt/X9GPd3L0HNIKzGu202EjxrXMpuc2V2CiKgemAbUUsqYmZJvPtCXoUKjNZwBJzsNScUbXA==}
+
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
 
@@ -7305,6 +7311,15 @@ packages:
 
   react-is@18.3.1:
     resolution: {integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==}
+
+  react-native-fs@2.20.0:
+    resolution: {integrity: sha512-VkTBzs7fIDUiy/XajOSNk0XazFE9l+QlMAce7lGuebZcag5CnjszB+u4BdqzwaQOdcYb5wsJIsqq4kxInIRpJQ==}
+    peerDependencies:
+      react-native: '*'
+      react-native-windows: '*'
+    peerDependenciesMeta:
+      react-native-windows:
+        optional: true
 
   react-native-get-random-values@1.11.0:
     resolution: {integrity: sha512-4BTbDbRmS7iPdhYLRcz3PGFIpFJBwNZg9g42iwa2P6FOv9vZj/xJc678RZXnLNZzd0qd7Q3CCF6Yd+CU2eoXKQ==}
@@ -12756,6 +12771,8 @@ snapshots:
 
   balanced-match@1.0.2: {}
 
+  base-64@0.1.0: {}
+
   base64-js@1.5.1: {}
 
   baseline-browser-mapping@2.9.19: {}
@@ -16329,6 +16346,12 @@ snapshots:
     optional: true
 
   react-is@18.3.1: {}
+
+  react-native-fs@2.20.0(react-native@0.83.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1)):
+    dependencies:
+      base-64: 0.1.0
+      react-native: 0.83.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1)
+      utf8: 3.0.0
 
   react-native-get-random-values@1.11.0(react-native@0.83.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1)):
     dependencies:
