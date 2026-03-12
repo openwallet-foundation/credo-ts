@@ -22,13 +22,14 @@ describe('mdoc device-response test', () => {
     await agent.initialize()
   })
 
-  test('can limit the disclosure', async () => {
+  test.only('can limit the disclosure', async () => {
     const holderKey = await agent.kms.createKey({
       type: {
         kty: 'EC',
         crv: 'P-256',
       },
     })
+
     const issuerKey = await agent.kms.createKey({
       type: {
         kty: 'EC',
@@ -64,7 +65,7 @@ describe('mdoc device-response test', () => {
       issuerCertificate: certificate,
     })
 
-    const limitedDisclosedPayload = MdocDeviceResponse.limitDisclosureToInputDescriptor({
+    const limitedDisclosedPayload = await MdocDeviceResponse.limitDisclosureToInputDescriptor(agent.context, {
       mdoc,
       inputDescriptor: {
         id: mdoc.docType,

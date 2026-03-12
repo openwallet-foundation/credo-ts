@@ -69,7 +69,7 @@ export class DifPresentationExchangeService {
     presentationDefinition: DifPresentationExchangeDefinition
   ): Promise<DifPexCredentialsForRequest> {
     const credentialRecords = await this.queryCredentialForPresentationDefinition(agentContext, presentationDefinition)
-    return getCredentialsForRequest(this.pex, presentationDefinition, credentialRecords)
+    return getCredentialsForRequest(agentContext, this.pex, presentationDefinition, credentialRecords)
   }
 
   /**

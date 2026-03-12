@@ -267,8 +267,10 @@ export class DcqlService {
           Object.fromEntries(presentation.deviceResponse.documents[0].issuerSigned.issuerNamespaces.issuerNamespaces)
         ).reduce(
           (prev, [key, value]) => ({
+            // biome-ignore lint/performance/noAccumulatingSpread: time complexity not relevant here
             ...prev,
             [key]: value.reduce<Record<string, unknown>>(
+              // biome-ignore lint/performance/noAccumulatingSpread: time complexity not relevant here
               (prev, curr) => ({ ...prev, [curr.elementIdentifier]: curr.elementValue }),
               {}
             ),

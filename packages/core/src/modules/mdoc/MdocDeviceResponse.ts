@@ -11,15 +11,19 @@ import {
   ItemsRequest,
   SessionTranscript,
 } from '@owf/mdoc'
+import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import {
   convertDcqlQueryToDeviceRequest,
   convertPresentationDefinitionToDeviceRequest,
+  type Field,
+  type PresentationDefinition,
 } from '@verifiables/request-converter'
 import type { AgentContext } from '../../agent'
 import { TypedArrayEncoder } from './../../utils'
 import { PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc'
 import { X509Certificate } from '../x509'
+import type { Mdoc } from './Mdoc'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
 import type {
@@ -102,6 +106,96 @@ export class MdocDeviceResponse {
     const documentRequests = convertDocumentRequest(deviceRequest.docRequests)
 
     return MdocDeviceResponse.createDeviceResponse(agentContext, { ...options, documentRequests })
+  }
+
+  public static async limitDisclosureToInputDescriptor(
+    agentContext: AgentContext,
+    { mdoc, ...options }: { inputDescriptor: InputDescriptorV2; mdoc: Mdoc }
+  ) {
+    const inputDescriptor = MdocDeviceResponse.assertMdocInputDescriptor(options.inputDescriptor)
+
+    const { deviceRequest } = convertPresentationDefinitionToDeviceRequest({
+      id: '<UNUSED_CREDO_ID>',
+      input_descriptors: [inputDescriptor],
+    })
+
+    const deviceRequestForDocument = DeviceRequest.create({
+      version: '1.0',
+      docRequests: deviceRequest.docRequests
+        .filter((request) => request.itemsRequest.docType === mdoc.docType)
+        .map((request) =>
+          DocRequest.create({
+            itemsRequest: ItemsRequest.create({
+              docType: request.itemsRequest.docType,
+              namespaces: nameSpacesRecordToMap(request.itemsRequest.nameSpaces),
+            }),
+          })
+        ),
+    })
+
+    const mdocContext = getMdocContext(agentContext)
+    const deviceResponse = await DeviceResponse.createWithDeviceRequest(
+      {
+        deviceRequest: deviceRequestForDocument,
+        issuerSigned: [mdoc.issuerSigned],
+        sessionTranscript: new Uint8Array([0]),
+      },
+      mdocContext
+    )
+
+    const [document] = deviceResponse.documents ?? []
+
+    if (!document) {
+      throw new MdocError('Could not limit the disclosure for the input descriptor')
+    }
+
+    const disclosedPayloadAsRecord = Object.fromEntries(
+      Array.from(document.issuerSigned.issuerNamespaces.issuerNamespaces.entries()).map(
+        ([namespace, issuerSignedItem]) => [
+          namespace,
+          Object.fromEntries(issuerSignedItem.map((isi) => [isi.elementIdentifier, isi.elementValue])),
+        ]
+      )
+    )
+
+    return disclosedPayloadAsRecord
+  }
+
+  private static assertMdocInputDescriptor(inputDescriptor: InputDescriptorV2) {
+    if (!inputDescriptor.format || !inputDescriptor.format.mso_mdoc) {
+      throw new MdocError(`Input descriptor must contain 'mso_mdoc' format property`)
+    }
+
+    if (!inputDescriptor.format.mso_mdoc.alg) {
+      throw new MdocError(`Input descriptor mso_mdoc must contain 'alg' property`)
+    }
+
+    if (!inputDescriptor.constraints?.limit_disclosure || inputDescriptor.constraints.limit_disclosure !== 'required') {
+      throw new MdocError(
+        `Input descriptor must contain 'limit_disclosure' constraints property which is set to required`
+      )
+    }
+
+    if (!inputDescriptor.constraints?.fields?.every((field) => field.intent_to_retain !== undefined)) {
+      throw new MdocError(`Input descriptor must contain 'intent_to_retain' constraints property`)
+    }
+
+    return {
+      ...inputDescriptor,
+      format: {
+        mso_mdoc: inputDescriptor.format.mso_mdoc,
+      },
+      constraints: {
+        ...inputDescriptor.constraints,
+        limit_disclosure: 'required',
+        fields: (inputDescriptor.constraints.fields ?? []).map((field) => {
+          return {
+            ...field,
+            intent_to_retain: field.intent_to_retain ?? false,
+          }
+        }) as Field[],
+      },
+    } satisfies PresentationDefinition['input_descriptors'][number]
   }
 
   public static async createDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOptions) {
