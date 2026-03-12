@@ -21,7 +21,7 @@ import {
   type KmsCreateKeyOptions,
   type KmsCreateKeyReturn,
   type KmsCreateKeyType,
-  type KmsCreateKeyTypeAssymetric,
+  type KmsCreateKeyTypeAsymmetric,
   zKmsCreateKeyForSignatureAlgorithmOptions,
   zKmsCreateKeyOptions,
 } from './options/KmsCreateKeyOptions'
@@ -92,7 +92,7 @@ export class KeyManagementApi {
    */
   public async createKeyForSignatureAlgorithm(
     options: WithBackend<KmsCreateKeyForSignatureAlgorithmOptions>
-  ): Promise<KmsCreateKeyReturn<KmsCreateKeyTypeAssymetric>> {
+  ): Promise<KmsCreateKeyReturn<KmsCreateKeyTypeAsymmetric>> {
     const { backend, algorithm, ...kmsOptions } = zParseWithErrorHandling(
       zWithBackend(zKmsCreateKeyForSignatureAlgorithmOptions),
       options,

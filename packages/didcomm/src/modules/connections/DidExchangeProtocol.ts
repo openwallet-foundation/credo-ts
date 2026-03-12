@@ -508,7 +508,7 @@ export class DidExchangeProtocol {
           },
           protectedHeaderOptions: {
             alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
-            jwk: signingKey,
+            jwk: signingKey.toJson({ includeKid: false }),
           },
         })
         signedAttach.addJws(jws)
