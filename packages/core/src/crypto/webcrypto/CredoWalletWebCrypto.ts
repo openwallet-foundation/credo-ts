@@ -63,27 +63,29 @@ export class CredoWalletWebCrypto {
     if (algorithm.name === 'ECDSA') {
       const hashAlg = typeof algorithm.hash === 'string' ? algorithm.hash : algorithm.hash.name
       if (publicKey.kty === 'EC' && publicKey.crv === 'P-256' && hashAlg !== 'SHA-256') {
-        if (hashAlg !== 'SHA-384') {
+        if (hashAlg !== 'SHA-384' && hashAlg !== 'SHA-512') {
           throw new CredoWebCryptoError(
             `Hash Alg: ${hashAlg} is not supported with key type ${publicKey.crv} currently`
           )
         }
 
-        return p256.verify(signature, Hasher.hash(message, 'sha-384'), publicKey.publicKey, {
+        return p256.verify(signature, Hasher.hash(message, hashAlg.toLowerCase()), publicKey.publicKey, {
           // we use a custom hash
           prehash: false,
+          lowS: false,
         })
       }
       if (publicKey.kty === 'EC' && publicKey.crv === 'P-384' && hashAlg !== 'SHA-384') {
-        if (hashAlg !== 'SHA-256') {
+        if (hashAlg !== 'SHA-256' && hashAlg !== 'SHA-512') {
           throw new CredoWebCryptoError(
             `Hash Alg: ${hashAlg} is not supported with key type ${publicKey.crv} currently`
           )
         }
 
-        return p384.verify(signature, Hasher.hash(message, 'sha-256'), publicKey.publicKey, {
+        return p384.verify(signature, Hasher.hash(message, hashAlg.toLowerCase()), publicKey.publicKey, {
           // we use a custom hash
           prehash: false,
+          lowS: false,
         })
       }
     }
