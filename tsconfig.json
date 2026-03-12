@@ -10,8 +10,6 @@
     "samples",
     "packages",
     "tests/vitest.d.ts",
-    "demo",
-    "demo-openid",
     "packages/drizzle-storage/types/shell.d.ts"
   ],
   "exclude": [
