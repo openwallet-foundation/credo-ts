@@ -1,8 +1,9 @@
 import type { DownloadToFileOptions, FileSystem } from '@credo-ts/core'
-
 import { Buffer, CredoError, getDirFromFilePath, TypedArrayEncoder } from '@credo-ts/core'
 import { Platform } from 'react-native'
-import * as RNFS from 'react-native-fs'
+import { rnfs } from './rnfs'
+
+const RNFS = rnfs()
 
 export class ReactNativeFileSystem implements FileSystem {
   public readonly dataPath
@@ -22,7 +23,7 @@ export class ReactNativeFileSystem implements FileSystem {
    * Files will be created under baseTempPath/.afj directory. If not specified, it will be set to
    * RNFS.TemporaryDirectoryPath
    *
-   * @see https://github.com/itinance/react-native-fs#constants
+   * @see https://github.com/birdofpreyru/react-native-fs#constants
    */
   public constructor(options?: { baseDataPath?: string; baseCachePath?: string; baseTempPath?: string }) {
     this.dataPath = `${options?.baseDataPath ?? RNFS.DocumentDirectoryPath}/.afj`
