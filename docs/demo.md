@@ -10,7 +10,7 @@ The Credo interactive demos now live in their own repositories so the framework 
 
 ## OpenID4VC + SD-JWT VC demo
 
-- Repository: https://github.com/openwallet-foundation/afj-demo-openid
+- Repository: https://github.com/openwallet-foundation/credo-demo-openid
 - Install dependencies with `pnpm install` and then start the desired processes (`pnpm issuer`, `pnpm provider`, `pnpm holder`, `pnpm verifier`, etc.) as described in that README.
 - The repo also includes `ngrok` proxy scripts to expose the demo endpoints when needed.
 

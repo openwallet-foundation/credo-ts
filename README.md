@@ -205,7 +205,7 @@ See [Supported Features](https://credo.js.org/guides/features) on the Credo webs
 Credo's interactive demos are now published as standalone repositories. Clone a repository to walk through the flows with Alice and Faber, install dependencies with `pnpm`, then run the scripts described in the repo's README. See `docs/demo.md` for more details on each repo.
 
 - AnonCreds / DIDComm demo (`credo-demo`): https://github.com/openwallet-foundation/credo-demo
-- OpenID4VC + SD-JWT VC demo (`afj-demo-openid`): https://github.com/openwallet-foundation/afj-demo-openid
+- OpenID4VC + SD-JWT VC demo (`credo-demo-openid`): https://github.com/openwallet-foundation/credo-demo-openid
 
 ## Contributing
 
