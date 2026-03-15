@@ -58,7 +58,7 @@ export const indyNetworkConfig = {
   connectOnStartup: true,
 } satisfies IndyVdrPoolConfig
 
-const useDidCommV2 = process.env.DIDCOMM_V2 === 'true' || process.env.USE_DIDCOMM_V2 === 'true'
+const useDidCommV2 = process.env.DIDCOMM_V2 === 'true'
 
 type DemoAgent = Agent<ReturnType<typeof getAskarAnonCredsIndyModules>>
 
@@ -74,9 +74,7 @@ export class BaseAgent {
     this.useDidCommV2 = useDidCommV2
 
     this.agent = new Agent({
-      config: {
-        logger: new ConsoleLogger(LogLevel.debug),
-      },
+      config: {},
       dependencies: agentDependencies,
       modules: getAskarAnonCredsIndyModules(
         {
