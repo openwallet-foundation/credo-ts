@@ -5,7 +5,7 @@ import {
   Ed25519PublicJwk,
   KeyManagementApi,
   type KmsCreateKeyOptions,
-  type KmsCreateKeyTypeAssymetric,
+  type KmsCreateKeyTypeAsymmetric,
   PublicJwk,
   X25519PublicJwk,
 } from '../../../kms'
