@@ -256,7 +256,7 @@ export interface PeerDidNumAlgo0CreateOptions extends DidCreateOptions {
   didDocument?: never
   options: {
     numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc
-  } & XOR<{ createKey: KmsCreateKeyOptions<KmsCreateKeyTypeAssymetric> }, { keyId: string }>
+  } & XOR<{ createKey: KmsCreateKeyOptions<KmsCreateKeyTypeAsymmetric> }, { keyId: string }>
   secret?: never
 }
 
