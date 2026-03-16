@@ -38,6 +38,16 @@ const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const verificationBaseUrl = `${baseUrl}/oid4vp`
 
+// Create ISO 18013-5 compliant root and leaf certificates
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
+
 describe('OpenID4VP Draft 24', () => {
   let expressApp: Express
   let clearNock: () => void
@@ -1532,6 +1542,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate,
       namespaces: {
@@ -1674,6 +1685,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate,
       namespaces: {
@@ -1904,12 +1916,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const presentation = presentationExchange?.presentations[0] as MdocDeviceResponse
-    expect(presentation.documents).toHaveLength(1)
+    expect(presentation.deviceResponse.documents).toHaveLength(1)
 
-    const mdocResponse = presentation.documents[0]
+    const mdocResponse = presentation.deviceResponse.documents?.[0]
 
     // name SHOULD NOT be disclosed
-    expect(mdocResponse.issuerSignedNamespaces).toStrictEqual({
+    expect(mdocResponse?.issuerSigned.issuerNamespaces.issuerNamespaces).toStrictEqual({
       'eu.europa.ec.eudi.pid.1': {
         degree: 'bachelor',
         name: 'John Doe',
@@ -2445,6 +2457,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate: selfSignedCertificate,
       namespaces: {
@@ -2721,9 +2734,9 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const presentation = dcql?.presentations.orgeuuniversity?.[0] as MdocDeviceResponse
-    expect(presentation.documents).toHaveLength(1)
+    expect(presentation.deviceResponse.documents).toHaveLength(1)
 
-    expect(presentation.documents[0].issuerSignedNamespaces).toEqual({
+    expect(presentation.deviceResponse.documents?.[0].issuerSigned.issuerNamespaces.issuerNamespaces).toEqual({
       'eu.europa.ec.eudi.pid.1': {
         date,
         name: 'John Doe',

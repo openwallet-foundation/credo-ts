@@ -511,9 +511,6 @@ importers:
 
   packages/core:
     dependencies:
-      '@animo-id/mdoc':
-        specifier: ^0.5.2
-        version: 0.5.2
       '@animo-id/pex':
         specifier: 'catalog:'
         version: 6.1.1
@@ -538,6 +535,9 @@ importers:
       '@noble/hashes':
         specifier: ^2.0.1
         version: 2.0.1
+      '@owf/mdoc':
+        specifier: ^0.6.0-alpha-20260225223459
+        version: 0.6.0-alpha-20260225223459
       '@peculiar/asn1-ecc':
         specifier: ^2.6.0
         version: 2.6.0
@@ -586,6 +586,9 @@ importers:
       '@types/ws':
         specifier: 'catalog:'
         version: 8.18.1
+      '@verifiables/request-converter':
+        specifier: ^0.1.1
+        version: 0.1.1(dcql@3.0.0(typescript@5.9.3))
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
@@ -3147,6 +3150,9 @@ packages:
   '@openwallet-foundation/askar-shared@0.4.3':
     resolution: {integrity: sha512-Zt9zlvjJxNs8UWlnRydZH594Lak15YPHY72VT1+iDbXh0OjTdyq6Bf0FIsh9sfFnRYIgh2zd8+VoXxZ07GjADA==}
 
+  '@owf/mdoc@0.6.0-alpha-20260225223459':
+    resolution: {integrity: sha512-j3F/301TSUa5JeEtlwNO0FfLyCeOYyiBtkETPLGnVOt7HSBoYpSdcm3Ot2+MfnGldi2qmo8HGC6Ul2uib70bTw==}
+
   '@oxc-project/runtime@0.101.0':
     resolution: {integrity: sha512-t3qpfVZIqSiLQ5Kqt/MC4Ge/WCOGrrcagAdzTcDaggupjiGxUx4nJF2v6wUCXWSzWHn5Ns7XLv13fCJEwCOERQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -3948,6 +3954,15 @@ packages:
     resolution: {integrity: sha512-hHqer2mcdVC0eYnVNbWyi28AlGOPb2vjH3lP3/Bc8Lc8BjhMsDwFMm7WhoP5C1+cfbr/QJ6Er3H/L08wznXxfg==}
     peerDependencies:
       graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0
+
+  '@verifiables/request-converter@0.1.1':
+    resolution: {integrity: sha512-ZxFcF0mO8/ucN/MOBO9Xoelt9+MA8i8QvcRfnJ3iPbV0sFUbI+RFgYeoI4+4v9DVhP6r3jwKLE/2SpqZU4JNiw==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      dcql: '>=2.0.0'
+    peerDependenciesMeta:
+      dcql:
+        optional: true
 
   '@vitest/coverage-v8@4.0.18':
     resolution: {integrity: sha512-7i+N2i0+ME+2JFZhfuz7Tg/FqKtilHjGyGvoHYQ6iLV0zahbsJ9sljC9OcFcPDbhYKCet+sG8SsVqlyGvPflZg==}
@@ -11320,6 +11335,12 @@ snapshots:
       buffer: 6.0.3
       tar: 7.5.7
 
+  '@owf/mdoc@0.6.0-alpha-20260225223459':
+    dependencies:
+      cbor-x: 1.6.0
+      zod: 4.3.6
+      zod-validation-error: 5.0.0(zod@4.3.6)
+
   '@oxc-project/runtime@0.101.0': {}
 
   '@oxc-project/types@0.101.0': {}
@@ -12366,6 +12387,10 @@ snapshots:
       '@urql/core': 2.3.6(graphql@15.8.0)
       graphql: 15.8.0
       wonka: 4.0.15
+
+  '@verifiables/request-converter@0.1.1(dcql@3.0.0(typescript@5.9.3))':
+    optionalDependencies:
+      dcql: 3.0.0(typescript@5.9.3)
 
   '@vitest/coverage-v8@4.0.18(vitest@4.0.18(@types/node@20.19.31)(esbuild@0.25.12)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:

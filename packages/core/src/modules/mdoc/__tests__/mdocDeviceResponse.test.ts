@@ -7,19 +7,29 @@ import { X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
 
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
+
 describe('mdoc device-response test', () => {
   const agent = new Agent(getAgentOptions('mdoc-test-agent', {}))
   beforeAll(async () => {
     await agent.initialize()
   })
 
-  test('can limit the disclosure', async () => {
+  test.only('can limit the disclosure', async () => {
     const holderKey = await agent.kms.createKey({
       type: {
         kty: 'EC',
         crv: 'P-256',
       },
     })
+
     const issuerKey = await agent.kms.createKey({
       type: {
         kty: 'EC',
@@ -43,6 +53,7 @@ describe('mdoc device-response test', () => {
 
     const mdoc = await Mdoc.sign(agent.context, {
       docType: 'org.iso.18013.5.1.mDL',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
       namespaces: {
         hello: {
@@ -54,7 +65,7 @@ describe('mdoc device-response test', () => {
       issuerCertificate: certificate,
     })
 
-    const limitedDisclosedPayload = MdocDeviceResponse.limitDisclosureToInputDescriptor({
+    const limitedDisclosedPayload = await MdocDeviceResponse.limitDisclosureToInputDescriptor(agent.context, {
       mdoc,
       inputDescriptor: {
         id: mdoc.docType,

@@ -24,6 +24,7 @@ import {
   joinUriParts,
   Kms,
   type Logger,
+  Mdoc,
   MdocDeviceResponse,
   type MdocSessionTranscriptOptions,
   type MdocSupportedSignatureAlgorithm,
@@ -1203,17 +1204,19 @@ export class OpenId4VpVerifierService {
           throw new CredoError('Expected vp_token entry for format mso_mdoc to be of type string')
         }
         const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(presentation)
-        if (mdocDeviceResponse.documents.length === 0) {
+        const document = mdocDeviceResponse.deviceResponse.documents?.[0]
+        if (!document) {
           throw new CredoError('mdoc device response does not contain any mdocs')
         }
+
+        const mdoc = new Mdoc(document.issuerSigned)
 
         const deviceResponses = mdocDeviceResponse.splitIntoSingleDocumentResponses()
 
         for (const deviceResponseIndex of deviceResponses.keys()) {
           const mdocDeviceResponse = deviceResponses[deviceResponseIndex]
 
-          const document = mdocDeviceResponse.documents[0]
-          const certificateChain = document.issuerSignedCertificateChain.map((cert) =>
+          const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
             X509Certificate.fromRawCertificate(cert)
           )
 
@@ -1221,7 +1224,7 @@ export class OpenId4VpVerifierService {
             certificateChain,
             verification: {
               type: 'credential',
-              credential: document,
+              credential: mdoc,
               openId4VcVerificationSessionId: options.verificationSessionId,
             },
           })

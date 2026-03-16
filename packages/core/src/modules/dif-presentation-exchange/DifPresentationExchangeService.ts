@@ -12,6 +12,7 @@ import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query } from '../../storage/StorageService'
 import { JsonTransformer } from '../../utils'
+import { uuid } from '../../utils/uuid'
 import type { VerificationMethod } from '../dids'
 import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
 import { getJwkHumanDescription } from '../kms'
@@ -52,6 +53,7 @@ import {
   getSphereonOriginalVerifiablePresentation,
   getVerifiablePresentationFromEncoded,
 } from './utils'
+import { assertMdocInputDescriptor, inputDescriptorToDocumentRequest } from './utils/mdoc'
 
 /**
  * @todo create a public api for using dif presentation exchange
@@ -67,7 +69,7 @@ export class DifPresentationExchangeService {
     presentationDefinition: DifPresentationExchangeDefinition
   ): Promise<DifPexCredentialsForRequest> {
     const credentialRecords = await this.queryCredentialForPresentationDefinition(agentContext, presentationDefinition)
-    return getCredentialsForRequest(this.pex, presentationDefinition, credentialRecords)
+    return getCredentialsForRequest(agentContext, this.pex, presentationDefinition, credentialRecords)
   }
 
   /**
@@ -210,12 +212,14 @@ export class DifPresentationExchangeService {
           )
         }
 
-        const { deviceResponseBase64Url, presentationSubmission } =
-          await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agentContext, {
-            mdocs: [mdocRecord.firstCredential],
-            presentationDefinition: presentationDefinition,
-            sessionTranscriptOptions: mdocSessionTranscript,
-          })
+        const deviceResponse = await MdocDeviceResponse.createDeviceResponse(agentContext, {
+          mdocs: [mdocRecord.firstCredential],
+          documentRequests: (presentationDefinition.input_descriptors as InputDescriptorV2[])
+            .filter((id) => Object.keys(id.format ?? {}).includes('mso_mdoc'))
+            .map(assertMdocInputDescriptor)
+            .map(inputDescriptorToDocumentRequest),
+          sessionTranscriptOptions: mdocSessionTranscript,
+        })
 
         if (presentationSubmissionLocation !== DifPresentationExchangeSubmissionLocation.EXTERNAL) {
           throw new DifPresentationExchangeError(
@@ -225,8 +229,18 @@ export class DifPresentationExchangeService {
 
         verifiablePresentationResultsWithFormat.push({
           verifiablePresentationResult: {
-            presentationSubmission: presentationSubmission,
-            verifiablePresentations: [deviceResponseBase64Url],
+            presentationSubmission: {
+              id: `MdocPresentationSubmission ${uuid()}`,
+              definition_id: presentationDefinition.id,
+              descriptor_map: [
+                {
+                  id: presentationDefinition.input_descriptors[0].id,
+                  format: 'mso_mdoc',
+                  path: '$',
+                },
+              ],
+            },
+            verifiablePresentations: [deviceResponse.encoded],
             presentationSubmissionLocation,
           },
           claimFormat: presentationToCreate.claimFormat,
