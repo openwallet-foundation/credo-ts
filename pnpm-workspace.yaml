@@ -1,7 +1,5 @@
 packages:
   - packages/*
-  - demo
-  - demo-openid
   - samples/*
 
 catalog:

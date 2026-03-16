@@ -202,10 +202,10 @@ See [Supported Features](https://credo.js.org/guides/features) on the Credo webs
 
 ## Demo
 
-To get to know the Credo issuance and verification flow, we built a demo to walk through it yourself together with agents Alice and Faber.
+Credo's interactive demos are now published as standalone repositories. Clone a repository to walk through the flows with Alice and Faber, install dependencies with `pnpm`, then run the scripts described in the repo's README. See `docs/demo.md` for more details on each repo.
 
-- OpenID4VC and SD-JWT VC demo in the [`/demo-openid`](/demo-openid) directory.
-- DIDComm and AnonCreds demo in the [`/demo`](/demo) directory.
+- AnonCreds / DIDComm demo (`credo-demo`): https://github.com/openwallet-foundation/credo-demo
+- OpenID4VC + SD-JWT VC demo (`credo-demo-openid`): https://github.com/openwallet-foundation/credo-demo-openid
 
 ## Contributing
 

@@ -97,23 +97,11 @@
       }
     },
     {
-      "includes": ["**/demo/**", "**/demo-openid/**"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noConsole": "off"
-          }
-        }
-      }
-    },
-    {
       "includes": [
         "**/*.test.ts",
         "**/__tests__/**",
         "**/vitest.*.ts",
         "**/samples/**",
-        "**/demo/**",
-        "**/demo-openid/**",
         "**/scripts/**",
         "**/tests/**",
         "**/tests/**"
