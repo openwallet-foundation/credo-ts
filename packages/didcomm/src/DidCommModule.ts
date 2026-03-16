@@ -113,7 +113,12 @@ function getDidcommModules<Options extends DidCommModuleConfigOptions>(options: 
           ? new DidCommMessagePickupModule(options.messagePickup === true ? {} : options.messagePickup)
           : undefined,
 
-      basicMessages: options.basicMessages !== false ? new DidCommBasicMessagesModule() : undefined,
+      basicMessages:
+        options.basicMessages !== false
+          ? new DidCommBasicMessagesModule(
+              options.basicMessages === true ? undefined : options.basicMessages
+            )
+          : undefined,
     }).filter(([, moduleValue]) => moduleValue !== undefined)
   ) as unknown as DidCommModules<Options>
 }

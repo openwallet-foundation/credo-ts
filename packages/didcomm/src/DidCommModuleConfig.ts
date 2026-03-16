@@ -1,5 +1,6 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type {
+  DidCommBasicMessagesModuleConfigOptions,
   DidCommConnectionsModuleConfigOptions,
   DidCommCredentialProtocol,
   DidCommMessagePickupModuleConfigOptions,
@@ -89,14 +90,13 @@ export interface DidCommModuleConfigOptions {
   proofs?: boolean | DidCommProofsModuleConfigOptions<DidCommProofProtocol[]>
 
   /**
-   * Configuration to enable to basic messages module
+   * Configuration for the basic messages module.
+   * Disable by passing `false`. Enable with default (1.0 only) by passing `true`.
+   * Pass options to enable 1.0 and/or 2.0 protocols.
    *
-   * The basic messages module is enabled by default,
-   * but can be disabled by passing `false`
-   *
-   * @default true
+   * @default true (1.0 only)
    */
-  basicMessages?: boolean
+  basicMessages?: boolean | DidCommBasicMessagesModuleConfigOptions
 
   /**
    * Configuration for the message pickup module

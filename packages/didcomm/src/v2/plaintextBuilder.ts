@@ -21,11 +21,11 @@ function mapV1AttachmentToV2(att: Record<string, unknown>): DidCommV2Attachment 
 }
 
 /**
- * Build a DIDComm v2 plaintext message from a DidCommMessage (v1 shape).
- * Maps @type→type, @id→id, ~thread→thid/pthid, ~l10n→lang, ~attach→attachments, remaining fields→body.
- * Used when packing outbound messages for DIDComm v2.
+ * Build a DIDComm v2 plaintext message from a DidCommMessage.
+ * For messages that implement toV2Plaintext() (e.g. DidCommBasicMessageV2), uses that directly.
+ * Otherwise maps v1 shape: @type→type, @id→id, ~thread→thid/pthid, ~l10n→lang, ~attach→attachments, remaining fields→body.
  *
- * @param message - The v1 DidCommMessage to convert
+ * @param message - The DidCommMessage to convert
  * @param config - Optional config (e.g. useDidSovPrefixWhereAllowed, from/to override for connection-based sends)
  * @returns A DIDComm v2 plaintext message
  */
@@ -39,6 +39,14 @@ export function buildV2PlaintextFromMessage(
     to?: string[]
   }
 ): DidCommV2PlaintextMessage {
+  const v2Native = message as unknown as { toV2Plaintext?: () => DidCommV2PlaintextMessage }
+  if (typeof v2Native.toV2Plaintext === 'function') {
+    const plaintext = v2Native.toV2Plaintext()
+    if (config?.from !== undefined) plaintext.from = config.from
+    if (config?.to !== undefined) plaintext.to = Array.isArray(config.to) ? config.to : [config.to]
+    return plaintext
+  }
+
   const v1 = message.toJSON({
     useDidSovPrefixWhereAllowed: config?.useDidSovPrefixWhereAllowed ?? false,
   })
