@@ -22,6 +22,7 @@
     "test": "vitest",
     "validate": "pnpm types:check && pnpm style:check",
     "run-mediator": "vite-node ./samples/mediator.ts",
+    "run-mediator:v2": "MEDIATION_V2=true vite-node ./samples/mediator.ts",
     "release": "pnpm build && pnpm changeset publish --no-git-tag",
     "changeset-version": "pnpm changeset version && pnpm style:fix"
   },

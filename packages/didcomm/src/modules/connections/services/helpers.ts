@@ -151,6 +151,18 @@ function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
 }
 
 export function routingToServices(routing: DidCommRouting): ResolvedDidCommService[] {
+  // v2: routingDid (DID-as-endpoint) - mediator DID used as serviceEndpoint per DIF spec
+  if (routing.routingDid) {
+    return [
+      {
+        id: '#inline-0',
+        serviceEndpoint: routing.routingDid,
+        recipientKeys: [routing.recipientKey],
+        routingKeys: routing.routingKeys,
+      },
+    ]
+  }
+  // v1-style: endpoints + routingKeys
   return routing.endpoints.map((endpoint, index) => ({
     id: `#inline-${index}`,
     serviceEndpoint: endpoint,
@@ -225,19 +237,22 @@ export async function createPeerDidForV2OOB(
   })
   didDocumentBuilder.addAuthentication(ed25519Vm).addKeyAgreement(x25519Vm)
 
-  const endpoint = routing.endpoints[0]
-  if (!endpoint) {
-    throw new CredoError('DIDComm v2 OOB requires at least one routing endpoint')
+  // Add all endpoints so recipient can choose transport (e.g. ws for live delivery, http for requests)
+  const uris = routing.routingDid ? [routing.routingDid, ...routing.endpoints] : routing.endpoints
+  if (!uris.length) {
+    throw new CredoError('DIDComm v2 OOB requires at least one routing endpoint or routingDid')
   }
-  didDocumentBuilder.addService(
-    new NewDidCommV2Service({
-      id: '#didcommmessaging-0',
-      serviceEndpoint: new NewDidCommV2ServiceEndpoint({
-        uri: endpoint,
-        accept: ['didcomm/v2'],
-      }),
-    })
-  )
+  for (let i = 0; i < uris.length; i++) {
+    didDocumentBuilder.addService(
+      new NewDidCommV2Service({
+        id: `#didcommmessaging-${i}`,
+        serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+          uri: uris[i],
+          accept: ['didcomm/v2'],
+        }),
+      })
+    )
+  }
 
   const didDocument = didDocumentBuilder.build()
   const keys: DidDocumentKey[] = [

@@ -18,6 +18,11 @@ export interface DidCommV2EnvelopeKeys {
   senderKeySkid?: string
 }
 
+/** Keys for anoncrypt: only recipient key; no sender (anonymous). */
+export interface DidCommV2AnoncryptKeys {
+  recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk>
+}
+
 @injectable()
 export class DidCommV2EnvelopeService {
   private logger: Logger
@@ -94,12 +99,90 @@ export class DidCommV2EnvelopeService {
   }
 
   /**
-   * Unpack a DIDComm v2 encrypted message (authcrypt only).
+   * Pack a DIDComm v2 plaintext message using ECDH-ES (anoncrypt).
+   * No sender identity; used for forwarded messages to mediators.
+   *
+   * @param agentContext - The agent context (for KMS access)
+   * @param plaintext - The v2 plaintext message to encrypt
+   * @param keys - Recipient X25519 key only
+   * @returns The DIDComm v2 encrypted message (JWE with typ application/didcomm-encrypted+json)
+   */
+  public async packAnoncrypt(
+    agentContext: AgentContext,
+    plaintext: DidCommV2PlaintextMessage,
+    keys: DidCommV2AnoncryptKeys
+  ): Promise<DidCommV2EncryptedMessage> {
+    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+    const plaintextBytes = JsonEncoder.toBuffer(plaintext)
+
+    const recipientX25519 = keys.recipientKey
+    if (!recipientX25519.is(Kms.X25519PublicJwk)) {
+      throw new CredoError('DIDComm v2 anoncrypt requires X25519 recipient key')
+    }
+
+    const ephemeralKey = await kms.createKey({
+      type: { kty: 'OKP', crv: 'X25519' },
+    })
+
+    try {
+      const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-ES+A256KW',
+            keyId: ephemeralKey.keyId,
+            externalPublicJwk: recipientX25519.toJson(),
+          },
+        },
+        encryption: { algorithm: 'A256GCM' },
+        data: plaintextBytes,
+      })
+
+      if (!iv || !tag) {
+        throw new CredoError('Expected iv and tag from KMS encrypt')
+      }
+      if (!encryptedKey?.encrypted) {
+        throw new CredoError('Expected encrypted key from KMS for ECDH-ES+A256KW')
+      }
+
+      const epk = ephemeralKey.publicJwk
+      if (!epk || (epk as { kty?: string }).kty !== 'OKP' || (epk as { crv?: string }).crv !== 'X25519') {
+        throw new CredoError('Expected X25519 ephemeral public key')
+      }
+      const epkJwk = epk as { kty: 'OKP'; crv: 'X25519'; x: string }
+
+      const protectedHeader = JsonEncoder.toBase64URL({
+        typ: 'application/didcomm-encrypted+json',
+        alg: 'ECDH-ES+A256KW',
+        enc: 'A256GCM',
+        recipients: [
+          {
+            header: {
+              kid: keys.recipientKey.keyId,
+              epk: { kty: epkJwk.kty, crv: epkJwk.crv, x: epkJwk.x },
+            },
+            encrypted_key: TypedArrayEncoder.toBase64URL(encryptedKey.encrypted),
+          },
+        ],
+      })
+
+      return {
+        protected: protectedHeader,
+        iv: TypedArrayEncoder.toBase64URL(iv),
+        ciphertext: TypedArrayEncoder.toBase64URL(encrypted),
+        tag: TypedArrayEncoder.toBase64URL(tag),
+      }
+    } finally {
+      await kms.deleteKey({ keyId: ephemeralKey.keyId })
+    }
+  }
+
+  /**
+   * Unpack a DIDComm v2 encrypted message (authcrypt or anoncrypt).
    *
    * @param agentContext - The agent context (for KMS access)
    * @param encrypted - The v2 encrypted message
-   * @param keys - Recipient key and sender key resolver (skid → X25519)
-   * @returns The plaintext message and sender key
+   * @param keys - Recipient key and sender key resolver (skid → X25519); resolveSenderKey not used for anoncrypt
+   * @returns The plaintext message and sender key (null for anoncrypt)
    */
   public async unpack(
     agentContext: AgentContext,
@@ -138,15 +221,17 @@ export class DidCommV2EnvelopeService {
       throw new CredoError('Invalid ephemeral public key in recipient header')
     }
 
-    const skid = protectedJson.skid as string | undefined
-    if (protectedJson.alg === 'ECDH-ES+A256KW' || !skid) {
-      throw new CredoError(
-        'DIDComm v2 anoncrypt is not supported. Only authcrypt (ECDH-1PU+A256KW with skid) is supported.'
-      )
+    if (protectedJson.alg === 'ECDH-ES+A256KW') {
+      return this.unpackAnoncrypt(agentContext, encrypted, keys, recipient, protectedJson)
     }
 
     if (protectedJson.alg !== 'ECDH-1PU+A256KW') {
       throw new CredoError(`Unsupported pack algorithm: ${protectedJson.alg}`)
+    }
+
+    const skid = protectedJson.skid as string | undefined
+    if (!skid) {
+      throw new CredoError('Authcrypt requires skid in protected header')
     }
     const senderKey = await keys.resolveSenderKey(skid)
     if (!senderKey) {
@@ -177,8 +262,48 @@ export class DidCommV2EnvelopeService {
     })
 
     const plaintext = JsonEncoder.fromBuffer(data) as DidCommV2PlaintextMessage
-    this.logger.debug('Unpacked DIDComm v2 message', { type: plaintext.type })
+    this.logger.debug('Unpacked DIDComm v2 authcrypt message', { type: plaintext.type })
 
     return { plaintext, senderKey: senderX25519 }
+  }
+
+  private async unpackAnoncrypt(
+    agentContext: AgentContext,
+    encrypted: DidCommV2EncryptedMessage,
+    keys: {
+      recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }
+      matchedKid: string
+    },
+    recipient: { header: { kid: string; epk: { kty: string; crv: string; x: string } }; encrypted_key: string },
+    _protectedJson: Record<string, unknown>
+  ): Promise<{
+    plaintext: DidCommV2PlaintextMessage
+    senderKey: Kms.PublicJwk<Kms.X25519PublicJwk> | null
+  }> {
+    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+
+    const { data } = await kms.decrypt({
+      key: {
+        keyAgreement: {
+          algorithm: 'ECDH-ES+A256KW',
+          keyId: keys.recipientKey.keyId,
+          externalPublicJwk: { kty: 'OKP', crv: 'X25519', x: recipient.header.epk.x },
+          encryptedKey: {
+            encrypted: TypedArrayEncoder.fromBase64(recipient.encrypted_key),
+          },
+        },
+      },
+      decryption: {
+        algorithm: 'A256GCM',
+        iv: TypedArrayEncoder.fromBase64(encrypted.iv),
+        tag: TypedArrayEncoder.fromBase64(encrypted.tag),
+      },
+      encrypted: TypedArrayEncoder.fromBase64(encrypted.ciphertext),
+    })
+
+    const plaintext = JsonEncoder.fromBuffer(data) as DidCommV2PlaintextMessage
+    this.logger.debug('Unpacked DIDComm v2 anoncrypt message', { type: plaintext.type })
+
+    return { plaintext, senderKey: null }
   }
 }

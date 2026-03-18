@@ -817,6 +817,35 @@ export class DidCommConnectionService {
     return this.connectionRepository.findSingleByQuery(agentContext, { theirDid })
   }
 
+  /**
+   * Find connection by their DID or by sender key. Used when findConnection fails (e.g. connection in
+   * RequestReceived, or DID format mismatch). Tries: 1) exact theirDid, 2) resolve theirDid via
+   * DidRepository (handles alternative forms), 3) resolve sender key to their DID.
+   */
+  public async findByTheirDidOrSender(
+    agentContext: AgentContext,
+    opts: { theirDid?: string; senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk> }
+  ): Promise<DidCommConnectionRecord | null> {
+    const { theirDid, senderKey } = opts
+    if (theirDid) {
+      const byDid = await this.findByTheirDid(agentContext, theirDid)
+      if (byDid) return byDid
+      const didRecord = await this.didRepository.findReceivedDid(agentContext, theirDid)
+      if (didRecord) {
+        const byCanonical = await this.findByTheirDid(agentContext, didRecord.did)
+        if (byCanonical) return byCanonical
+      }
+    }
+    if (senderKey) {
+      const theirDidRecord = await this.didRepository.findReceivedDidByRecipientKey(agentContext, senderKey)
+      if (theirDidRecord) {
+        const byKey = await this.findByTheirDid(agentContext, theirDidRecord.did)
+        if (byKey) return byKey
+      }
+    }
+    return null
+  }
+
   public async findByOurDid(agentContext: AgentContext, ourDid: string): Promise<DidCommConnectionRecord | null> {
     return this.connectionRepository.findSingleByQuery(agentContext, { did: ourDid })
   }

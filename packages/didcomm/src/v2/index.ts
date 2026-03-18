@@ -1,4 +1,8 @@
-export { DidCommV2EnvelopeService, type DidCommV2EnvelopeKeys } from './DidCommV2EnvelopeService'
+export {
+  DidCommV2EnvelopeService,
+  type DidCommV2AnoncryptKeys,
+  type DidCommV2EnvelopeKeys,
+} from './DidCommV2EnvelopeService'
 export { DidCommV2KeyResolver } from './resolveV2Keys'
 export { buildV2PlaintextFromMessage } from './plaintextBuilder'
 export { normalizeV2PlaintextToV1 } from './normalize'

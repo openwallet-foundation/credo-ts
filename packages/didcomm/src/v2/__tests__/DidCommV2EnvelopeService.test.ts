@@ -84,10 +84,9 @@ class MockEcdh1PuKeyManagementService implements Kms.KeyManagementService {
 
   async encrypt(ctx: AgentContext, options: Kms.KmsEncryptOptions): Promise<Kms.KmsEncryptReturn> {
     const keyAgreement = options.key.keyAgreement
-    const alg = keyAgreement?.algorithm
     if (
       !keyAgreement ||
-      (alg !== 'ECDH-1PU+A256KW' && alg !== 'ECDH-ES+A256KW')
+      (keyAgreement.algorithm !== 'ECDH-1PU+A256KW' && keyAgreement.algorithm !== 'ECDH-ES+A256KW')
     ) {
       throw new Error('Mock only supports ECDH-1PU+A256KW and ECDH-ES+A256KW')
     }
@@ -108,10 +107,9 @@ class MockEcdh1PuKeyManagementService implements Kms.KeyManagementService {
 
   async decrypt(ctx: AgentContext, options: Kms.KmsDecryptOptions): Promise<Kms.KmsDecryptReturn> {
     const keyAgreement = options.key.keyAgreement
-    const alg = keyAgreement?.algorithm
     if (
       !keyAgreement ||
-      (alg !== 'ECDH-1PU+A256KW' && alg !== 'ECDH-ES+A256KW')
+      (keyAgreement.algorithm !== 'ECDH-1PU+A256KW' && keyAgreement.algorithm !== 'ECDH-ES+A256KW')
     ) {
       throw new Error('Mock only supports ECDH-1PU+A256KW and ECDH-ES+A256KW')
     }
@@ -191,30 +189,40 @@ describe('DidCommV2EnvelopeService', () => {
     expect(decrypted).toEqual(plaintext)
   })
 
-  it('rejects anoncrypt messages on unpack', async () => {
-    const anoncryptMessage: DidCommV2EncryptedMessage = {
-      protected: JsonEncoder.toBase64URL({
-        typ: 'application/didcomm-encrypted+json',
-        alg: 'ECDH-ES+A256KW',
-        enc: 'A256GCM',
-        recipients: [
-          {
-            header: { kid: recipientKey.keyId, epk: { kty: 'OKP', crv: 'X25519', x: 'x' } },
-            encrypted_key: 'ek',
-          },
-        ],
-      }),
-      iv: 'iv',
-      ciphertext: 'ct',
-      tag: 'tag',
+  it('packs and unpacks anoncrypt message', async () => {
+    const plaintext: DidCommV2PlaintextMessage = {
+      id: 'test-msg-2',
+      type: 'https://didcomm.org/routing/2.0/forward',
+      to: ['did:example:mediator'],
+      body: { next: 'did:example:bob' },
+      attachments: [],
     }
 
-    await expect(
-      envelopeService.unpack(agentContext, anoncryptMessage, {
-        recipientKey,
-        matchedKid: recipientKey.keyId,
-        resolveSenderKey: async () => null,
-      })
-    ).rejects.toThrow(/anoncrypt is not supported/)
+    const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
+      recipientKey,
+    })
+
+    expect(encrypted).toMatchObject({
+      protected: expect.any(String),
+      iv: expect.any(String),
+      ciphertext: expect.any(String),
+      tag: expect.any(String),
+    })
+
+    const protectedJson = JsonEncoder.fromBase64(encrypted.protected) as {
+      alg?: string
+      recipients?: Array<{ header?: { kid?: string } }>
+    }
+    expect(protectedJson.alg).toBe('ECDH-ES+A256KW')
+    expect(protectedJson.recipients).toHaveLength(1)
+    const matchedKid = protectedJson.recipients?.[0]?.header?.kid ?? recipientKey.keyId
+    const { plaintext: decrypted, senderKey } = await envelopeService.unpack(agentContext, encrypted, {
+      recipientKey,
+      matchedKid,
+      resolveSenderKey: async () => null,
+    })
+
+    expect(decrypted).toEqual(plaintext)
+    expect(senderKey).toBeNull()
   })
 })

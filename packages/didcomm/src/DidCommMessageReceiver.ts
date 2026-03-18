@@ -164,6 +164,7 @@ export class DidCommMessageReceiver {
       connection: connection?.isReady ? connection : undefined,
       senderKey,
       recipientKey,
+      senderDid: plaintextMessage.from as string | undefined,
       agentContext,
       receivedAt,
       encryptedMessage,
@@ -231,15 +232,16 @@ export class DidCommMessageReceiver {
           throw new CredoError('No matching recipient key found for DIDComm v2 message')
         }
         const { recipientKey, matchedKid } = resolved
-        const protectedJson = JsonEncoder.fromBase64(message.protected) as { skid?: string }
+        const protectedJson = JsonEncoder.fromBase64(message.protected) as { skid?: string; alg?: string }
         const skid = protectedJson.skid
-        if (!skid) {
+        const isAnoncrypt = protectedJson.alg === 'ECDH-ES+A256KW'
+        if (!isAnoncrypt && !skid) {
           throw new CredoError('DIDComm v2 authcrypt requires skid in protected header')
         }
         const { plaintext, senderKey } = await this.v2EnvelopeService.unpack(agentContext, message, {
           recipientKey,
           matchedKid,
-          resolveSenderKey: (sid) => this.v2KeyResolver.resolveSenderKey(agentContext, sid),
+          resolveSenderKey: isAnoncrypt ? async () => null : (sid) => this.v2KeyResolver.resolveSenderKey(agentContext, sid),
         })
         this.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before normalization)', {
           id: plaintext.id,

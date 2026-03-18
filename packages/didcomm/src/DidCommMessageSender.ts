@@ -21,6 +21,7 @@ import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
 import { buildV2PlaintextFromMessage } from './v2'
 import { DidCommV2EnvelopeService } from './v2'
+import { createForwardMessageV2 } from './modules/routing/messages/v2'
 import type { DidCommMessageSentEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import type { DidCommMessage } from './DidCommMessage'
@@ -106,6 +107,19 @@ export class DidCommMessageSender {
       !useV1ForConnection &&
       useV2ForPacking &&
       keys.recipientKeys.length >= 1 &&
+      keys.routingKeys.length > 0 &&
+      keys.senderKey
+    ) {
+      try {
+        encryptedMessage = await this.packV2WithForward(agentContext, message, keys, connection)
+      } catch (error) {
+        agentContext.config.logger.debug('DIDComm v2 Forward pack failed, falling back to v1', { error })
+        encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
+      }
+    } else if (
+      !useV1ForConnection &&
+      useV2ForPacking &&
+      keys.recipientKeys.length >= 1 &&
       keys.routingKeys.length === 0 &&
       keys.senderKey
     ) {
@@ -148,6 +162,59 @@ export class DidCommMessageSender {
     }
   }
 
+  private async packV2WithForward(
+    agentContext: AgentContext,
+    message: DidCommMessage,
+    keys: EnvelopeKeys,
+    connection?: DidCommConnectionRecord
+  ): Promise<DidCommEncryptedMessage> {
+    const recipientX25519 = toX25519(keys.recipientKeys[0])
+    recipientX25519.keyId = keys.recipientKeys[0].hasKeyId ? keys.recipientKeys[0].keyId : keys.recipientKeys[0].legacyKeyId
+    const senderX25519 = toX25519(keys.senderKey!)
+    senderX25519.keyId = keys.senderKey!.hasKeyId ? keys.senderKey!.keyId : keys.senderKey!.legacyKeyId
+
+    const plaintext = buildV2PlaintextFromMessage(message, {
+      useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,
+      ...(connection?.did && connection?.theirDid
+        ? { from: connection.did, to: [connection.theirDid] }
+        : undefined),
+    })
+
+    let payload = await this.v2EnvelopeService.pack(agentContext, plaintext, {
+      recipientKey: recipientX25519,
+      senderKey: senderX25519,
+      senderKeySkid: keys.senderKeySkid,
+    })
+
+    // Use did:key derived from the recipient's key agreement key as `next`.
+    // This must match what the recipient registered with the mediator (did:key, not did:peer:4).
+    const recipientNext = new DidKey(keys.recipientKeys[0]).did
+    const routingKeysReversed = [...keys.routingKeys].reverse()
+    for (let i = 0; i < routingKeysReversed.length; i++) {
+      const routingKey = routingKeysReversed[i]
+      const next =
+        i === routingKeysReversed.length - 1
+          ? recipientNext
+          : new DidKey(routingKeysReversed[i + 1]).did
+      const routingKeyX25519 = toX25519(routingKey)
+      routingKeyX25519.keyId = new DidKey(routingKey).did
+      const attachment = {
+        id: utils.uuid(),
+        media_type: 'application/didcomm-encrypted+json',
+        data: { json: payload },
+      }
+      const forwardPlaintext = createForwardMessageV2({
+        to: [new DidKey(routingKey).did],
+        next,
+        attachments: [attachment],
+      })
+      payload = await this.v2EnvelopeService.packAnoncrypt(agentContext, forwardPlaintext, {
+        recipientKey: routingKeyX25519,
+      })
+    }
+    return payload
+  }
+
   private async sendMessageToSession(
     agentContext: AgentContext,
     session: DidCommTransportSession,
@@ -171,6 +238,19 @@ export class DidCommMessageSender {
       : this.didCommModuleConfig.sendsV2
 
     if (
+      !useV1ForConnectionSession &&
+      useV2ForSessionPacking &&
+      keys.recipientKeys.length >= 1 &&
+      keys.routingKeys.length > 0 &&
+      keys.senderKey
+    ) {
+      try {
+        encryptedMessage = await this.packV2WithForward(agentContext, message, session.keys, connection)
+      } catch (error) {
+        agentContext.config.logger.debug('DIDComm v2 Forward pack failed, falling back to v1', { error })
+        encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
+      }
+    } else if (
       !useV1ForConnectionSession &&
       useV2ForSessionPacking &&
       keys.recipientKeys.length >= 1 &&
@@ -685,12 +765,49 @@ export class DidCommMessageSender {
             : didToNumAlgo4DidDocument(connection.theirDid!)
           const allServices = didDocument.service ?? []
           for (const svc of allServices) {
-            const endpoint =
+            let endpoint: string | undefined =
               'firstServiceEndpointUri' in svc
                 ? (svc as NewDidCommV2Service).firstServiceEndpointUri
                 : typeof svc.serviceEndpoint === 'string'
                   ? svc.serviceEndpoint
                   : (svc.serviceEndpoint as { uri?: string })?.uri
+            let routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
+            // When endpoint is a DID (e.g. routing DID), resolve to get transport URL and mediator's keys for Forward
+            if (endpoint?.startsWith('did:')) {
+              try {
+                const routingDoc = endpoint.startsWith('did:peer:4')
+                  ? didToNumAlgo4DidDocument(endpoint)
+                  : didToNumAlgo2DidDocument(endpoint)
+                // Extract mediator's keys for v1 Forward (encrypt outer for mediator)
+                const routingKeyRefs = [
+                  ...(routingDoc.authentication ?? []),
+                  ...(routingDoc.keyAgreement ?? []),
+                ]
+                const seen = new Set<string>()
+                for (const keyRef of routingKeyRefs) {
+                  const vm =
+                    typeof keyRef === 'string' ? routingDoc.dereferenceVerificationMethod(keyRef) : keyRef
+                  if (seen.has(vm.id)) continue
+                  const publicJwk = getPublicJwkFromVerificationMethod(vm)
+                  if (publicJwk.is(Kms.Ed25519PublicJwk) || publicJwk.is(Kms.X25519PublicJwk)) {
+                    seen.add(vm.id)
+                    routingKeys.push(publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
+                  }
+                }
+                const firstSvc = routingDoc.service?.[0]
+                if (firstSvc) {
+                  const resolved =
+                    typeof firstSvc.serviceEndpoint === 'string'
+                      ? firstSvc.serviceEndpoint
+                      : (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.uri ??
+                        (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.s
+                  if (resolved) endpoint = resolved
+                }
+              } catch {
+                endpoint = undefined
+                routingKeys = []
+              }
+            }
             if (endpoint) {
               // Use keyAgreement (X25519 for v2) and authentication (Ed25519 for v1 fallback)
               const recipientKeys: Kms.PublicJwk[] = []
@@ -721,7 +838,7 @@ export class DidCommMessageSender {
               didCommServices.push({
                 id: svc.id,
                 recipientKeys: recipientKeys as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
-                routingKeys: [],
+                routingKeys,
                 serviceEndpoint: endpoint,
               })
             }

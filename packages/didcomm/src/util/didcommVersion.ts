@@ -79,3 +79,21 @@ export function assertDidCommV1Connection(
     )
   }
 }
+
+/**
+ * Throws if the connection uses DIDComm v1. Use for protocols that require v2 (e.g. Coordinate Mediation 2.0, Message Pickup 3.0).
+ *
+ * @param connection - The connection record to check
+ * @param protocolName - Name of the protocol for the error message
+ * @throws CredoError when connection.didcommVersion is 'v1'
+ */
+export function assertDidCommV2Connection(
+  connection: DidCommConnectionRecord,
+  protocolName: string
+): void {
+  if ((connection.didcommVersion ?? 'v1') === 'v1') {
+    throw new CredoError(
+      `${protocolName} requires a DIDComm v2 connection. Use a v2 connection instead.`
+    )
+  }
+}
