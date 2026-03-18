@@ -25,6 +25,8 @@ export interface EnvelopeKeys {
   recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   senderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> | null
+  /** DID URL of the sender key; used as skid in DIDComm v2 so recipient can resolve it */
+  senderKeySkid?: string
 }
 
 @injectable()
@@ -69,8 +71,11 @@ export class DidCommEnvelopeService {
           key: {
             keyAgreement: {
               algorithm: 'ECDH-HSALSA20',
-              // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys
-              externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
+        // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys
+            externalPublicJwk: (recipientKey.is(Kms.X25519PublicJwk)
+              ? recipientKey
+              : recipientKey.convertTo(Kms.X25519PublicJwk)
+            ).toJson(),
             },
           },
           encryption: {
@@ -87,7 +92,10 @@ export class DidCommEnvelopeService {
         key: {
           keyAgreement: {
             algorithm: 'ECDH-HSALSA20',
-            externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
+            externalPublicJwk: (recipientKey.is(Kms.X25519PublicJwk)
+              ? recipientKey
+              : recipientKey.convertTo(Kms.X25519PublicJwk)
+            ).toJson(),
 
             // Sender key only needed for Authcrypt
             keyId: senderKey?.keyId,

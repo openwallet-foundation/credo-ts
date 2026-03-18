@@ -25,6 +25,12 @@ export * from './repository'
 export * from './services'
 export * from './transport'
 export * from './types'
+export * from './v2'
+export {
+  assertDidCommV1Connection,
+  isDidCommV1EncryptedMessage,
+  isDidCommV2EncryptedMessage,
+} from './util/didcommVersion'
 export { isValidJweStructure } from './util/JWE'
 export {
   IsValidMessageType,

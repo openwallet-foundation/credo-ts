@@ -20,6 +20,7 @@ export interface DidCommStatusV2MessageOptions {
 
 export class DidCommStatusV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
+  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v1']
 
   public constructor(options: DidCommStatusV2MessageOptions) {
     super()

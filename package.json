@@ -16,10 +16,13 @@
     "test:debug": "COLLECT_FAILED_TEST_LOGS=true pnpm test",
     "test:unit": "pnpm test --project unit",
     "test:e2e": "pnpm test --project e2e",
+    "test:e2e:v1": "DIDCOMM_VERSION=v1 pnpm test --project e2e",
+    "test:e2e:v2": "DIDCOMM_VERSION=v2 pnpm test --project e2e",
     "test:drizzle": "pnpm test --project drizzle",
     "test": "vitest",
     "validate": "pnpm types:check && pnpm style:check",
     "run-mediator": "vite-node ./samples/mediator.ts",
+    "run-mediator:v2": "MEDIATION_V2=true vite-node ./samples/mediator.ts",
     "release": "pnpm build && pnpm changeset publish --no-git-tag",
     "changeset-version": "pnpm changeset version && pnpm style:fix"
   },

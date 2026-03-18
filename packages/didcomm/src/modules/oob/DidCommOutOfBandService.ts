@@ -239,12 +239,30 @@ export class DidCommOutOfBandService {
 
   public async findCreatedByRecipientKey(
     agentContext: AgentContext,
-    recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk | Kms.X25519PublicJwk>
   ) {
     return this.outOfBandRepository.findSingleByQuery(agentContext, {
       recipientKeyFingerprints: [recipientKey.fingerprint],
       role: DidCommOutOfBandRole.Sender,
     })
+  }
+
+  /**
+   * Find v2 OOB record (Sender role) by recipient DID.
+   * Used when inviter receives first DIDComm v2 message (to=[our DID]).
+   */
+  public async findCreatedByRecipientDid(
+    agentContext: AgentContext,
+    recipientDid: string
+  ): Promise<DidCommOutOfBandRecord | null> {
+    try {
+      return await this.outOfBandRepository.findSingleByQuery(agentContext, {
+        recipientDid,
+        role: DidCommOutOfBandRole.Sender,
+      })
+    } catch {
+      return null
+    }
   }
 
   public async getAll(agentContext: AgentContext) {
