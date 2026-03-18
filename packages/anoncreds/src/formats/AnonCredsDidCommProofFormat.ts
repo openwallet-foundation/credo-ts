@@ -46,6 +46,15 @@ export interface AnonCredsRequestProofFormat {
   non_revoked?: AnonCredsNonRevokedInterval
   requested_attributes?: Record<string, AnonCredsRequestedAttribute>
   requested_predicates?: Record<string, AnonCredsRequestedPredicate>
+
+  /**
+   * Optional nonce for the proof request. If not provided, a secure random
+   * nonce is auto-generated. Must be a non-negative integer as a decimal string
+   * (per the AnonCreds specification). Useful for multi-step protocols or
+   * ceremony flows where the verifier needs to bind the proof to a specific
+   * challenge.
+   */
+  nonce?: string
 }
 
 /**

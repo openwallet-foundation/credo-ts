@@ -137,7 +137,7 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
     const request = {
       name: anoncredsFormat.name,
       version: anoncredsFormat.version,
-      nonce: holderService.generateNonce(agentContext),
+      nonce: anoncredsFormat.nonce ?? holderService.generateNonce(agentContext),
       requested_attributes: anoncredsFormat.requested_attributes ?? {},
       requested_predicates: anoncredsFormat.requested_predicates ?? {},
       non_revoked: anoncredsFormat.non_revoked,
