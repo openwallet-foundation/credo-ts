@@ -1,6 +1,6 @@
 import { CredoError } from '../../error'
 import type { Uint8ArrayBuffer } from '../../types'
-import { TypedArrayEncoder } from '../../utils'
+import { TypedArrayEncoder } from '../../utils/TypedArrayEncoder'
 import { Sha1 } from './Sha1'
 import { Sha256 } from './Sha256'
 import { Sha384 } from './Sha384'

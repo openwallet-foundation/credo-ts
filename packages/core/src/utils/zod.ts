@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { ZodValidationError } from '../error'
 import type { Uint8ArrayBuffer } from '../types'
-import { JsonEncoder } from '.'
+import { JsonEncoder } from './JsonEncoder'
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 export type zBaseSchema = z.Schema<any, any, any>
@@ -33,4 +33,4 @@ const zBase64Url = z.string().regex(/[a-zA-Z0-9_-]+/, 'Must be a base64url strin
 
 const zUint8ArrayBuffer = z.instanceof<{ new (): Uint8ArrayBuffer }>(Uint8Array)
 
-export { zUniqueArray, zOptionalToUndefined, zBase64Url, zUint8ArrayBuffer }
+export { zBase64Url, zOptionalToUndefined, zUint8ArrayBuffer, zUniqueArray }

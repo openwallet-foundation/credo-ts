@@ -10,12 +10,12 @@ export {
 } from './LegacyDidCommV2Service'
 
 export {
-  IndyAgentService,
   DidCommV1Service,
-  DidDocumentService,
-  ServiceTransformer,
-  serviceTypes,
   DidCommV2Service as NewDidCommV2Service,
   DidCommV2ServiceEndpoint as NewDidCommV2ServiceEndpoint,
   type DidCommV2ServiceEndpointOptions as NewDidCommV2ServiceEndpointOptions,
+  DidDocumentService,
+  IndyAgentService,
+  ServiceTransformer,
+  serviceTypes,
 }

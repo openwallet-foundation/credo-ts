@@ -1,4 +1,4 @@
-import { base58, base64, base64url, hex, utf8 } from '@scure/base'
+import { base58, base64, base64urlnopad, hex, utf8 } from '@scure/base'
 import type { Uint8ArrayBuffer } from '../types'
 
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
@@ -12,37 +12,35 @@ export class TypedArrayEncoder {
 
   /**
    * Decode a base64 string into a Uint8Array
+   *
+   * For backwards-compatibility it also supports base64url
    */
   public static fromBase64(str: string): Uint8ArrayBuffer {
+    if (/^[A-Za-z0-9\-_]+$/.test(str)) {
+      return TypedArrayEncoder.fromBase64Url(str)
+    }
     return base64.decode(str) as Uint8ArrayBuffer
-  }
-
-  /**
-   * @deprecated Use `fromBase64Url`
-   */
-  public static fromBase64url(str: string): Uint8ArrayBuffer {
-    return TypedArrayEncoder.fromBase64Url(str)
   }
 
   /**
    * Decode a base64url string into a Uint8Array
    */
   public static fromBase64Url(str: string): Uint8ArrayBuffer {
-    return base64url.decode(str) as Uint8ArrayBuffer
+    return base64urlnopad.decode(str) as Uint8ArrayBuffer
   }
 
   /**
    * @deprecated Use `toBase64Url`
    */
   public static toBase64URL(data: Uint8ArrayBuffer): string {
-    return base64url.encode(data)
+    return TypedArrayEncoder.toBase64Url(data)
   }
 
   /**
    * Encode a Uint8Array into a base64url string
    */
   public static toBase64Url(data: Uint8ArrayBuffer): string {
-    return base64url.encode(data)
+    return base64urlnopad.encode(data)
   }
 
   /**

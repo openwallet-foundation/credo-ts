@@ -59,7 +59,7 @@ export function encodeCursor(cursor: InternalCursor): string {
 
 export function decodeCursor(cursor: string): InternalCursor | null {
   try {
-    const decoded = JsonEncoder.fromString(TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64url(cursor)))
+    const decoded = JsonEncoder.fromString(TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(cursor)))
 
     if (!decoded || typeof decoded !== 'object') return null
     if (typeof decoded.id !== 'string') return null

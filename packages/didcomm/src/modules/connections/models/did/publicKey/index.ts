@@ -38,4 +38,4 @@ export function PublicKeyTransformer() {
   )
 }
 
-export { Ed25119Sig2018, PublicKey, EddsaSaSigSecp256k1, RsaSig2018 }
+export { Ed25119Sig2018, EddsaSaSigSecp256k1, PublicKey, RsaSig2018 }

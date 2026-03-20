@@ -51,9 +51,9 @@ export class Jwt {
 
     try {
       return new Jwt({
-        header: JsonEncoder.fromBase64(header),
-        payload: JwtPayload.fromJson(JsonEncoder.fromBase64(payload)),
-        signature: TypedArrayEncoder.fromBase64(signature),
+        header: JsonEncoder.fromBase64Url(header),
+        payload: JwtPayload.fromJson(JsonEncoder.fromBase64Url(payload)),
+        signature: TypedArrayEncoder.fromBase64Url(signature),
         serializedJwt,
       })
     } catch (error) {

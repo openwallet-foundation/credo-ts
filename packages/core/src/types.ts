@@ -1,5 +1,6 @@
 import type { Logger } from './logger'
-import { Ed25519PublicJwk, PublicJwk } from './modules/kms'
+import type { Ed25519PublicJwk } from './modules/kms/jwk/kty/okp/Ed25519PublicJwk'
+import { PublicJwk } from './modules/kms/jwk/PublicJwk'
 
 export interface InitConfig {
   logger?: Logger

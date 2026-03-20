@@ -37,7 +37,7 @@ export class JsonEncoder {
    * Decode base64url string into a json object.
    */
   public static fromBase64Url(base64: string) {
-    return JsonEncoder.fromUint8Array(TypedArrayEncoder.fromBase64url(base64))
+    return JsonEncoder.fromUint8Array(TypedArrayEncoder.fromBase64Url(base64))
   }
 
   /**

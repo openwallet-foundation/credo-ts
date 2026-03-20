@@ -71,7 +71,6 @@
     "@sphereon/ssi-types": "0.33.0",
     "@stablelib/ed25519": "catalog:",
     "@types/ws": "catalog:",
-    "buffer": "^6.0.3",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
     "dcql": "^3.0.0",

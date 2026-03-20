@@ -592,9 +592,6 @@ importers:
       '@types/ws':
         specifier: 'catalog:'
         version: 8.18.1
-      buffer:
-        specifier: ^6.0.3
-        version: 6.0.3
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1
@@ -9703,7 +9700,7 @@ snapshots:
   '@babel/traverse@7.29.0':
     dependencies:
       '@babel/code-frame': 7.29.0
-      '@babel/generator': 7.29.0
+      '@babel/generator': 7.29.1
       '@babel/helper-globals': 7.28.0
       '@babel/parser': 7.29.0
       '@babel/template': 7.28.6
