@@ -18,6 +18,18 @@ import {
   verkeyToPublicJwk,
 } from '@credo-ts/core'
 
+export interface GetDidCommVersionFromDidDocResult {
+  version: 'v1' | 'v2'
+  matchedServiceIds: string[]
+  /** Set when both v1 and v2 families appeared in scope (dual-stack). */
+  bothFamiliesPresent?: { v1ServiceIds: string[]; v2ServiceIds: string[] }
+}
+
+export interface GetDidCommVersionFromDidDocOptions {
+  /** Default 'preferV2': if both families in scope, return v2. */
+  whenBothFamilies?: 'preferV2' | 'preferV1'
+}
+
 @injectable()
 export class DidCommDocumentService {
   private didResolverService: DidResolverService
@@ -26,6 +38,83 @@ export class DidCommDocumentService {
   public constructor(didResolverService: DidResolverService, didRepository: DidRepository) {
     this.didResolverService = didResolverService
     this.didRepository = didRepository
+  }
+
+  /**
+   * Determines the DIDComm envelope version advertised by the DID document for the given DID.
+   * Uses the same service filtering and fragment logic as {@link resolveServicesFromDid}.
+   *
+   * - **v1 family**: IndyAgent, did-communication (DidCommV1Service)
+   * - **v2 family**: DIDComm, DIDCommMessaging (legacy + W3C)
+   *
+   * When both families are in scope (dual-stack), returns v2 by default unless
+   * `whenBothFamilies: 'preferV1'` is passed.
+   *
+   * @throws CredoError when no DIDComm services are in scope, or when the DID fragment
+   *   references a service id that does not exist.
+   */
+  public async getDidCommVersionFromDidDoc(
+    agentContext: AgentContext,
+    did: string,
+    options: GetDidCommVersionFromDidDocOptions = {}
+  ): Promise<GetDidCommVersionFromDidDocResult> {
+    const whenBothFamilies = options.whenBothFamilies ?? 'preferV2'
+
+    const didDocument = await this.didResolverService.resolveDidDocument(agentContext, did)
+
+    const allDidCommServices = (didDocument.service?.filter(
+      (s) =>
+        s.type === IndyAgentService.type ||
+        s.type === DidCommV1Service.type ||
+        s.type === DidCommV2Service.type ||
+        s.type === NewDidCommV2Service.type
+    ) ?? []) as Array<IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service>
+
+    const didCommServices = parseDid(did).fragment
+      ? allDidCommServices.filter((service) => service.id === did)
+      : allDidCommServices
+
+    if (parseDid(did).fragment && didCommServices.length === 0) {
+      throw new CredoError(
+        `No DIDComm service found for DID URL ${did}. The fragment may reference a non-existent or non-DIDComm service.`
+      )
+    }
+
+    if (didCommServices.length === 0) {
+      throw new CredoError(
+        `No DIDComm-compatible services found for ${did}. Add a DIDCommMessaging or did-communication service to the DID document.`
+      )
+    }
+
+    const v1ServiceIds: string[] = []
+    const v2ServiceIds: string[] = []
+
+    for (const service of didCommServices) {
+      if (service.type === IndyAgentService.type || service.type === DidCommV1Service.type) {
+        v1ServiceIds.push(service.id)
+      } else if (service.type === DidCommV2Service.type || service.type === NewDidCommV2Service.type) {
+        v2ServiceIds.push(service.id)
+      }
+    }
+
+    const hasV1 = v1ServiceIds.length > 0
+    const hasV2 = v2ServiceIds.length > 0
+
+    if (hasV1 && hasV2) {
+      const version = whenBothFamilies === 'preferV1' ? 'v1' : 'v2'
+      const matchedServiceIds = version === 'v1' ? v1ServiceIds : v2ServiceIds
+      return {
+        version,
+        matchedServiceIds,
+        bothFamiliesPresent: { v1ServiceIds, v2ServiceIds },
+      }
+    }
+
+    if (hasV2) {
+      return { version: 'v2', matchedServiceIds: v2ServiceIds }
+    }
+
+    return { version: 'v1', matchedServiceIds: v1ServiceIds }
   }
 
   public async resolveServicesFromDid(agentContext: AgentContext, did: string): Promise<ResolvedDidCommService[]> {
