@@ -18,6 +18,10 @@ import {
   verkeyToPublicJwk,
 } from '@credo-ts/core'
 
+export interface GetSupportedDidCommVersionsFromDidDocResult {
+  versions: ('v1' | 'v2')[]
+}
+
 @injectable()
 export class DidCommDocumentService {
   private didResolverService: DidResolverService
@@ -26,6 +30,63 @@ export class DidCommDocumentService {
   public constructor(didResolverService: DidResolverService, didRepository: DidRepository) {
     this.didResolverService = didResolverService
     this.didRepository = didRepository
+  }
+
+  /**
+   * Returns all DIDComm envelope versions advertised by the DID document for the given DID.
+   * Uses the same service filtering and fragment logic as {@link resolveServicesFromDid}.
+   *
+   * - **v1 family**: IndyAgent, did-communication (DidCommV1Service)
+   * - **v2 family**: DIDComm, DIDCommMessaging (legacy + W3C)
+   *
+   * Callers should intersect this with their agent's supported versions and pick the most
+   * suitable one (e.g. prefer v2 when both are supported).
+   *
+   * @throws CredoError when no DIDComm services are in scope, or when the DID fragment
+   *   references a service id that does not exist.
+   */
+  public async getSupportedDidCommVersionsFromDidDoc(
+    agentContext: AgentContext,
+    did: string
+  ): Promise<GetSupportedDidCommVersionsFromDidDocResult> {
+    const didDocument = await this.didResolverService.resolveDidDocument(agentContext, did)
+
+    const allDidCommServices = (didDocument.service?.filter(
+      (s) =>
+        s.type === IndyAgentService.type ||
+        s.type === DidCommV1Service.type ||
+        s.type === DidCommV2Service.type ||
+        s.type === NewDidCommV2Service.type
+    ) ?? []) as Array<IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service>
+
+    const didCommServices = parseDid(did).fragment
+      ? allDidCommServices.filter((service) => service.id === did)
+      : allDidCommServices
+
+    if (parseDid(did).fragment && didCommServices.length === 0) {
+      throw new CredoError(
+        `No DIDComm service found for DID URL ${did}. The fragment may reference a non-existent or non-DIDComm service.`
+      )
+    }
+
+    if (didCommServices.length === 0) {
+      throw new CredoError(
+        `No DIDComm-compatible services found for ${did}. Add a DIDCommMessaging or did-communication service to the DID document.`
+      )
+    }
+
+    const hasV1 = didCommServices.some(
+      (s) => s.type === IndyAgentService.type || s.type === DidCommV1Service.type
+    )
+    const hasV2 = didCommServices.some(
+      (s) => s.type === DidCommV2Service.type || s.type === NewDidCommV2Service.type
+    )
+
+    const versions: ('v1' | 'v2')[] = []
+    if (hasV1) versions.push('v1')
+    if (hasV2) versions.push('v2')
+
+    return { versions }
   }
 
   public async resolveServicesFromDid(agentContext: AgentContext, did: string): Promise<ResolvedDidCommService[]> {

@@ -127,6 +127,12 @@ export interface ReceiveOutOfBandImplicitInvitationConfig
   extends Omit<BaseReceiveOutOfBandInvitationConfig, 'isImplicit' | 'reuseConnection'> {
   did: string
   handshakeProtocols?: DidCommHandshakeProtocol[]
+  /**
+   * When set, forces the DIDComm version for the implicit invitation. When omitted, the version is
+   * resolved from the DID document via {@link DidCommDocumentService.getSupportedDidCommVersionsFromDidDoc}
+   * (dual-stack docs default to v2). `handshakeProtocols` is ignored for v2.
+   */
+  didCommVersion?: 'v1' | 'v2'
 }
 
 @injectable()
@@ -164,6 +170,14 @@ export class DidCommOutOfBandApi {
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.didCommModuleConfig = didCommModuleConfig
+  }
+
+  private assertAgentSupportsDidCommVersion(version: 'v1' | 'v2'): void {
+    if (!this.didCommModuleConfig.didcommVersions.includes(version)) {
+      throw new CredoError(
+        `DID document advertises DIDComm ${version} but this agent is configured with didcommVersions: [${this.didCommModuleConfig.didcommVersions.join(', ')}] only. Update the DID document or add "${version}" to didcommVersions in DidCommModuleConfig.`
+      )
+    }
   }
 
   /**
@@ -519,8 +533,9 @@ export class DidCommOutOfBandApi {
    * calling `acceptInvitation`.
    *
    * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation
-   * (0160: Connection Protocol). Handshake protocol to be used depends on handshakeProtocols
-   * (DID Exchange by default)
+   * (0160: Connection Protocol). When `didCommVersion` is omitted, the version is inferred from
+   * the DID document (dual-stack defaults to v2). For v1, handshake follows `handshakeProtocols`;
+   * for v2, creates a v2 implicit OOB (no handshake messages).
    *
    * Agent role: receiver (invitee)
    *
@@ -529,16 +544,58 @@ export class DidCommOutOfBandApi {
    * @returns out-of-band record and connection record if one has been created.
    */
   public async receiveImplicitInvitation(config: ReceiveOutOfBandImplicitInvitationConfig) {
-    const handshakeProtocols = this.getSupportedHandshakeProtocols(
-      config.handshakeProtocols ?? [DidCommHandshakeProtocol.DidExchange]
-    ).map((p) => p.parsedProtocolUri.protocolUri)
+    let didCommVersion: 'v1' | 'v2'
 
-    const invitation = new DidCommOutOfBandInvitation({
-      id: config.did,
-      label: config.alias ?? '',
-      services: [config.did],
-      handshakeProtocols,
-    })
+    if (config.didCommVersion !== undefined) {
+      didCommVersion = config.didCommVersion
+    } else {
+      const { versions: didVersions } = await this.didCommDocumentService.getSupportedDidCommVersionsFromDidDoc(
+        this.agentContext,
+        config.did
+      )
+      const agentVersions = this.didCommModuleConfig.didcommVersions
+      const supported = didVersions.filter((v) => agentVersions.includes(v))
+      if (supported.length === 0) {
+        throw new CredoError(
+          `DID ${config.did} advertises DIDComm [${didVersions.join(', ')}] but this agent supports only [${agentVersions.join(', ')}]. Add a matching version to didcommVersions in DidCommModuleConfig.`
+        )
+      }
+      didCommVersion = supported.includes('v2') ? 'v2' : 'v1'
+    }
+    this.assertAgentSupportsDidCommVersion(didCommVersion)
+
+    if (didCommVersion === 'v2') {
+      const hasHandshakeProtocols =
+        config.handshakeProtocols !== undefined && config.handshakeProtocols.length > 0
+      if (hasHandshakeProtocols) {
+        throw new CredoError(
+          `handshakeProtocols cannot be used with DIDComm v2 (v2 has no handshake). Omit handshakeProtocols or set didCommVersion: 'v1'.`
+        )
+      }
+    }
+
+    let invitation: DidCommOutOfBandInvitation
+
+    if (didCommVersion === 'v2') {
+      const v2Invitation = new DidCommOutOfBandInvitationV2({
+        from: config.did,
+        body: {
+          accept: ['didcomm/v2'],
+        },
+      })
+      invitation = this.convertV2InvitationToOutOfBandInvitation(v2Invitation)
+    } else {
+      const handshakeProtocols = this.getSupportedHandshakeProtocols(
+        config.handshakeProtocols ?? [DidCommHandshakeProtocol.DidExchange]
+      ).map((p) => p.parsedProtocolUri.protocolUri)
+
+      invitation = new DidCommOutOfBandInvitation({
+        id: config.did,
+        label: config.alias ?? '',
+        services: [config.did],
+        handshakeProtocols,
+      })
+    }
 
     return this._receiveInvitation(invitation, { ...config, isImplicit: true })
   }
