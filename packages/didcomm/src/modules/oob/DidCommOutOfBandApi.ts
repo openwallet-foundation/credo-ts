@@ -127,6 +127,13 @@ export interface ReceiveOutOfBandImplicitInvitationConfig
   extends Omit<BaseReceiveOutOfBandInvitationConfig, 'isImplicit' | 'reuseConnection'> {
   did: string
   handshakeProtocols?: DidCommHandshakeProtocol[]
+  /**
+   * When `'v2'`, the implicit invitation is treated as DIDComm v2 OOB (no DID Exchange or
+   * Connections handshake; connection is created like {@link createInvitation} with `didCommVersion: 'v2'`).
+   * `handshakeProtocols` is ignored for v2.
+   * @default 'v1'
+   */
+  didCommVersion?: 'v1' | 'v2'
 }
 
 @injectable()
@@ -519,8 +526,9 @@ export class DidCommOutOfBandApi {
    * calling `acceptInvitation`.
    *
    * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation
-   * (0160: Connection Protocol). Handshake protocol to be used depends on handshakeProtocols
-   * (DID Exchange by default)
+   * (0160: Connection Protocol). For `didCommVersion: 'v1'` (default), handshake protocol
+   * follows `handshakeProtocols` (DID Exchange by default). For `didCommVersion: 'v2'`, creates
+   * a v2 implicit OOB (no handshake messages).
    *
    * Agent role: receiver (invitee)
    *
@@ -529,16 +537,30 @@ export class DidCommOutOfBandApi {
    * @returns out-of-band record and connection record if one has been created.
    */
   public async receiveImplicitInvitation(config: ReceiveOutOfBandImplicitInvitationConfig) {
-    const handshakeProtocols = this.getSupportedHandshakeProtocols(
-      config.handshakeProtocols ?? [DidCommHandshakeProtocol.DidExchange]
-    ).map((p) => p.parsedProtocolUri.protocolUri)
+    const didCommVersion = config.didCommVersion ?? 'v1'
 
-    const invitation = new DidCommOutOfBandInvitation({
-      id: config.did,
-      label: config.alias ?? '',
-      services: [config.did],
-      handshakeProtocols,
-    })
+    let invitation: DidCommOutOfBandInvitation
+
+    if (didCommVersion === 'v2') {
+      const v2Invitation = new DidCommOutOfBandInvitationV2({
+        from: config.did,
+        body: {
+          accept: ['didcomm/v2'],
+        },
+      })
+      invitation = this.convertV2InvitationToOutOfBandInvitation(v2Invitation)
+    } else {
+      const handshakeProtocols = this.getSupportedHandshakeProtocols(
+        config.handshakeProtocols ?? [DidCommHandshakeProtocol.DidExchange]
+      ).map((p) => p.parsedProtocolUri.protocolUri)
+
+      invitation = new DidCommOutOfBandInvitation({
+        id: config.did,
+        label: config.alias ?? '',
+        services: [config.did],
+        handshakeProtocols,
+      })
+    }
 
     return this._receiveInvitation(invitation, { ...config, isImplicit: true })
   }

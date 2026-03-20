@@ -72,6 +72,25 @@ describe('out of band implicit', () => {
     vi.resetAllMocks()
   })
 
+  test('v2 implicit invitation: completed connection without DID Exchange handshake', async () => {
+    const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
+
+    const { connectionRecord: aliceFaberConnection, outOfBandRecord } =
+      await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+        did: inMemoryDid,
+        didCommVersion: 'v2',
+        alias: 'Faber public',
+        label: 'Custom Alice',
+      })
+
+    expect(aliceFaberConnection).toBeDefined()
+    expect(aliceFaberConnection!.state).toBe(DidCommDidExchangeState.Completed)
+    expect(aliceFaberConnection!.didcommVersion).toBe('v2')
+    expect(aliceFaberConnection!.invitationDid).toBe(inMemoryDid)
+    expect(outOfBandRecord.outOfBandInvitation.v2Invitation?.from).toBe(inMemoryDid)
+    expect(outOfBandRecord.outOfBandInvitation.v2Invitation?.body?.accept).toEqual(['didcomm/v2'])
+  })
+
   test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} based on implicit OOB invitation`, async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
 
