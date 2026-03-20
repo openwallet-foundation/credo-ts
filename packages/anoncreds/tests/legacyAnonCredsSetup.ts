@@ -23,6 +23,8 @@ import type { EventReplaySubject } from '../../core/tests'
 import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
 import {
   getAgentOptions,
+  getDefaultDidCommConfigForTests,
+  getDefaultDidCommVersionForTests,
   importExistingIndyDidFromPrivateKey,
   makeConnection,
   publicDidSeed,
@@ -112,6 +114,7 @@ export const getAnonCredsIndyModules = <
       connections: {
         autoAcceptConnections: true,
       },
+      ...getDefaultDidCommConfigForTests(),
       ...extraDidCommConfig,
       credentials: {
         autoAcceptCredentials,
@@ -173,17 +176,15 @@ export async function presentLegacyAnonCredsProof({
 
   request: { attributes, predicates },
 }: {
-  holderAgent: AnonCredsTestsAgent
-  holderReplay: EventReplaySubject
-
-  verifierAgent: AnonCredsTestsAgent
-  verifierReplay: EventReplaySubject
-
-  verifierHolderConnectionId: string
+  holderAgent: AnonCredsTestsAgent;
+  holderReplay: EventReplaySubject;
+  verifierAgent: AnonCredsTestsAgent;
+  verifierReplay: EventReplaySubject;
+  verifierHolderConnectionId: string;
   request: {
-    attributes?: Record<string, AnonCredsRequestedAttribute>
-    predicates?: Record<string, AnonCredsRequestedPredicate>
-  }
+    attributes?: Record<string, AnonCredsRequestedAttribute>;
+    predicates?: Record<string, AnonCredsRequestedPredicate>;
+  };
 }) {
   let holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
     state: DidCommProofState.RequestReceived,
@@ -249,14 +250,12 @@ export async function issueLegacyAnonCredsCredential({
   issuerHolderConnectionId,
   offer,
 }: {
-  issuerAgent: AnonCredsTestsAgent
-  issuerReplay: EventReplaySubject
-
-  holderAgent: AnonCredsTestsAgent
-  holderReplay: EventReplaySubject
-
-  issuerHolderConnectionId: string
-  offer: AnonCredsDidCommOfferCredentialFormat
+  issuerAgent: AnonCredsTestsAgent;
+  issuerReplay: EventReplaySubject;
+  holderAgent: AnonCredsTestsAgent;
+  holderReplay: EventReplaySubject;
+  issuerHolderConnectionId: string;
+  offer: AnonCredsDidCommOfferCredentialFormat;
 }) {
   let issuerCredentialExchangeRecord = await issuerAgent.didcomm.credentials.offerCredential({
     comment: 'some comment about credential',
@@ -296,33 +295,27 @@ export async function issueLegacyAnonCredsCredential({
 }
 
 interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, CreateConnections extends boolean> {
-  issuerAgent: AnonCredsTestsAgent
-  issuerReplay: EventReplaySubject
-
-  holderAgent: AnonCredsTestsAgent
-  holderReplay: EventReplaySubject
-
-  issuerHolderConnectionId: CreateConnections extends true ? string : undefined
-  holderIssuerConnectionId: CreateConnections extends true ? string : undefined
-
+  issuerAgent: AnonCredsTestsAgent;
+  issuerReplay: EventReplaySubject;
+  holderAgent: AnonCredsTestsAgent;
+  holderReplay: EventReplaySubject;
+  issuerHolderConnectionId: CreateConnections extends true ? string : undefined;
+  holderIssuerConnectionId: CreateConnections extends true ? string : undefined;
   verifierHolderConnectionId: CreateConnections extends true
     ? VerifierName extends string
       ? string
       : undefined
-    : undefined
+    : undefined;
   holderVerifierConnectionId: CreateConnections extends true
     ? VerifierName extends string
       ? string
       : undefined
-    : undefined
-
-  verifierAgent: VerifierName extends string ? AnonCredsTestsAgent : undefined
-  verifierReplay: VerifierName extends string ? EventReplaySubject : undefined
-
-  schemaId: string
-  credentialDefinitionId: string
-
-  teardown: () => Promise<void>
+    : undefined;
+  verifierAgent: VerifierName extends string ? AnonCredsTestsAgent : undefined;
+  verifierReplay: VerifierName extends string ? EventReplaySubject : undefined;
+  schemaId: string;
+  credentialDefinitionId: string;
+  teardown: () => Promise<void>;
 }
 
 export async function setupAnonCredsTests<
@@ -338,6 +331,8 @@ export async function setupAnonCredsTests<
   preCreatedDefinition,
   createConnections,
   useDrizzleStorage,
+  extraDidCommConfig: setupExtraDidCommConfig,
+  didCommVersion,
 }: {
   issuerName: string
   holderName: string
@@ -348,7 +343,14 @@ export async function setupAnonCredsTests<
   preCreatedDefinition?: PreCreatedAnonCredsDefinition
   createConnections?: CreateConnections
   useDrizzleStorage?: 'postgres' | 'sqlite'
+  /** Override DidComm config. Default comes from DIDCOMM_VERSION env (v1/v2); set for per-test overrides. */
+  extraDidCommConfig?: DidCommModuleConfigOptions
+  /** DIDComm envelope version for connections. Defaults to DIDCOMM_VERSION env var, else v1. */
+  didCommVersion?: 'v1' | 'v2'
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
+  const resolvedDidCommVersion = didCommVersion ?? getDefaultDidCommVersionForTests()
+  const extraDidCommConfigForVersion: DidCommModuleConfigOptions =
+    resolvedDidCommVersion === 'v2' ? { didcommVersions: ['v1', 'v2'] } : {}
   const issuerPostgresDrizzle = useDrizzleStorage === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
   const issuerDrizzle =
     useDrizzleStorage === 'postgres'
@@ -369,6 +371,9 @@ export async function setupAnonCredsTests<
         autoAcceptProofs,
         extraDidCommConfig: {
           endpoints: ['rxjs:issuer'],
+          ...getDefaultDidCommConfigForTests(),
+          ...extraDidCommConfigForVersion,
+          ...setupExtraDidCommConfig,
         },
       }),
       { requireDidcomm: true, drizzle: issuerDrizzle }
@@ -392,6 +397,9 @@ export async function setupAnonCredsTests<
         autoAcceptProofs,
         extraDidCommConfig: {
           endpoints: ['rxjs:holder'],
+          ...getDefaultDidCommConfigForTests(),
+          ...extraDidCommConfigForVersion,
+          ...setupExtraDidCommConfig,
         },
       }),
       { requireDidcomm: true, drizzle: holderDrizzle }
@@ -417,6 +425,9 @@ export async function setupAnonCredsTests<
             autoAcceptProofs,
             extraDidCommConfig: {
               endpoints: ['rxjs:verifier'],
+              ...getDefaultDidCommConfigForTests(),
+              ...extraDidCommConfigForVersion,
+              ...setupExtraDidCommConfig,
             },
           }),
           { requireDidcomm: true, drizzle: verifierDrizzle }
@@ -471,10 +482,14 @@ export async function setupAnonCredsTests<
   let holderVerifierConnection: DidCommConnectionRecord | undefined
 
   if (createConnections ?? true) {
-    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)
+    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent, {
+      didCommVersion: resolvedDidCommVersion,
+    })
 
     if (verifierAgent) {
-      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
+      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent, {
+        didCommVersion: resolvedDidCommVersion,
+      })
     }
   }
 

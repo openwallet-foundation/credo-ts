@@ -13,6 +13,20 @@ export interface DidCommMediatorModuleConfigOptions {
   autoAcceptMediationRequests?: boolean
 
   /**
+   * Mediator's routing DID for Coordinate Mediation 2.0.
+   * This is the DID-as-endpoint where senders forward messages.
+   * Required for v2 mediate-grant. Typically a did:peer with service_endpoint.
+   */
+  mediatorRoutingDid?: string
+
+  /**
+   * Mediation protocol versions to support. When '2.0' is included, Coordinate Mediation 2.0 handlers are registered.
+   *
+   * @default ['1.0']
+   */
+  mediationProtocolVersions?: ('1.0' | '2.0')[]
+
+  /**
    * Strategy to use when a Forward message is received.
    *
    *
@@ -36,6 +50,16 @@ export class DidCommMediatorModuleConfig {
   /** See {@link DidCommMediatorModuleConfigOptions.autoAcceptMediationRequests} */
   public get autoAcceptMediationRequests() {
     return this.options.autoAcceptMediationRequests ?? false
+  }
+
+  /** See {@link DidCommMediatorModuleConfigOptions.mediatorRoutingDid} */
+  public get mediatorRoutingDid() {
+    return this.options.mediatorRoutingDid
+  }
+
+  /** See {@link DidCommMediatorModuleConfigOptions.mediationProtocolVersions} */
+  public get mediationProtocolVersions(): ('1.0' | '2.0')[] {
+    return this.options.mediationProtocolVersions ?? ['1.0']
   }
 
   /** See {@link DidCommMediatorModuleConfigOptions.messageForwardingStrategy} */

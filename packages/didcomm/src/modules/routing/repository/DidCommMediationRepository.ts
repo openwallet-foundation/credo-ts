@@ -19,6 +19,12 @@ export class DidCommMediationRepository extends Repository<DidCommMediationRecor
     })
   }
 
+  public getSingleByRecipientDid(agentContext: AgentContext, recipientDid: string) {
+    return this.getSingleByQuery(agentContext, {
+      recipientDids: [recipientDid],
+    })
+  }
+
   public async getByConnectionId(agentContext: AgentContext, connectionId: string): Promise<DidCommMediationRecord> {
     return this.getSingleByQuery(agentContext, { connectionId })
   }

@@ -662,6 +662,9 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
+      '@stablelib/ed25519':
+        specifier: 'catalog:'
+        version: 2.0.2
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1

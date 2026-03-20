@@ -35,6 +35,7 @@ export interface DidCommBatchMessageOptions {
  */
 export class DidCommBatchMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
+  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v1']
 
   public constructor(options: DidCommBatchMessageOptions) {
     super()

@@ -3,6 +3,8 @@ import type { DidCommInvitationType } from '../messages'
 export enum DidCommOutOfBandRecordMetadataKeys {
   RecipientRouting = '_internal/recipientRouting',
   LegacyInvitation = '_internal/legacyInvitation',
+  /** V2 OOB: persisted because v2Invitation is @Exclude() and lost on record load */
+  V2Invitation = '_internal/v2Invitation',
 }
 
 export type DidCommOutOfBandRecordMetadata = {
@@ -22,4 +24,5 @@ export type DidCommOutOfBandRecordMetadata = {
      */
     legacyInvitationType?: Exclude<DidCommInvitationType, DidCommInvitationType.OutOfBand>
   }
+  [DidCommOutOfBandRecordMetadataKeys.V2Invitation]: Record<string, unknown> // DidCommOutOfBandInvitationV2.toJSON() - from/body survive serialization
 }

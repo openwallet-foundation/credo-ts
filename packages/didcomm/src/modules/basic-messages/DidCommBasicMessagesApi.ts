@@ -5,6 +5,7 @@ import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections/services'
 import type { DidCommBasicMessageRecord } from './repository/DidCommBasicMessageRecord'
 import { DidCommBasicMessageService } from './services'
+import { DidCommBasicMessagesModuleConfig } from './DidCommBasicMessagesModuleConfig'
 
 @injectable()
 export class DidCommBasicMessagesApi {
@@ -12,17 +13,20 @@ export class DidCommBasicMessagesApi {
   private messageSender: DidCommMessageSender
   private connectionService: DidCommConnectionService
   private agentContext: AgentContext
+  private config: DidCommBasicMessagesModuleConfig
 
   public constructor(
     basicMessageService: DidCommBasicMessageService,
     messageSender: DidCommMessageSender,
     connectionService: DidCommConnectionService,
-    agentContext: AgentContext
+    agentContext: AgentContext,
+    config: DidCommBasicMessagesModuleConfig
   ) {
     this.basicMessageService = basicMessageService
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
+    this.config = config
   }
 
   /**
@@ -37,12 +41,11 @@ export class DidCommBasicMessagesApi {
   public async sendMessage(connectionId: string, message: string, parentThreadId?: string) {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
-    const { message: basicMessage, record: basicMessageRecord } = await this.basicMessageService.createMessage(
-      this.agentContext,
-      message,
-      connection,
-      parentThreadId
-    )
+    const { message: basicMessage, record: basicMessageRecord } =
+      this.config.supportsV2
+        ? await this.basicMessageService.createMessageV2(this.agentContext, message, connection, parentThreadId)
+        : await this.basicMessageService.createMessage(this.agentContext, message, connection, parentThreadId)
+
     const outboundMessageContext = new DidCommOutboundMessageContext(basicMessage, {
       agentContext: this.agentContext,
       connection,
