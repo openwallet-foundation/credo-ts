@@ -12,16 +12,14 @@ export class TypedArrayEncoder {
 
   /**
    * Decode a base64 string into a Uint8Array
+   *
+   * For backwards-compatibility it also supports base64url
    */
   public static fromBase64(str: string): Uint8ArrayBuffer {
+    if (/^[A-Za-z0-9\-_]+={0,2}$/.test(str)) {
+      return TypedArrayEncoder.fromBase64Url(str)
+    }
     return base64.decode(str) as Uint8ArrayBuffer
-  }
-
-  /**
-   * @deprecated Use `fromBase64Url`
-   */
-  public static fromBase64url(str: string): Uint8ArrayBuffer {
-    return TypedArrayEncoder.fromBase64Url(str)
   }
 
   /**

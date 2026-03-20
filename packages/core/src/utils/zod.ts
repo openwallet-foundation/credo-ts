@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { ZodValidationError } from '../error'
 import type { Uint8ArrayBuffer } from '../types'
-import { JsonEncoder } from '.'
+import { JsonEncoder } from './JsonEncoder'
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 export type zBaseSchema = z.Schema<any, any, any>
