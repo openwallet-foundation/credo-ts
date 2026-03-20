@@ -536,8 +536,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       '@owf/mdoc':
-        specifier: ^0.6.0-alpha-20260225223459
-        version: 0.6.0-alpha-20260225223459
+        specifier: ^0.6.0-alpha-20260320132530
+        version: 0.6.0-alpha-20260320132530
       '@peculiar/asn1-ecc':
         specifier: ^2.6.0
         version: 2.6.0
@@ -3141,8 +3141,8 @@ packages:
   '@openwallet-foundation/askar-shared@0.4.3':
     resolution: {integrity: sha512-Zt9zlvjJxNs8UWlnRydZH594Lak15YPHY72VT1+iDbXh0OjTdyq6Bf0FIsh9sfFnRYIgh2zd8+VoXxZ07GjADA==}
 
-  '@owf/mdoc@0.6.0-alpha-20260225223459':
-    resolution: {integrity: sha512-j3F/301TSUa5JeEtlwNO0FfLyCeOYyiBtkETPLGnVOt7HSBoYpSdcm3Ot2+MfnGldi2qmo8HGC6Ul2uib70bTw==}
+  '@owf/mdoc@0.6.0-alpha-20260320132530':
+    resolution: {integrity: sha512-kCoTCzVMrovH4eEjoNU6ZjS19AxBhsW8N2/UP1xHxdAHrEsF/E36fR7Y8GRLThGC1stabBuGVKsp3a3c9X19EA==}
 
   '@oxc-project/runtime@0.101.0':
     resolution: {integrity: sha512-t3qpfVZIqSiLQ5Kqt/MC4Ge/WCOGrrcagAdzTcDaggupjiGxUx4nJF2v6wUCXWSzWHn5Ns7XLv13fCJEwCOERQ==}
@@ -3708,6 +3708,7 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
     resolution: {integrity: sha512-QXJ6R8ENiZV2rPMbn06cw5JKwqUYN1kzVRbYfONqE1PEXx1noQ4md7uxr2zSczi0ubKkNcbyYDNtIMTZIhGzmQ==}
+    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
@@ -3970,7 +3971,7 @@ packages:
     resolution: {integrity: sha512-HhVd0MDnzzsgevnOWCBj5Otnzobjy5wLBe4EdeeFGv8luMsGcYqDuFRMcttKWZA5vVO8RFjexVovXvAM4JoJDQ==}
     peerDependencies:
       msw: ^2.4.9
-      vite: npm:rolldown-vite@latest
+      vite: ^6.0.0 || ^7.0.0-0
     peerDependenciesMeta:
       msw:
         optional: true
@@ -11315,7 +11316,7 @@ snapshots:
       buffer: 6.0.3
       tar: 7.5.7
 
-  '@owf/mdoc@0.6.0-alpha-20260225223459':
+  '@owf/mdoc@0.6.0-alpha-20260320132530':
     dependencies:
       cbor-x: 1.6.0
       zod: 4.3.6
