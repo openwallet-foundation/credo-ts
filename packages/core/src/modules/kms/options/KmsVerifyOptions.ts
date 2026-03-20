@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { zAnyUint8Array } from '../../../utils/zod'
+import { zUint8ArrayBuffer } from '../../../utils/zod'
 import { zKnownJwaSignatureAlgorithm } from '../jwk/jwa'
 import type { KmsJwkPublic } from '../jwk/knownJwk'
 import { zKmsJwkPublicAsymmetric } from '../jwk/knownJwk'
@@ -36,12 +36,12 @@ export const zKmsVerifyOptions = z.object({
   /**
    * The data to verify
    */
-  data: zAnyUint8Array.describe('The data to verify'),
+  data: zUint8ArrayBuffer.describe('The data to verify'),
 
   /**
    * The signature to verify the data against
    */
-  signature: zAnyUint8Array.describe('The signature on the data to verify'),
+  signature: zUint8ArrayBuffer.describe('The signature on the data to verify'),
 })
 
 export type KmsVerifyOptions = z.output<typeof zKmsVerifyOptions>

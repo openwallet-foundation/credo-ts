@@ -1,7 +1,6 @@
-import { Buffer } from 'node:buffer'
 import type { CipherGCM } from 'node:crypto'
 import { createCipheriv, createSecretKey, randomBytes } from 'node:crypto'
-import { type AnyUint8Array, Kms, type Uint8ArrayBuffer } from '@credo-ts/core'
+import { Kms, TypedArrayEncoder, type Uint8ArrayBuffer } from '@credo-ts/core'
 
 import { performSign } from './sign'
 
@@ -20,9 +19,9 @@ export const nodeSupportedEncryptionAlgorithms = [
 export async function performEncrypt(
   key: Kms.KmsJwkPrivateOct,
   dataEncryption: Kms.KmsEncryptDataEncryption,
-  data: AnyUint8Array
-): Promise<{ encrypted: Uint8ArrayBuffer; tag?: Uint8ArrayBuffer; iv: AnyUint8Array }> {
-  const secretKeyBytes = Buffer.from(key.k, 'base64url')
+  data: Uint8ArrayBuffer
+): Promise<{ encrypted: Uint8ArrayBuffer; tag?: Uint8ArrayBuffer; iv: Uint8ArrayBuffer }> {
+  const secretKeyBytes = TypedArrayEncoder.fromBase64Url(key.k)
   const nodeKey = createSecretKey(secretKeyBytes)
 
   // Create cipher with key and IV
@@ -35,7 +34,7 @@ export async function performEncrypt(
     const cipher = createCipheriv(nodeAlgorithm, nodeKey, iv)
 
     // Get encrypted data
-    const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
+    const encrypted = TypedArrayEncoder.concat([cipher.update(data), cipher.final()])
 
     return { encrypted, iv }
   }
@@ -60,25 +59,29 @@ export async function performEncrypt(
 
     // Perform encryption
     const cipher = createCipheriv(algSettings.cbcAlg, encKey, iv)
-    const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
+    const encrypted = TypedArrayEncoder.concat([cipher.update(data), cipher.final()])
 
     // Calculate authentication tag
     // AL (Associated Length) is 64-bit big-endian length of AAD in bits
-    const al = Buffer.alloc(8)
+    const al = new Uint8Array(8)
     const aadLength = dataEncryption.aad ? dataEncryption.aad.length * 8 : 0
-    al.writeBigUInt64BE(BigInt(aadLength))
+    new DataView(al.buffer).setBigUint64(0, BigInt(aadLength), false)
 
     // Create concatenated buffer for MAC calculation
-    const macData = Buffer.concat([
+    const macData = TypedArrayEncoder.concat([
       // If AAD exists, include it first, otherwise empty buffer
-      dataEncryption.aad ?? Buffer.alloc(0),
+      dataEncryption.aad ?? new Uint8Array(),
       iv, // Initial Vector
       encrypted, // Ciphertext
       al, // Associated Length (AL)
     ])
 
-    const hmac = await performSign({ kty: 'oct', k: macKey.toString('base64url') }, algSettings.hmacAlg, macData)
-    const tag = Buffer.from(hmac).subarray(0, algSettings.keySize) // Truncate to appropriate size
+    const hmac = await performSign(
+      { kty: 'oct', k: TypedArrayEncoder.toBase64Url(macKey) },
+      algSettings.hmacAlg,
+      macData
+    )
+    const tag = hmac.subarray(0, algSettings.keySize) // Truncate to appropriate size
 
     return { encrypted, tag, iv }
   }
@@ -105,7 +108,7 @@ export async function performEncrypt(
     }
 
     // Get encrypted data
-    const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
+    const encrypted = TypedArrayEncoder.concat([cipher.update(data), cipher.final()])
 
     // Get auth tag - must be saved to verify decryption
     const tag = cipher.getAuthTag() as Uint8ArrayBuffer
@@ -130,7 +133,7 @@ export async function performEncrypt(
     }
 
     // Get encrypted data
-    const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
+    const encrypted = TypedArrayEncoder.concat([cipher.update(data), cipher.final()])
 
     // Get auth tag - must be saved to verify decryption
     const tag = cipher.getAuthTag() as Uint8ArrayBuffer

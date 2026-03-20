@@ -55,11 +55,11 @@ import { agentDependencies, NodeInMemoryKeyManagementStorage, NodeKeyManagementS
 import type {
   Agent,
   AgentDependencies,
-  AnyUint8Array,
   BaseEvent,
   InitConfig,
   InjectionToken,
   KeyDidCreateOptions,
+  Uint8ArrayBuffer,
 } from '../src'
 import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
@@ -190,7 +190,7 @@ export function getAgentOptions<
   } as const
 }
 
-export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: AnyUint8Array) {
+export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Uint8ArrayBuffer) {
   const { privateJwk } = transformPrivateKeyToPrivateJwk({
     privateKey,
     type: {
@@ -856,7 +856,7 @@ export async function createDidKidVerificationMethod(agentContext: AgentContext,
             kty: 'OKP',
             crv: 'Ed25519',
           },
-          privateKey: TypedArrayEncoder.fromString(secretKey),
+          privateKey: TypedArrayEncoder.fromUtf8String(secretKey),
         }).privateJwk,
       })
     : await kms.createKey({

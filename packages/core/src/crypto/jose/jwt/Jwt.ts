@@ -1,7 +1,7 @@
+import type { Uint8ArrayBuffer } from '@credo-ts/core'
 import { CredoError } from '../../../error'
 import { replaceError } from '../../../logger/replaceError'
 import type { Jwk } from '../../../modules/kms'
-import type { Buffer } from '../../../utils'
 import { JsonEncoder, TypedArrayEncoder } from '../../../utils'
 import { JwtPayload } from './JwtPayload'
 
@@ -17,7 +17,7 @@ interface JwtHeader {
 interface JwtOptions {
   payload: JwtPayload
   header: JwtHeader
-  signature: Buffer
+  signature: Uint8ArrayBuffer
 
   serializedJwt: string
 }
@@ -27,7 +27,7 @@ export class Jwt {
 
   public readonly payload: JwtPayload
   public readonly header: JwtHeader
-  public readonly signature: Buffer
+  public readonly signature: Uint8ArrayBuffer
 
   /**
    * Compact serialization of the JWT. Contains the payload, header, and signature.

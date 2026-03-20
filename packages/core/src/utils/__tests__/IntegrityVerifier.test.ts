@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'vitest'
+import { JsonEncoder } from '..'
 import { IntegrityVerifier } from '../IntegrityVerifier'
 import { TypedArrayEncoder } from '../TypedArrayEncoder'
 
 describe('IntegrityVerifier - Subresource Integrity Verification', () => {
-  const testContent = TypedArrayEncoder.fromString("alert('Hello, world.');")
+  const testContent = TypedArrayEncoder.fromUtf8String("alert('Hello, world.');")
 
   describe('verifyIntegrity', () => {
     test('should verify valid SHA-256 integrity', () => {
@@ -93,7 +94,7 @@ describe('IntegrityVerifier - Subresource Integrity Verification', () => {
     test('should handle base64 values containing hyphens', () => {
       // Some base64 values may contain hyphens (base64url encoding)
       // The implementation should rejoin parts after the first hyphen
-      const content = TypedArrayEncoder.fromString('test-content-with-hyphens')
+      const content = TypedArrayEncoder.fromUtf8String('test-content-with-hyphens')
       // You would need to compute the actual hash for this test
       // This test ensures the parsing logic handles hyphens in base64 correctly
       const integrity = 'sha256-somehash-with-hyphens='
@@ -121,8 +122,8 @@ describe('IntegrityVerifier - Subresource Integrity Verification', () => {
     })
 
     test('should verify real-world JSON content', () => {
-      const jsonContent = JSON.stringify({ name: 'test', value: 123 })
-      const content = TypedArrayEncoder.fromString(jsonContent)
+      const jsonContent = JsonEncoder.toString({ name: 'test', value: 123 })
+      const content = TypedArrayEncoder.fromUtf8String(jsonContent)
 
       // Compute actual hash (this is just a placeholder)
       // In real usage, you would get this from the resource provider

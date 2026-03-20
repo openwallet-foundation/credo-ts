@@ -15,6 +15,7 @@ import {
 } from '@animo-id/mdoc'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import type { AgentContext } from '../../agent'
+import type { Uint8ArrayBuffer } from '../../types'
 import { TypedArrayEncoder } from './../../utils'
 import { uuid } from '../../utils/uuid'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
@@ -81,13 +82,13 @@ export class MdocDeviceResponse {
       const deviceSigned = cborEncode(prepared.get('deviceSigned'))
 
       return Mdoc.fromDeviceSignedDocument(
-        TypedArrayEncoder.toBase64URL(issuerSigned),
-        TypedArrayEncoder.toBase64URL(deviceSigned),
+        TypedArrayEncoder.toBase64Url(issuerSigned as Uint8ArrayBuffer),
+        TypedArrayEncoder.toBase64Url(deviceSigned as Uint8ArrayBuffer),
         docType
       )
     })
 
-    return new MdocDeviceResponse(TypedArrayEncoder.toBase64URL(mdoc.encode()), documents)
+    return new MdocDeviceResponse(TypedArrayEncoder.toBase64Url(mdoc.encode() as Uint8ArrayBuffer), documents)
   }
 
   public static fromBase64Url(base64Url: string) {
@@ -247,7 +248,7 @@ export class MdocDeviceResponse {
     }
 
     return {
-      deviceResponseBase64Url: TypedArrayEncoder.toBase64URL(combinedDeviceResponseMdoc.encode()),
+      deviceResponseBase64Url: TypedArrayEncoder.toBase64Url(combinedDeviceResponseMdoc.encode() as Uint8ArrayBuffer),
       presentationSubmission: MdocDeviceResponse.createPresentationSubmission({
         id: `MdocPresentationSubmission ${uuid()}`,
         presentationDefinition: {
@@ -301,7 +302,7 @@ export class MdocDeviceResponse {
       combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
     }
 
-    return combinedDeviceResponseMdoc.encode()
+    return combinedDeviceResponseMdoc.encode() as Uint8ArrayBuffer
   }
 
   public async verify(agentContext: AgentContext, options: Omit<MdocDeviceResponseVerifyOptions, 'deviceResponse'>) {

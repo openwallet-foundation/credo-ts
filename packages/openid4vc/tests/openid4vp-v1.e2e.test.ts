@@ -3062,7 +3062,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     if (!akiValue) {
       throw new Error('Leaf certificate must have an authorityKeyIdentifier')
     }
-    const akiBase64Url = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiValue))
+    const akiBase64Url = TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromHex(akiValue))
 
     // Set trusted certificates
     verifier.agent.x509.config.setTrustedCertificates([rootCertificate.toString('pem')])
@@ -3364,14 +3364,14 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     verifier.agent.x509.config.addTrustedCertificate(verifierCertificate.toString('base64'))
 
     // Create DCQL query with DIFFERENT AKI value that doesn't match the credential
-    const wrongAkiValue = TypedArrayEncoder.toBase64URL(new Uint8Array(20).fill(0xff))
+    const wrongAkiValue = TypedArrayEncoder.toBase64Url(new Uint8Array(20).fill(0xff))
 
     // Get the AKI value from the leaf certificate for use in trusted_authorities
     const akiValue = leafCertificate.authorityKeyIdentifier
     if (!akiValue) {
       throw new Error('Leaf certificate must have an authorityKeyIdentifier')
     }
-    const akiBase64Url = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiValue))
+    const akiBase64Url = TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromHex(akiValue))
 
     const dcqlQuery = {
       credentials: [

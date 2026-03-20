@@ -32,7 +32,7 @@ describe('DidRegistrar', () => {
     describe('did:peer:0', () => {
       it('should correctly create a did:peer:0 document using Ed25519 key type', async () => {
         const privateJwk = transformPrivateKeyToPrivateJwk({
-          privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e'),
+          privateKey: TypedArrayEncoder.fromUtf8String('96213c3d7fc8d4d6754c712fd969598e'),
           type: {
             kty: 'OKP',
             crv: 'Ed25519',
@@ -89,7 +89,7 @@ describe('DidRegistrar', () => {
               kty: 'OKP',
               crv: 'Ed25519',
             },
-            privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e'),
+            privateKey: TypedArrayEncoder.fromUtf8String('96213c3d7fc8d4d6754c712fd969598e'),
           }).privateJwk,
         })
         const did = 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU'

@@ -9,6 +9,7 @@ import {
   Verifier,
 } from '@animo-id/mdoc'
 import type { AgentContext } from '../../agent'
+import type { Uint8ArrayBuffer } from '../../types'
 import { TypedArrayEncoder } from './../../utils'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
@@ -29,7 +30,7 @@ export class Mdoc {
 
   private constructor(public issuerSignedDocument: IssuerSignedDocument | DeviceSignedDocument) {
     const issuerSigned = issuerSignedDocument.prepare().get('issuerSigned')
-    this.base64Url = TypedArrayEncoder.toBase64URL(cborEncode(issuerSigned))
+    this.base64Url = TypedArrayEncoder.toBase64Url(cborEncode(issuerSigned) as Uint8ArrayBuffer)
   }
 
   /**
@@ -185,7 +186,7 @@ export class Mdoc {
   ): Promise<{ isValid: true } | { isValid: false; error: string }> {
     const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
     const certificateChain = this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain.map((certificate) =>
-      X509Certificate.fromRawCertificate(certificate)
+      X509Certificate.fromRawCertificate(certificate as Uint8ArrayBuffer)
     )
 
     let trustedCertificates = options?.trustedCertificates

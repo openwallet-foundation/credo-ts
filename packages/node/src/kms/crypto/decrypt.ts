@@ -1,16 +1,14 @@
-import { Buffer } from 'node:buffer'
 import type { DecipherGCM } from 'node:crypto'
 import { createDecipheriv, createSecretKey, timingSafeEqual } from 'node:crypto'
-import { type AnyUint8Array, Kms, type Uint8ArrayBuffer } from '@credo-ts/core'
-
+import { Kms, TypedArrayEncoder, type Uint8ArrayBuffer } from '@credo-ts/core'
 import { performSign } from './sign'
 
 export async function performDecrypt(
   key: Kms.KmsJwkPrivateOct,
   dataDecryption: Kms.KmsDecryptDataDecryption,
-  encrypted: AnyUint8Array
+  encrypted: Uint8ArrayBuffer
 ): Promise<{ data: Uint8ArrayBuffer }> {
-  const secretKeyBytes = Buffer.from(key.k, 'base64url')
+  const secretKeyBytes = TypedArrayEncoder.fromBase64Url(key.k)
   const nodeKey = createSecretKey(secretKeyBytes)
 
   // Create decipher with key and IV
@@ -20,7 +18,7 @@ export async function performDecrypt(
     const decipher = createDecipheriv(nodeAlgorithm, nodeKey, dataDecryption.iv)
 
     // Get decrypted data
-    const data = Buffer.concat([decipher.update(encrypted), decipher.final()])
+    const data = TypedArrayEncoder.concat([decipher.update(encrypted), decipher.final()])
 
     return { data }
   }
@@ -47,7 +45,7 @@ export async function performDecrypt(
     }
 
     // Get decrypted data
-    const data = Buffer.concat([decipher.update(encrypted), decipher.final()])
+    const data = TypedArrayEncoder.concat([decipher.update(encrypted), decipher.final()])
 
     return { data }
   }
@@ -69,16 +67,20 @@ export async function performDecrypt(
 
     // Calculate authentication tag for verification
     // AL (Associated Length) is 64-bit big-endian length of AAD in bits
-    const al = Buffer.alloc(8)
+    const al = new Uint8Array(8)
     const aadLength = dataDecryption.aad ? dataDecryption.aad.length * 8 : 0
-    al.writeBigUInt64BE(BigInt(aadLength))
+    new DataView(al.buffer).setBigUint64(0, BigInt(aadLength), false)
 
     // Create concatenated buffer for MAC verification
-    const macData = Buffer.concat([dataDecryption.aad ?? Buffer.alloc(0), dataDecryption.iv, encrypted, al])
+    const macData = TypedArrayEncoder.concat([dataDecryption.aad ?? new Uint8Array(), dataDecryption.iv, encrypted, al])
 
     // Verify the authentication tag
-    const hmac = await performSign({ kty: 'oct', k: macKey.toString('base64url') }, algSettings.hmacAlg, macData)
-    const calculatedTag = Buffer.from(hmac).subarray(0, algSettings.keySize) // Truncate to appropriate size
+    const hmac = await performSign(
+      { kty: 'oct', k: TypedArrayEncoder.toBase64Url(macKey) },
+      algSettings.hmacAlg,
+      macData
+    )
+    const calculatedTag = hmac.subarray(0, algSettings.keySize) // Truncate to appropriate size
 
     if (!timingSafeEqual(calculatedTag, dataDecryption.tag)) {
       throw new Kms.KeyManagementError(
@@ -88,7 +90,7 @@ export async function performDecrypt(
 
     // After verification, perform decryption
     const decipher = createDecipheriv(algSettings.cbcAlg, encKey, dataDecryption.iv)
-    const data = Buffer.concat([decipher.update(encrypted), decipher.final()])
+    const data = TypedArrayEncoder.concat([decipher.update(encrypted), decipher.final()])
 
     return { data }
   }
@@ -106,7 +108,7 @@ export async function performDecrypt(
     }
 
     // Get decrypted data
-    const data = Buffer.concat([decipher.update(encrypted), decipher.final()])
+    const data = TypedArrayEncoder.concat([decipher.update(encrypted), decipher.final()])
 
     return { data }
   }

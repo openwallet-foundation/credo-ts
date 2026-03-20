@@ -1,100 +1,126 @@
-import type { AnyUint8Array, Uint8ArrayBuffer } from '../types'
-import { decodeFromBase58, encodeToBase58 } from './base58'
-import { base64ToBase64URL } from './base64'
-import { Buffer } from './buffer'
+import { base58, base64, base64url, hex, utf8 } from '@scure/base'
+import type { Uint8ArrayBuffer } from '../types'
 
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class TypedArrayEncoder {
   /**
-   * Encode buffer into base64 string.
-   *
-   * @param buffer the buffer to encode into base64 string
+   * Encode a Uint8Array into base64 string.
    */
-  public static toBase64(buffer: Buffer | AnyUint8Array) {
-    return Buffer.from(buffer).toString('base64')
+  public static toBase64(data: Uint8ArrayBuffer): string {
+    return base64.encode(data)
   }
 
   /**
-   * Encode buffer into base64url string.
-   *
-   * @param buffer the buffer to encode into base64url string
+   * Decode a base64 string into a Uint8Array
    */
-  public static toBase64URL(buffer: Buffer | AnyUint8Array) {
-    return base64ToBase64URL(TypedArrayEncoder.toBase64(buffer))
+  public static fromBase64(str: string): Uint8ArrayBuffer {
+    return base64.decode(str) as Uint8ArrayBuffer
   }
 
   /**
-   * Encode buffer into base58 string.
-   *
-   * @param buffer the buffer to encode into base58 string
+   * @deprecated Use `fromBase64Url`
    */
-  public static toBase58(buffer: Buffer | AnyUint8Array) {
-    return encodeToBase58(buffer)
+  public static fromBase64url(str: string): Uint8ArrayBuffer {
+    return TypedArrayEncoder.fromBase64Url(str)
   }
 
   /**
-   * Decode base64 string into buffer. Also supports base64url
-   *
-   * @param base64 the base64 or base64url string to decode into buffer format
+   * Decode a base64url string into a Uint8Array
    */
-  public static fromBase64(base64: string) {
-    return Buffer.from(base64, 'base64')
+  public static fromBase64Url(str: string): Uint8ArrayBuffer {
+    return base64url.decode(str) as Uint8ArrayBuffer
   }
 
   /**
-   * Decode base58 string into buffer
-   *
-   * @param base58 the base58 string to decode into buffer format
+   * @deprecated Use `toBase64Url`
    */
-  public static fromBase58(base58: string) {
-    return Buffer.from(decodeFromBase58(base58))
+  public static toBase64URL(data: Uint8ArrayBuffer): string {
+    return base64url.encode(data)
   }
 
   /**
-   * Encode buffer into base64 string.
-   *
-   * @param buffer the buffer to encode into base64 string
+   * Encode a Uint8Array into a base64url string
    */
-  public static toHex(buffer: Buffer | AnyUint8Array) {
-    return Buffer.from(buffer).toString('hex')
+  public static toBase64Url(data: Uint8ArrayBuffer): string {
+    return base64url.encode(data)
   }
 
   /**
-   * Decode hex string into buffer
-   *
-   * @param hex the hex string to decode into buffer format
+   * Encode a Uint8Array into a base58 string
    */
-  public static fromHex(hex: string) {
-    return Buffer.from(hex, 'hex')
+  public static toBase58(data: Uint8ArrayBuffer): string {
+    return base58.encode(data)
   }
 
   /**
-   * Decode string into buffer.
-   *
-   * @param str the string to decode into buffer format
+   * Decode a base58 string into Uint8Array
+   */
+  public static fromBase58(str: string): Uint8ArrayBuffer {
+    return base58.decode(str) as Uint8ArrayBuffer
+  }
+
+  /**
+   * Encode a Uint8Array into a hex string
+   */
+  public static toHex(data: Uint8ArrayBuffer): string {
+    return hex.encode(data)
+  }
+
+  /**
+   * Decode a hex string into Uint8Array
+   */
+  public static fromHex(str: string): Uint8ArrayBuffer {
+    return hex.decode(str) as Uint8ArrayBuffer
+  }
+
+  /**
+   * @deprecated Use `fromUtf8String`
    */
   public static fromString(str: string): Uint8ArrayBuffer {
-    return Buffer.from(str)
+    return utf8.decode(str) as Uint8ArrayBuffer
   }
 
-  public static toUtf8String(buffer: Buffer | AnyUint8Array) {
-    return Buffer.from(buffer).toString()
+  /**
+   * Decode a UTF-8 string into a Uint8Array
+   */
+  public static fromUtf8String(str: string): Uint8ArrayBuffer {
+    return utf8.decode(str) as Uint8ArrayBuffer
   }
 
-  public static concat(entries: AnyUint8Array[]): Uint8ArrayBuffer {
-    return Buffer.concat(entries)
+  /**
+   * Encode a Uint8Array into a UTF-8 string
+   */
+  public static toUtf8String(data: Uint8ArrayBuffer): string {
+    return utf8.encode(data)
   }
 
-  public static equals(firstBuffer: AnyUint8Array, otherBuffer: AnyUint8Array): boolean {
-    return Buffer.from(firstBuffer).equals(otherBuffer)
+  /**
+   * Concatenate multiple Uint8Arrays
+   */
+  public static concat(entries: Uint8ArrayBuffer[]): Uint8ArrayBuffer {
+    const result = new Uint8Array(entries.reduce((n, a) => n + a.byteLength, 0))
+    let offset = 0
+    for (const entry of entries) {
+      result.set(entry, offset)
+      offset += entry.byteLength
+    }
+    return result
+  }
+
+  /**
+   * Compare two Uint8Arrays
+   *
+   * @note Is a constant-time operation
+   */
+  public static equals(lhs: Uint8ArrayBuffer, rhs: Uint8ArrayBuffer): boolean {
+    if (lhs.byteLength !== rhs.byteLength) return false
+    let diff = 0
+    for (let i = 0; i < lhs.length; i++) diff |= lhs[i] ^ rhs[i]
+    return diff === 0
   }
 
   /**
    * Check whether an array is byte, or typed, array
-   *
-   * @param array unknown The array that has to be checked
-   *
-   * @returns A boolean if the array is a byte array
    */
   public static isTypedArray(array: unknown): boolean {
     // Checks whether the static property 'BYTES_PER_ELEMENT' exists on the provided array.

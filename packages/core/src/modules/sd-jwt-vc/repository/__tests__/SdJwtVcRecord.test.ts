@@ -1,4 +1,4 @@
-import { CredentialMultiInstanceState, JsonTransformer } from '@credo-ts/core'
+import { CredentialMultiInstanceState, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { SdJwtVcRecord } from '../SdJwtVcRecord'
 
 describe('SdJwtVcRecord', () => {
@@ -65,7 +65,7 @@ describe('SdJwtVcRecord', () => {
       ],
     })
 
-    const instance = JsonTransformer.deserialize(JSON.stringify(json), SdJwtVcRecord)
+    const instance = JsonTransformer.deserialize(JsonEncoder.toString(json), SdJwtVcRecord)
 
     expect(instance.type).toBe('SdJwtVcRecord')
     expect(instance.id).toBe('sdjwt-id')

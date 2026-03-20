@@ -72,7 +72,7 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
 
   public toUrl({ domain }: { domain: string }) {
     const invitationJson = this.toJSON()
-    const encodedInvitation = JsonEncoder.toBase64URL(invitationJson)
+    const encodedInvitation = JsonEncoder.toBase64Url(invitationJson)
     const invitationUrl = `${domain}?oob=${encodedInvitation}`
     return invitationUrl
   }

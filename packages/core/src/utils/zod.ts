@@ -1,7 +1,7 @@
 import { z } from 'zod'
-
 import { ZodValidationError } from '../error'
-import type { AnyUint8Array } from '../types'
+import type { Uint8ArrayBuffer } from '../types'
+import { JsonEncoder } from '.'
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 export type zBaseSchema = z.Schema<any, any, any>
@@ -15,7 +15,7 @@ export function zParseWithErrorHandling<Schema extends zBaseSchema>(
 
   if (!parseResult.success) {
     throw new ZodValidationError(
-      customErrorMessage ?? `Error validating schema with data ${JSON.stringify(data)}`,
+      customErrorMessage ?? `Error validating schema with data ${JsonEncoder.toString(data)}`,
       parseResult.error
     )
   }
@@ -31,6 +31,6 @@ const zOptionalToUndefined = <const TItem extends zBaseSchema>(item: TItem) =>
 
 const zBase64Url = z.string().regex(/[a-zA-Z0-9_-]+/, 'Must be a base64url string')
 
-const zAnyUint8Array = z.instanceof<{ new (): AnyUint8Array }>(Uint8Array)
+const zUint8ArrayBuffer = z.instanceof<{ new (): Uint8ArrayBuffer }>(Uint8Array)
 
-export { zUniqueArray, zOptionalToUndefined, zBase64Url, zAnyUint8Array }
+export { zUniqueArray, zOptionalToUndefined, zBase64Url, zUint8ArrayBuffer }

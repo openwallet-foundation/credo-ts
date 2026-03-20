@@ -146,7 +146,7 @@ describe('OpenId4Vc', () => {
     const verified = await verifier.agent.openid4vc.verifier.verifyAuthorizationResponse({
       verificationSessionId: verificationSession.id,
       authorizationResponse: {
-        vp_token: TypedArrayEncoder.toBase64URL(deviceResponse),
+        vp_token: TypedArrayEncoder.toBase64Url(deviceResponse),
         presentation_submission: {
           id: 'submission_id',
           definition_id: 'random',
@@ -268,7 +268,7 @@ describe('OpenId4Vc', () => {
       verifier.agent.openid4vc.verifier.verifyAuthorizationResponse({
         verificationSessionId: verificationSession.id,
         authorizationResponse: {
-          vp_token: TypedArrayEncoder.toBase64URL(deviceResponse),
+          vp_token: TypedArrayEncoder.toBase64Url(deviceResponse),
           presentation_submission: {
             id: 'submission_id',
             definition_id: 'random',

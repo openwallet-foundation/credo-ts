@@ -59,7 +59,7 @@ describe('peer dids', () => {
 
     const ed25519Key = await kms.importKey({
       privateJwk: transformPrivateKeyToPrivateJwk({
-        privateKey: TypedArrayEncoder.fromString('astringoftotalin32characterslong'),
+        privateKey: TypedArrayEncoder.fromUtf8String('astringoftotalin32characterslong'),
         type: {
           crv: 'Ed25519',
           kty: 'OKP',
@@ -70,7 +70,7 @@ describe('peer dids', () => {
 
     const mediatorEd25519Key = await kms.importKey({
       privateJwk: transformPrivateKeyToPrivateJwk({
-        privateKey: TypedArrayEncoder.fromString('anotherstringof32characterslong1'),
+        privateKey: TypedArrayEncoder.fromUtf8String('anotherstringof32characterslong1'),
         type: {
           crv: 'Ed25519',
           kty: 'OKP',

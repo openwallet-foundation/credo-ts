@@ -116,7 +116,7 @@ export class DidCommConnectionInvitationMessage extends DidCommMessage {
   }) {
     const invitationJson = this.toJSON({ useDidSovPrefixWhereAllowed })
 
-    const encodedInvitation = JsonEncoder.toBase64URL(invitationJson)
+    const encodedInvitation = JsonEncoder.toBase64Url(invitationJson)
     const invitationUrl = `${domain}?c_i=${encodedInvitation}`
 
     return invitationUrl

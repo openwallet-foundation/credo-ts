@@ -1,6 +1,6 @@
 import { cborEncode, DeviceRequest, parseDeviceResponse } from '@animo-id/mdoc'
 import { getAgentOptions } from '../../../../tests'
-import { Agent, X509Certificate } from '../../..'
+import { Agent, type Uint8ArrayBuffer, X509Certificate } from '../../..'
 import { TypedArrayEncoder } from '../../../utils'
 import { PublicJwk } from '../../kms'
 import { Mdoc } from '../Mdoc'
@@ -146,7 +146,7 @@ describe('mdoc device-response proximity test', () => {
         }),
         sessionTranscriptOptions: {
           type: 'sesionTranscriptBytes',
-          sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])),
+          sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])) as Uint8ArrayBuffer,
         },
         deviceNameSpaces: {
           'com.foobar-device': { test: 1234 },
@@ -161,8 +161,8 @@ describe('mdoc device-response proximity test', () => {
       const issuerSigned = cborEncode(prepared.get('issuerSigned'))
       const deviceSigned = cborEncode(prepared.get('deviceSigned'))
       parsedDocument = Mdoc.fromDeviceSignedDocument(
-        TypedArrayEncoder.toBase64URL(issuerSigned),
-        TypedArrayEncoder.toBase64URL(deviceSigned),
+        TypedArrayEncoder.toBase64Url(issuerSigned as Uint8ArrayBuffer),
+        TypedArrayEncoder.toBase64Url(deviceSigned as Uint8ArrayBuffer),
         docType
       )
     }

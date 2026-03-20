@@ -62,7 +62,7 @@ describe('DidCommConnectionInvitationMessage', () => {
         domain,
       })
 
-      expect(invitationUrl).toBe(`${domain}?c_i=${JsonEncoder.toBase64URL(json)}`)
+      expect(invitationUrl).toBe(`${domain}?c_i=${JsonEncoder.toBase64Url(json)}`)
     })
 
     it('should use did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation as type if useDidSovPrefixWhereAllowed is set to true', async () => {

@@ -25,7 +25,7 @@ describe('toUrl', () => {
       domain,
     })
 
-    expect(invitationUrl).toBe(`${domain}?oob=${JsonEncoder.toBase64URL(json)}`)
+    expect(invitationUrl).toBe(`${domain}?oob=${JsonEncoder.toBase64Url(json)}`)
   })
 })
 

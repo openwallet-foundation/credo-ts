@@ -3,7 +3,7 @@ import type { EventEmitter } from '../agent/EventEmitter'
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
 import { CachedStorageService } from '../modules/cache/CachedStorageService'
 import { CacheModuleConfig } from '../modules/cache/CacheModuleConfig'
-import { JsonTransformer } from '../utils'
+import { JsonEncoder, JsonTransformer } from '../utils'
 import type { BaseRecord } from './BaseRecord'
 import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from './RepositoryEvents'
 import { RepositoryEventTypes } from './RepositoryEvents'
@@ -183,7 +183,7 @@ export class Repository<T extends BaseRecord<any, any, any>> {
 
     const records = await this.findByQuery(agentContext, query)
     if (records.length > 1) {
-      throw new RecordDuplicateError(`Multiple records found for given query '${JSON.stringify(query)}'`, {
+      throw new RecordDuplicateError(`Multiple records found for given query '${JsonEncoder.toString(query)}'`, {
         recordType: this.recordClass.type,
       })
     }
@@ -211,7 +211,7 @@ export class Repository<T extends BaseRecord<any, any, any>> {
     const record = await this.findSingleByQuery(agentContext, query)
 
     if (!record) {
-      throw new RecordNotFoundError(`No record found for given query '${JSON.stringify(query)}'`, {
+      throw new RecordNotFoundError(`No record found for given query '${JsonEncoder.toString(query)}'`, {
         recordType: this.recordClass.type,
       })
     }

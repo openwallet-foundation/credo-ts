@@ -1,10 +1,9 @@
 import varint from 'varint'
-
-import type { AnyUint8Array } from '../types'
+import type { Uint8ArrayBuffer } from '../types'
 
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class VarintEncoder {
-  public static decode(data: AnyUint8Array | number[]) {
+  public static decode(data: Uint8ArrayBuffer | number[]) {
     const code = varint.decode(data)
     return [code, varint.decode.bytes] as const
   }

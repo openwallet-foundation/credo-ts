@@ -1,7 +1,5 @@
 import type { AgentContext, DidDocumentKey, ResolvedDidCommService } from '@credo-ts/core'
 import {
-  Buffer,
-  base64ToBase64URL,
   CredoError,
   DidDocument,
   DidKey,
@@ -491,14 +489,17 @@ export class DidExchangeProtocol {
       mimeType: typeof data === 'string' ? undefined : 'application/json',
       data: new DidCommAttachmentData({
         base64:
-          typeof data === 'string' ? TypedArrayEncoder.toBase64URL(Buffer.from(data)) : JsonEncoder.toBase64(data),
+          typeof data === 'string'
+            ? TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromUtf8String(data))
+            : JsonEncoder.toBase64Url(data),
       }),
     })
 
     await Promise.all(
       signingKeys.map(async (signingKey) => {
         const kid = new DidKey(signingKey).did
-        const payload = typeof data === 'string' ? TypedArrayEncoder.fromString(data) : JsonEncoder.toBuffer(data)
+        const payload =
+          typeof data === 'string' ? TypedArrayEncoder.fromUtf8String(data) : JsonEncoder.toUint8Array(data)
 
         const jws = await this.jwsService.createJws(agentContext, {
           payload,
@@ -570,7 +571,9 @@ export class DidExchangeProtocol {
       }
 
       // JWS payload must be base64url encoded
-      const base64UrlPayload = base64ToBase64URL(didRotateAttachment.data.base64)
+      const base64UrlPayload = TypedArrayEncoder.toBase64Url(
+        TypedArrayEncoder.fromBase64(didRotateAttachment.data.base64)
+      )
       const signedDid = TypedArrayEncoder.fromBase64(base64UrlPayload).toString()
 
       if (signedDid !== message.did) {
@@ -671,7 +674,9 @@ export class DidExchangeProtocol {
     }
 
     // JWS payload must be base64url encoded
-    const base64UrlPayload = base64ToBase64URL(didDocumentAttachment.data.base64)
+    const base64UrlPayload = TypedArrayEncoder.toBase64Url(
+      TypedArrayEncoder.fromBase64(didDocumentAttachment.data.base64)
+    )
 
     const { isValid, jwsSigners } = await this.jwsService.verifyJws(agentContext, {
       jws: {

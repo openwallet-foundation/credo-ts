@@ -12,8 +12,21 @@ import {
   DidRepository,
   Kms,
   TypedArrayEncoder,
+  type Uint8ArrayBuffer,
 } from '@credo-ts/core'
 import { Client, PrivateKey } from '@hashgraph/sdk'
+import {
+  type CreateDIDRequest,
+  type DeactivateDIDRequest,
+  DIDUpdateBuilder,
+  generateCreateDIDRequest,
+  generateDeactivateDIDRequest,
+  generateUpdateDIDRequest,
+  submitCreateDIDRequest,
+  submitDeactivateDIDRequest,
+  submitUpdateDIDRequest,
+  type UpdateDIDRequest,
+} from '@hiero-did-sdk/registrar'
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
 
 vi.mock('@hiero-did-sdk/registrar', () => ({
@@ -44,19 +57,6 @@ vi.mock('@hiero-did-sdk/registrar', () => ({
   submitDeactivateDIDRequest: vi.fn(),
 }))
 
-import {
-  type CreateDIDRequest,
-  type DeactivateDIDRequest,
-  DIDUpdateBuilder,
-  generateCreateDIDRequest,
-  generateDeactivateDIDRequest,
-  generateUpdateDIDRequest,
-  submitCreateDIDRequest,
-  submitDeactivateDIDRequest,
-  submitUpdateDIDRequest,
-  type UpdateDIDRequest,
-} from '@hiero-did-sdk/registrar'
-
 vi.mock('@hiero-did-sdk/resolver', () => ({
   resolveDID: vi.fn(),
   TopicReaderHederaHcs: vi.fn(),
@@ -76,7 +76,7 @@ const mockKeyId = 'mock-key-id'
 const mockPublicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } = {
   crv: 'Ed25519',
   kty: 'OKP',
-  x: TypedArrayEncoder.toBase64URL(privateKey.publicKey.toBytesRaw()),
+  x: TypedArrayEncoder.toBase64Url(privateKey.publicKey.toBytesRaw() as Uint8ArrayBuffer),
   kid: 'test-key-id',
 }
 

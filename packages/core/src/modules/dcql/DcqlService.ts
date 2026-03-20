@@ -9,7 +9,7 @@ import {
 } from 'dcql'
 import type { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
-import { isNonEmptyArray, type JsonObject, type JsonValue, mapNonEmptyArray } from '../../types'
+import { isNonEmptyArray, type JsonObject, type JsonValue, mapNonEmptyArray, type Uint8ArrayBuffer } from '../../types'
 import { asArray, TypedArrayEncoder } from '../../utils'
 import {
   CredentialMultiInstanceUseMode,
@@ -186,7 +186,7 @@ export class DcqlService {
       const akiValues = (credential.header.x5c as string[] | undefined)
         ?.map((c) => {
           const akiHex = X509Certificate.fromEncodedCertificate(c).authorityKeyIdentifier
-          return akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
+          return akiHex ? TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromHex(akiHex)) : undefined
         })
         .filter((aki) => aki !== undefined)
 
@@ -201,8 +201,8 @@ export class DcqlService {
     if (credential.claimFormat === ClaimFormat.MsoMdoc) {
       const akiValues = credential.issuerSignedCertificateChain
         .map((c) => {
-          const akiHex = X509Certificate.fromRawCertificate(c).authorityKeyIdentifier
-          return akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
+          const akiHex = X509Certificate.fromRawCertificate(c as Uint8ArrayBuffer).authorityKeyIdentifier
+          return akiHex ? TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromHex(akiHex)) : undefined
         })
         .filter((aki) => aki !== undefined)
 
@@ -762,7 +762,7 @@ export class DcqlService {
             ],
             sessionTranscriptOptions: mdocSessionTranscript,
           })
-          const deviceResponseBase64Url = TypedArrayEncoder.toBase64URL(deviceResponse)
+          const deviceResponseBase64Url = TypedArrayEncoder.toBase64Url(deviceResponse)
 
           encodedCreatedPresentation = deviceResponseBase64Url
           createdPresentation = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)

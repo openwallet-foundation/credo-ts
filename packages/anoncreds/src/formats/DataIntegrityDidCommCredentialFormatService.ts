@@ -1086,7 +1086,7 @@ export class DataIntegrityDidCommCredentialFormatService
         didMethodsSupported:
           didMethodsSupported ?? agentContext.dependencyManager.resolve(DidsApi).supportedResolverMethods,
         algsSupported: algsSupported ?? this.getSupportedJwaSignatureAlgorithms(agentContext),
-        nonce: TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
+        nonce: TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
       }
 
       if (didCommSignedAttachmentBindingMethod.algsSupported.length === 0) {

@@ -1,7 +1,7 @@
 import { instanceToInstance, instanceToPlain, plainToInstance } from 'class-transformer'
 
 import { ClassValidationError } from '../error/ClassValidationError'
-
+import { JsonEncoder } from './JsonEncoder'
 import { MessageValidator } from './MessageValidator'
 
 interface Validate {
@@ -46,7 +46,7 @@ export class JsonTransformer {
   }
 
   public static serialize<T>(classInstance: T): string {
-    return JSON.stringify(JsonTransformer.toJSON(classInstance))
+    return JsonEncoder.toString(JsonTransformer.toJSON(classInstance))
   }
 
   public static deserialize<T>(
@@ -55,6 +55,6 @@ export class JsonTransformer {
     cls: { new (...args: any[]): T },
     { validate = true }: Validate = {}
   ): T {
-    return JsonTransformer.fromJSON(JSON.parse(jsonString), cls, { validate })
+    return JsonTransformer.fromJSON(JsonEncoder.fromString(jsonString), cls, { validate })
   }
 }

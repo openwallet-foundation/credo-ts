@@ -1,6 +1,5 @@
 import {
   AgentContext,
-  Buffer,
   CredoError,
   Hasher,
   JsonEncoder,
@@ -9,6 +8,7 @@ import {
   JwtPayload,
   Kms,
   TypedArrayEncoder,
+  type Uint8ArrayBuffer,
   X509Certificate,
   X509ModuleConfig,
   X509Service,
@@ -221,7 +221,7 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
         alg: 'ECDH-ES',
         epk: ephmeralKey.publicJwk,
       }
-      const encodedHeader = JsonEncoder.toBase64URL(header)
+      const encodedHeader = JsonEncoder.toBase64Url(header)
 
       const encrypted = await kms.encrypt({
         key: {
@@ -235,10 +235,10 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
             externalPublicJwk: jwkJson,
           },
         },
-        data: Buffer.from(compact),
+        data: TypedArrayEncoder.fromUtf8String(compact),
         encryption: {
           algorithm: jweEncryptor.enc,
-          aad: Buffer.from(encodedHeader),
+          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
         },
       })
 
@@ -246,9 +246,9 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
         throw new CredoError("Expected 'iv' and 'tag' to be defined")
       }
 
-      const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64URL(encrypted.iv)}.${TypedArrayEncoder.toBase64URL(
+      const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64Url(encrypted.iv)}.${TypedArrayEncoder.toBase64Url(
         encrypted.encrypted
-      )}.${TypedArrayEncoder.toBase64URL(encrypted.tag)}`
+      )}.${TypedArrayEncoder.toBase64Url(encrypted.tag)}`
 
       return { encryptionJwk: jweEncryptor.publicJwk, jwe: compactJwe }
     } finally {
@@ -308,7 +308,7 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
         decryption: {
           algorithm: header.enc,
           // aad is the base64 encoded bytes (not just the bytes)
-          aad: TypedArrayEncoder.fromString(encodedHeader),
+          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
           iv: TypedArrayEncoder.fromBase64(encodedIv),
           tag: TypedArrayEncoder.fromBase64(encodedTag),
         },
@@ -390,7 +390,7 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
         jwk: header.jwk ? publicJwk : undefined,
         alg: signer.alg as Kms.KnownJwaSignatureAlgorithm,
       },
-      payload: JsonEncoder.toBuffer(payload),
+      payload: JsonEncoder.toUint8Array(payload),
       keyId: signer.kid ?? publicJwk.keyId,
     })
 
@@ -409,7 +409,7 @@ export function getOid4vcCallbacks(
   const kms = agentContext.resolve(Kms.KeyManagementApi)
 
   return {
-    hash: (data, alg) => Hasher.hash(data, alg.toLowerCase()),
+    hash: (data, alg) => Hasher.hash(data as Uint8ArrayBuffer, alg.toLowerCase()),
     generateRandom: (length) => kms.randomBytes({ length }),
     signJwt: getOid4vcJwtSignCallback(agentContext),
     clientAuthentication: () => {

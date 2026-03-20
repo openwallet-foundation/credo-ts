@@ -4,7 +4,7 @@ import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageS
 import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
 import { DidCommModule } from '../../../../../didcomm/src'
 import type { V0_1ToV0_2UpdateConfig } from '../../../../src'
-import { Agent, utils } from '../../../../src'
+import { Agent, JsonEncoder, utils } from '../../../../src'
 import { agentDependencies as dependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { UpdateAssistant } from '../UpdateAssistant'
@@ -49,7 +49,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       // is opened as an existing wallet instead of a new wallet
       storageService.contextCorrelationIdToRecords = {
         default: {
-          records: JSON.parse(aliceMediationRecordsString),
+          records: JsonEncoder.fromString(aliceMediationRecordsString),
           creationDate: new Date(),
         },
       }
@@ -107,7 +107,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.contextCorrelationIdToRecords = {
       default: {
-        records: JSON.parse(aliceCredentialRecordsString),
+        records: JsonEncoder.fromString(aliceCredentialRecordsString),
         creationDate: new Date(),
       },
     }
@@ -165,7 +165,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.contextCorrelationIdToRecords = {
       default: {
-        records: JSON.parse(aliceCredentialRecordsString),
+        records: JsonEncoder.fromString(aliceCredentialRecordsString),
         creationDate: new Date(),
       },
     }
@@ -225,7 +225,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.contextCorrelationIdToRecords = {
       default: {
-        records: JSON.parse(aliceConnectionRecordsString),
+        records: JsonEncoder.fromString(aliceConnectionRecordsString),
         creationDate: new Date(),
       },
     }

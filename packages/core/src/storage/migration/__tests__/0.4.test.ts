@@ -8,6 +8,7 @@ import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { W3cCredentialsModule } from '../../../modules/vc'
 import { customDocumentLoader } from '../../../modules/vc/data-integrity/__tests__/documentLoader'
+import { JsonEncoder } from '../../../utils'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 
@@ -49,7 +50,7 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.contextCorrelationIdToRecords = {
       default: {
-        records: JSON.parse(aliceW3cCredentialRecordsString),
+        records: JsonEncoder.fromString(aliceW3cCredentialRecordsString),
         creationDate: new Date(),
       },
     }
@@ -105,7 +106,7 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.contextCorrelationIdToRecords = {
       default: {
-        records: JSON.parse(aliceW3cCredentialRecordsString),
+        records: JsonEncoder.fromString(aliceW3cCredentialRecordsString),
         creationDate: new Date(),
       },
     }
@@ -158,7 +159,7 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.contextCorrelationIdToRecords = {
       default: {
-        records: JSON.parse(aliceW3cCredentialRecordsString),
+        records: JsonEncoder.fromString(aliceW3cCredentialRecordsString),
         creationDate: new Date(),
       },
     }

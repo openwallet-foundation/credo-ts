@@ -1,4 +1,4 @@
-import type { AnyUint8Array } from '../../../../../types'
+import type { Uint8ArrayBuffer } from '../../../../../types'
 import { KnownJwaKeyAgreementAlgorithms, type KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../../jwa'
 import type { PublicJwkType } from '../PublicJwk'
 import type { KmsJwkPublicEc } from './ecJwk'
@@ -37,12 +37,12 @@ export class Secp256k1PublicJwk implements PublicJwkType<Jwk> {
     return ecPublicJwkToPublicKey(this.jwk, { compressed: true })
   }
 
-  public static fromPublicKey(publicKey: AnyUint8Array) {
+  public static fromPublicKey(publicKey: Uint8ArrayBuffer) {
     const jwk = ecPublicKeyToPublicJwk(publicKey, 'secp256k1')
     return new Secp256k1PublicJwk(jwk)
   }
 
-  public static fromMulticodec(multicodec: AnyUint8Array) {
+  public static fromMulticodec(multicodec: Uint8ArrayBuffer) {
     const jwk = ecPublicKeyToPublicJwk(multicodec, 'secp256k1')
     return new Secp256k1PublicJwk(jwk)
   }

@@ -11,7 +11,6 @@ import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2/index.js'
 import {
   AgentContext,
-  type AnyUint8Array,
   DID_V1_CONTEXT_URL,
   type DidCreateOptions,
   type DidCreateResult,
@@ -592,7 +591,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
       if (typeof resource.data === 'string') {
         data = TypedArrayEncoder.fromBase64(resource.data)
       } else if (typeof resource.data === 'object') {
-        data = TypedArrayEncoder.fromString(JSON.stringify(resource.data))
+        data = TypedArrayEncoder.fromUtf8String(JSON.stringify(resource.data))
       } else {
         data = resource.data
       }
@@ -649,7 +648,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
   private async signPayload(
     agentContext: AgentContext,
-    payload: AnyUint8Array,
+    payload: Uint8ArrayBuffer,
     verificationMethod: VerificationMethod[] = [],
     keys?: DidDocumentKey[]
   ) {
@@ -747,7 +746,7 @@ export interface CheqdDidDeactivateOptions extends DidCreateOptions {
 }
 
 export interface CheqdCreateResourceOptions extends Pick<MsgCreateResourcePayload, 'id' | 'name' | 'resourceType'> {
-  data: string | Uint8Array | object
+  data: string | Uint8ArrayBuffer | object
   collectionId?: MsgCreateResourcePayload['collectionId']
   version?: MsgCreateResourcePayload['version']
   alsoKnownAs?: MsgCreateResourcePayload['alsoKnownAs']

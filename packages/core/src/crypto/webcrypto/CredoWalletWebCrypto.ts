@@ -3,7 +3,7 @@ import { AsnConvert, AsnParser } from '@peculiar/asn1-schema'
 import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import type { AgentContext } from '../../agent'
 import { KeyManagementApi, PublicJwk } from '../../modules/kms'
-import type { AnyUint8Array, Uint8ArrayBuffer } from '../../types'
+import type { Uint8ArrayBuffer } from '../../types'
 import { Hasher } from '../hashes'
 import { CredoWebCryptoError } from './CredoWebCryptoError'
 import { CredoWebCryptoKey } from './CredoWebCryptoKey'
@@ -34,7 +34,7 @@ export class CredoWalletWebCrypto {
 
   public async sign(
     key: CredoWebCryptoKey,
-    message: AnyUint8Array,
+    message: Uint8ArrayBuffer,
     algorithm: KeySignParams
   ): Promise<Uint8ArrayBuffer> {
     const jwaAlgorithm = keyParamsToJwaAlgorithm(algorithm, key)
@@ -52,8 +52,8 @@ export class CredoWalletWebCrypto {
   public async verify(
     key: CredoWebCryptoKey,
     algorithm: KeyVerifyParams,
-    message: AnyUint8Array,
-    signature: AnyUint8Array
+    message: Uint8ArrayBuffer,
+    signature: Uint8ArrayBuffer
   ): Promise<boolean> {
     const publicKey = key.publicJwk.publicKey
 
@@ -113,7 +113,7 @@ export class CredoWalletWebCrypto {
 
   public async importKey(
     format: KeyFormat,
-    keyData: AnyUint8Array | JsonWebKey,
+    keyData: Uint8ArrayBuffer | JsonWebKey,
     algorithm: KeyImportParams,
     extractable: boolean,
     keyUsages: Array<KeyUsage>
@@ -132,7 +132,7 @@ export class CredoWalletWebCrypto {
         return new CredoWebCryptoKey(publicJwk, algorithm as KeyGenAlgorithm, extractable, 'public', keyUsages)
       }
       case 'spki': {
-        const subjectPublicKey = AsnParser.parse(keyData as AnyUint8Array, SubjectPublicKeyInfo)
+        const subjectPublicKey = AsnParser.parse(keyData as Uint8ArrayBuffer, SubjectPublicKeyInfo)
         const publicJwk = spkiToPublicJwk(subjectPublicKey)
 
         return new CredoWebCryptoKey(publicJwk, algorithm as KeyGenAlgorithm, extractable, 'public', keyUsages)

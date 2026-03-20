@@ -1,6 +1,6 @@
 import { ECDSASigValue } from '@peculiar/asn1-ecc'
 import { AsnConvert } from '@peculiar/asn1-schema'
-import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../../../types'
+import type { Uint8ArrayBuffer } from '../../../../../types'
 import { KeyManagementError } from '../../../error/KeyManagementError'
 import type { KmsJwkPublicEc } from './ecJwk'
 import { ecCrvToCurveParams } from './ecPublicKey'
@@ -12,7 +12,7 @@ import { ecCrvToCurveParams } from './ecPublicKey'
  * @param crv - The EC crv of the key used for the signature
  * @returns DER encoded signature
  */
-export function rawEcSignatureToDer(rawSignature: AnyUint8Array, crv: KmsJwkPublicEc['crv']): Uint8ArrayBuffer {
+export function rawEcSignatureToDer(rawSignature: Uint8ArrayBuffer, crv: KmsJwkPublicEc['crv']): Uint8ArrayBuffer {
   const pointBitLength = ecCrvToCurveParams[crv].pointBitLength
   const pointByteLength = Math.ceil(pointBitLength / 8)
 
@@ -46,7 +46,7 @@ export function rawEcSignatureToDer(rawSignature: AnyUint8Array, crv: KmsJwkPubl
  * @param crv - The EC crv of the key used for the signature
  * @returns Raw signature as r || s concatenated values
  */
-export function derEcSignatureToRaw(derSignature: AnyUint8Array, crv: KmsJwkPublicEc['crv']): Uint8ArrayBuffer {
+export function derEcSignatureToRaw(derSignature: Uint8ArrayBuffer, crv: KmsJwkPublicEc['crv']): Uint8ArrayBuffer {
   // Parse DER signature
   const asn = AsnConvert.parse(derSignature, ECDSASigValue)
 
@@ -71,7 +71,7 @@ export function derEcSignatureToRaw(derSignature: AnyUint8Array, crv: KmsJwkPubl
  * @param data - The integer bytes
  * @returns - Data with leading zeros removed
  */
-function removeLeadingZeros(data: AnyUint8Array): Uint8ArrayBuffer {
+function removeLeadingZeros(data: Uint8ArrayBuffer): Uint8ArrayBuffer {
   let startIndex = 0
   while (startIndex < data.length - 1 && data[startIndex] === 0) {
     startIndex++

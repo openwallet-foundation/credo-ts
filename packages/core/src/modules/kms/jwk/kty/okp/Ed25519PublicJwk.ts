@@ -1,5 +1,5 @@
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
-import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../../../types'
+import type { Uint8ArrayBuffer } from '../../../../../types'
 import {
   type KnownJwaKeyAgreementAlgorithm,
   type KnownJwaSignatureAlgorithm,
@@ -45,12 +45,12 @@ export class Ed25519PublicJwk implements PublicJwkType<Jwk> {
     return okpPublicJwkToPublicKey(this.jwk)
   }
 
-  public static fromPublicKey(publicKey: AnyUint8Array) {
+  public static fromPublicKey(publicKey: Uint8ArrayBuffer) {
     const jwk = okpPublicKeyToPublicJwk(publicKey, 'Ed25519')
     return new Ed25519PublicJwk(jwk)
   }
 
-  public static fromMulticodec(multicodec: AnyUint8Array) {
+  public static fromMulticodec(multicodec: Uint8ArrayBuffer) {
     const jwk = okpPublicKeyToPublicJwk(multicodec, 'Ed25519')
     return new Ed25519PublicJwk(jwk)
   }

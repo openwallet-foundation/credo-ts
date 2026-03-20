@@ -4,7 +4,7 @@ import path from 'path'
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
 import { DidCommMediatorRoutingRecord } from '../../../../../didcomm/src/modules'
-import { Agent } from '../../../../src'
+import { Agent, JsonEncoder } from '../../../../src'
 import { agentDependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
 import * as uuid from '../../../utils/uuid'
@@ -46,7 +46,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.contextCorrelationIdToRecords = {
       default: {
-        records: JSON.parse(aliceCredentialRecordsString),
+        records: JsonEncoder.fromString(aliceCredentialRecordsString),
         creationDate: new Date(),
       },
     }
@@ -102,7 +102,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.contextCorrelationIdToRecords = {
       default: {
-        records: JSON.parse(aliceCredentialRecordsString),
+        records: JsonEncoder.fromString(aliceCredentialRecordsString),
         creationDate: new Date(),
       },
     }
@@ -139,7 +139,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.contextCorrelationIdToRecords = {
       default: {
-        records: JSON.parse(aliceDidRecordsString),
+        records: JsonEncoder.fromString(aliceDidRecordsString),
         creationDate: new Date(),
       },
     }

@@ -66,7 +66,7 @@ const agentContext = getAgentContext({
 const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
 kms.randomBytes = vi.fn(function () {
-  return TypedArrayEncoder.fromString('salt')
+  return TypedArrayEncoder.fromUtf8String('salt')
 })
 Date.prototype.getTime = vi.fn(function () {
   return 1698151532000

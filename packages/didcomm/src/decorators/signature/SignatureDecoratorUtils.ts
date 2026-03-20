@@ -1,6 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 
-import { Buffer, CredoError, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
+import { CredoError, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 
 import { SignatureDecorator } from './SignatureDecorator'
 
@@ -42,7 +42,7 @@ export async function unpackAndVerifySignatureDecorator(
     throw new CredoError('Signature is not valid')
   }
 
-  return JsonEncoder.fromBuffer(signedData.slice(8))
+  return JsonEncoder.fromUint8Array(signedData.slice(8))
 }
 
 /**
@@ -60,14 +60,14 @@ export async function signData(
   signerKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
 ): Promise<SignatureDecorator> {
   const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-  const dataBuffer = Buffer.concat([utils.timestamp(), JsonEncoder.toBuffer(data)])
+  const dataBuffer = TypedArrayEncoder.concat([utils.timestamp(), JsonEncoder.toUint8Array(data)])
 
   const result = await kms.sign({ data: dataBuffer, algorithm: 'EdDSA', keyId: signerKey.keyId })
 
   const signatureDecorator = new SignatureDecorator({
     signatureType: 'https://didcomm.org/signature/1.0/ed25519Sha512_single',
-    signature: TypedArrayEncoder.toBase64URL(result.signature),
-    signatureData: TypedArrayEncoder.toBase64URL(dataBuffer),
+    signature: TypedArrayEncoder.toBase64Url(result.signature),
+    signatureData: TypedArrayEncoder.toBase64Url(dataBuffer),
     signer: TypedArrayEncoder.toBase58(signerKey.publicKey.publicKey),
   })
 

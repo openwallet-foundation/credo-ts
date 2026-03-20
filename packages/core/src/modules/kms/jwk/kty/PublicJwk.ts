@@ -1,4 +1,4 @@
-import type { AnyUint8Array } from '../../../../types'
+import type { Uint8ArrayBuffer } from '../../../../types'
 import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from '../jwa'
 import type { KmsJwkPublicAsymmetric } from '../knownJwk'
 
@@ -8,5 +8,5 @@ export interface PublicJwkType<Jwk extends KmsJwkPublicAsymmetric = KmsJwkPublic
   supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] | undefined
   supportedEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] | undefined
 
-  multicodec: AnyUint8Array
+  multicodec: Uint8ArrayBuffer
 }

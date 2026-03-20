@@ -1,5 +1,5 @@
-import { Buffer } from '@credo-ts/core'
 import type { AgentContext } from '../agent'
+import { JsonEncoder, TypedArrayEncoder } from '../utils'
 import type { Constructor } from '../utils/mixins'
 import type { BaseRecord, TagsBase } from './BaseRecord'
 
@@ -54,12 +54,12 @@ export function recordToCursor(record: RecordToCursorBody): string {
 }
 
 export function encodeCursor(cursor: InternalCursor): string {
-  return Buffer.from(JSON.stringify(cursor)).toString('base64url')
+  return TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromUtf8String(JsonEncoder.toString(cursor)))
 }
 
 export function decodeCursor(cursor: string): InternalCursor | null {
   try {
-    const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString())
+    const decoded = JsonEncoder.fromString(TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64url(cursor)))
 
     if (!decoded || typeof decoded !== 'object') return null
     if (typeof decoded.id !== 'string') return null
