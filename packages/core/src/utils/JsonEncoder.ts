@@ -1,70 +1,84 @@
-import type { AnyUint8Array, Uint8ArrayBuffer } from '../types'
-import { base64ToBase64URL } from './base64'
-import { Buffer } from './buffer'
+import type { Uint8ArrayBuffer } from '../types'
 import { TypedArrayEncoder } from './TypedArrayEncoder'
 
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class JsonEncoder {
   /**
-   * Encode json object into base64 string.
-   *
-   * @param json the json object to encode into base64 string
+   * Encode json object into a base64 string
    */
   public static toBase64(json: unknown) {
-    return Buffer.from(JsonEncoder.toString(json)).toString('base64')
+    return TypedArrayEncoder.toBase64(TypedArrayEncoder.fromUtf8String(JsonEncoder.toString(json)))
   }
 
   /**
-   * Encode json object into base64url string.
-   *
-   * @param json the json object to encode into base64url string
+   * @deprecated use `toBase64Url
    */
   public static toBase64URL(json: unknown) {
-    return base64ToBase64URL(JsonEncoder.toBase64(json))
+    return JsonEncoder.toBase64Url(json)
   }
 
   /**
-   * Decode base64 string into json object. Also supports base64url
+   * Encode json object into a base64url string
+   */
+  public static toBase64Url(json: unknown) {
+    return TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromUtf8String(JsonEncoder.toString(json)))
+  }
+
+  /**
+   * Decode base64 string into a json object.
    *
-   * @param base64 the base64 or base64url string to decode into json
+   * @note Also supports base64url
    */
   public static fromBase64(base64: string) {
-    return JsonEncoder.fromBuffer(TypedArrayEncoder.fromBase64(base64))
+    return JsonEncoder.fromUint8Array(TypedArrayEncoder.fromBase64(base64))
   }
 
   /**
-   * Encode json object into string
-   *
-   * @param json the json object to encode into string
+   * Decode base64url string into a json object.
+   */
+  public static fromBase64Url(base64: string) {
+    return JsonEncoder.fromUint8Array(TypedArrayEncoder.fromBase64url(base64))
+  }
+
+  /**
+   * Encode json object into a string
    */
   public static toString(json: unknown) {
     return JSON.stringify(json)
   }
 
   /**
-   * Decode string into json object
-   *
-   * @param string the string to decode into json
+   * Decode string into a json object
    */
   public static fromString(string: string) {
     return JSON.parse(string)
   }
 
   /**
-   * Encode json object into buffer
-   *
-   * @param json the json object to encode into buffer format
+   * @deprecated Use `toUint8Array`
    */
   public static toBuffer(json: unknown): Uint8ArrayBuffer {
-    return Buffer.from(JsonEncoder.toString(json))
+    return JsonEncoder.toUint8Array(json)
   }
 
   /**
-   * Decode buffer into json object
-   *
-   * @param buffer the buffer to decode into json
+   * Encode json object into buffer
    */
-  public static fromBuffer(buffer: Buffer | AnyUint8Array) {
-    return JsonEncoder.fromString(Buffer.from(buffer).toString('utf-8'))
+  public static toUint8Array(json: unknown): Uint8ArrayBuffer {
+    return TypedArrayEncoder.fromUtf8String(JsonEncoder.toString(json))
+  }
+
+  /**
+   * @deprecated Use `fromUint8Array`
+   */
+  public static fromBuffer(data: Uint8ArrayBuffer) {
+    return JsonEncoder.fromUint8Array(data)
+  }
+
+  /**
+   * Decode buffer into a json object
+   */
+  public static fromUint8Array(data: Uint8ArrayBuffer) {
+    return JsonEncoder.fromString(TypedArrayEncoder.toUtf8String(data))
   }
 }

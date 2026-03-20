@@ -4,6 +4,7 @@ import { hkdf } from '@noble/hashes/hkdf.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, Hasher } from '../../crypto'
+import type { Uint8ArrayBuffer } from '../../types'
 import { TypedArrayEncoder } from '../../utils'
 import { KeyManagementApi, type KmsJwkPublicAsymmetric, type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { X509Certificate, X509Service } from '../x509'
@@ -32,15 +33,15 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
       calculateEphemeralMacKeyJwk: async (input) => {
         const { privateKey, publicKey, sessionTranscriptBytes } = input
         const ikm = p256.getSharedSecret(privateKey, publicKey, true).slice(1)
-        const salt = Hasher.hash(sessionTranscriptBytes, 'sha-256')
-        const info = TypedArrayEncoder.fromString('EMacKey')
+        const salt = Hasher.hash(sessionTranscriptBytes as Uint8ArrayBuffer, 'sha-256')
+        const info = TypedArrayEncoder.fromUtf8String('EMacKey')
         const hk1 = hkdf(sha256, ikm, salt, info, 32)
 
         return {
           key_ops: ['sign', 'verify'],
           ext: true,
           kty: 'oct',
-          k: TypedArrayEncoder.toBase64URL(hk1),
+          k: TypedArrayEncoder.toBase64Url(hk1 as Uint8ArrayBuffer),
           alg: 'HS256',
         }
       },
@@ -56,7 +57,7 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
           const algorithm = mac0.algName ?? publicJwk.signatureAlgorithm
 
           const { signature } = await kms.sign({
-            data,
+            data: data as Uint8ArrayBuffer,
             algorithm,
             keyId: publicJwk.keyId,
           })
@@ -74,9 +75,9 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
             key: {
               publicJwk: jwk as KmsJwkPublicAsymmetric,
             },
-            data,
+            data: data as Uint8ArrayBuffer,
             algorithm,
-            signature,
+            signature: signature as Uint8ArrayBuffer,
           })
 
           return verified
@@ -91,7 +92,7 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
           const algorithm = sign1.algName ?? publicJwk.signatureAlgorithm
 
           const { signature } = await kms.sign({
-            data,
+            data: data as Uint8ArrayBuffer,
             algorithm: algorithm as KnownJwaSignatureAlgorithm,
             keyId: publicJwk.keyId,
           })
@@ -109,9 +110,9 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
             key: {
               publicJwk: jwk as KmsJwkPublicAsymmetric,
             },
-            data,
+            data: data as Uint8ArrayBuffer,
             algorithm: algorithm as KnownJwaSignatureAlgorithm,
-            signature,
+            signature: signature as Uint8ArrayBuffer,
           })
 
           return verified
@@ -122,17 +123,19 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
     x509: {
       getIssuerNameField: (input) => {
         const { certificate, field } = input
-        const x509Certificate = X509Certificate.fromRawCertificate(certificate)
+        const x509Certificate = X509Certificate.fromRawCertificate(certificate as Uint8ArrayBuffer)
         return x509Certificate.getIssuerNameField(field)
       },
       getPublicKey: async (input) => {
-        const certificate = X509Certificate.fromRawCertificate(input.certificate)
+        const certificate = X509Certificate.fromRawCertificate(input.certificate as Uint8ArrayBuffer)
         return certificate.publicJwk.toJson()
       },
       validateCertificateChain: async (input) => {
-        const certificateChain = input.x5chain.map((cert) => X509Certificate.fromRawCertificate(cert).toString('pem'))
+        const certificateChain = input.x5chain.map((cert) =>
+          X509Certificate.fromRawCertificate(cert as Uint8ArrayBuffer).toString('pem')
+        )
         const trustedCertificates = input.trustedCertificates.map((cert) =>
-          X509Certificate.fromRawCertificate(cert).toString('pem')
+          X509Certificate.fromRawCertificate(cert as Uint8ArrayBuffer).toString('pem')
         ) as [string, ...string[]]
 
         await X509Service.validateCertificateChain(agentContext, {
@@ -143,7 +146,7 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
       },
       getCertificateData: async (input) => {
         const { certificate } = input
-        const x509Certificate = X509Certificate.fromRawCertificate(certificate)
+        const x509Certificate = X509Certificate.fromRawCertificate(certificate as Uint8ArrayBuffer)
         return {
           ...x509Certificate.data,
           thumbprint: await x509Certificate.getThumbprintInHex(agentContext),

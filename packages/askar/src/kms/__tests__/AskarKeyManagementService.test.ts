@@ -1,7 +1,6 @@
-import { Buffer } from 'node:buffer'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder, type Uint8ArrayBuffer } from '@credo-ts/core'
 import { AskarError, askar } from '@openwallet-foundation/askar-shared'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
@@ -1273,7 +1272,7 @@ describe('AskarKeyManagementService', () => {
           algorithm: 'A256GCM',
           iv: TypedArrayEncoder.fromBase64(encodedIv),
           tag: TypedArrayEncoder.fromBase64(encodedTag),
-          aad: TypedArrayEncoder.fromString(encodedHeader),
+          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
         },
         key: {
           keyAgreement: {
@@ -1288,7 +1287,7 @@ describe('AskarKeyManagementService', () => {
       })
 
       expect(header).toEqual(expectedHeader)
-      expect(JsonEncoder.fromBuffer(data)).toEqual(decodedPayload)
+      expect(JsonEncoder.fromUint8Array(data)).toEqual(decodedPayload)
     })
   })
 
@@ -1325,8 +1324,8 @@ describe('AskarKeyManagementService', () => {
         },
         decryption: {
           algorithm: 'A256CBC-HS512',
-          iv: result.iv as Uint8Array,
-          tag: result.tag as Uint8Array,
+          iv: result.iv as Uint8ArrayBuffer,
+          tag: result.tag as Uint8ArrayBuffer,
         },
         encrypted: result.encrypted,
       })
@@ -1366,8 +1365,8 @@ describe('AskarKeyManagementService', () => {
         },
         decryption: {
           algorithm: 'A128CBC-HS256',
-          iv: result.iv as Uint8Array,
-          tag: result.tag as Uint8Array,
+          iv: result.iv as Uint8ArrayBuffer,
+          tag: result.tag as Uint8ArrayBuffer,
         },
         encrypted: result.encrypted,
       })
@@ -1398,8 +1397,8 @@ describe('AskarKeyManagementService', () => {
         },
         decryption: {
           algorithm: 'C20P',
-          iv: result.iv as Uint8Array,
-          tag: result.tag as Uint8Array,
+          iv: result.iv as Uint8ArrayBuffer,
+          tag: result.tag as Uint8ArrayBuffer,
         },
         encrypted: result.encrypted,
       })
@@ -1430,8 +1429,8 @@ describe('AskarKeyManagementService', () => {
         },
         decryption: {
           algorithm: 'XC20P',
-          iv: result.iv as Uint8Array,
-          tag: result.tag as Uint8Array,
+          iv: result.iv as Uint8ArrayBuffer,
+          tag: result.tag as Uint8ArrayBuffer,
         },
         encrypted: result.encrypted,
       })
@@ -1469,8 +1468,8 @@ describe('AskarKeyManagementService', () => {
         },
         decryption: {
           algorithm: 'A256GCM',
-          iv: result.iv as Uint8Array,
-          tag: result.tag as Uint8Array,
+          iv: result.iv as Uint8ArrayBuffer,
+          tag: result.tag as Uint8ArrayBuffer,
         },
         encrypted: result.encrypted,
       })
@@ -1508,8 +1507,8 @@ describe('AskarKeyManagementService', () => {
         },
         decryption: {
           algorithm: 'A128GCM',
-          iv: result.iv as Uint8Array,
-          tag: result.tag as Uint8Array,
+          iv: result.iv as Uint8ArrayBuffer,
+          tag: result.tag as Uint8ArrayBuffer,
         },
         encrypted: result.encrypted,
       })
@@ -1563,8 +1562,8 @@ describe('AskarKeyManagementService', () => {
 
         decryption: {
           algorithm: 'A128GCM',
-          iv: result.iv as Uint8Array,
-          tag: result.tag as Uint8Array,
+          iv: result.iv as Uint8ArrayBuffer,
+          tag: result.tag as Uint8ArrayBuffer,
         },
         encrypted: result.encrypted,
       })
@@ -1624,8 +1623,8 @@ describe('AskarKeyManagementService', () => {
 
         decryption: {
           algorithm: 'A256GCM',
-          iv: result.iv as Uint8Array,
-          tag: result.tag as Uint8Array,
+          iv: result.iv as Uint8ArrayBuffer,
+          tag: result.tag as Uint8ArrayBuffer,
         },
         encrypted: result.encrypted,
       })
@@ -1685,8 +1684,8 @@ describe('AskarKeyManagementService', () => {
 
         decryption: {
           algorithm: 'XC20P',
-          iv: result.iv as Uint8Array,
-          tag: result.tag as Uint8Array,
+          iv: result.iv as Uint8ArrayBuffer,
+          tag: result.tag as Uint8ArrayBuffer,
         },
         encrypted: result.encrypted,
       })
@@ -1723,19 +1722,19 @@ describe('AskarKeyManagementService', () => {
         iv,
         tag,
       } = await service.encrypt(agentContext, {
-        data: JsonEncoder.toBuffer({
+        data: JsonEncoder.toUint8Array({
           '@type': 'https://didcomm.org/message/1.0/message',
         }),
         encryption: {
           algorithm: 'XC20P',
-          aad: JsonEncoder.toBuffer({
+          aad: JsonEncoder.toUint8Array({
             the: 'header',
           }),
         },
         key: {
           privateJwk: {
             kty: 'oct',
-            k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+            k: TypedArrayEncoder.toBase64Url(contentEncryptionKey),
           },
         },
       })
@@ -1755,14 +1754,14 @@ describe('AskarKeyManagementService', () => {
         encrypted: encryptedKey,
       })
 
-      expect(Buffer.from(decryptedKey).equals(Buffer.from(contentEncryptionKey))).toEqual(true)
+      expect(TypedArrayEncoder.equals(decryptedKey, contentEncryptionKey)).toEqual(true)
 
       const { data: decryptedMessage } = await service.decrypt(agentContext, {
         decryption: {
           algorithm: 'XC20P',
           iv,
           tag,
-          aad: JsonEncoder.toBuffer({
+          aad: JsonEncoder.toUint8Array({
             the: 'header',
           }),
         },
@@ -1770,12 +1769,12 @@ describe('AskarKeyManagementService', () => {
         key: {
           privateJwk: {
             kty: 'oct',
-            k: TypedArrayEncoder.toBase64URL(decryptedKey),
+            k: TypedArrayEncoder.toBase64Url(decryptedKey),
           },
         },
       })
 
-      expect(JsonEncoder.fromBuffer(decryptedMessage)).toEqual({
+      expect(JsonEncoder.fromUint8Array(decryptedMessage)).toEqual({
         '@type': 'https://didcomm.org/message/1.0/message',
       })
     })
@@ -1797,7 +1796,7 @@ describe('AskarKeyManagementService', () => {
       const senderPublicJwk = Kms.PublicJwk.fromPublicJwk(senderKey.publicJwk)
 
       const { encrypted: encryptedSender } = await service.encrypt(agentContext, {
-        data: TypedArrayEncoder.fromString(TypedArrayEncoder.toBase58(senderPublicJwk.publicKey.publicKey)),
+        data: TypedArrayEncoder.fromUtf8String(TypedArrayEncoder.toBase58(senderPublicJwk.publicKey.publicKey)),
         encryption: {
           algorithm: 'XSALSA20-POLY1305',
         },
@@ -1828,19 +1827,19 @@ describe('AskarKeyManagementService', () => {
         iv,
         tag,
       } = await service.encrypt(agentContext, {
-        data: JsonEncoder.toBuffer({
+        data: JsonEncoder.toUint8Array({
           '@type': 'https://didcomm.org/message/1.0/message',
         }),
         encryption: {
           algorithm: 'XC20P',
-          aad: JsonEncoder.toBuffer({
+          aad: JsonEncoder.toUint8Array({
             the: 'header',
           }),
         },
         key: {
           privateJwk: {
             kty: 'oct',
-            k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+            k: TypedArrayEncoder.toBase64Url(contentEncryptionKey),
           },
         },
       })
@@ -1879,14 +1878,14 @@ describe('AskarKeyManagementService', () => {
         encrypted: encryptedKey,
       })
 
-      expect(Buffer.from(decryptedKey).equals(Buffer.from(contentEncryptionKey))).toEqual(true)
+      expect(TypedArrayEncoder.equals(decryptedKey, contentEncryptionKey)).toEqual(true)
 
       const { data: decryptedMessage } = await service.decrypt(agentContext, {
         decryption: {
           algorithm: 'XC20P',
           iv,
           tag,
-          aad: JsonEncoder.toBuffer({
+          aad: JsonEncoder.toUint8Array({
             the: 'header',
           }),
         },
@@ -1894,12 +1893,12 @@ describe('AskarKeyManagementService', () => {
         key: {
           privateJwk: {
             kty: 'oct',
-            k: TypedArrayEncoder.toBase64URL(decryptedKey),
+            k: TypedArrayEncoder.toBase64Url(decryptedKey),
           },
         },
       })
 
-      expect(JsonEncoder.fromBuffer(decryptedMessage)).toEqual({
+      expect(JsonEncoder.fromUint8Array(decryptedMessage)).toEqual({
         '@type': 'https://didcomm.org/message/1.0/message',
       })
     })

@@ -29,6 +29,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
+    "@bacons/text-decoder": "^0.0.0",
     "@credo-ts/core": "workspace:*",
     "events": "^3.3.0"
   },

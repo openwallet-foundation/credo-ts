@@ -1,4 +1,5 @@
 import * as core from 'webcrypto-core'
+import { JsonEncoder } from '../../../utils'
 import { Sha1 } from '../../hashes'
 import type { HashAlgorithm } from '../types'
 
@@ -13,7 +14,7 @@ export class CredoSha1Provider extends core.ProviderCrypto {
         return hash.buffer
       }
       default:
-        throw new Error(`Hashing algorithm: ${JSON.stringify(algorithm)} is not supported`)
+        throw new Error(`Hashing algorithm: ${JsonEncoder.toString(algorithm)} is not supported`)
     }
   }
 }

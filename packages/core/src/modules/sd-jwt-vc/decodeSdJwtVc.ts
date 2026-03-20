@@ -1,13 +1,15 @@
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
+import type { HasherSync as SdJwtVcHasherSync } from '@sd-jwt/types'
 import { Hasher } from '../../crypto'
+import type { Uint8ArrayBuffer } from '../../types'
 import { ClaimFormat } from '../vc/index'
 import type { SdJwtVcHeader, SdJwtVcPayload } from './SdJwtVcOptions'
 import type { SdJwtVc } from './SdJwtVcService'
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import { parseHolderBindingFromCredential } from './utils'
 
-export function sdJwtVcHasher(data: string | ArrayBufferLike, alg: string) {
-  return Hasher.hash(typeof data === 'string' ? data : new Uint8Array(data), alg)
+export const sdJwtVcHasher: SdJwtVcHasherSync = (data: string | ArrayBuffer, alg: string) => {
+  return Hasher.hash(data as string | Uint8ArrayBuffer, alg)
 }
 
 export function decodeSdJwtVc<

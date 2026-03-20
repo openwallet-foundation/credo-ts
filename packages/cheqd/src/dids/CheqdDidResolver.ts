@@ -1,5 +1,5 @@
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
-import type { AgentContext, DidResolutionResult, DidResolver, ParsedDid } from '@credo-ts/core'
+import type { AgentContext, DidResolutionResult, DidResolver, ParsedDid, Uint8ArrayBuffer } from '@credo-ts/core'
 import { CredoError, DidDocument, JsonTransformer, utils } from '@credo-ts/core'
 import type { ParsedCheqdDid } from '../anoncreds/utils/identifiers'
 
@@ -113,7 +113,7 @@ export class CheqdDidResolver implements DidResolver {
         throw new Error('resolver_error: Unable to resolve resource, Please try again')
       }
 
-      const result = await renderResourceData(resource.data, metadata.mediaType)
+      const result = await renderResourceData(resource.data as Uint8ArrayBuffer, metadata.mediaType)
       return {
         resource: result,
         resourceMetadata: metadata,

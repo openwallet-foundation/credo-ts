@@ -1,6 +1,6 @@
 import { sign as _sign, constants, createHmac, createPrivateKey, createSecretKey } from 'node:crypto'
 import { promisify } from 'node:util'
-import type { AnyUint8Array, CanBePromise, Uint8ArrayBuffer } from '@credo-ts/core'
+import type { CanBePromise, Uint8ArrayBuffer } from '@credo-ts/core'
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 
 const sign = promisify(_sign)
@@ -8,7 +8,7 @@ const sign = promisify(_sign)
 export function performSign(
   key: Kms.KmsJwkPrivate,
   algorithm: Kms.KnownJwaSignatureAlgorithm,
-  data: AnyUint8Array
+  data: Uint8ArrayBuffer
 ): CanBePromise<Uint8ArrayBuffer> {
   const nodeAlgorithm = mapJwaSignatureAlgorithmToNode(algorithm)
   const nodeKey =

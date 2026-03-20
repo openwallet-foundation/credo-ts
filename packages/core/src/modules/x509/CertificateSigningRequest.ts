@@ -14,7 +14,7 @@ import {
   publicJwkToCryptoKeyAlgorithm,
 } from '../../crypto/webcrypto'
 import { spkiToPublicJwk } from '../../crypto/webcrypto/utils'
-import type { AnyUint8Array } from '../../types'
+import type { Uint8ArrayBuffer } from '../../types'
 import { PublicJwk } from '../kms'
 import {
   convertName,
@@ -53,7 +53,7 @@ export class CertificateSigningRequest {
     return this.publicJwk.hasKeyId
   }
 
-  public static fromRawCertificateRequest(rawCertificateRequest: AnyUint8Array): CertificateSigningRequest {
+  public static fromRawCertificateRequest(rawCertificateRequest: Uint8ArrayBuffer): CertificateSigningRequest {
     const certificateRequest = new x509.Pkcs10CertificateRequest(rawCertificateRequest)
     return CertificateSigningRequest.parseCertificateRequest(certificateRequest)
   }

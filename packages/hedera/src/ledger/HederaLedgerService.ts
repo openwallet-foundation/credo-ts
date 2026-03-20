@@ -14,7 +14,6 @@ import type {
 } from '@credo-ts/anoncreds'
 import {
   type AgentContext,
-  type AnyUint8Array,
   type DidCreateOptions,
   type DidDeactivateOptions,
   type DidDocument,
@@ -130,7 +129,7 @@ export class HederaLedgerService {
 
       const signatureResult = await kms.sign({
         keyId: publicJwk.keyId,
-        data: signingRequest.serializedPayload,
+        data: signingRequest.serializedPayload as Uint8ArrayBuffer,
         algorithm: 'EdDSA',
       })
       const createDidDocumentResult = await submitCreateDIDRequest(
@@ -211,7 +210,11 @@ export class HederaLedgerService {
         }
       )
 
-      const signatures = await this.signRequests(signingRequests, kms, rootKey.kmsKeyId)
+      const signatures = await this.signRequests(
+        signingRequests as Record<string, { serializedPayload: Uint8ArrayBuffer }>,
+        kms,
+        rootKey.kmsKeyId
+      )
       return await submitUpdateDIDRequest(
         {
           states,
@@ -257,7 +260,7 @@ export class HederaLedgerService {
       )
       const signatureResult = await kms.sign({
         keyId: rootKey.kmsKeyId,
-        data: signingRequest.serializedPayload,
+        data: signingRequest.serializedPayload as Uint8ArrayBuffer,
         algorithm: 'EdDSA',
       })
       return await submitDeactivateDIDRequest(
@@ -383,7 +386,7 @@ export class HederaLedgerService {
   }
 
   private async signRequests(
-    signingRequests: Record<string, { serializedPayload: AnyUint8Array }>,
+    signingRequests: Record<string, { serializedPayload: Uint8ArrayBuffer }>,
     kms: Kms.KeyManagementApi,
     keyId: string
   ): Promise<Record<string, Uint8ArrayBuffer>> {

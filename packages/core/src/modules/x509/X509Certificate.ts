@@ -12,7 +12,7 @@ import * as x509 from '@peculiar/x509'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { publicJwkToCryptoKeyAlgorithm, spkiToPublicJwk } from '../../crypto/webcrypto/utils'
-import type { AnyUint8Array } from '../../types'
+import type { Uint8ArrayBuffer } from '../../types'
 import { TypedArrayEncoder } from '../../utils'
 import { asymmetricPublicJwkMatches, PublicJwk } from '../kms'
 import {
@@ -53,13 +53,13 @@ export enum X509ExtendedKeyUsage {
 
 export type X509CertificateOptions = {
   publicJwk: PublicJwk
-  privateKey?: AnyUint8Array
+  privateKey?: Uint8ArrayBuffer
   x509Certificate: x509.X509Certificate
 }
 
 export class X509Certificate {
   public publicJwk: PublicJwk
-  public privateKey?: AnyUint8Array
+  public privateKey?: Uint8ArrayBuffer
   private x509Certificate: x509.X509Certificate
 
   private constructor(options: X509CertificateOptions) {
@@ -80,7 +80,7 @@ export class X509Certificate {
     return this.publicJwk.hasKeyId
   }
 
-  public static fromRawCertificate(rawCertificate: AnyUint8Array): X509Certificate {
+  public static fromRawCertificate(rawCertificate: Uint8ArrayBuffer): X509Certificate {
     const certificate = new x509.X509Certificate(rawCertificate)
     return X509Certificate.parseCertificate(certificate)
   }

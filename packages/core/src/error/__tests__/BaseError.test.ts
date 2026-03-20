@@ -1,3 +1,4 @@
+import { JsonEncoder } from '../../utils'
 import { BaseError } from '../BaseError'
 
 class CustomError extends BaseError {
@@ -10,7 +11,7 @@ describe('BaseError', () => {
   test('pass cause to custom error', () => {
     try {
       try {
-        JSON.parse('')
+        JsonEncoder.fromString('')
       } catch (error) {
         try {
           throw new CustomError('Custom first error message', { cause: error })

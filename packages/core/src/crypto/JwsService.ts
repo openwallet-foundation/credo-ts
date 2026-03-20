@@ -13,7 +13,7 @@ import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
 import { type EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
 import { X509Service } from './../modules/x509/X509Service'
 import { injectable } from '../plugins'
-import { type AnyUint8Array, isJsonObject } from '../types'
+import { isJsonObject, type Uint8ArrayBuffer } from '../types'
 import { JsonEncoder, TypedArrayEncoder } from '../utils'
 import type { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
 import type {
@@ -65,17 +65,17 @@ export class JwsService {
     }
 
     const payload =
-      options.payload instanceof JwtPayload ? JsonEncoder.toBuffer(options.payload.toJson()) : options.payload
+      options.payload instanceof JwtPayload ? JsonEncoder.toUint8Array(options.payload.toJson()) : options.payload
 
-    const base64Payload = TypedArrayEncoder.toBase64URL(payload)
-    const base64UrlProtectedHeader = JsonEncoder.toBase64URL(this.buildProtected(options.protectedHeaderOptions))
+    const base64Payload = TypedArrayEncoder.toBase64Url(payload)
+    const base64UrlProtectedHeader = JsonEncoder.toBase64Url(this.buildProtected(options.protectedHeaderOptions))
 
     const signResult = await kms.sign({
       algorithm: alg,
-      data: TypedArrayEncoder.fromString(`${base64UrlProtectedHeader}.${base64Payload}`),
+      data: TypedArrayEncoder.fromUtf8String(`${base64UrlProtectedHeader}.${base64Payload}`),
       keyId: options.keyId,
     })
-    const signature = TypedArrayEncoder.toBase64URL(signResult.signature)
+    const signature = TypedArrayEncoder.toBase64Url(signResult.signature)
 
     return {
       base64Payload,
@@ -205,7 +205,7 @@ export class JwsService {
         )
       }
 
-      const data = TypedArrayEncoder.fromString(`${jws.protected}.${payload}`)
+      const data = TypedArrayEncoder.fromUtf8String(`${jws.protected}.${payload}`)
       const signature = TypedArrayEncoder.fromBase64(jws.signature)
       jwsSigners.push(jwsSigner)
 
@@ -360,7 +360,7 @@ export class JwsService {
 }
 
 export interface CreateJwsOptions {
-  payload: AnyUint8Array | JwtPayload
+  payload: Uint8ArrayBuffer | JwtPayload
   keyId: string
   header: Record<string, unknown>
   protectedHeaderOptions: JwsProtectedHeaderOptions

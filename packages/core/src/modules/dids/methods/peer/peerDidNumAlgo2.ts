@@ -153,7 +153,7 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
     })
 
     for (const abbreviatedService of abbreviatedServices) {
-      const encodedService = JsonEncoder.toBase64URL(abbreviatedService)
+      const encodedService = JsonEncoder.toBase64Url(abbreviatedService)
       did += `.${DidPeerPurpose.Service}${encodedService}`
     }
   }

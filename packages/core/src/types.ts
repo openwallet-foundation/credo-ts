@@ -54,8 +54,6 @@ export interface JsonObject {
  */
 export type Uint8ArrayBuffer = ReturnType<typeof Uint8Array.from>
 
-export type AnyUint8Array = Uint8Array
-
 /**
  * Flatten an array of arrays
  * @example

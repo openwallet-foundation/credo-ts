@@ -1,5 +1,6 @@
 import { Hasher } from '../crypto/hashes/Hasher'
 import { CredoError } from '../error'
+import type { Uint8ArrayBuffer } from '../types'
 import { TypedArrayEncoder } from './TypedArrayEncoder'
 
 /**
@@ -19,7 +20,7 @@ export class IntegrityVerifier {
    * @param integrityMetadata - The integrity metadata string (e.g., "sha256-...")
    * @throws {CredoError} if verification fails
    */
-  public static verifyIntegrity(data: Uint8Array, integrityMetadata: string): void {
+  public static verifyIntegrity(data: Uint8ArrayBuffer, integrityMetadata: string): void {
     const parsedMetadata = IntegrityVerifier.parseIntegrityMetadata(integrityMetadata)
 
     // If metadata is empty, no verification is required
@@ -133,8 +134,8 @@ export class IntegrityVerifier {
    * @param algorithm - The hash algorithm name
    * @returns Base64-encoded hash value
    */
-  private static applyAlgorithmToBytes(bytes: Uint8Array, algorithm: string): string {
-    let hashResult: Uint8Array
+  private static applyAlgorithmToBytes(bytes: Uint8ArrayBuffer, algorithm: string): string {
+    let hashResult: Uint8ArrayBuffer
 
     switch (algorithm) {
       case 'sha256':

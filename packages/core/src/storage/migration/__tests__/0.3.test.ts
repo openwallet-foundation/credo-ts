@@ -1,11 +1,11 @@
 import { readFileSync } from 'fs'
 import path from 'path'
-
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
 import { agentDependencies } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
+import { JsonEncoder } from '../../../utils'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 
@@ -44,7 +44,7 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.contextCorrelationIdToRecords = {
       default: {
-        records: JSON.parse(aliceDidRecordsString),
+        records: JsonEncoder.fromString(aliceDidRecordsString),
         creationDate: new Date(),
       },
     }
@@ -102,7 +102,7 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.contextCorrelationIdToRecords = {
       default: {
-        records: JSON.parse(aliceW3cCredentialRecordsString),
+        records: JsonEncoder.fromString(aliceW3cCredentialRecordsString),
         creationDate: new Date(),
       },
     }

@@ -1,8 +1,7 @@
-import { Buffer } from 'node:buffer'
 import { randomBytes } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { JsonEncoder, Kms, TypedArrayEncoder, ZodValidationError } from '@credo-ts/core'
+import { JsonEncoder, Kms, TypedArrayEncoder, type Uint8ArrayBuffer, ZodValidationError } from '@credo-ts/core'
 import { getAgentContext } from '../../../../core/tests'
 import { NodeInMemoryKeyManagementStorage } from '../NodeInMemoryKeyManagementStorage'
 import { NodeKeyManagementService } from '../NodeKeyManagementService'
@@ -1209,7 +1208,7 @@ describe('NodeKeyManagementService', () => {
           algorithm: 'A128GCM',
           iv,
         },
-        data: Buffer.from('heelllo', 'utf-8'),
+        data: TypedArrayEncoder.fromUtf8String('heelllo'),
       })
 
       const { data } = await service.decrypt(agentContext, {
@@ -1217,12 +1216,12 @@ describe('NodeKeyManagementService', () => {
         decryption: {
           algorithm: 'A128GCM',
           iv,
-          tag: tag as Uint8Array,
+          tag: tag as Uint8ArrayBuffer,
         },
         encrypted,
       })
 
-      expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
     })
 
     it('decrypts with A192GCM', async () => {
@@ -1237,7 +1236,7 @@ describe('NodeKeyManagementService', () => {
           algorithm: 'A192GCM',
           iv,
         },
-        data: Buffer.from('heelllo', 'utf-8'),
+        data: TypedArrayEncoder.fromUtf8String('heelllo'),
       })
 
       const { data } = await service.decrypt(agentContext, {
@@ -1245,12 +1244,12 @@ describe('NodeKeyManagementService', () => {
         decryption: {
           algorithm: 'A192GCM',
           iv,
-          tag: tag as Uint8Array,
+          tag: tag as Uint8ArrayBuffer,
         },
         encrypted,
       })
 
-      expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
     })
 
     it('decrypts with A256GCM', async () => {
@@ -1265,7 +1264,7 @@ describe('NodeKeyManagementService', () => {
           algorithm: 'A256GCM',
           iv,
         },
-        data: Buffer.from('heelllo', 'utf-8'),
+        data: TypedArrayEncoder.fromUtf8String('heelllo'),
       })
 
       const { data } = await service.decrypt(agentContext, {
@@ -1273,12 +1272,12 @@ describe('NodeKeyManagementService', () => {
         decryption: {
           algorithm: 'A256GCM',
           iv,
-          tag: tag as Uint8Array,
+          tag: tag as Uint8ArrayBuffer,
         },
         encrypted,
       })
 
-      expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
     })
 
     it('decrypts with A128CBC-HS256', async () => {
@@ -1293,7 +1292,7 @@ describe('NodeKeyManagementService', () => {
           algorithm: 'A128CBC-HS256',
           iv,
         },
-        data: Buffer.from('heelllo', 'utf-8'),
+        data: TypedArrayEncoder.fromUtf8String('heelllo'),
       })
 
       const { data } = await service.decrypt(agentContext, {
@@ -1301,12 +1300,12 @@ describe('NodeKeyManagementService', () => {
         decryption: {
           algorithm: 'A128CBC-HS256',
           iv,
-          tag: tag as Uint8Array,
+          tag: tag as Uint8ArrayBuffer,
         },
         encrypted,
       })
 
-      expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
     })
 
     it('decrypts JWE using ECDH-ES and A256GCM based on test vector from OpenID Conformance test', async () => {
@@ -1333,7 +1332,7 @@ describe('NodeKeyManagementService', () => {
           algorithm: 'A256GCM',
           iv: TypedArrayEncoder.fromBase64(encodedIv),
           tag: TypedArrayEncoder.fromBase64(encodedTag),
-          aad: TypedArrayEncoder.fromString(encodedHeader),
+          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
         },
         key: {
           keyAgreement: {
@@ -1348,7 +1347,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       expect(header).toEqual(expectedHeader)
-      expect(JsonEncoder.fromBuffer(data)).toEqual(decodedPayload)
+      expect(JsonEncoder.fromUint8Array(data)).toEqual(decodedPayload)
     })
   })
 

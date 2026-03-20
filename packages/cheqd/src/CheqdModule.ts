@@ -1,5 +1,5 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import { Buffer } from '@credo-ts/core'
+import { Buffer } from 'buffer'
 import { CheqdApi } from './CheqdApi'
 import type { CheqdModuleConfigOptions } from './CheqdModuleConfig'
 import { CheqdModuleConfig } from './CheqdModuleConfig'
@@ -19,6 +19,7 @@ export class CheqdModule implements Module {
 
     dependencyManager.registerSingleton(CheqdLedgerService)
 
+    // TODO: add polyfill to cheqd module
     // Cheqd module needs Buffer to be available globally
     // If it is not available yet, we overwrite it with the
     // Buffer implementation from Credo

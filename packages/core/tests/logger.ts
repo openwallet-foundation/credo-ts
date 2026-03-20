@@ -1,6 +1,6 @@
 import type { ILogObj } from 'tslog'
 import { Logger } from 'tslog'
-
+import { JsonEncoder } from '../src'
 import { LogLevel } from '../src/logger'
 import { BaseLogger } from '../src/logger/BaseLogger'
 import { replaceError } from '../src/logger/replaceError'
@@ -57,7 +57,7 @@ export class TestLogger extends BaseLogger {
     if (this.logLevel === LogLevel.off) return
 
     if (data) {
-      this.logger[tsLogLevel](message, JSON.parse(JSON.stringify(data, replaceError, 2)))
+      this.logger[tsLogLevel](message, JsonEncoder.fromString(JSON.stringify(data, replaceError, 2)))
     } else {
       this.logger[tsLogLevel](message)
     }

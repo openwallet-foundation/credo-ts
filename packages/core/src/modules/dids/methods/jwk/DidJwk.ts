@@ -37,7 +37,7 @@ export class DidJwk {
   }
 
   public static fromPublicJwk(publicJwk: PublicJwk) {
-    const did = `did:jwk:${JsonEncoder.toBase64URL(publicJwk.toJson({ includeKid: false }))}`
+    const did = `did:jwk:${JsonEncoder.toBase64Url(publicJwk.toJson({ includeKid: false }))}`
 
     return new DidJwk(did, publicJwk)
   }

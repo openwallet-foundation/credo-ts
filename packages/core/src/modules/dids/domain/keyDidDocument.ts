@@ -1,3 +1,4 @@
+import type { Uint8ArrayBuffer } from 'packages/core/src/types'
 import { CredoError } from '../../../error'
 import {
   Ed25519PublicJwk,
@@ -75,7 +76,7 @@ function getEd25519DidDoc(did: string, publicJwk: PublicJwk<Ed25519PublicJwk>) {
   const publicJwkX25519 = PublicJwk.fromPublicKey({
     kty: 'OKP',
     crv: 'X25519',
-    publicKey: publicKeyX25519,
+    publicKey: publicKeyX25519 as Uint8ArrayBuffer,
   })
 
   const x25519VerificationMethod = getX25519KeyAgreementKey2019({

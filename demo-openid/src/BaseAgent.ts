@@ -1,6 +1,6 @@
 import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
 import type { InitConfig, KeyDidCreateOptions, ModulesMap, VerificationMethod } from '@credo-ts/core'
-import { Agent, Buffer, ConsoleLogger, DidKey, LogLevel } from '@credo-ts/core'
+import { Agent, ConsoleLogger, DidKey, LogLevel, TypedArrayEncoder } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import type { Express } from 'express'
 import express from 'express'
@@ -56,7 +56,7 @@ export class BaseAgent<AgentModules extends ModulesMap> {
         crv: 'Ed25519',
         kty: 'OKP',
       },
-      privateKey: Buffer.from(secretPrivateKey),
+      privateKey: TypedArrayEncoder.fromUtf8String(secretPrivateKey),
     })
 
     const { keyId } = await this.agent.kms.importKey({

@@ -1,5 +1,4 @@
 import {
-  Buffer,
   CredoError,
   convertPublicKeyToX25519,
   DidCommV1Service,
@@ -9,6 +8,7 @@ import {
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
   TypedArrayEncoder,
+  type Uint8ArrayBuffer,
 } from '@credo-ts/core'
 
 export type CommEndpointType = 'endpoint' | 'did-communication' | 'DIDComm' | 'DIDCommMessaging'
@@ -49,7 +49,7 @@ export function getFullVerkey(did: string, verkey: string) {
 
   // Create base58 encoded public key (32 bytes)
   return TypedArrayEncoder.toBase58(
-    Buffer.concat([
+    TypedArrayEncoder.concat([
       // Take did identifier (16 bytes)
       TypedArrayEncoder.fromBase58(id),
       // Concat the abbreviated verkey (16 bytes)
@@ -64,7 +64,7 @@ export function sovDidDocumentFromDid(fullDid: string, verkey: string) {
 
   const publicKeyBase58 = getFullVerkey(fullDid, verkey)
   const publicKeyX25519 = TypedArrayEncoder.toBase58(
-    convertPublicKeyToX25519(TypedArrayEncoder.fromBase58(publicKeyBase58))
+    convertPublicKeyToX25519(TypedArrayEncoder.fromBase58(publicKeyBase58)) as Uint8ArrayBuffer
   )
 
   const builder = new DidDocumentBuilder(fullDid)

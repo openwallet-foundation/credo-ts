@@ -33,7 +33,7 @@ describe('Cheqd DID registrar', () => {
   it('should create a did:cheqd did', async () => {
     // Generate a seed and the cheqd did. This allows us to create a new did every time
     // but still check if the created output document is as expected.
-    const privateKey = TypedArrayEncoder.fromString(
+    const privateKey = TypedArrayEncoder.fromUtf8String(
       Array(32 + 1)
         .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
         .slice(0, 32)

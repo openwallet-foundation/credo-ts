@@ -1,4 +1,4 @@
-import { type AgentContext, type AnyUint8Array, Kms } from '@credo-ts/core'
+import { type AgentContext, Kms, type Uint8ArrayBuffer } from '@credo-ts/core'
 import type { Verifier } from 'didwebvh-ts'
 
 export class WebVhDidCrypto implements Verifier {
@@ -8,7 +8,11 @@ export class WebVhDidCrypto implements Verifier {
     this.agentContext = agentContext
   }
 
-  public async verify(signature: AnyUint8Array, message: AnyUint8Array, publicKey: AnyUint8Array): Promise<boolean> {
+  public async verify(
+    signature: Uint8ArrayBuffer,
+    message: Uint8ArrayBuffer,
+    publicKey: Uint8ArrayBuffer
+  ): Promise<boolean> {
     try {
       const kms = this.agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 

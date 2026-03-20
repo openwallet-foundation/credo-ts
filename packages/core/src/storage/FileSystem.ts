@@ -1,7 +1,7 @@
-import type { Buffer } from '../utils/buffer'
+import type { Uint8ArrayBuffer } from '../types'
 
 export interface DownloadToFileOptions {
-  verifyHash?: { algorithm: 'sha256'; hash: Buffer }
+  verifyHash?: { algorithm: 'sha256'; hash: Uint8ArrayBuffer }
 }
 
 export interface FileSystem {

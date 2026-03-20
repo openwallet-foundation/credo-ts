@@ -76,10 +76,10 @@ export class DidCommEnvelopeService {
           encryption: {
             algorithm: 'XSALSA20-POLY1305',
           },
-          data: TypedArrayEncoder.fromString(TypedArrayEncoder.toBase58(senderKey.publicKey.publicKey)),
+          data: TypedArrayEncoder.fromUtf8String(TypedArrayEncoder.toBase58(senderKey.publicKey.publicKey)),
         })
 
-        encryptedSender = TypedArrayEncoder.toBase64URL(encrypted)
+        encryptedSender = TypedArrayEncoder.toBase64Url(encrypted)
       }
 
       // Encrypt the key
@@ -100,16 +100,16 @@ export class DidCommEnvelopeService {
       })
 
       recipients.push({
-        encrypted_key: TypedArrayEncoder.toBase64URL(encrypted),
+        encrypted_key: TypedArrayEncoder.toBase64Url(encrypted),
         header: {
           kid: TypedArrayEncoder.toBase58(recipientKey.publicKey.publicKey),
-          iv: iv ? TypedArrayEncoder.toBase64URL(iv) : undefined,
+          iv: iv ? TypedArrayEncoder.toBase64Url(iv) : undefined,
           sender: encryptedSender,
         },
       })
     }
 
-    const protectedString = JsonEncoder.toBase64URL({
+    const protectedString = JsonEncoder.toBase64Url({
       enc: 'xchacha20poly1305_ietf',
       typ: 'JWM/1.0',
       alg: senderKey ? 'Authcrypt' : 'Anoncrypt',
@@ -120,13 +120,13 @@ export class DidCommEnvelopeService {
     const { encrypted, iv, tag } = await kms.encrypt({
       encryption: {
         algorithm: 'C20P',
-        aad: TypedArrayEncoder.fromString(protectedString),
+        aad: TypedArrayEncoder.fromUtf8String(protectedString),
       },
-      data: JsonEncoder.toBuffer(message),
+      data: JsonEncoder.toUint8Array(message),
       key: {
         privateJwk: {
           kty: 'oct',
-          k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+          k: TypedArrayEncoder.toBase64Url(contentEncryptionKey),
         },
       },
     })
@@ -136,9 +136,9 @@ export class DidCommEnvelopeService {
     }
 
     return {
-      ciphertext: TypedArrayEncoder.toBase64URL(encrypted),
-      iv: TypedArrayEncoder.toBase64URL(iv),
-      tag: TypedArrayEncoder.toBase64URL(tag),
+      ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
+      iv: TypedArrayEncoder.toBase64Url(iv),
+      tag: TypedArrayEncoder.toBase64Url(tag),
       protected: protectedString,
     } satisfies DidCommEncryptedMessage
   }
@@ -227,19 +227,19 @@ export class DidCommEnvelopeService {
         algorithm: 'C20P',
         iv: TypedArrayEncoder.fromBase64(encryptedMessage.iv),
         tag: TypedArrayEncoder.fromBase64(encryptedMessage.tag),
-        aad: TypedArrayEncoder.fromString(encryptedMessage.protected),
+        aad: TypedArrayEncoder.fromUtf8String(encryptedMessage.protected),
       },
       key: {
         privateJwk: {
           kty: 'oct',
-          k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+          k: TypedArrayEncoder.toBase64Url(contentEncryptionKey),
         },
       },
       encrypted: TypedArrayEncoder.fromBase64(encryptedMessage.ciphertext),
     })
 
     return {
-      plaintextMessage: JsonEncoder.fromBuffer(message),
+      plaintextMessage: JsonEncoder.fromUint8Array(message),
       senderKey: senderPublicJwk,
       recipientKey,
     }

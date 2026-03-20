@@ -1,6 +1,6 @@
 import { Hasher, type HashName } from '../../../crypto/hashes/Hasher'
 import type { Uint8ArrayBuffer } from '../../../types'
-import { TypedArrayEncoder } from '../../../utils'
+import { JsonEncoder, TypedArrayEncoder } from '../../../utils'
 import { zParseWithErrorHandling } from '../../../utils/zod'
 import { type KmsJwkPublic, zKmsJwkPublic } from './knownJwk'
 
@@ -44,7 +44,7 @@ export function calculateJwkThumbprint(options: CalculateJwkThumbprintOptions): 
   )
 
   const thumbprint = Hasher.hash(
-    TypedArrayEncoder.fromString(JSON.stringify(jwkThumbprintComponents)),
+    TypedArrayEncoder.fromUtf8String(JsonEncoder.toString(jwkThumbprintComponents)),
     options.hashAlgorithm
   )
 

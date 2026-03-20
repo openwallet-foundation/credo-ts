@@ -1,5 +1,5 @@
 import type { AgentContext, Logger } from '@credo-ts/core'
-import { Buffer, CredoError, EventEmitter, JsonEncoder } from '@credo-ts/core'
+import { CredoError, EventEmitter, JsonEncoder, TypedArrayEncoder } from '@credo-ts/core'
 import type { WebSocket } from 'ws'
 import type { DidCommMessageReceivedEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
@@ -82,7 +82,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     // We can close the socket as it shouldn't return messages anymore
     // make sure to use the socket in a manner that is compliant with the https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
     // (React Native) and https://github.com/websockets/ws (NodeJs)
-    socket.send(Buffer.from(JSON.stringify(payload)))
+    socket.send(TypedArrayEncoder.fromUtf8String(JsonEncoder.toString(payload)))
     if (isNewSocket && !outboundPackage.responseRequested) {
       socket.close()
     }
@@ -129,7 +129,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
   // biome-ignore lint/suspicious/noExplicitAny: no explanation
   private handleMessageEvent = (event: any) => {
     this.logger.trace('WebSocket message event received.', { url: event.target.url })
-    const payload = JsonEncoder.fromBuffer(event.data)
+    const payload = JsonEncoder.fromUint8Array(event.data)
     if (!isValidJweStructure(payload)) {
       throw new Error(
         `Received a response from the other agent but the structure of the incoming message is not a DIDComm message: ${payload}`

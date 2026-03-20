@@ -34,6 +34,7 @@ import {
   SdJwtVcApi,
   SignatureSuiteRegistry,
   TypedArrayEncoder,
+  type Uint8ArrayBuffer,
   utils,
   type VerifiablePresentation,
   W3cCredentialService,
@@ -45,7 +46,7 @@ import {
   X509ModuleConfig,
   X509Service,
 } from '@credo-ts/core'
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { HashAlgorithm, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   type ClientIdPrefix,
   type ClientMetadata,
@@ -116,8 +117,8 @@ export class OpenId4VpVerifierService {
     options: OpenId4VpCreateAuthorizationRequestOptions & { verifier: OpenId4VcVerifierRecord }
   ): Promise<OpenId4VpCreateAuthorizationRequestReturn> {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
-    const nonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
-    const state = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
+    const nonce = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
+    const state = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
 
     const responseMode = options.responseMode ?? 'direct_post.jwt'
     const isDcApiRequest = responseMode === 'dc_api' || responseMode === 'dc_api.jwt'
@@ -227,7 +228,7 @@ export class OpenId4VpVerifierService {
         clientIdPrefix = 'x509_hash'
         clientId = await calculateX509HashClientIdPrefixValue({
           x509Certificate: leafCertificate.rawCertificate,
-          hash: Hasher.hash,
+          hash: (data: Uint8Array, alg: HashAlgorithm) => Hasher.hash(data as Uint8ArrayBuffer, alg),
         })
       } else {
         if (!leafCertificate.sanDnsNames.includes(getDomainFromUrl(authorizationResponseUrl))) {
@@ -293,7 +294,7 @@ export class OpenId4VpVerifierService {
       nonce,
       presentation_definition: options.presentationExchange?.definition,
       dcql_query: options.dcql?.query,
-      transaction_data: options.transactionData?.map((entry) => JsonEncoder.toBase64URL(entry)),
+      transaction_data: options.transactionData?.map((entry) => JsonEncoder.toBase64Url(entry)),
       response_mode: responseMode,
       response_type: 'vp_token',
       client_metadata,
@@ -1214,7 +1215,7 @@ export class OpenId4VpVerifierService {
 
           const document = mdocDeviceResponse.documents[0]
           const certificateChain = document.issuerSignedCertificateChain.map((cert) =>
-            X509Certificate.fromRawCertificate(cert)
+            X509Certificate.fromRawCertificate(cert as Uint8ArrayBuffer)
           )
 
           const trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {

@@ -1,4 +1,4 @@
-import { AgentContext, Kms } from '@credo-ts/core'
+import { AgentContext, Kms, type Uint8ArrayBuffer } from '@credo-ts/core'
 import { Client, PublicKey, Transaction, TransactionReceipt } from '@hashgraph/sdk'
 import { Publisher as ClientPublisher } from '@hiero-did-sdk/publisher-internal'
 import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../utils'
@@ -33,7 +33,11 @@ export class KmsPublisher extends ClientPublisher {
     const frozenTransaction = transaction.freezeWith(this.client)
 
     await frozenTransaction.signWith(this.submitPublicKey, async (message) => {
-      const signatureResult = await this.kms.sign({ keyId: this.keyId, data: message, algorithm: 'EdDSA' })
+      const signatureResult = await this.kms.sign({
+        keyId: this.keyId,
+        data: message as Uint8ArrayBuffer,
+        algorithm: 'EdDSA',
+      })
       return signatureResult.signature
     })
 

@@ -3,7 +3,7 @@ import type { SDJwt } from '@sd-jwt/core'
 import { decodeSdJwtSync } from '@sd-jwt/decode'
 import { selectDisclosures } from '@sd-jwt/present'
 import { SDJwtVcInstance, type VcTFetcher } from '@sd-jwt/sd-jwt-vc'
-import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/types'
+import type { DisclosureFrame, PresentationFrame, Hasher as SdJwtVcHasher } from '@sd-jwt/types'
 import { AgentContext } from '../../agent'
 import { Hasher, JwtPayload } from '../../crypto'
 import { CredoError } from '../../error'
@@ -306,7 +306,7 @@ export class SdJwtVcService {
       payload: sdJwtVc.jwt.payload as Payload,
       header: sdJwtVc.jwt.header as Header,
       compact: compactSdJwtVc,
-      prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
+      prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher as SdJwtVcHasher),
       holder: holderBinding,
 
       kbJwt: sdJwtVc.kbJwt
@@ -644,9 +644,9 @@ export class SdJwtVcService {
     const kms = agentContext.resolve(KeyManagementApi)
 
     return {
-      hasher: sdJwtVcHasher,
+      hasher: sdJwtVcHasher as SdJwtVcHasher,
       statusListFetcher: this.getStatusListFetcher(agentContext),
-      saltGenerator: (length) => TypedArrayEncoder.toBase64URL(kms.randomBytes({ length })).slice(0, length),
+      saltGenerator: (length) => TypedArrayEncoder.toBase64Url(kms.randomBytes({ length })).slice(0, length),
     }
   }
 

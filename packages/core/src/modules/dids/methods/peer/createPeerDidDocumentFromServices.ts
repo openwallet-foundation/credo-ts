@@ -1,6 +1,5 @@
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
-import type { ResolvedDidCommService } from '../../../../types'
-
+import type { ResolvedDidCommService, Uint8ArrayBuffer } from '../../../../types'
 import { PublicJwk } from '../../../kms'
 import type { DidDocumentKey } from '../../DidsApiOptions'
 import { DidDocument, getEd25519VerificationKey2018, getX25519KeyAgreementKey2019 } from '../../domain'
@@ -29,7 +28,7 @@ export function createPeerDidDocumentFromServices<WithKeys extends boolean>(
       const x25519Key = PublicJwk.fromPublicKey({
         crv: 'X25519',
         kty: 'OKP',
-        publicKey: convertPublicKeyToX25519(recipientKey.publicKey.publicKey),
+        publicKey: convertPublicKeyToX25519(recipientKey.publicKey.publicKey) as Uint8ArrayBuffer,
       })
 
       // key ids follow the #key-N pattern to comply with did:peer:2 spec

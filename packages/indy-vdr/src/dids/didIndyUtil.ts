@@ -1,5 +1,5 @@
 import { parseIndyDid } from '@credo-ts/anoncreds'
-import type { AgentContext } from '@credo-ts/core'
+import type { AgentContext, Uint8ArrayBuffer } from '@credo-ts/core'
 import {
   CredoError,
   convertPublicKeyToX25519,
@@ -39,7 +39,7 @@ export function indyDidDocumentFromDid(did: string, verKeyBase58: string) {
 }
 
 export function createKeyAgreementKey(verkey: string) {
-  return TypedArrayEncoder.toBase58(convertPublicKeyToX25519(TypedArrayEncoder.fromBase58(verkey)))
+  return TypedArrayEncoder.toBase58(convertPublicKeyToX25519(TypedArrayEncoder.fromBase58(verkey)) as Uint8ArrayBuffer)
 }
 
 const deepMerge = (a: Record<string, unknown>, b: Record<string, unknown>) => {

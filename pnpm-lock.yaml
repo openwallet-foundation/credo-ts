@@ -492,6 +492,9 @@ importers:
       '@stablelib/ed25519':
         specifier: 'catalog:'
         version: 2.0.2
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1
@@ -553,6 +556,9 @@ importers:
       '@peculiar/x509':
         specifier: 'catalog:'
         version: 1.14.3
+      '@scure/base':
+        specifier: ^2.0.0
+        version: 2.0.0
       '@sd-jwt/core':
         specifier: ^0.19.0
         version: 0.19.0
@@ -818,6 +824,9 @@ importers:
       '@hiero-did-sdk/resolver':
         specifier: ^0.1.8
         version: 0.1.8(bn.js@5.2.3)(react-native@0.83.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1))
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
     devDependencies:
       '@credo-ts/node':
         specifier: workspace:*
@@ -970,6 +979,9 @@ importers:
       '@animo-id/expo-secure-environment':
         specifier: ^0.1.1
         version: 0.1.5(expo@51.0.29(@babel/core@7.29.0)(@babel/preset-env@7.27.2(@babel/core@7.29.0))(react-native@0.83.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1))(react@18.3.1))(react-native@0.83.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1))(react@18.3.1)
+      '@bacons/text-decoder':
+        specifier: ^0.0.0
+        version: 0.0.0(react-native@0.83.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1))
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
@@ -1922,6 +1934,11 @@ packages:
   '@babel/types@8.0.0-rc.1':
     resolution: {integrity: sha512-ubmJ6TShyaD69VE9DQrlXcdkvJbmwWPB8qYj0H2kaJi29O7vJT9ajSdBd2W8CG34pwL9pYA74fi7RHC1qbLoVQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
+
+  '@bacons/text-decoder@0.0.0':
+    resolution: {integrity: sha512-8KNbnXSHfhZRR1S1IQEdWQNa9HE/ylWRisDdkoCmHiaP53mksnPaxyqUSlwpJ3DyG1xEekRwFDEG+pbCbSsrkQ==}
+    peerDependencies:
+      react-native: '*'
 
   '@bcoe/v8-coverage@1.0.2':
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
@@ -3870,9 +3887,6 @@ packages:
 
   '@types/node@20.19.31':
     resolution: {integrity: sha512-5jsi0wpncvTD33Sh1UCgacK37FFwDn+EG7wCmEvs62fCvBL+n8/76cAYDok21NF6+jaVWIqKwCZyX7Vbu8eB3A==}
-
-  '@types/node@25.2.0':
-    resolution: {integrity: sha512-DZ8VwRFUNzuqJ5khrvwMXHmvPe+zGayJhr2CDNiKB1WBE1ST8Djl00D0IC4vvNmHMdj6DlbYRIaFE7WHjlDl5w==}
 
   '@types/node@25.5.0':
     resolution: {integrity: sha512-jp2P3tQMSxWugkCUKLRPVUpGaL5MVFwF8RDuSRztfwgN1wmqJeMSbKlnEtQqU8UrhTmzEmZdu2I6v2dpp7XIxw==}
@@ -8285,9 +8299,6 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
-  undici-types@7.16.0:
-    resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
-
   undici-types@7.18.2:
     resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
 
@@ -9711,6 +9722,10 @@ snapshots:
       '@babel/helper-string-parser': 8.0.0-rc.1
       '@babel/helper-validator-identifier': 8.0.0-rc.1
 
+  '@bacons/text-decoder@0.0.0(react-native@0.83.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1))':
+    dependencies:
+      react-native: 0.83.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1)
+
   '@bcoe/v8-coverage@1.0.2': {}
 
   '@biomejs/biome@2.3.14':
@@ -11035,7 +11050,7 @@ snapshots:
 
   '@isaacs/fs-minipass@4.0.1':
     dependencies:
-      minipass: 7.1.2
+      minipass: 7.1.3
 
   '@isaacs/ttlcache@1.4.1': {}
 
@@ -12156,7 +12171,7 @@ snapshots:
 
   '@types/accepts@1.3.7':
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/babel__core@7.20.5':
     dependencies:
@@ -12182,7 +12197,7 @@ snapshots:
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/chai@5.2.3':
     dependencies:
@@ -12191,12 +12206,12 @@ snapshots:
 
   '@types/co-body@6.1.3':
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
       '@types/qs': 6.14.0
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/content-disposition@0.5.9': {}
 
@@ -12207,11 +12222,11 @@ snapshots:
       '@types/connect': 3.4.38
       '@types/express': 5.0.6
       '@types/keygrip': 1.0.6
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/cors@2.8.19':
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/deep-eql@4.0.2': {}
 
@@ -12221,7 +12236,7 @@ snapshots:
 
   '@types/express-serve-static-core@5.1.1':
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
       '@types/qs': 6.14.0
       '@types/range-parser': 1.2.7
       '@types/send': 1.2.1
@@ -12279,7 +12294,7 @@ snapshots:
       '@types/http-errors': 2.0.5
       '@types/keygrip': 1.0.6
       '@types/koa-compose': 3.2.9
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/luxon@3.7.1': {}
 
@@ -12303,10 +12318,6 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
-  '@types/node@25.2.0':
-    dependencies:
-      undici-types: 7.16.0
-
   '@types/node@25.5.0':
     dependencies:
       undici-types: 7.18.2
@@ -12317,11 +12328,11 @@ snapshots:
     dependencies:
       '@types/keygrip': 1.0.6
       '@types/koa': 3.0.1
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/pg@8.16.0':
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
       pg-protocol: 1.11.0
       pg-types: 2.2.0
 
@@ -12335,7 +12346,7 @@ snapshots:
 
   '@types/ref-napi@3.0.12':
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/ref-struct-di@1.1.12':
     dependencies:
@@ -12343,16 +12354,16 @@ snapshots:
 
   '@types/secp256k1@4.0.7':
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/send@1.2.1':
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/serve-static@2.2.0':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/stack-utils@2.0.3': {}
 
@@ -12360,7 +12371,7 @@ snapshots:
     dependencies:
       '@types/cookiejar': 2.1.5
       '@types/methods': 1.1.4
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
       form-data: 4.0.5
 
   '@types/supertest@6.0.3':
@@ -12370,17 +12381,17 @@ snapshots:
 
   '@types/through@0.0.33':
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/validator@13.15.10': {}
 
   '@types/varint@6.0.3':
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
 
   '@types/yargs-parser@21.0.3': {}
 
@@ -14705,7 +14716,7 @@ snapshots:
       '@jest/environment': 29.7.0
       '@jest/fake-timers': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
       jest-mock: 29.7.0
       jest-util: 29.7.0
 
@@ -15159,7 +15170,7 @@ snapshots:
 
   make-dir@4.0.0:
     dependencies:
-      semver: 7.7.3
+      semver: 7.7.4
 
   make-error@1.3.6: {}
 
@@ -15731,7 +15742,7 @@ snapshots:
 
   minizlib@3.1.0:
     dependencies:
-      minipass: 7.1.2
+      minipass: 7.1.3
 
   mixme@1.1.0: {}
 
@@ -16315,7 +16326,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
       long: 5.3.2
 
   protobufjs@8.0.0:
@@ -17229,7 +17240,7 @@ snapshots:
     dependencies:
       '@isaacs/fs-minipass': 4.0.1
       chownr: 3.0.0
-      minipass: 7.1.2
+      minipass: 7.1.3
       minizlib: 3.1.0
       yallist: 5.0.0
 
@@ -17508,8 +17519,6 @@ snapshots:
   undici-types@5.26.5: {}
 
   undici-types@6.21.0: {}
-
-  undici-types@7.16.0: {}
 
   undici-types@7.18.2: {}
 
@@ -17878,6 +17887,6 @@ snapshots:
 
   zstd-napi@0.0.12:
     dependencies:
-      '@types/node': 25.2.0
+      '@types/node': 25.5.0
       node-addon-api: 7.1.1
       prebuild-install: 7.1.3

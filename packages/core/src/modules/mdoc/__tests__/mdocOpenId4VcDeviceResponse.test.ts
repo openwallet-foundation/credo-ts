@@ -1,6 +1,7 @@
 import { cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
+import type { Uint8ArrayBuffer } from '../../../types'
 import { TypedArrayEncoder } from '../../../utils'
 import type { DifPresentationExchangeDefinition } from '../../dif-presentation-exchange'
 import { PublicJwk } from '../../kms'
@@ -213,8 +214,8 @@ describe('mdoc device-response openid4vp test', () => {
         const issuerSigned = cborEncode(prepared.get('issuerSigned'))
         const deviceSigned = cborEncode(prepared.get('deviceSigned'))
         parsedDocument = Mdoc.fromDeviceSignedDocument(
-          TypedArrayEncoder.toBase64URL(issuerSigned),
-          TypedArrayEncoder.toBase64URL(deviceSigned),
+          TypedArrayEncoder.toBase64Url(issuerSigned as Uint8ArrayBuffer),
+          TypedArrayEncoder.toBase64Url(deviceSigned as Uint8ArrayBuffer),
           docType
         )
       }
@@ -384,8 +385,8 @@ describe('mdoc device-response openid4vp test', () => {
       const issuerSigned = cborEncode(prepared.get('issuerSigned'))
       const deviceSigned = cborEncode(prepared.get('deviceSigned'))
       parsedDocument = Mdoc.fromDeviceSignedDocument(
-        TypedArrayEncoder.toBase64URL(issuerSigned),
-        TypedArrayEncoder.toBase64URL(deviceSigned),
+        TypedArrayEncoder.toBase64Url(issuerSigned as Uint8ArrayBuffer),
+        TypedArrayEncoder.toBase64Url(deviceSigned as Uint8ArrayBuffer),
         docType
       )
 

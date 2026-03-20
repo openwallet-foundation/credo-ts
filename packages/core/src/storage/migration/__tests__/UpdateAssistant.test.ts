@@ -2,6 +2,7 @@ import type { InMemoryStorageService } from '../../../../../../tests/InMemorySto
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
+import { JsonEncoder } from '../../../utils'
 import type { BaseRecord } from '../../BaseRecord'
 import { UpdateAssistant } from '../UpdateAssistant'
 import { CURRENT_FRAMEWORK_STORAGE_VERSION } from '../updates'
@@ -36,12 +37,12 @@ describe('UpdateAssistant', () => {
       // Make sure it's initialized
       storageService.createRecordsForContext(agent.context)
 
-      const beforeStorage = JSON.stringify(storageService.contextCorrelationIdToRecords)
+      const beforeStorage = JsonEncoder.toString(storageService.contextCorrelationIdToRecords)
       await updateAssistant.update()
 
       // We parse and stringify so the dates are equal (both string)
-      expect(JSON.parse(beforeStorage)).toEqual(
-        JSON.parse(JSON.stringify(storageService.contextCorrelationIdToRecords))
+      expect(JsonEncoder.fromString(beforeStorage)).toEqual(
+        JsonEncoder.fromString(JsonEncoder.toString(storageService.contextCorrelationIdToRecords))
       )
     })
   })

@@ -124,7 +124,7 @@ describe('shortened urls resolving to oob invitations', () => {
 describe('legacy connectionless', () => {
   test('parse url containing d_m ', async () => {
     const parsed = await parseInvitationShortUrl(
-      `https://example.com?d_m=${JsonEncoder.toBase64URL(mockLegacyConnectionless)}`,
+      `https://example.com?d_m=${JsonEncoder.toBase64Url(mockLegacyConnectionless)}`,
       agentDependencies
     )
     expect(parsed.toJSON()).toMatchObject({

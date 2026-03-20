@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { Uint8ArrayBuffer } from '../../../types'
-import { zAnyUint8Array } from '../../../utils/zod'
+import { zUint8ArrayBuffer } from '../../../utils/zod'
 import { KnownJwaContentEncryptionAlgorithms } from '../jwk/jwa'
 import { zKmsJwkPrivateOct } from '../jwk/kty/oct/octJwk'
 import { zKmsKeyId } from './common'
@@ -14,16 +14,16 @@ const zKmsDecryptDataDecryptionAesGcm = z.object({
     KnownJwaContentEncryptionAlgorithms.A256GCM,
   ]),
 
-  iv: zAnyUint8Array.refine((iv) => iv.length === 12, 'iv must be 12 bytes for AES GCM'),
-  aad: z.optional(zAnyUint8Array),
-  tag: zAnyUint8Array,
+  iv: zUint8ArrayBuffer.refine((iv) => iv.length === 12, 'iv must be 12 bytes for AES GCM'),
+  aad: z.optional(zUint8ArrayBuffer),
+  tag: zUint8ArrayBuffer,
 })
 export type KmsDecryptDataDecryptionAesGcm = z.output<typeof zKmsDecryptDataDecryptionAesGcm>
 
 // AES-CBC Content Decryption
 const zKmsDecryptDataDecryptionAesCbc = z.object({
   algorithm: z.enum([KnownJwaContentEncryptionAlgorithms.A128CBC, KnownJwaContentEncryptionAlgorithms.A256CBC]),
-  iv: zAnyUint8Array.refine((iv) => iv.length === 16, 'iv must be 16 bytes for AES CBC'),
+  iv: zUint8ArrayBuffer.refine((iv) => iv.length === 16, 'iv must be 16 bytes for AES CBC'),
 })
 export type KmsDecryptDataDecryptionAesCbc = z.output<typeof zKmsDecryptDataDecryptionAesCbc>
 
@@ -34,24 +34,24 @@ const zKmsDecryptDataDecryptionAesCbcHmac = z.object({
     KnownJwaContentEncryptionAlgorithms.A192CBC_HS384,
     KnownJwaContentEncryptionAlgorithms.A256CBC_HS512,
   ]),
-  iv: zAnyUint8Array.refine((iv) => iv.length === 16, 'iv must be 16 bytes for AES CBC with HMAC'),
-  aad: z.optional(zAnyUint8Array),
-  tag: zAnyUint8Array,
+  iv: zUint8ArrayBuffer.refine((iv) => iv.length === 16, 'iv must be 16 bytes for AES CBC with HMAC'),
+  aad: z.optional(zUint8ArrayBuffer),
+  tag: zUint8ArrayBuffer,
 })
 export type KmsDecryptDataDecryptionAesCbcHmac = z.output<typeof zKmsDecryptDataDecryptionAesCbcHmac>
 
 // XSalsa20-Poly1305 Content Decryption
 const zKmsDecryptDataDecryptionSalsa = z.object({
   algorithm: z.enum([KnownJwaContentEncryptionAlgorithms['XSALSA20-POLY1305']]),
-  iv: zAnyUint8Array.optional(),
+  iv: zUint8ArrayBuffer.optional(),
 })
 
 // ChaCha20-Poly1305 Content Decryption
 const zKmsDecryptDataDecryptionC20p = z.object({
   algorithm: z.enum([KnownJwaContentEncryptionAlgorithms.C20P, KnownJwaContentEncryptionAlgorithms.XC20P]),
-  iv: zAnyUint8Array,
-  aad: z.optional(zAnyUint8Array),
-  tag: zAnyUint8Array,
+  iv: zUint8ArrayBuffer,
+  aad: z.optional(zUint8ArrayBuffer),
+  tag: zUint8ArrayBuffer,
 })
 // FIXME: see how we can do refine with the discriminated union
 // .refine(
@@ -111,7 +111,7 @@ export const zKmsDecryptOptions = z.object({
   /**
    * The encrypted data to decrypt
    */
-  encrypted: zAnyUint8Array.describe('The encrypted data to decrypt'),
+  encrypted: zUint8ArrayBuffer.describe('The encrypted data to decrypt'),
 })
 
 export type KmsDecryptOptions = z.output<typeof zKmsDecryptOptions>

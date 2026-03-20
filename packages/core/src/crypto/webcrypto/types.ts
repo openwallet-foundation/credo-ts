@@ -13,7 +13,7 @@ import {
   RsaPublicJwk,
   Secp256k1PublicJwk,
 } from '../../modules/kms'
-import type { AnyUint8Array } from '../../types'
+import type { Uint8ArrayBuffer } from '../../types'
 import { CredoWebCryptoError } from './CredoWebCryptoError'
 import type { CredoWebCryptoKey } from './CredoWebCryptoKey'
 
@@ -59,7 +59,7 @@ export type EcKeyGenParams = {
 export type RsaHashedKeyGenParams = {
   name: 'RSASSA-PKCS1-v1_5' | 'RSA-PSS'
   modulusLength: number
-  publicExponent: AnyUint8Array
+  publicExponent: Uint8ArrayBuffer
   hash: { name: HashAlgorithmIdentifier }
 }
 

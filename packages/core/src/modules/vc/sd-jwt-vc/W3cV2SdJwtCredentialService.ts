@@ -1,5 +1,5 @@
 import { SDJwtInstance } from '@sd-jwt/core'
-import type { DisclosureFrame, PresentationFrame, SDJWTConfig } from '@sd-jwt/types'
+import type { DisclosureFrame, PresentationFrame, SDJWTConfig, Hasher as SdJwtVcHasher } from '@sd-jwt/types'
 import type { AgentContext } from '../../../agent/context'
 import { JwtPayload } from '../../../crypto'
 import { CredoError } from '../../../error'
@@ -439,8 +439,8 @@ export class W3cV2SdJwtCredentialService {
     const kms = agentContext.resolve(KeyManagementApi)
 
     return {
-      hasher: sdJwtVcHasher,
-      saltGenerator: (length) => TypedArrayEncoder.toBase64URL(kms.randomBytes({ length })).slice(0, length),
+      hasher: sdJwtVcHasher as SdJwtVcHasher,
+      saltGenerator: (length) => TypedArrayEncoder.toBase64Url(kms.randomBytes({ length })).slice(0, length),
     }
   }
 }

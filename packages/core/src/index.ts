@@ -58,7 +58,6 @@ export type {
 } from './storage/StorageService'
 export { decodeCursor, encodeCursor, recordToCursor } from './storage/StorageService'
 export type {
-  AnyUint8Array,
   CanBePromise,
   InitConfig,
   JsonArray,
@@ -75,7 +74,6 @@ export { isJsonObject, isNonEmptyArray, mapNonEmptyArray } from './types'
 export {
   asArray,
   type BaseName,
-  Buffer,
   DateTransformer,
   deepEquality,
   equalsIgnoreOrder,
@@ -93,7 +91,6 @@ export {
   MultiHashEncoder,
   TypedArrayEncoder,
 } from './utils'
-export { base64ToBase64URL } from './utils/base64'
 export type {
   CredentialMultiInstanceUseUpdateMode,
   UseInstanceFromCredentialRecordOptions,

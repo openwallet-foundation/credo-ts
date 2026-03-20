@@ -7,7 +7,7 @@ import {
 } from '../../../../../didcomm/src/modules/credentials'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { JsonTransformer } from '../../../utils'
+import { JsonEncoder, JsonTransformer } from '../../../utils'
 import { StorageUpdateService } from '../StorageUpdateService'
 import { UpdateAssistant } from '../UpdateAssistant'
 
@@ -43,7 +43,7 @@ describe('UpdateAssistant | Aries Askar', () => {
   })
 
   it('should create a backup', async () => {
-    const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
+    const aliceCredentialRecordsJson = JsonEncoder.fromString(aliceCredentialRecordsString)
 
     // biome-ignore lint/suspicious/noExplicitAny: no explanation
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {

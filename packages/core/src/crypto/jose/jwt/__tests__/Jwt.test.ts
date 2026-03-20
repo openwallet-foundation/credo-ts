@@ -60,7 +60,8 @@ describe('Jwt', () => {
     })
 
     expect(
-      jwtInstance.signature.equals(
+      TypedArrayEncoder.equals(
+        jwtInstance.signature,
         TypedArrayEncoder.fromBase64(
           'anABxv424eMpp0xgbTx6aZvZxblkSThq-XbgixhWegFCVz2Q-EtRUiGJuOUjmql5TttTZ_YgtN9PgozOfuTZtg'
         )

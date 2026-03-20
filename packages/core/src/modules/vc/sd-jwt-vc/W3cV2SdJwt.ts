@@ -1,7 +1,7 @@
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
 import { Hasher } from '../../../crypto'
 import { CredoError } from '../../../error'
-import { isJsonObject, type SingleOrArray } from '../../../types'
+import { isJsonObject, type SingleOrArray, type Uint8ArrayBuffer } from '../../../types'
 import { ClaimFormat } from '../models'
 
 export interface W3cV2SdJwtHeader {
@@ -29,7 +29,7 @@ export interface W3cV2SdJwt<T extends ClaimFormat.SdJwtW3cVc | ClaimFormat.SdJwt
   }
 }
 
-export function sdJwtVcHasher(data: string | ArrayBufferLike, alg: string) {
+export function sdJwtVcHasher(data: string | Uint8ArrayBuffer, alg: string) {
   return Hasher.hash(typeof data === 'string' ? data : new Uint8Array(data), alg)
 }
 

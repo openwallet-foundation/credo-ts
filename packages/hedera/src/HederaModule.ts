@@ -1,5 +1,5 @@
-import { AgentConfig, Buffer, DependencyManager, type Module } from '@credo-ts/core'
-
+import { AgentConfig, DependencyManager, type Module } from '@credo-ts/core'
+import { Buffer } from 'buffer'
 import { HederaModuleConfig, type HederaModuleConfigOptions } from './HederaModuleConfig'
 import { HederaLedgerService } from './ledger'
 
@@ -22,6 +22,7 @@ export class HederaModule implements Module {
     dependencyManager.registerInstance(HederaModuleConfig, this.config)
     dependencyManager.registerSingleton(HederaLedgerService)
 
+    // TODO: add polyfill to hadera module
     // Hedera module needs Buffer to be available globally
     // If it is not available yet, we overwrite it with the
     // Buffer implementation from Credo
