@@ -1,3 +1,4 @@
+import '@bacons/text-decoder/install'
 import 'react-native-get-random-values'
 
 import type { AgentDependencies } from '@credo-ts/core'
