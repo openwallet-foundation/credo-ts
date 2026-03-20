@@ -217,7 +217,7 @@ describe('DidCommDocumentService', () => {
     })
   })
 
-  describe('getDidCommVersionFromDidDoc', () => {
+  describe('getSupportedDidCommVersionsFromDidDoc', () => {
     test('v1 when only IndyAgent is present', async () => {
       mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(
         new DidDocument({
@@ -234,13 +234,11 @@ describe('DidCommDocumentService', () => {
           ],
         })
       )
-      const result = await didCommDocumentService.getDidCommVersionFromDidDoc(
+      const result = await didCommDocumentService.getSupportedDidCommVersionsFromDidDoc(
         agentContext,
         'did:sov:Q4zqM7aXqm7gDQkUVLng9h'
       )
-      expect(result.version).toBe('v1')
-      expect(result.matchedServiceIds).toEqual(['test-id'])
-      expect(result.bothFamiliesPresent).toBeUndefined()
+      expect(result.versions).toEqual(['v1'])
     })
 
     test('v2 when only DIDCommMessaging is present', async () => {
@@ -259,16 +257,14 @@ describe('DidCommDocumentService', () => {
           ],
         })
       )
-      const result = await didCommDocumentService.getDidCommVersionFromDidDoc(
+      const result = await didCommDocumentService.getSupportedDidCommVersionsFromDidDoc(
         agentContext,
         'did:example:holder'
       )
-      expect(result.version).toBe('v2')
-      expect(result.matchedServiceIds).toEqual(['did:example:holder#dm'])
-      expect(result.bothFamiliesPresent).toBeUndefined()
+      expect(result.versions).toEqual(['v2'])
     })
 
-    test('v2 by default when both v1 and v2 services are present', async () => {
+    test('both v1 and v2 when dual-stack DID', async () => {
       mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(
         new DidDocument({
           context: ['https://w3id.org/did/v1'],
@@ -289,47 +285,13 @@ describe('DidCommDocumentService', () => {
           ],
         })
       )
-      const result = await didCommDocumentService.getDidCommVersionFromDidDoc(
+      const result = await didCommDocumentService.getSupportedDidCommVersionsFromDidDoc(
         agentContext,
         'did:example:both'
       )
-      expect(result.version).toBe('v2')
-      expect(result.matchedServiceIds).toEqual(['did:example:both#v2'])
-      expect(result.bothFamiliesPresent).toEqual({
-        v1ServiceIds: ['did:example:both#v1'],
-        v2ServiceIds: ['did:example:both#v2'],
-      })
-    })
-
-    test('v1 when both present and whenBothFamilies preferV1', async () => {
-      mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(
-        new DidDocument({
-          context: ['https://w3id.org/did/v1'],
-          id: 'did:example:both',
-          service: [
-            new DidCommV1Service({
-              id: 'did:example:both#v1',
-              serviceEndpoint: 'https://v1.example',
-              recipientKeys: ['did:example:both#key-1'],
-            }),
-            new NewDidCommV2Service({
-              id: 'did:example:both#v2',
-              serviceEndpoint: new NewDidCommV2ServiceEndpoint({
-                uri: 'https://v2.example',
-                accept: ['didcomm/v2'],
-              }),
-            }),
-          ],
-        })
-      )
-      const result = await didCommDocumentService.getDidCommVersionFromDidDoc(
-        agentContext,
-        'did:example:both',
-        { whenBothFamilies: 'preferV1' }
-      )
-      expect(result.version).toBe('v1')
-      expect(result.matchedServiceIds).toEqual(['did:example:both#v1'])
-      expect(result.bothFamiliesPresent).toBeDefined()
+      expect(result.versions).toContain('v1')
+      expect(result.versions).toContain('v2')
+      expect(result.versions).toHaveLength(2)
     })
 
     test('throws when no DIDComm services are present', async () => {
@@ -341,7 +303,7 @@ describe('DidCommDocumentService', () => {
         })
       )
       await expect(
-        didCommDocumentService.getDidCommVersionFromDidDoc(agentContext, 'did:example:none')
+        didCommDocumentService.getSupportedDidCommVersionsFromDidDoc(agentContext, 'did:example:none')
       ).rejects.toThrow(/No DIDComm-compatible services found/)
     })
 
@@ -360,11 +322,11 @@ describe('DidCommDocumentService', () => {
         })
       )
       await expect(
-        didCommDocumentService.getDidCommVersionFromDidDoc(agentContext, 'did:example:frag#v2')
+        didCommDocumentService.getSupportedDidCommVersionsFromDidDoc(agentContext, 'did:example:frag#v2')
       ).rejects.toThrow(/No DIDComm service found for DID URL/)
     })
 
-    test('v2 when fragment selects only v2 service', async () => {
+    test('v2 only when fragment selects v2 service', async () => {
       mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(
         new DidDocument({
           context: ['https://w3id.org/did/v1'],
@@ -385,13 +347,11 @@ describe('DidCommDocumentService', () => {
           ],
         })
       )
-      const result = await didCommDocumentService.getDidCommVersionFromDidDoc(
+      const result = await didCommDocumentService.getSupportedDidCommVersionsFromDidDoc(
         agentContext,
         'did:example:frag#v2'
       )
-      expect(result.version).toBe('v2')
-      expect(result.matchedServiceIds).toEqual(['did:example:frag#v2'])
-      expect(result.bothFamiliesPresent).toBeUndefined()
+      expect(result.versions).toEqual(['v2'])
     })
   })
 })

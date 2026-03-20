@@ -129,7 +129,7 @@ export interface ReceiveOutOfBandImplicitInvitationConfig
   handshakeProtocols?: DidCommHandshakeProtocol[]
   /**
    * When set, forces the DIDComm version for the implicit invitation. When omitted, the version is
-   * resolved from the DID document via {@link DidCommDocumentService.getDidCommVersionFromDidDoc}
+   * resolved from the DID document via {@link DidCommDocumentService.getSupportedDidCommVersionsFromDidDoc}
    * (dual-stack docs default to v2). `handshakeProtocols` is ignored for v2.
    */
   didCommVersion?: 'v1' | 'v2'
@@ -549,8 +549,18 @@ export class DidCommOutOfBandApi {
     if (config.didCommVersion !== undefined) {
       didCommVersion = config.didCommVersion
     } else {
-      const result = await this.didCommDocumentService.getDidCommVersionFromDidDoc(this.agentContext, config.did)
-      didCommVersion = result.version
+      const { versions: didVersions } = await this.didCommDocumentService.getSupportedDidCommVersionsFromDidDoc(
+        this.agentContext,
+        config.did
+      )
+      const agentVersions = this.didCommModuleConfig.didcommVersions
+      const supported = didVersions.filter((v) => agentVersions.includes(v))
+      if (supported.length === 0) {
+        throw new CredoError(
+          `DID ${config.did} advertises DIDComm [${didVersions.join(', ')}] but this agent supports only [${agentVersions.join(', ')}]. Add a matching version to didcommVersions in DidCommModuleConfig.`
+        )
+      }
+      didCommVersion = supported.includes('v2') ? 'v2' : 'v1'
     }
     this.assertAgentSupportsDidCommVersion(didCommVersion)
 
