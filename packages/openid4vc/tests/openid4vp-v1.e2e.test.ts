@@ -1,11 +1,13 @@
-import type { DcqlQuery, MdocDeviceResponse, SdJwtVc, W3cV2SdJwtVerifiablePresentation } from '@credo-ts/core'
 import {
   asArray,
   ClaimFormat,
   DateOnly,
+  type DcqlQuery,
   Kms,
+  MdocDeviceResponse,
   MdocRecord,
   parseDid,
+  type SdJwtVc,
   SdJwtVcRecord,
   TypedArrayEncoder,
   W3cCredential,
@@ -16,6 +18,7 @@ import {
   W3cV2CredentialRecord,
   W3cV2CredentialSubject,
   W3cV2Issuer,
+  type W3cV2SdJwtVerifiablePresentation,
   w3cDate,
   X509ExtendedKeyUsage,
   X509KeyUsage,
@@ -592,6 +595,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const { dcql } = await verifierTenant1_2.modules.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession1.id
     )
+
     expect(dcql).toMatchObject({
       query: {
         credentials: [
@@ -618,6 +622,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         ],
       },
     })
+
     expect(
       asArray(
         (dcql?.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
@@ -2573,13 +2578,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const mdocPresentation = dcql?.presentations.university[0] as MdocDeviceResponse
     expect(mdocPresentation.deviceResponse.documents).toHaveLength(1)
 
-    const mdocResponse = mdocPresentation.deviceResponse.documents?.[0]
-
     // name SHOULD NOT be disclosed
-    expect(mdocResponse?.issuerSigned.issuerNamespaces.issuerNamespaces).toStrictEqual({
-      'eu.europa.ec.eudi.pid.1': {
-        degree: 'bachelor',
-        name: 'John Doe',
+    expect(mdocPresentation.issuerClaims).toStrictEqual({
+      'org.eu.university': {
+        'eu.europa.ec.eudi.pid.1': {
+          degree: 'bachelor',
+          name: 'John Doe',
+        },
       },
     })
 
@@ -2640,24 +2645,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
             },
           },
         ],
-        university: [
-          {
-            base64Url: expect.any(String),
-            documents: [
-              {
-                issuerSignedDocument: {
-                  docType: 'org.eu.university',
-                  issuerSigned: {
-                    nameSpaces: new Map([['eu.europa.ec.eudi.pid.1', [{}, {}]]]),
-                    issuerAuth: expect.any(Object),
-                  },
-                  deviceSigned: expect.any(Object),
-                },
-                base64Url: expect.any(String),
-              },
-            ],
-          },
-        ],
+        university: [expect.any(MdocDeviceResponse)],
       },
     })
   })
@@ -2995,11 +2983,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const presentation = dcql?.presentations.university?.[0] as MdocDeviceResponse
     expect(presentation.deviceResponse.documents).toHaveLength(1)
 
-    expect(presentation.deviceResponse.documents?.[0].issuerSigned.issuerNamespaces.issuerNamespaces).toEqual({
-      'eu.europa.ec.eudi.pid.1': {
-        date,
-        name: 'John Doe',
-        degree: 'bachelor',
+    expect(presentation.issuerClaims).toEqual({
+      'org.eu.university': {
+        'eu.europa.ec.eudi.pid.1': {
+          date,
+          name: 'John Doe',
+          degree: 'bachelor',
+        },
       },
     })
   })

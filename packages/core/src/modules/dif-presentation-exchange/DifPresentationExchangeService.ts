@@ -53,7 +53,6 @@ import {
   getSphereonOriginalVerifiablePresentation,
   getVerifiablePresentationFromEncoded,
 } from './utils'
-import { assertMdocInputDescriptor, inputDescriptorToDocumentRequest } from './utils/mdoc'
 
 /**
  * @todo create a public api for using dif presentation exchange
@@ -185,7 +184,6 @@ export class DifPresentationExchangeService {
     for (const presentationToCreate of presentationsToCreate) {
       // We create a presentation for each subject
       // Thus for each subject we need to filter all the related input descriptors and credentials
-      // FIXME: cast to V1, as tsc errors for strange reasons if not
       const inputDescriptorIds = presentationToCreate.verifiableCredentials.map((c) => c.inputDescriptorId)
       const inputDescriptorsForPresentation = (
         presentationDefinition as DifPresentationExchangeDefinitionV1
@@ -205,19 +203,18 @@ export class DifPresentationExchangeService {
             'Currently a Mdoc presentation can only be created from a single credential'
           )
         }
-        const mdocRecord = presentationToCreate.verifiableCredentials[0].credential
+
         if (!mdocSessionTranscript) {
           throw new DifPresentationExchangeError(
             'Missing mdoc session transcript options for creating MDOC presentation.'
           )
         }
 
-        const deviceResponse = await MdocDeviceResponse.createDeviceResponse(agentContext, {
-          mdocs: [mdocRecord.firstCredential],
-          documentRequests: (presentationDefinition.input_descriptors as InputDescriptorV2[])
-            .filter((id) => Object.keys(id.format ?? {}).includes('mso_mdoc'))
-            .map(assertMdocInputDescriptor)
-            .map(inputDescriptorToDocumentRequest),
+        const { credential, inputDescriptorId } = presentationToCreate.verifiableCredentials[0]
+
+        const deviceResponse = await MdocDeviceResponse.createDeviceResponseWithPresentationDefinition(agentContext, {
+          mdocs: [credential.firstCredential],
+          presentationDefinition,
           sessionTranscriptOptions: mdocSessionTranscript,
         })
 
@@ -234,7 +231,7 @@ export class DifPresentationExchangeService {
               definition_id: presentationDefinition.id,
               descriptor_map: [
                 {
-                  id: presentationDefinition.input_descriptors[0].id,
+                  id: inputDescriptorId,
                   format: 'mso_mdoc',
                   path: '$',
                 },

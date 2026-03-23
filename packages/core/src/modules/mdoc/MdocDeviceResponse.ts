@@ -7,6 +7,7 @@ import {
   DocRequest,
   Document,
   defaultVerificationCallback,
+  IssuerNamespaces,
   ItemsRequest,
   limitDisclosureToDeviceRequestNameSpaces,
   type MdocContext,
@@ -19,7 +20,7 @@ import {
   type Field,
   type PresentationDefinition,
 } from '@verifiables/request-converter'
-import type { AgentContext } from '../../agent'
+import { AgentContext } from '../../agent'
 import { TypedArrayEncoder } from './../../utils'
 import { PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc'
@@ -37,6 +38,14 @@ import type {
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
 import { nameSpacesRecordToMap } from './mdocUtil'
 import { convertDocumentRequest } from './utils/convertDocumentRequest'
+
+export type DeviceAndIssuerClaims = {
+  [docType: string]: {
+    [namespace: string]: {
+      [claimIdentifier: string]: unknown
+    }
+  }
+}
 
 export class MdocDeviceResponse {
   private constructor(public readonly deviceResponse: DeviceResponse) {}
@@ -115,24 +124,51 @@ export class MdocDeviceResponse {
   ) {
     const inputDescriptor = MdocDeviceResponse.assertMdocInputDescriptor(options.inputDescriptor)
 
-    // We take the first document request as we also only input a single input descriptor
-    const {
-      deviceRequest: {
-        docRequests: [convertedDocumentRequest],
-      },
-    } = convertPresentationDefinitionToDeviceRequest({
-      id: '<UNUSED_CREDO_ID>',
-      input_descriptors: [inputDescriptor],
-    })
+    let issuerNamespaces: IssuerNamespaces | undefined
 
-    const documentRequest = DocRequest.create({
-      itemsRequest: ItemsRequest.create({
-        docType: convertedDocumentRequest.itemsRequest.docType,
-        namespaces: convertedDocumentRequest.itemsRequest.nameSpaces,
-      }),
-    })
+    // First we try with all optional fields enabled, if that results in an error during the `limitDisclosureToDeviceRequestNameSpaces` call, we try again, skipping all optional fields
+    try {
+      // We take the first document request as we also only input a single input descriptor
+      const {
+        deviceRequest: {
+          docRequests: [convertedDocumentRequest],
+        },
+      } = convertPresentationDefinitionToDeviceRequest({
+        id: '<UNUSED_CREDO_ID>',
+        input_descriptors: [inputDescriptor],
+      })
 
-    const issuerNamespaces = limitDisclosureToDeviceRequestNameSpaces(mdoc.issuerSigned, documentRequest)
+      const documentRequest = DocRequest.create({
+        itemsRequest: ItemsRequest.create({
+          docType: convertedDocumentRequest.itemsRequest.docType,
+          namespaces: convertedDocumentRequest.itemsRequest.nameSpaces,
+        }),
+      })
+
+      issuerNamespaces = limitDisclosureToDeviceRequestNameSpaces(mdoc.issuerSigned, documentRequest)
+    } catch (_error) {
+      // We take the first document request as we also only input a single input descriptor
+      const {
+        deviceRequest: {
+          docRequests: [convertedDocumentRequest],
+        },
+      } = convertPresentationDefinitionToDeviceRequest(
+        {
+          id: '<UNUSED_CREDO_ID>',
+          input_descriptors: [inputDescriptor],
+        },
+        { skipOptionalFields: true }
+      )
+
+      const documentRequest = DocRequest.create({
+        itemsRequest: ItemsRequest.create({
+          docType: convertedDocumentRequest.itemsRequest.docType,
+          namespaces: convertedDocumentRequest.itemsRequest.nameSpaces,
+        }),
+      })
+
+      issuerNamespaces = limitDisclosureToDeviceRequestNameSpaces(mdoc.issuerSigned, documentRequest)
+    }
 
     const disclosedPayloadAsRecord = Object.fromEntries(
       Array.from(issuerNamespaces.issuerNamespaces.entries()).map(([namespace, issuerSignedItem]) => [
@@ -359,5 +395,41 @@ export class MdocDeviceResponse {
     }
 
     return signatureAlgorithm
+  }
+
+  public get issuerClaims(): DeviceAndIssuerClaims {
+    if (!this.deviceResponse.documents) return {}
+
+    return this.deviceResponse.documents.reduce(
+      (prev, document) => ({
+        // biome-ignore lint/performance/noAccumulatingSpread: time complexity is not relevant here
+        ...prev,
+        [document.docType]: Object.fromEntries(
+          Array.from(document.issuerSigned.issuerNamespaces.issuerNamespaces.entries()).map(([namespace, claim]) => [
+            namespace,
+            Object.fromEntries(claim.map((c) => [c.elementIdentifier, c.elementValue])),
+          ])
+        ),
+      }),
+      {}
+    )
+  }
+
+  public get deviceClaims(): DeviceAndIssuerClaims {
+    if (!this.deviceResponse.documents) return {}
+
+    return this.deviceResponse.documents.reduce(
+      (prev, document) => ({
+        // biome-ignore lint/performance/noAccumulatingSpread: time complexity is not relevant here
+        ...prev,
+        [document.docType]: Object.fromEntries(
+          Array.from(document.deviceSigned.deviceNamespaces.deviceNamespaces.entries()).map(([namespace, claim]) => [
+            namespace,
+            Object.fromEntries(claim.deviceSignedItems),
+          ])
+        ),
+      }),
+      {}
+    )
   }
 }

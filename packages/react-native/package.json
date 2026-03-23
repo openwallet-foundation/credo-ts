@@ -35,6 +35,7 @@
   "devDependencies": {
     "react-native": "^0.83.1",
     "react-native-fs": "^2.20.0",
+    "@dr.pogodin/react-native-fs": "^2.37.0",
     "react-native-get-random-values": "^2.0.0",
     "typescript": "catalog:"
   },
@@ -42,11 +43,18 @@
     "@animo-id/expo-secure-environment": "^0.1.1",
     "expo-crypto": "^15.0.7",
     "react-native": ">=0.71.4",
-    "react-native-fs": "^2.20.0",
+    "@dr.pogodin/react-native-fs": ">= 2.37.0",
+    "react-native-fs": ">= 2",
     "react-native-get-random-values": ">=1.11.0 <3.0.0"
   },
   "peerDependenciesMeta": {
     "@animo-id/expo-secure-environment": {
+      "optional": true
+    },
+    "react-native-fs": {
+      "optional": true
+    },
+    "@dr.pogodin/react-native-fs": {
       "optional": true
     }
   }
