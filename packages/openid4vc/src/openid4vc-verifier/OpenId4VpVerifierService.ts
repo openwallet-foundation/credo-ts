@@ -1220,7 +1220,7 @@ export class OpenId4VpVerifierService {
             X509Certificate.fromRawCertificate(cert)
           )
 
-          const trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+          let trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
             certificateChain,
             verification: {
               type: 'credential',
@@ -1228,6 +1228,10 @@ export class OpenId4VpVerifierService {
               openId4VcVerificationSessionId: options.verificationSessionId,
             },
           })
+
+          if (!trustedCertificates) {
+            trustedCertificates = x509Config.trustedCertificates ?? []
+          }
 
           let sessionTranscriptOptions: MdocSessionTranscriptOptions
           if (options.origin && options.version === 'v1') {

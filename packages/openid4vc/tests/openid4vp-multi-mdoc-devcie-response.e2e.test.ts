@@ -87,6 +87,7 @@ describe('OpenId4Vc', () => {
         })
       ).publicJwk
     )
+
     const mdocTwo = await verifier.agent.mdoc.sign({
       docType: 'two',
       holderKey: holderKey2,
@@ -153,6 +154,16 @@ describe('OpenId4Vc', () => {
         { docType: 'one', nameSpaces: { one: { name: false } } },
         { docType: 'two', nameSpaces: { two: { notName: false } } },
       ],
+    })
+
+    await deviceResponse.verify(verifier.agent.context, {
+      trustedCertificates: [certificate.toString('pem')],
+      sessionTranscriptOptions: {
+        type: 'openId4VpDcApiDraft24',
+        clientId: verificationSession.requestPayload.client_id as string,
+        origin: 'https://credo.com',
+        verifierGeneratedNonce: verificationSession.requestPayload.nonce,
+      },
     })
 
     const verified = await verifier.agent.openid4vc.verifier.verifyAuthorizationResponse({
