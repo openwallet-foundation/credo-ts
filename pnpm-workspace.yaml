@@ -12,7 +12,7 @@ catalog:
   '@hyperledger/anoncreds-shared': ^0.3.4
   '@hyperledger/indy-vdr-nodejs': ^0.2.4
   '@hyperledger/indy-vdr-shared': ^0.2.4
-  '@openwallet-foundation/askar-nodejs': ^0.4.3
+  '@openwallet-foundation/askar-nodejs': ^0.6.0
   '@openwallet-foundation/askar-shared': ^0.4.3
   '@peculiar/x509': ^1.14.3
   '@sphereon/pex-models': ^2.3.2
