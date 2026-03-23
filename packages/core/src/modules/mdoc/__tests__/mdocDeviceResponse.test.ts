@@ -22,7 +22,7 @@ describe('mdoc device-response test', () => {
     await agent.initialize()
   })
 
-  test.only('can limit the disclosure', async () => {
+  test('can limit the disclosure', async () => {
     const holderKey = await agent.kms.createKey({
       type: {
         kty: 'EC',
@@ -153,15 +153,17 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
 
     const deviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponseBase64url)
 
-    await deviceResponse.verify(agent.context, {
-      trustedCertificates: [rootCertificate],
-      now: new Date('2025-04-04'),
-      sessionTranscriptOptions: {
-        type: 'openId4VpDcApiDraft24',
-        clientId: 'x509_san_dns:7f95-217-123-18-26.ngrok-free.app',
-        origin: 'https://0663-217-123-18-26.ngrok-free.app',
-        verifierGeneratedNonce: '121784205639044947422645',
-      },
-    })
+    await expect(
+      deviceResponse.verify(agent.context, {
+        trustedCertificates: [rootCertificate],
+        now: new Date('2025-04-04'),
+        sessionTranscriptOptions: {
+          type: 'openId4VpDcApiDraft24',
+          clientId: 'x509_san_dns:7f95-217-123-18-26.ngrok-free.app',
+          origin: 'https://0663-217-123-18-26.ngrok-free.app',
+          verifierGeneratedNonce: '121784205639044947422645',
+        },
+      })
+    ).resolves.toBeUndefined()
   })
 })

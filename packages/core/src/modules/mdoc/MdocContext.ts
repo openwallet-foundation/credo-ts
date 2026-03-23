@@ -1,7 +1,7 @@
 import { p256 } from '@noble/curves/nist.js'
 import { hkdf } from '@noble/hashes/hkdf.js'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { CoseKey, type MdocContext } from '@owf/mdoc'
+import { CoseKey, coseKeyToJwk, type MdocContext } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, Hasher } from '../../crypto'
 import { TypedArrayEncoder } from '../../utils'
@@ -62,7 +62,7 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
           const { signature } = await kms.sign({
             data: input.toBeAuthenticated,
             // FIXME: input needs to provide the algorithm
-            algorithm: input.key.algorithm as KnownJwaSignatureAlgorithm,
+            algorithm: input.key.algorithm as unknown as KnownJwaSignatureAlgorithm,
             keyId: input.key.keyId,
           })
 
@@ -93,7 +93,7 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
 
           const { signature } = await kms.sign({
             data: input.toBeSigned,
-            algorithm: input.key.algorithm as KnownJwaSignatureAlgorithm,
+            algorithm: coseKeyToJwk.algorithm(input.algorithm),
             keyId: input.key.keyId,
           })
 
@@ -133,7 +133,7 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
         await X509Service.validateCertificateChain(agentContext, {
           certificateChain,
           trustedCertificates,
-          verificationDate: now,
+          verificationDate: input.now ?? now,
         })
       },
       getCertificateData: async (input) => {

@@ -664,7 +664,7 @@ export class OpenId4VpVerifierService {
         )
 
         const errorMessages = presentationVerificationResults
-          .map((result, index) => (!result.verified ? `\t- [${index}]: ${result.reason}` : undefined))
+          .map((result, index) => (!result.verified ? `\t- [${index}]: ${result.reason} - ${result.cause}` : undefined))
           .filter((i) => i !== undefined)
         if (errorMessages.length > 0) {
           throw new Oauth2ServerErrorResponseError(
@@ -1147,7 +1147,7 @@ export class OpenId4VpVerifierService {
         presentation: VerifiablePresentation
         transactionData?: TransactionDataHashesCredentials[string]
       }
-    | { verified: false; reason: string }
+    | { verified: false; reason: string; cause?: Error }
   > {
     const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
     const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
@@ -1338,6 +1338,7 @@ export class OpenId4VpVerifierService {
       return {
         verified: false,
         reason: error.message,
+        cause: error.cause,
       }
     }
   }

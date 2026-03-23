@@ -150,6 +150,7 @@ describe('mdoc device-response openid4vp test', () => {
         docType: 'org.iso.18013.5.1.mDL',
         validityInfo: {
           signed: new Date('2023-10-24'),
+          validFrom: new Date('2023-10-24'),
           validUntil: new Date('2050-10-24'),
         },
         holderKey: deviceKeyPublicJwk,
@@ -219,17 +220,18 @@ describe('mdoc device-response openid4vp test', () => {
 
     it('should be verifiable', async () => {
       const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponse)
-      const res = await mdocDeviceResponse.verify(agent.context, {
-        trustedCertificates: [ISSUER_CERTIFICATE_P256],
-        sessionTranscriptOptions: {
-          type: 'openId4VpDraft18',
-          clientId,
-          responseUri,
-          verifierGeneratedNonce,
-          mdocGeneratedNonce,
-        },
-      })
-      expect(res).toHaveLength(1)
+      await expect(
+        mdocDeviceResponse.verify(agent.context, {
+          trustedCertificates: [ISSUER_CERTIFICATE_P256],
+          sessionTranscriptOptions: {
+            type: 'openId4VpDraft18',
+            clientId,
+            responseUri,
+            verifierGeneratedNonce,
+            mdocGeneratedNonce,
+          },
+        })
+      ).resolves.toBeUndefined()
     })
 
     describe('should not be verifiable', () => {
@@ -258,9 +260,7 @@ describe('mdoc device-response openid4vp test', () => {
             })
             throw new Error('should not validate with different transcripts')
           } catch (error) {
-            expect((error as Error).message).toMatch(
-              'Unable to verify deviceAuth signature (ECDSA/EdDSA): Device signature must be valid'
-            )
+            expect((error as Error).message).toMatch('Mdoc with doctype org.iso.18013.5.1.mDL is not valid')
           }
         })
       }
@@ -274,11 +274,12 @@ describe('mdoc device-response openid4vp test', () => {
     })
 
     it('should contain the device namespaces', () => {
-      expect(parsedDeviceResponse.deviceResponse.documents?.[0].deviceSigned.deviceNamespaces).toEqual({
-        'com.foobar-device': {
-          test: 1234,
-        },
-      })
+      expect(
+        Array.from(
+          parsedDeviceResponse.deviceResponse.documents?.[0].deviceSigned.deviceNamespaces.deviceNamespaces.entries() ??
+            []
+        ).map(([namespace, value]) => [namespace, Array.from(value.deviceSignedItems.entries())])
+      ).toEqual([['com.foobar-device', [['test', 1234]]]])
     })
   })
 

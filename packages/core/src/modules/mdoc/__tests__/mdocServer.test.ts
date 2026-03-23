@@ -36,7 +36,7 @@ describe('mdoc service test', () => {
     expect(deviceKey?.fingerprint).toBe('zDnaeq8nbXthvXNTYAzxdyvdWXgm5ev5xLEUtjZpfj1YtQ5g2')
   })
 
-  test.only('can create and verify mdoc', async () => {
+  test('can create and verify mdoc', async () => {
     const holderKey = await kms.createKey({
       type: {
         kty: 'EC',
@@ -197,9 +197,7 @@ describe('mdoc service test', () => {
         },
         trustedCertificates: [certificate.toString('pem')],
       })
-    ).rejects.toThrow(
-      "Mdoc at index 0 is not valid. Country name (C) must be present in the issuer certificate's subject distinguished name"
-    )
+    ).rejects.toThrow('Mdoc with doctype org.iso.18013.5.1.mDL is not valid')
   })
 
   test('can decode claims from namespaces', async () => {

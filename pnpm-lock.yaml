@@ -536,8 +536,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       '@owf/mdoc':
-        specifier: ^0.6.0-alpha-20260320132530
-        version: 0.6.0-alpha-20260320132530
+        specifier: ^0.6.0-alpha-20260323111323
+        version: 0.6.0-alpha-20260323111323
       '@peculiar/asn1-ecc':
         specifier: ^2.6.0
         version: 2.6.0
@@ -3141,8 +3141,8 @@ packages:
   '@openwallet-foundation/askar-shared@0.4.3':
     resolution: {integrity: sha512-Zt9zlvjJxNs8UWlnRydZH594Lak15YPHY72VT1+iDbXh0OjTdyq6Bf0FIsh9sfFnRYIgh2zd8+VoXxZ07GjADA==}
 
-  '@owf/mdoc@0.6.0-alpha-20260320132530':
-    resolution: {integrity: sha512-kCoTCzVMrovH4eEjoNU6ZjS19AxBhsW8N2/UP1xHxdAHrEsF/E36fR7Y8GRLThGC1stabBuGVKsp3a3c9X19EA==}
+  '@owf/mdoc@0.6.0-alpha-20260323111323':
+    resolution: {integrity: sha512-CwmuQxwvRSLNFeL2Jyk9f3JWk6GuLzIgwn9cgGnran1EnpKWnBHn0gHw/ivZPJvgliSIVR59AtzZ5NnXFa0nkA==}
 
   '@oxc-project/runtime@0.101.0':
     resolution: {integrity: sha512-t3qpfVZIqSiLQ5Kqt/MC4Ge/WCOGrrcagAdzTcDaggupjiGxUx4nJF2v6wUCXWSzWHn5Ns7XLv13fCJEwCOERQ==}
@@ -11316,7 +11316,7 @@ snapshots:
       buffer: 6.0.3
       tar: 7.5.7
 
-  '@owf/mdoc@0.6.0-alpha-20260320132530':
+  '@owf/mdoc@0.6.0-alpha-20260323111323':
     dependencies:
       cbor-x: 1.6.0
       zod: 4.3.6

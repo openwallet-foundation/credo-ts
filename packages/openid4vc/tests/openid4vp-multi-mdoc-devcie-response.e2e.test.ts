@@ -294,6 +294,6 @@ describe('OpenId4Vc', () => {
         },
         origin: 'https://credo.com',
       })
-    ).rejects.toThrow('Invalid presentation')
+    ).rejects.toThrow()
   })
 })

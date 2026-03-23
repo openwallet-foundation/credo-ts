@@ -1,4 +1,3 @@
-import type { MdocContext } from '@owf/mdoc'
 import {
   CoseKey,
   DeviceNamespaces,
@@ -9,6 +8,8 @@ import {
   Document,
   defaultVerificationCallback,
   ItemsRequest,
+  limitDisclosureToDeviceRequestNameSpaces,
+  type MdocContext,
   SessionTranscript,
 } from '@owf/mdoc'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
@@ -109,53 +110,35 @@ export class MdocDeviceResponse {
   }
 
   public static async limitDisclosureToInputDescriptor(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     { mdoc, ...options }: { inputDescriptor: InputDescriptorV2; mdoc: Mdoc }
   ) {
     const inputDescriptor = MdocDeviceResponse.assertMdocInputDescriptor(options.inputDescriptor)
 
-    const { deviceRequest } = convertPresentationDefinitionToDeviceRequest({
+    // We take the first document request as we also only input a single input descriptor
+    const {
+      deviceRequest: {
+        docRequests: [convertedDocumentRequest],
+      },
+    } = convertPresentationDefinitionToDeviceRequest({
       id: '<UNUSED_CREDO_ID>',
       input_descriptors: [inputDescriptor],
     })
 
-    const deviceRequestForDocument = DeviceRequest.create({
-      version: '1.0',
-      docRequests: deviceRequest.docRequests
-        .filter((request) => request.itemsRequest.docType === mdoc.docType)
-        .map((request) =>
-          DocRequest.create({
-            itemsRequest: ItemsRequest.create({
-              docType: request.itemsRequest.docType,
-              namespaces: nameSpacesRecordToMap(request.itemsRequest.nameSpaces),
-            }),
-          })
-        ),
+    const documentRequest = DocRequest.create({
+      itemsRequest: ItemsRequest.create({
+        docType: convertedDocumentRequest.itemsRequest.docType,
+        namespaces: convertedDocumentRequest.itemsRequest.nameSpaces,
+      }),
     })
 
-    const mdocContext = getMdocContext(agentContext)
-    const deviceResponse = await DeviceResponse.createWithDeviceRequest(
-      {
-        deviceRequest: deviceRequestForDocument,
-        issuerSigned: [mdoc.issuerSigned],
-        sessionTranscript: new Uint8Array([0]),
-      },
-      mdocContext
-    )
-
-    const [document] = deviceResponse.documents ?? []
-
-    if (!document) {
-      throw new MdocError('Could not limit the disclosure for the input descriptor')
-    }
+    const issuerNamespaces = limitDisclosureToDeviceRequestNameSpaces(mdoc.issuerSigned, documentRequest)
 
     const disclosedPayloadAsRecord = Object.fromEntries(
-      Array.from(document.issuerSigned.issuerNamespaces.issuerNamespaces.entries()).map(
-        ([namespace, issuerSignedItem]) => [
-          namespace,
-          Object.fromEntries(issuerSignedItem.map((isi) => [isi.elementIdentifier, isi.elementValue])),
-        ]
-      )
+      Array.from(issuerNamespaces.issuerNamespaces.entries()).map(([namespace, issuerSignedItem]) => [
+        namespace,
+        Object.fromEntries(issuerSignedItem.map((isi) => [isi.elementIdentifier, isi.elementValue])),
+      ])
     )
 
     return disclosedPayloadAsRecord

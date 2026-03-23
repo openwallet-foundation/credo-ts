@@ -1,4 +1,4 @@
-import { DeviceKey, Holder, Issuer, IssuerSigned, SignatureAlgorithm } from '@owf/mdoc'
+import { DeviceKey, DeviceKeyInfo, Holder, Issuer, IssuerSigned, SignatureAlgorithm } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
@@ -95,7 +95,7 @@ export class Mdoc {
     return Object.fromEntries(
       Array.from(this.issuerSigned.issuerNamespaces.issuerNamespaces.entries()).map(([namespace, value]) => [
         namespace,
-        Object.fromEntries(Array.from(value.entries())),
+        Object.fromEntries(Array.from(value.values()).map((v) => [v.elementIdentifier, v.elementValue])),
       ])
     )
   }
@@ -132,7 +132,7 @@ export class Mdoc {
       },
       algorithm: SignatureAlgorithm[alg],
       certificate: issuerCertificate.rawCertificate,
-      deviceKeyInfo: { deviceKey: DeviceKey.fromJwk(holderKey.toJson()) },
+      deviceKeyInfo: DeviceKeyInfo.create({ deviceKey: DeviceKey.fromJwk(holderKey.toJson()) }),
       signingKey: issuerKey.toJson(),
     })
 
