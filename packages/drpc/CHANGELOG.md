@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0
+
+### Patch Changes
+
+- fdfda9a: fix(drpc): expose listener timeout parameter
+- Updated dependencies [9f9c815]
+  - @credo-ts/core@0.6.0
+
 ## 0.5.19
 
 ### Patch Changes
