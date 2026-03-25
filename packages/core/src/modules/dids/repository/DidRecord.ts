@@ -3,9 +3,10 @@ import { IsEnum, ValidateNested } from 'class-validator'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { Ed25519PublicJwk, X25519PublicJwk } from '../../kms'
+import { Ed25519PublicJwk, type PublicJwk, X25519PublicJwk } from '../../kms'
 import type { DidDocumentKey } from '../DidsApiOptions'
 import { DidDocument } from '../domain'
+import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { parseDid } from '../domain/parse'
 import type { DidRecordMetadata } from './didRecordMetadataTypes'
@@ -94,15 +95,21 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
       methodSpecificIdentifier: did.id,
 
       // Calculate if we have a did document, otherwise use the already present recipient keys
-      // Include both Ed25519 and X25519 fingerprints for Ed25519 keys so DIDComm v2 lookup works
-      // (v2 returns X25519 keys; DidRecords store Ed25519 from did:peer:1)
+      // Include both Ed25519 and X25519 fingerprints so DIDComm v2 inbound decrypt works:
+      // - peers may use Ed25519 did:key as JWE kid while the document lists X25519 in keyAgreement only
+      // - v2 unpack may resolve X25519 while DidRecords were tagged only from Ed25519 (did:peer:1)
       recipientKeyFingerprints: this.didDocument
         ? (() => {
             const prints = new Set<string>()
-            for (const recipientKey of this.didDocument!.recipientKeys) {
+            const doc = this.didDocument!
+            for (const recipientKey of doc.recipientKeys) {
               prints.add(recipientKey.fingerprint)
               if (recipientKey.is(Ed25519PublicJwk)) {
                 prints.add(recipientKey.convertTo(X25519PublicJwk).fingerprint)
+              }
+              if (recipientKey.is(X25519PublicJwk)) {
+                const paired = findMatchingEd25519Key(recipientKey as PublicJwk<X25519PublicJwk>, doc)
+                if (paired) prints.add(paired.publicJwk.fingerprint)
               }
             }
             return [...prints]

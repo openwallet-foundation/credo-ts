@@ -159,6 +159,30 @@ export class DidCommV2KeyResolver {
         if (!(err instanceof RecordNotFoundError)) throw err
       }
 
+      // Raw base58 kid is ambiguous: could be X25519 bytes misidentified as Ed25519 above.
+      // Retry with X25519 interpretation before falling through to mediator/OOB lookups.
+      if (publicJwk.is(Kms.Ed25519PublicJwk) && !kid.startsWith('did:') && !kid.startsWith('z')) {
+        try {
+          const x25519Jwk = Kms.PublicJwk.fromPublicKey({
+            kty: 'OKP',
+            crv: 'X25519',
+            publicKey: publicJwk.publicKey.publicKey,
+          })
+          const { didDocument, keys } =
+            await this.didcommDocumentService.resolveCreatedDidDocumentWithKeysByRecipientKey(agentContext, x25519Jwk)
+          const verificationMethod = didDocument.findVerificationMethodByPublicKey(x25519Jwk)
+          const kmsKeyId =
+            keys?.find(({ didDocumentRelativeKeyId }) =>
+              verificationMethod?.id.endsWith(didDocumentRelativeKeyId ?? '')
+            )?.kmsKeyId
+          const keyId = kmsKeyId ?? x25519Jwk.legacyKeyId
+          x25519Jwk.keyId = keyId
+          return { recipientKey: x25519Jwk as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }, matchedKid: kid }
+        } catch (err) {
+          if (!(err instanceof RecordNotFoundError)) throw err
+        }
+      }
+
       const mediatorRoutingRepository = agentContext.dependencyManager.resolve(DidCommMediatorRoutingRepository)
       let mediatorRoutingRecord
       try {

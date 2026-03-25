@@ -3,6 +3,7 @@ import {
   type AgentContextProvider,
   CredoError,
   DidKey,
+  DidsApi,
   InjectionSymbols,
   inject,
   injectable,
@@ -10,6 +11,7 @@ import {
   JsonTransformer,
   Kms,
   type Logger,
+  RecordDuplicateError,
 } from '@credo-ts/core'
 import { DidCommDispatcher } from './DidCommDispatcher'
 import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
@@ -187,8 +189,21 @@ export class DidCommMessageReceiver {
           const to = Array.isArray(plaintextMessage.to) ? plaintextMessage.to : undefined
           const ourDid = to?.[0] ?? connection.did
           if (ourDid) {
-            const keyRef = recipientKey.is(Kms.X25519PublicJwk) ? '#key-2' : '#key-1'
-            keys.senderKeySkid = `${ourDid}${keyRef}`
+            // Find the actual verification method ID in our DID document that matches
+            // the recipientKey, rather than assuming peer DID fragment conventions.
+            const dids = agentContext.resolve(DidsApi)
+            try {
+              const { didDocument: ourDoc } = await dids.resolveCreatedDidDocumentWithKeys(ourDid)
+              const vm = ourDoc.findVerificationMethodByPublicKey(recipientKey)
+              if (vm) {
+                const vmId = vm.id.startsWith('did:') ? vm.id : `${ourDoc.id}${vm.id.startsWith('#') ? '' : '#'}${vm.id}`
+                keys.senderKeySkid = vmId
+              } else {
+                keys.senderKeySkid = new DidKey(recipientKey).did
+              }
+            } catch {
+              keys.senderKeySkid = new DidKey(recipientKey).did
+            }
           }
         } else {
           // Connectionless: use did:key so recipient can resolve via tryParseKidAsPublicJwk
@@ -309,7 +324,32 @@ export class DidCommMessageReceiver {
     const to = Array.isArray(plaintextMessage.to) ? plaintextMessage.to : undefined
 
     if (from !== undefined) {
-      let connection = await this.connectionService.findByTheirDid(agentContext, from)
+      // v2 plaintext includes `to` (our DIDs). Multiple connections can share the same `theirDid`
+      // (e.g. several implicit sessions to one did:web); disambiguate with (ourDid, theirDid).
+      if (to?.length) {
+        const byPair = await this.connectionService.findByDids(agentContext, {
+          ourDid: to[0],
+          theirDid: from,
+        })
+        if (byPair) return byPair
+      }
+
+      let connection: DidCommConnectionRecord | null = null
+      try {
+        connection = await this.connectionService.findByTheirDid(agentContext, from)
+      } catch (error) {
+        if (error instanceof RecordDuplicateError) {
+          const candidates = await this.connectionService.findAllByQuery(agentContext, { theirDid: from })
+          if (to?.length) {
+            connection = candidates.find((c) => c.did === to[0]) ?? null
+          }
+          if (!connection && candidates.length === 1) {
+            connection = candidates[0]
+          }
+        } else {
+          throw error
+        }
+      }
       if (connection) return connection
 
       // Fallback: try findByKeys. With v1 connections + v2 envelope, findByTheirDid can fail in edge cases.

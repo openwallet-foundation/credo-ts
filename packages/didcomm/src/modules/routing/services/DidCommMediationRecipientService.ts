@@ -96,6 +96,7 @@ export class DidCommMediationRecipientService {
     agentContext: AgentContext,
     connection: DidCommConnectionRecord
   ): Promise<MediationProtocolMsgReturnType<MediateRequestMessage>> {
+    console.log('inside createRequestV2')
     const message = new MediateRequestMessage({})
 
     const mediationRecord = new DidCommMediationRecord({

@@ -215,6 +215,59 @@ describe('DidCommDocumentService', () => {
       expect(resolved[0].routingKeys[0].equals(ed25519Key)).toBe(true)
       expect(resolved).toHaveLength(1)
     })
+
+    test('resolves NewDidCommV2Service routingKeys for mediation (DIDCommMessaging endpoint)', async () => {
+      const publicKeyBase58Ed25519 = 'GyYtYWU1vjwd5PFJM4VSX5aUiSV3TyZMuLBJBTQvfdF8'
+      const publicKeyBase58X25519 = 'S3AQEEKkGYrrszT9D55ozVVX2XixYp8uynqVm4okbud'
+
+      const Ed25519VerificationMethod: VerificationMethod = {
+        type: 'Ed25519VerificationKey2018',
+        controller: 'did:example:mobile',
+        id: 'did:example:mobile#key-1',
+        publicKeyBase58: publicKeyBase58Ed25519,
+      }
+      const X25519VerificationMethod: VerificationMethod = {
+        type: 'X25519KeyAgreementKey2019',
+        controller: 'did:example:mobile',
+        id: 'did:example:mobile#key-agreement-1',
+        publicKeyBase58: publicKeyBase58X25519,
+      }
+
+      const holderDoc = new DidDocument({
+        context: [
+          'https://w3id.org/did/v1',
+          'https://w3id.org/security/suites/ed25519-2018/v1',
+          'https://w3id.org/security/suites/x25519-2019/v1',
+        ],
+        id: 'did:example:mobile',
+        verificationMethod: [Ed25519VerificationMethod, X25519VerificationMethod],
+        authentication: [Ed25519VerificationMethod.id],
+        keyAgreement: [X25519VerificationMethod.id],
+        service: [
+          new NewDidCommV2Service({
+            id: 'did:example:mobile#dm',
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+              uri: 'wss://mediator.example/didcomm',
+              accept: ['didcomm/v2'],
+              routingKeys: [Ed25519VerificationMethod.id],
+            }),
+          }),
+        ],
+      })
+
+      mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(holderDoc)
+
+      const resolved = await didCommDocumentService.resolveServicesFromDid(agentContext, 'did:example:mobile')
+      expect(resolved).toHaveLength(1)
+      expect(resolved[0].serviceEndpoint).toEqual('wss://mediator.example/didcomm')
+      expect(resolved[0].routingKeys).toHaveLength(1)
+      const ed25519Key = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'Ed25519',
+        publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58Ed25519),
+      })
+      expect(resolved[0].routingKeys[0].equals(ed25519Key)).toBe(true)
+    })
   })
 
   describe('getSupportedDidCommVersionsFromDidDoc', () => {

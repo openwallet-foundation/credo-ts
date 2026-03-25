@@ -7,6 +7,7 @@ import {
   DidKey,
   didKeyToVerkey,
   EventEmitter,
+  getAlternativeDidsForNumAlgo4Did,
   getEd25519VerificationKey2018,
   InjectionSymbols,
   inject,
@@ -137,6 +138,48 @@ export class DidCommMediatorService {
     return did
   }
 
+  /**
+   * When forward `next` does not match any keylist entry, log a snapshot of granted mediators
+   * so operators can compare `forward.next` / recipientDid with stored `recipientDids`.
+   */
+  private async logForwardRecipientLookupDiagnostics(
+    agentContext: AgentContext,
+    recipientKey: string,
+    recipientDid: string
+  ): Promise<void> {
+    const truncate = (s: string, max = 200) => (s.length <= max ? s : `${s.slice(0, max - 1)}…`)
+
+    try {
+      const all = await this.mediationRepository.getAll(agentContext)
+      const mediators = all.filter((r) => r.role === DidCommMediationRole.Mediator)
+      const granted = mediators.filter((r) => r.state === DidCommMediationState.Granted)
+      const summarizeDids = (dids: string[] | undefined) =>
+        (dids ?? []).map((d) => (d.length > 120 ? `${d.slice(0, 118)}…` : d))
+
+      this.logger.error(
+        'Forward routing: no MediationRecord for recipient. Compare forward `next` with CM2 keylist `recipient_did` values below.',
+        {
+          lookedUpRecipientKey: truncate(recipientKey),
+          lookedUpRecipientDid: truncate(recipientDid),
+          totalMediationRecords: all.length,
+          mediatorRoleRecords: mediators.length,
+          grantedMediatorRecords: granted.length,
+          grantedKeylists: granted.map((r) => ({
+            mediationRecordId: r.id,
+            connectionId: r.connectionId,
+            mediationProtocolVersion: r.mediationProtocolVersion,
+            recipientDids: summarizeDids(r.recipientDids),
+            recipientKeysCount: r.recipientKeys?.length ?? 0,
+          })),
+        }
+      )
+    } catch (diagErr) {
+      this.logger.error('Forward routing: lookup failed; could not collect mediation diagnostics', {
+        cause: diagErr instanceof Error ? diagErr.message : diagErr,
+      })
+    }
+  }
+
   public async processForwardMessage(
     messageContext: DidCommInboundMessageContext<DidCommForwardMessage | DidCommForwardMessageV2>
   ): Promise<void> {
@@ -174,7 +217,14 @@ export class DidCommMediatorService {
       mediationRecord = await this.mediationRepository.getSingleByRecipientKey(agentContext, recipientKey)
     } catch (err) {
       if (err instanceof RecordNotFoundError) {
-        mediationRecord = await this.mediationRepository.getSingleByRecipientDid(agentContext, recipientDid)
+        try {
+          mediationRecord = await this.mediationRepository.getSingleByRecipientDid(agentContext, recipientDid)
+        } catch (err2) {
+          if (err2 instanceof RecordNotFoundError) {
+            await this.logForwardRecipientLookupDiagnostics(agentContext, recipientKey, recipientDid)
+          }
+          throw err2
+        }
       } else {
         throw err
       }
@@ -400,9 +450,16 @@ export class DidCommMediatorService {
       let result = KeylistUpdateResultV2.NoChange
       if (update.action === KeylistUpdateActionV2.add) {
         mediationRecord.addRecipientDid(update.recipientDid)
+        // Also index short did:peer:4 form when the client sends long form so forward(next) queries hit exact tags.
+        const peer4Short = getAlternativeDidsForNumAlgo4Did(update.recipientDid)
+        peer4Short?.forEach((d) => mediationRecord.addRecipientDid(d))
         result = KeylistUpdateResultV2.Success
       } else if (update.action === KeylistUpdateActionV2.remove) {
-        const success = mediationRecord.removeRecipientDid(update.recipientDid)
+        let success = mediationRecord.removeRecipientDid(update.recipientDid)
+        const peer4Short = getAlternativeDidsForNumAlgo4Did(update.recipientDid)
+        peer4Short?.forEach((d) => {
+          if (mediationRecord.removeRecipientDid(d)) success = true
+        })
         result = success ? KeylistUpdateResultV2.Success : KeylistUpdateResultV2.NoChange
       }
       updated.push({ recipientDid: update.recipientDid, action: update.action, result })

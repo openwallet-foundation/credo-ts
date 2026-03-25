@@ -98,7 +98,6 @@ describe('out of band implicit', () => {
       aliceAgent.didcomm.oob.receiveImplicitInvitation({
         did: inMemoryDid,
         didCommVersion: 'v2',
-        label: 'Custom Alice',
         handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
       })
     ).rejects.toThrow(/handshakeProtocols cannot be used with DIDComm v2/)

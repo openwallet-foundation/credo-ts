@@ -6,6 +6,8 @@ import {
   DidRecord,
   DidRepository,
   DidResolverService,
+  didToNumAlgo2DidDocument,
+  didToNumAlgo4DidDocument,
   findMatchingEd25519Key,
   getPublicJwkFromVerificationMethod,
   IndyAgentService,
@@ -19,6 +21,7 @@ import {
 } from '@credo-ts/core'
 
 export interface GetSupportedDidCommVersionsFromDidDocResult {
+  /** All DIDComm versions advertised by the DID document (v1, v2, or both). */
   versions: ('v1' | 'v2')[]
 }
 
@@ -87,6 +90,73 @@ export class DidCommDocumentService {
     if (hasV2) versions.push('v2')
 
     return { versions }
+  }
+
+  /**
+   * Resolve DIDComm v1-style routing key references (VM ids / did#fragment) to Ed25519 JWKS for Forward / packV2WithForward.
+   */
+  private async resolveRoutingKeyReferences(
+    agentContext: AgentContext,
+    routingKeyRefs: string[]
+  ): Promise<Kms.PublicJwk<Kms.Ed25519PublicJwk>[]> {
+    const routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
+    for (const routingKey of routingKeyRefs) {
+      const routingDidDocument = await this.didResolverService.resolveDidDocument(agentContext, routingKey)
+      const publicJwk = getPublicJwkFromVerificationMethod(
+        routingDidDocument.dereferenceKey(routingKey, ['authentication', 'keyAgreement'])
+      )
+      if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
+        throw new CredoError(`Expected Ed25519PublicJwk but found ${publicJwk.JwkClass.name}`)
+      }
+      routingKeys.push(publicJwk)
+    }
+    return routingKeys
+  }
+
+  /**
+   * When a v2 service endpoint is a nested `did:` (common for did:peer mediation), expand to the transport URI and
+   * mediator keys — same idea as {@link DidCommMessageSender.retrieveServicesByConnection} peer fallback.
+   */
+  private expandV2EndpointIfRoutingDid(
+    endpoint: string,
+    routingKeysFromRefs: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+  ): { endpoint: string; routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] } {
+    if (!endpoint.startsWith('did:')) {
+      return { endpoint, routingKeys: routingKeysFromRefs }
+    }
+    try {
+      const routingDoc = endpoint.startsWith('did:peer:4')
+        ? didToNumAlgo4DidDocument(endpoint)
+        : didToNumAlgo2DidDocument(endpoint)
+      const nestedRoutingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
+      const keyRefs = [...(routingDoc.authentication ?? []), ...(routingDoc.keyAgreement ?? [])]
+      const seen = new Set<string>()
+      for (const keyRef of keyRefs) {
+        const vm = typeof keyRef === 'string' ? routingDoc.dereferenceVerificationMethod(keyRef) : keyRef
+        if (seen.has(vm.id)) continue
+        const publicJwk = getPublicJwkFromVerificationMethod(vm)
+        if (publicJwk.is(Kms.Ed25519PublicJwk) || publicJwk.is(Kms.X25519PublicJwk)) {
+          seen.add(vm.id)
+          nestedRoutingKeys.push(publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
+        }
+      }
+      let resolvedEndpoint = endpoint
+      const firstSvc = routingDoc.service?.[0]
+      if (firstSvc) {
+        const resolved =
+          typeof firstSvc.serviceEndpoint === 'string'
+            ? firstSvc.serviceEndpoint
+            : (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.uri ??
+              (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.s
+        if (resolved) resolvedEndpoint = resolved
+      }
+      return {
+        endpoint: resolvedEndpoint,
+        routingKeys: [...nestedRoutingKeys, ...routingKeysFromRefs],
+      }
+    } catch {
+      return { endpoint, routingKeys: routingKeysFromRefs }
+    }
   }
 
   public async resolveServicesFromDid(agentContext: AgentContext, did: string): Promise<ResolvedDidCommService[]> {
@@ -172,10 +242,20 @@ export class DidCommDocumentService {
         didCommService.type === DidCommV2Service.type ||
         didCommService.type === NewDidCommV2Service.type
       ) {
-        // DidCommV2Service (DIDCommMessaging): firstServiceEndpointUri; Legacy (DIDComm): serviceEndpoint
+        // DIDCommMessaging: firstServiceEndpointUri + optional routingKeys on each endpoint entry.
+        // Legacy DIDComm: string serviceEndpoint + optional top-level routingKeys.
         const recipientKeysFromDoc = didDocument.getRecipientKeysWithVerificationMethod({
           mapX25519ToEd25519: false,
         })
+        let routingKeyRefs: string[] = []
+        if (didCommService.type === NewDidCommV2Service.type) {
+          const v2 = didCommService as NewDidCommV2Service
+          const se = v2.serviceEndpoint
+          const first = Array.isArray(se) ? se[0] : se
+          routingKeyRefs = first?.routingKeys ?? []
+        } else {
+          routingKeyRefs = (didCommService as DidCommV2Service).routingKeys ?? []
+        }
         const endpoint =
           'firstServiceEndpointUri' in didCommService
             ? (didCommService as NewDidCommV2Service).firstServiceEndpointUri
@@ -193,11 +273,13 @@ export class DidCommDocumentService {
             }
             return jwk
           }) as Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+          let routingKeys = await this.resolveRoutingKeyReferences(agentContext, routingKeyRefs)
+          const expanded = this.expandV2EndpointIfRoutingDid(endpoint, routingKeys)
           resolvedServices.push({
             id: didCommService.id,
             recipientKeys,
-            routingKeys: [],
-            serviceEndpoint: endpoint,
+            routingKeys: expanded.routingKeys,
+            serviceEndpoint: expanded.endpoint,
           })
         }
       }
