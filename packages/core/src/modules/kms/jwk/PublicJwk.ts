@@ -4,13 +4,11 @@ import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../../../uti
 import type { Constructor } from '../../../utils/mixins'
 import { zParseWithErrorHandling } from '../../../utils/zod'
 import { KeyManagementError } from '../error/KeyManagementError'
-import { legacyKeyIdFromPublicJwk } from '../legacy'
 import { asymmetricPublicJwkMatches } from './equals'
 import { getJwkHumanDescription } from './humanDescription'
 import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
 import { calculateJwkThumbprint } from './jwkThumbprint'
 import { assertJwkAsymmetric, type KmsJwkPublicAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
-
 import {
   Ed25519PublicJwk,
   P256PublicJwk,
@@ -167,7 +165,20 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   }
 
   public get legacyKeyId() {
-    return legacyKeyIdFromPublicJwk(this)
+    // Compressed public keys were used for legacy key ids
+    const compresedPublicKey = this.compressedPublicKey
+    if (compresedPublicKey) {
+      return TypedArrayEncoder.toBase58(compresedPublicKey.publicKey)
+    }
+
+    const publicKey = this.publicKey
+    if (publicKey.kty === 'RSA') {
+      throw new KeyManagementError(
+        'Unable to derive legacy key id from RSA key. Support for RSA keys was only added after explit key ids were added.'
+      )
+    }
+
+    return TypedArrayEncoder.toBase58(publicKey.publicKey)
   }
 
   public get publicKey(): Jwk['publicKey'] {

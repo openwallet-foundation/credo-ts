@@ -4,8 +4,7 @@ import { CredoError } from '../../../error'
 import { TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
-import { Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
-import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
+import { asymmetricPublicJwkMatches, Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
 import { getPublicJwkFromVerificationMethod } from './key-type'
 import type { DidDocumentService } from './service'
 import { DidCommV1Service, IndyAgentService } from './service'
@@ -306,7 +305,7 @@ export class DidDocument {
     return recipientKeys.map(({ publicJwk, verificationMethod }) => {
       if (publicJwk.is(Ed25519PublicJwk)) return { publicJwk, verificationMethod }
 
-      const matchingEd25519Key = findMatchingEd25519Key(publicJwk as PublicJwk<X25519PublicJwk>, this)
+      const matchingEd25519Key = this.findMatchingEd25519Key(publicJwk as PublicJwk<X25519PublicJwk>)
 
       // For DIDcomm v1 if you use X25519 you MUST also include the Ed25519 key
       if (!matchingEd25519Key) {
@@ -325,6 +324,35 @@ export class DidDocument {
 
   public static fromJSON(didDocument: unknown) {
     return JsonTransformer.fromJSON(didDocument, DidDocument)
+  }
+
+  public findMatchingEd25519Key(
+    x25519Key: PublicJwk<X25519PublicJwk>
+  ): { publicJwk: PublicJwk<Ed25519PublicJwk>; verificationMethod: VerificationMethod } | undefined {
+    const verificationMethods = this.verificationMethod ?? []
+    const keyAgreements = this.keyAgreement ?? []
+    const authentications = this.authentication ?? []
+    const allKeyReferences: VerificationMethod[] = [
+      ...verificationMethods,
+      ...authentications.filter((keyAgreement): keyAgreement is VerificationMethod => typeof keyAgreement !== 'string'),
+      ...keyAgreements.filter((keyAgreement): keyAgreement is VerificationMethod => typeof keyAgreement !== 'string'),
+    ]
+
+    return allKeyReferences
+      .map((keyReference) => {
+        const verificationMethod = this.dereferenceKey(keyReference.id)
+        return {
+          publicJwk: getPublicJwkFromVerificationMethod(verificationMethod),
+          verificationMethod,
+        }
+      })
+
+      .find((v): v is typeof v & { publicJwk: PublicJwk<Ed25519PublicJwk> } => {
+        if (!v.publicJwk.is(Ed25519PublicJwk)) return false
+
+        const keyX25519 = v.publicJwk.convertTo(X25519PublicJwk)
+        return asymmetricPublicJwkMatches(keyX25519.toJson(), x25519Key.toJson())
+      })
   }
 }
 

@@ -11,7 +11,7 @@ import {
   getSupportedVerificationMethodTypesForPublicJwk,
 } from '../../dids/domain/key-type/keyDidMapping'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../../kms'
-import { W3cJsonLdVerifiableCredential } from '../data-integrity'
+import { W3cJsonLdVerifiableCredential } from '../data-integrity/models/W3cJsonLdVerifiableCredential'
 import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 import type {
   W3cJwtSignCredentialOptions,

@@ -1,22 +1,18 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-import type {
-  DidCommConnectionsModuleConfigOptions,
-  DidCommCredentialProtocol,
-  DidCommMessagePickupModuleConfigOptions,
-  DidCommMessagePickupProtocol,
-  DidCommProofsModuleConfigOptions,
-} from './modules'
+import type { DidCommConnectionsModuleConfigOptions } from './modules/connections/DidCommConnectionsModuleConfig'
 import type { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
+import type { DidCommCredentialProtocol } from './modules/credentials/protocol/DidCommCredentialProtocol'
 import type { DidCommDiscoverFeaturesModuleConfigOptions } from './modules/discover-features/DidCommDiscoverFeaturesModuleConfig'
+import type { DidCommMessagePickupModuleConfigOptions } from './modules/message-pickup/DidCommMessagePickupModuleConfig'
+import type { DidCommMessagePickupProtocol } from './modules/message-pickup/protocol/DidCommMessagePickupProtocol'
+import type { DidCommProofsModuleConfigOptions } from './modules/proofs/DidCommProofsModuleConfig'
 import type { DidCommProofProtocol } from './modules/proofs/protocol/DidCommProofProtocol'
 import type { DidCommMediationRecipientModuleConfigOptions } from './modules/routing/DidCommMediationRecipientModuleConfig'
 import type { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCommMediatorModuleConfig'
-import {
-  type DidCommInboundTransport,
-  type DidCommOutboundTransport,
-  type DidCommQueueTransportRepository,
-  InMemoryQueueTransportRepository,
-} from './transport'
+import type { DidCommInboundTransport } from './transport/DidCommInboundTransport'
+import type { DidCommOutboundTransport } from './transport/DidCommOutboundTransport'
+import type { DidCommQueueTransportRepository } from './transport/queue/DidCommQueueTransportRepository'
+import { InMemoryQueueTransportRepository } from './transport/queue/InMemoryQueueTransportRepository'
 import { DidCommMimeType } from './types'
 
 export interface DidCommModuleConfigOptions {

@@ -12,9 +12,11 @@ import {
 import { getSupportedVerificationMethodTypesForPublicJwk } from '../dids/domain/key-type/keyDidMapping'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { extractKeyFromHolderBinding, parseHolderBindingFromCredential } from '../sd-jwt-vc/utils'
-import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
-import { W3cV2Presentation } from './models'
-import { W3cV2SdJwtVerifiableCredential, W3cV2SdJwtVerifiablePresentation } from './sd-jwt-vc'
+import { W3cV2JwtVerifiableCredential } from './jwt-vc/W3cV2JwtVerifiableCredential'
+import { W3cV2JwtVerifiablePresentation } from './jwt-vc/W3cV2JwtVerifiablePresentation'
+import type { W3cV2Presentation } from './models/presentation/W3cV2Presentation'
+import { W3cV2SdJwtVerifiableCredential } from './sd-jwt-vc/W3cV2SdJwtVerifiableCredential'
+import type { W3cV2SdJwtVerifiablePresentation } from './sd-jwt-vc/W3cV2SdJwtVerifiablePresentation'
 
 export async function validateAndResolveVerificationMethod(
   agentContext: AgentContext,

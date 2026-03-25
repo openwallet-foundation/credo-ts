@@ -1,8 +1,8 @@
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
-import { Hasher } from '../../../crypto'
+import { Hasher } from '../../../crypto/hashes/Hasher'
 import { CredoError } from '../../../error'
 import { isJsonObject, type SingleOrArray, type Uint8ArrayBuffer } from '../../../types'
-import { ClaimFormat } from '../models'
+import { ClaimFormat } from '../models/ClaimFormat'
 
 export interface W3cV2SdJwtHeader {
   alg: string

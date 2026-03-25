@@ -3,7 +3,7 @@ import type {
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
 } from '../../../dif-presentation-exchange'
-import type { W3cPresentation } from '../../models'
+import type { W3cPresentation } from '../../models/presentation'
 import type { W3cCredentialRecord } from '../../repository'
 import type { W3cJsonLdVerifiablePresentation } from './W3cJsonLdVerifiablePresentation'
 

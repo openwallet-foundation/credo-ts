@@ -1,6 +1,6 @@
 import type { SingleOrArray } from '../../../../types'
 import { asArray, IsInstanceOrArrayOfInstances, JsonTransformer } from '../../../../utils'
-import { ClaimFormat } from '../../models'
+import { ClaimFormat } from '../../models/ClaimFormat'
 import type { W3cPresentationOptions } from '../../models/presentation/W3cPresentation'
 import { W3cPresentation } from '../../models/presentation/W3cPresentation'
 import type { DataIntegrityProofOptions } from './DataIntegrityProof'

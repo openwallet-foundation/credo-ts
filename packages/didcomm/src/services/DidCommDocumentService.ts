@@ -5,7 +5,6 @@ import {
   DidRecord,
   DidRepository,
   DidResolverService,
-  findMatchingEd25519Key,
   getPublicJwkFromVerificationMethod,
   IndyAgentService,
   injectable,
@@ -79,7 +78,7 @@ export class DidCommDocumentService {
           // FIXME: Now that indy-sdk is deprecated, we should look into the possiblty of using the X25519 key directly
           // removing the need to also include the Ed25519 key in the did document.
           if (publicJwk.is(Kms.X25519PublicJwk)) {
-            const matchingEd25519Key = findMatchingEd25519Key(publicJwk, didDocument)
+            const matchingEd25519Key = didDocument.findMatchingEd25519Key(publicJwk)
             if (matchingEd25519Key) return matchingEd25519Key.publicJwk
           }
 

@@ -1,6 +1,7 @@
 import { CredoError } from '../../../error'
-import { JsonTransformer, MessageValidator } from '../../../utils'
-import { ClaimFormat } from '../models'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { MessageValidator } from '../../../utils/MessageValidator'
+import { ClaimFormat } from '../models/ClaimFormat'
 import { W3cV2Presentation } from '../models/presentation/W3cV2Presentation'
 import { decodeSdJwt, type W3cV2SdJwt } from './W3cV2SdJwt'
 

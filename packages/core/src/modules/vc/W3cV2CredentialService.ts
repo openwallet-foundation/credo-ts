@@ -5,7 +5,7 @@ import type { Query, QueryOptions } from '../../storage/StorageService'
 import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
 import { W3cV2JwtCredentialService } from './jwt-vc/W3cV2JwtCredentialService'
 import type { W3cV2VerifiableCredential, W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from './models'
-import { ClaimFormat } from './models'
+import { ClaimFormat } from './models/ClaimFormat'
 import type { W3cV2VerifiablePresentation } from './models/presentation/W3cV2VerifiablePresentation'
 import { W3cV2CredentialRecord, W3cV2CredentialRepository } from './repository'
 import {
