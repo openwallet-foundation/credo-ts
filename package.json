@@ -48,7 +48,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "catalog:",
     "@types/node": "catalog:",
-    "@types/supertest": "^6.0.3",
+    "@types/supertest": "^7.2.0",
     "@types/varint": "^6.0.3",
     "@types/ws": "catalog:",
     "@vitest/coverage-v8": "catalog:",
