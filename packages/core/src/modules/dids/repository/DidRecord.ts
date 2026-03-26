@@ -84,34 +84,7 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
     const did = parseDid(this.did)
 
     const legacyDid = this.metadata.get(DidRecordMetadataKeys.LegacyDid)
-    console.log('inside getTags', did)
-    console.log({
-      ...this._tags,
-      role: this.role,
-      method: did.method,
-      legacyUnqualifiedDid: legacyDid?.unqualifiedDid,
-      did: this.did,
-      methodSpecificIdentifier: did.id,
 
-      // Calculate if we have a did document, otherwise use the already present recipient keys.
-      // DIDComm v2 uses keyAgreement verification relationships and ECDH-1PU requires X25519.
-      // Even if a peer references a verification method backed by an Ed25519 key, we index the
-      // corresponding X25519 fingerprint so lookup works consistently.
-      recipientKeyFingerprints: this.didDocument
-        ? (() => {
-            const prints = new Set<string>()
-            const doc = this.didDocument!
-            for (const recipientKey of doc.recipientKeys) {
-              const x25519 = recipientKey.is(Ed25519PublicJwk)
-                ? (recipientKey as PublicJwk<Ed25519PublicJwk>).convertTo(X25519PublicJwk)
-                : (recipientKey as PublicJwk<X25519PublicJwk>)
-
-              prints.add(x25519.fingerprint)
-            }
-            return [...prints]
-          })()
-        : this._tags.recipientKeyFingerprints,
-    })
     return {
       ...this._tags,
       role: this.role,
