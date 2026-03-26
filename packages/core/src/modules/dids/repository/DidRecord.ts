@@ -94,10 +94,10 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
       did: this.did,
       methodSpecificIdentifier: did.id,
 
-      // Calculate if we have a did document, otherwise use the already present recipient keys
-      // Include both Ed25519 and X25519 fingerprints so DIDComm v2 inbound decrypt works:
-      // - peers may use Ed25519 did:key as JWE kid while the document lists X25519 in keyAgreement only
-      // - v2 unpack may resolve X25519 while DidRecords were tagged only from Ed25519 (did:peer:1)
+      // Calculate if we have a did document, otherwise use the already present recipient keys.
+      // v1 compatibility: index both Ed25519 and X25519 fingerprints so v1 unpack
+      // can find the DidRecord regardless of which curve the peer used as kid.
+      // v2 does not use fingerprint-based lookup (resolves by DID URL instead).
       recipientKeyFingerprints: this.didDocument
         ? (() => {
             const prints = new Set<string>()
