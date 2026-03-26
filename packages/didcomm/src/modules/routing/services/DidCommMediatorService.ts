@@ -212,22 +212,16 @@ export class DidCommMediatorService {
 
     const recipientDid = recipientKey.startsWith('did:') ? recipientKey : verkeyToDidKey(recipientKey)
 
-    let mediationRecord: DidCommMediationRecord
-    try {
-      mediationRecord = await this.mediationRepository.getSingleByRecipientKey(agentContext, recipientKey)
-    } catch (err) {
-      if (err instanceof RecordNotFoundError) {
-        try {
-          mediationRecord = await this.mediationRepository.getSingleByRecipientDid(agentContext, recipientDid)
-        } catch (err2) {
-          if (err2 instanceof RecordNotFoundError) {
-            await this.logForwardRecipientLookupDiagnostics(agentContext, recipientKey, recipientDid)
-          }
-          throw err2
-        }
-      } else {
-        throw err
-      }
+    const mediationRecord =
+      (await this.mediationRepository.findSingleByRecipientKey(agentContext, recipientKey)) ??
+      (await this.mediationRepository.findSingleByRecipientDid(agentContext, recipientDid))
+
+    if (!mediationRecord) {
+      await this.logForwardRecipientLookupDiagnostics(agentContext, recipientKey, recipientDid)
+      throw new RecordNotFoundError(
+        `MediationRecord: no record for recipientKey '${recipientKey}' or recipientDid '${recipientDid}'`,
+        { recordType: DidCommMediationRecord.type }
+      )
     }
 
     mediationRecord.assertReady()
