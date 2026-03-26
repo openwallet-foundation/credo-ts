@@ -24,8 +24,8 @@ import { didDocumentToNumAlgo4Did } from './peerDidNumAlgo4'
 
 /**
  * Collect recipient key fingerprints from authentication and keyAgreement.
- * Includes X25519 conversion for Ed25519 keys so DIDComm v2 lookup works when
- * message uses authentication kid (#key-1) but DidRecord stores keyAgreement.
+ * For DIDComm v2 we normalize to X25519 fingerprints only.
+ * If a VM is backed by Ed25519, we convert it to the paired X25519 fingerprint.
  */
 function getRecipientKeyFingerprintsIncludingAuthAndKeyAgreement(didDocument: DidDocument): string[] {
   const prints = new Set<string>()
@@ -40,10 +40,10 @@ function getRecipientKeyFingerprintsIncludingAuthAndKeyAgreement(didDocument: Di
     seen.add(vm.id)
     const publicJwk = getPublicJwkFromVerificationMethod(vm)
     if (publicJwk.is(Ed25519PublicJwk) || publicJwk.is(X25519PublicJwk)) {
-      prints.add(publicJwk.fingerprint)
-      if (publicJwk.is(Ed25519PublicJwk)) {
-        prints.add((publicJwk as PublicJwk<Ed25519PublicJwk>).convertTo(X25519PublicJwk).fingerprint)
-      }
+      const x25519 = publicJwk.is(Ed25519PublicJwk)
+        ? (publicJwk as PublicJwk<Ed25519PublicJwk>).convertTo(X25519PublicJwk)
+        : (publicJwk as PublicJwk<X25519PublicJwk>)
+      prints.add(x25519.fingerprint)
     }
   }
   return [...prints]

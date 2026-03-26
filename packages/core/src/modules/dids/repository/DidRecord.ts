@@ -6,7 +6,6 @@ import { uuid } from '../../../utils/uuid'
 import { Ed25519PublicJwk, type PublicJwk, X25519PublicJwk } from '../../kms'
 import type { DidDocumentKey } from '../DidsApiOptions'
 import { DidDocument } from '../domain'
-import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { parseDid } from '../domain/parse'
 import type { DidRecordMetadata } from './didRecordMetadataTypes'
@@ -85,7 +84,34 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
     const did = parseDid(this.did)
 
     const legacyDid = this.metadata.get(DidRecordMetadataKeys.LegacyDid)
+    console.log('inside getTags', did)
+    console.log({
+      ...this._tags,
+      role: this.role,
+      method: did.method,
+      legacyUnqualifiedDid: legacyDid?.unqualifiedDid,
+      did: this.did,
+      methodSpecificIdentifier: did.id,
 
+      // Calculate if we have a did document, otherwise use the already present recipient keys.
+      // DIDComm v2 uses keyAgreement verification relationships and ECDH-1PU requires X25519.
+      // Even if a peer references a verification method backed by an Ed25519 key, we index the
+      // corresponding X25519 fingerprint so lookup works consistently.
+      recipientKeyFingerprints: this.didDocument
+        ? (() => {
+            const prints = new Set<string>()
+            const doc = this.didDocument!
+            for (const recipientKey of doc.recipientKeys) {
+              const x25519 = recipientKey.is(Ed25519PublicJwk)
+                ? (recipientKey as PublicJwk<Ed25519PublicJwk>).convertTo(X25519PublicJwk)
+                : (recipientKey as PublicJwk<X25519PublicJwk>)
+
+              prints.add(x25519.fingerprint)
+            }
+            return [...prints]
+          })()
+        : this._tags.recipientKeyFingerprints,
+    })
     return {
       ...this._tags,
       role: this.role,
@@ -95,22 +121,19 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
       methodSpecificIdentifier: did.id,
 
       // Calculate if we have a did document, otherwise use the already present recipient keys.
-      // v1 compatibility: index both Ed25519 and X25519 fingerprints so v1 unpack
-      // can find the DidRecord regardless of which curve the peer used as kid.
-      // v2 does not use fingerprint-based lookup (resolves by DID URL instead).
+      // DIDComm v2 uses keyAgreement verification relationships and ECDH-1PU requires X25519.
+      // Even if a peer references a verification method backed by an Ed25519 key, we index the
+      // corresponding X25519 fingerprint so lookup works consistently.
       recipientKeyFingerprints: this.didDocument
         ? (() => {
             const prints = new Set<string>()
             const doc = this.didDocument!
             for (const recipientKey of doc.recipientKeys) {
-              prints.add(recipientKey.fingerprint)
-              if (recipientKey.is(Ed25519PublicJwk)) {
-                prints.add(recipientKey.convertTo(X25519PublicJwk).fingerprint)
-              }
-              if (recipientKey.is(X25519PublicJwk)) {
-                const paired = findMatchingEd25519Key(recipientKey as PublicJwk<X25519PublicJwk>, doc)
-                if (paired) prints.add(paired.publicJwk.fingerprint)
-              }
+              const x25519 = recipientKey.is(Ed25519PublicJwk)
+                ? (recipientKey as PublicJwk<Ed25519PublicJwk>).convertTo(X25519PublicJwk)
+                : (recipientKey as PublicJwk<X25519PublicJwk>)
+
+              prints.add(x25519.fingerprint)
             }
             return [...prints]
           })()
