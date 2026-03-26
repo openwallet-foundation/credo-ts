@@ -53,7 +53,7 @@
     "@multiformats/base-x": "^4.0.1",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
-    "@owf/mdoc": "^0.6.0-alpha-20260323111323",
+    "@owf/mdoc": "^0.6.0",
     "@peculiar/asn1-ecc": "^2.6.0",
     "@peculiar/asn1-rsa": "^2.6.0",
     "@peculiar/asn1-schema": "^2.6.0",

@@ -299,36 +299,28 @@ export class MdocDeviceResponse {
       category: 'DOCUMENT_FORMAT',
     })
 
-    // NOTE: we split so that we can use individual trusted entities for each mdoc
-    const splittedDeviceResponses = this.splitIntoSingleDocumentResponses()
-
-    for (const deviceResponse of splittedDeviceResponses) {
-      await deviceResponse.deviceResponse
-        .verify(
-          {
-            trustedCertificates:
-              options.trustedCertificates?.map(
-                (certificate) => X509Certificate.fromEncodedCertificate(certificate).rawCertificate
-              ) ?? [],
-            disableCertificateChainValidation: false,
-            now: options.now,
-            skewSeconds: agentContext.config.validitySkewSeconds,
-            sessionTranscript: await MdocDeviceResponse.calculateSessionTranscriptBytes(
-              mdocContext,
-              options.sessionTranscriptOptions
-            ),
-          },
-          mdocContext
-        )
-        .catch((error) => {
-          throw new MdocError(
-            `Mdoc with doctype ${deviceResponse.deviceResponse.documents?.[0].docType} is not valid`,
-            {
-              cause: error,
-            }
-          )
+    await this.deviceResponse
+      .verify(
+        {
+          trustedCertificates:
+            options.trustedCertificates?.map(
+              (certificate) => X509Certificate.fromEncodedCertificate(certificate).rawCertificate
+            ) ?? [],
+          disableCertificateChainValidation: false,
+          now: options.now,
+          skewSeconds: agentContext.config.validitySkewSeconds,
+          sessionTranscript: await MdocDeviceResponse.calculateSessionTranscriptBytes(
+            mdocContext,
+            options.sessionTranscriptOptions
+          ),
+        },
+        mdocContext
+      )
+      .catch((error) => {
+        throw new MdocError(`Mdoc with doctype ${this.deviceResponse.documents?.[0].docType} is not valid`, {
+          cause: error,
         })
-    }
+      })
   }
 
   private static async calculateSessionTranscriptBytes(

@@ -78,7 +78,12 @@ export class Mdoc {
   }
 
   public get validityInfo() {
-    return this.issuerSigned.issuerAuth.mobileSecurityObject.validityInfo
+    const { signed, validFrom, validUntil } = this.issuerSigned.issuerAuth.mobileSecurityObject.validityInfo
+    return {
+      signed,
+      validFrom,
+      validUntil,
+    }
   }
 
   public get issuerSignedCertificateChain() {
@@ -131,7 +136,7 @@ export class Mdoc {
         validFrom: validityInfo.validFrom ?? now,
       },
       algorithm: SignatureAlgorithm[alg],
-      certificate: issuerCertificate.rawCertificate,
+      certificates: [issuerCertificate.rawCertificate],
       deviceKeyInfo: DeviceKeyInfo.create({ deviceKey: DeviceKey.fromJwk(holderKey.toJson()) }),
       signingKey: issuerKey.toJson(),
     })
