@@ -37,6 +37,7 @@ export {
   getAlternativeDidsForNumAlgo4Did,
   getDidPeer4ShortFormForEquivalence,
   getEd25519DidKeysFromLongFormDidPeer4,
+  getRecipientDidQueryVariants,
   isLongFormDidPeer4,
   isShortFormDidPeer4,
 } from './modules/dids/methods/peer/peerDidNumAlgo4'
