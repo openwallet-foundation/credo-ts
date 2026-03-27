@@ -13,7 +13,7 @@ export class ConsoleLogger extends BaseLogger {
     [LogLevel.Debug]: 'debug',
     [LogLevel.Info]: 'info',
     [LogLevel.Warn]: 'warn',
-    [LogLevel.error]: 'error',
+    [LogLevel.Error]: 'error',
     [LogLevel.Fatal]: 'error',
   } as const
 
@@ -58,7 +58,7 @@ export class ConsoleLogger extends BaseLogger {
   }
 
   public error(message: string, data?: LogData): void {
-    this.log(LogLevel.error, message, data)
+    this.log(LogLevel.Error, message, data)
   }
 
   public fatal(message: string, data?: LogData): void {

@@ -14,7 +14,7 @@ export class TestLogger extends BaseLogger {
     [LogLevel.Debug]: 'debug',
     [LogLevel.Info]: 'info',
     [LogLevel.Warn]: 'warn',
-    [LogLevel.error]: 'error',
+    [LogLevel.Error]: 'error',
     [LogLevel.Fatal]: 'fatal',
   } as const
 
@@ -25,7 +25,7 @@ export class TestLogger extends BaseLogger {
     [LogLevel.Debug]: 2,
     [LogLevel.Info]: 3,
     [LogLevel.Warn]: 4,
-    [LogLevel.error]: 5,
+    [LogLevel.Error]: 5,
     [LogLevel.Fatal]: 6,
   } as const
 
@@ -89,7 +89,7 @@ export class TestLogger extends BaseLogger {
 
   // biome-ignore lint/suspicious/noExplicitAny: no explanation
   public error(message: string, data?: Record<string, any>): void {
-    this.log(LogLevel.error, message, data)
+    this.log(LogLevel.Error, message, data)
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: no explanation
