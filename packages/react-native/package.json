@@ -33,7 +33,7 @@
     "events": "^3.3.0"
   },
   "devDependencies": {
-    "react-native": "^0.83.1",
+    "react-native": "^0.84.1",
     "react-native-fs": "^2.20.0",
     "@dr.pogodin/react-native-fs": "^2.37.0",
     "react-native-get-random-values": "^2.0.0",
