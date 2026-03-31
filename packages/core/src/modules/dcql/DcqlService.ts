@@ -19,6 +19,7 @@ import {
 import { DidsApi, getPublicJwkFromVerificationMethod, VerificationMethod } from '../dids'
 import type { VerifiableCredential, VerifiablePresentation } from '../dif-presentation-exchange/index'
 import {
+  Mdoc,
   MdocApi,
   MdocDeviceResponse,
   type MdocNameSpaces,
@@ -253,16 +254,29 @@ export class DcqlService {
       } satisfies DcqlSdJwtVcCredential
     }
     if (presentation.claimFormat === ClaimFormat.MsoMdoc) {
-      if (presentation.documents.length !== 1) {
+      if (!presentation.deviceResponse.documents || presentation.deviceResponse.documents.length !== 1) {
         throw new DcqlError('MDOC presentations must contain exactly one document')
       }
 
       return {
         cryptographic_holder_binding: true,
         credential_format: 'mso_mdoc',
-        authority: this.getAuthorityForCredential(presentation.documents[0]),
-        doctype: presentation.documents[0].docType,
-        namespaces: presentation.documents[0].issuerSignedNamespaces,
+        authority: this.getAuthorityForCredential(new Mdoc(presentation.deviceResponse.documents[0].issuerSigned)),
+        doctype: presentation.deviceResponse.documents[0].docType,
+        namespaces: Object.entries(
+          Object.fromEntries(presentation.deviceResponse.documents[0].issuerSigned.issuerNamespaces.issuerNamespaces)
+        ).reduce(
+          (prev, [key, value]) => ({
+            // biome-ignore lint/performance/noAccumulatingSpread: time complexity not relevant here
+            ...prev,
+            [key]: value.reduce<Record<string, unknown>>(
+              // biome-ignore lint/performance/noAccumulatingSpread: time complexity not relevant here
+              (prev, curr) => ({ ...prev, [curr.elementIdentifier]: curr.elementValue }),
+              {}
+            ),
+          }),
+          {}
+        ),
       } satisfies DcqlMdocCredential
     }
     if (presentation.claimFormat === ClaimFormat.JwtVp) {
@@ -762,7 +776,7 @@ export class DcqlService {
             ],
             sessionTranscriptOptions: mdocSessionTranscript,
           })
-          const deviceResponseBase64Url = TypedArrayEncoder.toBase64URL(deviceResponse)
+          const deviceResponseBase64Url = deviceResponse.encoded
 
           encodedCreatedPresentation = deviceResponseBase64Url
           createdPresentation = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)

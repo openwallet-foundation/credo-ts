@@ -43,6 +43,16 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
 export const GOOGLE_ENABLED = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET
 
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+
+  return nextMonth
+}
+
 export const credentialConfigurationsSupported = {
   PresentationAuthorization: {
     format: OpenId4VciCredentialFormatProfile.SdJwtVc,
@@ -224,6 +234,7 @@ function getCredentialRequestToCredentialMapper({
         type: 'credentials',
         format: ClaimFormat.MsoMdoc,
         credentials: holderBinding.keys.map((binding) => ({
+          validityInfo: { validUntil: getNextMonth() },
           issuerCertificate,
           holderKey: binding.jwk,
           namespaces: {
