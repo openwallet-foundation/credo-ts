@@ -555,8 +555,22 @@ export class DidCommMessageSender {
               service,
               senderKey: senderVerificationMethod.publicJwk,
               returnRoute: shouldAddReturnRoute,
+              // Per DIDComm v2 spec section 5.1.4, skid MUST point into the sender's keyAgreement (X25519),
+              // not authentication (Ed25519). Find the keyAgreement VM whose X25519 key matches
+              // the converted Ed25519 sender key, and use its id as skid.
               senderKeySkid: (() => {
-                const id = senderVerificationMethod.verificationMethod.id
+                const senderX25519 = senderVerificationMethod.publicJwk.convertTo(Kms.X25519PublicJwk)
+                const kaVm = (didDocument.keyAgreement ?? [])
+                  .map((ref) => (typeof ref === 'string' ? didDocument.dereferenceVerificationMethod(ref) : ref))
+                  .find((vm) => {
+                    try {
+                      const vmJwk = getPublicJwkFromVerificationMethod(vm)
+                      return vmJwk.is(Kms.X25519PublicJwk) && vmJwk.equals(senderX25519)
+                    } catch {
+                      return false
+                    }
+                  })
+                const id = kaVm?.id ?? senderVerificationMethod.verificationMethod.id
                 if (typeof id !== 'string') return undefined
                 if (id.startsWith('did:')) return id
                 if (id.startsWith('#')) return `${didDocument.id}${id}`
@@ -930,8 +944,9 @@ export class DidCommMessageSender {
           }
         }
       }
-    } else if (connection.outOfBandId && connection.isRequester) {
+    } else if (connection.outOfBandId && connection.isRequester && connection.previousTheirDids.length === 0) {
       // theirDid may be null (e.g. before response processed, or race); use OOB invitation services
+      // Skip if previousTheirDids is non-empty — that indicates a hangup / did-rotate termination
       try {
         const outOfBandRepository = agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
         const oobRecord = await outOfBandRepository.findById(agentContext, connection.outOfBandId)

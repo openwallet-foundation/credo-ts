@@ -1,4 +1,4 @@
-import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { Kms, RecordNotFoundError, TypedArrayEncoder } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
@@ -8,18 +8,21 @@ import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { DidCommInboundMessageContext } from '../../../../models/DidCommInboundMessageContext'
 import { DidCommConnectionService, DidCommDidExchangeState } from '../../../connections'
 import { DidCommMessagePickupApi } from '../../../message-pickup'
+import { DidCommMediatorModuleConfig } from '../../DidCommMediatorModuleConfig'
 import { DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage, DidCommKeylistUpdateResult } from '../../messages'
+import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
+import { DidCommForwardMessage } from '../../messages/DidCommForwardMessage'
 import {
+  DidCommForwardMessageV2,
+  KeylistQueryMessage,
   KeylistUpdateActionV2,
   KeylistUpdateMessage,
-  KeylistQueryMessage,
   MediateRequestMessage,
 } from '../../messages/v2'
 import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import { DidCommMediationRecord, DidCommMediatorRoutingRecord } from '../../repository'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
 import { DidCommMediatorRoutingRepository } from '../../repository/DidCommMediatorRoutingRepository'
-import { DidCommMediatorModuleConfig } from '../../DidCommMediatorModuleConfig'
 import { DidCommMediatorService } from '../DidCommMediatorService'
 
 vi.mock('../../repository/DidCommMediationRepository')
@@ -243,7 +246,8 @@ describe('MediatorService - useDidKeyInProtocols set to false', () => {
 describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
   const agentConfig = getAgentConfig('MediatorService')
   const mediatorModuleConfig = new DidCommMediatorModuleConfig({
-    mediatorRoutingDid: 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.SeyJ0IjoiZG0iLCJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCIsInIiOltdLCJhIjoibm9uZSMxIn0',
+    mediatorRoutingDid:
+      'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.SeyJ0IjoiZG0iLCJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCIsInIiOltdLCJhIjoibm9uZSMxIn0',
   })
 
   const agentContext = getAgentContext({
@@ -360,6 +364,35 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
 
       expect(response.keys).toHaveLength(2)
       expect(response.keys.map((k) => k.recipientDid)).toEqual(['did:peer:2.abc', 'did:peer:2.xyz'])
+    })
+  })
+
+  describe('processForwardMessage (v2)', () => {
+    test('looks up mediation record by DID only, never by verkey', async () => {
+      mockFunction(mediationRepository.findSingleByRecipientKey).mockClear()
+      mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(null)
+
+      const recipientDid = 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc'
+      const forward = new DidCommForwardMessageV2({
+        to: [mediatorModuleConfig.mediatorRoutingDid as string],
+        next: recipientDid,
+      })
+      forward.appendedAttachments = [
+        new DidCommAttachment({ id: 'msg-1', data: { json: { ciphertext: '', iv: '', protected: '', tag: '' } } }),
+      ]
+
+      const messageContext = new DidCommInboundMessageContext(forward, {
+        connection: mockConnection,
+        agentContext,
+      })
+
+      await expect(mediatorService.processForwardMessage(messageContext)).rejects.toThrow(RecordNotFoundError)
+
+      expect(mediationRepository.findSingleByRecipientKey).not.toHaveBeenCalled()
+      expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(
+        agentContext,
+        recipientDid
+      )
     })
   })
 })

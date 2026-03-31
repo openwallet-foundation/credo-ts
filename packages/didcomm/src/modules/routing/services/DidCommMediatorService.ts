@@ -1,14 +1,14 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import {
   CredoError,
-  didDocumentToNumAlgo2Did,
   DidDocumentBuilder,
   DidDocumentService,
   DidKey,
+  didDocumentToNumAlgo2Did,
   didKeyToVerkey,
   EventEmitter,
-  getAlternativeDidsForNumAlgo4Did,
-  getEd25519VerificationKey2018,
+  getDidPeer4ShortFormForEquivalence,
+  getX25519KeyAgreementKey2019,
   InjectionSymbols,
   inject,
   injectable,
@@ -21,6 +21,7 @@ import {
   TypedArrayEncoder,
   verkeyToDidKey,
 } from '@credo-ts/core'
+import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommInboundMessageContext } from '../../../models'
@@ -33,7 +34,8 @@ import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
 import type { DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
-import type { DidCommForwardMessage, DidCommForwardMessageV2, DidCommMediationRequestMessage } from '../messages'
+import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../messages'
+import { DidCommForwardMessageV2 } from '../messages'
 import {
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdated,
@@ -44,7 +46,9 @@ import {
 } from '../messages'
 import {
   KeylistMessage,
+  KeylistQueryMessage,
   KeylistUpdateActionV2,
+  KeylistUpdateMessage,
   KeylistUpdateResponseMessage,
   KeylistUpdateResultV2,
   MediateGrantMessage,
@@ -110,21 +114,26 @@ export class DidCommMediatorService {
     }
 
     const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
-    const wsEndpoint = didcommConfig.endpoints.find((e) => e.startsWith('ws://') || e.startsWith('wss://')) ?? didcommConfig.endpoints[0]
+    const wsEndpoint =
+      didcommConfig.endpoints.find((e) => e.startsWith('ws://') || e.startsWith('wss://')) ?? didcommConfig.endpoints[0]
 
     const routingKey = routingKeys[0]
     if (!routingKey.is(Kms.Ed25519PublicJwk)) {
       throw new CredoError('Mediator routing key must be Ed25519 for did:peer:2 creation.')
     }
 
-    const verificationMethod = getEd25519VerificationKey2018({
+    // DIDComm v2 Forward messages encrypt to a keyAgreement (X25519) key, not an authentication
+    // (Ed25519) key. Convert the routing key so the mediator can decrypt inbound forwards.
+    const x25519PublicKey = convertPublicKeyToX25519(routingKey.publicKey.publicKey)
+    const x25519Jwk = Kms.PublicJwk.fromPublicKey({ kty: 'OKP', crv: 'X25519', publicKey: x25519PublicKey })
+    const verificationMethod = getX25519KeyAgreementKey2019({
       id: 'did:peer:2-placeholder#key-1',
-      publicJwk: routingKey,
+      publicJwk: x25519Jwk,
       controller: 'did:peer:2-placeholder',
     })
 
     const didDocumentBuilder = new DidDocumentBuilder('did:peer:2-placeholder')
-    didDocumentBuilder.addAuthentication(verificationMethod)
+    didDocumentBuilder.addKeyAgreement(verificationMethod)
     // Use DIDCommMessaging + string endpoint so abbreviate produces t:'dm', s:endpoint for parser compatibility
     const service = JsonTransformer.fromJSON(
       { id: '#dm-0', type: 'DIDCommMessaging', serviceEndpoint: wsEndpoint },
@@ -138,48 +147,6 @@ export class DidCommMediatorService {
     return did
   }
 
-  /**
-   * When forward `next` does not match any keylist entry, log a snapshot of granted mediators
-   * so operators can compare `forward.next` / recipientDid with stored `recipientDids`.
-   */
-  private async logForwardRecipientLookupDiagnostics(
-    agentContext: AgentContext,
-    recipientKey: string,
-    recipientDid: string
-  ): Promise<void> {
-    const truncate = (s: string, max = 200) => (s.length <= max ? s : `${s.slice(0, max - 1)}…`)
-
-    try {
-      const all = await this.mediationRepository.getAll(agentContext)
-      const mediators = all.filter((r) => r.role === DidCommMediationRole.Mediator)
-      const granted = mediators.filter((r) => r.state === DidCommMediationState.Granted)
-      const summarizeDids = (dids: string[] | undefined) =>
-        (dids ?? []).map((d) => (d.length > 120 ? `${d.slice(0, 118)}…` : d))
-
-      this.logger.error(
-        'Forward routing: no MediationRecord for recipient. Compare forward `next` with CM2 keylist `recipient_did` values below.',
-        {
-          lookedUpRecipientKey: truncate(recipientKey),
-          lookedUpRecipientDid: truncate(recipientDid),
-          totalMediationRecords: all.length,
-          mediatorRoleRecords: mediators.length,
-          grantedMediatorRecords: granted.length,
-          grantedKeylists: granted.map((r) => ({
-            mediationRecordId: r.id,
-            connectionId: r.connectionId,
-            mediationProtocolVersion: r.mediationProtocolVersion,
-            recipientDids: summarizeDids(r.recipientDids),
-            recipientKeysCount: r.recipientKeys?.length ?? 0,
-          })),
-        }
-      )
-    } catch (diagErr) {
-      this.logger.error('Forward routing: lookup failed; could not collect mediation diagnostics', {
-        cause: diagErr instanceof Error ? diagErr.message : diagErr,
-      })
-    }
-  }
-
   public async processForwardMessage(
     messageContext: DidCommInboundMessageContext<DidCommForwardMessage | DidCommForwardMessageV2>
   ): Promise<void> {
@@ -187,39 +154,37 @@ export class DidCommMediatorService {
 
     const messagePickupApi = agentContext.resolve(DidCommMessagePickupApi)
 
-    const isV2 = 'next' in message && 'getMessage' in message
-    let recipientKey: string
+    let recipientDid: string
     let encryptedMessage: import('../../../types').DidCommEncryptedMessage
+    let mediationRecord: DidCommMediationRecord | null
 
-    if (isV2) {
-      const v2Msg = message as DidCommForwardMessageV2
-      if (!v2Msg.next) {
+    if (message instanceof DidCommForwardMessageV2) {
+      if (!message.next) {
         throw new CredoError('Invalid v2 Forward: Missing required attribute "next"')
       }
-      encryptedMessage = v2Msg.getMessage() as import('../../../types').DidCommEncryptedMessage
-      if (!encryptedMessage) {
+      const attachment = message.getMessage()
+      if (!attachment) {
         throw new CredoError('Invalid v2 Forward: Missing or empty attachment')
       }
-      recipientKey = v2Msg.next
+      encryptedMessage = attachment
+      // v2 `next` is always a DID; canonicalize did:peer:4 long→short so it matches keylist entries
+      recipientDid = getDidPeer4ShortFormForEquivalence(message.next) ?? message.next
+      mediationRecord = await this.mediationRepository.findSingleByRecipientDid(agentContext, recipientDid)
     } else {
-      const v1Msg = message as DidCommForwardMessage
-      if (!v1Msg.to) {
+      if (!message.to) {
         throw new CredoError('Invalid v1 Forward: Missing required attribute "to"')
       }
-      recipientKey = v1Msg.to
-      encryptedMessage = v1Msg.message
+      encryptedMessage = message.message
+      const rawDid = message.to.startsWith('did:') ? message.to : verkeyToDidKey(message.to)
+      recipientDid = getDidPeer4ShortFormForEquivalence(rawDid) ?? rawDid
+      mediationRecord =
+        (await this.mediationRepository.findSingleByRecipientKey(agentContext, message.to)) ??
+        (await this.mediationRepository.findSingleByRecipientDid(agentContext, recipientDid))
     }
 
-    const recipientDid = recipientKey.startsWith('did:') ? recipientKey : verkeyToDidKey(recipientKey)
-
-    const mediationRecord =
-      (await this.mediationRepository.findSingleByRecipientKey(agentContext, recipientKey)) ??
-      (await this.mediationRepository.findSingleByRecipientDid(agentContext, recipientDid))
-
     if (!mediationRecord) {
-      await this.logForwardRecipientLookupDiagnostics(agentContext, recipientKey, recipientDid)
       throw new RecordNotFoundError(
-        `MediationRecord: no record for recipientKey '${recipientKey}' or recipientDid '${recipientDid}'`,
+        `MediationRecord: no record found for forward message recipient`,
         { recordType: DidCommMediationRecord.type }
       )
     }
@@ -379,9 +344,7 @@ export class DidCommMediatorService {
     }
 
     if (!connection) {
-      throw new CredoError(
-        `No connection associated with incoming message ${messageContext.message.type}`
-      )
+      throw new CredoError(`No connection associated with incoming message ${messageContext.message.type}`)
     }
 
     connection.assertReady()
@@ -422,7 +385,7 @@ export class DidCommMediatorService {
   }
 
   public async processKeylistUpdateV2(
-    messageContext: DidCommInboundMessageContext<import('../messages/v2/KeylistUpdateMessage').KeylistUpdateMessage>
+    messageContext: DidCommInboundMessageContext<KeylistUpdateMessage>
   ): Promise<KeylistUpdateResponseMessage> {
     const connection = messageContext.assertReadyConnection()
     const { message } = messageContext
@@ -442,18 +405,12 @@ export class DidCommMediatorService {
 
     for (const update of message.updates) {
       let result = KeylistUpdateResultV2.NoChange
+      const canonicalRecipientDid = getDidPeer4ShortFormForEquivalence(update.recipientDid) ?? update.recipientDid
       if (update.action === KeylistUpdateActionV2.add) {
-        mediationRecord.addRecipientDid(update.recipientDid)
-        // Also index short did:peer:4 form when the client sends long form so forward(next) queries hit exact tags.
-        const peer4Short = getAlternativeDidsForNumAlgo4Did(update.recipientDid)
-        peer4Short?.forEach((d) => mediationRecord.addRecipientDid(d))
+        mediationRecord.addRecipientDid(canonicalRecipientDid)
         result = KeylistUpdateResultV2.Success
       } else if (update.action === KeylistUpdateActionV2.remove) {
-        let success = mediationRecord.removeRecipientDid(update.recipientDid)
-        const peer4Short = getAlternativeDidsForNumAlgo4Did(update.recipientDid)
-        peer4Short?.forEach((d) => {
-          if (mediationRecord.removeRecipientDid(d)) success = true
-        })
+        const success = mediationRecord.removeRecipientDid(canonicalRecipientDid)
         result = success ? KeylistUpdateResultV2.Success : KeylistUpdateResultV2.NoChange
       }
       updated.push({ recipientDid: update.recipientDid, action: update.action, result })
@@ -472,8 +429,8 @@ export class DidCommMediatorService {
   }
 
   public async processKeylistQueryV2(
-    messageContext: DidCommInboundMessageContext<import('../messages/v2/KeylistQueryMessage').KeylistQueryMessage>
-  ): Promise<import('../messages/v2/KeylistMessage').KeylistMessage> {
+    messageContext: DidCommInboundMessageContext<KeylistQueryMessage>
+  ): Promise<KeylistMessage> {
     const connection = messageContext.assertReadyConnection()
     const { message } = messageContext
 

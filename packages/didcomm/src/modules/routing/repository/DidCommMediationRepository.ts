@@ -2,7 +2,7 @@ import type { AgentContext } from '@credo-ts/core'
 
 import {
   EventEmitter,
-  getRecipientDidQueryVariants,
+  getDidPeer4ShortFormForEquivalence,
   InjectionSymbols,
   inject,
   injectable,
@@ -36,22 +36,17 @@ export class DidCommMediationRepository extends Repository<DidCommMediationRecor
   /**
    * Resolves a mediation record whose keylist includes this recipient DID.
    *
-   * For did:peer:4, both short and long forms are queried in a single `$or` round-trip.
-   * The mediator is expected to store all queryable forms at keylist-update time
-   * (see `processKeylistUpdateV2`). A storage migration backfills historical records.
+   * did:peer:4 long form is canonicalized to short form before querying.
+   * The mediator stores canonical routing DIDs at keylist-update time.
    */
   public async getSingleByRecipientDid(agentContext: AgentContext, recipientDid: string) {
-    const variants = getRecipientDidQueryVariants(recipientDid)
-    return this.getSingleByQuery(agentContext, {
-      $or: variants.map((did) => ({ recipientDids: [did] })),
-    })
+    const canonicalDid = getDidPeer4ShortFormForEquivalence(recipientDid) ?? recipientDid
+    return this.getSingleByQuery(agentContext, { recipientDids: [canonicalDid] })
   }
 
   public async findSingleByRecipientDid(agentContext: AgentContext, recipientDid: string) {
-    const variants = getRecipientDidQueryVariants(recipientDid)
-    return this.findSingleByQuery(agentContext, {
-      $or: variants.map((did) => ({ recipientDids: [did] })),
-    })
+    const canonicalDid = getDidPeer4ShortFormForEquivalence(recipientDid) ?? recipientDid
+    return this.findSingleByQuery(agentContext, { recipientDids: [canonicalDid] })
   }
 
   public async getByConnectionId(agentContext: AgentContext, connectionId: string) {

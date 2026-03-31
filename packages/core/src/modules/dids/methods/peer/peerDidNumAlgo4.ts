@@ -1,5 +1,4 @@
 import { CredoError } from '../../../../error'
-import { Ed25519PublicJwk } from '../../../kms'
 import {
   JsonEncoder,
   JsonTransformer,
@@ -9,6 +8,7 @@ import {
   VarintEncoder,
 } from '../../../../utils'
 import { Buffer } from '../../../../utils/buffer'
+import { Ed25519PublicJwk } from '../../../kms'
 import { DidDocument } from '../../domain'
 import { getPublicJwkFromVerificationMethod } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
@@ -40,18 +40,6 @@ export function getDidPeer4ShortFormForEquivalence(did: string): string | undefi
   if (isShortFormDidPeer4(did)) return did
   if (isLongFormDidPeer4(did)) return getAlternativeDidsForNumAlgo4Did(did)?.[0]
   return undefined
-}
-
-/**
- * All queryable forms of a recipient DID. For did:peer:4 long form this includes
- * the short form; for all other DIDs it returns just the input. Useful for building
- * `$or` storage queries that cover peer-4 equivalence in one indexed round-trip.
- */
-export function getRecipientDidQueryVariants(recipientDid: string): string[] {
-  const variants = new Set<string>([recipientDid])
-  const alternatives = getAlternativeDidsForNumAlgo4Did(recipientDid)
-  alternatives?.forEach((d) => variants.add(d))
-  return [...variants]
 }
 
 /** True when both strings are the same did:peer:4 identity (short vs long encodings). */
@@ -98,9 +86,7 @@ export function getEd25519DidKeysFromLongFormDidPeer4(did: string): string[] {
         if (jwk.is(Ed25519PublicJwk)) {
           didKeys.add(new DidKey(jwk).did)
         }
-      } catch {
-        continue
-      }
+      } catch {}
     }
     return [...didKeys]
   } catch {

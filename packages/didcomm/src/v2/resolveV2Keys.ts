@@ -102,9 +102,9 @@ export class DidCommV2KeyResolver {
       let vmId: string | undefined
 
       if (skid.includes('#')) {
-        // Explicit VM reference — dereference it (accept keyAgreement or authentication
-        // since Ed25519 auth keys are convertible to X25519 for ECDH-1PU)
-        const vm = didDocument.dereferenceKey(skid, ['keyAgreement', 'authentication'])
+        // Explicit VM reference — must be keyAgreement per DIDComm v2 spec (skid is a DID URL
+        // into the sender's keyAgreement, not authentication)
+        const vm = didDocument.dereferenceKey(skid, ['keyAgreement'])
         senderJwk = getPublicJwkFromVerificationMethod(vm)
         vmId = typeof vm === 'object' && vm !== null && 'id' in vm ? (vm as { id: string }).id : undefined
       } else {

@@ -31,14 +31,10 @@ export {
   didToNumAlgo2DidDocument,
 } from './modules/dids/methods/peer/peerDidNumAlgo2'
 export {
-  areEquivalentDidPeer4Forms,
   didDocumentToNumAlgo4Did,
   didToNumAlgo4DidDocument,
   getAlternativeDidsForNumAlgo4Did,
   getDidPeer4ShortFormForEquivalence,
-  getEd25519DidKeysFromLongFormDidPeer4,
-  getRecipientDidQueryVariants,
-  isLongFormDidPeer4,
   isShortFormDidPeer4,
 } from './modules/dids/methods/peer/peerDidNumAlgo4'
 export { DidRecordMetadataKeys } from './modules/dids/repository/didRecordMetadataTypes'
