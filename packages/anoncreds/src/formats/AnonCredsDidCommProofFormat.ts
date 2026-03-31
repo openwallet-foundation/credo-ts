@@ -49,10 +49,13 @@ export interface AnonCredsRequestProofFormat {
 
   /**
    * Optional nonce for the proof request. If not provided, a secure random
-   * nonce is auto-generated. Must be a non-negative integer as a decimal string
-   * (per the AnonCreds specification). Useful for multi-step protocols or
-   * ceremony flows where the verifier needs to bind the proof to a specific
-   * challenge.
+   * nonce is auto-generated.
+   *
+   * Must be a non-negative integer encoded as a decimal string, at most 80 bits
+   * (i.e. the decimal value must be < 2^80). This matches the `LARGE_NONCE`
+   * constant in the AnonCreds CL-signatures specification.
+   *
+   * @see https://github.com/anoncreds/anoncreds-clsignatures-rs/blob/5c74d040e842c25d8e9a05ca65dee6fb277a9be0/src/constants.rs#L25
    */
   nonce?: string
 }
