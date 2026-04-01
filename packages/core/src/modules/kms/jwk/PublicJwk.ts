@@ -10,7 +10,6 @@ import { getJwkHumanDescription } from './humanDescription'
 import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
 import { calculateJwkThumbprint } from './jwkThumbprint'
 import { assertJwkAsymmetric, type KmsJwkPublicAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
-
 import {
   Ed25519PublicJwk,
   P256PublicJwk,
@@ -119,7 +118,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
    * Get the signature algorithms supported for this jwk.
    *
    * If the jwk has an `alg` field defined it will only return that alg
-   * and otherwise return all known supported signature algorithm.
+   * and otherwise return all known supported signature algorithms.
    */
   public get supportedSignatureAlgorithms(): KnownJwaSignatureAlgorithm[] {
     const supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = this.jwk.supportedSignatureAlgorithms ?? []

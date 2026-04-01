@@ -23,6 +23,16 @@ import { createAgentFromModules } from './utils'
 const baseUrl = 'http://localhost:1234'
 const verificationBaseUrl = `${baseUrl}/oid4vp`
 
+// Create ISO 18013-5 compliant root and leaf certificates
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
+
 const dcqlQuery = {
   credentials: [
     {
@@ -227,6 +237,7 @@ describe('OpenId4VP DC API', () => {
     const date = new DateOnly()
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey: Kms.PublicJwk.fromPublicJwk(holderKey.publicJwk),
       issuerCertificate: selfSignedCertificate,
       namespaces: {

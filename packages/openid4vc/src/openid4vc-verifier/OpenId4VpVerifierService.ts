@@ -24,6 +24,7 @@ import {
   joinUriParts,
   Kms,
   type Logger,
+  Mdoc,
   MdocDeviceResponse,
   type MdocSessionTranscriptOptions,
   type MdocSupportedSignatureAlgorithm,
@@ -116,8 +117,8 @@ export class OpenId4VpVerifierService {
     options: OpenId4VpCreateAuthorizationRequestOptions & { verifier: OpenId4VcVerifierRecord }
   ): Promise<OpenId4VpCreateAuthorizationRequestReturn> {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
-    const nonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
-    const state = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
+    const nonce = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
+    const state = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
 
     const responseMode = options.responseMode ?? 'direct_post.jwt'
     const isDcApiRequest = responseMode === 'dc_api' || responseMode === 'dc_api.jwt'
@@ -293,7 +294,7 @@ export class OpenId4VpVerifierService {
       nonce,
       presentation_definition: options.presentationExchange?.definition,
       dcql_query: options.dcql?.query,
-      transaction_data: options.transactionData?.map((entry) => JsonEncoder.toBase64URL(entry)),
+      transaction_data: options.transactionData?.map((entry) => JsonEncoder.toBase64Url(entry)),
       response_mode: responseMode,
       response_type: 'vp_token',
       client_metadata,
@@ -524,7 +525,7 @@ export class OpenId4VpVerifierService {
 
       // NOTE: apu is needed for mDOC over OID4VP without DC API up to draft 24
       const mdocGeneratedNonce = result.jarm?.jarmHeader.apu
-        ? TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64(result.jarm?.jarmHeader.apu))
+        ? TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(result.jarm?.jarmHeader.apu))
         : undefined
 
       if (result.type === 'dcql') {
@@ -663,7 +664,7 @@ export class OpenId4VpVerifierService {
         )
 
         const errorMessages = presentationVerificationResults
-          .map((result, index) => (!result.verified ? `\t- [${index}]: ${result.reason}` : undefined))
+          .map((result, index) => (!result.verified ? `\t- [${index}]: ${result.reason} - ${result.cause}` : undefined))
           .filter((i) => i !== undefined)
         if (errorMessages.length > 0) {
           throw new Oauth2ServerErrorResponseError(
@@ -1146,7 +1147,7 @@ export class OpenId4VpVerifierService {
         presentation: VerifiablePresentation
         transactionData?: TransactionDataHashesCredentials[string]
       }
-    | { verified: false; reason: string }
+    | { verified: false; reason: string; cause?: Error }
   > {
     const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
     const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
@@ -1203,28 +1204,34 @@ export class OpenId4VpVerifierService {
           throw new CredoError('Expected vp_token entry for format mso_mdoc to be of type string')
         }
         const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(presentation)
-        if (mdocDeviceResponse.documents.length === 0) {
+        const document = mdocDeviceResponse.deviceResponse.documents?.[0]
+        if (!document) {
           throw new CredoError('mdoc device response does not contain any mdocs')
         }
+
+        const mdoc = new Mdoc(document.issuerSigned)
 
         const deviceResponses = mdocDeviceResponse.splitIntoSingleDocumentResponses()
 
         for (const deviceResponseIndex of deviceResponses.keys()) {
           const mdocDeviceResponse = deviceResponses[deviceResponseIndex]
 
-          const document = mdocDeviceResponse.documents[0]
-          const certificateChain = document.issuerSignedCertificateChain.map((cert) =>
+          const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
             X509Certificate.fromRawCertificate(cert)
           )
 
-          const trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+          let trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
             certificateChain,
             verification: {
               type: 'credential',
-              credential: document,
+              credential: mdoc,
               openId4VcVerificationSessionId: options.verificationSessionId,
             },
           })
+
+          if (!trustedCertificates) {
+            trustedCertificates = x509Config.trustedCertificates ?? []
+          }
 
           let sessionTranscriptOptions: MdocSessionTranscriptOptions
           if (options.origin && options.version === 'v1') {
@@ -1335,6 +1342,7 @@ export class OpenId4VpVerifierService {
       return {
         verified: false,
         reason: error.message,
+        cause: error.cause,
       }
     }
   }

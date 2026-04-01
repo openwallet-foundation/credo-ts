@@ -3,7 +3,6 @@
  */
 
 import { CredoError } from '../../../../error'
-import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../../types'
 import { JsonEncoder, TypedArrayEncoder } from '../../../../utils'
 import type { DocumentLoader, Proof, VerificationMethod } from '../jsonldUtil'
 import { suites } from '../libraries/jsonld-signatures'
@@ -73,7 +72,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
    *
    * @returns The proof containing the signature value.
    */
-  public async sign(options: { verifyData: AnyUint8Array; proof: Proof }) {
+  public async sign(options: { verifyData: Uint8Array; proof: Proof }) {
     if (!(this.signer && typeof this.signer.sign === 'function')) {
       throw new Error('A signer API has not been specified.')
     }
@@ -97,14 +96,14 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     */
 
     // create JWS data and sign
-    const encodedHeader = JsonEncoder.toBase64URL(header)
+    const encodedHeader = JsonEncoder.toBase64Url(header)
 
     const data = _createJws({ encodedHeader, verifyData: options.verifyData })
 
     const signature = await this.signer.sign({ data })
 
     // create detached content signature
-    const encodedSignature = TypedArrayEncoder.toBase64URL(signature)
+    const encodedSignature = TypedArrayEncoder.toBase64Url(signature)
     options.proof.jws = `${encodedHeader}..${encodedSignature}`
     return options.proof
   }
@@ -118,7 +117,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
    * @returns Resolves with the verification result.
    */
   public async verifySignature(options: {
-    verifyData: AnyUint8Array
+    verifyData: Uint8Array
     verificationMethod: VerificationMethod
     proof: Proof
   }) {
@@ -131,7 +130,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     // biome-ignore lint/suspicious/noImplicitAnyLet: no explanation
     let header
     try {
-      header = JsonEncoder.fromBase64(encodedHeader)
+      header = JsonEncoder.fromBase64Url(encodedHeader)
     } catch (e) {
       throw new Error(`Could not parse JWS header; ${e}`)
     }
@@ -154,7 +153,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     }
 
     // do signature verification
-    const signature = TypedArrayEncoder.fromBase64(encodedSignature)
+    const signature = TypedArrayEncoder.fromBase64Url(encodedSignature)
 
     const data = _createJws({ encodedHeader, verifyData: options.verifyData })
 
@@ -252,8 +251,8 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
  * @param {Uint8Array} options.verifyData - Payload to sign/verify.
  * @returns {Uint8Array} A combined byte array for signing.
  */
-function _createJws(options: { encodedHeader: string; verifyData: AnyUint8Array }): Uint8ArrayBuffer {
-  const encodedHeaderBytes = TypedArrayEncoder.fromString(`${options.encodedHeader}.`)
+function _createJws(options: { encodedHeader: string; verifyData: Uint8Array }): Uint8Array {
+  const encodedHeaderBytes = TypedArrayEncoder.fromUtf8String(`${options.encodedHeader}.`)
 
   // concatenate the two uint8arrays
   const data = new Uint8Array(encodedHeaderBytes.length + options.verifyData.length)

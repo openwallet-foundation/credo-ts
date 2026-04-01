@@ -266,12 +266,14 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
       content: { name: 'Record A' },
       id: idA,
       tags: { group: groupTag },
+      // biome-ignore lint/suspicious/noExplicitAny: not relevant in tests
     } as any)
 
     await agent.genericRecords.save({
       content: { name: 'Record B' },
       id: idB,
       tags: { group: groupTag },
+      // biome-ignore lint/suspicious/noExplicitAny: not relevant in tests
     } as any)
 
     // 1. Get the forward page to see what the DB decided the order is

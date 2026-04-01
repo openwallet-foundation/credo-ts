@@ -1,12 +1,18 @@
-import type { MdocContext, X509Context } from '@animo-id/mdoc'
 import { p256 } from '@noble/curves/nist.js'
 import { hkdf } from '@noble/hashes/hkdf.js'
 import { sha256 } from '@noble/hashes/sha2.js'
+import { CoseKey, coseKeyToJwk, type MdocContext } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, Hasher } from '../../crypto'
 import { TypedArrayEncoder } from '../../utils'
-import { KeyManagementApi, type KmsJwkPublicAsymmetric, type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
+import {
+  KeyManagementApi,
+  type KmsJwkPublicAsymmetric,
+  type KnownJwaSignatureAlgorithm,
+  knownJwaFromCoseSignatureAlgorithm,
+} from '../kms'
 import { X509Certificate, X509Service } from '../x509'
+import { MdocError } from './MdocError'
 
 export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date } = {}): MdocContext => {
   const crypto = new CredoWebCrypto(agentContext)
@@ -21,7 +27,7 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
           crypto.digest(
             digestAlgorithm,
             // NOTE: extra Uint8Array wrapping is needed here, somehow if we use `bytes.buffer` directly
-            // it's not working. Maybe due to Uint8array lengt
+            // it's not working. Maybe due to Uint8array length
             new Uint8Array(bytes).buffer
           )
         )
@@ -29,54 +35,51 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
       random: (length) => {
         return crypto.getRandomValues(new Uint8Array(length))
       },
-      calculateEphemeralMacKeyJwk: async (input) => {
+      calculateEphemeralMacKey: async (input) => {
         const { privateKey, publicKey, sessionTranscriptBytes } = input
         const ikm = p256.getSharedSecret(privateKey, publicKey, true).slice(1)
         const salt = Hasher.hash(sessionTranscriptBytes, 'sha-256')
-        const info = TypedArrayEncoder.fromString('EMacKey')
+        const info = TypedArrayEncoder.fromUtf8String('EMacKey')
         const hk1 = hkdf(sha256, ikm, salt, info, 32)
 
-        return {
+        return CoseKey.fromJwk({
           key_ops: ['sign', 'verify'],
           ext: true,
           kty: 'oct',
-          k: TypedArrayEncoder.toBase64URL(hk1),
+          k: TypedArrayEncoder.toBase64Url(hk1),
           alg: 'HS256',
-        }
+        })
       },
     },
 
     cose: {
       mac0: {
         sign: async (input) => {
-          const { jwk, mac0 } = input
-          const { data } = mac0.getRawSigningData()
-
-          const publicJwk = PublicJwk.fromUnknown(jwk)
-          const algorithm = mac0.algName ?? publicJwk.signatureAlgorithm
+          if (!input.key.keyId) {
+            throw new MdocError('Missing required keyId on CoseKey for signing mdoc')
+          }
 
           const { signature } = await kms.sign({
-            data,
-            algorithm,
-            keyId: publicJwk.keyId,
+            data: input.toBeAuthenticated,
+            // FIXME: input needs to provide the algorithm
+            algorithm: input.key.algorithm as unknown as KnownJwaSignatureAlgorithm,
+            keyId: input.key.keyId,
           })
 
           return signature
         },
         verify: async (input) => {
-          const { mac0, jwk, options } = input
-          const { data, signature } = mac0.getRawVerificationData(options)
+          const { mac0, key } = input
 
-          const publicJwk = PublicJwk.fromUnknown(jwk)
-          const algorithm = mac0.algName ?? publicJwk.signatureAlgorithm
+          const algorithm = knownJwaFromCoseSignatureAlgorithm(mac0.signatureAlgorithmName)
 
           const { verified } = await kms.verify({
             key: {
-              publicJwk: jwk as KmsJwkPublicAsymmetric,
+              publicJwk: key.jwk as KmsJwkPublicAsymmetric,
             },
-            data,
+            data: mac0.toBeAuthenticated,
             algorithm,
-            signature,
+            signature: mac0.tag,
           })
 
           return verified
@@ -84,34 +87,26 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
       },
       sign1: {
         sign: async (input) => {
-          const { jwk, sign1 } = input
-          const { data } = sign1.getRawSigningData()
-
-          const publicJwk = PublicJwk.fromUnknown(jwk)
-          const algorithm = sign1.algName ?? publicJwk.signatureAlgorithm
+          if (!input.key.keyId) {
+            throw new MdocError('Missing required keyId on CoseKey for signing mdoc')
+          }
 
           const { signature } = await kms.sign({
-            data,
-            algorithm: algorithm as KnownJwaSignatureAlgorithm,
-            keyId: publicJwk.keyId,
+            data: input.toBeSigned,
+            algorithm: coseKeyToJwk.algorithm(input.algorithm),
+            keyId: input.key.keyId,
           })
 
           return signature
         },
         verify: async (input) => {
-          const { sign1, jwk, options } = input
-          const { data, signature } = sign1.getRawVerificationData(options)
-
-          const publicJwk = PublicJwk.fromUnknown(jwk)
-          const algorithm = sign1.algName ?? publicJwk.signatureAlgorithm
-
           const { verified } = await kms.verify({
             key: {
-              publicJwk: jwk as KmsJwkPublicAsymmetric,
+              publicJwk: input.key.jwk as KmsJwkPublicAsymmetric,
             },
-            data,
-            algorithm: algorithm as KnownJwaSignatureAlgorithm,
-            signature,
+            data: input.sign1.toBeSigned,
+            algorithm: input.sign1.signatureAlgorithmName as KnownJwaSignatureAlgorithm,
+            signature: input.sign1.signature,
           })
 
           return verified
@@ -127,9 +122,9 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
       },
       getPublicKey: async (input) => {
         const certificate = X509Certificate.fromRawCertificate(input.certificate)
-        return certificate.publicJwk.toJson()
+        return CoseKey.fromJwk(certificate.publicJwk.toJson())
       },
-      validateCertificateChain: async (input) => {
+      verifyCertificateChain: async (input) => {
         const certificateChain = input.x5chain.map((cert) => X509Certificate.fromRawCertificate(cert).toString('pem'))
         const trustedCertificates = input.trustedCertificates.map((cert) =>
           X509Certificate.fromRawCertificate(cert).toString('pem')
@@ -138,7 +133,7 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
         await X509Service.validateCertificateChain(agentContext, {
           certificateChain,
           trustedCertificates,
-          verificationDate: now,
+          verificationDate: input.now ?? now,
         })
       },
       getCertificateData: async (input) => {
@@ -149,6 +144,6 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
           thumbprint: await x509Certificate.getThumbprintInHex(agentContext),
         }
       },
-    } satisfies X509Context,
-  }
+    },
+  } satisfies MdocContext
 }

@@ -7,7 +7,6 @@ import {
   TypedArrayEncoder,
   VarintEncoder,
 } from '../../../../utils'
-import { Buffer } from '../../../../utils/buffer'
 import { DidDocument } from '../../domain'
 import { parseDid } from '../../domain/parse'
 
@@ -20,7 +19,7 @@ export const isLongFormDidPeer4 = (did: string) => LONG_RE.test(did)
 
 const hashEncodedDocument = (encodedDocument: string) =>
   MultiBaseEncoder.encode(
-    MultiHashEncoder.encode(TypedArrayEncoder.fromString(encodedDocument), 'sha-256'),
+    MultiHashEncoder.encode(TypedArrayEncoder.fromUtf8String(encodedDocument), 'sha-256'),
     'base58btc'
   )
 
@@ -48,7 +47,7 @@ export function didToNumAlgo4DidDocument(did: string) {
   if (multiCodecValue !== JSON_MULTICODEC_VARINT) {
     throw new CredoError('Not a JSON multicodec data')
   }
-  const didDocumentJson = JsonEncoder.fromBuffer(data.subarray(2))
+  const didDocumentJson = JsonEncoder.fromUint8Array(data.subarray(2))
 
   didDocumentJson.id = parsed.did
   didDocumentJson.alsoKnownAs = [parsed.did.slice(0, did.lastIndexOf(':'))]
@@ -95,9 +94,9 @@ export function didDocumentToNumAlgo4Did(didDocument: DidDocument) {
   deleteControllerIfPresent(didDocumentJson.capabilityInvocation)
 
   // Construct encoded document by prefixing did document with multicodec prefix for JSON
-  const buffer = Buffer.concat([
+  const buffer = TypedArrayEncoder.concat([
     VarintEncoder.encode(JSON_MULTICODEC_VARINT),
-    TypedArrayEncoder.fromString(JSON.stringify(didDocumentJson)),
+    TypedArrayEncoder.fromUtf8String(JSON.stringify(didDocumentJson)),
   ])
 
   const encodedDocument = MultiBaseEncoder.encode(buffer, 'base58btc')

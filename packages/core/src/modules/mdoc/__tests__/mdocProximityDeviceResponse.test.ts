@@ -1,7 +1,6 @@
-import { cborEncode, DeviceRequest, parseDeviceResponse } from '@animo-id/mdoc'
+import { DeviceRequest, DocRequest, ItemsRequest, SessionTranscript } from '@owf/mdoc'
 import { getAgentOptions } from '../../../../tests'
-import { Agent, X509Certificate } from '../../..'
-import { TypedArrayEncoder } from '../../../utils'
+import { Agent, TypedArrayEncoder, X509Certificate } from '../../..'
 import { PublicJwk } from '../../kms'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
@@ -44,36 +43,39 @@ PQQDAgNIADBFAiAJ/Qyrl7A+ePZOdNfc7ohmjEdqCvxaos6//gfTvncuqQIhANo4
 q8mKCA9J8k/+zh//yKbN1bLAtdqPx7dnrDqV3Lg+
 -----END CERTIFICATE-----`
 
-const DEVICE_REQUEST_1 = DeviceRequest.from('1.0', [
-  {
-    itemsRequestData: {
-      docType: 'org.iso.18013.5.1.mDL',
-      nameSpaces: new Map([
-        [
-          'org.iso.18013.5.1',
-          new Map([
-            ['family_name', false],
-            ['given_name', false],
-            ['birth_date', false],
-            ['issue_date', false],
-            ['expiry_date', false],
-            ['issuing_country', false],
-            ['issuing_authority', false],
-            ['issuing_jurisdiction', false],
-            ['document_number', false],
-            ['portrait', false],
-            ['driving_privileges', false],
-            ['un_distinguishing_sign', false],
-          ]),
-        ],
-      ]),
-    },
-  },
-])
+const DEVICE_REQUEST_1 = DeviceRequest.create({
+  version: '1.0',
+  docRequests: [
+    DocRequest.create({
+      itemsRequest: ItemsRequest.create({
+        docType: 'org.iso.18013.5.1.mDL',
+        namespaces: new Map([
+          [
+            'org.iso.18013.5.1',
+            new Map([
+              ['family_name', false],
+              ['given_name', false],
+              ['birth_date', false],
+              ['issue_date', false],
+              ['expiry_date', false],
+              ['issuing_country', false],
+              ['issuing_authority', false],
+              ['issuing_jurisdiction', false],
+              ['document_number', false],
+              ['portrait', false],
+              ['driving_privileges', false],
+              ['un_distinguishing_sign', false],
+            ]),
+          ],
+        ]),
+      }),
+    }),
+  ],
+})
 
 describe('mdoc device-response proximity test', () => {
   let mdoc: Mdoc
-  let parsedDocument: Mdoc
+  let parsedDeviceResponse: MdocDeviceResponse
   let agent: Agent
 
   beforeEach(async () => {
@@ -132,47 +134,37 @@ describe('mdoc device-response proximity test', () => {
         },
       },
     })
+    parsedDeviceResponse = await MdocDeviceResponse.createDeviceResponse(agent.context, {
+      mdocs: [mdoc],
 
-    //  This is the Device side
-    {
-      const result = await MdocDeviceResponse.createDeviceResponse(agent.context, {
-        mdocs: [mdoc],
+      documentRequests: DEVICE_REQUEST_1.docRequests.map((v) => {
+        return {
+          docType: v.itemsRequest.docType,
+          nameSpaces: namespacesMapToRecord(v.itemsRequest.namespaces),
+        }
+      }),
 
-        documentRequests: DEVICE_REQUEST_1.docRequests.map((v) => {
-          return {
-            docType: v.itemsRequest.data.docType,
-            nameSpaces: namespacesMapToRecord(v.itemsRequest.data.nameSpaces),
-          }
-        }),
-        sessionTranscriptOptions: {
-          type: 'sesionTranscriptBytes',
-          sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])),
-        },
-        deviceNameSpaces: {
-          'com.foobar-device': { test: 1234 },
-        },
-      })
+      sessionTranscriptOptions: {
+        type: 'sesionTranscriptBytes',
+        sessionTranscriptBytes: SessionTranscript.decode(
+          TypedArrayEncoder.fromHex(
+            'd81859024183d8185858a20063312e30018201d818584ba4010220012158205a88d182bce5f42efa59943f33359d2e8a968ff289d93e5fa444b624343167fe225820b16e8cf858ddc7690407ba61d4c338237a8cfcf3de6aa672fc60a557aa32fc67d818584ba40102200121582060e3392385041f51403051f2415531cb56dd3f999c71687013aac6768bc8187e225820e58deb8fdbe907f7dd5368245551a34796f7d2215c440c339bb0f7b67beccdfa8258c391020f487315d10209616301013001046d646f631a200c016170706c69636174696f6e2f766e642e626c7565746f6f74682e6c652e6f6f6230081b28128b37282801021c015c1e580469736f2e6f72673a31383031333a646576696365656e676167656d656e746d646f63a20063312e30018201d818584ba4010220012158205a88d182bce5f42efa59943f33359d2e8a968ff289d93e5fa444b624343167fe225820b16e8cf858ddc7690407ba61d4c338237a8cfcf3de6aa672fc60a557aa32fc6758cd91022548721591020263720102110204616301013000110206616301036e6663005102046163010157001a201e016170706c69636174696f6e2f766e642e626c7565746f6f74682e6c652e6f6f6230081b28078080bf2801021c021107c832fff6d26fa0beb34dfcd555d4823a1c11010369736f2e6f72673a31383031333a6e66636e6663015a172b016170706c69636174696f6e2f766e642e7766612e6e616e57030101032302001324fec9a70b97ac9684a4e326176ef5b981c5e8533e5f00298cfccbc35e700a6b020414'
+          )
+        ).encode(),
+      },
 
-      const parsed = parseDeviceResponse(result)
-      expect(parsed.documents).toHaveLength(1)
-
-      const prepared = parsed.documents[0].prepare()
-      const docType = prepared.get('docType') as string
-      const issuerSigned = cborEncode(prepared.get('issuerSigned'))
-      const deviceSigned = cborEncode(prepared.get('deviceSigned'))
-      parsedDocument = Mdoc.fromDeviceSignedDocument(
-        TypedArrayEncoder.toBase64URL(issuerSigned),
-        TypedArrayEncoder.toBase64URL(deviceSigned),
-        docType
-      )
-    }
+      deviceNameSpaces: {
+        'com.foobar-device': { test: 1234 },
+      },
+    })
   })
 
   it('should contain the device namespaces', () => {
-    expect(parsedDocument.deviceSignedNamespaces).toEqual({
-      'com.foobar-device': {
-        test: 1234,
-      },
-    })
+    expect(
+      Array.from(
+        parsedDeviceResponse.deviceResponse.documents?.[0].deviceSigned.deviceNamespaces.deviceNamespaces.entries() ??
+          []
+      ).map(([namespace, value]) => [namespace, Array.from(value.deviceSignedItems.entries())])
+    ).toEqual([['com.foobar-device', [['test', 1234]]]])
   })
 })

@@ -1,4 +1,4 @@
-export { DateOnly } from '@animo-id/mdoc'
+export { DateOnly } from '@owf/mdoc'
 export * from './Mdoc'
 export * from './MdocApi'
 export * from './MdocDeviceResponse'

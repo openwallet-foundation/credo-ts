@@ -118,7 +118,7 @@
     "@credo-ts/tenants": "workspace:*",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
-    "drizzle-kit": "^0.31.9",
+    "drizzle-kit": "^0.31.10",
     "shell": "^0.12.0",
     "tsyringe": "catalog:",
     "zod": "catalog:"
@@ -127,7 +127,7 @@
     "drizzle-orm": "^0.44.6"
   },
   "devDependencies": {
-    "@libsql/client": "^0.15.15",
+    "@libsql/client": "^0.17.2",
     "@types/pg": "^8.16.0",
     "@types/yargs": "^17.0.35",
     "drizzle-orm": "^0.45.1",

@@ -52,15 +52,7 @@ import { anoncredsBundle } from '../../drizzle-storage/src/anoncreds/bundle'
 import type { AnyDrizzleDatabase } from '../../drizzle-storage/src/DrizzleStorageModuleConfig'
 import { didcommBundle } from '../../drizzle-storage/src/didcomm/bundle'
 import { agentDependencies, NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../node/src'
-import type {
-  Agent,
-  AgentDependencies,
-  AnyUint8Array,
-  BaseEvent,
-  InitConfig,
-  InjectionToken,
-  KeyDidCreateOptions,
-} from '../src'
+import type { Agent, AgentDependencies, BaseEvent, InitConfig, InjectionToken, KeyDidCreateOptions } from '../src'
 import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import { DidKey } from '../src/modules/dids/methods/key'
@@ -190,7 +182,7 @@ export function getAgentOptions<
   } as const
 }
 
-export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: AnyUint8Array) {
+export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Uint8Array) {
   const { privateJwk } = transformPrivateKeyToPrivateJwk({
     privateKey,
     type: {
@@ -856,7 +848,7 @@ export async function createDidKidVerificationMethod(agentContext: AgentContext,
             kty: 'OKP',
             crv: 'Ed25519',
           },
-          privateKey: TypedArrayEncoder.fromString(secretKey),
+          privateKey: TypedArrayEncoder.fromUtf8String(secretKey),
         }).privateJwk,
       })
     : await kms.createKey({
