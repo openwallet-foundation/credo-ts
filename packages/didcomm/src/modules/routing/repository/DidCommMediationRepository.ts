@@ -1,6 +1,14 @@
 import type { AgentContext } from '@credo-ts/core'
 
-import { EventEmitter, InjectionSymbols, inject, injectable, Repository, type StorageService } from '@credo-ts/core'
+import {
+  EventEmitter,
+  getDidPeer4ShortFormForEquivalence,
+  InjectionSymbols,
+  inject,
+  injectable,
+  Repository,
+  type StorageService,
+} from '@credo-ts/core'
 
 import { DidCommMediationRecord } from './DidCommMediationRecord'
 
@@ -19,13 +27,29 @@ export class DidCommMediationRepository extends Repository<DidCommMediationRecor
     })
   }
 
-  public getSingleByRecipientDid(agentContext: AgentContext, recipientDid: string) {
-    return this.getSingleByQuery(agentContext, {
-      recipientDids: [recipientDid],
+  public findSingleByRecipientKey(agentContext: AgentContext, recipientKey: string) {
+    return this.findSingleByQuery(agentContext, {
+      recipientKeys: [recipientKey],
     })
   }
 
-  public async getByConnectionId(agentContext: AgentContext, connectionId: string): Promise<DidCommMediationRecord> {
+  /**
+   * Resolves a mediation record whose keylist includes this recipient DID.
+   *
+   * did:peer:4 long form is canonicalized to short form before querying.
+   * The mediator stores canonical routing DIDs at keylist-update time.
+   */
+  public async getSingleByRecipientDid(agentContext: AgentContext, recipientDid: string) {
+    const canonicalDid = getDidPeer4ShortFormForEquivalence(recipientDid) ?? recipientDid
+    return this.getSingleByQuery(agentContext, { recipientDids: [canonicalDid] })
+  }
+
+  public async findSingleByRecipientDid(agentContext: AgentContext, recipientDid: string) {
+    const canonicalDid = getDidPeer4ShortFormForEquivalence(recipientDid) ?? recipientDid
+    return this.findSingleByQuery(agentContext, { recipientDids: [canonicalDid] })
+  }
+
+  public async getByConnectionId(agentContext: AgentContext, connectionId: string) {
     return this.getSingleByQuery(agentContext, { connectionId })
   }
 }

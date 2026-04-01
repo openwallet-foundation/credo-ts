@@ -3,7 +3,6 @@ import { IsEnum, ValidateNested } from 'class-validator'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { Ed25519PublicJwk, X25519PublicJwk } from '../../kms'
 import type { DidDocumentKey } from '../DidsApiOptions'
 import { DidDocument } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
@@ -93,20 +92,12 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
       did: this.did,
       methodSpecificIdentifier: did.id,
 
-      // Calculate if we have a did document, otherwise use the already present recipient keys
-      // Include both Ed25519 and X25519 fingerprints for Ed25519 keys so DIDComm v2 lookup works
-      // (v2 returns X25519 keys; DidRecords store Ed25519 from did:peer:1)
+      // Calculate if we have a did document, otherwise use the already present recipient keys.
+      // For numAlgo 2/4 peer DIDs the didDocument is not stored inline; PeerDidRegistrar already
+      // writes X25519 fingerprints to _tags at registration time. For numAlgo 1 (stored inline)
+      // we keep fingerprints as-is (Ed25519) so v1 lookups remain consistent.
       recipientKeyFingerprints: this.didDocument
-        ? (() => {
-            const prints = new Set<string>()
-            for (const recipientKey of this.didDocument!.recipientKeys) {
-              prints.add(recipientKey.fingerprint)
-              if (recipientKey.is(Ed25519PublicJwk)) {
-                prints.add(recipientKey.convertTo(X25519PublicJwk).fingerprint)
-              }
-            }
-            return [...prints]
-          })()
+        ? this.didDocument.recipientKeys.map((recipientKey) => recipientKey.fingerprint)
         : this._tags.recipientKeyFingerprints,
     }
   }

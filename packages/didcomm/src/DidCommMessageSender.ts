@@ -19,7 +19,7 @@ import {
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
-import { buildV2PlaintextFromMessage } from './v2'
+import { buildV2PlaintextFromMessage, type DidCommV2PlaintextMessage } from './v2'
 import { DidCommV2EnvelopeService } from './v2'
 import { createForwardMessageV2 } from './modules/routing/messages/v2'
 import type { DidCommMessageSentEvent } from './DidCommEvents'
@@ -125,7 +125,11 @@ export class DidCommMessageSender {
     ) {
       try {
         const recipientX25519 = toX25519(keys.recipientKeys[0])
-        recipientX25519.keyId = keys.recipientKeys[0].hasKeyId ? keys.recipientKeys[0].keyId : keys.recipientKeys[0].legacyKeyId
+        // Use did:key as kid when no explicit keyId — includes multicodec prefix so receiver
+        // can unambiguously determine the key type (Ed25519 vs X25519).
+        recipientX25519.keyId = keys.recipientKeys[0].hasKeyId
+          ? keys.recipientKeys[0].keyId
+          : new DidKey(keys.recipientKeys[0]).did
         const senderX25519 = toX25519(keys.senderKey)
         senderX25519.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
         const plaintext = buildV2PlaintextFromMessage(message, {
@@ -162,6 +166,32 @@ export class DidCommMessageSender {
     }
   }
 
+  /**
+   * Value for Forward `next` / mediator keylist lookup. Must match CM2 `recipient_did`
+   * ({@link DidCommMediationRecipientApi.provisionV2} registers the holder's peer DID).
+   */
+  private resolveRecipientNextForMediationForward(
+    connection: DidCommConnectionRecord | undefined,
+    plaintext: DidCommV2PlaintextMessage,
+    keys: EnvelopeKeys
+  ): string {
+    const keyDidFallback = new DidKey(keys.recipientKeys[0]).did
+    if (connection?.theirDid && connection.theirDid.length > 0) {
+      return connection.theirDid
+    }
+    const tagTheirDid = connection?.getTags().theirDid
+    if (typeof tagTheirDid === 'string' && tagTheirDid.length > 0) {
+      return tagTheirDid
+    }
+    const to0 = plaintext.to?.[0]
+    if (typeof to0 === 'string' && to0.length > 0) {
+      if (to0.startsWith('did:peer:') || to0.startsWith('did:web:')) {
+        return to0
+      }
+    }
+    return keyDidFallback
+  }
+
   private async packV2WithForward(
     agentContext: AgentContext,
     message: DidCommMessage,
@@ -169,14 +199,20 @@ export class DidCommMessageSender {
     connection?: DidCommConnectionRecord
   ): Promise<DidCommEncryptedMessage> {
     const recipientX25519 = toX25519(keys.recipientKeys[0])
-    recipientX25519.keyId = keys.recipientKeys[0].hasKeyId ? keys.recipientKeys[0].keyId : keys.recipientKeys[0].legacyKeyId
+    recipientX25519.keyId = keys.recipientKeys[0].hasKeyId
+      ? keys.recipientKeys[0].keyId
+      : new DidKey(keys.recipientKeys[0]).did
     const senderX25519 = toX25519(keys.senderKey!)
     senderX25519.keyId = keys.senderKey!.hasKeyId ? keys.senderKey!.keyId : keys.senderKey!.legacyKeyId
 
+    const tagsTheirDid = connection?.getTags().theirDid
+    const theirDidForEnvelope =
+      (connection?.theirDid && connection.theirDid.length > 0 ? connection.theirDid : undefined) ??
+      (typeof tagsTheirDid === 'string' && tagsTheirDid.length > 0 ? tagsTheirDid : undefined)
     const plaintext = buildV2PlaintextFromMessage(message, {
       useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,
-      ...(connection?.did && connection?.theirDid
-        ? { from: connection.did, to: [connection.theirDid] }
+      ...(connection?.did && theirDidForEnvelope
+        ? { from: connection.did, to: [theirDidForEnvelope] }
         : undefined),
     })
 
@@ -186,9 +222,7 @@ export class DidCommMessageSender {
       senderKeySkid: keys.senderKeySkid,
     })
 
-    // Use did:key derived from the recipient's key agreement key as `next`.
-    // This must match what the recipient registered with the mediator (did:key, not did:peer:4).
-    const recipientNext = new DidKey(keys.recipientKeys[0]).did
+    const recipientNext = this.resolveRecipientNextForMediationForward(connection, plaintext, keys)
     const routingKeysReversed = [...keys.routingKeys].reverse()
     for (let i = 0; i < routingKeysReversed.length; i++) {
       const routingKey = routingKeysReversed[i]
@@ -521,8 +555,22 @@ export class DidCommMessageSender {
               service,
               senderKey: senderVerificationMethod.publicJwk,
               returnRoute: shouldAddReturnRoute,
+              // Per DIDComm v2 spec section 5.1.4, skid MUST point into the sender's keyAgreement (X25519),
+              // not authentication (Ed25519). Find the keyAgreement VM whose X25519 key matches
+              // the converted Ed25519 sender key, and use its id as skid.
               senderKeySkid: (() => {
-                const id = senderVerificationMethod.verificationMethod.id
+                const senderX25519 = senderVerificationMethod.publicJwk.convertTo(Kms.X25519PublicJwk)
+                const kaVm = (didDocument.keyAgreement ?? [])
+                  .map((ref) => (typeof ref === 'string' ? didDocument.dereferenceVerificationMethod(ref) : ref))
+                  .find((vm) => {
+                    try {
+                      const vmJwk = getPublicJwkFromVerificationMethod(vm)
+                      return vmJwk.is(Kms.X25519PublicJwk) && vmJwk.equals(senderX25519)
+                    } catch {
+                      return false
+                    }
+                  })
+                const id = kaVm?.id ?? senderVerificationMethod.verificationMethod.id
                 if (typeof id !== 'string') return undefined
                 if (id.startsWith('did:')) return id
                 if (id.startsWith('#')) return `${didDocument.id}${id}`
@@ -896,8 +944,9 @@ export class DidCommMessageSender {
           }
         }
       }
-    } else if (connection.outOfBandId && connection.isRequester) {
+    } else if (connection.outOfBandId && connection.isRequester && connection.previousTheirDids.length === 0) {
       // theirDid may be null (e.g. before response processed, or race); use OOB invitation services
+      // Skip if previousTheirDids is non-empty — that indicates a hangup / did-rotate termination
       try {
         const outOfBandRepository = agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
         const oobRecord = await outOfBandRepository.findById(agentContext, connection.outOfBandId)

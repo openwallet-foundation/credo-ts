@@ -33,6 +33,9 @@ export {
 export {
   didDocumentToNumAlgo4Did,
   didToNumAlgo4DidDocument,
+  getAlternativeDidsForNumAlgo4Did,
+  getDidPeer4ShortFormForEquivalence,
+  isShortFormDidPeer4,
 } from './modules/dids/methods/peer/peerDidNumAlgo4'
 export { DidRecordMetadataKeys } from './modules/dids/repository/didRecordMetadataTypes'
 export * from './modules/dif-presentation-exchange'

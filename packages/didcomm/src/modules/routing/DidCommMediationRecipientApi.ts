@@ -2,12 +2,15 @@ import {
   AgentContext,
   CredoError,
   DidDocument,
+  didDocumentToNumAlgo4Did,
   DidsApi,
   EventEmitter,
   filterContextCorrelationId,
+  getAlternativeDidsForNumAlgo4Did,
   InjectionSymbols,
   inject,
   injectable,
+  isShortFormDidPeer4,
   type Logger,
   verkeyToDidKey,
 } from '@credo-ts/core'
@@ -472,12 +475,10 @@ export class DidCommMediationRecipientApi {
       this.agentContext,
       connection
     )
-
     const observable = this.eventEmitter.observable<DidCommMediationStateChangedEvent>(
       DidCommRoutingEventTypes.MediationStateChanged
     )
     const subject = new ReplaySubject<DidCommMediationStateChangedEvent>(1)
-
     observable
       .pipe(
         filterContextCorrelationId(this.agentContext.contextCorrelationId),
@@ -498,9 +499,30 @@ export class DidCommMediationRecipientApi {
       associatedRecord: mediationRecord,
     })
     await this.sendMessage(outboundMessageContext)
-
     const event = await firstValueFrom(subject)
     return event.payload.mediationRecord
+  }
+
+  /**
+   * CM2 keylist tags are exact strings; senders may use long or short did:peer:4 in forward `next`.
+   * Register every stable variant we can derive so the mediator finds the record.
+   */
+  private async recipientDidKeylistVariantsForProvision(recipientDid: string): Promise<string[]> {
+    const variants = new Set<string>([recipientDid])
+    getAlternativeDidsForNumAlgo4Did(recipientDid)?.forEach((d) => variants.add(d))
+    if (isShortFormDidPeer4(recipientDid)) {
+      try {
+        const { didDocument } = await this.dids.resolve(recipientDid)
+        if (didDocument) {
+          const { longFormDid } = didDocumentToNumAlgo4Did(didDocument)
+          variants.add(longFormDid)
+          getAlternativeDidsForNumAlgo4Did(longFormDid)?.forEach((d) => variants.add(d))
+        }
+      } catch {
+        // Resolution can fail for exotic stacks; primary did still sent
+      }
+    }
+    return [...variants]
   }
 
   /**
@@ -522,11 +544,14 @@ export class DidCommMediationRecipientApi {
       const connectionRecord = await this.connectionService.getById(this.agentContext, connection.id)
       const recipientDid = connectionRecord.did
       if (recipientDid) {
-        this.logger.debug('Sending keylist-update to register recipient DID with mediator')
+        const toRegister = await this.recipientDidKeylistVariantsForProvision(recipientDid)
+        this.logger.debug('Sending keylist-update to register recipient DID variant(s) with mediator', {
+          toRegister,
+        })
         mediation = await this.mediationRecipientService.keylistUpdateAndAwaitV2(
           this.agentContext,
           mediation,
-          [{ recipientDid, action: KeylistUpdateActionV2.add }],
+          toRegister.map((did) => ({ recipientDid: did, action: KeylistUpdateActionV2.add })),
           15000
         )
       }

@@ -20,6 +20,7 @@ const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB Implicit',
   {
     endpoints: ['rxjs:faber'],
+    didcommVersions: ['v1', 'v2'],
   },
   {},
   {
@@ -34,6 +35,7 @@ const aliceAgentOptions = getAgentOptions(
   'Alice Agent OOB Implicit',
   {
     endpoints: ['rxjs:alice'],
+    didcommVersions: ['v1', 'v2'],
   },
   {},
   {
@@ -98,8 +100,8 @@ describe('out of band implicit', () => {
       aliceAgent.didcomm.oob.receiveImplicitInvitation({
         did: inMemoryDid,
         didCommVersion: 'v2',
-        label: 'Custom Alice',
         handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+        label: 'Alice',
       })
     ).rejects.toThrow(/handshakeProtocols cannot be used with DIDComm v2/)
   })
