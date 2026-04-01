@@ -1,6 +1,4 @@
-import type { AnyUint8Array } from '@credo-ts/core'
-
-export function bytesToBigint(b: AnyUint8Array): bigint {
+export function bytesToBigint(b: Uint8Array): bigint {
   if (b.length === 0) {
     throw new Error('Empty byte array is not supported')
   }

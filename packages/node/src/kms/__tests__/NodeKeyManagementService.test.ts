@@ -1,8 +1,7 @@
-import { Buffer } from 'node:buffer'
 import { randomBytes } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { JsonEncoder, Kms, TypedArrayEncoder, ZodValidationError } from '@credo-ts/core'
+import { CredoError, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { getAgentContext } from '../../../../core/tests'
 import { NodeInMemoryKeyManagementStorage } from '../NodeInMemoryKeyManagementStorage'
 import { NodeKeyManagementService } from '../NodeKeyManagementService'
@@ -1209,7 +1208,7 @@ describe('NodeKeyManagementService', () => {
           algorithm: 'A128GCM',
           iv,
         },
-        data: Buffer.from('heelllo', 'utf-8'),
+        data: TypedArrayEncoder.fromUtf8String('heelllo'),
       })
 
       const { data } = await service.decrypt(agentContext, {
@@ -1222,7 +1221,7 @@ describe('NodeKeyManagementService', () => {
         encrypted,
       })
 
-      expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
     })
 
     it('decrypts with A192GCM', async () => {
@@ -1237,7 +1236,7 @@ describe('NodeKeyManagementService', () => {
           algorithm: 'A192GCM',
           iv,
         },
-        data: Buffer.from('heelllo', 'utf-8'),
+        data: TypedArrayEncoder.fromUtf8String('heelllo'),
       })
 
       const { data } = await service.decrypt(agentContext, {
@@ -1250,7 +1249,7 @@ describe('NodeKeyManagementService', () => {
         encrypted,
       })
 
-      expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
     })
 
     it('decrypts with A256GCM', async () => {
@@ -1265,7 +1264,7 @@ describe('NodeKeyManagementService', () => {
           algorithm: 'A256GCM',
           iv,
         },
-        data: Buffer.from('heelllo', 'utf-8'),
+        data: TypedArrayEncoder.fromUtf8String('heelllo'),
       })
 
       const { data } = await service.decrypt(agentContext, {
@@ -1278,7 +1277,7 @@ describe('NodeKeyManagementService', () => {
         encrypted,
       })
 
-      expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
     })
 
     it('decrypts with A128CBC-HS256', async () => {
@@ -1293,7 +1292,7 @@ describe('NodeKeyManagementService', () => {
           algorithm: 'A128CBC-HS256',
           iv,
         },
-        data: Buffer.from('heelllo', 'utf-8'),
+        data: TypedArrayEncoder.fromUtf8String('heelllo'),
       })
 
       const { data } = await service.decrypt(agentContext, {
@@ -1306,7 +1305,7 @@ describe('NodeKeyManagementService', () => {
         encrypted,
       })
 
-      expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
     })
 
     it('decrypts JWE using ECDH-ES and A256GCM based on test vector from OpenID Conformance test', async () => {
@@ -1325,30 +1324,30 @@ describe('NodeKeyManagementService', () => {
       }
 
       const [encodedHeader /* encryptionKey */, , encodedIv, encodedCiphertext, encodedTag] = compactJwe.split('.')
-      const header = JsonEncoder.fromBase64(encodedHeader)
+      const header = JsonEncoder.fromBase64Url(encodedHeader)
 
       const recipientKey = await service.importKey(agentContext, { privateJwk: privateKeyJwk })
       const { data } = await service.decrypt(agentContext, {
         decryption: {
           algorithm: 'A256GCM',
-          iv: TypedArrayEncoder.fromBase64(encodedIv),
-          tag: TypedArrayEncoder.fromBase64(encodedTag),
-          aad: TypedArrayEncoder.fromString(encodedHeader),
+          iv: TypedArrayEncoder.fromBase64Url(encodedIv),
+          tag: TypedArrayEncoder.fromBase64Url(encodedTag),
+          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
         },
         key: {
           keyAgreement: {
             algorithm: 'ECDH-ES',
             keyId: recipientKey.keyId,
             externalPublicJwk: header.epk,
-            apu: TypedArrayEncoder.fromBase64(header.apu),
-            apv: TypedArrayEncoder.fromBase64(header.apv),
+            apu: TypedArrayEncoder.fromBase64Url(header.apu),
+            apv: TypedArrayEncoder.fromBase64Url(header.apv),
           },
         },
-        encrypted: TypedArrayEncoder.fromBase64(encodedCiphertext),
+        encrypted: TypedArrayEncoder.fromBase64Url(encodedCiphertext),
       })
 
       expect(header).toEqual(expectedHeader)
-      expect(JsonEncoder.fromBuffer(data)).toEqual(decodedPayload)
+      expect(JsonEncoder.fromUint8Array(data)).toEqual(decodedPayload)
     })
   })
 
@@ -1801,8 +1800,8 @@ describe('NodeKeyManagementService', () => {
         .then(() => undefined)
         .catch((e) => e)
       expect(error).toBeInstanceOf(Kms.KeyManagementError)
-      expect(error.cause).toBeInstanceOf(ZodValidationError)
-      expect(error.cause.message).toContain('Must be a base64url string')
+      expect(error.cause).toBeInstanceOf(CredoError)
+      expect(error.cause.message).toContain('Could not decode data')
     })
 
     it('generates random keyId when not provided', async () => {

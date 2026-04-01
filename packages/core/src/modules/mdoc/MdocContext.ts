@@ -39,14 +39,14 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
         const { privateKey, publicKey, sessionTranscriptBytes } = input
         const ikm = p256.getSharedSecret(privateKey, publicKey, true).slice(1)
         const salt = Hasher.hash(sessionTranscriptBytes, 'sha-256')
-        const info = TypedArrayEncoder.fromString('EMacKey')
+        const info = TypedArrayEncoder.fromUtf8String('EMacKey')
         const hk1 = hkdf(sha256, ikm, salt, info, 32)
 
         return CoseKey.fromJwk({
           key_ops: ['sign', 'verify'],
           ext: true,
           kty: 'oct',
-          k: TypedArrayEncoder.toBase64URL(hk1),
+          k: TypedArrayEncoder.toBase64Url(hk1),
           alg: 'HS256',
         })
       },

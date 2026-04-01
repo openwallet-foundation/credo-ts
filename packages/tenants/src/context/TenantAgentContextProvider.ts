@@ -147,7 +147,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
   }
 
   private getRecipientKeysFromEncryptedMessage(jwe: DidCommEncryptedMessage): Kms.PublicJwk[] {
-    const jweProtected = JsonEncoder.fromBase64(jwe.protected)
+    const jweProtected = JsonEncoder.fromBase64Url(jwe.protected)
     if (!Array.isArray(jweProtected.recipients)) return []
 
     const recipientKeys: Kms.PublicJwk[] = []

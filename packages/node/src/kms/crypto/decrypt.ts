@@ -1,16 +1,15 @@
 import { Buffer } from 'node:buffer'
 import type { DecipherGCM } from 'node:crypto'
 import { createDecipheriv, createSecretKey, timingSafeEqual } from 'node:crypto'
-import { type AnyUint8Array, Kms, type Uint8ArrayBuffer } from '@credo-ts/core'
-
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { performSign } from './sign'
 
 export async function performDecrypt(
   key: Kms.KmsJwkPrivateOct,
   dataDecryption: Kms.KmsDecryptDataDecryption,
-  encrypted: AnyUint8Array
-): Promise<{ data: Uint8ArrayBuffer }> {
-  const secretKeyBytes = Buffer.from(key.k, 'base64url')
+  encrypted: Uint8Array
+): Promise<{ data: Uint8Array }> {
+  const secretKeyBytes = TypedArrayEncoder.fromBase64Url(key.k)
   const nodeKey = createSecretKey(secretKeyBytes)
 
   // Create decipher with key and IV
@@ -77,8 +76,12 @@ export async function performDecrypt(
     const macData = Buffer.concat([dataDecryption.aad ?? Buffer.alloc(0), dataDecryption.iv, encrypted, al])
 
     // Verify the authentication tag
-    const hmac = await performSign({ kty: 'oct', k: macKey.toString('base64url') }, algSettings.hmacAlg, macData)
-    const calculatedTag = Buffer.from(hmac).subarray(0, algSettings.keySize) // Truncate to appropriate size
+    const hmac = await performSign(
+      { kty: 'oct', k: TypedArrayEncoder.toBase64Url(macKey) },
+      algSettings.hmacAlg,
+      macData
+    )
+    const calculatedTag = hmac.subarray(0, algSettings.keySize) // Truncate to appropriate size
 
     if (!timingSafeEqual(calculatedTag, dataDecryption.tag)) {
       throw new Kms.KeyManagementError(

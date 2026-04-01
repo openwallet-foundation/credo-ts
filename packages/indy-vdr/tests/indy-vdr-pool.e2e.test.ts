@@ -30,7 +30,7 @@ describe('IndyVdrPoolService', () => {
   beforeAll(async () => {
     const createdKey = await kms.importKey({
       privateJwk: transformPrivateKeyToPrivateJwk({
-        privateKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),
+        privateKey: TypedArrayEncoder.fromUtf8String('000000000000000000000000Trustee9'),
         type: {
           kty: 'OKP',
           crv: 'Ed25519',

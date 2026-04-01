@@ -11,7 +11,7 @@ export async function multiSignRequest<Request extends IndyVdrRequest>(
 ) {
   const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
   const { signature } = await kms.sign({
-    data: TypedArrayEncoder.fromString(request.signatureInput),
+    data: TypedArrayEncoder.fromUtf8String(request.signatureInput),
     algorithm: 'EdDSA',
     keyId: signingKey.keyId,
   })

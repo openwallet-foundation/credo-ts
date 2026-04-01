@@ -64,7 +64,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
    * @throws {CredoError} If resolution, parsing, or validation fails.
    */
   private _digestMultibase(value: string) {
-    const valueBytes = TypedArrayEncoder.fromString(value)
+    const valueBytes = TypedArrayEncoder.fromUtf8String(value)
     const digestMultihash = MultiHashEncoder.encode(valueBytes, 'sha-256')
     const digestMultibase = MultiBaseEncoder.encode(digestMultihash, 'base58btc')
     return digestMultibase

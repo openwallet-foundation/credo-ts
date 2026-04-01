@@ -264,7 +264,9 @@ export class DataIntegrityDidCommCredentialFormatService
 
     const signedAttach = new DidCommAttachment({
       mimeType: 'application/json',
-      data: new DidCommAttachmentData({ base64: jws.payload }),
+      data: new DidCommAttachmentData({
+        base64: TypedArrayEncoder.toBase64(TypedArrayEncoder.fromBase64Url(jws.payload)),
+      }),
     })
 
     signedAttach.addJws(jws)
@@ -284,7 +286,7 @@ export class DataIntegrityDidCommCredentialFormatService
         header: jws.header,
         protected: jws.protected,
         signature: jws.signature,
-        payload: signedAttachment.data.base64,
+        payload: TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromBase64(signedAttachment.data.base64)),
       },
       allowedJwsSignerMethods: ['did'],
       resolveJwsSigner: async ({ protectedHeader: { kid, alg } }) => {
@@ -1086,7 +1088,7 @@ export class DataIntegrityDidCommCredentialFormatService
         didMethodsSupported:
           didMethodsSupported ?? agentContext.dependencyManager.resolve(DidsApi).supportedResolverMethods,
         algsSupported: algsSupported ?? this.getSupportedJwaSignatureAlgorithms(agentContext),
-        nonce: TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
+        nonce: TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
       }
 
       if (didCommSignedAttachmentBindingMethod.algsSupported.length === 0) {

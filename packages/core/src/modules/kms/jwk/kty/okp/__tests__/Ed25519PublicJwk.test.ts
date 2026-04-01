@@ -34,7 +34,7 @@ describe('Ed25519PublicJwk', () => {
     expect(publicJwk.toJson()).toEqual({
       kty: 'OKP',
       crv: 'Ed25519',
-      x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(TEST_ED25519_BASE58_KEY)),
+      x: TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromBase58(TEST_ED25519_BASE58_KEY)),
     })
   })
 })

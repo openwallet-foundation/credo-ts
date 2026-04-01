@@ -1,6 +1,5 @@
 import { type ValidityInfoOptions } from '@owf/mdoc'
 import type { DcqlQuery } from 'dcql'
-import type { AnyUint8Array } from '../../types'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate, X509Certificate } from '../x509'
@@ -38,7 +37,7 @@ export type MdocOpenId4VpDraft18SessionTranscriptOptions = {
 
 export type MdocSessionTranscriptByteOptions = {
   type: 'sesionTranscriptBytes'
-  sessionTranscriptBytes: AnyUint8Array
+  sessionTranscriptBytes: Uint8Array
 }
 
 export type MdocOpenId4VpDcApiSessionTranscriptOptions = {

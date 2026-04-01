@@ -58,7 +58,7 @@ export function didToNumAlgo2DidDocument(did: string) {
 
     // Handle service entry first
     if (purpose === DidPeerPurpose.Service) {
-      let services = JsonEncoder.fromBase64(entryContent)
+      let services = JsonEncoder.fromBase64Url(entryContent)
 
       // Make sure we have an array of services (can be both json or array)
       services = Array.isArray(services) ? services : [services]
@@ -153,7 +153,7 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
     })
 
     for (const abbreviatedService of abbreviatedServices) {
-      const encodedService = JsonEncoder.toBase64URL(abbreviatedService)
+      const encodedService = JsonEncoder.toBase64Url(abbreviatedService)
       did += `.${DidPeerPurpose.Service}${encodedService}`
     }
   }
