@@ -16,11 +16,11 @@ catalogs:
       specifier: 2.3.14
       version: 2.3.14
     '@hyperledger/anoncreds-nodejs':
-      specifier: 0.4.0-alpha-20260327110255
-      version: 0.4.0-alpha-20260327110255
+      specifier: ^0.4.0
+      version: 0.4.0
     '@hyperledger/anoncreds-shared':
-      specifier: 0.4.0-alpha-20260327110255
-      version: 0.4.0-alpha-20260327110255
+      specifier: ^0.4.0
+      version: 0.4.0
     '@hyperledger/indy-vdr-nodejs':
       specifier: ^0.2.4
       version: 0.2.4
@@ -230,7 +230,7 @@ importers:
     dependencies:
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.4.0-alpha-20260327110255
+        version: 0.4.0
       '@hyperledger/indy-vdr-nodejs':
         specifier: 'catalog:'
         version: 0.2.4
@@ -285,7 +285,7 @@ importers:
     dependencies:
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.4.0-alpha-20260327110255
+        version: 0.4.0
       '@hyperledger/indy-vdr-nodejs':
         specifier: 'catalog:'
         version: 0.2.4
@@ -393,10 +393,10 @@ importers:
         version: link:../node
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.4.0-alpha-20260327110255
+        version: 0.4.0
       '@hyperledger/anoncreds-shared':
         specifier: 'catalog:'
-        version: 0.4.0-alpha-20260327110255
+        version: 0.4.0
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -824,7 +824,7 @@ importers:
         version: link:../node
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.4.0-alpha-20260327110255
+        version: 0.4.0
       zstd-napi:
         specifier: ^0.0.12
         version: 0.0.12
@@ -2859,12 +2859,12 @@ packages:
     resolution: {integrity: sha512-P7q223JlO/BuZkZ2Ifkyqdul0O0ywa8xm88yJ0BmAIFBE0j4ft6Iw8Zg3kRMzYZX25vjl0ZssHJIA5LVUnBETg==}
     engines: {node: '>=20'}
 
-  '@hyperledger/anoncreds-nodejs@0.4.0-alpha-20260327110255':
-    resolution: {integrity: sha512-6e/7JtebCPZMeZTtUEsOtOu9uRm9veV3etyAs2ESH0Knp0ly4Xqt4u3xulr5fky/NqY5mTW6QwzUvVmlxcBQNQ==}
+  '@hyperledger/anoncreds-nodejs@0.4.0':
+    resolution: {integrity: sha512-R8c6IZhEhPnwGvt8/0nC+Je+gCsMrFGLEMhDqp7B/4aXjnM9LG4PnI+tDREoaZS8sSxKkSRA3cdCGOpn1Rx/mQ==}
     engines: {node: '>= 20'}
 
-  '@hyperledger/anoncreds-shared@0.4.0-alpha-20260327110255':
-    resolution: {integrity: sha512-hGatOIyth2CW3EZZvLR4c2pGWJXRIccZSxXkNfFK8aoz9VJsqDDt9dMRD7AtsuA+a3hj/sL9ftvHpJflr7YQEw==}
+  '@hyperledger/anoncreds-shared@0.4.0':
+    resolution: {integrity: sha512-iQM0Ok6tiuN8r1bjHzkUIUMZUlQt93yD812D0mMK2cBxAqzeccAy285G8iP/kra96/ptZe1mGxAcfoOESKPHzA==}
 
   '@hyperledger/indy-vdr-nodejs@0.2.4':
     resolution: {integrity: sha512-oJgzj4XGsPWHtkszdQpwSisRbWMdNVnV0zB8Q68gWgWU2vODcevA9Ad/GwNQce2D2TbieYc1TJiFEnBIoN2MeQ==}
@@ -3994,11 +3994,12 @@ packages:
   '@xmldom/xmldom@0.7.13':
     resolution: {integrity: sha512-lm2GW5PkosIzccsaZIz7tp8cPADSIlIHWDFTR1N0SzfinhhYgeIQjFMz4rYzanCScr3DqQLeomUDArp6MWKm+g==}
     engines: {node: '>=10.0.0'}
-    deprecated: this version is no longer supported, please update to at least 0.8.*
+    deprecated: this version has critical issues, please update to the latest version
 
   '@xmldom/xmldom@0.8.11':
     resolution: {integrity: sha512-cQzWCtO6C8TQiYl1ruKNn2U6Ao4o4WBBcbL61yJl84x+j5sOWWFU9X7DpND8XZG3daDppSsigMdfAIl2upQBRw==}
     engines: {node: '>=10.0.0'}
+    deprecated: this version has critical issues, please update to the latest version
 
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
@@ -5524,7 +5525,7 @@ packages:
 
   glob@7.1.6:
     resolution: {integrity: sha512-LwaxwyZ72Lk7vZINtNNrywX0ZuLyStrdDtabefZKAY5ZGJhVtgdznluResxNmPitE0SAO+O26sWTHeKSI2wMBA==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
@@ -10962,12 +10963,12 @@ snapshots:
 
   '@hiero-did-sdk/zstd@0.1.8': {}
 
-  '@hyperledger/anoncreds-nodejs@0.4.0-alpha-20260327110255':
+  '@hyperledger/anoncreds-nodejs@0.4.0':
     dependencies:
-      '@hyperledger/anoncreds-shared': 0.4.0-alpha-20260327110255
+      '@hyperledger/anoncreds-shared': 0.4.0
       koffi: 2.15.2
 
-  '@hyperledger/anoncreds-shared@0.4.0-alpha-20260327110255':
+  '@hyperledger/anoncreds-shared@0.4.0':
     dependencies:
       tar: 7.5.7
 
