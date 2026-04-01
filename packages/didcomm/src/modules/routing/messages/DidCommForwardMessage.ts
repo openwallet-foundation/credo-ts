@@ -16,6 +16,7 @@ export interface DidCommForwardMessageOptions {
  */
 export class DidCommForwardMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
+  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v1']
 
   /**
    * Create new ForwardMessage instance.

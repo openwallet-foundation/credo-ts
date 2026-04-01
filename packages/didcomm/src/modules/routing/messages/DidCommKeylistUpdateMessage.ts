@@ -41,6 +41,8 @@ export interface DidCommKeylistUpdateMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist-update
  */
 export class DidCommKeylistUpdateMessage extends DidCommMessage {
+  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v1']
+
   public constructor(options: DidCommKeylistUpdateMessageOptions) {
     super()
 

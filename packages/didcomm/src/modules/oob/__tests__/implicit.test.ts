@@ -20,6 +20,7 @@ const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB Implicit',
   {
     endpoints: ['rxjs:faber'],
+    didcommVersions: ['v1', 'v2'],
   },
   {},
   {
@@ -34,6 +35,7 @@ const aliceAgentOptions = getAgentOptions(
   'Alice Agent OOB Implicit',
   {
     endpoints: ['rxjs:alice'],
+    didcommVersions: ['v1', 'v2'],
   },
   {},
   {
@@ -72,11 +74,60 @@ describe('out of band implicit', () => {
     vi.resetAllMocks()
   })
 
+  test('v2 implicit invitation: completed connection without DID Exchange handshake', async () => {
+    const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
+
+    const { connectionRecord: aliceFaberConnection, outOfBandRecord } =
+      await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+        did: inMemoryDid,
+        didCommVersion: 'v2',
+        alias: 'Faber public',
+        label: 'Custom Alice',
+      })
+
+    expect(aliceFaberConnection).toBeDefined()
+    expect(aliceFaberConnection!.state).toBe(DidCommDidExchangeState.Completed)
+    expect(aliceFaberConnection!.didcommVersion).toBe('v2')
+    expect(aliceFaberConnection!.invitationDid).toBe(inMemoryDid)
+    expect(outOfBandRecord.outOfBandInvitation.v2Invitation?.from).toBe(inMemoryDid)
+    expect(outOfBandRecord.outOfBandInvitation.v2Invitation?.body?.accept).toEqual(['didcomm/v2'])
+  })
+
+  test('v2 with handshakeProtocols throws', async () => {
+    const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
+
+    await expect(
+      aliceAgent.didcomm.oob.receiveImplicitInvitation({
+        did: inMemoryDid,
+        didCommVersion: 'v2',
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+        label: 'Alice',
+      })
+    ).rejects.toThrow(/handshakeProtocols cannot be used with DIDComm v2/)
+  })
+
+  test('omitted didCommVersion with dual-stack DID uses v2 from doc', async () => {
+    const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
+
+    const { connectionRecord: aliceFaberConnection, outOfBandRecord } =
+      await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+        did: inMemoryDid,
+        alias: 'Faber public',
+        label: 'Custom Alice',
+      })
+
+    expect(aliceFaberConnection).toBeDefined()
+    expect(aliceFaberConnection!.state).toBe(DidCommDidExchangeState.Completed)
+    expect(aliceFaberConnection!.didcommVersion).toBe('v2')
+    expect(outOfBandRecord.outOfBandInvitation.v2Invitation?.from).toBe(inMemoryDid)
+  })
+
   test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} based on implicit OOB invitation`, async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
       did: inMemoryDid,
+      didCommVersion: 'v1',
       alias: 'Faber public',
       label: 'Custom Alice',
       handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
@@ -113,6 +164,7 @@ describe('out of band implicit', () => {
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       did: serviceUrl!,
+      didCommVersion: 'v1',
       alias: 'Faber public',
       label: 'alice',
       handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
@@ -147,6 +199,7 @@ describe('out of band implicit', () => {
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
       did: inMemoryDid,
+      didCommVersion: 'v1',
       label: 'alice',
       alias: 'Faber public',
       handshakeProtocols: [DidCommHandshakeProtocol.Connections],
@@ -179,11 +232,12 @@ describe('out of band implicit', () => {
     await expect(
       aliceAgent.didcomm.oob.receiveImplicitInvitation({
         did: 'did:sov:ZSEqSci581BDZCFPa29ScB',
+        didCommVersion: 'v1',
         label: 'alice',
         alias: 'Faber public',
         handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
       })
-    ).rejects.toThrow(/Unable to resolve did/)
+    ).rejects.toThrow(/Unable to resolve|No DIDComm/)
   })
 
   test('create two connections using the same implicit invitation', async () => {
@@ -191,6 +245,7 @@ describe('out of band implicit', () => {
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
       did: inMemoryDid,
+      didCommVersion: 'v1',
       label: 'alice',
       alias: 'Faber public',
       handshakeProtocols: [DidCommHandshakeProtocol.Connections],
@@ -218,6 +273,7 @@ describe('out of band implicit', () => {
     // Repeat implicit invitation procedure
     let { connectionRecord: aliceFaberNewConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
       did: inMemoryDid,
+      didCommVersion: 'v1',
       alias: 'Faber public New',
       label: 'Alice New',
       handshakeProtocols: [DidCommHandshakeProtocol.Connections],
