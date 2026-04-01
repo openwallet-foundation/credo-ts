@@ -15,6 +15,7 @@ export const nodeSupportedKeyAgreementAlgorithms = [
   'ECDH-ES+A128KW',
   'ECDH-ES+A192KW',
   'ECDH-ES+A256KW',
+  'ECDH-1PU+A256KW',
 ] satisfies Kms.KnownJwaKeyAgreementAlgorithm[]
 
 function assertNodeSupportedEcdhKeyDerivationCrv<Jwk extends Kms.KmsJwkPrivateAsymmetric | Kms.KmsJwkPublicAsymmetric>(
@@ -45,6 +46,14 @@ export async function deriveEncryptionKey(options: {
 }) {
   const { keyAgreement, encryption, privateJwk } = options
 
+  if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+    return deriveEncryptionKeyEcdh1Pu({
+      keyAgreement,
+      encryption,
+      privateJwk: privateJwk as Kms.KmsJwkPrivateOkp,
+    })
+  }
+
   assertNodeSupportedEcdhKeyDerivationCrv(keyAgreement.externalPublicJwk)
   assertNodeSupportedEcdhKeyDerivationCrv(privateJwk)
 
@@ -68,7 +77,6 @@ export async function deriveEncryptionKey(options: {
 
   if (keyAgreement.algorithm === 'ECDH-ES') {
     return {
-      // TODO: will be more efficient to return node key instance
       contentEncryptionKey: {
         kty: 'oct',
         k: derivedKeyBytes.toString('base64url'),
@@ -76,7 +84,6 @@ export async function deriveEncryptionKey(options: {
     }
   }
 
-  // Key wrapping
   const derivedKey = await subtle.importKey('raw', derivedKeyBytes, 'AES-KW', true, ['wrapKey'])
   const contentEncryptionKeyBytes = Buffer.from(
     getRandomValues(new Uint8Array(mapContentEncryptionAlgorithmToKeyLength(encryption.algorithm) >> 3))
@@ -95,12 +102,76 @@ export async function deriveEncryptionKey(options: {
   }
 }
 
+async function deriveEncryptionKeyEcdh1Pu(options: {
+  keyAgreement: Kms.KmsKeyAgreementEncryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
+  encryption: Kms.KmsEncryptDataEncryption
+  privateJwk: Kms.KmsJwkPrivateOkp
+}) {
+  const { keyAgreement, encryption, privateJwk } = options
+  if (privateJwk.crv !== 'X25519' || keyAgreement.externalPublicJwk.crv !== 'X25519') {
+    throw new Kms.KeyManagementAlgorithmNotSupportedError('ECDH-1PU+A256KW requires X25519 keys', 'node')
+  }
+
+  const ecdh = createECDH('x25519')
+  const ephemeralPrivate = getRandomValues(new Uint8Array(32))
+  ecdh.setPrivateKey(Buffer.from(ephemeralPrivate))
+  const recipientPub = Kms.PublicJwk.fromPublicJwk(keyAgreement.externalPublicJwk).publicKey
+  if (recipientPub.kty !== 'OKP') throw new Kms.KeyManagementError('X25519 expected')
+  const z1 = ecdh.computeSecret(recipientPub.publicKey)
+
+  const senderEcdh = createECDH('x25519')
+  senderEcdh.setPrivateKey(TypedArrayEncoder.fromBase64(privateJwk.d))
+  const z2 = senderEcdh.computeSecret(recipientPub.publicKey)
+
+  const Z = Buffer.concat([Buffer.from(z1), Buffer.from(z2)])
+  const algorithmId = Buffer.from('ECDH-1PU+A256KW')
+  const otherInfo = Buffer.concat([
+    numberTo4ByteUint8Array(algorithmId.length),
+    algorithmId,
+    numberTo4ByteUint8Array(0),
+    numberTo4ByteUint8Array(0),
+    numberTo4ByteUint8Array(256),
+    Buffer.alloc(0),
+  ])
+  const kek = concatKDF(Z, 256, 256, otherInfo)
+
+  const derivedKey = await subtle.importKey('raw', kek, 'AES-KW', true, ['wrapKey'])
+  const cekBytes = Buffer.from(getRandomValues(new Uint8Array(32)))
+  const cek = await subtle.importKey('raw', cekBytes, 'AES-KW', true, ['wrapKey'])
+  const encryptedCek = await subtle.wrapKey('raw', cek, derivedKey, 'AES-KW')
+
+  const epkPub = ecdh.getPublicKey()
+  const epkJwk = {
+    kty: 'OKP' as const,
+    crv: 'X25519' as const,
+    x: TypedArrayEncoder.toBase64URL(epkPub),
+  }
+
+  return {
+    encryptedContentEncryptionKey: {
+      encrypted: Buffer.from(encryptedCek),
+      ephemeralPublicKey: epkJwk,
+    } satisfies Kms.KmsEncryptedKey,
+    contentEncryptionKey: {
+      kty: 'oct' as const,
+      k: TypedArrayEncoder.toBase64URL(cekBytes),
+    },
+  }
+}
+
 export async function deriveDecryptionKey(options: {
   keyAgreement: NodeSupportedKeyAgreementDecryptOptions
   privateJwk: Kms.KmsJwkPrivateAsymmetric
   decryption: Kms.KmsDecryptDataDecryption
 }) {
   const { keyAgreement, decryption, privateJwk } = options
+
+  if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+    return deriveDecryptionKeyEcdh1Pu({
+      keyAgreement,
+      privateJwk: privateJwk as Kms.KmsJwkPrivateOkp,
+    })
+  }
 
   assertNodeSupportedEcdhKeyDerivationCrv(keyAgreement.externalPublicJwk)
   assertNodeSupportedEcdhKeyDerivationCrv(privateJwk)
@@ -141,12 +212,59 @@ export async function deriveDecryptionKey(options: {
     keyAgreement.encryptedKey.encrypted,
     derivedKey,
     'AES-KW',
-    // algorithm used is irrelevant
     { hash: 'SHA-256', name: 'HMAC' },
     true,
     ['decrypt']
   )
 
+  return {
+    contentEncryptionKey: (await subtle.exportKey('jwk', contentEncryptionKey)) as Kms.KmsJwkPrivate,
+  }
+}
+
+async function deriveDecryptionKeyEcdh1Pu(options: {
+  keyAgreement: Kms.KmsKeyAgreementDecryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
+  privateJwk: Kms.KmsJwkPrivateOkp
+}) {
+  const { keyAgreement, privateJwk } = options
+  const { ephemeralPublicJwk, senderPublicJwk } = keyAgreement
+  if (privateJwk.crv !== 'X25519') {
+    throw new Kms.KeyManagementAlgorithmNotSupportedError('ECDH-1PU+A256KW requires X25519', 'node')
+  }
+
+  const recipientEcdh = createECDH('x25519')
+  recipientEcdh.setPrivateKey(TypedArrayEncoder.fromBase64(privateJwk.d))
+  const epk = Kms.PublicJwk.fromPublicJwk(ephemeralPublicJwk).publicKey
+  const senderPub = Kms.PublicJwk.fromPublicJwk(senderPublicJwk).publicKey
+  if (epk.kty !== 'OKP' || senderPub.kty !== 'OKP') {
+    throw new Kms.KeyManagementError('X25519 keys expected')
+  }
+
+  const z1 = recipientEcdh.computeSecret(epk.publicKey)
+  const z2 = recipientEcdh.computeSecret(senderPub.publicKey)
+  const Z = Buffer.concat([Buffer.from(z1), Buffer.from(z2)])
+
+  const algorithmId = Buffer.from('ECDH-1PU+A256KW')
+  const otherInfo = Buffer.concat([
+    numberTo4ByteUint8Array(algorithmId.length),
+    algorithmId,
+    numberTo4ByteUint8Array(0),
+    numberTo4ByteUint8Array(0),
+    numberTo4ByteUint8Array(256),
+    Buffer.alloc(0),
+  ])
+  const kek = concatKDF(Z, 256, 256, otherInfo)
+  const derivedKey = await subtle.importKey('raw', kek, 'AES-KW', true, ['unwrapKey'])
+
+  const contentEncryptionKey = await subtle.unwrapKey(
+    'raw',
+    keyAgreement.encryptedKey.encrypted,
+    derivedKey,
+    'AES-KW',
+    { hash: 'SHA-256', name: 'HMAC' },
+    true,
+    ['decrypt']
+  )
   return {
     contentEncryptionKey: (await subtle.exportKey('jwk', contentEncryptionKey)) as Kms.KmsJwkPrivate,
   }

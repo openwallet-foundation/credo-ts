@@ -22,6 +22,8 @@ export interface DidCommBasicMessageStorageProps {
   parentThreadId?: string
   content: string
   sentTime: string
+  /** Protocol version (1.0 or 2.0). Optional for backwards compatibility. */
+  protocolVersion?: '1.0' | '2.0'
 }
 
 export class DidCommBasicMessageRecord extends BaseRecord<
@@ -34,6 +36,7 @@ export class DidCommBasicMessageRecord extends BaseRecord<
   public role!: DidCommBasicMessageRole
   public threadId?: string
   public parentThreadId?: string
+  public protocolVersion?: '1.0' | '2.0'
 
   public static readonly type = 'BasicMessageRecord'
   public readonly type = DidCommBasicMessageRecord.type
@@ -51,6 +54,7 @@ export class DidCommBasicMessageRecord extends BaseRecord<
       this.role = props.role
       this.threadId = props.threadId
       this.parentThreadId = props.parentThreadId
+      this.protocolVersion = props.protocolVersion
     }
   }
 

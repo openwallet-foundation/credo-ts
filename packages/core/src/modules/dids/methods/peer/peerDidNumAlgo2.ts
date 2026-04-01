@@ -1,5 +1,6 @@
 import { CredoError } from '../../../../error'
 import type { JsonObject } from '../../../../types'
+import { base64URLToBase64 } from '../../../../utils/base64'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
 import { PublicJwk } from '../../../kms'
 import type { DidDocument, VerificationMethod } from '../../domain'
@@ -58,7 +59,10 @@ export function didToNumAlgo2DidDocument(did: string) {
 
     // Handle service entry first
     if (purpose === DidPeerPurpose.Service) {
-      let services = JsonEncoder.fromBase64(entryContent)
+      // Service is base64url-encoded (from JsonEncoder.toBase64URL in didDocumentToNumAlgo2Did)
+      const base64 =
+        entryContent.includes('-') || entryContent.includes('_') ? base64URLToBase64(entryContent) : entryContent
+      let services = JsonEncoder.fromBase64(base64)
 
       // Make sure we have an array of services (can be both json or array)
       services = Array.isArray(services) ? services : [services]
