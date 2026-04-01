@@ -1,7 +1,5 @@
 import {
   type AgentContext,
-  type AnyUint8Array,
-  Buffer,
   CredoError,
   DidsApi,
   getPublicJwkFromVerificationMethod,
@@ -87,15 +85,15 @@ export class EddsaJcs2022Cryptosuite {
 
   public hashing(transformedDocument: string, canonicalProofConfig: string) {
     // https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
-    const transformedDocumentHash = Hasher.hash(TypedArrayEncoder.fromString(transformedDocument), 'sha-256')
-    const proofConfigHash = Hasher.hash(TypedArrayEncoder.fromString(canonicalProofConfig), 'sha-256')
+    const transformedDocumentHash = Hasher.hash(TypedArrayEncoder.fromUtf8String(transformedDocument), 'sha-256')
+    const proofConfigHash = Hasher.hash(TypedArrayEncoder.fromUtf8String(canonicalProofConfig), 'sha-256')
     const hashData = new Uint8Array(proofConfigHash.length + transformedDocumentHash.length)
     hashData.set(proofConfigHash, 0)
     hashData.set(transformedDocumentHash, proofConfigHash.length)
     return hashData
   }
 
-  public async proofVerification(hashData: AnyUint8Array, proofBytes: AnyUint8Array, options: ProofOptions) {
+  public async proofVerification(hashData: Uint8Array, proofBytes: Uint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
     const publicJwk = await this._publicJwkFromId(options.verificationMethod)
     const verificationResult = await this.keyApi.verify({
@@ -128,7 +126,7 @@ export class EddsaJcs2022Cryptosuite {
     const proofBytes = await this.keyApi.sign({
       keyId,
       algorithm: 'EdDSA',
-      data: Buffer.from(hashData),
+      data: hashData,
     })
     return proofBytes.signature
   }

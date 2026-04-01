@@ -91,11 +91,11 @@ export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Sign
   return async (input: string) => {
     const result = await kms.sign({
       keyId: key.keyId,
-      data: TypedArrayEncoder.fromString(input),
+      data: TypedArrayEncoder.fromUtf8String(input),
       algorithm: key.signatureAlgorithm,
     })
 
-    return TypedArrayEncoder.toBase64URL(result.signature)
+    return TypedArrayEncoder.toBase64Url(result.signature)
   }
 }
 
@@ -107,11 +107,11 @@ export function getSdJwtVerifier(agentContext: AgentContext, key: PublicJwk): Ve
 
   return async (message: string, signatureBase64Url: string) => {
     const result = await kms.verify({
-      signature: TypedArrayEncoder.fromBase64(signatureBase64Url),
+      signature: TypedArrayEncoder.fromBase64Url(signatureBase64Url),
       key: {
         publicJwk: key.toJson(),
       },
-      data: TypedArrayEncoder.fromString(message),
+      data: TypedArrayEncoder.fromUtf8String(message),
       algorithm: key.signatureAlgorithm,
     })
 

@@ -63,7 +63,7 @@ const w3cJsonLdCredentialService = new W3cJsonLdCredentialService(
 )
 
 describe('W3cJsonLdCredentialsService', () => {
-  const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
+  const privateKey = TypedArrayEncoder.fromUtf8String('testseed000000000000000000000001')
 
   describe('Utility methods', () => {
     describe('getVerificationMethodTypesByProofType', () => {

@@ -117,8 +117,8 @@ export class OpenId4VpVerifierService {
     options: OpenId4VpCreateAuthorizationRequestOptions & { verifier: OpenId4VcVerifierRecord }
   ): Promise<OpenId4VpCreateAuthorizationRequestReturn> {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
-    const nonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
-    const state = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
+    const nonce = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
+    const state = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
 
     const responseMode = options.responseMode ?? 'direct_post.jwt'
     const isDcApiRequest = responseMode === 'dc_api' || responseMode === 'dc_api.jwt'
@@ -294,7 +294,7 @@ export class OpenId4VpVerifierService {
       nonce,
       presentation_definition: options.presentationExchange?.definition,
       dcql_query: options.dcql?.query,
-      transaction_data: options.transactionData?.map((entry) => JsonEncoder.toBase64URL(entry)),
+      transaction_data: options.transactionData?.map((entry) => JsonEncoder.toBase64Url(entry)),
       response_mode: responseMode,
       response_type: 'vp_token',
       client_metadata,
@@ -525,7 +525,7 @@ export class OpenId4VpVerifierService {
 
       // NOTE: apu is needed for mDOC over OID4VP without DC API up to draft 24
       const mdocGeneratedNonce = result.jarm?.jarmHeader.apu
-        ? TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64(result.jarm?.jarmHeader.apu))
+        ? TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(result.jarm?.jarmHeader.apu))
         : undefined
 
       if (result.type === 'dcql') {

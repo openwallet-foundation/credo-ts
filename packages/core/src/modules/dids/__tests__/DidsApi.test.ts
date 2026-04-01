@@ -27,7 +27,7 @@ describe('DidsApi', () => {
   test('import an existing did without providing a did document', async () => {
     // Private key is for public key associated with did:key did
     const privateJwk = transformPrivateKeyToPrivateJwk({
-      privateKey: TypedArrayEncoder.fromString('a-sample-seed-of-32-bytes-in-tot'),
+      privateKey: TypedArrayEncoder.fromUtf8String('a-sample-seed-of-32-bytes-in-tot'),
       type: {
         kty: 'OKP',
         crv: 'Ed25519',

@@ -64,7 +64,7 @@ describe('Indy VDR Indy Did Registrar', () => {
     await endorser.initialize()
     const unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
       endorser,
-      TypedArrayEncoder.fromString('00000000000000000000000Endorser9')
+      TypedArrayEncoder.fromUtf8String('00000000000000000000000Endorser9')
     )
     endorserDid = `did:indy:pool:localtest:${unqualifiedSubmitterDid}`
 
@@ -157,7 +157,7 @@ describe('Indy VDR Indy Did Registrar', () => {
   })
 
   test('can register an endorsed did:indy without services - did and verkey specified', async () => {
-    const privateKey = TypedArrayEncoder.fromString(
+    const privateKey = TypedArrayEncoder.fromUtf8String(
       Array(32 + 1)
         .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
         .slice(0, 32)
@@ -259,7 +259,7 @@ describe('Indy VDR Indy Did Registrar', () => {
   })
 
   test('can register a did:indy without services - did and verkey specified', async () => {
-    const privateKey = TypedArrayEncoder.fromString(
+    const privateKey = TypedArrayEncoder.fromUtf8String(
       Array(32 + 1)
         .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
         .slice(0, 32)
@@ -342,7 +342,7 @@ describe('Indy VDR Indy Did Registrar', () => {
   test('can register a did:indy with services - did and verkey specified - using attrib endpoint', async () => {
     // Generate a private key and the indy did. This allows us to create a new did every time
     // but still check if the created output document is as expected.
-    const privateKey = TypedArrayEncoder.fromString(
+    const privateKey = TypedArrayEncoder.fromUtf8String(
       Array(32 + 1)
         .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
         .slice(0, 32)
@@ -468,7 +468,7 @@ describe('Indy VDR Indy Did Registrar', () => {
   test('can register an endorsed did:indy with services - did and verkey specified - using attrib endpoint', async () => {
     // Generate a private key and the indy did. This allows us to create a new did every time
     // but still check if the created output document is as expected.
-    const privateKey = TypedArrayEncoder.fromString(
+    const privateKey = TypedArrayEncoder.fromUtf8String(
       Array(32 + 1)
         .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
         .slice(0, 32)

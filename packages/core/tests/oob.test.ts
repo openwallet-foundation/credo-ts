@@ -1084,9 +1084,9 @@ describe('out of band', () => {
 
       expect(invitationUrl).toEqual(expect.stringContaining('https://test.com?d_m='))
 
-      const messageBase64 = invitationUrl.split('https://test.com?d_m=')[1]
+      const messageBase64Url = invitationUrl.split('https://test.com?d_m=')[1]
 
-      expect(JsonEncoder.fromBase64(messageBase64)).toMatchObject({
+      expect(JsonEncoder.fromBase64Url(messageBase64Url)).toMatchObject({
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
       })

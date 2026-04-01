@@ -58,7 +58,7 @@ export class Faber extends BaseAgent {
         crv: 'Ed25519',
         kty: 'OKP',
       },
-      privateKey: TypedArrayEncoder.fromString('afjdemoverysercure00000000000000'),
+      privateKey: TypedArrayEncoder.fromUtf8String('afjdemoverysercure00000000000000'),
     })
 
     const { keyId } = await this.agent.kms.importKey({

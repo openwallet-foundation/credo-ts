@@ -304,7 +304,7 @@ describe('W3cJwtCredentialService', () => {
     })
 
     test('returns invalid result when signature is not valid', async () => {
-      const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(`${CredoEs256DidJwkJwtVc}a`)
+      const jwtVc = W3cJwtVerifiableCredential.fromSerializedJwt(`${CredoEs256DidJwkJwtVc}eq`)
 
       const result = await w3cJwtCredentialService.verifyCredential(agentContext, {
         credential: jwtVc,

@@ -83,7 +83,7 @@ catalogs:
       version: 4.0.18
     ws:
       specifier: ^8.19.0
-      version: 8.19.0
+      version: 8.20.0
     zod:
       specifier: ^4.3.6
       version: 4.3.6
@@ -224,7 +224,7 @@ importers:
         version: 4.0.18(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
       ws:
         specifier: 'catalog:'
-        version: 8.19.0
+        version: 8.20.0
 
   demo:
     dependencies:
@@ -492,6 +492,9 @@ importers:
       '@stablelib/ed25519':
         specifier: 'catalog:'
         version: 2.0.2
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1
@@ -553,6 +556,9 @@ importers:
       '@peculiar/x509':
         specifier: 'catalog:'
         version: 1.14.3
+      '@scure/base':
+        specifier: ^2.0.0
+        version: 2.0.0
       '@sd-jwt/core':
         specifier: ^0.19.0
         version: 0.19.0
@@ -589,9 +595,6 @@ importers:
       '@verifiables/request-converter':
         specifier: ^0.2.0
         version: 0.2.0(dcql@3.0.0(typescript@5.9.3))
-      buffer:
-        specifier: ^6.0.3
-        version: 6.0.3
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1
@@ -821,6 +824,9 @@ importers:
       '@hiero-did-sdk/resolver':
         specifier: ^0.1.8
         version: 0.1.8(bn.js@5.2.3)(react-native@0.84.1(@babel/core@7.29.0)(@react-native-community/cli@10.2.7(@babel/core@7.29.0))(react@18.3.1))
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
     devDependencies:
       '@credo-ts/node':
         specifier: workspace:*
@@ -882,7 +888,7 @@ importers:
         version: 7.8.2
       ws:
         specifier: 'catalog:'
-        version: 8.19.0
+        version: 8.20.0
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1272,11 +1278,6 @@ packages:
   '@babel/highlight@7.25.9':
     resolution: {integrity: sha512-llL88JShoCsth8fF8R4SJnIn+WLvR6ccFxu1H3FlMhDontdcmZWf2HgIZ7AIqV3Xcck1idlohrN4EUBQz6klbw==}
     engines: {node: '>=6.9.0'}
-
-  '@babel/parser@7.29.0':
-    resolution: {integrity: sha512-IyDgFV5GeDUVX4YdF/3CPULtVGSXXMLh1xVIgdCgxApktqnQV0r7/8Nqthg+8YLGaAtdyIlo2qIdZrbCv4+7ww==}
-    engines: {node: '>=6.0.0'}
-    hasBin: true
 
   '@babel/parser@7.29.2':
     resolution: {integrity: sha512-4GgRzy/+fsBa72/RZVJmGKPmZu9Byn8o4MoLpmNe1m8ZfYnz5emHLQz3U4gLud6Zwl0RZIcgiLD7Uq7ySFuDLA==}
@@ -8631,18 +8632,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@8.19.0:
-    resolution: {integrity: sha512-blAT2mjOEIi0ZzruJfIhb3nps74PRWTCz1IjglWEEpQl5XS/UNama6u2/rjFkDDouqr4L67ry+1aGIALViWjDg==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   ws@8.20.0:
     resolution: {integrity: sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==}
     engines: {node: '>=10.0.0'}
@@ -8991,10 +8980,6 @@ snapshots:
       chalk: 2.4.2
       js-tokens: 4.0.0
       picocolors: 1.1.1
-
-  '@babel/parser@7.29.0':
-    dependencies:
-      '@babel/types': 7.29.0
 
   '@babel/parser@7.29.2':
     dependencies:
@@ -15257,7 +15242,7 @@ snapshots:
 
   magicast@0.5.1:
     dependencies:
-      '@babel/parser': 7.29.0
+      '@babel/parser': 7.29.2
       '@babel/types': 7.29.0
       source-map-js: 1.2.1
 
@@ -17730,7 +17715,7 @@ snapshots:
       magic-string: 0.30.21
       obug: 2.1.1
       pathe: 2.0.3
-      picomatch: 4.0.3
+      picomatch: 4.0.4
       std-env: 3.10.0
       tinybench: 2.9.0
       tinyexec: 1.0.2
@@ -17894,8 +17879,6 @@ snapshots:
       async-limiter: 1.0.1
 
   ws@7.5.10: {}
-
-  ws@8.19.0: {}
 
   ws@8.20.0: {}
 

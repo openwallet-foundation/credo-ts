@@ -87,7 +87,7 @@ describe('out of band implicit', () => {
       state: DidCommDidExchangeState.RequestReceived,
     })
     await faberAgent.didcomm.connections.acceptRequest(faberAliceConnection.id)
-    faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
+    faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection.id)
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected

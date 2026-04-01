@@ -1,5 +1,4 @@
 import { CredoError } from '../../error'
-import type { AnyUint8Array, Uint8ArrayBuffer } from '../../types'
 import { TypedArrayEncoder } from '../../utils'
 
 import { Sha1 } from './Sha1'
@@ -11,8 +10,8 @@ export type HashName = 'sha-512' | 'sha-384' | 'sha-256' | 'sha-1'
 
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class Hasher {
-  public static hash(data: AnyUint8Array | string, hashName: HashName | ({} & string)): Uint8ArrayBuffer {
-    const dataInput = typeof data === 'string' ? TypedArrayEncoder.fromString(data) : data
+  public static hash(data: Uint8Array | string, hashName: HashName | ({} & string)): Uint8Array {
+    const dataInput = typeof data === 'string' ? TypedArrayEncoder.fromUtf8String(data) : data
     switch (hashName.toUpperCase()) {
       case 'SHA-512':
         return new Sha512().hash(dataInput)
