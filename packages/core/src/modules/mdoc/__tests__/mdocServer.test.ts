@@ -7,6 +7,16 @@ import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } fro
 
 const agentConfig = getAgentConfig('mdoc')
 const agentContext = getAgentContext({ registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]], agentConfig })
+
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
+
 const kms = agentContext.resolve(KeyManagementApi)
 describe('mdoc service test', () => {
   test('can get issuer-auth protected-header alg', async () => {
@@ -64,6 +74,9 @@ describe('mdoc service test', () => {
         },
       },
       issuerCertificate: certificate,
+      validityInfo: {
+        validUntil: nextDay,
+      },
     })
 
     expect(mdoc.alg).toBe('ES256')
@@ -74,8 +87,6 @@ describe('mdoc service test', () => {
         nicer: 'dicer',
       },
     })
-
-    expect(mdoc.deviceSignedNamespaces).toBeNull()
 
     const { isValid } = await mdoc.verify(agentContext, {
       trustedCertificates: [certificate.toString('base64')],
@@ -113,6 +124,7 @@ describe('mdoc service test', () => {
 
     const mdoc = await Mdoc.sign(agentContext, {
       docType: 'org.iso.18013.5.1.mDL',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
       namespaces: {
         hello: {
@@ -132,8 +144,6 @@ describe('mdoc service test', () => {
       },
     })
 
-    expect(mdoc.deviceSignedNamespaces).toBeNull()
-
     const verifyResult = await mdoc.verify(agentContext, {
       trustedCertificates: [certificate.toString('base64')],
     })
@@ -142,45 +152,42 @@ describe('mdoc service test', () => {
       isValid: false,
     })
 
-    const { deviceResponseBase64Url } = await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(
-      agentContext,
-      {
-        mdocs: [mdoc],
-        presentationDefinition: {
-          id: 'something',
-          input_descriptors: [
-            {
-              id: 'org.iso.18013.5.1.mDL',
-              format: {
-                mso_mdoc: {
-                  alg: ['EdDSA', 'ES256'],
-                },
-              },
-              constraints: {
-                limit_disclosure: 'required',
-                fields: [
-                  {
-                    path: ["$['hello']['world']"],
-                    intent_to_retain: false,
-                  },
-                ],
+    const deviceResponse = await MdocDeviceResponse.createDeviceResponseWithPresentationDefinition(agentContext, {
+      mdocs: [mdoc],
+      presentationDefinition: {
+        id: 'something',
+        input_descriptors: [
+          {
+            id: 'org.iso.18013.5.1.mDL',
+            format: {
+              mso_mdoc: {
+                alg: ['EdDSA', 'ES256'],
               },
             },
-          ],
-        },
-        sessionTranscriptOptions: {
-          type: 'openId4VpDraft18',
-          mdocGeneratedNonce: 'something',
-          verifierGeneratedNonce: 'something-else',
-          clientId: 'something',
-          responseUri: 'something',
-        },
-      }
-    )
+            constraints: {
+              limit_disclosure: 'required',
+              fields: [
+                {
+                  path: ["$['hello']['world']"],
+                  intent_to_retain: false,
+                },
+              ],
+            },
+          },
+        ],
+      },
+      sessionTranscriptOptions: {
+        type: 'openId4VpDraft18',
+        mdocGeneratedNonce: 'something',
+        verifierGeneratedNonce: 'something-else',
+        clientId: 'something',
+        responseUri: 'something',
+      },
+    })
 
-    const deviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
+    const dr = MdocDeviceResponse.fromBase64Url(deviceResponse.encoded)
     await expect(
-      deviceResponse.verify(agentContext, {
+      dr.verify(agentContext, {
         sessionTranscriptOptions: {
           type: 'openId4VpDraft18',
           mdocGeneratedNonce: 'something',
@@ -190,9 +197,7 @@ describe('mdoc service test', () => {
         },
         trustedCertificates: [certificate.toString('pem')],
       })
-    ).rejects.toThrow(
-      "Mdoc at index 0 is not valid. Country name (C) must be present in the issuer certificate's subject distinguished name"
-    )
+    ).rejects.toThrow('Mdoc with doctype org.iso.18013.5.1.mDL is not valid')
   })
 
   test('can decode claims from namespaces', async () => {
