@@ -16,11 +16,11 @@ catalogs:
       specifier: 2.3.14
       version: 2.3.14
     '@hyperledger/anoncreds-nodejs':
-      specifier: ^0.3.4
-      version: 0.3.4
+      specifier: ^0.4.0
+      version: 0.4.0
     '@hyperledger/anoncreds-shared':
-      specifier: ^0.3.4
-      version: 0.3.4
+      specifier: ^0.4.0
+      version: 0.4.0
     '@hyperledger/indy-vdr-nodejs':
       specifier: ^0.2.4
       version: 0.2.4
@@ -230,7 +230,7 @@ importers:
     dependencies:
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.3.4
+        version: 0.4.0
       '@hyperledger/indy-vdr-nodejs':
         specifier: 'catalog:'
         version: 0.2.4
@@ -285,7 +285,7 @@ importers:
     dependencies:
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.3.4
+        version: 0.4.0
       '@hyperledger/indy-vdr-nodejs':
         specifier: 'catalog:'
         version: 0.2.4
@@ -393,10 +393,10 @@ importers:
         version: link:../node
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.3.4
+        version: 0.4.0
       '@hyperledger/anoncreds-shared':
         specifier: 'catalog:'
-        version: 0.3.4
+        version: 0.4.0
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -833,7 +833,7 @@ importers:
         version: link:../node
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.3.4
+        version: 0.4.0
       zstd-napi:
         specifier: ^0.0.12
         version: 0.0.12
@@ -2898,12 +2898,12 @@ packages:
     resolution: {integrity: sha512-P7q223JlO/BuZkZ2Ifkyqdul0O0ywa8xm88yJ0BmAIFBE0j4ft6Iw8Zg3kRMzYZX25vjl0ZssHJIA5LVUnBETg==}
     engines: {node: '>=20'}
 
-  '@hyperledger/anoncreds-nodejs@0.3.4':
-    resolution: {integrity: sha512-im5hRRvICM3hoyoJb4RJ7Mape7wIjDR8Tk+g/tHcg9GSPcEsJi+fJdxaHb7WVneycdZXeF6xky8BZwnQD2+Baw==}
-    engines: {node: '>= 18'}
+  '@hyperledger/anoncreds-nodejs@0.4.0':
+    resolution: {integrity: sha512-R8c6IZhEhPnwGvt8/0nC+Je+gCsMrFGLEMhDqp7B/4aXjnM9LG4PnI+tDREoaZS8sSxKkSRA3cdCGOpn1Rx/mQ==}
+    engines: {node: '>= 20'}
 
-  '@hyperledger/anoncreds-shared@0.3.4':
-    resolution: {integrity: sha512-XRyX39yWjn+ymUxy+4BvE0gdRIkfTmHtj1A19aOE8gALaDIAMiBbe0HxO8dkM+iAUXntBtqRJEL87Kwcx6xd8g==}
+  '@hyperledger/anoncreds-shared@0.4.0':
+    resolution: {integrity: sha512-iQM0Ok6tiuN8r1bjHzkUIUMZUlQt93yD812D0mMK2cBxAqzeccAy285G8iP/kra96/ptZe1mGxAcfoOESKPHzA==}
 
   '@hyperledger/indy-vdr-nodejs@0.2.4':
     resolution: {integrity: sha512-oJgzj4XGsPWHtkszdQpwSisRbWMdNVnV0zB8Q68gWgWU2vODcevA9Ad/GwNQce2D2TbieYc1TJiFEnBIoN2MeQ==}
@@ -11040,17 +11040,12 @@ snapshots:
 
   '@hiero-did-sdk/zstd@0.1.8': {}
 
-  '@hyperledger/anoncreds-nodejs@0.3.4':
+  '@hyperledger/anoncreds-nodejs@0.4.0':
     dependencies:
-      '@2060.io/ffi-napi': 4.0.9
-      '@2060.io/ref-napi': 3.0.6
-      '@hyperledger/anoncreds-shared': 0.3.4
-      ref-array-di: 1.2.2
-      ref-struct-di: 1.1.1
-    transitivePeerDependencies:
-      - supports-color
+      '@hyperledger/anoncreds-shared': 0.4.0
+      koffi: 2.15.2
 
-  '@hyperledger/anoncreds-shared@0.3.4':
+  '@hyperledger/anoncreds-shared@0.4.0':
     dependencies:
       tar: 7.5.7
 

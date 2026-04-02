@@ -1,5 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
-import { injectable, JsonTransformer } from '@credo-ts/core'
+import { CredoError, injectable, JsonTransformer } from '@credo-ts/core'
 import type {
   JsonObject,
   NonRevokedIntervalOverride,
@@ -155,6 +155,10 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
         const w3cJsonLdVerifiableCredential = JsonTransformer.toJSON(credentialWithMetadata.credential)
         const { revocationRegistryIndex, revocationRegistryId, timestamp } =
           AnonCredsW3cCredential.fromJson(w3cJsonLdVerifiableCredential)
+
+        if (!revocationRegistryId) {
+          throw new CredoError('Missing revocationRegistryId in revocable W3C AnonCreds credential')
+        }
 
         return await getRevocationMetadata(agentContext, {
           nonRevokedInterval: credentialWithMetadata.nonRevoked as AnonCredsNonRevokedInterval,
