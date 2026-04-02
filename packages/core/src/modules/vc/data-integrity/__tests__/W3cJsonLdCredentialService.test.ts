@@ -49,7 +49,7 @@ const agentConfig = getAgentConfig('W3cJsonLdCredentialServiceTest')
 const agentContext = getAgentContext({
   agentConfig,
   registerInstances: [
-    [InjectionSymbols.Logger, new ConsoleLogger(LogLevel.off)],
+    [InjectionSymbols.Logger, new ConsoleLogger(LogLevel.Off)],
     [DidsModuleConfig, new DidsModuleConfig({})],
     [DidRepository, new DidRepository(inMemoryStorage, new EventEmitter(agentDependencies, new Subject()))],
   ],

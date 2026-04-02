@@ -73,7 +73,7 @@ export class AskarToDrizzleStorageMigrator {
     drizzleModule,
     askarModule,
     agentDependencies,
-    logger = new ConsoleLogger(LogLevel.off),
+    logger = new ConsoleLogger(LogLevel.Off),
     skipMigrationForMissingAdapter = false,
     tenantsModule,
   }: {

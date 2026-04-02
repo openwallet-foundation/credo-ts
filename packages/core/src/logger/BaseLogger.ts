@@ -5,7 +5,7 @@ import { LogLevel } from './Logger'
 export abstract class BaseLogger implements Logger {
   public logLevel: LogLevel
 
-  public constructor(logLevel: LogLevel = LogLevel.off) {
+  public constructor(logLevel: LogLevel = LogLevel.Off) {
     this.logLevel = logLevel
   }
 
