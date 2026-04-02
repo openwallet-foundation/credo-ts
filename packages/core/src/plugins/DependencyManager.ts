@@ -99,6 +99,8 @@ export class DependencyManager {
       )
     }
 
+    agentContext.isInitialized = true
+
     for (const [moduleName, module] of Object.entries(this.registeredModules)) {
       try {
         await module.onInitializeContext?.(agentContext)
@@ -183,6 +185,8 @@ export class DependencyManager {
         }
       }
     } finally {
+      agentContext.isInitialized = false
+
       // NOTE: we support reinitialization of the root agent so we can't dispose of the agent context
       if (!agentContext.isRootAgentContext) {
         await this.container.dispose()
