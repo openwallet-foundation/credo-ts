@@ -271,11 +271,21 @@ export class DidCommMediationRecipientApi {
       throw new CredoError('There is no mediator to pickup messages from')
     }
 
-    const mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediatorRecord))
+    let mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediatorRecord))
     const mediatorConnection = await this.connectionService.getById(this.agentContext, mediatorRecord.connectionId)
 
     if (mediatorRecord.mediationProtocolVersion === '2.0') {
       assertDidCommV2Connection(mediatorConnection, 'Mediation 2.0')
+
+      // Ensure pickup strategy is compatible with DIDComm v2 — upgrade v1/v2 pickup to v3
+      if (
+        mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV1 ||
+        mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV2
+      ) {
+        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3
+      } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV2LiveMode) {
+        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3LiveMode
+      }
     } else {
       assertDidCommV1Connection(mediatorConnection, 'Mediation')
     }
@@ -386,9 +396,19 @@ export class DidCommMediationRecipientApi {
   private async getPickupStrategyForMediator(mediator: DidCommMediationRecord) {
     let mediatorPickupStrategy = mediator.pickupStrategy ?? this.config.mediatorPickupStrategy
 
-    // For Coordinate Mediation 2.0, default to PickUpV3 (Message Pickup 3.0)
-    if (!mediatorPickupStrategy && mediator.mediationProtocolVersion === '2.0') {
-      mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3
+    // For Coordinate Mediation 2.0 (DIDComm v2), message pickup v1/v2 protocols won't work
+    // because the connection is v2 and those protocols require v1 connections.
+    // Auto-upgrade to Message Pickup 3.0 equivalents.
+    if (mediator.mediationProtocolVersion === '2.0') {
+      if (
+        !mediatorPickupStrategy ||
+        mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV1 ||
+        mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV2
+      ) {
+        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3
+      } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV2LiveMode) {
+        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3LiveMode
+      }
       mediator.pickupStrategy = mediatorPickupStrategy
       await this.mediationRepository.update(this.agentContext, mediator)
       return mediatorPickupStrategy
