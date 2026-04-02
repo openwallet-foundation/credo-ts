@@ -242,11 +242,29 @@ export class DidCommDocumentService {
         didCommService.type === DidCommV2Service.type ||
         didCommService.type === NewDidCommV2Service.type
       ) {
-        // DIDCommMessaging: firstServiceEndpointUri + optional routingKeys on each endpoint entry.
-        // Legacy DIDComm: string serviceEndpoint + optional top-level routingKeys.
-        const recipientKeysFromDoc = didDocument.getRecipientKeysWithVerificationMethod({
-          mapX25519ToEd25519: false,
-        })
+        // DIDComm v2: recipient keys come exclusively from keyAgreement VMs (X25519).
+        // We must NOT use getRecipientKeysWithVerificationMethod() here because it
+        // accumulates keys from ALL services (v1 + v2), which would mix Ed25519
+        // authentication keys from v1 services into v2 encryption — causing the
+        // recipient kid to point to an authentication VM instead of keyAgreement.
+        // Cast is safe: downstream toX25519() in DidCommMessageSender handles both
+        // Ed25519 and X25519 inputs correctly at runtime.
+        const recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
+        for (const keyRef of didDocument.keyAgreement ?? []) {
+          const verificationMethod =
+            typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
+          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+          if (!publicJwk.is(Kms.X25519PublicJwk) && !publicJwk.is(Kms.Ed25519PublicJwk)) {
+            continue
+          }
+          if (!publicJwk.hasKeyId) {
+            const vmId = verificationMethod.id
+            publicJwk.keyId =
+              typeof vmId === 'string' && vmId.startsWith('#') ? `${didDocument.id}${vmId}` : vmId
+          }
+          recipientKeys.push(publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
+        }
+
         let routingKeyRefs: string[] = []
         if (didCommService.type === NewDidCommV2Service.type) {
           const v2 = didCommService as NewDidCommV2Service
@@ -263,16 +281,6 @@ export class DidCommDocumentService {
               ? didCommService.serviceEndpoint
               : (didCommService.serviceEndpoint as { uri?: string })?.uri
         if (endpoint) {
-          const recipientKeys = recipientKeysFromDoc.map(({ publicJwk, verificationMethod }) => {
-            const jwk = publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
-            if (verificationMethod?.id && !jwk.hasKeyId) {
-              const vmId = verificationMethod.id
-              jwk.keyId = typeof vmId === 'string' && vmId.startsWith('#')
-                ? `${didDocument.id}${vmId}`
-                : vmId
-            }
-            return jwk
-          }) as Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
           let routingKeys = await this.resolveRoutingKeyReferences(agentContext, routingKeyRefs)
           const expanded = this.expandV2EndpointIfRoutingDid(endpoint, routingKeys)
           resolvedServices.push({

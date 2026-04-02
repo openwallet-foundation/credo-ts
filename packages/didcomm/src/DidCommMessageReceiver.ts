@@ -379,6 +379,29 @@ export class DidCommMessageReceiver {
           )
           return connection
         }
+
+        // For implicit v2 OOB invitations: no OutOfBandRecord exists on the responder side
+        // because the public DID itself IS the invitation. Auto-create the connection if the
+        // recipient DID is one of our created DIDs.
+        const dids = agentContext.resolve(DidsApi)
+        try {
+          await dids.resolveCreatedDidDocumentWithKeys(recipient)
+          connection = await this.connectionService.createConnection(
+            agentContext,
+            {
+              protocol: DidCommHandshakeProtocol.None,
+              role: DidCommDidExchangeRole.Responder,
+              state: DidCommDidExchangeState.Completed,
+              theirDid: from,
+              did: recipient,
+              didcommVersion: 'v2',
+            },
+            true
+          )
+          return connection
+        } catch {
+          // recipient is not our DID — no connection created
+        }
       }
 
       return null

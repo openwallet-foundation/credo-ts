@@ -293,8 +293,11 @@ export class DidCommMessageSender {
     ) {
       try {
         const recipientX25519 = toX25519(keys.recipientKeys[0])
-        // Use did:key as kid so recipient can resolve via tryParseKidAsPublicJwk (connectionless return route)
-        recipientX25519.keyId = new DidKey(keys.recipientKeys[0]).did
+        // Use existing keyId (DID URL pointing to keyAgreement VM) when available,
+        // otherwise fall back to did:key for connectionless return route
+        recipientX25519.keyId = keys.recipientKeys[0].hasKeyId
+          ? keys.recipientKeys[0].keyId
+          : new DidKey(keys.recipientKeys[0]).did
         const senderX25519 = toX25519(keys.senderKey)
         senderX25519.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
         const plaintext = buildV2PlaintextFromMessage(message, {
@@ -544,8 +547,20 @@ export class DidCommMessageSender {
     const shouldAddReturnRoute =
       message.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(didDocument)
 
+    // When the connection uses DIDComm v2, prefer services with X25519 (keyAgreement) recipient keys.
+    // DID documents with dual v1/v2 services return both from resolveServicesFromDid; using v1
+    // recipientKeys (Ed25519) with v2 packing creates an incorrect kid (did:key:z6Mk… instead of
+    // a keyAgreement VM DID URL), which the recipient cannot resolve.
+    const useV2ForServiceOrder = (connection.didcommVersion ?? 'v1') === 'v2'
+    const orderedServices = useV2ForServiceOrder
+      ? (() => {
+          const v2Svcs = services.filter((s) => s.recipientKeys.some((k) => k.is(Kms.X25519PublicJwk)))
+          return v2Svcs.length > 0 ? [...v2Svcs, ...services.filter((s) => !v2Svcs.includes(s))] : services
+        })()
+      : services
+
     // Loop trough all available services and try to send the message
-    for (const service of services) {
+    for (const service of orderedServices) {
       try {
         // Enable return routing if the our did document does not have any inbound endpoint for given sender key
         await this.sendToService(
@@ -857,13 +872,17 @@ export class DidCommMessageSender {
               }
             }
             if (endpoint) {
-              // Use keyAgreement (X25519 for v2) and authentication (Ed25519 for v1 fallback)
               const recipientKeys: Kms.PublicJwk[] = []
-              // authentication (Ed25519) first - v2 converts to X25519; v1 uses Ed25519 directly
-              const keyRefs = [
-                ...(didDocument.authentication ?? []),
-                ...(didDocument.keyAgreement ?? []),
-              ]
+              // For v2 connections, use only keyAgreement VMs (X25519) — DIDComm v2 spec requires
+              // the kid to be a keyAgreement VM DID URL. For v1, include both authentication and
+              // keyAgreement for backwards compatibility.
+              const isV2Connection = (connection.didcommVersion ?? 'v1') === 'v2'
+              const keyRefs = isV2Connection
+                ? [...(didDocument.keyAgreement ?? [])]
+                : [
+                    ...(didDocument.authentication ?? []),
+                    ...(didDocument.keyAgreement ?? []),
+                  ]
               const seen = new Set<string>()
               for (const keyRef of keyRefs) {
                 const verificationMethod =

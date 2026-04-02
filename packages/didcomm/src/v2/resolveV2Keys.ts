@@ -48,9 +48,33 @@ export class DidCommV2KeyResolver {
           const verificationMethod = didDocument.dereferenceKey(keyRef, ['keyAgreement'])
           const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
 
-          const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
+          let kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
             verificationMethod.id.endsWith(didDocumentRelativeKeyId)
           )?.kmsKeyId
+
+          // When no direct kmsKeyId mapping exists for the keyAgreement VM (common for
+          // did:webvh and other DIDs where the X25519 key is derived from Ed25519),
+          // find the corresponding Ed25519 authentication key and use its kmsKeyId.
+          // Askar supports X25519 key agreement using Ed25519 keys via birational map.
+          if (!kmsKeyId && publicJwk.is(Kms.X25519PublicJwk) && keys) {
+            const x25519Target = publicJwk
+            for (const authRef of didDocument.authentication ?? []) {
+              try {
+                const authVm = typeof authRef === 'string' ? didDocument.dereferenceVerificationMethod(authRef) : authRef
+                const authJwk = getPublicJwkFromVerificationMethod(authVm)
+                if (!authJwk.is(Kms.Ed25519PublicJwk)) continue
+                const derivedX25519 = authJwk.convertTo(Kms.X25519PublicJwk)
+                if (derivedX25519.fingerprint === x25519Target.fingerprint) {
+                  kmsKeyId = keys.find(({ didDocumentRelativeKeyId }) =>
+                    authVm.id.endsWith(didDocumentRelativeKeyId)
+                  )?.kmsKeyId
+                  if (kmsKeyId) break
+                }
+              } catch {
+                continue
+              }
+            }
+          }
 
           const keyId = kmsKeyId ?? (publicJwk.hasKeyId ? publicJwk.keyId : publicJwk.legacyKeyId)
           const x25519 = publicJwk.is(Kms.X25519PublicJwk)
@@ -122,7 +146,11 @@ export class DidCommV2KeyResolver {
       const x25519 = senderJwk.is(Kms.X25519PublicJwk)
         ? senderJwk
         : (senderJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-      if (vmId && !x25519.hasKeyId) x25519.keyId = vmId
+      if (vmId && !x25519.hasKeyId) {
+        // Ensure keyId is always a full DID URL, not a relative fragment like "#key-2".
+        // Relative fragments can't be resolved by the recipient without knowing the DID.
+        x25519.keyId = vmId.startsWith('did:') ? vmId : vmId.startsWith('#') ? `${didOnly}${vmId}` : `${didOnly}#${vmId}`
+      }
       return x25519 as Kms.PublicJwk<Kms.X25519PublicJwk>
     } catch {
       return null
