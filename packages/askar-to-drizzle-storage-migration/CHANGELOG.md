@@ -1,5 +1,34 @@
 # @credo-ts/askar-to-drizzle-storage-migration
 
+## 0.7.0
+
+### Minor Changes
+
+- cc65c27: - Removed buffer dependency and replaced with `@scure/base` for base-x encoding/decoding
+
+  - Updated DIDComm attachments to use base64url, not base64
+  - Updated tests to make sure urland base64 encoded items use base64url
+  - Added `fromBase64Url` to `TypedArrayEncoder` and `JsonEncoder`
+
+  Breaking changes:
+
+  1. `TypedArrayEncoder.fromBase64` does not support base64url anymore, please use `TypedArrayEncoder.fromBase64Url` for that. Same for `JsonEncoder`
+  2. `TypedArrayEncoder.fromString` has been replaced by `TypedArrayEncoder.fromUtf8String` to be consistent with `TypedArrayEncoder.toUtf8String`
+  3. Every place where we accepted `Buffer` as input we now only support `Uint8Array` as input
+  4. `TypedArrayEncoder.equals` is now constant-time, however I would still hesitate to use it for any private crypto operation 5. Removed `Uint8ArrayBuffer` type, not used anymore
+
+### Patch Changes
+
+- Updated dependencies [120cee8]
+- Updated dependencies [c1ab9be]
+- Updated dependencies [10a3ce5]
+- Updated dependencies [cc65c27]
+- Updated dependencies [6aae4c2]
+  - @credo-ts/core@0.7.0
+  - @credo-ts/tenants@0.7.0
+  - @credo-ts/askar@0.7.0
+  - @credo-ts/drizzle-storage@0.7.0
+
 ## 0.6.3
 
 ### Patch Changes
