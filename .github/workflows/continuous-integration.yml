@@ -27,7 +27,7 @@ jobs:
     if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
     steps:
       - uses: actions/checkout@v6.0.2
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - name: Setup NodeJS
         uses: actions/setup-node@v6
@@ -63,7 +63,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6.0.2
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - name: Setup NodeJS
         id: setup-node
@@ -129,7 +129,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
       - name: pnpm cache path
@@ -189,7 +189,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
       - name: pnpm cache path
@@ -241,7 +241,7 @@ jobs:
           path: coverage
           merge-multiple: true
 
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6
         with:
           directory: coverage
           token: ${{ secrets.CODECOV_TOKEN }}
