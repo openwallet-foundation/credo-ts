@@ -16,6 +16,7 @@ export interface DidCommBatchPickupMessageOptions {
  */
 export class DidCommBatchPickupMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
+  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v1']
 
   /**
    * Create new BatchPickupMessage instance.
