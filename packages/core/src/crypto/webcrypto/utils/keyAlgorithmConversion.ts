@@ -2,7 +2,6 @@ import { RSAPublicKey } from '@peculiar/asn1-rsa'
 import { AsnParser, AsnSerializer } from '@peculiar/asn1-schema'
 import { AlgorithmIdentifier, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import { type KmsCreateKeyType, PublicJwk } from '../../../modules/kms'
-import { TypedArrayEncoder } from '../../../utils'
 import {
   ecPublicKeyWithK256AlgorithmIdentifier,
   ecPublicKeyWithP256AlgorithmIdentifier,
@@ -33,59 +32,13 @@ export const publicJwkToCryptoKeyAlgorithm = (key: PublicJwk): KeyGenAlgorithm =
     if (publicJwk.crv === 'Ed25519') {
       return { name: 'Ed25519' }
     }
-  } else if (publicJwk.kty === 'RSA') {
-    const modulusLength = TypedArrayEncoder.fromBase64Url(publicJwk.n).length * 8
-    const publicExponent = TypedArrayEncoder.fromBase64Url(publicJwk.e)
-
-    switch (publicJwk.alg) {
-      case 'PS256':
-        return {
-          name: 'RSA-PSS',
-          modulusLength,
-          publicExponent,
-          hash: { name: 'SHA-256' },
-        }
-      case 'PS384':
-        return {
-          name: 'RSA-PSS',
-          modulusLength,
-          publicExponent,
-          hash: { name: 'SHA-384' },
-        }
-      case 'PS512':
-        return {
-          name: 'RSA-PSS',
-          modulusLength,
-          publicExponent,
-          hash: { name: 'SHA-512' },
-        }
-      case 'RS256':
-        return {
-          name: 'RSASSA-PKCS1-v1_5',
-          modulusLength,
-          publicExponent,
-          hash: { name: 'SHA-256' },
-        }
-      case 'RS384':
-        return {
-          name: 'RSASSA-PKCS1-v1_5',
-          modulusLength,
-          publicExponent,
-          hash: { name: 'SHA-384' },
-        }
-      case 'RS512':
-        return {
-          name: 'RSASSA-PKCS1-v1_5',
-          modulusLength,
-          publicExponent,
-          hash: { name: 'SHA-512' },
-        }
-    }
   }
 
+  // TODO: support RSA, but i think we need some extra params for this
   throw new CredoWebCryptoError(`Unsupported ${key.jwkTypeHumanDescription}`)
 }
 
+// TODO: support RSA
 export const cryptoKeyAlgorithmToCreateKeyOptions = (algorithm: KeyGenAlgorithm) => {
   const algorithmName = algorithm.name.toUpperCase()
   switch (algorithmName) {
@@ -142,12 +95,11 @@ export const cryptoKeyAlgorithmToCreateKeyOptions = (algorithm: KeyGenAlgorithm)
   throw new CredoWebCryptoError(`Unsupported algorithm: ${algorithmName}`)
 }
 
-export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo, alg?: string): PublicJwk => {
+export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo): PublicJwk => {
   if (spki.algorithm.isEqual(ecPublicKeyWithP256AlgorithmIdentifier)) {
     return PublicJwk.fromPublicKey({
       kty: 'EC',
       crv: 'P-256',
-      alg,
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }
@@ -155,7 +107,6 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo, alg?: string): Publi
     return PublicJwk.fromPublicKey({
       kty: 'EC',
       crv: 'P-384',
-      alg,
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }
@@ -163,7 +114,6 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo, alg?: string): Publi
     return PublicJwk.fromPublicKey({
       kty: 'EC',
       crv: 'P-521',
-      alg,
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }
@@ -171,7 +121,6 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo, alg?: string): Publi
     return PublicJwk.fromPublicKey({
       kty: 'EC',
       crv: 'secp256k1',
-      alg,
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }
@@ -179,7 +128,6 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo, alg?: string): Publi
     return PublicJwk.fromPublicKey({
       kty: 'OKP',
       crv: 'Ed25519',
-      alg,
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }
@@ -187,7 +135,6 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo, alg?: string): Publi
     return PublicJwk.fromPublicKey({
       kty: 'OKP',
       crv: 'X25519',
-      alg,
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }
@@ -195,11 +142,10 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo, alg?: string): Publi
     // The RSA key is another ASN.1 structure inside the subjectPublicKey bit string
     const rsaPublicKey = AsnParser.parse(spki.subjectPublicKey, RSAPublicKey)
 
-    return PublicJwk.fromPublicJwk({
-      kty: 'RSA' as const,
-      n: TypedArrayEncoder.toBase64Url(new Uint8Array(rsaPublicKey.modulus)),
-      e: TypedArrayEncoder.toBase64Url(new Uint8Array(rsaPublicKey.publicExponent)),
-      alg,
+    return PublicJwk.fromPublicKey({
+      kty: 'RSA',
+      modulus: new Uint8Array(rsaPublicKey.modulus),
+      exponent: new Uint8Array(rsaPublicKey.publicExponent),
     })
   }
 
