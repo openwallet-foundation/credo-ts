@@ -25,7 +25,6 @@ import {
   createKeyUsagesExtension,
   createSubjectAlternativeNameExtension,
   createSubjectKeyIdentifierExtension,
-  x509SignatureAlgorithmToJwa,
 } from './utils'
 import { X509Error } from './X509Error'
 import type { X509CreateCertificateOptions } from './X509ServiceOptions'
@@ -95,7 +94,7 @@ export class X509Certificate {
     const spki = AsnParser.parse(certificate.publicKey.rawData, SubjectPublicKeyInfo)
     const privateKey = certificate.privateKey ? new Uint8Array(certificate.privateKey.rawData) : undefined
 
-    const publicJwk = spkiToPublicJwk(spki, x509SignatureAlgorithmToJwa(certificate.signatureAlgorithm))
+    const publicJwk = spkiToPublicJwk(spki)
 
     return new X509Certificate({
       publicJwk,

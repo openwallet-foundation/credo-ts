@@ -22,7 +22,6 @@ import {
   createKeyUsagesExtension,
   createSubjectAlternativeNameExtension,
   createSubjectKeyIdentifierExtension,
-  x509SignatureAlgorithmToJwa,
 } from './utils'
 import { X509ExtendedKeyUsage, X509KeyUsage } from './X509Certificate'
 import { X509Error } from './X509Error'
@@ -66,7 +65,7 @@ export class CertificateSigningRequest {
 
   private static parseCertificateRequest(certificateRequest: x509.Pkcs10CertificateRequest): CertificateSigningRequest {
     const spki = AsnParser.parse(certificateRequest.publicKey.rawData, SubjectPublicKeyInfo)
-    const publicJwk = spkiToPublicJwk(spki, x509SignatureAlgorithmToJwa(certificateRequest.signatureAlgorithm))
+    const publicJwk = spkiToPublicJwk(spki)
 
     return new CertificateSigningRequest({
       publicJwk,
