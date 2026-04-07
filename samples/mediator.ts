@@ -17,7 +17,7 @@
 
 import { AskarModule } from '@credo-ts/askar'
 import type { InitConfig } from '@credo-ts/core'
-import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
+import { Agent, LogLevel } from '@credo-ts/core'
 import {
   DidCommConnectionInvitationMessage,
   DidCommHttpOutboundTransport,
@@ -29,6 +29,7 @@ import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
 import type { Socket } from 'net'
 import { WebSocketServer } from 'ws'
+import { TestLogger } from '../packages/core/tests/logger'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
 
@@ -48,7 +49,7 @@ const DEFAULT_V2_ROUTING_DID =
 const mediatorRoutingDid =
   process.env.MEDIATOR_ROUTING_DID ?? (enableMediationV2 ? DEFAULT_V2_ROUTING_DID : undefined)
 
-const logger = new ConsoleLogger(LogLevel.debug)
+const logger = new TestLogger(LogLevel.Info)
 
 const agentConfig: InitConfig = {
   logger,

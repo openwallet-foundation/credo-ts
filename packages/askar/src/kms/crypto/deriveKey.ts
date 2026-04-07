@@ -131,7 +131,7 @@ export function deriveEncryptionKey(options: {
 
   const derivedKey = new Key(
     askar.keyDeriveEcdhEs({
-      algId: TypedArrayEncoder.fromString(
+      algId: TypedArrayEncoder.fromUtf8String(
         keyAgreement.algorithm === 'ECDH-ES' ? encryption.algorithm : keyAgreement.algorithm
       ),
       receive: false,
@@ -230,7 +230,7 @@ export function deriveDecryptionKey(options: {
 
   const derivedKey = new Key(
     askar.keyDeriveEcdhEs({
-      algId: TypedArrayEncoder.fromString(
+      algId: TypedArrayEncoder.fromUtf8String(
         keyAgreement.algorithm === 'ECDH-ES' ? decryption.algorithm : keyAgreement.algorithm
       ),
       receive: true,

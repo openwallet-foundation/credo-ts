@@ -468,7 +468,7 @@ export class DidCommOutOfBandApi {
 
     return {
       message: config.message,
-      invitationUrl: `${config.domain}?d_m=${JsonEncoder.toBase64URL(JsonTransformer.toJSON(config.message))}`,
+      invitationUrl: `${config.domain}?d_m=${JsonEncoder.toBase64Url(JsonTransformer.toJSON(config.message))}`,
       outOfBandRecord,
     }
   }

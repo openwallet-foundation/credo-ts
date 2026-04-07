@@ -22,7 +22,6 @@ import {
   DidCommMessageRole,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
-
 import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { DidCommConnectionService } from '../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService'

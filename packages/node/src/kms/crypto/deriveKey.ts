@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
 import { createECDH, createHash, getRandomValues, subtle } from 'node:crypto'
-import { type AnyUint8Array, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import type { NodeKmsSupportedEcCrvs } from './createKey'
 
 const nodeSupportedEcdhKeyDerivationEcCrv = [
@@ -85,19 +85,19 @@ export async function deriveEncryptionKey(options: {
   }
 
   const derivedKey = await subtle.importKey('raw', derivedKeyBytes, 'AES-KW', true, ['wrapKey'])
-  const contentEncryptionKeyBytes = Buffer.from(
-    getRandomValues(new Uint8Array(mapContentEncryptionAlgorithmToKeyLength(encryption.algorithm) >> 3))
+  const contentEncryptionKeyBytes = getRandomValues(
+    new Uint8Array(mapContentEncryptionAlgorithmToKeyLength(encryption.algorithm) >> 3)
   )
   const contentEncryptionKey = await subtle.importKey('raw', contentEncryptionKeyBytes, 'AES-KW', true, ['wrapKey'])
   const encryptedContentEncryptionKey = await subtle.wrapKey('raw', contentEncryptionKey, derivedKey, 'AES-KW')
 
   return {
     encryptedContentEncryptionKey: {
-      encrypted: Buffer.from(encryptedContentEncryptionKey),
+      encrypted: new Uint8Array(encryptedContentEncryptionKey),
     } satisfies Kms.KmsEncryptedKey,
     contentEncryptionKey: {
       kty: 'oct',
-      k: contentEncryptionKeyBytes.toString('base64url'),
+      k: TypedArrayEncoder.toBase64Url(contentEncryptionKeyBytes),
     } as const,
   }
 }
@@ -279,8 +279,8 @@ async function deriveKeyEcdhEs(options: {
    * This is only used for the AlgorithmID in KDF
    */
   usageAlgorithm: string
-  apv?: AnyUint8Array
-  apu?: AnyUint8Array
+  apv?: Uint8Array
+  apu?: Uint8Array
   privateJwk: Kms.KmsJwkPrivateEc | Kms.KmsJwkPrivateOkp
   publicJwk: Kms.KmsJwkPublicEc | Kms.KmsJwkPublicOkp
 }): Promise<Buffer> {
@@ -294,7 +294,7 @@ async function deriveKeyEcdhEs(options: {
   const ecdh = createECDH(nodeEcdhCurveName)
 
   // Set private key
-  ecdh.setPrivateKey(TypedArrayEncoder.fromBase64(options.privateJwk.d))
+  ecdh.setPrivateKey(TypedArrayEncoder.fromBase64Url(options.privateJwk.d))
 
   const publicKey = Kms.PublicJwk.fromPublicJwk(options.publicJwk).publicKey
   if (publicKey.kty === 'RSA') {
@@ -305,8 +305,8 @@ async function deriveKeyEcdhEs(options: {
   const sharedSecret = ecdh.computeSecret(publicKey.publicKey)
 
   // Prepare AlgorithmID for KDF (Datalen || Data)
-  const algorithmData = Buffer.from(options.usageAlgorithm) // ASCII representation of alg
-  const algorithmID = Buffer.concat([
+  const algorithmData = TypedArrayEncoder.fromUtf8String(options.usageAlgorithm) // ASCII representation of alg
+  const algorithmID = TypedArrayEncoder.concat([
     numberTo4ByteUint8Array(algorithmData.length), // Datalen: 32-bit big-endian counter
     algorithmData, // Data: ASCII representation of algorithm
   ])

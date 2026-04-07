@@ -1,4 +1,4 @@
-import { type AgentContext, type AnyUint8Array, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
+import { type AgentContext, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { JwkProps, KeyEntryObject, Session } from '@openwallet-foundation/askar-shared'
 import {
   askar,
@@ -383,7 +383,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           )
         }
         encryptionKey = this.keyFromSecretBytesAndEncryptionAlgorithm(
-          TypedArrayEncoder.fromBase64(key.privateJwk.k),
+          TypedArrayEncoder.fromBase64Url(key.privateJwk.k),
           encryption.algorithm
         )
         keysToFree.push(encryptionKey)
@@ -535,7 +535,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           )
         }
         decryptionKey = this.keyFromSecretBytesAndEncryptionAlgorithm(
-          TypedArrayEncoder.fromBase64(key.privateJwk.k),
+          TypedArrayEncoder.fromBase64Url(key.privateJwk.k),
           decryption.algorithm
         )
         keysToFree.push(decryptionKey)
@@ -719,7 +719,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       askar.keyFromJwk({
         // TODO: the JWK class in JS Askar wrapper is too limiting
         // so we use this method directly. should update it
-        jwk: new Uint8Array(JsonEncoder.toBuffer(jwk)) as unknown as Jwk,
+        jwk: new Uint8Array(JsonEncoder.toUint8Array(jwk)) as unknown as Jwk,
       })
     )
 
@@ -727,7 +727,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
   }
 
   private keyFromSecretBytesAndEncryptionAlgorithm(
-    secretBytes: AnyUint8Array,
+    secretBytes: Uint8Array,
     algorithm: AskarSupportedEncryptionOptions['algorithm']
   ) {
     const askarEncryptionAlgorithm = jwkEncToAskarAlg[algorithm]
@@ -751,7 +751,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     // TODO: the JWK class in JS Askar wrapper is too limiting
     // so we use this method directly. should update it
     // We extract alg, as Askar doesn't always use the same algs
-    const { alg, ...jwkSecret } = JsonEncoder.fromBuffer(
+    const { alg, ...jwkSecret } = JsonEncoder.fromUint8Array(
       askar.keyGetJwkSecret({
         localKeyHandle: key.handle,
       })

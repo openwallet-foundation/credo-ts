@@ -84,7 +84,7 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
       return this.v2Invitation.toUrl({ domain })
     }
     const invitationJson = this.toJSON()
-    const encodedInvitation = JsonEncoder.toBase64URL(invitationJson)
+    const encodedInvitation = JsonEncoder.toBase64Url(invitationJson)
     const invitationUrl = `${domain}?oob=${encodedInvitation}`
     return invitationUrl
   }
@@ -93,7 +93,7 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
     const parsedUrl = queryString.parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl.oob
     if (typeof encodedInvitation === 'string') {
-      const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
+      const invitationJson = JsonEncoder.fromBase64Url(encodedInvitation)
       const invitation = DidCommOutOfBandInvitation.fromJson(invitationJson)
 
       return invitation

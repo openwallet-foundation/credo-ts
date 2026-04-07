@@ -440,7 +440,7 @@ export class W3cV2SdJwtCredentialService {
 
     return {
       hasher: sdJwtVcHasher,
-      saltGenerator: (length) => TypedArrayEncoder.toBase64URL(kms.randomBytes({ length })).slice(0, length),
+      saltGenerator: (length) => TypedArrayEncoder.toBase64Url(kms.randomBytes({ length })).slice(0, length),
     }
   }
 }

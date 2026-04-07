@@ -1,7 +1,5 @@
 import type { HashName } from '../crypto/hashes'
-
 import { Hasher } from '../crypto/hashes'
-import type { AnyUint8Array, Uint8ArrayBuffer } from '../types'
 import { TypedArrayEncoder } from './TypedArrayEncoder'
 import { VarintEncoder } from './VarintEncoder'
 
@@ -37,7 +35,7 @@ export class MultiHashEncoder {
    *
    * @returns a multihash
    */
-  public static encode(data: AnyUint8Array, hashName: HashName): Uint8ArrayBuffer {
+  public static encode(data: Uint8Array, hashName: HashName): Uint8Array {
     const hash = Hasher.hash(data, hashName)
     const hashCode = multiHashNameMap[hashName]
 
@@ -55,7 +53,7 @@ export class MultiHashEncoder {
    *
    * @returns object with the data and the hashing algorithm
    */
-  public static decode(data: AnyUint8Array): { data: Uint8ArrayBuffer; hashName: string } {
+  public static decode(data: Uint8Array): { data: Uint8Array; hashName: string } {
     const [hashPrefix, hashPrefixByteLength] = VarintEncoder.decode(data)
     const withoutHashPrefix = data.slice(hashPrefixByteLength)
 
@@ -82,7 +80,7 @@ export class MultiHashEncoder {
    *
    * @returns a boolean whether the multihash is valid
    */
-  public static isValid(data: AnyUint8Array): boolean {
+  public static isValid(data: Uint8Array): boolean {
     try {
       MultiHashEncoder.decode(data)
       return true

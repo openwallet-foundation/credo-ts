@@ -318,7 +318,7 @@ export class Issuer extends BaseAgent<{
 
     const importedKey = await issuer.agent.kms.importKey({
       privateJwk: transformSeedToPrivateJwk({
-        seed: TypedArrayEncoder.fromString('e5f18b10cd15cdb76818bc6ae8b71eb475e6eac76875ed085d3962239bbcf42f'),
+        seed: TypedArrayEncoder.fromUtf8String('e5f18b10cd15cdb76818bc6ae8b71eb475e6eac76875ed085d3962239bbcf42f'),
         type: {
           crv: 'P-256',
           kty: 'EC',

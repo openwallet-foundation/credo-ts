@@ -521,7 +521,10 @@ export async function setupAnonCredsTests<
 
 export async function prepareForAnonCredsIssuance(agent: Agent, { attributeNames }: { attributeNames: string[] }) {
   // Add existing endorser did to the wallet
-  const unqualifiedDid = await importExistingIndyDidFromPrivateKey(agent, TypedArrayEncoder.fromString(publicDidSeed))
+  const unqualifiedDid = await importExistingIndyDidFromPrivateKey(
+    agent,
+    TypedArrayEncoder.fromUtf8String(publicDidSeed)
+  )
   const didIndyDid = `did:indy:pool:localtest:${unqualifiedDid}`
 
   const schema = await registerSchema(agent, {

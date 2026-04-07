@@ -1,6 +1,5 @@
 import { CredoError } from '../../../../error'
 import type { JsonObject } from '../../../../types'
-import { base64URLToBase64 } from '../../../../utils/base64'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
 import { PublicJwk } from '../../../kms'
 import type { DidDocument, VerificationMethod } from '../../domain'
@@ -59,10 +58,7 @@ export function didToNumAlgo2DidDocument(did: string) {
 
     // Handle service entry first
     if (purpose === DidPeerPurpose.Service) {
-      // Service is base64url-encoded (from JsonEncoder.toBase64URL in didDocumentToNumAlgo2Did)
-      const base64 =
-        entryContent.includes('-') || entryContent.includes('_') ? base64URLToBase64(entryContent) : entryContent
-      let services = JsonEncoder.fromBase64(base64)
+      let services = JsonEncoder.fromBase64Url(entryContent)
 
       // Make sure we have an array of services (can be both json or array)
       services = Array.isArray(services) ? services : [services]
@@ -157,7 +153,7 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
     })
 
     for (const abbreviatedService of abbreviatedServices) {
-      const encodedService = JsonEncoder.toBase64URL(abbreviatedService)
+      const encodedService = JsonEncoder.toBase64Url(abbreviatedService)
       did += `.${DidPeerPurpose.Service}${encodedService}`
     }
   }

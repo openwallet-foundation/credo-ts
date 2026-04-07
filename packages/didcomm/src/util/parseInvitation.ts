@@ -1,6 +1,6 @@
 import type { AgentDependencies } from '@credo-ts/core'
 
-import { base64URLToBase64, CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
+import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 import queryString from 'query-string'
 
 import { DidCommMessage } from '../DidCommMessage'
@@ -101,7 +101,7 @@ export const parseInvitationUrl = (invitationUrl: string): DidCommOutOfBandInvit
   const encodedInvitation = parsedUrl.oob ?? parsedUrl.c_i ?? parsedUrl.d_m
 
   if (typeof encodedInvitation === 'string') {
-    const invitationJson = JsonEncoder.fromBase64(encodedInvitation) as Record<string, unknown>
+    const invitationJson = JsonEncoder.fromBase64Url(encodedInvitation) as Record<string, unknown>
     return parseInvitationJson(invitationJson)
   }
   throw new CredoError(
@@ -173,7 +173,7 @@ export const parseInvitationShortUrl = async (
   }
   // Legacy connectionless invitation
   if (parsedUrl.d_m) {
-    const messageJson = JsonEncoder.fromBase64(parsedUrl.d_m as string)
+    const messageJson = JsonEncoder.fromBase64Url(parsedUrl.d_m as string)
     return transformLegacyConnectionlessInvitationToOutOfBandInvitation(messageJson)
   }
   try {

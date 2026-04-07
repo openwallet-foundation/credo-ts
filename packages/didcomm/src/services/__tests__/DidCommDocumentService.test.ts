@@ -1,17 +1,17 @@
-import { Kms, TypedArrayEncoder } from '@credo-ts/core'
-import type { MockedClassConstructor } from '../../../../../tests/types'
-import type { AgentContext } from '../../../..//core/src/agent'
-import type { VerificationMethod } from '../../../../core/src/modules/dids'
+import type { AgentContext, VerificationMethod } from '@credo-ts/core'
 import {
   DidCommV1Service,
   DidDocument,
+  DidRepository,
+  DidResolverService,
   IndyAgentService,
+  Kms,
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
-} from '../../../../core/src/modules/dids'
-import { verkeyToPublicJwk } from '../../../../core/src/modules/dids/helpers'
-import { DidRepository } from '../../../../core/src/modules/dids/repository/DidRepository'
-import { DidResolverService } from '../../../../core/src/modules/dids/services/DidResolverService'
+  TypedArrayEncoder,
+  verkeyToPublicJwk,
+} from '@credo-ts/core'
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { DidCommDocumentService } from '../DidCommDocumentService'
 

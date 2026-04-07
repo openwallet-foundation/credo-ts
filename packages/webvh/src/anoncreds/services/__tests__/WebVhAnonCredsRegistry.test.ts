@@ -211,7 +211,7 @@ describe('WebVhAnonCredsRegistry', () => {
       verifyProofSpy.mockResolvedValueOnce(false)
 
       const schemaContent = { attrNames: ['a'], name: 'N', version: 'V' }
-      const digestBuffer = TypedArrayEncoder.fromString(canonicalize(schemaContent))
+      const digestBuffer = TypedArrayEncoder.fromUtf8String(canonicalize(schemaContent))
       const multibaseHash = MultiBaseEncoder.encode(MultiHashEncoder.encode(digestBuffer, 'sha-256'), 'base58btc')
       const schemaId = `did:webvh:example.com:resource:badproof/${multibaseHash}`
 
@@ -298,7 +298,7 @@ describe('WebVhAnonCredsRegistry', () => {
         version: '1.0',
       }
       const contentString = canonicalize(incompleteContent)
-      const contentBuffer = TypedArrayEncoder.fromString(contentString)
+      const contentBuffer = TypedArrayEncoder.fromUtf8String(contentString)
       const multibaseHash = MultiBaseEncoder.encode(MultiHashEncoder.encode(contentBuffer, 'sha-256'), 'base58btc')
       const schemaId = `did:webvh:example.com:resource:incomplete/${multibaseHash}`
 

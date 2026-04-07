@@ -187,7 +187,7 @@ export class DcqlService {
       const akiValues = (credential.header.x5c as string[] | undefined)
         ?.map((c) => {
           const akiHex = X509Certificate.fromEncodedCertificate(c).authorityKeyIdentifier
-          return akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
+          return akiHex ? TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromHex(akiHex)) : undefined
         })
         .filter((aki) => aki !== undefined)
 
@@ -203,7 +203,7 @@ export class DcqlService {
       const akiValues = credential.issuerSignedCertificateChain
         .map((c) => {
           const akiHex = X509Certificate.fromRawCertificate(c).authorityKeyIdentifier
-          return akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
+          return akiHex ? TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromHex(akiHex)) : undefined
         })
         .filter((aki) => aki !== undefined)
 
