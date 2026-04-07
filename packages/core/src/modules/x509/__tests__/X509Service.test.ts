@@ -339,7 +339,7 @@ describe('X509Service', () => {
 
     const publicKey = x509Certificate.publicJwk.publicKey
     if (publicKey.kty !== 'EC') {
-      throw new Error('uexpected kty value')
+      throw new Error('unexpected kty value')
     }
 
     expect(publicKey.crv).toStrictEqual('P-256')
@@ -351,6 +351,47 @@ describe('X509Service', () => {
     expect(x509Certificate.publicJwk.toJson()).toMatchObject({
       x: 'iTwtg0eQbcbNabf2Nq9L_VM_lhhPCq2s0Qgw2kRx29s',
       y: 'YKwXDRz8U0-uLZ3NSI93R_35eNkl6jHp6Qg8OCup7VM',
+    })
+  })
+
+  it('should correctly parse an RSA-signed X.509 certificate', async () => {
+    const encodedCertificate = `-----BEGIN CERTIFICATE-----
+MIIFRTCCAy2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAqMSgwJgYDVQQDDB9FdXJv
+cGVhbiBDb21taXNzaW9uIFJvb3QgQ0EgLSAyMB4XDTE2MTAwNDExMjExN1oXDTQ2
+MTAwNDExMjExN1owKjEoMCYGA1UEAwwfRXVyb3BlYW4gQ29tbWlzc2lvbiBSb290
+IENBIC0gMjCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAL4JYI9CBISZ
+uBOBknpxCRX306sYm4tQPm5H2l5f4fDESYbthbv8FEOFUPu/uh/L5FuCsPgjDkHp
+6lQqfWV0QG8550pLWI82B5EgE/tN0F4Iwq5OVzOwK+qkHpcXLwxZATNYmfgTGAb2
+mcvVZ8ZkhL4cm6fWqjGzpX9av4R1uqRMKxm/0xuUXx37034g1/fMvzZ3V4rLGOwE
+GluagitBcZhpXXnAFZAu6QF07dokW7vgOOm392TlVgJrv94qN73gMfl/CGQd8Sb3
+t75HhYQ9kGyXEkFzOyPvwBlvV6hCOvElU+2u/HPYYz5lrC0u3MHPos16XF5/XJ7M
+/H9DDtA5mv3B9xO+/67fdaMyXaUJzoiE3decIUgLQC0Qh5hNs1kdkBnufmYRvpe9
+sUHWCsk39cNwVX+vp8EKDjtkiQbFuYIqvFckBbm7AcJlUt4jj6SJHVhECM4SCVd+
+oUtsaTStKUrrVjvuXgzN65qfzafesiaimXYWD60gRp7OoCiN9QwkCiRD1Iqs9irE
+E2DrIz15suuTb2+esrKciiIqyENUeYQolLhPvfdsZhdrtlFsDxM+/IPl7xz0V66k
+A97FtQuiVFOrZaj1YdjSpSfUlscpUfJHMebdd36zQ85oFyGERx7VHpjwE8bw4w4n
+DfnCKsz4xe7gZZX3CaKBCng6F4KiVXZHAgMBAAGjdjB0MA8GA1UdEwEB/wQFMAMB
+Af8wHQYDVR0OBBYEFC+klbkQluW624UvF9NUjFzbrNNXMB8GA1UdIwQYMBaAFC+k
+lbkQluW624UvF9NUjFzbrNNXMBEGA1UdIAQKMAgwBgYEVR0gADAOBgNVHQ8BAf8E
+BAMCAQYwDQYJKoZIhvcNAQELBQADggIBAFPypMzasOt82j0geV8hJOopri91Jc1d
+/fpc6mlubXb8E/scI9qqWQVUMlqiJkCyZl1TVis0bCPFvSlDl/hhwS5vnC0rBmCT
+XXEEsQmsEasw/IR4e7bNAF+l/pPmggh7u+Y00kjYt1XweA2Of/+xf4nAk3HiX02I
+ToHmY/Y4nlLP3bt1oac01Zv7sHPogmQrFFAvuoC4k+e6vJP0XveSp/vBpfKrdCNj
+nViZ3J8gUzrRowi10U812/A5NtZFvKOYXPTFi4vznYMmZsfgejUab5f/j+ycgrFl
+svw8vhYwWsJhWM/oPVNGnfYusa/8aovhwOiCe6lnn3o2jIASIPy6ReSzqZpqImKm
+UGdARWSFCJw4NX1m2dg4GnMjSlWFv5fEnyF0wZlqniarr2TsRek85N6vIaklzc0k
+A5gNgWLTxXMbr8rNta1RtXcN+SH8QgQ8CKgjbq4PSD/WPoOxRcZemGTXBdgxhTjZ
+JgwaQU4L810bScOcQ9cI1QB0/Iq+7fQOg9xIl3mvSoEhnP36Dr3uoi+yem1UhnjU
+9DHE0uKYpHjlHXP6LHvjfQZyS3ba3S0/nYsVf24b4UEja3PehnHhdzyJx/cHRJpN
+T5ibC5pZWL61QgOrDHuSBQnEQUMmYwNoqS+HQvu532NjlSfG6ffmDuEkGuBMM1jY
+gTqhM3BGMuf+
+-----END CERTIFICATE-----`
+
+    const x509Certificate = X509Service.parseCertificate(agentContext, { encodedCertificate })
+    expect(x509Certificate.publicJwk.toJson()).toMatchObject({
+      kty: 'RSA',
+      e: 'AQAB',
+      n: 'AL4JYI9CBISZuBOBknpxCRX306sYm4tQPm5H2l5f4fDESYbthbv8FEOFUPu_uh_L5FuCsPgjDkHp6lQqfWV0QG8550pLWI82B5EgE_tN0F4Iwq5OVzOwK-qkHpcXLwxZATNYmfgTGAb2mcvVZ8ZkhL4cm6fWqjGzpX9av4R1uqRMKxm_0xuUXx37034g1_fMvzZ3V4rLGOwEGluagitBcZhpXXnAFZAu6QF07dokW7vgOOm392TlVgJrv94qN73gMfl_CGQd8Sb3t75HhYQ9kGyXEkFzOyPvwBlvV6hCOvElU-2u_HPYYz5lrC0u3MHPos16XF5_XJ7M_H9DDtA5mv3B9xO-_67fdaMyXaUJzoiE3decIUgLQC0Qh5hNs1kdkBnufmYRvpe9sUHWCsk39cNwVX-vp8EKDjtkiQbFuYIqvFckBbm7AcJlUt4jj6SJHVhECM4SCVd-oUtsaTStKUrrVjvuXgzN65qfzafesiaimXYWD60gRp7OoCiN9QwkCiRD1Iqs9irEE2DrIz15suuTb2-esrKciiIqyENUeYQolLhPvfdsZhdrtlFsDxM-_IPl7xz0V66kA97FtQuiVFOrZaj1YdjSpSfUlscpUfJHMebdd36zQ85oFyGERx7VHpjwE8bw4w4nDfnCKsz4xe7gZZX3CaKBCng6F4KiVXZH',
     })
   })
 
