@@ -140,11 +140,7 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo): PublicJwk => {
   }
   if (spki.algorithm.isEqual(rsaKeyAlgorithmIdentifier)) {
     // The RSA key is another ASN.1 structure inside the subjectPublicKey bit string
-    // The first byte in the bit string is the number of unused bits (typically 0)
-    const keyWithoutUnusedBits = new Uint8Array(spki.subjectPublicKey).slice(1)
-
-    // Parse the RSA public key structure
-    const rsaPublicKey = AsnParser.parse(keyWithoutUnusedBits, RSAPublicKey)
+    const rsaPublicKey = AsnParser.parse(spki.subjectPublicKey, RSAPublicKey)
 
     return PublicJwk.fromPublicKey({
       kty: 'RSA',
@@ -172,7 +168,7 @@ export const publicJwkToSpki = (publicJwk: PublicJwk): SubjectPublicKeyInfo => {
 
     return new SubjectPublicKeyInfo({
       algorithm: rsaKeyAlgorithmIdentifier,
-      subjectPublicKey: new Uint8Array([0, ...new Uint8Array(rsaPublicKeyDer)]).buffer,
+      subjectPublicKey: rsaPublicKeyDer,
     })
   }
 
