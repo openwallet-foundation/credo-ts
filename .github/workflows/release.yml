@@ -3,10 +3,10 @@ name: Release
 on:
   push:
     branches:
-      - main
+      - v0.6.x
   pull_request:
     branches:
-      - main
+      - v0.6.x
     types:
       - opened
       - synchronize
@@ -22,7 +22,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/v0.6.x'
     steps:
       - uses: actions/checkout@v6.0.2
       - uses: pnpm/action-setup@v4

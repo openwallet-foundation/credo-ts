@@ -3,10 +3,10 @@ name: Continuous Integration
 on:
   pull_request:
     branches:
-      - main
+      - v0.6.x
   push:
     branches:
-      - main
+      - v0.6.x
   pull_request_review:
 
 env:
@@ -24,7 +24,7 @@ jobs:
   validate:
     runs-on: ubuntu-24.04
     name: Validate
-    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
+    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/v0.6.x'
     steps:
       - uses: actions/checkout@v6.0.2
       - uses: pnpm/action-setup@v4
@@ -50,7 +50,7 @@ jobs:
   unit-tests:
     runs-on: ubuntu-24.04
     name: Unit Tests
-    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
+    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/v0.6.x'
 
     strategy:
       fail-fast: false
@@ -109,7 +109,7 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-24.04
     name: E2E Tests
-    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
+    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/v0.6.x'
 
     strategy:
       fail-fast: false
@@ -169,7 +169,7 @@ jobs:
   drizzle-tests:
     runs-on: ubuntu-24.04
     name: Drizzle Tests
-    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
+    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/v0.6.x'
 
     strategy:
       fail-fast: false
