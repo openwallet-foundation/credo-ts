@@ -59,6 +59,13 @@ export const publicJwkToCryptoKeyAlgorithm = (key: PublicJwk): KeyGenAlgorithm =
           publicExponent,
           hash: { name: 'SHA-512' },
         }
+      case 'RS256':
+        return {
+          name: 'RSASSA-PKCS1-v1_5',
+          modulusLength,
+          publicExponent,
+          hash: { name: 'SHA-256' },
+        }
       case 'RS384':
         return {
           name: 'RSASSA-PKCS1-v1_5',
@@ -72,13 +79,6 @@ export const publicJwkToCryptoKeyAlgorithm = (key: PublicJwk): KeyGenAlgorithm =
           modulusLength,
           publicExponent,
           hash: { name: 'SHA-512' },
-        }
-      default:
-        return {
-          name: 'RSASSA-PKCS1-v1_5',
-          modulusLength,
-          publicExponent,
-          hash: { name: 'SHA-256' },
         }
     }
   }
@@ -142,11 +142,12 @@ export const cryptoKeyAlgorithmToCreateKeyOptions = (algorithm: KeyGenAlgorithm)
   throw new CredoWebCryptoError(`Unsupported algorithm: ${algorithmName}`)
 }
 
-export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo): PublicJwk => {
+export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo, alg?: string): PublicJwk => {
   if (spki.algorithm.isEqual(ecPublicKeyWithP256AlgorithmIdentifier)) {
     return PublicJwk.fromPublicKey({
       kty: 'EC',
       crv: 'P-256',
+      alg,
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }
@@ -154,6 +155,7 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo): PublicJwk => {
     return PublicJwk.fromPublicKey({
       kty: 'EC',
       crv: 'P-384',
+      alg,
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }
@@ -161,6 +163,7 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo): PublicJwk => {
     return PublicJwk.fromPublicKey({
       kty: 'EC',
       crv: 'P-521',
+      alg,
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }
@@ -168,6 +171,7 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo): PublicJwk => {
     return PublicJwk.fromPublicKey({
       kty: 'EC',
       crv: 'secp256k1',
+      alg,
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }
@@ -175,6 +179,7 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo): PublicJwk => {
     return PublicJwk.fromPublicKey({
       kty: 'OKP',
       crv: 'Ed25519',
+      alg,
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }
@@ -182,6 +187,7 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo): PublicJwk => {
     return PublicJwk.fromPublicKey({
       kty: 'OKP',
       crv: 'X25519',
+      alg,
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }
@@ -193,6 +199,7 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo): PublicJwk => {
       kty: 'RSA' as const,
       n: TypedArrayEncoder.toBase64URL(new Uint8Array(rsaPublicKey.modulus)),
       e: TypedArrayEncoder.toBase64URL(new Uint8Array(rsaPublicKey.publicExponent)),
+      alg,
     })
   }
 
