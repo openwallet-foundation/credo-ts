@@ -79,7 +79,7 @@ const agentContext = getAgentContext({
 const indyVdrIndyDidRegistrar = new IndyVdrIndyDidRegistrar()
 const kms = agentContext.resolve(Kms.KeyManagementApi)
 
-const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
+const privateKey = TypedArrayEncoder.fromUtf8String('96213c3d7fc8d4d6754c712fd969598e')
 const keyId = 'the-key-id'
 const privateJwk = transformPrivateKeyToPrivateJwk({
   privateKey,

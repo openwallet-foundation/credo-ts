@@ -61,7 +61,7 @@ export class MdocDeviceResponse {
    * Encoded is convenience method added to all credential instances
    */
   public get encoded() {
-    return TypedArrayEncoder.toBase64URL(this.deviceResponse.encode())
+    return TypedArrayEncoder.toBase64Url(this.deviceResponse.encode())
   }
 
   /**
@@ -91,7 +91,7 @@ export class MdocDeviceResponse {
   }
 
   public static fromBase64Url(base64Url: string) {
-    const parsed = DeviceResponse.decode(TypedArrayEncoder.fromBase64(base64Url))
+    const parsed = DeviceResponse.decode(TypedArrayEncoder.fromBase64Url(base64Url))
 
     return new MdocDeviceResponse(parsed)
   }

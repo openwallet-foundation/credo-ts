@@ -136,7 +136,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
     try {
       if (privateJwk.kty === 'oct') {
         // Just check if we can create a secret key instance
-        createSecretKey(TypedArrayEncoder.fromBase64(privateJwk.k)).export({ format: 'jwk' })
+        createSecretKey(TypedArrayEncoder.fromBase64Url(privateJwk.k)).export({ format: 'jwk' })
       } else if (privateJwk.kty === 'EC') {
         assertNodeSupportedEcCrv({ kty: privateJwk.kty, crv: privateJwk.crv })
         // This validates the JWK

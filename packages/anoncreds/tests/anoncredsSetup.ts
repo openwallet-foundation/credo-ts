@@ -424,7 +424,7 @@ export async function setupAnonCredsTests<
     const didDocument = new DidDocumentBuilder(issuerId).build()
     await issuerAgent.dids.import({ did: issuerId, didDocument })
   } else if (cheqd) {
-    const privateKey = TypedArrayEncoder.fromString('000000000000000000000000001cheqd')
+    const privateKey = TypedArrayEncoder.fromUtf8String('000000000000000000000000001cheqd')
     const { privateJwk } = transformPrivateKeyToPrivateJwk({
       type: {
         kty: 'OKP',

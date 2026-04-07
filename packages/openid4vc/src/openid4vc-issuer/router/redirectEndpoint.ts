@@ -198,7 +198,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
 
         // Grant authorization
         const kms = agentContext.resolve(Kms.KeyManagementApi)
-        const authorizationCode = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
+        const authorizationCode = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
         const authorizationCodeExpiresAt = addSecondsToDate(new Date(), config.authorizationCodeExpiresInSeconds)
 
         const redirectUri = new URL(issuanceSession.chainedIdentity.redirectUri)

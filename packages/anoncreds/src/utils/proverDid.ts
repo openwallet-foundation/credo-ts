@@ -8,5 +8,5 @@ import { TypedArrayEncoder, utils } from '@credo-ts/core'
  * an unqualified indy did.
  */
 export function generateLegacyProverDidLikeString() {
-  return TypedArrayEncoder.toBase58(TypedArrayEncoder.fromString(utils.uuid()).slice(0, 16))
+  return TypedArrayEncoder.toBase58(TypedArrayEncoder.fromUtf8String(utils.uuid()).slice(0, 16))
 }

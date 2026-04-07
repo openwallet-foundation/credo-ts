@@ -37,6 +37,7 @@
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@stablelib/ed25519": "catalog:",
+    "buffer": "^6.0.3",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
     "rxjs": "catalog:",
