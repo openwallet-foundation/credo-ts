@@ -40,6 +40,13 @@ export class DidCommMessage extends Decorated {
   @Exclude()
   public readonly allowQueueTransport: boolean = true
 
+  /**
+   * DIDComm envelope versions this message type supports. undefined = both v1 and v2 allowed (default for all existing messages).
+   * Set to ['v2'] for v2-only protocols (e.g. present-proof/3.0, trust-ping/2.0). Used to throw when sending v2-only over v1 connection.
+   */
+  @Exclude()
+  public readonly supportedDidCommVersions?: readonly ('v1' | 'v2')[]
+
   public toJSON({
     useDidSovPrefixWhereAllowed,
   }: {

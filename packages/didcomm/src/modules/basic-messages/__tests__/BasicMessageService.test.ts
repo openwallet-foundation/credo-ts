@@ -3,7 +3,7 @@ import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { getAgentContext, getMockConnection } from '../../../../../core/tests/helpers'
 import { DidCommInboundMessageContext } from '../../../models'
 import { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
-import { DidCommBasicMessage } from '../messages'
+import { DidCommBasicMessage, DidCommBasicMessageV2 } from '../messages'
 import { DidCommBasicMessageRecord } from '../repository/DidCommBasicMessageRecord'
 import { DidCommBasicMessageRepository } from '../repository/DidCommBasicMessageRepository'
 import { DidCommBasicMessageService } from '../services'
@@ -75,6 +75,81 @@ describe('BasicMessageService', () => {
             sentTime: basicMessage.sentTime.toISOString(),
             content: basicMessage.content,
             role: DidCommBasicMessageRole.Receiver,
+          }),
+          message: messageContext.message,
+        },
+      })
+    })
+  })
+
+  describe('createMessageV2', () => {
+    it('creates v2 message and record with protocolVersion 2.0', async () => {
+      const { message, record } = await basicMessageService.createMessageV2(
+        agentContext,
+        'hello v2',
+        mockConnectionRecord
+      )
+
+      expect(message).toBeInstanceOf(DidCommBasicMessageV2)
+      expect(message.content).toBe('hello v2')
+      expect(record.protocolVersion).toBe('2.0')
+
+      expect(basicMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(DidCommBasicMessageRecord))
+      expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
+        type: 'DidCommBasicMessageV2StateChanged',
+        payload: {
+          basicMessageRecord: expect.objectContaining({
+            connectionId: mockConnectionRecord.id,
+            content: 'hello v2',
+            role: DidCommBasicMessageRole.Sender,
+            protocolVersion: '2.0',
+          }),
+          message: expect.any(DidCommBasicMessageV2),
+        },
+      })
+    })
+
+    it('creates v2 message with parentThreadId', async () => {
+      const { message, record } = await basicMessageService.createMessageV2(
+        agentContext,
+        'reply',
+        mockConnectionRecord,
+        'parent-thread-id'
+      )
+
+      expect(message.thread?.parentThreadId).toBe('parent-thread-id')
+      expect(record.parentThreadId).toBe('parent-thread-id')
+    })
+  })
+
+  describe('saveV2', () => {
+    it('stores v2 record and emits DidCommBasicMessageV2StateChanged', async () => {
+      const basicMessageV2 = new DidCommBasicMessageV2({
+        id: '123',
+        content: 'message v2',
+        createdTime: Math.floor(Date.now() / 1000),
+      })
+
+      const messageContext = new DidCommInboundMessageContext(basicMessageV2, { agentContext })
+
+      vi.mocked(basicMessageRepository.save).mockClear()
+
+      await basicMessageService.saveV2(messageContext, mockConnectionRecord)
+
+      expect(basicMessageRepository.save).toHaveBeenCalledTimes(1)
+      const savedRecord = vi.mocked(basicMessageRepository.save).mock.calls[0][1]
+      expect(savedRecord.protocolVersion).toBe('2.0')
+      expect(savedRecord.content).toBe('message v2')
+      expect(savedRecord.role).toBe(DidCommBasicMessageRole.Receiver)
+
+      expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
+        type: 'DidCommBasicMessageV2StateChanged',
+        payload: {
+          basicMessageRecord: expect.objectContaining({
+            connectionId: mockConnectionRecord.id,
+            content: 'message v2',
+            role: DidCommBasicMessageRole.Receiver,
+            protocolVersion: '2.0',
           }),
           message: messageContext.message,
         },

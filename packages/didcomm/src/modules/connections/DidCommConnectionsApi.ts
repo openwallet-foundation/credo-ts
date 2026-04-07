@@ -12,9 +12,10 @@ import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig
 import { DidExchangeProtocol } from './DidExchangeProtocol'
 import { DidCommConnectionRequestMessage, DidCommDidExchangeRequestMessage } from './messages'
 import type { DidCommConnectionType } from './models'
-import { DidCommHandshakeProtocol } from './models'
+import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
 import type { DidCommConnectionRecord } from './repository'
 import { DidCommConnectionService, DidCommDidRotateService } from './services'
+import { createPeerDidForV2OOB } from './services/helpers'
 
 export interface SendPingOptions {
   responseRequested?: boolean
@@ -112,6 +113,40 @@ export class DidCommConnectionsApi {
         routing,
         autoAcceptConnection,
       })
+    } else if (protocol === DidCommHandshakeProtocol.None) {
+      // V2 OOB: create connection without handshake (no ConnectionRequest/Response sent)
+      if (ourDid) {
+        const connectionRecord = await this.connectionService.createConnection(this.agentContext, {
+          protocol: DidCommHandshakeProtocol.None,
+          role: DidCommDidExchangeRole.Responder,
+          state: DidCommDidExchangeState.Completed,
+          theirDid: outOfBandRecord.outOfBandInvitation.v2Invitation!.from,
+          did: ourDid,
+          outOfBandId: outOfBandRecord.id,
+          invitationDid: outOfBandRecord.outOfBandInvitation.v2Invitation!.from,
+          alias: config.alias,
+          theirLabel: outOfBandRecord.outOfBandInvitation.v2Invitation?.body?.goal,
+          didcommVersion: 'v2',
+        })
+        return connectionRecord
+      }
+      if (!routing) {
+        throw new CredoError('Routing is required for v2 OOB accept to create did:peer:2')
+      }
+      const { did } = await createPeerDidForV2OOB(this.agentContext, routing)
+      const connectionRecord = await this.connectionService.createConnection(this.agentContext, {
+        protocol: DidCommHandshakeProtocol.None,
+        role: DidCommDidExchangeRole.Responder,
+        state: DidCommDidExchangeState.Completed,
+        theirDid: outOfBandRecord.outOfBandInvitation.v2Invitation!.from,
+        did,
+        outOfBandId: outOfBandRecord.id,
+        invitationDid: outOfBandRecord.outOfBandInvitation.v2Invitation!.from,
+        alias: config.alias,
+        theirLabel: outOfBandRecord.outOfBandInvitation.v2Invitation?.body?.goal,
+        didcommVersion: 'v2',
+      })
+      return connectionRecord
     } else {
       throw new CredoError(`Unsupported handshake protocol ${protocol}.`)
     }

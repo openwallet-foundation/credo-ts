@@ -14,6 +14,7 @@ export interface DidCommMessageDeliveryV2MessageOptions {
 
 export class DidCommMessageDeliveryV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
+  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v1']
 
   public constructor(options: DidCommMessageDeliveryV2MessageOptions) {
     super()

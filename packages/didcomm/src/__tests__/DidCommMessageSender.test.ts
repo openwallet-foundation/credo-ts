@@ -17,6 +17,7 @@ import {
 } from '../../../core/tests/helpers'
 import { TestMessage } from '../../../core/tests/TestMessage'
 import { DidCommEnvelopeService } from '../DidCommEnvelopeService'
+import { DidCommV2EnvelopeService } from '../v2'
 import type { DidCommMessageSentEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommMessageSender } from '../DidCommMessageSender'
@@ -82,6 +83,7 @@ describe('DidCommMessageSender', () => {
 
   const enveloperService = new DidCommEnvelopeServiceMock()
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
+  const v2EnvelopeService = { pack: vi.fn() } as unknown as DidCommV2EnvelopeService
 
   const didsApi = new DidsApiMock()
   const didCommDocumentService = new DidCommDocumentServiceMock()
@@ -159,6 +161,7 @@ describe('DidCommMessageSender', () => {
       outboundTransport = new DummyHttpOutboundTransport()
       messageSender = new DidCommMessageSender(
         enveloperService,
+        v2EnvelopeService,
         transportService,
         didCommModuleConfig,
         didCommDocumentService,
@@ -520,6 +523,7 @@ describe('DidCommMessageSender', () => {
       didCommModuleConfig.outboundTransports = [outboundTransport]
       messageSender = new DidCommMessageSender(
         enveloperService,
+        v2EnvelopeService,
         transportService,
         didCommModuleConfig,
         didCommDocumentService,
@@ -663,6 +667,7 @@ describe('DidCommMessageSender', () => {
       didCommModuleConfig.outboundTransports = [outboundTransport]
       messageSender = new DidCommMessageSender(
         enveloperService,
+        v2EnvelopeService,
         transportService,
         didCommModuleConfig,
         didCommDocumentService,
