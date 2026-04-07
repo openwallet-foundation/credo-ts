@@ -43,7 +43,7 @@ function deriveEncryptionKeyEcdh1Pu(options: {
   const ephemeralKey = Key.generate(KeyAlgorithm.X25519)
   const apu = keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array([])
   const apv = keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array([])
-  const algId = TypedArrayEncoder.fromString('ECDH-1PU+A256KW')
+  const algId = TypedArrayEncoder.fromUtf8String('ECDH-1PU+A256KW')
 
   const derivedKey = new Key(
     askar.keyDeriveEcdh1pu({
@@ -69,7 +69,7 @@ function deriveEncryptionKeyEcdh1Pu(options: {
     const ephemeralPublicKey: Kms.KmsJwkPublicOkp = {
       kty: 'OKP',
       crv: 'X25519',
-      x: TypedArrayEncoder.toBase64URL(epkBytes),
+      x: TypedArrayEncoder.toBase64Url(epkBytes),
     }
     encryptedContentEncryptionKey = {
       encrypted: new Uint8Array(wrappedKey.ciphertext),
@@ -297,7 +297,7 @@ function deriveDecryptionKeyEcdh1Pu(options: {
 
   const apu = keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array([])
   const apv = keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array([])
-  const algId = TypedArrayEncoder.fromString('ECDH-1PU+A256KW')
+  const algId = TypedArrayEncoder.fromUtf8String('ECDH-1PU+A256KW')
 
   const derivedKey = new Key(
     askar.keyDeriveEcdh1pu({

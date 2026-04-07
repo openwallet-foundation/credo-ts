@@ -26,7 +26,7 @@ export class DidCommV2KeyResolver {
     agentContext: AgentContext,
     encrypted: DidCommV2EncryptedMessage
   ): Promise<{ recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }; matchedKid: string } | null> {
-    const protectedJson = JsonEncoder.fromBase64(encrypted.protected) as {
+    const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected) as {
       recipients?: Array<{ header?: { kid?: string } }>
     }
 

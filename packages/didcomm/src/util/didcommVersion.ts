@@ -17,7 +17,7 @@ export function isDidCommV2EncryptedMessage(message: unknown): boolean {
     return false
   }
   try {
-    const protectedJson = JsonEncoder.fromBase64((message as { protected: string }).protected)
+    const protectedJson = JsonEncoder.fromBase64Url((message as { protected: string }).protected)
     return protectedJson?.typ === DIDCOMM_V2_TYP
   } catch {
     return false
@@ -36,7 +36,7 @@ export function isDidCommV2AuthcryptMessage(message: unknown): boolean {
     return false
   }
   try {
-    const protectedJson = JsonEncoder.fromBase64((message as { protected: string }).protected)
+    const protectedJson = JsonEncoder.fromBase64Url((message as { protected: string }).protected)
     return protectedJson?.typ === DIDCOMM_V2_TYP && typeof protectedJson?.skid === 'string'
   } catch {
     return false
@@ -55,7 +55,7 @@ export function isDidCommV1EncryptedMessage(message: unknown): boolean {
     return false
   }
   try {
-    const protectedJson = JsonEncoder.fromBase64((message as { protected: string }).protected)
+    const protectedJson = JsonEncoder.fromBase64Url((message as { protected: string }).protected)
     return protectedJson?.typ === DIDCOMM_V1_TYP
   } catch {
     return false

@@ -51,7 +51,7 @@ export class DidCommOutOfBandInvitationV2 {
 
   public toUrl({ domain }: { domain: string }): string {
     const invitationJson = this.toJSON()
-    const encodedInvitation = JsonEncoder.toBase64URL(invitationJson)
+    const encodedInvitation = JsonEncoder.toBase64Url(invitationJson)
     return `${domain}?${LINK_PARAM}=${encodedInvitation}`
   }
 

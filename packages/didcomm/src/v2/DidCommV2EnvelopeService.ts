@@ -45,7 +45,7 @@ export class DidCommV2EnvelopeService {
     keys: DidCommV2EnvelopeKeys
   ): Promise<DidCommV2EncryptedMessage> {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    const plaintextBytes = JsonEncoder.toBuffer(plaintext)
+    const plaintextBytes = JsonEncoder.toUint8Array(plaintext)
 
     const recipientX25519 = keys.recipientKey
     if (!recipientX25519.is(Kms.X25519PublicJwk)) {
@@ -74,7 +74,7 @@ export class DidCommV2EnvelopeService {
     }
 
     const skid = keys.senderKeySkid ?? keys.senderKey.keyId
-    const protectedHeader = JsonEncoder.toBase64URL({
+    const protectedHeader = JsonEncoder.toBase64Url({
       typ: 'application/didcomm-encrypted+json',
       alg: 'ECDH-1PU+A256KW',
       enc: 'A256GCM',
@@ -85,16 +85,16 @@ export class DidCommV2EnvelopeService {
             kid: keys.recipientKey.keyId,
             epk: { kty: epk.kty, crv: epk.crv, x: epk.x },
           },
-          encrypted_key: TypedArrayEncoder.toBase64URL(encryptedKey.encrypted),
+          encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
         },
       ],
     })
 
     return {
       protected: protectedHeader,
-      iv: TypedArrayEncoder.toBase64URL(iv),
-      ciphertext: TypedArrayEncoder.toBase64URL(encrypted),
-      tag: TypedArrayEncoder.toBase64URL(tag),
+      iv: TypedArrayEncoder.toBase64Url(iv),
+      ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
+      tag: TypedArrayEncoder.toBase64Url(tag),
     }
   }
 
@@ -113,7 +113,7 @@ export class DidCommV2EnvelopeService {
     keys: DidCommV2AnoncryptKeys
   ): Promise<DidCommV2EncryptedMessage> {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    const plaintextBytes = JsonEncoder.toBuffer(plaintext)
+    const plaintextBytes = JsonEncoder.toUint8Array(plaintext)
 
     const recipientX25519 = keys.recipientKey
     if (!recipientX25519.is(Kms.X25519PublicJwk)) {
@@ -150,7 +150,7 @@ export class DidCommV2EnvelopeService {
       }
       const epkJwk = epk as { kty: 'OKP'; crv: 'X25519'; x: string }
 
-      const protectedHeader = JsonEncoder.toBase64URL({
+      const protectedHeader = JsonEncoder.toBase64Url({
         typ: 'application/didcomm-encrypted+json',
         alg: 'ECDH-ES+A256KW',
         enc: 'A256GCM',
@@ -160,16 +160,16 @@ export class DidCommV2EnvelopeService {
               kid: keys.recipientKey.keyId,
               epk: { kty: epkJwk.kty, crv: epkJwk.crv, x: epkJwk.x },
             },
-            encrypted_key: TypedArrayEncoder.toBase64URL(encryptedKey.encrypted),
+            encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
           },
         ],
       })
 
       return {
         protected: protectedHeader,
-        iv: TypedArrayEncoder.toBase64URL(iv),
-        ciphertext: TypedArrayEncoder.toBase64URL(encrypted),
-        tag: TypedArrayEncoder.toBase64URL(tag),
+        iv: TypedArrayEncoder.toBase64Url(iv),
+        ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
+        tag: TypedArrayEncoder.toBase64Url(tag),
       }
     } finally {
       await kms.deleteKey({ keyId: ephemeralKey.keyId })
@@ -198,7 +198,7 @@ export class DidCommV2EnvelopeService {
     senderKey: Kms.PublicJwk<Kms.X25519PublicJwk> | null
   }> {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    const protectedJson = JsonEncoder.fromBase64(encrypted.protected)
+    const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected)
 
     if (protectedJson.typ !== 'application/didcomm-encrypted+json') {
       throw new CredoError(`Invalid DIDComm v2 envelope typ: ${protectedJson.typ}`)
@@ -247,7 +247,7 @@ export class DidCommV2EnvelopeService {
           algorithm: 'ECDH-1PU+A256KW',
           keyId: keys.recipientKey.keyId,
           encryptedKey: {
-            encrypted: TypedArrayEncoder.fromBase64(recipient.encrypted_key),
+            encrypted: TypedArrayEncoder.fromBase64Url(recipient.encrypted_key),
           },
           ephemeralPublicJwk: { kty: 'OKP', crv: 'X25519', x: epk.x },
           senderPublicJwk: senderX25519.toJson(),
@@ -255,13 +255,13 @@ export class DidCommV2EnvelopeService {
       },
       decryption: {
         algorithm: 'A256GCM',
-        iv: TypedArrayEncoder.fromBase64(encrypted.iv),
-        tag: TypedArrayEncoder.fromBase64(encrypted.tag),
+        iv: TypedArrayEncoder.fromBase64Url(encrypted.iv),
+        tag: TypedArrayEncoder.fromBase64Url(encrypted.tag),
       },
-      encrypted: TypedArrayEncoder.fromBase64(encrypted.ciphertext),
+      encrypted: TypedArrayEncoder.fromBase64Url(encrypted.ciphertext),
     })
 
-    const plaintext = JsonEncoder.fromBuffer(data) as DidCommV2PlaintextMessage
+    const plaintext = JsonEncoder.fromUint8Array(data) as DidCommV2PlaintextMessage
     this.logger.debug('Unpacked DIDComm v2 authcrypt message', { type: plaintext.type })
 
     return { plaintext, senderKey: senderX25519 }
@@ -289,19 +289,19 @@ export class DidCommV2EnvelopeService {
           keyId: keys.recipientKey.keyId,
           externalPublicJwk: { kty: 'OKP', crv: 'X25519', x: recipient.header.epk.x },
           encryptedKey: {
-            encrypted: TypedArrayEncoder.fromBase64(recipient.encrypted_key),
+            encrypted: TypedArrayEncoder.fromBase64Url(recipient.encrypted_key),
           },
         },
       },
       decryption: {
         algorithm: 'A256GCM',
-        iv: TypedArrayEncoder.fromBase64(encrypted.iv),
-        tag: TypedArrayEncoder.fromBase64(encrypted.tag),
+        iv: TypedArrayEncoder.fromBase64Url(encrypted.iv),
+        tag: TypedArrayEncoder.fromBase64Url(encrypted.tag),
       },
-      encrypted: TypedArrayEncoder.fromBase64(encrypted.ciphertext),
+      encrypted: TypedArrayEncoder.fromBase64Url(encrypted.ciphertext),
     })
 
-    const plaintext = JsonEncoder.fromBuffer(data) as DidCommV2PlaintextMessage
+    const plaintext = JsonEncoder.fromUint8Array(data) as DidCommV2PlaintextMessage
     this.logger.debug('Unpacked DIDComm v2 anoncrypt message', { type: plaintext.type })
 
     return { plaintext, senderKey: null }
