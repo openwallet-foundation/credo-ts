@@ -247,7 +247,7 @@ export class DidCommMessageReceiver {
           throw new CredoError('No matching recipient key found for DIDComm v2 message')
         }
         const { recipientKey, matchedKid } = resolved
-        const protectedJson = JsonEncoder.fromBase64(message.protected) as { skid?: string; alg?: string }
+        const protectedJson = JsonEncoder.fromBase64Url(message.protected) as { skid?: string; alg?: string }
         const skid = protectedJson.skid
         const isAnoncrypt = protectedJson.alg === 'ECDH-ES+A256KW'
         if (!isAnoncrypt && !skid) {
