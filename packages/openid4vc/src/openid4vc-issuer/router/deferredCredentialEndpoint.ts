@@ -195,7 +195,11 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
           deferredCredentialResponse.interval ? 202 : 200
         )
       } catch (error) {
-        issuanceSession.errorMessage = 'Failed to create a deferred credential response'
+        issuanceSession.errorMessage =
+          typeof error.message === 'string' && error.message !== ''
+            ? error.message
+            : 'Failed to create a deferred credential response'
+
         await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
 
         if (error instanceof Oauth2ServerErrorResponseError) {
