@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.4
+
+### Patch Changes
+
+- 6004d24: Fix query to find session when using authorization server.
+- fe0a21f: Set issuance error message based on error, similarly to other places.
+- Updated dependencies [1491cf4]
+- Updated dependencies [120cee8]
+- Updated dependencies [c1ab9be]
+- Updated dependencies [10a3ce5]
+- Updated dependencies [ed556fe]
+  - @credo-ts/core@0.6.4
+
 ## 0.6.3
 
 ### Patch Changes

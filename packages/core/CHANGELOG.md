@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.4
+
+### Patch Changes
+
+- 1491cf4: Improved RSA support in X509 certificate chain validation.
+- 120cee8: fix: set `lowS` to false for noble curves after updating to v2
+- c1ab9be: feat: support SHA-512 for certificates signed with P-256/P384 keys
+- 10a3ce5: fix: typo in asymmetric
+- ed556fe: Fix the parsing of RSA-signed X509 certificates.
+
 ## 0.6.3
 
 ### Patch Changes
