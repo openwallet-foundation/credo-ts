@@ -25,6 +25,7 @@ import {
   createKeyUsagesExtension,
   createSubjectAlternativeNameExtension,
   createSubjectKeyIdentifierExtension,
+  x509SignatureAlgorithmToJwa,
 } from './utils'
 import { X509Error } from './X509Error'
 import type { X509CreateCertificateOptions } from './X509ServiceOptions'
@@ -314,7 +315,10 @@ export class X509Certificate {
   ) {
     let publicCryptoKey: CredoWebCryptoKey | undefined
     if (publicJwk) {
-      const cryptoKeyAlgorithm = publicJwkToCryptoKeyAlgorithm(publicJwk)
+      const cryptoKeyAlgorithm = publicJwkToCryptoKeyAlgorithm(publicJwk, {
+        alg: publicJwk.kty === 'RSA' ? x509SignatureAlgorithmToJwa(this.x509Certificate.signatureAlgorithm) : undefined,
+      })
+
       publicCryptoKey = new CredoWebCryptoKey(publicJwk, cryptoKeyAlgorithm, true, 'public', ['verify'])
     }
 
