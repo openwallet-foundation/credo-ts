@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.4
+
+### Patch Changes
+
+- 6aae4c2: Updated askar to 0.6.0 which uses koffi instead of ffi-napi
+- Updated dependencies [1491cf4]
+- Updated dependencies [120cee8]
+- Updated dependencies [c1ab9be]
+- Updated dependencies [10a3ce5]
+- Updated dependencies [ed556fe]
+  - @credo-ts/core@0.6.4
+
 ## 0.6.3
 
 ### Patch Changes
