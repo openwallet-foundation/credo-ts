@@ -10,8 +10,8 @@ catalog:
   '@biomejs/biome': 2.3.14
   '@hyperledger/anoncreds-nodejs': ^0.4.0
   '@hyperledger/anoncreds-shared': ^0.4.0
-  '@hyperledger/indy-vdr-nodejs': 0.3.0-dev.2
-  '@hyperledger/indy-vdr-shared': 0.3.0-dev.2
+  '@hyperledger/indy-vdr-nodejs': ^0.3.0
+  '@hyperledger/indy-vdr-shared': ^0.3.0
   '@openwallet-foundation/askar-nodejs': 0.6.0
   '@openwallet-foundation/askar-shared': 0.6.0
   '@peculiar/x509': ^1.14.3
@@ -40,8 +40,6 @@ ignoredBuiltDependencies:
   - secp256k1
 
 onlyBuiltDependencies:
-  - '@2060.io/ffi-napi'
-  - '@2060.io/ref-napi'
   - '@biomejs/biome'
   - '@hyperledger/anoncreds-nodejs'
   - '@hyperledger/indy-vdr-nodejs'

@@ -22,11 +22,11 @@ catalogs:
       specifier: ^0.4.0
       version: 0.4.0
     '@hyperledger/indy-vdr-nodejs':
-      specifier: 0.3.0-dev.2
-      version: 0.3.0-dev.2
+      specifier: ^0.3.0
+      version: 0.3.0
     '@hyperledger/indy-vdr-shared':
-      specifier: 0.3.0-dev.2
-      version: 0.3.0-dev.2
+      specifier: ^0.3.0
+      version: 0.3.0
     '@openwallet-foundation/askar-nodejs':
       specifier: 0.6.0
       version: 0.6.0
@@ -233,7 +233,7 @@ importers:
         version: 0.4.0
       '@hyperledger/indy-vdr-nodejs':
         specifier: 'catalog:'
-        version: 0.3.0-dev.2
+        version: 0.3.0
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
         version: 0.6.0
@@ -288,7 +288,7 @@ importers:
         version: 0.4.0
       '@hyperledger/indy-vdr-nodejs':
         specifier: 'catalog:'
-        version: 0.3.0-dev.2
+        version: 0.3.0
       '@koa/bodyparser':
         specifier: ^6.1.0
         version: 6.1.0(koa@3.1.1)
@@ -849,10 +849,10 @@ importers:
     devDependencies:
       '@hyperledger/indy-vdr-nodejs':
         specifier: 'catalog:'
-        version: 0.3.0-dev.2
+        version: 0.3.0
       '@hyperledger/indy-vdr-shared':
         specifier: 'catalog:'
-        version: 0.3.0-dev.2
+        version: 0.3.0
       '@stablelib/ed25519':
         specifier: ^2.0.2
         version: 2.0.2
@@ -2897,12 +2897,12 @@ packages:
   '@hyperledger/anoncreds-shared@0.4.0':
     resolution: {integrity: sha512-iQM0Ok6tiuN8r1bjHzkUIUMZUlQt93yD812D0mMK2cBxAqzeccAy285G8iP/kra96/ptZe1mGxAcfoOESKPHzA==}
 
-  '@hyperledger/indy-vdr-nodejs@0.3.0-dev.2':
-    resolution: {integrity: sha512-Pw/fIG1ZMLoNuyZcV9o5N8ZLXPz4A6PEy6JmFk5O0edV9KGMwB6nmPad8XjSXn6KifCNN3+NLhlDuRuiPQ5FKw==}
+  '@hyperledger/indy-vdr-nodejs@0.3.0':
+    resolution: {integrity: sha512-yx6hPlTXwirouAkMwaLmowU1mfBwRjTFQUQCH7Mgd4/C6Zp0taw/KUclhB83LpbjHBZiGsV/bILeLYD+HNpHfA==}
     engines: {node: '>= 20'}
 
-  '@hyperledger/indy-vdr-shared@0.3.0-dev.2':
-    resolution: {integrity: sha512-ltQQH06+etU2kU/JZ2Gl4pDe3j2hJJRP9Q5vdekJRm6nukSFCCIRuR7XIoaguH/hdLLH/fIXp/JGw/tfIEDkWA==}
+  '@hyperledger/indy-vdr-shared@0.3.0':
+    resolution: {integrity: sha512-MMH/PwmjfKSH9X7nplYPgu8oMNHsbMZSaP6F+6xFzJDJKsJ15v/y9zwi4eiTDcMVmmRcDHfSep2uBR4FWkXxzQ==}
 
   '@inquirer/external-editor@1.0.3':
     resolution: {integrity: sha512-RWbSrDiYmO4LbejWY7ttpxczuwQyZLBUyygsA9Nsv95hpzUWwnNTVQmAq3xuh7vNwCp07UTmE5i11XAEExx4RA==}
@@ -10972,12 +10972,12 @@ snapshots:
     dependencies:
       tar: 7.5.7
 
-  '@hyperledger/indy-vdr-nodejs@0.3.0-dev.2':
+  '@hyperledger/indy-vdr-nodejs@0.3.0':
     dependencies:
-      '@hyperledger/indy-vdr-shared': 0.3.0-dev.2
+      '@hyperledger/indy-vdr-shared': 0.3.0
       koffi: 2.15.2
 
-  '@hyperledger/indy-vdr-shared@0.3.0-dev.2':
+  '@hyperledger/indy-vdr-shared@0.3.0':
     dependencies:
       tar: 7.5.7
 
