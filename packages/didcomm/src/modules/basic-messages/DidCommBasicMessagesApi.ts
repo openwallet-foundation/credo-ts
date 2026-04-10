@@ -41,10 +41,15 @@ export class DidCommBasicMessagesApi {
   public async sendMessage(connectionId: string, message: string, parentThreadId?: string) {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
-    const { message: basicMessage, record: basicMessageRecord } =
-      this.config.supportsV2
-        ? await this.basicMessageService.createMessageV2(this.agentContext, message, connection, parentThreadId)
-        : await this.basicMessageService.createMessage(this.agentContext, message, connection, parentThreadId)
+    // Select BM protocol version based on the connection's DIDComm envelope version:
+    //   - v2 connection => BM 2.0 (only if config supports it)
+    //   - v1 connection => BM 1.0 (legacy interop, even if config includes v2)
+    // This ensures we don't send BM 2.0 to a peer that only speaks v1.
+    const useBmV2 = this.config.supportsV2 && (connection.didcommVersion ?? 'v1') === 'v2'
+
+    const { message: basicMessage, record: basicMessageRecord } = useBmV2
+      ? await this.basicMessageService.createMessageV2(this.agentContext, message, connection, parentThreadId)
+      : await this.basicMessageService.createMessage(this.agentContext, message, connection, parentThreadId)
 
     const outboundMessageContext = new DidCommOutboundMessageContext(basicMessage, {
       agentContext: this.agentContext,

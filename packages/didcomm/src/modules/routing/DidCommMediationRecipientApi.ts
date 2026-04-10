@@ -290,10 +290,17 @@ export class DidCommMediationRecipientApi {
       assertDidCommV1Connection(mediatorConnection, 'Mediation')
     }
 
-    const recipientDidV3 =
-      mediatorRecord.mediationProtocolVersion === '2.0' && mediatorRecord.recipientDids?.length
-        ? mediatorRecord.recipientDids[0]
-        : undefined
+    // For DIDComm v2 pickup we intentionally do NOT pass a `recipient_did` filter.
+    //
+    // Per CM 2.0 / MP 3.0, `recipient_did` in status-request is optional — when omitted
+    // the mediator returns messages for the entire connection. We rely on that because
+    // the mediation record may contain many registered DIDs (the holder's peer DID from
+    // provisioning, plus a did:key per downstream connection registered via keylist-update).
+    // Filtering by any single one (e.g. `recipientDids[0]`) would hide messages queued
+    // under a different recipient DID (e.g. a forward whose `next` is a per-connection
+    // did:key). Fetching all pending messages for the holder's mediator connection is
+    // the correct semantic.
+    const recipientDidV3 = undefined
 
     switch (mediatorPickupStrategy) {
       case DidCommMediatorPickupStrategy.PickUpV1:

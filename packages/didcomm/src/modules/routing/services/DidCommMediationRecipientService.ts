@@ -392,10 +392,24 @@ export class DidCommMediationRecipientService {
     if (!mediationRecord) return routing
 
     if (mediationRecord.mediationProtocolVersion === '2.0') {
-      // V2: use recipient_did (did:key from recipientKey)
-      const recipientDid = new DidKey(routing.recipientKey).did
+      // Register BOTH the Ed25519 and X25519 did:key forms of the recipient key.
+      //
+      // Rationale: Ed25519 and X25519 did:keys are two representations of the same
+      // physical key (birational map). They are literally different strings, so the
+      // mediator's exact-match keylist lookup needs both.
+      //
+      // - v1 senders (legacy): pack v1 Forwards with `to = base58(Ed25519 verkey)`;
+      //   the mediator canonicalizes that via verkeyToDidKey → Ed25519 did:key (z6Mk).
+      // - v2 senders: read the peer DID's X25519 keyAgreement VM and put the X25519
+      //   did:key (z6LS) into Forward `next`.
+      //
+      // Registering both covers interop with v1 and v2 senders without any special
+      // equivalence logic on the mediator side.
+      const ed25519Did = new DidKey(routing.recipientKey).did
+      const x25519Did = new DidKey(routing.recipientKey.convertTo(Kms.X25519PublicJwk)).did
       mediationRecord = await this.keylistUpdateAndAwaitV2(agentContext, mediationRecord, [
-        { recipientDid, action: KeylistUpdateActionV2.add },
+        { recipientDid: ed25519Did, action: KeylistUpdateActionV2.add },
+        { recipientDid: x25519Did, action: KeylistUpdateActionV2.add },
       ])
       return {
         ...routing,
@@ -435,7 +449,11 @@ export class DidCommMediationRecipientService {
     }
 
     if (mediationRecord.mediationProtocolVersion === '2.0') {
-      const recipientDids = recipientKeys.map((key) => new DidKey(key).did)
+      // Remove BOTH Ed25519 and X25519 did:key forms we registered in addMediationRouting.
+      const recipientDids = recipientKeys.flatMap((key) => [
+        new DidKey(key).did,
+        new DidKey(key.convertTo(Kms.X25519PublicJwk)).did,
+      ])
       await this.keylistUpdateAndAwaitV2(
         agentContext,
         mediationRecord,
