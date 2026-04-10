@@ -2,6 +2,7 @@ import type { DependencyManager } from '@credo-ts/core'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 
 import { DidCommBasicMessagesModule } from '../DidCommBasicMessagesModule'
+import { DidCommBasicMessagesModuleConfig } from '../DidCommBasicMessagesModuleConfig'
 import { DidCommBasicMessageRepository } from '../repository'
 import { DidCommBasicMessageService } from '../services'
 
@@ -20,6 +21,7 @@ describe('BasicMessagesModule', () => {
   test('registers dependencies on the dependency manager', () => {
     new DidCommBasicMessagesModule().register(dependencyManager)
 
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(DidCommBasicMessagesModuleConfig, expect.any(DidCommBasicMessagesModuleConfig))
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommBasicMessageService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommBasicMessageRepository)

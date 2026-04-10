@@ -1,7 +1,12 @@
 import type { AgentContext } from '../../../../agent'
 import type { XOR } from '../../../../types'
 import { JsonTransformer } from '../../../../utils'
-import { KeyManagementApi, type KmsCreateKeyOptions, type KmsCreateKeyTypeAsymmetric, PublicJwk } from '../../../kms'
+import {
+  KeyManagementApi,
+  type KmsCreateKeyOptions,
+  type KmsCreateKeyTypeAsymmetric,
+  PublicJwk,
+} from '../../../kms'
 import type { DidDocumentKey } from '../../DidsApiOptions'
 import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
@@ -129,6 +134,10 @@ export class PeerDidRegistrar implements DidRegistrar {
         }
       }
 
+      // We need to save the recipientKeys, so we can find the associated did
+      // of a key when we receive a message from another connection.
+      const recipientKeyFingerprints = didDocument.recipientKeys.map((key) => key.fingerprint)
+
       // Save the did so we know we created it and can use it for didcomm
       const didRecord = new DidRecord({
         did,
@@ -136,9 +145,7 @@ export class PeerDidRegistrar implements DidRegistrar {
         didDocument: isPeerDidNumAlgo1CreateOptions(options) ? didDocument : undefined,
         keys,
         tags: {
-          // We need to save the recipientKeys, so we can find the associated did
-          // of a key when we receive a message from another connection.
-          recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+          recipientKeyFingerprints,
           alternativeDids: getAlternativeDidsForPeerDid(did),
         },
       })

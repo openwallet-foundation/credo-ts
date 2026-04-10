@@ -23,7 +23,11 @@ import { DidCommConnectionType } from '../../connections/models/DidCommConnectio
 import type { DidCommConnectionRecord } from '../../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
-import type { DidCommKeylistUpdatedEvent, DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
+import type {
+  DidCommKeylistUpdatedEvent,
+  DidCommKeylistUpdatedV2Event,
+  DidCommMediationStateChangedEvent,
+} from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
 import type { DidCommMediationDenyMessage } from '../messages'
 import {
@@ -33,6 +37,16 @@ import {
   DidCommMediationRequestMessage,
 } from '../messages'
 import { DidCommKeylistUpdate, DidCommKeylistUpdateMessage } from '../messages/DidCommKeylistUpdateMessage'
+import {
+  KeylistUpdateActionV2,
+  KeylistUpdateMessage,
+  KeylistQueryMessage,
+  MediateGrantMessage,
+  MediateDenyMessage,
+  MediateRequestMessage,
+} from '../messages/v2'
+import type { KeylistUpdateResponseItem } from '../messages/v2/KeylistUpdateResponseMessage'
+import { KeylistUpdateResultV2 } from '../messages/v2/KeylistUpdateResponseMessage'
 import { DidCommMediationRole, DidCommMediationState } from '../models'
 import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
@@ -78,6 +92,28 @@ export class DidCommMediationRecipientService {
     return { mediationRecord, message }
   }
 
+  public async createRequestV2(
+    agentContext: AgentContext,
+    connection: DidCommConnectionRecord
+  ): Promise<MediationProtocolMsgReturnType<MediateRequestMessage>> {
+    const message = new MediateRequestMessage({})
+
+    const mediationRecord = new DidCommMediationRecord({
+      threadId: message.threadId,
+      state: DidCommMediationState.Requested,
+      role: DidCommMediationRole.Recipient,
+      connectionId: connection.id,
+      mediationProtocolVersion: '2.0',
+    })
+
+    await this.connectionService.addConnectionType(agentContext, connection, DidCommConnectionType.Mediator)
+
+    await this.mediationRepository.save(agentContext, mediationRecord)
+    this.emitStateChangedEvent(agentContext, mediationRecord, null)
+
+    return { mediationRecord, message }
+  }
+
   public async processMediationGrant(messageContext: DidCommInboundMessageContext<DidCommMediationGrantMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
@@ -104,6 +140,22 @@ export class DidCommMediationRecipientService {
     // According to RFC 0211 keys should be a did key, but base58 encoded verkey was used before
     // RFC was accepted. This converts the key to a public key base58 if it is a did key.
     mediationRecord.routingKeys = messageContext.message.routingKeys.map(didKeyToVerkey)
+    return await this.updateState(messageContext.agentContext, mediationRecord, DidCommMediationState.Granted)
+  }
+
+  public async processMediationGrantV2(
+    messageContext: DidCommInboundMessageContext<MediateGrantMessage>
+  ): Promise<DidCommMediationRecord> {
+    const connection = messageContext.assertReadyConnection()
+
+    const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
+    mediationRecord.assertState(DidCommMediationState.Requested)
+    mediationRecord.assertRole(DidCommMediationRole.Recipient)
+    if (mediationRecord.mediationProtocolVersion !== '2.0') {
+      throw new CredoError('processMediationGrantV2 requires mediation protocol version 2.0')
+    }
+
+    mediationRecord.routingDid = messageContext.message.routingDid
     return await this.updateState(messageContext.agentContext, mediationRecord, DidCommMediationState.Granted)
   }
 
@@ -147,6 +199,96 @@ export class DidCommMediationRecipientService {
         keylist,
       },
     })
+  }
+
+  public async processKeylistUpdateResultsV2(
+    messageContext: DidCommInboundMessageContext<import('../messages/v2/KeylistUpdateResponseMessage').KeylistUpdateResponseMessage>
+  ): Promise<void> {
+    const connection = messageContext.assertReadyConnection()
+
+    const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
+    mediationRecord.assertReady()
+    mediationRecord.assertRole(DidCommMediationRole.Recipient)
+    if (mediationRecord.mediationProtocolVersion !== '2.0') {
+      throw new CredoError('processKeylistUpdateResultsV2 requires mediation protocol version 2.0')
+    }
+
+    const updated = messageContext.message.updated
+    for (const item of updated) {
+      if (item.action === KeylistUpdateActionV2.add && item.result === KeylistUpdateResultV2.Success) {
+        mediationRecord.addRecipientDid(item.recipientDid)
+      } else if (item.action === KeylistUpdateActionV2.remove && item.result === KeylistUpdateResultV2.Success) {
+        mediationRecord.removeRecipientDid(item.recipientDid)
+      }
+    }
+
+    await this.mediationRepository.update(messageContext.agentContext, mediationRecord)
+    this.eventEmitter.emit<DidCommKeylistUpdatedV2Event>(messageContext.agentContext, {
+      type: DidCommRoutingEventTypes.RecipientKeylistUpdatedV2,
+      payload: {
+        mediationRecord,
+        updated,
+      },
+    })
+  }
+
+  public async processKeylistV2(
+    messageContext: DidCommInboundMessageContext<import('../messages/v2/KeylistMessage').KeylistMessage>
+  ): Promise<void> {
+    const connection = messageContext.assertReadyConnection()
+
+    const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
+    mediationRecord.assertReady()
+    mediationRecord.assertRole(DidCommMediationRole.Recipient)
+    if (mediationRecord.mediationProtocolVersion !== '2.0') {
+      throw new CredoError('processKeylistV2 requires mediation protocol version 2.0')
+    }
+
+    // Reconciliation: sync recipientDids with keylist response from mediator
+    const keys = messageContext.message.keys
+    const reportedDids = keys.map((k) => k.recipientDid)
+    mediationRecord.recipientDids = [...reportedDids]
+    await this.mediationRepository.update(messageContext.agentContext, mediationRecord)
+  }
+
+  public async keylistUpdateAndAwaitV2(
+    agentContext: AgentContext,
+    mediationRecord: DidCommMediationRecord,
+    updates: Array<{ recipientDid: string; action: KeylistUpdateActionV2 }>,
+    timeoutMs = 15000
+  ): Promise<DidCommMediationRecord> {
+    const connection = await this.connectionService.getById(agentContext, mediationRecord.connectionId)
+
+    mediationRecord.assertReady()
+    mediationRecord.assertRole(DidCommMediationRole.Recipient)
+    if (mediationRecord.mediationProtocolVersion !== '2.0') {
+      throw new CredoError('keylistUpdateAndAwaitV2 requires mediation protocol version 2.0')
+    }
+
+    const message = this.createKeylistUpdateV2Message(mediationRecord, updates)
+
+    const observable = this.eventEmitter.observable<DidCommKeylistUpdatedV2Event>(
+      DidCommRoutingEventTypes.RecipientKeylistUpdatedV2
+    )
+    const subject = new ReplaySubject<DidCommKeylistUpdatedV2Event>(1)
+
+    observable
+      .pipe(
+        filterContextCorrelationId(agentContext.contextCorrelationId),
+        filter((event) => mediationRecord.id === event.payload.mediationRecord.id),
+        first(),
+        timeout({
+          first: timeoutMs,
+          meta: 'DidCommMediationRecipientService.keylistUpdateAndAwaitV2',
+        })
+      )
+      .subscribe(subject)
+
+    const outboundMessageContext = new DidCommOutboundMessageContext(message, { agentContext, connection })
+    await this.messageSender.sendMessage(outboundMessageContext)
+
+    const event = await firstValueFrom(subject)
+    return event.payload.mediationRecord
   }
 
   public async keylistUpdateAndAwait(
@@ -218,6 +360,19 @@ export class DidCommMediationRecipientService {
     return keylistUpdateMessage
   }
 
+  public createKeylistUpdateV2Message(
+    mediationRecord: DidCommMediationRecord,
+    updates: Array<{ recipientDid: string; action: KeylistUpdateActionV2 }>
+  ): KeylistUpdateMessage {
+    return new KeylistUpdateMessage({
+      updates: updates.map((u) => ({ recipientDid: u.recipientDid, action: u.action })),
+    })
+  }
+
+  public createKeylistQueryV2Message(mediationRecord: DidCommMediationRecord, paginate?: { limit: number; offset: number }): KeylistQueryMessage {
+    return new KeylistQueryMessage(paginate ? { paginate } : {})
+  }
+
   public async addMediationRouting(
     agentContext: AgentContext,
     routing: DidCommRouting,
@@ -236,7 +391,36 @@ export class DidCommMediationRecipientService {
     // Return early if no mediation record
     if (!mediationRecord) return routing
 
-    // new did has been created and mediator needs to be updated with the public key.
+    if (mediationRecord.mediationProtocolVersion === '2.0') {
+      // Register BOTH the Ed25519 and X25519 did:key forms of the recipient key.
+      //
+      // Rationale: Ed25519 and X25519 did:keys are two representations of the same
+      // physical key (birational map). They are literally different strings, so the
+      // mediator's exact-match keylist lookup needs both.
+      //
+      // - v1 senders (legacy): pack v1 Forwards with `to = base58(Ed25519 verkey)`;
+      //   the mediator canonicalizes that via verkeyToDidKey → Ed25519 did:key (z6Mk).
+      // - v2 senders: read the peer DID's X25519 keyAgreement VM and put the X25519
+      //   did:key (z6LS) into Forward `next`.
+      //
+      // Registering both covers interop with v1 and v2 senders without any special
+      // equivalence logic on the mediator side.
+      const ed25519Did = new DidKey(routing.recipientKey).did
+      const x25519Did = new DidKey(routing.recipientKey.convertTo(Kms.X25519PublicJwk)).did
+      mediationRecord = await this.keylistUpdateAndAwaitV2(agentContext, mediationRecord, [
+        { recipientDid: ed25519Did, action: KeylistUpdateActionV2.add },
+        { recipientDid: x25519Did, action: KeylistUpdateActionV2.add },
+      ])
+      return {
+        ...routing,
+        mediatorId: mediationRecord.id,
+        routingDid: mediationRecord.routingDid,
+        endpoints: routing.endpoints,
+        routingKeys: routing.routingKeys,
+      }
+    }
+
+    // V1: new did has been created and mediator needs to be updated with the public key.
     mediationRecord = await this.keylistUpdateAndAwait(agentContext, mediationRecord, [
       {
         recipientKey: routing.recipientKey,
@@ -264,16 +448,30 @@ export class DidCommMediationRecipientService {
       throw new CredoError('No mediation record to remove routing from has been found')
     }
 
-    await this.keylistUpdateAndAwait(
-      agentContext,
-      mediationRecord,
-      recipientKeys.map((item) => {
-        return {
+    if (mediationRecord.mediationProtocolVersion === '2.0') {
+      // Remove BOTH Ed25519 and X25519 did:key forms we registered in addMediationRouting.
+      const recipientDids = recipientKeys.flatMap((key) => [
+        new DidKey(key).did,
+        new DidKey(key.convertTo(Kms.X25519PublicJwk)).did,
+      ])
+      await this.keylistUpdateAndAwaitV2(
+        agentContext,
+        mediationRecord,
+        recipientDids.map((recipientDid) => ({
+          recipientDid,
+          action: KeylistUpdateActionV2.remove,
+        }))
+      )
+    } else {
+      await this.keylistUpdateAndAwait(
+        agentContext,
+        mediationRecord,
+        recipientKeys.map((item) => ({
           recipientKey: item,
           action: DidCommKeylistUpdateAction.remove,
-        }
-      })
-    )
+        }))
+      )
+    }
   }
 
   public async processMediationDeny(messageContext: DidCommInboundMessageContext<DidCommMediationDenyMessage>) {
@@ -294,6 +492,22 @@ export class DidCommMediationRecipientService {
     await this.updateState(messageContext.agentContext, mediationRecord, DidCommMediationState.Denied)
 
     return mediationRecord
+  }
+
+  public async processMediationDenyV2(
+    messageContext: DidCommInboundMessageContext<MediateDenyMessage>
+  ): Promise<DidCommMediationRecord> {
+    const connection = messageContext.assertReadyConnection()
+
+    const mediationRecord = await this.findByConnectionId(messageContext.agentContext, connection.id)
+    if (!mediationRecord) {
+      throw new CredoError(`No mediation has been requested for this connection id: ${connection.id}`)
+    }
+
+    mediationRecord.assertRole(DidCommMediationRole.Recipient)
+    mediationRecord.assertState(DidCommMediationState.Requested)
+
+    return await this.updateState(messageContext.agentContext, mediationRecord, DidCommMediationState.Denied)
   }
 
   /**

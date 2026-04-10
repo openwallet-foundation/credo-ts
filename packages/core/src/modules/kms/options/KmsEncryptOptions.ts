@@ -3,7 +3,7 @@ import { zAnyUint8Array } from '../../../utils/zod'
 import { KnownJwaContentEncryptionAlgorithms } from '../jwk/jwa'
 import { zKmsJwkPrivateOct } from '../jwk/kty/oct/octJwk'
 import { zKmsKeyId } from './common'
-import { zKmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
+import { zKmsJwkPublicEcdh, zKmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
 
 const zKmsEncryptDataEncryptionAesGcm = z.object({
   // AES-GCM Content Encryption
@@ -137,8 +137,8 @@ export interface KmsEncryptReturn {
 
 export const zKmsEncryptedKey = z.object({
   /**
-   * Optional authentication tag
-   */
+     * Optional authentication tag
+     */
   tag: zAnyUint8Array.optional(),
 
   /**
@@ -150,6 +150,11 @@ export const zKmsEncryptedKey = z.object({
    * The encrypted key
    */
   encrypted: zAnyUint8Array,
+
+  /**
+   * The ephemeral public key
+   */
+  ephemeralPublicKey: zKmsJwkPublicEcdh.optional(),
 })
 
 /**
