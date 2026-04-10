@@ -12,7 +12,10 @@ import {
   DidRepository,
   DidsApi,
   didDocumentJsonToNumAlgo1Did,
+  didToNumAlgo2DidDocument,
+  didToNumAlgo4DidDocument,
   getEd25519VerificationKey2018,
+  getPublicJwkFromVerificationMethod,
   getX25519KeyAgreementKey2019,
   IndyAgentService,
   Kms,
@@ -150,19 +153,68 @@ function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
   })
 }
 
+/**
+ * Resolves a CM 2.0 routing DID (did:peer:2 or did:peer:4) to extract
+ * the mediator's transport URL and Ed25519 routing keys.
+ *
+ * The routing DID encodes the mediator's endpoint and keys. We resolve it
+ * at peer DID creation time so the resulting peer DID contains a plain URL
+ * that any v1 or v2 agent can use without special DID-as-endpoint handling.
+ */
+function resolveRoutingDid(routingDid: string): {
+  endpoint: string
+  routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+} {
+  const routingDoc = routingDid.startsWith('did:peer:4')
+    ? didToNumAlgo4DidDocument(routingDid)
+    : didToNumAlgo2DidDocument(routingDid)
+
+  // Extract the first service's transport URL
+  let endpoint = routingDid // fallback to DID if no service found
+  const firstSvc = routingDoc.service?.[0]
+  if (firstSvc) {
+    const resolved =
+      typeof firstSvc.serviceEndpoint === 'string'
+        ? firstSvc.serviceEndpoint
+        : (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.uri ??
+          (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.s
+    if (resolved) endpoint = resolved
+  }
+
+  // Extract Ed25519 routing keys from authentication (for v1 Forward compatibility).
+  // v1 Forward packing uses kid = base58(Ed25519_raw_bytes), and the mediator's
+  // routing record stores Ed25519 keys. X25519 keys are skipped here.
+  const routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
+  const keyRefs = [...(routingDoc.authentication ?? []), ...(routingDoc.keyAgreement ?? [])]
+  const seen = new Set<string>()
+  for (const keyRef of keyRefs) {
+    const vm = typeof keyRef === 'string' ? routingDoc.dereferenceVerificationMethod(keyRef) : keyRef
+    if (seen.has(vm.id)) continue
+    seen.add(vm.id)
+    const publicJwk = getPublicJwkFromVerificationMethod(vm)
+    if (publicJwk.is(Kms.Ed25519PublicJwk)) {
+      routingKeys.push(publicJwk)
+    }
+  }
+
+  return { endpoint, routingKeys }
+}
+
 export function routingToServices(routing: DidCommRouting): ResolvedDidCommService[] {
-  // v2: routingDid (DID-as-endpoint) - mediator DID used as serviceEndpoint per DIF spec
   if (routing.routingDid) {
+    // CM 2.0: resolve the routing DID to a plain URL + Ed25519 routing keys.
+    // This ensures the peer DID contains a universally-compatible serviceEndpoint.
+    const resolved = resolveRoutingDid(routing.routingDid)
     return [
       {
         id: '#inline-0',
-        serviceEndpoint: routing.routingDid,
+        serviceEndpoint: resolved.endpoint,
         recipientKeys: [routing.recipientKey],
-        routingKeys: routing.routingKeys,
+        routingKeys: [...resolved.routingKeys, ...routing.routingKeys],
       },
     ]
   }
-  // v1-style: endpoints + routingKeys
+  // CM 1.0: endpoints + routingKeys used as-is
   return routing.endpoints.map((endpoint, index) => ({
     id: `#inline-${index}`,
     serviceEndpoint: endpoint,
@@ -237,7 +289,13 @@ export async function createPeerDidForV2OOB(
   })
   didDocumentBuilder.addAuthentication(ed25519Vm).addKeyAgreement(x25519Vm)
 
-  // Add all endpoints so recipient can choose transport (e.g. ws for live delivery, http for requests)
+  // For v2 peer DIDs, keep the routing DID as the service URI (CM 2.0 DID-as-endpoint).
+  // v2 senders resolve this via DidCommDocumentService.expandV2EndpointIfRoutingDid which
+  // extracts the mediator's transport URL AND routing keys — needed so the sender wraps
+  // the message in a v2 Forward instead of encrypting directly to the recipient's key.
+  // We do NOT resolve to a plain URL here (unlike routingToServices): without routingKeys,
+  // v2 senders would skip forward-wrapping and post encrypted-to-recipient to the mediator,
+  // which cannot decrypt it. v1 senders use routingToServices and get the plain-URL path.
   const uris = routing.routingDid ? [routing.routingDid, ...routing.endpoints] : routing.endpoints
   if (!uris.length) {
     throw new CredoError('DIDComm v2 OOB requires at least one routing endpoint or routingDid')

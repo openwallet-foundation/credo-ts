@@ -116,6 +116,15 @@ export class DidCommDocumentService {
   /**
    * When a v2 service endpoint is a nested `did:` (common for did:peer mediation), expand to the transport URI and
    * mediator keys — same idea as {@link DidCommMessageSender.retrieveServicesByConnection} peer fallback.
+   *
+   * For mediator routing DIDs (did:peer:2 E<X25519>.V<Ed25519>), the Ed25519 authentication
+   * key and X25519 keyAgreement key represent the same physical key (related by the
+   * birational map). They MUST NOT be treated as two sequential routing hops — otherwise
+   * the sender would wrap the Forward twice, and the innermost wrap (addressed to the
+   * mediator) would be delivered to the recipient who cannot decrypt it.
+   *
+   * This function extracts ONE key per physical routing key, preferring the X25519
+   * keyAgreement form so the Forward envelope kid matches the mediator's decryption key.
    */
   private expandV2EndpointIfRoutingDid(
     endpoint: string,
@@ -128,18 +137,45 @@ export class DidCommDocumentService {
       const routingDoc = endpoint.startsWith('did:peer:4')
         ? didToNumAlgo4DidDocument(endpoint)
         : didToNumAlgo2DidDocument(endpoint)
-      const nestedRoutingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
-      const keyRefs = [...(routingDoc.authentication ?? []), ...(routingDoc.keyAgreement ?? [])]
-      const seen = new Set<string>()
-      for (const keyRef of keyRefs) {
-        const vm = typeof keyRef === 'string' ? routingDoc.dereferenceVerificationMethod(keyRef) : keyRef
-        if (seen.has(vm.id)) continue
-        const publicJwk = getPublicJwkFromVerificationMethod(vm)
-        if (publicJwk.is(Kms.Ed25519PublicJwk) || publicJwk.is(Kms.X25519PublicJwk)) {
-          seen.add(vm.id)
-          nestedRoutingKeys.push(publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
+
+      // Dedupe by X25519 fingerprint so Ed25519 auth + X25519 keyAgreement of the
+      // same physical key collapse to one hop. Prefer keyAgreement entries so the
+      // kept key is X25519 when available.
+      const byX25519Fingerprint = new Map<string, Kms.PublicJwk<Kms.Ed25519PublicJwk>>()
+      const addKey = (publicJwk: Kms.PublicJwk) => {
+        let fingerprint: string
+        try {
+          if (publicJwk.is(Kms.X25519PublicJwk)) {
+            fingerprint = publicJwk.fingerprint
+          } else if (publicJwk.is(Kms.Ed25519PublicJwk)) {
+            fingerprint = (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
+              .convertTo(Kms.X25519PublicJwk)
+              .fingerprint
+          } else {
+            return
+          }
+        } catch {
+          return
+        }
+        const existing = byX25519Fingerprint.get(fingerprint)
+        // Prefer X25519 over Ed25519 for the same physical key
+        if (!existing || (publicJwk.is(Kms.X25519PublicJwk) && !existing.is(Kms.X25519PublicJwk))) {
+          byX25519Fingerprint.set(fingerprint, publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
         }
       }
+
+      // keyAgreement first so X25519 wins the dedupe tie-breaker when both are present
+      const keyRefs = [...(routingDoc.keyAgreement ?? []), ...(routingDoc.authentication ?? [])]
+      const seenVmIds = new Set<string>()
+      for (const keyRef of keyRefs) {
+        const vm = typeof keyRef === 'string' ? routingDoc.dereferenceVerificationMethod(keyRef) : keyRef
+        if (seenVmIds.has(vm.id)) continue
+        seenVmIds.add(vm.id)
+        addKey(getPublicJwkFromVerificationMethod(vm))
+      }
+
+      const nestedRoutingKeys = Array.from(byX25519Fingerprint.values())
+
       let resolvedEndpoint = endpoint
       const firstSvc = routingDoc.service?.[0]
       if (firstSvc) {
@@ -232,11 +268,29 @@ export class DidCommDocumentService {
           return publicJwk
         })
 
+        // Expand DID-as-endpoint (e.g. when v2 mediation grant embeds a routing DID
+        // into a v1 peer DID service). Without this, the raw did:peer:2 would be passed
+        // as serviceEndpoint and no transport can handle the "did:" scheme.
+        let serviceEndpoint = v1Service.serviceEndpoint
+        let expandedRoutingKeys = routingKeys
+        if (typeof serviceEndpoint === 'string' && serviceEndpoint.startsWith('did:')) {
+          const expanded = this.expandV2EndpointIfRoutingDid(serviceEndpoint, routingKeys)
+          serviceEndpoint = expanded.endpoint
+          // For v1 Forward, only use Ed25519 routing keys. The v1 envelope packing
+          // sets kid = base58(raw_public_key) and the mediator looks up keys assuming
+          // Ed25519. Using X25519 keys here would produce a kid the mediator can't match.
+          expandedRoutingKeys = expanded.routingKeys.filter((k) => k.is(Kms.Ed25519PublicJwk))
+          // If no Ed25519 keys found, fall back to all keys (v2-only mediator routing DID)
+          if (expandedRoutingKeys.length === 0) {
+            expandedRoutingKeys = expanded.routingKeys
+          }
+        }
+
         resolvedServices.push({
           id: v1Service.id,
           recipientKeys,
-          routingKeys,
-          serviceEndpoint: v1Service.serviceEndpoint,
+          routingKeys: expandedRoutingKeys,
+          serviceEndpoint,
         })
       } else if (
         didCommService.type === DidCommV2Service.type ||

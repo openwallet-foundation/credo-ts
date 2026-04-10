@@ -1,5 +1,6 @@
 import {
   AgentContext,
+  DidKey,
   DidsApi,
   DidResolverService,
   getPublicJwkFromVerificationMethod,
@@ -8,6 +9,7 @@ import {
   Kms,
   parseDid,
 } from '@credo-ts/core'
+import { DidCommMediatorRoutingRepository } from '../modules/routing/repository'
 import type { DidCommV2EncryptedMessage } from './types'
 
 @injectable()
@@ -83,9 +85,78 @@ export class DidCommV2KeyResolver {
           x25519.keyId = keyId
           return { recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }, matchedKid: kid }
         } catch {
-          // Not our DID — try next recipient
-          continue
+          // Fall through: not a Created DID. Below we check mediator routing record
+          // for did:key kids (v2 Forward to mediator routing key).
         }
+
+        // Path 3: mediator routing record lookup for did:key kids.
+        // When a v2 Forward arrives addressed to the mediator's routing key, the kid
+        // is `did:key:z6...` which is NOT a Created DID in the DID store. We fall back
+        // to the mediator routing repository (same fallback pattern as v1's
+        // DidCommEnvelopeService.extractOurRecipientKeyWithKeyId).
+        //
+        // The kid may be Ed25519 (z6Mk) or X25519 (z6LS). The routing record stores
+        // Ed25519 keys, so we look up by Ed25519 fingerprint directly, and for X25519
+        // kids we derive the Ed25519=>X25519 mapping and compare.
+        if (kid.startsWith('did:key:')) {
+          try {
+            const kidPublicJwk = DidKey.fromDid(kid).publicJwk
+            const mediatorRoutingRepository = agentContext.dependencyManager.resolve(DidCommMediatorRoutingRepository)
+
+            // Ed25519 kid: direct fingerprint lookup
+            if (kidPublicJwk.is(Kms.Ed25519PublicJwk)) {
+              const record = await mediatorRoutingRepository.findSingleByQuery(agentContext, {
+                routingKeyFingerprints: [kidPublicJwk.fingerprint],
+              })
+              if (record) {
+                const routingKey = record.routingKeysWithKeyId.find((rk) => kidPublicJwk.equals(rk))
+                if (routingKey) {
+                  // Askar handles Ed25519 <=> X25519 birationally via the same kmsKeyId,
+                  // so we can convert and reuse the Ed25519 key id for X25519 decryption.
+                  const x25519 = (routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(
+                    Kms.X25519PublicJwk
+                  )
+                  x25519.keyId = routingKey.keyId
+                  return {
+                    recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
+                    matchedKid: kid,
+                  }
+                }
+              }
+            }
+
+            // X25519 kid: tag stores Ed25519 fingerprint so we can't query by X25519.
+            // Load the single well-known routing record and scan its keys.
+            if (kidPublicJwk.is(Kms.X25519PublicJwk)) {
+              const record = await mediatorRoutingRepository.findById(
+                agentContext,
+                mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID
+              )
+              if (record) {
+                for (const routingKey of record.routingKeysWithKeyId) {
+                  try {
+                    const derivedX25519 = (routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(
+                      Kms.X25519PublicJwk
+                    )
+                    if (derivedX25519.fingerprint === kidPublicJwk.fingerprint) {
+                      derivedX25519.keyId = routingKey.keyId
+                      return {
+                        recipientKey: derivedX25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
+                        matchedKid: kid,
+                      }
+                    }
+                  } catch {
+                    // Skip keys that can't be converted
+                  }
+                }
+              }
+            }
+          } catch {
+            // Ignore failures in Path 3 and continue to next recipient
+          }
+        }
+
+        continue
       }
 
       // Path 2: kid stored directly in KMS (e.g. internal key id)

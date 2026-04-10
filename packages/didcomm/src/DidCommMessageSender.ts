@@ -167,29 +167,23 @@ export class DidCommMessageSender {
   }
 
   /**
-   * Value for Forward `next` / mediator keylist lookup. Must match CM2 `recipient_did`
-   * ({@link DidCommMediationRecipientApi.provisionV2} registers the holder's peer DID).
+   * Value for Forward `next` / mediator keylist lookup.
+   *
+   * Per DIDComm v2 spec (routing/2.0) and Coordinate Mediation 2.0 spec, `next` MUST
+   * exactly match the value the recipient registered via `keylist-update` — mediators
+   * perform string-equality lookup, not DID/key equivalence.
+   *
    */
   private resolveRecipientNextForMediationForward(
-    connection: DidCommConnectionRecord | undefined,
-    plaintext: DidCommV2PlaintextMessage,
+    _connection: DidCommConnectionRecord | undefined,
+    _plaintext: DidCommV2PlaintextMessage,
     keys: EnvelopeKeys
   ): string {
-    const keyDidFallback = new DidKey(keys.recipientKeys[0]).did
-    if (connection?.theirDid && connection.theirDid.length > 0) {
-      return connection.theirDid
-    }
-    const tagTheirDid = connection?.getTags().theirDid
-    if (typeof tagTheirDid === 'string' && tagTheirDid.length > 0) {
-      return tagTheirDid
-    }
-    const to0 = plaintext.to?.[0]
-    if (typeof to0 === 'string' && to0.length > 0) {
-      if (to0.startsWith('did:peer:') || to0.startsWith('did:web:')) {
-        return to0
-      }
-    }
-    return keyDidFallback
+    // toX25519 ensures we always build the did:key from an X25519 fingerprint,
+    // so the form matches what the holder registered regardless of whether the
+    // peer DID stored an Ed25519 auth VM or an X25519 keyAgreement VM.
+    const x25519 = toX25519(keys.recipientKeys[0])
+    return new DidKey(x25519).did
   }
 
   private async packV2WithForward(
@@ -835,28 +829,49 @@ export class DidCommMessageSender {
                   ? svc.serviceEndpoint
                   : (svc.serviceEndpoint as { uri?: string })?.uri
             let routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
-            // When endpoint is a DID (e.g. routing DID), resolve to get transport URL and mediator's keys for Forward
+            // When endpoint is a DID (e.g. routing DID), resolve to get transport URL and mediator's keys for Forward.
+            // Dedupe by X25519 fingerprint: a mediator's Ed25519 authentication VM and X25519 keyAgreement VM
+            // are the same physical key (birational map) and must count as ONE hop. Without dedup, the sender
+            // wraps the Forward twice, and the inner wrap (addressed to the mediator) gets delivered to the
+            // recipient who cannot decrypt it. Prefers the X25519 form so the Forward kid matches the
+            // mediator's decryption key directly.
             if (endpoint?.startsWith('did:')) {
               try {
                 const routingDoc = endpoint.startsWith('did:peer:4')
                   ? didToNumAlgo4DidDocument(endpoint)
                   : didToNumAlgo2DidDocument(endpoint)
-                // Extract mediator's keys for v1 Forward (encrypt outer for mediator)
+                const byX25519Fp = new Map<string, Kms.PublicJwk<Kms.Ed25519PublicJwk>>()
+                // keyAgreement first so X25519 wins the tie-breaker when both forms are present
                 const routingKeyRefs = [
-                  ...(routingDoc.authentication ?? []),
                   ...(routingDoc.keyAgreement ?? []),
+                  ...(routingDoc.authentication ?? []),
                 ]
                 const seen = new Set<string>()
                 for (const keyRef of routingKeyRefs) {
                   const vm =
                     typeof keyRef === 'string' ? routingDoc.dereferenceVerificationMethod(keyRef) : keyRef
                   if (seen.has(vm.id)) continue
+                  seen.add(vm.id)
                   const publicJwk = getPublicJwkFromVerificationMethod(vm)
-                  if (publicJwk.is(Kms.Ed25519PublicJwk) || publicJwk.is(Kms.X25519PublicJwk)) {
-                    seen.add(vm.id)
-                    routingKeys.push(publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
+                  let fingerprint: string | undefined
+                  try {
+                    if (publicJwk.is(Kms.X25519PublicJwk)) {
+                      fingerprint = publicJwk.fingerprint
+                    } else if (publicJwk.is(Kms.Ed25519PublicJwk)) {
+                      fingerprint = (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
+                        .convertTo(Kms.X25519PublicJwk)
+                        .fingerprint
+                    }
+                  } catch {
+                    // Skip keys we can't convert
+                  }
+                  if (!fingerprint) continue
+                  const existing = byX25519Fp.get(fingerprint)
+                  if (!existing || (publicJwk.is(Kms.X25519PublicJwk) && !existing.is(Kms.X25519PublicJwk))) {
+                    byX25519Fp.set(fingerprint, publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
                   }
                 }
+                routingKeys = Array.from(byX25519Fp.values())
                 const firstSvc = routingDoc.service?.[0]
                 if (firstSvc) {
                   const resolved =

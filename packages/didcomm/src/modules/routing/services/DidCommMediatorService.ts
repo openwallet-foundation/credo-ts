@@ -8,6 +8,7 @@ import {
   didKeyToVerkey,
   EventEmitter,
   getDidPeer4ShortFormForEquivalence,
+  getEd25519VerificationKey2018,
   getX25519KeyAgreementKey2019,
   InjectionSymbols,
   inject,
@@ -132,7 +133,18 @@ export class DidCommMediatorService {
       controller: 'did:peer:2-placeholder',
     })
 
+    // Also include the Ed25519 authentication key so that v1 agents (which use Ed25519
+    // routing keys for Forward message encryption) can find it when resolving the routing DID.
+    // Without this, the routing DID only contains an X25519 keyAgreement key, which causes
+    // v1 Forward packing to produce a kid the mediator can't look up.
+    const ed25519VerificationMethod = getEd25519VerificationKey2018({
+      id: 'did:peer:2-placeholder#key-2',
+      publicJwk: routingKey,
+      controller: 'did:peer:2-placeholder',
+    })
+
     const didDocumentBuilder = new DidDocumentBuilder('did:peer:2-placeholder')
+    didDocumentBuilder.addAuthentication(ed25519VerificationMethod)
     didDocumentBuilder.addKeyAgreement(verificationMethod)
     // Use DIDCommMessaging + string endpoint so abbreviate produces t:'dm', s:endpoint for parser compatibility
     const service = JsonTransformer.fromJSON(
@@ -144,6 +156,15 @@ export class DidCommMediatorService {
     const didDocument = didDocumentBuilder.build()
     const did = didDocumentToNumAlgo2Did(didDocument)
     this.logger.debug('Created mediator routing DID from routing record', { did })
+
+    // NOTE: We intentionally do NOT import this routing DID into the DID store.
+    // For v1 Forward decryption, the mediator routing record (Path 2 in
+    // extractOurRecipientKeyWithKeyId) correctly resolves the Ed25519 key and
+    // its KMS key ID from DidCommMediatorRoutingRecord. Importing would require
+    // complex VM-to-KMS key mapping that is fragile across did:peer:2 round-trips.
+    // For v2 Forward decryption (future), a separate DID import with proper
+    // X25519 key mapping can be added when needed.
+
     return did
   }
 

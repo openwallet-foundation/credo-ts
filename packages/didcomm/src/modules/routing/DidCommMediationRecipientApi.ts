@@ -225,15 +225,10 @@ export class DidCommMediationRecipientApi {
                 protocolVersion: 'v2',
               })
             } else if (pickupStrategy === DidCommMediatorPickupStrategy.PickUpV3LiveMode) {
-              const recipientDidV3 =
-                mediator.mediationProtocolVersion === '2.0' && mediator.recipientDids?.length
-                  ? mediator.recipientDids[0]
-                  : undefined
               await this.messagePickupApi.pickupMessages({
                 connectionId: mediator.connectionId,
                 protocolVersion: 'v3',
                 awaitCompletion: true,
-                recipientDid: recipientDidV3,
               })
 
               await this.messagePickupApi.setLiveDeliveryMode({
@@ -290,11 +285,6 @@ export class DidCommMediationRecipientApi {
       assertDidCommV1Connection(mediatorConnection, 'Mediation')
     }
 
-    const recipientDidV3 =
-      mediatorRecord.mediationProtocolVersion === '2.0' && mediatorRecord.recipientDids?.length
-        ? mediatorRecord.recipientDids[0]
-        : undefined
-
     switch (mediatorPickupStrategy) {
       case DidCommMediatorPickupStrategy.PickUpV1:
       case DidCommMediatorPickupStrategy.PickUpV2: {
@@ -331,7 +321,6 @@ export class DidCommMediationRecipientApi {
                 connectionId: mediatorConnection.id,
                 batchSize: this.config.maximumMessagePickup,
                 protocolVersion: 'v3',
-                recipientDid: recipientDidV3,
               })
             },
             complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
@@ -364,7 +353,6 @@ export class DidCommMediationRecipientApi {
           connectionId: mediatorConnection.id,
           protocolVersion: 'v3',
           awaitCompletion: true,
-          recipientDid: recipientDidV3,
         })
 
         await this.messagePickupApi.setLiveDeliveryMode({
