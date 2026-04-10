@@ -1,8 +1,11 @@
+import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import {
   AgentContext,
   CredoError,
   createPeerDidDocumentFromServices,
   DidCommV1Service,
+  NewDidCommV2Service,
+  NewDidCommV2ServiceEndpoint,
   DidDocumentBuilder,
   type DidDocumentKey,
   DidDocumentRole,
@@ -10,17 +13,28 @@ import {
   DidsApi,
   didDocumentJsonToNumAlgo1Did,
   getEd25519VerificationKey2018,
+  getX25519KeyAgreementKey2019,
   IndyAgentService,
   Kms,
   PeerDidNumAlgo,
   type ResolvedDidCommService,
   TypedArrayEncoder,
 } from '@credo-ts/core'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
 import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import type { DidCommOutOfBandInlineServiceKey } from '../../oob/repository/DidCommOutOfBandRecord'
 import type { DidDoc, PublicKey } from '../models'
 import { EmbeddedAuthentication } from '../models'
+
+/**
+ * Normalize a PublicJwk to X25519 for comparison. DIDComm v2 uses X25519 for decryption;
+ * services may have Ed25519 keys. Centralizes the type assertion needed because
+ * PublicJwk.convertTo() only narrows when the instance is known to be Ed25519.
+ */
+export function toX25519(jwk: Kms.PublicJwk): Kms.PublicJwk<Kms.X25519PublicJwk> {
+  return jwk.is(Kms.X25519PublicJwk) ? jwk : (jwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+}
 
 export function convertToNewDidDocument(didDoc: DidDoc, keys?: DidDocumentKey[]) {
   const didDocumentBuilder = new DidDocumentBuilder('')
@@ -137,6 +151,18 @@ function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
 }
 
 export function routingToServices(routing: DidCommRouting): ResolvedDidCommService[] {
+  // v2: routingDid (DID-as-endpoint) - mediator DID used as serviceEndpoint per DIF spec
+  if (routing.routingDid) {
+    return [
+      {
+        id: '#inline-0',
+        serviceEndpoint: routing.routingDid,
+        recipientKeys: [routing.recipientKey],
+        routingKeys: routing.routingKeys,
+      },
+    ]
+  }
+  // v1-style: endpoints + routingKeys
   return routing.endpoints.map((endpoint, index) => ({
     id: `#inline-${index}`,
     serviceEndpoint: endpoint,
@@ -173,6 +199,89 @@ export async function assertNoCreatedDidExistsForKeys(agentContext: AgentContext
       )}`
     )
   }
+}
+
+/**
+ * Creates a did:peer (2 or 4) for DIDComm v2 OOB (invitation creation or accept).
+ * Uses DidCommV2Service with accept: ['didcomm/v2'].
+ * Defaults to did:peer:4; use numAlgo override for did:peer:2 (legacy).
+ */
+export async function createPeerDidForV2OOB(
+  agentContext: AgentContext,
+  routing: DidCommRouting,
+  numAlgoOverride?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
+): Promise<{ did: string; didDocument: import('@credo-ts/core').DidDocument }> {
+  const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+  const recipientKey = routing.recipientKey
+
+  if (!recipientKey.is(Kms.Ed25519PublicJwk)) {
+    throw new CredoError('DIDComm v2 OOB requires Ed25519 recipient key')
+  }
+
+  const x25519Key = Kms.PublicJwk.fromPublicKey({
+    crv: 'X25519',
+    kty: 'OKP',
+    publicKey: convertPublicKeyToX25519(recipientKey.publicKey.publicKey),
+  })
+
+  const didDocumentBuilder = new DidDocumentBuilder('')
+  const ed25519Vm = getEd25519VerificationKey2018({
+    id: '#key-1',
+    publicJwk: recipientKey,
+    controller: '#id',
+  })
+  const x25519Vm = getX25519KeyAgreementKey2019({
+    id: '#key-2',
+    publicJwk: x25519Key,
+    controller: '#id',
+  })
+  didDocumentBuilder.addAuthentication(ed25519Vm).addKeyAgreement(x25519Vm)
+
+  // Add all endpoints so recipient can choose transport (e.g. ws for live delivery, http for requests)
+  const uris = routing.routingDid ? [routing.routingDid, ...routing.endpoints] : routing.endpoints
+  if (!uris.length) {
+    throw new CredoError('DIDComm v2 OOB requires at least one routing endpoint or routingDid')
+  }
+  for (let i = 0; i < uris.length; i++) {
+    didDocumentBuilder.addService(
+      new NewDidCommV2Service({
+        id: `#didcommmessaging-${i}`,
+        serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+          uri: uris[i],
+          accept: ['didcomm/v2'],
+        }),
+      })
+    )
+  }
+
+  const didDocument = didDocumentBuilder.build()
+  const keys: DidDocumentKey[] = [
+    { didDocumentRelativeKeyId: '#key-1', kmsKeyId: recipientKey.keyId ?? recipientKey.legacyKeyId },
+    { didDocumentRelativeKeyId: '#key-2', kmsKeyId: recipientKey.keyId ?? recipientKey.legacyKeyId },
+  ]
+
+  await assertNoCreatedDidExistsForKeys(agentContext, [recipientKey])
+
+  const numAlgo =
+    numAlgoOverride ??
+    agentContext.dependencyManager.resolve(DidCommModuleConfig).peerDidNumAlgoForV2OOB ??
+    PeerDidNumAlgo.ShortFormAndLongForm
+
+  const result = await didsApi.create({
+    method: 'peer',
+    didDocument,
+    options: {
+      numAlgo,
+      keys,
+    },
+  })
+
+  if (result.didState?.state !== 'finished') {
+    throw new CredoError(`Did document creation failed: ${JSON.stringify(result.didState)}`)
+  }
+
+  const resolved = await didsApi.resolveCreatedDidDocumentWithKeys(result.didState.did)
+  return { did: resolved.didDocument.id, didDocument: resolved.didDocument }
 }
 
 export async function createPeerDidFromServices(

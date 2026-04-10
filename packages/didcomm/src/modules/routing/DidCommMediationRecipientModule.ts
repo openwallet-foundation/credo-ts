@@ -13,6 +13,12 @@ import {
   DidCommMediationDenyHandler,
   DidCommMediationGrantHandler,
 } from './handlers'
+import {
+  KeylistHandler,
+  KeylistUpdateResponseHandler,
+  MediationDenyHandler,
+  MediationGrantHandler,
+} from './handlers/v2'
 import { DidCommMediationRole } from './models'
 import { DidCommMediationRepository } from './repository'
 import { DidCommMediationRecipientService, DidCommRoutingService } from './services'
@@ -49,12 +55,27 @@ export class DidCommMediationRecipientModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantHandler(mediationRecipientService))
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyHandler(mediationRecipientService))
 
+    if (this.config.mediationProtocolVersions.includes('2.0')) {
+      messageHandlerRegistry.registerMessageHandler(new MediationGrantHandler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(new MediationDenyHandler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(new KeylistUpdateResponseHandler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(new KeylistHandler(mediationRecipientService))
+    }
+
     featureRegistry.register(
       new DidCommProtocol({
         id: 'https://didcomm.org/coordinate-mediation/1.0',
         roles: [DidCommMediationRole.Recipient],
       })
     )
+    if (this.config.mediationProtocolVersions.includes('2.0')) {
+      featureRegistry.register(
+        new DidCommProtocol({
+          id: 'https://didcomm.org/coordinate-mediation/2.0',
+          roles: [DidCommMediationRole.Recipient],
+        })
+      )
+    }
   }
 
   public async onCloseContext(agentContext: AgentContext): Promise<void> {
@@ -72,7 +93,8 @@ export class DidCommMediationRecipientModule implements Module {
     const mediationRecipientApi = agentContext.dependencyManager.resolve(DidCommMediationRecipientApi)
 
     // Connect to mediator through provided invitation if provided in config
-    // Also requests mediation ans sets as default mediator
+    // Also requests mediation and sets as default mediator.
+    // provision() delegates to provisionV2 when connection is v2.
     if (this.config.mediatorInvitationUrl) {
       agentContext.config.logger.debug('Provision mediation with invitation', {
         mediatorInvitationUrl: this.config.mediatorInvitationUrl,

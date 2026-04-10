@@ -1,5 +1,5 @@
 import type { DidResolverService } from '@credo-ts/core'
-import { CredoError } from '@credo-ts/core'
+import { CredoError, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import { DidCommOutboundMessageContext } from '../../../models'
@@ -31,7 +31,7 @@ export class DidCommConnectionResponseHandler implements DidCommMessageHandler {
   }
 
   public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommConnectionResponseHandler>) {
-    const { recipientKey, senderKey, message } = messageContext
+    let { recipientKey, senderKey, message } = messageContext
 
     if (!recipientKey || !senderKey) {
       throw new CredoError('Unable to process connection response without senderKey or recipientKey')
@@ -60,8 +60,15 @@ export class DidCommConnectionResponseHandler implements DidCommMessageHandler {
     }
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
-    // connection record did
-    if (!ourDidDocument.recipientKeys.find((key) => key.fingerprint === recipientKey.fingerprint)) {
+    // connection record did. Anoncrypt yields X25519; did doc may have Ed25519 - check both forms.
+    const recipientKeyMatches = ourDidDocument.recipientKeys.some((key) => {
+      if (key.fingerprint === recipientKey.fingerprint) return true
+      if (key.is(Kms.Ed25519PublicJwk) && recipientKey.is(Kms.X25519PublicJwk)) {
+        return key.convertTo(Kms.X25519PublicJwk).fingerprint === recipientKey.fingerprint
+      }
+      return false
+    })
+    if (!recipientKeyMatches) {
       throw new CredoError(`Recipient key ${recipientKey.fingerprint} not found in did document recipient keys.`)
     }
 

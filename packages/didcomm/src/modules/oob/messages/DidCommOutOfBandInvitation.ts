@@ -3,6 +3,7 @@ import { Exclude, Expose, Transform, TransformationType, Type } from 'class-tran
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import queryString from 'query-string'
 import { DidCommMessage } from '../../../DidCommMessage'
+import type { DidCommOutOfBandInvitationV2 } from './DidCommOutOfBandInvitationV2'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../decorators/attachment/DidCommAttachment'
 import type { DidCommPlaintextMessage } from '../../../types'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../util/messageType'
@@ -16,6 +17,7 @@ export enum DidCommInvitationType {
   OutOfBand = 'out-of-band/1.x',
   Connection = 'connections/1.x',
   Connectionless = 'connectionless',
+  V2OutOfBand = 'out-of-band/2.x',
 }
 
 export interface DidCommOutOfBandInvitationOptions {
@@ -54,6 +56,13 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
   @Exclude()
   public invitationType?: DidCommInvitationType
 
+  /**
+   * When this invitation was parsed from a v2 OOB format (out-of-band/2.0/invitation),
+   * holds the original v2 invitation for v2-specific flows.
+   */
+  @Exclude()
+  public v2Invitation?: DidCommOutOfBandInvitationV2
+
   public addRequest(message: DidCommMessage) {
     if (!this.requests) this.requests = []
     const requestAttachment = new DidCommAttachment({
@@ -71,6 +80,9 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
   }
 
   public toUrl({ domain }: { domain: string }) {
+    if (this.v2Invitation) {
+      return this.v2Invitation.toUrl({ domain })
+    }
     const invitationJson = this.toJSON()
     const encodedInvitation = JsonEncoder.toBase64Url(invitationJson)
     const invitationUrl = `${domain}?oob=${encodedInvitation}`
