@@ -320,7 +320,10 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         credentialResponse.transaction_id ? 202 : 200
       )
     } catch (error) {
-      issuanceSession.errorMessage = 'Failed to create a credential response'
+      issuanceSession.errorMessage =
+        typeof error.message === 'string' && error.message !== ''
+          ? error.message
+          : 'Failed to create a credential response'
       await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
 
       if (error instanceof Oauth2ServerErrorResponseError) {
