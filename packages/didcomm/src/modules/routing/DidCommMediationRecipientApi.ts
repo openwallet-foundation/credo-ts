@@ -225,15 +225,10 @@ export class DidCommMediationRecipientApi {
                 protocolVersion: 'v2',
               })
             } else if (pickupStrategy === DidCommMediatorPickupStrategy.PickUpV3LiveMode) {
-              const recipientDidV3 =
-                mediator.mediationProtocolVersion === '2.0' && mediator.recipientDids?.length
-                  ? mediator.recipientDids[0]
-                  : undefined
               await this.messagePickupApi.pickupMessages({
                 connectionId: mediator.connectionId,
                 protocolVersion: 'v3',
                 awaitCompletion: true,
-                recipientDid: recipientDidV3,
               })
 
               await this.messagePickupApi.setLiveDeliveryMode({
@@ -290,18 +285,6 @@ export class DidCommMediationRecipientApi {
       assertDidCommV1Connection(mediatorConnection, 'Mediation')
     }
 
-    // For DIDComm v2 pickup we intentionally do NOT pass a `recipient_did` filter.
-    //
-    // Per CM 2.0 / MP 3.0, `recipient_did` in status-request is optional — when omitted
-    // the mediator returns messages for the entire connection. We rely on that because
-    // the mediation record may contain many registered DIDs (the holder's peer DID from
-    // provisioning, plus a did:key per downstream connection registered via keylist-update).
-    // Filtering by any single one (e.g. `recipientDids[0]`) would hide messages queued
-    // under a different recipient DID (e.g. a forward whose `next` is a per-connection
-    // did:key). Fetching all pending messages for the holder's mediator connection is
-    // the correct semantic.
-    const recipientDidV3 = undefined
-
     switch (mediatorPickupStrategy) {
       case DidCommMediatorPickupStrategy.PickUpV1:
       case DidCommMediatorPickupStrategy.PickUpV2: {
@@ -338,7 +321,6 @@ export class DidCommMediationRecipientApi {
                 connectionId: mediatorConnection.id,
                 batchSize: this.config.maximumMessagePickup,
                 protocolVersion: 'v3',
-                recipientDid: recipientDidV3,
               })
             },
             complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
@@ -371,7 +353,6 @@ export class DidCommMediationRecipientApi {
           connectionId: mediatorConnection.id,
           protocolVersion: 'v3',
           awaitCompletion: true,
-          recipientDid: recipientDidV3,
         })
 
         await this.messagePickupApi.setLiveDeliveryMode({
