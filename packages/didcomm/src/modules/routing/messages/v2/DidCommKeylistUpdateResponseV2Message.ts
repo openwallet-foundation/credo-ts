@@ -4,7 +4,7 @@ import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-val
 import { DidCommMessage } from '../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
 
-import { KeylistUpdateActionV2 } from './KeylistUpdateMessage'
+import { KeylistUpdateActionV2 } from './DidCommKeylistUpdateV2Message'
 import type { DidCommVersion } from '../../../../util/didcommVersion'
 
 export enum KeylistUpdateResultV2 {
@@ -40,7 +40,7 @@ export class KeylistUpdateResponseItem {
   public result!: KeylistUpdateResultV2
 }
 
-export interface KeylistUpdateResponseMessageOptions {
+export interface DidCommKeylistUpdateResponseV2MessageOptions {
   id?: string
   updated: KeylistUpdateResponseItemV2[]
   threadId?: string
@@ -51,11 +51,11 @@ export interface KeylistUpdateResponseMessageOptions {
  *
  * @see https://didcomm.org/coordinate-mediation/2.0/
  */
-export class KeylistUpdateResponseMessage extends DidCommMessage {
+export class DidCommKeylistUpdateResponseV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: KeylistUpdateResponseMessageOptions) {
+  public constructor(options: DidCommKeylistUpdateResponseV2MessageOptions) {
     super()
 
     if (options) {
@@ -67,8 +67,8 @@ export class KeylistUpdateResponseMessage extends DidCommMessage {
     }
   }
 
-  @IsValidMessageType(KeylistUpdateResponseMessage.type)
-  public readonly type = KeylistUpdateResponseMessage.type.messageTypeUri
+  @IsValidMessageType(DidCommKeylistUpdateResponseV2Message.type)
+  public readonly type = DidCommKeylistUpdateResponseV2Message.type.messageTypeUri
   public static readonly type = parseMessageType(
     'https://didcomm.org/coordinate-mediation/2.0/keylist-update-response'
   )

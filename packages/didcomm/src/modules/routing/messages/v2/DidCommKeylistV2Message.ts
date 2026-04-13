@@ -46,7 +46,7 @@ export class KeylistPagination {
   public remaining!: number
 }
 
-export interface KeylistMessageOptions {
+export interface DidCommKeylistV2MessageOptions {
   id?: string
   keys: KeylistKeyItemV2[]
   pagination?: KeylistPaginationV2
@@ -58,11 +58,11 @@ export interface KeylistMessageOptions {
  *
  * @see https://didcomm.org/coordinate-mediation/2.0/
  */
-export class KeylistMessage extends DidCommMessage {
+export class DidCommKeylistV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: KeylistMessageOptions) {
+  public constructor(options: DidCommKeylistV2MessageOptions) {
     super()
 
     if (options) {
@@ -77,8 +77,8 @@ export class KeylistMessage extends DidCommMessage {
     }
   }
 
-  @IsValidMessageType(KeylistMessage.type)
-  public readonly type = KeylistMessage.type.messageTypeUri
+  @IsValidMessageType(DidCommKeylistV2Message.type)
+  public readonly type = DidCommKeylistV2Message.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/keylist')
 
   @Type(() => KeylistKeyItem)

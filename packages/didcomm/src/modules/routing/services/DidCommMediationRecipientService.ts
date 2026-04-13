@@ -39,14 +39,14 @@ import {
 import { DidCommKeylistUpdate, DidCommKeylistUpdateMessage } from '../messages/DidCommKeylistUpdateMessage'
 import {
   KeylistUpdateActionV2,
-  KeylistUpdateMessage,
-  KeylistQueryMessage,
-  MediateGrantMessage,
-  MediateDenyMessage,
-  MediateRequestMessage,
+  DidCommKeylistUpdateV2Message,
+  DidCommKeylistQueryV2Message,
+  DidCommMediateGrantV2Message,
+  DidCommMediateDenyV2Message,
+  DidCommMediateRequestV2Message,
 } from '../messages/v2'
-import type { KeylistUpdateResponseItem } from '../messages/v2/KeylistUpdateResponseMessage'
-import { KeylistUpdateResultV2 } from '../messages/v2/KeylistUpdateResponseMessage'
+import type { KeylistUpdateResponseItem } from '../messages/v2/DidCommKeylistUpdateResponseV2Message'
+import { KeylistUpdateResultV2 } from '../messages/v2/DidCommKeylistUpdateResponseV2Message'
 import { DidCommMediationRole, DidCommMediationState } from '../models'
 import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
@@ -95,8 +95,8 @@ export class DidCommMediationRecipientService {
   public async createRequestV2(
     agentContext: AgentContext,
     connection: DidCommConnectionRecord
-  ): Promise<MediationProtocolMsgReturnType<MediateRequestMessage>> {
-    const message = new MediateRequestMessage({})
+  ): Promise<MediationProtocolMsgReturnType<DidCommMediateRequestV2Message>> {
+    const message = new DidCommMediateRequestV2Message({})
 
     const mediationRecord = new DidCommMediationRecord({
       threadId: message.threadId,
@@ -144,7 +144,7 @@ export class DidCommMediationRecipientService {
   }
 
   public async processMediationGrantV2(
-    messageContext: DidCommInboundMessageContext<MediateGrantMessage>
+    messageContext: DidCommInboundMessageContext<DidCommMediateGrantV2Message>
   ): Promise<DidCommMediationRecord> {
     const connection = messageContext.assertReadyConnection()
 
@@ -202,7 +202,7 @@ export class DidCommMediationRecipientService {
   }
 
   public async processKeylistUpdateResultsV2(
-    messageContext: DidCommInboundMessageContext<import('../messages/v2/KeylistUpdateResponseMessage').KeylistUpdateResponseMessage>
+    messageContext: DidCommInboundMessageContext<import('../messages/v2/DidCommKeylistUpdateResponseV2Message').DidCommKeylistUpdateResponseV2Message>
   ): Promise<void> {
     const connection = messageContext.assertReadyConnection()
 
@@ -233,7 +233,7 @@ export class DidCommMediationRecipientService {
   }
 
   public async processKeylistV2(
-    messageContext: DidCommInboundMessageContext<import('../messages/v2/KeylistMessage').KeylistMessage>
+    messageContext: DidCommInboundMessageContext<import('../messages/v2/DidCommKeylistV2Message').DidCommKeylistV2Message>
   ): Promise<void> {
     const connection = messageContext.assertReadyConnection()
 
@@ -363,14 +363,14 @@ export class DidCommMediationRecipientService {
   public createKeylistUpdateV2Message(
     mediationRecord: DidCommMediationRecord,
     updates: Array<{ recipientDid: string; action: KeylistUpdateActionV2 }>
-  ): KeylistUpdateMessage {
-    return new KeylistUpdateMessage({
+  ): DidCommKeylistUpdateV2Message {
+    return new DidCommKeylistUpdateV2Message({
       updates: updates.map((u) => ({ recipientDid: u.recipientDid, action: u.action })),
     })
   }
 
-  public createKeylistQueryV2Message(mediationRecord: DidCommMediationRecord, paginate?: { limit: number; offset: number }): KeylistQueryMessage {
-    return new KeylistQueryMessage(paginate ? { paginate } : {})
+  public createKeylistQueryV2Message(mediationRecord: DidCommMediationRecord, paginate?: { limit: number; offset: number }): DidCommKeylistQueryV2Message {
+    return new DidCommKeylistQueryV2Message(paginate ? { paginate } : {})
   }
 
   public async addMediationRouting(
@@ -495,7 +495,7 @@ export class DidCommMediationRecipientService {
   }
 
   public async processMediationDenyV2(
-    messageContext: DidCommInboundMessageContext<MediateDenyMessage>
+    messageContext: DidCommInboundMessageContext<DidCommMediateDenyV2Message>
   ): Promise<DidCommMediationRecord> {
     const connection = messageContext.assertReadyConnection()
 

@@ -7,7 +7,7 @@ import { IsValidMessageType, parseMessageType } from '../../../../../util/messag
 import { DateParser } from '../../../../../util/transformers'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
 
-export interface StatusV3MessageOptions {
+export interface DidCommStatusV3MessageOptions {
   id?: string
   recipientDid?: string
   threadId: string
@@ -19,11 +19,11 @@ export interface StatusV3MessageOptions {
   liveDelivery?: boolean
 }
 
-export class StatusV3Message extends DidCommMessage {
+export class DidCommStatusV3Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: StatusV3MessageOptions) {
+  public constructor(options: DidCommStatusV3MessageOptions) {
     super()
     if (options) {
       this.id = options.id ?? this.generateId()
@@ -41,8 +41,8 @@ export class StatusV3Message extends DidCommMessage {
     this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @IsValidMessageType(StatusV3Message.type)
-  public readonly type = StatusV3Message.type.messageTypeUri
+  @IsValidMessageType(DidCommStatusV3Message.type)
+  public readonly type = DidCommStatusV3Message.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/messagepickup/3.0/status')
 
   @IsString()

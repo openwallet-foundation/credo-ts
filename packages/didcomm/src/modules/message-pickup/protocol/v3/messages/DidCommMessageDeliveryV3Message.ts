@@ -7,18 +7,18 @@ import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportD
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
 
-export interface MessageDeliveryV3MessageOptions {
+export interface DidCommMessageDeliveryV3MessageOptions {
   id?: string
   recipientDid?: string
   threadId?: string
   attachments: DidCommAttachment[]
 }
 
-export class MessageDeliveryV3Message extends DidCommMessage {
+export class DidCommMessageDeliveryV3Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: MessageDeliveryV3MessageOptions) {
+  public constructor(options: DidCommMessageDeliveryV3MessageOptions) {
     super()
 
     if (options) {
@@ -34,8 +34,8 @@ export class MessageDeliveryV3Message extends DidCommMessage {
     this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @IsValidMessageType(MessageDeliveryV3Message.type)
-  public readonly type = MessageDeliveryV3Message.type.messageTypeUri
+  @IsValidMessageType(DidCommMessageDeliveryV3Message.type)
+  public readonly type = DidCommMessageDeliveryV3Message.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/messagepickup/3.0/delivery')
 
   @IsString()

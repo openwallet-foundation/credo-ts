@@ -2,7 +2,7 @@ import { DidCommMessage } from '../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
 import type { DidCommVersion } from '../../../../util/didcommVersion'
 
-export interface MediateDenyMessageOptions {
+export interface DidCommMediateDenyV2MessageOptions {
   id?: string
   threadId?: string
 }
@@ -12,11 +12,11 @@ export interface MediateDenyMessageOptions {
  *
  * @see https://didcomm.org/coordinate-mediation/2.0/
  */
-export class MediateDenyMessage extends DidCommMessage {
+export class DidCommMediateDenyV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: MediateDenyMessageOptions = {}) {
+  public constructor(options: DidCommMediateDenyV2MessageOptions = {}) {
     super()
 
     if (options) {
@@ -27,7 +27,7 @@ export class MediateDenyMessage extends DidCommMessage {
     }
   }
 
-  @IsValidMessageType(MediateDenyMessage.type)
-  public readonly type = MediateDenyMessage.type.messageTypeUri
+  @IsValidMessageType(DidCommMediateDenyV2Message.type)
+  public readonly type = DidCommMediateDenyV2Message.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/mediate-deny')
 }

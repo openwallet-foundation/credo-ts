@@ -1,10 +1,10 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import { DidCommForwardMessage, DidCommForwardMessageV2 } from '../messages'
+import { DidCommForwardMessage, DidCommForwardV2Message } from '../messages'
 import type { DidCommMediatorService } from '../services'
 
 export class DidCommForwardHandler implements DidCommMessageHandler {
   private mediatorService: DidCommMediatorService
-  public supportedMessages = [DidCommForwardMessage, DidCommForwardMessageV2]
+  public supportedMessages = [DidCommForwardMessage, DidCommForwardV2Message]
 
   public constructor(mediatorService: DidCommMediatorService) {
     this.mediatorService = mediatorService

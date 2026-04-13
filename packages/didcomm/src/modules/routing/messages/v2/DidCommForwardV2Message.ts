@@ -8,7 +8,7 @@ import type { DidCommVersion } from '../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
 import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from '../../../../v2/types'
 
-export interface DidCommForwardMessageV2Options {
+export interface DidCommForwardV2MessageOptions {
   id?: string
   /** DIDs of the mediator(s) receiving this forward */
   to: string[]
@@ -38,11 +38,11 @@ export interface DidCommForwardV2PlaintextOptions {
  *
  * @see https://identity.foundation/didcomm-messaging/spec/v2.1/#routing-protocol
  */
-export class DidCommForwardMessageV2 extends DidCommMessage {
+export class DidCommForwardV2Message extends DidCommMessage {
   public readonly allowDidSovPrefix = true
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options?: DidCommForwardMessageV2Options) {
+  public constructor(options?: DidCommForwardV2MessageOptions) {
     super()
 
     if (options) {
@@ -52,8 +52,8 @@ export class DidCommForwardMessageV2 extends DidCommMessage {
     }
   }
 
-  @IsValidMessageType(DidCommForwardMessageV2.type)
-  public readonly type = DidCommForwardMessageV2.type.messageTypeUri
+  @IsValidMessageType(DidCommForwardV2Message.type)
+  public readonly type = DidCommForwardV2Message.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/routing/2.0/forward')
 
   @IsArray()
@@ -83,7 +83,7 @@ export class DidCommForwardMessageV2 extends DidCommMessage {
     const { id, to, next, attachments, expiresTime } = options
     const msg: DidCommV2PlaintextMessage = {
       id: id ?? utils.uuid(),
-      type: DidCommForwardMessageV2.type.messageTypeUri,
+      type: DidCommForwardV2Message.type.messageTypeUri,
       to,
       body: { next },
       attachments,

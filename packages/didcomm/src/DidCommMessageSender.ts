@@ -21,7 +21,7 @@ import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
 import { buildV2PlaintextFromMessage, type DidCommV2PlaintextMessage } from './v2'
 import { DidCommV2EnvelopeService } from './v2'
-import { DidCommForwardMessageV2 } from './modules/routing/messages/v2'
+import { DidCommForwardV2Message } from './modules/routing/messages/v2'
 import type { DidCommMessageSentEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import type { DidCommMessage } from './DidCommMessage'
@@ -232,7 +232,7 @@ export class DidCommMessageSender {
         media_type: 'application/didcomm-encrypted+json',
         data: { json: payload },
       }
-      const forwardPlaintext = DidCommForwardMessageV2.createV2PlaintextMessage({
+      const forwardPlaintext = DidCommForwardV2Message.createV2PlaintextMessage({
         to: [new DidKey(routingKey).did],
         next,
         attachments: [attachment],

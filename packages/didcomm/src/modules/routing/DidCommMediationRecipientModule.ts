@@ -14,10 +14,10 @@ import {
   DidCommMediationGrantHandler,
 } from './handlers'
 import {
-  KeylistHandler,
-  KeylistUpdateResponseHandler,
-  MediationDenyHandler,
-  MediationGrantHandler,
+  DidCommKeylistV2Handler,
+  DidCommKeylistUpdateResponseV2Handler,
+  DidCommMediationDenyV2Handler,
+  DidCommMediationGrantV2Handler,
 } from './handlers/v2'
 import { DidCommMediationRole } from './models'
 import { DidCommMediationRepository } from './repository'
@@ -56,10 +56,10 @@ export class DidCommMediationRecipientModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyHandler(mediationRecipientService))
 
     if (this.config.mediationProtocolVersions.includes('v2')) {
-      messageHandlerRegistry.registerMessageHandler(new MediationGrantHandler(mediationRecipientService))
-      messageHandlerRegistry.registerMessageHandler(new MediationDenyHandler(mediationRecipientService))
-      messageHandlerRegistry.registerMessageHandler(new KeylistUpdateResponseHandler(mediationRecipientService))
-      messageHandlerRegistry.registerMessageHandler(new KeylistHandler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantV2Handler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyV2Handler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(new DidCommKeylistUpdateResponseV2Handler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(new DidCommKeylistV2Handler(mediationRecipientService))
     }
 
     featureRegistry.register(

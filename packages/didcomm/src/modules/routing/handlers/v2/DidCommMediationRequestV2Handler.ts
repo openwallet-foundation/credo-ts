@@ -1,20 +1,20 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../handlers'
 import { DidCommOutboundMessageContext } from '../../../../models'
 import type { DidCommMediatorModuleConfig } from '../../DidCommMediatorModuleConfig'
-import { MediateRequestMessage } from '../../messages/v2'
+import { DidCommMediateRequestV2Message } from '../../messages/v2'
 import type { DidCommMediatorService } from '../../services/DidCommMediatorService'
 
-export class MediationRequestHandler implements DidCommMessageHandler {
+export class DidCommMediationRequestV2Handler implements DidCommMessageHandler {
   private mediatorService: DidCommMediatorService
   private mediatorModuleConfig: DidCommMediatorModuleConfig
-  public supportedMessages = [MediateRequestMessage]
+  public supportedMessages = [DidCommMediateRequestV2Message]
 
   public constructor(mediatorService: DidCommMediatorService, mediatorModuleConfig: DidCommMediatorModuleConfig) {
     this.mediatorService = mediatorService
     this.mediatorModuleConfig = mediatorModuleConfig
   }
 
-  public async handle(messageContext: DidCommMessageHandlerInboundMessage<MediationRequestHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommMediationRequestV2Handler>) {
     const { mediationRecord, connection } = await this.mediatorService.processMediationRequestV2(
       messageContext
     )

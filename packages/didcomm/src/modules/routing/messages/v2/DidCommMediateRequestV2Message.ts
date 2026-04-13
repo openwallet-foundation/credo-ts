@@ -3,7 +3,7 @@ import { DidCommMessage } from '../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
 import type { DidCommVersion } from '../../../../util/didcommVersion'
 
-export interface MediateRequestMessageOptions {
+export interface DidCommMediateRequestV2MessageOptions {
   id?: string
 }
 
@@ -12,11 +12,11 @@ export interface MediateRequestMessageOptions {
  *
  * @see https://didcomm.org/coordinate-mediation/2.0/
  */
-export class MediateRequestMessage extends DidCommMessage {
+export class DidCommMediateRequestV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: MediateRequestMessageOptions = {}) {
+  public constructor(options: DidCommMediateRequestV2MessageOptions = {}) {
     super()
 
     if (options) {
@@ -25,7 +25,7 @@ export class MediateRequestMessage extends DidCommMessage {
     this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @IsValidMessageType(MediateRequestMessage.type)
-  public readonly type = MediateRequestMessage.type.messageTypeUri
+  @IsValidMessageType(DidCommMediateRequestV2Message.type)
+  public readonly type = DidCommMediateRequestV2Message.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/mediate-request')
 }

@@ -5,7 +5,7 @@ import { DidCommMessage } from '../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
 import type { DidCommVersion } from '../../../../util/didcommVersion'
 
-export interface MediateGrantMessageOptions {
+export interface DidCommMediateGrantV2MessageOptions {
   id?: string
   routingDid: string
   threadId: string
@@ -16,11 +16,11 @@ export interface MediateGrantMessageOptions {
  *
  * @see https://didcomm.org/coordinate-mediation/2.0/
  */
-export class MediateGrantMessage extends DidCommMessage {
+export class DidCommMediateGrantV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: MediateGrantMessageOptions) {
+  public constructor(options: DidCommMediateGrantV2MessageOptions) {
     super()
 
     if (options) {
@@ -30,8 +30,8 @@ export class MediateGrantMessage extends DidCommMessage {
     }
   }
 
-  @IsValidMessageType(MediateGrantMessage.type)
-  public readonly type = MediateGrantMessage.type.messageTypeUri
+  @IsValidMessageType(DidCommMediateGrantV2Message.type)
+  public readonly type = DidCommMediateGrantV2Message.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/mediate-grant')
 
   @IsNotEmpty()

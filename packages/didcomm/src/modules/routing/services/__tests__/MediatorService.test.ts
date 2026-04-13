@@ -13,11 +13,11 @@ import { DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage, DidCommKeylist
 import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
 import { DidCommForwardMessage } from '../../messages/DidCommForwardMessage'
 import {
-  DidCommForwardMessageV2,
-  KeylistQueryMessage,
+  DidCommForwardV2Message,
+  DidCommKeylistQueryV2Message,
   KeylistUpdateActionV2,
-  KeylistUpdateMessage,
-  MediateRequestMessage,
+  DidCommKeylistUpdateV2Message,
+  DidCommMediateRequestV2Message,
 } from '../../messages/v2'
 import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import { DidCommMediationRecord, DidCommMediatorRoutingRecord } from '../../repository'
@@ -269,7 +269,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
 
   describe('processMediationRequestV2', () => {
     test('creates mediation record with protocol version 2.0', async () => {
-      const mediateRequest = new MediateRequestMessage({})
+      const mediateRequest = new DidCommMediateRequestV2Message({})
       const messageContext = new DidCommInboundMessageContext(mediateRequest, {
         connection: mockConnection,
         agentContext,
@@ -287,7 +287,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
   })
 
   describe('createGrantMediationMessageV2', () => {
-    test('returns MediateGrantMessage with routing_did', async () => {
+    test('returns DidCommMediateGrantV2Message with routing_did', async () => {
       const mediationRecord = new DidCommMediationRecord({
         connectionId: 'connectionId',
         role: DidCommMediationRole.Mediator,
@@ -318,7 +318,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
       mockFunction(mediationRepository.update).mockResolvedValue(undefined)
 
-      const keylistUpdate = new KeylistUpdateMessage({
+      const keylistUpdate = new DidCommKeylistUpdateV2Message({
         updates: [
           { recipientDid: 'did:peer:2.abc', action: KeylistUpdateActionV2.add },
           { recipientDid: 'did:peer:2.xyz', action: KeylistUpdateActionV2.remove },
@@ -341,7 +341,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
   })
 
   describe('processKeylistQueryV2', () => {
-    test('returns KeylistMessage with recipient DIDs', async () => {
+    test('returns DidCommKeylistV2Message with recipient DIDs', async () => {
       const mediationRecord = new DidCommMediationRecord({
         connectionId: 'connectionId',
         role: DidCommMediationRole.Mediator,
@@ -353,7 +353,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
 
       mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
 
-      const keylistQuery = new KeylistQueryMessage({})
+      const keylistQuery = new DidCommKeylistQueryV2Message({})
       keylistQuery.setThread({ threadId: 'threadId' })
 
       const messageContext = new DidCommInboundMessageContext(keylistQuery, {
@@ -373,7 +373,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       mockFunction(mediationRepository.findSingleByRecipientDid).mockResolvedValue(null)
 
       const recipientDid = 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc'
-      const forward = new DidCommForwardMessageV2({
+      const forward = new DidCommForwardV2Message({
         to: [mediatorModuleConfig.mediatorRoutingDid as string],
         next: recipientDid,
       })

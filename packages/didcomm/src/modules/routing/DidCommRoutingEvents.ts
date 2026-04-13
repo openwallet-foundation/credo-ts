@@ -3,7 +3,7 @@ import type { DidCommRouting } from '../../models'
 import type { DidCommKeylistUpdate } from './messages/DidCommKeylistUpdateMessage'
 import type { DidCommMediationState } from './models/DidCommMediationState'
 import type { DidCommMediationRecord } from './repository/DidCommMediationRecord'
-import type { KeylistUpdateResponseItem } from './messages/v2/KeylistUpdateResponseMessage'
+import type { KeylistUpdateResponseItem } from './messages/v2/DidCommKeylistUpdateResponseV2Message'
 
 export enum DidCommRoutingEventTypes {
   MediationStateChanged = 'DidCommMediationStateChanged',

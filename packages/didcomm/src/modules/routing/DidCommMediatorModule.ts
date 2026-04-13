@@ -9,9 +9,9 @@ import { DidCommForwardHandler } from './handlers/DidCommForwardHandler'
 import { DidCommKeylistUpdateHandler } from './handlers/DidCommKeylistUpdateHandler'
 import { DidCommMediationRequestHandler } from './handlers/DidCommMediationRequestHandler'
 import {
-  KeylistQueryHandler,
-  KeylistUpdateHandler,
-  MediationRequestHandler,
+  DidCommKeylistQueryV2Handler,
+  DidCommKeylistUpdateV2Handler,
+  DidCommMediationRequestV2Handler,
 } from './handlers/v2'
 import { DidCommMediationRole } from './models'
 import { DidCommMediationRepository, DidCommMediatorRoutingRepository } from './repository'
@@ -50,9 +50,9 @@ export class DidCommMediatorModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationRequestHandler(mediatorService, this.config))
 
     if (this.config.mediationProtocolVersions.includes('v2')) {
-      messageHandlerRegistry.registerMessageHandler(new MediationRequestHandler(mediatorService, this.config))
-      messageHandlerRegistry.registerMessageHandler(new KeylistUpdateHandler(mediatorService))
-      messageHandlerRegistry.registerMessageHandler(new KeylistQueryHandler(mediatorService))
+      messageHandlerRegistry.registerMessageHandler(new DidCommMediationRequestV2Handler(mediatorService, this.config))
+      messageHandlerRegistry.registerMessageHandler(new DidCommKeylistUpdateV2Handler(mediatorService))
+      messageHandlerRegistry.registerMessageHandler(new DidCommKeylistQueryV2Handler(mediatorService))
     }
 
     featureRegistry.register(

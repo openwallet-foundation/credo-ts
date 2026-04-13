@@ -26,7 +26,7 @@ export class Paginate {
   public offset!: number
 }
 
-export interface KeylistQueryMessageOptions {
+export interface DidCommKeylistQueryV2MessageOptions {
   id?: string
   paginate?: PaginateOptions
 }
@@ -36,11 +36,11 @@ export interface KeylistQueryMessageOptions {
  *
  * @see https://didcomm.org/coordinate-mediation/2.0/
  */
-export class KeylistQueryMessage extends DidCommMessage {
+export class DidCommKeylistQueryV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: KeylistQueryMessageOptions = {}) {
+  public constructor(options: DidCommKeylistQueryV2MessageOptions = {}) {
     super()
 
     if (options) {
@@ -52,8 +52,8 @@ export class KeylistQueryMessage extends DidCommMessage {
     this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @IsValidMessageType(KeylistQueryMessage.type)
-  public readonly type = KeylistQueryMessage.type.messageTypeUri
+  @IsValidMessageType(DidCommKeylistQueryV2Message.type)
+  public readonly type = DidCommKeylistQueryV2Message.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/keylist-query')
 
   @IsOptional()

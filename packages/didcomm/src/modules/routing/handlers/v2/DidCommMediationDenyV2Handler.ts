@@ -1,19 +1,19 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../handlers'
-import { KeylistUpdateResponseMessage } from '../../messages/v2'
+import { DidCommMediateDenyV2Message } from '../../messages/v2'
 import type { DidCommMediationRecipientService } from '../../services/DidCommMediationRecipientService'
 
-export class KeylistUpdateResponseHandler implements DidCommMessageHandler {
+export class DidCommMediationDenyV2Handler implements DidCommMessageHandler {
   private mediationRecipientService: DidCommMediationRecipientService
-  public supportedMessages = [KeylistUpdateResponseMessage]
+  public supportedMessages = [DidCommMediateDenyV2Message]
 
   public constructor(mediationRecipientService: DidCommMediationRecipientService) {
     this.mediationRecipientService = mediationRecipientService
   }
 
-  public async handle(messageContext: DidCommMessageHandlerInboundMessage<KeylistUpdateResponseHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommMediationDenyV2Handler>) {
     messageContext.assertReadyConnection()
 
-    await this.mediationRecipientService.processKeylistUpdateResultsV2(messageContext)
+    await this.mediationRecipientService.processMediationDenyV2(messageContext)
 
     return undefined
   }

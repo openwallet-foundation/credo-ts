@@ -1,17 +1,17 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { DidCommMessagePickupV3Protocol } from '../DidCommMessagePickupV3Protocol'
-import { LiveDeliveryChangeV3Message } from '../messages'
+import { DidCommMessagesReceivedV3Message } from '../messages'
 
-export class LiveDeliveryChangeV3Handler implements DidCommMessageHandler {
-  public supportedMessages = [LiveDeliveryChangeV3Message]
+export class DidCommMessagesReceivedV3Handler implements DidCommMessageHandler {
+  public supportedMessages = [DidCommMessagesReceivedV3Message]
   private protocol: DidCommMessagePickupV3Protocol
 
   public constructor(protocol: DidCommMessagePickupV3Protocol) {
     this.protocol = protocol
   }
 
-  public async handle(messageContext: DidCommMessageHandlerInboundMessage<LiveDeliveryChangeV3Handler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommMessagesReceivedV3Handler>) {
     messageContext.assertReadyConnection()
-    return this.protocol.processLiveDeliveryChange(messageContext)
+    return this.protocol.processMessagesReceived(messageContext)
   }
 }

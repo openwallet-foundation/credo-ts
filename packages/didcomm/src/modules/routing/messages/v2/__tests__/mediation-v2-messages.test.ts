@@ -2,30 +2,30 @@ import { JsonTransformer } from '@credo-ts/core'
 
 import {
   KeylistUpdateActionV2,
-  KeylistUpdateMessage,
+  DidCommKeylistUpdateV2Message,
   KeylistUpdateResultV2,
-  KeylistUpdateResponseMessage,
-  KeylistMessage,
-  KeylistQueryMessage,
-  MediateDenyMessage,
-  MediateGrantMessage,
-  MediateRequestMessage,
+  DidCommKeylistUpdateResponseV2Message,
+  DidCommKeylistV2Message,
+  DidCommKeylistQueryV2Message,
+  DidCommMediateDenyV2Message,
+  DidCommMediateGrantV2Message,
+  DidCommMediateRequestV2Message,
   Paginate,
 } from '../index'
 
 describe('Coordinate Mediation 2.0 Messages', () => {
-  describe('MediateRequestMessage', () => {
+  describe('DidCommMediateRequestV2Message', () => {
     it('should create valid message', () => {
-      const message = new MediateRequestMessage()
+      const message = new DidCommMediateRequestV2Message()
       expect(message.type).toBe('https://didcomm.org/coordinate-mediation/2.0/mediate-request')
       expect(message.supportedDidCommVersions).toEqual(['v2'])
       expect(message.id).toBeDefined()
     })
   })
 
-  describe('MediateGrantMessage', () => {
+  describe('DidCommMediateGrantV2Message', () => {
     it('should create valid message with routing_did', () => {
-      const message = new MediateGrantMessage({
+      const message = new DidCommMediateGrantV2Message({
         routingDid: 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc',
         threadId: 'thread-123',
       })
@@ -37,16 +37,16 @@ describe('Coordinate Mediation 2.0 Messages', () => {
     })
   })
 
-  describe('MediateDenyMessage', () => {
+  describe('DidCommMediateDenyV2Message', () => {
     it('should create valid message', () => {
-      const message = new MediateDenyMessage()
+      const message = new DidCommMediateDenyV2Message()
       expect(message.type).toBe('https://didcomm.org/coordinate-mediation/2.0/mediate-deny')
     })
   })
 
-  describe('KeylistUpdateMessage', () => {
+  describe('DidCommKeylistUpdateV2Message', () => {
     it('should create valid message with recipient_did updates', () => {
-      const message = new KeylistUpdateMessage({
+      const message = new DidCommKeylistUpdateV2Message({
         updates: [
           { recipientDid: 'did:peer:2.xxx', action: KeylistUpdateActionV2.add },
           { recipientDid: 'did:peer:2.yyy', action: KeylistUpdateActionV2.remove },
@@ -62,9 +62,9 @@ describe('Coordinate Mediation 2.0 Messages', () => {
     })
   })
 
-  describe('KeylistUpdateResponseMessage', () => {
+  describe('DidCommKeylistUpdateResponseV2Message', () => {
     it('should create valid message', () => {
-      const message = new KeylistUpdateResponseMessage({
+      const message = new DidCommKeylistUpdateResponseV2Message({
         updated: [
           {
             recipientDid: 'did:peer:2.xxx',
@@ -78,23 +78,23 @@ describe('Coordinate Mediation 2.0 Messages', () => {
     })
   })
 
-  describe('KeylistQueryMessage', () => {
+  describe('DidCommKeylistQueryV2Message', () => {
     it('should create valid message without paginate', () => {
-      const message = new KeylistQueryMessage()
+      const message = new DidCommKeylistQueryV2Message()
       expect(message.type).toBe('https://didcomm.org/coordinate-mediation/2.0/keylist-query')
     })
 
     it('should create valid message with paginate', () => {
-      const message = new KeylistQueryMessage({ paginate: { limit: 30, offset: 0 } })
+      const message = new DidCommKeylistQueryV2Message({ paginate: { limit: 30, offset: 0 } })
       expect(message.paginate).toBeDefined()
       expect(message.paginate?.limit).toBe(30)
       expect(message.paginate?.offset).toBe(0)
     })
   })
 
-  describe('KeylistMessage', () => {
+  describe('DidCommKeylistV2Message', () => {
     it('should create valid message', () => {
-      const message = new KeylistMessage({
+      const message = new DidCommKeylistV2Message({
         keys: [{ recipientDid: 'did:peer:2.xxx' }],
         pagination: { count: 1, offset: 0, remaining: 0 },
       })

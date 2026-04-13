@@ -6,16 +6,16 @@ import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportD
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
 
-export interface MessagesReceivedV3MessageOptions {
+export interface DidCommMessagesReceivedV3MessageOptions {
   id?: string
   messageIdList: string[]
 }
 
-export class MessagesReceivedV3Message extends DidCommMessage {
+export class DidCommMessagesReceivedV3Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: MessagesReceivedV3MessageOptions) {
+  public constructor(options: DidCommMessagesReceivedV3MessageOptions) {
     super()
 
     if (options) {
@@ -25,8 +25,8 @@ export class MessagesReceivedV3Message extends DidCommMessage {
     this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @IsValidMessageType(MessagesReceivedV3Message.type)
-  public readonly type = MessagesReceivedV3Message.type.messageTypeUri
+  @IsValidMessageType(DidCommMessagesReceivedV3Message.type)
+  public readonly type = DidCommMessagesReceivedV3Message.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/messagepickup/3.0/messages-received')
 
   @IsArray()

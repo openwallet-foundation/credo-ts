@@ -32,7 +32,7 @@ export class KeylistUpdateItem {
   public action!: KeylistUpdateActionV2
 }
 
-export interface KeylistUpdateMessageOptions {
+export interface DidCommKeylistUpdateV2MessageOptions {
   id?: string
   updates: KeylistUpdateItemV2[]
 }
@@ -42,11 +42,11 @@ export interface KeylistUpdateMessageOptions {
  *
  * @see https://didcomm.org/coordinate-mediation/2.0/
  */
-export class KeylistUpdateMessage extends DidCommMessage {
+export class DidCommKeylistUpdateV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: KeylistUpdateMessageOptions) {
+  public constructor(options: DidCommKeylistUpdateV2MessageOptions) {
     super()
 
     if (options) {
@@ -56,8 +56,8 @@ export class KeylistUpdateMessage extends DidCommMessage {
     this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @IsValidMessageType(KeylistUpdateMessage.type)
-  public readonly type = KeylistUpdateMessage.type.messageTypeUri
+  @IsValidMessageType(DidCommKeylistUpdateV2Message.type)
+  public readonly type = DidCommKeylistUpdateV2Message.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/keylist-update')
 
   @Type(() => KeylistUpdateItem)
