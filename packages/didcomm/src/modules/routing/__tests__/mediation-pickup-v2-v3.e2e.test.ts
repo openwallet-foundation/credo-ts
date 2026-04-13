@@ -87,7 +87,7 @@ describe('Mediation 2.0 + Pickup 3.0 Combined', () => {
         expect(recipientMediatorConn.didcommVersion).toBe('v2')
         expect(mediatorRecipientConn.didcommVersion).toBe('v2')
 
-        const mediationRecord = await recipientAgent.didcomm.mediationRecipient.provisionV2(recipientMediatorConn)
+        const mediationRecord = await recipientAgent.didcomm.mediationRecipient.provision(recipientMediatorConn)
         expect(mediationRecord.mediationProtocolVersion).toBe('v2')
         expect(mediationRecord.routingDid).toBe(MEDIATOR_ROUTING_DID)
         expect(mediationRecord.recipientDids?.length).toBeGreaterThan(0)

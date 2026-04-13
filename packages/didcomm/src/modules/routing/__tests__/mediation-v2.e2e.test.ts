@@ -18,8 +18,9 @@ describe('Coordinate Mediation 2.0', () => {
       // 1. Mediator with mediatorRoutingDid, mediationProtocolVersions: ['v2']
       // 2. Recipient with mediationProtocolVersions: ['v2']
       // 3. Create v2 connection via OOB
-      // 4. provisionV2() → requestAndAwaitGrantV2 → keylist-update (post-grant)
-      // 5. keylistQueryV2() to verify recipient DIDs registered
+      // 4. provision() → requestAndAwaitGrant → keylist-update (post-grant)
+      //    (API auto-selects v2 based on connection.didcommVersion)
+      // 5. keylistQuery() to verify recipient DIDs registered
       // 6. Validate routing.routingDid and routingToServices
       expect(MEDIATOR_ROUTING_DID).toBeDefined()
     })
@@ -27,11 +28,11 @@ describe('Coordinate Mediation 2.0', () => {
 })
 
 describe('Mediation v2 - API validation', () => {
-  it('DidCommMediationRecipientApi exposes v2 methods', () => {
-    expect(typeof DidCommMediationRecipientApi.prototype.requestMediationV2).toBe('function')
-    expect(typeof DidCommMediationRecipientApi.prototype.requestAndAwaitGrantV2).toBe('function')
-    expect(typeof DidCommMediationRecipientApi.prototype.provisionV2).toBe('function')
-    expect(typeof DidCommMediationRecipientApi.prototype.notifyKeylistUpdateV2).toBe('function')
-    expect(typeof DidCommMediationRecipientApi.prototype.keylistQueryV2).toBe('function')
+  it('DidCommMediationRecipientApi exposes unified methods (no V2 suffix)', () => {
+    expect(typeof DidCommMediationRecipientApi.prototype.requestMediation).toBe('function')
+    expect(typeof DidCommMediationRecipientApi.prototype.requestAndAwaitGrant).toBe('function')
+    expect(typeof DidCommMediationRecipientApi.prototype.provision).toBe('function')
+    expect(typeof DidCommMediationRecipientApi.prototype.notifyKeylistUpdate).toBe('function')
+    expect(typeof DidCommMediationRecipientApi.prototype.keylistQuery).toBe('function')
   })
 })

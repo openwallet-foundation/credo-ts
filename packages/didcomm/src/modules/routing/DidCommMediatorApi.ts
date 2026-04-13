@@ -1,6 +1,5 @@
-import { AgentContext, CredoError, injectable } from '@credo-ts/core'
+import { AgentContext, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { assertDidCommV1Connection, assertDidCommV2Connection } from '../../util/didcommVersion'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections'
 import { DidCommMediatorModuleConfig } from './DidCommMediatorModuleConfig'
@@ -30,38 +29,19 @@ export class DidCommMediatorApi {
     this.config = config
   }
 
+  /**
+   * Grant a pending mediation request. Automatically sends a v1 or v2 grant
+   * based on the mediation record's protocol version.
+   */
   public async grantRequestedMediation(mediationRecordId: string): Promise<DidCommMediationRecord> {
     const record = await this.mediatorService.getById(this.agentContext, mediationRecordId)
     const connectionRecord = await this.connectionService.getById(this.agentContext, record.connectionId)
-    assertDidCommV1Connection(connectionRecord, 'Mediation')
 
-    const { message, mediationRecord } = await this.mediatorService.createGrantMediationMessage(
-      this.agentContext,
-      record
-    )
-    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection: connectionRecord,
-      associatedRecord: mediationRecord,
-    })
+    const { message, mediationRecord } =
+      record.mediationProtocolVersion === 'v2'
+        ? await this.mediatorService.createGrantMediationMessageV2(this.agentContext, record)
+        : await this.mediatorService.createGrantMediationMessage(this.agentContext, record)
 
-    await this.messageSender.sendMessage(outboundMessageContext)
-
-    return mediationRecord
-  }
-
-  public async grantRequestedMediationV2(mediationRecordId: string): Promise<DidCommMediationRecord> {
-    const record = await this.mediatorService.getById(this.agentContext, mediationRecordId)
-    const connectionRecord = await this.connectionService.getById(this.agentContext, record.connectionId)
-    assertDidCommV2Connection(connectionRecord, 'Coordinate Mediation 2.0')
-    if (record.mediationProtocolVersion !== 'v2') {
-      throw new CredoError('grantRequestedMediationV2 requires mediation record with protocol version 2.0')
-    }
-
-    const { message, mediationRecord } = await this.mediatorService.createGrantMediationMessageV2(
-      this.agentContext,
-      record
-    )
     const outboundMessageContext = new DidCommOutboundMessageContext(message, {
       agentContext: this.agentContext,
       connection: connectionRecord,
