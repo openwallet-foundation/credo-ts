@@ -12,7 +12,7 @@ import {
   DidCommBasicMessageEventTypes,
   type DidCommBasicMessageV2StateChangedEvent,
 } from '../DidCommBasicMessageEvents'
-import { DidCommBasicMessage } from '../messages'
+import { DidCommBasicMessage } from '../protocol/v1'
 import { DidCommBasicMessageRecord } from '../repository'
 
 async function waitForBasicMessageV2(

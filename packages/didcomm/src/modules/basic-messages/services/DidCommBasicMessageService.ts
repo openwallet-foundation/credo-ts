@@ -8,7 +8,8 @@ import type {
 } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageEventTypes } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
-import { DidCommBasicMessage, DidCommBasicMessageV2 } from '../messages'
+import { DidCommBasicMessage } from '../protocol/v1'
+import { DidCommBasicMessageV2 } from '../protocol/v2'
 import { DidCommBasicMessageRecord, DidCommBasicMessageRepository } from '../repository'
 
 @injectable()

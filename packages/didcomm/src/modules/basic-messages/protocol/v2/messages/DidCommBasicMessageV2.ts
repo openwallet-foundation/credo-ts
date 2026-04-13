@@ -1,9 +1,9 @@
 import { Expose } from 'class-transformer'
 import { IsInt, IsOptional, IsString } from 'class-validator'
 
-import { DidCommMessage } from '../../../DidCommMessage'
-import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
-import type { DidCommV2PlaintextMessage } from '../../../v2/types'
+import { DidCommMessage } from '../../../../../DidCommMessage'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
+import type { DidCommV2PlaintextMessage } from '../../../../../v2/types'
 
 /**
  * BasicMessage 2.0 message.
