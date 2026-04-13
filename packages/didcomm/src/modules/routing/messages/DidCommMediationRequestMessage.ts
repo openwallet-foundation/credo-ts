@@ -1,5 +1,6 @@
 import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 
 export interface DidCommMediationRequestMessageOptions {
   sentTime?: Date
@@ -14,7 +15,7 @@ export interface DidCommMediationRequestMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#mediation-request
  */
 export class DidCommMediationRequestMessage extends DidCommMessage {
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v1']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   /**
    * Create new DidCommBasicMessage instance.

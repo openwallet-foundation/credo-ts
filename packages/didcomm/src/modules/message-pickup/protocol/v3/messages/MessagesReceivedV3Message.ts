@@ -4,6 +4,7 @@ import { IsArray } from 'class-validator'
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 
 export interface MessagesReceivedV3MessageOptions {
   id?: string
@@ -12,7 +13,7 @@ export interface MessagesReceivedV3MessageOptions {
 
 export class MessagesReceivedV3Message extends DidCommMessage {
   public readonly allowQueueTransport = false
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v2']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
   public constructor(options: MessagesReceivedV3MessageOptions) {
     super()

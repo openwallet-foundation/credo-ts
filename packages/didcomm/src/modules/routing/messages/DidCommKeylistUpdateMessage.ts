@@ -3,6 +3,7 @@ import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-val
 
 import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 
 export enum DidCommKeylistUpdateAction {
   add = 'add',
@@ -41,7 +42,7 @@ export interface DidCommKeylistUpdateMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist-update
  */
 export class DidCommKeylistUpdateMessage extends DidCommMessage {
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v1']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   public constructor(options: DidCommKeylistUpdateMessageOptions) {
     super()

@@ -279,7 +279,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
 
       const { mediationRecord: record } = await mediatorService.processMediationRequestV2(messageContext)
 
-      expect(record.mediationProtocolVersion).toBe('2.0')
+      expect(record.mediationProtocolVersion).toBe('v2')
       expect(record.threadId).toBe(mediateRequest.id)
       expect(record.role).toBe(DidCommMediationRole.Mediator)
       expect(record.state).toBe(DidCommMediationState.Requested)
@@ -293,7 +293,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
         role: DidCommMediationRole.Mediator,
         state: DidCommMediationState.Requested,
         threadId: 'threadId',
-        mediationProtocolVersion: '2.0',
+        mediationProtocolVersion: 'v2',
       })
 
       mockFunction(mediationRepository.update).mockResolvedValue(undefined)
@@ -312,7 +312,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
         role: DidCommMediationRole.Mediator,
         state: DidCommMediationState.Granted,
         threadId: 'threadId',
-        mediationProtocolVersion: '2.0',
+        mediationProtocolVersion: 'v2',
       })
 
       mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
@@ -347,7 +347,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
         role: DidCommMediationRole.Mediator,
         state: DidCommMediationState.Granted,
         threadId: 'threadId',
-        mediationProtocolVersion: '2.0',
+        mediationProtocolVersion: 'v2',
         recipientDids: ['did:peer:2.abc', 'did:peer:2.xyz'],
       })
 

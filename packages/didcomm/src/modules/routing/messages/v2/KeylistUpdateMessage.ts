@@ -4,6 +4,7 @@ import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-val
 import { ReturnRouteTypes } from '../../../../decorators/transport/TransportDecorator'
 import { DidCommMessage } from '../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
+import type { DidCommVersion } from '../../../../util/didcommVersion'
 
 export enum KeylistUpdateActionV2 {
   add = 'add',
@@ -43,7 +44,7 @@ export interface KeylistUpdateMessageOptions {
  */
 export class KeylistUpdateMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v2']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
   public constructor(options: KeylistUpdateMessageOptions) {
     super()

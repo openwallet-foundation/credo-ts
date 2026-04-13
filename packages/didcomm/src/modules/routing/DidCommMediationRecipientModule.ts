@@ -55,7 +55,7 @@ export class DidCommMediationRecipientModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantHandler(mediationRecipientService))
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyHandler(mediationRecipientService))
 
-    if (this.config.mediationProtocolVersions.includes('2.0')) {
+    if (this.config.mediationProtocolVersions.includes('v2')) {
       messageHandlerRegistry.registerMessageHandler(new MediationGrantHandler(mediationRecipientService))
       messageHandlerRegistry.registerMessageHandler(new MediationDenyHandler(mediationRecipientService))
       messageHandlerRegistry.registerMessageHandler(new KeylistUpdateResponseHandler(mediationRecipientService))
@@ -68,7 +68,7 @@ export class DidCommMediationRecipientModule implements Module {
         roles: [DidCommMediationRole.Recipient],
       })
     )
-    if (this.config.mediationProtocolVersions.includes('2.0')) {
+    if (this.config.mediationProtocolVersions.includes('v2')) {
       featureRegistry.register(
         new DidCommProtocol({
           id: 'https://didcomm.org/coordinate-mediation/2.0',

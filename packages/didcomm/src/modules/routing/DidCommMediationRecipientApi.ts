@@ -269,7 +269,7 @@ export class DidCommMediationRecipientApi {
     let mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediatorRecord))
     const mediatorConnection = await this.connectionService.getById(this.agentContext, mediatorRecord.connectionId)
 
-    if (mediatorRecord.mediationProtocolVersion === '2.0') {
+    if (mediatorRecord.mediationProtocolVersion === 'v2') {
       assertDidCommV2Connection(mediatorConnection, 'Mediation 2.0')
 
       // Ensure pickup strategy is compatible with DIDComm v2 — upgrade v1/v2 pickup to v3
@@ -387,7 +387,7 @@ export class DidCommMediationRecipientApi {
     // For Coordinate Mediation 2.0 (DIDComm v2), message pickup v1/v2 protocols won't work
     // because the connection is v2 and those protocols require v1 connections.
     // Auto-upgrade to Message Pickup 3.0 equivalents.
-    if (mediator.mediationProtocolVersion === '2.0') {
+    if (mediator.mediationProtocolVersion === 'v2') {
       if (
         !mediatorPickupStrategy ||
         mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV1 ||
@@ -577,7 +577,7 @@ export class DidCommMediationRecipientApi {
   ): Promise<void> {
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== '2.0') {
+    if (mediationRecord.mediationProtocolVersion !== 'v2') {
       throw new CredoError('notifyKeylistUpdateV2 requires mediation protocol version 2.0')
     }
     const connection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)
@@ -599,7 +599,7 @@ export class DidCommMediationRecipientApi {
   ): Promise<void> {
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== '2.0') {
+    if (mediationRecord.mediationProtocolVersion !== 'v2') {
       throw new CredoError('keylistQueryV2 requires mediation protocol version 2.0')
     }
     const connection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)

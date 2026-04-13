@@ -37,6 +37,7 @@ import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
+import type { DidCommVersion } from './util/didcommVersion'
 
 export interface TransportPriorityOptions {
   schemes: string[]

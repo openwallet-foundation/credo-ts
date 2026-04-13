@@ -1,4 +1,5 @@
 import type { DidCommMediatorPickupStrategy } from './DidCommMediatorPickupStrategy'
+import type { DidCommVersion } from '../../util/didcommVersion'
 
 /**
  * MediationRecipientModuleConfigOptions defines the interface for the options of the MediationRecipientModuleConfig class.
@@ -70,12 +71,12 @@ export interface DidCommMediationRecipientModuleConfigOptions {
   mediatorInvitationUrl?: string
 
   /**
-   * Mediation protocol versions to support. When '2.0' is included, Coordinate Mediation 2.0 handlers are registered.
+   * Mediation protocol versions to support. When 'v2' is included, Coordinate Mediation 2.0 handlers are registered.
    * Use with DIDComm v2 connections.
    *
-   * @default ['1.0']
+   * @default ['v1']
    */
-  mediationProtocolVersions?: ('1.0' | '2.0')[]
+  mediationProtocolVersions?: DidCommVersion[]
 }
 
 export class DidCommMediationRecipientModuleConfig {
@@ -116,7 +117,7 @@ export class DidCommMediationRecipientModuleConfig {
   }
 
   /** See {@link DidCommMediationRecipientModuleConfigOptions.mediationProtocolVersions} */
-  public get mediationProtocolVersions(): ('1.0' | '2.0')[] {
-    return this.options.mediationProtocolVersions ?? ['1.0']
+  public get mediationProtocolVersions(): DidCommVersion[] {
+    return this.options.mediationProtocolVersions ?? ['v1']
   }
 }

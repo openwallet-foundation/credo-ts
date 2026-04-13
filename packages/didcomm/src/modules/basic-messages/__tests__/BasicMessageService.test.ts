@@ -92,7 +92,7 @@ describe('BasicMessageService', () => {
 
       expect(message).toBeInstanceOf(DidCommBasicMessageV2)
       expect(message.content).toBe('hello v2')
-      expect(record.protocolVersion).toBe('2.0')
+      expect(record.protocolVersion).toBe('v2')
 
       expect(basicMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(DidCommBasicMessageRecord))
       expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
@@ -102,7 +102,7 @@ describe('BasicMessageService', () => {
             connectionId: mockConnectionRecord.id,
             content: 'hello v2',
             role: DidCommBasicMessageRole.Sender,
-            protocolVersion: '2.0',
+            protocolVersion: 'v2',
           }),
           message: expect.any(DidCommBasicMessageV2),
         },
@@ -138,7 +138,7 @@ describe('BasicMessageService', () => {
 
       expect(basicMessageRepository.save).toHaveBeenCalledTimes(1)
       const savedRecord = vi.mocked(basicMessageRepository.save).mock.calls[0][1]
-      expect(savedRecord.protocolVersion).toBe('2.0')
+      expect(savedRecord.protocolVersion).toBe('v2')
       expect(savedRecord.content).toBe('message v2')
       expect(savedRecord.role).toBe(DidCommBasicMessageRole.Receiver)
 
@@ -149,7 +149,7 @@ describe('BasicMessageService', () => {
             connectionId: mockConnectionRecord.id,
             content: 'message v2',
             role: DidCommBasicMessageRole.Receiver,
-            protocolVersion: '2.0',
+            protocolVersion: 'v2',
           }),
           message: messageContext.message,
         },

@@ -4,6 +4,7 @@ import { IsObject, IsString } from 'class-validator'
 import { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommEncryptedMessage } from '../../../types'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 
 export interface DidCommForwardMessageOptions {
   id?: string
@@ -16,7 +17,7 @@ export interface DidCommForwardMessageOptions {
  */
 export class DidCommForwardMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v1']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   /**
    * Create new ForwardMessage instance.

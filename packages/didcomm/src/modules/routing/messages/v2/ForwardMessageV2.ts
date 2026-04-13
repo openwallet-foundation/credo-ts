@@ -4,6 +4,7 @@ import { IsArray, IsString } from 'class-validator'
 import { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommEncryptedMessage } from '../../../../types'
 import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
+import type { DidCommVersion } from '../../../../util/didcommVersion'
 
 export interface DidCommForwardMessageV2Options {
   id?: string
@@ -23,7 +24,7 @@ export interface DidCommForwardMessageV2Options {
  */
 export class DidCommForwardMessageV2 extends DidCommMessage {
   public readonly allowDidSovPrefix = true
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v2']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
   public constructor(options?: DidCommForwardMessageV2Options) {
     super()

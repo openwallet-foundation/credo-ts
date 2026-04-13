@@ -57,6 +57,7 @@ import { DidCommOutOfBandInvitationV2 } from './messages/DidCommOutOfBandInvitat
 import { DidCommOutOfBandRepository } from './repository'
 import { type DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord } from './repository/DidCommOutOfBandRecord'
 import { DidCommOutOfBandRecordMetadataKeys } from './repository/outOfBandRecordMetadataTypes'
+import type { DidCommVersion } from '../../util/didcommVersion'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
@@ -84,7 +85,7 @@ export interface CreateOutOfBandInvitationConfig {
    * (no handshake, first-message connection establishment).
    * @default from didcommVersions (v2 when enabled, else v1)
    */
-  didCommVersion?: 'v1' | 'v2'
+  didCommVersion?: DidCommVersion
 
   /**
    * Peer DID numAlgo for V2 OOB invitation. Overrides module config peerDidNumAlgoForV2OOB.
@@ -132,7 +133,7 @@ export interface ReceiveOutOfBandImplicitInvitationConfig
    * resolved from the DID document via {@link DidCommDocumentService.getSupportedDidCommVersionsFromDidDoc}
    * (dual-stack docs default to v2). `handshakeProtocols` is ignored for v2.
    */
-  didCommVersion?: 'v1' | 'v2'
+  didCommVersion?: DidCommVersion
 }
 
 @injectable()
@@ -172,7 +173,7 @@ export class DidCommOutOfBandApi {
     this.didCommModuleConfig = didCommModuleConfig
   }
 
-  private assertAgentSupportsDidCommVersion(version: 'v1' | 'v2'): void {
+  private assertAgentSupportsDidCommVersion(version: DidCommVersion): void {
     if (!this.didCommModuleConfig.didcommVersions.includes(version)) {
       throw new CredoError(
         `DID document advertises DIDComm ${version} but this agent is configured with didcommVersions: [${this.didCommModuleConfig.didcommVersions.join(', ')}] only. Update the DID document or add "${version}" to didcommVersions in DidCommModuleConfig.`
@@ -544,7 +545,7 @@ export class DidCommOutOfBandApi {
    * @returns out-of-band record and connection record if one has been created.
    */
   public async receiveImplicitInvitation(config: ReceiveOutOfBandImplicitInvitationConfig) {
-    let didCommVersion: 'v1' | 'v2'
+    let didCommVersion: DidCommVersion
 
     if (config.didCommVersion !== undefined) {
       didCommVersion = config.didCommVersion

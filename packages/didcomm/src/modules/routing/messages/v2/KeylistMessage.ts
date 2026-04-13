@@ -3,6 +3,7 @@ import { IsArray, IsInt, IsOptional, IsString, ValidateNested } from 'class-vali
 
 import { DidCommMessage } from '../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
+import type { DidCommVersion } from '../../../../util/didcommVersion'
 
 export interface KeylistKeyItemV2 {
   recipientDid: string
@@ -59,7 +60,7 @@ export interface KeylistMessageOptions {
  */
 export class KeylistMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v2']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
   public constructor(options: KeylistMessageOptions) {
     super()

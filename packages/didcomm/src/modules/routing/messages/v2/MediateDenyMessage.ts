@@ -1,5 +1,6 @@
 import { DidCommMessage } from '../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
+import type { DidCommVersion } from '../../../../util/didcommVersion'
 
 export interface MediateDenyMessageOptions {
   id?: string
@@ -13,7 +14,7 @@ export interface MediateDenyMessageOptions {
  */
 export class MediateDenyMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v2']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
   public constructor(options: MediateDenyMessageOptions = {}) {
     super()

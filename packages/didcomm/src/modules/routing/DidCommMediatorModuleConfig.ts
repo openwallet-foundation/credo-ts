@@ -1,4 +1,5 @@
 import { DidCommMessageForwardingStrategy } from './DidCommMessageForwardingStrategy'
+import type { DidCommVersion } from '../../util/didcommVersion'
 
 /**
  * MediatorModuleConfigOptions defines the interface for the options of the MediatorModuleConfig class.
@@ -20,11 +21,11 @@ export interface DidCommMediatorModuleConfigOptions {
   mediatorRoutingDid?: string
 
   /**
-   * Mediation protocol versions to support. When '2.0' is included, Coordinate Mediation 2.0 handlers are registered.
+   * Mediation protocol versions to support. When 'v2' is included, Coordinate Mediation 2.0 handlers are registered.
    *
-   * @default ['1.0']
+   * @default ['v1']
    */
-  mediationProtocolVersions?: ('1.0' | '2.0')[]
+  mediationProtocolVersions?: DidCommVersion[]
 
   /**
    * Strategy to use when a Forward message is received.
@@ -58,8 +59,8 @@ export class DidCommMediatorModuleConfig {
   }
 
   /** See {@link DidCommMediatorModuleConfigOptions.mediationProtocolVersions} */
-  public get mediationProtocolVersions(): ('1.0' | '2.0')[] {
-    return this.options.mediationProtocolVersions ?? ['1.0']
+  public get mediationProtocolVersions(): DidCommVersion[] {
+    return this.options.mediationProtocolVersions ?? ['v1']
   }
 
   /** See {@link DidCommMediatorModuleConfigOptions.messageForwardingStrategy} */

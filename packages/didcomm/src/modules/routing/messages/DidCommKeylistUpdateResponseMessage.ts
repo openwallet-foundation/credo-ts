@@ -5,6 +5,7 @@ import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 import { DidCommKeylistUpdateAction } from './DidCommKeylistUpdateMessage'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 
 export enum DidCommKeylistUpdateResult {
   ClientError = 'client_error',
@@ -49,7 +50,7 @@ export interface DidCommKeylistUpdateResponseMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist-update-response
  */
 export class DidCommKeylistUpdateResponseMessage extends DidCommMessage {
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v1']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   public constructor(options: DidCommKeylistUpdateResponseMessageOptions) {
     super()

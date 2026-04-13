@@ -54,7 +54,7 @@ export class DidCommMediatorApi {
     const record = await this.mediatorService.getById(this.agentContext, mediationRecordId)
     const connectionRecord = await this.connectionService.getById(this.agentContext, record.connectionId)
     assertDidCommV2Connection(connectionRecord, 'Coordinate Mediation 2.0')
-    if (record.mediationProtocolVersion !== '2.0') {
+    if (record.mediationProtocolVersion !== 'v2') {
       throw new CredoError('grantRequestedMediationV2 requires mediation record with protocol version 2.0')
     }
 

@@ -66,7 +66,7 @@ const faberConfigWithV2 = getAgentOptions(
   {
     endpoints: ['rxjs:faber-v2'],
     didcommVersions: ['v1', 'v2'],
-    basicMessages: { protocols: ['1.0', '2.0'] },
+    basicMessages: { protocols: ['v1', 'v2'] },
   },
   undefined,
   undefined,
@@ -78,7 +78,7 @@ const aliceConfigWithV2 = getAgentOptions(
   {
     endpoints: ['rxjs:alice-v2'],
     didcommVersions: ['v1', 'v2'],
-    basicMessages: { protocols: ['1.0', '2.0'] },
+    basicMessages: { protocols: ['v1', 'v2'] },
   },
   undefined,
   undefined,
@@ -219,22 +219,22 @@ describe('Basic Messages E2E', () => {
     aliceAgentV2.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgentV2.initialize()
 
-    const [aliceConn, faberConn] = await makeConnection(aliceAgentV2, faberAgentV2)
+    const [aliceConn, faberConn] = await makeConnection(aliceAgentV2, faberAgentV2, { didCommVersion: 'v2' })
 
     testLogger.test('Alice sends BM 2.0 to Faber')
     const helloRecord = await aliceAgentV2.didcomm.basicMessages.sendMessage(aliceConn.id, 'Hello 2.0')
     expect(helloRecord.content).toBe('Hello 2.0')
-    expect(helloRecord.protocolVersion).toBe('2.0')
+    expect(helloRecord.protocolVersion).toBe('v2')
 
     testLogger.test('Faber receives BM 2.0')
     const receivedHello = await waitForBasicMessageV2(faberAgentV2, { content: 'Hello 2.0' })
     expect(receivedHello.content).toBe('Hello 2.0')
-    expect(receivedHello.protocolVersion).toBe('2.0')
+    expect(receivedHello.protocolVersion).toBe('v2')
 
     testLogger.test('Faber sends BM 2.0 reply')
     const replyRecord = await faberAgentV2.didcomm.basicMessages.sendMessage(faberConn.id, 'Reply 2.0')
     expect(replyRecord.content).toBe('Reply 2.0')
-    expect(replyRecord.protocolVersion).toBe('2.0')
+    expect(replyRecord.protocolVersion).toBe('v2')
 
     await waitForBasicMessageV2(aliceAgentV2, { content: 'Reply 2.0' })
 

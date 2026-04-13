@@ -6,6 +6,17 @@ const DIDCOMM_V2_TYP = 'application/didcomm-encrypted+json'
 const DIDCOMM_V1_TYP = 'JWM/1.0'
 
 /**
+ * Canonical DIDComm protocol version identifier.
+ *
+ * DIDComm messaging is versioned along the major boundary only; minor
+ * revisions are considered backwards-compatible within each major. Use this
+ * type everywhere a version needs to be represented (connection records,
+ * mediation records, module config, message metadata, etc.) instead of
+ * redeclaring the `'v1' | 'v2'` union inline.
+ */
+export type DidCommVersion = 'v1' | 'v2'
+
+/**
  * Detect whether an encrypted message is DIDComm v2 format.
  * v2 uses typ: 'application/didcomm-encrypted+json' in the JWE protected header.
  *

@@ -49,7 +49,7 @@ export class DidCommMediatorModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommForwardHandler(mediatorService))
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationRequestHandler(mediatorService, this.config))
 
-    if (this.config.mediationProtocolVersions.includes('2.0')) {
+    if (this.config.mediationProtocolVersions.includes('v2')) {
       messageHandlerRegistry.registerMessageHandler(new MediationRequestHandler(mediatorService, this.config))
       messageHandlerRegistry.registerMessageHandler(new KeylistUpdateHandler(mediatorService))
       messageHandlerRegistry.registerMessageHandler(new KeylistQueryHandler(mediatorService))
@@ -61,7 +61,7 @@ export class DidCommMediatorModule implements Module {
         roles: [DidCommMediationRole.Mediator],
       })
     )
-    if (this.config.mediationProtocolVersions.includes('2.0')) {
+    if (this.config.mediationProtocolVersions.includes('v2')) {
       featureRegistry.register(
         new DidCommProtocol({
           id: 'https://didcomm.org/coordinate-mediation/2.0',

@@ -86,7 +86,7 @@ export class DidCommBasicMessageService {
       role: DidCommBasicMessageRole.Sender,
       threadId: basicMessage.threadId,
       parentThreadId,
-      protocolVersion: '2.0',
+      protocolVersion: 'v2',
     })
 
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)
@@ -108,7 +108,7 @@ export class DidCommBasicMessageService {
       role: DidCommBasicMessageRole.Receiver,
       threadId: message.threadId,
       parentThreadId: message.thread?.parentThreadId,
-      protocolVersion: '2.0',
+      protocolVersion: 'v2',
     })
 
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)

@@ -9,6 +9,7 @@ import {
   rfc0160StateFromDidExchangeState,
 } from '../models'
 import type { DidCommConnectionMetadata } from './DidCommConnectionMetadataTypes'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 
 export interface DidCommConnectionRecordProps {
   id?: string
@@ -32,7 +33,7 @@ export interface DidCommConnectionRecordProps {
   previousDids?: Array<string>
   previousTheirDids?: Array<string>
   /** DIDComm envelope version. V2 OOB uses v2; handshake protocols use v1. Defaults to v1. */
-  didcommVersion?: 'v1' | 'v2'
+  didcommVersion?: DidCommVersion
 }
 
 export type CustomDidCommConnectionTags = TagsBase
@@ -91,7 +92,7 @@ export class DidCommConnectionRecord extends BaseRecord<
   public previousTheirDids: string[] = []
 
   /** DIDComm envelope version for this connection. V2 OOB uses v2; handshake protocols use v1. Defaults to v1. */
-  public didcommVersion?: 'v1' | 'v2'
+  public didcommVersion?: DidCommVersion
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = DidCommConnectionRecord.type

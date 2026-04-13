@@ -3,6 +3,7 @@ import { Transform } from 'class-transformer'
 import { DidCommMediatorPickupStrategy } from '../DidCommMediatorPickupStrategy'
 import type { DidCommMediationRole } from '../models/DidCommMediationRole'
 import { DidCommMediationState } from '../models/DidCommMediationState'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 
 export interface DidCommMediationRecordProps {
   id?: string
@@ -16,7 +17,7 @@ export interface DidCommMediationRecordProps {
   routingKeys?: string[]
   routingDid?: string
   recipientDids?: string[]
-  mediationProtocolVersion?: '1.0' | '2.0'
+  mediationProtocolVersion?: DidCommVersion
   pickupStrategy?: DidCommMediatorPickupStrategy
   tags?: CustomDidCommMediationTags
 }
@@ -64,9 +65,9 @@ export class DidCommMediationRecord
   public recipientDids?: string[]
 
   /**
-   * Protocol version used for this record: '1.0' or '2.0'.
+   * Protocol version used for this record: 'v1' or 'v2'.
    */
-  public mediationProtocolVersion?: '1.0' | '2.0'
+  public mediationProtocolVersion?: DidCommVersion
 
   @Transform(({ value }) => {
     if (value === 'Explicit') {

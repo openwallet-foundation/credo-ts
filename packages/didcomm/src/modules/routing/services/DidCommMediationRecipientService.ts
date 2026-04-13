@@ -103,7 +103,7 @@ export class DidCommMediationRecipientService {
       state: DidCommMediationState.Requested,
       role: DidCommMediationRole.Recipient,
       connectionId: connection.id,
-      mediationProtocolVersion: '2.0',
+      mediationProtocolVersion: 'v2',
     })
 
     await this.connectionService.addConnectionType(agentContext, connection, DidCommConnectionType.Mediator)
@@ -151,7 +151,7 @@ export class DidCommMediationRecipientService {
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
     mediationRecord.assertState(DidCommMediationState.Requested)
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== '2.0') {
+    if (mediationRecord.mediationProtocolVersion !== 'v2') {
       throw new CredoError('processMediationGrantV2 requires mediation protocol version 2.0')
     }
 
@@ -209,7 +209,7 @@ export class DidCommMediationRecipientService {
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== '2.0') {
+    if (mediationRecord.mediationProtocolVersion !== 'v2') {
       throw new CredoError('processKeylistUpdateResultsV2 requires mediation protocol version 2.0')
     }
 
@@ -240,7 +240,7 @@ export class DidCommMediationRecipientService {
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== '2.0') {
+    if (mediationRecord.mediationProtocolVersion !== 'v2') {
       throw new CredoError('processKeylistV2 requires mediation protocol version 2.0')
     }
 
@@ -261,7 +261,7 @@ export class DidCommMediationRecipientService {
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== '2.0') {
+    if (mediationRecord.mediationProtocolVersion !== 'v2') {
       throw new CredoError('keylistUpdateAndAwaitV2 requires mediation protocol version 2.0')
     }
 
@@ -391,7 +391,7 @@ export class DidCommMediationRecipientService {
     // Return early if no mediation record
     if (!mediationRecord) return routing
 
-    if (mediationRecord.mediationProtocolVersion === '2.0') {
+    if (mediationRecord.mediationProtocolVersion === 'v2') {
       // Register BOTH the Ed25519 and X25519 did:key forms of the recipient key.
       //
       // Rationale: Ed25519 and X25519 did:keys are two representations of the same
@@ -448,7 +448,7 @@ export class DidCommMediationRecipientService {
       throw new CredoError('No mediation record to remove routing from has been found')
     }
 
-    if (mediationRecord.mediationProtocolVersion === '2.0') {
+    if (mediationRecord.mediationProtocolVersion === 'v2') {
       // Remove BOTH Ed25519 and X25519 did:key forms we registered in addMediationRouting.
       const recipientDids = recipientKeys.flatMap((key) => [
         new DidKey(key).did,

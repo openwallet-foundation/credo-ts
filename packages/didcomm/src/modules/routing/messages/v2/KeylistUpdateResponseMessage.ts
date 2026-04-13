@@ -5,6 +5,7 @@ import { DidCommMessage } from '../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
 
 import { KeylistUpdateActionV2 } from './KeylistUpdateMessage'
+import type { DidCommVersion } from '../../../../util/didcommVersion'
 
 export enum KeylistUpdateResultV2 {
   ClientError = 'client_error',
@@ -52,7 +53,7 @@ export interface KeylistUpdateResponseMessageOptions {
  */
 export class KeylistUpdateResponseMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v2']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
   public constructor(options: KeylistUpdateResponseMessageOptions) {
     super()

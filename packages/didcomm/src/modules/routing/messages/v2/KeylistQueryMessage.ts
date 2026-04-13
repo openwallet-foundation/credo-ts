@@ -4,6 +4,7 @@ import { IsInt, IsOptional, ValidateNested } from 'class-validator'
 import { ReturnRouteTypes } from '../../../../decorators/transport/TransportDecorator'
 import { DidCommMessage } from '../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
+import type { DidCommVersion } from '../../../../util/didcommVersion'
 
 export interface PaginateOptions {
   limit: number
@@ -37,7 +38,7 @@ export interface KeylistQueryMessageOptions {
  */
 export class KeylistQueryMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v2']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
   public constructor(options: KeylistQueryMessageOptions = {}) {
     super()

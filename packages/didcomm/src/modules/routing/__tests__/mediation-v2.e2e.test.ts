@@ -15,8 +15,8 @@ describe('Coordinate Mediation 2.0', () => {
   describe('v2 provision flow', () => {
     it.skip('provisions mediation v2: request → grant → keylist-update → keylist-query', async () => {
       // TODO: Full E2E requires v2 OOB + v2 connections.
-      // 1. Mediator with mediatorRoutingDid, mediationProtocolVersions: ['2.0']
-      // 2. Recipient with mediationProtocolVersions: ['2.0']
+      // 1. Mediator with mediatorRoutingDid, mediationProtocolVersions: ['v2']
+      // 2. Recipient with mediationProtocolVersions: ['v2']
       // 3. Create v2 connection via OOB
       // 4. provisionV2() → requestAndAwaitGrantV2 → keylist-update (post-grant)
       // 5. keylistQueryV2() to verify recipient DIDs registered
