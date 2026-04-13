@@ -1,8 +1,8 @@
 import { Type } from 'class-transformer'
 import { IsArray, ValidateNested } from 'class-validator'
 
-import { DidCommMessage } from '../../../DidCommMessage'
-import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
+import { DidCommMessage } from '../../../../DidCommMessage'
+import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
 
 export interface DidCommKeylistMessageOptions {
   id?: string

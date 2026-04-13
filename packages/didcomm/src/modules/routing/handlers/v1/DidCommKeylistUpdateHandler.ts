@@ -1,7 +1,7 @@
-import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import { DidCommOutboundMessageContext } from '../../../models'
-import { DidCommKeylistUpdateMessage } from '../messages'
-import type { DidCommMediatorService } from '../services/DidCommMediatorService'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../handlers'
+import { DidCommOutboundMessageContext } from '../../../../models'
+import { DidCommKeylistUpdateMessage } from '../../messages'
+import type { DidCommMediatorService } from '../../services/DidCommMediatorService'
 
 export class DidCommKeylistUpdateHandler implements DidCommMessageHandler {
   private mediatorService: DidCommMediatorService

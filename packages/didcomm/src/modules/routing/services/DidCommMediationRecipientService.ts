@@ -36,7 +36,7 @@ import {
   DidCommMediationGrantMessage,
   DidCommMediationRequestMessage,
 } from '../messages'
-import { DidCommKeylistUpdate, DidCommKeylistUpdateMessage } from '../messages/DidCommKeylistUpdateMessage'
+import { DidCommKeylistUpdate, DidCommKeylistUpdateMessage } from '../messages/v1/DidCommKeylistUpdateMessage'
 import {
   KeylistUpdateActionV2,
   DidCommKeylistUpdateV2Message,

@@ -11,7 +11,7 @@ import { DidCommMessagePickupApi } from '../../../message-pickup'
 import { DidCommMediatorModuleConfig } from '../../DidCommMediatorModuleConfig'
 import { DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage, DidCommKeylistUpdateResult } from '../../messages'
 import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
-import { DidCommForwardMessage } from '../../messages/DidCommForwardMessage'
+import { DidCommForwardMessage } from '../../messages/v1/DidCommForwardMessage'
 import {
   DidCommForwardV2Message,
   DidCommKeylistQueryV2Message,

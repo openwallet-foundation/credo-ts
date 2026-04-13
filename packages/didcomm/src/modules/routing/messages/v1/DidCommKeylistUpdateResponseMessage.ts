@@ -1,11 +1,11 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
 
-import { DidCommMessage } from '../../../DidCommMessage'
-import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
+import { DidCommMessage } from '../../../../DidCommMessage'
+import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
 
 import { DidCommKeylistUpdateAction } from './DidCommKeylistUpdateMessage'
-import type { DidCommVersion } from '../../../util/didcommVersion'
+import type { DidCommVersion } from '../../../../util/didcommVersion'
 
 export enum DidCommKeylistUpdateResult {
   ClientError = 'client_error',

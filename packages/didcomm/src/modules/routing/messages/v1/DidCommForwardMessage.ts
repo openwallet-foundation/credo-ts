@@ -1,10 +1,10 @@
 import { Expose } from 'class-transformer'
 import { IsObject, IsString } from 'class-validator'
 
-import { DidCommMessage } from '../../../DidCommMessage'
-import type { DidCommEncryptedMessage } from '../../../types'
-import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
-import type { DidCommVersion } from '../../../util/didcommVersion'
+import { DidCommMessage } from '../../../../DidCommMessage'
+import type { DidCommEncryptedMessage } from '../../../../types'
+import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
+import type { DidCommVersion } from '../../../../util/didcommVersion'
 
 export interface DidCommForwardMessageOptions {
   id?: string

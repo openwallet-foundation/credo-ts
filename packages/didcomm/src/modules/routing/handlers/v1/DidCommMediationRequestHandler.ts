@@ -1,8 +1,8 @@
-import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import { DidCommOutboundMessageContext } from '../../../models'
-import type { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
-import { DidCommMediationRequestMessage } from '../messages/DidCommMediationRequestMessage'
-import type { DidCommMediatorService } from '../services/DidCommMediatorService'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../handlers'
+import { DidCommOutboundMessageContext } from '../../../../models'
+import type { DidCommMediatorModuleConfig } from '../../DidCommMediatorModuleConfig'
+import { DidCommMediationRequestMessage } from '../../messages/v1/DidCommMediationRequestMessage'
+import type { DidCommMediatorService } from '../../services/DidCommMediatorService'
 
 export class DidCommMediationRequestHandler implements DidCommMessageHandler {
   private mediatorService: DidCommMediatorService
