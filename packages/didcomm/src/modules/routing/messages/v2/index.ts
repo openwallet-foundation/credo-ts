@@ -1,4 +1,3 @@
-export * from './ForwardMessage'
 export * from './ForwardMessageV2'
 export * from './KeylistMessage'
 export * from './KeylistQueryMessage'

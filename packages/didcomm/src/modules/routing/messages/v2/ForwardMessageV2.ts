@@ -1,10 +1,12 @@
 import { Expose } from 'class-transformer'
 import { IsArray, IsString } from 'class-validator'
 
+import { utils } from '@credo-ts/core'
 import { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommEncryptedMessage } from '../../../../types'
-import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
 import type { DidCommVersion } from '../../../../util/didcommVersion'
+import { IsValidMessageType, parseMessageType } from '../../../../util/messageType'
+import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from '../../../../v2/types'
 
 export interface DidCommForwardMessageV2Options {
   id?: string
@@ -14,6 +16,20 @@ export interface DidCommForwardMessageV2Options {
   next: string
   /** Encrypted payload(s) to forward (populated via ~attach when parsing) */
   attachments?: Array<{ id: string; data: { json?: DidCommEncryptedMessage } }>
+}
+
+/**
+ * Options for building an outbound routing/2.0/forward plaintext message.
+ */
+export interface DidCommForwardV2PlaintextOptions {
+  id?: string
+  /** DIDs of the mediator(s) receiving this forward (e.g. first hop) */
+  to: string[]
+  /** Next hop: DID or key identifier for the party to receive the attached payload */
+  next: string
+  /** Payload(s) to forward; encrypted for the `next` recipient */
+  attachments: DidCommV2Attachment[]
+  expiresTime?: number
 }
 
 /**
@@ -57,5 +73,22 @@ export class DidCommForwardMessageV2 extends DidCommMessage {
     } catch {
       return null
     }
+  }
+
+  /**
+   * Build a DIDComm v2 Forward plaintext message for outbound mediator wrapping.
+   * The outer envelope is anoncrypt; this returns the plaintext JSON to be packed.
+   */
+  public static createV2PlaintextMessage(options: DidCommForwardV2PlaintextOptions): DidCommV2PlaintextMessage {
+    const { id, to, next, attachments, expiresTime } = options
+    const msg: DidCommV2PlaintextMessage = {
+      id: id ?? utils.uuid(),
+      type: DidCommForwardMessageV2.type.messageTypeUri,
+      to,
+      body: { next },
+      attachments,
+    }
+    if (expiresTime !== undefined) msg.expires_time = expiresTime
+    return msg
   }
 }
