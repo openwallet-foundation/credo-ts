@@ -55,7 +55,7 @@ class MockEcdh1PuKeyManagementService implements Kms.KeyManagementService {
       throw new Kms.KeyManagementAlgorithmNotSupportedError('Only OKP X25519 supported', this.backend)
     }
     const keyId = options.keyId ?? `mock-key-${randomBytes(8).toString('hex')}`
-    const x = TypedArrayEncoder.toBase64URL(randomBytes(32))
+    const x = TypedArrayEncoder.toBase64Url(randomBytes(32))
     const publicJwk = {
       kty: 'OKP' as const,
       crv: 'X25519' as const,
@@ -92,7 +92,7 @@ class MockEcdh1PuKeyManagementService implements Kms.KeyManagementService {
     }
     const iv = randomBytes(12)
     const tag = randomBytes(16)
-    const epkX = TypedArrayEncoder.toBase64URL(randomBytes(32))
+    const epkX = TypedArrayEncoder.toBase64Url(randomBytes(32))
     const ephemeralPublicKey = { kty: 'OKP' as const, crv: 'X25519' as const, x: epkX }
     return {
       encrypted: new Uint8Array(options.data),
