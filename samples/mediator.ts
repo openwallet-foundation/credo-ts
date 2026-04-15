@@ -84,7 +84,7 @@ const agent = new Agent({
         autoAcceptMediationRequests: true,
         ...(enableMediationV2 && mediatorRoutingDid
           ? {
-              mediationProtocolVersions: ['1.0', '2.0'] as const,
+              mediationProtocolVersions: ['v1', 'v2'] as const,
               mediatorRoutingDid,
             }
           : {}),

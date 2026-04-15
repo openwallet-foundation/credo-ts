@@ -18,13 +18,13 @@ import {
   DidCommKeylistUpdateResponseMessage,
   DidCommKeylistUpdateResult,
   DidCommMediationGrantMessage,
-} from '../../messages'
+} from '../../protocol/v1/messages'
 import {
   KeylistUpdateActionV2,
-  KeylistUpdateResponseMessage,
-  MediateGrantMessage,
-} from '../../messages/v2'
-import { KeylistUpdateResultV2 } from '../../messages/v2/KeylistUpdateResponseMessage'
+  DidCommKeylistUpdateResponseV2Message,
+  DidCommMediateGrantV2Message,
+} from '../../protocol/v2/messages'
+import { KeylistUpdateResultV2 } from '../../protocol/v2/messages/DidCommKeylistUpdateResponseV2Message'
 import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import { DidCommMediationRecord } from '../../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
@@ -263,11 +263,11 @@ describe('DidCommMediationRecipientService', () => {
           role: DidCommMediationRole.Recipient,
           state: DidCommMediationState.Requested,
           threadId: 'threadId',
-          mediationProtocolVersion: '2.0',
+          mediationProtocolVersion: 'v2',
         })
         mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(v2Record)
 
-        const mediateGrant = new MediateGrantMessage({
+        const mediateGrant = new DidCommMediateGrantV2Message({
           routingDid: 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.SeyJ0IjoiZG0iLCJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCIsInIiOltdLCJhIjoibm9uZSMxIn0',
           threadId: 'threadId',
         })
@@ -289,13 +289,13 @@ describe('DidCommMediationRecipientService', () => {
           role: DidCommMediationRole.Recipient,
           state: DidCommMediationState.Granted,
           threadId: 'threadId',
-          mediationProtocolVersion: '2.0',
+          mediationProtocolVersion: 'v2',
           recipientDids: ['did:peer:2.xyz'], // Initially has xyz so remove can succeed
         })
         mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(v2Record)
         mockFunction(mediationRepository.update).mockResolvedValue(undefined)
 
-        const keylistUpdateResponse = new KeylistUpdateResponseMessage({
+        const keylistUpdateResponse = new DidCommKeylistUpdateResponseV2Message({
           updated: [
             { recipientDid: 'did:peer:2.abc', action: KeylistUpdateActionV2.add, result: KeylistUpdateResultV2.Success },
             { recipientDid: 'did:peer:2.xyz', action: KeylistUpdateActionV2.remove, result: KeylistUpdateResultV2.Success },
@@ -340,7 +340,7 @@ describe('DidCommMediationRecipientService', () => {
           role: DidCommMediationRole.Recipient,
           state: DidCommMediationState.Granted,
           threadId: 'thread-id',
-          mediationProtocolVersion: '2.0',
+          mediationProtocolVersion: 'v2',
           routingDid: 'did:peer:2.mediator',
         })
 

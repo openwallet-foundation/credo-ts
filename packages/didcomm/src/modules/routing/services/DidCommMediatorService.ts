@@ -35,8 +35,7 @@ import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
 import type { DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
-import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../messages'
-import { DidCommForwardMessageV2 } from '../messages'
+import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../protocol/v1/messages'
 import {
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdated,
@@ -44,17 +43,18 @@ import {
   DidCommKeylistUpdateResponseMessage,
   DidCommKeylistUpdateResult,
   DidCommMediationGrantMessage,
-} from '../messages'
+} from '../protocol/v1/messages'
 import {
-  KeylistMessage,
-  KeylistQueryMessage,
+  DidCommForwardV2Message,
+  DidCommKeylistV2Message,
+  DidCommKeylistQueryV2Message,
   KeylistUpdateActionV2,
-  KeylistUpdateMessage,
-  KeylistUpdateResponseMessage,
+  DidCommKeylistUpdateV2Message,
+  DidCommKeylistUpdateResponseV2Message,
   KeylistUpdateResultV2,
-  MediateGrantMessage,
-  MediateRequestMessage,
-} from '../messages/v2'
+  DidCommMediateGrantV2Message,
+  DidCommMediateRequestV2Message,
+} from '../protocol/v2/messages'
 import { DidCommMediationRole } from '../models/DidCommMediationRole'
 import { DidCommMediationState } from '../models/DidCommMediationState'
 import { DidCommMediatorRoutingRecord } from '../repository'
@@ -169,7 +169,7 @@ export class DidCommMediatorService {
   }
 
   public async processForwardMessage(
-    messageContext: DidCommInboundMessageContext<DidCommForwardMessage | DidCommForwardMessageV2>
+    messageContext: DidCommInboundMessageContext<DidCommForwardMessage | DidCommForwardV2Message>
   ): Promise<void> {
     const { message, agentContext } = messageContext
 
@@ -179,7 +179,7 @@ export class DidCommMediatorService {
     let encryptedMessage: import('../../../types').DidCommEncryptedMessage
     let mediationRecord: DidCommMediationRecord | null
 
-    if (message instanceof DidCommForwardMessageV2) {
+    if (message instanceof DidCommForwardV2Message) {
       if (!message.next) {
         throw new CredoError('Invalid v2 Forward: Missing required attribute "next"')
       }
@@ -347,7 +347,7 @@ export class DidCommMediatorService {
   }
 
   public async processMediationRequestV2(
-    messageContext: DidCommInboundMessageContext<MediateRequestMessage>
+    messageContext: DidCommInboundMessageContext<DidCommMediateRequestV2Message>
   ): Promise<{ mediationRecord: DidCommMediationRecord; connection: DidCommConnectionRecord }> {
     let connection = messageContext.connection
 
@@ -375,7 +375,7 @@ export class DidCommMediatorService {
       role: DidCommMediationRole.Mediator,
       state: DidCommMediationState.Requested,
       threadId: messageContext.message.threadId,
-      mediationProtocolVersion: '2.0',
+      mediationProtocolVersion: 'v2',
     })
 
     await this.mediationRepository.save(messageContext.agentContext, mediationRecord)
@@ -387,7 +387,7 @@ export class DidCommMediatorService {
   public async createGrantMediationMessageV2(
     agentContext: AgentContext,
     mediationRecord: DidCommMediationRecord
-  ): Promise<{ mediationRecord: DidCommMediationRecord; message: MediateGrantMessage }> {
+  ): Promise<{ mediationRecord: DidCommMediationRecord; message: DidCommMediateGrantV2Message }> {
     mediationRecord.assertState(DidCommMediationState.Requested)
     mediationRecord.assertRole(DidCommMediationRole.Mediator)
 
@@ -397,7 +397,7 @@ export class DidCommMediatorService {
     mediationRecord.routingDid = routingDid
     await this.mediationRepository.update(agentContext, mediationRecord)
 
-    const message = new MediateGrantMessage({
+    const message = new DidCommMediateGrantV2Message({
       routingDid,
       threadId: mediationRecord.threadId,
     })
@@ -406,15 +406,15 @@ export class DidCommMediatorService {
   }
 
   public async processKeylistUpdateV2(
-    messageContext: DidCommInboundMessageContext<KeylistUpdateMessage>
-  ): Promise<KeylistUpdateResponseMessage> {
+    messageContext: DidCommInboundMessageContext<DidCommKeylistUpdateV2Message>
+  ): Promise<DidCommKeylistUpdateResponseV2Message> {
     const connection = messageContext.assertReadyConnection()
     const { message } = messageContext
 
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Mediator)
-    if (mediationRecord.mediationProtocolVersion !== '2.0') {
+    if (mediationRecord.mediationProtocolVersion !== 'v2') {
       throw new CredoError('Keylist update v2 requires mediation protocol version 2.0')
     }
 
@@ -439,7 +439,7 @@ export class DidCommMediatorService {
 
     await this.mediationRepository.update(messageContext.agentContext, mediationRecord)
 
-    return new KeylistUpdateResponseMessage({
+    return new DidCommKeylistUpdateResponseV2Message({
       updated: updated.map((u) => ({
         recipientDid: u.recipientDid,
         action: u.action,
@@ -450,15 +450,15 @@ export class DidCommMediatorService {
   }
 
   public async processKeylistQueryV2(
-    messageContext: DidCommInboundMessageContext<KeylistQueryMessage>
-  ): Promise<KeylistMessage> {
+    messageContext: DidCommInboundMessageContext<DidCommKeylistQueryV2Message>
+  ): Promise<DidCommKeylistV2Message> {
     const connection = messageContext.assertReadyConnection()
     const { message } = messageContext
 
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Mediator)
-    if (mediationRecord.mediationProtocolVersion !== '2.0') {
+    if (mediationRecord.mediationProtocolVersion !== 'v2') {
       throw new CredoError('Keylist query v2 requires mediation protocol version 2.0')
     }
 
@@ -478,7 +478,7 @@ export class DidCommMediatorService {
       }
     }
 
-    return new KeylistMessage({
+    return new DidCommKeylistV2Message({
       keys,
       pagination,
       threadId: message.threadId,

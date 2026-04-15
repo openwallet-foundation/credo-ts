@@ -20,6 +20,7 @@ import {
   InMemoryQueueTransportRepository,
 } from './transport'
 import { DidCommMimeType } from './types'
+import type { DidCommVersion } from './util/didcommVersion'
 
 export interface DidCommModuleConfigOptions {
   endpoints?: string[]
@@ -39,7 +40,7 @@ export interface DidCommModuleConfigOptions {
    *
    * @default ['v1']
    */
-  didcommVersions?: ('v1' | 'v2')[]
+  didcommVersions?: DidCommVersion[]
 
   /**
    * Peer DID numAlgo for V2 OOB invitation creation. did:peer:4 (ShortFormAndLongForm) uses a shorter
@@ -232,7 +233,7 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
   }
 
   /** DIDComm versions the agent supports. */
-  public get didcommVersions(): ('v1' | 'v2')[] {
+  public get didcommVersions(): DidCommVersion[] {
     return this.options.didcommVersions ?? ['v1']
   }
 

@@ -20,7 +20,7 @@ import {
   DidCommMessagePickupV2Protocol,
   DidCommMessagePickupV3Protocol,
 } from '../protocol'
-import { MessageDeliveryV3Message } from '../protocol/v3'
+import { DidCommMessageDeliveryV3Message } from '../protocol/v3'
 import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
 
@@ -178,6 +178,6 @@ describe('DidCommMessagePickupApi', () => {
     const sendMessageMock = messageSender.sendMessage as MockedFunction<(typeof messageSender)['sendMessage']>
     expect(sendMessageMock).toHaveBeenCalledTimes(1)
     const [outboundCtx] = sendMessageMock.mock.calls[0]
-    expect(outboundCtx.message.type).toEqual(MessageDeliveryV3Message.type.messageTypeUri)
+    expect(outboundCtx.message.type).toEqual(DidCommMessageDeliveryV3Message.type.messageTypeUri)
   })
 })

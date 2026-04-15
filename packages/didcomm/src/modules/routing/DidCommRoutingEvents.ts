@@ -1,9 +1,9 @@
 import type { BaseEvent } from '@credo-ts/core'
 import type { DidCommRouting } from '../../models'
-import type { DidCommKeylistUpdate } from './messages/DidCommKeylistUpdateMessage'
+import type { DidCommKeylistUpdate } from './protocol/v1/messages/DidCommKeylistUpdateMessage'
 import type { DidCommMediationState } from './models/DidCommMediationState'
 import type { DidCommMediationRecord } from './repository/DidCommMediationRecord'
-import type { KeylistUpdateResponseItem } from './messages/v2/KeylistUpdateResponseMessage'
+import type { KeylistUpdateResponseItem } from './protocol/v2/messages/DidCommKeylistUpdateResponseV2Message'
 
 export enum DidCommRoutingEventTypes {
   MediationStateChanged = 'DidCommMediationStateChanged',

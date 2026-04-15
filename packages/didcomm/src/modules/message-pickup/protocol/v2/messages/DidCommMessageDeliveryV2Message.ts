@@ -4,6 +4,7 @@ import { DidCommMessage } from '../../../../../DidCommMessage'
 import type { DidCommAttachment } from '../../../../../decorators/attachment/DidCommAttachment'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 
 export interface DidCommMessageDeliveryV2MessageOptions {
   id?: string
@@ -14,7 +15,7 @@ export interface DidCommMessageDeliveryV2MessageOptions {
 
 export class DidCommMessageDeliveryV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v1']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   public constructor(options: DidCommMessageDeliveryV2MessageOptions) {
     super()

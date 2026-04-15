@@ -12,13 +12,13 @@ import {
   DidCommKeylistUpdateResponseHandler,
   DidCommMediationDenyHandler,
   DidCommMediationGrantHandler,
-} from './handlers'
+} from './protocol/v1/handlers'
 import {
-  KeylistHandler,
-  KeylistUpdateResponseHandler,
-  MediationDenyHandler,
-  MediationGrantHandler,
-} from './handlers/v2'
+  DidCommKeylistV2Handler,
+  DidCommKeylistUpdateResponseV2Handler,
+  DidCommMediationDenyV2Handler,
+  DidCommMediationGrantV2Handler,
+} from './protocol/v2/handlers'
 import { DidCommMediationRole } from './models'
 import { DidCommMediationRepository } from './repository'
 import { DidCommMediationRecipientService, DidCommRoutingService } from './services'
@@ -55,11 +55,11 @@ export class DidCommMediationRecipientModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantHandler(mediationRecipientService))
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyHandler(mediationRecipientService))
 
-    if (this.config.mediationProtocolVersions.includes('2.0')) {
-      messageHandlerRegistry.registerMessageHandler(new MediationGrantHandler(mediationRecipientService))
-      messageHandlerRegistry.registerMessageHandler(new MediationDenyHandler(mediationRecipientService))
-      messageHandlerRegistry.registerMessageHandler(new KeylistUpdateResponseHandler(mediationRecipientService))
-      messageHandlerRegistry.registerMessageHandler(new KeylistHandler(mediationRecipientService))
+    if (this.config.mediationProtocolVersions.includes('v2')) {
+      messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantV2Handler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyV2Handler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(new DidCommKeylistUpdateResponseV2Handler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(new DidCommKeylistV2Handler(mediationRecipientService))
     }
 
     featureRegistry.register(
@@ -68,7 +68,7 @@ export class DidCommMediationRecipientModule implements Module {
         roles: [DidCommMediationRole.Recipient],
       })
     )
-    if (this.config.mediationProtocolVersions.includes('2.0')) {
+    if (this.config.mediationProtocolVersions.includes('v2')) {
       featureRegistry.register(
         new DidCommProtocol({
           id: 'https://didcomm.org/coordinate-mediation/2.0',

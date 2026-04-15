@@ -7,7 +7,8 @@ import type { DidCommBasicMessagesModuleConfigOptions } from './DidCommBasicMess
 import { DidCommBasicMessagesModuleConfig } from './DidCommBasicMessagesModuleConfig'
 import { DidCommBasicMessageRole } from './DidCommBasicMessageRole'
 import { DidCommBasicMessagesApi } from './DidCommBasicMessagesApi'
-import { DidCommBasicMessageHandler, DidCommBasicMessageV2Handler } from './handlers'
+import { DidCommBasicMessageHandler } from './protocol/v1/handlers'
+import { DidCommBasicMessageV2Handler } from './protocol/v2/handlers'
 import { DidCommBasicMessageRepository } from './repository'
 import { DidCommBasicMessageService } from './services'
 

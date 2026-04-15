@@ -12,7 +12,7 @@ import {
 import { DidCommHandshakeProtocol } from '../../connections'
 import { DidCommMessageForwardingStrategy } from '../../routing/DidCommMessageForwardingStrategy'
 import { DidCommMessagesReceivedV2Message, DidCommStatusV2Message } from '../protocol'
-import { StatusV3Message } from '../protocol/v3'
+import { DidCommStatusV3Message } from '../protocol/v3'
 
 const recipientOptions = getAgentOptions('Mediation Pickup Loop Recipient', undefined, undefined, undefined, {
   requireDidcomm: true,
@@ -404,9 +404,9 @@ describe('E2E Pick Up protocol', () => {
     })
 
     const firstStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
-      messageType: StatusV3Message.type.messageTypeUri,
+      messageType: DidCommStatusV3Message.type.messageTypeUri,
     })
-    expect((firstStatusMessage as StatusV3Message).messageCount).toBe(1)
+    expect((firstStatusMessage as DidCommStatusV3Message).messageCount).toBe(1)
 
     const basicMessage = await basicMessagePromise
     expect(basicMessage.content).toBe(message)

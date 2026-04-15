@@ -8,14 +8,14 @@ import {
 import { DidCommConnectionRecord } from '../../modules/connections/repository'
 
 describe('didcommVersion', () => {
-  const v1Protected = JsonEncoder.toBase64URL({
+  const v1Protected = JsonEncoder.toBase64Url({
     enc: 'xchacha20poly1305_ietf',
     typ: 'JWM/1.0',
     alg: 'Authcrypt',
     recipients: [],
   })
 
-  const v2AuthcryptProtected = JsonEncoder.toBase64URL({
+  const v2AuthcryptProtected = JsonEncoder.toBase64Url({
     typ: 'application/didcomm-encrypted+json',
     alg: 'ECDH-1PU+A256KW',
     enc: 'A256GCM',
@@ -23,7 +23,7 @@ describe('didcommVersion', () => {
     recipients: [],
   })
 
-  const v2AnoncryptProtected = JsonEncoder.toBase64URL({
+  const v2AnoncryptProtected = JsonEncoder.toBase64Url({
     typ: 'application/didcomm-encrypted+json',
     alg: 'ECDH-ES+A256KW',
     enc: 'A256GCM',

@@ -14,7 +14,7 @@ describe('DidCommMessageReceiver', () => {
       setupSubjectTransports([agent])
       await agent.initialize()
 
-      const v2Protected = JsonEncoder.toBase64URL({
+      const v2Protected = JsonEncoder.toBase64Url({
         typ: 'application/didcomm-encrypted+json',
         alg: 'ECDH-1PU+A256KW',
         enc: 'A256GCM',

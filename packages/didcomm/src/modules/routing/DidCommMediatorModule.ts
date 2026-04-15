@@ -5,14 +5,14 @@ import { DidCommProtocol } from '../../models'
 import { DidCommMediatorApi } from './DidCommMediatorApi'
 import type { DidCommMediatorModuleConfigOptions } from './DidCommMediatorModuleConfig'
 import { DidCommMediatorModuleConfig } from './DidCommMediatorModuleConfig'
-import { DidCommForwardHandler } from './handlers/DidCommForwardHandler'
-import { DidCommKeylistUpdateHandler } from './handlers/DidCommKeylistUpdateHandler'
-import { DidCommMediationRequestHandler } from './handlers/DidCommMediationRequestHandler'
+import { DidCommForwardHandler } from './protocol/v1/handlers/DidCommForwardHandler'
+import { DidCommKeylistUpdateHandler } from './protocol/v1/handlers/DidCommKeylistUpdateHandler'
+import { DidCommMediationRequestHandler } from './protocol/v1/handlers/DidCommMediationRequestHandler'
 import {
-  KeylistQueryHandler,
-  KeylistUpdateHandler,
-  MediationRequestHandler,
-} from './handlers/v2'
+  DidCommKeylistQueryV2Handler,
+  DidCommKeylistUpdateV2Handler,
+  DidCommMediationRequestV2Handler,
+} from './protocol/v2/handlers'
 import { DidCommMediationRole } from './models'
 import { DidCommMediationRepository, DidCommMediatorRoutingRepository } from './repository'
 import { DidCommMediatorService } from './services'
@@ -49,10 +49,10 @@ export class DidCommMediatorModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommForwardHandler(mediatorService))
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationRequestHandler(mediatorService, this.config))
 
-    if (this.config.mediationProtocolVersions.includes('2.0')) {
-      messageHandlerRegistry.registerMessageHandler(new MediationRequestHandler(mediatorService, this.config))
-      messageHandlerRegistry.registerMessageHandler(new KeylistUpdateHandler(mediatorService))
-      messageHandlerRegistry.registerMessageHandler(new KeylistQueryHandler(mediatorService))
+    if (this.config.mediationProtocolVersions.includes('v2')) {
+      messageHandlerRegistry.registerMessageHandler(new DidCommMediationRequestV2Handler(mediatorService, this.config))
+      messageHandlerRegistry.registerMessageHandler(new DidCommKeylistUpdateV2Handler(mediatorService))
+      messageHandlerRegistry.registerMessageHandler(new DidCommKeylistQueryV2Handler(mediatorService))
     }
 
     featureRegistry.register(
@@ -61,7 +61,7 @@ export class DidCommMediatorModule implements Module {
         roles: [DidCommMediationRole.Mediator],
       })
     )
-    if (this.config.mediationProtocolVersions.includes('2.0')) {
+    if (this.config.mediationProtocolVersions.includes('v2')) {
       featureRegistry.register(
         new DidCommProtocol({
           id: 'https://didcomm.org/coordinate-mediation/2.0',

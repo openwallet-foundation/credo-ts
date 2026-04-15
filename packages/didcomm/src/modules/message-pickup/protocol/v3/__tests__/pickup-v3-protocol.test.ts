@@ -18,12 +18,12 @@ import { DidCommMessagePickupV1Protocol } from '../../v1'
 import { DidCommMessagePickupV2Protocol } from '../../v2'
 import { DidCommMessagePickupV3Protocol } from '../DidCommMessagePickupV3Protocol'
 import {
-  DeliveryRequestV3Message,
-  LiveDeliveryChangeV3Message,
-  MessageDeliveryV3Message,
-  MessagesReceivedV3Message,
-  StatusRequestV3Message,
-  StatusV3Message,
+  DidCommDeliveryRequestV3Message,
+  DidCommLiveDeliveryChangeV3Message,
+  DidCommMessageDeliveryV3Message,
+  DidCommMessagesReceivedV3Message,
+  DidCommStatusRequestV3Message,
+  DidCommStatusV3Message,
 } from '../messages'
 
 const mockConnection = getMockConnection({
@@ -96,7 +96,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
     test('no available messages in queue', async () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(0)
 
-      const statusRequest = new StatusRequestV3Message({})
+      const statusRequest = new DidCommStatusRequestV3Message({})
 
       const messageContext = new DidCommInboundMessageContext(statusRequest, {
         connection: mockConnection,
@@ -109,7 +109,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
       expect(connection).toEqual(mockConnection)
       expect(message).toEqual(
-        new StatusV3Message({
+        new DidCommStatusV3Message({
           id: message.id,
           threadId: statusRequest.threadId,
           messageCount: 0,
@@ -123,7 +123,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
     test('multiple messages in queue', async () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(5)
-      const statusRequest = new StatusRequestV3Message({})
+      const statusRequest = new DidCommStatusRequestV3Message({})
 
       const messageContext = new DidCommInboundMessageContext(statusRequest, {
         connection: mockConnection,
@@ -136,7 +136,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
       expect(connection).toEqual(mockConnection)
       expect(message).toEqual(
-        new StatusV3Message({
+        new DidCommStatusV3Message({
           id: message.id,
           threadId: statusRequest.threadId,
           messageCount: 5,
@@ -151,7 +151,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
     test('status request specifying recipient_did', async () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(10)
 
-      const statusRequest = new StatusRequestV3Message({
+      const statusRequest = new DidCommStatusRequestV3Message({
         recipientDid: 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc',
       })
 
@@ -172,7 +172,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
     test('no available messages in queue', async () => {
       mockFunction(queueTransportRepository.takeFromQueue).mockReturnValue([])
 
-      const deliveryRequest = new DeliveryRequestV3Message({ limit: 10 })
+      const deliveryRequest = new DidCommDeliveryRequestV3Message({ limit: 10 })
 
       const messageContext = new DidCommInboundMessageContext(deliveryRequest, {
         connection: mockConnection,
@@ -183,7 +183,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
       expect(connection).toEqual(mockConnection)
       expect(message).toEqual(
-        new StatusV3Message({
+        new DidCommStatusV3Message({
           id: message.id,
           threadId: deliveryRequest.threadId,
           messageCount: 0,
@@ -198,7 +198,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
     test('less messages in queue than limit', async () => {
       mockFunction(queueTransportRepository.takeFromQueue).mockReturnValue(queuedMessages)
 
-      const deliveryRequest = new DeliveryRequestV3Message({ limit: 10 })
+      const deliveryRequest = new DidCommDeliveryRequestV3Message({ limit: 10 })
 
       const messageContext = new DidCommInboundMessageContext(deliveryRequest, {
         connection: mockConnection,
@@ -208,7 +208,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
       const { connection, message } = await pickupProtocol.processDeliveryRequest(messageContext)
 
       expect(connection).toEqual(mockConnection)
-      expect(message).toBeInstanceOf(MessageDeliveryV3Message)
+      expect(message).toBeInstanceOf(DidCommMessageDeliveryV3Message)
       expect(message.threadId).toEqual(deliveryRequest.threadId)
       expect(message.appendedAttachments?.length).toEqual(3)
       expect(message.appendedAttachments).toEqual(
@@ -232,7 +232,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
     test('delivery request specifying recipient_did', async () => {
       mockFunction(queueTransportRepository.takeFromQueue).mockReturnValue(queuedMessages)
 
-      const deliveryRequest = new DeliveryRequestV3Message({
+      const deliveryRequest = new DidCommDeliveryRequestV3Message({
         limit: 10,
         recipientDid: 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc',
       })
@@ -257,7 +257,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
       mockFunction(queueTransportRepository.takeFromQueue).mockReturnValue(queuedMessages)
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(4)
 
-      const messagesReceived = new MessagesReceivedV3Message({
+      const messagesReceived = new DidCommMessagesReceivedV3Message({
         messageIdList: ['1', '2'],
       })
 
@@ -270,7 +270,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
       expect(connection).toEqual(mockConnection)
       expect(message).toEqual(
-        new StatusV3Message({
+        new DidCommStatusV3Message({
           id: message.id,
           threadId: messagesReceived.threadId,
           messageCount: 4,
@@ -303,7 +303,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
   describe('processStatus', () => {
     it('if status request has a message count of zero returns nothing', async () => {
-      const status = new StatusV3Message({
+      const status = new DidCommStatusV3Message({
         threadId: uuid(),
         messageCount: 0,
       })
@@ -319,7 +319,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
     })
 
     it('if it has a message count greater than zero return a valid delivery request', async () => {
-      const status = new StatusV3Message({
+      const status = new DidCommStatusV3Message({
         threadId: uuid(),
         messageCount: 1,
       })
@@ -328,14 +328,14 @@ describe('DidCommMessagePickupV3Protocol', () => {
       const deliveryRequestMessage = await pickupProtocol.processStatus(messageContext)
       expect(deliveryRequestMessage)
       expect(deliveryRequestMessage).toEqual(
-        new DeliveryRequestV3Message({ id: deliveryRequestMessage?.id, limit: 1 })
+        new DidCommDeliveryRequestV3Message({ id: deliveryRequestMessage?.id, limit: 1 })
       )
     })
   })
 
   describe('processDelivery', () => {
     it('if the delivery has no attachments expect an error', async () => {
-      const messageContext = new DidCommInboundMessageContext({} as MessageDeliveryV3Message, {
+      const messageContext = new DidCommInboundMessageContext({} as DidCommMessageDeliveryV3Message, {
         connection: mockConnection,
         agentContext,
       })
@@ -344,7 +344,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
     })
 
     it('should return a message received with a message id list in it', async () => {
-      const messageDeliveryMessage = new MessageDeliveryV3Message({
+      const messageDeliveryMessage = new DidCommMessageDeliveryV3Message({
         threadId: uuid(),
         attachments: [
           new DidCommAttachment({
@@ -363,7 +363,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
       const messagesReceivedMessage = await pickupProtocol.processDelivery(messageContext)
 
       expect(messagesReceivedMessage).toEqual(
-        new MessagesReceivedV3Message({
+        new DidCommMessagesReceivedV3Message({
           id: messagesReceivedMessage.id,
           messageIdList: ['1'],
         })
@@ -372,7 +372,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
     it('handles base64 attachments per Message Pickup 3.0 spec', async () => {
       const encryptedMsg = { protected: 'p', iv: 'i', ciphertext: 'c', tag: 't' }
-      const messageDeliveryMessage = new MessageDeliveryV3Message({
+      const messageDeliveryMessage = new DidCommMessageDeliveryV3Message({
         threadId: uuid(),
         attachments: [
           new DidCommAttachment({
@@ -396,7 +396,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
   describe('processLiveDeliveryChange', () => {
     test('throws problem report when live_delivery is true but no sessionId (non-persistent transport)', async () => {
-      const liveDeliveryChange = new LiveDeliveryChangeV3Message({ liveDelivery: true })
+      const liveDeliveryChange = new DidCommLiveDeliveryChangeV3Message({ liveDelivery: true })
 
       const messageContext = new DidCommInboundMessageContext(liveDeliveryChange, {
         connection: mockConnection,
@@ -415,7 +415,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
     test('saves live session when live_delivery is true and sessionId is present', async () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(3)
 
-      const liveDeliveryChange = new LiveDeliveryChangeV3Message({ liveDelivery: true })
+      const liveDeliveryChange = new DidCommLiveDeliveryChangeV3Message({ liveDelivery: true })
 
       const messageContext = new DidCommInboundMessageContext(liveDeliveryChange, {
         connection: mockConnection,
@@ -425,15 +425,15 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
       const { message } = await pickupProtocol.processLiveDeliveryChange(messageContext)
 
-      expect(message).toBeInstanceOf(StatusV3Message)
-      expect((message as StatusV3Message).liveDelivery).toBe(true)
-      expect((message as StatusV3Message).messageCount).toBe(3)
+      expect(message).toBeInstanceOf(DidCommStatusV3Message)
+      expect((message as DidCommStatusV3Message).liveDelivery).toBe(true)
+      expect((message as DidCommStatusV3Message).messageCount).toBe(3)
     })
 
     test('removes live session when live_delivery is false', async () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(0)
 
-      const liveDeliveryChange = new LiveDeliveryChangeV3Message({ liveDelivery: false })
+      const liveDeliveryChange = new DidCommLiveDeliveryChangeV3Message({ liveDelivery: false })
 
       const messageContext = new DidCommInboundMessageContext(liveDeliveryChange, {
         connection: mockConnection,
@@ -442,9 +442,9 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
       const { message } = await pickupProtocol.processLiveDeliveryChange(messageContext)
 
-      expect(message).toBeInstanceOf(StatusV3Message)
-      expect((message as StatusV3Message).liveDelivery).toBe(false)
-      expect((message as StatusV3Message).messageCount).toBe(0)
+      expect(message).toBeInstanceOf(DidCommStatusV3Message)
+      expect((message as DidCommStatusV3Message).liveDelivery).toBe(false)
+      expect((message as DidCommStatusV3Message).messageCount).toBe(0)
     })
   })
 })

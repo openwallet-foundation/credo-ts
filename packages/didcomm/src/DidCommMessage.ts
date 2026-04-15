@@ -12,6 +12,7 @@ import { TransportDecorated } from './decorators/transport/TransportDecoratorExt
 import type { DidCommPlaintextMessage } from './types'
 import type { ParsedMessageType } from './util/messageType'
 import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from './util/messageType'
+import type { DidCommVersion } from './util/didcommVersion'
 
 export type ConstructableAgentMessage = Constructor<DidCommMessage> & { type: ParsedMessageType }
 
@@ -45,7 +46,7 @@ export class DidCommMessage extends Decorated {
    * Set to ['v2'] for v2-only protocols (e.g. present-proof/3.0, trust-ping/2.0). Used to throw when sending v2-only over v1 connection.
    */
   @Exclude()
-  public readonly supportedDidCommVersions?: readonly ('v1' | 'v2')[]
+  public readonly supportedDidCommVersions?: readonly DidCommVersion[]
 
   public toJSON({
     useDidSovPrefixWhereAllowed,

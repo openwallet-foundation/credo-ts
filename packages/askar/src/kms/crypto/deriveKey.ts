@@ -84,9 +84,7 @@ function deriveEncryptionKeyEcdh1Pu(options: {
   } finally {
     ephemeralKey.handle.free()
     derivedKey.handle.free()
-    if (contentEncryptionKey) {
-      // contentEncryptionKey is returned to caller; they free it
-    }
+    // contentEncryptionKey is returned to caller; they free it.
   }
 }
 

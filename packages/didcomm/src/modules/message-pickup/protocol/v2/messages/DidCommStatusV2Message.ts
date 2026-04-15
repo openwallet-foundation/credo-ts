@@ -5,6 +5,7 @@ import { DidCommMessage } from '../../../../../DidCommMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import { DateParser } from '../../../../../util/transformers'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 
 export interface DidCommStatusV2MessageOptions {
   id?: string
@@ -20,7 +21,7 @@ export interface DidCommStatusV2MessageOptions {
 
 export class DidCommStatusV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
-  public readonly supportedDidCommVersions: ('v1' | 'v2')[] = ['v1']
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   public constructor(options: DidCommStatusV2MessageOptions) {
     super()

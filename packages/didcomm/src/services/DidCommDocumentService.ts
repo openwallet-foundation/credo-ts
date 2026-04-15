@@ -19,10 +19,11 @@ import {
   type ResolvedDidCommService,
   verkeyToPublicJwk,
 } from '@credo-ts/core'
+import type { DidCommVersion } from '../util/didcommVersion'
 
 export interface GetSupportedDidCommVersionsFromDidDocResult {
   /** All DIDComm versions advertised by the DID document (v1, v2, or both). */
-  versions: ('v1' | 'v2')[]
+  versions: DidCommVersion[]
 }
 
 @injectable()
@@ -85,7 +86,7 @@ export class DidCommDocumentService {
       (s) => s.type === DidCommV2Service.type || s.type === NewDidCommV2Service.type
     )
 
-    const versions: ('v1' | 'v2')[] = []
+    const versions: DidCommVersion[] = []
     if (hasV1) versions.push('v1')
     if (hasV2) versions.push('v2')
 

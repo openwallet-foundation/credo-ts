@@ -46,7 +46,7 @@ describe('Mediation 2.0 + Pickup 3.0 Combined', () => {
               didcommVersions: ['v1', 'v2'],
               mediator: {
                 autoAcceptMediationRequests: true,
-                mediationProtocolVersions: ['1.0', '2.0'],
+                mediationProtocolVersions: ['v1', 'v2'],
                 mediatorRoutingDid: MEDIATOR_ROUTING_DID,
               },
             },
@@ -62,7 +62,7 @@ describe('Mediation 2.0 + Pickup 3.0 Combined', () => {
               endpoints: ['rxjs:recipient'],
               didcommVersions: ['v1', 'v2'],
               mediationRecipient: {
-                mediationProtocolVersions: ['1.0', '2.0'],
+                mediationProtocolVersions: ['v1', 'v2'],
                 mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV3,
                 mediatorPollingInterval: 200,
               },
@@ -87,8 +87,8 @@ describe('Mediation 2.0 + Pickup 3.0 Combined', () => {
         expect(recipientMediatorConn.didcommVersion).toBe('v2')
         expect(mediatorRecipientConn.didcommVersion).toBe('v2')
 
-        const mediationRecord = await recipientAgent.didcomm.mediationRecipient.provisionV2(recipientMediatorConn)
-        expect(mediationRecord.mediationProtocolVersion).toBe('2.0')
+        const mediationRecord = await recipientAgent.didcomm.mediationRecipient.provision(recipientMediatorConn)
+        expect(mediationRecord.mediationProtocolVersion).toBe('v2')
         expect(mediationRecord.routingDid).toBe(MEDIATOR_ROUTING_DID)
         expect(mediationRecord.recipientDids?.length).toBeGreaterThan(0)
 
@@ -119,6 +119,6 @@ describe('Mediation v2 + Pickup v3 - API validation', () => {
 
   it('DidCommMediationRecipientApi initiates pickup with v3 for v2 mediators', () => {
     expect(typeof DidCommMediationRecipientApi.prototype.initiateMessagePickup).toBe('function')
-    // When mediator has mediationProtocolVersion === '2.0', initiateMessagePickup uses PickUpV3 by default
+    // When mediator has mediationProtocolVersion === 'v2', initiateMessagePickup uses PickUpV3 by default
   })
 })

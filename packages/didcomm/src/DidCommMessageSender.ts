@@ -21,7 +21,7 @@ import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
 import { buildV2PlaintextFromMessage, type DidCommV2PlaintextMessage } from './v2'
 import { DidCommV2EnvelopeService } from './v2'
-import { createForwardMessageV2 } from './modules/routing/messages/v2'
+import { DidCommForwardV2Message } from './modules/routing/protocol/v2/messages'
 import type { DidCommMessageSentEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import type { DidCommMessage } from './DidCommMessage'
@@ -37,6 +37,7 @@ import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
+import type { DidCommVersion } from './util/didcommVersion'
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -231,7 +232,7 @@ export class DidCommMessageSender {
         media_type: 'application/didcomm-encrypted+json',
         data: { json: payload },
       }
-      const forwardPlaintext = createForwardMessageV2({
+      const forwardPlaintext = DidCommForwardV2Message.createV2PlaintextMessage({
         to: [new DidKey(routingKey).did],
         next,
         attachments: [attachment],

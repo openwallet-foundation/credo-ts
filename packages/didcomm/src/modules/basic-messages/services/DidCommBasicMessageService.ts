@@ -8,7 +8,8 @@ import type {
 } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageEventTypes } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
-import { DidCommBasicMessage, DidCommBasicMessageV2 } from '../messages'
+import { DidCommBasicMessage } from '../protocol/v1'
+import { DidCommBasicMessageV2 } from '../protocol/v2'
 import { DidCommBasicMessageRecord, DidCommBasicMessageRepository } from '../repository'
 
 @injectable()
@@ -86,7 +87,7 @@ export class DidCommBasicMessageService {
       role: DidCommBasicMessageRole.Sender,
       threadId: basicMessage.threadId,
       parentThreadId,
-      protocolVersion: '2.0',
+      protocolVersion: 'v2',
     })
 
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)
@@ -108,7 +109,7 @@ export class DidCommBasicMessageService {
       role: DidCommBasicMessageRole.Receiver,
       threadId: message.threadId,
       parentThreadId: message.thread?.parentThreadId,
-      protocolVersion: '2.0',
+      protocolVersion: 'v2',
     })
 
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)

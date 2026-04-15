@@ -1,7 +1,0 @@
-export * from './DidCommForwardHandler'
-export * from './DidCommKeylistUpdateHandler'
-export * from './DidCommKeylistUpdateResponseHandler'
-export * from './DidCommMediationDenyHandler'
-export * from './DidCommMediationGrantHandler'
-export * from './DidCommMediationRequestHandler'
-export * from './v2'

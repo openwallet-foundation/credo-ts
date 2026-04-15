@@ -33,8 +33,8 @@ import { DidCommMediationRecipientModuleConfig } from './DidCommMediationRecipie
 import { DidCommMediatorPickupStrategy } from './DidCommMediatorPickupStrategy'
 import type { DidCommMediationStateChangedEvent } from './DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from './DidCommRoutingEvents'
-import { DidCommKeylistUpdate, DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage } from './messages'
-import { KeylistUpdateActionV2 } from './messages/v2'
+import { DidCommKeylistUpdate, DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage } from './protocol/v1/messages'
+import { KeylistUpdateActionV2 } from './protocol/v2/messages'
 import { DidCommMediationRole } from './models/DidCommMediationRole'
 import { DidCommMediationState } from './models/DidCommMediationState'
 import type { DidCommMediationRecord } from './repository'
@@ -269,7 +269,7 @@ export class DidCommMediationRecipientApi {
     let mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediatorRecord))
     const mediatorConnection = await this.connectionService.getById(this.agentContext, mediatorRecord.connectionId)
 
-    if (mediatorRecord.mediationProtocolVersion === '2.0') {
+    if (mediatorRecord.mediationProtocolVersion === 'v2') {
       assertDidCommV2Connection(mediatorConnection, 'Mediation 2.0')
 
       // Ensure pickup strategy is compatible with DIDComm v2 — upgrade v1/v2 pickup to v3
@@ -387,7 +387,7 @@ export class DidCommMediationRecipientApi {
     // For Coordinate Mediation 2.0 (DIDComm v2), message pickup v1/v2 protocols won't work
     // because the connection is v2 and those protocols require v1 connections.
     // Auto-upgrade to Message Pickup 3.0 equivalents.
-    if (mediator.mediationProtocolVersion === '2.0') {
+    if (mediator.mediationProtocolVersion === 'v2') {
       if (
         !mediatorPickupStrategy ||
         mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV1 ||
@@ -445,70 +445,23 @@ export class DidCommMediationRecipientApi {
     return this.mediationRecipientService.setDefaultMediator(this.agentContext, mediatorRecord)
   }
 
+  /**
+   * Send a mediation request for the given connection. Automatically selects
+   * v1 or v2 Coordinate Mediation based on the connection's DIDComm version.
+   */
   public async requestMediation(connection: DidCommConnectionRecord): Promise<DidCommMediationRecord> {
-    assertDidCommV1Connection(connection, 'Mediation')
-    const { mediationRecord, message } = await this.mediationRecipientService.createRequest(
-      this.agentContext,
-      connection
-    )
-    const outboundMessage = new DidCommOutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection: connection,
-    })
+    const { mediationRecord, message } =
+      (connection.didcommVersion ?? 'v1') === 'v2'
+        ? await this.mediationRecipientService.createRequestV2(this.agentContext, connection)
+        : await this.mediationRecipientService.createRequest(this.agentContext, connection)
 
-    await this.sendMessage(outboundMessage)
-    return mediationRecord
-  }
-
-  public async requestMediationV2(connection: DidCommConnectionRecord): Promise<DidCommMediationRecord> {
-    assertDidCommV2Connection(connection, 'Coordinate Mediation 2.0')
-    const { mediationRecord, message } = await this.mediationRecipientService.createRequestV2(
-      this.agentContext,
-      connection
-    )
     const outboundMessage = new DidCommOutboundMessageContext(message, {
       agentContext: this.agentContext,
       connection,
     })
+
     await this.sendMessage(outboundMessage)
     return mediationRecord
-  }
-
-  public async requestAndAwaitGrantV2(
-    connection: DidCommConnectionRecord,
-    timeoutMs = 10000
-  ): Promise<DidCommMediationRecord> {
-    assertDidCommV2Connection(connection, 'Coordinate Mediation 2.0')
-    const { mediationRecord, message } = await this.mediationRecipientService.createRequestV2(
-      this.agentContext,
-      connection
-    )
-    const observable = this.eventEmitter.observable<DidCommMediationStateChangedEvent>(
-      DidCommRoutingEventTypes.MediationStateChanged
-    )
-    const subject = new ReplaySubject<DidCommMediationStateChangedEvent>(1)
-    observable
-      .pipe(
-        filterContextCorrelationId(this.agentContext.contextCorrelationId),
-        filter((event) => event.payload.mediationRecord.id === mediationRecord.id),
-        filter((event) => event.payload.previousState === DidCommMediationState.Requested),
-        filter((event) => event.payload.mediationRecord.state === DidCommMediationState.Granted),
-        first(),
-        timeout({
-          first: timeoutMs,
-          meta: 'MediationRecipientApi.requestAndAwaitGrantV2',
-        })
-      )
-      .subscribe(subject)
-
-    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection,
-      associatedRecord: mediationRecord,
-    })
-    await this.sendMessage(outboundMessageContext)
-    const event = await firstValueFrom(subject)
-    return event.payload.mediationRecord
   }
 
   /**
@@ -534,95 +487,36 @@ export class DidCommMediationRecipientApi {
   }
 
   /**
-   * Full v2 provision: mediate-request → grant → keylist-update (post-grant, adds recipient DID).
+   * Register (add/remove) a routing key or DID with the mediator. Automatically selects
+   * the v1 or v2 keylist-update flow based on the mediation record's protocol version.
+   *
+   * For v1 the key is a verkey (or did:key) and action defaults to add.
+   * For v2 the key is the recipient DID.
    */
-  public async provisionV2(connection: DidCommConnectionRecord): Promise<DidCommMediationRecord> {
-    assertDidCommV2Connection(connection, 'Coordinate Mediation 2.0')
-    this.logger.debug('Connection completed, requesting mediation v2')
-
-    let mediation = await this.findByConnectionId(connection.id)
-    if (!mediation) {
-      this.logger.info(`Requesting mediation v2 for connection ${connection.id}`)
-      mediation = await this.requestAndAwaitGrantV2(connection, 60000)
-      this.logger.debug('Mediation v2 granted, setting as default mediator')
-      await this.setDefaultMediator(mediation)
-      this.logger.debug('Default mediator set')
-
-      // Post-grant: keylist-update to add recipient DID (required per spec)
-      const connectionRecord = await this.connectionService.getById(this.agentContext, connection.id)
-      const recipientDid = connectionRecord.did
-      if (recipientDid) {
-        const toRegister = await this.recipientDidKeylistVariantsForProvision(recipientDid)
-        this.logger.debug('Sending keylist-update to register recipient DID variant(s) with mediator', {
-          toRegister,
-        })
-        mediation = await this.mediationRecipientService.keylistUpdateAndAwaitV2(
-          this.agentContext,
-          mediation,
-          toRegister.map((did) => ({ recipientDid: did, action: KeylistUpdateActionV2.add })),
-          15000
-        )
-      }
-    } else {
-      this.logger.debug(`Mediator invitation has already been ${mediation.isReady ? 'granted' : 'requested'}`)
-    }
-
-    return mediation
-  }
-
-  public async notifyKeylistUpdateV2(
-    mediationRecord: DidCommMediationRecord,
-    recipientDid: string,
-    action: KeylistUpdateActionV2 = KeylistUpdateActionV2.add
-  ): Promise<void> {
-    mediationRecord.assertReady()
-    mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== '2.0') {
-      throw new CredoError('notifyKeylistUpdateV2 requires mediation protocol version 2.0')
-    }
-    const connection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)
-    assertDidCommV2Connection(connection, 'Coordinate Mediation 2.0')
-
-    const message = this.mediationRecipientService.createKeylistUpdateV2Message(mediationRecord, [
-      { recipientDid, action },
-    ])
-    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection,
-    })
-    await this.sendMessage(outboundMessageContext)
-  }
-
-  public async keylistQueryV2(
-    mediationRecord: DidCommMediationRecord,
-    paginate?: { limit: number; offset: number }
-  ): Promise<void> {
-    mediationRecord.assertReady()
-    mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== '2.0') {
-      throw new CredoError('keylistQueryV2 requires mediation protocol version 2.0')
-    }
-    const connection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)
-    assertDidCommV2Connection(connection, 'Coordinate Mediation 2.0')
-
-    const message = this.mediationRecipientService.createKeylistQueryV2Message(mediationRecord, paginate)
-    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection,
-    })
-    await this.sendMessage(outboundMessageContext)
-  }
-
   public async notifyKeylistUpdate(
-    connection: DidCommConnectionRecord,
-    verkey: string,
-    action?: DidCommKeylistUpdateAction
-  ) {
-    assertDidCommV1Connection(connection, 'Mediation')
-    // Use our useDidKey configuration unless we know the key formatting other party is using
+    mediationRecord: DidCommMediationRecord,
+    recipientKeyOrDid: string,
+    action: DidCommKeylistUpdateAction = DidCommKeylistUpdateAction.add
+  ): Promise<void> {
+    mediationRecord.assertReady()
+    mediationRecord.assertRole(DidCommMediationRole.Recipient)
+    const connection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)
+
+    if (mediationRecord.mediationProtocolVersion === 'v2') {
+      const message = this.mediationRecipientService.createKeylistUpdateV2Message(mediationRecord, [
+        { recipientDid: recipientKeyOrDid, action: action as unknown as KeylistUpdateActionV2 },
+      ])
+      const outboundMessageContext = new DidCommOutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection,
+      })
+      await this.sendMessage(outboundMessageContext)
+      return
+    }
+
+    // v1 flow
     const didcommConfig = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
     let useDidKey = didcommConfig.useDidKeyInProtocols
-
     const useDidKeysConnectionMetadata = connection.metadata.get(DidCommConnectionMetadataKeys.UseDidKeysForProtocol)
     if (useDidKeysConnectionMetadata) {
       useDidKey = useDidKeysConnectionMetadata[DidCommKeylistUpdateMessage.type.protocolUri] ?? useDidKey
@@ -630,11 +524,34 @@ export class DidCommMediationRecipientApi {
 
     const message = this.mediationRecipientService.createKeylistUpdateMessage([
       new DidCommKeylistUpdate({
-        action: action ?? DidCommKeylistUpdateAction.add,
-        recipientKey: useDidKey ? verkeyToDidKey(verkey) : verkey,
+        action,
+        recipientKey: useDidKey ? verkeyToDidKey(recipientKeyOrDid) : recipientKeyOrDid,
       }),
     ])
 
+    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+    })
+    await this.sendMessage(outboundMessageContext)
+  }
+
+  /**
+   * Query the mediator's keylist. Only supported for Coordinate Mediation 2.0;
+   * v1 has no public keylist-query method.
+   */
+  public async keylistQuery(
+    mediationRecord: DidCommMediationRecord,
+    paginate?: { limit: number; offset: number }
+  ): Promise<void> {
+    mediationRecord.assertReady()
+    mediationRecord.assertRole(DidCommMediationRole.Recipient)
+    if (mediationRecord.mediationProtocolVersion !== 'v2') {
+      throw new CredoError('keylistQuery is only supported for Coordinate Mediation 2.0')
+    }
+    const connection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)
+
+    const message = this.mediationRecipientService.createKeylistQueryV2Message(mediationRecord, paginate)
     const outboundMessageContext = new DidCommOutboundMessageContext(message, {
       agentContext: this.agentContext,
       connection,
@@ -664,33 +581,31 @@ export class DidCommMediationRecipientApi {
     return null
   }
 
+  /**
+   * Send a mediation request and wait for a grant. Automatically selects
+   * v1 or v2 Coordinate Mediation based on the connection's DIDComm version.
+   */
   public async requestAndAwaitGrant(
     connection: DidCommConnectionRecord,
     timeoutMs = 10000
   ): Promise<DidCommMediationRecord> {
-    const { mediationRecord, message } = await this.mediationRecipientService.createRequest(
-      this.agentContext,
-      connection
-    )
+    const { mediationRecord, message } =
+      (connection.didcommVersion ?? 'v1') === 'v2'
+        ? await this.mediationRecipientService.createRequestV2(this.agentContext, connection)
+        : await this.mediationRecipientService.createRequest(this.agentContext, connection)
 
-    // Create observable for event
     const observable = this.eventEmitter.observable<DidCommMediationStateChangedEvent>(
       DidCommRoutingEventTypes.MediationStateChanged
     )
     const subject = new ReplaySubject<DidCommMediationStateChangedEvent>(1)
 
-    // Apply required filters to observable stream subscribe to replay subject
     observable
       .pipe(
         filterContextCorrelationId(this.agentContext.contextCorrelationId),
-        // Only take event for current mediation record
         filter((event) => event.payload.mediationRecord.id === mediationRecord.id),
-        // Only take event for previous state requested, current state granted
         filter((event) => event.payload.previousState === DidCommMediationState.Requested),
         filter((event) => event.payload.mediationRecord.state === DidCommMediationState.Granted),
-        // Only wait for first event that matches the criteria
         first(),
-        // Do not wait for longer than specified timeout
         timeout({
           first: timeoutMs,
           meta: 'MediationRecipientApi.requestAndAwaitGrant',
@@ -698,10 +613,9 @@ export class DidCommMediationRecipientApi {
       )
       .subscribe(subject)
 
-    // Send mediation request message
     const outboundMessageContext = new DidCommOutboundMessageContext(message, {
       agentContext: this.agentContext,
-      connection: connection,
+      connection,
       associatedRecord: mediationRecord,
     })
     await this.sendMessage(outboundMessageContext)
@@ -712,28 +626,41 @@ export class DidCommMediationRecipientApi {
 
   /**
    * Requests mediation for a given connection and sets that as default mediator.
-   * For v2 connections, delegates to provisionV2.
-   *
-   * @param connection connection record which will be used for mediation
-   * @returns mediation record
+   * Automatically selects v1 or v2 flow based on the connection's DIDComm version.
+   * For v2, also performs the post-grant keylist-update required by the CM 2.0 spec.
    */
-  // TODO: we should rename this method, to something that is more descriptive
-  public async provision(connection: DidCommConnectionRecord) {
-    if ((connection.didcommVersion ?? 'v1') === 'v2') {
-      return this.provisionV2(connection)
-    }
-    assertDidCommV1Connection(connection, 'Mediation')
-    this.logger.debug('Connection completed, requesting mediation')
+  public async provision(connection: DidCommConnectionRecord): Promise<DidCommMediationRecord> {
+    const isV2 = (connection.didcommVersion ?? 'v1') === 'v2'
+    this.logger.debug(`Connection completed, requesting mediation (${isV2 ? 'v2' : 'v1'})`)
 
     let mediation = await this.findByConnectionId(connection.id)
-    if (!mediation) {
-      this.logger.info(`Requesting mediation for connection ${connection.id}`)
-      mediation = await this.requestAndAwaitGrant(connection, 60000) // TODO: put timeout as a config parameter
-      this.logger.debug('Mediation granted, setting as default mediator')
-      await this.setDefaultMediator(mediation)
-      this.logger.debug('Default mediator set')
-    } else {
+    if (mediation) {
       this.logger.debug(`Mediator invitation has already been ${mediation.isReady ? 'granted' : 'requested'}`)
+      return mediation
+    }
+
+    this.logger.info(`Requesting mediation for connection ${connection.id}`)
+    mediation = await this.requestAndAwaitGrant(connection, 60000)
+    this.logger.debug('Mediation granted, setting as default mediator')
+    await this.setDefaultMediator(mediation)
+    this.logger.debug('Default mediator set')
+
+    if (isV2) {
+      // CM 2.0 post-grant: keylist-update to register the recipient DID with the mediator.
+      const connectionRecord = await this.connectionService.getById(this.agentContext, connection.id)
+      const recipientDid = connectionRecord.did
+      if (recipientDid) {
+        const toRegister = await this.recipientDidKeylistVariantsForProvision(recipientDid)
+        this.logger.debug('Sending keylist-update to register recipient DID variant(s) with mediator', {
+          toRegister,
+        })
+        mediation = await this.mediationRecipientService.keylistUpdateAndAwaitV2(
+          this.agentContext,
+          mediation,
+          toRegister.map((did) => ({ recipientDid: did, action: KeylistUpdateActionV2.add })),
+          15000
+        )
+      }
     }
 
     return mediation

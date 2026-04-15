@@ -1,5 +1,6 @@
 import type { BaseEvent } from '@credo-ts/core'
-import type { DidCommBasicMessage, DidCommBasicMessageV2 } from './messages'
+import type { DidCommBasicMessage } from './protocol/v1'
+import type { DidCommBasicMessageV2 } from './protocol/v2'
 import type { DidCommBasicMessageRecord } from './repository'
 
 export enum DidCommBasicMessageEventTypes {
