@@ -3,6 +3,7 @@ import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import { DateParser } from '../../../../../util/transformers'
 
@@ -20,6 +21,7 @@ export interface DidCommStatusV2MessageOptions {
 
 export class DidCommStatusV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   public constructor(options: DidCommStatusV2MessageOptions) {
     super()

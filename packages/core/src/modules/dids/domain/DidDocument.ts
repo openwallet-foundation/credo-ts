@@ -8,7 +8,7 @@ import { Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
 import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
 import { getPublicJwkFromVerificationMethod } from './key-type'
 import type { DidDocumentService } from './service'
-import { DidCommV1Service, IndyAgentService } from './service'
+import { DidCommV1Service, DidCommV2Service, IndyAgentService, NewDidCommV2Service } from './service'
 import { ServiceTransformer } from './service/ServiceTransformer'
 import { IsStringOrVerificationMethod, VerificationMethod, VerificationMethodTransformer } from './verificationMethod'
 
@@ -206,10 +206,15 @@ export class DidDocument {
    * Get all DIDComm services ordered by priority descending. This means the highest
    * priority will be the first entry.
    */
-  public get didCommServices(): Array<IndyAgentService | DidCommV1Service> {
-    const didCommServiceTypes = [IndyAgentService.type, DidCommV1Service.type]
+  public get didCommServices(): Array<IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service> {
+    const didCommServiceTypes = [
+      IndyAgentService.type,
+      DidCommV1Service.type,
+      DidCommV2Service.type,
+      NewDidCommV2Service.type,
+    ]
     const services = (this.service?.filter((service) => didCommServiceTypes.includes(service.type)) ?? []) as Array<
-      IndyAgentService | DidCommV1Service
+      IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service
     >
 
     // Sort services based on indicated priority
@@ -292,6 +297,25 @@ export class DidDocument {
             publicJwk,
             verificationMethod,
           })
+        }
+      } else if (service.type === DidCommV2Service.type || service.type === NewDidCommV2Service.type) {
+        // DidCommV2Service: keys come from DID document keyAgreement
+        for (const keyRef of this.keyAgreement ?? []) {
+          const verificationMethod = typeof keyRef === 'string' ? this.dereferenceVerificationMethod(keyRef) : keyRef
+          if (seenVerificationMethodIds.includes(verificationMethod.id)) {
+            continue
+          }
+
+          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+          if (!publicJwk.is(Ed25519PublicJwk) && !publicJwk.is(X25519PublicJwk)) {
+            continue
+          }
+
+          recipientKeys.push({
+            publicJwk,
+            verificationMethod,
+          })
+          seenVerificationMethodIds.push(verificationMethod.id)
         }
       }
     }

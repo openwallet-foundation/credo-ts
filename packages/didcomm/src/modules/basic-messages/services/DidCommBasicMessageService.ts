@@ -2,10 +2,14 @@ import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import { EventEmitter, injectable } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '../../../models'
 import { DidCommConnectionRecord } from '../../connections'
-import type { DidCommBasicMessageStateChangedEvent } from '../DidCommBasicMessageEvents'
+import type {
+  DidCommBasicMessageStateChangedEvent,
+  DidCommBasicMessageV2StateChangedEvent,
+} from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageEventTypes } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
-import { DidCommBasicMessage } from '../messages'
+import { DidCommBasicMessage } from '../protocol/v1'
+import { DidCommBasicMessageV2 } from '../protocol/v2'
 import { DidCommBasicMessageRecord, DidCommBasicMessageRepository } from '../repository'
 
 @injectable()
@@ -66,6 +70,52 @@ export class DidCommBasicMessageService {
     this.emitStateChangedEvent(agentContext, basicMessageRecord, message)
   }
 
+  public async createMessageV2(
+    agentContext: AgentContext,
+    content: string,
+    connectionRecord: DidCommConnectionRecord,
+    parentThreadId?: string
+  ) {
+    const basicMessage = new DidCommBasicMessageV2({ content, parentThreadId })
+
+    const sentTimeIso = new Date(basicMessage.createdTime * 1000).toISOString()
+
+    const basicMessageRecord = new DidCommBasicMessageRecord({
+      sentTime: sentTimeIso,
+      content: basicMessage.content,
+      connectionId: connectionRecord.id,
+      role: DidCommBasicMessageRole.Sender,
+      threadId: basicMessage.threadId,
+      parentThreadId,
+      protocolVersion: 'v2',
+    })
+
+    await this.basicMessageRepository.save(agentContext, basicMessageRecord)
+    this.emitV2StateChangedEvent(agentContext, basicMessageRecord, basicMessage)
+
+    return { message: basicMessage, record: basicMessageRecord }
+  }
+
+  public async saveV2(
+    { message, agentContext }: DidCommInboundMessageContext<DidCommBasicMessageV2>,
+    connection: DidCommConnectionRecord
+  ) {
+    const sentTimeIso = new Date(message.createdTime * 1000).toISOString()
+
+    const basicMessageRecord = new DidCommBasicMessageRecord({
+      sentTime: sentTimeIso,
+      content: message.content,
+      connectionId: connection.id,
+      role: DidCommBasicMessageRole.Receiver,
+      threadId: message.threadId,
+      parentThreadId: message.thread?.parentThreadId,
+      protocolVersion: 'v2',
+    })
+
+    await this.basicMessageRepository.save(agentContext, basicMessageRecord)
+    this.emitV2StateChangedEvent(agentContext, basicMessageRecord, message)
+  }
+
   private emitStateChangedEvent(
     agentContext: AgentContext,
     basicMessageRecord: DidCommBasicMessageRecord,
@@ -73,6 +123,17 @@ export class DidCommBasicMessageService {
   ) {
     this.eventEmitter.emit<DidCommBasicMessageStateChangedEvent>(agentContext, {
       type: DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+      payload: { message: basicMessage, basicMessageRecord: basicMessageRecord.clone() },
+    })
+  }
+
+  private emitV2StateChangedEvent(
+    agentContext: AgentContext,
+    basicMessageRecord: DidCommBasicMessageRecord,
+    basicMessage: DidCommBasicMessageV2
+  ) {
+    this.eventEmitter.emit<DidCommBasicMessageV2StateChangedEvent>(agentContext, {
+      type: DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged,
       payload: { message: basicMessage, basicMessageRecord: basicMessageRecord.clone() },
     })
   }
