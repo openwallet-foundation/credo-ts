@@ -4,14 +4,18 @@ import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegist
 import { DidCommMessagePickupApi } from './DidCommMessagePickupApi'
 import type { DidCommMessagePickupModuleConfigOptions } from './DidCommMessagePickupModuleConfig'
 import { DidCommMessagePickupModuleConfig } from './DidCommMessagePickupModuleConfig'
-import { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from './protocol'
+import { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol, DidCommMessagePickupV3Protocol } from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 import { DidCommMessagePickupSessionService } from './services'
 
 /**
  * Default protocols that will be registered if the `protocols` property is not configured.
  */
-export type DefaultDidCommMessagePickupProtocols = [DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol]
+export type DefaultDidCommMessagePickupProtocols = [
+  DidCommMessagePickupV1Protocol,
+  DidCommMessagePickupV2Protocol,
+  DidCommMessagePickupV3Protocol,
+]
 
 // MessagePickupModuleOptions makes the protocols property optional from the config, as it will set it when not provided.
 export type DidCommMessagePickupModuleOptions<MessagePickupProtocols extends DidCommMessagePickupProtocol[]> = Optional<
@@ -31,7 +35,9 @@ export class DidCommMessagePickupModule<
   public constructor(config?: DidCommMessagePickupModuleOptions<MessagePickupProtocols>) {
     this.config = new DidCommMessagePickupModuleConfig({
       ...config,
-      protocols: config?.protocols ?? [new DidCommMessagePickupV1Protocol(), new DidCommMessagePickupV2Protocol()],
+      protocols:
+        config?.protocols ??
+        [new DidCommMessagePickupV1Protocol(), new DidCommMessagePickupV2Protocol(), new DidCommMessagePickupV3Protocol()],
     }) as DidCommMessagePickupModuleConfig<MessagePickupProtocols>
   }
 

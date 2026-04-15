@@ -18,6 +18,10 @@ export const didcommMediation = sqliteTable(
     routingKeys: text('routing_keys', { mode: 'json' }).$type<string[]>().notNull(),
     pickupStrategy: text('pickup_strategy').$type<DidCommMediatorPickupStrategy>(),
 
+    routingDid: text('routing_did'),
+    recipientDids: text('recipient_dids', { mode: 'json' }).$type<string[]>(),
+    mediationProtocolVersion: text('mediation_protocol_version'),
+
     default: integer({ mode: 'boolean' }),
   },
   (table) => [

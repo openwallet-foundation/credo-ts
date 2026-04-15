@@ -6,6 +6,7 @@ import { MessageIdRegExp } from '../../../../../BaseDidCommMessage'
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import type { DidCommEncryptedMessage } from '../../../../../types'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 
 export class DidCommBatchMessageMessage {
   public constructor(options: { id?: string; message: DidCommEncryptedMessage }) {
@@ -35,6 +36,7 @@ export interface DidCommBatchMessageOptions {
  */
 export class DidCommBatchMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   public constructor(options: DidCommBatchMessageOptions) {
     super()

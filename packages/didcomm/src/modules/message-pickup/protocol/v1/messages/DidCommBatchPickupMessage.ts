@@ -3,6 +3,7 @@ import { IsInt } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 
 export interface DidCommBatchPickupMessageOptions {
   id?: string
@@ -16,6 +17,7 @@ export interface DidCommBatchPickupMessageOptions {
  */
 export class DidCommBatchPickupMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   /**
    * Create new BatchPickupMessage instance.

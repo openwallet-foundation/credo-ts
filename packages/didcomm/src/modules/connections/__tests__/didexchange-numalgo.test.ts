@@ -6,7 +6,7 @@ import { setupSubjectTransports } from '../../../../../core/tests'
 import { firstValueWithStackTrace, getAgentOptions } from '../../../../../core/tests/helpers'
 import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
-import { DidCommDidExchangeState } from '../models'
+import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../models'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
@@ -135,6 +135,7 @@ async function didExchangeNumAlgoBaseTest(options: {
 
   const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
     autoAcceptConnection: false,
+    handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     multiUseInvitation: false,
   })
 

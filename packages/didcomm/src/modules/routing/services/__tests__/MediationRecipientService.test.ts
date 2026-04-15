@@ -18,7 +18,13 @@ import {
   DidCommKeylistUpdateResponseMessage,
   DidCommKeylistUpdateResult,
   DidCommMediationGrantMessage,
-} from '../../messages'
+} from '../../protocol/v1/messages'
+import {
+  KeylistUpdateActionV2,
+  DidCommKeylistUpdateResponseV2Message,
+  DidCommMediateGrantV2Message,
+} from '../../protocol/v2/messages'
+import { KeylistUpdateResultV2 } from '../../protocol/v2/messages/DidCommKeylistUpdateResponseV2Message'
 import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import { DidCommMediationRecord } from '../../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
@@ -246,6 +252,112 @@ describe('DidCommMediationRecipientService', () => {
       expect(extendedRouting).toMatchObject(routing)
       expect(mediationRepository.findSingleByQuery).not.toHaveBeenCalled()
       expect(mediationRepository.getById).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('v2 (Coordinate Mediation 2.0)', () => {
+    describe('processMediationGrantV2', () => {
+      test('stores routing_did and updates state to Granted', async () => {
+        const v2Record = new DidCommMediationRecord({
+          connectionId: 'connectionId',
+          role: DidCommMediationRole.Recipient,
+          state: DidCommMediationState.Requested,
+          threadId: 'threadId',
+          mediationProtocolVersion: 'v2',
+        })
+        mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(v2Record)
+
+        const mediateGrant = new DidCommMediateGrantV2Message({
+          routingDid: 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.SeyJ0IjoiZG0iLCJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCIsInIiOltdLCJhIjoibm9uZSMxIn0',
+          threadId: 'threadId',
+        })
+
+        const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
+        const messageContext = new DidCommInboundMessageContext(mediateGrant, { connection, agentContext })
+
+        await mediationRecipientService.processMediationGrantV2(messageContext)
+
+        expect(v2Record.routingDid).toBe(mediateGrant.routingDid)
+        expect(v2Record.state).toBe(DidCommMediationState.Granted)
+      })
+    })
+
+    describe('processKeylistUpdateResultsV2', () => {
+      test('updates recipientDids from keylist-update-response', async () => {
+        const v2Record = new DidCommMediationRecord({
+          connectionId: 'connectionId',
+          role: DidCommMediationRole.Recipient,
+          state: DidCommMediationState.Granted,
+          threadId: 'threadId',
+          mediationProtocolVersion: 'v2',
+          recipientDids: ['did:peer:2.xyz'], // Initially has xyz so remove can succeed
+        })
+        mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(v2Record)
+        mockFunction(mediationRepository.update).mockResolvedValue(undefined)
+
+        const keylistUpdateResponse = new DidCommKeylistUpdateResponseV2Message({
+          updated: [
+            { recipientDid: 'did:peer:2.abc', action: KeylistUpdateActionV2.add, result: KeylistUpdateResultV2.Success },
+            { recipientDid: 'did:peer:2.xyz', action: KeylistUpdateActionV2.remove, result: KeylistUpdateResultV2.Success },
+          ],
+        })
+
+        const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
+        const messageContext = new DidCommInboundMessageContext(keylistUpdateResponse, {
+          connection,
+          agentContext,
+        })
+
+        await mediationRecipientService.processKeylistUpdateResultsV2(messageContext)
+
+        expect(v2Record.recipientDids).toContain('did:peer:2.abc')
+        expect(v2Record.recipientDids).not.toContain('did:peer:2.xyz')
+        expect(eventEmitter.emit).toHaveBeenCalledWith(
+          agentContext,
+          expect.objectContaining({
+            type: 'DidCommRecipientKeylistUpdatedV2',
+            payload: expect.objectContaining({
+              mediationRecord: v2Record,
+            }),
+          })
+        )
+      })
+    })
+
+    describe('addMediationRouting v2', () => {
+      test('uses keylistUpdateAndAwaitV2 when mediation protocol is 2.0', async () => {
+        const routingKey = Kms.PublicJwk.fromFingerprint(
+          'z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
+        ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+        const routing: DidCommRouting = {
+          routingKeys: [routingKey],
+          recipientKey: routingKey,
+          endpoints: [],
+        }
+
+        const v2MediationRecord = new DidCommMediationRecord({
+          connectionId: 'connection-id',
+          role: DidCommMediationRole.Recipient,
+          state: DidCommMediationState.Granted,
+          threadId: 'thread-id',
+          mediationProtocolVersion: 'v2',
+          routingDid: 'did:peer:2.mediator',
+        })
+
+        mockFunction(mediationRepository.getById).mockResolvedValue(v2MediationRecord)
+        vi.spyOn(mediationRecipientService, 'keylistUpdateAndAwaitV2').mockResolvedValue(v2MediationRecord)
+
+        const extendedRouting = await mediationRecipientService.addMediationRouting(agentContext, routing, {
+          mediatorId: 'mediator-id',
+        })
+
+        expect(extendedRouting.routingDid).toBe('did:peer:2.mediator')
+        expect(mediationRecipientService.keylistUpdateAndAwaitV2).toHaveBeenCalledWith(
+          agentContext,
+          v2MediationRecord,
+          expect.arrayContaining([expect.objectContaining({ recipientDid: expect.any(String), action: KeylistUpdateActionV2.add })])
+        )
+      })
     })
   })
 })
