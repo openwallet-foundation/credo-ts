@@ -5,14 +5,14 @@ import { DidCommProtocol } from '../../models'
 import { DidCommMediatorApi } from './DidCommMediatorApi'
 import type { DidCommMediatorModuleConfigOptions } from './DidCommMediatorModuleConfig'
 import { DidCommMediatorModuleConfig } from './DidCommMediatorModuleConfig'
-import { DidCommForwardHandler } from './handlers/v1/DidCommForwardHandler'
-import { DidCommKeylistUpdateHandler } from './handlers/v1/DidCommKeylistUpdateHandler'
-import { DidCommMediationRequestHandler } from './handlers/v1/DidCommMediationRequestHandler'
+import { DidCommForwardHandler } from './protocol/v1/handlers/DidCommForwardHandler'
+import { DidCommKeylistUpdateHandler } from './protocol/v1/handlers/DidCommKeylistUpdateHandler'
+import { DidCommMediationRequestHandler } from './protocol/v1/handlers/DidCommMediationRequestHandler'
 import {
   DidCommKeylistQueryV2Handler,
   DidCommKeylistUpdateV2Handler,
   DidCommMediationRequestV2Handler,
-} from './handlers/v2'
+} from './protocol/v2/handlers'
 import { DidCommMediationRole } from './models'
 import { DidCommMediationRepository, DidCommMediatorRoutingRepository } from './repository'
 import { DidCommMediatorService } from './services'

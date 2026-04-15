@@ -12,13 +12,13 @@ import {
   DidCommKeylistUpdateResponseHandler,
   DidCommMediationDenyHandler,
   DidCommMediationGrantHandler,
-} from './handlers'
+} from './protocol/v1/handlers'
 import {
   DidCommKeylistV2Handler,
   DidCommKeylistUpdateResponseV2Handler,
   DidCommMediationDenyV2Handler,
   DidCommMediationGrantV2Handler,
-} from './handlers/v2'
+} from './protocol/v2/handlers'
 import { DidCommMediationRole } from './models'
 import { DidCommMediationRepository } from './repository'
 import { DidCommMediationRecipientService, DidCommRoutingService } from './services'

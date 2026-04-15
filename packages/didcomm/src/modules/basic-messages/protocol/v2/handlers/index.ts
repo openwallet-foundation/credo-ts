@@ -1,1 +1,1 @@
-export * from './BasicMessageV2Handler'
+export * from './DidCommBasicMessageV2Handler'

@@ -9,16 +9,15 @@ import { DidCommInboundMessageContext } from '../../../../models/DidCommInboundM
 import { DidCommConnectionService, DidCommDidExchangeState } from '../../../connections'
 import { DidCommMessagePickupApi } from '../../../message-pickup'
 import { DidCommMediatorModuleConfig } from '../../DidCommMediatorModuleConfig'
-import { DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage, DidCommKeylistUpdateResult } from '../../messages'
+import { DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage, DidCommKeylistUpdateResult } from '../../protocol/v1/messages'
 import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
-import { DidCommForwardMessage } from '../../messages/v1/DidCommForwardMessage'
 import {
   DidCommForwardV2Message,
   DidCommKeylistQueryV2Message,
   KeylistUpdateActionV2,
   DidCommKeylistUpdateV2Message,
   DidCommMediateRequestV2Message,
-} from '../../messages/v2'
+} from '../../protocol/v2/messages'
 import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import { DidCommMediationRecord, DidCommMediatorRoutingRecord } from '../../repository'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'

@@ -29,14 +29,14 @@ import type {
   DidCommMediationStateChangedEvent,
 } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
-import type { DidCommMediationDenyMessage } from '../messages'
+import type { DidCommMediationDenyMessage } from '../protocol/v1/messages'
 import {
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdateResponseMessage,
   DidCommMediationGrantMessage,
   DidCommMediationRequestMessage,
-} from '../messages'
-import { DidCommKeylistUpdate, DidCommKeylistUpdateMessage } from '../messages/v1/DidCommKeylistUpdateMessage'
+} from '../protocol/v1/messages'
+import { DidCommKeylistUpdate, DidCommKeylistUpdateMessage } from '../protocol/v1/messages/DidCommKeylistUpdateMessage'
 import {
   KeylistUpdateActionV2,
   DidCommKeylistUpdateV2Message,
@@ -44,9 +44,9 @@ import {
   DidCommMediateGrantV2Message,
   DidCommMediateDenyV2Message,
   DidCommMediateRequestV2Message,
-} from '../messages/v2'
-import type { KeylistUpdateResponseItem } from '../messages/v2/DidCommKeylistUpdateResponseV2Message'
-import { KeylistUpdateResultV2 } from '../messages/v2/DidCommKeylistUpdateResponseV2Message'
+} from '../protocol/v2/messages'
+import type { KeylistUpdateResponseItem } from '../protocol/v2/messages/DidCommKeylistUpdateResponseV2Message'
+import { KeylistUpdateResultV2 } from '../protocol/v2/messages/DidCommKeylistUpdateResponseV2Message'
 import { DidCommMediationRole, DidCommMediationState } from '../models'
 import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
@@ -202,7 +202,7 @@ export class DidCommMediationRecipientService {
   }
 
   public async processKeylistUpdateResultsV2(
-    messageContext: DidCommInboundMessageContext<import('../messages/v2/DidCommKeylistUpdateResponseV2Message').DidCommKeylistUpdateResponseV2Message>
+    messageContext: DidCommInboundMessageContext<import('../protocol/v2/messages/DidCommKeylistUpdateResponseV2Message').DidCommKeylistUpdateResponseV2Message>
   ): Promise<void> {
     const connection = messageContext.assertReadyConnection()
 
@@ -233,7 +233,7 @@ export class DidCommMediationRecipientService {
   }
 
   public async processKeylistV2(
-    messageContext: DidCommInboundMessageContext<import('../messages/v2/DidCommKeylistV2Message').DidCommKeylistV2Message>
+    messageContext: DidCommInboundMessageContext<import('../protocol/v2/messages/DidCommKeylistV2Message').DidCommKeylistV2Message>
   ): Promise<void> {
     const connection = messageContext.assertReadyConnection()
 

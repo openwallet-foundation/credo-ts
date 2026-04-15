@@ -18,13 +18,13 @@ import {
   DidCommKeylistUpdateResponseMessage,
   DidCommKeylistUpdateResult,
   DidCommMediationGrantMessage,
-} from '../../messages'
+} from '../../protocol/v1/messages'
 import {
   KeylistUpdateActionV2,
   DidCommKeylistUpdateResponseV2Message,
   DidCommMediateGrantV2Message,
-} from '../../messages/v2'
-import { KeylistUpdateResultV2 } from '../../messages/v2/DidCommKeylistUpdateResponseV2Message'
+} from '../../protocol/v2/messages'
+import { KeylistUpdateResultV2 } from '../../protocol/v2/messages/DidCommKeylistUpdateResponseV2Message'
 import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import { DidCommMediationRecord } from '../../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
