@@ -4,8 +4,8 @@ import { IsOptional, IsString } from 'class-validator'
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import type { DidCommAttachment } from '../../../../../decorators/attachment/DidCommAttachment'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
-import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface DidCommMessageDeliveryV3MessageOptions {
   id?: string

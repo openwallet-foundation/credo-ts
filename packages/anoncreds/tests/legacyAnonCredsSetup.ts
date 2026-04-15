@@ -176,15 +176,15 @@ export async function presentLegacyAnonCredsProof({
 
   request: { attributes, predicates },
 }: {
-  holderAgent: AnonCredsTestsAgent;
-  holderReplay: EventReplaySubject;
-  verifierAgent: AnonCredsTestsAgent;
-  verifierReplay: EventReplaySubject;
-  verifierHolderConnectionId: string;
+  holderAgent: AnonCredsTestsAgent
+  holderReplay: EventReplaySubject
+  verifierAgent: AnonCredsTestsAgent
+  verifierReplay: EventReplaySubject
+  verifierHolderConnectionId: string
   request: {
-    attributes?: Record<string, AnonCredsRequestedAttribute>;
-    predicates?: Record<string, AnonCredsRequestedPredicate>;
-  };
+    attributes?: Record<string, AnonCredsRequestedAttribute>
+    predicates?: Record<string, AnonCredsRequestedPredicate>
+  }
 }) {
   let holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
     state: DidCommProofState.RequestReceived,
@@ -250,12 +250,12 @@ export async function issueLegacyAnonCredsCredential({
   issuerHolderConnectionId,
   offer,
 }: {
-  issuerAgent: AnonCredsTestsAgent;
-  issuerReplay: EventReplaySubject;
-  holderAgent: AnonCredsTestsAgent;
-  holderReplay: EventReplaySubject;
-  issuerHolderConnectionId: string;
-  offer: AnonCredsDidCommOfferCredentialFormat;
+  issuerAgent: AnonCredsTestsAgent
+  issuerReplay: EventReplaySubject
+  holderAgent: AnonCredsTestsAgent
+  holderReplay: EventReplaySubject
+  issuerHolderConnectionId: string
+  offer: AnonCredsDidCommOfferCredentialFormat
 }) {
   let issuerCredentialExchangeRecord = await issuerAgent.didcomm.credentials.offerCredential({
     comment: 'some comment about credential',
@@ -295,27 +295,27 @@ export async function issueLegacyAnonCredsCredential({
 }
 
 interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, CreateConnections extends boolean> {
-  issuerAgent: AnonCredsTestsAgent;
-  issuerReplay: EventReplaySubject;
-  holderAgent: AnonCredsTestsAgent;
-  holderReplay: EventReplaySubject;
-  issuerHolderConnectionId: CreateConnections extends true ? string : undefined;
-  holderIssuerConnectionId: CreateConnections extends true ? string : undefined;
+  issuerAgent: AnonCredsTestsAgent
+  issuerReplay: EventReplaySubject
+  holderAgent: AnonCredsTestsAgent
+  holderReplay: EventReplaySubject
+  issuerHolderConnectionId: CreateConnections extends true ? string : undefined
+  holderIssuerConnectionId: CreateConnections extends true ? string : undefined
   verifierHolderConnectionId: CreateConnections extends true
     ? VerifierName extends string
       ? string
       : undefined
-    : undefined;
+    : undefined
   holderVerifierConnectionId: CreateConnections extends true
     ? VerifierName extends string
       ? string
       : undefined
-    : undefined;
-  verifierAgent: VerifierName extends string ? AnonCredsTestsAgent : undefined;
-  verifierReplay: VerifierName extends string ? EventReplaySubject : undefined;
-  schemaId: string;
-  credentialDefinitionId: string;
-  teardown: () => Promise<void>;
+    : undefined
+  verifierAgent: VerifierName extends string ? AnonCredsTestsAgent : undefined
+  verifierReplay: VerifierName extends string ? EventReplaySubject : undefined
+  schemaId: string
+  credentialDefinitionId: string
+  teardown: () => Promise<void>
 }
 
 export async function setupAnonCredsTests<

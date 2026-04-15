@@ -1,8 +1,8 @@
 import {
   AgentContext,
   DidKey,
-  DidsApi,
   DidResolverService,
+  DidsApi,
   getPublicJwkFromVerificationMethod,
   injectable,
   JsonEncoder,
@@ -62,7 +62,8 @@ export class DidCommV2KeyResolver {
             const x25519Target = publicJwk
             for (const authRef of didDocument.authentication ?? []) {
               try {
-                const authVm = typeof authRef === 'string' ? didDocument.dereferenceVerificationMethod(authRef) : authRef
+                const authVm =
+                  typeof authRef === 'string' ? didDocument.dereferenceVerificationMethod(authRef) : authRef
                 const authJwk = getPublicJwkFromVerificationMethod(authVm)
                 if (!authJwk.is(Kms.Ed25519PublicJwk)) continue
                 const derivedX25519 = authJwk.convertTo(Kms.X25519PublicJwk)
@@ -72,9 +73,7 @@ export class DidCommV2KeyResolver {
                   )?.kmsKeyId
                   if (kmsKeyId) break
                 }
-              } catch {
-                continue
-              }
+              } catch {}
             }
           }
 
@@ -113,9 +112,7 @@ export class DidCommV2KeyResolver {
                 if (routingKey) {
                   // Askar handles Ed25519 <=> X25519 birationally via the same kmsKeyId,
                   // so we can convert and reuse the Ed25519 key id for X25519 decryption.
-                  const x25519 = (routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(
-                    Kms.X25519PublicJwk
-                  )
+                  const x25519 = (routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
                   x25519.keyId = routingKey.keyId
                   return {
                     recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
@@ -220,7 +217,11 @@ export class DidCommV2KeyResolver {
       if (vmId && !x25519.hasKeyId) {
         // Ensure keyId is always a full DID URL, not a relative fragment like "#key-2".
         // Relative fragments can't be resolved by the recipient without knowing the DID.
-        x25519.keyId = vmId.startsWith('did:') ? vmId : vmId.startsWith('#') ? `${didOnly}${vmId}` : `${didOnly}#${vmId}`
+        x25519.keyId = vmId.startsWith('did:')
+          ? vmId
+          : vmId.startsWith('#')
+            ? `${didOnly}${vmId}`
+            : `${didOnly}#${vmId}`
       }
       return x25519 as Kms.PublicJwk<Kms.X25519PublicJwk>
     } catch {

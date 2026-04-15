@@ -180,29 +180,29 @@ export function getAgentOptions<
   const _modules = {
     ...(storage === 'drizzle' ? drizzleModules : {}),
     ...(requireDidcomm
-      // ? {
-      //     didcomm: new DidCommModule({
-      //       // DIDComm v2 defaults for tests (individual tests can override via didcommConfig)
-      //       didcommVersions: ['v1', 'v2'],
-      //       ...didcommConfig,
-      //       connections: {
-      //         autoAcceptConnections: true,
-      //         autoCreateConnectionOnFirstMessage: true,
-      //         ...didcommConfig?.connections,
-      //       },
-      //     }),
-      //   }
-      // : {}),
-      ? {
-        didcomm: new DidCommModule({
-          connections: {
-            autoAcceptConnections: true,
-          },
-          ...getDefaultDidCommConfigForTests(),
-          ...didcommConfig,
-        }),
-      }
-    : {}),
+      ? // ? {
+        //     didcomm: new DidCommModule({
+        //       // DIDComm v2 defaults for tests (individual tests can override via didcommConfig)
+        //       didcommVersions: ['v1', 'v2'],
+        //       ...didcommConfig,
+        //       connections: {
+        //         autoAcceptConnections: true,
+        //         autoCreateConnectionOnFirstMessage: true,
+        //         ...didcommConfig?.connections,
+        //       },
+        //     }),
+        //   }
+        // : {}),
+        {
+          didcomm: new DidCommModule({
+            connections: {
+              autoAcceptConnections: true,
+            },
+            ...getDefaultDidCommConfigForTests(),
+            ...didcommConfig,
+          }),
+        }
+      : {}),
     ...m,
 
     ...(kms === 'askar' || storage === 'askar'
@@ -847,14 +847,13 @@ export async function makeConnection(
     // 2) A creates inv with ourDid=A_A, B receives with ourDid=B_F → both have matching DIDs
     const invB = await agentB.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
     const bDid = invB.outOfBandInvitation.v2Invitation?.from
-    const { connectionRecord: aConn, outOfBandRecord: aOutOfBand } =
-      await agentA.didcomm.oob.receiveInvitation(invB.outOfBandInvitation, { label: '' })
-    const aConnectionId =
-      aConn?.id ?? (await agentA.didcomm.connections.findAllByOutOfBandId(aOutOfBand.id))[0]?.id
+    const { connectionRecord: aConn, outOfBandRecord: aOutOfBand } = await agentA.didcomm.oob.receiveInvitation(
+      invB.outOfBandInvitation,
+      { label: '' }
+    )
+    const aConnectionId = aConn?.id ?? (await agentA.didcomm.connections.findAllByOutOfBandId(aOutOfBand.id))[0]?.id
     if (!aConnectionId) {
-      throw new Error(
-        'makeConnection (v2): No connection record created for agent A when receiving from B.'
-      )
+      throw new Error('makeConnection (v2): No connection record created for agent A when receiving from B.')
     }
     const aConnection = await agentA.didcomm.connections.returnWhenIsConnected(aConnectionId)
 
@@ -862,17 +861,16 @@ export async function makeConnection(
       didCommVersion: 'v2',
       ourDid: aConnection.did,
     })
-    const { connectionRecord: bConn, outOfBandRecord: bOutOfBand } =
-      await agentB.didcomm.oob.receiveInvitation(invA.outOfBandInvitation, {
+    const { connectionRecord: bConn, outOfBandRecord: bOutOfBand } = await agentB.didcomm.oob.receiveInvitation(
+      invA.outOfBandInvitation,
+      {
         label: '',
         ourDid: bDid ?? undefined,
-      })
-    const bConnectionId =
-      bConn?.id ?? (await agentB.didcomm.connections.findAllByOutOfBandId(bOutOfBand.id))[0]?.id
+      }
+    )
+    const bConnectionId = bConn?.id ?? (await agentB.didcomm.connections.findAllByOutOfBandId(bOutOfBand.id))[0]?.id
     if (!bConnectionId) {
-      throw new Error(
-        'makeConnection (v2): No connection record created for agent B when receiving from A.'
-      )
+      throw new Error('makeConnection (v2): No connection record created for agent B when receiving from A.')
     }
     const bConnection = await agentB.didcomm.connections.returnWhenIsConnected(bConnectionId)
 

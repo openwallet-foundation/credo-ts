@@ -10,9 +10,9 @@ import { ThreadDecorated } from './decorators/thread/ThreadDecoratorExtension'
 import { TimingDecorated } from './decorators/timing/TimingDecoratorExtension'
 import { TransportDecorated } from './decorators/transport/TransportDecoratorExtension'
 import type { DidCommPlaintextMessage } from './types'
+import type { DidCommVersion } from './util/didcommVersion'
 import type { ParsedMessageType } from './util/messageType'
 import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from './util/messageType'
-import type { DidCommVersion } from './util/didcommVersion'
 
 export type ConstructableAgentMessage = Constructor<DidCommMessage> & { type: ParsedMessageType }
 

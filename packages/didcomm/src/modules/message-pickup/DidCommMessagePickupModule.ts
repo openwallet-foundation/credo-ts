@@ -4,7 +4,11 @@ import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegist
 import { DidCommMessagePickupApi } from './DidCommMessagePickupApi'
 import type { DidCommMessagePickupModuleConfigOptions } from './DidCommMessagePickupModuleConfig'
 import { DidCommMessagePickupModuleConfig } from './DidCommMessagePickupModuleConfig'
-import { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol, DidCommMessagePickupV3Protocol } from './protocol'
+import {
+  DidCommMessagePickupV1Protocol,
+  DidCommMessagePickupV2Protocol,
+  DidCommMessagePickupV3Protocol,
+} from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 import { DidCommMessagePickupSessionService } from './services'
 
@@ -35,9 +39,11 @@ export class DidCommMessagePickupModule<
   public constructor(config?: DidCommMessagePickupModuleOptions<MessagePickupProtocols>) {
     this.config = new DidCommMessagePickupModuleConfig({
       ...config,
-      protocols:
-        config?.protocols ??
-        [new DidCommMessagePickupV1Protocol(), new DidCommMessagePickupV2Protocol(), new DidCommMessagePickupV3Protocol()],
+      protocols: config?.protocols ?? [
+        new DidCommMessagePickupV1Protocol(),
+        new DidCommMessagePickupV2Protocol(),
+        new DidCommMessagePickupV3Protocol(),
+      ],
     }) as DidCommMessagePickupModuleConfig<MessagePickupProtocols>
   }
 

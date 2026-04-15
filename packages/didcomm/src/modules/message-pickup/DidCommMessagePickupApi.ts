@@ -9,9 +9,9 @@ import {
 } from '@credo-ts/core'
 import { filter, first, firstValueFrom, ReplaySubject, Subject, takeUntil, timeout } from 'rxjs'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { assertDidCommV1Connection, assertDidCommV2Connection } from '../../util/didcommVersion'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommOutboundMessageContext } from '../../models'
+import { assertDidCommV1Connection, assertDidCommV2Connection } from '../../util/didcommVersion'
 import { DidCommConnectionService } from '../connections/services'
 import type {
   DeliverMessagesFromQueueOptions,

@@ -17,8 +17,8 @@ import { SubjectInboundTransport } from '../../../../../../tests/transport/Subje
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { getAgentOptions, makeConnection } from '../../../../../core/tests/helpers'
-import { DidCommMediatorPickupStrategy } from '../DidCommMediatorPickupStrategy'
 import { DidCommMediationRecipientApi } from '../DidCommMediationRecipientApi'
+import { DidCommMediatorPickupStrategy } from '../DidCommMediatorPickupStrategy'
 
 // Mediator routing DID - serviceEndpoint will be this DID (DID-as-endpoint).
 const MEDIATOR_ROUTING_DID =

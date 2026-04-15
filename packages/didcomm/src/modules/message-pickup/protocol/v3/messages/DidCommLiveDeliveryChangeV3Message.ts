@@ -3,8 +3,8 @@ import { IsBoolean } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
-import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface DidCommLiveDeliveryChangeV3MessageOptions {
   id?: string

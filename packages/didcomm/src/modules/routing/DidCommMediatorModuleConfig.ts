@@ -1,5 +1,5 @@
-import { DidCommMessageForwardingStrategy } from './DidCommMessageForwardingStrategy'
 import type { DidCommVersion } from '../../util/didcommVersion'
+import { DidCommMessageForwardingStrategy } from './DidCommMessageForwardingStrategy'
 
 /**
  * MediatorModuleConfigOptions defines the interface for the options of the MediatorModuleConfig class.

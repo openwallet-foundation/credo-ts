@@ -13,6 +13,7 @@ import { DidCommConnectionMetadataKeys } from '../../../connections/repository/D
 import { DidCommConnectionRepository } from '../../../connections/repository/DidCommConnectionRepository'
 import { DidCommConnectionService } from '../../../connections/services/DidCommConnectionService'
 import { DidCommRoutingEventTypes } from '../../DidCommRoutingEvents'
+import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import {
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdateResponseMessage,
@@ -20,12 +21,11 @@ import {
   DidCommMediationGrantMessage,
 } from '../../protocol/v1/messages'
 import {
-  KeylistUpdateActionV2,
   DidCommKeylistUpdateResponseV2Message,
   DidCommMediateGrantV2Message,
+  KeylistUpdateActionV2,
 } from '../../protocol/v2/messages'
 import { KeylistUpdateResultV2 } from '../../protocol/v2/messages/DidCommKeylistUpdateResponseV2Message'
-import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import { DidCommMediationRecord } from '../../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
 import { DidCommMediationRecipientService } from '../DidCommMediationRecipientService'
@@ -268,7 +268,8 @@ describe('DidCommMediationRecipientService', () => {
         mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(v2Record)
 
         const mediateGrant = new DidCommMediateGrantV2Message({
-          routingDid: 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.SeyJ0IjoiZG0iLCJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCIsInIiOltdLCJhIjoibm9uZSMxIn0',
+          routingDid:
+            'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.SeyJ0IjoiZG0iLCJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCIsInIiOltdLCJhIjoibm9uZSMxIn0',
           threadId: 'threadId',
         })
 
@@ -297,8 +298,16 @@ describe('DidCommMediationRecipientService', () => {
 
         const keylistUpdateResponse = new DidCommKeylistUpdateResponseV2Message({
           updated: [
-            { recipientDid: 'did:peer:2.abc', action: KeylistUpdateActionV2.add, result: KeylistUpdateResultV2.Success },
-            { recipientDid: 'did:peer:2.xyz', action: KeylistUpdateActionV2.remove, result: KeylistUpdateResultV2.Success },
+            {
+              recipientDid: 'did:peer:2.abc',
+              action: KeylistUpdateActionV2.add,
+              result: KeylistUpdateResultV2.Success,
+            },
+            {
+              recipientDid: 'did:peer:2.xyz',
+              action: KeylistUpdateActionV2.remove,
+              result: KeylistUpdateResultV2.Success,
+            },
           ],
         })
 
@@ -355,7 +364,9 @@ describe('DidCommMediationRecipientService', () => {
         expect(mediationRecipientService.keylistUpdateAndAwaitV2).toHaveBeenCalledWith(
           agentContext,
           v2MediationRecord,
-          expect.arrayContaining([expect.objectContaining({ recipientDid: expect.any(String), action: KeylistUpdateActionV2.add })])
+          expect.arrayContaining([
+            expect.objectContaining({ recipientDid: expect.any(String), action: KeylistUpdateActionV2.add }),
+          ])
         )
       })
     })

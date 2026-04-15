@@ -15,9 +15,7 @@ export class DidCommMediationRequestV2Handler implements DidCommMessageHandler {
   }
 
   public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommMediationRequestV2Handler>) {
-    const { mediationRecord, connection } = await this.mediatorService.processMediationRequestV2(
-      messageContext
-    )
+    const { mediationRecord, connection } = await this.mediatorService.processMediationRequestV2(messageContext)
 
     if (this.mediatorModuleConfig.autoAcceptMediationRequests) {
       const { message } = await this.mediatorService.createGrantMediationMessageV2(

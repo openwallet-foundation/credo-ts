@@ -5,6 +5,7 @@ import { DidCommProtocol } from '../../models'
 import { DidCommMediatorApi } from './DidCommMediatorApi'
 import type { DidCommMediatorModuleConfigOptions } from './DidCommMediatorModuleConfig'
 import { DidCommMediatorModuleConfig } from './DidCommMediatorModuleConfig'
+import { DidCommMediationRole } from './models'
 import { DidCommForwardHandler } from './protocol/v1/handlers/DidCommForwardHandler'
 import { DidCommKeylistUpdateHandler } from './protocol/v1/handlers/DidCommKeylistUpdateHandler'
 import { DidCommMediationRequestHandler } from './protocol/v1/handlers/DidCommMediationRequestHandler'
@@ -13,7 +14,6 @@ import {
   DidCommKeylistUpdateV2Handler,
   DidCommMediationRequestV2Handler,
 } from './protocol/v2/handlers'
-import { DidCommMediationRole } from './models'
 import { DidCommMediationRepository, DidCommMediatorRoutingRepository } from './repository'
 import { DidCommMediatorService } from './services'
 

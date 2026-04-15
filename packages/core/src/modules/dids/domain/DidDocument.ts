@@ -301,8 +301,7 @@ export class DidDocument {
       } else if (service.type === DidCommV2Service.type || service.type === NewDidCommV2Service.type) {
         // DidCommV2Service: keys come from DID document keyAgreement
         for (const keyRef of this.keyAgreement ?? []) {
-          const verificationMethod =
-            typeof keyRef === 'string' ? this.dereferenceVerificationMethod(keyRef) : keyRef
+          const verificationMethod = typeof keyRef === 'string' ? this.dereferenceVerificationMethod(keyRef) : keyRef
           if (seenVerificationMethodIds.includes(verificationMethod.id)) {
             continue
           }

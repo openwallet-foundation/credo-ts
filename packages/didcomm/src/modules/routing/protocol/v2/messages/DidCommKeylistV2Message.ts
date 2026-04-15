@@ -2,8 +2,8 @@ import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
-import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface KeylistKeyItemV2 {
   recipientDid: string

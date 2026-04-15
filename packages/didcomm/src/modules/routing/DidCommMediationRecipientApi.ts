@@ -2,8 +2,8 @@ import {
   AgentContext,
   CredoError,
   DidDocument,
-  didDocumentToNumAlgo4Did,
   DidsApi,
+  didDocumentToNumAlgo4Did,
   EventEmitter,
   filterContextCorrelationId,
   getAlternativeDidsForNumAlgo4Did,
@@ -17,11 +17,11 @@ import {
 import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
 import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { assertDidCommV1Connection, assertDidCommV2Connection } from '../../util/didcommVersion'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommOutboundMessageContext } from '../../models'
 import type { DidCommOutboundWebSocketClosedEvent, DidCommOutboundWebSocketOpenedEvent } from '../../transport'
 import { DidCommTransportEventTypes } from '../../transport'
+import { assertDidCommV1Connection, assertDidCommV2Connection } from '../../util/didcommVersion'
 import type { DidCommConnectionRecord } from '../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../connections/services'
@@ -33,10 +33,10 @@ import { DidCommMediationRecipientModuleConfig } from './DidCommMediationRecipie
 import { DidCommMediatorPickupStrategy } from './DidCommMediatorPickupStrategy'
 import type { DidCommMediationStateChangedEvent } from './DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from './DidCommRoutingEvents'
-import { DidCommKeylistUpdate, DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage } from './protocol/v1/messages'
-import { KeylistUpdateActionV2 } from './protocol/v2/messages'
 import { DidCommMediationRole } from './models/DidCommMediationRole'
 import { DidCommMediationState } from './models/DidCommMediationState'
+import { DidCommKeylistUpdate, DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage } from './protocol/v1/messages'
+import { KeylistUpdateActionV2 } from './protocol/v2/messages'
 import type { DidCommMediationRecord } from './repository'
 import { DidCommMediationRepository } from './repository'
 import { DidCommMediationRecipientService } from './services/DidCommMediationRecipientService'

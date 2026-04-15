@@ -1,12 +1,7 @@
 import type { AgentContext } from '../../../../agent'
 import type { XOR } from '../../../../types'
 import { JsonTransformer } from '../../../../utils'
-import {
-  KeyManagementApi,
-  type KmsCreateKeyOptions,
-  type KmsCreateKeyTypeAsymmetric,
-  PublicJwk,
-} from '../../../kms'
+import { KeyManagementApi, type KmsCreateKeyOptions, type KmsCreateKeyTypeAsymmetric, PublicJwk } from '../../../kms'
 import type { DidDocumentKey } from '../../DidsApiOptions'
 import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'

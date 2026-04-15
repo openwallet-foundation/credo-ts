@@ -3,12 +3,12 @@ import { Exclude, Expose, Transform, TransformationType, Type } from 'class-tran
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import queryString from 'query-string'
 import { DidCommMessage } from '../../../DidCommMessage'
-import type { DidCommOutOfBandInvitationV2 } from './DidCommOutOfBandInvitationV2'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../decorators/attachment/DidCommAttachment'
 import type { DidCommPlaintextMessage } from '../../../types'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../util/messageType'
 import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 import { outOfBandServiceToNumAlgo2Did } from '../helpers'
+import type { DidCommOutOfBandInvitationV2 } from './DidCommOutOfBandInvitationV2'
 
 /**
  * The original invitation an out of band invitation was derived from.

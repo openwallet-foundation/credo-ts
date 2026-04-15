@@ -16,7 +16,7 @@ import {
   CheqdModule,
   CheqdModuleConfig,
 } from '@credo-ts/cheqd'
-import { Agent, DidsModule, PeerDidNumAlgo } from '@credo-ts/core'
+import { Agent, DidsModule } from '@credo-ts/core'
 import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import {
   DidCommAutoAcceptCredential,

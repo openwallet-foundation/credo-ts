@@ -21,11 +21,11 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../../../../../../core/tests'
 import {
-  type DidCommModuleConfigOptions,
   DidCommAutoAcceptProof,
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
   DidCommMediatorPickupStrategy,
+  type DidCommModuleConfigOptions,
   DidCommPresentationV2Message,
   DidCommProofEventTypes,
   DidCommProofState,

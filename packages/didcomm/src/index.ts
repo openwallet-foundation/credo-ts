@@ -25,7 +25,6 @@ export * from './repository'
 export * from './services'
 export * from './transport'
 export * from './types'
-export * from './v2'
 export type { DidCommVersion } from './util/didcommVersion'
 export {
   assertDidCommV1Connection,
@@ -48,3 +47,4 @@ export {
   parseInvitationShortUrl,
   parseInvitationUrl,
 } from './util/parseInvitation'
+export * from './v2'

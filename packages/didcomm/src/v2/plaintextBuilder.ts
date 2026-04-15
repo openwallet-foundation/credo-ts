@@ -52,11 +52,11 @@ export function buildV2PlaintextFromMessage(
   })
 
   const {
-    ['@type']: type,
-    ['@id']: id,
-    ['~thread']: thread,
-    ['~l10n']: l10n,
-    ['~attach']: attach,
+    '@type': type,
+    '@id': id,
+    '~thread': thread,
+    '~l10n': l10n,
+    '~attach': attach,
     created_time,
     expires_time,
     from,

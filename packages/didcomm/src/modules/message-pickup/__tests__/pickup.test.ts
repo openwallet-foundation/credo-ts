@@ -380,7 +380,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.didcomm.connections.returnWhenIsConnected(
-      recipientMediatorConnection!.id
+      recipientMediatorConnection?.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.didcomm.connections.findAllByOutOfBandId(

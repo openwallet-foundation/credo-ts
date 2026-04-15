@@ -1,8 +1,8 @@
 import { JsonEncoder } from '@credo-ts/core'
-import { DidCommMessageReceiver } from '../DidCommMessageReceiver'
 import { Agent } from '../../../core/src/agent/Agent'
 import { getAgentOptions } from '../../../core/tests/helpers'
 import { setupSubjectTransports } from '../../../core/tests/transport'
+import { DidCommMessageReceiver } from '../DidCommMessageReceiver'
 import { isDidCommV2EncryptedMessage } from '../util/didcommVersion'
 
 describe('DidCommMessageReceiver', () => {

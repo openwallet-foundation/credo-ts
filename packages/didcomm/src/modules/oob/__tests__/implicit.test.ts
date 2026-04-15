@@ -86,9 +86,9 @@ describe('out of band implicit', () => {
       })
 
     expect(aliceFaberConnection).toBeDefined()
-    expect(aliceFaberConnection!.state).toBe(DidCommDidExchangeState.Completed)
-    expect(aliceFaberConnection!.didcommVersion).toBe('v2')
-    expect(aliceFaberConnection!.invitationDid).toBe(inMemoryDid)
+    expect(aliceFaberConnection?.state).toBe(DidCommDidExchangeState.Completed)
+    expect(aliceFaberConnection?.didcommVersion).toBe('v2')
+    expect(aliceFaberConnection?.invitationDid).toBe(inMemoryDid)
     expect(outOfBandRecord.outOfBandInvitation.v2Invitation?.from).toBe(inMemoryDid)
     expect(outOfBandRecord.outOfBandInvitation.v2Invitation?.body?.accept).toEqual(['didcomm/v2'])
   })
@@ -117,8 +117,8 @@ describe('out of band implicit', () => {
       })
 
     expect(aliceFaberConnection).toBeDefined()
-    expect(aliceFaberConnection!.state).toBe(DidCommDidExchangeState.Completed)
-    expect(aliceFaberConnection!.didcommVersion).toBe('v2')
+    expect(aliceFaberConnection?.state).toBe(DidCommDidExchangeState.Completed)
+    expect(aliceFaberConnection?.didcommVersion).toBe('v2')
     expect(outOfBandRecord.outOfBandInvitation.v2Invitation?.from).toBe(inMemoryDid)
   })
 

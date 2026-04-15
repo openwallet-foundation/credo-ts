@@ -18,7 +18,12 @@ import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__
 import type { EventReplaySubject } from './events'
 
 import { setupEventReplaySubjects } from './events'
-import { getAgentOptions, getDefaultDidCommConfigForTests, getDefaultDidCommVersionForTests, makeConnection } from './helpers'
+import {
+  getAgentOptions,
+  getDefaultDidCommConfigForTests,
+  getDefaultDidCommVersionForTests,
+  makeConnection,
+} from './helpers'
 import { setupSubjectTransports } from './transport'
 
 export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>

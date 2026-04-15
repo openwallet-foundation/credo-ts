@@ -79,12 +79,8 @@ export class DidCommDocumentService {
       )
     }
 
-    const hasV1 = didCommServices.some(
-      (s) => s.type === IndyAgentService.type || s.type === DidCommV1Service.type
-    )
-    const hasV2 = didCommServices.some(
-      (s) => s.type === DidCommV2Service.type || s.type === NewDidCommV2Service.type
-    )
+    const hasV1 = didCommServices.some((s) => s.type === IndyAgentService.type || s.type === DidCommV1Service.type)
+    const hasV2 = didCommServices.some((s) => s.type === DidCommV2Service.type || s.type === NewDidCommV2Service.type)
 
     const versions: DidCommVersion[] = []
     if (hasV1) versions.push('v1')
@@ -149,9 +145,7 @@ export class DidCommDocumentService {
           if (publicJwk.is(Kms.X25519PublicJwk)) {
             fingerprint = publicJwk.fingerprint
           } else if (publicJwk.is(Kms.Ed25519PublicJwk)) {
-            fingerprint = (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
-              .convertTo(Kms.X25519PublicJwk)
-              .fingerprint
+            fingerprint = (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk).fingerprint
           } else {
             return
           }
@@ -183,8 +177,8 @@ export class DidCommDocumentService {
         const resolved =
           typeof firstSvc.serviceEndpoint === 'string'
             ? firstSvc.serviceEndpoint
-            : (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.uri ??
-              (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.s
+            : ((firstSvc.serviceEndpoint as { uri?: string; s?: string })?.uri ??
+              (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.s)
         if (resolved) resolvedEndpoint = resolved
       }
       return {
@@ -293,10 +287,7 @@ export class DidCommDocumentService {
           routingKeys: expandedRoutingKeys,
           serviceEndpoint,
         })
-      } else if (
-        didCommService.type === DidCommV2Service.type ||
-        didCommService.type === NewDidCommV2Service.type
-      ) {
+      } else if (didCommService.type === DidCommV2Service.type || didCommService.type === NewDidCommV2Service.type) {
         // DIDComm v2: recipient keys come exclusively from keyAgreement VMs (X25519).
         // We must NOT use getRecipientKeysWithVerificationMethod() here because it
         // accumulates keys from ALL services (v1 + v2), which would mix Ed25519
@@ -314,8 +305,7 @@ export class DidCommDocumentService {
           }
           if (!publicJwk.hasKeyId) {
             const vmId = verificationMethod.id
-            publicJwk.keyId =
-              typeof vmId === 'string' && vmId.startsWith('#') ? `${didDocument.id}${vmId}` : vmId
+            publicJwk.keyId = typeof vmId === 'string' && vmId.startsWith('#') ? `${didDocument.id}${vmId}` : vmId
           }
           recipientKeys.push(publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
         }
@@ -336,7 +326,7 @@ export class DidCommDocumentService {
               ? didCommService.serviceEndpoint
               : (didCommService.serviceEndpoint as { uri?: string })?.uri
         if (endpoint) {
-          let routingKeys = await this.resolveRoutingKeyReferences(agentContext, routingKeyRefs)
+          const routingKeys = await this.resolveRoutingKeyReferences(agentContext, routingKeyRefs)
           const expanded = this.expandV2EndpointIfRoutingDid(endpoint, routingKeys)
           resolvedServices.push({
             id: didCommService.id,

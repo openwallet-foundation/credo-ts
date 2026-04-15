@@ -2,8 +2,8 @@ import { Expose } from 'class-transformer'
 import { IsArray, IsNotEmpty, IsString } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
-import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface DidCommMediationGrantMessageOptions {
   id?: string

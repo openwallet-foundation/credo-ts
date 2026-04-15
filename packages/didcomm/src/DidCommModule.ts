@@ -5,7 +5,6 @@ import { mergeMap, takeUntil } from 'rxjs'
 import { DidCommApi } from './DidCommApi'
 import { DidCommDispatcher } from './DidCommDispatcher'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
-import { DidCommV2EnvelopeService, DidCommV2KeyResolver } from './v2'
 import type { DidCommMessageReceivedEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
@@ -41,6 +40,7 @@ import { DidCommMessageRepository } from './repository'
 import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
 import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
+import { DidCommV2EnvelopeService, DidCommV2KeyResolver } from './v2'
 
 // biome-ignore lint/complexity/noBannedTypes: no explanation
 type ModuleOrEmpty<Config, Module> = Config extends false ? {} : Module
@@ -115,9 +115,7 @@ function getDidcommModules<Options extends DidCommModuleConfigOptions>(options: 
 
       basicMessages:
         options.basicMessages !== false
-          ? new DidCommBasicMessagesModule(
-              options.basicMessages === true ? undefined : options.basicMessages
-            )
+          ? new DidCommBasicMessagesModule(options.basicMessages === true ? undefined : options.basicMessages)
           : undefined,
     }).filter(([, moduleValue]) => moduleValue !== undefined)
   ) as unknown as DidCommModules<Options>

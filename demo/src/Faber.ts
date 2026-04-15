@@ -93,9 +93,7 @@ export class Faber extends BaseAgent {
   }
 
   private async printConnectionInvite() {
-    const outOfBand = await this.agent.didcomm.oob.createInvitation(
-      this.useDidCommV2 ? { didCommVersion: 'v2' } : {}
-    )
+    const outOfBand = await this.agent.didcomm.oob.createInvitation(this.useDidCommV2 ? { didCommVersion: 'v2' } : {})
     this.outOfBandId = outOfBand.id
 
     console.log(

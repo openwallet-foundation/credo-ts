@@ -1,9 +1,9 @@
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Transform } from 'class-transformer'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 import { DidCommMediatorPickupStrategy } from '../DidCommMediatorPickupStrategy'
 import type { DidCommMediationRole } from '../models/DidCommMediationRole'
 import { DidCommMediationState } from '../models/DidCommMediationState'
-import type { DidCommVersion } from '../../../util/didcommVersion'
 
 export interface DidCommMediationRecordProps {
   id?: string

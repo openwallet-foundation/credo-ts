@@ -1,6 +1,7 @@
 import type { TagsBase } from '@credo-ts/core'
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Transform } from 'class-transformer'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 import type { DidCommConnectionType } from '../models'
 import {
   DidCommDidExchangeRole,
@@ -9,7 +10,6 @@ import {
   rfc0160StateFromDidExchangeState,
 } from '../models'
 import type { DidCommConnectionMetadata } from './DidCommConnectionMetadataTypes'
-import type { DidCommVersion } from '../../../util/didcommVersion'
 
 export interface DidCommConnectionRecordProps {
   id?: string

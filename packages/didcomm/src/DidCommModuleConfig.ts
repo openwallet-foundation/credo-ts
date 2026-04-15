@@ -1,3 +1,4 @@
+import { PeerDidNumAlgo } from '@credo-ts/core'
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type {
   DidCommBasicMessagesModuleConfigOptions,
@@ -12,7 +13,6 @@ import type { DidCommDiscoverFeaturesModuleConfigOptions } from './modules/disco
 import type { DidCommProofProtocol } from './modules/proofs/protocol/DidCommProofProtocol'
 import type { DidCommMediationRecipientModuleConfigOptions } from './modules/routing/DidCommMediationRecipientModuleConfig'
 import type { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCommMediatorModuleConfig'
-import { PeerDidNumAlgo } from '@credo-ts/core'
 import {
   type DidCommInboundTransport,
   type DidCommOutboundTransport,
@@ -249,8 +249,6 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
 
   /** Peer DID numAlgo for V2 OOB. Defaults to did:peer:4. */
   public get peerDidNumAlgoForV2OOB() {
-    return (
-      this.options.peerDidNumAlgoForV2OOB ?? PeerDidNumAlgo.ShortFormAndLongForm
-    )
+    return this.options.peerDidNumAlgoForV2OOB ?? PeerDidNumAlgo.ShortFormAndLongForm
   }
 }

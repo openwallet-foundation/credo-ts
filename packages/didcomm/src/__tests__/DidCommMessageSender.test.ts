@@ -17,7 +17,6 @@ import {
 } from '../../../core/tests/helpers'
 import { TestMessage } from '../../../core/tests/TestMessage'
 import { DidCommEnvelopeService } from '../DidCommEnvelopeService'
-import { DidCommV2EnvelopeService } from '../v2'
 import type { DidCommMessageSentEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommMessageSender } from '../DidCommMessageSender'
@@ -29,6 +28,7 @@ import type { DidCommConnectionRecord } from '../modules'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 import { type DidCommOutboundTransport, InMemoryQueueTransportRepository } from '../transport'
 import type { DidCommEncryptedMessage } from '../types'
+import { DidCommV2EnvelopeService } from '../v2'
 import { DummyTransportSession } from './stubs'
 
 vi.mock('../DidCommTransportService')

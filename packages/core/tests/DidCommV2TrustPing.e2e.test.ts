@@ -1,13 +1,6 @@
-import {
-  DidCommDidExchangeState,
-  DidCommHandshakeProtocol,
-} from '../../didcomm/src'
+import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
-import {
-  getAgentOptions,
-  waitForTrustPingReceivedEvent,
-  waitForTrustPingResponseReceivedEvent,
-} from './helpers'
+import { getAgentOptions, waitForTrustPingReceivedEvent, waitForTrustPingResponseReceivedEvent } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 type DidCommV2Config = { endpoints: string[]; didcommVersions: ('v1' | 'v2')[] }
@@ -18,12 +11,8 @@ function createAgents(
   faberConfig: DidCommV2Config,
   aliceConfig: DidCommV2Config
 ) {
-  const faber = new Agent(
-    getAgentOptions(faberName, faberConfig, undefined, undefined, { requireDidcomm: true })
-  )
-  const alice = new Agent(
-    getAgentOptions(aliceName, aliceConfig, undefined, undefined, { requireDidcomm: true })
-  )
+  const faber = new Agent(getAgentOptions(faberName, faberConfig, undefined, undefined, { requireDidcomm: true }))
+  const alice = new Agent(getAgentOptions(aliceName, aliceConfig, undefined, undefined, { requireDidcomm: true }))
   return { faber, alice }
 }
 
@@ -200,7 +189,7 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       expect(aliceFaberConnection).toBeDefined()
       expect(aliceFaberConnection?.state).toBe(DidCommDidExchangeState.Completed)
 
-      const ping = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection!.id, {})
+      const ping = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection?.id, {})
       await waitForTrustPingResponseReceivedEvent(aliceAgent, { threadId: ping.threadId })
     })
   })

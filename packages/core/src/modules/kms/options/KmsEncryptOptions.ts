@@ -137,8 +137,8 @@ export interface KmsEncryptReturn {
 
 export const zKmsEncryptedKey = z.object({
   /**
-     * Optional authentication tag
-     */
+   * Optional authentication tag
+   */
   tag: zAnyUint8Array.optional(),
 
   /**

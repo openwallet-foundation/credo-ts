@@ -80,10 +80,7 @@ export function isDidCommV1EncryptedMessage(message: unknown): boolean {
  * @param protocolName - Name of the protocol for the error message
  * @throws CredoError when connection.didcommVersion is 'v2'
  */
-export function assertDidCommV1Connection(
-  connection: DidCommConnectionRecord,
-  protocolName: string
-): void {
+export function assertDidCommV1Connection(connection: DidCommConnectionRecord, protocolName: string): void {
   if ((connection.didcommVersion ?? 'v1') === 'v2') {
     throw new CredoError(
       `${protocolName} is restricted for DIDComm v2 connections. Use a v1 connection (handshake-based) instead.`
@@ -98,13 +95,8 @@ export function assertDidCommV1Connection(
  * @param protocolName - Name of the protocol for the error message
  * @throws CredoError when connection.didcommVersion is 'v1'
  */
-export function assertDidCommV2Connection(
-  connection: DidCommConnectionRecord,
-  protocolName: string
-): void {
+export function assertDidCommV2Connection(connection: DidCommConnectionRecord, protocolName: string): void {
   if ((connection.didcommVersion ?? 'v1') === 'v1') {
-    throw new CredoError(
-      `${protocolName} requires a DIDComm v2 connection. Use a v2 connection instead.`
-    )
+    throw new CredoError(`${protocolName} requires a DIDComm v2 connection. Use a v2 connection instead.`)
   }
 }

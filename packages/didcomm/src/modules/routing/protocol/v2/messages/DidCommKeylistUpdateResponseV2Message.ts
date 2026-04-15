@@ -2,10 +2,9 @@ import { Expose, Type } from 'class-transformer'
 import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
-import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
-
-import { KeylistUpdateActionV2 } from './DidCommKeylistUpdateV2Message'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
+import { KeylistUpdateActionV2 } from './DidCommKeylistUpdateV2Message'
 
 export enum KeylistUpdateResultV2 {
   ClientError = 'client_error',
@@ -69,9 +68,7 @@ export class DidCommKeylistUpdateResponseV2Message extends DidCommMessage {
 
   @IsValidMessageType(DidCommKeylistUpdateResponseV2Message.type)
   public readonly type = DidCommKeylistUpdateResponseV2Message.type.messageTypeUri
-  public static readonly type = parseMessageType(
-    'https://didcomm.org/coordinate-mediation/2.0/keylist-update-response'
-  )
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/keylist-update-response')
 
   @Type(() => KeylistUpdateResponseItem)
   @IsArray()

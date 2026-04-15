@@ -1,16 +1,15 @@
 import { JsonTransformer } from '@credo-ts/core'
 
 import {
-  KeylistUpdateActionV2,
-  DidCommKeylistUpdateV2Message,
-  KeylistUpdateResultV2,
-  DidCommKeylistUpdateResponseV2Message,
-  DidCommKeylistV2Message,
   DidCommKeylistQueryV2Message,
+  DidCommKeylistUpdateResponseV2Message,
+  DidCommKeylistUpdateV2Message,
+  DidCommKeylistV2Message,
   DidCommMediateDenyV2Message,
   DidCommMediateGrantV2Message,
   DidCommMediateRequestV2Message,
-  Paginate,
+  KeylistUpdateActionV2,
+  KeylistUpdateResultV2,
 } from '../index'
 
 describe('Coordinate Mediation 2.0 Messages', () => {
@@ -33,7 +32,7 @@ describe('Coordinate Mediation 2.0 Messages', () => {
       expect(message.routingDid).toBe('did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc')
 
       const json = JsonTransformer.toJSON(message)
-      expect(json['routing_did']).toBe('did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc')
+      expect(json.routing_did).toBe('did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc')
     })
   })
 
@@ -58,7 +57,7 @@ describe('Coordinate Mediation 2.0 Messages', () => {
       expect(message.updates[0].action).toBe(KeylistUpdateActionV2.add)
 
       const json = JsonTransformer.toJSON(message)
-      expect(json.updates[0]['recipient_did']).toBe('did:peer:2.xxx')
+      expect(json.updates[0].recipient_did).toBe('did:peer:2.xxx')
     })
   })
 

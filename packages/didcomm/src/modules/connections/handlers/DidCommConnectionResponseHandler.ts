@@ -1,5 +1,5 @@
 import type { DidResolverService } from '@credo-ts/core'
-import { CredoError, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { CredoError, Kms } from '@credo-ts/core'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import { DidCommOutboundMessageContext } from '../../../models'
@@ -31,7 +31,7 @@ export class DidCommConnectionResponseHandler implements DidCommMessageHandler {
   }
 
   public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommConnectionResponseHandler>) {
-    let { recipientKey, senderKey, message } = messageContext
+    const { recipientKey, senderKey, message } = messageContext
 
     if (!recipientKey || !senderKey) {
       throw new CredoError('Unable to process connection response without senderKey or recipientKey')

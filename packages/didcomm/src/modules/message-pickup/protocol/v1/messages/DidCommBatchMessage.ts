@@ -5,8 +5,8 @@ import { IsArray, IsInstance, IsObject, Matches, ValidateNested } from 'class-va
 import { MessageIdRegExp } from '../../../../../BaseDidCommMessage'
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import type { DidCommEncryptedMessage } from '../../../../../types'
-import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export class DidCommBatchMessageMessage {
   public constructor(options: { id?: string; message: DidCommEncryptedMessage }) {

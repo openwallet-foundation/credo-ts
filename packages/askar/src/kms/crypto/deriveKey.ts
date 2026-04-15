@@ -279,10 +279,7 @@ function deriveDecryptionKeyEcdh1Pu(options: {
   const { keyAgreement, decryption, ephemeralKey, senderKey, recipientKey } = options
 
   if (recipientKey.algorithm !== KeyAlgorithm.X25519) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      'ECDH-1PU+A256KW requires X25519 recipient key',
-      'askar'
-    )
+    throw new Kms.KeyManagementAlgorithmNotSupportedError('ECDH-1PU+A256KW requires X25519 recipient key', 'askar')
   }
 
   const askarEncryptionAlgorithm = jwkEncToAskarAlg[decryption.algorithm as keyof typeof jwkEncToAskarAlg]

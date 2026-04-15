@@ -3,9 +3,9 @@ import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import { DateParser } from '../../../../../util/transformers'
-import type { DidCommVersion } from '../../../../../util/didcommVersion'
 
 export interface DidCommStatusV3MessageOptions {
   id?: string

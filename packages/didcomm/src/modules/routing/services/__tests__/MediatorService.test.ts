@@ -5,20 +5,24 @@ import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
+import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
 import { DidCommInboundMessageContext } from '../../../../models/DidCommInboundMessageContext'
 import { DidCommConnectionService, DidCommDidExchangeState } from '../../../connections'
 import { DidCommMessagePickupApi } from '../../../message-pickup'
 import { DidCommMediatorModuleConfig } from '../../DidCommMediatorModuleConfig'
-import { DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage, DidCommKeylistUpdateResult } from '../../protocol/v1/messages'
-import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
+import { DidCommMediationRole, DidCommMediationState } from '../../models'
+import {
+  DidCommKeylistUpdateAction,
+  DidCommKeylistUpdateMessage,
+  DidCommKeylistUpdateResult,
+} from '../../protocol/v1/messages'
 import {
   DidCommForwardV2Message,
   DidCommKeylistQueryV2Message,
-  KeylistUpdateActionV2,
   DidCommKeylistUpdateV2Message,
   DidCommMediateRequestV2Message,
+  KeylistUpdateActionV2,
 } from '../../protocol/v2/messages'
-import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import { DidCommMediationRecord, DidCommMediatorRoutingRecord } from '../../repository'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
 import { DidCommMediatorRoutingRepository } from '../../repository/DidCommMediatorRoutingRepository'
@@ -388,10 +392,7 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       await expect(mediatorService.processForwardMessage(messageContext)).rejects.toThrow(RecordNotFoundError)
 
       expect(mediationRepository.findSingleByRecipientKey).not.toHaveBeenCalled()
-      expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(
-        agentContext,
-        recipientDid
-      )
+      expect(mediationRepository.findSingleByRecipientDid).toHaveBeenCalledWith(agentContext, recipientDid)
     })
   })
 })

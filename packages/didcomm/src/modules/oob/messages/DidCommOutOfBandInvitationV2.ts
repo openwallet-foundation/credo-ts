@@ -58,9 +58,7 @@ export class DidCommOutOfBandInvitationV2 {
   public static fromJson(json: Record<string, unknown>): DidCommOutOfBandInvitationV2 {
     const type = json.type as string
     if (type !== DidCommOutOfBandInvitationV2.type) {
-      throw new CredoError(
-        `Invalid v2 OOB invitation type: expected ${DidCommOutOfBandInvitationV2.type}, got ${type}`
-      )
+      throw new CredoError(`Invalid v2 OOB invitation type: expected ${DidCommOutOfBandInvitationV2.type}, got ${type}`)
     }
     const id = json.id as string
     const from = json.from as string

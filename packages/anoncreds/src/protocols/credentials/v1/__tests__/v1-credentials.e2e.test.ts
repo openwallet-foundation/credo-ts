@@ -1,13 +1,13 @@
 import { JsonEncoder, JsonTransformer } from '@credo-ts/core'
+import type { DidCommEncryptedMessage } from '@credo-ts/didcomm'
 import {
   DidCommCredentialExchangeRecord,
   DidCommCredentialRole,
   DidCommCredentialState,
+  DidCommEventTypes,
   DidCommMessageRepository,
   DidCommModuleConfig,
-  DidCommEventTypes,
 } from '@credo-ts/didcomm'
-import type { DidCommEncryptedMessage } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../../../../../core/tests'
 import { waitForCredentialRecord } from '../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../core/tests/logger'
@@ -46,12 +46,8 @@ describe('V1 Credentials', () => {
     const faberDidCommConfig = faberAgent.dependencyManager.resolve(DidCommModuleConfig)
     const aliceDidCommConfig = aliceAgent.dependencyManager.resolve(DidCommModuleConfig)
 
-    testLogger.test(
-      `Faber DidComm config: didcommVersions=${JSON.stringify(faberDidCommConfig.didcommVersions)}`
-    )
-    testLogger.test(
-      `Alice DidComm config: didcommVersions=${JSON.stringify(aliceDidCommConfig.didcommVersions)}`
-    )
+    testLogger.test(`Faber DidComm config: didcommVersions=${JSON.stringify(faberDidCommConfig.didcommVersions)}`)
+    testLogger.test(`Alice DidComm config: didcommVersions=${JSON.stringify(aliceDidCommConfig.didcommVersions)}`)
 
     // Logging DIDComm v2 envelopes for this test: need to check (protected header typ/alg/enc/skid) for issuer & holder. Should be removed later.
     faberReplay.subscribe((event) => {
@@ -95,7 +91,6 @@ describe('V1 Credentials', () => {
   })
 
   test('Alice starts with V1 credential proposal to Faber', async () => {
-    console.log('Alice starts with V1 credential proposal to Faber loggin')
     const credentialPreview = DidCommCredentialV1Preview.fromRecord({
       name: 'John',
       age: '99',

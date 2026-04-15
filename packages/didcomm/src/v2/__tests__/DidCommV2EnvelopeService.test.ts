@@ -1,11 +1,11 @@
-import type { AgentContext } from '@credo-ts/core'
-import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
-import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { randomBytes } from 'node:crypto'
+import type { AgentContext } from '@credo-ts/core'
+import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
+import testLogger from '../../../../core/tests/logger'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../node/src'
 import { DidCommV2EnvelopeService } from '../DidCommV2EnvelopeService'
-import type { DidCommV2EncryptedMessage, DidCommV2PlaintextMessage } from '../types'
-import testLogger from '../../../../core/tests/logger'
+import type { DidCommV2PlaintextMessage } from '../types'
 
 function supportsX25519Ecdh(): boolean {
   try {
@@ -25,21 +25,14 @@ class MockEcdh1PuKeyManagementService implements Kms.KeyManagementService {
   private keys = new Map<string, Kms.KmsJwkPublicOkp & { crv: 'X25519' }>()
 
   isOperationSupported(_ctx: AgentContext, operation: Kms.KmsOperation): boolean {
-    if (operation.operation === 'createKey')
-      return operation.type.kty === 'OKP' && operation.type.crv === 'X25519'
+    if (operation.operation === 'createKey') return operation.type.kty === 'OKP' && operation.type.crv === 'X25519'
     if (operation.operation === 'encrypt') {
       const alg = operation.keyAgreement?.algorithm
-      return (
-        operation.encryption?.algorithm === 'A256GCM' &&
-        (alg === 'ECDH-1PU+A256KW' || alg === 'ECDH-ES+A256KW')
-      )
+      return operation.encryption?.algorithm === 'A256GCM' && (alg === 'ECDH-1PU+A256KW' || alg === 'ECDH-ES+A256KW')
     }
     if (operation.operation === 'decrypt') {
       const alg = operation.keyAgreement?.algorithm
-      return (
-        operation.decryption?.algorithm === 'A256GCM' &&
-        (alg === 'ECDH-1PU+A256KW' || alg === 'ECDH-ES+A256KW')
-      )
+      return operation.decryption?.algorithm === 'A256GCM' && (alg === 'ECDH-1PU+A256KW' || alg === 'ECDH-ES+A256KW')
     }
     if (operation.operation === 'randomBytes') return true
     if (operation.operation === 'deleteKey') return true
@@ -178,7 +171,9 @@ describe('DidCommV2EnvelopeService', () => {
       tag: expect.any(String),
     })
 
-    const protectedJson = JsonEncoder.fromBase64(encrypted.protected) as { recipients?: Array<{ header?: { kid?: string } }> }
+    const protectedJson = JsonEncoder.fromBase64(encrypted.protected) as {
+      recipients?: Array<{ header?: { kid?: string } }>
+    }
     const matchedKid = protectedJson.recipients?.[0]?.header?.kid ?? recipientKey.keyId
     const { plaintext: decrypted } = await envelopeService.unpack(agentContext, encrypted, {
       recipientKey,

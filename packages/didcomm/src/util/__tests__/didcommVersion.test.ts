@@ -1,11 +1,11 @@
 import { CredoError, JsonEncoder } from '@credo-ts/core'
+import { DidCommConnectionRecord } from '../../modules/connections/repository'
 import {
   assertDidCommV1Connection,
   isDidCommV1EncryptedMessage,
   isDidCommV2AuthcryptMessage,
   isDidCommV2EncryptedMessage,
 } from '../didcommVersion'
-import { DidCommConnectionRecord } from '../../modules/connections/repository'
 
 describe('didcommVersion', () => {
   const v1Protected = JsonEncoder.toBase64Url({

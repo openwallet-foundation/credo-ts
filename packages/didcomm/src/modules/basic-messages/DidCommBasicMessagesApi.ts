@@ -3,9 +3,9 @@ import { AgentContext, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections/services'
+import { DidCommBasicMessagesModuleConfig } from './DidCommBasicMessagesModuleConfig'
 import type { DidCommBasicMessageRecord } from './repository/DidCommBasicMessageRecord'
 import { DidCommBasicMessageService } from './services'
-import { DidCommBasicMessagesModuleConfig } from './DidCommBasicMessagesModuleConfig'
 
 @injectable()
 export class DidCommBasicMessagesApi {

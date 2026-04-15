@@ -1,11 +1,8 @@
-import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import {
   AgentContext,
   CredoError,
   createPeerDidDocumentFromServices,
   DidCommV1Service,
-  NewDidCommV2Service,
-  NewDidCommV2ServiceEndpoint,
   DidDocumentBuilder,
   type DidDocumentKey,
   DidDocumentRole,
@@ -19,10 +16,13 @@ import {
   getX25519KeyAgreementKey2019,
   IndyAgentService,
   Kms,
+  NewDidCommV2Service,
+  NewDidCommV2ServiceEndpoint,
   PeerDidNumAlgo,
   type ResolvedDidCommService,
   TypedArrayEncoder,
 } from '@credo-ts/core'
+import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
 import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
@@ -176,8 +176,8 @@ function resolveRoutingDid(routingDid: string): {
     const resolved =
       typeof firstSvc.serviceEndpoint === 'string'
         ? firstSvc.serviceEndpoint
-        : (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.uri ??
-          (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.s
+        : ((firstSvc.serviceEndpoint as { uri?: string; s?: string })?.uri ??
+          (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.s)
     if (resolved) endpoint = resolved
   }
 

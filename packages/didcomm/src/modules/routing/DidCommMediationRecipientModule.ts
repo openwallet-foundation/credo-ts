@@ -8,18 +8,18 @@ import { DidCommOutOfBandApi } from '../oob'
 import { DidCommMediationRecipientApi } from './DidCommMediationRecipientApi'
 import type { DidCommMediationRecipientModuleConfigOptions } from './DidCommMediationRecipientModuleConfig'
 import { DidCommMediationRecipientModuleConfig } from './DidCommMediationRecipientModuleConfig'
+import { DidCommMediationRole } from './models'
 import {
   DidCommKeylistUpdateResponseHandler,
   DidCommMediationDenyHandler,
   DidCommMediationGrantHandler,
 } from './protocol/v1/handlers'
 import {
-  DidCommKeylistV2Handler,
   DidCommKeylistUpdateResponseV2Handler,
+  DidCommKeylistV2Handler,
   DidCommMediationDenyV2Handler,
   DidCommMediationGrantV2Handler,
 } from './protocol/v2/handlers'
-import { DidCommMediationRole } from './models'
 import { DidCommMediationRepository } from './repository'
 import { DidCommMediationRecipientService, DidCommRoutingService } from './services'
 
@@ -58,7 +58,9 @@ export class DidCommMediationRecipientModule implements Module {
     if (this.config.mediationProtocolVersions.includes('v2')) {
       messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantV2Handler(mediationRecipientService))
       messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyV2Handler(mediationRecipientService))
-      messageHandlerRegistry.registerMessageHandler(new DidCommKeylistUpdateResponseV2Handler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(
+        new DidCommKeylistUpdateResponseV2Handler(mediationRecipientService)
+      )
       messageHandlerRegistry.registerMessageHandler(new DidCommKeylistV2Handler(mediationRecipientService))
     }
 

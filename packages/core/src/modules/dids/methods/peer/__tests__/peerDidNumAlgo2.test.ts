@@ -37,11 +37,11 @@ describe('peerDidNumAlgo2', () => {
         'did:peer:2.Vz6MkgRWTwRc79V69K6aA5dpcbkhj4fACYNRxitMdqfSe81VQ.Ez6LStdh5Gg1ArxFtYLW8VKYVU7HPj12WHvNbq2feCtWoHtKn.SeyJzIjp7InVyaSI6InJ4anM6ZmFiZXIiLCJhY2NlcHQiOlsiZGlkY29tbS92MiJdfSwidCI6ImRtIn0'
       const doc = didToNumAlgo2DidDocument(did)
       expect(doc.service).toHaveLength(1)
-      expect(doc.service![0].type).toBe('DIDCommMessaging')
-      const ep = doc.service![0].serviceEndpoint as { uri?: string }
+      expect(doc.service?.[0].type).toBe('DIDCommMessaging')
+      const ep = doc.service?.[0].serviceEndpoint as { uri?: string }
       expect(ep?.uri).toBe('rxjs:faber')
       expect(doc.keyAgreement).toBeDefined()
-      expect(doc.keyAgreement!.length).toBeGreaterThan(0)
+      expect(doc.keyAgreement?.length).toBeGreaterThan(0)
     })
   })
 

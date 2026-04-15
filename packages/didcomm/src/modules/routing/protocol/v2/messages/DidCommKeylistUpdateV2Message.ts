@@ -1,10 +1,9 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
-
-import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { DidCommMessage } from '../../../../../DidCommMessage'
-import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
+import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export enum KeylistUpdateActionV2 {
   add = 'add',

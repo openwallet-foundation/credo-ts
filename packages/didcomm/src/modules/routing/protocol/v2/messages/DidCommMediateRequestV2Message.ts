@@ -1,7 +1,7 @@
-import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { DidCommMessage } from '../../../../../DidCommMessage'
-import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
+import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface DidCommMediateRequestV2MessageOptions {
   id?: string

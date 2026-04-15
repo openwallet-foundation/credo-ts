@@ -7,8 +7,8 @@ import { CredoError } from '../../../../../core/src/error/CredoError'
 import { testLogger } from '../../../../../core/tests'
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../core/tests/helpers'
 import { DidCommModuleConfig } from '../../../../../didcomm/src'
-import { InMemoryQueueTransportRepository } from '../../../transport/queue/InMemoryQueueTransportRepository'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
+import { InMemoryQueueTransportRepository } from '../../../transport/queue/InMemoryQueueTransportRepository'
 import { DidCommDidExchangeState } from '../../connections/models/DidCommDidExchangeState'
 import { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
 import { DidCommMessagePickupApi } from '../DidCommMessagePickupApi'
@@ -20,8 +20,8 @@ import {
   DidCommMessagePickupV2Protocol,
   DidCommMessagePickupV3Protocol,
 } from '../protocol'
-import { DidCommMessageDeliveryV3Message } from '../protocol/v3'
 import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
+import { DidCommMessageDeliveryV3Message } from '../protocol/v3'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
 
 const mockConnection = getMockConnection({
@@ -56,9 +56,9 @@ const messageSender = new MessageSenderMock()
 const connectionService = new ConnectionServiceMock()
 const messagePickupSessionService = new MessagePickupSessionServiceMock()
 
-const queueTransportRepository = new (InMemoryQueueTransportRepository as MockedClassConstructor<
-  typeof InMemoryQueueTransportRepository
->)()
+const queueTransportRepository = new (
+  InMemoryQueueTransportRepository as MockedClassConstructor<typeof InMemoryQueueTransportRepository>
+)()
 const didCommModuleConfigWithQueue = new DidCommModuleConfig({ queueTransportRepository })
 
 // Mock typed object

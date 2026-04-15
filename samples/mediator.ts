@@ -39,15 +39,14 @@ const app = express()
 const socketServer = new WebSocketServer({ noServer: true })
 
 const endpoints = process.env.AGENT_ENDPOINTS?.split(',') ?? [`http://localhost:${port}`, `ws://localhost:${port}`]
-const wsEndpoint = endpoints.find((e) => e.startsWith('ws://')) ?? `ws://localhost:${port}`
+const _wsEndpoint = endpoints.find((e) => e.startsWith('ws://')) ?? `ws://localhost:${port}`
 const enableMediationV2 = process.env.MEDIATION_V2 === 'true'
 
 // For Mediation 2.0, mediator needs a routing DID (did:peer:2 with service endpoint).
 // Use MEDIATOR_ROUTING_DID to override. Default for ws://localhost:3001:
 const DEFAULT_V2_ROUTING_DID =
   'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.SeyJ0IjoiZG0iLCJzIjoid3M6Ly9sb2NhbGhvc3Q6MzAwMSIsInIiOltdLCJhIjoibm9uZSMxIn0'
-const mediatorRoutingDid =
-  process.env.MEDIATOR_ROUTING_DID ?? (enableMediationV2 ? DEFAULT_V2_ROUTING_DID : undefined)
+const mediatorRoutingDid = process.env.MEDIATOR_ROUTING_DID ?? (enableMediationV2 ? DEFAULT_V2_ROUTING_DID : undefined)
 
 const logger = new TestLogger(LogLevel.Info)
 

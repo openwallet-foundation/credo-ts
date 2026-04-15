@@ -3,7 +3,6 @@ import {
   CredoError,
   DidKey,
   DidsApi,
-  NewDidCommV2Service,
   didKeyToEd25519PublicJwk,
   didToNumAlgo2DidDocument,
   didToNumAlgo4DidDocument,
@@ -12,6 +11,7 @@ import {
   injectable,
   Kms,
   MessageValidator,
+  NewDidCommV2Service,
   type ResolvedDidCommService,
   utils,
   verkeyToDidKey,
@@ -19,9 +19,6 @@ import {
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
-import { buildV2PlaintextFromMessage, type DidCommV2PlaintextMessage } from './v2'
-import { DidCommV2EnvelopeService } from './v2'
-import { DidCommForwardV2Message } from './modules/routing/protocol/v2/messages'
 import type { DidCommMessageSentEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import type { DidCommMessage } from './DidCommMessage'
@@ -33,11 +30,12 @@ import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import { toX25519 } from './modules/connections/services/helpers'
-import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
+import { DidCommOutOfBandRepository } from './modules/oob/repository'
+import { DidCommForwardV2Message } from './modules/routing/protocol/v2/messages'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
-import type { DidCommVersion } from './util/didcommVersion'
+import { buildV2PlaintextFromMessage, DidCommV2EnvelopeService, type DidCommV2PlaintextMessage } from './v2'
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -100,9 +98,7 @@ export class DidCommMessageSender {
     const isConnectionResponse = typeof message.type === 'string' && message.type.endsWith('connections/1.0/response')
     const useV1ForConnection = isConnectionRequest || isConnectionResponse
 
-    const useV2ForPacking = connection
-      ? (connection.didcommVersion ?? 'v1') === 'v2'
-      : this.didCommModuleConfig.sendsV2
+    const useV2ForPacking = connection ? (connection.didcommVersion ?? 'v1') === 'v2' : this.didCommModuleConfig.sendsV2
 
     if (
       !useV1ForConnection &&
@@ -198,7 +194,7 @@ export class DidCommMessageSender {
       ? keys.recipientKeys[0].keyId
       : new DidKey(keys.recipientKeys[0]).did
     const senderX25519 = toX25519(keys.senderKey!)
-    senderX25519.keyId = keys.senderKey!.hasKeyId ? keys.senderKey!.keyId : keys.senderKey!.legacyKeyId
+    senderX25519.keyId = keys.senderKey?.hasKeyId ? keys.senderKey?.keyId : keys.senderKey?.legacyKeyId
 
     const tagsTheirDid = connection?.getTags().theirDid
     const theirDidForEnvelope =
@@ -206,9 +202,7 @@ export class DidCommMessageSender {
       (typeof tagsTheirDid === 'string' && tagsTheirDid.length > 0 ? tagsTheirDid : undefined)
     const plaintext = buildV2PlaintextFromMessage(message, {
       useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,
-      ...(connection?.did && theirDidForEnvelope
-        ? { from: connection.did, to: [theirDidForEnvelope] }
-        : undefined),
+      ...(connection?.did && theirDidForEnvelope ? { from: connection.did, to: [theirDidForEnvelope] } : undefined),
     })
 
     let payload = await this.v2EnvelopeService.pack(agentContext, plaintext, {
@@ -221,10 +215,7 @@ export class DidCommMessageSender {
     const routingKeysReversed = [...keys.routingKeys].reverse()
     for (let i = 0; i < routingKeysReversed.length; i++) {
       const routingKey = routingKeysReversed[i]
-      const next =
-        i === routingKeysReversed.length - 1
-          ? recipientNext
-          : new DidKey(routingKeysReversed[i + 1]).did
+      const next = i === routingKeysReversed.length - 1 ? recipientNext : new DidKey(routingKeysReversed[i + 1]).did
       const routingKeyX25519 = toX25519(routingKey)
       routingKeyX25519.keyId = new DidKey(routingKey).did
       const attachment = {
@@ -808,11 +799,9 @@ export class DidCommMessageSender {
       // Applies to both requester and responder since v2 OOB invitations use services: [from] (DID string),
       // so getInlineServices() is empty and the requester cannot use inline services.
       const hasNoUsableRecipientKeys =
-        didCommServices.length === 0 ||
-        didCommServices.every((s) => !s.recipientKeys || s.recipientKeys.length === 0)
+        didCommServices.length === 0 || didCommServices.every((s) => !s.recipientKeys || s.recipientKeys.length === 0)
       const isPeer2 = connection.theirDid?.startsWith('did:peer:2')
-      const isPeer4LongForm =
-        connection.theirDid?.startsWith('did:peer:4') && connection.theirDid?.includes(':')
+      const isPeer4LongForm = connection.theirDid?.startsWith('did:peer:4') && connection.theirDid?.includes(':')
       if (hasNoUsableRecipientKeys && connection.outOfBandId && (isPeer2 || isPeer4LongForm)) {
         if (didCommServices.length > 0) {
           didCommServices = []
@@ -843,14 +832,10 @@ export class DidCommMessageSender {
                   : didToNumAlgo2DidDocument(endpoint)
                 const byX25519Fp = new Map<string, Kms.PublicJwk<Kms.Ed25519PublicJwk>>()
                 // keyAgreement first so X25519 wins the tie-breaker when both forms are present
-                const routingKeyRefs = [
-                  ...(routingDoc.keyAgreement ?? []),
-                  ...(routingDoc.authentication ?? []),
-                ]
+                const routingKeyRefs = [...(routingDoc.keyAgreement ?? []), ...(routingDoc.authentication ?? [])]
                 const seen = new Set<string>()
                 for (const keyRef of routingKeyRefs) {
-                  const vm =
-                    typeof keyRef === 'string' ? routingDoc.dereferenceVerificationMethod(keyRef) : keyRef
+                  const vm = typeof keyRef === 'string' ? routingDoc.dereferenceVerificationMethod(keyRef) : keyRef
                   if (seen.has(vm.id)) continue
                   seen.add(vm.id)
                   const publicJwk = getPublicJwkFromVerificationMethod(vm)
@@ -859,9 +844,9 @@ export class DidCommMessageSender {
                     if (publicJwk.is(Kms.X25519PublicJwk)) {
                       fingerprint = publicJwk.fingerprint
                     } else if (publicJwk.is(Kms.Ed25519PublicJwk)) {
-                      fingerprint = (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
-                        .convertTo(Kms.X25519PublicJwk)
-                        .fingerprint
+                      fingerprint = (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(
+                        Kms.X25519PublicJwk
+                      ).fingerprint
                     }
                   } catch {
                     // Skip keys we can't convert
@@ -878,8 +863,8 @@ export class DidCommMessageSender {
                   const resolved =
                     typeof firstSvc.serviceEndpoint === 'string'
                       ? firstSvc.serviceEndpoint
-                      : (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.uri ??
-                        (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.s
+                      : ((firstSvc.serviceEndpoint as { uri?: string; s?: string })?.uri ??
+                        (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.s)
                   if (resolved) endpoint = resolved
                 }
               } catch {
@@ -895,16 +880,11 @@ export class DidCommMessageSender {
               const isV2Connection = (connection.didcommVersion ?? 'v1') === 'v2'
               const keyRefs = isV2Connection
                 ? [...(didDocument.keyAgreement ?? [])]
-                : [
-                    ...(didDocument.authentication ?? []),
-                    ...(didDocument.keyAgreement ?? []),
-                  ]
+                : [...(didDocument.authentication ?? []), ...(didDocument.keyAgreement ?? [])]
               const seen = new Set<string>()
               for (const keyRef of keyRefs) {
                 const verificationMethod =
-                  typeof keyRef === 'string'
-                    ? didDocument.dereferenceVerificationMethod(keyRef)
-                    : keyRef
+                  typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
                 if (seen.has(verificationMethod.id)) continue
                 const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
                 if (publicJwk.is(Kms.Ed25519PublicJwk) || publicJwk.is(Kms.X25519PublicJwk)) {
@@ -927,9 +907,7 @@ export class DidCommMessageSender {
             }
           }
           if (didCommServices.length > 0) {
-            agentContext.config.logger.debug(
-              `Used did:peer:2/4 parse fallback for connection ${connection.id}.`
-            )
+            agentContext.config.logger.debug(`Used did:peer:2/4 parse fallback for connection ${connection.id}.`)
           }
         } catch (err) {
           agentContext.config.logger.debug(
@@ -986,9 +964,7 @@ export class DidCommMessageSender {
         const outOfBandRepository = agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
         const oobRecord = await outOfBandRepository.findById(agentContext, connection.outOfBandId)
         if (oobRecord) {
-          agentContext.config.logger.debug(
-            `Resolving services from connection outOfBandId ${connection.outOfBandId}.`
-          )
+          agentContext.config.logger.debug(`Resolving services from connection outOfBandId ${connection.outOfBandId}.`)
           for (const service of oobRecord.outOfBandInvitation.getInlineServices()) {
             didCommServices.push({
               id: service.id,

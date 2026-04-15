@@ -37,7 +37,7 @@ describe('buildV2PlaintextFromMessage', () => {
 
     const v2 = buildV2PlaintextFromMessage(message)
     expect(v2.attachments).toHaveLength(1)
-    expect(v2.attachments![0]).toMatchObject({
+    expect(v2.attachments?.[0]).toMatchObject({
       id: 'att-1',
       media_type: 'application/json',
       data: { json: { foo: 'bar' } },
@@ -62,7 +62,7 @@ describe('buildV2PlaintextFromMessage', () => {
     expect(v2.pthid).toBe('pt1')
     expect(v2.lang).toBe('en')
     expect(v2.attachments).toHaveLength(1)
-    expect(v2.attachments![0].id).toBe('att-round')
-    expect(v2.attachments![0].data).toEqual({ base64: 'e30=' })
+    expect(v2.attachments?.[0].id).toBe('att-round')
+    expect(v2.attachments?.[0].data).toEqual({ base64: 'e30=' })
   })
 })

@@ -1,7 +1,6 @@
+import { utils } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
 import { IsArray, IsString } from 'class-validator'
-
-import { utils } from '@credo-ts/core'
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import type { DidCommEncryptedMessage } from '../../../../../types'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'

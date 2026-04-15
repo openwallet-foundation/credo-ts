@@ -71,11 +71,11 @@ export class DidCommEnvelopeService {
           key: {
             keyAgreement: {
               algorithm: 'ECDH-HSALSA20',
-        // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys
-            externalPublicJwk: (recipientKey.is(Kms.X25519PublicJwk)
-              ? recipientKey
-              : recipientKey.convertTo(Kms.X25519PublicJwk)
-            ).toJson(),
+              // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys
+              externalPublicJwk: (recipientKey.is(Kms.X25519PublicJwk)
+                ? recipientKey
+                : recipientKey.convertTo(Kms.X25519PublicJwk)
+              ).toJson(),
             },
           },
           encryption: {

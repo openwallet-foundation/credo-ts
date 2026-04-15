@@ -14,11 +14,12 @@ import {
   RecordDuplicateError,
 } from '@credo-ts/core'
 import { DidCommDispatcher } from './DidCommDispatcher'
-import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
+import type { DecryptedDidCommMessageContext, EnvelopeKeys } from './DidCommEnvelopeService'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
 import { DidCommMessage } from './DidCommMessage'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from './DidCommMessageSender'
+import { DidCommModuleConfig } from './DidCommModuleConfig'
 import type { DidCommTransportSession } from './DidCommTransportService'
 import { DidCommTransportService } from './DidCommTransportService'
 import { DidCommProblemReportError } from './errors'
@@ -33,15 +34,11 @@ import {
 } from './modules/connections'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import { DidCommOutOfBandService } from './modules/oob/DidCommOutOfBandService'
-import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
-import { normalizeV2PlaintextToV1 } from './v2'
-import { DidCommV2EnvelopeService } from './v2'
-import { DidCommV2KeyResolver } from './v2'
 import { isDidCommV2EncryptedMessage } from './util/didcommVersion'
 import { isValidJweStructure } from './util/JWE'
-import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
+import { DidCommV2EnvelopeService, DidCommV2KeyResolver, normalizeV2PlaintextToV1 } from './v2'
 
 @injectable()
 export class DidCommMessageReceiver {
@@ -196,7 +193,9 @@ export class DidCommMessageReceiver {
               const { didDocument: ourDoc } = await dids.resolveCreatedDidDocumentWithKeys(ourDid)
               const vm = ourDoc.findVerificationMethodByPublicKey(recipientKey)
               if (vm) {
-                const vmId = vm.id.startsWith('did:') ? vm.id : `${ourDoc.id}${vm.id.startsWith('#') ? '' : '#'}${vm.id}`
+                const vmId = vm.id.startsWith('did:')
+                  ? vm.id
+                  : `${ourDoc.id}${vm.id.startsWith('#') ? '' : '#'}${vm.id}`
                 keys.senderKeySkid = vmId
               } else {
                 keys.senderKeySkid = new DidKey(recipientKey).did
@@ -256,7 +255,9 @@ export class DidCommMessageReceiver {
         const { plaintext, senderKey } = await this.v2EnvelopeService.unpack(agentContext, message, {
           recipientKey,
           matchedKid,
-          resolveSenderKey: isAnoncrypt ? async () => null : (sid) => this.v2KeyResolver.resolveSenderKey(agentContext, sid),
+          resolveSenderKey: isAnoncrypt
+            ? async () => null
+            : (sid) => this.v2KeyResolver.resolveSenderKey(agentContext, sid),
         })
         this.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before normalization)', {
           id: plaintext.id,

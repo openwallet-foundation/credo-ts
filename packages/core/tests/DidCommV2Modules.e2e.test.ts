@@ -1,17 +1,16 @@
+import { ReplaySubject } from 'rxjs'
 import { DidCommDiscoverFeaturesEventTypes, DidCommGoalCode } from '../../didcomm/src'
+import {
+  waitForDisclosureSubject,
+  waitForQuerySubject,
+} from '../../didcomm/src/modules/discover-features/__tests__/helpers'
 import type {
   DidCommDiscoverFeaturesDisclosureReceivedEvent,
   DidCommDiscoverFeaturesQueryReceivedEvent,
 } from '../../didcomm/src/modules/discover-features/DidCommDiscoverFeaturesEvents'
-import { waitForDisclosureSubject, waitForQuerySubject } from '../../didcomm/src/modules/discover-features/__tests__/helpers'
 import { Agent } from '../src/agent/Agent'
-import {
-  getAgentOptions,
-  makeConnection,
-  waitForBasicMessage,
-} from './helpers'
+import { getAgentOptions, makeConnection, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'
-import { ReplaySubject } from 'rxjs'
 
 const faberAgent = new Agent(
   getAgentOptions(
@@ -51,10 +50,7 @@ describe('DIDComm v2 modules', () => {
     })
 
     it('exchanges basic messages over DIDComm v2', async () => {
-      const helloRecord = await aliceAgent.didcomm.basicMessages.sendMessage(
-        aliceConnection.id,
-        'Hello over v2'
-      )
+      const helloRecord = await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'Hello over v2')
       expect(helloRecord.content).toBe('Hello over v2')
 
       const receivedHello = await waitForBasicMessage(faberAgent, {
@@ -62,10 +58,7 @@ describe('DIDComm v2 modules', () => {
       })
       expect(receivedHello.content).toBe('Hello over v2')
 
-      const replyRecord = await faberAgent.didcomm.basicMessages.sendMessage(
-        faberConnection.id,
-        'How are you? (v2)'
-      )
+      const replyRecord = await faberAgent.didcomm.basicMessages.sendMessage(faberConnection.id, 'How are you? (v2)')
       expect(replyRecord.content).toBe('How are you? (v2)')
 
       const receivedReply = await waitForBasicMessage(aliceAgent, {
@@ -75,10 +68,7 @@ describe('DIDComm v2 modules', () => {
     })
 
     it('sends basic message with parentThreadId over DIDComm v2', async () => {
-      const helloRecord = await aliceAgent.didcomm.basicMessages.sendMessage(
-        aliceConnection.id,
-        'Threaded hello'
-      )
+      const helloRecord = await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'Threaded hello')
       expect(helloRecord.content).toBe('Threaded hello')
 
       const helloMessage = await waitForBasicMessage(faberAgent, {
@@ -126,9 +116,7 @@ describe('DIDComm v2 modules', () => {
         )
         .subscribe(faberReplay)
       aliceAgent.events
-        .observable<DidCommDiscoverFeaturesQueryReceivedEvent>(
-          DidCommDiscoverFeaturesEventTypes.QueryReceived
-        )
+        .observable<DidCommDiscoverFeaturesQueryReceivedEvent>(DidCommDiscoverFeaturesEventTypes.QueryReceived)
         .subscribe(aliceReplay)
 
       await faberAgent.didcomm.discovery.queryFeatures({
@@ -169,14 +157,10 @@ describe('DIDComm v2 modules', () => {
         )
         .subscribe(aliceReplay)
       faberAgent.events
-        .observable<DidCommDiscoverFeaturesQueryReceivedEvent>(
-          DidCommDiscoverFeaturesEventTypes.QueryReceived
-        )
+        .observable<DidCommDiscoverFeaturesQueryReceivedEvent>(DidCommDiscoverFeaturesEventTypes.QueryReceived)
         .subscribe(faberReplay)
 
-      faberAgent.didcomm.features.register(
-        new DidCommGoalCode({ id: 'v2.e2e.goal.test' })
-      )
+      faberAgent.didcomm.features.register(new DidCommGoalCode({ id: 'v2.e2e.goal.test' }))
 
       await aliceAgent.didcomm.discovery.queryFeatures({
         connectionId: aliceConnection.id,

@@ -1,5 +1,5 @@
-import type { DidCommMediatorPickupStrategy } from './DidCommMediatorPickupStrategy'
 import type { DidCommVersion } from '../../util/didcommVersion'
+import type { DidCommMediatorPickupStrategy } from './DidCommMediatorPickupStrategy'
 
 /**
  * MediationRecipientModuleConfigOptions defines the interface for the options of the MediationRecipientModuleConfig class.

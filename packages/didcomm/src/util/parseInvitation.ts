@@ -55,7 +55,7 @@ function convertV2ToOutOfBandInvitation(v2Invitation: DidCommOutOfBandInvitation
  */
 export const parseInvitationJson = (invitationJson: Record<string, unknown>): DidCommOutOfBandInvitation => {
   // DIDComm v2 OOB uses "type" not "@type"
-  const v2Type = invitationJson['type'] as string
+  const v2Type = invitationJson.type as string
   if (v2Type === DidCommOutOfBandInvitationV2.type) {
     const v2Invitation = DidCommOutOfBandInvitationV2.fromJson(invitationJson)
     return convertV2ToOutOfBandInvitation(v2Invitation)

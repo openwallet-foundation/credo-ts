@@ -35,6 +35,8 @@ import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
 import type { DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
+import { DidCommMediationRole } from '../models/DidCommMediationRole'
+import { DidCommMediationState } from '../models/DidCommMediationState'
 import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../protocol/v1/messages'
 import {
   DidCommKeylistUpdateAction,
@@ -46,17 +48,15 @@ import {
 } from '../protocol/v1/messages'
 import {
   DidCommForwardV2Message,
-  DidCommKeylistV2Message,
   DidCommKeylistQueryV2Message,
-  KeylistUpdateActionV2,
-  DidCommKeylistUpdateV2Message,
   DidCommKeylistUpdateResponseV2Message,
-  KeylistUpdateResultV2,
+  DidCommKeylistUpdateV2Message,
+  DidCommKeylistV2Message,
   DidCommMediateGrantV2Message,
   DidCommMediateRequestV2Message,
+  KeylistUpdateActionV2,
+  KeylistUpdateResultV2,
 } from '../protocol/v2/messages'
-import { DidCommMediationRole } from '../models/DidCommMediationRole'
-import { DidCommMediationState } from '../models/DidCommMediationState'
 import { DidCommMediatorRoutingRecord } from '../repository'
 import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
@@ -204,10 +204,9 @@ export class DidCommMediatorService {
     }
 
     if (!mediationRecord) {
-      throw new RecordNotFoundError(
-        `MediationRecord: no record found for forward message recipient`,
-        { recordType: DidCommMediationRecord.type }
-      )
+      throw new RecordNotFoundError(`MediationRecord: no record found for forward message recipient`, {
+        recordType: DidCommMediationRecord.type,
+      })
     }
 
     mediationRecord.assertReady()

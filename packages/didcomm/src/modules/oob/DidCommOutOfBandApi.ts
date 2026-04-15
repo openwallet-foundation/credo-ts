@@ -4,7 +4,6 @@ import {
   CredoError,
   DidKey,
   DidsApi,
-  PeerDidNumAlgo,
   EventEmitter,
   filterContextCorrelationId,
   InjectionSymbols,
@@ -14,19 +13,21 @@ import {
   JsonTransformer,
   Kms,
   type Logger,
+  PeerDidNumAlgo,
 } from '@credo-ts/core'
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 import { DidCommEventTypes, type DidCommMessageReceivedEvent } from '../../DidCommEvents'
 import type { DidCommMessage } from '../../DidCommMessage'
-import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import type { DidCommAttachment } from '../../decorators/attachment/DidCommAttachment'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommDocumentService } from '../../services'
 import type { DidCommPlaintextMessage } from '../../types'
+import type { DidCommVersion } from '../../util/didcommVersion'
 import {
   parseDidCommProtocolUri,
   parseMessageType,
@@ -41,9 +42,9 @@ import {
   DidCommHandshakeProtocol,
 } from '../connections'
 import { DidCommConnectionsApi } from '../connections/DidCommConnectionsApi'
+import { createPeerDidForV2OOB } from '../connections/services/helpers'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
 import { convertToNewInvitation, convertToOldInvitation } from './converters'
-
 import { DidCommOutOfBandService } from './DidCommOutOfBandService'
 import type { DidCommHandshakeReusedEvent } from './domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandEventTypes } from './domain/DidCommOutOfBandEvents'
@@ -51,13 +52,11 @@ import { DidCommOutOfBandRole } from './domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from './domain/DidCommOutOfBandState'
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from './helpers'
-import { createPeerDidForV2OOB } from '../connections/services/helpers'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from './messages'
 import { DidCommOutOfBandInvitationV2 } from './messages/DidCommOutOfBandInvitationV2'
 import { DidCommOutOfBandRepository } from './repository'
 import { type DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord } from './repository/DidCommOutOfBandRecord'
 import { DidCommOutOfBandRecordMetadataKeys } from './repository/outOfBandRecordMetadataTypes'
-import type { DidCommVersion } from '../../util/didcommVersion'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
@@ -211,7 +210,11 @@ export class DidCommOutOfBandApi {
     const hasRouting = config.routing !== undefined
     const didCommVersion =
       config.didCommVersion ??
-      (hasAttachments || hasExplicitHandshakeProtocols || hasRouting ? 'v1' : this.didCommModuleConfig.sendsV2 ? 'v2' : 'v1')
+      (hasAttachments || hasExplicitHandshakeProtocols || hasRouting
+        ? 'v1'
+        : this.didCommModuleConfig.sendsV2
+          ? 'v2'
+          : 'v1')
     const autoAcceptConnection = config.autoAcceptConnection ?? this.connectionsApi.config.autoAcceptConnections
 
     // V2 OOB path: no handshake, did:peer:2, first-message connection establishment
@@ -324,7 +327,9 @@ export class DidCommOutOfBandApi {
   /**
    * Converts v2 OOB invitation to unified DidCommOutOfBandInvitation for record storage.
    */
-  private convertV2InvitationToOutOfBandInvitation(v2Invitation: DidCommOutOfBandInvitationV2): DidCommOutOfBandInvitation {
+  private convertV2InvitationToOutOfBandInvitation(
+    v2Invitation: DidCommOutOfBandInvitationV2
+  ): DidCommOutOfBandInvitation {
     const invitation = new DidCommOutOfBandInvitation({
       id: v2Invitation.id,
       goal: v2Invitation.body?.goal,
@@ -566,8 +571,7 @@ export class DidCommOutOfBandApi {
     this.assertAgentSupportsDidCommVersion(didCommVersion)
 
     if (didCommVersion === 'v2') {
-      const hasHandshakeProtocols =
-        config.handshakeProtocols !== undefined && config.handshakeProtocols.length > 0
+      const hasHandshakeProtocols = config.handshakeProtocols !== undefined && config.handshakeProtocols.length > 0
       if (hasHandshakeProtocols) {
         throw new CredoError(
           `handshakeProtocols cannot be used with DIDComm v2 (v2 has no handshake). Omit handshakeProtocols or set didCommVersion: 'v1'.`
@@ -683,7 +687,10 @@ export class DidCommOutOfBandApi {
 
     // V2 OOB: v2Invitation is @Exclude() and lost when record is loaded from storage. Persist in metadata.
     if (outOfBandInvitation.v2Invitation) {
-      outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.V2Invitation, outOfBandInvitation.v2Invitation.toJSON())
+      outOfBandRecord.metadata.set(
+        DidCommOutOfBandRecordMetadataKeys.V2Invitation,
+        outOfBandInvitation.v2Invitation.toJSON()
+      )
     }
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)

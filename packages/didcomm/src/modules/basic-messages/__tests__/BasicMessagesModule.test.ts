@@ -21,7 +21,10 @@ describe('BasicMessagesModule', () => {
   test('registers dependencies on the dependency manager', () => {
     new DidCommBasicMessagesModule().register(dependencyManager)
 
-    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(DidCommBasicMessagesModuleConfig, expect.any(DidCommBasicMessagesModuleConfig))
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(
+      DidCommBasicMessagesModuleConfig,
+      expect.any(DidCommBasicMessagesModuleConfig)
+    )
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommBasicMessageService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommBasicMessageRepository)
