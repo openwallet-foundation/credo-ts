@@ -186,10 +186,10 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
         invitationUrl,
         { label: 'alice' }
       )
-      expect(aliceFaberConnection).toBeDefined()
-      expect(aliceFaberConnection?.state).toBe(DidCommDidExchangeState.Completed)
+      if (!aliceFaberConnection) throw new Error('Expected aliceFaberConnection to be defined')
+      expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
-      const ping = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection?.id, {})
+      const ping = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection.id, {})
       await waitForTrustPingResponseReceivedEvent(aliceAgent, { threadId: ping.threadId })
     })
   })

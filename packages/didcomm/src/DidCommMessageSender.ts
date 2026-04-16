@@ -193,8 +193,11 @@ export class DidCommMessageSender {
     recipientX25519.keyId = keys.recipientKeys[0].hasKeyId
       ? keys.recipientKeys[0].keyId
       : new DidKey(keys.recipientKeys[0]).did
-    const senderX25519 = toX25519(keys.senderKey!)
-    senderX25519.keyId = keys.senderKey?.hasKeyId ? keys.senderKey?.keyId : keys.senderKey?.legacyKeyId
+    if (!keys.senderKey) {
+      throw new CredoError('DIDComm v2 pack requires a sender key')
+    }
+    const senderX25519 = toX25519(keys.senderKey)
+    senderX25519.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
 
     const tagsTheirDid = connection?.getTags().theirDid
     const theirDidForEnvelope =
@@ -559,8 +562,8 @@ export class DidCommMessageSender {
               // Per DIDComm v2 spec section 5.1.4, skid MUST point into the sender's keyAgreement (X25519),
               // not authentication (Ed25519). Find the keyAgreement VM whose X25519 key matches
               // the converted Ed25519 sender key, and use its id as skid.
-              senderKeySkid: (() => {
-                const senderX25519 = senderVerificationMethod.publicJwk.convertTo(Kms.X25519PublicJwk)
+              senderKeySkid: ((): string | undefined => {
+                const senderX25519 = toX25519(senderVerificationMethod.publicJwk)
                 const kaVm = (didDocument.keyAgreement ?? [])
                   .map((ref) => (typeof ref === 'string' ? didDocument.dereferenceVerificationMethod(ref) : ref))
                   .find((vm) => {
@@ -572,7 +575,6 @@ export class DidCommMessageSender {
                     }
                   })
                 const id = kaVm?.id ?? senderVerificationMethod.verificationMethod.id
-                if (typeof id !== 'string') return undefined
                 if (id.startsWith('did:')) return id
                 if (id.startsWith('#')) return `${didDocument.id}${id}`
                 return undefined
@@ -807,9 +809,10 @@ export class DidCommMessageSender {
           didCommServices = []
         }
         try {
+          if (!connection.theirDid) throw new CredoError('Connection has no theirDid')
           const didDocument = isPeer2
-            ? didToNumAlgo2DidDocument(connection.theirDid!)
-            : didToNumAlgo4DidDocument(connection.theirDid!)
+            ? didToNumAlgo2DidDocument(connection.theirDid)
+            : didToNumAlgo4DidDocument(connection.theirDid)
           const allServices = didDocument.service ?? []
           for (const svc of allServices) {
             let endpoint: string | undefined =

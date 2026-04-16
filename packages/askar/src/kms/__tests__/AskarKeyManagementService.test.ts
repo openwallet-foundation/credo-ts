@@ -1732,7 +1732,7 @@ describe('AskarKeyManagementService', () => {
             keyId: recipientKey.keyId,
             algorithm: 'ECDH-1PU+A256KW',
             encryptedKey: result.encryptedKey as Kms.KmsEncryptedKey,
-            ephemeralPublicJwk: result.encryptedKey?.ephemeralPublicKey!,
+            ephemeralPublicJwk: result.encryptedKey?.ephemeralPublicKey as Kms.KmsJwkPublicEcdh,
             senderPublicJwk: senderKey.publicJwk,
           },
         },

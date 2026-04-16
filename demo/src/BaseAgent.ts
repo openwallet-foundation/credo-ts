@@ -113,7 +113,7 @@ function getAskarAnonCredsIndyModules(
       ...(useDidCommV2 && {
         didcommVersions: ['v1', 'v2'],
       }),
-      basicMessages: { protocols: ['1.0', '2.0'] },
+      basicMessages: { protocols: ['v1', 'v2'] },
       connections: {
         autoAcceptConnections: true,
         ...(useDidCommV2 && { autoCreateConnectionOnFirstMessage: true }),

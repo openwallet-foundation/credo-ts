@@ -217,8 +217,13 @@ export class DidDocument {
       IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service
     >
 
-    // Sort services based on indicated priority
-    return services.sort((a, b) => a.priority - b.priority)
+    // Sort services based on indicated priority. DIDComm V2 services do not
+    // carry a priority field; treat them as priority 0 for a stable ordering.
+    const getPriority = (
+      service: IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service
+    ): number => (service instanceof IndyAgentService || service instanceof DidCommV1Service ? service.priority : 0)
+
+    return services.sort((a, b) => getPriority(a) - getPriority(b))
   }
 
   // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
@@ -249,7 +254,7 @@ export class DidDocument {
 
     const seenVerificationMethodIds: string[] = []
     for (const service of this.didCommServices) {
-      if (service.type === IndyAgentService.type) {
+      if (service instanceof IndyAgentService) {
         for (const publicKeyBase58 of service.recipientKeys) {
           const publicJwk = PublicJwk.fromPublicKey({
             kty: 'OKP',
@@ -276,8 +281,9 @@ export class DidDocument {
             publicJwk,
             verificationMethod,
           })
+          seenVerificationMethodIds.push(verificationMethod.id)
         }
-      } else if (service.type === DidCommV1Service.type) {
+      } else if (service instanceof DidCommV1Service) {
         for (const recipientKey of service.recipientKeys) {
           const verificationMethod = this.dereferenceKey(recipientKey, ['authentication', 'keyAgreement'])
           if (seenVerificationMethodIds.includes(verificationMethod.id)) {
@@ -297,8 +303,9 @@ export class DidDocument {
             publicJwk,
             verificationMethod,
           })
+          seenVerificationMethodIds.push(verificationMethod.id)
         }
-      } else if (service.type === DidCommV2Service.type || service.type === NewDidCommV2Service.type) {
+      } else if (service instanceof DidCommV2Service || service instanceof NewDidCommV2Service) {
         // DidCommV2Service: keys come from DID document keyAgreement
         for (const keyRef of this.keyAgreement ?? []) {
           const verificationMethod = typeof keyRef === 'string' ? this.dereferenceVerificationMethod(keyRef) : keyRef
