@@ -8,6 +8,7 @@ import { testLogger } from '../../../../../core/tests'
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../core/tests/helpers'
 import { DidCommModuleConfig } from '../../../../../didcomm/src'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
+import { InMemoryQueueTransportRepository } from '../../../transport/queue/InMemoryQueueTransportRepository'
 import { DidCommDidExchangeState } from '../../connections/models/DidCommDidExchangeState'
 import { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
 import { DidCommMessagePickupApi } from '../DidCommMessagePickupApi'
@@ -17,8 +18,10 @@ import {
   DidCommMessageDeliveryV2Message,
   DidCommMessagePickupV1Protocol,
   DidCommMessagePickupV2Protocol,
+  DidCommMessagePickupV3Protocol,
 } from '../protocol'
 import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
+import { DidCommMessageDeliveryV3Message } from '../protocol/v3'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
 
 const mockConnection = getMockConnection({
@@ -29,6 +32,7 @@ vi.mock('../../../../../core/src/agent/EventEmitter')
 vi.mock('../../../DidCommMessageSender')
 vi.mock('../../connections/services/DidCommConnectionService')
 vi.mock('../services/DidCommMessagePickupSessionService')
+vi.mock('../../../transport/queue/InMemoryQueueTransportRepository')
 
 const EventEmitterMock = EventEmitter as MockedClassConstructor<typeof EventEmitter>
 const MessageSenderMock = DidCommMessageSender as MockedClassConstructor<typeof DidCommMessageSender>
@@ -39,7 +43,11 @@ const MessagePickupSessionServiceMock = DidCommMessagePickupSessionService as Mo
 
 const messagePickupModuleConfig = new DidCommMessagePickupModuleConfig({
   maximumBatchSize: 10,
-  protocols: [new DidCommMessagePickupV1Protocol(), new DidCommMessagePickupV2Protocol()],
+  protocols: [
+    new DidCommMessagePickupV1Protocol(),
+    new DidCommMessagePickupV2Protocol(),
+    new DidCommMessagePickupV3Protocol(),
+  ],
 })
 
 // Mock classes
@@ -47,6 +55,11 @@ const eventEmitter = new EventEmitterMock()
 const messageSender = new MessageSenderMock()
 const connectionService = new ConnectionServiceMock()
 const messagePickupSessionService = new MessagePickupSessionServiceMock()
+
+const queueTransportRepository = new (
+  InMemoryQueueTransportRepository as MockedClassConstructor<typeof InMemoryQueueTransportRepository>
+)()
+const didCommModuleConfigWithQueue = new DidCommModuleConfig({ queueTransportRepository })
 
 // Mock typed object
 const agentContext = getAgentContext({
@@ -56,7 +69,7 @@ const agentContext = getAgentContext({
     [DidCommConnectionService, connectionService],
     [DidCommMessagePickupModuleConfig, messagePickupModuleConfig],
     [DidCommMessagePickupSessionService, messagePickupSessionService],
-    [DidCommModuleConfig, new DidCommModuleConfig()],
+    [DidCommModuleConfig, didCommModuleConfigWithQueue],
   ],
 })
 
@@ -136,5 +149,35 @@ describe('DidCommMessagePickupApi', () => {
         batchSize: 10,
       })
     ).rejects.toThrow(CredoError)
+  })
+
+  it('sends v3 delivery message when session uses v3 protocol', async () => {
+    const mockConnectionV3 = getMockConnection({
+      state: DidCommDidExchangeState.Completed,
+    })
+    mockConnectionV3.didcommVersion = 'v2'
+    mockFunction(messagePickupSessionService.getLiveSession).mockReturnValue({
+      connectionId: mockConnectionV3.id,
+      protocolVersion: 'v3',
+    } as DidCommMessagePickupSession)
+    mockFunction(connectionService.getById).mockResolvedValue(mockConnectionV3)
+    mockFunction(queueTransportRepository.takeFromQueue).mockResolvedValue([
+      {
+        id: 'msg-1',
+        encryptedMessage: { protected: 'p', iv: 'i', ciphertext: 'c', tag: 't' },
+        receivedAt: new Date(),
+      },
+    ])
+
+    await api.deliverMessagesFromQueue({
+      pickupSessionId: 'pickup-1',
+      recipientDid: 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc',
+      batchSize: 10,
+    })
+
+    const sendMessageMock = messageSender.sendMessage as MockedFunction<(typeof messageSender)['sendMessage']>
+    expect(sendMessageMock).toHaveBeenCalledTimes(1)
+    const [outboundCtx] = sendMessageMock.mock.calls[0]
+    expect(outboundCtx.message.type).toEqual(DidCommMessageDeliveryV3Message.type.messageTypeUri)
   })
 })
