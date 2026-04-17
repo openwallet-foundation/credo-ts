@@ -1,5 +1,6 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 import { BaseRecord, utils } from '@credo-ts/core'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 import type { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
 
 export type CustomDidCommBasicMessageTags = TagsBase
@@ -22,6 +23,8 @@ export interface DidCommBasicMessageStorageProps {
   parentThreadId?: string
   content: string
   sentTime: string
+  /** Protocol version ('v1' or 'v2). Optional for backwards compatibility. */
+  protocolVersion?: DidCommVersion
 }
 
 export class DidCommBasicMessageRecord extends BaseRecord<
@@ -34,6 +37,7 @@ export class DidCommBasicMessageRecord extends BaseRecord<
   public role!: DidCommBasicMessageRole
   public threadId?: string
   public parentThreadId?: string
+  public protocolVersion?: DidCommVersion
 
   public static readonly type = 'BasicMessageRecord'
   public readonly type = DidCommBasicMessageRecord.type
@@ -51,6 +55,7 @@ export class DidCommBasicMessageRecord extends BaseRecord<
       this.role = props.role
       this.threadId = props.threadId
       this.parentThreadId = props.parentThreadId
+      this.protocolVersion = props.protocolVersion
     }
   }
 

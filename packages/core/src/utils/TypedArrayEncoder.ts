@@ -1,4 +1,4 @@
-import { base58, base64, base64urlnopad, hex, utf8 } from '@scure/base'
+import { base58, base64, base64url, base64urlnopad, hex, utf8 } from '@scure/base'
 import { CredoError } from '../error'
 
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
@@ -15,11 +15,31 @@ export class TypedArrayEncoder {
   }
 
   /**
-   * Decode a base64 string into a Uint8Array
+   * Decode a base64 string into a Uint8Array.
+   *
+   * Accepts multiple base64 variants for interop with agents that produce
+   * attachments with loose encoding (e.g. DIDComm `did_rotate~attach` data
+   * using base64url, with or without padding):
+   *   1. standard base64 (padded)
+   *   2. base64url (padded)
+   *   3. base64url (no padding)
    */
   public static fromBase64(data: string) {
+    // Try strict base64 first
     try {
       return base64.decode(data)
+    } catch {
+      // Fall through to base64url variants
+    }
+    // Try base64url with padding
+    try {
+      return base64url.decode(data)
+    } catch {
+      // Fall through to base64url without padding
+    }
+    // Try base64url without padding
+    try {
+      return base64urlnopad.decode(data)
     } catch (error) {
       throw new CredoError(`Could not decode data from base64 string`, { cause: error })
     }

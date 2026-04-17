@@ -24,7 +24,7 @@ export const didcommConnectionRoleEnum = pgEnum('DidcommConnectionRole', didcomm
 
 export const didcommConnectionHandshakeProtocols = exhaustiveArray(
   {} as DidCommHandshakeProtocol,
-  ['https://didcomm.org/didexchange/1.x', 'https://didcomm.org/connections/1.x'] as const
+  ['https://didcomm.org/didexchange/1.x', 'https://didcomm.org/connections/1.x', 'None'] as const
 )
 export const didcommConnectionHandshakeProtocolEnum = pgEnum(
   'DidcommConnectionHandshakeProtocol',

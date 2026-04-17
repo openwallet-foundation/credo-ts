@@ -792,6 +792,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "invitationId": "d56fd7af-852e-458e-b750-7a4f4e53d6e6",
       "invitationRequestsThreadIds": undefined,
+      "recipientDid": undefined,
       "recipientKeyFingerprints": [
         "z6MkfiPMPxCQeSDZGMkCvm1Y2rBoPsmw4ZHMv71jXtcWRRiM",
       ],
@@ -820,6 +821,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
           "didcomm/aip1",
           "didcomm/aip2;env=rfc19",
         ],
+        "from": undefined,
         "goal": undefined,
         "goal_code": undefined,
         "handshake_protocols": [
@@ -840,6 +842,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
             "type": "did-communication",
           },
         ],
+        "to": undefined,
         "~attach": undefined,
         "~l10n": undefined,
         "~please_ack": undefined,
@@ -860,6 +863,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "invitationId": "d939d371-3155-4d9c-87d1-46447f624f44",
       "invitationRequestsThreadIds": undefined,
+      "recipientDid": undefined,
       "recipientKeyFingerprints": [
         "z6MktCZAQNGvWb4WHAjwBqPtXhZdDYorbSJkGW9vj1uhw1HD",
       ],
@@ -888,6 +892,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
           "didcomm/aip1",
           "didcomm/aip2;env=rfc19",
         ],
+        "from": undefined,
         "goal": undefined,
         "goal_code": undefined,
         "handshake_protocols": [
@@ -908,6 +913,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
             "type": "did-communication",
           },
         ],
+        "to": undefined,
         "~attach": undefined,
         "~l10n": undefined,
         "~please_ack": undefined,
@@ -928,6 +934,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "invitationId": "21ef606f-b25b-48c6-bafa-e79193732413",
       "invitationRequestsThreadIds": undefined,
+      "recipientDid": undefined,
       "recipientKeyFingerprints": [
         "z6MkfiPMPxCQeSDZGMkCvm1Y2rBoPsmw4ZHMv71jXtcWRRiM",
       ],
@@ -956,6 +963,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
           "didcomm/aip1",
           "didcomm/aip2;env=rfc19",
         ],
+        "from": undefined,
         "goal": undefined,
         "goal_code": undefined,
         "handshake_protocols": [
@@ -976,6 +984,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
             "type": "did-communication",
           },
         ],
+        "to": undefined,
         "~attach": undefined,
         "~l10n": undefined,
         "~please_ack": undefined,
@@ -996,6 +1005,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "invitationId": "08eb8d8b-67cf-4ce2-9aca-c7d260a5c143",
       "invitationRequestsThreadIds": undefined,
+      "recipientDid": undefined,
       "recipientKeyFingerprints": [
         "z6Mkmod8vp2nURVktVC5ceQeyr2VUz26iu2ZANLNVg9pMawa",
       ],
@@ -1024,6 +1034,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
           "didcomm/aip1",
           "didcomm/aip2;env=rfc19",
         ],
+        "from": undefined,
         "goal": undefined,
         "goal_code": undefined,
         "handshake_protocols": [
@@ -1044,6 +1055,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
             "type": "did-communication",
           },
         ],
+        "to": undefined,
         "~attach": undefined,
         "~l10n": undefined,
         "~please_ack": undefined,
@@ -1064,6 +1076,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "invitationId": "cc67fb5e-1414-4ba6-9030-7456ccd2aaea",
       "invitationRequestsThreadIds": undefined,
+      "recipientDid": undefined,
       "recipientKeyFingerprints": [
         "z6MkjDJL4X7YGoH6gjamhZR2NzowPZqtJfX5kPuNuWiVdjMr",
       ],
@@ -1092,6 +1105,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
           "didcomm/aip1",
           "didcomm/aip2;env=rfc19",
         ],
+        "from": undefined,
         "goal": undefined,
         "goal_code": undefined,
         "handshake_protocols": [
@@ -1112,6 +1126,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
             "type": "did-communication",
           },
         ],
+        "to": undefined,
         "~attach": undefined,
         "~l10n": undefined,
         "~please_ack": undefined,
@@ -1132,6 +1147,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "invitationId": "f0ca03d8-2e11-4ff2-a5fc-e0137a434b7e",
       "invitationRequestsThreadIds": undefined,
+      "recipientDid": undefined,
       "recipientKeyFingerprints": [
         "z6Mko31DNE3gqMRZj1JNhv2BHb1caQshcd9njgKkEQXsgFRp",
       ],
@@ -1155,6 +1171,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
           "didcomm/aip1",
           "didcomm/aip2;env=rfc19",
         ],
+        "from": undefined,
         "goal": undefined,
         "goal_code": undefined,
         "handshake_protocols": [
@@ -1175,6 +1192,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
             "type": "did-communication",
           },
         ],
+        "to": undefined,
         "~attach": undefined,
         "~l10n": undefined,
         "~please_ack": undefined,
@@ -1195,6 +1213,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "invitationId": "1f516e35-08d3-43d8-900c-99d5239f54da",
       "invitationRequestsThreadIds": undefined,
+      "recipientDid": undefined,
       "recipientKeyFingerprints": [
         "z6MkuWTEmH1mUo6W96zSWyH612hFHowRzNEscPYBL2CCMyC2",
       ],
@@ -1223,6 +1242,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
           "didcomm/aip1",
           "didcomm/aip2;env=rfc19",
         ],
+        "from": undefined,
         "goal": undefined,
         "goal_code": undefined,
         "handshake_protocols": [
@@ -1243,6 +1263,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
             "type": "did-communication",
           },
         ],
+        "to": undefined,
         "~attach": undefined,
         "~l10n": undefined,
         "~please_ack": undefined,
@@ -3244,6 +3265,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
     "tags": {
       "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "MEDIATOR",
       "state": "granted",
@@ -3270,6 +3292,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
     "tags": {
       "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "MEDIATOR",
       "state": "granted",
@@ -3296,6 +3319,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "802ef124-36b7-490f-b152-e9d090ddf073",
     "tags": {
       "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "MEDIATOR",
       "state": "granted",
@@ -3331,6 +3355,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
     "tags": {
       "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "MEDIATOR",
       "state": "granted",
@@ -3359,6 +3384,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
     "tags": {
       "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "RECIPIENT",
       "state": "granted",
@@ -3385,6 +3411,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
     "tags": {
       "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "RECIPIENT",
       "state": "granted",
@@ -3411,6 +3438,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "802ef124-36b7-490f-b152-e9d090ddf073",
     "tags": {
       "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "RECIPIENT",
       "state": "granted",
@@ -3446,6 +3474,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
     "tags": {
       "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "RECIPIENT",
       "state": "granted",
@@ -3474,6 +3503,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
     "tags": {
       "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "MEDIATOR",
       "state": "granted",
@@ -3500,6 +3530,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
     "tags": {
       "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "MEDIATOR",
       "state": "granted",
@@ -3526,6 +3557,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "802ef124-36b7-490f-b152-e9d090ddf073",
     "tags": {
       "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "MEDIATOR",
       "state": "granted",
@@ -3561,6 +3593,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
     "tags": {
       "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "MEDIATOR",
       "state": "granted",
@@ -3589,6 +3622,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
     "tags": {
       "connectionId": "88e2093e-97b9-4665-aff0-ffdcb4afee60",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "RECIPIENT",
       "state": "granted",
@@ -3615,6 +3649,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "7f14c1ec-514c-49b2-a00b-04af7e600060",
     "tags": {
       "connectionId": "85a78484-105d-4844-8c01-9f9877362708",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "RECIPIENT",
       "state": "granted",
@@ -3641,6 +3676,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "802ef124-36b7-490f-b152-e9d090ddf073",
     "tags": {
       "connectionId": "ca5b148a-250f-46b0-8537-ae88014d8bd7",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "MEDIATOR",
       "state": "granted",
@@ -3676,6 +3712,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the
     "id": "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd",
     "tags": {
       "connectionId": "dbb3367e-55aa-4c03-b10a-d1fc34392bea",
+      "recipientDids": undefined,
       "recipientKeys": [],
       "role": "MEDIATOR",
       "state": "granted",
