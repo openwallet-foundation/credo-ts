@@ -540,9 +540,12 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         )
         keysToFree.push(decryptionKey)
       } else if (key.keyAgreement) {
-        if (key.keyAgreement.externalPublicJwk) {
-          Kms.assertAllowedKeyDerivationAlgForKey(key.keyAgreement.externalPublicJwk, key.keyAgreement.algorithm)
-          Kms.assertKeyAllowsDerive(key.keyAgreement.externalPublicJwk)
+        // ECDH-1PU+A256KW has ephemeralPublicJwk/senderPublicJwk instead of externalPublicJwk.
+        const externalPublicJwk =
+          key.keyAgreement.algorithm === 'ECDH-1PU+A256KW' ? undefined : key.keyAgreement.externalPublicJwk
+        if (externalPublicJwk) {
+          Kms.assertAllowedKeyDerivationAlgForKey(externalPublicJwk, key.keyAgreement.algorithm)
+          Kms.assertKeyAllowsDerive(externalPublicJwk)
         }
         Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, askarSupportedKeyAgreementAlgorithms, this.backend)
 
@@ -556,15 +559,13 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         Kms.assertKeyAllowsDerive(privateJwk)
 
         // Special case: Ed25519 may be converted to X25519 for ECDH-HSALSA20 (DIDComm v1) and ECDH-ES (DIDComm v2 anoncrypt)
+        const isEd25519Private = privateJwk.kty === 'OKP' && privateJwk.crv === 'Ed25519'
         if (
-          key.keyAgreement.externalPublicJwk &&
+          externalPublicJwk &&
           key.keyAgreement.algorithm !== 'ECDH-HSALSA20' &&
-          !(
-            (key.keyAgreement.algorithm?.startsWith('ECDH-ES') || key.keyAgreement.algorithm === 'ECDH-ES') &&
-            privateJwk.crv === 'Ed25519'
-          )
+          !(key.keyAgreement.algorithm.startsWith('ECDH-ES') && isEd25519Private)
         ) {
-          Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
+          Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, externalPublicJwk)
         }
 
         let senderKey: Key | undefined
@@ -575,9 +576,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           senderKey = this.keyFromJwk(agreement.senderPublicJwk)
           keysToFree.push(ephemeralKey, senderKey)
         } else {
-          senderKey = key.keyAgreement.externalPublicJwk
-            ? this.keyFromJwk(key.keyAgreement.externalPublicJwk)
-            : undefined
+          senderKey = externalPublicJwk ? this.keyFromJwk(externalPublicJwk) : undefined
           if (senderKey) keysToFree.push(senderKey)
         }
 
@@ -635,11 +634,12 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         }
 
         // ECDH-1PU+A256KW and ECDH-ES require X25519; convert Ed25519 like DIDComm v1
+        // Note: ECDH-ES+A192KW is not in askarSupportedKeyAgreementAlgorithms so it's already
+        // rejected by assertSupportedKeyAgreementAlgorithm above.
         if (
           (key.keyAgreement.algorithm === 'ECDH-1PU+A256KW' ||
             key.keyAgreement.algorithm === 'ECDH-ES+A256KW' ||
             key.keyAgreement.algorithm === 'ECDH-ES+A128KW' ||
-            key.keyAgreement.algorithm === 'ECDH-ES+A192KW' ||
             key.keyAgreement.algorithm === 'ECDH-ES') &&
           privateKey.algorithm === KeyAlgorithm.Ed25519
         ) {

@@ -66,11 +66,11 @@ function deriveEncryptionKeyEcdh1Pu(options: {
       other: contentEncryptionKey,
     })
     const epkBytes = ephemeralKey.publicBytes
-    const ephemeralPublicKey: Kms.KmsJwkPublicOkp = {
+    const ephemeralPublicKey = {
       kty: 'OKP',
       crv: 'X25519',
       x: TypedArrayEncoder.toBase64Url(epkBytes),
-    }
+    } as const
     encryptedContentEncryptionKey = {
       encrypted: new Uint8Array(wrappedKey.ciphertext),
       iv: wrappedKey.nonce ? new Uint8Array(wrappedKey.nonce) : undefined,

@@ -379,15 +379,17 @@ describe('E2E Pick Up protocol', () => {
       { label: 'recipient' }
     )
 
+    if (!recipientMediatorConnection) throw new Error('Expected recipientMediatorConnection to be defined')
     recipientMediatorConnection = await recipientAgent.didcomm.connections.returnWhenIsConnected(
-      recipientMediatorConnection?.id
+      recipientMediatorConnection.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.didcomm.connections.findAllByOutOfBandId(
       mediatorOutOfBandRecord.id
     )
+    if (!mediatorRecipientConnection) throw new Error('Expected mediatorRecipientConnection to be defined')
     mediatorRecipientConnection = await mediatorAgent.didcomm.connections.returnWhenIsConnected(
-      mediatorRecipientConnection?.id
+      mediatorRecipientConnection.id
     )
 
     await recipientAgent.shutdown()

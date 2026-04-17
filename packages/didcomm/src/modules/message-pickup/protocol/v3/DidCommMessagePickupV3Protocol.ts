@@ -330,8 +330,8 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
   public async processDelivery(
     messageContext: DidCommInboundMessageContext<DidCommMessageDeliveryV3Message>
   ): Promise<DidCommMessagesReceivedV3Message> {
-    messageContext.assertReadyConnection()
-    assertDidCommV2Connection(messageContext.connection!, 'Message Pickup 3.0')
+    const connection = messageContext.assertReadyConnection()
+    assertDidCommV2Connection(connection, 'Message Pickup 3.0')
 
     const { appendedAttachments } = messageContext.message
 

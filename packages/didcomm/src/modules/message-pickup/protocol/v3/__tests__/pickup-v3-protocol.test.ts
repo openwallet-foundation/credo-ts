@@ -103,8 +103,8 @@ describe('DidCommMessagePickupV3Protocol', () => {
       })
 
       const result = await pickupProtocol.processStatusRequest(messageContext)
-      expect(result).toBeDefined()
-      const { connection, message } = result!
+      if (!result) throw new Error('Expected processStatusRequest result to be defined')
+      const { connection, message } = result
 
       expect(connection).toEqual(mockConnection)
       expect(message).toEqual(
@@ -130,8 +130,8 @@ describe('DidCommMessagePickupV3Protocol', () => {
       })
 
       const result = await pickupProtocol.processStatusRequest(messageContext)
-      expect(result).toBeDefined()
-      const { connection, message } = result!
+      if (!result) throw new Error('Expected processStatusRequest result to be defined')
+      const { connection, message } = result
 
       expect(connection).toEqual(mockConnection)
       expect(message).toEqual(

@@ -1,12 +1,14 @@
 import {
   AgentContext,
   CredoError,
+  DidCommV1Service,
   DidDocument,
   DidsApi,
   didDocumentToNumAlgo4Did,
   EventEmitter,
   filterContextCorrelationId,
   getAlternativeDidsForNumAlgo4Did,
+  IndyAgentService,
   InjectionSymbols,
   inject,
   injectable,
@@ -131,7 +133,10 @@ export class DidCommMediationRecipientApi {
     const websocketSchemes = ['ws', 'wss']
     const didDocument = connectionRecord.theirDid && (await this.dids.resolveDidDocument(connectionRecord.theirDid))
     const services = (didDocument as DidDocument)?.didCommServices || []
-    const hasWebSocketTransport = services?.some((s) => websocketSchemes.includes(s.protocolScheme))
+    const hasWebSocketTransport = services?.some(
+      (s) =>
+        (s instanceof IndyAgentService || s instanceof DidCommV1Service) && websocketSchemes.includes(s.protocolScheme)
+    )
 
     if (!hasWebSocketTransport) {
       throw new CredoError('Cannot open websocket to connection without websocket service endpoint')
@@ -470,14 +475,18 @@ export class DidCommMediationRecipientApi {
    */
   private async recipientDidKeylistVariantsForProvision(recipientDid: string): Promise<string[]> {
     const variants = new Set<string>([recipientDid])
-    getAlternativeDidsForNumAlgo4Did(recipientDid)?.forEach((d) => variants.add(d))
+    for (const d of getAlternativeDidsForNumAlgo4Did(recipientDid) ?? []) {
+      variants.add(d)
+    }
     if (isShortFormDidPeer4(recipientDid)) {
       try {
         const { didDocument } = await this.dids.resolve(recipientDid)
         if (didDocument) {
           const { longFormDid } = didDocumentToNumAlgo4Did(didDocument)
           variants.add(longFormDid)
-          getAlternativeDidsForNumAlgo4Did(longFormDid)?.forEach((d) => variants.add(d))
+          for (const d of getAlternativeDidsForNumAlgo4Did(longFormDid) ?? []) {
+            variants.add(d)
+          }
         }
       } catch {
         // Resolution can fail for exotic stacks; primary did still sent

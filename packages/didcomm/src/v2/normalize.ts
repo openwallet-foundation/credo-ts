@@ -41,9 +41,10 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidComm
   if (to !== undefined) v1.to = to
 
   if (thid !== undefined || pthid !== undefined) {
-    v1['~thread'] = {}
-    if (thid !== undefined) v1['~thread']!.thid = thid
-    if (pthid !== undefined) v1['~thread']!.pthid = pthid
+    const thread: { thid?: string; pthid?: string } = {}
+    if (thid !== undefined) thread.thid = thid
+    if (pthid !== undefined) thread.pthid = pthid
+    v1['~thread'] = thread
   }
 
   if (lang !== undefined) {

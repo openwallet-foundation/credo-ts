@@ -49,7 +49,6 @@ export async function deriveEncryptionKey(options: {
   if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
     return deriveEncryptionKeyEcdh1Pu({
       keyAgreement,
-      encryption,
       privateJwk: privateJwk as Kms.KmsJwkPrivateOkp,
     })
   }
@@ -104,10 +103,9 @@ export async function deriveEncryptionKey(options: {
 
 async function deriveEncryptionKeyEcdh1Pu(options: {
   keyAgreement: Kms.KmsKeyAgreementEncryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
-  encryption: Kms.KmsEncryptDataEncryption
   privateJwk: Kms.KmsJwkPrivateOkp
 }) {
-  const { keyAgreement, encryption, privateJwk } = options
+  const { keyAgreement, privateJwk } = options
   if (privateJwk.crv !== 'X25519' || keyAgreement.externalPublicJwk.crv !== 'X25519') {
     throw new Kms.KeyManagementAlgorithmNotSupportedError('ECDH-1PU+A256KW requires X25519 keys', 'node')
   }
@@ -144,7 +142,7 @@ async function deriveEncryptionKeyEcdh1Pu(options: {
   const epkJwk = {
     kty: 'OKP' as const,
     crv: 'X25519' as const,
-    x: TypedArrayEncoder.toBase64URL(epkPub),
+    x: TypedArrayEncoder.toBase64Url(epkPub),
   }
 
   return {
@@ -154,7 +152,7 @@ async function deriveEncryptionKeyEcdh1Pu(options: {
     } satisfies Kms.KmsEncryptedKey,
     contentEncryptionKey: {
       kty: 'oct' as const,
-      k: TypedArrayEncoder.toBase64URL(cekBytes),
+      k: TypedArrayEncoder.toBase64Url(cekBytes),
     },
   }
 }

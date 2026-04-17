@@ -1,3 +1,4 @@
+import type { Ed25519PublicJwk } from '../../../kms'
 import { PublicJwk } from '../../../kms'
 import { DidCommV1Service, DidDocumentBuilder, getEd25519VerificationKey2018 } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
@@ -7,7 +8,9 @@ import { DidRecordMetadataKeys } from '../didRecordMetadataTypes'
 describe('DidRecord', () => {
   describe('getTags', () => {
     it('stores the fingerprints of recipient keys from the did document when a did document is present', () => {
-      const publicJwk = PublicJwk.fromFingerprint('z6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V')
+      const publicJwk = PublicJwk.fromFingerprint(
+        'z6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V'
+      ) as PublicJwk<Ed25519PublicJwk>
       const verificationMethod = getEd25519VerificationKey2018({
         publicJwk,
         controller: 'did:example:alice#id',

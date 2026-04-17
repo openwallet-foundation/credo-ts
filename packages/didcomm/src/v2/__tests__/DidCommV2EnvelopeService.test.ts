@@ -43,7 +43,10 @@ class MockEcdh1PuKeyManagementService implements Kms.KeyManagementService {
     return this.keys.get(keyId) ?? null
   }
 
-  async createKey(ctx: AgentContext, options: Kms.KmsCreateKeyOptions<Kms.KmsCreateKeyTypeOkp>) {
+  async createKey<Type extends Kms.KmsCreateKeyType>(
+    _ctx: AgentContext,
+    options: Kms.KmsCreateKeyOptions<Type>
+  ): Promise<Kms.KmsCreateKeyReturn<Type>> {
     if (options.type.kty !== 'OKP' || options.type.crv !== 'X25519') {
       throw new Kms.KeyManagementAlgorithmNotSupportedError('Only OKP X25519 supported', this.backend)
     }
@@ -56,7 +59,7 @@ class MockEcdh1PuKeyManagementService implements Kms.KeyManagementService {
       kid: keyId,
     }
     this.keys.set(keyId, publicJwk)
-    return { keyId, publicJwk }
+    return { keyId, publicJwk } as unknown as Kms.KmsCreateKeyReturn<Type>
   }
 
   async importKey(): Promise<Kms.KmsImportKeyReturn<never>> {

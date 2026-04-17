@@ -53,6 +53,9 @@ const zKmsKeyAgreementDecryptEcdh1Pu = z.object({
   encryptedKey: zKmsEncryptedKey,
   ephemeralPublicJwk: zKmsJwkPublicEcdh,
   senderPublicJwk: zKmsJwkPublicEcdh,
+
+  apu: z.optional(zAnyUint8Array),
+  apv: z.optional(zAnyUint8Array),
 })
 export type KmsKeyAgreementDecryptEcdh1Pu = z.output<typeof zKmsKeyAgreementDecryptEcdh1Pu>
 
