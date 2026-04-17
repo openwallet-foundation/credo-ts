@@ -1,3 +1,4 @@
+import type { ClassConstructor } from 'class-transformer'
 import { CredoError } from '../../../../error'
 import type { JsonObject } from '../../../../types'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
@@ -10,6 +11,9 @@ import {
   getVerificationMethodsForPublicJwk,
 } from '../../domain/key-type/keyDidMapping'
 import { parseDid } from '../../domain/parse'
+import { DidCommV2Service } from '../../domain/service/DidCommV2Service'
+import { LegacyDidCommV2Service } from '../../domain/service/LegacyDidCommV2Service'
+import { serviceTypes } from '../../domain/service/ServiceTransformer'
 
 enum DidPeerPurpose {
   Assertion = 'A',
@@ -69,7 +73,18 @@ export function didToNumAlgo2DidDocument(did: string) {
 
         service.id = `${did}#${service.type.toLowerCase()}-${serviceIndex++}`
 
-        didDocument.addService(JsonTransformer.fromJSON(service, DidDocumentService))
+        // Use the service type mapping to create the correct subclass instance (e.g. DidCommV1Service)
+        // so that instanceof checks in DidDocument work correctly. Mirrors ServiceTransformer logic.
+        let serviceClass = (serviceTypes[service.type] ?? DidDocumentService) as ClassConstructor<DidDocumentService>
+        // DIDCommMessaging with a string serviceEndpoint is the legacy format
+        if (
+          service.type === DidCommV2Service.type &&
+          'serviceEndpoint' in service &&
+          typeof service.serviceEndpoint === 'string'
+        ) {
+          serviceClass = LegacyDidCommV2Service
+        }
+        didDocument.addService(JsonTransformer.fromJSON(service, serviceClass))
       }
     }
     // Otherwise we can be sure it is a key
