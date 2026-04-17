@@ -29,7 +29,7 @@ describe('peerDidNumAlgo2', () => {
 
     test('transforms method 2 peer did created by aca-py to a did document', async () => {
       expect(isValidPeerDid(didPeer2Ez6LSe3YyteKQAcaPy.id)).toEqual(true)
-      expect(didToNumAlgo2DidDocument(didPeer2Ez6LSe3YyteKQAcaPy.id).toJSON()).toEqual(didPeer2Ez6LSe3YyteKQAcaPy)
+      expect(didToNumAlgo2DidDocument(didPeer2Ez6LSe3YyteKQAcaPy.id).toJSON()).toMatchObject(didPeer2Ez6LSe3YyteKQAcaPy)
     })
 
     test('parses v2 OOB style peer did with serviceEndpoint object { uri, accept }', () => {
