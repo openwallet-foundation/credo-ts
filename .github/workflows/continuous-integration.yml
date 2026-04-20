@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
         # Each shard runs a set of the tests
         # Make sure to UPDATE THE TEST command with the total length of
         # the shards if you change this!!
@@ -114,7 +114,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
 
     steps:
       - uses: actions/checkout@v6.0.2
@@ -174,7 +174,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
 
     steps:
       - uses: actions/checkout@v6.0.2
@@ -237,7 +237,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
-          pattern: coverage-artifacts-20-*
+          pattern: coverage-artifacts-22-*
           path: coverage
           merge-multiple: true
 
