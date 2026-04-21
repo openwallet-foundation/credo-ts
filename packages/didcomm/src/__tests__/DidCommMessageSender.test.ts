@@ -531,9 +531,7 @@ describe('DidCommMessageSender', () => {
       // The wss service must be tried first, not the https one, even though
       // https is not listed in the priority schemes.
       expect(wsSendSpy).toHaveBeenCalledTimes(1)
-      expect(wsSendSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ endpoint: wssService.serviceEndpoint })
-      )
+      expect(wsSendSpy).toHaveBeenCalledWith(expect.objectContaining({ endpoint: wssService.serviceEndpoint }))
       expect(httpSendSpy).not.toHaveBeenCalled()
     })
   })
