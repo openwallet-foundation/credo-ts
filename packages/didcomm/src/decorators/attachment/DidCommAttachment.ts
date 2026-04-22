@@ -1,6 +1,6 @@
 import type { JwsDetachedFormat, JwsFlattenedDetachedFormat, JwsGeneralFormat } from '@credo-ts/core'
 
-import { CredoError, JsonEncoder, type JsonValue, utils } from '@credo-ts/core'
+import { CredoError, JsonEncoder, type JsonValue, TypedArrayEncoder, utils } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 import { IsDate, IsHash, IsInstance, IsInt, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -136,11 +136,40 @@ export class DidCommAttachment {
   public data!: DidCommAttachmentData
 
   /*
+   * Helper function returning the raw bytes of a base64 attachment payload.
+   *
+   * Although the DIDComm specification mandates standard base64 for `data.base64`,
+   * many peers (including earlier Credo versions) emit the payload using the
+   * base64url alphabet, with or without padding. To preserve interoperability we
+   * accept both alphabets here — this is the only place such leniency lives, so
+   * the underlying `TypedArrayEncoder.fromBase64` can remain strictly spec-compliant
+   * for every other caller.
+   */
+  public getDataAsUint8Array(): Uint8Array {
+    if (typeof this.data.base64 !== 'string') {
+      throw new CredoError('No base64 attachment data found.')
+    }
+    try {
+      return TypedArrayEncoder.fromBase64(this.data.base64)
+    } catch (strictError) {
+      try {
+        // `fromBase64Url` expects the no-padding variant. Strip any trailing
+        // `=` so we accept both padded and unpadded base64url inputs.
+        return TypedArrayEncoder.fromBase64Url(this.data.base64.replace(/=+$/, ''))
+      } catch {
+        throw new CredoError('Could not decode attachment data as base64 or base64url string.', {
+          cause: strictError,
+        })
+      }
+    }
+  }
+
+  /*
    * Helper function returning JSON representation of attachment data (if present). Tries to obtain the data from .base64 or .json, throws an error otherwise
    */
   public getDataAsJson<T>(): T {
     if (typeof this.data.base64 === 'string') {
-      return JsonEncoder.fromBase64(this.data.base64) as T
+      return JsonEncoder.fromUint8Array(this.getDataAsUint8Array()) as T
     }
     if (this.data.json) {
       return this.data.json as T
