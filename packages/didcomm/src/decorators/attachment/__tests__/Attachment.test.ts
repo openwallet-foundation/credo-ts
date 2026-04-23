@@ -129,13 +129,13 @@ describe('Decorators | DidCommAttachment', () => {
       expect(() => attachment.getDataAsUint8Array()).toThrow(/No base64 attachment data found/)
     })
 
-    it('throws a clear error for genuinely invalid input, preserving the strict base64 error as cause', () => {
+    it('throws a clear error for genuinely invalid input', () => {
       const attachment = new DidCommAttachment({
         id: 'some-uuid',
         data: new DidCommAttachmentData({ base64: 'this is definitely not base64 $$$' }),
       })
       expect(() => attachment.getDataAsUint8Array()).toThrow(
-        /Could not decode attachment data as base64 or base64url string/
+        /Could not decode attachment data as base64url or base64 string/
       )
     })
 
