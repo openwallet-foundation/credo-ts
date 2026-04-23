@@ -26,7 +26,7 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../models'
 import type { DidCommConnectionRecord } from '../modules'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
-import { type DidCommOutboundTransport, InMemoryQueueTransportRepository } from '../transport'
+import { type DidCommOutboundTransport, InMemoryDidCommQueueTransportRepository, InMemoryDidCommTransportSessionRepository } from '../transport'
 import type { DidCommEncryptedMessage } from '../types'
 import { DummyTransportSession } from './stubs'
 
@@ -88,6 +88,10 @@ describe('DidCommMessageSender', () => {
   const eventEmitter = new EventEmitter(agentDependencies, new Subject())
   const resolveCreatedDidDocumentWithKeysMock = mockFunction(didsApi.resolveCreatedDidDocumentWithKeys)
   const didResolverServiceResolveDidServicesMock = mockFunction(didCommDocumentService.resolveServicesFromDid)
+  const didcommConfig = new DidCommModuleConfig({
+    queueTransportRepository: new InMemoryDidCommQueueTransportRepository(),
+    transportSessionRepository: new InMemoryDidCommTransportSessionRepository(),
+  })
 
   const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
@@ -154,7 +158,7 @@ describe('DidCommMessageSender', () => {
       eventEmitter.on<DidCommMessageSentEvent>(DidCommEventTypes.DidCommMessageSent, eventListenerMock)
 
       didCommModuleConfig = new DidCommModuleConfig({
-        queueTransportRepository: new InMemoryQueueTransportRepository(),
+        queueTransportRepository: new InMemoryDidCommQueueTransportRepository(),
       })
       outboundTransport = new DummyHttpOutboundTransport()
       messageSender = new DidCommMessageSender(
