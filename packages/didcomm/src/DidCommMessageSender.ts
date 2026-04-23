@@ -994,13 +994,16 @@ export class DidCommMessageSender {
       })
     }
 
-    // If transport priority is set we will sort services by our priority
+    // If transport priority is set we will sort services by our priority.
+    // Services whose scheme is not listed in the priority list are kept but
+    // sorted after any prioritized ones (indexOf returns -1 for them, which
+    // would otherwise incorrectly rank them first).
     if (transportPriority?.schemes) {
-      services = services.sort((a, b) => {
-        const aScheme = utils.getProtocolScheme(a.serviceEndpoint)
-        const bScheme = utils.getProtocolScheme(b.serviceEndpoint)
-        return transportPriority?.schemes.indexOf(aScheme) - transportPriority?.schemes.indexOf(bScheme)
-      })
+      const schemePriority = (endpoint: string) => {
+        const index = transportPriority.schemes.indexOf(utils.getProtocolScheme(endpoint))
+        return index === -1 ? Number.MAX_SAFE_INTEGER : index
+      }
+      services = services.sort((a, b) => schemePriority(a.serviceEndpoint) - schemePriority(b.serviceEndpoint))
     }
 
     agentContext.config.logger.debug(
