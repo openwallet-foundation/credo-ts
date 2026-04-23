@@ -1,0 +1,6 @@
+export * from './DidCommDeliveryRequestV3Message'
+export * from './DidCommLiveDeliveryChangeV3Message'
+export * from './DidCommMessageDeliveryV3Message'
+export * from './DidCommMessagesReceivedV3Message'
+export * from './DidCommStatusRequestV3Message'
+export * from './DidCommStatusV3Message'

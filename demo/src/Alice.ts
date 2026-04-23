@@ -30,13 +30,23 @@ export class Alice extends BaseAgent {
   }
 
   private async receiveConnectionRequest(invitationUrl: string) {
-    const { connectionRecord } = await this.agent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, {
-      label: 'alice',
-    })
-    if (!connectionRecord) {
-      throw new Error(redText(Output.NoConnectionRecordFromOutOfBand))
+    try {
+      const result = await this.agent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, {
+        label: 'alice',
+      })
+      const { connectionRecord } = result
+      if (!connectionRecord) {
+        throw new Error(
+          redText(
+            `${Output.NoConnectionRecordFromOutOfBand}\n(Received outOfBandRecord but no connection. This may indicate a v2 OOB flow issue.)`
+          )
+        )
+      }
+      return connectionRecord
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      throw new Error(redText(`${Output.NoConnectionRecordFromOutOfBand}\nUnderlying error: ${message}`))
     }
-    return connectionRecord
   }
 
   private async waitForConnection(connectionRecord: DidCommConnectionRecord) {
@@ -48,6 +58,11 @@ export class Alice extends BaseAgent {
 
   public async acceptConnection(invitation_url: string) {
     const connectionRecord = await this.receiveConnectionRequest(invitation_url)
+    // For v2 OOB: connection is created on inviter's side when they receive first message.
+    // Send trust-ping so Faber creates the connection.
+    if (this.useDidCommV2) {
+      await this.agent.didcomm.connections.sendPing(connectionRecord.id, {})
+    }
     this.connectionRecordFaberId = await this.waitForConnection(connectionRecord)
   }
 
