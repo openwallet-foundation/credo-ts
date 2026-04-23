@@ -1,5 +1,7 @@
+import { PeerDidNumAlgo } from '@credo-ts/core'
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type {
+  DidCommBasicMessagesModuleConfigOptions,
   DidCommConnectionsModuleConfigOptions,
   DidCommCredentialProtocol,
   DidCommMessagePickupModuleConfigOptions,
@@ -18,6 +20,7 @@ import {
   InMemoryQueueTransportRepository,
 } from './transport'
 import { DidCommMimeType } from './types'
+import type { DidCommVersion } from './util/didcommVersion'
 
 export interface DidCommModuleConfigOptions {
   endpoints?: string[]
@@ -30,6 +33,22 @@ export interface DidCommModuleConfigOptions {
   didCommMimeType?: string
   useDidKeyInProtocols?: boolean
   queueTransportRepository?: DidCommQueueTransportRepository
+
+  /**
+   * DIDComm versions to support. When v2 is included, the agent accepts and sends v2 envelopes
+   * (when the connection supports it). Connection request/response always use v1 for compatibility.
+   *
+   * @default ['v1']
+   */
+  didcommVersions?: DidCommVersion[]
+
+  /**
+   * Peer DID numAlgo for V2 OOB invitation creation. did:peer:4 (ShortFormAndLongForm) uses a shorter
+   * identifier; did:peer:2 (MultipleInceptionKeyWithoutDoc) embeds endpoints in the DID. Use peer:2 for legacy.
+   *
+   * @default PeerDidNumAlgo.ShortFormAndLongForm (did:peer:4)
+   */
+  peerDidNumAlgoForV2OOB?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
 
   /**
    * Configuration for the connection module.
@@ -72,14 +91,13 @@ export interface DidCommModuleConfigOptions {
   proofs?: boolean | DidCommProofsModuleConfigOptions<DidCommProofProtocol[]>
 
   /**
-   * Configuration to enable to basic messages module
+   * Configuration for the basic messages module.
+   * Disable by passing `false`. Enable with default (1.0 only) by passing `true`.
+   * Pass options to enable 1.0 and/or 2.0 protocols.
    *
-   * The basic messages module is enabled by default,
-   * but can be disabled by passing `false`
-   *
-   * @default true
+   * @default true (1.0 only)
    */
-  basicMessages?: boolean
+  basicMessages?: boolean | DidCommBasicMessagesModuleConfigOptions
 
   /**
    * Configuration for the message pickup module
@@ -212,5 +230,25 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
    */
   public get queueTransportRepository() {
     return this._queueTransportRepository
+  }
+
+  /** DIDComm versions the agent supports. */
+  public get didcommVersions(): DidCommVersion[] {
+    return this.options.didcommVersions ?? ['v1']
+  }
+
+  /** Whether the agent accepts inbound DIDComm v2 encrypted messages. */
+  public get acceptsV2() {
+    return this.didcommVersions.includes('v2')
+  }
+
+  /** Whether the agent sends outbound messages using DIDComm v2 envelope when supported. */
+  public get sendsV2() {
+    return this.didcommVersions.includes('v2')
+  }
+
+  /** Peer DID numAlgo for V2 OOB. Defaults to did:peer:4. */
+  public get peerDidNumAlgoForV2OOB() {
+    return this.options.peerDidNumAlgoForV2OOB ?? PeerDidNumAlgo.ShortFormAndLongForm
   }
 }
