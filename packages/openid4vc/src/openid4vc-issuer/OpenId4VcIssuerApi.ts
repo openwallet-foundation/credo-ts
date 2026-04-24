@@ -48,6 +48,13 @@ export class OpenId4VcIssuerApi {
     return this.openId4VcIssuerService.rotateAccessTokenSigningKey(this.agentContext, issuer)
   }
 
+  /**
+   * Updates issuer metadata.
+   *
+   * Optional fields are only changed when they are included in `options`.
+   * If a field is omitted, the current value is kept.
+   * If a field is included with `undefined`, the value is cleared.
+   */
   public async updateIssuerMetadata(options: OpenId4VcUpdateIssuerRecordOptions) {
     const {
       issuerId,
@@ -61,16 +68,16 @@ export class OpenId4VcIssuerApi {
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
 
     issuer.credentialConfigurationsSupported = credentialConfigurationsSupported
-    if (display !== undefined) {
+    if ('display' in options) {
       issuer.display = display
     }
-    if (dpopSigningAlgValuesSupported !== undefined) {
+    if ('dpopSigningAlgValuesSupported' in options) {
       issuer.dpopSigningAlgValuesSupported = dpopSigningAlgValuesSupported
     }
-    if (batchCredentialIssuance !== undefined) {
+    if ('batchCredentialIssuance' in options) {
       issuer.batchCredentialIssuance = batchCredentialIssuance
     }
-    if (authorizationServerConfigs !== undefined) {
+    if ('authorizationServerConfigs' in options) {
       issuer.authorizationServerConfigs = authorizationServerConfigs
     }
 
