@@ -174,7 +174,7 @@ describe('DidCommV2EnvelopeService', () => {
       tag: expect.any(String),
     })
 
-    const protectedJson = JsonEncoder.fromBase64(encrypted.protected) as {
+    const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected) as {
       recipients?: Array<{ header?: { kid?: string } }>
     }
     const matchedKid = protectedJson.recipients?.[0]?.header?.kid ?? recipientKey.keyId
@@ -207,7 +207,7 @@ describe('DidCommV2EnvelopeService', () => {
       tag: expect.any(String),
     })
 
-    const protectedJson = JsonEncoder.fromBase64(encrypted.protected) as {
+    const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected) as {
       alg?: string
       recipients?: Array<{ header?: { kid?: string } }>
     }
