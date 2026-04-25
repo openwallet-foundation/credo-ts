@@ -8,7 +8,7 @@ import { Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
 import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
 import { getPublicJwkFromVerificationMethod } from './key-type'
 import type { DidDocumentService } from './service'
-import { DidCommV1Service, IndyAgentService } from './service'
+import { DidCommV1Service, DidCommV2Service, IndyAgentService, NewDidCommV2Service } from './service'
 import { ServiceTransformer } from './service/ServiceTransformer'
 import { IsStringOrVerificationMethod, VerificationMethod, VerificationMethodTransformer } from './verificationMethod'
 
@@ -206,14 +206,24 @@ export class DidDocument {
    * Get all DIDComm services ordered by priority descending. This means the highest
    * priority will be the first entry.
    */
-  public get didCommServices(): Array<IndyAgentService | DidCommV1Service> {
-    const didCommServiceTypes = [IndyAgentService.type, DidCommV1Service.type]
+  public get didCommServices(): Array<IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service> {
+    const didCommServiceTypes = [
+      IndyAgentService.type,
+      DidCommV1Service.type,
+      DidCommV2Service.type,
+      NewDidCommV2Service.type,
+    ]
     const services = (this.service?.filter((service) => didCommServiceTypes.includes(service.type)) ?? []) as Array<
-      IndyAgentService | DidCommV1Service
+      IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service
     >
 
-    // Sort services based on indicated priority
-    return services.sort((a, b) => a.priority - b.priority)
+    // Sort services based on indicated priority. DIDComm V2 services do not
+    // carry a priority field; treat them as priority 0 for a stable ordering.
+    const getPriority = (
+      service: IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service
+    ): number => (service instanceof IndyAgentService || service instanceof DidCommV1Service ? service.priority : 0)
+
+    return services.sort((a, b) => getPriority(a) - getPriority(b))
   }
 
   // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
@@ -244,7 +254,7 @@ export class DidDocument {
 
     const seenVerificationMethodIds: string[] = []
     for (const service of this.didCommServices) {
-      if (service.type === IndyAgentService.type) {
+      if (service instanceof IndyAgentService) {
         for (const publicKeyBase58 of service.recipientKeys) {
           const publicJwk = PublicJwk.fromPublicKey({
             kty: 'OKP',
@@ -271,8 +281,9 @@ export class DidDocument {
             publicJwk,
             verificationMethod,
           })
+          seenVerificationMethodIds.push(verificationMethod.id)
         }
-      } else if (service.type === DidCommV1Service.type) {
+      } else if (service instanceof DidCommV1Service) {
         for (const recipientKey of service.recipientKeys) {
           const verificationMethod = this.dereferenceKey(recipientKey, ['authentication', 'keyAgreement'])
           if (seenVerificationMethodIds.includes(verificationMethod.id)) {
@@ -292,6 +303,26 @@ export class DidDocument {
             publicJwk,
             verificationMethod,
           })
+          seenVerificationMethodIds.push(verificationMethod.id)
+        }
+      } else if (service instanceof DidCommV2Service || service instanceof NewDidCommV2Service) {
+        // DidCommV2Service: keys come from DID document keyAgreement
+        for (const keyRef of this.keyAgreement ?? []) {
+          const verificationMethod = typeof keyRef === 'string' ? this.dereferenceVerificationMethod(keyRef) : keyRef
+          if (seenVerificationMethodIds.includes(verificationMethod.id)) {
+            continue
+          }
+
+          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+          if (!publicJwk.is(Ed25519PublicJwk) && !publicJwk.is(X25519PublicJwk)) {
+            continue
+          }
+
+          recipientKeys.push({
+            publicJwk,
+            verificationMethod,
+          })
+          seenVerificationMethodIds.push(verificationMethod.id)
         }
       }
     }

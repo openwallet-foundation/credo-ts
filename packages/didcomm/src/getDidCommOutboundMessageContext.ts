@@ -1,5 +1,5 @@
 import type { AgentContext, BaseRecordAny, ResolvedDidCommService } from '@credo-ts/core'
-import { CredoError, Kms, utils } from '@credo-ts/core'
+import { CredoError, DidKey, Kms, utils } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
 import { ServiceDecorator } from './decorators/service/ServiceDecorator'
 import type { DidCommRouting } from './models'
@@ -124,13 +124,18 @@ export async function getConnectionlessOutboundMessageContext(
   // Adds the ~service and ~thread.pthid (if oob is used) to the message and updates it in storage.
   await addExchangeDataToMessage(agentContext, { message, ourService, outOfBandRecord, associatedRecord })
 
+  const senderKey = ourService.recipientKeys[0]
+  // For DIDComm v2: skid must be resolvable. Use did:key so recipient can resolve via tryParseKidAsPublicJwk
+  const senderKeySkid = new DidKey(senderKey).did
+
   return new DidCommOutboundMessageContext(message, {
     agentContext: agentContext,
     associatedRecord,
     serviceParams: {
       service: recipientService,
-      senderKey: ourService.recipientKeys[0],
+      senderKey,
       returnRoute: true,
+      senderKeySkid,
     },
   })
 }
