@@ -288,6 +288,20 @@ export class DidCommMediationRecipientApi {
       }
     } else {
       assertDidCommV1Connection(mediatorConnection, 'Mediation')
+
+      // Symmetric to the v2 upgrade above: if an explicit v3 strategy was passed for a CM 1.0
+      // mediator, downgrade to the v2 equivalent (Message Pickup 3.0 needs a v2 connection).
+      if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV3) {
+        this.logger.warn(
+          `Pickup strategy 'PickUpV3' is not compatible with Coordinate Mediation 1.0. Downgrading to 'PickUpV2'.`
+        )
+        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV2
+      } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV3LiveMode) {
+        this.logger.warn(
+          `Pickup strategy 'PickUpV3LiveMode' is not compatible with Coordinate Mediation 1.0. Downgrading to 'PickUpV2LiveMode'.`
+        )
+        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV2LiveMode
+      }
     }
 
     switch (mediatorPickupStrategy) {
@@ -405,6 +419,26 @@ export class DidCommMediationRecipientApi {
       mediator.pickupStrategy = mediatorPickupStrategy
       await this.mediationRepository.update(this.agentContext, mediator)
       return mediatorPickupStrategy
+    }
+
+    // For Coordinate Mediation 1.0, Message Pickup 3.0 won't work because it requires a v2
+    // connection. Downgrade v3 strategies to their v2 equivalents (symmetric with the v2 upgrade
+    // above) so a globally-configured pickup strategy still works against a CM 1.0 mediator.
+    // Persist the coerced value to avoid re-warning on subsequent agent restarts.
+    if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV3) {
+      this.logger.warn(
+        `Pickup strategy 'PickUpV3' is not compatible with Coordinate Mediation 1.0. Downgrading to 'PickUpV2'.`
+      )
+      mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV2
+      mediator.pickupStrategy = mediatorPickupStrategy
+      await this.mediationRepository.update(this.agentContext, mediator)
+    } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV3LiveMode) {
+      this.logger.warn(
+        `Pickup strategy 'PickUpV3LiveMode' is not compatible with Coordinate Mediation 1.0. Downgrading to 'PickUpV2LiveMode'.`
+      )
+      mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV2LiveMode
+      mediator.pickupStrategy = mediatorPickupStrategy
+      await this.mediationRepository.update(this.agentContext, mediator)
     }
 
     // If mediator pickup strategy is not configured we try to query if batch pickup
