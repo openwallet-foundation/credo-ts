@@ -35,7 +35,7 @@ describe('getPresentationsToCreate failure paths', () => {
     } as unknown as DifPexInputDescriptorToCredentials
 
     expect(() => getPresentationsToCreate(credentialsForInputDescriptor)).toThrow(
-      "Claim format SdJwtDc requires SdJwtVcRecord"
+      'Claim format SdJwtDc requires SdJwtVcRecord'
     )
   })
 
@@ -51,7 +51,7 @@ describe('getPresentationsToCreate failure paths', () => {
     } as unknown as DifPexInputDescriptorToCredentials
 
     expect(() => getPresentationsToCreate(credentialsForInputDescriptor)).toThrow(
-      "Claim format MsoMdoc requires MdocRecord"
+      'Claim format MsoMdoc requires MdocRecord'
     )
   })
 
@@ -66,7 +66,7 @@ describe('getPresentationsToCreate failure paths', () => {
     } as unknown as DifPexInputDescriptorToCredentials
 
     expect(() => getPresentationsToCreate(credentialsForInputDescriptor)).toThrow(
-      "Claim format JwtVc/LdpVc requires W3cCredentialRecord"
+      'Claim format JwtVc/LdpVc requires W3cCredentialRecord'
     )
   })
 
@@ -81,7 +81,7 @@ describe('getPresentationsToCreate failure paths', () => {
     } as unknown as DifPexInputDescriptorToCredentials
 
     expect(() => getPresentationsToCreate(credentialsForInputDescriptor)).toThrow(
-      "Claim format JwtVc/LdpVc requires W3cCredentialRecord"
+      'Claim format JwtVc/LdpVc requires W3cCredentialRecord'
     )
   })
 

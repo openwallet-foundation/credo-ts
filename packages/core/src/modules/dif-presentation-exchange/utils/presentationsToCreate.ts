@@ -1,5 +1,5 @@
-import type { JsonObject } from '../../../types'
 import { CredoError } from '../../../error'
+import type { JsonObject } from '../../../types'
 import { MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
