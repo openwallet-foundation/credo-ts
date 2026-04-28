@@ -53,7 +53,16 @@ import type { AnyDrizzleDatabase } from '../../drizzle-storage/src/DrizzleStorag
 import { didcommBundle } from '../../drizzle-storage/src/didcomm/bundle'
 import { agentDependencies, NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../node/src'
 import type { Agent, AgentDependencies, BaseEvent, InitConfig, InjectionToken, KeyDidCreateOptions } from '../src'
-import { AgentConfig, AgentContext, DependencyManager, DidDocument, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
+import {
+  AgentConfig,
+  AgentContext,
+  DependencyManager,
+  DidDocument,
+  DidsApi,
+  Kms,
+  TypedArrayEncoder,
+  X509Api,
+} from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import { DidKey } from '../src/modules/dids/methods/key'
 import { KeyManagementApi, type KeyManagementService, PublicJwk } from '../src/modules/kms'
