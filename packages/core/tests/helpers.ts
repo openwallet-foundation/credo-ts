@@ -53,7 +53,16 @@ import type { AnyDrizzleDatabase } from '../../drizzle-storage/src/DrizzleStorag
 import { didcommBundle } from '../../drizzle-storage/src/didcomm/bundle'
 import { agentDependencies, NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../node/src'
 import type { Agent, AgentDependencies, BaseEvent, InitConfig, InjectionToken, KeyDidCreateOptions } from '../src'
-import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
+import {
+  AgentConfig,
+  AgentContext,
+  DependencyManager,
+  DidDocument,
+  DidsApi,
+  Kms,
+  TypedArrayEncoder,
+  X509Api,
+} from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import { DidKey } from '../src/modules/dids/methods/key'
 import { KeyManagementApi, type KeyManagementService, PublicJwk } from '../src/modules/kms'
@@ -199,10 +208,26 @@ export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateK
 
   // did is first 16 bytes of public key encoded as base58
   const unqualifiedIndyDid = TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey.slice(0, 16))
+  const did = `did:indy:pool:localtest:${unqualifiedIndyDid}`
+
+  // Import with a local DID document to avoid resolver/ledger calls during test setup.
+  const didDocument = new DidDocument({
+    id: did,
+    verificationMethod: [
+      {
+        id: `${did}#verkey`,
+        type: 'Ed25519VerificationKey2018',
+        controller: did,
+        publicKeyBase58: TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey),
+      },
+    ],
+    authentication: [`${did}#verkey`],
+  })
 
   // import the did in the wallet so it can be used
   await agent.dids.import({
-    did: `did:indy:pool:localtest:${unqualifiedIndyDid}`,
+    did,
+    didDocument,
     keys: [
       {
         didDocumentRelativeKeyId: '#verkey',
