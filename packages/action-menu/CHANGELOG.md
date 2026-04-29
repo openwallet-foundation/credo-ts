@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.0
+
+### Patch Changes
+
+- a5d1dae: feat(action-menu): allow disabling strict protocol state checking through the new ActionMenuModuleConfig object at agent constructor
+- Updated dependencies [5056b97]
+- Updated dependencies [b75f0bf]
+- Updated dependencies [120cee8]
+- Updated dependencies [c1ab9be]
+- Updated dependencies [10a3ce5]
+- Updated dependencies [10a3ce5]
+- Updated dependencies [cc65c27]
+- Updated dependencies [b7aec4e]
+  - @credo-ts/core@0.7.0
+  - @credo-ts/didcomm@0.7.0
+
 ## 0.6.3
 
 ### Patch Changes
