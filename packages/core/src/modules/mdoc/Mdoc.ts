@@ -115,7 +115,7 @@ export class Mdoc {
       issuer.addIssuerNamespace(namespace, namespaceRecord)
     }
 
-    const issuerKey = issuerCertificate.publicJwk
+    const issuerKey = Array.isArray(issuerCertificate) ? issuerCertificate[0].publicJwk : issuerCertificate.publicJwk
     const alg = issuerKey.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
     if (!alg) {
       throw new MdocError(
@@ -136,7 +136,9 @@ export class Mdoc {
         validFrom: validityInfo.validFrom ?? now,
       },
       algorithm: SignatureAlgorithm[alg],
-      certificates: [issuerCertificate.rawCertificate],
+      certificates: Array.isArray(issuerCertificate)
+        ? issuerCertificate.map((c) => c.rawCertificate)
+        : [issuerCertificate.rawCertificate],
       deviceKeyInfo: DeviceKeyInfo.create({ deviceKey: DeviceKey.fromJwk(holderKey.toJson()) }),
       signingKey: issuerKey.toJson(),
     })

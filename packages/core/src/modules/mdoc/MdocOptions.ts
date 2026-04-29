@@ -104,10 +104,13 @@ export type MdocSignOptions = {
   namespaces: MdocNameSpaces
 
   /**
+   * The X509 certificate (or certificate chain) to use for signing the mDOC.
+   * When an array of certificates is provided, the first certificate is
+   * used for signing, and the entire chain is included in the mDOC.
    *
-   * The X509 certificate to use for signing the mDOC. The certificate MUST have a
-   * publicJwk with key id configured, enabling signing with the KMS
+   * The signing certificate MUST have a publicJwk with key id configured,
+   * enabling signing with the KMS.
    */
-  issuerCertificate: X509Certificate
+  issuerCertificate: X509Certificate | X509Certificate[]
   holderKey: PublicJwk
 }
