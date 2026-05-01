@@ -9,6 +9,7 @@ import {
 import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
+import { DidRepository } from '../repository'
 import { isLongFormDidPeer4, isShortFormDidPeer4 } from '../methods/peer/peerDidNumAlgo4'
 
 const agentOptions = getAgentOptions('DidsApi', undefined, undefined, undefined, { requireDidcomm: true })
@@ -183,6 +184,35 @@ describe('DidsApi', () => {
     // Should not have stored the updated record
     const createdDidsOverwrite = await agent.dids.getCreatedDids({ did })
     expect(createdDidsOverwrite[0].didDocument?.service).toHaveLength(1)
+  })
+
+  test('getCreatedDids can filter by custom tags', async () => {
+    const did = 'did:example:tag-filter'
+    const didRepository = agent.context.dependencyManager.resolve(DidRepository)
+
+    await agent.dids.import({
+      did,
+      didDocument: new DidDocument({ id: did }),
+    })
+
+    const didRecord = await didRepository.findCreatedDid(agent.context, did)
+    if (!didRecord) throw new Error(`Expected did record ${did} to exist`)
+
+    didRecord.setTags({ domain: 'alice:foo' })
+    await didRepository.update(agent.context, didRecord)
+
+    const matching = await agent.dids.getCreatedDids({
+      method: 'example',
+      tags: { domain: 'alice:foo' },
+    })
+
+    const nonMatching = await agent.dids.getCreatedDids({
+      method: 'example',
+      tags: { domain: 'alice:bar' },
+    })
+
+    expect(matching.some((record) => record.did === did)).toBe(true)
+    expect(nonMatching.some((record) => record.did === did)).toBe(false)
   })
 
   test('create and resolve did:peer:4 in short and long form', async () => {

@@ -7,7 +7,7 @@ import type { ImportDidOptions } from './DidsApiOptions'
 import { DidsModuleConfig } from './DidsModuleConfig'
 import { type DidPurpose, getPublicJwkFromVerificationMethod } from './domain'
 import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'
-import { DidRecord, DidRepository } from './repository'
+import { type CustomDidTags, DidRecord, DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'
 import type {
   DidCreateOptions,
@@ -101,8 +101,16 @@ export class DidsApi {
    *
    * You can call `${@link DidsModule.resolve} to resolve the did document based on the did itself.
    */
-  public getCreatedDids({ method, did }: { method?: string; did?: string } = {}) {
-    return this.didRepository.getCreatedDids(this.agentContext, { method, did })
+  public getCreatedDids({
+    method,
+    did,
+    tags,
+  }: {
+    method?: string
+    did?: string
+    tags?: Partial<CustomDidTags>
+  } = {}) {
+    return this.didRepository.getCreatedDids(this.agentContext, { method, did, tags })
   }
 
   /**

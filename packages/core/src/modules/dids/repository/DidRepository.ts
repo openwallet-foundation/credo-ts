@@ -64,8 +64,20 @@ export class DidRepository extends Repository<DidRecord> {
     })
   }
 
-  public getCreatedDids(agentContext: AgentContext, { method, did }: { method?: string; did?: string }) {
+  public getCreatedDids(
+    agentContext: AgentContext,
+    {
+      method,
+      did,
+      tags,
+    }: {
+      method?: string
+      did?: string
+      tags?: Partial<CustomDidTags>
+    }
+  ) {
     return this.findByQuery(agentContext, {
+      ...(tags ?? {}),
       role: DidDocumentRole.Created,
       method,
       $or: did ? [{ alternativeDids: [did] }, { did }] : undefined,
