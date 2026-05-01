@@ -101,15 +101,7 @@ export class DidsApi {
    *
    * You can call `${@link DidsModule.resolve} to resolve the did document based on the did itself.
    */
-  public getCreatedDids({
-    method,
-    did,
-    tags,
-  }: {
-    method?: string
-    did?: string
-    tags?: Partial<CustomDidTags>
-  } = {}) {
+  public getCreatedDids({ method, did, tags }: { method?: string; did?: string; tags?: Partial<CustomDidTags> } = {}) {
     return this.didRepository.getCreatedDids(this.agentContext, { method, did, tags })
   }
 

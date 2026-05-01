@@ -9,8 +9,8 @@ import {
 import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { DidRepository } from '../repository'
 import { isLongFormDidPeer4, isShortFormDidPeer4 } from '../methods/peer/peerDidNumAlgo4'
+import { DidRepository } from '../repository'
 
 const agentOptions = getAgentOptions('DidsApi', undefined, undefined, undefined, { requireDidcomm: true })
 
