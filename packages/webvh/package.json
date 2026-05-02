@@ -1,8 +1,12 @@
 {
   "name": "@credo-ts/webvh",
   "exports": {
-    "cli": "./build/index.mjs",
-    "import": "./src/index.ts"
+    ".": {
+      "cli": "./build/index.mjs",
+      "import": "./src/index.ts"
+    },
+    "./core": "./src/core.ts",
+    "./anoncreds": "./src/anoncreds/index.ts"
   },
   "version": "0.7.0",
   "description": "Credo WebVH DID method implementation",
@@ -21,7 +25,17 @@
     "module": "./build/index.mjs",
     "exports": {
       ".": "./build/index.mjs",
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./core": {
+        "import": "./build/core.mjs",
+        "require": "./build/core.mjs",
+        "types": "./build/core.d.mts"
+      },
+      "./anoncreds": {
+        "import": "./build/anoncreds/index.mjs",
+        "require": "./build/anoncreds/index.mjs",
+        "types": "./build/anoncreds/index.d.mts"
+      }
     }
   },
   "scripts": {

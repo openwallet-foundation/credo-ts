@@ -1,4 +1,4 @@
-import { IsStringOrStringArray, JsonTransformer } from '@credo-ts/core'
+import { JsonTransformer } from '@credo-ts/core'
 import { Expose, Transform, Type } from 'class-transformer'
 import {
   ArrayMinSize,
@@ -10,6 +10,7 @@ import {
   Validate,
   ValidateNested,
 } from 'class-validator'
+import { WebVhAttestedResource } from '../../resources'
 
 export class WebVhSchemaContent {
   @IsArray()
@@ -86,37 +87,7 @@ export class WebVhRevocationStatusListContent {
   public timestamp!: number
 }
 
-export class WebVhProof {
-  @IsString()
-  public type!: string
-
-  @IsString()
-  public cryptosuite!: string
-
-  @IsString()
-  public proofPurpose!: string
-
-  @IsString()
-  public proofValue!: string
-
-  @IsString()
-  public verificationMethod!: string
-}
-
-export class WebVhResource {
-  @IsArray()
-  @IsString({ each: true })
-  @Type(() => String)
-  public '@context'!: string[]
-
-  @Validate(IsStringOrStringArray)
-  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
-  @Type(() => String)
-  public type!: string[]
-
-  @IsString()
-  public id!: string
-
+export class WebVhAnonCredsResource extends WebVhAttestedResource {
   @Expose()
   @Transform(({ value }) => {
     if (value && 'attrNames' in value) {
@@ -131,33 +102,4 @@ export class WebVhResource {
     return value
   })
   public content!: WebVhSchemaContent | WebVhCredDefContent | WebVhRevRegDefContent | WebVhRevocationStatusListContent
-
-  @ValidateNested()
-  @Type(() => WebVhProof)
-  public proof!: WebVhProof
-
-  @IsOptional()
-  public metadata?: Record<string, unknown>
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => WebVhLink)
-  public links?: WebVhLink[]
-}
-
-export class WebVhLink {
-  @IsString()
-  public id!: string
-
-  @IsString()
-  public type!: string
-
-  @IsOptional()
-  @IsNumber()
-  public timestamp?: number
-
-  @IsOptional()
-  @IsString()
-  public digestMultibase!: string
 }
