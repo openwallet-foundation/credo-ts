@@ -75,6 +75,18 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
     this.requests.push(requestAttachment)
   }
 
+  /**
+   * Add a pre-built `DidCommAttachment` to `requests~attach`.
+   *
+   * Lower-level companion to {@link addRequest} for callers that already hold a
+   * `DidCommAttachment` instance (e.g. when surfacing v2 OOB attachments through the
+   * unified invitation record).
+   */
+  public addRequestAttachment(attachment: DidCommAttachment) {
+    if (!this.requests) this.requests = []
+    this.requests.push(attachment)
+  }
+
   public getRequests(): DidCommPlaintextMessage[] | undefined {
     return this.requests?.map((request) => request.getDataAsJson())
   }
