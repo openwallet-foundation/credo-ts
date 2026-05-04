@@ -2,6 +2,7 @@ import { parseDid } from '@sphereon/ssi-types'
 import { AgentContext } from '../../agent'
 import { CredoError, RecordNotFoundError } from '../../error'
 import { injectable } from '../../plugins'
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import { KeyManagementApi } from '../kms'
 import type { ImportDidOptions } from './DidsApiOptions'
 import { DidsModuleConfig } from './DidsModuleConfig'
@@ -103,6 +104,13 @@ export class DidsApi {
    */
   public getCreatedDids({ method, did }: { method?: string; did?: string } = {}) {
     return this.didRepository.getCreatedDids(this.agentContext, { method, did })
+  }
+
+  /**
+   * Find all did records by query.
+   */
+  public async findAllByQuery(query: Query<DidRecord>, queryOptions?: QueryOptions): Promise<Array<DidRecord>> {
+    return await this.didRepository.findByQuery(this.agentContext, query, queryOptions)
   }
 
   /**
