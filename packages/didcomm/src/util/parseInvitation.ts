@@ -5,7 +5,7 @@ import queryString from 'query-string'
 
 import { DidCommMessage } from '../DidCommMessage'
 import { DidCommConnectionInvitationMessage } from '../modules/connections/messages'
-import { convertToNewInvitation } from '../modules/oob/converters'
+import { convertToNewInvitation, convertV2InvitationToOutOfBandInvitation } from '../modules/oob/converters'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../modules/oob/messages'
 import { DidCommOutOfBandInvitationV2 } from '../modules/oob/messages/DidCommOutOfBandInvitationV2'
@@ -32,22 +32,6 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
 }
 
 /**
- * Converts a v2 OOB invitation to the unified DidCommOutOfBandInvitation format.
- * The resulting invitation has services: [from] so resolution works for v2 DIDs.
- */
-function convertV2ToOutOfBandInvitation(v2Invitation: DidCommOutOfBandInvitationV2): DidCommOutOfBandInvitation {
-  const invitation = new DidCommOutOfBandInvitation({
-    id: v2Invitation.id,
-    goal: v2Invitation.body?.goal,
-    goalCode: v2Invitation.body?.goalCode,
-    services: [v2Invitation.from],
-  })
-  invitation.invitationType = DidCommInvitationType.V2OutOfBand
-  invitation.v2Invitation = v2Invitation
-  return invitation
-}
-
-/**
  * Parses a JSON containing an invitation message and returns an DidCommOutOfBandInvitation instance
  *
  * @param invitationJson JSON object containing message
@@ -58,7 +42,7 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Di
   const v2Type = invitationJson.type as string
   if (v2Type === DidCommOutOfBandInvitationV2.type) {
     const v2Invitation = DidCommOutOfBandInvitationV2.fromJson(invitationJson)
-    return convertV2ToOutOfBandInvitation(v2Invitation)
+    return convertV2InvitationToOutOfBandInvitation(v2Invitation)
   }
 
   const messageType = invitationJson['@type'] as string

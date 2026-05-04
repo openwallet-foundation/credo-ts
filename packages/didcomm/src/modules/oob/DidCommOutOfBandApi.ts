@@ -14,6 +14,7 @@ import {
   Kms,
   type Logger,
   PeerDidNumAlgo,
+  utils,
 } from '@credo-ts/core'
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 import { DidCommEventTypes, type DidCommMessageReceivedEvent } from '../../DidCommEvents'
@@ -35,6 +36,7 @@ import {
   supportsIncomingMessageType,
 } from '../../util/messageType'
 import { parseInvitationShortUrl } from '../../util/parseInvitation'
+import type { DidCommV2Attachment } from '../../v2/types'
 import {
   DidCommConnectionInvitationMessage,
   DidCommConnectionRecord,
@@ -44,7 +46,12 @@ import {
 import { DidCommConnectionsApi } from '../connections/DidCommConnectionsApi'
 import { createPeerDidForV2OOB } from '../connections/services/helpers'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
-import { convertToNewInvitation, convertToOldInvitation } from './converters'
+import {
+  convertToNewInvitation,
+  convertToOldInvitation,
+  convertV2InvitationToOutOfBandInvitation,
+  didCommAttachmentToV2Attachment,
+} from './converters'
 import { DidCommOutOfBandService } from './DidCommOutOfBandService'
 import type { DidCommHandshakeReusedEvent } from './domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandEventTypes } from './domain/DidCommOutOfBandEvents'
@@ -325,23 +332,6 @@ export class DidCommOutOfBandApi {
   }
 
   /**
-   * Converts v2 OOB invitation to unified DidCommOutOfBandInvitation for record storage.
-   */
-  private convertV2InvitationToOutOfBandInvitation(
-    v2Invitation: DidCommOutOfBandInvitationV2
-  ): DidCommOutOfBandInvitation {
-    const invitation = new DidCommOutOfBandInvitation({
-      id: v2Invitation.id,
-      goal: v2Invitation.body?.goal,
-      goalCode: v2Invitation.body?.goalCode,
-      services: [v2Invitation.from],
-    })
-    invitation.invitationType = DidCommInvitationType.V2OutOfBand
-    invitation.v2Invitation = v2Invitation
-    return invitation
-  }
-
-  /**
    * Creates a v2 OOB invitation (out-of-band/2.0) with did:peer (default did:peer:4).
    * No handshake; connection is established on first encrypted message.
    */
@@ -350,9 +340,16 @@ export class DidCommOutOfBandApi {
     autoAcceptConnection: boolean
   ): Promise<DidCommOutOfBandRecord> {
     const multiUseInvitation = config.multiUseInvitation ?? false
+    const messages = config.messages && config.messages.length > 0 ? config.messages : undefined
+    const appendedAttachments =
+      config.appendedAttachments && config.appendedAttachments.length > 0 ? config.appendedAttachments : undefined
 
     if (config.routing && config.invitationDid) {
       throw new CredoError("Both 'routing' and 'invitationDid' cannot be provided at the same time.")
+    }
+
+    if (messages && multiUseInvitation) {
+      throw new CredoError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined.")
     }
 
     const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
@@ -385,6 +382,27 @@ export class DidCommOutOfBandApi {
       }
     }
 
+    // Build v2 attachments from caller-supplied messages and appended v1 attachments.
+    const v2Attachments: DidCommV2Attachment[] = []
+    if (messages) {
+      for (const message of messages) {
+        if (message.service) {
+          // Newer OOB messages carry services on the invitation, not the attached message.
+          message.service = undefined
+        }
+        v2Attachments.push({
+          id: utils.uuid(),
+          media_type: 'application/json',
+          data: { json: message.toJSON() as Record<string, unknown> },
+        })
+      }
+    }
+    if (appendedAttachments) {
+      for (const v1Attachment of appendedAttachments) {
+        v2Attachments.push(didCommAttachmentToV2Attachment(v1Attachment))
+      }
+    }
+
     const v2Invitation = new DidCommOutOfBandInvitationV2({
       from: did,
       body: {
@@ -392,6 +410,7 @@ export class DidCommOutOfBandApi {
         goal: config.goal,
         accept: ['didcomm/v2'],
       },
+      attachments: v2Attachments.length > 0 ? v2Attachments : undefined,
     })
 
     const outOfBandRecord = new DidCommOutOfBandRecord({
@@ -399,7 +418,7 @@ export class DidCommOutOfBandApi {
       role: DidCommOutOfBandRole.Sender,
       state: DidCommOutOfBandState.AwaitResponse,
       alias: config.alias,
-      outOfBandInvitation: this.convertV2InvitationToOutOfBandInvitation(v2Invitation),
+      outOfBandInvitation: convertV2InvitationToOutOfBandInvitation(v2Invitation),
       reusable: multiUseInvitation,
       autoAcceptConnection,
       tags: {
@@ -588,7 +607,7 @@ export class DidCommOutOfBandApi {
           accept: ['didcomm/v2'],
         },
       })
-      invitation = this.convertV2InvitationToOutOfBandInvitation(v2Invitation)
+      invitation = convertV2InvitationToOutOfBandInvitation(v2Invitation)
     } else {
       const handshakeProtocols = this.getSupportedHandshakeProtocols(
         config.handshakeProtocols ?? [DidCommHandshakeProtocol.DidExchange]
@@ -793,6 +812,14 @@ export class DidCommOutOfBandApi {
         ourDid,
       })
       await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
+
+      // Dispatch any messages carried as attachments on the v2 invitation. Mirrors the v1
+      // `requests~attach` flow: each attached protocol message is emitted on the freshly
+      // established connection so the matching protocol handler can pick it up.
+      if (messages && messages.length > 0) {
+        await this.emitWithConnection(outOfBandRecord, connectionRecord, messages)
+      }
+
       return { outOfBandRecord, connectionRecord }
     }
 

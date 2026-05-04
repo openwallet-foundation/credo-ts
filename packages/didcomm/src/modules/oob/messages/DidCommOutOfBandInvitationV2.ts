@@ -1,5 +1,6 @@
 import { CredoError, JsonEncoder, utils } from '@credo-ts/core'
 import queryString from 'query-string'
+import type { DidCommV2Attachment } from '../../../v2/types'
 
 const LINK_PARAM = 'oob'
 
@@ -13,11 +14,12 @@ export interface DidCommOutOfBandInvitationV2Options {
   id?: string
   from: string
   body?: DidCommOutOfBandInvitationV2Body
+  attachments?: DidCommV2Attachment[]
 }
 
 /**
  * DIDComm v2 Out-of-Band Invitation (https://didcomm.org/out-of-band/2.0/invitation).
- * Structure: { type, id, from, body: { goal_code, goal, accept } }
+ * Structure: { type, id, from, body: { goal_code, goal, accept }, attachments? }.
  */
 export class DidCommOutOfBandInvitationV2 {
   public static readonly type = 'https://didcomm.org/out-of-band/2.0/invitation'
@@ -25,12 +27,14 @@ export class DidCommOutOfBandInvitationV2 {
   public id!: string
   public from!: string
   public body?: DidCommOutOfBandInvitationV2Body
+  public attachments?: DidCommV2Attachment[]
 
   public constructor(options?: DidCommOutOfBandInvitationV2Options) {
     if (options) {
       this.id = options.id ?? utils.uuid()
       this.from = options.from
       this.body = options.body
+      this.attachments = options.attachments
     }
   }
 
@@ -46,6 +50,7 @@ export class DidCommOutOfBandInvitationV2 {
             accept: this.body.accept,
           }
         : undefined,
+      attachments: this.attachments && this.attachments.length > 0 ? this.attachments : undefined,
     }
   }
 
@@ -73,7 +78,8 @@ export class DidCommOutOfBandInvitationV2 {
           accept: bodyJson.accept as string[] | undefined,
         }
       : undefined
-    return new DidCommOutOfBandInvitationV2({ id, from, body })
+    const attachments = Array.isArray(json.attachments) ? (json.attachments as DidCommV2Attachment[]) : undefined
+    return new DidCommOutOfBandInvitationV2({ id, from, body, attachments })
   }
 
   public static fromUrl(invitationUrl: string): DidCommOutOfBandInvitationV2 {

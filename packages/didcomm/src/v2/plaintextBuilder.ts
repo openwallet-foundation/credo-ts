@@ -5,7 +5,7 @@ import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from './types'
  * Map a v1 ~attach item to v2 attachments format.
  * v1: @id, mime-type, data; v2: id, media_type, data.
  */
-function mapV1AttachmentToV2(att: Record<string, unknown>): DidCommV2Attachment {
+export function mapV1AttachmentToV2(att: Record<string, unknown>): DidCommV2Attachment {
   const v2: DidCommV2Attachment = {
     id: (att['@id'] ?? att.id) as string,
     data: (att.data ?? {}) as DidCommV2Attachment['data'],
@@ -18,6 +18,27 @@ function mapV1AttachmentToV2(att: Record<string, unknown>): DidCommV2Attachment 
   if (att.lastmod_time !== undefined) v2.lastmod_time = att.lastmod_time as string
   if (att.byte_count !== undefined) v2.byte_count = att.byte_count as number
   return v2
+}
+
+/**
+ * Map a v2 attachment to v1 ~attach item shape.
+ * v2: id, media_type, data; v1 (JSON form): @id, mime-type, data.
+ *
+ * Used when surfacing v2 OOB invitation attachments through the unified invitation
+ * record so the existing v1 `requests~attach` consumers can dispatch them.
+ */
+export function mapV2AttachmentToV1(v2: DidCommV2Attachment): Record<string, unknown> {
+  const v1: Record<string, unknown> = {
+    '@id': v2.id,
+    data: v2.data,
+  }
+  if (v2.description !== undefined) v1.description = v2.description
+  if (v2.filename !== undefined) v1.filename = v2.filename
+  if (v2.media_type !== undefined) v1['mime-type'] = v2.media_type
+  if (v2.format !== undefined) v1.format = v2.format
+  if (v2.lastmod_time !== undefined) v1.lastmod_time = v2.lastmod_time
+  if (v2.byte_count !== undefined) v1.byte_count = v2.byte_count
+  return v1
 }
 
 /**
