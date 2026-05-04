@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
+    "@stablelib/ed25519": "catalog:",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
     "luxon": "^3.7.2",

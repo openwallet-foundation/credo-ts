@@ -5,9 +5,10 @@ import queryString from 'query-string'
 
 import { DidCommMessage } from '../DidCommMessage'
 import { DidCommConnectionInvitationMessage } from '../modules/connections/messages'
-import { convertToNewInvitation } from '../modules/oob/converters'
+import { convertToNewInvitation, convertV2InvitationToOutOfBandInvitation } from '../modules/oob/converters'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../modules/oob/messages'
+import { DidCommOutOfBandInvitationV2 } from '../modules/oob/messages/DidCommOutOfBandInvitationV2'
 
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
 
@@ -37,6 +38,13 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
  * @returns DidCommOutOfBandInvitation
  */
 export const parseInvitationJson = (invitationJson: Record<string, unknown>): DidCommOutOfBandInvitation => {
+  // DIDComm v2 OOB uses "type" not "@type"
+  const v2Type = invitationJson.type as string
+  if (v2Type === DidCommOutOfBandInvitationV2.type) {
+    const v2Invitation = DidCommOutOfBandInvitationV2.fromJson(invitationJson)
+    return convertV2InvitationToOutOfBandInvitation(v2Invitation)
+  }
+
   const messageType = invitationJson['@type'] as string
 
   if (!messageType) {

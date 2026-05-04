@@ -1,0 +1,62 @@
+import { Type } from 'class-transformer'
+import { IsInt, IsOptional, ValidateNested } from 'class-validator'
+import { DidCommMessage } from '../../../../../DidCommMessage'
+import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
+import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
+
+export interface PaginateOptions {
+  limit: number
+  offset: number
+}
+
+export class Paginate {
+  public constructor(options: PaginateOptions) {
+    if (options) {
+      this.limit = options.limit
+      this.offset = options.offset
+    }
+  }
+
+  @IsInt()
+  public limit!: number
+
+  @IsInt()
+  public offset!: number
+}
+
+export interface DidCommKeylistQueryV2MessageOptions {
+  id?: string
+  paginate?: PaginateOptions
+}
+
+/**
+ * Keylist Query 2.0 - query mediator for registered keys (recipient_dids).
+ *
+ * @see https://didcomm.org/coordinate-mediation/2.0/
+ */
+export class DidCommKeylistQueryV2Message extends DidCommMessage {
+  public readonly allowQueueTransport = false
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
+
+  public constructor(options: DidCommKeylistQueryV2MessageOptions = {}) {
+    super()
+
+    if (options) {
+      this.id = options.id ?? this.generateId()
+      if (options.paginate) {
+        this.paginate = new Paginate(options.paginate)
+      }
+    }
+    this.setReturnRouting(ReturnRouteTypes.all)
+  }
+
+  @IsValidMessageType(DidCommKeylistQueryV2Message.type)
+  public readonly type = DidCommKeylistQueryV2Message.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/keylist-query')
+
+  @IsOptional()
+  @Type(() => Paginate)
+  @ValidateNested()
+  public paginate?: Paginate
+}
