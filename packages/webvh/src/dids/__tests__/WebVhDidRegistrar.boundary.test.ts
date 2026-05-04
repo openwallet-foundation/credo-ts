@@ -72,7 +72,8 @@ describe('WebVhDidRegistrar boundary contracts', () => {
       const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
       expect(result.didState.state).toBe('finished')
 
-      const did = result.didState.did!
+      const did = result.didState.did
+      if (!did) throw new Error('create failed')
       const record = await repository.findSingleByQuery(agentContext, { did })
       expect(record).toBeDefined()
 
@@ -94,7 +95,8 @@ describe('WebVhDidRegistrar boundary contracts', () => {
 
     it('each log entry has updateKeys in parameters after create', async () => {
       const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      const did = result.didState.did!
+      const did = result.didState.did
+      if (!did) throw new Error('create failed')
       const record = await repository.findSingleByQuery(agentContext, { did })
       const log = record?.metadata.get('log') as WebVhDidLog
 
@@ -146,7 +148,8 @@ describe('WebVhDidRegistrar boundary contracts', () => {
     it('a log produced by create can be resolved by the upstream resolveDIDFromLog', async () => {
       const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
       expect(result.didState.state).toBe('finished')
-      const did = result.didState.did!
+      const did = result.didState.did
+      if (!did) throw new Error('create failed')
 
       const record = await repository.findSingleByQuery(agentContext, { did })
       const log = record?.metadata.get('log') as WebVhDidLog
@@ -187,7 +190,8 @@ describe('WebVhDidRegistrar boundary contracts', () => {
   describe('resource URL parsing alignment', () => {
     it('parseResourceId correctly handles URLs in the format produced by didwebvh-ts DIDs', async () => {
       const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      const did = result.didState.did!
+      const did = result.didState.did
+      if (!did) throw new Error('create failed')
 
       // Simulate a resource URL derived from a real did:webvh DID
       const resourceId = `${did}/resources/zQmSomeFakeHash`
@@ -200,7 +204,8 @@ describe('WebVhDidRegistrar boundary contracts', () => {
 
     it('parseResourceId rejects a plain DID without a resource path', async () => {
       const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
-      const did = result.didState.did!
+      const did = result.didState.did
+      if (!did) throw new Error('create failed')
 
       expect(parseResourceId(did)).toBeNull()
     })
