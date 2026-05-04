@@ -99,9 +99,7 @@ function isSchemaContentShape(value: unknown): value is SchemaContentShape {
   )
 }
 
-function isCredentialDefinitionContentShape(
-  value: unknown
-): value is CredentialDefinitionContentShape {
+function isCredentialDefinitionContentShape(value: unknown): value is CredentialDefinitionContentShape {
   if (!value || typeof value !== 'object') return false
 
   const candidate = value as Record<string, unknown>
@@ -115,9 +113,7 @@ function isCredentialDefinitionContentShape(
   )
 }
 
-function isRevocationRegistryDefinitionContentShape(
-  value: unknown
-): value is RevocationRegistryDefinitionContentShape {
+function isRevocationRegistryDefinitionContentShape(value: unknown): value is RevocationRegistryDefinitionContentShape {
   if (!value || typeof value !== 'object') return false
 
   const candidate = value as Record<string, unknown>
@@ -130,9 +126,7 @@ function isRevocationRegistryDefinitionContentShape(
   )
 }
 
-function isRevocationRegistryDefinitionValueShape(
-  value: unknown
-): value is RevocationRegistryDefinitionValueShape {
+function isRevocationRegistryDefinitionValueShape(value: unknown): value is RevocationRegistryDefinitionValueShape {
   if (!value || typeof value !== 'object') return false
 
   const candidate = value as Record<string, unknown>
@@ -182,8 +176,8 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
    *
    * @param agentContext The agent context.
    * @param resourceId The DID URI of the resource to resolve.
-  * @param resourceTypeString A descriptive string for the resource type (e.g., 'schema', 'credential definition') used in logs/errors.
-  * @returns The parsed and validated resource object and the original resolution result.
+   * @param resourceTypeString A descriptive string for the resource type (e.g., 'schema', 'credential definition') used in logs/errors.
+   * @returns The parsed and validated resource object and the original resolution result.
    * @throws {CredoError} If resolution, parsing, or validation fails.
    */
   private _digestMultibase(value: string) {

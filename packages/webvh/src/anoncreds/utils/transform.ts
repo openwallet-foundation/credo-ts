@@ -1,15 +1,6 @@
 import { JsonTransformer } from '@credo-ts/core'
 import { Expose, Transform, Type } from 'class-transformer'
-import {
-  ArrayMinSize,
-  IsArray,
-  IsNumber,
-  IsObject,
-  IsOptional,
-  IsString,
-  Validate,
-  ValidateNested,
-} from 'class-validator'
+import { ArrayMinSize, IsArray, IsNumber, IsObject, IsOptional, IsString } from 'class-validator'
 import { WebVhAttestedResource } from '../../resources'
 
 export class WebVhSchemaContent {

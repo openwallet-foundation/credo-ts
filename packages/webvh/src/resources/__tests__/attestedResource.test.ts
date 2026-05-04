@@ -104,10 +104,14 @@ describe('requireResourceType', () => {
   })
 
   it('throws when resourceType is an empty string', () => {
-    expect(() => requireResourceType({ metadata: { resourceType: '' } })).toThrow('missing required metadata.resourceType')
+    expect(() => requireResourceType({ metadata: { resourceType: '' } })).toThrow(
+      'missing required metadata.resourceType'
+    )
   })
 
   it('throws when resourceType is not a string', () => {
-    expect(() => requireResourceType({ metadata: { resourceType: 42 } })).toThrow('missing required metadata.resourceType')
+    expect(() => requireResourceType({ metadata: { resourceType: 42 } })).toThrow(
+      'missing required metadata.resourceType'
+    )
   })
 })
