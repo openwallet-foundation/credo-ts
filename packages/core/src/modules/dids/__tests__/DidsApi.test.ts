@@ -9,6 +9,7 @@ import {
 import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
+import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { isLongFormDidPeer4, isShortFormDidPeer4 } from '../methods/peer/peerDidNumAlgo4'
 import { DidRepository } from '../repository'
 
@@ -203,13 +204,13 @@ describe('DidsApi', () => {
 
     const matching = await agent.dids.findAllByQuery({
       method: 'example',
-      role: 'created',
+      role: DidDocumentRole.Created,
       domain: 'alice:foo',
     })
 
     const nonMatching = await agent.dids.findAllByQuery({
       method: 'example',
-      role: 'created',
+      role: DidDocumentRole.Created,
       domain: 'alice:bar',
     })
 
