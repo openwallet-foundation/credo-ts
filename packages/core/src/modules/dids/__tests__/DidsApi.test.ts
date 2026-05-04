@@ -186,7 +186,7 @@ describe('DidsApi', () => {
     expect(createdDidsOverwrite[0].didDocument?.service).toHaveLength(1)
   })
 
-  test('getCreatedDids can filter by custom tags', async () => {
+  test('findAllByQuery can filter by custom tags', async () => {
     const did = 'did:example:tag-filter'
     const didRepository = agent.context.dependencyManager.resolve(DidRepository)
 
@@ -201,14 +201,16 @@ describe('DidsApi', () => {
     didRecord.setTags({ domain: 'alice:foo' })
     await didRepository.update(agent.context, didRecord)
 
-    const matching = await agent.dids.getCreatedDids({
+    const matching = await agent.dids.findAllByQuery({
       method: 'example',
-      tags: { domain: 'alice:foo' },
+      role: 'created',
+      domain: 'alice:foo',
     })
 
-    const nonMatching = await agent.dids.getCreatedDids({
+    const nonMatching = await agent.dids.findAllByQuery({
       method: 'example',
-      tags: { domain: 'alice:bar' },
+      role: 'created',
+      domain: 'alice:bar',
     })
 
     expect(matching.some((record) => record.did === did)).toBe(true)

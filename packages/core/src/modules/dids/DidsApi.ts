@@ -2,12 +2,13 @@ import { parseDid } from '@sphereon/ssi-types'
 import { AgentContext } from '../../agent'
 import { CredoError, RecordNotFoundError } from '../../error'
 import { injectable } from '../../plugins'
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import { KeyManagementApi } from '../kms'
 import type { ImportDidOptions } from './DidsApiOptions'
 import { DidsModuleConfig } from './DidsModuleConfig'
 import { type DidPurpose, getPublicJwkFromVerificationMethod } from './domain'
 import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'
-import { type CustomDidTags, DidRecord, DidRepository } from './repository'
+import { DidRecord, DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'
 import type {
   DidCreateOptions,
@@ -101,8 +102,15 @@ export class DidsApi {
    *
    * You can call `${@link DidsModule.resolve} to resolve the did document based on the did itself.
    */
-  public getCreatedDids({ method, did, tags }: { method?: string; did?: string; tags?: Partial<CustomDidTags> } = {}) {
-    return this.didRepository.getCreatedDids(this.agentContext, { method, did, tags })
+  public getCreatedDids({ method, did }: { method?: string; did?: string } = {}) {
+    return this.didRepository.getCreatedDids(this.agentContext, { method, did })
+  }
+
+  /**
+   * Find all did records by query.
+   */
+  public async findAllByQuery(query: Query<DidRecord>, queryOptions?: QueryOptions): Promise<Array<DidRecord>> {
+    return await this.didRepository.findByQuery(this.agentContext, query, queryOptions)
   }
 
   /**
