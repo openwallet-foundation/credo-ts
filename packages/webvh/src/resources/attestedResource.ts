@@ -1,6 +1,22 @@
 import { IsStringOrStringArray } from '@credo-ts/core'
 import { Transform, Type } from 'class-transformer'
 import { IsArray, IsNumber, IsObject, IsOptional, IsString, Validate, ValidateNested } from 'class-validator'
+import type { DIDLog, DIDLogEntry } from 'didwebvh-ts'
+
+/**
+ * A single entry in a did:webvh DID log.
+ * Structurally identical to `DIDLogEntry` from `didwebvh-ts`; re-exported here
+ * as a stable Credo-level contract so consumers do not need to import directly
+ * from the upstream library.
+ */
+export type WebVhDidLogEntry = DIDLogEntry
+
+/**
+ * An ordered array of `WebVhDidLogEntry` items representing the full history of
+ * a did:webvh DID document.
+ * Structurally identical to `DIDLog` from `didwebvh-ts`.
+ */
+export type WebVhDidLog = DIDLog
 
 export type WebVhResourceIdParts = {
   did: string
