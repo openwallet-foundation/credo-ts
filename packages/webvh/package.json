@@ -6,7 +6,8 @@
       "import": "./src/index.ts"
     },
     "./core": "./src/core.ts",
-    "./anoncreds": "./src/anoncreds/index.ts"
+    "./anoncreds": "./src/anoncreds/index.ts",
+    "./resources": "./src/resources/index.ts"
   },
   "version": "0.7.0",
   "description": "Credo WebVH DID method implementation",
@@ -35,6 +36,11 @@
         "import": "./build/anoncreds/index.mjs",
         "require": "./build/anoncreds/index.mjs",
         "types": "./build/anoncreds/index.d.mts"
+      },
+      "./resources": {
+        "import": "./build/resources/index.mjs",
+        "require": "./build/resources/index.mjs",
+        "types": "./build/resources/index.d.mts"
       }
     }
   },
