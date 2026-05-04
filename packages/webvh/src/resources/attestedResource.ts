@@ -132,3 +132,16 @@ export function getResourceType(resource: Pick<WebVhAttestedResource, 'metadata'
   const resourceType = resource.metadata?.resourceType
   return typeof resourceType === 'string' ? resourceType : undefined
 }
+
+/**
+ * Returns the `metadata.resourceType` string from a webvh attested resource.
+ * Throws if the field is absent or empty, ensuring callers receive a non-optional
+ * string suitable for deterministic indexing, policy routing, or typed dispatch.
+ */
+export function requireResourceType(resource: Pick<WebVhAttestedResource, 'metadata'>): string {
+  const resourceType = resource.metadata?.resourceType
+  if (typeof resourceType !== 'string' || resourceType.length === 0) {
+    throw new Error('WebVh attested resource is missing required metadata.resourceType')
+  }
+  return resourceType
+}

@@ -1,5 +1,5 @@
 import type { WebVhDidLog, WebVhDidLogEntry } from '../attestedResource'
-import { getResourceType, isWebVhAttestedResource, parseResourceId } from '../attestedResource'
+import { getResourceType, isWebVhAttestedResource, parseResourceId, requireResourceType } from '../attestedResource'
 
 describe('attestedResource helpers', () => {
   it('parses a did:webvh resource id', () => {
@@ -87,5 +87,27 @@ describe('WebVhDidLog types', () => {
 
     expect(log).toHaveLength(1)
     expect(log[0].versionId).toBe('1-zQmHash')
+  })
+})
+
+describe('requireResourceType', () => {
+  it('returns resourceType when present and non-empty', () => {
+    expect(requireResourceType({ metadata: { resourceType: 'anonCredsSchema' } })).toBe('anonCredsSchema')
+  })
+
+  it('throws when metadata is absent', () => {
+    expect(() => requireResourceType({})).toThrow('missing required metadata.resourceType')
+  })
+
+  it('throws when resourceType is absent from metadata', () => {
+    expect(() => requireResourceType({ metadata: {} })).toThrow('missing required metadata.resourceType')
+  })
+
+  it('throws when resourceType is an empty string', () => {
+    expect(() => requireResourceType({ metadata: { resourceType: '' } })).toThrow('missing required metadata.resourceType')
+  })
+
+  it('throws when resourceType is not a string', () => {
+    expect(() => requireResourceType({ metadata: { resourceType: 42 } })).toThrow('missing required metadata.resourceType')
   })
 })
