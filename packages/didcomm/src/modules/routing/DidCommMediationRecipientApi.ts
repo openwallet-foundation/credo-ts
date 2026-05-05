@@ -271,21 +271,11 @@ export class DidCommMediationRecipientApi {
       throw new CredoError('There is no mediator to pickup messages from')
     }
 
-    let mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediatorRecord))
+    const mediatorPickupStrategy = await this.getPickupStrategyForMediator(mediatorRecord, pickupStrategy)
     const mediatorConnection = await this.connectionService.getById(this.agentContext, mediatorRecord.connectionId)
 
     if (mediatorRecord.mediationProtocolVersion === 'v2') {
       assertDidCommV2Connection(mediatorConnection, 'Mediation 2.0')
-
-      // Ensure pickup strategy is compatible with DIDComm v2 — upgrade v1/v2 pickup to v3
-      if (
-        mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV1 ||
-        mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV2
-      ) {
-        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3
-      } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV2LiveMode) {
-        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3LiveMode
-      }
     } else {
       assertDidCommV1Connection(mediatorConnection, 'Mediation')
     }
@@ -386,8 +376,17 @@ export class DidCommMediationRecipientApi {
     this.stopMessagePickup$.next(true)
   }
 
-  private async getPickupStrategyForMediator(mediator: DidCommMediationRecord) {
-    let mediatorPickupStrategy = mediator.pickupStrategy ?? this.config.mediatorPickupStrategy
+  /**
+   * Picks the pickup strategy for a mediator. Tries `requested`, then the stored strategy, then
+   * the config default, and adjusts it to match the mediator's CM version (CM 2.0 → Pickup v3,
+   * CM 1.0 → Pickup v2). Saves the adjusted strategy only when there's no `requested` override.
+   */
+  private async getPickupStrategyForMediator(
+    mediator: DidCommMediationRecord,
+    requested?: DidCommMediatorPickupStrategy
+  ) {
+    let mediatorPickupStrategy = requested ?? mediator.pickupStrategy ?? this.config.mediatorPickupStrategy
+    const persistCoercion = requested === undefined
 
     // For Coordinate Mediation 2.0 (DIDComm v2), message pickup v1/v2 protocols won't work
     // because the connection is v2 and those protocols require v1 connections.
@@ -402,9 +401,34 @@ export class DidCommMediationRecipientApi {
       } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV2LiveMode) {
         mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3LiveMode
       }
-      mediator.pickupStrategy = mediatorPickupStrategy
-      await this.mediationRepository.update(this.agentContext, mediator)
+      if (persistCoercion) {
+        mediator.pickupStrategy = mediatorPickupStrategy
+        await this.mediationRepository.update(this.agentContext, mediator)
+      }
       return mediatorPickupStrategy
+    }
+
+    // For Coordinate Mediation 1.0, Message Pickup 3.0 won't work because it requires a v2
+    // connection. Downgrade v3 strategies to their v2 equivalents (symmetric with the v2 upgrade
+    // above) so a globally-configured pickup strategy still works against a CM 1.0 mediator.
+    if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV3) {
+      this.logger.warn(
+        `Pickup strategy 'PickUpV3' is not compatible with Coordinate Mediation 1.0. Downgrading to 'PickUpV2'.`
+      )
+      mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV2
+      if (persistCoercion) {
+        mediator.pickupStrategy = mediatorPickupStrategy
+        await this.mediationRepository.update(this.agentContext, mediator)
+      }
+    } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV3LiveMode) {
+      this.logger.warn(
+        `Pickup strategy 'PickUpV3LiveMode' is not compatible with Coordinate Mediation 1.0. Downgrading to 'PickUpV2LiveMode'.`
+      )
+      mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV2LiveMode
+      if (persistCoercion) {
+        mediator.pickupStrategy = mediatorPickupStrategy
+        await this.mediationRepository.update(this.agentContext, mediator)
+      }
     }
 
     // If mediator pickup strategy is not configured we try to query if batch pickup
