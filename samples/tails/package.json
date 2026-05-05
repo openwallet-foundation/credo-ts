@@ -18,6 +18,6 @@
     "@types/multer": "^2.0.0",
     "@types/ws": "catalog:",
     "form-data": "^4.0.5",
-    "multer": "^2.0.2"
+    "multer": "^2.1.1"
   }
 }
