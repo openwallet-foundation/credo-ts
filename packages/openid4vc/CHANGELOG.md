@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.1
+
+### Patch Changes
+
+- 3f2bef1: Restore detailed mdoc verification error.
+- Updated dependencies [7dfafeb]
+  - @credo-ts/core@0.7.1
+
 ## 0.7.0
 
 ### Minor Changes
