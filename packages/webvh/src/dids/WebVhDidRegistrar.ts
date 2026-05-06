@@ -63,7 +63,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
       const { publicKeyMultibase, keyId } = await this.generatePublicKey(agentContext)
       const signer = new WebVhDidCryptoSigner(agentContext, publicKeyMultibase, keyId)
       const verifier = new WebVhDidCrypto(agentContext)
-      const baseDid = `did:webvh:{SCID}:${domain}`
+      const baseDid = `did:webvh:{SCID}:${encodeURIComponent(domain)}`
 
       // Create DID
       const { did, doc, log } = await createDID({
