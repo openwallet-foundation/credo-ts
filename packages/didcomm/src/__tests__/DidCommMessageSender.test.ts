@@ -494,6 +494,46 @@ describe('DidCommMessageSender', () => {
         },
       })
     })
+
+    test('prioritizes services whose scheme is listed in transportPriority over ones that are not', async () => {
+      // Simulate a DID Document exposing both https and wss service endpoints,
+      // where the https one is returned first by the resolver.
+      const httpsService = new DidCommV1Service({
+        id: '<did>;https',
+        serviceEndpoint: 'https://www.example.com',
+        recipientKeys: ['#authentication-1'],
+      })
+      const wssService = new DidCommV1Service({
+        id: '<did>;wss',
+        serviceEndpoint: 'wss://www.example.com',
+        recipientKeys: ['#authentication-1'],
+      })
+
+      resolveCreatedDidDocumentWithKeysMock.mockResolvedValue({
+        didDocument: getMockDidDocument({ service: [httpsService, wssService] }),
+        keys: [],
+      })
+      didResolverServiceResolveDidServicesMock.mockResolvedValue([
+        getMockResolvedDidService(httpsService),
+        getMockResolvedDidService(wssService),
+      ])
+
+      const httpTransport = new DummyHttpOutboundTransport()
+      const wsTransport = new DummyWsOutboundTransport()
+      didCommModuleConfig.outboundTransports = [httpTransport, wsTransport]
+      const httpSendSpy = vi.spyOn(httpTransport, 'sendMessage')
+      const wsSendSpy = vi.spyOn(wsTransport, 'sendMessage')
+
+      await messageSender.sendMessage(outboundMessageContext, {
+        transportPriority: { schemes: ['wss', 'ws'] },
+      })
+
+      // The wss service must be tried first, not the https one, even though
+      // https is not listed in the priority schemes.
+      expect(wsSendSpy).toHaveBeenCalledTimes(1)
+      expect(wsSendSpy).toHaveBeenCalledWith(expect.objectContaining({ endpoint: wssService.serviceEndpoint }))
+      expect(httpSendSpy).not.toHaveBeenCalled()
+    })
   })
 
   describe('sendMessageToService', () => {

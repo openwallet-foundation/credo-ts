@@ -268,12 +268,12 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
 
   const kms = agentContext.resolve(Kms.KeyManagementApi)
   // Store presentation during issuance session on the record
-  verificationSession.presentationDuringIssuanceSession = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
+  verificationSession.presentationDuringIssuanceSession = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
   await agentContext.dependencyManager
     .resolve(OpenId4VcVerificationSessionRepository)
     .update(agentContext, verificationSession)
 
-  const authSession = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
+  const authSession = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
   issuanceSession.authorization = {
     ...issuanceSession.authorization,
     scopes: presentationScopes,
@@ -445,7 +445,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
 
   // Grant authorization
   const kms = agentContext.resolve(Kms.KeyManagementApi)
-  const authorizationCode = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
+  const authorizationCode = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
   const authorizationCodeExpiresAt = utils.addSecondsToDate(new Date(), config.authorizationCodeExpiresInSeconds)
 
   issuanceSession.authorization = {

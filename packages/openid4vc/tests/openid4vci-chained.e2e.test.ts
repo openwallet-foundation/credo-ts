@@ -227,7 +227,10 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         })
       }
 
-      if (TypedArrayEncoder.fromBase64(authorizationHeader[1]).toString() !== `${idpClientId}:${idpClientSecret}`) {
+      if (
+        TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(authorizationHeader[1])) !==
+        `${idpClientId}:${idpClientSecret}`
+      ) {
         return res.status(401).json({
           error: 'invalid_client',
           error_description: 'Unauthorized user',
@@ -495,7 +498,10 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         })
       }
 
-      if (TypedArrayEncoder.fromBase64(authorizationHeader[1]).toString() !== `${idpClientId}:${idpClientSecret}`) {
+      if (
+        TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(authorizationHeader[1])) !==
+        `${idpClientId}:${idpClientSecret}`
+      ) {
         return res.status(401).json({
           error: 'invalid_client',
           error_description: 'Unauthorized user',

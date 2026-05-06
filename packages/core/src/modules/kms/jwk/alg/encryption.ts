@@ -10,7 +10,7 @@ export function supportedEncryptionAlgsForKey(jwk: KmsJwkPrivate | Exclude<KmsJw
 
   // Only symmetric (oct) keys can be used directly for content encryption
   if (jwk.kty === 'oct') {
-    const keyBits = TypedArrayEncoder.fromBase64(jwk.k).length * 8
+    const keyBits = TypedArrayEncoder.fromBase64Url(jwk.k).length * 8
 
     // For CBC-HMAC composite algorithms we need exact key sizes
     if (keyBits === 256) algs.push('A128CBC-HS256')

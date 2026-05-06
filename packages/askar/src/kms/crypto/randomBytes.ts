@@ -1,7 +1,6 @@
-import type { Uint8ArrayBuffer } from '@credo-ts/core'
 import { CryptoBox } from '@openwallet-foundation/askar-shared'
 
-export function randomBytes(length: number): Uint8ArrayBuffer {
+export function randomBytes(length: number): Uint8Array {
   const buffer = new Uint8Array(length)
   const CBOX_NONCE_LENGTH = 24
 

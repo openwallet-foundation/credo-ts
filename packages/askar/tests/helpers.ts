@@ -40,7 +40,7 @@ export function getAskarPostgresAgentOptions(
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
     autoUpdateStorageOnStartup: false,
-    logger: new TestLogger(LogLevel.off, name),
+    logger: new TestLogger(LogLevel.Off, name),
     ...extraConfig,
   }
   return {
@@ -74,7 +74,7 @@ export function getAskarSqliteAgentOptions(
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
     autoUpdateStorageOnStartup: false,
-    logger: new TestLogger(LogLevel.off, name),
+    logger: new TestLogger(LogLevel.Off, name),
     ...extraConfig,
   }
   return {

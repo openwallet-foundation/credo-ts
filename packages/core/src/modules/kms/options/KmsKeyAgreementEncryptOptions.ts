@@ -69,5 +69,5 @@ export const zKmsKeyAgreementEncryptOptions = z
     zKmsKeyAgreementEncryptEcdhEsKw,
     zKmsKeyAgreementEncryptEcdhHsalsa20,
   ])
-  .describe('Options for key agreement based on an assymetric key.')
+  .describe('Options for key agreement based on an asymmetric key.')
 export type KmsKeyAgreementEncryptOptions = z.output<typeof zKmsKeyAgreementEncryptOptions>

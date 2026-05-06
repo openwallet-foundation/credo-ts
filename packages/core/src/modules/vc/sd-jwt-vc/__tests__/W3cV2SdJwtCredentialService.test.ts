@@ -66,7 +66,7 @@ const dids = agentContext.dependencyManager.resolve(DidsApi)
 const w3cV2JwtCredentialService = new W3cV2SdJwtCredentialService()
 
 kms.randomBytes = vi.fn(function () {
-  return TypedArrayEncoder.fromString('salt')
+  return TypedArrayEncoder.fromUtf8String('salt')
 })
 Date.prototype.getTime = vi.fn(function () {
   return 1698151532000

@@ -1,5 +1,77 @@
 # Changelog
 
+## 0.7.0
+
+### Minor Changes
+
+- cc65c27: - Removed buffer dependency and replaced with `@scure/base` for base-x encoding/decoding
+
+  - Updated DIDComm attachments to use base64url, not base64
+  - Updated tests to make sure urland base64 encoded items use base64url
+  - Added `fromBase64Url` to `TypedArrayEncoder` and `JsonEncoder`
+
+  Breaking changes:
+
+  1. `TypedArrayEncoder.fromBase64` does not support base64url anymore, please use `TypedArrayEncoder.fromBase64Url` for that. Same for `JsonEncoder`
+  2. `TypedArrayEncoder.fromString` has been replaced by `TypedArrayEncoder.fromUtf8String` to be consistent with `TypedArrayEncoder.toUtf8String`
+  3. Every place where we accepted `Buffer` as input we now only support `Uint8Array` as input
+  4. `TypedArrayEncoder.equals` is now constant-time, however I would still hesitate to use it for any private crypto operation 5. Removed `Uint8ArrayBuffer` type, not used anymore
+
+### Patch Changes
+
+- 944358e: Fix query to find session when using authorization server.
+- 0bd4bd0: Set issuance error message based on error, similarly to other places.
+- Updated dependencies [5056b97]
+- Updated dependencies [b75f0bf]
+- Updated dependencies [120cee8]
+- Updated dependencies [c1ab9be]
+- Updated dependencies [10a3ce5]
+- Updated dependencies [cc65c27]
+- Updated dependencies [b7aec4e]
+  - @credo-ts/core@0.7.0
+
+## 0.6.3
+
+### Patch Changes
+
+- d7c08a1: Adds support for setting a custom expiration for individual credential offers and authorization requests.
+- 8f1b343: The state of the issuance session is now correctly updated to 'Error' if an error happens while creating a credential response.
+- e2cbb15: Introduces a new callback in the issuer configuration (`getChainedAuthorizationRequestParameters`),
+  which can be used to dynamically provide:
+
+  - The scopes to request to the chained authorization server.
+  - Any additional payload to add to the request to the chained authorization server.
+  - An allowed list of redirect URIs, if you want to limit to which wallets you're issuing to.
+
+  The following has been changed in `OpenId4VciChainedAuthorizationServerConfig`:
+
+  - The `scopesMapping` option is now optional. Either `scopesMapping` or the new callback
+    must be defined in order to fullfil a chained authorization request.
+  - A new `redirectUris` option has been added. This can be used when you want to statically
+    define the allowed `redirectUris`, instead of using the callback. If the callback is
+    provided, this option will not be used.
+
+  The option `getVerificationSessionForIssuanceSessionAuthorization` has been deprecated and replaced with `getVerificationSession`. Please update your usage.
+
+- 7a79b99: fix: update @openid4vci package to fix an issue where did-based proofs would not work in OpenID4VCI authorization code flow
+- 55389c4: The state of the issuance session is now correctly updated to 'Error' if an error happens while creating a deferred credential response.
+- 7f24d03: For new credential deferrals, Credo keeps track of until when the transaction is deferred.
+  If the wallet calls the endpoint before the interval has passed by, we automatically
+  return a new deferral response with the remaining interval.
+- 5358453: Adds an `holderBinding` object to the `OpenId4VcIssuanceSessionRecordTransaction`,
+  allowing you to easily use the holder binding in the deferred credential response
+  endpoint.
+
+  In addition, we now pass the respective `transaction` to `OpenId4VciDeferredCredentialRequestToCredentialMapperOptions`
+  when called. This simplifies the user logic, since you no longer need to retrieve the transaction manually.
+
+- 020c864: You can now customize the grace period during which an issuance session is kept alive after the deferral interval has passed by defining `deferralIntervalGracePeriodInSeconds` (default is 7 days).
+
+  Note that this only applies to deferrals happening after upgrading Credo. For sessions deferred before updating Credo, the previous expiry date will remain unless the issuance is deferred once more.
+
+- Updated dependencies [73d2d59]
+  - @credo-ts/core@0.6.3
+
 ## 0.6.2
 
 ### Patch Changes

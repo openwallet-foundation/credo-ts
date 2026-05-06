@@ -12,6 +12,7 @@ import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query } from '../../storage/StorageService'
 import { JsonTransformer } from '../../utils'
+import { uuid } from '../../utils/uuid'
 import type { VerificationMethod } from '../dids'
 import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
 import { getJwkHumanDescription } from '../kms'
@@ -67,7 +68,7 @@ export class DifPresentationExchangeService {
     presentationDefinition: DifPresentationExchangeDefinition
   ): Promise<DifPexCredentialsForRequest> {
     const credentialRecords = await this.queryCredentialForPresentationDefinition(agentContext, presentationDefinition)
-    return getCredentialsForRequest(this.pex, presentationDefinition, credentialRecords)
+    return getCredentialsForRequest(agentContext, this.pex, presentationDefinition, credentialRecords)
   }
 
   /**
@@ -183,7 +184,6 @@ export class DifPresentationExchangeService {
     for (const presentationToCreate of presentationsToCreate) {
       // We create a presentation for each subject
       // Thus for each subject we need to filter all the related input descriptors and credentials
-      // FIXME: cast to V1, as tsc errors for strange reasons if not
       const inputDescriptorIds = presentationToCreate.verifiableCredentials.map((c) => c.inputDescriptorId)
       const inputDescriptorsForPresentation = (
         presentationDefinition as DifPresentationExchangeDefinitionV1
@@ -203,19 +203,20 @@ export class DifPresentationExchangeService {
             'Currently a Mdoc presentation can only be created from a single credential'
           )
         }
-        const mdocRecord = presentationToCreate.verifiableCredentials[0].credential
+
         if (!mdocSessionTranscript) {
           throw new DifPresentationExchangeError(
             'Missing mdoc session transcript options for creating MDOC presentation.'
           )
         }
 
-        const { deviceResponseBase64Url, presentationSubmission } =
-          await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agentContext, {
-            mdocs: [mdocRecord.firstCredential],
-            presentationDefinition: presentationDefinition,
-            sessionTranscriptOptions: mdocSessionTranscript,
-          })
+        const { credential, inputDescriptorId } = presentationToCreate.verifiableCredentials[0]
+
+        const deviceResponse = await MdocDeviceResponse.createDeviceResponseWithPresentationDefinition(agentContext, {
+          mdocs: [credential.firstCredential],
+          presentationDefinition,
+          sessionTranscriptOptions: mdocSessionTranscript,
+        })
 
         if (presentationSubmissionLocation !== DifPresentationExchangeSubmissionLocation.EXTERNAL) {
           throw new DifPresentationExchangeError(
@@ -225,8 +226,18 @@ export class DifPresentationExchangeService {
 
         verifiablePresentationResultsWithFormat.push({
           verifiablePresentationResult: {
-            presentationSubmission: presentationSubmission,
-            verifiablePresentations: [deviceResponseBase64Url],
+            presentationSubmission: {
+              id: `MdocPresentationSubmission ${uuid()}`,
+              definition_id: presentationDefinition.id,
+              descriptor_map: [
+                {
+                  id: inputDescriptorId,
+                  format: 'mso_mdoc',
+                  path: '$',
+                },
+              ],
+            },
+            verifiablePresentations: [deviceResponse.encoded],
             presentationSubmissionLocation,
           },
           claimFormat: presentationToCreate.claimFormat,

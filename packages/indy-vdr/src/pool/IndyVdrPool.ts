@@ -116,7 +116,7 @@ export class IndyVdrPool {
     }
 
     const { signature } = await kms.sign({
-      data: TypedArrayEncoder.fromString(request.signatureInput),
+      data: TypedArrayEncoder.fromUtf8String(request.signatureInput),
       algorithm: 'EdDSA',
       keyId: signingKey.keyId,
     })

@@ -10,7 +10,7 @@ export class CredoSha1Provider extends core.ProviderCrypto {
     switch (algorithm.name.toUpperCase()) {
       case 'SHA-1': {
         const hash = new Sha1().hash(new Uint8Array(data))
-        return hash.buffer
+        return hash.buffer as ArrayBuffer
       }
       default:
         throw new Error(`Hashing algorithm: ${JSON.stringify(algorithm)} is not supported`)

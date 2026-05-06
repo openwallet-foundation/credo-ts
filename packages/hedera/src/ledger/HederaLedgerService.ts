@@ -14,7 +14,6 @@ import type {
 } from '@credo-ts/anoncreds'
 import {
   type AgentContext,
-  type AnyUint8Array,
   type DidCreateOptions,
   type DidDeactivateOptions,
   type DidDocument,
@@ -23,7 +22,6 @@ import {
   type DidUpdateOptions,
   injectable,
   Kms,
-  type Uint8ArrayBuffer,
 } from '@credo-ts/core'
 import { Client } from '@hashgraph/sdk'
 import { HederaAnoncredsRegistry } from '@hiero-did-sdk/anoncreds'
@@ -383,11 +381,11 @@ export class HederaLedgerService {
   }
 
   private async signRequests(
-    signingRequests: Record<string, { serializedPayload: AnyUint8Array }>,
+    signingRequests: Record<string, { serializedPayload: Uint8Array }>,
     kms: Kms.KeyManagementApi,
     keyId: string
-  ): Promise<Record<string, Uint8ArrayBuffer>> {
-    const result: Record<string, Uint8ArrayBuffer> = {}
+  ): Promise<Record<string, Uint8Array>> {
+    const result: Record<string, Uint8Array> = {}
 
     for (const [key, request] of Object.entries(signingRequests)) {
       const { signature } = await kms.sign({

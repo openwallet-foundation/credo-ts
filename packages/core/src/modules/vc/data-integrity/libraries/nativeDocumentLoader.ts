@@ -1,8 +1,8 @@
-import type { DocumentLoader } from './jsonld'
+import type { DocumentLoader } from './jsonld.js'
 
 export async function getNativeDocumentLoader(): Promise<() => DocumentLoader> {
   // @ts-expect-error package doesn't have types
-  const loader = await import('@digitalcredentials/jsonld/lib/documentLoaders/node')
+  const loader = await import('@digitalcredentials/jsonld/lib/documentLoaders/node.js')
 
   if (!loader) throw new Error('Could not load node document loader. Module did not contain a loader function')
   if (typeof loader === 'function') return loader

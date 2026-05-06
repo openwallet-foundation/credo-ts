@@ -7,6 +7,15 @@ import { X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
 
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
+
 describe('mdoc device-response test', () => {
   const agent = new Agent(getAgentOptions('mdoc-test-agent', {}))
   beforeAll(async () => {
@@ -20,6 +29,7 @@ describe('mdoc device-response test', () => {
         crv: 'P-256',
       },
     })
+
     const issuerKey = await agent.kms.createKey({
       type: {
         kty: 'EC',
@@ -43,6 +53,7 @@ describe('mdoc device-response test', () => {
 
     const mdoc = await Mdoc.sign(agent.context, {
       docType: 'org.iso.18013.5.1.mDL',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
       namespaces: {
         hello: {
@@ -54,7 +65,7 @@ describe('mdoc device-response test', () => {
       issuerCertificate: certificate,
     })
 
-    const limitedDisclosedPayload = MdocDeviceResponse.limitDisclosureToInputDescriptor({
+    const limitedDisclosedPayload = await MdocDeviceResponse.limitDisclosureToInputDescriptor(agent.context, {
       mdoc,
       inputDescriptor: {
         id: mdoc.docType,
@@ -142,15 +153,17 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
 
     const deviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponseBase64url)
 
-    await deviceResponse.verify(agent.context, {
-      trustedCertificates: [rootCertificate],
-      now: new Date('2025-04-04'),
-      sessionTranscriptOptions: {
-        type: 'openId4VpDcApiDraft24',
-        clientId: 'x509_san_dns:7f95-217-123-18-26.ngrok-free.app',
-        origin: 'https://0663-217-123-18-26.ngrok-free.app',
-        verifierGeneratedNonce: '121784205639044947422645',
-      },
-    })
+    await expect(
+      deviceResponse.verify(agent.context, {
+        trustedCertificates: [rootCertificate],
+        now: new Date('2025-04-04'),
+        sessionTranscriptOptions: {
+          type: 'openId4VpDcApiDraft24',
+          clientId: 'x509_san_dns:7f95-217-123-18-26.ngrok-free.app',
+          origin: 'https://0663-217-123-18-26.ngrok-free.app',
+          verifierGeneratedNonce: '121784205639044947422645',
+        },
+      })
+    ).resolves.toBeUndefined()
   })
 })

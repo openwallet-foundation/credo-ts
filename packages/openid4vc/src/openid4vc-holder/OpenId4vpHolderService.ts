@@ -269,7 +269,7 @@ export class OpenId4VpHolderService {
       // see if any specified an alg array
       const [transactionDataHahsesAlg] = supportedAllowedHashAlgs
       const transactionDataHashes = entries.map((entry) =>
-        TypedArrayEncoder.toBase64URL(Hasher.hash(entry.encoded, transactionDataHahsesAlg))
+        TypedArrayEncoder.toBase64Url(Hasher.hash(entry.encoded, transactionDataHahsesAlg))
       )
 
       updatedCredentials[credentialId] = updatedCredentials[credentialId].map((credential) => {
@@ -302,7 +302,7 @@ export class OpenId4VpHolderService {
     const { authorizationRequestPayload, presentationExchange, dcql, transactionData } = options
 
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
-    const authorizationResponseNonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
+    const authorizationResponseNonce = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
     const { nonce } = authorizationRequestPayload
 
     let openid4vpVersionNumber = parseAuthorizationRequestVersion(authorizationRequestPayload)

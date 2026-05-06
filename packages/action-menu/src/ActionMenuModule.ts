@@ -3,6 +3,7 @@ import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry, DidCommProtocol } from '@credo-ts/didcomm'
 
 import { ActionMenuApi } from './ActionMenuApi'
+import { ActionMenuModuleConfig, type ActionMenuModuleConfigOptions } from './ActionMenuModuleConfig'
 import { ActionMenuRole } from './ActionMenuRole'
 import {
   ActionMenuProblemReportHandler,
@@ -18,11 +19,18 @@ import { ActionMenuService } from './services'
  */
 export class ActionMenuModule implements Module {
   public readonly api = ActionMenuApi
+  public readonly config: ActionMenuModuleConfig
+
+  public constructor(config?: ActionMenuModuleConfigOptions) {
+    this.config = new ActionMenuModuleConfig(config ?? {})
+  }
 
   /**
    * Registers the dependencies of the question answer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
+    dependencyManager.registerInstance(ActionMenuModuleConfig, this.config)
+
     // Services
     dependencyManager.registerSingleton(ActionMenuService)
 

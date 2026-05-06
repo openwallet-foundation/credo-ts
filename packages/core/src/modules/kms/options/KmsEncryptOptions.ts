@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../types'
 import { zAnyUint8Array } from '../../../utils/zod'
 import { KnownJwaContentEncryptionAlgorithms } from '../jwk/jwa'
 import { zKmsJwkPrivateOct } from '../jwk/kty/oct/octJwk'
@@ -72,7 +71,7 @@ export const zKmsEncryptOptions = z.object({
    * The key to use for encrypting. There are three possible formats:
    * - a key id, pointing to a symmetric (oct) jwk that can be used directly for encryption
    * - a private symmetric (oct) jwk object that can be used directly for encryption
-   * - an object configuring key agreement, based on an existing assymetric key
+   * - an object configuring key agreement, based on an existing asymmetric key
    */
   key: z.union([
     z.object({
@@ -117,18 +116,18 @@ export interface KmsEncryptReturn {
   /**
    * The encrypted data, also known as "ciphertext" in JWE
    */
-  encrypted: Uint8ArrayBuffer
+  encrypted: Uint8Array
 
   /**
    * Optional authentication tag
    */
-  tag?: Uint8ArrayBuffer
+  tag?: Uint8Array
 
   /**
    * The initialization vector. For algorithms where the iv is required
    * and not provided, this will contain the auto-generated value.
    */
-  iv?: AnyUint8Array // may be any uint8array since the user can also provide it as input
+  iv?: Uint8Array // may be any uint8array since the user can also provide it as input
 
   /**
    * The encrypted content encryption key, if key wrapping was used

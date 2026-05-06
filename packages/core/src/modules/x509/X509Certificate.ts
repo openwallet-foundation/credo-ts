@@ -12,7 +12,6 @@ import * as x509 from '@peculiar/x509'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { publicJwkToCryptoKeyAlgorithm, spkiToPublicJwk } from '../../crypto/webcrypto/utils'
-import type { AnyUint8Array } from '../../types'
 import { TypedArrayEncoder } from '../../utils'
 import { asymmetricPublicJwkMatches, PublicJwk } from '../kms'
 import {
@@ -25,6 +24,7 @@ import {
   createKeyUsagesExtension,
   createSubjectAlternativeNameExtension,
   createSubjectKeyIdentifierExtension,
+  x509SignatureAlgorithmToJwa,
 } from './utils'
 import { X509Error } from './X509Error'
 import type { X509CreateCertificateOptions } from './X509ServiceOptions'
@@ -53,13 +53,13 @@ export enum X509ExtendedKeyUsage {
 
 export type X509CertificateOptions = {
   publicJwk: PublicJwk
-  privateKey?: AnyUint8Array
+  privateKey?: Uint8Array
   x509Certificate: x509.X509Certificate
 }
 
 export class X509Certificate {
   public publicJwk: PublicJwk
-  public privateKey?: AnyUint8Array
+  public privateKey?: Uint8Array
   private x509Certificate: x509.X509Certificate
 
   private constructor(options: X509CertificateOptions) {
@@ -80,7 +80,7 @@ export class X509Certificate {
     return this.publicJwk.hasKeyId
   }
 
-  public static fromRawCertificate(rawCertificate: AnyUint8Array): X509Certificate {
+  public static fromRawCertificate(rawCertificate: Uint8Array): X509Certificate {
     const certificate = new x509.X509Certificate(rawCertificate)
     return X509Certificate.parseCertificate(certificate)
   }
@@ -314,7 +314,10 @@ export class X509Certificate {
   ) {
     let publicCryptoKey: CredoWebCryptoKey | undefined
     if (publicJwk) {
-      const cryptoKeyAlgorithm = publicJwkToCryptoKeyAlgorithm(publicJwk)
+      const cryptoKeyAlgorithm = publicJwkToCryptoKeyAlgorithm(publicJwk, {
+        alg: publicJwk.kty === 'RSA' ? x509SignatureAlgorithmToJwa(this.x509Certificate.signatureAlgorithm) : undefined,
+      })
+
       publicCryptoKey = new CredoWebCryptoKey(publicJwk, cryptoKeyAlgorithm, true, 'public', ['verify'])
     }
 

@@ -1,6 +1,5 @@
 import {
   AgentContext,
-  Buffer,
   CredoError,
   Hasher,
   JsonEncoder,
@@ -221,7 +220,7 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
         alg: 'ECDH-ES',
         epk: ephmeralKey.publicJwk,
       }
-      const encodedHeader = JsonEncoder.toBase64URL(header)
+      const encodedHeader = JsonEncoder.toBase64Url(header)
 
       const encrypted = await kms.encrypt({
         key: {
@@ -230,15 +229,15 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
             // That way we don't have to store the key
             keyId: ephmeralKey.keyId,
             algorithm: 'ECDH-ES',
-            apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64(jweEncryptor.apu) : undefined,
-            apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64(jweEncryptor.apv) : undefined,
+            apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apu) : undefined,
+            apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apv) : undefined,
             externalPublicJwk: jwkJson,
           },
         },
-        data: Buffer.from(compact),
+        data: TypedArrayEncoder.fromUtf8String(compact),
         encryption: {
           algorithm: jweEncryptor.enc,
-          aad: Buffer.from(encodedHeader),
+          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
         },
       })
 
@@ -246,9 +245,9 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
         throw new CredoError("Expected 'iv' and 'tag' to be defined")
       }
 
-      const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64URL(encrypted.iv)}.${TypedArrayEncoder.toBase64URL(
+      const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64Url(encrypted.iv)}.${TypedArrayEncoder.toBase64Url(
         encrypted.encrypted
-      )}.${TypedArrayEncoder.toBase64URL(encrypted.tag)}`
+      )}.${TypedArrayEncoder.toBase64Url(encrypted.tag)}`
 
       return { encryptionJwk: jweEncryptor.publicJwk, jwe: compactJwe }
     } finally {
@@ -304,21 +303,21 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
 
     try {
       const decrypted = await kms.decrypt({
-        encrypted: TypedArrayEncoder.fromBase64(encodedCiphertext),
+        encrypted: TypedArrayEncoder.fromBase64Url(encodedCiphertext),
         decryption: {
           algorithm: header.enc,
           // aad is the base64 encoded bytes (not just the bytes)
-          aad: TypedArrayEncoder.fromString(encodedHeader),
-          iv: TypedArrayEncoder.fromBase64(encodedIv),
-          tag: TypedArrayEncoder.fromBase64(encodedTag),
+          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
+          iv: TypedArrayEncoder.fromBase64Url(encodedIv),
+          tag: TypedArrayEncoder.fromBase64Url(encodedTag),
         },
         key: {
           keyAgreement: {
             algorithm: header.alg,
             externalPublicJwk: epk.toJson() as Kms.KmsJwkPublicEcdh,
             keyId: kid,
-            apu: typeof header.apu === 'string' ? TypedArrayEncoder.fromBase64(header.apu) : undefined,
-            apv: typeof header.apv === 'string' ? TypedArrayEncoder.fromBase64(header.apv) : undefined,
+            apu: typeof header.apu === 'string' ? TypedArrayEncoder.fromBase64Url(header.apu) : undefined,
+            apv: typeof header.apv === 'string' ? TypedArrayEncoder.fromBase64Url(header.apv) : undefined,
           },
         },
       })
@@ -390,7 +389,7 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
         jwk: header.jwk ? publicJwk : undefined,
         alg: signer.alg as Kms.KnownJwaSignatureAlgorithm,
       },
-      payload: JsonEncoder.toBuffer(payload),
+      payload: JsonEncoder.toUint8Array(payload),
       keyId: signer.kid ?? publicJwk.keyId,
     })
 

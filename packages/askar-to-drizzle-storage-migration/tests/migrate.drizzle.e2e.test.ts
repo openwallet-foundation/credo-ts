@@ -75,7 +75,7 @@ async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
       crv: 'Ed25519',
       kty: 'OKP',
     },
-    privateKey: TypedArrayEncoder.fromString('afjdemoverysercure00000000000000'),
+    privateKey: TypedArrayEncoder.fromUtf8String('afjdemoverysercure00000000000000'),
   })
 
   privateJwk.kid = 'consistent-kid'

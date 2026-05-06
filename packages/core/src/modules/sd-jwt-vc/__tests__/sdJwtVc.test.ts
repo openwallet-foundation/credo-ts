@@ -20,7 +20,7 @@ describe('sd-jwt-vc end to end test', () => {
     await issuer.initialize()
 
     const issuerPrivateJwk = transformSeedToPrivateJwk({
-      seed: TypedArrayEncoder.fromString('00000000000000000000000000000000'),
+      seed: TypedArrayEncoder.fromUtf8String('00000000000000000000000000000000'),
       type: {
         crv: 'Ed25519',
         kty: 'OKP',
@@ -50,7 +50,7 @@ describe('sd-jwt-vc end to end test', () => {
 
     await holder.initialize()
     const holderPrivateJwk = transformSeedToPrivateJwk({
-      seed: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
+      seed: TypedArrayEncoder.fromUtf8String('00000000000000000000000000000001'),
       type: {
         crv: 'Ed25519',
         kty: 'OKP',
@@ -242,7 +242,7 @@ describe('sd-jwt-vc end to end test', () => {
     const verifierMetadata = {
       audience: verifierDid,
       issuedAt: Date.now() / 1000,
-      nonce: TypedArrayEncoder.toBase64URL(verifier.kms.randomBytes({ length: 32 })),
+      nonce: TypedArrayEncoder.toBase64Url(verifier.kms.randomBytes({ length: 32 })),
     }
 
     const presentation = await holder.sdJwtVc.present<Payload>({

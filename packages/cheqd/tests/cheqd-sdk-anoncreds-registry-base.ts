@@ -29,7 +29,7 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
 
   // One test as the credential definition depends on the schema
   test('register and resolve a schema and credential definition', async () => {
-    const privateKey = TypedArrayEncoder.fromString(`000000000000000000000${useCache ? 'cached' : '000000'}cheqd`)
+    const privateKey = TypedArrayEncoder.fromUtf8String(`000000000000000000000${useCache ? 'cached' : '000000'}cheqd`)
     const { privateJwk } = transformPrivateKeyToPrivateJwk({
       privateKey,
       type: {

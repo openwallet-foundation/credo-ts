@@ -12,6 +12,7 @@ import {
 } from '../../../../core/tests/helpers'
 import type { ActionMenuStateChangedEvent } from '../../ActionMenuEvents'
 import { ActionMenuEventTypes } from '../../ActionMenuEvents'
+import { ActionMenuModuleConfig } from '../../ActionMenuModuleConfig'
 import { ActionMenuRole } from '../../ActionMenuRole'
 import { ActionMenuState } from '../../ActionMenuState'
 import { ActionMenuProblemReportError } from '../../errors/ActionMenuProblemReportError'
@@ -63,7 +64,12 @@ describe('ActionMenuService', () => {
   beforeEach(async () => {
     actionMenuRepository = new ActionMenuRepositoryMock()
     eventEmitter = new EventEmitter(agentDependencies, new Subject())
-    actionMenuService = new ActionMenuService(actionMenuRepository, agentConfig, eventEmitter)
+    actionMenuService = new ActionMenuService(
+      actionMenuRepository,
+      agentConfig,
+      eventEmitter,
+      new ActionMenuModuleConfig({})
+    )
   })
 
   afterEach(() => {
@@ -778,6 +784,243 @@ describe('ActionMenuService', () => {
       expect(actionMenuRepository.update).not.toHaveBeenCalled()
       expect(actionMenuRepository.save).not.toHaveBeenCalled()
       expect(eventListenerMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('ActionMenuModuleConfig', () => {
+    it('defaults strictStateChecking to true', () => {
+      const config = new ActionMenuModuleConfig({})
+      expect(config.strictStateChecking).toBe(true)
+    })
+
+    it('allows setting strictStateChecking to false', () => {
+      const config = new ActionMenuModuleConfig({ strictStateChecking: false })
+      expect(config.strictStateChecking).toBe(false)
+    })
+
+    it('allows setting strictStateChecking to true explicitly', () => {
+      const config = new ActionMenuModuleConfig({ strictStateChecking: true })
+      expect(config.strictStateChecking).toBe(true)
+    })
+  })
+
+  describe('strictStateChecking disabled', () => {
+    let lenientService: ActionMenuService
+
+    beforeEach(() => {
+      lenientService = new ActionMenuService(
+        actionMenuRepository,
+        agentConfig,
+        eventEmitter,
+        new ActionMenuModuleConfig({ strictStateChecking: false })
+      )
+    })
+
+    describe('createMenu', () => {
+      it('does not throw on invalid state when strictStateChecking is false', async () => {
+        const testMenu = new ActionMenu({
+          description: 'menu-description',
+          title: 'menu-title',
+          options: [{ name: 'opt1', title: 'opt1-title', description: 'opt1-desc' }],
+        })
+
+        // AwaitingSelection is not a valid state for createMenu in strict mode
+        const previousRecord = mockActionMenuRecord({
+          connectionId: mockConnectionRecord.id,
+          role: ActionMenuRole.Responder,
+          state: ActionMenuState.AwaitingSelection,
+          threadId: 'threadId-1',
+        })
+
+        mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(previousRecord))
+
+        await expect(
+          lenientService.createMenu(agentContext, {
+            connection: mockConnectionRecord,
+            menu: testMenu,
+          })
+        ).resolves.toBeDefined()
+      })
+
+      it('throws on invalid state when strictStateChecking is true (default)', async () => {
+        const testMenu = new ActionMenu({
+          description: 'menu-description',
+          title: 'menu-title',
+          options: [{ name: 'opt1', title: 'opt1-title', description: 'opt1-desc' }],
+        })
+
+        const previousRecord = mockActionMenuRecord({
+          connectionId: mockConnectionRecord.id,
+          role: ActionMenuRole.Responder,
+          state: ActionMenuState.AwaitingSelection,
+          threadId: 'threadId-1',
+        })
+
+        mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(previousRecord))
+
+        await expect(
+          actionMenuService.createMenu(agentContext, {
+            connection: mockConnectionRecord,
+            menu: testMenu,
+          })
+        ).rejects.toThrow(
+          `Action Menu record is in invalid state ${ActionMenuState.AwaitingSelection}. Valid states are: ${ActionMenuState.Null}, ${ActionMenuState.PreparingRootMenu}, ${ActionMenuState.Done}.`
+        )
+      })
+    })
+
+    describe('createPerform', () => {
+      it('does not throw on invalid state when strictStateChecking is false', async () => {
+        const testMenu = new ActionMenu({
+          description: 'menu-description',
+          title: 'menu-title',
+          options: [
+            { name: 'opt1', title: 'opt1-title', description: 'opt1-desc' },
+            { name: 'opt2', title: 'opt2-title', description: 'opt2-desc' },
+          ],
+        })
+
+        // Done is not a valid state for createPerform in strict mode
+        const mockRecord = mockActionMenuRecord({
+          connectionId: mockConnectionRecord.id,
+          role: ActionMenuRole.Requester,
+          state: ActionMenuState.Done,
+          threadId: '123',
+          menu: testMenu,
+        })
+
+        await expect(
+          lenientService.createPerform(agentContext, {
+            actionMenuRecord: mockRecord,
+            performedAction: { name: 'opt1' },
+          })
+        ).resolves.toBeDefined()
+      })
+
+      it('throws on invalid state when strictStateChecking is true (default)', async () => {
+        const testMenu = new ActionMenu({
+          description: 'menu-description',
+          title: 'menu-title',
+          options: [
+            { name: 'opt1', title: 'opt1-title', description: 'opt1-desc' },
+            { name: 'opt2', title: 'opt2-title', description: 'opt2-desc' },
+          ],
+        })
+
+        const mockRecord = mockActionMenuRecord({
+          connectionId: mockConnectionRecord.id,
+          role: ActionMenuRole.Requester,
+          state: ActionMenuState.Done,
+          threadId: '123',
+          menu: testMenu,
+        })
+
+        await expect(
+          actionMenuService.createPerform(agentContext, {
+            actionMenuRecord: mockRecord,
+            performedAction: { name: 'opt1' },
+          })
+        ).rejects.toThrow(
+          `Action Menu record is in invalid state ${ActionMenuState.Done}. Valid states are: ${ActionMenuState.PreparingSelection}.`
+        )
+      })
+    })
+
+    describe('processPerform', () => {
+      it('does not throw on invalid state when strictStateChecking is false', async () => {
+        const mockRecord = mockActionMenuRecord({
+          connectionId: mockConnectionRecord.id,
+          role: ActionMenuRole.Responder,
+          state: ActionMenuState.Done,
+          threadId: '123',
+          menu: new ActionMenu({
+            description: 'menu-description',
+            title: 'menu-title',
+            options: [
+              { name: 'opt1', title: 'opt1-title', description: 'opt1-desc' },
+              { name: 'opt2', title: 'opt2-title', description: 'opt2-desc' },
+            ],
+          }),
+        })
+
+        const mockPerformMessage = new PerformMessage({
+          name: 'opt1',
+          threadId: '123',
+        })
+
+        const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
+          agentContext,
+          connection: mockConnectionRecord,
+        })
+
+        mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
+
+        await expect(lenientService.processPerform(messageContext)).resolves.not.toThrow()
+      })
+
+      it('still throws problem report when menu cleared regardless of strictStateChecking', async () => {
+        const mockRecord = mockActionMenuRecord({
+          connectionId: mockConnectionRecord.id,
+          role: ActionMenuRole.Responder,
+          state: ActionMenuState.Null,
+          threadId: '123',
+          menu: new ActionMenu({
+            description: 'menu-description',
+            title: 'menu-title',
+            options: [
+              { name: 'opt1', title: 'opt1-title', description: 'opt1-desc' },
+              { name: 'opt2', title: 'opt2-title', description: 'opt2-desc' },
+            ],
+          }),
+        })
+
+        const mockPerformMessage = new PerformMessage({
+          name: 'opt1',
+          threadId: '123',
+        })
+
+        const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
+          agentContext,
+          connection: mockConnectionRecord,
+        })
+
+        mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
+
+        await expect(lenientService.processPerform(messageContext)).rejects.toThrow(ActionMenuProblemReportError)
+      })
+
+      it('throws on invalid state when strictStateChecking is true (default)', async () => {
+        const mockRecord = mockActionMenuRecord({
+          connectionId: mockConnectionRecord.id,
+          role: ActionMenuRole.Responder,
+          state: ActionMenuState.Done,
+          threadId: '123',
+          menu: new ActionMenu({
+            description: 'menu-description',
+            title: 'menu-title',
+            options: [
+              { name: 'opt1', title: 'opt1-title', description: 'opt1-desc' },
+              { name: 'opt2', title: 'opt2-title', description: 'opt2-desc' },
+            ],
+          }),
+        })
+
+        const mockPerformMessage = new PerformMessage({
+          name: 'opt1',
+          threadId: '123',
+        })
+
+        const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
+          agentContext,
+          connection: mockConnectionRecord,
+        })
+
+        mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
+
+        await expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
+          `Action Menu record is in invalid state ${ActionMenuState.Done}. Valid states are: ${ActionMenuState.AwaitingSelection}.`
+        )
+      })
     })
   })
 

@@ -73,12 +73,12 @@ describe('IndyVdrAnonCredsRegistry', () => {
     await agent.initialize()
     const unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
       endorser,
-      TypedArrayEncoder.fromString('00000000000000000000000Endorser9')
+      TypedArrayEncoder.fromUtf8String('00000000000000000000000Endorser9')
     )
     endorserDid = `did:indy:pool:localtest:${unqualifiedSubmitterDid}`
     const agentUnqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
       agent,
-      TypedArrayEncoder.fromString('00000000000000000000000Endorser9')
+      TypedArrayEncoder.fromUtf8String('00000000000000000000000Endorser9')
     )
     agentDid = `did:indy:pool:localtest:${agentUnqualifiedSubmitterDid}`
   })

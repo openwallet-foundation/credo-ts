@@ -30,7 +30,7 @@ describe('DidRegistrar', () => {
   describe('KeyDidRegistrar', () => {
     it('should correctly create a did:key document using Ed25519 key type', async () => {
       const privateJwk = transformPrivateKeyToPrivateJwk({
-        privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e'),
+        privateKey: TypedArrayEncoder.fromUtf8String('96213c3d7fc8d4d6754c712fd969598e'),
         type: {
           kty: 'OKP',
           crv: 'Ed25519',
@@ -72,17 +72,17 @@ describe('DidRegistrar', () => {
         didState: {
           state: 'failed',
           reason:
-            'unknownError: Invalid options provided to getPublicKey method\n✖ Invalid input: expected string, received undefined\n  → at keyId',
+            'unknownError: Invalid options provided to getPublicKey method\n✖ expected string, received undefined\n  → at keyId',
         },
       })
     })
 
     it('should store the did document', async () => {
-      const _privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
+      const _privateKey = TypedArrayEncoder.fromUtf8String('96213c3d7fc8d4d6754c712fd969598e')
       const did = 'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU'
 
       const privateJwk = transformPrivateKeyToPrivateJwk({
-        privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e'),
+        privateKey: TypedArrayEncoder.fromUtf8String('96213c3d7fc8d4d6754c712fd969598e'),
         type: {
           kty: 'OKP',
           crv: 'Ed25519',

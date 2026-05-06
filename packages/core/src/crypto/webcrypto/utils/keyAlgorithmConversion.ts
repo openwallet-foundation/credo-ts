@@ -2,6 +2,7 @@ import { RSAPublicKey } from '@peculiar/asn1-rsa'
 import { AsnParser, AsnSerializer } from '@peculiar/asn1-schema'
 import { AlgorithmIdentifier, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import { type KmsCreateKeyType, PublicJwk } from '../../../modules/kms'
+import { TypedArrayEncoder } from '../../../utils'
 import {
   ecPublicKeyWithK256AlgorithmIdentifier,
   ecPublicKeyWithP256AlgorithmIdentifier,
@@ -14,7 +15,13 @@ import {
 import { CredoWebCryptoError } from '../CredoWebCryptoError'
 import type { EcKeyGenParams, KeyGenAlgorithm, RsaHashedKeyGenParams } from '../types'
 
-export const publicJwkToCryptoKeyAlgorithm = (key: PublicJwk): KeyGenAlgorithm => {
+export const publicJwkToCryptoKeyAlgorithm = (
+  key: PublicJwk,
+  options?: {
+    // Optional algorithm hint, which can be useful for RSA keys.
+    alg?: string
+  }
+): KeyGenAlgorithm => {
   const publicJwk = key.toJson()
 
   if (publicJwk.kty === 'EC') {
@@ -32,13 +39,59 @@ export const publicJwkToCryptoKeyAlgorithm = (key: PublicJwk): KeyGenAlgorithm =
     if (publicJwk.crv === 'Ed25519') {
       return { name: 'Ed25519' }
     }
+  } else if (publicJwk.kty === 'RSA') {
+    const modulusLength = TypedArrayEncoder.fromBase64Url(publicJwk.n).length * 8
+    const publicExponent = TypedArrayEncoder.fromBase64Url(publicJwk.e)
+
+    switch (publicJwk.alg ?? options?.alg) {
+      case 'PS256':
+        return {
+          name: 'RSA-PSS',
+          modulusLength,
+          publicExponent,
+          hash: { name: 'SHA-256' },
+        }
+      case 'PS384':
+        return {
+          name: 'RSA-PSS',
+          modulusLength,
+          publicExponent,
+          hash: { name: 'SHA-384' },
+        }
+      case 'PS512':
+        return {
+          name: 'RSA-PSS',
+          modulusLength,
+          publicExponent,
+          hash: { name: 'SHA-512' },
+        }
+      case 'RS256':
+        return {
+          name: 'RSASSA-PKCS1-v1_5',
+          modulusLength,
+          publicExponent,
+          hash: { name: 'SHA-256' },
+        }
+      case 'RS384':
+        return {
+          name: 'RSASSA-PKCS1-v1_5',
+          modulusLength,
+          publicExponent,
+          hash: { name: 'SHA-384' },
+        }
+      case 'RS512':
+        return {
+          name: 'RSASSA-PKCS1-v1_5',
+          modulusLength,
+          publicExponent,
+          hash: { name: 'SHA-512' },
+        }
+    }
   }
 
-  // TODO: support RSA, but i think we need some extra params for this
   throw new CredoWebCryptoError(`Unsupported ${key.jwkTypeHumanDescription}`)
 }
 
-// TODO: support RSA
 export const cryptoKeyAlgorithmToCreateKeyOptions = (algorithm: KeyGenAlgorithm) => {
   const algorithmName = algorithm.name.toUpperCase()
   switch (algorithmName) {
@@ -140,11 +193,7 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo): PublicJwk => {
   }
   if (spki.algorithm.isEqual(rsaKeyAlgorithmIdentifier)) {
     // The RSA key is another ASN.1 structure inside the subjectPublicKey bit string
-    // The first byte in the bit string is the number of unused bits (typically 0)
-    const keyWithoutUnusedBits = new Uint8Array(spki.subjectPublicKey).slice(1)
-
-    // Parse the RSA public key structure
-    const rsaPublicKey = AsnParser.parse(keyWithoutUnusedBits, RSAPublicKey)
+    const rsaPublicKey = AsnParser.parse(spki.subjectPublicKey, RSAPublicKey)
 
     return PublicJwk.fromPublicKey({
       kty: 'RSA',
@@ -172,7 +221,7 @@ export const publicJwkToSpki = (publicJwk: PublicJwk): SubjectPublicKeyInfo => {
 
     return new SubjectPublicKeyInfo({
       algorithm: rsaKeyAlgorithmIdentifier,
-      subjectPublicKey: new Uint8Array([0, ...new Uint8Array(rsaPublicKeyDer)]).buffer,
+      subjectPublicKey: rsaPublicKeyDer,
     })
   }
 

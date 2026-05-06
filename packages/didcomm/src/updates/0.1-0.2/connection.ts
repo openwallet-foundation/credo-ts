@@ -189,7 +189,7 @@ export async function extractDidDocument<Agent extends BaseAgent>(
 
       ourDidRecord.metadata.set(DidRecordMetadataKeys.LegacyDid, {
         unqualifiedDid: oldOurDidDoc.id,
-        didDocumentString: JsonEncoder.toString(oldOurDidDocJson),
+        didDocumentString: JsonEncoder.toUtf8String(oldOurDidDocJson),
       })
 
       await didRepository.save(agent.context, ourDidRecord)
@@ -239,7 +239,7 @@ export async function extractDidDocument<Agent extends BaseAgent>(
 
       theirDidRecord.metadata.set(DidRecordMetadataKeys.LegacyDid, {
         unqualifiedDid: oldTheirDidDoc.id,
-        didDocumentString: JsonEncoder.toString(oldTheirDidDocJson),
+        didDocumentString: JsonEncoder.toUtf8String(oldTheirDidDocJson),
       })
 
       await didRepository.save(agent.context, theirDidRecord)

@@ -2,7 +2,7 @@ import { JsonEncoder, MultiBaseEncoder, MultiHashEncoder } from '../../../../uti
 
 export function didDocumentJsonToNumAlgo1Did(didDocumentJson: Record<string, unknown>): string {
   // We need to remove the id property before hashing
-  const didDocumentBuffer = JsonEncoder.toBuffer({ ...didDocumentJson, id: undefined })
+  const didDocumentBuffer = JsonEncoder.toUint8Array({ ...didDocumentJson, id: undefined })
 
   const didIdentifier = MultiBaseEncoder.encode(MultiHashEncoder.encode(didDocumentBuffer, 'sha-256'), 'base58btc')
 

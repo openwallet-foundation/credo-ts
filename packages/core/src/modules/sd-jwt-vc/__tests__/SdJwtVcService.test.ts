@@ -78,7 +78,7 @@ const agent = new Agent(
 )
 
 agent.kms.randomBytes = vi.fn(function () {
-  return TypedArrayEncoder.fromString('salt')
+  return TypedArrayEncoder.fromUtf8String('salt')
 })
 Date.prototype.getTime = vi.fn(function () {
   return 1698151532000
@@ -142,7 +142,7 @@ describe('SdJwtVcService', () => {
     await agent.initialize()
 
     const issuerPrivateJwk = transformSeedToPrivateJwk({
-      seed: TypedArrayEncoder.fromString('00000000000000000000000000000000'),
+      seed: TypedArrayEncoder.fromUtf8String('00000000000000000000000000000000'),
       type: {
         crv: 'Ed25519',
         kty: 'OKP',
@@ -173,7 +173,7 @@ describe('SdJwtVcService', () => {
     simpleX509Certificate.keyId = issuerKey.keyId
 
     const holderPrivateJwk = transformSeedToPrivateJwk({
-      seed: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
+      seed: TypedArrayEncoder.fromUtf8String('00000000000000000000000000000001'),
       type: {
         crv: 'Ed25519',
         kty: 'OKP',
@@ -1544,7 +1544,7 @@ describe('SdJwtVcService', () => {
 
       const metadataJson = JSON.stringify(mockMetadata)
       // Compute the actual sha256 hash of the metadata
-      const hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-256'))
+      const hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromUtf8String(metadataJson), 'sha-256'))
       const integrityMetadata = `sha256-${hash}`
 
       mockJwtDecode({
@@ -1579,7 +1579,7 @@ describe('SdJwtVcService', () => {
       }
 
       const metadataJson = JSON.stringify(mockMetadata)
-      const hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-384'))
+      const hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromUtf8String(metadataJson), 'sha-384'))
       const integrityMetadata = `sha384-${hash}`
 
       mockJwtDecode({
@@ -1614,7 +1614,7 @@ describe('SdJwtVcService', () => {
       }
 
       const metadataJson = JSON.stringify(mockMetadata)
-      const hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-512'))
+      const hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromUtf8String(metadataJson), 'sha-512'))
       const integrityMetadata = `sha512-${hash}`
 
       mockJwtDecode({
@@ -1681,8 +1681,12 @@ describe('SdJwtVcService', () => {
       }
 
       const metadataJson = JSON.stringify(mockMetadata)
-      const sha256Hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-256'))
-      const sha512Hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-512'))
+      const sha256Hash = TypedArrayEncoder.toBase64(
+        Hasher.hash(TypedArrayEncoder.fromUtf8String(metadataJson), 'sha-256')
+      )
+      const sha512Hash = TypedArrayEncoder.toBase64(
+        Hasher.hash(TypedArrayEncoder.fromUtf8String(metadataJson), 'sha-512')
+      )
       // Provide both sha256 and sha512, the verifier should use sha512 as it's stronger
       const integrityMetadata = `sha256-${sha256Hash} sha512-${sha512Hash}`
 
@@ -1744,7 +1748,9 @@ describe('SdJwtVcService', () => {
 
       const metadataJson = JSON.stringify(mockMetadata)
       const incorrectSha256Hash = 'invalidhash1234567890abcdef='
-      const sha512Hash = TypedArrayEncoder.toBase64(Hasher.hash(TypedArrayEncoder.fromString(metadataJson), 'sha-512'))
+      const sha512Hash = TypedArrayEncoder.toBase64(
+        Hasher.hash(TypedArrayEncoder.fromUtf8String(metadataJson), 'sha-512')
+      )
       // sha512 is stronger and correct, so it should succeed even if sha256 is wrong
       const integrityMetadata = `sha256-${incorrectSha256Hash} sha512-${sha512Hash}`
 
