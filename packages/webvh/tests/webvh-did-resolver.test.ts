@@ -61,4 +61,32 @@ describe('WebVH DID resolver', () => {
       'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example'
     )
   })
+
+  it('should expose WebVhApi through webvhSdk module', () => {
+    expect(typeof agent.modules.webvhSdk.resolveResource).toBe('function')
+  })
+
+  it('should resolve a webvh resource through WebVhApi', async () => {
+    const mockFetch = vi.spyOn(agent.config.agentDependencies, 'fetch').mockResolvedValue({
+      ok: true,
+      headers: {
+        get: (header: string) => (header.toLowerCase() === 'content-type' ? 'application/json' : null),
+      },
+      json: async () => ({ resourceType: 'schema', id: '1234' }),
+      text: async () => '',
+    } as unknown as Response)
+
+    const result = await agent.modules.webvhSdk.resolveResource(
+      'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:localhost/resources/1234'
+    )
+
+    expect(mockFetch).toHaveBeenCalledWith('http://localhost/resources/1234')
+    expect(result).toMatchObject({
+      content: { resourceType: 'schema', id: '1234' },
+      contentMetadata: { contentType: 'application/json' },
+      dereferencingMetadata: { contentType: 'application/json' },
+    })
+
+    mockFetch.mockRestore()
+  })
 })
