@@ -89,7 +89,9 @@ describe('WebVH DID module', () => {
     expect(didCreateResult.didState.state).toBe('finished')
 
     if (didCreateResult.didState.state === 'finished') {
-      expect(didCreateResult.didState.did).toBe('did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example')
+      expect(didCreateResult.didState.did).toBe(
+        'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example'
+      )
     }
 
     const createdDids = await agent.dids.getCreatedDids({ method: 'webvh' })

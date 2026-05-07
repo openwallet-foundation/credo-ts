@@ -1,7 +1,6 @@
 import type { DependencyManager, Module } from '@credo-ts/core'
-
-import { WebVhApi } from './WebVhApi'
 import { WebVhDidRegistrar, WebVhDidResolver } from './dids'
+import { WebVhApi } from './WebVhApi'
 
 export class WebVhModule implements Module {
   public readonly api = WebVhApi
