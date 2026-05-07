@@ -44,9 +44,8 @@ export class EddsaJcs2022Cryptosuite {
     const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
     return (
-      didRecord.keys?.find(
-        ({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${verificationMethod.publicKeyMultibase}`
-      )?.kmsKeyId ?? publicJwk.legacyKeyId
+      didRecord.keys?.find(({ didDocumentRelativeKeyId }) => verificationMethod.id.endsWith(didDocumentRelativeKeyId))
+        ?.kmsKeyId ?? publicJwk.legacyKeyId
     )
   }
 
