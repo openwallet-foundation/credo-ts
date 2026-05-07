@@ -1,6 +1,7 @@
 import type { AgentContext, BaseRecordAny, ResolvedDidCommService } from '@credo-ts/core'
 import { CredoError, DidKey, Kms, utils } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
+import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { ServiceDecorator } from './decorators/service/ServiceDecorator'
 import type { DidCommRouting } from './models'
 import { DidCommOutboundMessageContext } from './models'
@@ -177,19 +178,25 @@ async function getServicesForMessage(
     outOfBandRecord?: DidCommOutOfBandRecord
   }
 ) {
+  // Key off sendsV2 config; invitationType is @Exclude()-decorated and lost after the OOB record's storage round-trip.
+  const preferDidcommV2 = agentContext.dependencyManager.resolve(DidCommModuleConfig).sendsV2
+
+  // v1 ~service holds raw base58 keys with no DID URL keyId; for v2 OOB Receiver, re-resolve via the OOB record to get a keyAgreement vm.
+  const skipLastReceivedServiceForV2 = preferDidcommV2 && outOfBandRecord?.role === DidCommOutOfBandRole.Receiver
+
   let ourService = lastSentMessage?.service?.resolvedDidCommService
-  let recipientService = lastReceivedMessage.service?.resolvedDidCommService
+  let recipientService = skipLastReceivedServiceForV2 ? undefined : lastReceivedMessage.service?.resolvedDidCommService
 
   const outOfBandService = agentContext.dependencyManager.resolve(DidCommOutOfBandService)
 
-  // Check if valid
   if (outOfBandRecord?.role === DidCommOutOfBandRole.Sender) {
     // Extract ourService from the oob record if not on a previous message
     if (!ourService) {
       ourService = await outOfBandService.getResolvedServiceForOutOfBandServices(
         agentContext,
         outOfBandRecord.outOfBandInvitation.getServices(),
-        outOfBandRecord.invitationInlineServiceKeys
+        outOfBandRecord.invitationInlineServiceKeys,
+        preferDidcommV2
       )
     }
 
@@ -208,7 +215,9 @@ async function getServicesForMessage(
     if (!recipientService) {
       recipientService = await outOfBandService.getResolvedServiceForOutOfBandServices(
         agentContext,
-        outOfBandRecord.outOfBandInvitation.getServices()
+        outOfBandRecord.outOfBandInvitation.getServices(),
+        undefined,
+        preferDidcommV2
       )
     }
 

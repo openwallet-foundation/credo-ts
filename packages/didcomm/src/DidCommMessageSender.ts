@@ -694,10 +694,11 @@ export class DidCommMessageSender {
       service: { ...service, recipientKeys: 'omitted...', routingKeys: 'omitted...' },
     })
 
-    // For connectionless v2: use did:key as kid so recipient can resolve via tryParseKidAsPublicJwk
+    // v2 spec: kid must be a DID URL into a keyAgreement vm. Preserve any attached keyId; only fall back to did:key for raw base58 from v1 ~service.
     const recipientKeys =
       !connection && this.didCommModuleConfig.sendsV2
         ? service.recipientKeys.map((k) => {
+            if (k.hasKeyId) return k
             const copy = Kms.PublicJwk.fromPublicJwk(k.toJson())
             copy.keyId = new DidKey(k).did
             return copy
