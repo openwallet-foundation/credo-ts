@@ -1,5 +1,5 @@
-import type { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
-import { CredoError, DidsApi, EventEmitter, injectable, parseDid } from '@credo-ts/core'
+import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import { CredoError, DidsApi, EventEmitter, injectable, Kms, parseDid } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '../../models'
 import { DidCommDocumentService } from '../../services'
 import type { DidCommConnectionRecord, DidCommHandshakeProtocol } from '../connections'
@@ -239,12 +239,30 @@ export class DidCommOutOfBandService {
 
   public async findCreatedByRecipientKey(
     agentContext: AgentContext,
-    recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk | Kms.X25519PublicJwk>
   ) {
     return this.outOfBandRepository.findSingleByQuery(agentContext, {
       recipientKeyFingerprints: [recipientKey.fingerprint],
       role: DidCommOutOfBandRole.Sender,
     })
+  }
+
+  /**
+   * Find v2 OOB record (Sender role) by recipient DID.
+   * Used when inviter receives first DIDComm v2 message (to=[our DID]).
+   */
+  public async findCreatedByRecipientDid(
+    agentContext: AgentContext,
+    recipientDid: string
+  ): Promise<DidCommOutOfBandRecord | null> {
+    try {
+      return await this.outOfBandRepository.findSingleByQuery(agentContext, {
+        recipientDid,
+        role: DidCommOutOfBandRole.Sender,
+      })
+    } catch {
+      return null
+    }
   }
 
   public async getAll(agentContext: AgentContext) {
@@ -265,21 +283,21 @@ export class DidCommOutOfBandService {
   }
 
   /**
-   * Extract a resolved didcomm service from an out of band invitation.
-   *
-   * Currently the first service that can be resolved is returned.
+   * Extract a resolved didcomm service from an out of band invitation. The first resolvable service is returned;
+   * when `preferDidcommV2` is set, X25519-keyAgreement services are preferred so v2 packing emits a spec-compliant kid.
    */
   public async getResolvedServiceForOutOfBandServices(
     agentContext: AgentContext,
     services: Array<string | OutOfBandDidCommService>,
-    /**
-     * Optional keys for the inline services
-     */
-    inlineServiceKeys?: DidCommOutOfBandInlineServiceKey[]
+    inlineServiceKeys?: DidCommOutOfBandInlineServiceKey[],
+    preferDidcommV2?: boolean
   ) {
     for (const service of services) {
       if (typeof service === 'string') {
-        const [didService] = await this.didCommDocumentService.resolveServicesFromDid(agentContext, service)
+        const allServices = await this.didCommDocumentService.resolveServicesFromDid(agentContext, service)
+        const didService = preferDidcommV2
+          ? (allServices.find((s) => s.recipientKeys.some((k) => k.is(Kms.X25519PublicJwk))) ?? allServices[0])
+          : allServices[0]
 
         if (didService) return didService
       } else {
