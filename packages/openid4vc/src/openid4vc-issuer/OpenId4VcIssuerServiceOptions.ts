@@ -96,6 +96,14 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
    * @default false
    */
   requirePresentationDuringIssuance?: boolean
+  /**
+   * Optional OAuth 2.0 scope value(s) for authorization code flow.
+   *
+   * This can be used to align with HAIP requirement that the issuer includes a scope
+   * value so the wallet can identify the desired credential type and use it in the
+   * authorization request `scope` parameter.
+   */
+  scope?: string
 }
 
 interface OpenId4VciCreateCredentialOfferOptionsBase {
