@@ -33,7 +33,8 @@ import {
 import { canonicalize } from 'json-canonicalize'
 import { EddsaJcs2022Cryptosuite, type UnsecuredDocument } from '../../cryptosuites'
 import { WebVhDidResolver } from '../../dids'
-import { WebVhResource } from '../utils/transform'
+import { isWebVhAttestedResource, parseResourceId, WebVhAttestedResource } from '../../resources'
+import { WebVhAnonCredsResource } from '../utils/transform'
 
 type DidResourceResolutionResult = {
   error?: string
@@ -41,6 +42,122 @@ type DidResourceResolutionResult = {
   content?: Record<string, unknown> | unknown[] | string // More specific than any, but still flexible
   contentMetadata?: Record<string, unknown>
   dereferencingMetadata?: Record<string, unknown>
+}
+
+type SchemaContentShape = {
+  attrNames: string[]
+  name: string
+  version: string
+  issuerId: string
+}
+
+type CredentialDefinitionContentShape = {
+  issuerId: string
+  schemaId: string
+  type: string
+  tag: string
+  value: Record<string, unknown>
+}
+
+type RevocationRegistryDefinitionContentShape = {
+  issuerId: string
+  revocDefType: string
+  credDefId: string
+  tag: string
+  value: RevocationRegistryDefinitionValueShape
+}
+
+type RevocationRegistryDefinitionValueShape = {
+  publicKeys: {
+    accumKey: {
+      z: string
+    }
+  }
+  maxCredNum: number
+  tailsLocation: string
+  tailsHash: string
+}
+
+type RevocationStatusListShape = {
+  issuerId: string
+  revRegDefId: string
+  revocationList: number[]
+  currentAccumulator: string
+  timestamp: number
+}
+
+function isSchemaContentShape(value: unknown): value is SchemaContentShape {
+  if (!value || typeof value !== 'object') return false
+
+  const candidate = value as Record<string, unknown>
+  return (
+    Array.isArray(candidate.attrNames) &&
+    candidate.attrNames.every((item) => typeof item === 'string') &&
+    typeof candidate.name === 'string' &&
+    typeof candidate.version === 'string' &&
+    typeof candidate.issuerId === 'string'
+  )
+}
+
+function isCredentialDefinitionContentShape(value: unknown): value is CredentialDefinitionContentShape {
+  if (!value || typeof value !== 'object') return false
+
+  const candidate = value as Record<string, unknown>
+  return (
+    typeof candidate.issuerId === 'string' &&
+    typeof candidate.schemaId === 'string' &&
+    typeof candidate.type === 'string' &&
+    typeof candidate.tag === 'string' &&
+    !!candidate.value &&
+    typeof candidate.value === 'object'
+  )
+}
+
+function isRevocationRegistryDefinitionContentShape(value: unknown): value is RevocationRegistryDefinitionContentShape {
+  if (!value || typeof value !== 'object') return false
+
+  const candidate = value as Record<string, unknown>
+  return (
+    typeof candidate.issuerId === 'string' &&
+    typeof candidate.revocDefType === 'string' &&
+    typeof candidate.credDefId === 'string' &&
+    typeof candidate.tag === 'string' &&
+    isRevocationRegistryDefinitionValueShape(candidate.value)
+  )
+}
+
+function isRevocationRegistryDefinitionValueShape(value: unknown): value is RevocationRegistryDefinitionValueShape {
+  if (!value || typeof value !== 'object') return false
+
+  const candidate = value as Record<string, unknown>
+  const publicKeys = candidate.publicKeys as Record<string, unknown> | undefined
+  const accumKey = publicKeys?.accumKey as Record<string, unknown> | undefined
+
+  return (
+    !!publicKeys &&
+    typeof publicKeys === 'object' &&
+    !!accumKey &&
+    typeof accumKey === 'object' &&
+    typeof accumKey.z === 'string' &&
+    typeof candidate.maxCredNum === 'number' &&
+    typeof candidate.tailsLocation === 'string' &&
+    typeof candidate.tailsHash === 'string'
+  )
+}
+
+function isRevocationStatusListShape(value: unknown): value is RevocationStatusListShape {
+  if (!value || typeof value !== 'object') return false
+
+  const candidate = value as Record<string, unknown>
+
+  return (
+    typeof candidate.issuerId === 'string' &&
+    typeof candidate.revRegDefId === 'string' &&
+    Array.isArray(candidate.revocationList) &&
+    candidate.revocationList.every((item) => typeof item === 'number') &&
+    typeof candidate.currentAccumulator === 'string' &&
+    typeof candidate.timestamp === 'number'
+  )
 }
 
 export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
@@ -60,7 +177,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
    * @param agentContext The agent context.
    * @param resourceId The DID URI of the resource to resolve.
    * @param resourceTypeString A descriptive string for the resource type (e.g., 'schema', 'credential definition') used in logs/errors.
-   * @returns The parsed and validated WebVhResource object and the original resolution result.
+   * @returns The parsed and validated resource object and the original resolution result.
    * @throws {CredoError} If resolution, parsing, or validation fails.
    */
   private _digestMultibase(value: string) {
@@ -73,7 +190,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     agentContext: AgentContext,
     resourceId: string,
     resourceTypeString: string
-  ): Promise<{ resourceObject: WebVhResource; resolutionResult: DidResourceResolutionResult }> {
+  ): Promise<{ resourceObject: WebVhAttestedResource; resolutionResult: DidResourceResolutionResult }> {
     try {
       const webvhDidResolver = agentContext.dependencyManager.resolve(WebVhDidResolver)
       if (!this.supportedIdentifier.test(resourceId))
@@ -95,12 +212,12 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         )
       }
 
-      let resourceObject: WebVhResource
+      let resourceObject: WebVhAnonCredsResource
       try {
         agentContext.config.logger.trace(
           `Parsing resource data: ${JSON.stringify(resolutionResult.content).substring(0, 200)}...`
         )
-        resourceObject = JsonTransformer.fromJSON(resolutionResult.content, WebVhResource)
+        resourceObject = JsonTransformer.fromJSON(resolutionResult.content, WebVhAnonCredsResource)
       } catch (parseError) {
         agentContext.config.logger.error(`Failed to parse resource data for ${resourceId}`, {
           error: parseError instanceof Error ? parseError.message : String(parseError),
@@ -116,23 +233,8 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       // --- Attested Resource Validation steps ---
 
       // 1. Data Model Verification
-      if (!Array.isArray(resourceObject.type) || !resourceObject.type.includes('AttestedResource')) {
+      if (!isWebVhAttestedResource(resourceObject)) {
         throw new CredoError('Missing AttestedResource type.')
-      }
-      if (!resourceObject.id || typeof resourceObject.id !== 'string') {
-        throw new CredoError('Missing resource id.')
-      }
-      if (!resourceObject.content || typeof resourceObject.content !== 'object') {
-        throw new CredoError('Missing resource content.')
-      }
-      if (resourceObject.metadata && typeof resourceObject.metadata !== 'object') {
-        throw new CredoError('Expecting metadata to be an object.')
-      }
-      if (resourceObject.links && typeof resourceObject.links !== 'object') {
-        throw new CredoError('Expecting metadata to be an array.')
-      }
-      if (!resourceObject.proof || typeof resourceObject.proof !== 'object') {
-        throw new CredoError('Missing resource proof.')
       }
       agentContext.config.logger.trace(`Resource ${resourceId} attestation found.`)
 
@@ -181,25 +283,17 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       const schemaContent = resourceObject.content
 
       // Type check to ensure we have a schema content object
-      if (
-        !('attrNames' in schemaContent) ||
-        !('name' in schemaContent) ||
-        !('version' in schemaContent) ||
-        !('issuerId' in schemaContent)
-      ) {
+      if (!isSchemaContentShape(schemaContent)) {
         throw new CredoError(`Parsed resource content for ${schemaId} is not a valid schema.`)
       }
 
-      const contentIssuerId = (schemaContent as { issuerId?: string })?.issuerId // Type assertion for accessing issuerId
-      if (!contentIssuerId || typeof contentIssuerId !== 'string') {
-        throw new CredoError(`Resolved resource content for ${schemaId} is missing a valid issuerId.`)
-      }
+      const contentIssuerId = schemaContent.issuerId
 
-      const resourceDidMatch = schemaId.match(/^(did:webvh:[^/]+)/)
-      if (!resourceDidMatch || !resourceDidMatch[1]) {
+      const parsedSchemaId = parseResourceId(schemaId)
+      if (!parsedSchemaId) {
         throw new CredoError(`Could not extract DID from resource ID: ${schemaId}`)
       }
-      const expectedIssuerDid = resourceDidMatch[1]
+      const expectedIssuerDid = parsedSchemaId.did
 
       if (contentIssuerId !== expectedIssuerDid) {
         throw new CredoError(
@@ -249,26 +343,18 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       // Extract the content and make sure it's a CredDef
       const credDefContent = resourceObject.content
       // Type check for WebVhCredDefContent
-      if (
-        !('schemaId' in credDefContent) ||
-        !('type' in credDefContent) ||
-        !('tag' in credDefContent) ||
-        !('value' in credDefContent)
-      ) {
+      if (!isCredentialDefinitionContentShape(credDefContent)) {
         throw new CredoError('Resolved resource content is not a valid credential definition.')
       }
 
-      const contentIssuerId = (credDefContent as { issuerId?: string })?.issuerId
-      if (!contentIssuerId || typeof contentIssuerId !== 'string') {
-        throw new CredoError(`Resolved resource content for ${credentialDefinitionId} is missing a valid issuerId.`)
-      }
+      const contentIssuerId = credDefContent.issuerId
 
       // Extract the DID from the resourceId (part before /resources/hash)
-      const resourceDidMatch = credentialDefinitionId.match(/^(did:webvh:[^/]+)/)
-      if (!resourceDidMatch || !resourceDidMatch[1]) {
+      const parsedCredentialDefinitionId = parseResourceId(credentialDefinitionId)
+      if (!parsedCredentialDefinitionId) {
         throw new CredoError(`Could not extract DID from resource ID: ${credentialDefinitionId}`)
       }
-      const expectedIssuerDid = resourceDidMatch[1]
+      const expectedIssuerDid = parsedCredentialDefinitionId.did
 
       if (contentIssuerId !== expectedIssuerDid) {
         throw new CredoError(
@@ -324,12 +410,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
       const revRegDefContent = resourceObject.content
 
-      if (
-        !('revocDefType' in revRegDefContent) ||
-        !('credDefId' in revRegDefContent) ||
-        !('tag' in revRegDefContent) ||
-        !('value' in revRegDefContent)
-      ) {
+      if (!isRevocationRegistryDefinitionContentShape(revRegDefContent)) {
         throw new CredoError(
           `Parsed resource content for ${revocationRegistryDefinitionId} is not a valid revocation registry definition.`
         )
@@ -344,7 +425,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
           revocDefType: revRegDefContent.revocDefType as AnonCredsRevocationRegistryDefinition['revocDefType'], // TODO: Map revocDefType string to AnonCreds type
           credDefId: revRegDefContent.credDefId,
           tag: revRegDefContent.tag,
-          value: revRegDefContent.value as AnonCredsRevocationRegistryDefinitionValue, // TODO: Map value structure to AnonCreds type
+          value: revRegDefContent.value as AnonCredsRevocationRegistryDefinitionValue,
         },
         revocationRegistryDefinitionId,
         resolutionMetadata: resolutionResult.dereferencingMetadata || {},
@@ -416,6 +497,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
       if (!revocationEntryResourceObject) {
         throw new CredoError('No revocation entry found for the given timestamp.')
+      }
+
+      if (!isRevocationStatusListShape(revocationEntryResourceObject.content)) {
+        throw new CredoError('Resolved revocation entry content is not a valid revocation status list.')
       }
 
       return {
@@ -601,7 +686,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  public async verifyProof(agentContext: AgentContext, attestedResource: WebVhResource): Promise<boolean> {
+  public async verifyProof(agentContext: AgentContext, attestedResource: WebVhAttestedResource): Promise<boolean> {
     const cryptosuite = new EddsaJcs2022Cryptosuite(agentContext)
     try {
       const verificationResult = await cryptosuite.verifyProof(attestedResource)

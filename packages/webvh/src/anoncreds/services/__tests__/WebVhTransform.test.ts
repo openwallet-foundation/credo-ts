@@ -1,14 +1,14 @@
 import { JsonTransformer } from '@credo-ts/core'
 
-import { WebVhResource } from '../../utils/transform'
+import { WebVhAnonCredsResource } from '../../utils/transform'
 
 import { mockCredDefResource, mockSchemaResource } from './mock-resources'
 
 describe('WebVhTransform', () => {
   it('should correctly transform a schema resource', () => {
-    const resource = JsonTransformer.fromJSON(mockSchemaResource, WebVhResource)
+    const resource = JsonTransformer.fromJSON(mockSchemaResource, WebVhAnonCredsResource)
 
-    expect(resource).toBeInstanceOf(WebVhResource)
+    expect(resource).toBeInstanceOf(WebVhAnonCredsResource)
     expect(resource['@context']).toContain('https://opsecid.github.io/attested-resource/v1')
     expect(resource.type).toEqual(['AttestedResource'])
 
@@ -24,9 +24,9 @@ describe('WebVhTransform', () => {
   })
 
   it('should correctly transform a credential definition resource', () => {
-    const resource = JsonTransformer.fromJSON(mockCredDefResource, WebVhResource)
+    const resource = JsonTransformer.fromJSON(mockCredDefResource, WebVhAnonCredsResource)
 
-    expect(resource).toBeInstanceOf(WebVhResource)
+    expect(resource).toBeInstanceOf(WebVhAnonCredsResource)
     expect(resource['@context']).toContain('https://identity.foundation/did-attested-resources/context/v0.1')
     expect(resource.type).toEqual(['AttestedResource'])
 
