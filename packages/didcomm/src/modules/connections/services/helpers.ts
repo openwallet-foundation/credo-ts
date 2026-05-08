@@ -9,18 +9,35 @@ import {
   DidRepository,
   DidsApi,
   didDocumentJsonToNumAlgo1Did,
+  didToNumAlgo2DidDocument,
+  didToNumAlgo4DidDocument,
   getEd25519VerificationKey2018,
+  getPublicJwkFromVerificationMethod,
+  getX25519KeyAgreementKey2019,
   IndyAgentService,
   Kms,
+  NewDidCommV2Service,
+  NewDidCommV2ServiceEndpoint,
   PeerDidNumAlgo,
   type ResolvedDidCommService,
   TypedArrayEncoder,
 } from '@credo-ts/core'
+import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
 import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import type { DidCommOutOfBandInlineServiceKey } from '../../oob/repository/DidCommOutOfBandRecord'
 import type { DidDoc, PublicKey } from '../models'
 import { EmbeddedAuthentication } from '../models'
+
+/**
+ * Normalize a PublicJwk to X25519 for comparison. DIDComm v2 uses X25519 for decryption;
+ * services may have Ed25519 keys. Centralizes the type assertion needed because
+ * PublicJwk.convertTo() only narrows when the instance is known to be Ed25519.
+ */
+export function toX25519(jwk: Kms.PublicJwk): Kms.PublicJwk<Kms.X25519PublicJwk> {
+  return jwk.is(Kms.X25519PublicJwk) ? jwk : (jwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+}
 
 export function convertToNewDidDocument(didDoc: DidDoc, keys?: DidDocumentKey[]) {
   const didDocumentBuilder = new DidDocumentBuilder('')
@@ -136,7 +153,68 @@ function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
   })
 }
 
+/**
+ * Resolves a CM 2.0 routing DID (did:peer:2 or did:peer:4) to extract
+ * the mediator's transport URL and Ed25519 routing keys.
+ *
+ * The routing DID encodes the mediator's endpoint and keys. We resolve it
+ * at peer DID creation time so the resulting peer DID contains a plain URL
+ * that any v1 or v2 agent can use without special DID-as-endpoint handling.
+ */
+function resolveRoutingDid(routingDid: string): {
+  endpoint: string
+  routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+} {
+  const routingDoc = routingDid.startsWith('did:peer:4')
+    ? didToNumAlgo4DidDocument(routingDid)
+    : didToNumAlgo2DidDocument(routingDid)
+
+  // Extract the first service's transport URL
+  let endpoint = routingDid // fallback to DID if no service found
+  const firstSvc = routingDoc.service?.[0]
+  if (firstSvc) {
+    const resolved =
+      typeof firstSvc.serviceEndpoint === 'string'
+        ? firstSvc.serviceEndpoint
+        : ((firstSvc.serviceEndpoint as { uri?: string; s?: string })?.uri ??
+          (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.s)
+    if (resolved) endpoint = resolved
+  }
+
+  // Extract Ed25519 routing keys from authentication (for v1 Forward compatibility).
+  // v1 Forward packing uses kid = base58(Ed25519_raw_bytes), and the mediator's
+  // routing record stores Ed25519 keys. X25519 keys are skipped here.
+  const routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
+  const keyRefs = [...(routingDoc.authentication ?? []), ...(routingDoc.keyAgreement ?? [])]
+  const seen = new Set<string>()
+  for (const keyRef of keyRefs) {
+    const vm = typeof keyRef === 'string' ? routingDoc.dereferenceVerificationMethod(keyRef) : keyRef
+    if (seen.has(vm.id)) continue
+    seen.add(vm.id)
+    const publicJwk = getPublicJwkFromVerificationMethod(vm)
+    if (publicJwk.is(Kms.Ed25519PublicJwk)) {
+      routingKeys.push(publicJwk)
+    }
+  }
+
+  return { endpoint, routingKeys }
+}
+
 export function routingToServices(routing: DidCommRouting): ResolvedDidCommService[] {
+  if (routing.routingDid) {
+    // CM 2.0: resolve the routing DID to a plain URL + Ed25519 routing keys.
+    // This ensures the peer DID contains a universally-compatible serviceEndpoint.
+    const resolved = resolveRoutingDid(routing.routingDid)
+    return [
+      {
+        id: '#inline-0',
+        serviceEndpoint: resolved.endpoint,
+        recipientKeys: [routing.recipientKey],
+        routingKeys: [...resolved.routingKeys, ...routing.routingKeys],
+      },
+    ]
+  }
+  // CM 1.0: endpoints + routingKeys used as-is
   return routing.endpoints.map((endpoint, index) => ({
     id: `#inline-${index}`,
     serviceEndpoint: endpoint,
@@ -173,6 +251,95 @@ export async function assertNoCreatedDidExistsForKeys(agentContext: AgentContext
       )}`
     )
   }
+}
+
+/**
+ * Creates a did:peer (2 or 4) for DIDComm v2 OOB (invitation creation or accept).
+ * Uses DidCommV2Service with accept: ['didcomm/v2'].
+ * Defaults to did:peer:4; use numAlgo override for did:peer:2 (legacy).
+ */
+export async function createPeerDidForV2OOB(
+  agentContext: AgentContext,
+  routing: DidCommRouting,
+  numAlgoOverride?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
+): Promise<{ did: string; didDocument: import('@credo-ts/core').DidDocument }> {
+  const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+  const recipientKey = routing.recipientKey
+
+  if (!recipientKey.is(Kms.Ed25519PublicJwk)) {
+    throw new CredoError('DIDComm v2 OOB requires Ed25519 recipient key')
+  }
+
+  const x25519Key = Kms.PublicJwk.fromPublicKey({
+    crv: 'X25519',
+    kty: 'OKP',
+    publicKey: convertPublicKeyToX25519(recipientKey.publicKey.publicKey),
+  })
+
+  const didDocumentBuilder = new DidDocumentBuilder('')
+  const ed25519Vm = getEd25519VerificationKey2018({
+    id: '#key-1',
+    publicJwk: recipientKey,
+    controller: '#id',
+  })
+  const x25519Vm = getX25519KeyAgreementKey2019({
+    id: '#key-2',
+    publicJwk: x25519Key,
+    controller: '#id',
+  })
+  didDocumentBuilder.addAuthentication(ed25519Vm).addKeyAgreement(x25519Vm)
+
+  // For v2 peer DIDs, keep the routing DID as the service URI (CM 2.0 DID-as-endpoint).
+  // v2 senders resolve this via DidCommDocumentService.expandV2EndpointIfRoutingDid which
+  // extracts the mediator's transport URL AND routing keys — needed so the sender wraps
+  // the message in a v2 Forward instead of encrypting directly to the recipient's key.
+  // We do NOT resolve to a plain URL here (unlike routingToServices): without routingKeys,
+  // v2 senders would skip forward-wrapping and post encrypted-to-recipient to the mediator,
+  // which cannot decrypt it. v1 senders use routingToServices and get the plain-URL path.
+  const uris = routing.routingDid ? [routing.routingDid, ...routing.endpoints] : routing.endpoints
+  if (!uris.length) {
+    throw new CredoError('DIDComm v2 OOB requires at least one routing endpoint or routingDid')
+  }
+  for (let i = 0; i < uris.length; i++) {
+    didDocumentBuilder.addService(
+      new NewDidCommV2Service({
+        id: `#didcommmessaging-${i}`,
+        serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+          uri: uris[i],
+          accept: ['didcomm/v2'],
+        }),
+      })
+    )
+  }
+
+  const didDocument = didDocumentBuilder.build()
+  const keys: DidDocumentKey[] = [
+    { didDocumentRelativeKeyId: '#key-1', kmsKeyId: recipientKey.keyId ?? recipientKey.legacyKeyId },
+    { didDocumentRelativeKeyId: '#key-2', kmsKeyId: recipientKey.keyId ?? recipientKey.legacyKeyId },
+  ]
+
+  await assertNoCreatedDidExistsForKeys(agentContext, [recipientKey])
+
+  const numAlgo =
+    numAlgoOverride ??
+    agentContext.dependencyManager.resolve(DidCommModuleConfig).peerDidNumAlgoForV2OOB ??
+    PeerDidNumAlgo.ShortFormAndLongForm
+
+  const result = await didsApi.create({
+    method: 'peer',
+    didDocument,
+    options: {
+      numAlgo,
+      keys,
+    },
+  })
+
+  if (result.didState?.state !== 'finished') {
+    throw new CredoError(`Did document creation failed: ${JSON.stringify(result.didState)}`)
+  }
+
+  const resolved = await didsApi.resolveCreatedDidDocumentWithKeys(result.didState.did)
+  return { did: resolved.didDocument.id, didDocument: resolved.didDocument }
 }
 
 export async function createPeerDidFromServices(

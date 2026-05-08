@@ -200,7 +200,7 @@ describe('Agent', () => {
 
     const protocols = registry.query({ featureType: 'protocol', match: '*' }).map((p) => p.id)
 
-    expect(protocols.length).toEqual(14)
+    expect(protocols.length).toEqual(15)
 
     expect(protocols).toEqual(
       expect.arrayContaining([
@@ -215,6 +215,7 @@ describe('Agent', () => {
         'https://didcomm.org/discover-features/2.0',
         'https://didcomm.org/messagepickup/1.0',
         'https://didcomm.org/messagepickup/2.0',
+        'https://didcomm.org/messagepickup/3.0',
         'https://didcomm.org/out-of-band/1.1',
         'https://didcomm.org/revocation_notification/1.0',
         'https://didcomm.org/revocation_notification/2.0',

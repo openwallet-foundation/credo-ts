@@ -65,6 +65,7 @@ describe('out of band', () => {
     label: 'Faber College',
     alias: `Faber's connection with Alice`,
     imageUrl: 'http://faber.image.url',
+    handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
   }
 
   const issueCredentialConfig = {
@@ -785,7 +786,9 @@ describe('out of band', () => {
     })
 
     test(`make two connections with ${DidCommHandshakeProtocol.DidExchange} by reusing the did from the first connection as the 'invitationDid' in oob invitation for the second connection`, async () => {
-      const outOfBandRecord1 = await faberAgent.didcomm.oob.createInvitation({})
+      const outOfBandRecord1 = await faberAgent.didcomm.oob.createInvitation({
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+      })
 
       let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
         outOfBandRecord1.outOfBandInvitation,
@@ -804,6 +807,7 @@ describe('out of band', () => {
       // (first connection's did matches the one used in invitation, since no rotation has been done (multiUse=false))
       const outOfBandRecord2 = await faberAgent.didcomm.oob.createInvitation({
         invitationDid: faberAliceConnection.did,
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
       })
 
       let { connectionRecord: aliceFaberConnection2 } = await aliceAgent.didcomm.oob.receiveInvitation(

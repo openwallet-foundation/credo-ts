@@ -11,7 +11,7 @@ export class SubjectOutboundTransport implements DidCommOutboundTransport {
   private agentContext!: AgentContext
   private stop$!: Subject<boolean>
 
-  public supportedSchemes = ['rxjs', 'wss']
+  public supportedSchemes = ['rxjs', 'wss', 'did']
 
   public constructor(subjectMap: { [key: string]: Subject<SubjectMessage> | undefined }) {
     this.subjectMap = subjectMap
