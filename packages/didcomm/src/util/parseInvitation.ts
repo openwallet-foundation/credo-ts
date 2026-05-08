@@ -82,14 +82,14 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Di
 export const parseInvitationUrl = (invitationUrl: string): DidCommOutOfBandInvitation => {
   const parsedUrl = queryString.parseUrl(invitationUrl).query
 
-  const encodedInvitation = parsedUrl.oob ?? parsedUrl.c_i ?? parsedUrl.d_m
+  const encodedInvitation = parsedUrl._oob ?? parsedUrl.oob ?? parsedUrl.c_i ?? parsedUrl.d_m
 
   if (typeof encodedInvitation === 'string') {
     const invitationJson = JsonEncoder.fromBase64Url(encodedInvitation) as Record<string, unknown>
     return parseInvitationJson(invitationJson)
   }
   throw new CredoError(
-    'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`.'
+    'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob`, `c_i` or `d_m`.'
   )
 }
 
@@ -152,7 +152,7 @@ export const parseInvitationShortUrl = async (
   dependencies: AgentDependencies
 ): Promise<DidCommOutOfBandInvitation> => {
   const parsedUrl = queryString.parseUrl(invitationUrl).query
-  if (parsedUrl.oob || parsedUrl.c_i) {
+  if (parsedUrl._oob || parsedUrl.oob || parsedUrl.c_i) {
     return parseInvitationUrl(invitationUrl)
   }
   // Legacy connectionless invitation
@@ -166,7 +166,7 @@ export const parseInvitationShortUrl = async (
     return outOfBandInvitation
   } catch (_error) {
     throw new CredoError(
-      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`, or be valid shortened URL'
+      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob`, `c_i` or `d_m`, or be valid shortened URL'
     )
   }
 }

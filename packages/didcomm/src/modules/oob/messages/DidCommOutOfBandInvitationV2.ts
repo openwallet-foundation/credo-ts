@@ -2,7 +2,7 @@ import { CredoError, JsonEncoder, utils } from '@credo-ts/core'
 import queryString from 'query-string'
 import type { DidCommV2Attachment } from '../../../v2/types'
 
-const LINK_PARAM = 'oob'
+const LINK_PARAM = '_oob'
 
 export interface DidCommOutOfBandInvitationV2Body {
   goalCode?: string
