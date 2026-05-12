@@ -26,13 +26,16 @@ export class DidCommRoutingService {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
     const didcommConfig = agentContext.resolve(DidCommModuleConfig)
 
-    // Create and store new key
-    const recipientKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+    // Create and store new key — preserve the KMS keyId so downstream DID records
+    // map verification methods to the actual Askar key (not legacyKeyId).
+    const createdKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+    const recipientKey = Kms.PublicJwk.fromPublicJwk(createdKey.publicJwk)
+    recipientKey.keyId = createdKey.keyId
 
     let routing: DidCommRouting = {
       endpoints: didcommConfig.endpoints,
       routingKeys: [],
-      recipientKey: Kms.PublicJwk.fromPublicJwk(recipientKey.publicJwk),
+      recipientKey,
     }
 
     // Extend routing with mediator keys (if applicable)
