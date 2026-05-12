@@ -3,10 +3,15 @@ import { getAlternativeDidsForPeerDid, isValidPeerDid } from '@credo-ts/core'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import { DidCommEmptyMessage } from '../../../messages'
 import type { DidCommConnectionRecord } from '../repository'
-import { DidCommConnectionService, DidCommDidRotateService, DidCommFromPriorService } from '../services'
+import {
+  DidCommConnectionService,
+  DidCommDidRotateService,
+  DidCommFromPriorService,
+  type FromPriorPayload,
+} from '../services'
 
 /**
- * Handle a v2.1 `empty/1.0/empty` message. If it carries a `from_prior` JWT with no `sub`,
+ * Handle a DIDComm V2 `empty/1.0/empty` message. If it carries a `from_prior` JWT with no `sub`,
  * the sender is signaling end-of-relationship per
  * https://identity.foundation/didcomm-messaging/spec/v2.1/#ending-a-relationship.
  *
@@ -34,7 +39,7 @@ export class DidCommEmptyMessageHandler implements DidCommMessageHandler {
     const jws = inbound.message.fromPrior
     if (!jws) return undefined
 
-    let payload
+    let payload: FromPriorPayload
     try {
       payload = await this.fromPriorService.verify(agentContext, jws)
     } catch (error) {
@@ -48,7 +53,7 @@ export class DidCommEmptyMessageHandler implements DidCommMessageHandler {
 
     const connection = await this.findConnectionByIss(agentContext, payload.iss)
     if (!connection) {
-      agentContext.config.logger.debug('Received v2.1 termination signal but no matching connection', {
+      agentContext.config.logger.debug('Received V2 termination signal but no matching connection', {
         iss: payload.iss,
       })
       return undefined
