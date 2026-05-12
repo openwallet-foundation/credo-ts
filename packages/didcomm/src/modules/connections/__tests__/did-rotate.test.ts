@@ -457,3 +457,65 @@ describe('Rotation E2E tests', () => {
     })
   })
 })
+
+const v2AliceAgentOptions = getAgentOptions(
+  'V2 End-of-Relationship Alice',
+  { didcommVersions: ['v1', 'v2'], endpoints: ['rxjs:v2-alice'] },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
+const v2BobAgentOptions = getAgentOptions(
+  'V2 End-of-Relationship Bob',
+  { didcommVersions: ['v1', 'v2'], endpoints: ['rxjs:v2-bob'] },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
+
+describe('DIDComm V2 Ending a Relationship E2E tests', () => {
+  let aliceAgent: Agent<(typeof v2AliceAgentOptions)['modules']>
+  let bobAgent: Agent<(typeof v2BobAgentOptions)['modules']>
+  let aliceBobConnection: DidCommConnectionRecord | undefined
+  let bobAliceConnection: DidCommConnectionRecord | undefined
+
+  beforeEach(async () => {
+    aliceAgent = new Agent(v2AliceAgentOptions)
+    bobAgent = new Agent(v2BobAgentOptions)
+
+    setupSubjectTransports([aliceAgent, bobAgent])
+    await aliceAgent.initialize()
+    await bobAgent.initialize()
+    ;[aliceBobConnection, bobAliceConnection] = await makeConnection(aliceAgent, bobAgent, { didCommVersion: 'v2' })
+  })
+
+  afterEach(async () => {
+    await aliceAgent.shutdown()
+    await bobAgent.shutdown()
+  })
+
+  test('rotate-to-nothing signal terminates connection on both ends', async () => {
+    expect(aliceBobConnection?.didcommVersion).toEqual('v2')
+    expect(bobAliceConnection?.didcommVersion).toEqual('v2')
+
+    const aliceDidBeforeHangup = aliceBobConnection?.did
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection?.id! })
+
+    // Bob receives an empty/1.0/empty message carrying from_prior, processes it,
+    // and emits the same rotated event used for v1 hangup.
+    const rotationEvent = await waitForDidRotate(bobAgent, {})
+    expect(rotationEvent.theirDid?.to).toBeUndefined()
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const aliceAfter = await aliceAgent.didcomm.connections.findById(aliceBobConnection?.id!)
+    expect(aliceAfter?.did).toBeUndefined()
+    expect(aliceAfter?.previousDids).toContain(aliceDidBeforeHangup)
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const bobAfter = await bobAgent.didcomm.connections.findById(bobAliceConnection?.id!)
+    expect(bobAfter?.theirDid).toBeUndefined()
+    expect(bobAfter?.previousTheirDids).toContain(aliceDidBeforeHangup)
+  })
+})
