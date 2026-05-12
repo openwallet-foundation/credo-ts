@@ -4,9 +4,18 @@ import { Kms, utils } from '@credo-ts/core'
 
 import { importSecureEnvironment } from './secureEnvironment'
 
+export interface SecureEnvironmentKeyManagementServiceOptions {
+  biometricsBacked?: boolean
+}
+
 export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementService {
   public readonly backend = 'secureEnvironment'
   private readonly secureEnvironment = importSecureEnvironment()
+  private readonly options: Required<SecureEnvironmentKeyManagementServiceOptions>
+
+  public constructor(options: SecureEnvironmentKeyManagementServiceOptions = {}) {
+    this.options = { biometricsBacked: true, ...options }
+  }
 
   public isOperationSupported(_agentContext: AgentContext, operation: Kms.KmsOperation): boolean {
     if (operation.operation === 'createKey') {
@@ -86,7 +95,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
     const secureEnvironment = await this.secureEnvironment
 
     try {
-      await secureEnvironment.generateKeypair(keyId)
+      await secureEnvironment.generateKeypair(keyId, this.options.biometricsBacked)
 
       return {
         keyId,
@@ -117,7 +126,11 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
       // Kms.assertKeyAllowsSign(publicJwk)
 
       // Perform the signing operation
-      const signature = await secureEnvironment.sign(options.keyId, new Uint8Array(options.data))
+      const signature = await secureEnvironment.sign(
+        options.keyId,
+        new Uint8Array(options.data),
+        this.options.biometricsBacked
+      )
 
       return {
         signature,
