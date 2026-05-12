@@ -117,7 +117,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
       // Kms.assertKeyAllowsSign(publicJwk)
 
       // Perform the signing operation
-      const signature = await secureEnvironment.sign(options.keyId, options.data)
+      const signature = await secureEnvironment.sign(options.keyId, new Uint8Array(options.data))
 
       return {
         signature,
