@@ -1260,9 +1260,12 @@ export class OpenId4VciHolderService {
         )
 
         if (!verificationResults.every((result) => result.isValid)) {
-          agentContext.config.logger.error('Failed to validate credential(s)', { verificationResults })
+          const resultsWithoutCredentials = verificationResults.map(({ sdJwtVc, ...rest }) => rest)
+          agentContext.config.logger.error('Failed to validate credential(s)', {
+            verificationResults: resultsWithoutCredentials,
+          })
           throw new CredoError(
-            `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(verificationResults, replaceError)}`
+            `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(resultsWithoutCredentials, replaceError)}`
           )
         }
 

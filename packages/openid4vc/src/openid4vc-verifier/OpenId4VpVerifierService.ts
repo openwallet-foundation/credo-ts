@@ -574,7 +574,9 @@ export class OpenId4VpVerifierService {
         const errorMessages = presentationVerificationResults
           .flatMap(([credentialId, presentations], index) =>
             presentations.map((result) =>
-              !result.verified ? `\t- ${credentialId}[${index}]: ${result.reason}` : undefined
+              !result.verified
+                ? `\t- ${credentialId}[${index}]: ${[result.reason, result.cause?.message].filter((i) => i !== undefined).join(', ')}`
+                : undefined
             )
           )
           .filter((i) => i !== undefined)
