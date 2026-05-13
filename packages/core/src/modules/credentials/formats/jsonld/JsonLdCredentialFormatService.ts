@@ -375,8 +375,10 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     return supportedFormats.includes(format)
   }
 
-  public async deleteCredentialById(): Promise<void> {
-    throw new Error('Not implemented.')
+  public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+
+    await w3cCredentialService.removeCredentialRecord(agentContext, credentialRecordId)
   }
 
   public areCredentialsEqual = (message1: Attachment, message2: Attachment): boolean => {
