@@ -29,6 +29,7 @@ import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
+import { DidCommConnectionMetadataKeys } from './modules/connections/repository/DidCommConnectionMetadataTypes'
 import { toX25519 } from './modules/connections/services/helpers'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommOutOfBandRepository } from './modules/oob/repository'
@@ -134,6 +135,7 @@ export class DidCommMessageSender {
           ...(connection?.did && connection?.theirDid
             ? { from: connection.did, to: [connection.theirDid] }
             : undefined),
+          fromPrior: connection?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.fromPriorJwt,
         })
         agentContext.config.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before encrypt)', {
           id: plaintext.id,
@@ -142,6 +144,7 @@ export class DidCommMessageSender {
           to: plaintext.to,
           thid: plaintext.thid,
           bodyKeys: plaintext.body ? Object.keys(plaintext.body) : undefined,
+          hasFromPrior: plaintext.from_prior !== undefined,
         })
         encryptedMessage = await this.v2EnvelopeService.pack(agentContext, plaintext, {
           recipientKey: recipientX25519,
@@ -206,6 +209,7 @@ export class DidCommMessageSender {
     const plaintext = buildV2PlaintextFromMessage(message, {
       useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,
       ...(connection?.did && theirDidForEnvelope ? { from: connection.did, to: [theirDidForEnvelope] } : undefined),
+      fromPrior: connection?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.fromPriorJwt,
     })
 
     let payload = await this.v2EnvelopeService.pack(agentContext, plaintext, {
@@ -294,6 +298,7 @@ export class DidCommMessageSender {
           ...(connection?.did && connection?.theirDid
             ? { from: connection.did, to: [connection.theirDid] }
             : undefined),
+          fromPrior: connection?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.fromPriorJwt,
         })
         agentContext.config.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before encrypt)', {
           id: plaintext.id,
@@ -302,6 +307,7 @@ export class DidCommMessageSender {
           to: plaintext.to,
           thid: plaintext.thid,
           bodyKeys: plaintext.body ? Object.keys(plaintext.body) : undefined,
+          hasFromPrior: plaintext.from_prior !== undefined,
         })
         encryptedMessage = await this.v2EnvelopeService.pack(agentContext, plaintext, {
           recipientKey: recipientX25519,

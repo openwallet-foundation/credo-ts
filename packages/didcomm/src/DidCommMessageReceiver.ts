@@ -33,7 +33,9 @@ import {
   DidCommHandshakeProtocol,
 } from './modules/connections'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
+import { DidCommDidRotateV2Service } from './modules/connections/services/DidCommDidRotateV2Service'
 import { DidCommOutOfBandService } from './modules/oob/DidCommOutOfBandService'
+import { DidCommRoutingService } from './modules/routing/services/DidCommRoutingService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isDidCommV2EncryptedMessage } from './util/didcommVersion'
 import { isValidJweStructure } from './util/JWE'
@@ -153,6 +155,24 @@ export class DidCommMessageReceiver {
     )
 
     const connection = await this.findConnection(agentContext, decryptedMessage)
+
+    if (connection) {
+      const fromPriorJws = plaintextMessage.from_prior as string | undefined
+      if (fromPriorJws) {
+        const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
+        await didRotateV2Service.processFromPrior(
+          agentContext,
+          connection,
+          fromPriorJws,
+          plaintextMessage.from as string | undefined
+        )
+      }
+      const inboundTo = Array.isArray(plaintextMessage.to) ? (plaintextMessage.to as string[]) : undefined
+      if (inboundTo?.length) {
+        const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
+        await didRotateV2Service.clearPendingRotationIfAcknowledged(agentContext, connection, inboundTo)
+      }
+    }
 
     const message = await this.transformAndValidate(agentContext, plaintextMessage, connection)
 
@@ -323,6 +343,7 @@ export class DidCommMessageReceiver {
     // DIDComm v2: plaintext has from/to (normalized from v2 shape). Try findByTheirDid first.
     const from = plaintextMessage.from as string | undefined
     const to = Array.isArray(plaintextMessage.to) ? plaintextMessage.to : undefined
+    const fromPriorJws = plaintextMessage.from_prior as string | undefined
 
     if (from !== undefined) {
       // v2 plaintext includes `to` (our DIDs). Multiple connections can share the same `theirDid`
@@ -359,58 +380,101 @@ export class DidCommMessageReceiver {
         connection = await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
         if (connection) return connection
       }
+    }
 
-      if (to?.length && this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
-        const recipient = to[0]
-        const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipient)
-        if (outOfBandRecord) {
-          // Inviter receives first message → Responder (so retrieveServicesByConnection uses theirDid parse fallback)
-          connection = await this.connectionService.createConnection(
-            agentContext,
-            {
-              protocol: DidCommHandshakeProtocol.None,
-              role: DidCommDidExchangeRole.Responder,
-              state: DidCommDidExchangeState.Completed,
-              theirDid: from,
-              did: recipient,
-              outOfBandId: outOfBandRecord.id,
-              didcommVersion: 'v2',
-            },
-            true
-          )
-          return connection
-        }
+    // a v2 message arriving from an unknown DID (or with no top-level `from`, as in the
+    // termination case) carries from_prior. Verify the JWT and look up by iss (the prior DID).
+    if (fromPriorJws) {
+      try {
+        const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
+        const payload = await didRotateV2Service.verifyFromPrior(agentContext, fromPriorJws)
+        const byIss = await this.connectionService.findByTheirDid(agentContext, payload.iss)
+        if (byIss) return byIss
+      } catch (error) {
+        this.logger.warn('from_prior JWT verification failed during connection lookup', {
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    }
 
-        // For implicit v2 OOB invitations: no OutOfBandRecord exists on the responder side
-        // because the public DID itself IS the invitation. Auto-create the connection if the
-        // recipient DID is one of our created DIDs.
-        const dids = agentContext.resolve(DidsApi)
-        try {
-          await dids.resolveCreatedDidDocumentWithKeys(recipient)
-          connection = await this.connectionService.createConnection(
-            agentContext,
-            {
-              protocol: DidCommHandshakeProtocol.None,
-              role: DidCommDidExchangeRole.Responder,
-              state: DidCommDidExchangeState.Completed,
-              theirDid: from,
-              did: recipient,
-              didcommVersion: 'v2',
-            },
-            true
-          )
-          return connection
-        } catch {
-          // recipient is not our DID — no connection created
+    if (from !== undefined && to?.length && this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
+      const recipient = to[0]
+      const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipient)
+      if (outOfBandRecord) {
+        // Inviter receives first message → Responder (so retrieveServicesByConnection uses theirDid parse fallback)
+        const connection = await this.connectionService.createConnection(
+          agentContext,
+          {
+            protocol: DidCommHandshakeProtocol.None,
+            role: DidCommDidExchangeRole.Responder,
+            state: DidCommDidExchangeState.Completed,
+            theirDid: from,
+            did: recipient,
+            outOfBandId: outOfBandRecord.id,
+            didcommVersion: 'v2',
+          },
+          true
+        )
+        // Spec privacy: for reusable invitations, the invitation DID is shared across every
+        // accepter; rotate to a per-pair DID before our first outbound. The from_prior JWT
+        // attached to the next outbound message notifies the peer about the linkage.
+        if (outOfBandRecord.reusable) {
+          await this.rotateInviterDidForV2OOB(agentContext, connection)
         }
+        return connection
       }
 
-      return null
+      // For implicit v2 OOB invitations: no OutOfBandRecord exists on the responder side
+      // because the public DID itself IS the invitation. Auto-create the connection if the
+      // recipient DID is one of our created DIDs.
+      const dids = agentContext.resolve(DidsApi)
+      try {
+        await dids.resolveCreatedDidDocumentWithKeys(recipient)
+        const connection = await this.connectionService.createConnection(
+          agentContext,
+          {
+            protocol: DidCommHandshakeProtocol.None,
+            role: DidCommDidExchangeRole.Responder,
+            state: DidCommDidExchangeState.Completed,
+            theirDid: from,
+            did: recipient,
+            didcommVersion: 'v2',
+          },
+          true
+        )
+        // Always rotate to a per-pair DID
+        await this.rotateInviterDidForV2OOB(agentContext, connection)
+        return connection
+      } catch {
+        // recipient is not our DID — no connection created
+      }
     }
 
     // v1: use sender/recipient keys
     if (!recipientKey || !senderKey) return null
     return this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
+  }
+
+  /**
+   * Generate a fresh per-pair peer DID for a v2 connection that was auto-created from a
+   * reusable or implicit OOB invitation, and write `from_prior` rotation metadata so the
+   * next outbound message announces the rotation.
+   */
+  private async rotateInviterDidForV2OOB(
+    agentContext: AgentContext,
+    connection: DidCommConnectionRecord
+  ): Promise<void> {
+    try {
+      const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
+      const routing = await routingService.getRouting(agentContext, {})
+      const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
+      await didRotateV2Service.rotateOurDid(agentContext, connection, routing)
+    } catch (error) {
+      this.logger.warn('Failed to rotate inviter DID for v2 OOB connection; continuing with invitation DID', {
+        connectionId: connection.id,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
   }
 
   /**

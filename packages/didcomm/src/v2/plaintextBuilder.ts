@@ -58,6 +58,8 @@ export function buildV2PlaintextFromMessage(
     from?: string
     /** Override to (e.g. [connection.theirDid]) when message doesn't have it */
     to?: string[]
+    /** Compact JWS to attach as the `from_prior` header (DIDComm V2 DID rotation). */
+    fromPrior?: string
   }
 ): DidCommV2PlaintextMessage {
   const v2Native = message as unknown as { toV2Plaintext?: () => DidCommV2PlaintextMessage }
@@ -65,6 +67,7 @@ export function buildV2PlaintextFromMessage(
     const plaintext = v2Native.toV2Plaintext()
     if (config?.from !== undefined) plaintext.from = config.from
     if (config?.to !== undefined) plaintext.to = Array.isArray(config.to) ? config.to : [config.to]
+    if (config?.fromPrior !== undefined) plaintext.from_prior = config.fromPrior
     return plaintext
   }
 
@@ -111,6 +114,8 @@ export function buildV2PlaintextFromMessage(
   // TODO: Do we need to convert created_time/expires_time from Date (v1 ~timing) to epoch (v2)?
   if (created_time !== undefined) v2.created_time = created_time as number
   if (expires_time !== undefined) v2.expires_time = expires_time as number
+
+  if (config?.fromPrior !== undefined) v2.from_prior = config.fromPrior
 
   return v2
 }

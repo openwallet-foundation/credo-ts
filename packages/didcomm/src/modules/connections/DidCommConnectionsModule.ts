@@ -34,7 +34,7 @@ import { DidCommConnectionRole, DidCommDidExchangeRole, DidCommDidRotateRole } f
 import { DidCommConnectionRepository } from './repository'
 import { DidCommConnectionService } from './services/DidCommConnectionService'
 import { DidCommDidRotateService } from './services/DidCommDidRotateService'
-import { DidCommFromPriorService } from './services/DidCommFromPriorService'
+import { DidCommDidRotateV2Service } from './services/DidCommDidRotateV2Service'
 import { DidCommTrustPingService } from './services/DidCommTrustPingService'
 
 export class DidCommConnectionsModule implements Module {
@@ -56,7 +56,7 @@ export class DidCommConnectionsModule implements Module {
     dependencyManager.registerSingleton(DidCommConnectionService)
     dependencyManager.registerSingleton(DidExchangeProtocol)
     dependencyManager.registerSingleton(DidCommDidRotateService)
-    dependencyManager.registerSingleton(DidCommFromPriorService)
+    dependencyManager.registerSingleton(DidCommDidRotateV2Service)
     dependencyManager.registerSingleton(DidCommTrustPingService)
 
     // Repositories
@@ -120,11 +120,7 @@ export class DidCommConnectionsModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateAckHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommHangupHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateProblemReportHandler(didRotateService))
-
-    const fromPriorService = agentContext.resolve(DidCommFromPriorService)
-    messageHandlerRegistry.registerMessageHandler(
-      new DidCommEmptyMessageHandler(fromPriorService, didRotateService, connectionService)
-    )
+    messageHandlerRegistry.registerMessageHandler(new DidCommEmptyMessageHandler())
 
     featureRegistry.register(
       new DidCommProtocol({
