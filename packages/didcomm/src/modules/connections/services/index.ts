@@ -1,4 +1,4 @@
 export * from './DidCommConnectionService'
 export * from './DidCommDidRotateService'
-export * from './DidCommFromPriorService'
+export * from './DidCommDidRotateV2Service'
 export * from './DidCommTrustPingService'

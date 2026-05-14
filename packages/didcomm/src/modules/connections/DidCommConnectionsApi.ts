@@ -1,17 +1,11 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
-import { AgentContext, CredoError, DidKey, DidResolverService, EventEmitter, injectable, utils } from '@credo-ts/core'
-import { DidCommEventTypes, type DidCommMessageSentEvent } from '../../DidCommEvents'
+import { AgentContext, CredoError, DidResolverService, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { DidCommEmptyMessage } from '../../messages'
 import type { DidCommRouting } from '../../models'
-import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../../models'
-import { DidCommDocumentService } from '../../services/DidCommDocumentService'
-import { DidCommV2EnvelopeService, type DidCommV2PlaintextMessage } from '../../v2'
+import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
 import type { DidCommOutOfBandRecord } from '../oob/repository'
-import { DidCommForwardV2Message } from '../routing/protocol/v2/messages'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
@@ -20,8 +14,8 @@ import { DidCommConnectionRequestMessage, DidCommDidExchangeRequestMessage } fro
 import type { DidCommConnectionType } from './models'
 import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
 import type { DidCommConnectionRecord } from './repository'
-import { DidCommConnectionService, DidCommDidRotateService, DidCommFromPriorService } from './services'
-import { createPeerDidForV2OOB, toX25519 } from './services/helpers'
+import { DidCommConnectionService, DidCommDidRotateService, DidCommDidRotateV2Service } from './services'
+import { createPeerDidForV2OOB } from './services/helpers'
 
 export interface SendPingOptions {
   responseRequested?: boolean
@@ -384,7 +378,8 @@ export class DidCommConnectionsApi {
 
     if (connection.didcommVersion === 'v2') {
       try {
-        await this.sendV2TerminationSignal(connectionBeforeHangup)
+        const didRotateV2Service = this.agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
+        await didRotateV2Service.sendRotateToNothing(this.agentContext, connectionBeforeHangup)
       } catch (error) {
         this.agentContext.config.logger.warn('Failed to send v2 termination signal', {
           connectionId: connection.id,
@@ -534,105 +529,6 @@ export class DidCommConnectionsApi {
         })
       }
     }
-  }
-
-  /**
-   * Emit a DIDComm V2 relationship-termination signal to `connection.theirDid`.
-   */
-  private async sendV2TerminationSignal(connection: DidCommConnectionRecord): Promise<void> {
-    const logger = this.agentContext.config.logger
-    if (!connection.did || !connection.theirDid) {
-      throw new CredoError(`Cannot send v2 termination signal: connection '${connection.id}' missing did or theirDid`)
-    }
-
-    const fromPriorService = this.agentContext.dependencyManager.resolve(DidCommFromPriorService)
-    const fromPriorJwt = await fromPriorService.createForTermination(this.agentContext, connection.did)
-
-    const documentService = this.agentContext.dependencyManager.resolve(DidCommDocumentService)
-    const services = await documentService.resolveServicesFromDid(this.agentContext, connection.theirDid)
-    if (services.length === 0) {
-      throw new CredoError(`No DIDComm service resolvable for '${connection.theirDid}'`)
-    }
-    const service = services[0]
-    if (service.recipientKeys.length === 0) {
-      throw new CredoError(`Resolved DIDComm service for '${connection.theirDid}' has no recipient key`)
-    }
-
-    const recipientEd25519 = service.recipientKeys[0]
-    const recipientX25519 = toX25519(recipientEd25519)
-    recipientX25519.keyId = recipientEd25519.hasKeyId ? recipientEd25519.keyId : new DidKey(recipientEd25519).did
-
-    const empty = new DidCommEmptyMessage({ fromPrior: fromPriorJwt })
-    const plaintext: DidCommV2PlaintextMessage = {
-      id: empty.id,
-      type: DidCommEmptyMessage.type.messageTypeUri,
-      to: [connection.theirDid],
-      from_prior: fromPriorJwt,
-      body: {},
-    }
-
-    const v2EnvelopeService = this.agentContext.dependencyManager.resolve(DidCommV2EnvelopeService)
-    let payload = await v2EnvelopeService.packAnoncrypt(this.agentContext, plaintext, {
-      recipientKey: recipientX25519,
-    })
-
-    if (service.routingKeys.length > 0) {
-      const recipientNext = new DidKey(toX25519(recipientEd25519)).did
-      const reversed = [...service.routingKeys].reverse()
-      for (let i = 0; i < reversed.length; i++) {
-        const routingKey = reversed[i]
-        const next = i === reversed.length - 1 ? recipientNext : new DidKey(reversed[i + 1]).did
-        const routingX25519 = toX25519(routingKey)
-        routingX25519.keyId = new DidKey(routingKey).did
-        const forwardPlaintext = DidCommForwardV2Message.createV2PlaintextMessage({
-          to: [new DidKey(routingKey).did],
-          next,
-          attachments: [
-            {
-              id: utils.uuid(),
-              media_type: 'application/didcomm-encrypted+json',
-              data: { json: payload as unknown as Record<string, unknown> },
-            },
-          ],
-        })
-        payload = await v2EnvelopeService.packAnoncrypt(this.agentContext, forwardPlaintext, {
-          recipientKey: routingX25519,
-        })
-      }
-    }
-
-    const didCommModuleConfig = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
-    const scheme = utils.getProtocolScheme(service.serviceEndpoint)
-    if (!scheme) {
-      throw new CredoError(`No protocol scheme on service endpoint '${service.serviceEndpoint}'`)
-    }
-    const transport = didCommModuleConfig.outboundTransports.find((t) => t.supportedSchemes.includes(scheme))
-    if (!transport) {
-      throw new CredoError(`No outbound transport supports scheme '${scheme}' for v2 termination`)
-    }
-
-    logger.debug('Sending empty message with from_prior (rotate-to-nothing)', {
-      connectionId: connection.id,
-      to: connection.theirDid,
-      endpoint: service.serviceEndpoint,
-      routingKeys: service.routingKeys.length,
-    })
-
-    await transport.sendMessage({
-      payload,
-      endpoint: service.serviceEndpoint,
-      connectionId: connection.id,
-    })
-
-    const outboundContext = new DidCommOutboundMessageContext(empty, {
-      agentContext: this.agentContext,
-      connection,
-    })
-    const eventEmitter = this.agentContext.dependencyManager.resolve(EventEmitter)
-    eventEmitter.emit<DidCommMessageSentEvent>(this.agentContext, {
-      type: DidCommEventTypes.DidCommMessageSent,
-      payload: { message: outboundContext, status: OutboundMessageSendStatus.SentToTransport },
-    })
   }
 
   /**

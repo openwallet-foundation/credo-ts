@@ -145,21 +145,6 @@ export class DidCommDidRotateService {
   }
 
   /**
-   * Mark a connection as terminated by the peer per DIDComm V2 rotate-to-nothing.
-   *
-   * @see https://identity.foundation/didcomm-messaging/spec/v2.1/#ending-a-relationship
-   */
-  public async processRotateToNothing(agentContext: AgentContext, connection: DidCommConnectionRecord) {
-    if (connection.theirDid) {
-      connection.previousTheirDids = [...connection.previousTheirDids, connection.theirDid]
-    }
-    const previousTheirDid = connection.theirDid
-    connection.theirDid = undefined
-    await agentContext.dependencyManager.resolve(DidCommConnectionService).update(agentContext, connection)
-    this.emitDidRotatedEvent(agentContext, connection, { previousTheirDid })
-  }
-
-  /**
    * Process an incoming DID Rotate message and update connection if success. Any acknowledge
    * or problem report will be sent to the prior DID, so the created context will take former
    * connection record data
