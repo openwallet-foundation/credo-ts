@@ -382,14 +382,16 @@ export class DidCommMessageReceiver {
       }
     }
 
-    // a v2 message arriving from an unknown DID (or with no top-level `from`, as in the
-    // termination case) carries from_prior. Verify the JWT and look up by iss (the prior DID).
-    if (fromPriorJws) {
+    // Connection lookup is by (ourDid, priorDid) pair per V2.
+    if (fromPriorJws && to?.length) {
       try {
         const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
         const payload = await didRotateV2Service.verifyFromPrior(agentContext, fromPriorJws)
-        const byIss = await this.connectionService.findByTheirDid(agentContext, payload.iss)
-        if (byIss) return byIss
+        const byPair = await this.connectionService.findByDids(agentContext, {
+          ourDid: to[0],
+          theirDid: payload.iss,
+        })
+        if (byPair) return byPair
       } catch (error) {
         this.logger.warn('from_prior JWT verification failed during connection lookup', {
           error: error instanceof Error ? error.message : String(error),
