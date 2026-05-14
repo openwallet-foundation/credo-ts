@@ -14,7 +14,7 @@ import { DidCommConnectionRole, DidCommDidExchangeRole, DidCommDidRotateRole } f
 import { DidCommConnectionRepository } from '../repository'
 import { DidCommConnectionService, DidCommTrustPingService } from '../services'
 import { DidCommDidRotateService } from '../services/DidCommDidRotateService'
-import { DidCommFromPriorService } from '../services/DidCommFromPriorService'
+import { DidCommDidRotateV2Service } from '../services/DidCommDidRotateV2Service'
 
 describe('DidCommConnectionsModule', () => {
   test('registers dependencies on the dependency manager', () => {
@@ -38,7 +38,7 @@ describe('DidCommConnectionsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidExchangeProtocol)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommTrustPingService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommDidRotateService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommFromPriorService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommDidRotateV2Service)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommConnectionRepository)
   })
 
@@ -56,7 +56,7 @@ describe('DidCommConnectionsModule', () => {
         [DidCommTrustPingService, {} as unknown as DidCommTrustPingService],
         [DidExchangeProtocol, {} as unknown as DidExchangeProtocol],
         [DidCommDidRotateService, {} as unknown as DidCommDidRotateService],
-        [DidCommFromPriorService, {} as unknown as DidCommFromPriorService],
+        [DidCommDidRotateV2Service, {} as unknown as DidCommDidRotateV2Service],
       ],
     })
     await new DidCommConnectionsModule().initialize(agentContext)
