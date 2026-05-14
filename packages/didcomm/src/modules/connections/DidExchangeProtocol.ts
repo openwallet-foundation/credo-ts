@@ -1,6 +1,7 @@
 import type { AgentContext, DidDocumentKey, ResolvedDidCommService } from '@credo-ts/core'
 import {
   CredoError,
+  DidCommV1Service,
   DidDocument,
   DidKey,
   DidRepository,
@@ -308,9 +309,28 @@ export class DidExchangeProtocol {
     for (const did of outOfBandRecord.outOfBandInvitation.getDidServices()) {
       const dids = agentContext.resolve(DidsApi)
       const resolved = await dids.resolveCreatedDidDocumentWithKeys(parseDid(did).did)
+
+      // Collect the verification method ids that DIDComm v1 services explicitly point to
+      // as recipient keys. The receiver only stores those (after Ed25519 filtering — see
+      // processResponse) as `invitationKeys`, so the responder must restrict itself to the
+      // same set: signing with extra keys (e.g. a webvh update key, or unrelated Ed25519
+      // verification methods that happen to be present in `authentication` / `keyAgreement`)
+      // would produce signer keys that are not invitation keys and the receiver would
+      // reject the response with `response_not_accepted`.
+      const v1RecipientKeyVmIds = new Set<string>()
+      for (const service of resolved.didDocument.didCommServices) {
+        if (service instanceof DidCommV1Service) {
+          for (const recipientKey of service.recipientKeys) {
+            const vm = resolved.didDocument.dereferenceKey(recipientKey, ['authentication', 'keyAgreement'])
+            v1RecipientKeyVmIds.add(vm.id)
+          }
+        }
+      }
+
       invitationRecipientKeys.push(
         ...resolved.didDocument
           .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+          .filter(({ verificationMethod }) => v1RecipientKeyVmIds.has(verificationMethod.id))
           .map(({ publicJwk, verificationMethod }) => {
             const kmsKeyId = resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
               verificationMethod.id.endsWith(didDocumentRelativeKeyId)
@@ -361,18 +381,24 @@ export class DidExchangeProtocol {
       })
     }
 
-    // Get DID Document either from message (if it is a did:peer) or resolve it externally
-    const didDocument = await this.resolveDidDocument(
-      agentContext,
-      message,
-      outOfBandRecord.getTags().recipientKeyFingerprints.map((fingerprint) => {
-        const publicJwk = Kms.PublicJwk.fromFingerprint(fingerprint)
-        if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
-          throw new CredoError('Expected fingerprint to be of type Ed25519')
-        }
-        return publicJwk
-      })
-    )
+    // Get DID Document either from message (if it is a did:peer) or resolve it externally.
+    // The OOB record's recipientKeyFingerprints may include X25519 entries harvested from
+    // DIDComm v2 services in the inviter's DID document (see
+    // DidCommDocumentService.resolveServicesFromDid). DID Exchange v1.x signatures are only
+    // ever produced with Ed25519 invitation keys, so non-Ed25519 fingerprints are irrelevant
+    // at this layer and must be filtered out rather than rejected.
+    const ed25519InvitationKeys = outOfBandRecord
+      .getTags()
+      .recipientKeyFingerprints.map((fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint))
+      .filter((publicJwk): publicJwk is Kms.PublicJwk<Kms.Ed25519PublicJwk> => publicJwk.is(Kms.Ed25519PublicJwk))
+
+    if (ed25519InvitationKeys.length === 0) {
+      throw new CredoError(
+        'Expected at least one Ed25519 invitation key in the out of band record to verify the DID Exchange response'
+      )
+    }
+
+    const didDocument = await this.resolveDidDocument(agentContext, message, ed25519InvitationKeys)
 
     if (isValidPeerDid(didDocument.id)) {
       const didRecord = await this.didRepository.storeReceivedDid(messageContext.agentContext, {
