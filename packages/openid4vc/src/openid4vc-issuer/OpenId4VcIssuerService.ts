@@ -1480,7 +1480,7 @@ export class OpenId4VcIssuerService {
         authorization_server: config.issuerMetadata.credentialIssuer.authorization_servers
           ? authorizationServerUrl
           : undefined,
-        scope: scope,
+        scope,
       }
     }
 
