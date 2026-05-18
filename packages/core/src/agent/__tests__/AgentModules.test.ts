@@ -1,4 +1,5 @@
 import { CacheModule } from '../../modules/cache'
+import { DataIntegrityModule } from '../../modules/data-integrity'
 import { DcqlModule } from '../../modules/dcql'
 import { DidsModule } from '../../modules/dids'
 import { DifPresentationExchangeModule } from '../../modules/dif-presentation-exchange'
@@ -57,6 +58,7 @@ describe('AgentModules', () => {
         dids: expect.any(DidsModule),
         kms: expect.any(KeyManagementModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
+        dataIntegrity: expect.any(DataIntegrityModule),
         sdJwtVc: expect.any(SdJwtVcModule),
         mdoc: expect.any(MdocModule),
         x509: expect.any(X509Module),
@@ -77,6 +79,7 @@ describe('AgentModules', () => {
         dids: expect.any(DidsModule),
         kms: expect.any(KeyManagementModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
+        dataIntegrity: expect.any(DataIntegrityModule),
         cache: expect.any(CacheModule),
         sdJwtVc: expect.any(SdJwtVcModule),
         mdoc: expect.any(MdocModule),
@@ -100,6 +103,7 @@ describe('AgentModules', () => {
         dids: expect.any(DidsModule),
         kms: expect.any(KeyManagementModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
+        dataIntegrity: expect.any(DataIntegrityModule),
         cache: expect.any(CacheModule),
         sdJwtVc: expect.any(SdJwtVcModule),
         mdoc: expect.any(MdocModule),
