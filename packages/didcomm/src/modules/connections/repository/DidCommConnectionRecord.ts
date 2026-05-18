@@ -46,6 +46,7 @@ export type DefaultDidCommConnectionTags = {
   theirDid?: string
   outOfBandId?: string
   invitationDid?: string
+  didcommVersion?: DidCommVersion
   connectionTypes?: Array<DidCommConnectionType | string>
   previousDids?: Array<string>
   previousTheirDids?: Array<string>
@@ -139,6 +140,7 @@ export class DidCommConnectionRecord extends BaseRecord<
       theirDid: this.theirDid,
       outOfBandId: this.outOfBandId,
       invitationDid: this.invitationDid,
+      didcommVersion: this.didcommVersion,
       connectionTypes: this.connectionTypes,
       previousDids: this.previousDids,
       previousTheirDids: this.previousTheirDids,
