@@ -96,6 +96,7 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
    * @default false
    */
   requirePresentationDuringIssuance?: boolean
+
   /**
    * Optional OAuth 2.0 scope value(s) for authorization code flow.
    *
