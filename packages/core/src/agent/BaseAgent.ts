@@ -1,4 +1,5 @@
 import type { Logger } from '../logger'
+import { DataIntegrityApi } from '../modules/data-integrity'
 import { DidsApi } from '../modules/dids'
 import { GenericRecordsApi } from '../modules/generic-records'
 import { KeyManagementApi } from '../modules/kms'
@@ -24,6 +25,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly mdoc: MdocApi
   public readonly genericRecords: GenericRecordsApi
   public readonly dids: DidsApi
+  public readonly dataIntegrity: DataIntegrityApi
   public readonly w3cCredentials: W3cCredentialsApi
   public readonly w3cV2Credentials: W3cV2CredentialsApi
   public readonly sdJwtVc: SdJwtVcApi
@@ -62,6 +64,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
 
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
     this.dids = this.dependencyManager.resolve(DidsApi)
+    this.dataIntegrity = this.dependencyManager.resolve(DataIntegrityApi)
     this.w3cCredentials = this.dependencyManager.resolve(W3cCredentialsApi)
     this.w3cV2Credentials = this.dependencyManager.resolve(W3cV2CredentialsApi)
     this.sdJwtVc = this.dependencyManager.resolve(SdJwtVcApi)
@@ -72,6 +75,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     const defaultApis = [
       this.genericRecords,
       this.dids,
+      this.dataIntegrity,
       this.w3cCredentials,
       this.w3cV2Credentials,
       this.sdJwtVc,
