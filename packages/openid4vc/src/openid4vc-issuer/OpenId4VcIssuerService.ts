@@ -1453,6 +1453,7 @@ export class OpenId4VcIssuerService {
     if (authorizationCodeFlowConfig) {
       const { requirePresentationDuringIssuance } = authorizationCodeFlowConfig
       let authorizationServerUrl = authorizationCodeFlowConfig.authorizationServerUrl
+      const scope = authorizationCodeFlowConfig.scope
 
       if (requirePresentationDuringIssuance) {
         if (authorizationServerUrl && authorizationServerUrl !== issuerMetadata.credentialIssuer.credential_issuer) {
@@ -1479,6 +1480,7 @@ export class OpenId4VcIssuerService {
         authorization_server: config.issuerMetadata.credentialIssuer.authorization_servers
           ? authorizationServerUrl
           : undefined,
+        scope,
       }
     }
 
