@@ -187,6 +187,46 @@ describe('WebVhDidRegistrar boundary contracts', () => {
     })
   })
 
+  describe('key fragment conformance', () => {
+    it('stored didDocumentRelativeKeyId matches the actual fragment in the DID document verificationMethod', async () => {
+      const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
+      expect(result.didState.state).toBe('finished')
+      const did = result.didState.did
+      if (!did) throw new Error('create failed')
+
+      const record = await repository.findSingleByQuery(agentContext, { did })
+      expect(record?.keys).toBeDefined()
+      expect(record?.keys?.length).toBeGreaterThan(0)
+
+      const storedFragment = record?.keys?.[0].didDocumentRelativeKeyId
+      if (!storedFragment) throw new Error('Missing didDocumentRelativeKeyId')
+
+      // The stored fragment must start with '#' and must match the actual VM id
+      // in the resolved DID document
+      expect(storedFragment).toMatch(/^#/)
+
+      const vmId = record?.didDocument?.verificationMethod?.[0]?.id
+      if (!vmId) throw new Error('Missing verificationMethod id')
+      expect(vmId.endsWith(storedFragment)).toBe(true)
+    })
+
+    it('didDocumentRelativeKeyId matches via endsWith semantics as used in Credo core', async () => {
+      const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
+      const did = result.didState.did
+      if (!did) throw new Error('create failed')
+
+      const record = await repository.findSingleByQuery(agentContext, { did })
+      const storedFragment = record?.keys?.[0].didDocumentRelativeKeyId
+      if (!storedFragment) throw new Error('Missing didDocumentRelativeKeyId')
+      const vmId = record?.didDocument?.verificationMethod?.[0]?.id
+      if (!vmId) throw new Error('Missing verificationMethod id')
+
+      // This mirrors the lookup logic used by Credo core (DidsApi line ~208) and the
+      // corrected cryptosuite: verificationMethod.id.endsWith(didDocumentRelativeKeyId)
+      expect(vmId.endsWith(storedFragment)).toBe(true)
+    })
+  })
+
   describe('resource URL parsing alignment', () => {
     it('parseResourceId correctly handles URLs in the format produced by didwebvh-ts DIDs', async () => {
       const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })

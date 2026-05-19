@@ -63,7 +63,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
       const { publicKeyMultibase, keyId } = await this.generatePublicKey(agentContext)
       const signer = new WebVhDidCryptoSigner(agentContext, publicKeyMultibase, keyId)
       const verifier = new WebVhDidCrypto(agentContext)
-      const baseDid = `did:webvh:{SCID}:${domain}`
+      const baseDid = `did:webvh:{SCID}:${encodeURIComponent(domain)}`
 
       // Create DID
       const { did, doc, log } = await createDID({
@@ -83,9 +83,14 @@ export class WebVhDidRegistrar implements DidRegistrar {
 
       const didDocument = JsonTransformer.fromJSON(doc, DidDocument)
 
+      // Derive the fragment from the actual DID document verificationMethod. didwebvh-ts
+      // is responsible for incorporating and signing over fragments in the log
+      // so we read back what the library produced
+      const matchedVm = didDocument.verificationMethod?.find((vm) => vm.publicKeyMultibase === publicKeyMultibase)
+      const vmIdFragment = matchedVm?.id.split('#')[1]
       keys.push({
         kmsKeyId: keyId,
-        didDocumentRelativeKeyId: `#${publicKeyMultibase}`,
+        didDocumentRelativeKeyId: `#${vmIdFragment}`,
       })
       const didRecord = new DidRecord({
         did,
