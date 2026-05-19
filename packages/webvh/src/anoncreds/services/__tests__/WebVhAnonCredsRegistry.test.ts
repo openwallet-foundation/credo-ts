@@ -1,13 +1,6 @@
 import type { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
-import type { AgentContext, DidDocumentService, VerificationMethod } from '@credo-ts/core'
-import {
-  DidDocument,
-  DidRepository,
-  DidsApi,
-  MultiBaseEncoder,
-  MultiHashEncoder,
-  TypedArrayEncoder,
-} from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
+import { DataIntegrityApi, DidRepository, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
 import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
@@ -19,11 +12,9 @@ import {
   issuerId,
   mockCredDefResource,
   mockRegRevEntryResource,
-  mockResolvedDidDocument,
   mockResolvedDidRecord,
   mockRevRegDefResource,
   mockSchemaResource,
-  verificationMethodId,
 } from './mock-resources'
 
 // Mock the WebVhDidResolver
@@ -36,28 +27,16 @@ vi.mock('../../../dids/WebVhDidResolver', () => {
   }
 })
 
-interface DidDocumentOptions {
-  context?: string | string[]
-  id: string
-  alsoKnownAs?: string[]
-  controller?: string | string[]
-  verificationMethod?: VerificationMethod[]
-  service?: DidDocumentService[]
-  authentication?: Array<string | VerificationMethod>
-  assertionMethod?: Array<string | VerificationMethod>
-  keyAgreement?: Array<string | VerificationMethod>
-  capabilityInvocation?: Array<string | VerificationMethod>
-  capabilityDelegation?: Array<string | VerificationMethod>
-}
-
-// Mock DidsApi
-const mockResolveDidDocument = vi.fn()
-const mockDidsApi = {
-  resolveDidDocument: mockResolveDidDocument,
-}
 const mockFindCreatedDid = vi.fn()
 const mockDidsRepository = {
   findCreatedDid: mockFindCreatedDid,
+}
+
+const mockDataIntegrityVerifyProof = vi.fn()
+const mockDataIntegrityCreateProofOrThrow = vi.fn()
+const mockDataIntegrityApi = {
+  verifyProof: mockDataIntegrityVerifyProof,
+  createProofOrThrow: mockDataIntegrityCreateProofOrThrow,
 }
 
 describe('WebVhAnonCredsRegistry', () => {
@@ -67,14 +46,26 @@ describe('WebVhAnonCredsRegistry', () => {
   beforeEach(() => {
     // Reset the mocks before each test
     mockResolveResource.mockReset()
-    mockResolveDidDocument.mockReset()
     mockFindCreatedDid.mockReset()
+    mockDataIntegrityVerifyProof.mockReset()
+    mockDataIntegrityCreateProofOrThrow.mockReset()
+
+    mockDataIntegrityVerifyProof.mockResolvedValue({
+      verified: true,
+      verifiedDocument: { ...mockSchemaResource, proof: undefined },
+      mediaType: null,
+    })
+
+    mockDataIntegrityCreateProofOrThrow.mockResolvedValue({
+      created: true,
+      proof: mockSchemaResource.proof,
+    })
 
     const agentConfig = getAgentConfig('WebVhAnonCredsRegistryTest')
     agentContext = getAgentContext({
       agentConfig,
       registerInstances: [
-        [DidsApi, mockDidsApi],
+        [DataIntegrityApi, mockDataIntegrityApi],
         [DidRepository, mockDidsRepository],
         [WebVhDidResolver, { resolveResource: mockResolveResource }],
       ],
@@ -636,44 +627,63 @@ describe('WebVhAnonCredsRegistry', () => {
       // Clear the default verifyProof mock for these tests
       vi.restoreAllMocks()
 
-      // Mock successful DID resolution
-      mockResolveDidDocument.mockResolvedValue(
-        new DidDocument(mockResolvedDidDocument as unknown as DidDocumentOptions)
-      )
+      mockDataIntegrityVerifyProof.mockResolvedValue({
+        verified: true,
+        verifiedDocument: { ...mockSchemaResource, proof: undefined },
+        mediaType: null,
+      })
     })
 
     it('should return true for valid DataIntegrityProof with eddsa-jcs-2022', async () => {
       const result = await registry.verifyProof(agentContext, mockSchemaResource)
 
       expect(result).toBe(true)
-      expect(mockResolveDidDocument).toHaveBeenCalledWith(verificationMethodId)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(mockSchemaResource)
     })
 
     it('should return false for null proof', async () => {
       const testInput = { ...mockSchemaResource }
       // @ts-expect-error
       testInput.proof = null
+      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+        verified: false,
+        verifiedDocument: null,
+        mediaType: null,
+        errors: [{ type: 'https://www.w3.org/ns/credentials#PARSING_ERROR', title: 'Invalid Data Integrity proof' }],
+      })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for undefined proof', async () => {
       const testInput = { ...mockSchemaResource }
       // @ts-expect-error
       testInput.proof = undefined
+      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+        verified: false,
+        verifiedDocument: null,
+        mediaType: null,
+        errors: [{ type: 'https://www.w3.org/ns/credentials#PARSING_ERROR', title: 'Invalid Data Integrity proof' }],
+      })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for non-object proof', async () => {
       const testInput = { ...mockSchemaResource }
       // @ts-expect-error
       testInput.proof = testInput.proof.proofValue
+      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+        verified: false,
+        verifiedDocument: null,
+        mediaType: null,
+        errors: [{ type: 'https://www.w3.org/ns/credentials#PARSING_ERROR', title: 'Invalid Data Integrity proof' }],
+      })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for wrong proof type', async () => {
@@ -681,9 +691,15 @@ describe('WebVhAnonCredsRegistry', () => {
       const testProof = { ...mockSchemaResource.proof }
       testProof.type = 'Ed25519Signature2020'
       testInput.proof = testProof
+      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+        verified: false,
+        verifiedDocument: null,
+        mediaType: null,
+        errors: [{ type: 'https://www.w3.org/ns/credentials#PARSING_ERROR', title: 'Invalid Data Integrity proof' }],
+      })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for wrong cryptosuite', async () => {
@@ -691,9 +707,15 @@ describe('WebVhAnonCredsRegistry', () => {
       const testProof = { ...mockSchemaResource.proof }
       testProof.cryptosuite = 'eddsa-rdfc-2022'
       testInput.proof = testProof
+      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+        verified: false,
+        verifiedDocument: null,
+        mediaType: null,
+        errors: [{ type: 'https://www.w3.org/ns/credentials#PARSING_ERROR', title: 'Invalid Data Integrity proof' }],
+      })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for missing verificationMethod', async () => {
@@ -702,9 +724,15 @@ describe('WebVhAnonCredsRegistry', () => {
       // @ts-expect-error
       testProof.verificationMethod = undefined
       testInput.proof = testProof
+      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+        verified: false,
+        verifiedDocument: null,
+        mediaType: null,
+        errors: [{ type: 'https://www.w3.org/ns/credentials#PARSING_ERROR', title: 'Invalid Data Integrity proof' }],
+      })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      // expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for invalid verificationMethod type', async () => {
@@ -713,8 +741,15 @@ describe('WebVhAnonCredsRegistry', () => {
       // @ts-expect-error
       testProof.verificationMethod = { id: testProof.verificationMethod }
       testInput.proof = testProof
+      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+        verified: false,
+        verifiedDocument: null,
+        mediaType: null,
+        errors: [{ type: 'https://www.w3.org/ns/credentials#PARSING_ERROR', title: 'Invalid Data Integrity proof' }],
+      })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for missing proofValue', async () => {
@@ -723,9 +758,15 @@ describe('WebVhAnonCredsRegistry', () => {
       // @ts-expect-error
       testProof.proofValue = undefined
       testInput.proof = testProof
+      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+        verified: false,
+        verifiedDocument: null,
+        mediaType: null,
+        errors: [{ type: 'https://www.w3.org/ns/credentials#PARSING_ERROR', title: 'Invalid Data Integrity proof' }],
+      })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for invalid proofValue type', async () => {
@@ -734,44 +775,68 @@ describe('WebVhAnonCredsRegistry', () => {
       // @ts-expect-error
       testProof.proofValue = { value: testInput.proof.proofValue }
       testInput.proof = testProof
+      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+        verified: false,
+        verifiedDocument: null,
+        mediaType: null,
+        errors: [{ type: 'https://www.w3.org/ns/credentials#PARSING_ERROR', title: 'Invalid Data Integrity proof' }],
+      })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
-    it('should return false when DID resolution fails', async () => {
+    it('should return false when core Data Integrity verification reports failure', async () => {
       const testInput = { ...mockSchemaResource }
 
-      // Mock DID resolution failure
-      mockResolveDidDocument.mockResolvedValue({
-        didDocument: null,
-        didResolutionMetadata: { error: 'notFound' },
-        didDocumentMetadata: {},
+      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+        verified: false,
+        verifiedDocument: null,
+        mediaType: null,
+        errors: [
+          {
+            type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR',
+            title: 'Proof verification failed',
+          },
+        ],
       })
 
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockResolveDidDocument).toHaveBeenCalled()
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
-    it('should return false when verification method not found in DID document', async () => {
+    it('should return false when core Data Integrity verification throws', async () => {
       const testInput = { ...mockSchemaResource }
-      const testProof = { ...mockSchemaResource.proof }
-      testProof.verificationMethod = `${issuerId}#key-01`
-      testInput.proof = testProof
+
+      mockDataIntegrityVerifyProof.mockRejectedValueOnce(new Error('verification error'))
+
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
-    it('should return false when signature verification fails', async () => {
+    it('should return false when proof verification fails for invalid proof value', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
       testProof.proofValue = 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz'
       testInput.proof = testProof
 
+      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+        verified: false,
+        verifiedDocument: null,
+        mediaType: null,
+        errors: [
+          {
+            type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR',
+            title: 'Proof verification failed',
+          },
+        ],
+      })
+
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockResolveDidDocument).toHaveBeenCalled()
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should handle proof without optional fields', async () => {
@@ -779,7 +844,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
 
       expect(result).toBe(true)
-      expect(mockResolveDidDocument).toHaveBeenCalled()
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
   })
 })
