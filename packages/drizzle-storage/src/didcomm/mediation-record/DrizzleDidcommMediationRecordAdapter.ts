@@ -34,6 +34,9 @@ export class DrizzleDidcommMediationRecordAdapter extends BaseDrizzleRecordAdapt
       routingKeys: record.routingKeys,
       endpoint: record.endpoint,
       pickupStrategy: record.pickupStrategy,
+      routingDid: record.routingDid,
+      recipientDids: record.recipientDids,
+      mediationProtocolVersion: record.mediationProtocolVersion,
       customTags,
     }
   }
