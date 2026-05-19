@@ -11,11 +11,20 @@ import type {
   VerificationMethod,
 } from '@credo-ts/core'
 
-import { DidDocument, DidDocumentRole, DidRecord, DidRepository, JsonTransformer, Kms } from '@credo-ts/core'
+import {
+  DidDocument,
+  DidDocumentRole,
+  DidRecord,
+  DidRepository,
+  getKmsKeyIdForVerifiacationMethod,
+  JsonTransformer,
+  Kms,
+} from '@credo-ts/core'
 import { createDID, type DIDLog, MultibaseEncoding, multibaseEncode, updateDID } from 'didwebvh-ts'
 
 import { WebVhDidCrypto } from './WebVhDidCrypto'
 import { WebVhDidCryptoSigner } from './WebVhDidCryptoSigner'
+import { WebVhDidRecordMetadataKeys } from './webVhDidRecordMetadataTypes'
 
 interface WebVhDidCreateOptions extends DidCreateOptions {
   domain: string
@@ -98,7 +107,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
         role: DidDocumentRole.Created,
         keys,
       })
-      didRecord.metadata.set('log', log)
+      didRecord.metadata.set(WebVhDidRecordMetadataKeys.DidLog, log)
       didRecord.setTags({ domain: domainKey })
       await didRepository.save(agentContext, didRecord)
 
@@ -134,9 +143,13 @@ export class WebVhDidRegistrar implements DidRegistrar {
       })
       if (!didRecord) return this.handleError('DID not found')
 
-      const log = didRecord.metadata.get('log') as DIDLog
+      const log = didRecord.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as DIDLog
       const domain = didRecord.getTag('domain') as string
-      const keyId = didRecord.keys?.[0].kmsKeyId
+      const activeUpdateKey = log[log.length - 1]?.parameters?.updateKeys?.[0] ?? log[0]?.parameters?.updateKeys?.[0]
+      const vm = didRecord.didDocument?.verificationMethod?.find((v) => v.publicKeyMultibase === activeUpdateKey)
+      let keyId = vm ? getKmsKeyIdForVerifiacationMethod(vm, didRecord.keys) : undefined
+      if (!keyId && activeUpdateKey)
+        keyId = didRecord.metadata.get(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds)?.[activeUpdateKey]
 
       if (!log) return this.handleError('The log registry must be created before it can be edited.')
       if (!keyId) return this.handleError('The key ID must be present before the log can be edited.')
@@ -174,7 +187,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
         keyAgreement: normalizeMethodArray(keyAgreement),
         services,
       })
-      didRecord.metadata.set('log', logResult)
+      didRecord.metadata.set(WebVhDidRecordMetadataKeys.DidLog, logResult)
       didRecord.didDocument = JsonTransformer.fromJSON(doc, DidDocument)
       await didRepository.update(agentContext, didRecord)
 

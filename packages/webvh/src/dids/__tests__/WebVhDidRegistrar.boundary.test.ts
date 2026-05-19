@@ -31,6 +31,7 @@ import type { WebVhDidLog, WebVhDidLogEntry } from '../../resources'
 import { parseResourceId } from '../../resources'
 import { WebVhDidCrypto } from '../WebVhDidCrypto'
 import { WebVhDidRegistrar } from '../WebVhDidRegistrar'
+import { WebVhDidRecordMetadataKeys } from '../webVhDidRecordMetadataTypes'
 
 // didwebvh-ts calls fetchWitnessProofs during resolve/update. In this offline unit-test
 // environment those HTTP requests fail (ENOTFOUND) and generate stderr noise even when
@@ -77,7 +78,7 @@ describe('WebVhDidRegistrar boundary contracts', () => {
       const record = await repository.findSingleByQuery(agentContext, { did })
       expect(record).toBeDefined()
 
-      const log = record?.metadata.get('log') as WebVhDidLog
+      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
       expect(Array.isArray(log)).toBe(true)
       expect(log).toHaveLength(1)
 
@@ -98,7 +99,7 @@ describe('WebVhDidRegistrar boundary contracts', () => {
       const did = result.didState.did
       if (!did) throw new Error('create failed')
       const record = await repository.findSingleByQuery(agentContext, { did })
-      const log = record?.metadata.get('log') as WebVhDidLog
+      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
 
       expect(Array.isArray(log[0].parameters.updateKeys)).toBe(true)
       expect(log[0].parameters.updateKeys?.length).toBeGreaterThan(0)
@@ -119,7 +120,7 @@ describe('WebVhDidRegistrar boundary contracts', () => {
       expect(updateResult.didState.state).toBe('finished')
 
       const record = await repository.findSingleByQuery(agentContext, { did })
-      const log = record?.metadata.get('log') as WebVhDidLog
+      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
 
       expect(log).toHaveLength(2)
     })
@@ -135,7 +136,7 @@ describe('WebVhDidRegistrar boundary contracts', () => {
       await registrar.update(agentContext, { did, didDocument })
 
       const record = await repository.findSingleByQuery(agentContext, { did })
-      const log = record?.metadata.get('log') as WebVhDidLog
+      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
 
       const indices = log.map((e) => parseInt(e.versionId.split('-')[0], 10))
       for (let i = 1; i < indices.length; i++) {
@@ -152,7 +153,7 @@ describe('WebVhDidRegistrar boundary contracts', () => {
       if (!did) throw new Error('create failed')
 
       const record = await repository.findSingleByQuery(agentContext, { did })
-      const log = record?.metadata.get('log') as WebVhDidLog
+      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
 
       // Delegate directly to the upstream library — no Credo resolver involved.
       const verifier = new WebVhDidCrypto(agentContext)
@@ -176,7 +177,7 @@ describe('WebVhDidRegistrar boundary contracts', () => {
       expect(updateResult.didState.state).toBe('finished')
 
       const record = await repository.findSingleByQuery(agentContext, { did })
-      const log = record?.metadata.get('log') as WebVhDidLog
+      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
 
       const verifier = new WebVhDidCrypto(agentContext)
       const resolved = await resolveDIDFromLog(log, { verifier })
