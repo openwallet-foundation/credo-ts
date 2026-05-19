@@ -14,7 +14,7 @@ import { DidCommConnectionRequestMessage, DidCommDidExchangeRequestMessage } fro
 import type { DidCommConnectionType } from './models'
 import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
 import type { DidCommConnectionRecord } from './repository'
-import { DidCommConnectionService, DidCommDidRotateService } from './services'
+import { DidCommConnectionService, DidCommDidRotateService, DidCommDidRotateV2Service } from './services'
 import { createPeerDidForV2OOB } from './services/helpers'
 
 export interface SendPingOptions {
@@ -151,6 +151,7 @@ export class DidCommConnectionsApi {
           alias: config.alias,
           theirLabel: outOfBandRecord.outOfBandInvitation.v2Invitation?.body?.goal,
           didcommVersion: 'v2',
+          mediatorId: routing.mediatorId,
         },
         true
       )
@@ -375,12 +376,24 @@ export class DidCommConnectionsApi {
     // Create Hangup message and update did in connection record
     const message = await this.didRotateService.createHangup(this.agentContext, { connection })
 
-    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection: connectionBeforeHangup,
-    })
+    if (connection.didcommVersion === 'v2') {
+      try {
+        const didRotateV2Service = this.agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
+        await didRotateV2Service.sendRotateToNothing(this.agentContext, connectionBeforeHangup)
+      } catch (error) {
+        this.agentContext.config.logger.warn('Failed to send v2 termination signal', {
+          connectionId: connection.id,
+          error: error.message,
+        })
+      }
+    } else {
+      const outboundMessageContext = new DidCommOutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionBeforeHangup,
+      })
 
-    await this.messageSender.sendMessage(outboundMessageContext)
+      await this.messageSender.sendMessage(outboundMessageContext)
+    }
 
     // After hang-up message submission, delete connection if required
     if (options.deleteAfterHangup) {
@@ -502,8 +515,10 @@ export class DidCommConnectionsApi {
   }
 
   private async removeRouting(connection: DidCommConnectionRecord) {
-    if (connection.mediatorId && connection.did) {
-      const { didDocument } = await this.didResolverService.resolve(this.agentContext, connection.did)
+    const did = connection.did ?? connection.previousDids.at(-1)
+
+    if (connection.mediatorId && did) {
+      const { didDocument } = await this.didResolverService.resolve(this.agentContext, did)
 
       if (didDocument) {
         await this.routingService.removeRouting(this.agentContext, {
