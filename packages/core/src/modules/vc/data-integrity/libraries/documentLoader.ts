@@ -11,27 +11,27 @@ export type DocumentLoaderWithContext = (agentContext: AgentContext) => Document
 
 export function defaultDocumentLoader(
   agentContext: AgentContext,
-  customContexts: Record<string, unknown> = {}
+  additionalContexts: Record<string, unknown> = {}
 ): DocumentLoader {
   const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
-  const CONTEXTS = { ...DEFAULT_CONTEXTS, ...customContexts }
+  const contexts = { ...DEFAULT_CONTEXTS, ...additionalContexts }
 
   async function loader(url: string) {
     // Check if in the default contexts shipped with Credo
-    if (url in CONTEXTS) {
+    if (url in contexts) {
       return {
         contextUrl: null,
         documentUrl: url,
-        document: CONTEXTS[url as keyof typeof CONTEXTS],
+        document: contexts[url as keyof typeof contexts],
       }
     }
 
     const withoutFragment = url.split('#')[0]
-    if (withoutFragment in CONTEXTS) {
+    if (withoutFragment in contexts) {
       return {
         contextUrl: null,
         documentUrl: url,
-        document: CONTEXTS[url as keyof typeof CONTEXTS],
+        document: contexts[url as keyof typeof contexts],
       }
     }
 
