@@ -1,12 +1,15 @@
-import { CredoError, JsonEncoder } from '@credo-ts/core'
+import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 import queryString from 'query-string'
 
 import { DidCommMessage } from '../../../DidCommMessage'
+import { DidCommAttachment } from '../../../decorators/attachment/DidCommAttachment'
 import type { DidCommPlaintextMessage } from '../../../types'
 import type { DidCommVersion } from '../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
+import { normalizeV2PlaintextToV1 } from '../../../v2/normalize'
+import { mapV1AttachmentToV2, mapV2AttachmentToV1 } from '../../../v2/plaintextBuilder'
 import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from '../../../v2/types'
 
 const LINK_PARAM = '_oob'
@@ -40,7 +43,11 @@ export class DidCommOutOfBandInvitationV2 extends DidCommMessage {
       this.goal = options.body?.goal
       this.goalCode = options.body?.goalCode
       this.accept = options.body?.accept
-      this.attachments = options.attachments
+      if (options.attachments) {
+        for (const v2Att of options.attachments) {
+          this.addAppendedAttachment(JsonTransformer.fromJSON(mapV2AttachmentToV1(v2Att), DidCommAttachment))
+        }
+      }
     }
   }
 
@@ -48,6 +55,7 @@ export class DidCommOutOfBandInvitationV2 extends DidCommMessage {
   public readonly type = DidCommOutOfBandInvitationV2.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/out-of-band/2.0/invitation')
 
+  @IsString()
   public declare from: string
 
   @Expose({ name: 'goal' })
@@ -65,16 +73,20 @@ export class DidCommOutOfBandInvitationV2 extends DidCommMessage {
   @IsOptional()
   public accept?: string[]
 
-  @Expose({ name: 'attachments' })
-  @IsOptional()
-  public attachments?: DidCommV2Attachment[]
-
   public get body(): DidCommOutOfBandInvitationV2Body | undefined {
     if (this.goal === undefined && this.goalCode === undefined && this.accept === undefined) return undefined
     return { goal: this.goal, goalCode: this.goalCode, accept: this.accept }
   }
 
+  public get attachments(): DidCommV2Attachment[] | undefined {
+    if (!this.appendedAttachments?.length) return undefined
+    return this.appendedAttachments.map((att) =>
+      mapV1AttachmentToV2(JsonTransformer.toJSON(att) as Record<string, unknown>)
+    )
+  }
+
   public toJSON(): DidCommPlaintextMessage {
+    const attachments = this.attachments
     const wire = {
       type: DidCommOutOfBandInvitationV2.type.messageTypeUri,
       id: this.id,
@@ -86,7 +98,7 @@ export class DidCommOutOfBandInvitationV2 extends DidCommMessage {
             accept: this.accept,
           }
         : undefined,
-      attachments: this.attachments && this.attachments.length > 0 ? this.attachments : undefined,
+      attachments,
     }
     return wire as unknown as DidCommPlaintextMessage
   }
@@ -102,7 +114,8 @@ export class DidCommOutOfBandInvitationV2 extends DidCommMessage {
       from: this.from,
       body,
     }
-    if (this.attachments && this.attachments.length > 0) plaintext.attachments = this.attachments
+    const attachments = this.attachments
+    if (attachments) plaintext.attachments = attachments
     return plaintext
   }
 
@@ -112,27 +125,10 @@ export class DidCommOutOfBandInvitationV2 extends DidCommMessage {
   }
 
   public static fromJson(json: Record<string, unknown>): DidCommOutOfBandInvitationV2 {
-    const type = json.type as string
-    if (type !== DidCommOutOfBandInvitationV2.type.messageTypeUri) {
-      throw new CredoError(
-        `Invalid v2 OOB invitation type: expected ${DidCommOutOfBandInvitationV2.type.messageTypeUri}, got ${type}`
-      )
-    }
-    const id = json.id as string
-    const from = json.from as string
-    if (!from) {
-      throw new CredoError('Invalid v2 OOB invitation: missing from')
-    }
-    const bodyJson = json.body as Record<string, unknown> | undefined
-    const body = bodyJson
-      ? {
-          goalCode: bodyJson.goal_code as string | undefined,
-          goal: bodyJson.goal as string | undefined,
-          accept: bodyJson.accept as string[] | undefined,
-        }
-      : undefined
-    const attachments = Array.isArray(json.attachments) ? (json.attachments as DidCommV2Attachment[]) : undefined
-    return new DidCommOutOfBandInvitationV2({ id, from, body, attachments })
+    return JsonTransformer.fromJSON(
+      normalizeV2PlaintextToV1(json as DidCommV2PlaintextMessage),
+      DidCommOutOfBandInvitationV2
+    )
   }
 
   public static fromUrl(invitationUrl: string): DidCommOutOfBandInvitationV2 {

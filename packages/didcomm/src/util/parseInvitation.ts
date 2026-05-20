@@ -42,6 +42,7 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Di
   const v2Type = invitationJson.type as string
   if (v2Type === DidCommOutOfBandInvitationV2.type.messageTypeUri) {
     const v2Invitation = DidCommOutOfBandInvitationV2.fromJson(invitationJson)
+    MessageValidator.validateSync(v2Invitation)
     return convertV2InvitationToOutOfBandInvitation(v2Invitation)
   }
 
