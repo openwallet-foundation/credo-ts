@@ -108,6 +108,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
         keys,
       })
       didRecord.metadata.set(WebVhDidRecordMetadataKeys.DidLog, log)
+      didRecord.metadata.set(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds, { [publicKeyMultibase]: keyId })
       didRecord.setTags({ domain: domainKey })
       await didRepository.save(agentContext, didRecord)
 
