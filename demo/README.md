@@ -51,6 +51,20 @@ In the right terminal run Faber:
 pnpm faber
 ```
 
+### DIDComm v2
+
+To run the demo with DIDComm v2 (out-of-band 2.0, did:peer:2, no handshake):
+
+```sh
+# Terminal 1
+pnpm alice:v2
+
+# Terminal 2
+pnpm faber:v2
+```
+
+Or set `DIDCOMM_V2=true` (or `USE_DIDCOMM_V2=true`) before running the regular commands.
+
 ### Usage
 
 To set up a connection:
