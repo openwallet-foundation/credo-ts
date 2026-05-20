@@ -691,10 +691,8 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     const firstAccepterDid = (await accepter.didcomm.connections.findById(firstAccepterConnection?.id!))?.did
-    console.log(await accepter.didcomm.connections.findById(firstAccepterConnection?.id!))
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     const secondAccepterDid = (await accepterTwo.didcomm.connections.findById(secondAccepterConnection?.id!))?.did
-    console.log(await accepterTwo.didcomm.connections.findById(secondAccepterConnection?.id!))
     const inviterToFirst = inviterConnections.find((c) => c.theirDid === firstAccepterDid)
     const inviterToSecond = inviterConnections.find((c) => c.theirDid === secondAccepterDid)
     expect(inviterToFirst).toBeDefined()

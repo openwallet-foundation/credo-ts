@@ -80,7 +80,9 @@ export class DidCommDidRotateV2Service {
       throw new CredoError(`Cannot rotate connection '${connection.id}': no current did`)
     }
     if (connection.didcommVersion !== 'v2') {
-      throw new CredoError(`rotateOurDid only supports v2 connections; '${connection.id}' is ${connection.didcommVersion ?? 'v1'}`)
+      throw new CredoError(
+        `rotateOurDid only supports v2 connections; '${connection.id}' is ${connection.didcommVersion ?? 'v1'}`
+      )
     }
 
     const priorDid = connection.did
@@ -123,7 +125,8 @@ export class DidCommDidRotateV2Service {
     const pending = connection.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)
     if (!pending) return
     if (!inboundTo?.length || !connection.did) return
-    if (!inboundTo.includes(connection.did) && inboundTo.every((to) => !this.didsEqual(to, connection.did as string))) return
+    if (!inboundTo.includes(connection.did) && inboundTo.every((to) => !this.didsEqual(to, connection.did as string)))
+      return
 
     connection.metadata.delete(DidCommConnectionMetadataKeys.DidRotateV2)
     await agentContext.dependencyManager.resolve(DidCommConnectionService).update(agentContext, connection)
@@ -471,10 +474,7 @@ export class DidCommDidRotateV2Service {
       type: DidCommConnectionEventTypes.DidCommConnectionDidRotated,
       payload: {
         connectionRecord: connectionRecord.clone(),
-        ourDid:
-          previousOurDid && connectionRecord.did
-            ? { from: previousOurDid, to: connectionRecord.did }
-            : undefined,
+        ourDid: previousOurDid && connectionRecord.did ? { from: previousOurDid, to: connectionRecord.did } : undefined,
         theirDid:
           previousTheirDid && connectionRecord.theirDid
             ? { from: previousTheirDid, to: connectionRecord.theirDid }
