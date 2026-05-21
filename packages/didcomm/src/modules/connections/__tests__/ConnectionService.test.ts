@@ -1035,18 +1035,21 @@ describe('DidCommConnectionService', () => {
     it('should throw an error when lastReceivedMessage and senderKey are present, but sender key is not present in recipientKeys of previously received message ~service decorator', async () => {
       expect.assertions(1)
 
-      const senderKey = 'senderKey'
+      // Valid 32-byte base58 Ed25519 keys — required so toX25519() conversion works correctly
+      const ourRecipientKeyBase58 = '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'
+      const senderKeyBase58 = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const anotherKeyBase58 = '6fioC1zcDPyPEL19pXRS2E4iJ46zH7xP6uSgAaPdwDrx'
 
       const lastReceivedMessage = new DidCommMessage()
       lastReceivedMessage.setService({
-        recipientKeys: ['anotherKey'],
+        recipientKeys: [anotherKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
       const lastSentMessage = new DidCommMessage()
       lastSentMessage.setService({
-        recipientKeys: [senderKey],
+        recipientKeys: [ourRecipientKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
@@ -1057,12 +1060,12 @@ describe('DidCommConnectionService', () => {
         senderKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
-          publicKey: TypedArrayEncoder.fromBase58('randomKey'),
+          publicKey: TypedArrayEncoder.fromBase58(senderKeyBase58),
         }),
         recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
-          publicKey: TypedArrayEncoder.fromBase58(senderKey),
+          publicKey: TypedArrayEncoder.fromBase58(ourRecipientKeyBase58),
         }),
       })
 
@@ -1071,7 +1074,7 @@ describe('DidCommConnectionService', () => {
           lastReceivedMessage,
           lastSentMessage,
         })
-      ).rejects.toThrow('Sender key z41yMxWDBqGD2Z not found in their service.')
+      ).rejects.toThrow('Sender key z6MkkbTaLstV4fwr1rNf5CSxdS2rGbwxi3V5y6NnVFTZ2V1w not found in their service.')
     })
   })
 
