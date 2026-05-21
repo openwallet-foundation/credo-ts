@@ -65,9 +65,13 @@ export function buildV2PlaintextFromMessage(
   const v2Native = message as unknown as { toV2Plaintext?: () => DidCommV2PlaintextMessage }
   if (typeof v2Native.toV2Plaintext === 'function') {
     const plaintext = v2Native.toV2Plaintext()
-    if (config?.from !== undefined) plaintext.from = config.from
-    if (config?.to !== undefined) plaintext.to = Array.isArray(config.to) ? config.to : [config.to]
-    if (config?.fromPrior !== undefined) plaintext.from_prior = config.fromPrior
+    if (plaintext.from === undefined && config?.from !== undefined) plaintext.from = config.from
+    if (plaintext.to === undefined && config?.to !== undefined) {
+      plaintext.to = Array.isArray(config.to) ? config.to : [config.to]
+    }
+    if (plaintext.from_prior === undefined && config?.fromPrior !== undefined) {
+      plaintext.from_prior = config.fromPrior
+    }
     return plaintext
   }
 
