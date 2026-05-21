@@ -26,16 +26,26 @@ export class DidCommRoutingService {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
     const didcommConfig = agentContext.resolve(DidCommModuleConfig)
 
-    // Create and store new key — preserve the KMS keyId so downstream DID records
-    // map verification methods to the actual Askar key (not legacyKeyId).
+    // Create Ed25519 key for authentication/signing (used by V1 and V2).
     const createdKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
     const recipientKey = Kms.PublicJwk.fromPublicJwk(createdKey.publicJwk)
     recipientKey.keyId = createdKey.keyId
+
+    // Create separate X25519 key for V2 key agreement (ECDH-ES / ECDH-1PU) only
+    // when the agent supports DIDComm V2. V1-only agents derive X25519 from Ed25519
+    // at runtime via Askar's birational map, so no separate key is needed.
+    let keyAgreementKey: Kms.PublicJwk<Kms.X25519PublicJwk> | undefined
+    if (didcommConfig.acceptsV2) {
+      const createdX25519Key = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      keyAgreementKey = Kms.PublicJwk.fromPublicJwk(createdX25519Key.publicJwk)
+      keyAgreementKey.keyId = createdX25519Key.keyId
+    }
 
     let routing: DidCommRouting = {
       endpoints: didcommConfig.endpoints,
       routingKeys: [],
       recipientKey,
+      keyAgreementKey,
     }
 
     // Extend routing with mediator keys (if applicable)
@@ -75,9 +85,15 @@ export interface GetRoutingOptions {
 
 export interface RemoveRoutingOptions {
   /**
-   * Keys to remove routing from
+   * Ed25519 recipient keys to remove routing from (used by both V1 and V2 mediators).
    */
   recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+
+  /**
+   * Optional separate X25519 key agreement keys to remove from V2 mediator keylist.
+   * When provided, these are removed directly (not derived from recipientKeys).
+   */
+  keyAgreementKeys?: Kms.PublicJwk<Kms.X25519PublicJwk>[]
 
   /**
    * Identifier of the mediator used when routing has been set up

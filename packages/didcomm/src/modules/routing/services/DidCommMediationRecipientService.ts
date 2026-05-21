@@ -398,25 +398,23 @@ export class DidCommMediationRecipientService {
     if (!mediationRecord) return routing
 
     if (mediationRecord.mediationProtocolVersion === 'v2') {
-      // Register BOTH the Ed25519 and X25519 did:key forms of the recipient key.
+      // Register the Ed25519 did:key (for V1 senders) and the separate X25519 did:key
+      // (for V2 senders) with the mediator's keylist. These are independent keys, each
+      // with their own KMS key ID.
       //
-      // Rationale: Ed25519 and X25519 did:keys are two representations of the same
-      // physical key (birational map). They are literally different strings, so the
-      // mediator's exact-match keylist lookup needs both.
-      //
-      // - v1 senders (legacy): pack v1 Forwards with `to = base58(Ed25519 verkey)`;
+      // - V1 senders: pack V1 Forwards with `to = base58(Ed25519 verkey)`;
       //   the mediator canonicalizes that via verkeyToDidKey → Ed25519 did:key (z6Mk).
-      // - v2 senders: read the peer DID's X25519 keyAgreement VM and put the X25519
+      // - V2 senders: read the peer DID's X25519 keyAgreement VM and put the X25519
       //   did:key (z6LS) into Forward `next`.
-      //
-      // Registering both covers interop with v1 and v2 senders without any special
-      // equivalence logic on the mediator side.
       const ed25519Did = new DidKey(routing.recipientKey).did
-      const x25519Did = new DidKey(routing.recipientKey.convertTo(Kms.X25519PublicJwk)).did
-      mediationRecord = await this.keylistUpdateAndAwaitV2(agentContext, mediationRecord, [
+      const keylistUpdates: Array<{ recipientDid: string; action: KeylistUpdateActionV2 }> = [
         { recipientDid: ed25519Did, action: KeylistUpdateActionV2.add },
-        { recipientDid: x25519Did, action: KeylistUpdateActionV2.add },
-      ])
+      ]
+      if (routing.keyAgreementKey) {
+        const x25519Did = new DidKey(routing.keyAgreementKey).did
+        keylistUpdates.push({ recipientDid: x25519Did, action: KeylistUpdateActionV2.add })
+      }
+      mediationRecord = await this.keylistUpdateAndAwaitV2(agentContext, mediationRecord, keylistUpdates)
       return {
         ...routing,
         mediatorId: mediationRecord.id,
@@ -446,7 +444,7 @@ export class DidCommMediationRecipientService {
 
   public async removeMediationRouting(
     agentContext: AgentContext,
-    { recipientKeys, mediatorId }: RemoveRoutingOptions
+    { recipientKeys, keyAgreementKeys, mediatorId }: RemoveRoutingOptions
   ): Promise<void> {
     const mediationRecord = await this.getById(agentContext, mediatorId)
 
@@ -455,11 +453,14 @@ export class DidCommMediationRecipientService {
     }
 
     if (mediationRecord.mediationProtocolVersion === 'v2') {
-      // Remove BOTH Ed25519 and X25519 did:key forms we registered in addMediationRouting.
-      const recipientDids = recipientKeys.flatMap((key) => [
-        new DidKey(key).did,
-        new DidKey(key.convertTo(Kms.X25519PublicJwk)).did,
-      ])
+      // Remove Ed25519 did:key entries from the mediator keylist.
+      const recipientDids = recipientKeys.map((key) => new DidKey(key).did)
+      // Remove separate X25519 key agreement keys if provided (independent keys).
+      if (keyAgreementKeys) {
+        for (const key of keyAgreementKeys) {
+          recipientDids.push(new DidKey(key).did)
+        }
+      }
       await this.keylistUpdateAndAwaitV2(
         agentContext,
         mediationRecord,

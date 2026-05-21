@@ -375,7 +375,11 @@ export class DidCommOutOfBandApi {
       const result = await createPeerDidForV2OOB(this.agentContext, routing, numAlgo)
       did = result.did
       recipientKeyFingerprints = [routing.recipientKey.fingerprint]
-      if (routing.recipientKey.is(Kms.Ed25519PublicJwk)) {
+      // Include the X25519 key agreement fingerprint for recipient key matching.
+      // Uses the independent keyAgreementKey if available, otherwise derives from Ed25519.
+      if (routing.keyAgreementKey) {
+        recipientKeyFingerprints.push(routing.keyAgreementKey.fingerprint)
+      } else if (routing.recipientKey.is(Kms.Ed25519PublicJwk)) {
         recipientKeyFingerprints.push(
           (routing.recipientKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk).fingerprint
         )
@@ -690,6 +694,8 @@ export class DidCommOutOfBandApi {
       outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.RecipientRouting, {
         recipientKeyFingerprint: routing.recipientKey.fingerprint,
         recipientKeyId: routing.recipientKey.keyId,
+        keyAgreementKeyFingerprint: routing.keyAgreementKey?.fingerprint,
+        keyAgreementKeyId: routing.keyAgreementKey?.keyId,
         routingKeyFingerprints: routing.routingKeys.map((key) => key.fingerprint),
         endpoints: routing.endpoints,
         mediatorId: routing.mediatorId,
@@ -789,8 +795,18 @@ export class DidCommOutOfBandApi {
       ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       recipientPublicJwk.keyId = recipientRouting.recipientKeyId ?? recipientPublicJwk.legacyKeyId
 
+      // Restore the independent X25519 key agreement key from metadata if available.
+      let keyAgreementKey: Kms.PublicJwk<Kms.X25519PublicJwk> | undefined
+      if (recipientRouting.keyAgreementKeyFingerprint) {
+        keyAgreementKey = Kms.PublicJwk.fromFingerprint(
+          recipientRouting.keyAgreementKeyFingerprint
+        ) as Kms.PublicJwk<Kms.X25519PublicJwk>
+        keyAgreementKey.keyId = recipientRouting.keyAgreementKeyId ?? keyAgreementKey.legacyKeyId
+      }
+
       routing = {
         recipientKey: recipientPublicJwk,
+        keyAgreementKey,
         routingKeys: recipientRouting.routingKeyFingerprints.map(
           (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
         ),

@@ -14,6 +14,15 @@ export type DidCommOutOfBandRecordMetadata = {
      * Optional key id to use for the recipient key. If not configured the legacy base58 encoded public key will be used as the key id
      */
     recipientKeyId?: string
+    /**
+     * Fingerprint of the separate X25519 key agreement key (when using independent keys).
+     * If not set, the X25519 key is derived from the Ed25519 recipientKey at runtime.
+     */
+    keyAgreementKeyFingerprint?: string
+    /**
+     * KMS key id for the separate X25519 key agreement key (when using independent keys).
+     */
+    keyAgreementKeyId?: string
     routingKeyFingerprints: string[]
     endpoints: string[]
     mediatorId?: string

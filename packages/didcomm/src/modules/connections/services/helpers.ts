@@ -270,11 +270,15 @@ export async function createPeerDidForV2OOB(
     throw new CredoError('DIDComm v2 OOB requires Ed25519 recipient key')
   }
 
-  const x25519Key = Kms.PublicJwk.fromPublicKey({
-    crv: 'X25519',
-    kty: 'OKP',
-    publicKey: convertPublicKeyToX25519(recipientKey.publicKey.publicKey),
-  })
+  // Use separate X25519 key from routing if available (independent KMS key),
+  // otherwise fall back to deriving from Ed25519 (legacy behavior).
+  const x25519Key = routing.keyAgreementKey
+    ? routing.keyAgreementKey
+    : Kms.PublicJwk.fromPublicKey({
+        crv: 'X25519',
+        kty: 'OKP',
+        publicKey: convertPublicKeyToX25519(recipientKey.publicKey.publicKey),
+      })
 
   const didDocumentBuilder = new DidDocumentBuilder('')
   const ed25519Vm = getEd25519VerificationKey2018({
@@ -313,9 +317,15 @@ export async function createPeerDidForV2OOB(
   }
 
   const didDocument = didDocumentBuilder.build()
+  // Map each verification method to its own KMS key ID.
+  // #key-1 (Ed25519 auth) → Ed25519 KMS key
+  // #key-2 (X25519 keyAgreement) → X25519 KMS key (independent, or Ed25519 fallback)
+  const x25519KmsKeyId = routing.keyAgreementKey
+    ? (routing.keyAgreementKey.keyId ?? routing.keyAgreementKey.legacyKeyId)
+    : (recipientKey.keyId ?? recipientKey.legacyKeyId)
   const keys: DidDocumentKey[] = [
     { didDocumentRelativeKeyId: '#key-1', kmsKeyId: recipientKey.keyId ?? recipientKey.legacyKeyId },
-    { didDocumentRelativeKeyId: '#key-2', kmsKeyId: recipientKey.keyId ?? recipientKey.legacyKeyId },
+    { didDocumentRelativeKeyId: '#key-2', kmsKeyId: x25519KmsKeyId },
   ]
 
   await assertNoCreatedDidExistsForKeys(agentContext, [recipientKey])

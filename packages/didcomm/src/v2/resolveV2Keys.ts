@@ -1,6 +1,8 @@
 import {
   AgentContext,
   DidKey,
+  type DidDocument,
+  type DidDocumentKey,
   DidResolverService,
   DidsApi,
   getPublicJwkFromVerificationMethod,
@@ -18,6 +20,55 @@ import { DidCommMediatorRoutingRepository } from '../modules/routing/repository'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 import type { DidCommV2EncryptedMessage } from './types'
 
+type ResolvedRecipientKey = {
+  recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }
+  matchedKid: string
+}
+
+/**
+ * Ensure the JWK is X25519. If it's Ed25519, convert via birational map (legacy compat).
+ * If it's already X25519, return as-is.
+ */
+function toX25519WithKeyId(
+  jwk: Kms.PublicJwk,
+  keyId: string
+): Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string } {
+  const x25519 = jwk.is(Kms.X25519PublicJwk)
+    ? (jwk as Kms.PublicJwk<Kms.X25519PublicJwk>)
+    : (jwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+  x25519.keyId = keyId
+  return x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }
+}
+
+/**
+ * Legacy fallback: scan authentication VMs for an Ed25519 key whose derived X25519
+ * matches the target X25519 fingerprint. Returns the Ed25519 VM's kmsKeyId.
+ * Only needed for DIDs created before independent X25519 keys were stored.
+ */
+function findLegacyEd25519KmsKeyId(
+  didDocument: DidDocument,
+  keys: DidDocumentKey[] | undefined,
+  x25519Fingerprint: string
+): string | undefined {
+  if (!keys) return undefined
+  for (const authRef of didDocument.authentication ?? []) {
+    try {
+      const authVm =
+        typeof authRef === 'string' ? didDocument.dereferenceVerificationMethod(authRef) : authRef
+      const authJwk = getPublicJwkFromVerificationMethod(authVm)
+      if (!authJwk.is(Kms.Ed25519PublicJwk)) continue
+      const derivedX25519 = authJwk.convertTo(Kms.X25519PublicJwk)
+      if (derivedX25519.fingerprint === x25519Fingerprint) {
+        const kmsKeyId = keys.find(({ didDocumentRelativeKeyId }) =>
+          authVm.id.endsWith(didDocumentRelativeKeyId)
+        )?.kmsKeyId
+        if (kmsKeyId) return kmsKeyId
+      }
+    } catch {}
+  }
+  return undefined
+}
+
 @injectable()
 export class DidCommV2KeyResolver {
   public constructor(private didResolverService: DidResolverService) {}
@@ -25,15 +76,19 @@ export class DidCommV2KeyResolver {
   /**
    * Resolve our recipient key from a DIDComm v2 encrypted message.
    *
-   * Per DIDComm v2 spec, the JWE recipient `kid` MUST be a DID URL pointing to a
-   * `keyAgreement` verification method in the recipient's DID document. This resolver
-   * only accepts that format. Non-conforming `kid` values (raw keys, did:key, bare
-   * multibase) are skipped.
+   * Resolution strategy (in order):
+   * 1. **Created DID lookup** — kid is a DID URL; look up our DID record and find the
+   *    keyAgreement VM's kmsKeyId directly. For new DIDs with independent X25519 keys
+   *    this succeeds immediately. Legacy fallback scans Ed25519 auth keys.
+   * 2. **Mediator routing key** — kid is a did:key for a mediator routing key.
+   * 3. **Reverse did:key lookup** — did:key kid that maps to a VM on a Created DID.
+   * 4. **OOB ephemeral key** — did:key kid stored on an out-of-band record.
+   * 5. **Direct KMS lookup** — kid is a raw KMS key id.
    */
   public async resolveRecipientKey(
     agentContext: AgentContext,
     encrypted: DidCommV2EncryptedMessage
-  ): Promise<{ recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }; matchedKid: string } | null> {
+  ): Promise<ResolvedRecipientKey | null> {
     const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected) as {
       recipients?: Array<{ header?: { kid?: string } }>
     }
@@ -45,239 +100,19 @@ export class DidCommV2KeyResolver {
       const kid = recipient.header?.kid
       if (!kid) continue
 
-      // Path 1: kid is a DID URL
       if (kid.startsWith('did:')) {
-        const didOnly = kid.includes('#') ? kid.split('#')[0] : kid
-        const keyRef = kid.includes('#') ? kid : `${kid}#${parseDid(kid).id}`
-
-        try {
-          const dids = agentContext.resolve(DidsApi)
-          const { didDocument, keys } = await dids.resolveCreatedDidDocumentWithKeys(didOnly)
-          const verificationMethod = didDocument.dereferenceKey(keyRef, ['keyAgreement'])
-          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-
-          let kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
-            verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-          )?.kmsKeyId
-
-          // When no direct kmsKeyId mapping exists for the keyAgreement VM (common for
-          // did:webvh and other DIDs where the X25519 key is derived from Ed25519),
-          // find the corresponding Ed25519 authentication key and use its kmsKeyId.
-          // Askar supports X25519 key agreement using Ed25519 keys via birational map.
-          if (!kmsKeyId && publicJwk.is(Kms.X25519PublicJwk) && keys) {
-            const x25519Target = publicJwk
-            for (const authRef of didDocument.authentication ?? []) {
-              try {
-                const authVm =
-                  typeof authRef === 'string' ? didDocument.dereferenceVerificationMethod(authRef) : authRef
-                const authJwk = getPublicJwkFromVerificationMethod(authVm)
-                if (!authJwk.is(Kms.Ed25519PublicJwk)) continue
-                const derivedX25519 = authJwk.convertTo(Kms.X25519PublicJwk)
-                if (derivedX25519.fingerprint === x25519Target.fingerprint) {
-                  kmsKeyId = keys.find(({ didDocumentRelativeKeyId }) =>
-                    authVm.id.endsWith(didDocumentRelativeKeyId)
-                  )?.kmsKeyId
-                  if (kmsKeyId) break
-                }
-              } catch {}
-            }
-          }
-
-          const keyId = kmsKeyId ?? (publicJwk.hasKeyId ? publicJwk.keyId : publicJwk.legacyKeyId)
-          const x25519 = publicJwk.is(Kms.X25519PublicJwk)
-            ? (publicJwk as Kms.PublicJwk<Kms.X25519PublicJwk>)
-            : (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-          x25519.keyId = keyId
-          return { recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }, matchedKid: kid }
-        } catch {
-          // Fall through: not a Created DID. Below we check mediator routing record
-          // for did:key kids (v2 Forward to mediator routing key).
-        }
-
-        const kidPublicJwk = kid.startsWith('did:key:') ? DidKey.fromDid(kid).publicJwk : null
-
-        // Path 2: did:key kid for a mediator routing key (v2 Forward
-        // arrives addressed to a key our mediator manages). Routing keys aren't
-        // Created DIDs, so we look them up in the mediator routing repository.
-        if (kidPublicJwk) {
-          try {
-            const mediatorRoutingRepository = agentContext.dependencyManager.resolve(DidCommMediatorRoutingRepository)
-
-            // Ed25519 kid: direct fingerprint lookup
-            if (kidPublicJwk.is(Kms.Ed25519PublicJwk)) {
-              const record = await mediatorRoutingRepository.findSingleByQuery(agentContext, {
-                routingKeyFingerprints: [kidPublicJwk.fingerprint],
-              })
-              if (record) {
-                const routingKey = record.routingKeysWithKeyId.find((rk) => kidPublicJwk.equals(rk))
-                if (routingKey) {
-                  // Askar handles Ed25519 <=> X25519 birationally via the same kmsKeyId,
-                  // so we can convert and reuse the Ed25519 key id for X25519 decryption.
-                  const x25519 = (routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-                  x25519.keyId = routingKey.keyId
-                  return {
-                    recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
-                    matchedKid: kid,
-                  }
-                }
-              }
-            }
-
-            // X25519 kid: tag stores Ed25519 fingerprint so we can't query by X25519.
-            // Load the single well-known routing record and scan its keys.
-            if (kidPublicJwk.is(Kms.X25519PublicJwk)) {
-              const record = await mediatorRoutingRepository.findById(
-                agentContext,
-                mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID
-              )
-              if (record) {
-                for (const routingKey of record.routingKeysWithKeyId) {
-                  try {
-                    const derivedX25519 = (routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(
-                      Kms.X25519PublicJwk
-                    )
-                    if (derivedX25519.fingerprint === kidPublicJwk.fingerprint) {
-                      derivedX25519.keyId = routingKey.keyId
-                      return {
-                        recipientKey: derivedX25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
-                        matchedKid: kid,
-                      }
-                    }
-                  } catch {
-                    // Skip keys that can't be converted
-                  }
-                }
-              }
-            }
-          } catch {
-            // Ignore failures and try the next path.
-          }
-        }
-
-        // Path 3: did:key kid whose underlying public key is actually
-        // a verification method on one of our Created DIDs (e.g. the master Ed25519
-        // of did:webvh, referenced as `did:key:z6Mk...`). Path 1 missed it
-        // because the did:key form itself isn't registered. We reverse-lookup by
-        // public key and pull the kmsKeyId from the parent DID record.
-        if (kidPublicJwk) {
-          try {
-            const documentService = agentContext.dependencyManager.resolve(DidCommDocumentService)
-            const { didDocument, keys } = await documentService.resolveCreatedDidDocumentWithKeysByRecipientKey(
-              agentContext,
-              kidPublicJwk
-            )
-
-            for (const vm of didDocument.verificationMethod ?? []) {
-              let vmJwk: Kms.PublicJwk
-              try {
-                vmJwk = getPublicJwkFromVerificationMethod(vm)
-              } catch {
-                continue
-              }
-              const directMatch = vmJwk.fingerprint === kidPublicJwk.fingerprint
-              const derivedMatch =
-                vmJwk.is(Kms.Ed25519PublicJwk) &&
-                (vmJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk).fingerprint ===
-                  kidPublicJwk.fingerprint
-              if (!directMatch && !derivedMatch) continue
-
-              const x25519 = vmJwk.is(Kms.X25519PublicJwk)
-                ? (vmJwk as Kms.PublicJwk<Kms.X25519PublicJwk>)
-                : (vmJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-              const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
-                vm.id.endsWith(didDocumentRelativeKeyId)
-              )?.kmsKeyId
-              x25519.keyId = kmsKeyId ?? (vmJwk.hasKeyId ? vmJwk.keyId : vmJwk.legacyKeyId)
-              return {
-                recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
-                matchedKid: kid,
-              }
-            }
-          } catch (error) {
-            if (!(error instanceof RecordNotFoundError)) throw error
-          }
-        }
-
-        // Path 4: did:key kid for an ephemeral routing key from a
-        // connection-less OOB exchange. The wallet generates a fresh routing key
-        // per exchange and stores its kmsKeyId only on the OOB record's metadata.
-        // Look up the OOB record by fingerprint and pull the kmsKeyId from there.
-        // Sender role: the kid matches one of our invitation's inline service keys.
-        // Receiver role: the kid matches our recipientRouting key for that exchange.
-        if (kidPublicJwk) {
-          const fingerprint = kidPublicJwk.fingerprint
-          const outOfBandRepository = agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
-
-          const outOfBandRecord = await outOfBandRepository.findSingleByQuery(agentContext, {
-            $or: [
-              {
-                role: DidCommOutOfBandRole.Sender,
-                recipientKeyFingerprints: [fingerprint],
-              },
-              {
-                role: DidCommOutOfBandRole.Receiver,
-                recipientRoutingKeyFingerprint: fingerprint,
-              },
-            ],
-          })
-
-          if (outOfBandRecord?.role === DidCommOutOfBandRole.Sender) {
-            agentContext.config.logger.debug(
-              `Found out of band record with id '${outOfBandRecord.id}' and role '${outOfBandRecord.role}' for recipient key '${fingerprint}' for incoming didcomm v2 message`
-            )
-
-            for (const service of outOfBandRecord.outOfBandInvitation.getInlineServices()) {
-              const resolvedService = getResolvedDidcommServiceWithSigningKeyId(
-                service,
-                outOfBandRecord.invitationInlineServiceKeys
-              )
-              const recipientKey = resolvedService.recipientKeys.find((rk) => rk.fingerprint === fingerprint)
-              if (!recipientKey) continue
-              const matchedKeyId = recipientKey.hasKeyId ? recipientKey.keyId : recipientKey.legacyKeyId
-              const x25519 = recipientKey.is(Kms.X25519PublicJwk)
-                ? (recipientKey as Kms.PublicJwk<Kms.X25519PublicJwk>)
-                : (recipientKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-              x25519.keyId = matchedKeyId
-              return {
-                recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
-                matchedKid: kid,
-              }
-            }
-          } else if (outOfBandRecord?.role === DidCommOutOfBandRole.Receiver) {
-            agentContext.config.logger.debug(
-              `Found out of band record with id '${outOfBandRecord.id}' and role '${outOfBandRecord.role}' for recipient key '${fingerprint}' for incoming didcomm v2 message`
-            )
-
-            const recipientRouting = outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.RecipientRouting)
-            if (recipientRouting?.recipientKeyFingerprint === fingerprint) {
-              const x25519 = kidPublicJwk.is(Kms.X25519PublicJwk)
-                ? (kidPublicJwk as Kms.PublicJwk<Kms.X25519PublicJwk>)
-                : (kidPublicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-              x25519.keyId = recipientRouting.recipientKeyId ?? x25519.legacyKeyId
-              return {
-                recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
-                matchedKid: kid,
-              }
-            }
-          }
-        }
-
+        const result =
+          (await this.resolveFromCreatedDid(agentContext, kid)) ??
+          (await this.resolveFromMediatorRouting(agentContext, kid)) ??
+          (await this.resolveFromReverseLookup(agentContext, kid)) ??
+          (await this.resolveFromOutOfBand(agentContext, kid))
+        if (result) return result
         continue
       }
 
-      // Path 5: kid stored directly in KMS (e.g. internal key id)
-      const kmsPublic = await kms.getPublicKey({ keyId: kid }).catch((err) => {
-        if (err instanceof Kms.KeyManagementKeyNotFoundError) return null
-        throw err
-      })
-      if (kmsPublic) {
-        const publicJwk = Kms.PublicJwk.fromPublicJwk(kmsPublic as Kms.KmsJwkPublicOkp)
-        const x25519 = publicJwk.is(Kms.X25519PublicJwk)
-          ? (publicJwk as Kms.PublicJwk<Kms.X25519PublicJwk>)
-          : (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-        x25519.keyId = kid
-        return { recipientKey: x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }, matchedKid: kid }
-      }
+      // kid stored directly in KMS (e.g. internal key id)
+      const result = await this.resolveFromKms(kms, kid)
+      if (result) return result
     }
 
     return null
@@ -303,13 +138,10 @@ export class DidCommV2KeyResolver {
       let vmId: string | undefined
 
       if (skid.includes('#')) {
-        // Explicit VM reference — must be keyAgreement per DIDComm v2 spec (skid is a DID URL
-        // into the sender's keyAgreement, not authentication)
         const vm = didDocument.dereferenceKey(skid, ['keyAgreement'])
         senderJwk = getPublicJwkFromVerificationMethod(vm)
         vmId = typeof vm === 'object' && vm !== null && 'id' in vm ? (vm as { id: string }).id : undefined
       } else {
-        // No fragment (e.g. did:key:z6Mk…) — pick first keyAgreement VM
         const kaVms = didDocument.keyAgreement
         if (kaVms && kaVms.length > 0) {
           const ka = typeof kaVms[0] === 'string' ? didDocument.dereferenceKey(kaVms[0], ['keyAgreement']) : kaVms[0]
@@ -324,8 +156,6 @@ export class DidCommV2KeyResolver {
         ? senderJwk
         : (senderJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
       if (vmId && !x25519.hasKeyId) {
-        // Ensure keyId is always a full DID URL, not a relative fragment like "#key-2".
-        // Relative fragments can't be resolved by the recipient without knowing the DID.
         x25519.keyId = vmId.startsWith('did:')
           ? vmId
           : vmId.startsWith('#')
@@ -336,5 +166,196 @@ export class DidCommV2KeyResolver {
     } catch {
       return null
     }
+  }
+
+  // ── Private resolution paths ──────────────────────────────────────────
+
+  /**
+   * Path 1: kid is a DID URL pointing to a keyAgreement VM on one of our Created DIDs.
+   * With independent X25519 keys, the direct kmsKeyId lookup succeeds immediately.
+   */
+  private async resolveFromCreatedDid(agentContext: AgentContext, kid: string): Promise<ResolvedRecipientKey | null> {
+    const didOnly = kid.includes('#') ? kid.split('#')[0] : kid
+    const keyRef = kid.includes('#') ? kid : `${kid}#${parseDid(kid).id}`
+
+    try {
+      const dids = agentContext.resolve(DidsApi)
+      const { didDocument, keys } = await dids.resolveCreatedDidDocumentWithKeys(didOnly)
+      const verificationMethod = didDocument.dereferenceKey(keyRef, ['keyAgreement'])
+      const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+
+      // Direct lookup — succeeds for new DIDs with independent X25519 keys
+      let kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
+        verificationMethod.id.endsWith(didDocumentRelativeKeyId)
+      )?.kmsKeyId
+
+      // Legacy fallback: X25519 VM mapped to an Ed25519 KMS key (birational map)
+      if (!kmsKeyId && publicJwk.is(Kms.X25519PublicJwk)) {
+        kmsKeyId = findLegacyEd25519KmsKeyId(didDocument, keys, publicJwk.fingerprint)
+      }
+
+      const keyId = kmsKeyId ?? (publicJwk.hasKeyId ? publicJwk.keyId : publicJwk.legacyKeyId)
+      return { recipientKey: toX25519WithKeyId(publicJwk, keyId), matchedKid: kid }
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Path 2: did:key kid for a mediator routing key. Routing keys aren't Created DIDs,
+   * so we look them up in the mediator routing repository.
+   */
+  private async resolveFromMediatorRouting(
+    agentContext: AgentContext,
+    kid: string
+  ): Promise<ResolvedRecipientKey | null> {
+    if (!kid.startsWith('did:key:')) return null
+    const kidPublicJwk = DidKey.fromDid(kid).publicJwk
+
+    try {
+      const mediatorRoutingRepository = agentContext.dependencyManager.resolve(DidCommMediatorRoutingRepository)
+
+      if (kidPublicJwk.is(Kms.Ed25519PublicJwk)) {
+        const record = await mediatorRoutingRepository.findSingleByQuery(agentContext, {
+          routingKeyFingerprints: [kidPublicJwk.fingerprint],
+        })
+        const routingKey = record?.routingKeysWithKeyId.find((rk) => kidPublicJwk.equals(rk))
+        if (routingKey) {
+          return { recipientKey: toX25519WithKeyId(routingKey, routingKey.keyId!), matchedKid: kid }
+        }
+      }
+
+      if (kidPublicJwk.is(Kms.X25519PublicJwk)) {
+        const record = await mediatorRoutingRepository.findById(
+          agentContext,
+          mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID
+        )
+        if (record) {
+          for (const routingKey of record.routingKeysWithKeyId) {
+            try {
+              const derivedX25519 = (routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+              if (derivedX25519.fingerprint === kidPublicJwk.fingerprint) {
+                return { recipientKey: toX25519WithKeyId(derivedX25519, routingKey.keyId!), matchedKid: kid }
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch {}
+
+    return null
+  }
+
+  /**
+   * Path 3: did:key kid whose public key is a VM on one of our Created DIDs
+   * (e.g. did:webvh referenced as did:key). Reverse-lookup by public key.
+   */
+  private async resolveFromReverseLookup(
+    agentContext: AgentContext,
+    kid: string
+  ): Promise<ResolvedRecipientKey | null> {
+    if (!kid.startsWith('did:key:')) return null
+    const kidPublicJwk = DidKey.fromDid(kid).publicJwk
+
+    try {
+      const documentService = agentContext.dependencyManager.resolve(DidCommDocumentService)
+      const { didDocument, keys } = await documentService.resolveCreatedDidDocumentWithKeysByRecipientKey(
+        agentContext,
+        kidPublicJwk
+      )
+
+      for (const vm of didDocument.verificationMethod ?? []) {
+        let vmJwk: Kms.PublicJwk
+        try {
+          vmJwk = getPublicJwkFromVerificationMethod(vm)
+        } catch {
+          continue
+        }
+
+        const directMatch = vmJwk.fingerprint === kidPublicJwk.fingerprint
+        const derivedMatch =
+          !directMatch &&
+          vmJwk.is(Kms.Ed25519PublicJwk) &&
+          (vmJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk).fingerprint ===
+            kidPublicJwk.fingerprint
+        if (!directMatch && !derivedMatch) continue
+
+        const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
+          vm.id.endsWith(didDocumentRelativeKeyId)
+        )?.kmsKeyId
+        const keyId = kmsKeyId ?? (vmJwk.hasKeyId ? vmJwk.keyId : vmJwk.legacyKeyId)
+        return { recipientKey: toX25519WithKeyId(vmJwk, keyId), matchedKid: kid }
+      }
+    } catch (error) {
+      if (!(error instanceof RecordNotFoundError)) throw error
+    }
+
+    return null
+  }
+
+  /**
+   * Path 4: did:key kid for an ephemeral key from a connection-less OOB exchange.
+   * Looks up by fingerprint on the OOB record metadata.
+   */
+  private async resolveFromOutOfBand(agentContext: AgentContext, kid: string): Promise<ResolvedRecipientKey | null> {
+    if (!kid.startsWith('did:key:')) return null
+    const kidPublicJwk = DidKey.fromDid(kid).publicJwk
+    const fingerprint = kidPublicJwk.fingerprint
+
+    const outOfBandRepository = agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
+    const outOfBandRecord = await outOfBandRepository.findSingleByQuery(agentContext, {
+      $or: [
+        { role: DidCommOutOfBandRole.Sender, recipientKeyFingerprints: [fingerprint] },
+        { role: DidCommOutOfBandRole.Receiver, recipientRoutingKeyFingerprint: fingerprint },
+      ],
+    })
+
+    if (outOfBandRecord?.role === DidCommOutOfBandRole.Sender) {
+      for (const service of outOfBandRecord.outOfBandInvitation.getInlineServices()) {
+        const resolvedService = getResolvedDidcommServiceWithSigningKeyId(
+          service,
+          outOfBandRecord.invitationInlineServiceKeys
+        )
+        const recipientKey = resolvedService.recipientKeys.find((rk) => rk.fingerprint === fingerprint)
+        if (!recipientKey) continue
+        const keyId = recipientKey.hasKeyId ? recipientKey.keyId : recipientKey.legacyKeyId
+        return { recipientKey: toX25519WithKeyId(recipientKey, keyId), matchedKid: kid }
+      }
+    }
+
+    if (outOfBandRecord?.role === DidCommOutOfBandRole.Receiver) {
+      const recipientRouting = outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.RecipientRouting)
+      if (!recipientRouting) return null
+
+      // Independent X25519 key — direct match
+      if (recipientRouting.keyAgreementKeyFingerprint === fingerprint) {
+        const keyId = recipientRouting.keyAgreementKeyId ?? kidPublicJwk.legacyKeyId
+        return { recipientKey: toX25519WithKeyId(kidPublicJwk, keyId), matchedKid: kid }
+      }
+      // Legacy Ed25519 fallback
+      if (recipientRouting.recipientKeyFingerprint === fingerprint) {
+        const keyId = recipientRouting.recipientKeyId ?? kidPublicJwk.legacyKeyId
+        return { recipientKey: toX25519WithKeyId(kidPublicJwk, keyId), matchedKid: kid }
+      }
+    }
+
+    return null
+  }
+
+  /**
+   * Path 5: kid is a raw KMS key id (not a DID URL).
+   */
+  private async resolveFromKms(
+    kms: Kms.KeyManagementApi,
+    kid: string
+  ): Promise<ResolvedRecipientKey | null> {
+    const kmsPublic = await kms.getPublicKey({ keyId: kid }).catch((err) => {
+      if (err instanceof Kms.KeyManagementKeyNotFoundError) return null
+      throw err
+    })
+    if (!kmsPublic) return null
+
+    const publicJwk = Kms.PublicJwk.fromPublicJwk(kmsPublic as Kms.KmsJwkPublicOkp)
+    return { recipientKey: toX25519WithKeyId(publicJwk, kid), matchedKid: kid }
   }
 }
