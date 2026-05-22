@@ -141,6 +141,15 @@ export class Mdoc {
         : [issuerCertificate.rawCertificate],
       deviceKeyInfo: DeviceKeyInfo.create({ deviceKey: DeviceKey.fromJwk(holderKey.toJson()) }),
       signingKey: issuerKey.toJson(),
+      status: options.statusInfo
+        ? {
+            statusList: {
+              idx: options.statusInfo.idx,
+              uri: options.statusInfo.uri,
+              certificate: options.statusInfo.certificate?.rawCertificate,
+            },
+          }
+        : undefined,
     })
 
     return new Mdoc(issuerSigned)
@@ -182,6 +191,7 @@ export class Mdoc {
           ),
           issuerSigned: this.issuerSigned,
           disableCertificateChainValidation: false,
+          disableStatusValidation: false,
           now: options?.now,
         },
         mdocContext

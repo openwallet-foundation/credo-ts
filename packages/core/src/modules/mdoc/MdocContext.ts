@@ -1,10 +1,10 @@
 import { p256 } from '@noble/curves/nist.js'
 import { hkdf } from '@noble/hashes/hkdf.js'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { CoseKey, coseKeyToJwk, type MdocContext } from '@owf/mdoc'
+import { coseKeyToJwkClaim } from '@owf/cose'
+import { CoseKey, type MdocContext } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, Hasher } from '../../crypto'
-import { TypedArrayEncoder } from '../../utils'
 import {
   KeyManagementApi,
   type KmsJwkPublicAsymmetric,
@@ -19,6 +19,7 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
   const kms = agentContext.resolve(KeyManagementApi)
 
   return {
+    fetch: agentContext.config.agentDependencies.fetch,
     crypto: {
       digest: async (input) => {
         const { bytes, digestAlgorithm } = input
@@ -35,26 +36,20 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
       random: (length) => {
         return crypto.getRandomValues(new Uint8Array(length))
       },
-      calculateEphemeralMacKey: async (input) => {
-        const { privateKey, publicKey, sessionTranscriptBytes } = input
+      hdkf: async (input) => {
+        const { publicKey, privateKey, salt, info, digestAlgorithm } = input
         const ikm = p256.getSharedSecret(privateKey, publicKey, true).slice(1)
-        const salt = Hasher.hash(sessionTranscriptBytes, 'sha-256')
-        const info = TypedArrayEncoder.fromUtf8String('EMacKey')
-        const hk1 = hkdf(sha256, ikm, salt, info, 32)
-
-        return CoseKey.fromJwk({
-          key_ops: ['sign', 'verify'],
-          ext: true,
-          kty: 'oct',
-          k: TypedArrayEncoder.toBase64Url(hk1),
-          alg: 'HS256',
-        })
+        const hashedSalt = Hasher.hash(salt, digestAlgorithm ?? 'sha-256')
+        return hkdf(sha256, ikm, hashedSalt, info, 32)
       },
     },
 
     cose: {
       mac0: {
         sign: async (input) => {
+          if (input.key instanceof Uint8Array) {
+            throw new MdocError('For mdoc authentication with mac0 a CoseKey is required, not a Uint8Array')
+          }
           if (!input.key.keyId) {
             throw new MdocError('Missing required keyId on CoseKey for signing mdoc')
           }
@@ -70,6 +65,11 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
         },
         verify: async (input) => {
           const { mac0, key } = input
+          if (key instanceof Uint8Array) {
+            throw new MdocError(
+              'For mdoc authentication verification with mac0 a CoseKey is required, not a Uint8Array'
+            )
+          }
 
           const algorithm = knownJwaFromCoseSignatureAlgorithm(mac0.signatureAlgorithmName)
 
@@ -93,13 +93,16 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
 
           const { signature } = await kms.sign({
             data: input.toBeSigned,
-            algorithm: coseKeyToJwk.algorithm(input.algorithm),
+            algorithm: coseKeyToJwkClaim.algorithm(input.algorithm),
             keyId: input.key.keyId,
           })
 
           return signature
         },
         verify: async (input) => {
+          if (input.key instanceof Uint8Array) {
+            throw new MdocError('For mdoc signature verification with sign1 a CoseKey is required, not a Uint8Array')
+          }
           const { verified } = await kms.verify({
             key: {
               publicJwk: input.key.jwk as KmsJwkPublicAsymmetric,
@@ -117,12 +120,16 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
     x509: {
       getIssuerNameField: (input) => {
         const { certificate, field } = input
-        const x509Certificate = X509Certificate.fromRawCertificate(certificate)
+        const x509Certificate = X509Certificate.fromRawCertificate(
+          certificate instanceof Uint8Array ? certificate : certificate[0]
+        )
         return x509Certificate.getIssuerNameField(field)
       },
       getPublicKey: async (input) => {
-        const certificate = X509Certificate.fromRawCertificate(input.certificate)
-        return CoseKey.fromJwk(certificate.publicJwk.toJson())
+        const certificate = X509Certificate.fromRawCertificate(
+          input.certificate instanceof Uint8Array ? input.certificate : input.certificate[0]
+        )
+        return CoseKey.fromJwk(certificate.publicJwk.toJson()).publicKey
       },
       verifyCertificateChain: async (input) => {
         const certificateChain = input.x5chain.map((cert) => X509Certificate.fromRawCertificate(cert).toString('pem'))

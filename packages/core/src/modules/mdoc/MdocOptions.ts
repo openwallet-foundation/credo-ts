@@ -113,4 +113,6 @@ export type MdocSignOptions = {
    */
   issuerCertificate: X509Certificate | X509Certificate[]
   holderKey: PublicJwk
+
+  statusInfo?: { idx: number; uri: string; certificate?: X509Certificate }
 }
