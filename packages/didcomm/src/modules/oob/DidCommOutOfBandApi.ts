@@ -362,14 +362,11 @@ export class DidCommOutOfBandApi {
       const didsApi = this.agentContext.dependencyManager.resolve(DidsApi)
       const { didDocument } = await didsApi.resolveCreatedDidDocumentWithKeys(config.ourDid)
       did = config.ourDid
-      const recipientKeys = didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+      // Collect fingerprints for all recipient keys (Ed25519 + X25519) without
+      // requiring birational derivation. With independent keys the X25519 key is
+      // not derived from the Ed25519 key, so mapX25519ToEd25519 would fail.
+      const recipientKeys = didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
       recipientKeyFingerprints = recipientKeys.map((k) => k.publicJwk.fingerprint)
-      const ed25519Key = recipientKeys.find((k) => k.publicJwk.is(Kms.Ed25519PublicJwk))
-      if (ed25519Key) {
-        recipientKeyFingerprints.push(
-          (ed25519Key.publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk).fingerprint
-        )
-      }
     } else {
       const numAlgo = config.peerDidNumAlgoForV2OOB ?? this.didCommModuleConfig.peerDidNumAlgoForV2OOB
       const result = await createPeerDidForV2OOB(this.agentContext, routing, numAlgo)
