@@ -9,18 +9,23 @@ import {
   type Logger,
   TypedArrayEncoder,
 } from '@credo-ts/core'
-import type { DidCommV2EncryptedMessage, DidCommV2PlaintextMessage } from './types'
+import { computeApu, computeApv } from './apuApv'
+import type { DidCommV2ContentEncryptionAlgorithm, DidCommV2EncryptedMessage, DidCommV2PlaintextMessage } from './types'
 
 export interface DidCommV2EnvelopeKeys {
   recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk>
   senderKey: Kms.PublicJwk<Kms.X25519PublicJwk>
   /** DID URL of the sender key; used as skid in JWE so recipient can resolve it. Falls back to senderKey.keyId if absent. */
   senderKeySkid?: string
+  /** Content encryption algorithm. Defaults to A256CBC-HS512 (mandatory authcrypt enc per DIDComm v2.1). */
+  contentEncryptionAlgorithm?: DidCommV2ContentEncryptionAlgorithm
 }
 
 /** Keys for anoncrypt: only recipient key; no sender (anonymous). */
 export interface DidCommV2AnoncryptKeys {
   recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk>
+  /** Content encryption algorithm. Defaults to A256GCM (legacy default; A256CBC-HS512 and XC20P are also valid). */
+  contentEncryptionAlgorithm?: DidCommV2ContentEncryptionAlgorithm
 }
 
 @injectable()
@@ -52,47 +57,66 @@ export class DidCommV2EnvelopeService {
       throw new CredoError('DIDComm v2 authcrypt requires X25519 recipient key')
     }
 
-    const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
-      key: {
-        keyAgreement: {
-          algorithm: 'ECDH-1PU+A256KW',
-          keyId: keys.senderKey.keyId,
-          externalPublicJwk: recipientX25519.toJson(),
-        },
-      },
-      encryption: { algorithm: 'A256GCM' },
-      data: plaintextBytes,
-    })
-
-    if (!iv || !tag) {
-      throw new CredoError('Expected iv and tag from KMS encrypt')
-    }
-
-    const epk = encryptedKey?.ephemeralPublicKey
-    if (!epk) {
-      throw new CredoError('ECDH-1PU must return ephemeral public key')
-    }
-
+    const enc: DidCommV2ContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256CBC-HS512'
     const skid = keys.senderKeySkid ?? keys.senderKey.keyId
-    const protectedHeader = JsonEncoder.toBase64Url({
-      typ: 'application/didcomm-encrypted+json',
-      alg: 'ECDH-1PU+A256KW',
-      enc: 'A256GCM',
-      skid,
-      epk: { kty: epk.kty, crv: epk.crv, x: epk.x },
-    })
+    const recipientKid = keys.recipientKey.keyId
+    const apu = computeApu(skid)
+    const apv = computeApv([recipientKid])
 
-    return {
-      protected: protectedHeader,
-      recipients: [
-        {
-          header: { kid: keys.recipientKey.keyId },
-          encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
+    const ephemeralKey = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+    try {
+      const epk = ephemeralKey.publicJwk
+      if (!epk || (epk as { kty?: string }).kty !== 'OKP' || (epk as { crv?: string }).crv !== 'X25519') {
+        throw new CredoError('Expected X25519 ephemeral public key')
+      }
+      const epkJwk = epk as { kty: 'OKP'; crv: 'X25519'; x: string }
+
+      const protectedHeader = JsonEncoder.toBase64Url({
+        typ: 'application/didcomm-encrypted+json',
+        alg: 'ECDH-1PU+A256KW',
+        enc,
+        skid,
+        apu: TypedArrayEncoder.toBase64Url(apu),
+        apv: TypedArrayEncoder.toBase64Url(apv),
+        epk: { kty: epkJwk.kty, crv: epkJwk.crv, x: epkJwk.x },
+      })
+
+      const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-1PU+A256KW',
+            keyId: keys.senderKey.keyId,
+            ephemeralKeyId: ephemeralKey.keyId,
+            externalPublicJwk: recipientX25519.toJson(),
+            apu,
+            apv,
+          },
         },
-      ],
-      iv: TypedArrayEncoder.toBase64Url(iv),
-      ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
-      tag: TypedArrayEncoder.toBase64Url(tag),
+        encryption: { algorithm: enc, aad: TypedArrayEncoder.fromUtf8String(protectedHeader) },
+        data: plaintextBytes,
+      })
+
+      if (!iv || !tag) {
+        throw new CredoError('Expected iv and tag from KMS encrypt')
+      }
+      if (!encryptedKey?.encrypted) {
+        throw new CredoError('Expected encrypted key from KMS for ECDH-1PU+A256KW')
+      }
+
+      return {
+        protected: protectedHeader,
+        recipients: [
+          {
+            header: { kid: recipientKid },
+            encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
+          },
+        ],
+        iv: TypedArrayEncoder.toBase64Url(iv),
+        ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
+        tag: TypedArrayEncoder.toBase64Url(tag),
+      }
+    } finally {
+      await kms.deleteKey({ keyId: ephemeralKey.keyId })
     }
   }
 
@@ -118,20 +142,37 @@ export class DidCommV2EnvelopeService {
       throw new CredoError('DIDComm v2 anoncrypt requires X25519 recipient key')
     }
 
-    const ephemeralKey = await kms.createKey({
-      type: { kty: 'OKP', crv: 'X25519' },
-    })
+    const enc: DidCommV2ContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256GCM'
+    const recipientKid = keys.recipientKey.keyId
+    const apv = computeApv([recipientKid])
+
+    const ephemeralKey = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
 
     try {
+      const epk = ephemeralKey.publicJwk
+      if (!epk || (epk as { kty?: string }).kty !== 'OKP' || (epk as { crv?: string }).crv !== 'X25519') {
+        throw new CredoError('Expected X25519 ephemeral public key')
+      }
+      const epkJwk = epk as { kty: 'OKP'; crv: 'X25519'; x: string }
+
+      const protectedHeader = JsonEncoder.toBase64Url({
+        typ: 'application/didcomm-encrypted+json',
+        alg: 'ECDH-ES+A256KW',
+        enc,
+        apv: TypedArrayEncoder.toBase64Url(apv),
+        epk: { kty: epkJwk.kty, crv: epkJwk.crv, x: epkJwk.x },
+      })
+
       const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
         key: {
           keyAgreement: {
             algorithm: 'ECDH-ES+A256KW',
             keyId: ephemeralKey.keyId,
             externalPublicJwk: recipientX25519.toJson(),
+            apv,
           },
         },
-        encryption: { algorithm: 'A256GCM' },
+        encryption: { algorithm: enc, aad: TypedArrayEncoder.fromUtf8String(protectedHeader) },
         data: plaintextBytes,
       })
 
@@ -142,24 +183,11 @@ export class DidCommV2EnvelopeService {
         throw new CredoError('Expected encrypted key from KMS for ECDH-ES+A256KW')
       }
 
-      const epk = ephemeralKey.publicJwk
-      if (!epk || (epk as { kty?: string }).kty !== 'OKP' || (epk as { crv?: string }).crv !== 'X25519') {
-        throw new CredoError('Expected X25519 ephemeral public key')
-      }
-      const epkJwk = epk as { kty: 'OKP'; crv: 'X25519'; x: string }
-
-      const protectedHeader = JsonEncoder.toBase64Url({
-        typ: 'application/didcomm-encrypted+json',
-        alg: 'ECDH-ES+A256KW',
-        enc: 'A256GCM',
-        epk: { kty: epkJwk.kty, crv: epkJwk.crv, x: epkJwk.x },
-      })
-
       return {
         protected: protectedHeader,
         recipients: [
           {
-            header: { kid: keys.recipientKey.keyId },
+            header: { kid: recipientKid },
             encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
           },
         ],

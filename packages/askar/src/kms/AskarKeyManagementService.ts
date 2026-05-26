@@ -467,11 +467,22 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           keysToFree.push(privateKey)
         }
 
+        let ephemeralKey: Key | undefined
+        if (
+          key.keyAgreement.algorithm === 'ECDH-1PU+A256KW' &&
+          'ephemeralKeyId' in key.keyAgreement &&
+          key.keyAgreement.ephemeralKeyId
+        ) {
+          ephemeralKey = (await this.getKeyAsserted(agentContext, key.keyAgreement.ephemeralKeyId)).key
+          keysToFree.push(ephemeralKey)
+        }
+
         const { contentEncryptionKey, encryptedContentEncryptionKey } = deriveEncryptionKey({
           encryption,
           keyAgreement: key.keyAgreement,
           recipientKey,
           senderKey: privateKey,
+          ephemeralKey,
         })
 
         encryptionKey = contentEncryptionKey

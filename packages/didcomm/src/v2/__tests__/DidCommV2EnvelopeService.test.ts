@@ -165,6 +165,7 @@ describe('DidCommV2EnvelopeService', () => {
     const encrypted = await envelopeService.pack(agentContext, plaintext, {
       senderKey,
       recipientKey,
+      contentEncryptionAlgorithm: 'A256GCM',
     })
 
     expect(encrypted).toMatchObject({

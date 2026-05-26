@@ -23,14 +23,18 @@ function deriveEncryptionKeyEcdh1Pu(options: {
   encryption: Kms.KmsEncryptDataEncryption
   senderKey: Key
   recipientKey: Key
+  ephemeralKey?: Key
 }) {
-  const { keyAgreement, encryption, senderKey, recipientKey } = options
+  const { keyAgreement, encryption, senderKey, recipientKey, ephemeralKey: providedEphemeralKey } = options
 
   if (senderKey.algorithm !== KeyAlgorithm.X25519 || recipientKey.algorithm !== KeyAlgorithm.X25519) {
     throw new Kms.KeyManagementAlgorithmNotSupportedError(
       'ECDH-1PU+A256KW requires X25519 sender and recipient keys',
       'askar'
     )
+  }
+  if (providedEphemeralKey && providedEphemeralKey.algorithm !== KeyAlgorithm.X25519) {
+    throw new Kms.KeyManagementAlgorithmNotSupportedError('ECDH-1PU+A256KW requires an X25519 ephemeral key', 'askar')
   }
   const askarEncryptionAlgorithm = jwkEncToAskarAlg[encryption.algorithm as keyof typeof jwkEncToAskarAlg]
   if (!askarEncryptionAlgorithm) {
@@ -40,7 +44,8 @@ function deriveEncryptionKeyEcdh1Pu(options: {
     )
   }
 
-  const ephemeralKey = Key.generate(KeyAlgorithm.X25519)
+  const ephemeralKey = providedEphemeralKey ?? Key.generate(KeyAlgorithm.X25519)
+  const ownsEphemeralKey = !providedEphemeralKey
   const apu = keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array([])
   const apv = keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array([])
   const algId = TypedArrayEncoder.fromUtf8String('ECDH-1PU+A256KW')
@@ -82,7 +87,7 @@ function deriveEncryptionKeyEcdh1Pu(options: {
       encryptedContentEncryptionKey,
     }
   } finally {
-    ephemeralKey.handle.free()
+    if (ownsEphemeralKey) ephemeralKey.handle.free()
     derivedKey.handle.free()
     // contentEncryptionKey is returned to caller; they free it.
   }
@@ -93,8 +98,9 @@ export function deriveEncryptionKey(options: {
   senderKey: Key
   recipientKey: Key
   encryption: Kms.KmsEncryptDataEncryption
+  ephemeralKey?: Key
 }) {
-  const { keyAgreement, encryption, senderKey, recipientKey } = options
+  const { keyAgreement, encryption, senderKey, recipientKey, ephemeralKey } = options
 
   const askarEncryptionAlgorithm = jwkEncToAskarAlg[encryption.algorithm as keyof typeof jwkEncToAskarAlg]
   if (!askarEncryptionAlgorithm) {
@@ -112,13 +118,14 @@ export function deriveEncryptionKey(options: {
     )
   }
 
-  // ECDH-1PU+A256KW: generate ephemeral key, derive KEK via askar.keyDeriveEcdh1pu, wrap CEK
+  // ECDH-1PU+A256KW: derive KEK via askar.keyDeriveEcdh1pu (using caller's ephemeral if supplied), wrap CEK
   if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
     return deriveEncryptionKeyEcdh1Pu({
       keyAgreement,
       encryption,
       senderKey,
       recipientKey,
+      ephemeralKey,
     })
   }
 
