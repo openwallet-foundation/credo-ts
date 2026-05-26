@@ -283,8 +283,19 @@ async function createOurService(
     ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
     recipientPublicJwk.keyId = oobRecordRecipientRouting.recipientKeyId ?? recipientPublicJwk.legacyKeyId
+
+    // Restore the independent X25519 key agreement key from metadata if available.
+    let keyAgreementKey: Kms.PublicJwk<Kms.X25519PublicJwk> | undefined
+    if (oobRecordRecipientRouting.keyAgreementKeyFingerprint) {
+      keyAgreementKey = Kms.PublicJwk.fromFingerprint(
+        oobRecordRecipientRouting.keyAgreementKeyFingerprint
+      ) as Kms.PublicJwk<Kms.X25519PublicJwk>
+      keyAgreementKey.keyId = oobRecordRecipientRouting.keyAgreementKeyId ?? keyAgreementKey.legacyKeyId
+    }
+
     routing = {
       recipientKey: recipientPublicJwk,
+      keyAgreementKey,
       routingKeys: oobRecordRecipientRouting.routingKeyFingerprints.map(
         (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       ),
@@ -305,6 +316,8 @@ async function createOurService(
       outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.RecipientRouting, {
         recipientKeyFingerprint: routing.recipientKey.fingerprint,
         recipientKeyId: routing.recipientKey.keyId,
+        keyAgreementKeyFingerprint: routing.keyAgreementKey?.fingerprint,
+        keyAgreementKeyId: routing.keyAgreementKey?.keyId,
         routingKeyFingerprints: routing.routingKeys.map((key) => key.fingerprint),
         endpoints: routing.endpoints,
         mediatorId: routing.mediatorId,

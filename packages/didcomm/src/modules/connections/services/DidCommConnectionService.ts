@@ -271,12 +271,14 @@ export class DidCommConnectionService {
       const dids = agentContext.resolve(DidsApi)
       const resolved = await dids.resolveCreatedDidDocumentWithKeys(parseDid(firstService).did)
 
-      const recipientKeys = resolved.didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+      const recipientKeys = resolved.didDocument
+        .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+        .filter(({ publicJwk }) => publicJwk.is(Kms.Ed25519PublicJwk))
       if (recipientKeys.length === 0) {
         throw new CredoError(`Unable to extract signing key for connection response from did '${firstService}'`)
       }
 
-      signingKey = recipientKeys[0].publicJwk
+      signingKey = recipientKeys[0].publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       // TOOD: we probably need an util: addKeyIdToVerificationMethodKey
       signingKey.keyId =
         resolved.keys?.find(({ didDocumentRelativeKeyId }) =>

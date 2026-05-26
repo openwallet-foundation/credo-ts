@@ -538,6 +538,24 @@ export class DidCommMessageSender {
       )
     }
 
+    // For DIDComm v2 authcrypt (ECDH-1PU): resolve the independent X25519 keyAgreement key
+    // if it has its own kmsKeyId. This avoids using the Ed25519-derived X25519 (which would
+    // produce a different public key than what skid points to with independent keys).
+    let senderKeyAgreement: { publicJwk: Kms.PublicJwk<Kms.X25519PublicJwk>; vmId: string } | undefined
+    for (const kaRef of didDocument.keyAgreement ?? []) {
+      const vm = typeof kaRef === 'string' ? didDocument.dereferenceVerificationMethod(kaRef) : kaRef
+      try {
+        const jwk = getPublicJwkFromVerificationMethod(vm)
+        if (!jwk.is(Kms.X25519PublicJwk)) continue
+        const kmsKeyId = keys?.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
+        if (kmsKeyId) {
+          jwk.keyId = kmsKeyId
+          senderKeyAgreement = { publicJwk: jwk as Kms.PublicJwk<Kms.X25519PublicJwk>, vmId: vm.id }
+          break
+        }
+      } catch {}
+    }
+
     // If the returnRoute is already set we won't override it. This allows to set the returnRoute manually if this is desired.
     const shouldAddReturnRoute =
       message.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(didDocument)
@@ -554,6 +572,39 @@ export class DidCommMessageSender {
         })()
       : services
 
+    // Resolve the sender key and skid for DIDComm v2.
+    // When an independent X25519 keyAgreement key is available, use it directly as the
+    // sender key for ECDH-1PU. Otherwise fall back to the Ed25519 key (Askar handles
+    // birational conversion at runtime). The cast is safe: downstream toX25519() handles both.
+    let effectiveSenderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> = senderVerificationMethod.publicJwk
+    if (senderKeyAgreement) {
+      effectiveSenderKey = senderKeyAgreement.publicJwk as never
+    }
+
+    // Per DIDComm v2 spec section 5.1.4, skid MUST point into the sender's keyAgreement (X25519).
+    const effectiveSenderKeySkid: string | undefined = (() => {
+      if (senderKeyAgreement) {
+        const id = senderKeyAgreement.vmId
+        if (id.startsWith('did:')) return id
+        if (id.startsWith('#')) return `${didDocument.id}${id}`
+        return undefined
+      }
+      // Legacy fallback: find first X25519 keyAgreement VM
+      const kaVm = (didDocument.keyAgreement ?? [])
+        .map((ref) => (typeof ref === 'string' ? didDocument.dereferenceVerificationMethod(ref) : ref))
+        .find((vm) => {
+          try {
+            return getPublicJwkFromVerificationMethod(vm).is(Kms.X25519PublicJwk)
+          } catch {
+            return false
+          }
+        })
+      const id = kaVm?.id ?? senderVerificationMethod.verificationMethod.id
+      if (id.startsWith('did:')) return id
+      if (id.startsWith('#')) return `${didDocument.id}${id}`
+      return undefined
+    })()
+
     // Loop trough all available services and try to send the message
     for (const service of orderedServices) {
       try {
@@ -563,28 +614,9 @@ export class DidCommMessageSender {
             agentContext,
             serviceParams: {
               service,
-              senderKey: senderVerificationMethod.publicJwk,
+              senderKey: effectiveSenderKey,
               returnRoute: shouldAddReturnRoute,
-              // Per DIDComm v2 spec section 5.1.4, skid MUST point into the sender's keyAgreement (X25519),
-              // not authentication (Ed25519). Find the keyAgreement VM whose X25519 key matches
-              // the converted Ed25519 sender key, and use its id as skid.
-              senderKeySkid: ((): string | undefined => {
-                const senderX25519 = toX25519(senderVerificationMethod.publicJwk)
-                const kaVm = (didDocument.keyAgreement ?? [])
-                  .map((ref) => (typeof ref === 'string' ? didDocument.dereferenceVerificationMethod(ref) : ref))
-                  .find((vm) => {
-                    try {
-                      const vmJwk = getPublicJwkFromVerificationMethod(vm)
-                      return vmJwk.is(Kms.X25519PublicJwk) && vmJwk.equals(senderX25519)
-                    } catch {
-                      return false
-                    }
-                  })
-                const id = kaVm?.id ?? senderVerificationMethod.verificationMethod.id
-                if (id.startsWith('did:')) return id
-                if (id.startsWith('#')) return `${didDocument.id}${id}`
-                return undefined
-              })(),
+              senderKeySkid: effectiveSenderKeySkid,
             },
             connection,
           })
