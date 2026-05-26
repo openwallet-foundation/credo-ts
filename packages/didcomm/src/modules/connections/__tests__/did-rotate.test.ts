@@ -18,6 +18,8 @@ import { getOutboundDidCommMessageContext } from '../../../getDidCommOutboundMes
 import { DidCommBasicMessage } from '../../basic-messages'
 import { DidCommDidRotateAckMessage, DidCommDidRotateProblemReportMessage, DidCommHangupMessage } from '../messages'
 import { DidCommConnectionRecord } from '../repository'
+import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
+import { DidCommDidRotateV2Service } from '../services/DidCommDidRotateV2Service'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
@@ -455,5 +457,280 @@ describe('Rotation E2E tests', () => {
       const rotationEvent = await waitForDidRotate(bobAgent, {})
       expect(rotationEvent.theirDid?.to).toBeUndefined()
     })
+  })
+})
+
+const v2AliceAgentOptions = getAgentOptions(
+  'V2 End-of-Relationship Alice',
+  { didcommVersions: ['v1', 'v2'], endpoints: ['rxjs:v2-alice'] },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
+const v2BobAgentOptions = getAgentOptions(
+  'V2 End-of-Relationship Bob',
+  { didcommVersions: ['v1', 'v2'], endpoints: ['rxjs:v2-bob'] },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
+
+describe('DIDComm V2 Ending a Relationship E2E tests', () => {
+  let aliceAgent: Agent<(typeof v2AliceAgentOptions)['modules']>
+  let bobAgent: Agent<(typeof v2BobAgentOptions)['modules']>
+  let aliceBobConnection: DidCommConnectionRecord | undefined
+  let bobAliceConnection: DidCommConnectionRecord | undefined
+
+  beforeEach(async () => {
+    aliceAgent = new Agent(v2AliceAgentOptions)
+    bobAgent = new Agent(v2BobAgentOptions)
+
+    setupSubjectTransports([aliceAgent, bobAgent])
+    await aliceAgent.initialize()
+    await bobAgent.initialize()
+    ;[aliceBobConnection, bobAliceConnection] = await makeConnection(aliceAgent, bobAgent, { didCommVersion: 'v2' })
+  })
+
+  afterEach(async () => {
+    await aliceAgent.shutdown()
+    await bobAgent.shutdown()
+  })
+
+  test('rotate-to-nothing signal terminates connection on both ends', async () => {
+    expect(aliceBobConnection?.didcommVersion).toEqual('v2')
+    expect(bobAliceConnection?.didcommVersion).toEqual('v2')
+
+    const aliceDidBeforeHangup = aliceBobConnection?.did
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection?.id! })
+
+    // Bob receives an empty/1.0/empty message carrying from_prior, processes it,
+    // and emits the same rotated event used for v1 hangup.
+    const rotationEvent = await waitForDidRotate(bobAgent, {})
+    expect(rotationEvent.theirDid?.to).toBeUndefined()
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const aliceAfter = await aliceAgent.didcomm.connections.findById(aliceBobConnection?.id!)
+    expect(aliceAfter?.did).toBeUndefined()
+    expect(aliceAfter?.previousDids).toContain(aliceDidBeforeHangup)
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const bobAfter = await bobAgent.didcomm.connections.findById(bobAliceConnection?.id!)
+    expect(bobAfter?.theirDid).toBeUndefined()
+    expect(bobAfter?.previousTheirDids).toContain(aliceDidBeforeHangup)
+  })
+
+  test('alice rotates v2 DID; basic message carries from_prior and bob updates theirDid', async () => {
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const oldAliceDid = aliceBobConnection?.did!
+
+    const didRotateV2 = aliceAgent.dependencyManager.resolve(DidCommDidRotateV2Service)
+    const routing = await aliceAgent.didcomm.mediationRecipient.getRouting({})
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const { newDid } = await didRotateV2.rotateOurDid(aliceAgent.context, aliceBobConnection!, routing)
+
+    expect(newDid).not.toEqual(oldAliceDid)
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const aliceAfterRotate = await aliceAgent.didcomm.connections.findById(aliceBobConnection?.id!)
+    expect(aliceAfterRotate?.did).toEqual(newDid)
+    expect(aliceAfterRotate?.previousDids).toContain(oldAliceDid)
+    expect(aliceAfterRotate?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.priorDid).toEqual(oldAliceDid)
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await aliceAgent.didcomm.basicMessages.sendMessage(aliceBobConnection?.id!, 'hello rotated')
+    await waitForBasicMessage(bobAgent, { content: 'hello rotated' })
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const bobAfter = await bobAgent.didcomm.connections.findById(bobAliceConnection?.id!)
+    expect(bobAfter?.theirDid).toEqual(newDid)
+    expect(bobAfter?.previousTheirDids).toContain(oldAliceDid)
+
+    // Bob replies to the new DID; this acknowledges the rotation and Alice clears the pending JWT.
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'ack')
+    await waitForBasicMessage(aliceAgent, { content: 'ack' })
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const aliceCleared = await aliceAgent.didcomm.connections.findById(aliceBobConnection?.id!)
+    expect(aliceCleared?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)).toBeFalsy()
+  })
+})
+
+const v2InviterAgentOptions = getAgentOptions(
+  'V2 Multi-Use Inviter',
+  {
+    didcommVersions: ['v1', 'v2'],
+    endpoints: ['rxjs:v2-inviter'],
+    connections: { autoAcceptConnections: true, autoCreateConnectionOnFirstMessage: true },
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
+const v2AccepterAgentOptions = getAgentOptions(
+  'V2 Multi-Use Accepter',
+  {
+    didcommVersions: ['v1', 'v2'],
+    endpoints: ['rxjs:v2-accepter'],
+    connections: { autoAcceptConnections: true, autoCreateConnectionOnFirstMessage: true },
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
+const v2AccepterTwoAgentOptions = getAgentOptions(
+  'V2 Multi-Use Accepter Two',
+  {
+    didcommVersions: ['v1', 'v2'],
+    endpoints: ['rxjs:v2-accepter-two'],
+    connections: { autoAcceptConnections: true, autoCreateConnectionOnFirstMessage: true },
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
+
+describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
+  let inviter: Agent<(typeof v2InviterAgentOptions)['modules']>
+  let accepter: Agent<(typeof v2AccepterAgentOptions)['modules']>
+  let accepterTwo: Agent<(typeof v2AccepterTwoAgentOptions)['modules']>
+
+  beforeEach(async () => {
+    inviter = new Agent(v2InviterAgentOptions)
+    accepter = new Agent(v2AccepterAgentOptions)
+    accepterTwo = new Agent(v2AccepterTwoAgentOptions)
+    setupSubjectTransports([inviter, accepter, accepterTwo])
+    await inviter.initialize()
+    await accepter.initialize()
+    await accepterTwo.initialize()
+  })
+
+  afterEach(async () => {
+    await inviter.shutdown()
+    await accepter.shutdown()
+    await accepterTwo.shutdown()
+  })
+
+  test('inviter rotates its DID per accepter; from_prior announces the rotation', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({
+      didCommVersion: 'v2',
+      multiUseInvitation: true,
+    })
+    const invitationDid = invitation.outOfBandInvitation.v2Invitation?.from
+    expect(invitationDid).toBeDefined()
+
+    const { connectionRecord: accepterConnection } = await accepter.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+    expect(accepterConnection?.theirDid).toEqual(invitationDid)
+
+    // First inbound from accepter to invitation DID triggers inviter-side auto-create + rotation.
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await accepter.didcomm.basicMessages.sendMessage(accepterConnection?.id!, 'hi from accepter')
+    await waitForBasicMessage(inviter, { content: 'hi from accepter' })
+
+    const inviterConnections = await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)
+    expect(inviterConnections.length).toBeGreaterThan(0)
+    const inviterConnection = inviterConnections[0]
+
+    expect(inviterConnection.did).not.toEqual(invitationDid)
+    expect(inviterConnection.previousDids).toContain(invitationDid)
+    const pending = inviterConnection.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)
+    expect(pending?.priorDid).toEqual(invitationDid)
+    expect(pending?.newDid).toEqual(inviterConnection.did)
+    expect(pending?.fromPriorJwt).toBeDefined()
+
+    await inviter.didcomm.basicMessages.sendMessage(inviterConnection.id, 'hi from inviter (rotated)')
+    await waitForBasicMessage(accepter, { content: 'hi from inviter (rotated)' })
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const accepterAfter = await accepter.didcomm.connections.findById(accepterConnection?.id!)
+    expect(accepterAfter?.theirDid).toEqual(inviterConnection.did)
+    expect(accepterAfter?.previousTheirDids).toContain(invitationDid)
+
+    // Accepter now replies to the inviter's new DID; inviter clears pending rotation.
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await accepter.didcomm.basicMessages.sendMessage(accepterConnection?.id!, 'ack')
+    await waitForBasicMessage(inviter, { content: 'ack' })
+
+    const inviterCleared = await inviter.didcomm.connections.findById(inviterConnection.id)
+    expect(inviterCleared?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)).toBeFalsy()
+  })
+
+  test('two accepters on the same multi-use invitation get distinct inviter DIDs (no correlator)', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({
+      didCommVersion: 'v2',
+      multiUseInvitation: true,
+    })
+    const invitationDid = invitation.outOfBandInvitation.v2Invitation?.from
+    expect(invitationDid).toBeDefined()
+
+    const { connectionRecord: firstAccepterConnection } = await accepter.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+    expect(firstAccepterConnection?.theirDid).toEqual(invitationDid)
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await accepter.didcomm.basicMessages.sendMessage(firstAccepterConnection?.id!, 'first hello')
+    await waitForBasicMessage(inviter, { content: 'first hello' })
+
+    const { connectionRecord: secondAccepterConnection } = await accepterTwo.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+    expect(secondAccepterConnection?.theirDid).toEqual(invitationDid)
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await accepterTwo.didcomm.basicMessages.sendMessage(secondAccepterConnection?.id!, 'second hello')
+    await waitForBasicMessage(inviter, { content: 'second hello' })
+
+    const inviterConnections = await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)
+    expect(inviterConnections.length).toEqual(2)
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const firstAccepterDid = (await accepter.didcomm.connections.findById(firstAccepterConnection?.id!))?.did
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const secondAccepterDid = (await accepterTwo.didcomm.connections.findById(secondAccepterConnection?.id!))?.did
+    const inviterToFirst = inviterConnections.find((c) => c.theirDid === firstAccepterDid)
+    const inviterToSecond = inviterConnections.find((c) => c.theirDid === secondAccepterDid)
+    expect(inviterToFirst).toBeDefined()
+    expect(inviterToSecond).toBeDefined()
+    if (!inviterToFirst || !inviterToSecond) throw new Error('inviter connections not matched to accepters')
+
+    // Neither inviter-side connection reuses the invitation DID, and the two
+    // connections have distinct per-pair DIDs so accepters cannot be correlated through it.
+    expect(inviterToFirst.did).not.toEqual(invitationDid)
+    expect(inviterToSecond.did).not.toEqual(invitationDid)
+    expect(inviterToFirst.did).not.toEqual(inviterToSecond.did)
+
+    expect(inviterToFirst.previousDids).toContain(invitationDid)
+    expect(inviterToSecond.previousDids).toContain(invitationDid)
+
+    const firstPending = inviterToFirst.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)
+    const secondPending = inviterToSecond.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)
+    expect(firstPending?.priorDid).toEqual(invitationDid)
+    expect(secondPending?.priorDid).toEqual(invitationDid)
+    expect(firstPending?.newDid).toEqual(inviterToFirst.did)
+    expect(secondPending?.newDid).toEqual(inviterToSecond.did)
+    expect(firstPending?.fromPriorJwt).toBeDefined()
+    expect(secondPending?.fromPriorJwt).toBeDefined()
+    expect(firstPending?.fromPriorJwt).not.toEqual(secondPending?.fromPriorJwt)
+
+    // Each accepter receives the inviter's own per-pair rotated DID, not the invitation DID nor the
+    // other accepter's per-pair DID.
+    await inviter.didcomm.basicMessages.sendMessage(inviterToFirst.id, 'hello first (rotated)')
+    await inviter.didcomm.basicMessages.sendMessage(inviterToSecond.id, 'hello second (rotated)')
+    await waitForBasicMessage(accepter, { content: 'hello first (rotated)' })
+    await waitForBasicMessage(accepterTwo, { content: 'hello second (rotated)' })
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const accepterAfter = await accepter.didcomm.connections.findById(firstAccepterConnection?.id!)
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const accepterTwoAfter = await accepterTwo.didcomm.connections.findById(secondAccepterConnection?.id!)
+    expect(accepterAfter?.theirDid).toEqual(inviterToFirst.did)
+    expect(accepterTwoAfter?.theirDid).toEqual(inviterToSecond.did)
+    expect(accepterAfter?.theirDid).not.toEqual(accepterTwoAfter?.theirDid)
   })
 })
