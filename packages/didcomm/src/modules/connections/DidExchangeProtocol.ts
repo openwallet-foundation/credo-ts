@@ -129,7 +129,8 @@ export class DidExchangeProtocol {
     const message = new DidCommDidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
     const signingKeys = didDocument
-      .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+      .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+      .filter(({ publicJwk }) => publicJwk.is(Kms.Ed25519PublicJwk))
       .map(({ publicJwk, verificationMethod }) => {
         // Bind the kmsKeyIds
         const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
@@ -138,7 +139,7 @@ export class DidExchangeProtocol {
 
         publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
 
-        return publicJwk
+        return publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       })
 
     // Create sign attachment containing didDoc
@@ -329,15 +330,18 @@ export class DidExchangeProtocol {
 
       invitationRecipientKeys.push(
         ...resolved.didDocument
-          .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
-          .filter(({ verificationMethod }) => v1RecipientKeyVmIds.has(verificationMethod.id))
+          .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+          .filter(
+            ({ publicJwk, verificationMethod }) =>
+              publicJwk.is(Kms.Ed25519PublicJwk) && v1RecipientKeyVmIds.has(verificationMethod.id)
+          )
           .map(({ publicJwk, verificationMethod }) => {
             const kmsKeyId = resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
               verificationMethod.id.endsWith(didDocumentRelativeKeyId)
             )?.kmsKeyId
 
             publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
-            return publicJwk
+            return publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
           })
       )
     }

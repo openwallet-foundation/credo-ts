@@ -6,7 +6,7 @@ import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
 import type { DidCommOutOfBandRecord } from '../oob/repository'
-import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
+import { DidCommRoutingService, type RemoveRoutingOptions } from '../routing/services/DidCommRoutingService'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
@@ -521,10 +521,11 @@ export class DidCommConnectionsApi {
       const { didDocument } = await this.didResolverService.resolve(this.agentContext, did)
 
       if (didDocument) {
+        const recipientKeys = didDocument
+          .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+          .map(({ publicJwk }) => publicJwk) as RemoveRoutingOptions['recipientKeys']
         await this.routingService.removeRouting(this.agentContext, {
-          recipientKeys: didDocument
-            .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
-            .map(({ publicJwk }) => publicJwk),
+          recipientKeys,
           mediatorId: connection.mediatorId,
         })
       }
@@ -551,10 +552,11 @@ export class DidCommConnectionsApi {
       const mediatorRecord = await getMediationRecordForDidDocument(this.agentContext, did.didDocument)
 
       if (mediatorRecord) {
+        const recipientKeys = did.didDocument
+          .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+          .map(({ publicJwk }) => publicJwk) as RemoveRoutingOptions['recipientKeys']
         await this.routingService.removeRouting(this.agentContext, {
-          recipientKeys: did.didDocument
-            .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
-            .map(({ publicJwk }) => publicJwk),
+          recipientKeys,
           mediatorId: mediatorRecord.id,
         })
       }
