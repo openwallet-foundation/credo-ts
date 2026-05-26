@@ -26,13 +26,26 @@ export class DidCommRoutingService {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
     const didcommConfig = agentContext.resolve(DidCommModuleConfig)
 
-    // Create and store new key
-    const recipientKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+    // Create Ed25519 key for authentication/signing (used by V1 and V2).
+    const createdKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+    const recipientKey = Kms.PublicJwk.fromPublicJwk(createdKey.publicJwk)
+    recipientKey.keyId = createdKey.keyId
+
+    // Create separate X25519 key for V2 key agreement (ECDH-ES / ECDH-1PU) only
+    // when the agent supports DIDComm V2. V1-only agents derive X25519 from Ed25519
+    // at runtime via Askar's birational map, so no separate key is needed.
+    let keyAgreementKey: Kms.PublicJwk<Kms.X25519PublicJwk> | undefined
+    if (didcommConfig.acceptsV2) {
+      const createdX25519Key = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      keyAgreementKey = Kms.PublicJwk.fromPublicJwk(createdX25519Key.publicJwk)
+      keyAgreementKey.keyId = createdX25519Key.keyId
+    }
 
     let routing: DidCommRouting = {
       endpoints: didcommConfig.endpoints,
       routingKeys: [],
-      recipientKey: Kms.PublicJwk.fromPublicJwk(recipientKey.publicJwk),
+      recipientKey,
+      keyAgreementKey,
     }
 
     // Extend routing with mediator keys (if applicable)
@@ -72,9 +85,11 @@ export interface GetRoutingOptions {
 
 export interface RemoveRoutingOptions {
   /**
-   * Keys to remove routing from
+   * Recipient keys to remove routing from. May include both Ed25519 and X25519 keys.
+   * V1 mediators only use Ed25519 keys; V2 mediators use both directly (as did:key).
+   * X25519 keys are passed through as-is without birational derivation.
    */
-  recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+  recipientKeys: (Kms.PublicJwk<Kms.Ed25519PublicJwk> | Kms.PublicJwk<Kms.X25519PublicJwk>)[]
 
   /**
    * Identifier of the mediator used when routing has been set up
