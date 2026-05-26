@@ -1,10 +1,10 @@
 import { CredoError } from '../../error'
 import { isObject } from '../../utils/object'
-import type { DataIntegrityCryptosuiteProof, DataIntegrityUnsecuredDocument } from './DataIntegrityProof'
+import type { W3cDataIntegrityCryptosuiteProof, W3cDataIntegrityUnsecuredDocument } from './W3cDataIntegrityProof'
 
 // ─── Processing Error Taxonomy ───────────────────────────────────────────────
 
-export enum DataIntegrityProcessingErrorCode {
+export enum W3cDataIntegrityProcessingErrorCode {
   ParsingError = 'https://www.w3.org/ns/credentials#PARSING_ERROR',
   ProofGenerationError = 'https://w3id.org/security#PROOF_GENERATION_ERROR',
   ProofVerificationError = 'https://w3id.org/security#PROOF_VERIFICATION_ERROR',
@@ -15,74 +15,74 @@ export enum DataIntegrityProcessingErrorCode {
 
 // ─── Public Issue Types ─────────────────────────────────────────────────────
 
-export interface DataIntegrityProcessingIssue {
-  type: DataIntegrityProcessingErrorCode
+export interface W3cDataIntegrityProcessingIssue {
+  type: W3cDataIntegrityProcessingErrorCode
   title: string
   detail?: string
 }
 
-export type DataIntegrityIssueList = [DataIntegrityProcessingIssue, ...DataIntegrityProcessingIssue[]]
+export type W3cDataIntegrityIssueList = [W3cDataIntegrityProcessingIssue, ...W3cDataIntegrityProcessingIssue[]]
 
 // ─── Public Result Types ────────────────────────────────────────────────────
 
-export class DataIntegrityProcessingError extends CredoError {
-  public readonly issue: DataIntegrityProcessingIssue
+export class W3cDataIntegrityProcessingError extends CredoError {
+  public readonly issue: W3cDataIntegrityProcessingIssue
 
-  public constructor(code: DataIntegrityProcessingErrorCode, title: string, detail?: string) {
+  public constructor(code: W3cDataIntegrityProcessingErrorCode, title: string, detail?: string) {
     super(title)
     this.issue = createIssue(code, title, detail)
   }
 }
 
-export interface DataIntegrityCreateSuccess {
+export interface W3cDataIntegrityCreateSuccess {
   created: true
-  proof: DataIntegrityCryptosuiteProof
+  proof: W3cDataIntegrityCryptosuiteProof
 }
 
-export interface DataIntegrityCreateFailure {
+export interface W3cDataIntegrityCreateFailure {
   created: false
   proof: null
-  errors: DataIntegrityIssueList
+  errors: W3cDataIntegrityIssueList
 }
 
-export type DataIntegrityCreateResult = DataIntegrityCreateSuccess | DataIntegrityCreateFailure
+export type W3cDataIntegrityCreateResult = W3cDataIntegrityCreateSuccess | W3cDataIntegrityCreateFailure
 
-export type DataIntegrityVerifySuccess = {
+export type W3cDataIntegrityVerifySuccess = {
   verified: true
-  verifiedDocument: DataIntegrityUnsecuredDocument
+  verifiedDocument: W3cDataIntegrityUnsecuredDocument
   mediaType: string | null
 }
 
-export type DataIntegrityVerifyFailure = {
+export type W3cDataIntegrityVerifyFailure = {
   verified: false
   verifiedDocument: null
   mediaType: null
-  errors: DataIntegrityIssueList
+  errors: W3cDataIntegrityIssueList
 }
 
-export type DataIntegrityVerifyResult = DataIntegrityVerifySuccess | DataIntegrityVerifyFailure
+export type W3cDataIntegrityVerifyResult = W3cDataIntegrityVerifySuccess | W3cDataIntegrityVerifyFailure
 
 // ─── Issue Constructors ─────────────────────────────────────────────────────
 
 export function createIssue(
-  code: DataIntegrityProcessingErrorCode,
+  code: W3cDataIntegrityProcessingErrorCode,
   title: string,
   detail?: string
-): DataIntegrityProcessingIssue {
+): W3cDataIntegrityProcessingIssue {
   return { type: code, title, detail }
 }
 
-export function createProofVerificationIssue(title: string, detail?: string): DataIntegrityProcessingIssue {
-  return createIssue(DataIntegrityProcessingErrorCode.ProofVerificationError, title, detail)
+export function createProofVerificationIssue(title: string, detail?: string): W3cDataIntegrityProcessingIssue {
+  return createIssue(W3cDataIntegrityProcessingErrorCode.ProofVerificationError, title, detail)
 }
 
 // ─── Type Guards ────────────────────────────────────────────────────────────
 
-export function isDataIntegrityProblemType(type: string): type is DataIntegrityProcessingErrorCode {
-  return Object.values(DataIntegrityProcessingErrorCode).includes(type as DataIntegrityProcessingErrorCode)
+export function isW3cDataIntegrityProblemType(type: string): type is W3cDataIntegrityProcessingErrorCode {
+  return Object.values(W3cDataIntegrityProcessingErrorCode).includes(type as W3cDataIntegrityProcessingErrorCode)
 }
 
-export function isDataIntegrityProcessingIssue(issue: unknown): issue is DataIntegrityProcessingIssue {
+export function isW3cDataIntegrityProcessingIssue(issue: unknown): issue is W3cDataIntegrityProcessingIssue {
   if (!isObject(issue)) return false
 
   const candidate = issue as Record<string, unknown>
@@ -92,9 +92,9 @@ export function isDataIntegrityProcessingIssue(issue: unknown): issue is DataInt
 // ─── Verification Result Builder ────────────────────────────────────────────
 
 export function createInvalidResult(
-  issue: DataIntegrityProcessingIssue,
-  additionalIssues: DataIntegrityProcessingIssue[] = []
-): DataIntegrityVerifyFailure {
+  issue: W3cDataIntegrityProcessingIssue,
+  additionalIssues: W3cDataIntegrityProcessingIssue[] = []
+): W3cDataIntegrityVerifyFailure {
   return {
     verified: false,
     verifiedDocument: null,
@@ -107,46 +107,46 @@ export function createInvalidResult(
 
 const DEFAULT_VERIFICATION_FAILURE_MESSAGE = 'Data Integrity proof verification failed'
 
-function formatIssueSummary(error: DataIntegrityProcessingIssue) {
+function formatIssueSummary(error: W3cDataIntegrityProcessingIssue) {
   return `[${error.type}] ${error.title}`
 }
 
-function formatIssueDetail(error: DataIntegrityProcessingIssue) {
+function formatIssueDetail(error: W3cDataIntegrityProcessingIssue) {
   return error.detail ? `${formatIssueSummary(error)}: ${error.detail}` : formatIssueSummary(error)
 }
 
-export function formatDataIntegrityIssueSummary(errors: DataIntegrityProcessingIssue[]): string {
+export function formatW3cDataIntegrityIssueSummary(errors: W3cDataIntegrityProcessingIssue[]): string {
   return errors.map(formatIssueSummary).join('; ')
 }
 
-export function formatDataIntegrityIssueDetail(errors: DataIntegrityProcessingIssue[]): string {
+export function formatW3cDataIntegrityIssueDetail(errors: W3cDataIntegrityProcessingIssue[]): string {
   const detail = errors.map(formatIssueDetail).join('; ')
   return detail || DEFAULT_VERIFICATION_FAILURE_MESSAGE
 }
 
 // ─── CredoError Conversion ──────────────────────────────────────────────────
 
-export function createDataIntegrityCredoError(errors: DataIntegrityIssueList): CredoError {
-  const message = formatDataIntegrityIssueDetail(errors)
+export function createW3cDataIntegrityCredoError(errors: W3cDataIntegrityIssueList): CredoError {
+  const message = formatW3cDataIntegrityIssueDetail(errors)
 
   // Keep defensive runtime handling for malformed or force-cast empty issue lists.
   if (errors.length === 0) {
     return new CredoError(message)
   }
 
-  const cause = new CredoError(`Data Integrity processing issues: ${formatDataIntegrityIssueSummary(errors)}`)
+  const cause = new CredoError(`Data Integrity processing issues: ${formatW3cDataIntegrityIssueSummary(errors)}`)
   return new CredoError(message, { cause })
 }
 
 // ─── Fail-Fast Assertions ────────────────────────────────────────────────────
-export function assertCreated(result: DataIntegrityCreateResult): asserts result is DataIntegrityCreateSuccess {
+export function assertCreated(result: W3cDataIntegrityCreateResult): asserts result is W3cDataIntegrityCreateSuccess {
   if (!result.created) {
-    throw createDataIntegrityCredoError(result.errors)
+    throw createW3cDataIntegrityCredoError(result.errors)
   }
 }
 
-export function assertVerified(result: DataIntegrityVerifyResult): asserts result is DataIntegrityVerifySuccess {
+export function assertVerified(result: W3cDataIntegrityVerifyResult): asserts result is W3cDataIntegrityVerifySuccess {
   if (!result.verified) {
-    throw createDataIntegrityCredoError(result.errors)
+    throw createW3cDataIntegrityCredoError(result.errors)
   }
 }

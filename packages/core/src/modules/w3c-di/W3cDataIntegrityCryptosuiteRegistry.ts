@@ -2,18 +2,18 @@ import type { AgentContext } from '../../agent/context'
 import { CredoError } from '../../error'
 import { injectAll, injectable } from '../../plugins'
 import { PublicJwk, type SupportedPublicJwkClass } from '../kms/jwk/PublicJwk'
-import type { DataIntegrityCryptosuiteInfo } from './cryptosuites/types'
-import { DataIntegrityCryptosuiteToken } from './cryptosuites/types'
+import type { W3cDataIntegrityCryptosuiteInfo } from './cryptosuites/types'
+import { W3cDataIntegrityCryptosuiteToken } from './cryptosuites/types'
 
 @injectable()
 export class W3cDataIntegrityCryptosuiteRegistry {
-  private cryptosuiteMapping: DataIntegrityCryptosuiteInfo[]
+  private cryptosuiteMapping: W3cDataIntegrityCryptosuiteInfo[]
 
   public constructor(
-    @injectAll(DataIntegrityCryptosuiteToken) cryptosuites: Array<DataIntegrityCryptosuiteInfo | 'default'>
+    @injectAll(W3cDataIntegrityCryptosuiteToken) cryptosuites: Array<W3cDataIntegrityCryptosuiteInfo | 'default'>
   ) {
     this.cryptosuiteMapping = cryptosuites.filter(
-      (cryptosuite): cryptosuite is DataIntegrityCryptosuiteInfo => cryptosuite !== 'default'
+      (cryptosuite): cryptosuite is W3cDataIntegrityCryptosuiteInfo => cryptosuite !== 'default'
     )
   }
 

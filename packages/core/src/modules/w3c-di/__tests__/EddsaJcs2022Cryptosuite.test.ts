@@ -6,12 +6,12 @@ import { MultiBaseEncoder, TypedArrayEncoder } from '../../../utils'
 import { DidsApi } from '../../dids'
 import { KeyManagementApi } from '../../kms'
 import { EddsaJcs2022Cryptosuite } from '../cryptosuites/eddsa-jcs-2022/EddsaJcs2022Cryptosuite'
-import { DataIntegrityProcessingError, DataIntegrityProcessingErrorCode } from '../DataIntegrityError'
+import { W3cDataIntegrityProcessingError, W3cDataIntegrityProcessingErrorCode } from '../W3cDataIntegrityError'
 import type {
-  DataIntegrityCryptosuiteProof,
-  DataIntegrityCryptosuiteProofOptions,
-  DataIntegrityUnsecuredDocument,
-} from '../DataIntegrityProof'
+  W3cDataIntegrityCryptosuiteProof,
+  W3cDataIntegrityCryptosuiteProofOptions,
+  W3cDataIntegrityUnsecuredDocument,
+} from '../W3cDataIntegrityProof'
 
 describe('EddsaJcs2022Cryptosuite', () => {
   let agentContext: AgentContext
@@ -27,7 +27,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
   const mockVerificationMethod =
     'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
-  const mockProofOptions: DataIntegrityCryptosuiteProofOptions = {
+  const mockProofOptions: W3cDataIntegrityCryptosuiteProofOptions = {
     type: 'DataIntegrityProof',
     cryptosuite: 'eddsa-jcs-2022',
     proofPurpose: 'assertionMethod',
@@ -42,7 +42,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
   const mockProofValue = MultiBaseEncoder.encode(new Uint8Array(64).fill(7), 'base58btc')
 
-  const specCredential: DataIntegrityUnsecuredDocument = {
+  const specCredential: W3cDataIntegrityUnsecuredDocument = {
     '@context': ['https://www.w3.org/ns/credentials/v2', 'https://www.w3.org/ns/credentials/examples/v2'],
     id: 'urn:uuid:58172aac-d8ba-11ed-83dd-0b3aef56cc33',
     type: ['VerifiableCredential', 'AlumniCredential'],
@@ -56,7 +56,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
     },
   }
 
-  const specProofOptions: DataIntegrityCryptosuiteProofOptions = {
+  const specProofOptions: W3cDataIntegrityCryptosuiteProofOptions = {
     type: 'DataIntegrityProof',
     cryptosuite: 'eddsa-jcs-2022',
     created: '2023-02-24T23:36:38Z',
@@ -138,7 +138,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
     // Spec: VC DI EdDSA v1.0 §3.3.1 steps 1, 2, 7, and 8 require cloning proof options, copying document @context into the proof, and returning a proof with proofValue.
     it('injects document @context into the returned proof and preserves other proof options', async () => {
       const documentContext = ['https://w3id.org/security/data-integrity/v2']
-      const unsecuredDocument: DataIntegrityUnsecuredDocument = {
+      const unsecuredDocument: W3cDataIntegrityUnsecuredDocument = {
         '@context': documentContext,
         type: 'VerifiableCredential',
         issuer: 'did:example:issuer',
@@ -164,7 +164,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
     // Spec: VC DI EdDSA v1.0 §3.3.1 step 2 only injects @context when the unsecured document contains it.
     it('does not add @context to returned proof when document has no @context', async () => {
-      const unsecuredDocument: DataIntegrityUnsecuredDocument = {
+      const unsecuredDocument: W3cDataIntegrityUnsecuredDocument = {
         type: 'AttestedResource',
         id: 'did:webvh:example/resources/zExample',
       }
@@ -175,7 +175,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
     // Spec: VC DI EdDSA v1.0 §3.3.1 step 1 requires proof to be a clone of options, so the original options object must not be mutated.
     it('does not mutate the original proof options', async () => {
-      const options: DataIntegrityCryptosuiteProofOptions = {
+      const options: W3cDataIntegrityCryptosuiteProofOptions = {
         ...mockProofOptions,
         created: '2026-05-14T12:00:00Z',
       }
@@ -235,12 +235,12 @@ describe('EddsaJcs2022Cryptosuite', () => {
     // Spec: VC DI EdDSA v1.0 §3.3.2 step 4.1 requires the secured document @context to start with the proof @context in the same order before continuing.
     it('continues verification when the unsecured document context starts with the proof context in the same order', async () => {
       const proofContext = ['https://w3id.org/security/data-integrity/v2']
-      const proofWithContext: DataIntegrityCryptosuiteProof = {
+      const proofWithContext: W3cDataIntegrityCryptosuiteProof = {
         ...mockProofOptions,
         '@context': proofContext,
         proofValue: mockProofValue,
       }
-      const inputDocument: DataIntegrityUnsecuredDocument = {
+      const inputDocument: W3cDataIntegrityUnsecuredDocument = {
         '@context': [...proofContext, 'https://example.org/extra-context'],
         type: 'VerifiableCredential',
         issuer: 'did:example:issuer',
@@ -260,12 +260,12 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
     // Spec: VC DI EdDSA v1.0 §3.3.2 step 4.1 requires an immediate false result when the document context does not start with the proof context.
     it('returns false when the unsecured document context does not start with the proof context', async () => {
-      const proofWithContext: DataIntegrityCryptosuiteProof = {
+      const proofWithContext: W3cDataIntegrityCryptosuiteProof = {
         ...mockProofOptions,
         '@context': ['https://w3id.org/security/data-integrity/v2'],
         proofValue: mockProofValue,
       }
-      const inputDocument: DataIntegrityUnsecuredDocument = {
+      const inputDocument: W3cDataIntegrityUnsecuredDocument = {
         '@context': ['https://different.context/v1'],
         type: 'VerifiableCredential',
       }
@@ -282,12 +282,12 @@ describe('EddsaJcs2022Cryptosuite', () => {
     // Spec: VC DI EdDSA v1.0 §3.3.2 step 3 decodes proofValue before step 4 context processing.
     // Even if context prefix would fail in step 4.1, an invalid proofValue MUST fail at decode first.
     it('throws on invalid proofValue before evaluating context prefix mismatch', async () => {
-      const proofWithContext: DataIntegrityCryptosuiteProof = {
+      const proofWithContext: W3cDataIntegrityCryptosuiteProof = {
         ...mockProofOptions,
         '@context': ['https://w3id.org/security/data-integrity/v2'],
         proofValue: 'not-a-valid-multibase',
       }
-      const inputDocument: DataIntegrityUnsecuredDocument = {
+      const inputDocument: W3cDataIntegrityUnsecuredDocument = {
         '@context': ['https://different.context/v1'],
         type: 'VerifiableCredential',
       }
@@ -302,12 +302,12 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
     // Spec: VC DI EdDSA v1.0 §3.3.2 step 4.1 requires a false result when proof @context has more entries than document @context.
     it('returns false when the proof context has more entries than the unsecured document context', async () => {
-      const proofWithContext: DataIntegrityCryptosuiteProof = {
+      const proofWithContext: W3cDataIntegrityCryptosuiteProof = {
         ...mockProofOptions,
         '@context': ['https://ctx1.example/v1', 'https://ctx2.example/v1'],
         proofValue: mockProofValue,
       }
-      const inputDocument: DataIntegrityUnsecuredDocument = {
+      const inputDocument: W3cDataIntegrityUnsecuredDocument = {
         '@context': ['https://ctx1.example/v1'],
         type: 'VerifiableCredential',
       }
@@ -325,12 +325,12 @@ describe('EddsaJcs2022Cryptosuite', () => {
     it('restores proof @context onto the verified document before transformation', async () => {
       const proofContext = ['https://w3id.org/security/data-integrity/v2']
 
-      const proofWithContext: DataIntegrityCryptosuiteProof = {
+      const proofWithContext: W3cDataIntegrityCryptosuiteProof = {
         ...mockProofOptions,
         '@context': proofContext,
         proofValue: mockProofValue,
       }
-      const inputDocument: DataIntegrityUnsecuredDocument = {
+      const inputDocument: W3cDataIntegrityUnsecuredDocument = {
         '@context': [...proofContext, 'https://example.org/extra-context'],
         type: 'VerifiableCredential',
         issuer: 'did:example:issuer',
@@ -356,11 +356,11 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
     // Spec: VC DI EdDSA v1.0 §3.3.2 step 4 is skipped when proofOptions does not contain @context, even if the unsecured document contains @context.
     it('skips @context congruency when proof omits @context and preserves the unsecured document as verifiedDocument', async () => {
-      const proofWithoutContext: DataIntegrityCryptosuiteProof = {
+      const proofWithoutContext: W3cDataIntegrityCryptosuiteProof = {
         ...mockProofOptions,
         proofValue: mockProofValue,
       }
-      const inputDocument: DataIntegrityUnsecuredDocument = {
+      const inputDocument: W3cDataIntegrityUnsecuredDocument = {
         '@context': ['https://www.w3.org/ns/credentials/v2'],
         type: 'AttestedResource',
         id: 'did:webvh:example/resources/zExample',
@@ -396,12 +396,12 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
     // Spec: VC DI EdDSA v1.0 §3.3.2 step 4.1 requires a false result when proofOptions contains @context but the unsecured document does not.
     it('returns false when proof options include @context but the unsecured document omits it', async () => {
-      const proofWithContext: DataIntegrityCryptosuiteProof = {
+      const proofWithContext: W3cDataIntegrityCryptosuiteProof = {
         ...mockProofOptions,
         '@context': ['https://www.w3.org/ns/credentials/v2'],
         proofValue: mockProofValue,
       }
-      const inputDocument: DataIntegrityUnsecuredDocument = {
+      const inputDocument: W3cDataIntegrityUnsecuredDocument = {
         type: 'VerifiableCredential',
       }
 
@@ -418,12 +418,12 @@ describe('EddsaJcs2022Cryptosuite', () => {
     it('handles @context as string in proof without error and preserves the restored context', async () => {
       const contextString = 'https://w3id.org/security/data-integrity/v2'
 
-      const proofWithContext: DataIntegrityCryptosuiteProof = {
+      const proofWithContext: W3cDataIntegrityCryptosuiteProof = {
         ...mockProofOptions,
         '@context': contextString,
         proofValue: mockProofValue,
       }
-      const inputDocument: DataIntegrityUnsecuredDocument = {
+      const inputDocument: W3cDataIntegrityUnsecuredDocument = {
         '@context': contextString,
         type: 'VerifiableCredential',
       }
@@ -455,13 +455,13 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
     // Spec: VC DI EdDSA v1.0 §§3.3.1 + 3.3.2 round-trip: a proof produced by createProof verifies on the same unsecured document.
     it('creates a proof that verifyProof accepts for the same unsecured document', async () => {
-      const unsecuredDocument: DataIntegrityUnsecuredDocument = {
+      const unsecuredDocument: W3cDataIntegrityUnsecuredDocument = {
         '@context': ['https://www.w3.org/ns/credentials/v2'],
         id: 'urn:example:round-trip',
         type: 'VerifiableCredential',
       }
 
-      const options: DataIntegrityCryptosuiteProofOptions = {
+      const options: W3cDataIntegrityCryptosuiteProofOptions = {
         ...mockProofOptions,
         created: '2026-05-14T12:00:00Z',
       }
@@ -519,14 +519,14 @@ describe('EddsaJcs2022Cryptosuite', () => {
           }
         )
 
-      expect(transformation).toThrow(DataIntegrityProcessingError)
+      expect(transformation).toThrow(W3cDataIntegrityProcessingError)
 
       try {
         transformation()
       } catch (error) {
-        expect(error).toBeInstanceOf(DataIntegrityProcessingError)
-        expect((error as DataIntegrityProcessingError).issue.type).toBe(
-          DataIntegrityProcessingErrorCode.ProofTransformationError
+        expect(error).toBeInstanceOf(W3cDataIntegrityProcessingError)
+        expect((error as W3cDataIntegrityProcessingError).issue.type).toBe(
+          W3cDataIntegrityProcessingErrorCode.ProofTransformationError
         )
       }
     })
@@ -542,14 +542,14 @@ describe('EddsaJcs2022Cryptosuite', () => {
           }
         )
 
-      expect(transformation).toThrow(DataIntegrityProcessingError)
+      expect(transformation).toThrow(W3cDataIntegrityProcessingError)
 
       try {
         transformation()
       } catch (error) {
-        expect(error).toBeInstanceOf(DataIntegrityProcessingError)
-        expect((error as DataIntegrityProcessingError).issue.type).toBe(
-          DataIntegrityProcessingErrorCode.ProofTransformationError
+        expect(error).toBeInstanceOf(W3cDataIntegrityProcessingError)
+        expect((error as W3cDataIntegrityProcessingError).issue.type).toBe(
+          W3cDataIntegrityProcessingErrorCode.ProofTransformationError
         )
       }
     })
@@ -567,14 +567,14 @@ describe('EddsaJcs2022Cryptosuite', () => {
           }
         )
 
-      expect(transformation).toThrow(DataIntegrityProcessingError)
+      expect(transformation).toThrow(W3cDataIntegrityProcessingError)
 
       try {
         transformation()
       } catch (error) {
-        expect(error).toBeInstanceOf(DataIntegrityProcessingError)
-        expect((error as DataIntegrityProcessingError).issue.type).toBe(
-          DataIntegrityProcessingErrorCode.ProofTransformationError
+        expect(error).toBeInstanceOf(W3cDataIntegrityProcessingError)
+        expect((error as W3cDataIntegrityProcessingError).issue.type).toBe(
+          W3cDataIntegrityProcessingErrorCode.ProofTransformationError
         )
       }
     })
@@ -590,14 +590,14 @@ describe('EddsaJcs2022Cryptosuite', () => {
           mockProofOptions
         )
 
-      expect(transformation).toThrow(DataIntegrityProcessingError)
+      expect(transformation).toThrow(W3cDataIntegrityProcessingError)
 
       try {
         transformation()
       } catch (error) {
-        expect(error).toBeInstanceOf(DataIntegrityProcessingError)
-        expect((error as DataIntegrityProcessingError).issue.type).toBe(
-          DataIntegrityProcessingErrorCode.ProofTransformationError
+        expect(error).toBeInstanceOf(W3cDataIntegrityProcessingError)
+        expect((error as W3cDataIntegrityProcessingError).issue.type).toBe(
+          W3cDataIntegrityProcessingErrorCode.ProofTransformationError
         )
       }
     })
@@ -676,7 +676,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
     // only what is present in proofOptions.
     it('does not inject @context from an external document — only proofOptions is an input', () => {
       const proofOptions = { ...mockProofOptions } // no @context
-      const _unsecuredDocument: DataIntegrityUnsecuredDocument = {
+      const _unsecuredDocument: W3cDataIntegrityUnsecuredDocument = {
         '@context': ['https://www.w3.org/ns/credentials/v2'],
         type: 'VerifiableCredential',
       }
@@ -689,7 +689,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
     // Spec: VC DI EdDSA v1.0 §3.3.5 step 3 requires an error for invalid created dateTime values.
     it('throws when created is not a valid RFC3339 dateTime', () => {
-      const invalidOptions: DataIntegrityCryptosuiteProofOptions = {
+      const invalidOptions: W3cDataIntegrityCryptosuiteProofOptions = {
         ...mockProofOptions,
         created: 'not-a-datetime',
       }
@@ -701,7 +701,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
     // dateTimeStamp is a derived type of dateTime where explicitTimezone is required.
     // A dateTime without timezone offset (e.g. '2023-02-24T23:36:38') is valid dateTime but not dateTimeStamp.
     it('throws when created is not valid dateTimeStamp with timezone offset', () => {
-      const invalidOptions: DataIntegrityCryptosuiteProofOptions = {
+      const invalidOptions: W3cDataIntegrityCryptosuiteProofOptions = {
         ...mockProofOptions,
         created: '2023-02-24T23:36:38',
       }
@@ -711,7 +711,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
     // Spec: VC DI EdDSA v1.0 §3.3.5 step 3 — calendar validation must reject impossible dates.
     it('throws when created is November 31st (non-existent day)', () => {
-      const invalidOptions: DataIntegrityCryptosuiteProofOptions = {
+      const invalidOptions: W3cDataIntegrityCryptosuiteProofOptions = {
         ...mockProofOptions,
         created: '2025-11-31T12:00:00Z',
       }
@@ -721,7 +721,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
     // Spec: VC DI EdDSA v1.0 §3.3.5 step 3 — calendar validation must reject Feb 29 in non-leap years.
     it('throws when created is February 29th of a non-leap year', () => {
-      const invalidOptions: DataIntegrityCryptosuiteProofOptions = {
+      const invalidOptions: W3cDataIntegrityCryptosuiteProofOptions = {
         ...mockProofOptions,
         created: '2025-02-29T12:00:00Z',
       }
@@ -731,7 +731,7 @@ describe('EddsaJcs2022Cryptosuite', () => {
 
     // Spec: VC DI EdDSA v1.0 §3.3.5 step 3 — calendar validation must accept Feb 29 in leap years.
     it('does not throw when created is February 29th of a leap year', () => {
-      const validOptions: DataIntegrityCryptosuiteProofOptions = {
+      const validOptions: W3cDataIntegrityCryptosuiteProofOptions = {
         ...mockProofOptions,
         created: '2024-02-29T12:00:00Z',
       }

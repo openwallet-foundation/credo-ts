@@ -1,5 +1,5 @@
 import { CacheModule } from '../../modules/cache'
-import { W3cDataIntegrityModule } from '../../modules/data-integrity'
+import { W3cDataIntegrityModule } from '../../modules/w3c-di'
 import { DcqlModule } from '../../modules/dcql'
 import { DidsModule } from '../../modules/dids'
 import { DifPresentationExchangeModule } from '../../modules/dif-presentation-exchange'

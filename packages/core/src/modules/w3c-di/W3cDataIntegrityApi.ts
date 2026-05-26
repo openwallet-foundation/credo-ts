@@ -1,17 +1,17 @@
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
 import { W3cDataIntegrityCryptosuiteRegistry } from './W3cDataIntegrityCryptosuiteRegistry'
-import { assertCreated, assertVerified } from './DataIntegrityError'
+import { assertCreated, assertVerified } from './W3cDataIntegrityError'
 import type {
-  DataIntegrityProofSetSecuredDocument,
-  DataIntegritySecuredDocument,
-  DataIntegritySingleProofSecuredDocument,
-} from './DataIntegrityProof'
-import { assertMultiProofDocument, assertSingleProofDocument } from './DataIntegrityProof'
+  W3cDataIntegrityProofSetSecuredDocument,
+  W3cDataIntegritySecuredDocument,
+  W3cDataIntegritySingleProofSecuredDocument,
+} from './W3cDataIntegrityProof'
+import { assertMultiProofDocument, assertSingleProofDocument } from './W3cDataIntegrityProof'
 import type {
-  DataIntegrityCreateProofOptions,
-  DataIntegrityVerifyProofDocumentOptions,
-  DataIntegrityVerifyProofOptions,
+  W3cDataIntegrityCreateProofOptions,
+  W3cDataIntegrityVerifyProofDocumentOptions,
+  W3cDataIntegrityVerifyProofOptions,
 } from './W3cDataIntegrityProofService'
 import { W3cDataIntegrityProofService } from './W3cDataIntegrityProofService'
 
@@ -33,13 +33,13 @@ export class W3cDataIntegrityApi {
 
   // ─── Create (Result-Based) ────────────────────────────────────────────────
 
-  public async createProof(options: DataIntegrityCreateProofOptions) {
+  public async createProof(options: W3cDataIntegrityCreateProofOptions) {
     return await this.dataIntegrityProofService.createProof(this.agentContext, options)
   }
 
   // ─── Create (Fail-Fast) ───────────────────────────────────────────────────
 
-  public async createProofOrThrow(options: DataIntegrityCreateProofOptions) {
+  public async createProofOrThrow(options: W3cDataIntegrityCreateProofOptions) {
     const result = await this.createProof(options)
     assertCreated(result)
     return result
@@ -48,15 +48,15 @@ export class W3cDataIntegrityApi {
   // ─── Verify (Explicit Paths) ──────────────────────────────────────────────
 
   public async verifyProof(
-    securedDocument: DataIntegritySingleProofSecuredDocument,
-    options?: DataIntegrityVerifyProofOptions
+    securedDocument: W3cDataIntegritySingleProofSecuredDocument,
+    options?: W3cDataIntegrityVerifyProofOptions
   ) {
     return await this.dataIntegrityProofService.verifyProof(this.agentContext, securedDocument, options)
   }
 
   public async verifyProofSetAndChain(
-    securedDocument: DataIntegrityProofSetSecuredDocument,
-    options?: DataIntegrityVerifyProofOptions
+    securedDocument: W3cDataIntegrityProofSetSecuredDocument,
+    options?: W3cDataIntegrityVerifyProofOptions
   ) {
     return await this.dataIntegrityProofService.verifyProofSetAndChain(this.agentContext, securedDocument, options)
   }
@@ -64,8 +64,8 @@ export class W3cDataIntegrityApi {
   // ─── Verify (Convenience Dispatcher) ──────────────────────────────────────
 
   public async verifySecuredDocument(
-    securedDocument: DataIntegritySecuredDocument,
-    options?: DataIntegrityVerifyProofOptions
+    securedDocument: W3cDataIntegritySecuredDocument,
+    options?: W3cDataIntegrityVerifyProofOptions
   ) {
     if (Array.isArray(securedDocument.proof)) {
       assertMultiProofDocument(securedDocument)
@@ -79,8 +79,8 @@ export class W3cDataIntegrityApi {
   // ─── Verify (Fail-Fast) ───────────────────────────────────────────────────
 
   public async verifySecuredDocumentOrThrow(
-    securedDocument: DataIntegritySecuredDocument,
-    options?: DataIntegrityVerifyProofOptions
+    securedDocument: W3cDataIntegritySecuredDocument,
+    options?: W3cDataIntegrityVerifyProofOptions
   ) {
     const result = await this.verifySecuredDocument(securedDocument, options)
     assertVerified(result)
@@ -89,7 +89,7 @@ export class W3cDataIntegrityApi {
 
   // ─── Verify (Document Parsing + Verification) ─────────────────────────────
 
-  public async verifyProofDocument(options: DataIntegrityVerifyProofDocumentOptions) {
+  public async verifyProofDocument(options: W3cDataIntegrityVerifyProofDocumentOptions) {
     return await this.dataIntegrityProofService.verifyProofDocument(this.agentContext, options)
   }
 

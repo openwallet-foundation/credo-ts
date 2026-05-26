@@ -1,10 +1,10 @@
 import { isObject } from '../../utils/object'
 import { validateProofRequiredMembers } from './proof-processing/validation'
 
-export type DataIntegrityDomain = string | string[]
-export type DataIntegrityPreviousProofReference = string | string[]
+export type W3cDataIntegrityDomain = string | string[]
+export type W3cDataIntegrityPreviousProofReference = string | string[]
 
-export interface DataIntegrityCryptosuiteProofOptions {
+export interface W3cDataIntegrityCryptosuiteProofOptions {
   id?: string
   type: 'DataIntegrityProof'
   cryptosuite: string
@@ -13,46 +13,46 @@ export interface DataIntegrityCryptosuiteProofOptions {
   created?: string
   expires?: string
   challenge?: string
-  domain?: DataIntegrityDomain
+  domain?: W3cDataIntegrityDomain
   nonce?: string
-  previousProof?: DataIntegrityPreviousProofReference
+  previousProof?: W3cDataIntegrityPreviousProofReference
   '@context'?: unknown
 }
 
-export function createProofOptions(
-  options: Omit<DataIntegrityCryptosuiteProofOptions, 'type' | '@context' | 'id'>
-): DataIntegrityCryptosuiteProofOptions {
+export function createW3cDataIntegrityProofOptions(
+  options: Omit<W3cDataIntegrityCryptosuiteProofOptions, 'type' | '@context' | 'id'>
+): W3cDataIntegrityCryptosuiteProofOptions {
   return {
     type: 'DataIntegrityProof',
     ...options,
   }
 }
 
-export interface DataIntegrityCryptosuiteProof extends DataIntegrityCryptosuiteProofOptions {
+export interface W3cDataIntegrityCryptosuiteProof extends W3cDataIntegrityCryptosuiteProofOptions {
   proofValue: string
 }
 
-export type DataIntegrityUnsecuredDocument = Record<string, unknown>
+export type W3cDataIntegrityUnsecuredDocument = Record<string, unknown>
 
-export type DataIntegrityProofSet = DataIntegrityCryptosuiteProof | DataIntegrityCryptosuiteProof[]
+export type W3cDataIntegrityProofSet = W3cDataIntegrityCryptosuiteProof | W3cDataIntegrityCryptosuiteProof[]
 
-export type DataIntegritySingleProofSecuredDocument = DataIntegrityUnsecuredDocument & {
-  proof: DataIntegrityCryptosuiteProof
+export type W3cDataIntegritySingleProofSecuredDocument = W3cDataIntegrityUnsecuredDocument & {
+  proof: W3cDataIntegrityCryptosuiteProof
 }
 
-export type DataIntegrityProofSetSecuredDocument = DataIntegrityUnsecuredDocument & {
-  proof: DataIntegrityCryptosuiteProof[]
+export type W3cDataIntegrityProofSetSecuredDocument = W3cDataIntegrityUnsecuredDocument & {
+  proof: W3cDataIntegrityCryptosuiteProof[]
 }
 
-export type DataIntegritySecuredDocument = DataIntegrityUnsecuredDocument & {
-  proof: DataIntegrityProofSet
+export type W3cDataIntegritySecuredDocument = W3cDataIntegrityUnsecuredDocument & {
+  proof: W3cDataIntegrityProofSet
 }
 
 /**
  * Enforces required member validation for Data Integrity proofs.
  * See VC Data Integrity v1.0 §4.4 step 4.
  */
-export function assertIsDataIntegrityProof(proof: unknown): asserts proof is DataIntegrityCryptosuiteProof {
+export function assertIsW3cDataIntegrityProof(proof: unknown): asserts proof is W3cDataIntegrityCryptosuiteProof {
   const validationError = validateProofRequiredMembers(proof)
   if (validationError) {
     throw new TypeError(validationError)
@@ -62,7 +62,7 @@ export function assertIsDataIntegrityProof(proof: unknown): asserts proof is Dat
 /**
  * Enforces single-proof secured document shape for VC Data Integrity v1.0 §4.4 flows.
  */
-export function assertSingleProofDocument(doc: unknown): asserts doc is DataIntegritySingleProofSecuredDocument {
+export function assertSingleProofDocument(doc: unknown): asserts doc is W3cDataIntegritySingleProofSecuredDocument {
   if (!isObject(doc)) {
     throw new TypeError('Secured document must be a non-null object')
   }
@@ -72,13 +72,13 @@ export function assertSingleProofDocument(doc: unknown): asserts doc is DataInte
     throw new TypeError('Proof sets are not accepted by verifyProof; call verifyProofSetAndChain instead')
   }
 
-  assertIsDataIntegrityProof(securedDocument.proof)
+  assertIsW3cDataIntegrityProof(securedDocument.proof)
 }
 
 /**
  * Enforces proof-set secured document shape for VC Data Integrity v1.0 §4.5 flows.
  */
-export function assertMultiProofDocument(doc: unknown): asserts doc is DataIntegrityProofSetSecuredDocument {
+export function assertMultiProofDocument(doc: unknown): asserts doc is W3cDataIntegrityProofSetSecuredDocument {
   if (!isObject(doc)) {
     throw new TypeError('Secured document must be a non-null object')
   }
@@ -96,7 +96,7 @@ export function assertMultiProofDocument(doc: unknown): asserts doc is DataInteg
 /**
  * Enforces general secured document shape for Data Integrity single- or multi-proof inputs.
  */
-export function assertDataIntegrityDocument(doc: unknown): asserts doc is DataIntegritySecuredDocument {
+export function assertW3cDataIntegrityDocument(doc: unknown): asserts doc is W3cDataIntegritySecuredDocument {
   if (!isObject(doc)) {
     throw new TypeError('Secured document must be a non-null object')
   }

@@ -1,10 +1,10 @@
-import type { DataIntegrityCryptosuiteProof } from '../DataIntegrityProof'
-import { assertIsDataIntegrityProof, createProofOptions } from '../DataIntegrityProof'
+import type { W3cDataIntegrityCryptosuiteProof } from '../W3cDataIntegrityProof'
+import { assertIsW3cDataIntegrityProof, createW3cDataIntegrityProofOptions } from '../W3cDataIntegrityProof'
 import { validateProofRequiredMembers } from '../proof-processing/validation'
 
 describe('DataIntegrityProof', () => {
   test('creates proof options with type set to DataIntegrityProof', () => {
-    const options = createProofOptions({
+    const options = createW3cDataIntegrityProofOptions({
       cryptosuite: 'eddsa-jcs-2022',
       verificationMethod: 'did:example:issuer#key-1',
       proofPurpose: 'assertionMethod',
@@ -23,7 +23,7 @@ describe('DataIntegrityProof', () => {
   })
 
   test('validateProofRequiredMembers returns undefined for valid proof shape', () => {
-    const proof: DataIntegrityCryptosuiteProof = {
+    const proof: W3cDataIntegrityCryptosuiteProof = {
       type: 'DataIntegrityProof',
       cryptosuite: 'eddsa-jcs-2022',
       verificationMethod: 'did:example:issuer#key-1',
@@ -32,7 +32,7 @@ describe('DataIntegrityProof', () => {
     }
 
     expect(validateProofRequiredMembers(proof)).toBeUndefined()
-    expect(() => assertIsDataIntegrityProof(proof)).not.toThrow()
+    expect(() => assertIsW3cDataIntegrityProof(proof)).not.toThrow()
   })
 
   test('validateProofRequiredMembers rejects proof without proofValue', () => {
@@ -44,7 +44,7 @@ describe('DataIntegrityProof', () => {
     }
 
     expect(validateProofRequiredMembers(invalidProof)).toBe('Proof proofValue is required')
-    expect(() => assertIsDataIntegrityProof(invalidProof)).toThrow(TypeError)
+    expect(() => assertIsW3cDataIntegrityProof(invalidProof)).toThrow(TypeError)
   })
 
   test('validateProofRequiredMembers rejects proof without verificationMethod', () => {
@@ -56,7 +56,7 @@ describe('DataIntegrityProof', () => {
     }
 
     expect(validateProofRequiredMembers(invalidProof)).toBe('Proof verificationMethod is required')
-    expect(() => assertIsDataIntegrityProof(invalidProof)).toThrow(TypeError)
+    expect(() => assertIsW3cDataIntegrityProof(invalidProof)).toThrow(TypeError)
   })
 
   test('validateProofRequiredMembers rejects proof without proofPurpose', () => {
@@ -68,7 +68,7 @@ describe('DataIntegrityProof', () => {
     }
 
     expect(validateProofRequiredMembers(invalidProof)).toBe('Proof proofPurpose is required')
-    expect(() => assertIsDataIntegrityProof(invalidProof)).toThrow(TypeError)
+    expect(() => assertIsW3cDataIntegrityProof(invalidProof)).toThrow(TypeError)
   })
 
   test('validateProofRequiredMembers rejects proof with invalid type', () => {
@@ -81,6 +81,6 @@ describe('DataIntegrityProof', () => {
     }
 
     expect(validateProofRequiredMembers(invalidProof)).toBe("Proof type must be 'DataIntegrityProof'")
-    expect(() => assertIsDataIntegrityProof(invalidProof)).toThrow(TypeError)
+    expect(() => assertIsW3cDataIntegrityProof(invalidProof)).toThrow(TypeError)
   })
 })

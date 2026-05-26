@@ -1,14 +1,14 @@
 import { asArray, equalsIgnoreOrder } from '../../../utils'
 import { MultiBaseEncoder } from '../../../utils/MultiBaseEncoder'
-import type { DataIntegrityVerifyFailure } from '../DataIntegrityError'
+import type { W3cDataIntegrityVerifyFailure } from '../W3cDataIntegrityError'
 import {
   createInvalidResult,
   createIssue,
-  DataIntegrityProcessingError,
-  DataIntegrityProcessingErrorCode,
-  type DataIntegrityProcessingIssue,
-} from '../DataIntegrityError'
-import type { DataIntegrityCryptosuiteProof } from '../DataIntegrityProof'
+  W3cDataIntegrityProcessingError,
+  W3cDataIntegrityProcessingErrorCode,
+  type W3cDataIntegrityProcessingIssue,
+} from '../W3cDataIntegrityError'
+import type { W3cDataIntegrityCryptosuiteProof } from '../W3cDataIntegrityProof'
 import { buildValidatedProofReferenceGraph } from './chain'
 import { isXsdDateTimeStamp } from './iso8601-datetime'
 
@@ -51,7 +51,7 @@ export function validateProofRequiredMembers(proof: unknown): string | undefined
 /**
  * Implements VC Data Integrity v1.0 §4.5 steps 3.2-3.3 dependency validation.
  */
-export function validateProofDependencies(proofs: DataIntegrityCryptosuiteProof[]): DataIntegrityProcessingIssue[] {
+export function validateProofDependencies(proofs: W3cDataIntegrityCryptosuiteProof[]): W3cDataIntegrityProcessingIssue[] {
   const proofReferenceGraphResult = buildValidatedProofReferenceGraph(proofs)
   if (!proofReferenceGraphResult.ok) {
     return proofReferenceGraphResult.errors
@@ -66,15 +66,15 @@ export function validateProofDependencies(proofs: DataIntegrityCryptosuiteProof[
  * Prerequisite: validateProofRequiredMembers() has already passed for this proof.
  */
 export function validateProofFieldFormats(
-  proof: DataIntegrityCryptosuiteProof
-): DataIntegrityVerifyFailure | undefined {
+  proof: W3cDataIntegrityCryptosuiteProof
+): W3cDataIntegrityVerifyFailure | undefined {
   // Assumes validateProofRequiredMembers() has already validated proof structure.
   // This function validates only semantic/format constraints on required members.
 
   if (!isValidAbsoluteUrl(proof.verificationMethod)) {
     return createInvalidResult(
       createIssue(
-        DataIntegrityProcessingErrorCode.ProofVerificationError,
+        W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
         'Proof verificationMethod must be a valid URL',
         `Received '${proof.verificationMethod}'`
       )
@@ -85,7 +85,7 @@ export function validateProofFieldFormats(
     if (!isValidAbsoluteUrl(proof.id)) {
       return createInvalidResult(
         createIssue(
-          DataIntegrityProcessingErrorCode.ProofVerificationError,
+          W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
           'Proof id must be a valid URL',
           `Received '${proof.id}'`
         )
@@ -96,7 +96,7 @@ export function validateProofFieldFormats(
   if (typeof proof.created === 'string' && !isXsdDateTimeStamp(proof.created)) {
     return createInvalidResult(
       createIssue(
-        DataIntegrityProcessingErrorCode.ProofVerificationError,
+        W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
         'Proof created must be a valid dateTimeStamp',
         `Received '${proof.created}'`
       )
@@ -106,7 +106,7 @@ export function validateProofFieldFormats(
   if (typeof proof.expires === 'string' && !isXsdDateTimeStamp(proof.expires)) {
     return createInvalidResult(
       createIssue(
-        DataIntegrityProcessingErrorCode.ProofVerificationError,
+        W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
         'Proof expires must be a valid dateTimeStamp',
         `Received '${proof.expires}'`
       )
@@ -117,7 +117,7 @@ export function validateProofFieldFormats(
   if (!MultiBaseEncoder.isValid(proof.proofValue)) {
     return createInvalidResult(
       createIssue(
-        DataIntegrityProcessingErrorCode.ProofVerificationError,
+        W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
         'Proof proofValue must be a valid multibase-encoded value'
       )
     )
@@ -129,7 +129,7 @@ export function validateProofFieldFormats(
 // ─── Proof option postcondition assertions ────────────────────────────────────
 
 export function assertCreatedProofPostconditions(
-  proof: DataIntegrityCryptosuiteProof,
+  proof: W3cDataIntegrityCryptosuiteProof,
   options: {
     verificationMethod: string
     proofPurpose: string
@@ -143,8 +143,8 @@ export function assertCreatedProofPostconditions(
   expectedCryptosuite: string
 ): void {
   const throwPostconditionError = (detail: string) => {
-    throw new DataIntegrityProcessingError(
-      DataIntegrityProcessingErrorCode.ProofGenerationError,
+    throw new W3cDataIntegrityProcessingError(
+      W3cDataIntegrityProcessingErrorCode.ProofGenerationError,
       'Error creating Data Integrity proof',
       detail
     )

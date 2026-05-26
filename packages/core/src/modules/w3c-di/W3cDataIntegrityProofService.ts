@@ -1,60 +1,60 @@
 import type { AgentContext } from '../../agent/context'
 import { injectable } from '../../plugins'
 import { asArray, equalsIgnoreOrder } from '../../utils'
-import type { DataIntegrityCryptosuite, DataIntegrityProofVerificationInput } from './cryptosuites/types'
+import type { W3cDataIntegrityCryptosuite, W3cDataIntegrityProofVerificationInput } from './cryptosuites/types'
 import { W3cDataIntegrityCryptosuiteRegistry } from './W3cDataIntegrityCryptosuiteRegistry'
 import type {
-  DataIntegrityCreateFailure,
-  DataIntegrityCreateSuccess,
-  DataIntegrityProcessingIssue,
-  DataIntegrityVerifyFailure,
-  DataIntegrityVerifySuccess,
-} from './DataIntegrityError'
+  W3cDataIntegrityCreateFailure,
+  W3cDataIntegrityCreateSuccess,
+  W3cDataIntegrityProcessingIssue,
+  W3cDataIntegrityVerifyFailure,
+  W3cDataIntegrityVerifySuccess,
+} from './W3cDataIntegrityError'
 import {
   createInvalidResult,
   createIssue,
-  DataIntegrityProcessingError,
-  DataIntegrityProcessingErrorCode,
-} from './DataIntegrityError'
+  W3cDataIntegrityProcessingError,
+  W3cDataIntegrityProcessingErrorCode,
+} from './W3cDataIntegrityError'
 import type {
-  DataIntegrityCryptosuiteProof,
-  DataIntegrityCryptosuiteProofOptions,
-  DataIntegrityDomain,
-  DataIntegrityPreviousProofReference,
-  DataIntegrityProofSetSecuredDocument,
-  DataIntegritySingleProofSecuredDocument,
-  DataIntegrityUnsecuredDocument,
-} from './DataIntegrityProof'
-import { assertMultiProofDocument, assertSingleProofDocument, createProofOptions } from './DataIntegrityProof'
+  W3cDataIntegrityCryptosuiteProof,
+  W3cDataIntegrityCryptosuiteProofOptions,
+  W3cDataIntegrityDomain,
+  W3cDataIntegrityPreviousProofReference,
+  W3cDataIntegrityProofSetSecuredDocument,
+  W3cDataIntegritySingleProofSecuredDocument,
+  W3cDataIntegrityUnsecuredDocument,
+} from './W3cDataIntegrityProof'
+import { assertMultiProofDocument, assertSingleProofDocument, createW3cDataIntegrityProofOptions } from './W3cDataIntegrityProof'
 import { validateProofChainStructure } from './proof-processing/chain'
 import { omitUndefinedFields } from './proof-processing/normalisation'
-import { parseDataIntegrityProofDocument } from './proof-processing/parsing'
+import { parseW3cDataIntegrityProofDocument } from './proof-processing/parsing'
 import {
   assertCreatedProofPostconditions,
   validateProofFieldFormats,
   validateProofRequiredMembers,
 } from './proof-processing/validation'
 
-export interface DataIntegrityCreateProofOptions {
-  unsecuredDocument: DataIntegrityUnsecuredDocument
+export interface W3cDataIntegrityCreateProofOptions {
+  unsecuredDocument: W3cDataIntegrityUnsecuredDocument
   verificationMethod: string
   proofPurpose: string
   cryptosuite: string
   created?: string
   expires?: string
   challenge?: string
-  domain?: DataIntegrityDomain
+  domain?: W3cDataIntegrityDomain
   nonce?: string
-  previousProof?: DataIntegrityPreviousProofReference
+  previousProof?: W3cDataIntegrityPreviousProofReference
 }
 
-export interface DataIntegrityVerifyProofOptions {
+export interface W3cDataIntegrityVerifyProofOptions {
   expectedProofPurpose?: string
-  domain?: DataIntegrityDomain
+  domain?: W3cDataIntegrityDomain
   challenge?: string
 }
 
-export interface DataIntegrityVerifyProofDocumentOptions extends DataIntegrityVerifyProofOptions {
+export interface W3cDataIntegrityVerifyProofDocumentOptions extends W3cDataIntegrityVerifyProofOptions {
   mediaType: string
   documentBytes: Uint8Array
 }
@@ -76,11 +76,11 @@ export class W3cDataIntegrityProofService {
    */
   public async createProof(
     agentContext: AgentContext,
-    options: DataIntegrityCreateProofOptions
-  ): Promise<DataIntegrityCreateSuccess | DataIntegrityCreateFailure> {
+    options: W3cDataIntegrityCreateProofOptions
+  ): Promise<W3cDataIntegrityCreateSuccess | W3cDataIntegrityCreateFailure> {
     const normalisedUnsecuredDocument = omitUndefinedFields(options.unsecuredDocument)
 
-    let cryptosuite: DataIntegrityCryptosuite
+    let cryptosuite: W3cDataIntegrityCryptosuite
     try {
       cryptosuite = this.dataIntegrityCryptosuiteRegistry.createByCryptosuite(agentContext, options.cryptosuite)
     } catch (error) {
@@ -89,10 +89,10 @@ export class W3cDataIntegrityProofService {
       }
 
       const issue =
-        error instanceof DataIntegrityProcessingError
+        error instanceof W3cDataIntegrityProcessingError
           ? error.issue
           : createIssue(
-              DataIntegrityProcessingErrorCode.ProofGenerationError,
+              W3cDataIntegrityProcessingErrorCode.ProofGenerationError,
               'Error creating Data Integrity proof',
               error.message
             )
@@ -103,7 +103,7 @@ export class W3cDataIntegrityProofService {
       }
     }
 
-    const proofOptions: DataIntegrityCryptosuiteProofOptions = createProofOptions(
+    const proofOptions: W3cDataIntegrityCryptosuiteProofOptions = createW3cDataIntegrityProofOptions(
       omitUndefinedFields({
         cryptosuite: cryptosuite.cryptosuite,
         verificationMethod: options.verificationMethod,
@@ -134,10 +134,10 @@ export class W3cDataIntegrityProofService {
       }
 
       const issue =
-        error instanceof DataIntegrityProcessingError
+        error instanceof W3cDataIntegrityProcessingError
           ? error.issue
           : createIssue(
-              DataIntegrityProcessingErrorCode.ProofGenerationError,
+              W3cDataIntegrityProcessingErrorCode.ProofGenerationError,
               'Error creating Data Integrity proof',
               error.message
             )
@@ -156,9 +156,9 @@ export class W3cDataIntegrityProofService {
    */
   public async verifyProof(
     agentContext: AgentContext,
-    securedDocument: DataIntegritySingleProofSecuredDocument,
-    options: DataIntegrityVerifyProofOptions = {}
-  ): Promise<DataIntegrityVerifySuccess | DataIntegrityVerifyFailure> {
+    securedDocument: W3cDataIntegritySingleProofSecuredDocument,
+    options: W3cDataIntegrityVerifyProofOptions = {}
+  ): Promise<W3cDataIntegrityVerifySuccess | W3cDataIntegrityVerifyFailure> {
     try {
       assertSingleProofDocument(securedDocument)
 
@@ -169,10 +169,10 @@ export class W3cDataIntegrityProofService {
       }
 
       const issue =
-        error instanceof DataIntegrityProcessingError
+        error instanceof W3cDataIntegrityProcessingError
           ? error.issue
           : createIssue(
-              DataIntegrityProcessingErrorCode.ProofVerificationError,
+              W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
               'Error verifying Data Integrity proof',
               error.message
             )
@@ -189,9 +189,9 @@ export class W3cDataIntegrityProofService {
    */
   public async verifyProofSetAndChain(
     agentContext: AgentContext,
-    securedDocument: DataIntegrityProofSetSecuredDocument,
-    options: DataIntegrityVerifyProofOptions = {}
-  ): Promise<DataIntegrityVerifySuccess | DataIntegrityVerifyFailure> {
+    securedDocument: W3cDataIntegrityProofSetSecuredDocument,
+    options: W3cDataIntegrityVerifyProofOptions = {}
+  ): Promise<W3cDataIntegrityVerifySuccess | W3cDataIntegrityVerifyFailure> {
     try {
       assertMultiProofDocument(securedDocument)
 
@@ -202,7 +202,7 @@ export class W3cDataIntegrityProofService {
           if (!requiredMemberValidationError) return undefined
 
           return createIssue(
-            DataIntegrityProcessingErrorCode.ProofVerificationError,
+            W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
             `Proof at index ${index} has invalid required members`,
             requiredMemberValidationError
           )
@@ -229,7 +229,7 @@ export class W3cDataIntegrityProofService {
             proofPolicyIssue.detail ?? proofPolicyIssue.title
           )
         })
-        .filter((issue): issue is DataIntegrityProcessingIssue => issue !== undefined)
+        .filter((issue): issue is W3cDataIntegrityProcessingIssue => issue !== undefined)
 
       if (proofPolicyIssues.length > 0) {
         return createInvalidResult(proofPolicyIssues[0], proofPolicyIssues.slice(1))
@@ -241,12 +241,12 @@ export class W3cDataIntegrityProofService {
           if (!proofFieldFormatError) return undefined
 
           return createIssue(
-            DataIntegrityProcessingErrorCode.ProofVerificationError,
+            W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
             `Proof at index ${index} has invalid field formats`,
             proofFieldFormatError.errors[0]?.detail ?? proofFieldFormatError.errors[0]?.title
           )
         })
-        .filter((issue): issue is DataIntegrityProcessingIssue => issue !== undefined)
+        .filter((issue): issue is W3cDataIntegrityProcessingIssue => issue !== undefined)
 
       if (proofFieldFormatIssues.length > 0) {
         return createInvalidResult(proofFieldFormatIssues[0], proofFieldFormatIssues.slice(1))
@@ -258,7 +258,7 @@ export class W3cDataIntegrityProofService {
       for (const [_index, proof] of proofs.entries()) {
         const matchingProofIndices = this.getMatchingProofIndices(proof, proofIdToIndex)
         const matchingProofs = matchingProofIndices.map((matchingProofIndex) => proofs[matchingProofIndex])
-        const singleProofSecuredDocument: DataIntegritySingleProofSecuredDocument = {
+        const singleProofSecuredDocument: W3cDataIntegritySingleProofSecuredDocument = {
           ...unsecuredDocument,
           proof,
         }
@@ -287,10 +287,10 @@ export class W3cDataIntegrityProofService {
       }
 
       const issue =
-        error instanceof DataIntegrityProcessingError
+        error instanceof W3cDataIntegrityProcessingError
           ? error.issue
           : createIssue(
-              DataIntegrityProcessingErrorCode.ProofVerificationError,
+              W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
               'Error verifying Data Integrity proof set/chain',
               error.message
             )
@@ -305,9 +305,9 @@ export class W3cDataIntegrityProofService {
    */
   public async verifyProofDocument(
     agentContext: AgentContext,
-    options: DataIntegrityVerifyProofDocumentOptions
-  ): Promise<DataIntegrityVerifySuccess | DataIntegrityVerifyFailure> {
-    const parseResult = parseDataIntegrityProofDocument(options, this.supportedMediaTypes)
+    options: W3cDataIntegrityVerifyProofDocumentOptions
+  ): Promise<W3cDataIntegrityVerifySuccess | W3cDataIntegrityVerifyFailure> {
+    const parseResult = parseW3cDataIntegrityProofDocument(options, this.supportedMediaTypes)
     if (!parseResult.ok) {
       return parseResult.result
     }
@@ -317,10 +317,10 @@ export class W3cDataIntegrityProofService {
     const verificationResult = Array.isArray(securedDocument.proof)
       ? await this.verifyProofSetAndChain(
           agentContext,
-          securedDocument as DataIntegrityProofSetSecuredDocument,
+          securedDocument as W3cDataIntegrityProofSetSecuredDocument,
           verifyOptions
         )
-      : await this.verifyProof(agentContext, securedDocument as DataIntegritySingleProofSecuredDocument, verifyOptions)
+      : await this.verifyProof(agentContext, securedDocument as W3cDataIntegritySingleProofSecuredDocument, verifyOptions)
 
     if (!verificationResult.verified) {
       return verificationResult
@@ -340,13 +340,13 @@ export class W3cDataIntegrityProofService {
    */
   private async verifySingleProofCore(
     agentContext: AgentContext,
-    securedDocument: DataIntegritySingleProofSecuredDocument,
-    options: DataIntegrityVerifyProofOptions,
-    unsecuredDocument: DataIntegrityUnsecuredDocument = (() => {
+    securedDocument: W3cDataIntegritySingleProofSecuredDocument,
+    options: W3cDataIntegrityVerifyProofOptions,
+    unsecuredDocument: W3cDataIntegrityUnsecuredDocument = (() => {
       const { proof: _, ...unsecuredDocument } = securedDocument
       return unsecuredDocument
     })()
-  ): Promise<DataIntegrityVerifySuccess | DataIntegrityVerifyFailure> {
+  ): Promise<W3cDataIntegrityVerifySuccess | W3cDataIntegrityVerifyFailure> {
     const proof = securedDocument.proof
 
     const proofPolicyIssue = this.validateProofPolicy(proof, options)
@@ -360,7 +360,7 @@ export class W3cDataIntegrityProofService {
     }
 
     const cryptosuite = this.dataIntegrityCryptosuiteRegistry.createByCryptosuite(agentContext, proof.cryptosuite)
-    const proofVerificationInput: DataIntegrityProofVerificationInput = {
+    const proofVerificationInput: W3cDataIntegrityProofVerificationInput = {
       unsecuredDocument,
       proof,
     }
@@ -368,7 +368,7 @@ export class W3cDataIntegrityProofService {
 
     if (!verificationResult.verified || verificationResult.verifiedDocument === null) {
       return createInvalidResult(
-        createIssue(DataIntegrityProcessingErrorCode.ProofVerificationError, 'Cryptosuite proof verification failed')
+        createIssue(W3cDataIntegrityProcessingErrorCode.ProofVerificationError, 'Cryptosuite proof verification failed')
       )
     }
 
@@ -386,12 +386,12 @@ export class W3cDataIntegrityProofService {
    * Validates expected proofPurpose, domain, and challenge when provided.
    */
   private validateProofPolicy(
-    proof: DataIntegrityCryptosuiteProof,
-    options: DataIntegrityVerifyProofOptions
-  ): DataIntegrityProcessingIssue | undefined {
+    proof: W3cDataIntegrityCryptosuiteProof,
+    options: W3cDataIntegrityVerifyProofOptions
+  ): W3cDataIntegrityProcessingIssue | undefined {
     if (options.expectedProofPurpose && proof.proofPurpose !== options.expectedProofPurpose) {
       return createIssue(
-        DataIntegrityProcessingErrorCode.ProofVerificationError,
+        W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
         'Proof purpose does not match expected proof purpose',
         `Expected '${options.expectedProofPurpose}', received '${proof.proofPurpose}'`
       )
@@ -403,7 +403,7 @@ export class W3cDataIntegrityProofService {
 
       if (!equalsIgnoreOrder(expectedDomain, proofDomain)) {
         return createIssue(
-          DataIntegrityProcessingErrorCode.InvalidDomainError,
+          W3cDataIntegrityProcessingErrorCode.InvalidDomainError,
           'Proof domain does not match expected domain'
         )
       }
@@ -411,7 +411,7 @@ export class W3cDataIntegrityProofService {
 
     if (options.challenge && proof.challenge !== options.challenge) {
       return createIssue(
-        DataIntegrityProcessingErrorCode.InvalidChallengeError,
+        W3cDataIntegrityProcessingErrorCode.InvalidChallengeError,
         'Proof challenge does not match expected challenge',
         `Expected '${options.challenge}', received '${proof.challenge ?? 'undefined'}'`
       )
@@ -422,7 +422,7 @@ export class W3cDataIntegrityProofService {
 
   // ─── Verify (Proof Set Helpers) ───────────────────────────────────────────
 
-  private createProofIdToIndexMap(proofs: DataIntegrityCryptosuiteProof[]) {
+  private createProofIdToIndexMap(proofs: W3cDataIntegrityCryptosuiteProof[]) {
     const proofIdToIndex = new Map<string, number>()
 
     for (const [index, proof] of proofs.entries()) {
@@ -433,7 +433,7 @@ export class W3cDataIntegrityProofService {
     return proofIdToIndex
   }
 
-  private getMatchingProofIndices(proof: DataIntegrityCryptosuiteProof, proofIdToIndex: Map<string, number>) {
+  private getMatchingProofIndices(proof: W3cDataIntegrityCryptosuiteProof, proofIdToIndex: Map<string, number>) {
     const previousProofReferences = proof.previousProof
       ? Array.isArray(proof.previousProof)
         ? proof.previousProof
@@ -458,9 +458,9 @@ export class W3cDataIntegrityProofService {
    * Adds matching dependency proofs into the unsecured document for per-proof verification.
    */
   private reconstructProofInputDocument(
-    unsecuredDocument: DataIntegrityUnsecuredDocument,
-    matchingProofs: DataIntegrityCryptosuiteProof[]
-  ): DataIntegrityUnsecuredDocument {
+    unsecuredDocument: W3cDataIntegrityUnsecuredDocument,
+    matchingProofs: W3cDataIntegrityCryptosuiteProof[]
+  ): W3cDataIntegrityUnsecuredDocument {
     if (matchingProofs.length === 0) {
       return unsecuredDocument
     }

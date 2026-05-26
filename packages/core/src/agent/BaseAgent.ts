@@ -1,5 +1,5 @@
 import type { Logger } from '../logger'
-import { W3cDataIntegrityApi } from '../modules/data-integrity'
+import { W3cDataIntegrityApi } from '../modules/w3c-di'
 import { DidsApi } from '../modules/dids'
 import { GenericRecordsApi } from '../modules/generic-records'
 import { KeyManagementApi } from '../modules/kms'

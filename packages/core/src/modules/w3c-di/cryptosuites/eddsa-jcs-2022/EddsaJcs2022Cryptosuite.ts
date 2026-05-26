@@ -5,21 +5,21 @@ import { Hasher } from '../../../../crypto'
 import { asArray, MultiBaseEncoder, TypedArrayEncoder } from '../../../../utils'
 import { isObject } from '../../../../utils/object'
 import { KeyManagementApi } from '../../../kms'
-import { DataIntegrityProcessingError, DataIntegrityProcessingErrorCode } from '../../DataIntegrityError'
+import { W3cDataIntegrityProcessingError, W3cDataIntegrityProcessingErrorCode } from '../../W3cDataIntegrityError'
 import type {
-  DataIntegrityCryptosuiteProof,
-  DataIntegrityCryptosuiteProofOptions,
-  DataIntegrityUnsecuredDocument,
-} from '../../DataIntegrityProof'
+  W3cDataIntegrityCryptosuiteProof,
+  W3cDataIntegrityCryptosuiteProofOptions,
+  W3cDataIntegrityUnsecuredDocument,
+} from '../../W3cDataIntegrityProof'
 import { isXsdDateTimeStamp } from '../../proof-processing/iso8601-datetime'
 import { publicJwkFromVerificationMethodId, publicKeyIdFromVerificationMethodId } from '../../proof-processing/keyUtils'
 import type {
-  DataIntegrityCryptosuite,
-  DataIntegrityProofVerificationInput,
-  DataIntegrityProofVerificationResult,
+  W3cDataIntegrityCryptosuite,
+  W3cDataIntegrityProofVerificationInput,
+  W3cDataIntegrityProofVerificationResult,
 } from '../types'
 
-export class EddsaJcs2022Cryptosuite implements DataIntegrityCryptosuite {
+export class EddsaJcs2022Cryptosuite implements W3cDataIntegrityCryptosuite {
   public readonly cryptosuite = 'eddsa-jcs-2022'
   private keyManagementApi: KeyManagementApi
   private agentContext: AgentContext
@@ -43,15 +43,15 @@ export class EddsaJcs2022Cryptosuite implements DataIntegrityCryptosuite {
    * https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022
    */
   public async createProof(
-    unsecuredDocument: DataIntegrityUnsecuredDocument,
-    options: DataIntegrityCryptosuiteProofOptions
-  ): Promise<DataIntegrityCryptosuiteProof> {
+    unsecuredDocument: W3cDataIntegrityUnsecuredDocument,
+    options: W3cDataIntegrityCryptosuiteProofOptions
+  ): Promise<W3cDataIntegrityCryptosuiteProof> {
     // Boundary contract: callers must pass DataIntegrityProof + eddsa-jcs-2022 options.
     // W3cDataIntegrityProofService is the normal enforcement gate, but this guard protects
     // direct callers as well and keeps failures close to cryptosuite entry points.
-    this.assertProofTypeAndCryptosuite(options, DataIntegrityProcessingErrorCode.ProofGenerationError, 'createProof')
+    this.assertProofTypeAndCryptosuite(options, W3cDataIntegrityProcessingErrorCode.ProofGenerationError, 'createProof')
 
-    const proof: DataIntegrityCryptosuiteProofOptions = { ...options } // 1
+    const proof: W3cDataIntegrityCryptosuiteProofOptions = { ...options } // 1
 
     if ('@context' in unsecuredDocument) {
       proof['@context'] = unsecuredDocument['@context']
@@ -73,16 +73,16 @@ export class EddsaJcs2022Cryptosuite implements DataIntegrityCryptosuite {
    * Spec: VC DI EdDSA v1.0 §§3.3.2
    * https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
    */
-  public async verifyProof(input: DataIntegrityProofVerificationInput): Promise<DataIntegrityProofVerificationResult> {
+  public async verifyProof(input: W3cDataIntegrityProofVerificationInput): Promise<W3cDataIntegrityProofVerificationResult> {
     const { unsecuredDocument: securedDocument, proof } = input
-    const unsecuredDocument: DataIntegrityUnsecuredDocument = { ...securedDocument } // 1
+    const unsecuredDocument: W3cDataIntegrityUnsecuredDocument = { ...securedDocument } // 1
     const { proofValue, ...proofOptions } = proof // 2
 
     // Boundary contract: when verifyProof is called directly, validate proof suite
     // identity before running cryptographic verification.
     this.assertProofTypeAndCryptosuite(
       proofOptions,
-      DataIntegrityProcessingErrorCode.ProofVerificationError,
+      W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
       'verifyProof'
     )
 
@@ -123,12 +123,12 @@ export class EddsaJcs2022Cryptosuite implements DataIntegrityCryptosuite {
    * https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022
    */
   public transformation(
-    unsecuredDocument: DataIntegrityUnsecuredDocument,
-    proofOptions: DataIntegrityCryptosuiteProofOptions
+    unsecuredDocument: W3cDataIntegrityUnsecuredDocument,
+    proofOptions: W3cDataIntegrityCryptosuiteProofOptions
   ) {
     if (proofOptions.type !== 'DataIntegrityProof' || proofOptions.cryptosuite !== 'eddsa-jcs-2022') {
       const err = `Proof type must be 'DataIntegrityProof' AND cryptosuite must be 'eddsa-jcs-2022'`
-      throw new DataIntegrityProcessingError(DataIntegrityProcessingErrorCode.ProofTransformationError, err)
+      throw new W3cDataIntegrityProcessingError(W3cDataIntegrityProcessingErrorCode.ProofTransformationError, err)
     } // 1
 
     const canonicalDocument = this.canonicalizeJcsStrict(unsecuredDocument) // 2
@@ -152,17 +152,17 @@ export class EddsaJcs2022Cryptosuite implements DataIntegrityCryptosuite {
    * Spec: VC DI EdDSA v1.0 §§3.3.5
    * https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
    */
-  public proofConfiguration(proofOptions: DataIntegrityCryptosuiteProofOptions) {
+  public proofConfiguration(proofOptions: W3cDataIntegrityCryptosuiteProofOptions) {
     const proofConfig = { ...proofOptions } // 1
 
     if (proofConfig.type !== 'DataIntegrityProof' || proofConfig.cryptosuite !== 'eddsa-jcs-2022') {
       const err = `Proof type must be 'DataIntegrityProof' AND cryptosuite must be 'eddsa-jcs-2022'`
-      throw new DataIntegrityProcessingError(DataIntegrityProcessingErrorCode.ProofGenerationError, err)
+      throw new W3cDataIntegrityProcessingError(W3cDataIntegrityProcessingErrorCode.ProofGenerationError, err)
     }
 
     if (typeof proofConfig.created === 'string' && !isXsdDateTimeStamp(proofConfig.created)) {
       const err = `Proof created must be a valid dateTimeStamp. Received '${proofConfig.created}'`
-      throw new DataIntegrityProcessingError(DataIntegrityProcessingErrorCode.ProofGenerationError, err)
+      throw new W3cDataIntegrityProcessingError(W3cDataIntegrityProcessingErrorCode.ProofGenerationError, err)
     }
 
     const canonicalProofConfig = this.canonicalizeJcsStrict(proofConfig) // 4
@@ -173,7 +173,7 @@ export class EddsaJcs2022Cryptosuite implements DataIntegrityCryptosuite {
    * Spec: VC DI EdDSA v1.0 §§3.3.6
    * https://www.w3.org/TR/vc-di-eddsa/#proof-serialization-eddsa-jcs-2022
    */
-  public async proofSerialization(hashData: Uint8Array, options: DataIntegrityCryptosuiteProofOptions) {
+  public async proofSerialization(hashData: Uint8Array, options: W3cDataIntegrityCryptosuiteProofOptions) {
     // Caller (W3cDataIntegrityProofService) is responsible for required-member and suite-shape validation before invocation.
     // This method intentionally focuses on §3.3.6 signing semantics only.
 
@@ -187,7 +187,7 @@ export class EddsaJcs2022Cryptosuite implements DataIntegrityCryptosuite {
     const proofBytes = signResult.signature // 2
     if (proofBytes.length !== 64) {
       const err = `EdDSA signature must be exactly 64 bytes, got ${proofBytes.length}`
-      throw new DataIntegrityProcessingError(DataIntegrityProcessingErrorCode.ProofGenerationError, err)
+      throw new W3cDataIntegrityProcessingError(W3cDataIntegrityProcessingErrorCode.ProofGenerationError, err)
     } // 2
     return proofBytes // 3
   }
@@ -199,7 +199,7 @@ export class EddsaJcs2022Cryptosuite implements DataIntegrityCryptosuite {
   public async proofVerification(
     hashData: Uint8Array,
     proofBytes: Uint8Array,
-    options: DataIntegrityCryptosuiteProofOptions
+    options: W3cDataIntegrityCryptosuiteProofOptions
   ) {
     const verificationMethod = options.verificationMethod
     const publicKeyBytes = await publicJwkFromVerificationMethodId(this.agentContext, verificationMethod) // 1
@@ -213,13 +213,13 @@ export class EddsaJcs2022Cryptosuite implements DataIntegrityCryptosuite {
   }
 
   private assertProofTypeAndCryptosuite(
-    options: Partial<DataIntegrityCryptosuiteProofOptions>,
-    errorCode: DataIntegrityProcessingErrorCode,
+    options: Partial<W3cDataIntegrityCryptosuiteProofOptions>,
+    errorCode: W3cDataIntegrityProcessingErrorCode,
     caller: 'createProof' | 'verifyProof'
   ) {
     if (options.type !== 'DataIntegrityProof' || options.cryptosuite !== 'eddsa-jcs-2022') {
       const err = `Proof type must be 'DataIntegrityProof' AND cryptosuite must be 'eddsa-jcs-2022'`
-      throw new DataIntegrityProcessingError(errorCode, err)
+      throw new W3cDataIntegrityProcessingError(errorCode, err)
     }
   }
 }
@@ -227,12 +227,12 @@ export class EddsaJcs2022Cryptosuite implements DataIntegrityCryptosuite {
 function assertJcsInput(value: unknown, path = '$') {
   if (value === undefined || typeof value === 'function' || typeof value === 'symbol' || typeof value === 'bigint') {
     const err = `JCS canonicalization input contains unsupported value at ${path}`
-    throw new DataIntegrityProcessingError(DataIntegrityProcessingErrorCode.ProofTransformationError, err)
+    throw new W3cDataIntegrityProcessingError(W3cDataIntegrityProcessingErrorCode.ProofTransformationError, err)
   }
 
   if (typeof value === 'number' && !Number.isFinite(value)) {
     const err = `JCS canonicalization input contains non-finite number at ${path}`
-    throw new DataIntegrityProcessingError(DataIntegrityProcessingErrorCode.ProofTransformationError, err)
+    throw new W3cDataIntegrityProcessingError(W3cDataIntegrityProcessingErrorCode.ProofTransformationError, err)
   }
 
   if (Array.isArray(value)) {

@@ -1,16 +1,16 @@
-import type { DataIntegrityProcessingIssue } from '../DataIntegrityError'
-import { createIssue, DataIntegrityProcessingErrorCode } from '../DataIntegrityError'
-import type { DataIntegrityCryptosuiteProof } from '../DataIntegrityProof'
+import type { W3cDataIntegrityProcessingIssue } from '../W3cDataIntegrityError'
+import { createIssue, W3cDataIntegrityProcessingErrorCode } from '../W3cDataIntegrityError'
+import type { W3cDataIntegrityCryptosuiteProof } from '../W3cDataIntegrityProof'
 import { validateProofDependencies } from './validation'
 
 export type BuildValidatedProofReferenceGraphResult =
   | { ok: true; value: Map<number, number[]> }
-  | { ok: false; errors: DataIntegrityProcessingIssue[] }
+  | { ok: false; errors: W3cDataIntegrityProcessingIssue[] }
 
 /**
  * Implements VC Data Integrity v1.0 §4.5 steps 3.2-3.3 chain-structure validation.
  */
-export function validateProofChainStructure(proofs: DataIntegrityCryptosuiteProof[]): DataIntegrityProcessingIssue[] {
+export function validateProofChainStructure(proofs: W3cDataIntegrityCryptosuiteProof[]): W3cDataIntegrityProcessingIssue[] {
   return validateProofDependencies(proofs)
 }
 
@@ -18,12 +18,12 @@ export function validateProofChainStructure(proofs: DataIntegrityCryptosuiteProo
  * Builds and validates proof dependency references for VC Data Integrity v1.0 §4.5.
  */
 export function buildValidatedProofReferenceGraph(
-  proofs: DataIntegrityCryptosuiteProof[]
+  proofs: W3cDataIntegrityCryptosuiteProof[]
 ): BuildValidatedProofReferenceGraphResult {
   const proofIdToIndexList = new Map<string, number[]>()
   const proofIdToUniqueIndex = new Map<string, number>()
   const proofReferenceGraph = new Map<number, number[]>()
-  const issues: DataIntegrityProcessingIssue[] = []
+  const issues: W3cDataIntegrityProcessingIssue[] = []
 
   for (const [index, proof] of proofs.entries()) {
     proofReferenceGraph.set(index, [])
@@ -45,7 +45,7 @@ export function buildValidatedProofReferenceGraph(
       proofIdToUniqueIndex.delete(proofId)
       issues.push(
         createIssue(
-          DataIntegrityProcessingErrorCode.ProofVerificationError,
+          W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
           'Duplicate proof id in proof set',
           `Duplicate proof id '${proofId}' at indices ${indices.join(', ')}`
         )
@@ -73,7 +73,7 @@ export function buildValidatedProofReferenceGraph(
 
         issues.push(
           createIssue(
-            DataIntegrityProcessingErrorCode.ProofVerificationError,
+            W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
             'Proof previousProof reference could not be resolved',
             resolutionDetail
           )
@@ -88,7 +88,7 @@ export function buildValidatedProofReferenceGraph(
   }
 
   if (hasProofChainCycle(proofReferenceGraph)) {
-    issues.push(createIssue(DataIntegrityProcessingErrorCode.ProofVerificationError, 'Proof chain contains a cycle'))
+    issues.push(createIssue(W3cDataIntegrityProcessingErrorCode.ProofVerificationError, 'Proof chain contains a cycle'))
   }
 
   for (const [index, referenceIndices] of proofReferenceGraph.entries()) {
@@ -96,7 +96,7 @@ export function buildValidatedProofReferenceGraph(
       if (referencedProofIndex >= index) {
         issues.push(
           createIssue(
-            DataIntegrityProcessingErrorCode.ProofVerificationError,
+            W3cDataIntegrityProcessingErrorCode.ProofVerificationError,
             'Proof previousProof reference must target an earlier proof',
             `Reference targets proof index ${referencedProofIndex}, current proof index ${index}`
           )

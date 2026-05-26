@@ -1,14 +1,14 @@
 import { CredoError } from '../../../error'
 import { Ed25519PublicJwk } from '../../kms'
 import { EddsaJcs2022Cryptosuite } from '../cryptosuites/eddsa-jcs-2022/EddsaJcs2022Cryptosuite'
-import type { DataIntegrityCryptosuiteInfo } from '../cryptosuites/types'
+import type { W3cDataIntegrityCryptosuiteInfo } from '../cryptosuites/types'
 import { W3cDataIntegrityCryptosuiteRegistry } from '../W3cDataIntegrityCryptosuiteRegistry'
 
 const cryptosuiteInfo = {
   cryptosuiteClass: EddsaJcs2022Cryptosuite,
   cryptosuite: 'eddsa-jcs-2022',
   supportedPublicJwkTypes: [Ed25519PublicJwk],
-} satisfies DataIntegrityCryptosuiteInfo
+} satisfies W3cDataIntegrityCryptosuiteInfo
 
 describe('W3cDataIntegrityCryptosuiteRegistry', () => {
   test('returns registered cryptosuite by name', () => {

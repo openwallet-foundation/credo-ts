@@ -3,12 +3,12 @@ import type { AgentContext } from '../../../agent/context'
 import { TypedArrayEncoder } from '../../../utils'
 import { MultiBaseEncoder } from '../../../utils/MultiBaseEncoder'
 import { W3cDataIntegrityCryptosuiteRegistry } from '../W3cDataIntegrityCryptosuiteRegistry'
-import { DataIntegrityProcessingError, DataIntegrityProcessingErrorCode } from '../DataIntegrityError'
+import { W3cDataIntegrityProcessingError, W3cDataIntegrityProcessingErrorCode } from '../W3cDataIntegrityError'
 import type {
-  DataIntegrityCryptosuiteProof,
-  DataIntegrityProofSetSecuredDocument,
-  DataIntegritySingleProofSecuredDocument,
-} from '../DataIntegrityProof'
+  W3cDataIntegrityCryptosuiteProof,
+  W3cDataIntegrityProofSetSecuredDocument,
+  W3cDataIntegritySingleProofSecuredDocument,
+} from '../W3cDataIntegrityProof'
 import { W3cDataIntegrityProofService } from '../W3cDataIntegrityProofService'
 
 const validProofValue = MultiBaseEncoder.encode(TypedArrayEncoder.fromUtf8String('proof-value'), 'base58btc')
@@ -22,7 +22,7 @@ describe('W3cDataIntegrityProofService', () => {
   const mockResolveDidDocument = vi.fn()
 
   test('contains an explicit ProblemDetails type mapping for every processing error code', () => {
-    expect(Object.values(DataIntegrityProcessingErrorCode)).toEqual(
+    expect(Object.values(W3cDataIntegrityProcessingErrorCode)).toEqual(
       expect.arrayContaining([
         'https://www.w3.org/ns/credentials#PARSING_ERROR',
         'https://w3id.org/security#PROOF_GENERATION_ERROR',
@@ -35,17 +35,17 @@ describe('W3cDataIntegrityProofService', () => {
   })
 
   test('maps processing error codes to their normative ProblemDetails URLs', () => {
-    expect(DataIntegrityProcessingErrorCode.ProofVerificationError).toBe(
+    expect(W3cDataIntegrityProcessingErrorCode.ProofVerificationError).toBe(
       'https://w3id.org/security#PROOF_VERIFICATION_ERROR'
     )
-    expect(DataIntegrityProcessingErrorCode.ProofGenerationError).toBe(
+    expect(W3cDataIntegrityProcessingErrorCode.ProofGenerationError).toBe(
       'https://w3id.org/security#PROOF_GENERATION_ERROR'
     )
-    expect(DataIntegrityProcessingErrorCode.ProofTransformationError).toBe(
+    expect(W3cDataIntegrityProcessingErrorCode.ProofTransformationError).toBe(
       'https://w3id.org/security#PROOF_TRANSFORMATION_ERROR'
     )
-    expect(DataIntegrityProcessingErrorCode.InvalidDomainError).toBe('https://w3id.org/security#INVALID_DOMAIN_ERROR')
-    expect(DataIntegrityProcessingErrorCode.InvalidChallengeError).toBe(
+    expect(W3cDataIntegrityProcessingErrorCode.InvalidDomainError).toBe('https://w3id.org/security#INVALID_DOMAIN_ERROR')
+    expect(W3cDataIntegrityProcessingErrorCode.InvalidChallengeError).toBe(
       'https://w3id.org/security#INVALID_CHALLENGE_ERROR'
     )
   })
@@ -116,7 +116,7 @@ describe('W3cDataIntegrityProofService', () => {
         verificationMethod: 'did:example:123#wrong-key',
         proofPurpose: 'assertionMethod',
         proofValue: validProofValue,
-      } satisfies DataIntegrityCryptosuiteProof),
+      } satisfies W3cDataIntegrityCryptosuiteProof),
     })
 
     // §3.3.5/3.3.6 SHOULD convey PROOF_GENERATION_ERROR — postcondition failure returns structured failure
@@ -151,7 +151,7 @@ describe('W3cDataIntegrityProofService', () => {
         verificationMethod: 'did:example:123#key-1',
         proofPurpose: 'authentication',
         proofValue: validProofValue,
-      } satisfies DataIntegrityCryptosuiteProof),
+      } satisfies W3cDataIntegrityCryptosuiteProof),
     })
 
     const result = await service.createProof(agentContext, {
@@ -186,7 +186,7 @@ describe('W3cDataIntegrityProofService', () => {
         verificationMethod: 'did:example:123#key-1',
         proofPurpose: 'assertionMethod',
         // missing proofValue on purpose
-      } as unknown as DataIntegrityCryptosuiteProof),
+      } as unknown as W3cDataIntegrityCryptosuiteProof),
     })
 
     // §3.3.5/3.3.6 SHOULD convey PROOF_GENERATION_ERROR — postcondition failure returns structured failure
@@ -220,7 +220,7 @@ describe('W3cDataIntegrityProofService', () => {
       proofPurpose: 'assertionMethod',
       domain: ['example.org'],
       proofValue: validProofValue,
-    } satisfies DataIntegrityCryptosuiteProof)
+    } satisfies W3cDataIntegrityCryptosuiteProof)
 
     mockCreateByCryptosuite.mockReturnValue({
       cryptosuite: 'eddsa-jcs-2022',
@@ -310,7 +310,7 @@ describe('W3cDataIntegrityProofService', () => {
       }),
     })
 
-    const securedDocument: DataIntegritySingleProofSecuredDocument = {
+    const securedDocument: W3cDataIntegritySingleProofSecuredDocument = {
       id: 'urn:example:test',
       proof: {
         type: 'DataIntegrityProof',
@@ -387,8 +387,8 @@ describe('W3cDataIntegrityProofService', () => {
       verifyProof: vi
         .fn()
         .mockRejectedValue(
-          new DataIntegrityProcessingError(
-            DataIntegrityProcessingErrorCode.ProofTransformationError,
+          new W3cDataIntegrityProcessingError(
+            W3cDataIntegrityProcessingErrorCode.ProofTransformationError,
             'JCS canonicalization input is invalid'
           )
         ),
@@ -632,7 +632,7 @@ describe('W3cDataIntegrityProofService', () => {
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:example:123#key-1',
         proofValue: validProofValue,
-      } as unknown as DataIntegrityCryptosuiteProof,
+      } as unknown as W3cDataIntegrityCryptosuiteProof,
     })
 
     expect(result.verified).toBe(false)
@@ -649,7 +649,7 @@ describe('W3cDataIntegrityProofService', () => {
         verificationMethod: 'did:example:123#key-1',
         proofPurpose: 'assertionMethod',
         proofValue: validProofValue,
-      } as unknown as DataIntegrityCryptosuiteProof,
+      } as unknown as W3cDataIntegrityCryptosuiteProof,
     })
 
     expect(result.verified).toBe(false)
@@ -921,7 +921,7 @@ describe('W3cDataIntegrityProofService', () => {
           cryptosuite: 'eddsa-jcs-2022',
           verificationMethod: 'did:example:123#key-1',
           proofValue: validProofValue1,
-        } as unknown as DataIntegrityCryptosuiteProof,
+        } as unknown as W3cDataIntegrityCryptosuiteProof,
       ],
     })
 
@@ -941,7 +941,7 @@ describe('W3cDataIntegrityProofService', () => {
           verificationMethod: 'did:example:123#key-1',
           proofPurpose: 'assertionMethod',
           proofValue: validProofValue1,
-        } as unknown as DataIntegrityCryptosuiteProof,
+        } as unknown as W3cDataIntegrityCryptosuiteProof,
       ],
     })
 
@@ -961,7 +961,7 @@ describe('W3cDataIntegrityProofService', () => {
           // missing verificationMethod
           proofPurpose: 'assertionMethod',
           proofValue: validProofValue1,
-        } as unknown as DataIntegrityCryptosuiteProof,
+        } as unknown as W3cDataIntegrityCryptosuiteProof,
         {
           id: 'urn:proof:2',
           type: 'DataIntegrityProof',
@@ -969,7 +969,7 @@ describe('W3cDataIntegrityProofService', () => {
           verificationMethod: 'did:example:123#key-2',
           // missing proofPurpose
           proofValue: validProofValue2,
-        } as unknown as DataIntegrityCryptosuiteProof,
+        } as unknown as W3cDataIntegrityCryptosuiteProof,
       ],
     })
 
@@ -1235,7 +1235,7 @@ describe('W3cDataIntegrityProofService', () => {
           proofPurpose: 'assertionMethod',
           proofValue: validProofValue,
         },
-      } as unknown as DataIntegrityProofSetSecuredDocument,
+      } as unknown as W3cDataIntegrityProofSetSecuredDocument,
       {}
     )
 

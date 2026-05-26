@@ -2,7 +2,7 @@ import type { DependencyManager, Module } from '../../plugins'
 import { injectable } from '../../plugins'
 import { Ed25519PublicJwk } from '../kms/jwk'
 import { EddsaJcs2022Cryptosuite } from './cryptosuites/eddsa-jcs-2022/EddsaJcs2022Cryptosuite'
-import { DataIntegrityCryptosuiteToken } from './cryptosuites/types'
+import { W3cDataIntegrityCryptosuiteToken } from './cryptosuites/types'
 import { W3cDataIntegrityApi } from './W3cDataIntegrityApi'
 import { W3cDataIntegrityCryptosuiteRegistry } from './W3cDataIntegrityCryptosuiteRegistry'
 import { W3cDataIntegrityProofService } from './W3cDataIntegrityProofService'
@@ -15,7 +15,7 @@ export class W3cDataIntegrityModule implements Module {
     dependencyManager.registerSingleton(W3cDataIntegrityCryptosuiteRegistry)
     dependencyManager.registerSingleton(W3cDataIntegrityProofService)
 
-    dependencyManager.registerInstance(DataIntegrityCryptosuiteToken, {
+    dependencyManager.registerInstance(W3cDataIntegrityCryptosuiteToken, {
       cryptosuiteClass: EddsaJcs2022Cryptosuite,
       cryptosuite: 'eddsa-jcs-2022',
       supportedPublicJwkTypes: [Ed25519PublicJwk],
