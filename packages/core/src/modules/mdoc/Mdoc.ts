@@ -144,7 +144,7 @@ export class Mdoc {
       status: options.statusInfo
         ? {
             statusList: {
-              idx: options.statusInfo.idx,
+              idx: options.statusInfo.index,
               uri: options.statusInfo.uri,
               certificate: options.statusInfo.certificate?.rawCertificate,
             },

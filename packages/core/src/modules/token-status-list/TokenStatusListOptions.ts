@@ -4,7 +4,7 @@ export type CreateTokenStatusListOptions = {
   format: 'cwt' | 'jwt'
   statusListLength: number
   bitsPerStatus: BitsPerStatus
-  hostingUri: string
+  statusListUri: string
   aggregationUri?: string
 
   /**
@@ -15,18 +15,7 @@ export type CreateTokenStatusListOptions = {
 
 export type UpdateTokenStatusListOptions<TSL extends Uint8Array | string> = {
   token: TSL
-  index: number
-  value: StatusType
-
-  /**
-   * Will determine whether it will be signed or authenticated
-   */
-  keyId: string
-}
-
-export type BatchUpdateTokenStatusListOptions<TSL extends Uint8Array | string> = {
-  token: TSL
-  indexAndValue: Array<[number, StatusType]>
+  status: { index: number; status: StatusType } | Array<{ index: number; status: StatusType }>
 
   /**
    * Will determine whether it will be signed or authenticated
@@ -36,4 +25,5 @@ export type BatchUpdateTokenStatusListOptions<TSL extends Uint8Array | string> =
 
 export type FetchTokenStatusListOptions = {
   uri: string
+  acceptedFormats?: Array<'cwt' | 'jwt'>
 }

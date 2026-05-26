@@ -1,10 +1,10 @@
 import type { Sign1Context } from '@owf/cose'
 import { coseKeyToJwkClaim } from '@owf/cose'
 import { CoseKey } from '@owf/mdoc'
-import type { AgentContext } from '../../../agent'
-import { CredoError } from '../../../error'
-import { KeyManagementApi, type KmsJwkPublicAsymmetric, type KnownJwaSignatureAlgorithm } from '../../kms'
-import { X509Certificate } from '../../x509'
+import type { AgentContext } from '../../agent'
+import { CredoError } from '../../error'
+import { KeyManagementApi, type KmsJwkPublicAsymmetric, type KnownJwaSignatureAlgorithm } from '../../modules/kms'
+import { X509Certificate } from '../../modules/x509'
 
 export const getSign1Context = (agentContext: AgentContext): Sign1Context => {
   const kms = agentContext.resolve(KeyManagementApi)

@@ -1,4 +1,4 @@
-import { StatusListCwt } from '@owf/token-status-list'
+import { StatusListCwt, StatusType } from '@owf/token-status-list'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { CredoError } from '../../../error'
 import { KeyManagementApi, type KmsJwkPublicEc, PublicJwk } from '../../../modules/kms'
@@ -42,17 +42,18 @@ describe('TokenStatusListService', () => {
         format: 'cwt',
         statusListLength: 16,
         bitsPerStatus: 1,
-        hostingUri: 'https://example.com/status/1',
+        statusListUri: 'https://example.com/status/1',
         keyId: key.keyId,
       }
 
       const result = await tokenStatusListService.createTokenStatusList(agentContext, options)
 
       expect(result).toBeDefined()
-      expect(result).toBeInstanceOf(Uint8Array)
+      expect(result.statusList).toBeInstanceOf(Uint8Array)
+      expect(result.format).toStrictEqual('cwt')
 
       // Verify it's a valid CWT
-      const cwt = StatusListCwt.fromToken(result as Uint8Array)
+      const cwt = StatusListCwt.fromToken(result.statusList as Uint8Array)
       expect(cwt.payload).toBeDefined()
       expect(cwt.payload.statusList).toBeDefined()
       expect(cwt.payload.statusList.statusList.length).toBe(16)
@@ -80,7 +81,7 @@ describe('TokenStatusListService', () => {
         format: 'cwt',
         statusListLength: 16,
         bitsPerStatus: 1,
-        hostingUri: 'https://example.com/status/1',
+        statusListUri: 'https://example.com/status/1',
         keyId: key.keyId,
       }
 
@@ -95,36 +96,31 @@ describe('TokenStatusListService', () => {
         format: 'cwt',
         statusListLength: 16,
         bitsPerStatus: 1,
-        hostingUri: 'https://example.com/status/1',
+        statusListUri: 'https://example.com/status/1',
         keyId: key.keyId,
       }
 
-      const statusListToken = (await tokenStatusListService.createTokenStatusList(
-        agentContext,
-        createOptions
-      )) as Uint8Array
+      const { statusList } = await tokenStatusListService.createTokenStatusList(agentContext, createOptions)
 
       // Now update it
       const result = await tokenStatusListService.updateTokenStatusList(agentContext, {
-        token: statusListToken,
-        index: 3,
-        value: 1,
+        token: statusList as Uint8Array,
+        status: { index: 3, status: StatusType.Invalid },
         keyId: key.keyId,
       })
 
       expect(result).toBeDefined()
-      expect(result).toBeInstanceOf(Uint8Array)
+      expect(result.statusList).toBeInstanceOf(Uint8Array)
 
       // Verify the status was updated
-      const cwt = StatusListCwt.fromToken(result as Uint8Array)
+      const cwt = StatusListCwt.fromToken(result.statusList)
       expect(cwt.payload.statusList.getStatus(3)).toBe(1)
     })
 
     test('throws error when updating with invalid token type', async () => {
       const options = {
         token: 123 as unknown as Uint8Array,
-        index: 0,
-        value: 1,
+        status: { index: 0, status: StatusType.Invalid },
         keyId: key.keyId,
       }
 
@@ -139,31 +135,28 @@ describe('TokenStatusListService', () => {
         format: 'cwt',
         statusListLength: 24,
         bitsPerStatus: 1,
-        hostingUri: 'https://example.com/status/1',
+        statusListUri: 'https://example.com/status/1',
         keyId: key.keyId,
       }
 
-      const statusListToken = (await tokenStatusListService.createTokenStatusList(
-        agentContext,
-        createOptions
-      )) as Uint8Array
+      const { statusList } = await tokenStatusListService.createTokenStatusList(agentContext, createOptions)
 
-      // Now batch update it
-      const result = await tokenStatusListService.batchUpdateTokenStatusList(agentContext, {
-        token: statusListToken,
-        indexAndValue: [
-          [1, 1],
-          [7, 1],
-          [12, 1],
+      // Now update multiple
+      const result = await tokenStatusListService.updateTokenStatusList(agentContext, {
+        token: statusList as Uint8Array,
+        status: [
+          { index: 1, status: StatusType.Invalid },
+          { index: 7, status: StatusType.Invalid },
+          { index: 12, status: StatusType.Invalid },
         ],
         keyId: key.keyId,
       })
 
       expect(result).toBeDefined()
-      expect(result).toBeInstanceOf(Uint8Array)
+      expect(result.statusList).toBeInstanceOf(Uint8Array)
 
       // Verify the statuses were updated
-      const cwt = StatusListCwt.fromToken(result as Uint8Array)
+      const cwt = StatusListCwt.fromToken(result.statusList)
       expect(cwt.payload.statusList.getStatus(1)).toBe(1)
       expect(cwt.payload.statusList.getStatus(7)).toBe(1)
       expect(cwt.payload.statusList.getStatus(12)).toBe(1)

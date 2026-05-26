@@ -1,0 +1,95 @@
+import { p256 } from '@noble/curves/nist.js'
+import { hkdf } from '@noble/hashes/hkdf.js'
+import { sha256 } from '@noble/hashes/sha2.js'
+import { type MdocContext } from '@owf/mdoc'
+import { AgentContext } from '../../agent'
+import { CredoWebCrypto, Hasher } from '../../crypto'
+import { CredoError } from '../../error'
+import { KeyManagementApi, type KmsJwkPublicAsymmetric, knownJwaFromCoseSignatureAlgorithm } from '../../modules/kms'
+import { X509Certificate, X509Service } from '../../modules/x509'
+import { getMac0Context } from './mac0Context'
+import { getSign1Context } from './sign1Context'
+
+export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date } = {}): MdocContext => {
+  const crypto = new CredoWebCrypto(agentContext)
+  const kms = agentContext.resolve(KeyManagementApi)
+
+  return {
+    fetch: agentContext.config.agentDependencies.fetch,
+    crypto: {
+      digest: async (input) => {
+        const { bytes, digestAlgorithm } = input
+
+        return new Uint8Array(
+          crypto.digest(
+            digestAlgorithm,
+            // NOTE: extra Uint8Array wrapping is needed here, somehow if we use `bytes.buffer` directly
+            // it's not working. Maybe due to Uint8array length
+            new Uint8Array(bytes).buffer
+          )
+        )
+      },
+      random: (length) => {
+        return crypto.getRandomValues(new Uint8Array(length))
+      },
+      hdkf: async (input) => {
+        const { publicKey, privateKey, salt, info, digestAlgorithm } = input
+        const ikm = p256.getSharedSecret(privateKey, publicKey, true).slice(1)
+        const hashedSalt = Hasher.hash(salt, digestAlgorithm ?? 'sha-256')
+        return hkdf(sha256, ikm, hashedSalt, info, 32)
+      },
+    },
+
+    cose: {
+      mac0: {
+        sign: getMac0Context(agentContext).mac,
+        verify: async (input) => {
+          const { mac0, key } = input
+          if (key instanceof Uint8Array) {
+            throw new CredoError(
+              'For mdoc authentication verification with mac0 a CoseKey is required, not a Uint8Array'
+            )
+          }
+
+          const algorithm = knownJwaFromCoseSignatureAlgorithm(mac0.signatureAlgorithmName)
+
+          const { verified } = await kms.verify({
+            key: {
+              publicJwk: key.jwk as KmsJwkPublicAsymmetric,
+            },
+            data: mac0.toBeAuthenticated,
+            algorithm,
+            signature: mac0.tag,
+          })
+
+          return verified
+        },
+      },
+      sign1: getSign1Context(agentContext),
+    },
+
+    x509: {
+      ...getSign1Context(agentContext).x509,
+      verifyCertificateChain: async (input) => {
+        const certificateChain = input.x5chain.map((cert) => X509Certificate.fromRawCertificate(cert).toString('pem'))
+        const trustedCertificates = input.trustedCertificates.map((cert) =>
+          X509Certificate.fromRawCertificate(cert).toString('pem')
+        ) as [string, ...string[]]
+
+        await X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          trustedCertificates,
+          verificationDate: input.now ?? now,
+        })
+      },
+      getCertificateData: async (input) => {
+        const { certificate } = input
+        const x509Certificate = X509Certificate.fromRawCertificate(certificate)
+        return {
+          ...x509Certificate.data,
+          thumbprint: await x509Certificate.getThumbprintInHex(agentContext),
+        }
+      },
+    },
+  } satisfies MdocContext
+}

@@ -1,12 +1,12 @@
 import { AgentContext } from '../../agent'
+import type { Jwt } from '../../crypto'
 import { injectable } from '../../plugins'
 import type {
-  BatchUpdateTokenStatusListOptions,
   CreateTokenStatusListOptions,
   FetchTokenStatusListOptions,
   UpdateTokenStatusListOptions,
 } from './TokenStatusListOptions'
-import type { TokenStatusListService } from './TokenStatusListService'
+import type { StatusListCwt, TokenStatusListService } from './TokenStatusListService'
 
 /**
  * @public
@@ -21,25 +21,37 @@ export class TokenStatusListApi {
     this.tokenStatusListService = tokenStatusListService
   }
 
-  public async createTokenStatusList(options: CreateTokenStatusListOptions): Promise<Uint8Array | string> {
+  public async createTokenStatusList(
+    options: CreateTokenStatusListOptions
+  ): Promise<
+    | { format: 'cwt'; statusList: Uint8Array; parsed: StatusListCwt }
+    | { format: 'jwt'; statusList: string; parsed: Jwt }
+  > {
     return this.tokenStatusListService.createTokenStatusList(this.agentContext, options)
   }
 
-  public async updateTokenStatusList<TSL extends Uint8Array | string>(
-    options: UpdateTokenStatusListOptions<TSL>
-  ): Promise<TSL> {
-    return this.tokenStatusListService.updateTokenStatusList<TSL>(this.agentContext, options)
+  public async updateTokenStatusList(
+    options: UpdateTokenStatusListOptions<string>
+  ): Promise<{ statusList: string; parsed: Jwt }>
+  public async updateTokenStatusList(
+    options: UpdateTokenStatusListOptions<Uint8Array>
+  ): Promise<{ statusList: Uint8Array; parsed: StatusListCwt }>
+  public async updateTokenStatusList(
+    options: UpdateTokenStatusListOptions<Uint8Array | string>
+  ): Promise<{ statusList: Uint8Array | string; parsed: StatusListCwt | Jwt }> {
+    return this.tokenStatusListService.updateTokenStatusList(
+      this.agentContext,
+      options as UpdateTokenStatusListOptions<Uint8Array>
+    )
   }
 
-  public async batchUpdateTokenStatusList<TSL extends Uint8Array | string>(
-    options: BatchUpdateTokenStatusListOptions<TSL>
-  ): Promise<TSL> {
-    return this.tokenStatusListService.batchUpdateTokenStatusList<TSL>(this.agentContext, options)
-  }
-
-  public async fetchTokenStatusList<TSL extends Uint8Array | string = Uint8Array | string>(
+  public async fetchTokenStatusList(
     options: FetchTokenStatusListOptions
-  ): Promise<TSL> {
-    return this.tokenStatusListService.fetchTokenStatusList<TSL>(this.agentContext, options)
+  ): Promise<{ raw: Uint8Array; parsed: StatusListCwt }>
+  public async fetchTokenStatusList(options: FetchTokenStatusListOptions): Promise<{ raw: string; parsed: Jwt }>
+  public async fetchTokenStatusList(
+    options: FetchTokenStatusListOptions
+  ): Promise<{ raw: Uint8Array | string; parsed: StatusListCwt | Jwt }> {
+    return this.tokenStatusListService.fetchTokenStatusList(this.agentContext, options)
   }
 }
