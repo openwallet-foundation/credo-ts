@@ -227,8 +227,10 @@ export class DidCommV2EnvelopeService {
     if (protectedJson.typ !== 'application/didcomm-encrypted+json') {
       throw new CredoError(`Invalid DIDComm v2 envelope typ: ${protectedJson.typ}`)
     }
-    if (protectedJson.enc !== 'A256GCM') {
-      throw new CredoError(`Unsupported enc: ${protectedJson.enc}`)
+
+    const enc = protectedJson.enc
+    if (enc !== 'A256GCM' && enc !== 'A256CBC-HS512') {
+      throw new CredoError(`Unsupported enc: ${enc}`)
     }
 
     const recipient = encrypted.recipients?.find((r) => r.header?.kid === keys.matchedKid)
@@ -241,8 +243,11 @@ export class DidCommV2EnvelopeService {
       throw new CredoError('Invalid ephemeral public key in protected header')
     }
 
+    const aad = TypedArrayEncoder.fromUtf8String(encrypted.protected)
+    const apv = this.parseAndValidateApv(protectedJson, encrypted.recipients)
+
     if (protectedJson.alg === 'ECDH-ES+A256KW') {
-      return this.unpackAnoncrypt(agentContext, encrypted, keys, recipient, epk.x)
+      return this.unpackAnoncrypt(agentContext, encrypted, keys, recipient, epk.x, enc, aad, apv)
     }
 
     if (protectedJson.alg !== 'ECDH-1PU+A256KW') {
@@ -253,6 +258,7 @@ export class DidCommV2EnvelopeService {
     if (!skid) {
       throw new CredoError('Authcrypt requires skid in protected header')
     }
+    const apu = this.parseAndValidateApu(protectedJson, skid)
     const senderKey = await keys.resolveSenderKey(skid)
     if (!senderKey) {
       throw new CredoError('Could not resolve sender key for skid')
@@ -271,12 +277,15 @@ export class DidCommV2EnvelopeService {
           },
           ephemeralPublicJwk: { kty: 'OKP', crv: 'X25519', x: epk.x },
           senderPublicJwk: senderX25519.toJson(),
+          apu,
+          apv,
         },
       },
       decryption: {
-        algorithm: 'A256GCM',
+        algorithm: enc,
         iv: TypedArrayEncoder.fromBase64Url(encrypted.iv),
         tag: TypedArrayEncoder.fromBase64Url(encrypted.tag),
+        aad,
       },
       encrypted: TypedArrayEncoder.fromBase64Url(encrypted.ciphertext),
     })
@@ -295,7 +304,10 @@ export class DidCommV2EnvelopeService {
       matchedKid: string
     },
     recipient: { header: { kid: string }; encrypted_key: string },
-    epkX: string
+    epkX: string,
+    enc: DidCommV2ContentEncryptionAlgorithm,
+    aad: Uint8Array,
+    apv: Uint8Array
   ): Promise<{
     plaintext: DidCommV2PlaintextMessage
     senderKey: Kms.PublicJwk<Kms.X25519PublicJwk> | null
@@ -311,12 +323,14 @@ export class DidCommV2EnvelopeService {
           encryptedKey: {
             encrypted: TypedArrayEncoder.fromBase64Url(recipient.encrypted_key),
           },
+          apv,
         },
       },
       decryption: {
-        algorithm: 'A256GCM',
+        algorithm: enc,
         iv: TypedArrayEncoder.fromBase64Url(encrypted.iv),
         tag: TypedArrayEncoder.fromBase64Url(encrypted.tag),
+        aad,
       },
       encrypted: TypedArrayEncoder.fromBase64Url(encrypted.ciphertext),
     })
@@ -326,4 +340,40 @@ export class DidCommV2EnvelopeService {
 
     return { plaintext, senderKey: null }
   }
+
+  private parseAndValidateApu(protectedJson: Record<string, unknown>, skid: string): Uint8Array {
+    const expected = computeApu(skid)
+    const apuField = protectedJson.apu
+    if (typeof apuField !== 'string') {
+      throw new CredoError('Authcrypt requires apu in protected header')
+    }
+    const received = TypedArrayEncoder.fromBase64Url(apuField)
+    if (!constantTimeEqual(received, expected)) {
+      throw new CredoError('apu in protected header does not match skid')
+    }
+    return received
+  }
+
+  private parseAndValidateApv(
+    protectedJson: Record<string, unknown>,
+    recipients: DidCommV2EncryptedMessage['recipients']
+  ): Uint8Array {
+    const apvField = protectedJson.apv
+    if (typeof apvField !== 'string') {
+      throw new CredoError('Missing apv in protected header')
+    }
+    const received = TypedArrayEncoder.fromBase64Url(apvField)
+    const expected = computeApv(recipients.map((r) => r.header.kid))
+    if (!constantTimeEqual(received, expected)) {
+      throw new CredoError('apv in protected header does not match recipient kids')
+    }
+    return received
+  }
+}
+
+function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
+  return diff === 0
 }

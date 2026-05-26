@@ -1,6 +1,7 @@
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { askar, Key, KeyAlgorithm } from '@openwallet-foundation/askar-shared'
 import { jwkEncToAskarAlg } from '../../utils'
+import { type AskarSupportedEncryptionOptions, aeadEncrypt } from './encrypt'
 
 export const askarSupportedKeyAgreementAlgorithms = [
   'ECDH-ES',
@@ -18,14 +19,21 @@ type AskarSupportedKeyAgreementDecryptOptions = Kms.KmsKeyAgreementDecryptOption
   algorithm: (typeof askarSupportedKeyAgreementAlgorithms)[number]
 }
 
-function deriveEncryptionKeyEcdh1Pu(options: {
+/**
+ * Full ECDH-1PU+A256KW encrypt flow per draft-madden-jose-ecdh-1pu-04 §2.3:
+ * encrypt content with a fresh CEK first, then derive the KEK with the resulting JWE
+ * Authentication Tag bound into SuppPubInfo, then wrap the CEK with that KEK. The KEK
+ * cannot be derived before content encryption because it depends on the tag.
+ */
+export function encryptEcdh1Pu(options: {
   keyAgreement: AskarSupportedKeyAgreementEncryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
-  encryption: Kms.KmsEncryptDataEncryption
+  encryption: AskarSupportedEncryptionOptions
   senderKey: Key
   recipientKey: Key
+  data: Uint8Array
   ephemeralKey?: Key
 }) {
-  const { keyAgreement, encryption, senderKey, recipientKey, ephemeralKey: providedEphemeralKey } = options
+  const { keyAgreement, encryption, senderKey, recipientKey, data, ephemeralKey: providedEphemeralKey } = options
 
   if (senderKey.algorithm !== KeyAlgorithm.X25519 || recipientKey.algorithm !== KeyAlgorithm.X25519) {
     throw new Kms.KeyManagementAlgorithmNotSupportedError(
@@ -50,46 +58,46 @@ function deriveEncryptionKeyEcdh1Pu(options: {
   const apv = keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array([])
   const algId = TypedArrayEncoder.fromUtf8String('ECDH-1PU+A256KW')
 
-  const derivedKey = new Key(
-    askar.keyDeriveEcdh1pu({
-      algorithm: KeyAlgorithm.AesA256Kw,
-      ephemeralKey,
-      senderKey,
-      recipientKey,
-      algId,
-      apu,
-      apv,
-      receive: false,
-    })
-  )
-
-  let contentEncryptionKey: Key | undefined
-  let encryptedContentEncryptionKey: Kms.KmsEncryptedKey | undefined
+  const contentEncryptionKey = Key.generate(askarEncryptionAlgorithm)
+  let derivedKey: Key | undefined
   try {
-    contentEncryptionKey = Key.generate(askarEncryptionAlgorithm)
-    const wrappedKey = derivedKey.wrapKey({
-      other: contentEncryptionKey,
-    })
-    const epkBytes = ephemeralKey.publicBytes
+    const aeadResult = aeadEncrypt({ key: contentEncryptionKey, data, encryption })
+
+    derivedKey = new Key(
+      askar.keyDeriveEcdh1pu({
+        algorithm: KeyAlgorithm.AesA256Kw,
+        ephemeralKey,
+        senderKey,
+        recipientKey,
+        algId,
+        apu,
+        apv,
+        ccTag: aeadResult.tag,
+        receive: false,
+      })
+    )
+    const wrappedKey = derivedKey.wrapKey({ other: contentEncryptionKey })
     const ephemeralPublicKey = {
       kty: 'OKP',
       crv: 'X25519',
-      x: TypedArrayEncoder.toBase64Url(epkBytes),
+      x: TypedArrayEncoder.toBase64Url(ephemeralKey.publicBytes),
     } as const
-    encryptedContentEncryptionKey = {
-      encrypted: new Uint8Array(wrappedKey.ciphertext),
-      iv: wrappedKey.nonce ? new Uint8Array(wrappedKey.nonce) : undefined,
-      tag: wrappedKey.tag ? new Uint8Array(wrappedKey.tag) : undefined,
-      ephemeralPublicKey,
-    }
+
     return {
-      contentEncryptionKey,
-      encryptedContentEncryptionKey,
+      encrypted: aeadResult.encrypted,
+      iv: aeadResult.iv,
+      tag: aeadResult.tag,
+      encryptedKey: {
+        encrypted: new Uint8Array(wrappedKey.ciphertext),
+        iv: wrappedKey.nonce ? new Uint8Array(wrappedKey.nonce) : undefined,
+        tag: wrappedKey.tag ? new Uint8Array(wrappedKey.tag) : undefined,
+        ephemeralPublicKey,
+      } satisfies Kms.KmsEncryptedKey,
     }
   } finally {
     if (ownsEphemeralKey) ephemeralKey.handle.free()
-    derivedKey.handle.free()
-    // contentEncryptionKey is returned to caller; they free it.
+    derivedKey?.handle.free()
+    contentEncryptionKey.handle.free()
   }
 }
 
@@ -98,9 +106,8 @@ export function deriveEncryptionKey(options: {
   senderKey: Key
   recipientKey: Key
   encryption: Kms.KmsEncryptDataEncryption
-  ephemeralKey?: Key
 }) {
-  const { keyAgreement, encryption, senderKey, recipientKey, ephemeralKey } = options
+  const { keyAgreement, encryption, senderKey, recipientKey } = options
 
   const askarEncryptionAlgorithm = jwkEncToAskarAlg[encryption.algorithm as keyof typeof jwkEncToAskarAlg]
   if (!askarEncryptionAlgorithm) {
@@ -118,15 +125,11 @@ export function deriveEncryptionKey(options: {
     )
   }
 
-  // ECDH-1PU+A256KW: derive KEK via askar.keyDeriveEcdh1pu (using caller's ephemeral if supplied), wrap CEK
+  // ECDH-1PU+A256KW requires the JWE Authentication Tag in the KDF, so it goes through encryptEcdh1Pu
+  // which performs content encryption + key wrapping atomically. Callers that reach this dispatcher
+  // with 1PU are programming errors.
   if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
-    return deriveEncryptionKeyEcdh1Pu({
-      keyAgreement,
-      encryption,
-      senderKey,
-      recipientKey,
-      ephemeralKey,
-    })
+    throw new Kms.KeyManagementError('Use encryptEcdh1Pu for ECDH-1PU+A256KW; deriveEncryptionKey only handles ECDH-ES')
   }
 
   const askarKeyWrappingAlgorithm =
@@ -300,6 +303,10 @@ function deriveDecryptionKeyEcdh1Pu(options: {
   const apu = keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array([])
   const apv = keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array([])
   const algId = TypedArrayEncoder.fromUtf8String('ECDH-1PU+A256KW')
+  // draft-madden-jose-ecdh-1pu-04 binds the JWE Authentication Tag into the KDF SuppPubInfo
+  // for the Key Wrapping variants of ECDH-1PU.
+  const decryptionTag = 'tag' in decryption ? decryption.tag : undefined
+  const ccTag = decryptionTag ? new Uint8Array(decryptionTag) : undefined
 
   const derivedKey = new Key(
     askar.keyDeriveEcdh1pu({
@@ -310,6 +317,7 @@ function deriveDecryptionKeyEcdh1Pu(options: {
       algId,
       apu,
       apv,
+      ccTag,
       receive: true,
     })
   )
