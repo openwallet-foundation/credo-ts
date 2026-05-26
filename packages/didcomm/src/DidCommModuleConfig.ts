@@ -55,18 +55,18 @@ export interface DidCommModuleConfigOptions {
   peerDidNumAlgoForV2OOB?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
 
   /**
-   * Default content encryption algorithm for DIDComm v2 authcrypt envelopes. Per spec, authcrypt
-   * MUST use A256CBC-HS512; A256GCM is also accepted for backward compatibility.
+   * Default content encryption algorithm for DIDComm v2 authcrypt envelopes. Spec restricts
+   * authcrypt to A256CBC-HS512.
    *
    * @default 'A256CBC-HS512'
    */
   v2DefaultAuthcryptContentEncryption?: DidCommV2AuthcryptContentEncryptionAlgorithm
 
   /**
-   * Default content encryption algorithm for DIDComm v2 anoncrypt envelopes. Set to 'XC20P' to
-   * match the SICPA stack default.
+   * Default content encryption algorithm for DIDComm v2 anoncrypt envelopes. A256CBC-HS512 is
+   * REQUIRED per spec; A256GCM is RECOMMENDED; XC20P is OPTIONAL (SICPA's default).
    *
-   * @default 'A256GCM'
+   * @default 'A256CBC-HS512'
    */
   v2DefaultAnoncryptContentEncryption?: DidCommV2AnoncryptContentEncryptionAlgorithm
 
@@ -277,6 +277,6 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
   }
 
   public get v2DefaultAnoncryptContentEncryption(): DidCommV2AnoncryptContentEncryptionAlgorithm {
-    return this.options.v2DefaultAnoncryptContentEncryption ?? 'A256GCM'
+    return this.options.v2DefaultAnoncryptContentEncryption ?? 'A256CBC-HS512'
   }
 }

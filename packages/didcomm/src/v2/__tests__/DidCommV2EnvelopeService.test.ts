@@ -26,13 +26,20 @@ class MockEcdh1PuKeyManagementService implements Kms.KeyManagementService {
 
   isOperationSupported(_ctx: AgentContext, operation: Kms.KmsOperation): boolean {
     if (operation.operation === 'createKey') return operation.type.kty === 'OKP' && operation.type.crv === 'X25519'
+    const supportedEnc = ['A256GCM', 'A256CBC-HS512', 'XC20P']
     if (operation.operation === 'encrypt') {
       const alg = operation.keyAgreement?.algorithm
-      return operation.encryption?.algorithm === 'A256GCM' && (alg === 'ECDH-1PU+A256KW' || alg === 'ECDH-ES+A256KW')
+      return (
+        supportedEnc.includes(operation.encryption?.algorithm ?? '') &&
+        (alg === 'ECDH-1PU+A256KW' || alg === 'ECDH-ES+A256KW')
+      )
     }
     if (operation.operation === 'decrypt') {
       const alg = operation.keyAgreement?.algorithm
-      return operation.decryption?.algorithm === 'A256GCM' && (alg === 'ECDH-1PU+A256KW' || alg === 'ECDH-ES+A256KW')
+      return (
+        supportedEnc.includes(operation.decryption?.algorithm ?? '') &&
+        (alg === 'ECDH-1PU+A256KW' || alg === 'ECDH-ES+A256KW')
+      )
     }
     if (operation.operation === 'randomBytes') return true
     if (operation.operation === 'deleteKey') return true
@@ -86,8 +93,11 @@ class MockEcdh1PuKeyManagementService implements Kms.KeyManagementService {
     ) {
       throw new Error('Mock only supports ECDH-1PU+A256KW and ECDH-ES+A256KW')
     }
-    const iv = randomBytes(12)
-    const tag = randomBytes(16)
+    const enc = options.encryption.algorithm
+    const ivSize = enc === 'A256CBC-HS512' ? 16 : enc === 'XC20P' ? 24 : 12
+    const tagSize = enc === 'A256CBC-HS512' ? 32 : 16
+    const iv = randomBytes(ivSize)
+    const tag = randomBytes(tagSize)
     const epkX = TypedArrayEncoder.toBase64Url(randomBytes(32))
     const ephemeralPublicKey = { kty: 'OKP' as const, crv: 'X25519' as const, x: epkX }
     return {
@@ -165,7 +175,7 @@ describe('DidCommV2EnvelopeService', () => {
     const encrypted = await envelopeService.pack(agentContext, plaintext, {
       senderKey,
       recipientKey,
-      contentEncryptionAlgorithm: 'A256GCM',
+      contentEncryptionAlgorithm: 'A256CBC-HS512',
     })
 
     expect(encrypted).toMatchObject({
@@ -197,7 +207,7 @@ describe('DidCommV2EnvelopeService', () => {
 
     const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
       recipientKey,
-      contentEncryptionAlgorithm: 'A256GCM',
+      contentEncryptionAlgorithm: 'A256CBC-HS512',
     })
 
     expect(encrypted).toMatchObject({

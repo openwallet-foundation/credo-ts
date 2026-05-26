@@ -42,8 +42,8 @@ export interface DidCommV2Attachment {
 export const DIDCOMM_V2_PLAIN_MIME_TYPE = 'application/didcomm-plain+json'
 export const DIDCOMM_V2_ENCRYPTED_MIME_TYPE = 'application/didcomm-encrypted+json'
 
-export type DidCommV2AuthcryptContentEncryptionAlgorithm = 'A256GCM' | 'A256CBC-HS512'
-export type DidCommV2AnoncryptContentEncryptionAlgorithm = 'A256GCM' | 'A256CBC-HS512' | 'XC20P'
+export type DidCommV2AuthcryptContentEncryptionAlgorithm = 'A256CBC-HS512'
+export type DidCommV2AnoncryptContentEncryptionAlgorithm = 'A256CBC-HS512' | 'A256GCM' | 'XC20P'
 export type DidCommV2ContentEncryptionAlgorithm =
   | DidCommV2AuthcryptContentEncryptionAlgorithm
   | DidCommV2AnoncryptContentEncryptionAlgorithm

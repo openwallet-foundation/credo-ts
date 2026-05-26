@@ -22,7 +22,7 @@ export interface DidCommV2EnvelopeKeys {
   senderKey: Kms.PublicJwk<Kms.X25519PublicJwk>
   /** DID URL of the sender key; used as skid in JWE so recipient can resolve it. Falls back to senderKey.keyId if absent. */
   senderKeySkid?: string
-  /** Content encryption algorithm. Defaults to A256CBC-HS512 (mandatory authcrypt enc per DIDComm v2.1). XC20P is not allowed for authcrypt. */
+  /** Content encryption algorithm. Authcrypt is restricted to A256CBC-HS512 per DIDComm v2.1. */
   contentEncryptionAlgorithm?: DidCommV2AuthcryptContentEncryptionAlgorithm
 }
 

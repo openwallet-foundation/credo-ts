@@ -68,7 +68,6 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
   describe('authcrypt', () => {
     it.each<DidCommV2AuthcryptContentEncryptionAlgorithm>([
       'A256CBC-HS512',
-      'A256GCM',
     ])('round-trips with %s content encryption', async (enc) => {
       const encrypted = await envelopeService.pack(agentContext, plaintext, {
         senderKey,
