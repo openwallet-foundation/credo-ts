@@ -693,9 +693,6 @@ importers:
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
         version: 0.6.0
-      '@openwallet-foundation/askar-shared':
-        specifier: 'catalog:'
-        version: 0.6.0
       '@sphereon/pex-models':
         specifier: 'catalog:'
         version: 2.3.2

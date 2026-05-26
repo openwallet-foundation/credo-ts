@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import { InjectionSymbols, Kms } from '@credo-ts/core'
-import { askar } from '@openwallet-foundation/askar-shared'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../../../../askar/src/AskarModuleConfig'
 import { AskarKeyManagementService } from '../../../../../askar/src/kms/AskarKeyManagementService'
