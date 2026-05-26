@@ -234,7 +234,7 @@ export class DidCommV2EnvelopeService {
     }
 
     const enc = protectedJson.enc
-    if (enc !== 'A256GCM' && enc !== 'A256CBC-HS512') {
+    if (enc !== 'A256GCM' && enc !== 'A256CBC-HS512' && enc !== 'XC20P') {
       throw new CredoError(`Unsupported enc: ${enc}`)
     }
 
@@ -257,6 +257,9 @@ export class DidCommV2EnvelopeService {
 
     if (protectedJson.alg !== 'ECDH-1PU+A256KW') {
       throw new CredoError(`Unsupported pack algorithm: ${protectedJson.alg}`)
+    }
+    if (enc === 'XC20P') {
+      throw new CredoError('XC20P content encryption is only valid with anoncrypt (ECDH-ES+A256KW)')
     }
 
     const skid = protectedJson.skid as string | undefined
