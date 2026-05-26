@@ -13,7 +13,12 @@ import {
 import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarErrorCode, isAskarError, jwkCrvToAskarAlg, jwkEncToAskarAlg } from '../utils'
 import { aeadDecrypt } from './crypto/decrypt'
-import { askarSupportedKeyAgreementAlgorithms, deriveDecryptionKey, deriveEncryptionKey } from './crypto/deriveKey'
+import {
+  askarSupportedKeyAgreementAlgorithms,
+  deriveDecryptionKey,
+  deriveEncryptionKey,
+  encryptEcdh1Pu,
+} from './crypto/deriveKey'
 import { type AskarSupportedEncryptionOptions, aeadEncrypt } from './crypto/encrypt'
 import { randomBytes } from './crypto/randomBytes'
 
@@ -465,6 +470,26 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         if (key.keyAgreement.algorithm === 'ECDH-1PU+A256KW' && privateKey.algorithm === KeyAlgorithm.Ed25519) {
           privateKey = privateKey.convertkey({ algorithm: KeyAlgorithm.X25519 })
           keysToFree.push(privateKey)
+        }
+
+        // ECDH-1PU+A256KW binds the JWE Authentication Tag into the KDF per draft-madden, so
+        // content encryption has to happen before key derivation. encryptEcdh1Pu does the full
+        // atomic flow (CEK gen, content encrypt, KEK derive with tag, CEK wrap) and short-circuits
+        // the rest of this method.
+        if (key.keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+          let ephemeralKey: Key | undefined
+          if ('ephemeralKeyId' in key.keyAgreement && key.keyAgreement.ephemeralKeyId) {
+            ephemeralKey = (await this.getKeyAsserted(agentContext, key.keyAgreement.ephemeralKeyId)).key
+            keysToFree.push(ephemeralKey)
+          }
+          return encryptEcdh1Pu({
+            keyAgreement: key.keyAgreement,
+            encryption: encryption as AskarSupportedEncryptionOptions,
+            senderKey: privateKey,
+            recipientKey,
+            data,
+            ephemeralKey,
+          })
         }
 
         const { contentEncryptionKey, encryptedContentEncryptionKey } = deriveEncryptionKey({

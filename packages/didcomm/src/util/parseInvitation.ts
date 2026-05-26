@@ -40,8 +40,9 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
 export const parseInvitationJson = (invitationJson: Record<string, unknown>): DidCommOutOfBandInvitation => {
   // DIDComm v2 OOB uses "type" not "@type"
   const v2Type = invitationJson.type as string
-  if (v2Type === DidCommOutOfBandInvitationV2.type) {
+  if (v2Type === DidCommOutOfBandInvitationV2.type.messageTypeUri) {
     const v2Invitation = DidCommOutOfBandInvitationV2.fromJson(invitationJson)
+    MessageValidator.validateSync(v2Invitation)
     return convertV2InvitationToOutOfBandInvitation(v2Invitation)
   }
 

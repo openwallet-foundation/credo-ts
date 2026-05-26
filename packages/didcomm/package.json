@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@animo-id/pex": "catalog:",
+    "@openwallet-foundation/askar-nodejs": "catalog:",
     "@sphereon/pex-models": "catalog:",
     "@types/luxon": "^3.7.1",
     "reflect-metadata": "catalog:",

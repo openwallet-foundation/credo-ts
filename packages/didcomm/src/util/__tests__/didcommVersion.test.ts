@@ -20,14 +20,12 @@ describe('didcommVersion', () => {
     alg: 'ECDH-1PU+A256KW',
     enc: 'A256GCM',
     skid: 'key-id',
-    recipients: [],
   })
 
   const v2AnoncryptProtected = JsonEncoder.toBase64Url({
     typ: 'application/didcomm-encrypted+json',
     alg: 'ECDH-ES+A256KW',
     enc: 'A256GCM',
-    recipients: [],
   })
 
   describe('isDidCommV2EncryptedMessage', () => {
@@ -40,6 +38,7 @@ describe('didcommVersion', () => {
     it('returns true for v2 encrypted message', () => {
       const message = {
         protected: v2AuthcryptProtected,
+        recipients: [],
         iv: 'base64iv',
         ciphertext: 'base64ciphertext',
         tag: 'base64tag',
@@ -50,6 +49,7 @@ describe('didcommVersion', () => {
     it('returns true for v2 anoncrypt message', () => {
       const message = {
         protected: v2AnoncryptProtected,
+        recipients: [],
         iv: 'base64iv',
         ciphertext: 'base64ciphertext',
         tag: 'base64tag',
@@ -60,6 +60,16 @@ describe('didcommVersion', () => {
     it('returns false for v1 encrypted message', () => {
       const message = {
         protected: v1Protected,
+        iv: 'base64iv',
+        ciphertext: 'base64ciphertext',
+        tag: 'base64tag',
+      }
+      expect(isDidCommV2EncryptedMessage(message)).toBe(false)
+    })
+
+    it('returns false when top-level recipients is missing', () => {
+      const message = {
+        protected: v2AuthcryptProtected,
         iv: 'base64iv',
         ciphertext: 'base64ciphertext',
         tag: 'base64tag',
@@ -86,6 +96,7 @@ describe('didcommVersion', () => {
     it('returns false for v2 encrypted message', () => {
       const message = {
         protected: v2AuthcryptProtected,
+        recipients: [],
         iv: 'base64iv',
         ciphertext: 'base64ciphertext',
         tag: 'base64tag',
@@ -98,6 +109,7 @@ describe('didcommVersion', () => {
     it('returns true for v2 authcrypt message', () => {
       const message = {
         protected: v2AuthcryptProtected,
+        recipients: [],
         iv: 'base64iv',
         ciphertext: 'base64ciphertext',
         tag: 'base64tag',
@@ -108,6 +120,7 @@ describe('didcommVersion', () => {
     it('returns false for v2 anoncrypt message', () => {
       const message = {
         protected: v2AnoncryptProtected,
+        recipients: [],
         iv: 'base64iv',
         ciphertext: 'base64ciphertext',
         tag: 'base64tag',

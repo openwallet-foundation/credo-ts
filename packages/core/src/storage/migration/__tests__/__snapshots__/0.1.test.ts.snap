@@ -1284,6 +1284,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "connectionTypes": [],
       "did": "did:peer:1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho",
+      "didcommVersion": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2ZpUE1QeENRZVNEWkdNa0N2bTFZMnJCb1BzbXc0WkhNdjcxalh0Y1dSUmlNI3o2TWtmaVBNUHhDUWVTRFpHTWtDdm0xWTJyQm9Qc213NFpITXY3MWpYdGNXUlJpTSJdLCJyIjpbXX0",
       "invitationKey": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
       "mediatorId": undefined,
@@ -1322,6 +1323,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "connectionTypes": [],
       "did": "did:peer:1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2",
+      "didcommVersion": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2ZpUE1QeENRZVNEWkdNa0N2bTFZMnJCb1BzbXc0WkhNdjcxalh0Y1dSUmlNI3o2TWtmaVBNUHhDUWVTRFpHTWtDdm0xWTJyQm9Qc213NFpITXY3MWpYdGNXUlJpTSJdLCJyIjpbXX0",
       "invitationKey": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
       "mediatorId": undefined,
@@ -1360,6 +1362,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "connectionTypes": [],
       "did": "did:peer:1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE",
+      "didcommVersion": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3RDWkFRTkd2V2I0V0hBandCcVB0WGhaZERZb3JiU0prR1c5dmoxdWh3MUhEI3o2TWt0Q1pBUU5HdldiNFdIQWp3QnFQdFhoWmREWW9yYlNKa0dXOXZqMXVodzFIRCJdLCJyIjpbXX0",
       "invitationKey": "EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq",
       "mediatorId": undefined,
@@ -1409,6 +1412,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "connectionTypes": [],
       "did": "did:peer:1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e",
+      "didcommVersion": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3VXVEVtSDFtVW82Vzk2elNXeUg2MTJoRkhvd1J6TkVzY1BZQkwyQ0NNeUMyI3o2TWt1V1RFbUgxbVVvNlc5NnpTV3lINjEyaEZIb3dSek5Fc2NQWUJMMkNDTXlDMiJdLCJyIjpbXX0",
       "invitationKey": "G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe",
       "mediatorId": undefined,
@@ -1443,6 +1447,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "connectionTypes": [],
       "did": "did:peer:1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT",
+      "didcommVersion": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa28zMURORTNncU1SWmoxSk5odjJCSGIxY2FRc2hjZDluamdLa0VRWHNnRlJwI3o2TWtvMzFETkUzZ3FNUlpqMUpOaHYyQkhiMWNhUXNoY2Q5bmpnS2tFUVhzZ0ZScCJdLCJyIjpbXX0",
       "invitationKey": "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
       "mediatorId": undefined,
@@ -2404,6 +2409,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "connectionTypes": [],
       "did": "did:peer:1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa",
+      "didcommVersion": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2pESkw0WDdZR29INmdqYW1oWlIyTnpvd1BacXRKZlg1a1B1TnVXaVZkak1yI3o2TWtqREpMNFg3WUdvSDZnamFtaFpSMk56b3dQWnF0SmZYNWtQdU51V2lWZGpNciJdLCJyIjpbXX0",
       "invitationKey": "5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU",
       "mediatorId": undefined,
@@ -2442,6 +2448,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection 
     "tags": {
       "connectionTypes": [],
       "did": "did:peer:1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx",
+      "didcommVersion": undefined,
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa21vZDh2cDJuVVJWa3RWQzVjZVFleXIyVlV6MjZpdTJaQU5MTlZnOXBNYXdhI3o2TWttb2Q4dnAyblVSVmt0VkM1Y2VRZXlyMlZVejI2aXUyWkFOTE5WZzlwTWF3YSJdLCJyIjpbXX0",
       "invitationKey": "8MN6LZnM8t1HmzMNw5Sp8kUVfQkFK1nCUMRSfQBoSNAC",
       "mediatorId": undefined,

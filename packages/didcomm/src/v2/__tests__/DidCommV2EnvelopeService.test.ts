@@ -165,19 +165,18 @@ describe('DidCommV2EnvelopeService', () => {
     const encrypted = await envelopeService.pack(agentContext, plaintext, {
       senderKey,
       recipientKey,
+      contentEncryptionAlgorithm: 'A256GCM',
     })
 
     expect(encrypted).toMatchObject({
       protected: expect.any(String),
+      recipients: expect.any(Array),
       iv: expect.any(String),
       ciphertext: expect.any(String),
       tag: expect.any(String),
     })
 
-    const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected) as {
-      recipients?: Array<{ header?: { kid?: string } }>
-    }
-    const matchedKid = protectedJson.recipients?.[0]?.header?.kid ?? recipientKey.keyId
+    const matchedKid = encrypted.recipients[0]?.header?.kid ?? recipientKey.keyId
     const { plaintext: decrypted } = await envelopeService.unpack(agentContext, encrypted, {
       recipientKey,
       matchedKid,
@@ -198,22 +197,21 @@ describe('DidCommV2EnvelopeService', () => {
 
     const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
       recipientKey,
+      contentEncryptionAlgorithm: 'A256GCM',
     })
 
     expect(encrypted).toMatchObject({
       protected: expect.any(String),
+      recipients: expect.any(Array),
       iv: expect.any(String),
       ciphertext: expect.any(String),
       tag: expect.any(String),
     })
 
-    const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected) as {
-      alg?: string
-      recipients?: Array<{ header?: { kid?: string } }>
-    }
+    const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected) as { alg?: string }
     expect(protectedJson.alg).toBe('ECDH-ES+A256KW')
-    expect(protectedJson.recipients).toHaveLength(1)
-    const matchedKid = protectedJson.recipients?.[0]?.header?.kid ?? recipientKey.keyId
+    expect(encrypted.recipients).toHaveLength(1)
+    const matchedKid = encrypted.recipients[0]?.header?.kid ?? recipientKey.keyId
     const { plaintext: decrypted, senderKey } = await envelopeService.unpack(agentContext, encrypted, {
       recipientKey,
       matchedKid,

@@ -7,7 +7,6 @@ import {
   DidsApi,
   getPublicJwkFromVerificationMethod,
   injectable,
-  JsonEncoder,
   Kms,
   parseDid,
   RecordNotFoundError,
@@ -89,11 +88,7 @@ export class DidCommV2KeyResolver {
     agentContext: AgentContext,
     encrypted: DidCommV2EncryptedMessage
   ): Promise<ResolvedRecipientKey | null> {
-    const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected) as {
-      recipients?: Array<{ header?: { kid?: string } }>
-    }
-
-    const recipients = protectedJson.recipients ?? []
+    const recipients = encrypted.recipients ?? []
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
     for (const recipient of recipients) {

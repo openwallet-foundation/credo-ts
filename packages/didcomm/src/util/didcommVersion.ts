@@ -1,5 +1,6 @@
 import { CredoError, JsonEncoder } from '@credo-ts/core'
 import type { DidCommConnectionRecord } from '../modules/connections/repository'
+import type { DidCommV2EncryptedMessage } from '../v2/types'
 import { isValidJweStructure } from './JWE'
 
 const DIDCOMM_V2_TYP = 'application/didcomm-encrypted+json'
@@ -18,13 +19,17 @@ export type DidCommVersion = 'v1' | 'v2'
 
 /**
  * Detect whether an encrypted message is DIDComm v2 format.
- * v2 uses typ: 'application/didcomm-encrypted+json' in the JWE protected header.
+ * v2 uses typ: 'application/didcomm-encrypted+json' in the JWE protected header,
+ * and JWE General JSON Serialization with a top-level recipients array.
  *
- * @param message - The message to check (typically a JWE object with protected, iv, ciphertext, tag)
+ * @param message - The message to check (typically a JWE object with protected, recipients, iv, ciphertext, tag)
  * @returns true if the message is DIDComm v2 encrypted format
  */
-export function isDidCommV2EncryptedMessage(message: unknown): boolean {
+export function isDidCommV2EncryptedMessage(message: unknown): message is DidCommV2EncryptedMessage {
   if (!isValidJweStructure(message)) {
+    return false
+  }
+  if (!Array.isArray((message as { recipients?: unknown }).recipients)) {
     return false
   }
   try {
@@ -44,6 +49,9 @@ export function isDidCommV2EncryptedMessage(message: unknown): boolean {
  */
 export function isDidCommV2AuthcryptMessage(message: unknown): boolean {
   if (!isValidJweStructure(message)) {
+    return false
+  }
+  if (!Array.isArray((message as { recipients?: unknown }).recipients)) {
     return false
   }
   try {
