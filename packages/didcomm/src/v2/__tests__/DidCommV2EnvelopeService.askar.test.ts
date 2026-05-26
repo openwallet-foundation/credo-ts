@@ -9,7 +9,11 @@ import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
 
 import { computeApu, computeApv } from '../apuApv'
 import { DidCommV2EnvelopeService } from '../DidCommV2EnvelopeService'
-import type { DidCommV2ContentEncryptionAlgorithm, DidCommV2PlaintextMessage } from '../types'
+import type {
+  DidCommV2AnoncryptContentEncryptionAlgorithm,
+  DidCommV2AuthcryptContentEncryptionAlgorithm,
+  DidCommV2PlaintextMessage,
+} from '../types'
 
 describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
   const agentContext = getAgentContext({
@@ -62,7 +66,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
   }
 
   describe('authcrypt', () => {
-    it.each<DidCommV2ContentEncryptionAlgorithm>([
+    it.each<DidCommV2AuthcryptContentEncryptionAlgorithm>([
       'A256CBC-HS512',
       'A256GCM',
     ])('round-trips with %s content encryption', async (enc) => {
@@ -102,7 +106,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
   })
 
   describe('anoncrypt', () => {
-    it.each<DidCommV2ContentEncryptionAlgorithm>([
+    it.each<DidCommV2AnoncryptContentEncryptionAlgorithm>([
       'A256CBC-HS512',
       'A256GCM',
     ])('round-trips with %s content encryption', async (enc) => {

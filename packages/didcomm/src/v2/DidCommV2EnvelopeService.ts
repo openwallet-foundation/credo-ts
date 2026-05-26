@@ -10,22 +10,27 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { computeApu, computeApv } from './apuApv'
-import type { DidCommV2ContentEncryptionAlgorithm, DidCommV2EncryptedMessage, DidCommV2PlaintextMessage } from './types'
+import type {
+  DidCommV2AnoncryptContentEncryptionAlgorithm,
+  DidCommV2AuthcryptContentEncryptionAlgorithm,
+  DidCommV2EncryptedMessage,
+  DidCommV2PlaintextMessage,
+} from './types'
 
 export interface DidCommV2EnvelopeKeys {
   recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk>
   senderKey: Kms.PublicJwk<Kms.X25519PublicJwk>
   /** DID URL of the sender key; used as skid in JWE so recipient can resolve it. Falls back to senderKey.keyId if absent. */
   senderKeySkid?: string
-  /** Content encryption algorithm. Defaults to A256CBC-HS512 (mandatory authcrypt enc per DIDComm v2.1). */
-  contentEncryptionAlgorithm?: DidCommV2ContentEncryptionAlgorithm
+  /** Content encryption algorithm. Defaults to A256CBC-HS512 (mandatory authcrypt enc per DIDComm v2.1). XC20P is not allowed for authcrypt. */
+  contentEncryptionAlgorithm?: DidCommV2AuthcryptContentEncryptionAlgorithm
 }
 
 /** Keys for anoncrypt: only recipient key; no sender (anonymous). */
 export interface DidCommV2AnoncryptKeys {
   recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk>
   /** Content encryption algorithm. Defaults to A256CBC-HS512; A256GCM is also accepted. */
-  contentEncryptionAlgorithm?: DidCommV2ContentEncryptionAlgorithm
+  contentEncryptionAlgorithm?: DidCommV2AnoncryptContentEncryptionAlgorithm
 }
 
 @injectable()
@@ -57,7 +62,7 @@ export class DidCommV2EnvelopeService {
       throw new CredoError('DIDComm v2 authcrypt requires X25519 recipient key')
     }
 
-    const enc: DidCommV2ContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256CBC-HS512'
+    const enc: DidCommV2AuthcryptContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256CBC-HS512'
     const skid = keys.senderKeySkid ?? keys.senderKey.keyId
     const recipientKid = keys.recipientKey.keyId
     const apu = computeApu(skid)
@@ -142,7 +147,7 @@ export class DidCommV2EnvelopeService {
       throw new CredoError('DIDComm v2 anoncrypt requires X25519 recipient key')
     }
 
-    const enc: DidCommV2ContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256CBC-HS512'
+    const enc: DidCommV2AnoncryptContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256CBC-HS512'
     const recipientKid = keys.recipientKey.keyId
     const apv = computeApv([recipientKid])
 
@@ -305,7 +310,7 @@ export class DidCommV2EnvelopeService {
     },
     recipient: { header: { kid: string }; encrypted_key: string },
     epkX: string,
-    enc: DidCommV2ContentEncryptionAlgorithm,
+    enc: DidCommV2AnoncryptContentEncryptionAlgorithm,
     aad: Uint8Array,
     apv: Uint8Array
   ): Promise<{
