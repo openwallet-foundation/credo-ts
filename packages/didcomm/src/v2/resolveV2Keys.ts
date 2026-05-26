@@ -1,8 +1,8 @@
 import {
   AgentContext,
-  DidKey,
   type DidDocument,
   type DidDocumentKey,
+  DidKey,
   DidResolverService,
   DidsApi,
   getPublicJwkFromVerificationMethod,
@@ -28,10 +28,7 @@ type ResolvedRecipientKey = {
  * Ensure the JWK is X25519. If it's Ed25519, convert via birational map (legacy compat).
  * If it's already X25519, return as-is.
  */
-function toX25519WithKeyId(
-  jwk: Kms.PublicJwk,
-  keyId: string
-): Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string } {
+function toX25519WithKeyId(jwk: Kms.PublicJwk, keyId: string): Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string } {
   const x25519 = jwk.is(Kms.X25519PublicJwk)
     ? (jwk as Kms.PublicJwk<Kms.X25519PublicJwk>)
     : (jwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
@@ -52,8 +49,7 @@ function findLegacyEd25519KmsKeyId(
   if (!keys) return undefined
   for (const authRef of didDocument.authentication ?? []) {
     try {
-      const authVm =
-        typeof authRef === 'string' ? didDocument.dereferenceVerificationMethod(authRef) : authRef
+      const authVm = typeof authRef === 'string' ? didDocument.dereferenceVerificationMethod(authRef) : authRef
       const authJwk = getPublicJwkFromVerificationMethod(authVm)
       if (!authJwk.is(Kms.Ed25519PublicJwk)) continue
       const derivedX25519 = authJwk.convertTo(Kms.X25519PublicJwk)
@@ -215,8 +211,8 @@ export class DidCommV2KeyResolver {
           routingKeyFingerprints: [kidPublicJwk.fingerprint],
         })
         const routingKey = record?.routingKeysWithKeyId.find((rk) => kidPublicJwk.equals(rk))
-        if (routingKey) {
-          return { recipientKey: toX25519WithKeyId(routingKey, routingKey.keyId!), matchedKid: kid }
+        if (routingKey?.keyId) {
+          return { recipientKey: toX25519WithKeyId(routingKey, routingKey.keyId), matchedKid: kid }
         }
       }
 
@@ -229,8 +225,8 @@ export class DidCommV2KeyResolver {
           for (const routingKey of record.routingKeysWithKeyId) {
             try {
               const derivedX25519 = (routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-              if (derivedX25519.fingerprint === kidPublicJwk.fingerprint) {
-                return { recipientKey: toX25519WithKeyId(derivedX25519, routingKey.keyId!), matchedKid: kid }
+              if (derivedX25519.fingerprint === kidPublicJwk.fingerprint && routingKey.keyId) {
+                return { recipientKey: toX25519WithKeyId(derivedX25519, routingKey.keyId), matchedKid: kid }
               }
             } catch {}
           }
@@ -340,10 +336,7 @@ export class DidCommV2KeyResolver {
   /**
    * Path 5: kid is a raw KMS key id (not a DID URL).
    */
-  private async resolveFromKms(
-    kms: Kms.KeyManagementApi,
-    kid: string
-  ): Promise<ResolvedRecipientKey | null> {
+  private async resolveFromKms(kms: Kms.KeyManagementApi, kid: string): Promise<ResolvedRecipientKey | null> {
     const kmsPublic = await kms.getPublicKey({ keyId: kid }).catch((err) => {
       if (err instanceof Kms.KeyManagementKeyNotFoundError) return null
       throw err

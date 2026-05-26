@@ -573,11 +573,13 @@ export class DidCommMessageSender {
       : services
 
     // Resolve the sender key and skid for DIDComm v2.
-    // When an independent X25519 keyAgreement key is available, use it directly as the
-    // sender key for ECDH-1PU. Otherwise fall back to the Ed25519 key (Askar handles
-    // birational conversion at runtime). The cast is safe: downstream toX25519() handles both.
+    // When an independent X25519 keyAgreement key is available AND the connection uses V2,
+    // use it directly as the sender key for ECDH-1PU. Otherwise fall back to the Ed25519 key
+    // (Askar handles birational conversion at runtime). The cast is safe: downstream toX25519() handles both.
+    // IMPORTANT: V1 authcrypt embeds raw sender bytes as Ed25519; using X25519 bytes there would
+    // cause "Ed25519: invalid public key" on the receiver during convertTo(X25519).
     let effectiveSenderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> = senderVerificationMethod.publicJwk
-    if (senderKeyAgreement) {
+    if (senderKeyAgreement && useV2ForServiceOrder) {
       effectiveSenderKey = senderKeyAgreement.publicJwk as never
     }
 

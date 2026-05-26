@@ -331,8 +331,9 @@ export class DidExchangeProtocol {
       invitationRecipientKeys.push(
         ...resolved.didDocument
           .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
-          .filter(({ publicJwk, verificationMethod }) =>
-            publicJwk.is(Kms.Ed25519PublicJwk) && v1RecipientKeyVmIds.has(verificationMethod.id)
+          .filter(
+            ({ publicJwk, verificationMethod }) =>
+              publicJwk.is(Kms.Ed25519PublicJwk) && v1RecipientKeyVmIds.has(verificationMethod.id)
           )
           .map(({ publicJwk, verificationMethod }) => {
             const kmsKeyId = resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
