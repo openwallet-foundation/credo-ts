@@ -444,7 +444,7 @@ export class DidCommMediationRecipientService {
 
   public async removeMediationRouting(
     agentContext: AgentContext,
-    { recipientKeys, keyAgreementKeys, mediatorId }: RemoveRoutingOptions
+    { recipientKeys, mediatorId }: RemoveRoutingOptions
   ): Promise<void> {
     const mediationRecord = await this.getById(agentContext, mediatorId)
 
@@ -453,14 +453,8 @@ export class DidCommMediationRecipientService {
     }
 
     if (mediationRecord.mediationProtocolVersion === 'v2') {
-      // Remove Ed25519 did:key entries from the mediator keylist.
+      // V2 mediators accept both Ed25519 and X25519 keys as did:key.
       const recipientDids = recipientKeys.map((key) => new DidKey(key).did)
-      // Remove separate X25519 key agreement keys if provided (independent keys).
-      if (keyAgreementKeys) {
-        for (const key of keyAgreementKeys) {
-          recipientDids.push(new DidKey(key).did)
-        }
-      }
       await this.keylistUpdateAndAwaitV2(
         agentContext,
         mediationRecord,
@@ -470,11 +464,13 @@ export class DidCommMediationRecipientService {
         }))
       )
     } else {
+      // V1 mediators only support Ed25519 keys; filter out X25519.
+      const ed25519Keys = recipientKeys.filter((k) => k.is(Kms.Ed25519PublicJwk))
       await this.keylistUpdateAndAwait(
         agentContext,
         mediationRecord,
-        recipientKeys.map((item) => ({
-          recipientKey: item,
+        ed25519Keys.map((item) => ({
+          recipientKey: item as Kms.PublicJwk<Kms.Ed25519PublicJwk>,
           action: DidCommKeylistUpdateAction.remove,
         }))
       )

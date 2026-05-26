@@ -1,12 +1,12 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
-import { AgentContext, CredoError, DidResolverService, injectable, Kms } from '@credo-ts/core'
+import { AgentContext, CredoError, DidResolverService, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
 import type { DidCommOutOfBandRecord } from '../oob/repository'
-import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
+import { DidCommRoutingService, type RemoveRoutingOptions } from '../routing/services/DidCommRoutingService'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
@@ -523,13 +523,9 @@ export class DidCommConnectionsApi {
       if (didDocument) {
         const recipientKeys = didDocument
           .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+          .map(({ publicJwk }) => publicJwk) as RemoveRoutingOptions['recipientKeys']
         await this.routingService.removeRouting(this.agentContext, {
-          recipientKeys: recipientKeys
-            .filter(({ publicJwk }) => publicJwk.is(Kms.Ed25519PublicJwk))
-            .map(({ publicJwk }) => publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>),
-          keyAgreementKeys: recipientKeys
-            .filter(({ publicJwk }) => publicJwk.is(Kms.X25519PublicJwk))
-            .map(({ publicJwk }) => publicJwk as Kms.PublicJwk<Kms.X25519PublicJwk>),
+          recipientKeys,
           mediatorId: connection.mediatorId,
         })
       }
@@ -558,13 +554,9 @@ export class DidCommConnectionsApi {
       if (mediatorRecord) {
         const recipientKeys = did.didDocument
           .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+          .map(({ publicJwk }) => publicJwk) as RemoveRoutingOptions['recipientKeys']
         await this.routingService.removeRouting(this.agentContext, {
-          recipientKeys: recipientKeys
-            .filter(({ publicJwk }) => publicJwk.is(Kms.Ed25519PublicJwk))
-            .map(({ publicJwk }) => publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>),
-          keyAgreementKeys: recipientKeys
-            .filter(({ publicJwk }) => publicJwk.is(Kms.X25519PublicJwk))
-            .map(({ publicJwk }) => publicJwk as Kms.PublicJwk<Kms.X25519PublicJwk>),
+          recipientKeys,
           mediatorId: mediatorRecord.id,
         })
       }

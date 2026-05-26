@@ -85,15 +85,11 @@ export interface GetRoutingOptions {
 
 export interface RemoveRoutingOptions {
   /**
-   * Ed25519 recipient keys to remove routing from (used by both V1 and V2 mediators).
+   * Recipient keys to remove routing from. May include both Ed25519 and X25519 keys.
+   * V1 mediators only use Ed25519 keys; V2 mediators use both directly (as did:key).
+   * X25519 keys are passed through as-is without birational derivation.
    */
-  recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
-
-  /**
-   * Optional separate X25519 key agreement keys to remove from V2 mediator keylist.
-   * When provided, these are removed directly (not derived from recipientKeys).
-   */
-  keyAgreementKeys?: Kms.PublicJwk<Kms.X25519PublicJwk>[]
+  recipientKeys: (Kms.PublicJwk<Kms.Ed25519PublicJwk> | Kms.PublicJwk<Kms.X25519PublicJwk>)[]
 
   /**
    * Identifier of the mediator used when routing has been set up
