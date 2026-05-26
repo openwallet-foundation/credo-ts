@@ -47,7 +47,7 @@ export class EddsaJcs2022Cryptosuite implements DataIntegrityCryptosuite {
     options: DataIntegrityCryptosuiteProofOptions
   ): Promise<DataIntegrityCryptosuiteProof> {
     // Boundary contract: callers must pass DataIntegrityProof + eddsa-jcs-2022 options.
-    // DataIntegrityProofService is the normal enforcement gate, but this guard protects
+    // W3cDataIntegrityProofService is the normal enforcement gate, but this guard protects
     // direct callers as well and keeps failures close to cryptosuite entry points.
     this.assertProofTypeAndCryptosuite(options, DataIntegrityProcessingErrorCode.ProofGenerationError, 'createProof')
 
@@ -174,7 +174,7 @@ export class EddsaJcs2022Cryptosuite implements DataIntegrityCryptosuite {
    * https://www.w3.org/TR/vc-di-eddsa/#proof-serialization-eddsa-jcs-2022
    */
   public async proofSerialization(hashData: Uint8Array, options: DataIntegrityCryptosuiteProofOptions) {
-    // Caller (DataIntegrityProofService) is responsible for required-member and suite-shape validation before invocation.
+    // Caller (W3cDataIntegrityProofService) is responsible for required-member and suite-shape validation before invocation.
     // This method intentionally focuses on §3.3.6 signing semantics only.
 
     const verificationMethod = options.verificationMethod

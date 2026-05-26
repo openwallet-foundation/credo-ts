@@ -2,16 +2,16 @@ import type { AgentContext } from '../../../agent/context'
 import { CredoError } from '../../../error'
 import { MultiBaseEncoder } from '../../../utils/MultiBaseEncoder'
 import { TypedArrayEncoder } from '../../../utils/TypedArrayEncoder'
-import { DataIntegrityApi } from '../DataIntegrityApi'
-import type { DataIntegrityCryptosuiteRegistry } from '../DataIntegrityCryptosuiteRegistry'
-import type { DataIntegrityProofService } from '../DataIntegrityProofService'
+import { W3cDataIntegrityApi } from '../W3cDataIntegrityApi'
+import type { W3cDataIntegrityCryptosuiteRegistry } from '../W3cDataIntegrityCryptosuiteRegistry'
+import type { W3cDataIntegrityProofService } from '../W3cDataIntegrityProofService'
 
 const validProofValue = MultiBaseEncoder.encode(TypedArrayEncoder.fromUtf8String('proof-value'), 'base58btc')
 
-describe('DataIntegrityApi', () => {
+describe('W3cDataIntegrityApi', () => {
   const agentContext = {} as AgentContext
 
-  test('delegates createProof to DataIntegrityProofService', async () => {
+  test('delegates createProof to W3cDataIntegrityProofService', async () => {
     const proofService = {
       createProof: vi.fn().mockResolvedValue({
         created: true,
@@ -25,13 +25,13 @@ describe('DataIntegrityApi', () => {
         warnings: [],
         errors: [],
       }),
-    } as unknown as DataIntegrityProofService
+    } as unknown as W3cDataIntegrityProofService
 
     const cryptosuiteRegistry = {
       supportedCryptosuites: ['eddsa-jcs-2022'],
-    } as unknown as DataIntegrityCryptosuiteRegistry
+    } as unknown as W3cDataIntegrityCryptosuiteRegistry
 
-    const api = new DataIntegrityApi(agentContext, proofService, cryptosuiteRegistry)
+    const api = new W3cDataIntegrityApi(agentContext, proofService, cryptosuiteRegistry)
 
     await api.createProof({
       unsecuredDocument: { id: 'urn:example:test' },
@@ -57,13 +57,13 @@ describe('DataIntegrityApi', () => {
         verifiedDocument: {},
         mediaType: 'application/json',
       }),
-    } as unknown as DataIntegrityProofService
+    } as unknown as W3cDataIntegrityProofService
 
     const cryptosuiteRegistry = {
       supportedCryptosuites: ['eddsa-jcs-2022'],
-    } as unknown as DataIntegrityCryptosuiteRegistry
+    } as unknown as W3cDataIntegrityCryptosuiteRegistry
 
-    const api = new DataIntegrityApi(agentContext, proofService, cryptosuiteRegistry)
+    const api = new W3cDataIntegrityApi(agentContext, proofService, cryptosuiteRegistry)
 
     await api.verifyProof({
       id: 'urn:example:test',
@@ -148,13 +148,13 @@ describe('DataIntegrityApi', () => {
             },
           ],
         }),
-    } as unknown as DataIntegrityProofService
+    } as unknown as W3cDataIntegrityProofService
 
     const cryptosuiteRegistry = {
       supportedCryptosuites: ['eddsa-jcs-2022'],
-    } as unknown as DataIntegrityCryptosuiteRegistry
+    } as unknown as W3cDataIntegrityCryptosuiteRegistry
 
-    const api = new DataIntegrityApi(agentContext, proofService, cryptosuiteRegistry)
+    const api = new W3cDataIntegrityApi(agentContext, proofService, cryptosuiteRegistry)
 
     const success = await api.createProofOrThrow({
       unsecuredDocument: { id: 'urn:example:test' },
@@ -194,13 +194,13 @@ describe('DataIntegrityApi', () => {
             },
           ],
         }),
-    } as unknown as DataIntegrityProofService
+    } as unknown as W3cDataIntegrityProofService
 
     const cryptosuiteRegistry = {
       supportedCryptosuites: ['eddsa-jcs-2022'],
-    } as unknown as DataIntegrityCryptosuiteRegistry
+    } as unknown as W3cDataIntegrityCryptosuiteRegistry
 
-    const api = new DataIntegrityApi(agentContext, proofService, cryptosuiteRegistry)
+    const api = new W3cDataIntegrityApi(agentContext, proofService, cryptosuiteRegistry)
 
     const success = await api.verifySecuredDocumentOrThrow({
       id: 'urn:example:test',

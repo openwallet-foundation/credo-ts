@@ -3,7 +3,7 @@
  * Keep this surface stable and semver-conscious.
  */
 export type { DataIntegrityCryptosuite, DataIntegrityCryptosuiteInfo } from './cryptosuites/types'
-export { DataIntegrityApi } from './DataIntegrityApi'
+export { W3cDataIntegrityApi } from './W3cDataIntegrityApi'
 export type {
   DataIntegrityCreateFailure,
   DataIntegrityCreateResult,
@@ -15,7 +15,7 @@ export type {
   DataIntegrityVerifySuccess,
 } from './DataIntegrityError'
 export { DataIntegrityProcessingErrorCode } from './DataIntegrityError'
-export { DataIntegrityModule } from './DataIntegrityModule'
+export { W3cDataIntegrityModule } from './W3cDataIntegrityModule'
 export type {
   DataIntegrityCryptosuiteProof,
   DataIntegrityCryptosuiteProofOptions,
@@ -29,4 +29,4 @@ export type {
   DataIntegrityCreateProofOptions,
   DataIntegrityVerifyProofDocumentOptions,
   DataIntegrityVerifyProofOptions,
-} from './DataIntegrityProofService'
+} from './W3cDataIntegrityProofService'

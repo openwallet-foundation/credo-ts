@@ -4,8 +4,8 @@
 export { EddsaJcs2022Cryptosuite } from './cryptosuites/eddsa-jcs-2022/EddsaJcs2022Cryptosuite'
 export type { DataIntegrityCryptosuite, DataIntegrityCryptosuiteInfo } from './cryptosuites/types'
 export { DataIntegrityCryptosuiteToken } from './cryptosuites/types'
-export { DataIntegrityApi } from './DataIntegrityApi'
-export { DataIntegrityCryptosuiteRegistry } from './DataIntegrityCryptosuiteRegistry'
+export { W3cDataIntegrityApi } from './W3cDataIntegrityApi'
+export { W3cDataIntegrityCryptosuiteRegistry } from './W3cDataIntegrityCryptosuiteRegistry'
 export type {
   DataIntegrityCreateResult,
   DataIntegrityIssueList,
@@ -49,5 +49,5 @@ export type {
   DataIntegrityCreateProofOptions,
   DataIntegrityVerifyProofDocumentOptions,
   DataIntegrityVerifyProofOptions,
-} from './DataIntegrityProofService'
-export { DataIntegrityProofService } from './DataIntegrityProofService'
+} from './W3cDataIntegrityProofService'
+export { W3cDataIntegrityProofService } from './W3cDataIntegrityProofService'

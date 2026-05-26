@@ -2,22 +2,22 @@ import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import type { AgentContext } from '../../../agent/context'
 import { TypedArrayEncoder } from '../../../utils'
 import { MultiBaseEncoder } from '../../../utils/MultiBaseEncoder'
-import { DataIntegrityCryptosuiteRegistry } from '../DataIntegrityCryptosuiteRegistry'
+import { W3cDataIntegrityCryptosuiteRegistry } from '../W3cDataIntegrityCryptosuiteRegistry'
 import { DataIntegrityProcessingError, DataIntegrityProcessingErrorCode } from '../DataIntegrityError'
 import type {
   DataIntegrityCryptosuiteProof,
   DataIntegrityProofSetSecuredDocument,
   DataIntegritySingleProofSecuredDocument,
 } from '../DataIntegrityProof'
-import { DataIntegrityProofService } from '../DataIntegrityProofService'
+import { W3cDataIntegrityProofService } from '../W3cDataIntegrityProofService'
 
 const validProofValue = MultiBaseEncoder.encode(TypedArrayEncoder.fromUtf8String('proof-value'), 'base58btc')
 const validProofValue1 = MultiBaseEncoder.encode(TypedArrayEncoder.fromUtf8String('proof-value-1'), 'base58btc')
 const validProofValue2 = MultiBaseEncoder.encode(TypedArrayEncoder.fromUtf8String('proof-value-2'), 'base58btc')
 
-describe('DataIntegrityProofService', () => {
+describe('W3cDataIntegrityProofService', () => {
   let agentContext: AgentContext
-  let service: DataIntegrityProofService
+  let service: W3cDataIntegrityProofService
   const mockCreateByCryptosuite = vi.fn()
   const mockResolveDidDocument = vi.fn()
 
@@ -63,7 +63,7 @@ describe('DataIntegrityProofService', () => {
       agentConfig: getAgentConfig('DataIntegrityProofServiceTest'),
       registerInstances: [
         [
-          DataIntegrityCryptosuiteRegistry,
+          W3cDataIntegrityCryptosuiteRegistry,
           {
             supportedCryptosuites: ['eddsa-jcs-2022'],
             createByCryptosuite: mockCreateByCryptosuite,
@@ -72,7 +72,9 @@ describe('DataIntegrityProofService', () => {
       ],
     })
 
-    service = new DataIntegrityProofService(agentContext.dependencyManager.resolve(DataIntegrityCryptosuiteRegistry))
+    service = new W3cDataIntegrityProofService(
+      agentContext.dependencyManager.resolve(W3cDataIntegrityCryptosuiteRegistry)
+    )
   })
 
   test('createProof rejects when cryptosuite is omitted', async () => {

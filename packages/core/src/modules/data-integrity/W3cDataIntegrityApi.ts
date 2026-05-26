@@ -1,6 +1,6 @@
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
-import { DataIntegrityCryptosuiteRegistry } from './DataIntegrityCryptosuiteRegistry'
+import { W3cDataIntegrityCryptosuiteRegistry } from './W3cDataIntegrityCryptosuiteRegistry'
 import { assertCreated, assertVerified } from './DataIntegrityError'
 import type {
   DataIntegrityProofSetSecuredDocument,
@@ -12,19 +12,19 @@ import type {
   DataIntegrityCreateProofOptions,
   DataIntegrityVerifyProofDocumentOptions,
   DataIntegrityVerifyProofOptions,
-} from './DataIntegrityProofService'
-import { DataIntegrityProofService } from './DataIntegrityProofService'
+} from './W3cDataIntegrityProofService'
+import { W3cDataIntegrityProofService } from './W3cDataIntegrityProofService'
 
 @injectable()
-export class DataIntegrityApi {
+export class W3cDataIntegrityApi {
   private agentContext: AgentContext
-  private dataIntegrityProofService: DataIntegrityProofService
-  private dataIntegrityCryptosuiteRegistry: DataIntegrityCryptosuiteRegistry
+  private dataIntegrityProofService: W3cDataIntegrityProofService
+  private dataIntegrityCryptosuiteRegistry: W3cDataIntegrityCryptosuiteRegistry
 
   public constructor(
     agentContext: AgentContext,
-    dataIntegrityProofService: DataIntegrityProofService,
-    dataIntegrityCryptosuiteRegistry: DataIntegrityCryptosuiteRegistry
+    dataIntegrityProofService: W3cDataIntegrityProofService,
+    dataIntegrityCryptosuiteRegistry: W3cDataIntegrityCryptosuiteRegistry
   ) {
     this.agentContext = agentContext
     this.dataIntegrityProofService = dataIntegrityProofService

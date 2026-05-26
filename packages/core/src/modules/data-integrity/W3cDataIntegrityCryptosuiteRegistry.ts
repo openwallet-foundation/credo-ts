@@ -6,7 +6,7 @@ import type { DataIntegrityCryptosuiteInfo } from './cryptosuites/types'
 import { DataIntegrityCryptosuiteToken } from './cryptosuites/types'
 
 @injectable()
-export class DataIntegrityCryptosuiteRegistry {
+export class W3cDataIntegrityCryptosuiteRegistry {
   private cryptosuiteMapping: DataIntegrityCryptosuiteInfo[]
 
   public constructor(

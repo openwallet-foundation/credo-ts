@@ -1,5 +1,5 @@
 import { CacheModule, SingleContextStorageLruCache } from '../modules/cache'
-import { DataIntegrityModule } from '../modules/data-integrity'
+import { W3cDataIntegrityModule } from '../modules/data-integrity'
 import { DcqlModule } from '../modules/dcql/DcqlModule'
 import { DidsModule } from '../modules/dids'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
@@ -108,7 +108,7 @@ function getDefaultAgentModules() {
     genericRecords: () => new GenericRecordsModule(),
     dids: () => new DidsModule(),
     w3cCredentials: () => new W3cCredentialsModule(),
-    dataIntegrity: () => new DataIntegrityModule(),
+    w3cDataIntegrity: () => new W3cDataIntegrityModule(),
     cache: () => new CacheModule({ cache: new SingleContextStorageLruCache({ limit: 500 }) }),
     pex: () => new DifPresentationExchangeModule(),
     sdJwtVc: () => new SdJwtVcModule(),

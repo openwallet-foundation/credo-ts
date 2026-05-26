@@ -6,7 +6,7 @@ import type { DataIntegritySecuredDocument } from '../DataIntegrityProof'
 import type {
   DataIntegrityVerifyProofDocumentOptions,
   DataIntegrityVerifyProofOptions,
-} from '../DataIntegrityProofService'
+} from '../W3cDataIntegrityProofService'
 
 export interface ParsedDataIntegrityProofDocument {
   normalisedMediaType: string

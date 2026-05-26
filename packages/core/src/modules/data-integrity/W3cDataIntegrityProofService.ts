@@ -2,7 +2,7 @@ import type { AgentContext } from '../../agent/context'
 import { injectable } from '../../plugins'
 import { asArray, equalsIgnoreOrder } from '../../utils'
 import type { DataIntegrityCryptosuite, DataIntegrityProofVerificationInput } from './cryptosuites/types'
-import { DataIntegrityCryptosuiteRegistry } from './DataIntegrityCryptosuiteRegistry'
+import { W3cDataIntegrityCryptosuiteRegistry } from './W3cDataIntegrityCryptosuiteRegistry'
 import type {
   DataIntegrityCreateFailure,
   DataIntegrityCreateSuccess,
@@ -60,11 +60,11 @@ export interface DataIntegrityVerifyProofDocumentOptions extends DataIntegrityVe
 }
 
 @injectable()
-export class DataIntegrityProofService {
-  private dataIntegrityCryptosuiteRegistry: DataIntegrityCryptosuiteRegistry
+export class W3cDataIntegrityProofService {
+  private dataIntegrityCryptosuiteRegistry: W3cDataIntegrityCryptosuiteRegistry
   private readonly supportedMediaTypes = ['application/json', 'application/ld+json', 'application/vc+ld+json']
 
-  public constructor(dataIntegrityCryptosuiteRegistry: DataIntegrityCryptosuiteRegistry) {
+  public constructor(dataIntegrityCryptosuiteRegistry: W3cDataIntegrityCryptosuiteRegistry) {
     this.dataIntegrityCryptosuiteRegistry = dataIntegrityCryptosuiteRegistry
   }
 
