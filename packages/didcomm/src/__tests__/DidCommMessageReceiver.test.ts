@@ -19,11 +19,11 @@ describe('DidCommMessageReceiver', () => {
         alg: 'ECDH-1PU+A256KW',
         enc: 'A256GCM',
         skid: 'key-id',
-        recipients: [{ header: { kid: 'recipient-kid' }, encrypted_key: 'enc' }],
       })
 
       const v2Message = {
         protected: v2Protected,
+        recipients: [{ header: { kid: 'recipient-kid' }, encrypted_key: 'enc' }],
         iv: 'dGVzdC1pdi0xMg',
         ciphertext: 'dGVzdC1jaXBoZXJ0ZXh0',
         tag: 'dGVzdC10YWc',

@@ -50,11 +50,13 @@ export interface DidCommV2JweRecipient {
 }
 
 /**
- * DIDComm v2 encrypted message (JWE with typ application/didcomm-encrypted+json).
- * Same top-level structure as v1 for transport compatibility.
+ * DIDComm v2 encrypted message (JWE in JSON General Serialization, typ application/didcomm-encrypted+json).
+ * The shared ephemeral public key and all KDF/alg parameters live in the protected header;
+ * recipients is top-level and per-recipient headers contain only the kid.
  */
 export interface DidCommV2EncryptedMessage {
   protected: string
+  recipients: DidCommV2JweRecipient[]
   iv: string
   ciphertext: string
   tag: string

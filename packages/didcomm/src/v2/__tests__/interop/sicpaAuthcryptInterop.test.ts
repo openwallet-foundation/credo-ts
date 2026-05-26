@@ -27,9 +27,7 @@ interface X25519PublicJwk {
 }
 
 interface SicpaAuthcryptFixture {
-  encryptedMessage: DidCommV2EncryptedMessage & {
-    recipients: Array<{ header: { kid: string }; encrypted_key: string }>
-  }
+  encryptedMessage: DidCommV2EncryptedMessage
   expectedPlaintext: DidCommV2PlaintextMessage
   recipient: { kid: string; privateJwk: X25519PrivateJwk }
   sender: { kid: string; publicJwk: X25519PublicJwk }

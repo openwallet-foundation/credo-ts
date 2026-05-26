@@ -79,19 +79,17 @@ export class DidCommV2EnvelopeService {
       alg: 'ECDH-1PU+A256KW',
       enc: 'A256GCM',
       skid,
-      recipients: [
-        {
-          header: {
-            kid: keys.recipientKey.keyId,
-            epk: { kty: epk.kty, crv: epk.crv, x: epk.x },
-          },
-          encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
-        },
-      ],
+      epk: { kty: epk.kty, crv: epk.crv, x: epk.x },
     })
 
     return {
       protected: protectedHeader,
+      recipients: [
+        {
+          header: { kid: keys.recipientKey.keyId },
+          encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
+        },
+      ],
       iv: TypedArrayEncoder.toBase64Url(iv),
       ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
       tag: TypedArrayEncoder.toBase64Url(tag),
@@ -154,19 +152,17 @@ export class DidCommV2EnvelopeService {
         typ: 'application/didcomm-encrypted+json',
         alg: 'ECDH-ES+A256KW',
         enc: 'A256GCM',
-        recipients: [
-          {
-            header: {
-              kid: keys.recipientKey.keyId,
-              epk: { kty: epkJwk.kty, crv: epkJwk.crv, x: epkJwk.x },
-            },
-            encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
-          },
-        ],
+        epk: { kty: epkJwk.kty, crv: epkJwk.crv, x: epkJwk.x },
       })
 
       return {
         protected: protectedHeader,
+        recipients: [
+          {
+            header: { kid: keys.recipientKey.keyId },
+            encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
+          },
+        ],
         iv: TypedArrayEncoder.toBase64Url(iv),
         ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
         tag: TypedArrayEncoder.toBase64Url(tag),
@@ -207,22 +203,18 @@ export class DidCommV2EnvelopeService {
       throw new CredoError(`Unsupported enc: ${protectedJson.enc}`)
     }
 
-    const recipients = protectedJson.recipients as Array<{
-      header: { kid: string; epk: { kty: string; crv: string; x: string } }
-      encrypted_key: string
-    }>
-    const recipient = recipients?.find((r) => r.header?.kid === keys.matchedKid)
+    const recipient = encrypted.recipients?.find((r) => r.header?.kid === keys.matchedKid)
     if (!recipient) {
       throw new CredoError('No matching recipient in envelope')
     }
 
-    const epk = recipient.header.epk
-    if (!epk || epk.kty !== 'OKP' || epk.crv !== 'X25519') {
-      throw new CredoError('Invalid ephemeral public key in recipient header')
+    const epk = protectedJson.epk as { kty?: string; crv?: string; x?: string } | undefined
+    if (!epk || epk.kty !== 'OKP' || epk.crv !== 'X25519' || !epk.x) {
+      throw new CredoError('Invalid ephemeral public key in protected header')
     }
 
     if (protectedJson.alg === 'ECDH-ES+A256KW') {
-      return this.unpackAnoncrypt(agentContext, encrypted, keys, recipient, protectedJson)
+      return this.unpackAnoncrypt(agentContext, encrypted, keys, recipient, epk.x)
     }
 
     if (protectedJson.alg !== 'ECDH-1PU+A256KW') {
@@ -274,8 +266,8 @@ export class DidCommV2EnvelopeService {
       recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }
       matchedKid: string
     },
-    recipient: { header: { kid: string; epk: { kty: string; crv: string; x: string } }; encrypted_key: string },
-    _protectedJson: Record<string, unknown>
+    recipient: { header: { kid: string }; encrypted_key: string },
+    epkX: string
   ): Promise<{
     plaintext: DidCommV2PlaintextMessage
     senderKey: Kms.PublicJwk<Kms.X25519PublicJwk> | null
@@ -287,7 +279,7 @@ export class DidCommV2EnvelopeService {
         keyAgreement: {
           algorithm: 'ECDH-ES+A256KW',
           keyId: keys.recipientKey.keyId,
-          externalPublicJwk: { kty: 'OKP', crv: 'X25519', x: recipient.header.epk.x },
+          externalPublicJwk: { kty: 'OKP', crv: 'X25519', x: epkX },
           encryptedKey: {
             encrypted: TypedArrayEncoder.fromBase64Url(recipient.encrypted_key),
           },
