@@ -16,16 +16,16 @@ export type {
 export {
   assertCreated,
   assertVerified,
-  createW3cDataIntegrityCredoError,
   createInvalidResult,
   createIssue,
   createProofVerificationIssue,
-  W3cDataIntegrityProcessingError,
-  W3cDataIntegrityProcessingErrorCode,
+  createW3cDataIntegrityCredoError,
   formatW3cDataIntegrityIssueDetail,
   formatW3cDataIntegrityIssueSummary,
   isW3cDataIntegrityProblemType,
   isW3cDataIntegrityProcessingIssue,
+  W3cDataIntegrityProcessingError,
+  W3cDataIntegrityProcessingErrorCode,
 } from './W3cDataIntegrityError'
 export type {
   W3cDataIntegrityCryptosuiteProof,
@@ -39,10 +39,10 @@ export type {
   W3cDataIntegrityUnsecuredDocument,
 } from './W3cDataIntegrityProof'
 export {
-  assertW3cDataIntegrityDocument,
   assertIsW3cDataIntegrityProof,
   assertMultiProofDocument,
   assertSingleProofDocument,
+  assertW3cDataIntegrityDocument,
   createW3cDataIntegrityProofOptions,
 } from './W3cDataIntegrityProof'
 export type {

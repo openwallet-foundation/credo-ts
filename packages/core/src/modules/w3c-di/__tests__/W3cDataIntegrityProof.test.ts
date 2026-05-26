@@ -1,6 +1,6 @@
+import { validateProofRequiredMembers } from '../proof-processing/validation'
 import type { W3cDataIntegrityCryptosuiteProof } from '../W3cDataIntegrityProof'
 import { assertIsW3cDataIntegrityProof, createW3cDataIntegrityProofOptions } from '../W3cDataIntegrityProof'
-import { validateProofRequiredMembers } from '../proof-processing/validation'
 
 describe('DataIntegrityProof', () => {
   test('creates proof options with type set to DataIntegrityProof', () => {

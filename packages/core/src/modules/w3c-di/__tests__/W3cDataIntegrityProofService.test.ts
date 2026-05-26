@@ -44,7 +44,9 @@ describe('W3cDataIntegrityProofService', () => {
     expect(W3cDataIntegrityProcessingErrorCode.ProofTransformationError).toBe(
       'https://w3id.org/security#PROOF_TRANSFORMATION_ERROR'
     )
-    expect(W3cDataIntegrityProcessingErrorCode.InvalidDomainError).toBe('https://w3id.org/security#INVALID_DOMAIN_ERROR')
+    expect(W3cDataIntegrityProcessingErrorCode.InvalidDomainError).toBe(
+      'https://w3id.org/security#INVALID_DOMAIN_ERROR'
+    )
     expect(W3cDataIntegrityProcessingErrorCode.InvalidChallengeError).toBe(
       'https://w3id.org/security#INVALID_CHALLENGE_ERROR'
     )

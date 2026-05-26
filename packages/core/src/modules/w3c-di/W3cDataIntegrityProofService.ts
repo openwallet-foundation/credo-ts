@@ -2,6 +2,14 @@ import type { AgentContext } from '../../agent/context'
 import { injectable } from '../../plugins'
 import { asArray, equalsIgnoreOrder } from '../../utils'
 import type { W3cDataIntegrityCryptosuite, W3cDataIntegrityProofVerificationInput } from './cryptosuites/types'
+import { validateProofChainStructure } from './proof-processing/chain'
+import { omitUndefinedFields } from './proof-processing/normalisation'
+import { parseW3cDataIntegrityProofDocument } from './proof-processing/parsing'
+import {
+  assertCreatedProofPostconditions,
+  validateProofFieldFormats,
+  validateProofRequiredMembers,
+} from './proof-processing/validation'
 import { W3cDataIntegrityCryptosuiteRegistry } from './W3cDataIntegrityCryptosuiteRegistry'
 import type {
   W3cDataIntegrityCreateFailure,
@@ -25,15 +33,11 @@ import type {
   W3cDataIntegritySingleProofSecuredDocument,
   W3cDataIntegrityUnsecuredDocument,
 } from './W3cDataIntegrityProof'
-import { assertMultiProofDocument, assertSingleProofDocument, createW3cDataIntegrityProofOptions } from './W3cDataIntegrityProof'
-import { validateProofChainStructure } from './proof-processing/chain'
-import { omitUndefinedFields } from './proof-processing/normalisation'
-import { parseW3cDataIntegrityProofDocument } from './proof-processing/parsing'
 import {
-  assertCreatedProofPostconditions,
-  validateProofFieldFormats,
-  validateProofRequiredMembers,
-} from './proof-processing/validation'
+  assertMultiProofDocument,
+  assertSingleProofDocument,
+  createW3cDataIntegrityProofOptions,
+} from './W3cDataIntegrityProof'
 
 export interface W3cDataIntegrityCreateProofOptions {
   unsecuredDocument: W3cDataIntegrityUnsecuredDocument
@@ -320,7 +324,11 @@ export class W3cDataIntegrityProofService {
           securedDocument as W3cDataIntegrityProofSetSecuredDocument,
           verifyOptions
         )
-      : await this.verifyProof(agentContext, securedDocument as W3cDataIntegritySingleProofSecuredDocument, verifyOptions)
+      : await this.verifyProof(
+          agentContext,
+          securedDocument as W3cDataIntegritySingleProofSecuredDocument,
+          verifyOptions
+        )
 
     if (!verificationResult.verified) {
       return verificationResult

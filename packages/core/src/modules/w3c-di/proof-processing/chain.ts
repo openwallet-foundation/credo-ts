@@ -10,7 +10,9 @@ export type BuildValidatedProofReferenceGraphResult =
 /**
  * Implements VC Data Integrity v1.0 §4.5 steps 3.2-3.3 chain-structure validation.
  */
-export function validateProofChainStructure(proofs: W3cDataIntegrityCryptosuiteProof[]): W3cDataIntegrityProcessingIssue[] {
+export function validateProofChainStructure(
+  proofs: W3cDataIntegrityCryptosuiteProof[]
+): W3cDataIntegrityProcessingIssue[] {
   return validateProofDependencies(proofs)
 }
 

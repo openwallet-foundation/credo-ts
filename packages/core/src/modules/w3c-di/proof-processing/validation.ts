@@ -51,7 +51,9 @@ export function validateProofRequiredMembers(proof: unknown): string | undefined
 /**
  * Implements VC Data Integrity v1.0 §4.5 steps 3.2-3.3 dependency validation.
  */
-export function validateProofDependencies(proofs: W3cDataIntegrityCryptosuiteProof[]): W3cDataIntegrityProcessingIssue[] {
+export function validateProofDependencies(
+  proofs: W3cDataIntegrityCryptosuiteProof[]
+): W3cDataIntegrityProcessingIssue[] {
   const proofReferenceGraphResult = buildValidatedProofReferenceGraph(proofs)
   if (!proofReferenceGraphResult.ok) {
     return proofReferenceGraphResult.errors

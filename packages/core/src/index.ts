@@ -14,7 +14,6 @@ export * from './crypto'
 export * from './error'
 export * from './logger'
 export * from './modules/cache'
-export * from './modules/w3c-di'
 export * from './modules/dcql'
 export * from './modules/dids'
 export { tryParseDid } from './modules/dids/domain/parse'
@@ -32,15 +31,14 @@ export { didDocumentToNumAlgo4Did } from './modules/dids/methods/peer/peerDidNum
 export { DidRecordMetadataKeys } from './modules/dids/repository/didRecordMetadataTypes'
 export * from './modules/dif-presentation-exchange'
 export * from './modules/generic-records'
-
 /**
  * @deprecated import from `@credo-ts/core/kms` instead
  */
 export * as Kms from './modules/kms'
-
 export * from './modules/mdoc'
 export * from './modules/sd-jwt-vc'
 export * from './modules/vc'
+export * from './modules/w3c-di'
 export * from './modules/x509'
 export * from './plugins'
 export * from './storage/BaseRecord'

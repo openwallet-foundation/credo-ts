@@ -5,14 +5,14 @@ import { Hasher } from '../../../../crypto'
 import { asArray, MultiBaseEncoder, TypedArrayEncoder } from '../../../../utils'
 import { isObject } from '../../../../utils/object'
 import { KeyManagementApi } from '../../../kms'
+import { isXsdDateTimeStamp } from '../../proof-processing/iso8601-datetime'
+import { publicJwkFromVerificationMethodId, publicKeyIdFromVerificationMethodId } from '../../proof-processing/keyUtils'
 import { W3cDataIntegrityProcessingError, W3cDataIntegrityProcessingErrorCode } from '../../W3cDataIntegrityError'
 import type {
   W3cDataIntegrityCryptosuiteProof,
   W3cDataIntegrityCryptosuiteProofOptions,
   W3cDataIntegrityUnsecuredDocument,
 } from '../../W3cDataIntegrityProof'
-import { isXsdDateTimeStamp } from '../../proof-processing/iso8601-datetime'
-import { publicJwkFromVerificationMethodId, publicKeyIdFromVerificationMethodId } from '../../proof-processing/keyUtils'
 import type {
   W3cDataIntegrityCryptosuite,
   W3cDataIntegrityProofVerificationInput,
@@ -73,7 +73,9 @@ export class EddsaJcs2022Cryptosuite implements W3cDataIntegrityCryptosuite {
    * Spec: VC DI EdDSA v1.0 §§3.3.2
    * https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
    */
-  public async verifyProof(input: W3cDataIntegrityProofVerificationInput): Promise<W3cDataIntegrityProofVerificationResult> {
+  public async verifyProof(
+    input: W3cDataIntegrityProofVerificationInput
+  ): Promise<W3cDataIntegrityProofVerificationResult> {
     const { unsecuredDocument: securedDocument, proof } = input
     const unsecuredDocument: W3cDataIntegrityUnsecuredDocument = { ...securedDocument } // 1
     const { proofValue, ...proofOptions } = proof // 2
