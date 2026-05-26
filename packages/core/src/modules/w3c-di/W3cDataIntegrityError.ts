@@ -116,11 +116,11 @@ function formatIssueDetail(error: W3cDataIntegrityProcessingIssue) {
 }
 
 export function formatW3cDataIntegrityIssueSummary(errors: W3cDataIntegrityProcessingIssue[]): string {
-  return errors.map(formatIssueSummary).join('; ')
+  return errors.map(formatIssueSummary).join('\n')
 }
 
 export function formatW3cDataIntegrityIssueDetail(errors: W3cDataIntegrityProcessingIssue[]): string {
-  const detail = errors.map(formatIssueDetail).join('; ')
+  const detail = errors.map(formatIssueDetail).join('\n')
   return detail || DEFAULT_VERIFICATION_FAILURE_MESSAGE
 }
 
