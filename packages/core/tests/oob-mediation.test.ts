@@ -59,6 +59,7 @@ describe('out of band with mediation', () => {
     goalCode: 'p2p-messaging',
     label: 'Faber College',
     handshake: true,
+    handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     multiUseInvitation: false,
   }
 
@@ -143,7 +144,10 @@ describe('out of band with mediation', () => {
 
   test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
     // ========== Make a connection between Alice and Faber ==========
-    const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ multiUseInvitation: false })
+    const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+      multiUseInvitation: false,
+    })
 
     const { outOfBandInvitation } = outOfBandRecord
     const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
@@ -180,7 +184,9 @@ describe('out of band with mediation', () => {
       )
     )
 
-    const outOfBandRecord = await aliceAgent.didcomm.oob.createInvitation({})
+    const outOfBandRecord = await aliceAgent.didcomm.oob.createInvitation({
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+    })
     const { outOfBandInvitation } = outOfBandRecord
 
     const keyAddMessage = await keyAddMessagePromise
