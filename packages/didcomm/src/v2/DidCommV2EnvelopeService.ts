@@ -24,7 +24,7 @@ export interface DidCommV2EnvelopeKeys {
 /** Keys for anoncrypt: only recipient key; no sender (anonymous). */
 export interface DidCommV2AnoncryptKeys {
   recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk>
-  /** Content encryption algorithm. Defaults to A256GCM (legacy default; A256CBC-HS512 and XC20P are also valid). */
+  /** Content encryption algorithm. Defaults to A256CBC-HS512; A256GCM is also accepted. */
   contentEncryptionAlgorithm?: DidCommV2ContentEncryptionAlgorithm
 }
 
@@ -142,7 +142,7 @@ export class DidCommV2EnvelopeService {
       throw new CredoError('DIDComm v2 anoncrypt requires X25519 recipient key')
     }
 
-    const enc: DidCommV2ContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256GCM'
+    const enc: DidCommV2ContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256CBC-HS512'
     const recipientKid = keys.recipientKey.keyId
     const apv = computeApv([recipientKid])
 
