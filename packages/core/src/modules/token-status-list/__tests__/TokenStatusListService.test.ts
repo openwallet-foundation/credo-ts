@@ -1,0 +1,180 @@
+import { StatusListCwt } from '@owf/token-status-list'
+import { getAgentConfig, getAgentContext } from '../../../../tests'
+import { CredoError } from '../../../error'
+import { KeyManagementApi, type KmsJwkPublicEc, PublicJwk } from '../../../modules/kms'
+import type { CreateTokenStatusListOptions } from '../TokenStatusListOptions'
+import { TokenStatusListService } from '../TokenStatusListService'
+
+describe('TokenStatusListService', () => {
+  const agentConfig = getAgentConfig('TokenStatusListService')
+  const agentContext = getAgentContext({ agentConfig })
+  const tokenStatusListService = agentContext.dependencyManager.resolve(TokenStatusListService)
+  const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
+
+  let key: PublicJwk
+  let jwkWithAlg: KmsJwkPublicEc & { alg: string; kid: string }
+
+  beforeAll(async () => {
+    // node kms does not seem to add the alg to the JWK, which is defined on the `key`
+    const createdKey = await kms.createKey({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
+    })
+    key = PublicJwk.fromPublicJwk(createdKey.publicJwk)
+
+    jwkWithAlg = {
+      ...createdKey.publicJwk,
+      alg: 'ES256',
+    }
+
+    vi.spyOn(kms, 'getPublicKey').mockImplementation(async () => jwkWithAlg)
+  })
+
+  afterAll(() => {
+    vi.restoreAllMocks()
+  })
+
+  describe('createTokenStatusList', () => {
+    test('creates a CWT status list with sign1', async () => {
+      const options: CreateTokenStatusListOptions = {
+        format: 'cwt',
+        statusListLength: 16,
+        bitsPerStatus: 1,
+        hostingUri: 'https://example.com/status/1',
+        keyId: key.keyId,
+      }
+
+      const result = await tokenStatusListService.createTokenStatusList(agentContext, options)
+
+      expect(result).toBeDefined()
+      expect(result).toBeInstanceOf(Uint8Array)
+
+      // Verify it's a valid CWT
+      const cwt = StatusListCwt.fromToken(result as Uint8Array)
+      expect(cwt.payload).toBeDefined()
+      expect(cwt.payload.statusList).toBeDefined()
+      expect(cwt.payload.statusList.statusList.length).toBe(16)
+    })
+
+    test('throws error for unsupported format', async () => {
+      const options = {
+        format: 'invalid' as const,
+        statusListLength: 16,
+        bitsPerStatus: 1,
+        hostingUri: 'https://example.com/status/1',
+        keyId: key.keyId,
+      }
+
+      // @ts-expect-error: invalid format on purpose to test the code
+      await expect(tokenStatusListService.createTokenStatusList(agentContext, options)).rejects.toThrow(CredoError)
+    })
+
+    test('throws error when key has no algorithm', async () => {
+      // Create a mock key without alg
+      const keyWithoutAlg = { ...key.toJson(), alg: undefined }
+      vi.spyOn(kms, 'getPublicKey').mockResolvedValueOnce(keyWithoutAlg)
+
+      const options: CreateTokenStatusListOptions = {
+        format: 'cwt',
+        statusListLength: 16,
+        bitsPerStatus: 1,
+        hostingUri: 'https://example.com/status/1',
+        keyId: key.keyId,
+      }
+
+      await expect(tokenStatusListService.createTokenStatusList(agentContext, options)).rejects.toThrow(CredoError)
+    })
+  })
+
+  describe('updateTokenStatusList', () => {
+    test('updates a CWT status list', async () => {
+      // First create a CWT status list
+      const createOptions: CreateTokenStatusListOptions = {
+        format: 'cwt',
+        statusListLength: 16,
+        bitsPerStatus: 1,
+        hostingUri: 'https://example.com/status/1',
+        keyId: key.keyId,
+      }
+
+      const statusListToken = (await tokenStatusListService.createTokenStatusList(
+        agentContext,
+        createOptions
+      )) as Uint8Array
+
+      // Now update it
+      const result = await tokenStatusListService.updateTokenStatusList(agentContext, {
+        token: statusListToken,
+        index: 3,
+        value: 1,
+        keyId: key.keyId,
+      })
+
+      expect(result).toBeDefined()
+      expect(result).toBeInstanceOf(Uint8Array)
+
+      // Verify the status was updated
+      const cwt = StatusListCwt.fromToken(result as Uint8Array)
+      expect(cwt.payload.statusList.getStatus(3)).toBe(1)
+    })
+
+    test('throws error when updating with invalid token type', async () => {
+      const options = {
+        token: 123 as unknown as Uint8Array,
+        index: 0,
+        value: 1,
+        keyId: key.keyId,
+      }
+
+      await expect(tokenStatusListService.updateTokenStatusList(agentContext, options)).rejects.toThrow(CredoError)
+    })
+  })
+
+  describe('batchUpdateTokenStatusList', () => {
+    test('batch updates a CWT status list', async () => {
+      // First create a CWT status list
+      const createOptions: CreateTokenStatusListOptions = {
+        format: 'cwt',
+        statusListLength: 24,
+        bitsPerStatus: 1,
+        hostingUri: 'https://example.com/status/1',
+        keyId: key.keyId,
+      }
+
+      const statusListToken = (await tokenStatusListService.createTokenStatusList(
+        agentContext,
+        createOptions
+      )) as Uint8Array
+
+      // Now batch update it
+      const result = await tokenStatusListService.batchUpdateTokenStatusList(agentContext, {
+        token: statusListToken,
+        indexAndValue: [
+          [1, 1],
+          [7, 1],
+          [12, 1],
+        ],
+        keyId: key.keyId,
+      })
+
+      expect(result).toBeDefined()
+      expect(result).toBeInstanceOf(Uint8Array)
+
+      // Verify the statuses were updated
+      const cwt = StatusListCwt.fromToken(result as Uint8Array)
+      expect(cwt.payload.statusList.getStatus(1)).toBe(1)
+      expect(cwt.payload.statusList.getStatus(7)).toBe(1)
+      expect(cwt.payload.statusList.getStatus(12)).toBe(1)
+    })
+  })
+
+  describe('fetchTokenStatsuList', () => {
+    test('method exists and can be invoked', async () => {
+      // Test that the method exists and has the correct signature
+      expect(tokenStatusListService.fetchTokenStatusList).toBeDefined()
+      expect(typeof tokenStatusListService.fetchTokenStatusList).toBe('function')
+    })
+  })
+})

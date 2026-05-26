@@ -544,6 +544,9 @@ importers:
       '@owf/mdoc':
         specifier: 0.6.1-alpha-20260522131848
         version: 0.6.1-alpha-20260522131848
+      '@owf/token-status-list':
+        specifier: 0.3.0-alpha-20260522120032
+        version: 0.3.0-alpha-20260522120032
       '@peculiar/asn1-ecc':
         specifier: ^2.6.0
         version: 2.6.1
