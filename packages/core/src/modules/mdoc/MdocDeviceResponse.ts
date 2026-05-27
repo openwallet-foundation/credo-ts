@@ -21,12 +21,12 @@ import {
   type PresentationDefinition,
 } from '@verifiables/request-converter'
 import { AgentContext } from '../../agent'
+import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { TypedArrayEncoder } from './../../utils'
 import { PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc'
 import { X509Certificate } from '../x509'
 import type { Mdoc } from './Mdoc'
-import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
 import type {
   MdocDeviceResponseDcqlQueryOptions,

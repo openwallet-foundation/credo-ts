@@ -538,14 +538,14 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       '@owf/cose':
-        specifier: 0.3.0-alpha-20260526134153
-        version: 0.3.0-alpha-20260526134153
+        specifier: 0.3.0-alpha-20260527090717
+        version: 0.3.0-alpha-20260527090717
       '@owf/mdoc':
-        specifier: 0.6.1-alpha-20260526143228
-        version: 0.6.1-alpha-20260526143228
+        specifier: 0.7.0-alpha-20260527101117
+        version: 0.7.0-alpha-20260527101117
       '@owf/token-status-list':
-        specifier: 0.3.0-alpha-20260526134153
-        version: 0.3.0-alpha-20260526134153
+        specifier: 0.3.0-alpha-20260527090717
+        version: 0.3.0-alpha-20260527090717
       '@peculiar/asn1-ecc':
         specifier: ^2.6.0
         version: 2.6.1
@@ -3177,17 +3177,17 @@ packages:
   '@openwallet-foundation/askar-shared@0.6.0':
     resolution: {integrity: sha512-O9aaQCZ2BkQ5Z8jqshhqhxbS/rT2nTfN90iW32WKQEh9YUwWERFQcnqKR+XszGhV95jqwZagcwhDb72hFH3VaQ==}
 
-  '@owf/cose@0.3.0-alpha-20260526134153':
-    resolution: {integrity: sha512-/n3idRlgUxmBjSss4xgFx9IjUvS2sdT5CJl0qHuoO2jwXPQ8HnoISVdtRL3z9DUlFsqVdm/Z7F/Qy40pHsn0rA==}
+  '@owf/cose@0.3.0-alpha-20260527090717':
+    resolution: {integrity: sha512-5f3CoxGvk7Yw9k5Au4j/l2ATOQviJ4xIeWnUCedGVKfZVoEXC+0zamVnpZhWB5LMwHnSlAqJfaHdMjH6XU5FtA==}
 
-  '@owf/identity-common@0.3.0-alpha-20260526134153':
-    resolution: {integrity: sha512-X/XXHg7hHlQUzDG81Z/cSkuHuz1zGoV7nZgIfF74CQsA4XhKeqmAB6TOfDwkSEZezNs4ydM0WQcnNNhcKoFtCw==}
+  '@owf/identity-common@0.3.0-alpha-20260527090717':
+    resolution: {integrity: sha512-R0Owiq/XS0a/kTsskXCwZTRyeC+wXS0cnSIaZ6tv5CZVY+L434bEBP5AHD4x+OIXrk4K7SKCrwMDoTVArsr8Rg==}
 
-  '@owf/mdoc@0.6.1-alpha-20260526143228':
-    resolution: {integrity: sha512-ly7BRlD044NcyjmpAKqjXTij9SHGUONX1m4/IHteayqALAEvw5NMHI/i0y28PrSEucP7nJ+hyFRKZPWq5W4rBA==}
+  '@owf/mdoc@0.7.0-alpha-20260527101117':
+    resolution: {integrity: sha512-jzlr7gwbUgHc+P+JhVfyf2r4TYzcowkg6iaZo7hargpeH6ctFoc10uwiPVRipxfjyTTrx7WFuctqWvfE9xINbw==}
 
-  '@owf/token-status-list@0.3.0-alpha-20260526134153':
-    resolution: {integrity: sha512-qLy/13JPAJRV8H4Dr4DVCqxk0sgMKvaTurbz7wO7MDWpB551GYwWLLTGuNo25opSnv76ew/ByCl01So28CKhyw==}
+  '@owf/token-status-list@0.3.0-alpha-20260527090717':
+    resolution: {integrity: sha512-hjUvMoHJ1MyfkGJlUC/CRX4wE0Dkhvvv4SBhi4wNegEZZcHctOfM0DyRJLKvbpZWZ/+UjiY2rURAtHJIjD5b3w==}
 
   '@oxc-project/runtime@0.101.0':
     resolution: {integrity: sha512-t3qpfVZIqSiLQ5Kqt/MC4Ge/WCOGrrcagAdzTcDaggupjiGxUx4nJF2v6wUCXWSzWHn5Ns7XLv13fCJEwCOERQ==}
@@ -11628,28 +11628,28 @@ snapshots:
       buffer: 6.0.3
       tar: 7.5.7
 
-  '@owf/cose@0.3.0-alpha-20260526134153':
+  '@owf/cose@0.3.0-alpha-20260527090717':
     dependencies:
-      '@owf/identity-common': 0.3.0-alpha-20260526134153
+      '@owf/identity-common': 0.3.0-alpha-20260527090717
       cbor-x: 1.6.4
       zod: 4.4.3
       zod-validation-error: 5.0.0(zod@4.4.3)
 
-  '@owf/identity-common@0.3.0-alpha-20260526134153': {}
+  '@owf/identity-common@0.3.0-alpha-20260527090717': {}
 
-  '@owf/mdoc@0.6.1-alpha-20260526143228':
+  '@owf/mdoc@0.7.0-alpha-20260527101117':
     dependencies:
-      '@owf/cose': 0.3.0-alpha-20260526134153
-      '@owf/identity-common': 0.3.0-alpha-20260526134153
-      '@owf/token-status-list': 0.3.0-alpha-20260526134153
+      '@owf/cose': 0.3.0-alpha-20260527090717
+      '@owf/identity-common': 0.3.0-alpha-20260527090717
+      '@owf/token-status-list': 0.3.0-alpha-20260527090717
       nock: 14.0.15
       zod: 4.4.3
       zod-validation-error: 5.0.0(zod@4.4.3)
 
-  '@owf/token-status-list@0.3.0-alpha-20260526134153':
+  '@owf/token-status-list@0.3.0-alpha-20260527090717':
     dependencies:
-      '@owf/cose': 0.3.0-alpha-20260526134153
-      '@owf/identity-common': 0.3.0-alpha-20260526134153
+      '@owf/cose': 0.3.0-alpha-20260527090717
+      '@owf/identity-common': 0.3.0-alpha-20260527090717
       cbor-x: 1.6.4
       pako: 2.1.0
       zod: 4.4.3
@@ -16599,7 +16599,7 @@ snapshots:
 
   postcss@8.4.49:
     dependencies:
-      nanoid: 3.3.11
+      nanoid: 3.3.12
       picocolors: 1.1.1
       source-map-js: 1.2.1
 

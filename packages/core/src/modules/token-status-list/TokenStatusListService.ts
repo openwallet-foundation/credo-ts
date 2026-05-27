@@ -8,11 +8,11 @@ import {
 } from '@owf/token-status-list'
 import type { AgentContext } from '../../agent'
 import { type JwsProtectedHeaderOptions, JwsService, Jwt, JwtPayload } from '../../crypto'
+import { getMac0Context } from '../../crypto/contexts/mac0Context'
+import { getSign1Context } from '../../crypto/contexts/sign1Context'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import { KeyManagementApi } from '../kms'
-import { getMac0Context } from './context/mac0Context'
-import { getSign1Context } from './context/sign1Context'
 import type {
   CreateTokenStatusListOptions,
   FetchTokenStatusListOptions,

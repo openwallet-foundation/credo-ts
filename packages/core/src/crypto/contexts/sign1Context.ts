@@ -46,7 +46,7 @@ export const getSign1Context = (agentContext: AgentContext): Sign1Context => {
       },
       getPublicKey: async (input) => {
         const certificate = X509Certificate.fromRawCertificate(input.certificate)
-        return CoseKey.fromJwk(certificate.publicJwk.toJson()).publicKey
+        return CoseKey.fromJwk(certificate.publicJwk.toJson())
       },
     },
   } satisfies Sign1Context
