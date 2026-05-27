@@ -25,8 +25,12 @@ export function supportedKeyDerivationAlgsForKey(
     algs.push('ECDH-ES', 'ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW')
   }
 
-  // ECDH-1PU+A256KW (e.g. DIDComm v2): X25519 natively; Ed25519 may be converted to X25519 by the KMS
+  // ECDH-1PU+A256KW (e.g. DIDComm v2): X25519 natively; Ed25519 may be converted to X25519 by the KMS.
+  // P-256 is also valid per DIDComm v2.1; askar-crypto's Ecdh1PU is generic over any KeyExchange curve.
   if (jwk.kty === 'OKP' && (jwk.crv === 'X25519' || jwk.crv === 'Ed25519')) {
+    algs.push('ECDH-1PU+A256KW')
+  }
+  if (jwk.kty === 'EC' && jwk.crv === 'P-256') {
     algs.push('ECDH-1PU+A256KW')
   }
   if (jwk.kty === 'OKP' && (jwk.crv === 'X25519' || jwk.crv === 'Ed25519')) {

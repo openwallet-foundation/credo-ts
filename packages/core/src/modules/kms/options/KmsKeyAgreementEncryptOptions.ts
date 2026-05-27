@@ -66,7 +66,7 @@ export type KmsKeyAgreementEncryptEcdhHsalsa20 = z.output<typeof zKmsKeyAgreemen
 const zKmsKeyAgreementEncryptEcdh1Pu = z.object({
   keyId: zKmsKeyId,
   algorithm: z.literal('ECDH-1PU+A256KW'),
-  externalPublicJwk: zKmsJwkPublicOkp.extend({ crv: zKmsJwkPublicOkp.shape.crv.extract(['X25519']) }),
+  externalPublicJwk: zKmsJwkPublicEcdh,
 
   /**
    * Optional id of a caller-provided ephemeral key. When set, the KMS uses this key for the
