@@ -8,6 +8,8 @@ import { W3cV2JwtVerifiableCredential } from '../jwt-vc'
 import { ClaimFormat, type W3cV2VerifiableCredential } from '../models'
 import { W3cV2SdJwtVerifiableCredential } from '../sd-jwt-vc'
 
+type W3cV2StoredVerifiableCredential = W3cV2VerifiableCredential<ClaimFormat.JwtW3cVc | ClaimFormat.SdJwtW3cVc>
+
 export interface W3cV2CredentialRecordOptions {
   id?: string
   createdAt?: Date
@@ -30,7 +32,7 @@ export type DefaultW3cV2CredentialTags = {
   schemaIds: Array<string>
   contexts: Array<string>
   givenId?: string
-  claimFormat: W3cV2VerifiableCredential['claimFormat']
+  claimFormat: W3cV2StoredVerifiableCredential['claimFormat']
 
   types: Array<string>
   algs?: Array<string>
@@ -75,7 +77,7 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
    * Only here for class transformation. If credential is set we transform
    * it to the new credentialInstances array format
    */
-  private set credential(credential: W3cV2VerifiableCredential) {
+  private set credential(credential: W3cV2StoredVerifiableCredential) {
     this.credentialInstances = [
       {
         // NOTE: we have to type the `set` method the same as the `get`. Previously
@@ -86,14 +88,14 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
     ]
   }
 
-  public get firstCredential(): W3cV2VerifiableCredential {
+  public get firstCredential(): W3cV2StoredVerifiableCredential {
     const credential = this.credentialInstances[0].credential
     return credential.includes('~')
       ? W3cV2SdJwtVerifiableCredential.fromCompact(credential)
       : W3cV2JwtVerifiableCredential.fromCompact(credential)
   }
 
-  public static fromCredential(credential: W3cV2VerifiableCredential) {
+  public static fromCredential(credential: W3cV2StoredVerifiableCredential) {
     return new W3cV2CredentialRecord({
       credentialInstances: [
         {

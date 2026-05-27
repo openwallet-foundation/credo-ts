@@ -3,7 +3,7 @@ import type {
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeSubmission,
   EncodedX509Certificate,
-  IAnonCredsDataIntegrityService,
+  IAnonCredsVc1BridgeService,
   JsonValue,
   W3cJsonPresentation,
   W3cVerifiablePresentation,
@@ -11,8 +11,8 @@ import type {
   X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import {
-  ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
-  AnonCredsDataIntegrityServiceSymbol,
+  ANONCREDS_VC1_BRIDGE_CRYPTOSUITE,
+  AnonCredsVc1BridgeServiceSymbol,
   ClaimFormat,
   CredoError,
   DifPresentationExchangeService,
@@ -21,6 +21,7 @@ import {
   extractX509CertificatesFromJwt,
   JsonTransformer,
   Kms,
+  SdJwtVcApi,
   TypedArrayEncoder,
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
@@ -241,17 +242,17 @@ export class DidCommDifPresentationExchangeProofFormatService
     return { attachment, format }
   }
 
-  private shouldVerifyUsingAnonCredsDataIntegrity(
+  private shouldVerifyUsingAnonCredsVc1Bridge(
     presentation: W3cVerifiablePresentation,
     presentationSubmission: DifPresentationExchangeSubmission
   ) {
     if (presentation.claimFormat !== ClaimFormat.LdpVp) return false
     const descriptorMap = presentationSubmission.descriptor_map
 
-    const verifyUsingDataIntegrity = descriptorMap.every((descriptor) => descriptor.format === ClaimFormat.DiVp)
-    if (!verifyUsingDataIntegrity) return false
+    const verifyUsingAnonCredsVc1Bridge = descriptorMap.every((descriptor) => descriptor.format === ClaimFormat.DiVp)
+    if (!verifyUsingAnonCredsVc1Bridge) return false
 
-    return presentation.dataIntegrityCryptosuites.includes(ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE)
+    return presentation.anoncredsVc1BridgeCryptosuites.includes(ANONCREDS_VC1_BRIDGE_CRYPTOSUITE)
   }
 
   public async processPresentation(
@@ -268,11 +269,21 @@ export class DidCommDifPresentationExchangeProofFormatService
 
     // TODO: we should probably move this transformation logic into the VC module, so it
     // can be reused in Credo when we need to go from encoded -> parsed
-    if (typeof presentation === 'string' && presentation.includes('~')) {
-      // NOTE: we need to define in the PEX RFC where to put the presentation_submission
-      throw new CredoError('Received SD-JWT VC in PEX proof format. This is not supported yet.')
-    }
     if (typeof presentation === 'string') {
+      try {
+        const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
+        sdJwtVcApi.fromCompact(presentation)
+
+        // NOTE: we need to define in the PEX RFC where to put the presentation_submission
+        throw new CredoError('Received SD-JWT VC in PEX proof format. This is not supported yet.')
+      } catch (error) {
+        if (error instanceof CredoError && error.message.includes('Received SD-JWT VC in PEX proof format')) {
+          throw error
+        }
+
+        // Not an SD-JWT presentation, continue with other parsers.
+      }
+
       // If it's a string, we expect it to be a JWT VP
       parsedPresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
       jsonPresentation = parsedPresentation.presentation.toJSON()
@@ -332,13 +343,11 @@ export class DidCommDifPresentationExchangeProofFormatService
           domain: request.options.domain,
         })
       } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
-        if (
-          this.shouldVerifyUsingAnonCredsDataIntegrity(parsedPresentation, jsonPresentation.presentation_submission)
-        ) {
-          const dataIntegrityService = agentContext.dependencyManager.resolve<IAnonCredsDataIntegrityService>(
-            AnonCredsDataIntegrityServiceSymbol
+        if (this.shouldVerifyUsingAnonCredsVc1Bridge(parsedPresentation, jsonPresentation.presentation_submission)) {
+          const anoncredsVc1BridgeService = agentContext.dependencyManager.resolve<IAnonCredsVc1BridgeService>(
+            AnonCredsVc1BridgeServiceSymbol
           )
-          const proofVerificationResult = await dataIntegrityService.verifyPresentation(agentContext, {
+          const proofVerificationResult = await anoncredsVc1BridgeService.verifyPresentation(agentContext, {
             presentation: parsedPresentation as W3cJsonLdVerifiablePresentation,
             presentationDefinition: request.presentation_definition,
             presentationSubmission: jsonPresentation.presentation_submission,
@@ -349,8 +358,8 @@ export class DidCommDifPresentationExchangeProofFormatService
             isValid: proofVerificationResult,
             validations: {},
             error: {
-              name: 'DataIntegrityError',
-              message: 'Verifying the Data Integrity Proof failed. An unknown error occurred.',
+              name: 'AnonCredsVc1BridgeError',
+              message: 'Verifying the anoncreds VC1 bridge proof failed. An unknown error occurred.',
             },
           }
         } else {

@@ -1,3 +1,7 @@
+import {
+  W3cV2DataIntegrityVerifiablePresentation,
+  type W3cV2DataIntegrityVerifiablePresentationOptions,
+} from '../../data-integrity-v1'
 import { W3cV2JwtVerifiablePresentation, type W3cV2JwtVerifiablePresentationOptions } from '../../jwt-vc'
 import { W3cV2SdJwtVerifiablePresentation, type W3cV2SdJwtVerifiablePresentationOptions } from '../../sd-jwt-vc'
 import { ClaimFormat } from '../ClaimFormat'
@@ -18,17 +22,24 @@ import { ClaimFormat } from '../ClaimFormat'
  * TODO: add support for embedded proof mechanisms (Verifiable Credential Data Integrity 1.0)
  */
 export type W3cV2VerifiablePresentation<
-  Format extends ClaimFormat.JwtW3cVp | ClaimFormat.SdJwtW3cVp | unknown = unknown,
+  Format extends ClaimFormat.JwtW3cVp | ClaimFormat.SdJwtW3cVp | ClaimFormat.DiVp | unknown = unknown,
 > = Format extends ClaimFormat.JwtW3cVp
   ? W3cV2JwtVerifiablePresentation
   : Format extends ClaimFormat.SdJwtW3cVp
     ? W3cV2SdJwtVerifiablePresentation
-    : W3cV2SdJwtVerifiablePresentation | W3cV2JwtVerifiablePresentation
+    : Format extends ClaimFormat.DiVp
+      ? W3cV2DataIntegrityVerifiablePresentation
+      : W3cV2SdJwtVerifiablePresentation | W3cV2JwtVerifiablePresentation | W3cV2DataIntegrityVerifiablePresentation
 
 export type W3cV2VerifiablePresentationOptions<
-  Format extends ClaimFormat.JwtW3cVp | ClaimFormat.SdJwtW3cVp | unknown = unknown,
+  Format extends ClaimFormat.JwtW3cVp | ClaimFormat.SdJwtW3cVp | ClaimFormat.DiVp | unknown = unknown,
 > = Format extends ClaimFormat.JwtW3cVp
   ? W3cV2JwtVerifiablePresentationOptions
   : Format extends ClaimFormat.SdJwtW3cVp
     ? W3cV2SdJwtVerifiablePresentationOptions
-    : W3cV2SdJwtVerifiablePresentationOptions | W3cV2JwtVerifiablePresentationOptions
+    : Format extends ClaimFormat.DiVp
+      ? W3cV2DataIntegrityVerifiablePresentationOptions
+      :
+          | W3cV2SdJwtVerifiablePresentationOptions
+          | W3cV2JwtVerifiablePresentationOptions
+          | W3cV2DataIntegrityVerifiablePresentationOptions

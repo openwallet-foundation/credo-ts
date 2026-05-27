@@ -7,30 +7,39 @@ import type { W3cV2CredentialRecord } from './repository'
 import { W3cV2SdJwtVerifiableCredential, W3cV2SdJwtVerifiablePresentation } from './sd-jwt-vc'
 
 export type W3cV2SignCredentialOptions<
-  Format extends ClaimFormat.JwtW3cVc | ClaimFormat.SdJwtW3cVc | undefined = undefined,
+  Format extends ClaimFormat.JwtW3cVc | ClaimFormat.SdJwtW3cVc | ClaimFormat.DiVc | undefined = undefined,
 > = Format extends ClaimFormat.JwtW3cVc
   ? W3cV2JwtSignCredentialOptions
   : Format extends ClaimFormat.SdJwtW3cVc
     ? W3cV2SdJwtSignCredentialOptions
-    : W3cV2JwtSignCredentialOptions | W3cV2SdJwtSignCredentialOptions
+    : Format extends ClaimFormat.DiVc
+      ? W3cV2DiSignCredentialOptions
+      : W3cV2JwtSignCredentialOptions | W3cV2SdJwtSignCredentialOptions | W3cV2DiSignCredentialOptions
 
 export type W3cV2VerifyCredentialOptions<
-  Format extends ClaimFormat.JwtW3cVc | ClaimFormat.SdJwtW3cVc | undefined = undefined,
+  Format extends ClaimFormat.JwtW3cVc | ClaimFormat.SdJwtW3cVc | ClaimFormat.DiVc | undefined = undefined,
 > = Format extends ClaimFormat.JwtW3cVc
   ? W3cV2JwtVerifyCredentialOptions
   : Format extends ClaimFormat.SdJwtW3cVc
     ? W3cV2SdJwtVerifyCredentialOptions
-    : W3cV2JwtVerifyCredentialOptions | W3cV2SdJwtVerifyCredentialOptions
+    : Format extends ClaimFormat.DiVc
+      ? W3cV2DiVerifyCredentialOptions
+      : W3cV2JwtVerifyCredentialOptions | W3cV2SdJwtVerifyCredentialOptions | W3cV2DiVerifyCredentialOptions
 
 export type W3cV2SignPresentationOptions<
-  Format extends ClaimFormat.JwtW3cVp | ClaimFormat.SdJwtW3cVp | undefined = undefined,
+  Format extends ClaimFormat.JwtW3cVp | ClaimFormat.SdJwtW3cVp | ClaimFormat.DiVp | undefined = undefined,
 > = Format extends ClaimFormat.JwtW3cVp
   ? W3cV2JwtSignPresentationOptions
   : Format extends ClaimFormat.SdJwtW3cVp
     ? W3cV2SdJwtSignPresentationOptions
-    : W3cV2JwtSignPresentationOptions | W3cV2SdJwtSignPresentationOptions
+    : Format extends ClaimFormat.DiVp
+      ? W3cV2DiSignPresentationOptions
+      : W3cV2JwtSignPresentationOptions | W3cV2SdJwtSignPresentationOptions | W3cV2DiSignPresentationOptions
 
-export type W3cV2VerifyPresentationOptions = W3cV2JwtVerifyPresentationOptions | W3cV2SdJwtVerifyPresentationOptions
+export type W3cV2VerifyPresentationOptions =
+  | W3cV2JwtVerifyPresentationOptions
+  | W3cV2SdJwtVerifyPresentationOptions
+  | W3cV2DiVerifyPresentationOptions
 
 interface W3cV2SignCredentialOptionsBase {
   /**
@@ -108,6 +117,15 @@ export interface W3cV2SdJwtVerifyCredentialOptions extends W3cV2VerifyCredential
   credential: W3cV2SdJwtVerifiableCredential | string // string must be encoded VC SD-JWT
 }
 
+export interface W3cV2DiSignCredentialOptions extends W3cV2SignCredentialOptionsBase {
+  format: ClaimFormat.DiVc
+}
+
+export interface W3cV2DiVerifyCredentialOptions extends W3cV2VerifyCredentialOptionsBase {
+  // Future DI implementation will narrow this to a dedicated verifiable DI credential model.
+  credential: { claimFormat: ClaimFormat.DiVc } | Record<string, unknown>
+}
+
 interface W3cV2SignPresentationOptionsBase {
   /**
    * The format of the presentation to be signed.
@@ -176,6 +194,15 @@ export interface W3cV2JwtVerifyPresentationOptions extends W3cV2VerifyPresentati
 
 export interface W3cV2SdJwtVerifyPresentationOptions extends W3cV2VerifyPresentationOptionsBase {
   presentation: W3cV2SdJwtVerifiablePresentation | string // string must be encoded VP SD-JWT
+}
+
+export interface W3cV2DiSignPresentationOptions extends W3cV2SignPresentationOptionsBase {
+  format: ClaimFormat.DiVp
+}
+
+export interface W3cV2DiVerifyPresentationOptions extends W3cV2VerifyPresentationOptionsBase {
+  // Future DI implementation will narrow this to a dedicated verifiable DI presentation model.
+  presentation: { claimFormat: ClaimFormat.DiVp } | Record<string, unknown>
 }
 
 export interface W3cV2StoreCredentialOptions {

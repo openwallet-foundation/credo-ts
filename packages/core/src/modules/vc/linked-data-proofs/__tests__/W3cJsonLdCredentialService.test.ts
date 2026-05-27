@@ -17,6 +17,7 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../../dids'
 import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../../kms'
+import { AnonCredsVc1BridgeProof } from '../../anoncreds-vc1-bridge/AnonCredsVc1BridgeProof'
 import { ClaimFormat, W3cCredential } from '../../models'
 import { W3cPresentation } from '../../models/presentation/W3cPresentation'
 import { W3cCredentialsModuleConfig } from '../../W3cCredentialsModuleConfig'
@@ -64,6 +65,138 @@ const w3cJsonLdCredentialService = new W3cJsonLdCredentialService(
 
 describe('W3cJsonLdCredentialsService', () => {
   const privateKey = TypedArrayEncoder.fromUtf8String('testseed000000000000000000000001')
+
+  describe('VC1 bridge proof boundary', () => {
+    it('accepts DataIntegrityProof with anoncreds-2023 cryptosuite for credential and presentation', () => {
+      const vc = JsonTransformer.fromJSON(
+        {
+          ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+          proof: {
+            type: 'DataIntegrityProof',
+            cryptosuite: 'anoncreds-2023',
+            proofPurpose: 'assertionMethod',
+            verificationMethod: 'did:example:issuer#keys-1',
+            proofValue: 'zProofValue',
+          },
+        },
+        W3cJsonLdVerifiableCredential
+      )
+
+      const vp = JsonTransformer.fromJSON(
+        {
+          ...Ed25519Signature2018Fixtures.TEST_VP_DOCUMENT_SIGNED,
+          proof: {
+            type: 'DataIntegrityProof',
+            cryptosuite: 'anoncreds-2023',
+            proofPurpose: 'authentication',
+            verificationMethod: 'did:example:holder#keys-1',
+            proofValue: 'zProofValue',
+            challenge: 'challenge',
+          },
+        },
+        W3cJsonLdVerifiablePresentation
+      )
+
+      expect(vc.proof).toBeInstanceOf(AnonCredsVc1BridgeProof)
+      expect(vp.proof).toBeInstanceOf(AnonCredsVc1BridgeProof)
+    })
+
+    it('exposes anoncreds VC1 bridge cryptosuites for credential and presentation', () => {
+      const vc = JsonTransformer.fromJSON(
+        {
+          ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+          proof: {
+            type: 'DataIntegrityProof',
+            cryptosuite: 'anoncreds-2023',
+            proofPurpose: 'assertionMethod',
+            verificationMethod: 'did:example:issuer#keys-1',
+            proofValue: 'zProofValue',
+          },
+        },
+        W3cJsonLdVerifiableCredential
+      )
+
+      const vp = JsonTransformer.fromJSON(
+        {
+          ...Ed25519Signature2018Fixtures.TEST_VP_DOCUMENT_SIGNED,
+          proof: {
+            type: 'DataIntegrityProof',
+            cryptosuite: 'anoncreds-2023',
+            proofPurpose: 'authentication',
+            verificationMethod: 'did:example:holder#keys-1',
+            proofValue: 'zProofValue',
+            challenge: 'challenge',
+          },
+        },
+        W3cJsonLdVerifiablePresentation
+      )
+
+      expect(vc.anoncredsVc1BridgeCryptosuites).toEqual(['anoncreds-2023'])
+      expect(vp.anoncredsVc1BridgeCryptosuites).toEqual(['anoncreds-2023'])
+    })
+
+    it('rejects DataIntegrityProof with non-anoncreds cryptosuite for credential and presentation', () => {
+      expect(() =>
+        JsonTransformer.fromJSON(
+          {
+            ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+            proof: {
+              type: 'DataIntegrityProof',
+              cryptosuite: 'eddsa-jcs-2022',
+              proofPurpose: 'assertionMethod',
+              verificationMethod: 'did:example:issuer#keys-1',
+              proofValue: 'zProofValue',
+            },
+          },
+          W3cJsonLdVerifiableCredential
+        )
+      ).toThrow('VC1 bridge proofs only support DataIntegrityProof with cryptosuite anoncreds-2023')
+
+      expect(() =>
+        JsonTransformer.fromJSON(
+          {
+            ...Ed25519Signature2018Fixtures.TEST_VP_DOCUMENT_SIGNED,
+            proof: {
+              type: 'DataIntegrityProof',
+              cryptosuite: 'eddsa-jcs-2022',
+              proofPurpose: 'authentication',
+              verificationMethod: 'did:example:holder#keys-1',
+              proofValue: 'zProofValue',
+              challenge: 'challenge',
+            },
+          },
+          W3cJsonLdVerifiablePresentation
+        )
+      ).toThrow('VC1 bridge proofs only support DataIntegrityProof with cryptosuite anoncreds-2023')
+    })
+
+    it('rejects mixed proofs when anoncreds VC1 proof is hidden in an array', async () => {
+      const mixedCredential = JsonTransformer.fromJSON(
+        {
+          ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+          proof: [
+            Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED.proof,
+            {
+              type: 'DataIntegrityProof',
+              cryptosuite: 'anoncreds-2023',
+              proofPurpose: 'assertionMethod',
+              verificationMethod: 'did:example:issuer#keys-1',
+              proofValue: 'zProofValue',
+            },
+          ],
+        },
+        W3cJsonLdVerifiableCredential
+      )
+
+      const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, {
+        credential: mixedCredential,
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.error).toBeInstanceOf(Error)
+      expect(result.error?.message).toContain('VC1 bridge proof with cryptosuite anoncreds-2023')
+    })
+  })
 
   describe('Utility methods', () => {
     describe('getVerificationMethodTypesByProofType', () => {
@@ -181,6 +314,28 @@ describe('W3cJsonLdCredentialsService', () => {
             },
           },
         })
+      })
+
+      it('should fail with explicit boundary error when anoncreds-2023 DataIntegrityProof is verified through generic path', async () => {
+        const vc = JsonTransformer.fromJSON(
+          {
+            ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+            proof: {
+              type: 'DataIntegrityProof',
+              cryptosuite: 'anoncreds-2023',
+              proofPurpose: 'assertionMethod',
+              verificationMethod: 'did:example:issuer#keys-1',
+              proofValue: 'zProofValue',
+            },
+          },
+          W3cJsonLdVerifiableCredential
+        )
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+        expect(result.isValid).toBe(false)
+        expect(result.error).toBeInstanceOf(Error)
+        expect(result.error?.message).toContain('must be verified through the anoncreds VC1 bridge path')
       })
 
       it('should fail because of invalid signature', async () => {
@@ -305,6 +460,32 @@ describe('W3cJsonLdCredentialsService', () => {
             },
           },
         })
+      })
+
+      it('should fail with explicit boundary error when anoncreds-2023 DataIntegrityProof is verified through generic path', async () => {
+        const vp = JsonTransformer.fromJSON(
+          {
+            ...Ed25519Signature2018Fixtures.TEST_VP_DOCUMENT_SIGNED,
+            proof: {
+              type: 'DataIntegrityProof',
+              cryptosuite: 'anoncreds-2023',
+              proofPurpose: 'authentication',
+              verificationMethod: 'did:example:holder#keys-1',
+              proofValue: 'zProofValue',
+              challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
+            },
+          },
+          W3cJsonLdVerifiablePresentation
+        )
+
+        const result = await w3cJsonLdCredentialService.verifyPresentation(agentContext, {
+          presentation: vp,
+          challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
+        })
+
+        expect(result.isValid).toBe(false)
+        expect(result.error).toBeInstanceOf(Error)
+        expect(result.error?.message).toContain('must be verified through the anoncreds VC1 bridge path')
       })
 
       it('should fail when presentation signature is not valid', async () => {

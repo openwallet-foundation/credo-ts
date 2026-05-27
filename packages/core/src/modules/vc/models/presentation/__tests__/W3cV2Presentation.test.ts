@@ -1,4 +1,5 @@
 import { JsonTransformer } from '../../../../../utils'
+import { W3cV2DataIntegrityVerifiableCredential } from '../../../data-integrity-v1'
 import { W3cV2Presentation } from '../W3cV2Presentation'
 
 const validPresentation = {
@@ -16,6 +17,20 @@ const validPresentation = {
       type: 'EnvelopedVerifiableCredential',
     },
   ],
+}
+
+const validEmbeddedDiCredential = {
+  '@context': ['https://www.w3.org/ns/credentials/v2', 'https://w3id.org/security/data-integrity/v2'],
+  type: ['VerifiableCredential', 'ExampleCredential'],
+  issuer: 'did:key:z6Mkissuer',
+  credentialSubject: { id: 'did:key:z6Mksubject', name: 'Alice' },
+  proof: {
+    type: 'DataIntegrityProof',
+    cryptosuite: 'eddsa-jcs-2022',
+    proofPurpose: 'assertionMethod',
+    verificationMethod: 'did:key:z6Mkissuer#z6Mkissuer',
+    proofValue: 'zProof',
+  },
 }
 
 describe('W3cV2Presentation', () => {
@@ -83,19 +98,46 @@ describe('W3cV2Presentation', () => {
   test('throws an error when verifiableCredential is not a credential or an array of credentials', () => {
     expect(() =>
       JsonTransformer.fromJSON({ ...validPresentation, verifiableCredential: undefined }, W3cV2Presentation)
-    ).toThrow(
-      /verifiableCredential value must be an instance of, or an array of instances containing W3cV2EnvelopedVerifiableCredential/
-    )
+    ).toThrow(/verifiableCredential value must be an instance of, or an array of instances containing/)
 
     expect(() =>
       JsonTransformer.fromJSON({ ...validPresentation, verifiableCredential: [] }, W3cV2Presentation)
-    ).toThrow(
-      /verifiableCredential value must be an instance of, or an array of instances containing W3cV2EnvelopedVerifiableCredential/
-    )
+    ).toThrow(/verifiableCredential value must be an instance of, or an array of instances containing/)
 
     expect(() =>
       JsonTransformer.fromJSON({ ...validPresentation, verifiableCredential: [{ random: 'prop' }] }, W3cV2Presentation)
-    ).toThrow(/property verifiableCredential\[0\]\.context/)
+    ).toThrow(/W3cV2EnvelopedVerifiableCredential: Failed to validate class/)
+  })
+
+  test('accepts an embedded DI credential entry', () => {
+    const jsonPresentation = {
+      ...validPresentation,
+      verifiableCredential: [validEmbeddedDiCredential],
+    }
+
+    const presentation = JsonTransformer.fromJSON(jsonPresentation, W3cV2Presentation)
+    const credentials = Array.isArray(presentation.verifiableCredential)
+      ? presentation.verifiableCredential
+      : [presentation.verifiableCredential]
+
+    expect(credentials[0]).toBeInstanceOf(W3cV2DataIntegrityVerifiableCredential)
+    expect(JsonTransformer.toJSON(presentation)).toEqual(jsonPresentation)
+  })
+
+  test('accepts mixed enveloped and embedded DI credential entries', () => {
+    const jsonPresentation = {
+      ...validPresentation,
+      verifiableCredential: [validPresentation.verifiableCredential[0], validEmbeddedDiCredential],
+    }
+
+    const presentation = JsonTransformer.fromJSON(jsonPresentation, W3cV2Presentation)
+    const credentials = Array.isArray(presentation.verifiableCredential)
+      ? presentation.verifiableCredential
+      : [presentation.verifiableCredential]
+
+    expect(credentials[0]).not.toBeInstanceOf(W3cV2DataIntegrityVerifiableCredential)
+    expect(credentials[1]).toBeInstanceOf(W3cV2DataIntegrityVerifiableCredential)
+    expect(JsonTransformer.toJSON(presentation)).toEqual(jsonPresentation)
   })
 
   it('should transform from JSON to a class instance and back', () => {

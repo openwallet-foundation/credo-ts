@@ -2,6 +2,7 @@ import type { AgentContext } from '../../agent/context'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
+import { mapDataIntegrityIssuesToCredoError, type W3cV2DataIntegrityIssue } from './data-integrity-v1'
 import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
 import { W3cV2JwtCredentialService } from './jwt-vc/W3cV2JwtCredentialService'
 import type { W3cV2VerifiableCredential, W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from './models'
@@ -14,6 +15,10 @@ import {
   W3cV2SdJwtVerifiablePresentation,
 } from './sd-jwt-vc'
 import type {
+  W3cV2DiSignCredentialOptions,
+  W3cV2DiSignPresentationOptions,
+  W3cV2DiVerifyCredentialOptions,
+  W3cV2DiVerifyPresentationOptions,
   W3cV2JwtVerifyCredentialOptions,
   W3cV2JwtVerifyPresentationOptions,
   W3cV2SdJwtVerifyCredentialOptions,
@@ -47,7 +52,7 @@ export class W3cV2CredentialService {
    * @param credential the credential to be signed
    * @returns the signed credential
    */
-  public async signCredential<Format extends ClaimFormat.JwtW3cVc | ClaimFormat.SdJwtW3cVc>(
+  public async signCredential<Format extends ClaimFormat.JwtW3cVc | ClaimFormat.SdJwtW3cVc | ClaimFormat.DiVc>(
     agentContext: AgentContext,
     options: W3cV2SignCredentialOptions<Format>
   ): Promise<W3cV2VerifiableCredential<Format>> {
@@ -59,7 +64,10 @@ export class W3cV2CredentialService {
       const signed = await this.w3cV2SdJwtCredentialService.signCredential(agentContext, options)
       return signed as W3cV2VerifiableCredential<Format>
     }
-    throw new CredoError(`Unsupported format in options. Format must be either 'vc+jwt' or 'vc+sd-jwt'`)
+    if (options.format === ClaimFormat.DiVc) {
+      this.throwDataIntegrityStubError('signCredential', ClaimFormat.DiVc, options as W3cV2DiSignCredentialOptions)
+    }
+    throw new CredoError(`Unsupported format in options. Format must be either 'vc+jwt', 'vc+sd-jwt', or 'di_vc'`)
   }
 
   /**
@@ -78,6 +86,11 @@ export class W3cV2CredentialService {
         options as W3cV2SdJwtVerifyCredentialOptions
       )
     }
+
+    if (this.getClaimFormat(options.credential) === ClaimFormat.DiVc) {
+      this.throwDataIntegrityStubError('verifyCredential', ClaimFormat.DiVc, options as W3cV2DiVerifyCredentialOptions)
+    }
+
     throw new CredoError(
       'Unsupported credential type in options. Credential must be either a W3cV2JwtVerifiablePresentation or a W3cV2SdJwtVerifiablePresentation'
     )
@@ -89,7 +102,7 @@ export class W3cV2CredentialService {
    * @param presentation the presentation to be signed
    * @returns the signed presentation
    */
-  public async signPresentation<Format extends ClaimFormat.JwtW3cVp | ClaimFormat.SdJwtW3cVp>(
+  public async signPresentation<Format extends ClaimFormat.JwtW3cVp | ClaimFormat.SdJwtW3cVp | ClaimFormat.DiVp>(
     agentContext: AgentContext,
     options: W3cV2SignPresentationOptions<Format>
   ): Promise<W3cV2VerifiablePresentation<Format>> {
@@ -101,7 +114,10 @@ export class W3cV2CredentialService {
       const signed = await this.w3cV2SdJwtCredentialService.signPresentation(agentContext, options)
       return signed as W3cV2VerifiablePresentation<Format>
     }
-    throw new CredoError(`Unsupported format in options. Format must be either 'vp+jwt' or 'vp+sd-jwt'`)
+    if (options.format === ClaimFormat.DiVp) {
+      this.throwDataIntegrityStubError('signPresentation', ClaimFormat.DiVp, options as W3cV2DiSignPresentationOptions)
+    }
+    throw new CredoError(`Unsupported format in options. Format must be either 'vp+jwt', 'vp+sd-jwt', or 'di_vp'`)
   }
 
   /**
@@ -115,20 +131,113 @@ export class W3cV2CredentialService {
     options: W3cV2VerifyPresentationOptions
   ): Promise<W3cV2VerifyPresentationResult> {
     if (options.presentation instanceof W3cV2JwtVerifiablePresentation) {
+      this.preparePresentationEntryRoutingStub(options.presentation, ClaimFormat.JwtW3cVp)
       return this.w3cV2JwtCredentialService.verifyPresentation(
         agentContext,
         options as W3cV2JwtVerifyPresentationOptions
       )
     }
     if (options.presentation instanceof W3cV2SdJwtVerifiablePresentation) {
+      this.preparePresentationEntryRoutingStub(options.presentation, ClaimFormat.SdJwtW3cVp)
       return this.w3cV2SdJwtCredentialService.verifyPresentation(
         agentContext,
         options as W3cV2SdJwtVerifyPresentationOptions
       )
     }
+
+    if (this.getClaimFormat(options.presentation) === ClaimFormat.DiVp) {
+      this.preparePresentationEntryRoutingStub(options.presentation, ClaimFormat.DiVp)
+      this.throwDataIntegrityStubError(
+        'verifyPresentation',
+        ClaimFormat.DiVp,
+        options as W3cV2DiVerifyPresentationOptions
+      )
+    }
+
     throw new CredoError(
       'Unsupported credential type in options. Presentation must be either a W3cV2JwtVerifiablePresentation or a W3cV2SdJwtVerifiablePresentation'
     )
+  }
+
+  // TODO: replace this stub with DI component integration once vc/data-integrity-v1 and w3c-di are ported.
+  private throwDataIntegrityStubError(
+    operation: 'signCredential' | 'verifyCredential' | 'signPresentation' | 'verifyPresentation',
+    claimFormat: ClaimFormat.DiVc | ClaimFormat.DiVp,
+    _options:
+      | W3cV2DiSignCredentialOptions
+      | W3cV2DiVerifyCredentialOptions
+      | W3cV2DiSignPresentationOptions
+      | W3cV2DiVerifyPresentationOptions,
+    issues?: W3cV2DataIntegrityIssue[]
+  ): never {
+    const cause = mapDataIntegrityIssuesToCredoError({
+      operation,
+      claimFormat,
+      issues,
+    })
+
+    throw new CredoError(
+      `Data Integrity format '${claimFormat}' is not supported by ${operation} on this branch. ` +
+        `Only DI stubs are present in chore/vc2-spec-alignment pending a dedicated DI port.`,
+      { cause }
+    )
+  }
+
+  private getClaimFormat(value: unknown): string | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+
+    const candidate = value as { claimFormat?: unknown }
+    return typeof candidate.claimFormat === 'string' ? candidate.claimFormat : undefined
+  }
+
+  private preparePresentationEntryRoutingStub(
+    presentation: unknown,
+    outerClaimFormat: ClaimFormat.JwtW3cVp | ClaimFormat.SdJwtW3cVp | ClaimFormat.DiVp
+  ) {
+    const resolvedPresentation = this.getResolvedPresentationForRoutingStub(presentation)
+    if (!resolvedPresentation) return
+
+    const entries = Array.isArray(resolvedPresentation.verifiableCredential)
+      ? resolvedPresentation.verifiableCredential
+      : [resolvedPresentation.verifiableCredential]
+
+    entries.forEach((entry, entryIndex) => {
+      this.registerVpEntryRoutingHookStub({
+        outerClaimFormat,
+        entryClaimFormat: this.getClaimFormat(entry),
+        entryIndex,
+      })
+    })
+  }
+
+  private getResolvedPresentationForRoutingStub(value: unknown):
+    | {
+        verifiableCredential: unknown | unknown[]
+      }
+    | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+
+    const candidate = value as {
+      resolvedPresentation?: {
+        verifiableCredential?: unknown | unknown[]
+      }
+    }
+
+    const resolvedPresentation = candidate.resolvedPresentation
+    if (!resolvedPresentation?.verifiableCredential) return undefined
+
+    return {
+      verifiableCredential: resolvedPresentation.verifiableCredential,
+    }
+  }
+
+  private registerVpEntryRoutingHookStub(_options: {
+    outerClaimFormat: ClaimFormat.JwtW3cVp | ClaimFormat.SdJwtW3cVp | ClaimFormat.DiVp
+    entryClaimFormat?: string
+    entryIndex: number
+  }) {
+    // TODO: In the DI port branch, route VP credential entries by entry claim format and shape.
+    // TODO: Keep VP-level validations separate from per-entry VC validation aggregation.
   }
 
   /**

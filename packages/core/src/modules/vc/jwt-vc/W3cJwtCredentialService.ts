@@ -12,7 +12,7 @@ import {
 } from '../../dids/domain/key-type/keyDidMapping'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../../kms'
 import { W3cJsonLdVerifiableCredential } from '../linked-data-proofs/models/W3cJsonLdVerifiableCredential'
-import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
+import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 import { validateCredentialSubjectAuthentication } from '../util'
 import type {
   W3cJwtSignCredentialOptions,

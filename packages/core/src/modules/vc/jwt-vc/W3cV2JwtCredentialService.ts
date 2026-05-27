@@ -19,6 +19,7 @@ import type {
   W3cV2JwtVerifyCredentialOptions,
   W3cV2JwtVerifyPresentationOptions,
 } from '../W3cV2CredentialServiceOptions'
+import { W3cV2EnvelopedVerifiableCredential } from '../models/credential/W3cV2EnvelopedVerifiableCredential'
 import { W3cV2JwtVerifiableCredential } from './W3cV2JwtVerifiableCredential'
 import { W3cV2JwtVerifiablePresentation } from './W3cV2JwtVerifiablePresentation'
 
@@ -348,7 +349,10 @@ export class W3cV2JwtCredentialService {
       // Verify all credentials in parallel, and await the result
       validationResults.validations.credentials = await Promise.all(
         credentials.map(async (credential) => {
-          if (!(credential.envelopedCredential instanceof W3cV2JwtVerifiableCredential)) {
+          if (
+            !(credential instanceof W3cV2EnvelopedVerifiableCredential) ||
+            !(credential.envelopedCredential instanceof W3cV2JwtVerifiableCredential)
+          ) {
             return {
               isValid: false,
               error: new CredoError(

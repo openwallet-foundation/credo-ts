@@ -6,9 +6,11 @@ import {
   DifPresentationExchangeService,
 } from '../../../../../../../core/src/modules/dif-presentation-exchange'
 import {
+  AnonCredsVc1BridgeServiceSymbol,
   CREDENTIALS_CONTEXT_V1_URL,
   W3cCredentialRecord,
   W3cCredentialRepository,
+  W3cCredentialService,
   W3cJsonLdVerifiableCredential,
   W3cJsonLdVerifiablePresentation,
 } from '../../../../../../../core/src/modules/vc'
@@ -204,6 +206,98 @@ describe('Presentation Exchange ProofFormatService', () => {
         attachmentId: expect.any(String),
         format: 'dif/presentation-exchange/submission@v1.0',
       })
+    })
+  })
+
+  describe('Process Presentation', () => {
+    test('routes anoncreds VC1 bridge presentations through the anoncreds bridge service', async () => {
+      type ProcessPresentationOptions = Parameters<
+        DidCommDifPresentationExchangeProofFormatService['processPresentation']
+      >[1]
+
+      const requestAttachment = {
+        getDataAsJson: () => ({
+          options: { challenge: 'challenge' },
+          presentation_definition: mockPresentationDefinition(),
+        }),
+      }
+
+      const presentation = new W3cJsonLdVerifiablePresentation({
+        verifiableCredential: [mockCredentialRecord.firstCredential],
+        proof: {
+          type: 'DataIntegrityProof',
+          cryptosuite: 'anoncreds-2023',
+          proofPurpose: 'authentication',
+          verificationMethod: 'did:example:holder#keys-1',
+          proofValue: 'zProofValue',
+          challenge: 'challenge',
+        },
+      })
+
+      const attachment = {
+        getDataAsJson: () => ({
+          ...presentation.toJSON(),
+          presentation_submission: {
+            id: 'presentation-submission-id',
+            definition_id: 'definition-id',
+            descriptor_map: [
+              {
+                id: 'wa_driver_license',
+                format: 'di_vp',
+                path: '$.verifiableCredential[0]',
+              },
+            ],
+          },
+        }),
+      }
+
+      const validatePresentationDefinitionSpy = vi
+        .spyOn(DifPresentationExchangeService.prototype, 'validatePresentationDefinition')
+        .mockReturnValue(undefined)
+      const validatePresentationSubmissionSpy = vi
+        .spyOn(DifPresentationExchangeService.prototype, 'validatePresentationSubmission')
+        .mockReturnValue(undefined)
+      const validatePresentationSpy = vi
+        .spyOn(DifPresentationExchangeService.prototype, 'validatePresentation')
+        .mockReturnValue(undefined)
+      const successfulVerificationResult: Awaited<ReturnType<W3cCredentialService['verifyPresentation']>> = {
+        isValid: true,
+        validations: {},
+        error: undefined,
+      }
+      const genericVerifySpy = vi
+        .spyOn(W3cCredentialService.prototype, 'verifyPresentation')
+        .mockResolvedValue(successfulVerificationResult)
+
+      const originalResolve = agent.dependencyManager.resolve.bind(agent.dependencyManager)
+      const anoncredsBridgeService = {
+        verifyPresentation: vi.fn().mockResolvedValue(true),
+      }
+      const resolveSpy = vi.spyOn(agent.dependencyManager, 'resolve').mockImplementation((token: unknown) => {
+        if (token === AnonCredsVc1BridgeServiceSymbol) {
+          return anoncredsBridgeService as never
+        }
+
+        return originalResolve(token as never)
+      })
+
+      try {
+        const result = await pexFormatService.processPresentation(agent.context, {
+          requestAttachment: requestAttachment as ProcessPresentationOptions['requestAttachment'],
+          attachment: attachment as ProcessPresentationOptions['attachment'],
+          proofRecord: mockProofRecord(),
+        })
+
+        expect(result).toBe(true)
+        expect(anoncredsBridgeService.verifyPresentation).toHaveBeenCalledTimes(1)
+        expect(genericVerifySpy).not.toHaveBeenCalled()
+      } finally {
+        resolveSpy.mockRestore()
+        validatePresentationDefinitionSpy.mockRestore()
+        validatePresentationSubmissionSpy.mockRestore()
+        validatePresentationSpy.mockRestore()
+        genericVerifySpy.mockRestore()
+      }
     })
   })
 })
