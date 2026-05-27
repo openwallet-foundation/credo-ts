@@ -175,17 +175,20 @@ describe('TokenStatusListService', () => {
         acceptedFormats: ['cwt'],
         uri: '',
       })
+      await expect(_cwtResult).rejects.toThrow()
 
       const _jwtResult2: Promise<{ format: 'jwt' }> = tokenStatusListService.fetchTokenStatusList(agentContext, {
         acceptedFormats: ['jwt'],
         uri: '',
       })
+      await expect(_jwtResult2).rejects.toThrow()
 
       // @ts-expect-error invalid type match
       const _jwtInvalidResult: Promise<{ format: 'cwt' }> = tokenStatusListService.fetchTokenStatusList(agentContext, {
         acceptedFormats: ['jwt'],
         uri: '',
       })
+      await expect(_jwtInvalidResult).rejects.toThrow()
 
       const _jwtCwtValidResult: Promise<{ format: 'cwt' | 'jwt' }> = tokenStatusListService.fetchTokenStatusList(
         agentContext,
@@ -193,6 +196,7 @@ describe('TokenStatusListService', () => {
           uri: '',
         }
       )
+      await expect(_jwtCwtValidResult).rejects.toThrow()
     })
   })
 })
