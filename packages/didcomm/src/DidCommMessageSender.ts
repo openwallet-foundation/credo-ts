@@ -565,14 +565,16 @@ export class DidCommMessageSender {
     const shouldAddReturnRoute =
       message.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(didDocument)
 
-    // When the connection uses DIDComm v2, prefer services with X25519 (keyAgreement) recipient keys.
-    // DID documents with dual v1/v2 services return both from resolveServicesFromDid; using v1
-    // recipientKeys (Ed25519) with v2 packing creates an incorrect kid (did:key:z6Mk… instead of
-    // a keyAgreement VM DID URL), which the recipient cannot resolve.
+    // When the connection uses DIDComm v2, prefer services with a keyAgreement (X25519 or P-256)
+    // recipient key. DID documents with dual v1/v2 services return both from resolveServicesFromDid;
+    // using v1 recipientKeys (Ed25519) with v2 packing creates an incorrect kid (did:key:z6Mk… instead
+    // of a keyAgreement VM DID URL), which the recipient cannot resolve.
     const useV2ForServiceOrder = (connection.didcommVersion ?? 'v1') === 'v2'
     const orderedServices = useV2ForServiceOrder
       ? (() => {
-          const v2Svcs = services.filter((s) => s.recipientKeys.some((k) => k.is(Kms.X25519PublicJwk)))
+          const v2Svcs = services.filter((s) =>
+            s.recipientKeys.some((k) => k.is(Kms.X25519PublicJwk, Kms.P256PublicJwk))
+          )
           return v2Svcs.length > 0 ? [...v2Svcs, ...services.filter((s) => !v2Svcs.includes(s))] : services
         })()
       : services
@@ -596,12 +598,12 @@ export class DidCommMessageSender {
         if (id.startsWith('#')) return `${didDocument.id}${id}`
         return undefined
       }
-      // Legacy fallback: find first X25519 keyAgreement VM
+      // Legacy fallback: find first keyAgreement VM (X25519 or P-256)
       const kaVm = (didDocument.keyAgreement ?? [])
         .map((ref) => (typeof ref === 'string' ? didDocument.dereferenceVerificationMethod(ref) : ref))
         .find((vm) => {
           try {
-            return getPublicJwkFromVerificationMethod(vm).is(Kms.X25519PublicJwk)
+            return getPublicJwkFromVerificationMethod(vm).is(Kms.X25519PublicJwk, Kms.P256PublicJwk)
           } catch {
             return false
           }
@@ -936,7 +938,7 @@ export class DidCommMessageSender {
                   typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
                 if (seen.has(verificationMethod.id)) continue
                 const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-                if (publicJwk.is(Kms.Ed25519PublicJwk) || publicJwk.is(Kms.X25519PublicJwk)) {
+                if (publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk, Kms.P256PublicJwk)) {
                   seen.add(verificationMethod.id)
                   const jwk = publicJwk
                   if (verificationMethod?.id && !jwk.hasKeyId) {

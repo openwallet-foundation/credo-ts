@@ -1,5 +1,5 @@
 import { Agent } from '../src/agent/Agent'
-import { getAgentOptions } from './helpers'
+import { getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 const faberAgent = new Agent(
@@ -44,7 +44,7 @@ describe('DIDComm v2 P-256 connection', () => {
     await aliceAgent.shutdown()
   })
 
-  it('establishes a bidirectional v2 OOB connection with P-256 keyAgreement', async () => {
+  it('establishes a bidirectional v2 OOB connection and round-trips a trust ping over P-256', async () => {
     const invAlice = await aliceAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
     const aliceDid = invAlice.outOfBandInvitation.v2Invitation?.from as string
     const { connectionRecord: faberConn0, outOfBandRecord: faberOob0 } = await faberAgent.didcomm.oob.receiveInvitation(
@@ -75,5 +75,8 @@ describe('DIDComm v2 P-256 connection', () => {
     expect(aliceConnection.did).toBeDefined()
     expect(faberConnection.theirDid).toBe(aliceDid)
     expect(aliceConnection.theirDid).toBe(faberConnection.did)
+
+    const ping = await aliceAgent.didcomm.connections.sendPing(aliceConnection.id, {})
+    await waitForTrustPingResponseReceivedEvent(aliceAgent, { threadId: ping.threadId })
   }, 30000)
 })
