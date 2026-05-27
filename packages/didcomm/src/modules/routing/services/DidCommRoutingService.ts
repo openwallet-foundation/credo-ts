@@ -2,6 +2,7 @@ import type { AgentContext } from '@credo-ts/core'
 import { EventEmitter, injectable, Kms } from '@credo-ts/core'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
+import type { DidCommV2KeyAgreementJwk } from '../../../v2/types'
 import type { DidCommRoutingCreatedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
 
@@ -31,14 +32,18 @@ export class DidCommRoutingService {
     const recipientKey = Kms.PublicJwk.fromPublicJwk(createdKey.publicJwk)
     recipientKey.keyId = createdKey.keyId
 
-    // Create separate X25519 key for V2 key agreement (ECDH-ES / ECDH-1PU) only
-    // when the agent supports DIDComm V2. V1-only agents derive X25519 from Ed25519
-    // at runtime via Askar's birational map, so no separate key is needed.
-    let keyAgreementKey: Kms.PublicJwk<Kms.X25519PublicJwk> | undefined
+    // Create separate keyAgreement key for V2 (ECDH-ES / ECDH-1PU) only when the agent
+    // supports DIDComm V2. V1-only agents derive X25519 from Ed25519 at runtime via Askar's
+    // birational map, so no separate key is needed. Curve selected via
+    // DidCommModuleConfig.v2KeyAgreementCurve (X25519 default; P-256 supported).
+    let keyAgreementKey: DidCommV2KeyAgreementJwk | undefined
     if (didcommConfig.acceptsV2) {
-      const createdX25519Key = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
-      keyAgreementKey = Kms.PublicJwk.fromPublicJwk(createdX25519Key.publicJwk)
-      keyAgreementKey.keyId = createdX25519Key.keyId
+      const curve = didcommConfig.v2KeyAgreementCurve
+      const createdKeyAgreementKey = await kms.createKey({
+        type: curve === 'P-256' ? { kty: 'EC', crv: 'P-256' } : { kty: 'OKP', crv: 'X25519' },
+      })
+      keyAgreementKey = Kms.PublicJwk.fromPublicJwk(createdKeyAgreementKey.publicJwk) as DidCommV2KeyAgreementJwk
+      keyAgreementKey.keyId = createdKeyAgreementKey.keyId
     }
 
     let routing: DidCommRouting = {

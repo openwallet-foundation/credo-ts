@@ -2,6 +2,8 @@ import type { Kms } from '@credo-ts/core'
 
 export type DidCommV2KeyAgreementJwk = Kms.PublicJwk<Kms.X25519PublicJwk | Kms.P256PublicJwk>
 
+export type DidCommV2KeyAgreementCurve = 'X25519' | 'P-256'
+
 /**
  * DIDComm v2 plaintext message format (DIF DIDComm Messaging spec).
  * Uses headers + body structure; `type` and `id` (no @ prefix).

@@ -1,4 +1,4 @@
-import { PeerDidNumAlgo } from '@credo-ts/core'
+import { CredoError, PeerDidNumAlgo } from '@credo-ts/core'
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type {
   DidCommBasicMessagesModuleConfigOptions,
@@ -21,6 +21,7 @@ import {
 } from './transport'
 import { DidCommMimeType } from './types'
 import type { DidCommVersion } from './util/didcommVersion'
+import type { DidCommV2KeyAgreementCurve } from './v2/types'
 
 export interface DidCommModuleConfigOptions {
   endpoints?: string[]
@@ -49,6 +50,14 @@ export interface DidCommModuleConfigOptions {
    * @default PeerDidNumAlgo.ShortFormAndLongForm (did:peer:4)
    */
   peerDidNumAlgoForV2OOB?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
+
+  /**
+   * keyAgreement curve for DIDComm v2 outbound routing. Both X25519 and P-256 are MUST-support
+   * curves per DIDComm Messaging v2.1. P-256 requires 'v2' in `didcommVersions`.
+   *
+   * @default 'X25519'
+   */
+  v2KeyAgreementCurve?: DidCommV2KeyAgreementCurve
 
   /**
    * Configuration for the connection module.
@@ -159,6 +168,10 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
     this._outboundTransports = options?.transports?.outbound ?? []
     this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryQueueTransportRepository()
 
+    if (this.options.v2KeyAgreementCurve === 'P-256' && !(this.options.didcommVersions ?? ['v1']).includes('v2')) {
+      throw new CredoError("v2KeyAgreementCurve 'P-256' requires 'v2' in didcommVersions")
+    }
+
     this.enabledModules = {
       connections: true,
       oob: true,
@@ -250,5 +263,10 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
   /** Peer DID numAlgo for V2 OOB. Defaults to did:peer:4. */
   public get peerDidNumAlgoForV2OOB() {
     return this.options.peerDidNumAlgoForV2OOB ?? PeerDidNumAlgo.ShortFormAndLongForm
+  }
+
+  /** keyAgreement curve for DIDComm v2 outbound routing. Defaults to X25519. */
+  public get v2KeyAgreementCurve(): DidCommV2KeyAgreementCurve {
+    return this.options.v2KeyAgreementCurve ?? 'X25519'
   }
 }
