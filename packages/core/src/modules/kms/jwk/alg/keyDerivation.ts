@@ -29,7 +29,7 @@ export function supportedKeyDerivationAlgsForKey(
   if (jwk.kty === 'OKP' && (jwk.crv === 'X25519' || jwk.crv === 'Ed25519')) {
     algs.push('ECDH-1PU+A256KW')
   }
-  if (jwk.kty === 'EC' && jwk.crv === 'P-256') {
+  if (jwk.kty === 'EC' && (jwk.crv === 'P-256' || jwk.crv === 'P-384')) {
     algs.push('ECDH-1PU+A256KW')
   }
   if (jwk.kty === 'OKP' && (jwk.crv === 'X25519' || jwk.crv === 'Ed25519')) {

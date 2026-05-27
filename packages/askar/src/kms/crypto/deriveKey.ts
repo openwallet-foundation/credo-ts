@@ -35,10 +35,10 @@ export function encryptEcdh1Pu(options: {
 }) {
   const { keyAgreement, encryption, senderKey, recipientKey, data, ephemeralKey: providedEphemeralKey } = options
 
-  const supportedAlgorithms: KeyAlgorithm[] = [KeyAlgorithm.X25519, KeyAlgorithm.EcSecp256r1]
+  const supportedAlgorithms: KeyAlgorithm[] = [KeyAlgorithm.X25519, KeyAlgorithm.EcSecp256r1, KeyAlgorithm.EcSecp384r1]
   if (!supportedAlgorithms.includes(senderKey.algorithm) || !supportedAlgorithms.includes(recipientKey.algorithm)) {
     throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      'ECDH-1PU+A256KW requires X25519 or P-256 sender and recipient keys',
+      'ECDH-1PU+A256KW requires X25519, P-256, or P-384 sender and recipient keys',
       'askar'
     )
   }
@@ -294,10 +294,10 @@ function deriveDecryptionKeyEcdh1Pu(options: {
 }) {
   const { keyAgreement, decryption, ephemeralKey, senderKey, recipientKey } = options
 
-  const supportedAlgorithms: KeyAlgorithm[] = [KeyAlgorithm.X25519, KeyAlgorithm.EcSecp256r1]
+  const supportedAlgorithms: KeyAlgorithm[] = [KeyAlgorithm.X25519, KeyAlgorithm.EcSecp256r1, KeyAlgorithm.EcSecp384r1]
   if (!supportedAlgorithms.includes(recipientKey.algorithm)) {
     throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      'ECDH-1PU+A256KW requires X25519 or P-256 recipient key',
+      'ECDH-1PU+A256KW requires X25519, P-256, or P-384 recipient key',
       'askar'
     )
   }
