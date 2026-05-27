@@ -66,14 +66,19 @@ export interface DidCommV2EncryptedMessage {
 export interface DidCommV2JwsSignature {
   protected: string
   signature: string
-  header: { kid: string }
+  // Optional: spec puts kid in `protected`, SICPA fixtures put it here. Verifiers accept either.
+  header?: { kid?: string }
 }
 
 /**
  * DIDComm v2 signed message (JWS in JSON General Serialization, typ application/didcomm-signed+json).
- * `payload` is the base64url-encoded plaintext bytes; per-signature `kid` lives in the unprotected header.
+ * `payload` is the base64url-encoded plaintext bytes.
  */
 export interface DidCommV2SignedMessage {
   payload: string
   signatures: DidCommV2JwsSignature[]
 }
+
+/** Algorithms required by DIDComm v2.1: verify all three, sign at least one. */
+export const DIDCOMM_V2_SIGNING_ALGORITHMS = ['EdDSA', 'ES256', 'ES256K'] as const
+export type DidCommV2SigningAlgorithm = (typeof DIDCOMM_V2_SIGNING_ALGORITHMS)[number]
