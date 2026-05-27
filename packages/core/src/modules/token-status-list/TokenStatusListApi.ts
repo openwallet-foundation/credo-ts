@@ -1,3 +1,4 @@
+import type { StatusListCwt } from '@owf/token-status-list'
 import { AgentContext } from '../../agent'
 import type { Jwt } from '../../crypto'
 import { injectable } from '../../plugins'
@@ -9,7 +10,7 @@ import type {
   TokenStatusListResultFor,
   UpdateTokenStatusListOptions,
 } from './TokenStatusListOptions'
-import type { StatusListCwt, TokenStatusListService } from './TokenStatusListService'
+import type { TokenStatusListService } from './TokenStatusListService'
 
 /**
  * @public

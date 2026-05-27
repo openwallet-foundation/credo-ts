@@ -22,8 +22,6 @@ import type {
   UpdateTokenStatusListOptions,
 } from './TokenStatusListOptions'
 
-export { StatusListCwt, type StatusListCwtOptions } from '@owf/token-status-list'
-
 /**
  * @internal
  *
