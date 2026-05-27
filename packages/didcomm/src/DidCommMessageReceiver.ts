@@ -41,7 +41,7 @@ import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from './util/didcommVersion'
 import { isValidJweStructure } from './util/JWE'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
-import type { DidCommV2SignedMessage } from './v2'
+import type { DidCommV2PlaintextMessage, DidCommV2SignedMessage } from './v2'
 import { DidCommV2EnvelopeService, DidCommV2KeyResolver, normalizeV2PlaintextToV1 } from './v2'
 
 @injectable()
@@ -312,16 +312,37 @@ export class DidCommMessageReceiver {
             ? async () => null
             : (sid) => this.v2KeyResolver.resolveSenderKey(agentContext, sid),
         })
+
+        // Sign-then-encrypt: the decrypted bytes are a JWS. Verify it and use the inner plaintext.
+        let unwrapped: DidCommV2PlaintextMessage = plaintext
+        if (isDidCommV2SignedMessage(plaintext as unknown)) {
+          const dids = agentContext.dependencyManager.resolve(DidsApi)
+          const { plaintext: verifiedInner } = await this.v2EnvelopeService.verifySignedMessage(
+            agentContext,
+            plaintext as unknown as DidCommV2SignedMessage,
+            {
+              resolveSignerJwk: async (kid) => {
+                const signerDid = kid.split('#')[0]
+                const didDocument = await dids.resolveDidDocument(signerDid)
+                const vm = didDocument.dereferenceKey(kid, ['authentication'])
+                return getPublicJwkFromVerificationMethod(vm)
+              },
+            }
+          )
+          unwrapped = verifiedInner
+          this.logger.debug('Verified nested DIDComm v2 signed message', { type: unwrapped.type, from: unwrapped.from })
+        }
+
         this.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before normalization)', {
-          id: plaintext.id,
-          type: plaintext.type,
-          from: plaintext.from,
-          to: plaintext.to,
-          thid: plaintext.thid,
-          bodyKeys: plaintext.body ? Object.keys(plaintext.body) : undefined,
+          id: unwrapped.id,
+          type: unwrapped.type,
+          from: unwrapped.from,
+          to: unwrapped.to,
+          thid: unwrapped.thid,
+          bodyKeys: unwrapped.body ? Object.keys(unwrapped.body) : undefined,
         })
-        const plaintextMessage = normalizeV2PlaintextToV1(plaintext)
-        this.logger.debug('Unpacked DIDComm v2 message', { type: plaintext.type })
+        const plaintextMessage = normalizeV2PlaintextToV1(unwrapped)
+        this.logger.debug('Unpacked DIDComm v2 message', { type: unwrapped.type })
         return {
           plaintextMessage,
           senderKey: senderKey as unknown as DecryptedDidCommMessageContext['senderKey'],
