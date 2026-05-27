@@ -4,6 +4,15 @@ export type DidCommV2KeyAgreementJwk = Kms.PublicJwk<Kms.X25519PublicJwk | Kms.P
 
 export type DidCommV2KeyAgreementCurve = 'X25519' | 'P-256' | 'P-384'
 
+/** KMS key type for a DIDComm v2 keyAgreement curve. */
+export function keyTypeForCurve(
+  curve: DidCommV2KeyAgreementCurve
+): { kty: 'OKP'; crv: 'X25519' } | { kty: 'EC'; crv: 'P-256' } | { kty: 'EC'; crv: 'P-384' } {
+  if (curve === 'X25519') return { kty: 'OKP', crv: 'X25519' }
+  if (curve === 'P-256') return { kty: 'EC', crv: 'P-256' }
+  return { kty: 'EC', crv: 'P-384' }
+}
+
 /**
  * DIDComm v2 plaintext message format (DIF DIDComm Messaging spec).
  * Uses headers + body structure; `type` and `id` (no @ prefix).

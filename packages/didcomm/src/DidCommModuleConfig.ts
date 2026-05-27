@@ -52,8 +52,8 @@ export interface DidCommModuleConfigOptions {
   peerDidNumAlgoForV2OOB?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
 
   /**
-   * keyAgreement curve for DIDComm v2 outbound routing. Both X25519 and P-256 are MUST-support
-   * curves per DIDComm Messaging v2.1. P-256 requires 'v2' in `didcommVersions`.
+   * keyAgreement curve for DIDComm v2 outbound routing. X25519, P-256, and P-384 are MUST-support
+   * curves per DIDComm Messaging v2.1. P-256 and P-384 require 'v2' in `didcommVersions`.
    *
    * @default 'X25519'
    */
@@ -184,8 +184,11 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
     this._outboundTransports = options?.transports?.outbound ?? []
     this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryQueueTransportRepository()
 
-    if (this.options.v2KeyAgreementCurve === 'P-256' && !(this.options.didcommVersions ?? ['v1']).includes('v2')) {
-      throw new CredoError("v2KeyAgreementCurve 'P-256' requires 'v2' in didcommVersions")
+    if (
+      (this.options.v2KeyAgreementCurve === 'P-256' || this.options.v2KeyAgreementCurve === 'P-384') &&
+      !(this.options.didcommVersions ?? ['v1']).includes('v2')
+    ) {
+      throw new CredoError(`v2KeyAgreementCurve '${this.options.v2KeyAgreementCurve}' requires 'v2' in didcommVersions`)
     }
 
     this.enabledModules = {

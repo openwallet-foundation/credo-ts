@@ -300,7 +300,7 @@ export class DidCommDocumentService {
           const verificationMethod =
             typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
           const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-          if (!publicJwk.is(Kms.X25519PublicJwk, Kms.Ed25519PublicJwk, Kms.P256PublicJwk)) {
+          if (!publicJwk.is(Kms.X25519PublicJwk, Kms.Ed25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
             continue
           }
           if (!publicJwk.hasKeyId) {

@@ -20,7 +20,7 @@ import type {
   DidCommV2SignedMessage,
   DidCommV2SigningAlgorithm,
 } from './types'
-import { DIDCOMM_V2_SIGNED_MIME_TYPE, DIDCOMM_V2_SIGNING_ALGORITHMS } from './types'
+import { DIDCOMM_V2_SIGNED_MIME_TYPE, DIDCOMM_V2_SIGNING_ALGORITHMS, keyTypeForCurve } from './types'
 
 type EpkJwk =
   | { kty: 'OKP'; crv: 'X25519'; x: string }
@@ -90,7 +90,7 @@ export class DidCommV2EnvelopeService {
     const apu = computeApu(skid)
     const apv = computeApv([recipientKid])
 
-    const ephemeralKey = await kms.createKey({ type: ephemeralKeyTypeForCurve(recipientCurve) })
+    const ephemeralKey = await kms.createKey({ type: keyTypeForCurve(recipientCurve) })
     try {
       const epkJwk = toEpkJwk(ephemeralKey.publicJwk, recipientCurve)
 
@@ -161,7 +161,7 @@ export class DidCommV2EnvelopeService {
     const recipientKid = keys.recipientKey.keyId
     const apv = computeApv([recipientKid])
 
-    const ephemeralKey = await kms.createKey({ type: ephemeralKeyTypeForCurve(recipientCurve) })
+    const ephemeralKey = await kms.createKey({ type: keyTypeForCurve(recipientCurve) })
 
     try {
       const epkJwk = toEpkJwk(ephemeralKey.publicJwk, recipientCurve)
@@ -543,12 +543,6 @@ function getKeyAgreementCurve(jwk: DidCommV2KeyAgreementJwk): 'X25519' | 'P-256'
   if (jwk.is(Kms.P256PublicJwk)) return 'P-256'
   if (jwk.is(Kms.P384PublicJwk)) return 'P-384'
   throw new CredoError('Unsupported keyAgreement curve for DIDComm v2')
-}
-
-function ephemeralKeyTypeForCurve(curve: 'X25519' | 'P-256' | 'P-384'): Kms.KmsCreateKeyType {
-  if (curve === 'X25519') return { kty: 'OKP', crv: 'X25519' }
-  if (curve === 'P-256') return { kty: 'EC', crv: 'P-256' }
-  return { kty: 'EC', crv: 'P-384' }
 }
 
 function toEpkJwk(publicJwk: unknown, expectedCurve: 'X25519' | 'P-256' | 'P-384'): EpkJwk {
