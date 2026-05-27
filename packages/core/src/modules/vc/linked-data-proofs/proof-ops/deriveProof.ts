@@ -11,14 +11,13 @@
  * limitations under the License.
  */
 
-import type { JsonObject } from '../../../types'
+import type { JsonObject } from '../../../../types'
 
-import { JsonTransformer } from '../../../utils'
-import { SECURITY_PROOF_URL } from '../constants'
-
+import { JsonTransformer } from '../../../../utils'
+import { SECURITY_PROOF_URL } from '../../constants'
+import jsonld from '../../jsonld/jsonld'
+import { W3cJsonLdVerifiableCredential } from '../models/W3cJsonLdVerifiableCredential'
 import { getProofs, getTypeInfo } from './jsonldUtil'
-import jsonld from './libraries/jsonld'
-import { W3cJsonLdVerifiableCredential } from './models/W3cJsonLdVerifiableCredential'
 
 export interface W3cJsonLdDeriveProofOptions {
   credential: W3cJsonLdVerifiableCredential

@@ -11,18 +11,27 @@
  * limitations under the License.
  */
 
-import type { JsonArray, JsonObject } from '../../../../types'
+import type { JsonObject } from '../../../../../types'
+import type { DocumentLoader } from '../jsonldUtil'
 
 /**
- * Result for getting proofs from a JSON-LD document
+ * Options for getting a proof from a JSON-LD document
  */
-export interface GetProofsResult {
+export interface GetProofsOptions {
   /**
-   * The JSON-LD document with the linked data proofs removed.
+   * The JSON-LD document to extract the proofs from.
    */
-  document: JsonObject
+  readonly document: JsonObject
   /**
-   * The list of proofs that matched the requested type.
+   * Optional the proof type(s) to filter the returned proofs by
    */
-  proofs: JsonArray
+  readonly proofType?: string | readonly string[]
+  /**
+   * Optional custom document loader
+   */
+  documentLoader?(): DocumentLoader
+  /**
+   * Optional property to indicate whether to skip compacting the resulting proof
+   */
+  readonly skipProofCompaction?: boolean
 }
