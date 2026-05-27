@@ -20,7 +20,7 @@ catalog:
   '@types/express': ^5.0.6
   '@types/node': ^20.19.31
   '@types/ws': ^8.18.1
-  '@vitest/coverage-v8': ^4.0.18
+  '@vitest/coverage-v8': ^4.1.7
   class-transformer: 0.5.1
   class-validator: ^0.14.3
   express: ^5.2.1
@@ -29,7 +29,7 @@ catalog:
   rxjs: ^7.8.2
   tsyringe: ^4.10.0
   typescript: ~5.9.3
-  vitest: ^4.0.18
+  vitest: ^4.1.7
   ws: ^8.19.0
   zod: ^4.3.6
 
