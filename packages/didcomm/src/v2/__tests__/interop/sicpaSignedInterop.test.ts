@@ -1,16 +1,13 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-
+import type { JwsFlattenedFormat } from '@credo-ts/core'
 import { InjectionSymbols, JsonEncoder, JwsService, Kms } from '@credo-ts/core'
 import { askar } from '@openwallet-foundation/askar-nodejs'
-
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../../../../askar/src/AskarModuleConfig'
 import { AskarKeyManagementService } from '../../../../../askar/src/kms/AskarKeyManagementService'
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
 import testLogger from '../../../../../core/tests/logger'
 import { NodeFileSystem } from '../../../../../node/src/NodeFileSystem'
-
-import type { JwsFlattenedFormat } from '@credo-ts/core'
 
 interface SicpaSignedFixture {
   signedMessage: {

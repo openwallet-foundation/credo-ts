@@ -5,6 +5,7 @@ import {
   isDidCommV1EncryptedMessage,
   isDidCommV2AuthcryptMessage,
   isDidCommV2EncryptedMessage,
+  isDidCommV2SignedMessage,
 } from '../didcommVersion'
 
 describe('didcommVersion', () => {
@@ -130,6 +131,54 @@ describe('didcommVersion', () => {
 
     it('returns false for non-JWE input', () => {
       expect(isDidCommV2AuthcryptMessage('invalid')).toBe(false)
+    })
+  })
+
+  describe('isDidCommV2SignedMessage', () => {
+    const signedProtected = JsonEncoder.toBase64Url({
+      typ: 'application/didcomm-signed+json',
+      alg: 'EdDSA',
+    })
+
+    it('returns false for non-object input', () => {
+      expect(isDidCommV2SignedMessage('invalid')).toBe(false)
+      expect(isDidCommV2SignedMessage(null)).toBe(false)
+      expect(isDidCommV2SignedMessage(undefined)).toBe(false)
+      expect(isDidCommV2SignedMessage({})).toBe(false)
+    })
+
+    it('returns true for v2 signed message', () => {
+      const message = {
+        payload: 'base64payload',
+        signatures: [
+          { protected: signedProtected, signature: 'base64sig', header: { kid: 'did:example:alice#key-1' } },
+        ],
+      }
+      expect(isDidCommV2SignedMessage(message)).toBe(true)
+    })
+
+    it('returns false when signatures array is empty', () => {
+      expect(isDidCommV2SignedMessage({ payload: 'p', signatures: [] })).toBe(false)
+    })
+
+    it('returns false for v2 encrypted message', () => {
+      const message = {
+        protected: v2AuthcryptProtected,
+        recipients: [],
+        iv: 'base64iv',
+        ciphertext: 'base64ciphertext',
+        tag: 'base64tag',
+      }
+      expect(isDidCommV2SignedMessage(message)).toBe(false)
+    })
+
+    it('returns false when a signature protected header has the wrong typ', () => {
+      const wrongTyp = JsonEncoder.toBase64Url({ typ: 'application/didcomm-plain+json', alg: 'EdDSA' })
+      const message = {
+        payload: 'base64payload',
+        signatures: [{ protected: wrongTyp, signature: 'base64sig', header: { kid: 'k' } }],
+      }
+      expect(isDidCommV2SignedMessage(message)).toBe(false)
     })
   })
 

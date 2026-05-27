@@ -41,6 +41,7 @@ export interface DidCommV2Attachment {
 
 export const DIDCOMM_V2_PLAIN_MIME_TYPE = 'application/didcomm-plain+json'
 export const DIDCOMM_V2_ENCRYPTED_MIME_TYPE = 'application/didcomm-encrypted+json'
+export const DIDCOMM_V2_SIGNED_MIME_TYPE = 'application/didcomm-signed+json'
 
 export type DidCommV2ContentEncryptionAlgorithm = 'A256GCM' | 'A256CBC-HS512'
 
@@ -60,4 +61,19 @@ export interface DidCommV2EncryptedMessage {
   iv: string
   ciphertext: string
   tag: string
+}
+
+export interface DidCommV2JwsSignature {
+  protected: string
+  signature: string
+  header: { kid: string }
+}
+
+/**
+ * DIDComm v2 signed message (JWS in JSON General Serialization, typ application/didcomm-signed+json).
+ * `payload` is the base64url-encoded plaintext bytes; per-signature `kid` lives in the unprotected header.
+ */
+export interface DidCommV2SignedMessage {
+  payload: string
+  signatures: DidCommV2JwsSignature[]
 }
