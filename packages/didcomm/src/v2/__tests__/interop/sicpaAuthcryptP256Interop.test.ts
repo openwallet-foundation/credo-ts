@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
-import { InjectionSymbols, Kms } from '@credo-ts/core'
+import { InjectionSymbols, JsonEncoder, Kms } from '@credo-ts/core'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../../../../askar/src/AskarModuleConfig'
@@ -30,7 +30,7 @@ interface P256PublicJwk {
 
 interface SicpaAuthcryptP256Fixture {
   encryptedMessage: DidCommV2EncryptedMessage
-  expectedPlaintext: DidCommV2PlaintextMessage
+  expectedInnerPayload: DidCommV2PlaintextMessage
   recipient: { kid: string; privateJwk: P256PrivateJwk }
   sender: { kid: string; publicJwk: P256PublicJwk }
 }
@@ -83,13 +83,14 @@ describe('SICPA authcrypt P-256 + A256CBC-HS512 interop', () => {
 
   it('decrypts SICPA TEST_ENCRYPTED_DIDCOMM_MESSAGE_AUTH_P256', async () => {
     const { plaintext, senderKey } = await envelopeService.unpack(agentContext, fixture.encryptedMessage, {
-      recipientKey: recipientKey as unknown as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
+      recipientKey,
       matchedKid: fixture.recipient.kid,
-      resolveSenderKey: async (skid) =>
-        skid === fixture.sender.kid ? (senderPublicJwk as unknown as Kms.PublicJwk<Kms.X25519PublicJwk>) : null,
+      resolveSenderKey: async (skid) => (skid === fixture.sender.kid ? senderPublicJwk : null),
     })
 
-    expect(plaintext).toEqual(fixture.expectedPlaintext)
+    expect(Array.isArray(plaintext.signatures)).toBe(true)
+    expect(typeof plaintext.payload).toBe('string')
+    expect(JsonEncoder.fromBase64Url(plaintext.payload as string)).toEqual(fixture.expectedInnerPayload)
     expect(senderKey).not.toBeNull()
   })
 })

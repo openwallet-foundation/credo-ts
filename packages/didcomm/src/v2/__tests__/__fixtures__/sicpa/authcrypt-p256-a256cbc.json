@@ -1,5 +1,5 @@
 {
-  "$description": "SICPA didcomm-python TEST_ENCRYPTED_DIDCOMM_MESSAGE_AUTH_P256: authcrypt with ECDH-1PU+A256KW, A256CBC-HS512, P-256. Alice (sender) -> Bob (recipient, 2 P-256 keys).",
+  "$description": "SICPA didcomm-python TEST_ENCRYPTED_DIDCOMM_MESSAGE_AUTH_P256: sign-then-encrypt with ECDH-1PU+A256KW, A256CBC-HS512, P-256. The ciphertext decrypts to a JWS envelope whose inner payload matches expectedInnerPayload. Alice (sender) -> Bob (recipient, 2 P-256 keys).",
   "$source": "https://github.com/sicpa-dlab/didcomm-python/blob/main/tests/test_vectors/didcomm_messages/spec/spec_test_vectors_auth_encrypted.py",
   "$license": "Apache-2.0",
   "encryptedMessage": {
@@ -18,9 +18,8 @@
     "iv": "mLqi1bZLz7VwqtVVFsDiLg",
     "ciphertext": "WCufCs2lMZfkxQ0JCK92lPtLFgwWk_FtRWOMj52bQISa94nEbIYqHDUohIbvLMgbSjRcJVusZO04UthDuOpSSTcV5GBi3O0cMrjyI_PZnTb1yikLXpXma1bT10D2r5TPtzRMxXF3nFsr9y0JKV1TsMtn70Df2fERx2bAGxcflmd-A2sMlSTT8b7QqPtn17Yb-pA8gr4i0Bqb2WfDzwnbfewbukpRmPA2hsEs9oLKypbniAafSpoiQjfb19oDfsYaWWXqsdjTYMflqH__DqSmW52M-SUp6or0xU0ujbHmOkRkcdh9PsR5YsPuIWAqYa2hfjz_KIrGTxvCos0DMiZ4Lh_lPIYQqBufSdFH5AGChoekFbQ1vcyIyYMFugzOHOgZ2TwEzv94GCgokBHQR4_qaU_f4Mva64KPwqOYdm5f4KX16afTJa-IV7ar7__2L-A-LyxmC5KIHeGOedV9kzZBLC7TuzRAuE3vY7pkhLB1jPE6XpTeKXldljaeOSEVcbFUQtsHOSPz9JXuhqZ1fdAx8qV7hUnSAd_YMMDR3S6SXtem8ak2m98WPvKIxhCbcto7W2qoNYMT7MPvvid-QzUvTdKtyovCvLzhyYJzMjZxmn9-EnGhZ5ITPL_xFfLyKxhSSUVz3kSwK9xuOj3KpJnrrD7xrp5FKzEaJVIHWrUW90V_9QVLjriThZ36fA3ipvs8ZJ8QSTnGAmuIQ6Z2u_r4KsjL_mGAgn47qyqRm-OSLEUE4_2qB0Q9Z7EBKakCH8VPt09hTMDR62aYZYwtmpNs9ISu0VPvFjh8UmKbFcQsVrz90-x-r-Q1fTX9JaIFcDy7aqKcI-ai3tVF_HDR60Jaiw"
   },
-  "expectedPlaintext": {
+  "expectedInnerPayload": {
     "id": "1234567890",
-    "thid": "1234567890",
     "typ": "application/didcomm-plain+json",
     "type": "http://example.com/protocols/lets_do_lunch/1.0/proposal",
     "from": "did:example:alice",
