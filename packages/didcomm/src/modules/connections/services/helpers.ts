@@ -39,6 +39,20 @@ export function toX25519(jwk: Kms.PublicJwk): Kms.PublicJwk<Kms.X25519PublicJwk>
   return jwk.is(Kms.X25519PublicJwk) ? jwk : (jwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
 }
 
+/**
+ * Normalize a PublicJwk to a DIDComm v2 keyAgreement key (X25519 or P-256).
+ * Ed25519 inputs are birationally converted to X25519 per RFC 7748.
+ */
+export function toKeyAgreement(jwk: Kms.PublicJwk): Kms.PublicJwk<Kms.X25519PublicJwk | Kms.P256PublicJwk> {
+  if (jwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk)) {
+    return jwk as Kms.PublicJwk<Kms.X25519PublicJwk | Kms.P256PublicJwk>
+  }
+  if (jwk.is(Kms.Ed25519PublicJwk)) {
+    return jwk.convertTo(Kms.X25519PublicJwk)
+  }
+  throw new CredoError(`Unsupported keyAgreement curve: ${jwk.jwkTypeHumanDescription}`)
+}
+
 export function convertToNewDidDocument(didDoc: DidDoc, keys?: DidDocumentKey[]) {
   const didDocumentBuilder = new DidDocumentBuilder('')
 
