@@ -1,6 +1,6 @@
 import type { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
-import { DataIntegrityApi, DidRepository, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
+import { DidRepository, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder, W3cDataIntegrityApi } from '@credo-ts/core'
 import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
@@ -32,11 +32,11 @@ const mockDidsRepository = {
   findCreatedDid: mockFindCreatedDid,
 }
 
-const mockDataIntegrityVerifyProof = vi.fn()
-const mockDataIntegrityCreateProofOrThrow = vi.fn()
-const mockDataIntegrityApi = {
-  verifyProof: mockDataIntegrityVerifyProof,
-  createProofOrThrow: mockDataIntegrityCreateProofOrThrow,
+const mockW3cDataIntegrityVerifyProof = vi.fn()
+const mockW3cDataIntegrityCreateProofOrThrow = vi.fn()
+const mockW3cDataIntegrityApi = {
+  verifyProof: mockW3cDataIntegrityVerifyProof,
+  createProofOrThrow: mockW3cDataIntegrityCreateProofOrThrow,
 }
 
 describe('WebVhAnonCredsRegistry', () => {
@@ -47,16 +47,16 @@ describe('WebVhAnonCredsRegistry', () => {
     // Reset the mocks before each test
     mockResolveResource.mockReset()
     mockFindCreatedDid.mockReset()
-    mockDataIntegrityVerifyProof.mockReset()
-    mockDataIntegrityCreateProofOrThrow.mockReset()
+    mockW3cDataIntegrityVerifyProof.mockReset()
+    mockW3cDataIntegrityCreateProofOrThrow.mockReset()
 
-    mockDataIntegrityVerifyProof.mockResolvedValue({
+    mockW3cDataIntegrityVerifyProof.mockResolvedValue({
       verified: true,
       verifiedDocument: { ...mockSchemaResource, proof: undefined },
       mediaType: null,
     })
 
-    mockDataIntegrityCreateProofOrThrow.mockResolvedValue({
+    mockW3cDataIntegrityCreateProofOrThrow.mockResolvedValue({
       created: true,
       proof: mockSchemaResource.proof,
     })
@@ -65,7 +65,7 @@ describe('WebVhAnonCredsRegistry', () => {
     agentContext = getAgentContext({
       agentConfig,
       registerInstances: [
-        [DataIntegrityApi, mockDataIntegrityApi],
+        [W3cDataIntegrityApi, mockW3cDataIntegrityApi],
         [DidRepository, mockDidsRepository],
         [WebVhDidResolver, { resolveResource: mockResolveResource }],
       ],
@@ -627,7 +627,7 @@ describe('WebVhAnonCredsRegistry', () => {
       // Clear the default verifyProof mock for these tests
       vi.restoreAllMocks()
 
-      mockDataIntegrityVerifyProof.mockResolvedValue({
+      mockW3cDataIntegrityVerifyProof.mockResolvedValue({
         verified: true,
         verifiedDocument: { ...mockSchemaResource, proof: undefined },
         mediaType: null,
@@ -638,14 +638,14 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, mockSchemaResource)
 
       expect(result).toBe(true)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(mockSchemaResource)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(mockSchemaResource)
     })
 
     it('should return false for null proof', async () => {
       const testInput = { ...mockSchemaResource }
       // @ts-expect-error
       testInput.proof = null
-      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+      mockW3cDataIntegrityVerifyProof.mockResolvedValueOnce({
         verified: false,
         verifiedDocument: null,
         mediaType: null,
@@ -653,14 +653,14 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for undefined proof', async () => {
       const testInput = { ...mockSchemaResource }
       // @ts-expect-error
       testInput.proof = undefined
-      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+      mockW3cDataIntegrityVerifyProof.mockResolvedValueOnce({
         verified: false,
         verifiedDocument: null,
         mediaType: null,
@@ -668,14 +668,14 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for non-object proof', async () => {
       const testInput = { ...mockSchemaResource }
       // @ts-expect-error
       testInput.proof = testInput.proof.proofValue
-      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+      mockW3cDataIntegrityVerifyProof.mockResolvedValueOnce({
         verified: false,
         verifiedDocument: null,
         mediaType: null,
@@ -683,7 +683,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for wrong proof type', async () => {
@@ -691,7 +691,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const testProof = { ...mockSchemaResource.proof }
       testProof.type = 'Ed25519Signature2020'
       testInput.proof = testProof
-      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+      mockW3cDataIntegrityVerifyProof.mockResolvedValueOnce({
         verified: false,
         verifiedDocument: null,
         mediaType: null,
@@ -699,7 +699,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for wrong cryptosuite', async () => {
@@ -707,7 +707,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const testProof = { ...mockSchemaResource.proof }
       testProof.cryptosuite = 'eddsa-rdfc-2022'
       testInput.proof = testProof
-      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+      mockW3cDataIntegrityVerifyProof.mockResolvedValueOnce({
         verified: false,
         verifiedDocument: null,
         mediaType: null,
@@ -715,7 +715,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for missing verificationMethod', async () => {
@@ -724,7 +724,7 @@ describe('WebVhAnonCredsRegistry', () => {
       // @ts-expect-error
       testProof.verificationMethod = undefined
       testInput.proof = testProof
-      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+      mockW3cDataIntegrityVerifyProof.mockResolvedValueOnce({
         verified: false,
         verifiedDocument: null,
         mediaType: null,
@@ -732,7 +732,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for invalid verificationMethod type', async () => {
@@ -741,7 +741,7 @@ describe('WebVhAnonCredsRegistry', () => {
       // @ts-expect-error
       testProof.verificationMethod = { id: testProof.verificationMethod }
       testInput.proof = testProof
-      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+      mockW3cDataIntegrityVerifyProof.mockResolvedValueOnce({
         verified: false,
         verifiedDocument: null,
         mediaType: null,
@@ -749,7 +749,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for missing proofValue', async () => {
@@ -758,7 +758,7 @@ describe('WebVhAnonCredsRegistry', () => {
       // @ts-expect-error
       testProof.proofValue = undefined
       testInput.proof = testProof
-      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+      mockW3cDataIntegrityVerifyProof.mockResolvedValueOnce({
         verified: false,
         verifiedDocument: null,
         mediaType: null,
@@ -766,7 +766,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false for invalid proofValue type', async () => {
@@ -775,7 +775,7 @@ describe('WebVhAnonCredsRegistry', () => {
       // @ts-expect-error
       testProof.proofValue = { value: testInput.proof.proofValue }
       testInput.proof = testProof
-      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+      mockW3cDataIntegrityVerifyProof.mockResolvedValueOnce({
         verified: false,
         verifiedDocument: null,
         mediaType: null,
@@ -783,13 +783,13 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false when core Data Integrity verification reports failure', async () => {
       const testInput = { ...mockSchemaResource }
 
-      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+      mockW3cDataIntegrityVerifyProof.mockResolvedValueOnce({
         verified: false,
         verifiedDocument: null,
         mediaType: null,
@@ -803,17 +803,17 @@ describe('WebVhAnonCredsRegistry', () => {
 
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false when core Data Integrity verification throws', async () => {
       const testInput = { ...mockSchemaResource }
 
-      mockDataIntegrityVerifyProof.mockRejectedValueOnce(new Error('verification error'))
+      mockW3cDataIntegrityVerifyProof.mockRejectedValueOnce(new Error('verification error'))
 
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should return false when proof verification fails for invalid proof value', async () => {
@@ -822,7 +822,7 @@ describe('WebVhAnonCredsRegistry', () => {
       testProof.proofValue = 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz'
       testInput.proof = testProof
 
-      mockDataIntegrityVerifyProof.mockResolvedValueOnce({
+      mockW3cDataIntegrityVerifyProof.mockResolvedValueOnce({
         verified: false,
         verifiedDocument: null,
         mediaType: null,
@@ -836,7 +836,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
 
     it('should handle proof without optional fields', async () => {
@@ -844,7 +844,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
 
       expect(result).toBe(true)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockW3cDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
     })
   })
 })

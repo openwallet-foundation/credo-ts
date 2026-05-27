@@ -23,9 +23,9 @@ import type {
 import {
   type AgentContext,
   CredoError,
-  DataIntegrityApi,
-  type DataIntegritySingleProofSecuredDocument,
-  type DataIntegrityUnsecuredDocument,
+  W3cDataIntegrityApi,
+  type W3cDataIntegritySingleProofSecuredDocument,
+  type W3cDataIntegrityUnsecuredDocument,
   DidRepository,
   JsonTransformer,
   MultiBaseEncoder,
@@ -696,10 +696,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async verifyProof(agentContext: AgentContext, attestedResource: WebVhAttestedResource): Promise<boolean> {
-    const dataIntegrity = agentContext.dependencyManager.resolve(DataIntegrityApi)
+    const dataIntegrity = agentContext.dependencyManager.resolve(W3cDataIntegrityApi)
     try {
       const verificationResult = await dataIntegrity.verifyProof(
-        attestedResource as unknown as DataIntegritySingleProofSecuredDocument
+        attestedResource as unknown as W3cDataIntegritySingleProofSecuredDocument
       )
       return verificationResult.verified
     } catch (error) {
@@ -713,10 +713,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
   public async createProof(
     agentContext: AgentContext,
-    unsecuredDocument: DataIntegrityUnsecuredDocument,
+    unsecuredDocument: W3cDataIntegrityUnsecuredDocument,
     verificationMethod: string
   ) {
-    const dataIntegrity = agentContext.dependencyManager.resolve(DataIntegrityApi)
+    const dataIntegrity = agentContext.dependencyManager.resolve(W3cDataIntegrityApi)
     try {
       const creationResult = await dataIntegrity.createProofOrThrow({
         unsecuredDocument,
