@@ -8,7 +8,7 @@ import {
   ReferencedAuthentication,
   RsaSig2018,
 } from '../models'
-import { convertToNewDidDocument, toKeyAgreement } from '../services/helpers'
+import { convertToNewDidDocument, keyAgreementsEqual, toKeyAgreement } from '../services/helpers'
 
 const key = new Ed25119Sig2018({
   id: 'did:sov:SKJVx2kn373FNgvff1SbJo#4',
@@ -246,5 +246,65 @@ describe('toKeyAgreement', () => {
       y: 'B33OmdK_FrhqAjjlZGFNlImd_5HFGtj0VyEYqsQqg2X-XnQv6KjC9X3rL5GqxKlF',
     })
     expect(() => toKeyAgreement(p384Jwk)).toThrow(/P-384/)
+  })
+})
+
+describe('keyAgreementsEqual', () => {
+  const ed25519A = Kms.PublicJwk.fromFingerprint(
+    'z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
+  ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  const ed25519B = Kms.PublicJwk.fromFingerprint(
+    'z6MkfV5QFybBws9PpkRoYjeUuiacFB7N3pmqWxFwBpY1uPdv'
+  ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+
+  const x25519FromA = ed25519A.convertTo(Kms.X25519PublicJwk)
+
+  const p256A = Kms.PublicJwk.fromPublicJwk({
+    kty: 'EC',
+    crv: 'P-256',
+    x: 'FQVaTOksf-XsCUrt4J1L2UGvtWaDwpboVlqbKBY2AIo',
+    y: '6XFB9PYo7dyC5ViJSO9uXNYkxTJWn0d_mqJ__ZYhcNY',
+  })
+
+  const p256B = Kms.PublicJwk.fromPublicJwk({
+    kty: 'EC',
+    crv: 'P-256',
+    x: 'L0crjMN1g0Ih4sYAJ_nGoHUck2cloltUpUVQDhF2nHE',
+    y: 'SxYgE7CmEJYi7IDhgK5jI4ZiajO8jPRZDldVhqFpYoo',
+  })
+
+  it('matches identical X25519 keys', () => {
+    expect(keyAgreementsEqual(x25519FromA, x25519FromA)).toBe(true)
+  })
+
+  it('matches identical P-256 keys', () => {
+    expect(keyAgreementsEqual(p256A, p256A)).toBe(true)
+  })
+
+  it('matches identical Ed25519 keys', () => {
+    expect(keyAgreementsEqual(ed25519A, ed25519A)).toBe(true)
+  })
+
+  it('bridges Ed25519 to X25519 birationally', () => {
+    expect(keyAgreementsEqual(ed25519A, x25519FromA)).toBe(true)
+    expect(keyAgreementsEqual(x25519FromA, ed25519A)).toBe(true)
+  })
+
+  it('does not match different Ed25519 keys', () => {
+    expect(keyAgreementsEqual(ed25519A, ed25519B)).toBe(false)
+  })
+
+  it('does not match different P-256 keys', () => {
+    expect(keyAgreementsEqual(p256A, p256B)).toBe(false)
+  })
+
+  it('does not match P-256 against X25519', () => {
+    expect(keyAgreementsEqual(p256A, x25519FromA)).toBe(false)
+    expect(keyAgreementsEqual(x25519FromA, p256A)).toBe(false)
+  })
+
+  it('does not match P-256 against Ed25519', () => {
+    expect(keyAgreementsEqual(p256A, ed25519A)).toBe(false)
+    expect(keyAgreementsEqual(ed25519A, p256A)).toBe(false)
   })
 })

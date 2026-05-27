@@ -55,6 +55,22 @@ export function toKeyAgreement(jwk: Kms.PublicJwk): DidCommV2KeyAgreementJwk {
   throw new CredoError(`Unsupported keyAgreement curve: ${jwk.jwkTypeHumanDescription}`)
 }
 
+/**
+ * Compare two keys for keyAgreement equivalence. Direct fingerprint match for same-curve keys;
+ * bridges Ed25519 <-> X25519 via the RFC 7748 birational map. Returns false for non-bridgeable
+ * cross-curve combinations (e.g. P-256 vs Ed25519).
+ */
+export function keyAgreementsEqual(a: Kms.PublicJwk, b: Kms.PublicJwk): boolean {
+  if (a.fingerprint === b.fingerprint) return true
+  if (a.is(Kms.Ed25519PublicJwk) && b.is(Kms.X25519PublicJwk)) {
+    return a.convertTo(Kms.X25519PublicJwk).fingerprint === b.fingerprint
+  }
+  if (a.is(Kms.X25519PublicJwk) && b.is(Kms.Ed25519PublicJwk)) {
+    return a.fingerprint === b.convertTo(Kms.X25519PublicJwk).fingerprint
+  }
+  return false
+}
+
 export function convertToNewDidDocument(didDoc: DidDoc, keys?: DidDocumentKey[]) {
   const didDocumentBuilder = new DidDocumentBuilder('')
 
