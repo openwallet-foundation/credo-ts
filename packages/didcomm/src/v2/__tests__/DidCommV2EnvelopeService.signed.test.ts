@@ -208,6 +208,69 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
     })
   })
 
+  describe('sign-then-encrypt round-trip', () => {
+    let recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk>
+    let senderEcdhKey: Kms.PublicJwk<Kms.X25519PublicJwk>
+
+    beforeAll(async () => {
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      const recipient = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      const senderEcdh = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      recipientKey = Kms.PublicJwk.fromPublicJwk(recipient.publicJwk) as Kms.PublicJwk<Kms.X25519PublicJwk>
+      recipientKey.keyId = recipient.keyId
+      senderEcdhKey = Kms.PublicJwk.fromPublicJwk(senderEcdh.publicJwk) as Kms.PublicJwk<Kms.X25519PublicJwk>
+      senderEcdhKey.keyId = senderEcdh.keyId
+    })
+
+    it('signs then authcrypts; unpacks back to the JWS which verifies to the original plaintext', async () => {
+      const envelope = await envelopeService.packSignedAndEncrypted(
+        agentContext,
+        plaintext,
+        { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' },
+        { senderKey: senderEcdhKey, recipientKey }
+      )
+
+      const matchedKid = envelope.recipients[0]?.header?.kid ?? recipientKey.keyId
+      const { plaintext: inner } = await envelopeService.unpack(agentContext, envelope, {
+        recipientKey: recipientKey as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
+        matchedKid,
+        resolveSenderKey: async (skid) => (skid === senderEcdhKey.keyId ? senderEcdhKey : null),
+      })
+
+      // The inner bytes are a JWS, not a JWM plaintext. Verify and recover the original.
+      const innerSigned = inner as unknown as DidCommV2SignedMessage
+      expect(innerSigned.payload).toBeDefined()
+      expect(innerSigned.signatures).toHaveLength(1)
+
+      const { plaintext: verified } = await envelopeService.verifySignedMessage(agentContext, innerSigned, {
+        resolveSignerJwk: async (kid) => (kid === signerKid ? signerJwk : null),
+      })
+      expect(verified).toEqual(plaintext)
+    })
+
+    it('signs then anoncrypts; unpacks back to the JWS which verifies to the original plaintext', async () => {
+      const envelope = await envelopeService.packSignedAndAnoncrypted(
+        agentContext,
+        plaintext,
+        { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' },
+        { recipientKey }
+      )
+
+      const matchedKid = envelope.recipients[0]?.header?.kid ?? recipientKey.keyId
+      const { plaintext: inner } = await envelopeService.unpack(agentContext, envelope, {
+        recipientKey: recipientKey as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
+        matchedKid,
+        resolveSenderKey: async () => null,
+      })
+
+      const innerSigned = inner as unknown as DidCommV2SignedMessage
+      const { plaintext: verified } = await envelopeService.verifySignedMessage(agentContext, innerSigned, {
+        resolveSignerJwk: async (kid) => (kid === signerKid ? signerJwk : null),
+      })
+      expect(verified).toEqual(plaintext)
+    })
+  })
+
   describe('round-trip on Askar (all DIDComm v2.1 algorithms)', () => {
     const cases: Array<{ alg: 'EdDSA' | 'ES256' | 'ES256K'; keyType: Kms.KmsCreateKeyType }> = [
       { alg: 'EdDSA', keyType: { kty: 'OKP', crv: 'Ed25519' } },

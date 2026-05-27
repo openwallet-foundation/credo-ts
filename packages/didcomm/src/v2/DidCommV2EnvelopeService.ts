@@ -62,19 +62,15 @@ export class DidCommV2EnvelopeService {
 
   /**
    * Pack a DIDComm v2 plaintext message into an encrypted v2 envelope using ECDH-1PU (authcrypt).
-   *
-   * @param agentContext - The agent context (for KMS access)
-   * @param plaintext - The v2 plaintext message to encrypt
-   * @param keys - Recipient and sender X25519 keys
-   * @returns The DIDComm v2 encrypted message (JWE with typ application/didcomm-encrypted+json)
+   * Accepts pre-serialized bytes for the sign-then-encrypt flow where the JWS itself is the payload.
    */
   public async pack(
     agentContext: AgentContext,
-    plaintext: DidCommV2PlaintextMessage,
+    payload: DidCommV2PlaintextMessage | Uint8Array,
     keys: DidCommV2EnvelopeKeys
   ): Promise<DidCommV2EncryptedMessage> {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    const plaintextBytes = JsonEncoder.toUint8Array(plaintext)
+    const plaintextBytes = payload instanceof Uint8Array ? payload : JsonEncoder.toUint8Array(payload)
 
     const recipientX25519 = keys.recipientKey
     if (!recipientX25519.is(Kms.X25519PublicJwk)) {
@@ -145,21 +141,16 @@ export class DidCommV2EnvelopeService {
   }
 
   /**
-   * Pack a DIDComm v2 plaintext message using ECDH-ES (anoncrypt).
-   * No sender identity; used for forwarded messages to mediators.
-   *
-   * @param agentContext - The agent context (for KMS access)
-   * @param plaintext - The v2 plaintext message to encrypt
-   * @param keys - Recipient X25519 key only
-   * @returns The DIDComm v2 encrypted message (JWE with typ application/didcomm-encrypted+json)
+   * Pack a DIDComm v2 plaintext message using ECDH-ES (anoncrypt). No sender identity;
+   * used for forwarded messages to mediators. Accepts pre-serialized bytes for sign-then-anoncrypt.
    */
   public async packAnoncrypt(
     agentContext: AgentContext,
-    plaintext: DidCommV2PlaintextMessage,
+    payload: DidCommV2PlaintextMessage | Uint8Array,
     keys: DidCommV2AnoncryptKeys
   ): Promise<DidCommV2EncryptedMessage> {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    const plaintextBytes = JsonEncoder.toUint8Array(plaintext)
+    const plaintextBytes = payload instanceof Uint8Array ? payload : JsonEncoder.toUint8Array(payload)
 
     const recipientX25519 = keys.recipientKey
     if (!recipientX25519.is(Kms.X25519PublicJwk)) {
@@ -257,6 +248,31 @@ export class DidCommV2EnvelopeService {
       payload: signed.payload,
       signatures: [{ protected: signed.protected, signature: signed.signature }],
     }
+  }
+
+  /**
+   * Sign then authcrypt: sign the plaintext, JWE-wrap the JWS using ECDH-1PU.
+   * Spec mandates this order (sign before encrypt) for non-repudiation over DIDComm v2.
+   */
+  public async packSignedAndEncrypted(
+    agentContext: AgentContext,
+    plaintext: DidCommV2PlaintextMessage,
+    signer: DidCommV2Signer,
+    keys: DidCommV2EnvelopeKeys
+  ): Promise<DidCommV2EncryptedMessage> {
+    const signed = await this.signPlaintext(agentContext, plaintext, signer)
+    return this.pack(agentContext, JsonEncoder.toUint8Array(signed), keys)
+  }
+
+  /** Sign then anoncrypt: hides sender identity on the wire while preserving the signature for the recipient. */
+  public async packSignedAndAnoncrypted(
+    agentContext: AgentContext,
+    plaintext: DidCommV2PlaintextMessage,
+    signer: DidCommV2Signer,
+    keys: DidCommV2AnoncryptKeys
+  ): Promise<DidCommV2EncryptedMessage> {
+    const signed = await this.signPlaintext(agentContext, plaintext, signer)
+    return this.packAnoncrypt(agentContext, JsonEncoder.toUint8Array(signed), keys)
   }
 
   /**
