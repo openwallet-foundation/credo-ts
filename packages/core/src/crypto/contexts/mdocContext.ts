@@ -20,7 +20,7 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
         return new Uint8Array(
           crypto.digest(
             digestAlgorithm,
-            // NOTE: extra Uint8Array wrapping is needed here, somehow if we use `bytes.buffer` directly
+            // NOTE:  extra Uint8Array wrapping is needed here, somehow if we use `bytes.buffer` directly
             // it's not working. Maybe due to Uint8array length
             new Uint8Array(bytes).buffer
           )
