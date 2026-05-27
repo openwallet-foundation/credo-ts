@@ -6,7 +6,6 @@ export default defineConfig(
     ...item,
     entry: [
       './src/index.ts',
-      './src/modules/vc/data-integrity/libraries/nativeDocumentLoader.native.ts',
       './src/modules/kms/index.ts',
     ],
     plugins: [
