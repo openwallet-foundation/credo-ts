@@ -38,13 +38,13 @@ describe('TokenStatusListService', () => {
 
   describe('createTokenStatusList', () => {
     test('creates a CWT status list with sign1', async () => {
-      const options: CreateTokenStatusListOptions = {
+      const options = {
         format: 'cwt',
         statusListLength: 16,
         bitsPerStatus: 1,
         statusListUri: 'https://example.com/status/1',
         keyId: key.keyId,
-      }
+      } satisfies CreateTokenStatusListOptions
 
       const result = await tokenStatusListService.createTokenStatusList(agentContext, options)
 
@@ -163,11 +163,36 @@ describe('TokenStatusListService', () => {
     })
   })
 
-  describe('fetchTokenStatsuList', () => {
+  describe('fetchTokenStatusList', () => {
     test('method exists and can be invoked', async () => {
       // Test that the method exists and has the correct signature
       expect(tokenStatusListService.fetchTokenStatusList).toBeDefined()
       expect(typeof tokenStatusListService.fetchTokenStatusList).toBe('function')
+    })
+
+    test('type inference works', async () => {
+      const _cwtResult: Promise<{ format: 'cwt' }> = tokenStatusListService.fetchTokenStatusList(agentContext, {
+        acceptedFormats: ['cwt'],
+        uri: '',
+      })
+
+      const _jwtResult2: Promise<{ format: 'jwt' }> = tokenStatusListService.fetchTokenStatusList(agentContext, {
+        acceptedFormats: ['jwt'],
+        uri: '',
+      })
+
+      // @ts-expect-error invalid type match
+      const _jwtInvalidResult: Promise<{ format: 'cwt' }> = tokenStatusListService.fetchTokenStatusList(agentContext, {
+        acceptedFormats: ['jwt'],
+        uri: '',
+      })
+
+      const _jwtCwtValidResult: Promise<{ format: 'cwt' | 'jwt' }> = tokenStatusListService.fetchTokenStatusList(
+        agentContext,
+        {
+          uri: '',
+        }
+      )
     })
   })
 })

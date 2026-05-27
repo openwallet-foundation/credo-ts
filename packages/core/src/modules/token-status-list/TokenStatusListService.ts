@@ -16,6 +16,9 @@ import { getSign1Context } from './context/sign1Context'
 import type {
   CreateTokenStatusListOptions,
   FetchTokenStatusListOptions,
+  TokenStatusListFormat,
+  TokenStatusListResult,
+  TokenStatusListResultFor,
   UpdateTokenStatusListOptions,
 } from './TokenStatusListOptions'
 
@@ -28,13 +31,10 @@ export { StatusListCwt, type StatusListCwtOptions } from '@owf/token-status-list
  */
 @injectable()
 export class TokenStatusListService {
-  public async createTokenStatusList(
+  public async createTokenStatusList<Format extends TokenStatusListFormat>(
     agentContext: AgentContext,
-    options: CreateTokenStatusListOptions
-  ): Promise<
-    | { format: 'cwt'; statusList: Uint8Array; parsed: StatusListCwt }
-    | { format: 'jwt'; statusList: string; parsed: Jwt }
-  > {
+    options: CreateTokenStatusListOptions<Format>
+  ): Promise<Extract<TokenStatusListResult, { format: Format }>> {
     const statusList = new StatusList(
       new Array(options.statusListLength).fill(0),
       options.bitsPerStatus,
@@ -54,14 +54,14 @@ export class TokenStatusListService {
           format: options.format,
           statusList: await cwt.authenticateAndEncode({ key: CoseKey.fromJwk(jwk) }, mac0Context),
           parsed: cwt,
-        }
+        } as Extract<TokenStatusListResult, { format: Format }>
       } else {
         const sign1Context = getSign1Context(agentContext)
         return {
           format: options.format,
           statusList: await cwt.signAndEncode({ signingKey: CoseKey.fromJwk(jwk) }, sign1Context),
           parsed: cwt,
-        }
+        } as Extract<TokenStatusListResult, { format: Format }>
       }
     }
 
@@ -78,10 +78,10 @@ export class TokenStatusListService {
         protectedHeaderOptions: header as JwsProtectedHeaderOptions,
       })
       return {
-        format: options.format,
+        format: 'jwt',
         statusList: jws,
         parsed: Jwt.fromSerializedJwt(jws),
-      }
+      } as Extract<TokenStatusListResult, { format: Format }>
     }
 
     throw new CredoError(`Could not create token status list with format '${options.format}'`)
@@ -147,18 +147,10 @@ export class TokenStatusListService {
     throw new CredoError(`Could not update status list in token for token '${options.token}'`)
   }
 
-  public async fetchTokenStatusList(
+  public async fetchTokenStatusList<AcceptedFormats extends TokenStatusListFormat>(
     agentContext: AgentContext,
-    options: FetchTokenStatusListOptions
-  ): Promise<{ raw: Uint8Array; parsed: StatusListCwt }>
-  public async fetchTokenStatusList(
-    agentContext: AgentContext,
-    options: FetchTokenStatusListOptions
-  ): Promise<{ raw: string; parsed: Jwt }>
-  public async fetchTokenStatusList(
-    agentContext: AgentContext,
-    options: FetchTokenStatusListOptions
-  ): Promise<{ raw: Uint8Array | string; parsed: StatusListCwt | Jwt }> {
+    options: FetchTokenStatusListOptions<AcceptedFormats>
+  ): Promise<TokenStatusListResultFor<AcceptedFormats>> {
     const token = await fetchStatusList({
       uri: options.uri,
       acceptedFormats: options.acceptedFormats,
@@ -166,18 +158,19 @@ export class TokenStatusListService {
     })
 
     if (token instanceof Uint8Array) {
-      const cwt = StatusListCwt.fromToken(token)
       return {
-        raw: token,
-        parsed: cwt,
-      }
+        format: 'cwt',
+        statusList: token,
+        parsed: StatusListCwt.fromToken(token),
+      } as TokenStatusListResultFor<AcceptedFormats>
     }
+
     if (typeof token === 'string') {
-      const jwt = Jwt.fromSerializedJwt(token)
       return {
-        raw: token,
-        parsed: jwt,
-      }
+        format: 'jwt',
+        statusList: token,
+        parsed: Jwt.fromSerializedJwt(token),
+      } as TokenStatusListResultFor<AcceptedFormats>
     }
 
     throw new CredoError(`Could not parse token from URL '${options.uri}'`)

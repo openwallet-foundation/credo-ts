@@ -4,6 +4,9 @@ import { injectable } from '../../plugins'
 import type {
   CreateTokenStatusListOptions,
   FetchTokenStatusListOptions,
+  TokenStatusListFormat,
+  TokenStatusListResult,
+  TokenStatusListResultFor,
   UpdateTokenStatusListOptions,
 } from './TokenStatusListOptions'
 import type { StatusListCwt, TokenStatusListService } from './TokenStatusListService'
@@ -21,12 +24,9 @@ export class TokenStatusListApi {
     this.tokenStatusListService = tokenStatusListService
   }
 
-  public async createTokenStatusList(
-    options: CreateTokenStatusListOptions
-  ): Promise<
-    | { format: 'cwt'; statusList: Uint8Array; parsed: StatusListCwt }
-    | { format: 'jwt'; statusList: string; parsed: Jwt }
-  > {
+  public async createTokenStatusList<Format extends TokenStatusListFormat>(
+    options: CreateTokenStatusListOptions<Format>
+  ): Promise<Extract<TokenStatusListResult, { format: Format }>> {
     return this.tokenStatusListService.createTokenStatusList(this.agentContext, options)
   }
 
@@ -45,13 +45,9 @@ export class TokenStatusListApi {
     )
   }
 
-  public async fetchTokenStatusList(
-    options: FetchTokenStatusListOptions
-  ): Promise<{ raw: Uint8Array; parsed: StatusListCwt }>
-  public async fetchTokenStatusList(options: FetchTokenStatusListOptions): Promise<{ raw: string; parsed: Jwt }>
-  public async fetchTokenStatusList(
-    options: FetchTokenStatusListOptions
-  ): Promise<{ raw: Uint8Array | string; parsed: StatusListCwt | Jwt }> {
+  public async fetchTokenStatusList<AcceptedFormats extends TokenStatusListFormat>(
+    options: FetchTokenStatusListOptions<AcceptedFormats>
+  ): Promise<TokenStatusListResultFor<AcceptedFormats>> {
     return this.tokenStatusListService.fetchTokenStatusList(this.agentContext, options)
   }
 }

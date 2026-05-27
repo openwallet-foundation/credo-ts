@@ -1,7 +1,11 @@
-import { type BitsPerStatus, StatusType } from '@owf/token-status-list'
+import { type BitsPerStatus, StatusListCwt, StatusType } from '@owf/token-status-list'
+import type { Jwt } from '../../crypto'
+import type { SingleOrArray } from '../../types'
 
-export type CreateTokenStatusListOptions = {
-  format: 'cwt' | 'jwt'
+export type TokenStatusListFormat = 'cwt' | 'jwt'
+
+export type CreateTokenStatusListOptions<Format extends TokenStatusListFormat = TokenStatusListFormat> = {
+  format: Format
   statusListLength: number
   bitsPerStatus: BitsPerStatus
   statusListUri: string
@@ -13,9 +17,13 @@ export type CreateTokenStatusListOptions = {
   keyId: string
 }
 
+export type TokenStatusListResult =
+  | { format: 'cwt'; statusList: Uint8Array; parsed: StatusListCwt }
+  | { format: 'jwt'; statusList: string; parsed: Jwt }
+
 export type UpdateTokenStatusListOptions<TSL extends Uint8Array | string> = {
   token: TSL
-  status: { index: number; status: StatusType } | Array<{ index: number; status: StatusType }>
+  status: SingleOrArray<{ index: number; status: StatusType }>
 
   /**
    * Will determine whether it will be signed or authenticated
@@ -23,7 +31,12 @@ export type UpdateTokenStatusListOptions<TSL extends Uint8Array | string> = {
   keyId: string
 }
 
-export type FetchTokenStatusListOptions = {
+export type FetchTokenStatusListOptions<AcceptedFormats extends TokenStatusListFormat = TokenStatusListFormat> = {
   uri: string
-  acceptedFormats?: Array<'cwt' | 'jwt'>
+  acceptedFormats?: AcceptedFormats[]
 }
+
+export type TokenStatusListResultFor<Format extends TokenStatusListFormat> = Extract<
+  TokenStatusListResult,
+  { format: Format }
+>
