@@ -4,6 +4,7 @@ import {
   CredoError,
   DidKey,
   DidsApi,
+  getPublicJwkFromVerificationMethod,
   InjectionSymbols,
   inject,
   injectable,
@@ -37,9 +38,10 @@ import { DidCommDidRotateV2Service } from './modules/connections/services/DidCom
 import { DidCommOutOfBandService } from './modules/oob/DidCommOutOfBandService'
 import { DidCommRoutingService } from './modules/routing/services/DidCommRoutingService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
-import { isDidCommV2EncryptedMessage } from './util/didcommVersion'
+import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from './util/didcommVersion'
 import { isValidJweStructure } from './util/JWE'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
+import type { DidCommV2SignedMessage } from './v2'
 import { DidCommV2EnvelopeService, DidCommV2KeyResolver, normalizeV2PlaintextToV1 } from './v2'
 
 @injectable()
@@ -118,6 +120,8 @@ export class DidCommMessageReceiver {
     try {
       if (this.isEncryptedMessage(inboundMessage)) {
         await this.receiveEncryptedMessage(agentContext, inboundMessage as DidCommEncryptedMessage, session, receivedAt)
+      } else if (isDidCommV2SignedMessage(inboundMessage)) {
+        await this.receiveSignedMessage(agentContext, inboundMessage, connection, receivedAt)
       } else if (this.isPlaintextMessage(inboundMessage)) {
         await this.receivePlaintextMessage(agentContext, inboundMessage, connection, receivedAt)
       } else {
@@ -138,6 +142,35 @@ export class DidCommMessageReceiver {
     const message = await this.transformAndValidate(agentContext, plaintextMessage)
     const messageContext = new DidCommInboundMessageContext(message, { connection, agentContext, receivedAt })
     await this.dispatcher.dispatch(messageContext)
+  }
+
+  private async receiveSignedMessage(
+    agentContext: AgentContext,
+    signedMessage: DidCommV2SignedMessage,
+    connection?: DidCommConnectionRecord,
+    receivedAt?: Date
+  ) {
+    if (!this.config.didcommVersions.includes('v2')) {
+      throw new CredoError(
+        'Received DIDComm v2 signed message but v2 is not enabled. Add "v2" to didcommVersions in DidCommModuleConfig to accept v2 messages.'
+      )
+    }
+
+    const dids = agentContext.dependencyManager.resolve(DidsApi)
+
+    // resolveSignerJwk enforces the DIDComm v2.1 mandate that kid resolves to an authentication VM.
+    const { plaintext } = await this.v2EnvelopeService.verifySignedMessage(agentContext, signedMessage, {
+      resolveSignerJwk: async (kid) => {
+        const signerDid = kid.split('#')[0]
+        const didDocument = await dids.resolveDidDocument(signerDid)
+        const vm = didDocument.dereferenceKey(kid, ['authentication'])
+        return getPublicJwkFromVerificationMethod(vm)
+      },
+    })
+
+    this.logger.info(`Verified DIDComm v2 signed message of type '${plaintext.type}' from '${plaintext.from}'`)
+    const plaintextMessage = normalizeV2PlaintextToV1(plaintext)
+    await this.receivePlaintextMessage(agentContext, plaintextMessage, connection, receivedAt)
   }
 
   private async receiveEncryptedMessage(
