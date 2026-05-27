@@ -181,7 +181,7 @@ export class MdocDeviceResponse {
   }
 
   private static assertMdocInputDescriptor(inputDescriptor: InputDescriptorV2) {
-    if (!inputDescriptor.format || !inputDescriptor.format.mso_mdoc) {
+    if (!inputDescriptor.format?.mso_mdoc) {
       throw new MdocError(`Input descriptor must contain 'mso_mdoc' format property`)
     }
 

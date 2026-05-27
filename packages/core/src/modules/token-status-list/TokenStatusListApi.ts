@@ -10,7 +10,7 @@ import type {
   TokenStatusListResultFor,
   UpdateTokenStatusListOptions,
 } from './TokenStatusListOptions'
-import type { TokenStatusListService } from './TokenStatusListService'
+import { TokenStatusListService } from './TokenStatusListService'
 
 /**
  * @public

@@ -376,7 +376,7 @@ export class SdJwtVcService {
       // If keyBinding is present, verify the key binding
       try {
         if (keyBinding) {
-          if (!sdJwtVc.kbJwt || !sdJwtVc.kbJwt.payload) {
+          if (!sdJwtVc.kbJwt?.payload) {
             throw new SdJwtVcError('Keybinding is required for verification of the sd-jwt-vc')
           }
 
@@ -739,7 +739,7 @@ export class SdJwtVcService {
     let response = firstResponse
 
     // If the response is not ok, try the legacy URL (will be removed in 0.7)
-    if (!response || !response?.ok) {
+    if (!response?.ok) {
       // modify the uri based on https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-04.html#section-6.3.1
       const vctElements = vct.split('/')
       vctElements.splice(3, 0, '.well-known/vct')
