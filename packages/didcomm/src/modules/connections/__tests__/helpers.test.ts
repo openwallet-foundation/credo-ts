@@ -209,14 +209,16 @@ describe('toKeyAgreement', () => {
     expect(result.fingerprint).toBe(expectedX25519.fingerprint)
   })
 
-  it('throws on P-384', () => {
+  it('passes P-384 through unchanged', () => {
     const p384Jwk = Kms.PublicJwk.fromPublicJwk({
       kty: 'EC',
       crv: 'P-384',
       x: 'lInTxl8fjLKp_UCrxI0WDklcl9VuTGyM5h6yIQXVbPxBu8t-9rJW6vMzpgWf3-Pp',
       y: 'B33OmdK_FrhqAjjlZGFNlImd_5HFGtj0VyEYqsQqg2X-XnQv6KjC9X3rL5GqxKlF',
     })
-    expect(() => toKeyAgreement(p384Jwk)).toThrow(/Unsupported keyAgreement curve/)
+    const result = toKeyAgreement(p384Jwk)
+    expect(result).toBe(p384Jwk)
+    expect(result.is(Kms.P384PublicJwk)).toBe(true)
   })
 
   it('throws on secp256k1', () => {
@@ -239,13 +241,13 @@ describe('toKeyAgreement', () => {
   })
 
   it('includes the offending JWK description in the error message', () => {
-    const p384Jwk = Kms.PublicJwk.fromPublicJwk({
+    const secp256k1Jwk = Kms.PublicJwk.fromPublicJwk({
       kty: 'EC',
-      crv: 'P-384',
-      x: 'lInTxl8fjLKp_UCrxI0WDklcl9VuTGyM5h6yIQXVbPxBu8t-9rJW6vMzpgWf3-Pp',
-      y: 'B33OmdK_FrhqAjjlZGFNlImd_5HFGtj0VyEYqsQqg2X-XnQv6KjC9X3rL5GqxKlF',
+      crv: 'secp256k1',
+      x: 'LowlbeS1Y_OWnnLrwxQRoLSY8VnGgKpAhMfeY9MEjcs',
+      y: 'EmxC44wNJp_2EVUyMv-Zo2sj_HCmGRfL6QyJUkBNbHc',
     })
-    expect(() => toKeyAgreement(p384Jwk)).toThrow(/P-384/)
+    expect(() => toKeyAgreement(secp256k1Jwk)).toThrow(/secp256k1/)
   })
 })
 
