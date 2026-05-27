@@ -10,9 +10,12 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { computeApu, computeApv } from './apuApv'
-import type { DidCommV2ContentEncryptionAlgorithm, DidCommV2EncryptedMessage, DidCommV2PlaintextMessage } from './types'
-
-export type DidCommV2KeyAgreementJwk = Kms.PublicJwk<Kms.X25519PublicJwk | Kms.P256PublicJwk>
+import type {
+  DidCommV2ContentEncryptionAlgorithm,
+  DidCommV2EncryptedMessage,
+  DidCommV2KeyAgreementJwk,
+  DidCommV2PlaintextMessage,
+} from './types'
 
 type EpkJwk = { kty: 'OKP'; crv: 'X25519'; x: string } | { kty: 'EC'; crv: 'P-256'; x: string; y: string }
 

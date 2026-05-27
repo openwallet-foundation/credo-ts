@@ -25,6 +25,7 @@ import {
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
+import type { DidCommV2KeyAgreementJwk } from '../../../v2/types'
 import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import type { DidCommOutOfBandInlineServiceKey } from '../../oob/repository/DidCommOutOfBandRecord'
 import type { DidDoc, PublicKey } from '../models'
@@ -43,9 +44,9 @@ export function toX25519(jwk: Kms.PublicJwk): Kms.PublicJwk<Kms.X25519PublicJwk>
  * Normalize a PublicJwk to a DIDComm v2 keyAgreement key (X25519 or P-256).
  * Ed25519 inputs are birationally converted to X25519 per RFC 7748.
  */
-export function toKeyAgreement(jwk: Kms.PublicJwk): Kms.PublicJwk<Kms.X25519PublicJwk | Kms.P256PublicJwk> {
+export function toKeyAgreement(jwk: Kms.PublicJwk): DidCommV2KeyAgreementJwk {
   if (jwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk)) {
-    return jwk as Kms.PublicJwk<Kms.X25519PublicJwk | Kms.P256PublicJwk>
+    return jwk as DidCommV2KeyAgreementJwk
   }
   if (jwk.is(Kms.Ed25519PublicJwk)) {
     return jwk.convertTo(Kms.X25519PublicJwk)
