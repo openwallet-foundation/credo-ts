@@ -1,6 +1,12 @@
 import type { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
-import { DidRepository, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder, W3cDataIntegrityApi } from '@credo-ts/core'
+import {
+  DidRepository,
+  MultiBaseEncoder,
+  MultiHashEncoder,
+  TypedArrayEncoder,
+  W3cDataIntegrityApi,
+} from '@credo-ts/core'
 import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 

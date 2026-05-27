@@ -23,15 +23,15 @@ import type {
 import {
   type AgentContext,
   CredoError,
-  W3cDataIntegrityApi,
-  type W3cDataIntegritySingleProofSecuredDocument,
-  type W3cDataIntegrityUnsecuredDocument,
   DidRepository,
   JsonTransformer,
   MultiBaseEncoder,
   MultiHashEncoder,
   type Proof,
   TypedArrayEncoder,
+  W3cDataIntegrityApi,
+  type W3cDataIntegritySingleProofSecuredDocument,
+  type W3cDataIntegrityUnsecuredDocument,
 } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 import { WebVhDidResolver } from '../../dids'
