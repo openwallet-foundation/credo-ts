@@ -206,7 +206,7 @@ export class DidCommV2EnvelopeService {
    *
    * @param agentContext - The agent context (for KMS access)
    * @param encrypted - The v2 encrypted message
-   * @param keys - Recipient key and sender key resolver (skid → X25519); resolveSenderKey not used for anoncrypt
+   * @param keys - Recipient key and sender key resolver; resolveSenderKey not used for anoncrypt
    * @returns The plaintext message and sender key (null for anoncrypt)
    */
   public async unpack(
