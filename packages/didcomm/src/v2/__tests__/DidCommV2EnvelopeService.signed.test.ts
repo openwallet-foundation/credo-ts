@@ -62,7 +62,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
   })
 
   describe('signPlaintext', () => {
-    it('produces a single-signer JWS with kid in the protected header (DIDComm v2.1 spec example)', async () => {
+    it('produces a single-signer JWS with kid in the unprotected header (SICPA interop)', async () => {
       const signed = await envelopeService.signPlaintext(agentContext, plaintext, {
         keyId: signerJwk.keyId,
         kid: signerKid,
@@ -70,11 +70,10 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       })
 
       expect(signed.signatures).toHaveLength(1)
-      expect(signed.signatures[0].header).toBeUndefined()
-      expect(JsonEncoder.fromBase64Url(signed.signatures[0].protected)).toMatchObject({
+      expect(signed.signatures[0].header).toEqual({ kid: signerKid })
+      expect(JsonEncoder.fromBase64Url(signed.signatures[0].protected)).toEqual({
         typ: DIDCOMM_V2_SIGNED_MIME_TYPE,
         alg: 'EdDSA',
-        kid: signerKid,
       })
       expect(JsonEncoder.fromBase64Url(signed.payload)).toEqual(plaintext)
     })

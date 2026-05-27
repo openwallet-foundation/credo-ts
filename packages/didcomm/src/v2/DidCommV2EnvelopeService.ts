@@ -233,20 +233,22 @@ export class DidCommV2EnvelopeService {
       )
     }
 
+    // SICPA's validate_jws requires kid in the unprotected per-signature header. The DIDComm
+    // v2.1 spec example shows kid in the protected header but doesn't normatively mandate it.
+    // We emit unprotected for interop; verify accepts either location.
     const signed = await this.jwsService.createJws(agentContext, {
       payload: JsonEncoder.toUint8Array(plaintext),
       keyId: signer.keyId,
-      header: {},
+      header: { kid: signer.kid },
       protectedHeaderOptions: {
         typ: DIDCOMM_V2_SIGNED_MIME_TYPE,
         alg: signer.alg,
-        kid: signer.kid,
       },
     })
 
     return {
       payload: signed.payload,
-      signatures: [{ protected: signed.protected, signature: signed.signature }],
+      signatures: [{ protected: signed.protected, signature: signed.signature, header: { kid: signer.kid } }],
     }
   }
 
