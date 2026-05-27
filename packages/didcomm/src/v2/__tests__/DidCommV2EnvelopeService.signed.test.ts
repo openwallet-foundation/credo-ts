@@ -207,4 +207,42 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       ).rejects.toThrow()
     })
   })
+
+  describe('round-trip on Askar (all DIDComm v2.1 algorithms)', () => {
+    const cases: Array<{ alg: 'EdDSA' | 'ES256' | 'ES256K'; keyType: Kms.KmsCreateKeyType }> = [
+      { alg: 'EdDSA', keyType: { kty: 'OKP', crv: 'Ed25519' } },
+      { alg: 'ES256', keyType: { kty: 'EC', crv: 'P-256' } },
+      { alg: 'ES256K', keyType: { kty: 'EC', crv: 'secp256k1' } },
+    ]
+
+    it.each(cases)('signs and verifies with $alg', async ({ alg, keyType }) => {
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      const created = await kms.createKey({ type: keyType })
+      const jwk = Kms.PublicJwk.fromPublicJwk(created.publicJwk as Kms.KmsJwkPublicAsymmetric)
+      jwk.keyId = created.keyId
+      const kid = `did:example:alice#${alg.toLowerCase()}-key`
+      const localPlaintext: DidCommV2PlaintextMessage = {
+        id: `roundtrip-${alg}`,
+        type: 'https://example.com/protocols/test/1.0/ping',
+        from: 'did:example:alice',
+        to: ['did:example:bob'],
+        body: { alg },
+      }
+
+      const signed = await envelopeService.signPlaintext(agentContext, localPlaintext, {
+        keyId: jwk.keyId,
+        kid,
+        alg,
+      })
+
+      const { plaintext: verified, signers } = await envelopeService.verifySignedMessage(agentContext, signed, {
+        resolveSignerJwk: async (resolved) => (resolved === kid ? jwk : null),
+      })
+
+      expect(verified).toEqual(localPlaintext)
+      expect(signers).toHaveLength(1)
+      expect(signers[0].alg).toBe(alg)
+      expect(signers[0].jwk.fingerprint).toBe(jwk.fingerprint)
+    })
+  })
 })
