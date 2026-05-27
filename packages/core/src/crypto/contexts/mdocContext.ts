@@ -4,15 +4,12 @@ import { sha256 } from '@noble/hashes/sha2.js'
 import { type MdocContext } from '@owf/mdoc'
 import { AgentContext } from '../../agent'
 import { CredoWebCrypto, Hasher } from '../../crypto'
-import { CredoError } from '../../error'
-import { KeyManagementApi, type KmsJwkPublicAsymmetric, knownJwaFromCoseSignatureAlgorithm } from '../../modules/kms'
 import { X509Certificate, X509Service } from '../../modules/x509'
 import { getMac0Context } from './mac0Context'
 import { getSign1Context } from './sign1Context'
 
 export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date } = {}): MdocContext => {
   const crypto = new CredoWebCrypto(agentContext)
-  const kms = agentContext.resolve(KeyManagementApi)
 
   return {
     fetch: agentContext.config.agentDependencies.fetch,
@@ -41,30 +38,7 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
     },
 
     cose: {
-      mac0: {
-        sign: getMac0Context(agentContext).mac,
-        verify: async (input) => {
-          const { mac0, key } = input
-          if (key instanceof Uint8Array) {
-            throw new CredoError(
-              'For mdoc authentication verification with mac0 a CoseKey is required, not a Uint8Array'
-            )
-          }
-
-          const algorithm = knownJwaFromCoseSignatureAlgorithm(mac0.signatureAlgorithmName)
-
-          const { verified } = await kms.verify({
-            key: {
-              publicJwk: key.jwk as KmsJwkPublicAsymmetric,
-            },
-            data: mac0.toBeAuthenticated,
-            algorithm,
-            signature: mac0.tag,
-          })
-
-          return verified
-        },
-      },
+      mac0: getMac0Context(agentContext),
       sign1: getSign1Context(agentContext),
     },
 

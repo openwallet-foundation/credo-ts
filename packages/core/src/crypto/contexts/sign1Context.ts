@@ -24,9 +24,6 @@ export const getSign1Context = (agentContext: AgentContext): Sign1Context => {
       return signature
     },
     verify: async (input) => {
-      if (input.key instanceof Uint8Array) {
-        throw new CredoError('For a sign1 signature verification a CoseKey is required, not a Uint8Array')
-      }
       const { verified } = await kms.verify({
         key: {
           publicJwk: input.key.jwk as KmsJwkPublicAsymmetric,
