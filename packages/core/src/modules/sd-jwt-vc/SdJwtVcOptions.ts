@@ -161,8 +161,17 @@ export type SdJwtVcVerifyOptions = {
    * has a status, it will not be fetched and verified.
    *
    * @default true
+   * @deprecated use `disableStatusValidation`
    */
   verifyCredentialStatus?: boolean
+
+  /**
+   * Whether to disable the status validation of the credential. If set to true and the credential
+   * has a status, it will not be fetched and verified.
+   *
+   * @default false
+   */
+  disableStatusValidation?: boolean
 
   trustedCertificates?: EncodedX509Certificate[]
 

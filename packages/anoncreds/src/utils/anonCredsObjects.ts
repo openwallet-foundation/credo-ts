@@ -11,7 +11,7 @@ export async function fetchSchema(agentContext: AgentContext, schemaId: string) 
     .getRegistryForIdentifier(agentContext, schemaId)
     .getSchema(agentContext, schemaId)
 
-  if (!result || !result.schema) {
+  if (!result?.schema) {
     throw new CredoError(`Schema not found for id ${schemaId}: ${result.resolutionMetadata.message}`)
   }
 
@@ -29,7 +29,7 @@ export async function fetchCredentialDefinition(agentContext: AgentContext, cred
     .getRegistryForIdentifier(agentContext, credentialDefinitionId)
     .getCredentialDefinition(agentContext, credentialDefinitionId)
 
-  if (!result || !result.credentialDefinition) {
+  if (!result?.credentialDefinition) {
     throw new CredoError(
       `Credential definition not found for id ${credentialDefinitionId}: ${result.resolutionMetadata.message}`
     )
@@ -54,7 +54,7 @@ export async function fetchRevocationRegistryDefinition(
     .getRegistryForIdentifier(agentContext, revocationRegistryDefinitionId)
     .getRevocationRegistryDefinition(agentContext, revocationRegistryDefinitionId)
 
-  if (!result || !result.revocationRegistryDefinition) {
+  if (!result?.revocationRegistryDefinition) {
     throw new CredoError(
       `RevocationRegistryDefinition not found for id ${revocationRegistryDefinitionId}: ${result.resolutionMetadata.message}`
     )

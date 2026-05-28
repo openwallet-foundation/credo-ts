@@ -265,7 +265,10 @@ export function getAgentContext({
   registerInstances?: Array<[InjectionToken, unknown]>
   isRootAgentContext?: boolean
 } = {}) {
-  if (agentConfig) dependencyManager.registerInstance(AgentConfig, agentConfig)
+  const config = agentConfig ?? new AgentConfig({}, agentDependencies)
+  if (!dependencyManager.isRegistered(AgentConfig)) {
+    dependencyManager.registerInstance(AgentConfig, config)
+  }
 
   // Register custom instances on the dependency manager
   for (const [token, instance] of registerInstances.values()) {

@@ -36,7 +36,7 @@ export type MdocOpenId4VpDraft18SessionTranscriptOptions = {
 }
 
 export type MdocSessionTranscriptByteOptions = {
-  type: 'sesionTranscriptBytes'
+  type: 'sessionTranscriptBytes'
   sessionTranscriptBytes: Uint8Array
 }
 
@@ -113,4 +113,6 @@ export type MdocSignOptions = {
    */
   issuerCertificate: X509Certificate | X509Certificate[]
   holderKey: PublicJwk
+
+  statusInfo?: { index: number; uri: string; certificate?: X509Certificate }
 }

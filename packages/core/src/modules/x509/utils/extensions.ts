@@ -18,7 +18,7 @@ export const createSubjectKeyIdentifierExtension = (
   options: X509CertificateExtensionsOptions['subjectKeyIdentifier'],
   additionalOptions: { publicJwk: PublicJwk }
 ) => {
-  if (!options || !options.include) return
+  if (!options?.include) return
 
   const spki = publicJwkToSpki(additionalOptions.publicJwk)
   const hash = Hasher.hash(new Uint8Array(spki.subjectPublicKey), 'SHA-1')

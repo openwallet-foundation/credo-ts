@@ -8,7 +8,7 @@ import type {
 } from './protocol/DidCommCredentialProtocolOptions'
 
 // re-export GetCredentialFormatDataReturn type from protocol, as it is also used in the api
-export type { GetCredentialFormatDataReturn, DeleteCredentialOptions }
+export type { DeleteCredentialOptions, GetCredentialFormatDataReturn }
 
 export type FindCredentialProposalMessageReturn<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]> =
   ReturnType<CPs[number]['findProposalMessage']>

@@ -4,6 +4,7 @@ import { GenericRecordsApi } from '../modules/generic-records'
 import { KeyManagementApi } from '../modules/kms'
 import { MdocApi } from '../modules/mdoc'
 import { SdJwtVcApi } from '../modules/sd-jwt-vc'
+import { TokenStatusListApi } from '../modules/token-status-list'
 import { W3cV2CredentialsApi } from '../modules/vc'
 import { W3cCredentialsApi } from '../modules/vc/W3cCredentialsApi'
 import { X509Api } from '../modules/x509'
@@ -29,6 +30,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly sdJwtVc: SdJwtVcApi
   public readonly x509: X509Api
   public readonly kms: KeyManagementApi
+  public readonly tokenStatusList: TokenStatusListApi
 
   /**
    * The DIDComm module, only available if the didcomm module is registered
@@ -68,6 +70,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.x509 = this.dependencyManager.resolve(X509Api)
     this.mdoc = this.dependencyManager.resolve(MdocApi)
     this.kms = this.dependencyManager.resolve(KeyManagementApi)
+    this.tokenStatusList = this.dependencyManager.resolve(TokenStatusListApi)
 
     const defaultApis = [
       this.genericRecords,
@@ -78,6 +81,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       this.x509,
       this.mdoc,
       this.kms,
+      this.tokenStatusList,
     ]
 
     // Set the api of the registered modules on the agent, excluding the default apis
