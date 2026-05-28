@@ -7,6 +7,7 @@ import { isObject } from '../../../../utils/object'
 import { KeyManagementApi } from '../../../kms'
 import { isXsdDateTimeStamp } from '../../proof-processing/iso8601-datetime'
 import { publicJwkFromVerificationMethodId, publicKeyIdFromVerificationMethodId } from '../../proof-processing/keyUtils'
+import { omitUndefinedFields } from '../../proof-processing/normalisation'
 import { W3cDataIntegrityProcessingError, W3cDataIntegrityProcessingErrorCode } from '../../W3cDataIntegrityError'
 import type {
   W3cDataIntegrityCryptosuiteProof,
@@ -30,10 +31,11 @@ export class EddsaJcs2022Cryptosuite implements W3cDataIntegrityCryptosuite {
   }
 
   private canonicalizeJcsStrict(value: unknown) {
-    assertJcsInput(value)
-    return canonicalizeEx(value, {
+    const normalised = omitUndefinedFields(value)
+    assertJcsInput(normalised)
+    return canonicalizeEx(normalised, {
       allowCircular: false,
-      filterUndefined: false,
+      filterUndefined: true,
       undefinedInArrayToNull: false,
     })
   }
@@ -226,7 +228,7 @@ export class EddsaJcs2022Cryptosuite implements W3cDataIntegrityCryptosuite {
   }
 }
 
-function assertJcsInput(value: unknown, path = '$') {
+function assertJcsInput(value: unknown, path = '$', seen = new WeakSet<object>()) {
   if (value === undefined || typeof value === 'function' || typeof value === 'symbol' || typeof value === 'bigint') {
     const err = `JCS canonicalization input contains unsupported value at ${path}`
     throw new W3cDataIntegrityProcessingError(W3cDataIntegrityProcessingErrorCode.ProofTransformationError, err)
@@ -239,14 +241,22 @@ function assertJcsInput(value: unknown, path = '$') {
 
   if (Array.isArray(value)) {
     for (let i = 0; i < value.length; i++) {
-      assertJcsInput(value[i], `${path}[${i}]`)
+      assertJcsInput(value[i], `${path}[${i}]`, seen)
     }
     return
   }
 
   if (isObject(value)) {
+    const objectValue = value as object
+    if (seen.has(objectValue)) {
+      const err = `JCS canonicalization input contains circular reference at ${path}`
+      throw new W3cDataIntegrityProcessingError(W3cDataIntegrityProcessingErrorCode.ProofTransformationError, err)
+    }
+
+    seen.add(objectValue)
+
     for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
-      assertJcsInput(nestedValue, `${path}.${key}`)
+      assertJcsInput(nestedValue, `${path}.${key}`, seen)
     }
   }
 }

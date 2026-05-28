@@ -579,13 +579,29 @@ describe('EddsaJcs2022Cryptosuite', () => {
       }
     })
 
-    // Spec: VC DI EdDSA v1.0 §3.3.3 relies on JCS; unsupported input values must fail transformation categorically.
-    it('throws PROOF_TRANSFORMATION_ERROR for unsupported JCS input values', () => {
+    // Spec: VC DI EdDSA v1.0 §3.3.3 step 2 applies JCS canonicalization; runtime normalization omits undefined object fields before canonicalization.
+    it('omits undefined object fields before JCS transformation', () => {
+      const canonical = cryptosuite.transformation(
+        {
+          id: 'urn:example:test',
+          nested: {
+            keep: 'value',
+            remove: undefined,
+          },
+        },
+        mockProofOptions
+      )
+
+      expect(canonical).toBe('{"id":"urn:example:test","nested":{"keep":"value"}}')
+    })
+
+    // Spec: VC DI EdDSA v1.0 §3.3.3 step 2 applies JCS canonicalization; undefined array values are not valid JSON values and must fail transformation.
+    it('throws PROOF_TRANSFORMATION_ERROR for undefined values in arrays', () => {
       const transformation = () =>
         cryptosuite.transformation(
           {
             id: 'urn:example:test',
-            value: undefined,
+            values: [undefined],
           },
           mockProofOptions
         )
