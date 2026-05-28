@@ -69,12 +69,17 @@ export class Mdoc {
   }
 
   public get alg(): KnownJwaSignatureAlgorithm {
-    const algName = this.issuerSigned.issuerAuth.signatureAlgorithmName
-    if (isKnownJwaSignatureAlgorithm(algName)) {
-      return algName
+    const jwaAlg = this.issuerSigned.issuerAuth.jwaAlgorithm
+
+    if (!jwaAlg) {
+      throw new MdocError('The IssuerAuth does not have a valid signature algorithm in the header')
     }
 
-    throw new MdocError(`Cannot parse mdoc. The signature algorithm '${algName}' is not supported.`)
+    if (isKnownJwaSignatureAlgorithm(jwaAlg)) {
+      return jwaAlg
+    }
+
+    throw new MdocError(`Cannot parse mdoc. The signature algorithm '${jwaAlg}' is not supported.`)
   }
 
   public get validityInfo() {

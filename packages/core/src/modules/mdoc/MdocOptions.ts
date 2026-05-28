@@ -36,7 +36,7 @@ export type MdocOpenId4VpDraft18SessionTranscriptOptions = {
 }
 
 export type MdocSessionTranscriptByteOptions = {
-  type: 'sesionTranscriptBytes'
+  type: 'sessionTranscriptBytes'
   sessionTranscriptBytes: Uint8Array
 }
 

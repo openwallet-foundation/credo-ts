@@ -4,8 +4,9 @@ import { CredoError } from '../../error'
 import {
   KeyManagementApi,
   type KmsJwkPublicAsymmetric,
-  type KnownJwaSignatureAlgorithm,
+  type KnownCoseSignatureAlgorithm,
   knownJwaFromCoseSignatureAlgorithm,
+  PublicJwk,
 } from '../../modules/kms'
 
 export const getMac0Context = (agentContext: AgentContext): Mac0Context => {
@@ -20,30 +21,37 @@ export const getMac0Context = (agentContext: AgentContext): Mac0Context => {
         throw new CredoError('Missing required keyId on CoseKey for signing mdoc')
       }
 
+      const algorithm = input.key.algorithm
+      const jwaAlgorithm = input.key.algorithm
+        ? knownJwaFromCoseSignatureAlgorithm(algorithm as KnownCoseSignatureAlgorithm)
+        : PublicJwk.fromUnknown(input.key.jwk).signatureAlgorithm
+
       const { signature } = await kms.sign({
         data: input.toBeAuthenticated,
-        // FIXME: input needs to provide the algorithm
-        algorithm: input.key.algorithm as unknown as KnownJwaSignatureAlgorithm,
+        algorithm: jwaAlgorithm,
         keyId: input.key.keyId,
       })
 
       return signature
     },
     verify: async (input) => {
-      const { mac0, key } = input
+      const { tag, toBeAuthenticated, key } = input
       if (key instanceof Uint8Array) {
         throw new CredoError('For mdoc authentication verification with mac0 a CoseKey is required, not a Uint8Array')
       }
 
-      const algorithm = knownJwaFromCoseSignatureAlgorithm(mac0.signatureAlgorithmName)
+      const algorithm = input.algorithm ?? key.algorithm
+      const jwaAlgorithm = algorithm
+        ? knownJwaFromCoseSignatureAlgorithm(algorithm as KnownCoseSignatureAlgorithm)
+        : PublicJwk.fromUnknown(key.jwk).signatureAlgorithm
 
       const { verified } = await kms.verify({
         key: {
           publicJwk: key.jwk as KmsJwkPublicAsymmetric,
         },
-        data: mac0.toBeAuthenticated,
-        algorithm,
-        signature: mac0.tag,
+        data: toBeAuthenticated,
+        algorithm: jwaAlgorithm,
+        signature: tag,
       })
 
       return verified

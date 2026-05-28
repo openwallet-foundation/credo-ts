@@ -1,9 +1,14 @@
 import type { Sign1Context } from '@owf/cose'
-import { coseKeyToJwkClaim } from '@owf/cose'
 import { CoseKey } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
-import { KeyManagementApi, type KmsJwkPublicAsymmetric, type KnownJwaSignatureAlgorithm } from '../../modules/kms'
+import {
+  KeyManagementApi,
+  type KmsJwkPublicAsymmetric,
+  type KnownCoseSignatureAlgorithm,
+  knownJwaFromCoseSignatureAlgorithm,
+  PublicJwk,
+} from '../../modules/kms'
 import { X509Certificate } from '../../modules/x509'
 
 export const getSign1Context = (agentContext: AgentContext): Sign1Context => {
@@ -17,20 +22,26 @@ export const getSign1Context = (agentContext: AgentContext): Sign1Context => {
 
       const { signature } = await kms.sign({
         data: input.toBeSigned,
-        algorithm: coseKeyToJwkClaim.algorithm(input.algorithm),
+        algorithm: knownJwaFromCoseSignatureAlgorithm(input.algorithm as KnownCoseSignatureAlgorithm),
         keyId: input.key.keyId,
       })
 
       return signature
     },
     verify: async (input) => {
+      const algorithm = input.algorithm ?? input.key.algorithm
+      const jwaAlgorithm = algorithm
+        ? knownJwaFromCoseSignatureAlgorithm(algorithm as KnownCoseSignatureAlgorithm)
+        : PublicJwk.fromUnknown(input.key.jwk).signatureAlgorithm
+
       const { verified } = await kms.verify({
         key: {
           publicJwk: input.key.jwk as KmsJwkPublicAsymmetric,
         },
-        data: input.sign1.toBeSigned,
-        algorithm: input.sign1.signatureAlgorithmName as KnownJwaSignatureAlgorithm,
-        signature: input.sign1.signature,
+        data: input.toBeVerified,
+        algorithm: jwaAlgorithm,
+
+        signature: input.signature,
       })
 
       return verified
