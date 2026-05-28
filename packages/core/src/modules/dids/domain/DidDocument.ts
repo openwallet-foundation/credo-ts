@@ -246,7 +246,8 @@ export class DidDocument {
   }): Array<{
     verificationMethod: VerificationMethod
     publicJwk: PublicJwk<
-      MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk
+      | (MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk)
+      | P256PublicJwk
     >
   }> {
     const recipientKeys: Array<{
@@ -332,15 +333,15 @@ export class DidDocument {
     if (!mapX25519ToEd25519) {
       return recipientKeys as Array<{
         verificationMethod: VerificationMethod
-        publicJwk: PublicJwk<MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk>
+        publicJwk: PublicJwk<
+          | (MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk)
+          | P256PublicJwk
+        >
       }>
     }
 
     return recipientKeys.flatMap(({ publicJwk, verificationMethod }) => {
-      if (publicJwk.is(Ed25519PublicJwk)) return [{ publicJwk, verificationMethod }]
-
-      // P-256 has no Ed25519 birational sibling; skip in the v1-compatible mapping.
-      if (publicJwk.is(P256PublicJwk)) return []
+      if (publicJwk.is(Ed25519PublicJwk, P256PublicJwk)) return [{ publicJwk, verificationMethod }]
 
       const matchingEd25519Key = findMatchingEd25519Key(publicJwk as PublicJwk<X25519PublicJwk>, this)
 
