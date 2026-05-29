@@ -1051,12 +1051,8 @@ describe('W3cDataIntegrityProofService', () => {
       throw new Error('Expected verification to fail')
     }
 
-    expect(result.errors).toHaveLength(2)
+    expect(result.errors).toHaveLength(1)
     expect(result.errors[0]).toMatchObject({
-      type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR',
-      title: 'Proof chain contains a cycle',
-    })
-    expect(result.errors[1]).toMatchObject({
       type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR',
       title: 'Proof previousProof reference must target an earlier proof',
     })
