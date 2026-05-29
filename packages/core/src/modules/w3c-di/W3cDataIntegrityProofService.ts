@@ -2,14 +2,15 @@ import type { AgentContext } from '../../agent/context'
 import { injectable } from '../../plugins'
 import { asArray, equalsIgnoreOrder } from '../../utils'
 import type { W3cDataIntegrityCryptosuite, W3cDataIntegrityProofVerificationInput } from './cryptosuites/types'
-import { validateProofChainStructure } from './proof-processing/chain'
 import { omitUndefinedFields } from './proof-processing/normalisation'
 import { parseW3cDataIntegrityProofDocument } from './proof-processing/parsing'
+import { validateProofChainStructure } from './proof-processing/proof-set-validation'
 import {
   assertCreatedProofPostconditions,
   validateProofFieldFormats,
   validateProofRequiredMembers,
-} from './proof-processing/validation'
+} from './proof-processing/proof-validation'
+
 import { W3cDataIntegrityCryptosuiteRegistry } from './W3cDataIntegrityCryptosuiteRegistry'
 import type {
   W3cDataIntegrityCreateFailure,

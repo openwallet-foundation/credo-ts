@@ -1,4 +1,4 @@
-import { validateProofRequiredMembers } from '../proof-processing/validation'
+import { validateProofRequiredMembers } from '../proof-processing/proof-validation'
 import type { W3cDataIntegrityCryptosuiteProof } from '../W3cDataIntegrityProof'
 import { assertIsW3cDataIntegrityProof, createW3cDataIntegrityProofOptions } from '../W3cDataIntegrityProof'
 

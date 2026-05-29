@@ -10,12 +10,9 @@ export function validateProofChainStructure(
 ): W3cDataIntegrityProcessingIssue[] {
   const proofIdToIndexList = new Map<string, number[]>()
   const proofIdToUniqueIndex = new Map<string, number>()
-  const proofReferenceGraph = new Map<number, number[]>()
   const issues: W3cDataIntegrityProcessingIssue[] = []
 
   for (const [index, proof] of proofs.entries()) {
-    proofReferenceGraph.set(index, [])
-
     const proofId = 'id' in proof && typeof proof.id === 'string' ? proof.id : undefined
     if (!proofId) continue
 
@@ -48,8 +45,6 @@ export function validateProofChainStructure(
         : [proof.previousProof]
       : []
 
-    const resolvedReferenceIndices: number[] = []
-
     for (const previousProofReference of previousProofReferences) {
       const referencedProofIndex = proofIdToUniqueIndex.get(previousProofReference)
 
@@ -69,18 +64,6 @@ export function validateProofChainStructure(
         continue
       }
 
-      resolvedReferenceIndices.push(referencedProofIndex)
-    }
-
-    proofReferenceGraph.set(index, resolvedReferenceIndices)
-  }
-
-  if (hasProofChainCycle(proofReferenceGraph)) {
-    issues.push(createIssue(W3cDataIntegrityProcessingErrorCode.ProofVerificationError, 'Proof chain contains a cycle'))
-  }
-
-  for (const [index, referenceIndices] of proofReferenceGraph.entries()) {
-    for (const referencedProofIndex of referenceIndices) {
       if (referencedProofIndex >= index) {
         issues.push(
           createIssue(
@@ -98,38 +81,4 @@ export function validateProofChainStructure(
   }
 
   return []
-}
-
-/**
- * Detects cycles in a proof chain reference graph using DFS.
- * The graph maps proof indices to the indices of their previousProof references.
- */
-export function hasProofChainCycle(referenceGraph: Map<number, number[]>): boolean {
-  const visiting = new Set<number>()
-  const visited = new Set<number>()
-
-  const visit = (index: number): boolean => {
-    if (visiting.has(index)) return true
-    if (visited.has(index)) return false
-
-    visiting.add(index)
-    const dependencies = referenceGraph.get(index) ?? []
-    for (const dependencyIndex of dependencies) {
-      if (visit(dependencyIndex)) {
-        return true
-      }
-    }
-
-    visiting.delete(index)
-    visited.add(index)
-    return false
-  }
-
-  for (const index of referenceGraph.keys()) {
-    if (visit(index)) {
-      return true
-    }
-  }
-
-  return false
 }
