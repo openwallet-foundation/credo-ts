@@ -1,11 +1,6 @@
 import type { W3cDataIntegrityProcessingIssue } from '../W3cDataIntegrityError'
 import { createIssue, W3cDataIntegrityProcessingErrorCode } from '../W3cDataIntegrityError'
 import type { W3cDataIntegrityCryptosuiteProof } from '../W3cDataIntegrityProof'
-import { validateProofDependencies } from './validation'
-
-export type BuildValidatedProofReferenceGraphResult =
-  | { ok: true; value: Map<number, number[]> }
-  | { ok: false; errors: W3cDataIntegrityProcessingIssue[] }
 
 /**
  * Implements VC Data Integrity v1.0 §4.5 steps 3.2-3.3 chain-structure validation.
@@ -13,15 +8,6 @@ export type BuildValidatedProofReferenceGraphResult =
 export function validateProofChainStructure(
   proofs: W3cDataIntegrityCryptosuiteProof[]
 ): W3cDataIntegrityProcessingIssue[] {
-  return validateProofDependencies(proofs)
-}
-
-/**
- * Builds and validates proof dependency references for VC Data Integrity v1.0 §4.5.
- */
-export function buildValidatedProofReferenceGraph(
-  proofs: W3cDataIntegrityCryptosuiteProof[]
-): BuildValidatedProofReferenceGraphResult {
   const proofIdToIndexList = new Map<string, number[]>()
   const proofIdToUniqueIndex = new Map<string, number>()
   const proofReferenceGraph = new Map<number, number[]>()
@@ -108,16 +94,10 @@ export function buildValidatedProofReferenceGraph(
   }
 
   if (issues.length > 0) {
-    return {
-      ok: false,
-      errors: issues,
-    }
+    return issues
   }
 
-  return {
-    ok: true,
-    value: proofReferenceGraph,
-  }
+  return []
 }
 
 /**

@@ -6,10 +6,8 @@ import {
   createIssue,
   W3cDataIntegrityProcessingError,
   W3cDataIntegrityProcessingErrorCode,
-  type W3cDataIntegrityProcessingIssue,
 } from '../W3cDataIntegrityError'
 import type { W3cDataIntegrityCryptosuiteProof } from '../W3cDataIntegrityProof'
-import { buildValidatedProofReferenceGraph } from './chain'
 import { isXsdDateTimeStamp } from './iso8601-datetime'
 
 // ─── Exported validators ──────────────────────────────────────────────────────
@@ -46,20 +44,6 @@ export function validateProofRequiredMembers(proof: unknown): string | undefined
   }
 
   return undefined
-}
-
-/**
- * Implements VC Data Integrity v1.0 §4.5 steps 3.2-3.3 dependency validation.
- */
-export function validateProofDependencies(
-  proofs: W3cDataIntegrityCryptosuiteProof[]
-): W3cDataIntegrityProcessingIssue[] {
-  const proofReferenceGraphResult = buildValidatedProofReferenceGraph(proofs)
-  if (!proofReferenceGraphResult.ok) {
-    return proofReferenceGraphResult.errors
-  }
-
-  return []
 }
 
 /**
