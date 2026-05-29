@@ -22,7 +22,7 @@ export function TransportDecorated<T extends BaseMessageConstructor>(Base: T) {
 
     public hasReturnRouting(threadId?: string): boolean {
       //   transport 'none' or undefined always false
-      if (!this.transport || !this.transport.returnRoute || this.transport.returnRoute === ReturnRouteTypes.none) {
+      if (!this.transport?.returnRoute || this.transport.returnRoute === ReturnRouteTypes.none) {
         return false
       }
       // transport 'all' always true

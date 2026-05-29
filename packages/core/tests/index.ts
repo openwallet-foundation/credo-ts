@@ -5,4 +5,4 @@ export * from './transport'
 
 import testLogger, { TestLogger } from './logger'
 
-export { testLogger, TestLogger }
+export { TestLogger, testLogger }

@@ -6,6 +6,7 @@ import { GenericRecordsModule } from '../../modules/generic-records'
 import { KeyManagementModule } from '../../modules/kms'
 import { MdocModule } from '../../modules/mdoc'
 import { SdJwtVcModule } from '../../modules/sd-jwt-vc'
+import { TokenStatusListModule } from '../../modules/token-status-list/TokenStatusListModule'
 import { W3cCredentialsModule } from '../../modules/vc'
 import { W3cDataIntegrityModule } from '../../modules/w3c-di'
 import { X509Module } from '../../modules/x509'
@@ -63,6 +64,7 @@ describe('AgentModules', () => {
         mdoc: expect.any(MdocModule),
         x509: expect.any(X509Module),
         cache: expect.any(CacheModule),
+        tokenStatusList: expect.any(TokenStatusListModule),
       })
     })
 
@@ -84,6 +86,7 @@ describe('AgentModules', () => {
         sdJwtVc: expect.any(SdJwtVcModule),
         mdoc: expect.any(MdocModule),
         x509: expect.any(X509Module),
+        tokenStatusList: expect.any(TokenStatusListModule),
         myModule,
       })
     })
@@ -108,6 +111,7 @@ describe('AgentModules', () => {
         sdJwtVc: expect.any(SdJwtVcModule),
         mdoc: expect.any(MdocModule),
         x509: expect.any(X509Module),
+        tokenStatusList: expect.any(TokenStatusListModule),
         myModule,
       })
     })

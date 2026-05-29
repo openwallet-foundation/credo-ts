@@ -1,10 +1,10 @@
 import { DeviceKey, DeviceKeyInfo, Holder, Issuer, IssuerSigned, SignatureAlgorithm } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
+import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig } from '../x509'
-import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
@@ -69,12 +69,17 @@ export class Mdoc {
   }
 
   public get alg(): KnownJwaSignatureAlgorithm {
-    const algName = this.issuerSigned.issuerAuth.signatureAlgorithmName
-    if (isKnownJwaSignatureAlgorithm(algName)) {
-      return algName
+    const jwaAlg = this.issuerSigned.issuerAuth.jwaAlgorithm
+
+    if (!jwaAlg) {
+      throw new MdocError('The IssuerAuth does not have a valid signature algorithm in the header')
     }
 
-    throw new MdocError(`Cannot parse mdoc. The signature algorithm '${algName}' is not supported.`)
+    if (isKnownJwaSignatureAlgorithm(jwaAlg)) {
+      return jwaAlg
+    }
+
+    throw new MdocError(`Cannot parse mdoc. The signature algorithm '${jwaAlg}' is not supported.`)
   }
 
   public get validityInfo() {
@@ -141,6 +146,15 @@ export class Mdoc {
         : [issuerCertificate.rawCertificate],
       deviceKeyInfo: DeviceKeyInfo.create({ deviceKey: DeviceKey.fromJwk(holderKey.toJson()) }),
       signingKey: issuerKey.toJson(),
+      status: options.statusInfo
+        ? {
+            statusList: {
+              idx: options.statusInfo.index,
+              uri: options.statusInfo.uri,
+              certificate: options.statusInfo.certificate?.rawCertificate,
+            },
+          }
+        : undefined,
     })
 
     return new Mdoc(issuerSigned)
@@ -182,6 +196,7 @@ export class Mdoc {
           ),
           issuerSigned: this.issuerSigned,
           disableCertificateChainValidation: false,
+          disableStatusValidation: false,
           now: options?.now,
         },
         mdocContext
