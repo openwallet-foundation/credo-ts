@@ -4,7 +4,7 @@ import config from '../../tsdown.config.base'
 export default defineConfig(
   config.map((item) => ({
     ...item,
-    entry: ['./src/index.ts', './src/modules/kms/index.ts'],
+    entry: ['./src/index.ts', './src/modules/kms/index.ts', './src/modules/vc/jsonld/nativeDocumentLoader.native.ts'],
     plugins: [
       ...(Array.isArray(item.plugins) ? item.plugins : []),
       {

@@ -27,11 +27,9 @@
     }
   },
   "browser": {
-    "./build/modules/vc/jsonld/nativeDocumentLoader.js": "./build/modules/vc/jsonld/nativeDocumentLoader.native.js",
     "./build/modules/vc/jsonld/nativeDocumentLoader.mjs": "./build/modules/vc/jsonld/nativeDocumentLoader.native.mjs"
   },
   "react-native": {
-    "./build/modules/vc/jsonld/nativeDocumentLoader.js": "./build/modules/vc/jsonld/nativeDocumentLoader.native.js",
     "./build/modules/vc/jsonld/nativeDocumentLoader.mjs": "./build/modules/vc/jsonld/nativeDocumentLoader.native.mjs"
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/core",
