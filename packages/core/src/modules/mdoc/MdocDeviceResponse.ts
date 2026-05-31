@@ -21,12 +21,12 @@ import {
   type PresentationDefinition,
 } from '@verifiables/request-converter'
 import { AgentContext } from '../../agent'
+import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { TypedArrayEncoder } from './../../utils'
 import { PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc'
 import { X509Certificate } from '../x509'
 import type { Mdoc } from './Mdoc'
-import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
 import type {
   MdocDeviceResponseDcqlQueryOptions,
@@ -181,7 +181,7 @@ export class MdocDeviceResponse {
   }
 
   private static assertMdocInputDescriptor(inputDescriptor: InputDescriptorV2) {
-    if (!inputDescriptor.format || !inputDescriptor.format.mso_mdoc) {
+    if (!inputDescriptor.format?.mso_mdoc) {
       throw new MdocError(`Input descriptor must contain 'mso_mdoc' format property`)
     }
 
@@ -327,17 +327,17 @@ export class MdocDeviceResponse {
     mdocContext: MdocContext,
     options: MdocSessionTranscriptOptions
   ) {
-    if (options.type === 'sesionTranscriptBytes') {
+    if (options.type === 'sessionTranscriptBytes') {
       return options.sessionTranscriptBytes
     }
 
     if (options.type === 'openId4VpDraft18') {
-      return SessionTranscript.forOid4VpDraft18(options, mdocContext)
+      return await SessionTranscript.forOid4VpDraft18(options, mdocContext)
     }
 
     if (options.type === 'openId4Vp') {
       const { encryptionJwk, verifierGeneratedNonce, ...rest } = options
-      return SessionTranscript.forOid4Vp(
+      return await SessionTranscript.forOid4Vp(
         {
           ...rest,
           jwkThumbprint: encryptionJwk ? encryptionJwk.getJwkThumbprint() : undefined,
@@ -349,7 +349,7 @@ export class MdocDeviceResponse {
 
     if (options.type === 'openId4VpDcApi') {
       const { encryptionJwk, verifierGeneratedNonce, ...rest } = options
-      return SessionTranscript.forOid4VpDcApi(
+      return await SessionTranscript.forOid4VpDcApi(
         {
           ...rest,
           nonce: verifierGeneratedNonce,
@@ -362,7 +362,7 @@ export class MdocDeviceResponse {
     if (options.type === 'openId4VpDcApiDraft24') {
       const { verifierGeneratedNonce, ...rest } = options
 
-      return SessionTranscript.forOid4VpDcApiDraft24(
+      return await SessionTranscript.forOid4VpDcApiDraft24(
         {
           ...rest,
           nonce: verifierGeneratedNonce,
