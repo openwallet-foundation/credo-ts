@@ -1,45 +1,103 @@
+import type { Document, IssuerSigned, KeyAuthorizations } from '@owf/mdoc'
+import type { Mdoc } from './Mdoc'
 import { MdocError } from './MdocError'
-import type { MdocDeviceKeyAuthorizationsOptions, MdocNameSpaces } from './MdocOptions'
+import type { MdocNameSpaces } from './MdocOptions'
+
+export function isDeviceKeyAuthorizationEnforced(keyAuthorizations?: KeyAuthorizations): boolean {
+  if (!keyAuthorizations) return false
+
+  return Boolean(
+    keyAuthorizations.namespaces?.length || (keyAuthorizations.dataElements && keyAuthorizations.dataElements.size > 0)
+  )
+}
+
+export function getDeviceKeyAuthorizationsFromIssuerSigned(issuerSigned: IssuerSigned): KeyAuthorizations | undefined {
+  return issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.keyAuthorizations
+}
+
+export function getDeviceKeyAuthorizationsFromMdoc(mdoc: Mdoc): KeyAuthorizations | undefined {
+  return getDeviceKeyAuthorizationsFromIssuerSigned(mdoc.issuerSigned)
+}
 
 /**
- * Ensures device key authorizations only reference namespaces and data elements
- * present in the issuer-signed payload being signed.
+ * Verifier: ensure presented nameSpaces are within MSO deviceKeyInfo.keyAuthorizations.
  */
-export function assertDeviceKeyAuthorizationsMatchNamespaces(
-  namespaces: MdocNameSpaces,
-  deviceKeyAuthorizations?: MdocDeviceKeyAuthorizationsOptions
+export function assertNameSpacesWithinDeviceKeyAuthorizations(
+  keyAuthorizations: KeyAuthorizations | undefined,
+  nameSpaces: MdocNameSpaces
 ): void {
-  if (!deviceKeyAuthorizations?.namespaces?.length && !deviceKeyAuthorizations?.dataElements) {
+  if (!isDeviceKeyAuthorizationEnforced(keyAuthorizations)) {
     return
   }
 
-  const issuedNamespaceIds = new Set(Object.keys(namespaces))
+  const authorizedNamespaces = keyAuthorizations?.namespaces
+  const authorizedDataElements = keyAuthorizations?.dataElements
+  const restrictsNamespaces = Boolean(authorizedNamespaces?.length)
+  const restrictsElements = Boolean(authorizedDataElements && authorizedDataElements.size > 0)
 
-  for (const namespace of deviceKeyAuthorizations.namespaces ?? []) {
-    if (!issuedNamespaceIds.has(namespace)) {
-      throw new MdocError(
-        `Device key authorization namespace '${namespace}' is not present in the mdoc issuance namespaces`
-      )
-    }
-  }
-
-  for (const [namespace, dataElements] of Object.entries(deviceKeyAuthorizations.dataElements ?? {})) {
-    const issuedElements = namespaces[namespace]
-    if (!issuedElements) {
-      throw new MdocError(
-        `Device key authorization dataElements namespace '${namespace}' is not present in the mdoc issuance namespaces`
-      )
+  for (const [namespace, elements] of Object.entries(nameSpaces)) {
+    if (restrictsNamespaces && !authorizedNamespaces?.includes(namespace)) {
+      throw new MdocError(`Device key is not authorized for namespace '${namespace}'`)
     }
 
-    const issuedElementIds = new Set(Object.keys(issuedElements))
-    for (const dataElement of dataElements) {
-      if (!issuedElementIds.has(dataElement)) {
-        throw new MdocError(
-          `Device key authorization data element '${dataElement}' is not present in namespace '${namespace}' of the mdoc issuance payload`
-        )
+    if (restrictsElements) {
+      const authorizedElementIds = authorizedDataElements?.get(namespace)
+      if (!authorizedElementIds) {
+        throw new MdocError(`Device key is not authorized for namespace '${namespace}'`)
+      }
+
+      for (const elementId of Object.keys(elements)) {
+        if (!authorizedElementIds.includes(elementId)) {
+          throw new MdocError(
+            `Device key is not authorized for data element '${elementId}' in namespace '${namespace}'`
+          )
+        }
       }
     }
   }
+}
+
+export function getDeviceSignedNameSpacesFromDocument(document: Document): MdocNameSpaces {
+  const deviceNamespaces = document.deviceSigned.deviceNamespaces?.deviceNamespaces
+  if (!deviceNamespaces?.size) return {}
+
+  return Object.fromEntries(
+    Array.from(deviceNamespaces.entries()).map(([namespace, items]) => [
+      namespace,
+      Object.fromEntries(items.deviceSignedItems.entries()),
+    ])
+  )
+}
+
+export function getIssuerSignedNameSpacesFromDocument(document: Document): MdocNameSpaces {
+  const issuerNamespaces = document.issuerSigned.issuerNamespaces?.issuerNamespaces
+  if (!issuerNamespaces?.size) return {}
+
+  return Object.fromEntries(
+    Array.from(issuerNamespaces.entries()).map(([namespace, items]) => [
+      namespace,
+      Object.fromEntries(items.map((item) => [item.elementIdentifier, item.elementValue])),
+    ])
+  )
+}
+
+/**
+ * Verifier: ensure deviceSigned and issuerSigned nameSpaces in a device response document
+ * are within MSO deviceKeyInfo.keyAuthorizations.
+ */
+export function assertDocumentNameSpacesWithinDeviceKeyAuthorizations(
+  keyAuthorizations: KeyAuthorizations | undefined,
+  document: Document
+): void {
+  if (!isDeviceKeyAuthorizationEnforced(keyAuthorizations)) {
+    return
+  }
+
+  const deviceSignedNameSpaces = getDeviceSignedNameSpacesFromDocument(document)
+  const issuerSignedNameSpaces = getIssuerSignedNameSpacesFromDocument(document)
+
+  assertNameSpacesWithinDeviceKeyAuthorizations(keyAuthorizations, deviceSignedNameSpaces)
+  assertNameSpacesWithinDeviceKeyAuthorizations(keyAuthorizations, issuerSignedNameSpaces)
 }
 
 export function nameSpacesRecordToMap<

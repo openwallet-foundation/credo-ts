@@ -36,7 +36,7 @@ import type {
   MdocSessionTranscriptOptions,
 } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
-import { nameSpacesRecordToMap } from './mdocUtil'
+import { assertDocumentNameSpacesWithinDeviceKeyAuthorizations, nameSpacesRecordToMap } from './mdocUtil'
 import { convertDocumentRequest } from './utils/convertDocumentRequest'
 
 export type DeviceAndIssuerClaims = {
@@ -321,6 +321,11 @@ export class MdocDeviceResponse {
           cause: error,
         })
       })
+
+    for (const document of this.deviceResponse.documents ?? []) {
+      const keyAuthorizations = document.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.keyAuthorizations
+      assertDocumentNameSpacesWithinDeviceKeyAuthorizations(keyAuthorizations, document)
+    }
   }
 
   private static async calculateSessionTranscriptBytes(

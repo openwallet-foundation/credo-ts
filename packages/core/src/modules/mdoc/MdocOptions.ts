@@ -98,19 +98,19 @@ export type MdocDeviceResponseVerifyOptions = {
 }
 
 /**
- * Device key authorizations options for the MSO `deviceKeyInfo.keyAuthorizations` (CBOR `nameSpaces` / `dataElements`).
+ * Device key authorizations for MSO `deviceKeyInfo.keyAuthorizations` (CBOR `nameSpaces` / `dataElements`).
+ *
+ * Authorizations may include namespaces and data elements that are not part of the issuer-signed
+ * issuance payload when those entries are intended for device-signed presentation data.
  */
 export type MdocDeviceKeyAuthorizationsOptions = {
   /**
-   * Namespace identifiers the device key is allowed to use for device-signed data.
-   * Each entry must match a key in {@link MdocSignOptions.namespaces}.
+   * Namespace identifiers the device key may use when signing device-signed data.
    */
   namespaces?: string[]
 
   /**
    * Per-namespace data element identifiers the device key may sign or MAC.
-   * Keys must match namespace identifiers from {@link MdocSignOptions.namespaces};
-   * values must be subsets of the element keys issued in that namespace.
    */
   dataElements?: Record<string, string[]>
 }

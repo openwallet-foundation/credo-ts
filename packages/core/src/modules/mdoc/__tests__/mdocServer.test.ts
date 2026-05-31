@@ -193,7 +193,7 @@ describe('mdoc service test', () => {
     expect(mdoc.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.keyAuthorizations).toBeUndefined()
   })
 
-  test('throws when device key authorization namespace is not in issuance payload', async () => {
+  test('embeds device-only key authorizations not present in issuance payload', async () => {
     const holderKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const issuerKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const nextDay = new Date()
@@ -204,45 +204,24 @@ describe('mdoc service test', () => {
       issuer: 'C=DE',
     })
 
-    await expect(
-      Mdoc.sign(agentContext, {
-        docType: 'org.iso.18013.5.1.mDL',
-        holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
-        namespaces: { 'org.iso.18013.5.1': { family_name: 'Doe' } },
-        deviceKeyAuthorizations: { namespaces: ['org.unknown.namespace'] },
-        issuerCertificate: certificate,
-        validityInfo: { validUntil: nextDay },
-      })
-    ).rejects.toThrow(
-      "Device key authorization namespace 'org.unknown.namespace' is not present in the mdoc issuance namespaces"
-    )
-  })
-
-  test('throws when device key authorization data element is not in issuance payload', async () => {
-    const holderKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
-    const issuerKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
-    const nextDay = new Date()
-    nextDay.setDate(nextDay.getDate() + 2)
-    const certificate = await X509Service.createCertificate(agentContext, {
-      authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
-      validity: { notBefore: new Date(), notAfter: nextDay },
-      issuer: 'C=DE',
-    })
-
-    await expect(
-      Mdoc.sign(agentContext, {
-        docType: 'org.iso.18013.5.1.mDL',
-        holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
-        namespaces: { 'org.iso.18013.5.1': { family_name: 'Doe' } },
-        deviceKeyAuthorizations: {
-          dataElements: { 'org.iso.18013.5.1': ['unknown_element'] },
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { 'org.iso.18013.5.1': { family_name: 'Doe' } },
+      deviceKeyAuthorizations: {
+        namespaces: ['org.iso.18013.5.1', 'org.example.transaction'],
+        dataElements: {
+          'org.iso.18013.5.1': ['family_name'],
+          'org.example.transaction': ['transaction_id'],
         },
-        issuerCertificate: certificate,
-        validityInfo: { validUntil: nextDay },
-      })
-    ).rejects.toThrow(
-      "Device key authorization data element 'unknown_element' is not present in namespace 'org.iso.18013.5.1' of the mdoc issuance payload"
-    )
+      },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+    })
+
+    const keyAuthorizations = mdoc.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.keyAuthorizations
+    expect(keyAuthorizations?.namespaces).toEqual(['org.iso.18013.5.1', 'org.example.transaction'])
+    expect(keyAuthorizations?.dataElements?.get('org.example.transaction')).toEqual(['transaction_id'])
   })
 
   test('throws error when mdoc is invalid (missing C= in cert)', async () => {

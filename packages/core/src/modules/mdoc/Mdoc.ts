@@ -16,7 +16,7 @@ import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
-import { assertDeviceKeyAuthorizationsMatchNamespaces } from './mdocUtil'
+import { getDeviceKeyAuthorizationsFromMdoc } from './mdocUtil'
 
 /**
  * This class represents a IssuerSigned Mdoc Document,
@@ -114,6 +114,10 @@ export class Mdoc {
     )
   }
 
+  public get deviceKeyAuthorizations() {
+    return getDeviceKeyAuthorizationsFromMdoc(this)
+  }
+
   public static async sign(agentContext: AgentContext, options: MdocSignOptions) {
     const { docType, validityInfo, namespaces, holderKey, issuerCertificate, deviceKeyAuthorizations } = options
     const mdocContext = getMdocContext(agentContext)
@@ -123,8 +127,6 @@ export class Mdoc {
     for (const [namespace, namespaceRecord] of Object.entries(namespaces)) {
       issuer.addIssuerNamespace(namespace, namespaceRecord)
     }
-
-    assertDeviceKeyAuthorizationsMatchNamespaces(namespaces, deviceKeyAuthorizations)
 
     const issuerKey = Array.isArray(issuerCertificate) ? issuerCertificate[0].publicJwk : issuerCertificate.publicJwk
     const alg = issuerKey.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
@@ -143,10 +145,11 @@ export class Mdoc {
     let keyAuthorizations: KeyAuthorizations | undefined
     if (deviceKeyAuthorizations) {
       const { namespaces, dataElements } = deviceKeyAuthorizations
-      if (namespaces?.length || dataElements) {
+      const hasDataElements = dataElements && Object.keys(dataElements).length > 0
+      if (namespaces?.length || hasDataElements) {
         keyAuthorizations = KeyAuthorizations.create({
           ...(namespaces?.length ? { namespaces } : {}),
-          ...(dataElements ? { dataElements: new Map(Object.entries(dataElements)) } : {}),
+          ...(hasDataElements ? { dataElements: new Map(Object.entries(dataElements)) } : {}),
         })
       }
     }
