@@ -142,7 +142,7 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
     // Proof types is used for ldp_vc credentials
     if (credential.claimFormat === ClaimFormat.LdpVc) {
       tags.proofTypes = credential.proofTypes
-      tags.cryptosuites = credential.dataIntegrityCryptosuites
+      tags.cryptosuites = credential.anoncredsVc1BridgeCryptosuites
     }
 
     // Algs is used for jwt_vc credentials
