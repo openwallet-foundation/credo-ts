@@ -6,8 +6,8 @@ import {
   DifPresentationExchangeService,
 } from '../../../../../../../core/src/modules/dif-presentation-exchange'
 import {
-  CREDENTIALS_CONTEXT_V1_URL,
   AnonCredsVc1BridgeServiceSymbol,
+  CREDENTIALS_CONTEXT_V1_URL,
   W3cCredentialRecord,
   W3cCredentialRepository,
   W3cCredentialService,
@@ -211,6 +211,10 @@ describe('Presentation Exchange ProofFormatService', () => {
 
   describe('Process Presentation', () => {
     test('routes anoncreds VC1 bridge presentations through the anoncreds bridge service', async () => {
+      type ProcessPresentationOptions = Parameters<
+        DidCommDifPresentationExchangeProofFormatService['processPresentation']
+      >[1]
+
       const requestAttachment = {
         getDataAsJson: () => ({
           options: { challenge: 'challenge' },
@@ -256,9 +260,14 @@ describe('Presentation Exchange ProofFormatService', () => {
       const validatePresentationSpy = vi
         .spyOn(DifPresentationExchangeService.prototype, 'validatePresentation')
         .mockReturnValue(undefined)
+      const successfulVerificationResult: Awaited<ReturnType<W3cCredentialService['verifyPresentation']>> = {
+        isValid: true,
+        validations: {},
+        error: undefined,
+      }
       const genericVerifySpy = vi
         .spyOn(W3cCredentialService.prototype, 'verifyPresentation')
-        .mockResolvedValue({ isValid: true, validations: {}, error: undefined } as any)
+        .mockResolvedValue(successfulVerificationResult)
 
       const originalResolve = agent.dependencyManager.resolve.bind(agent.dependencyManager)
       const anoncredsBridgeService = {
@@ -274,8 +283,8 @@ describe('Presentation Exchange ProofFormatService', () => {
 
       try {
         const result = await pexFormatService.processPresentation(agent.context, {
-          requestAttachment: requestAttachment as any,
-          attachment: attachment as any,
+          requestAttachment: requestAttachment as ProcessPresentationOptions['requestAttachment'],
+          attachment: attachment as ProcessPresentationOptions['attachment'],
           proofRecord: mockProofRecord(),
         })
 

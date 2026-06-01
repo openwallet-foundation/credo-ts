@@ -556,15 +556,23 @@ describe('DifPresentationExchangeService', () => {
     }
 
     expect(
-      (pexService as unknown as {
-        shouldSignUsingAnonCredsVc1Bridge: (presentationToCreate: typeof bridgeEligiblePresentationToCreate) => boolean
-      }).shouldSignUsingAnonCredsVc1Bridge(bridgeEligiblePresentationToCreate)
+      (
+        pexService as unknown as {
+          shouldSignUsingAnonCredsVc1Bridge: (
+            presentationToCreate: typeof bridgeEligiblePresentationToCreate
+          ) => boolean
+        }
+      ).shouldSignUsingAnonCredsVc1Bridge(bridgeEligiblePresentationToCreate)
     ).toBe(true)
 
     expect(
-      (pexService as unknown as {
-        shouldSignUsingAnonCredsVc1Bridge: (presentationToCreate: typeof bridgeEligiblePresentationToCreate) => boolean
-      }).shouldSignUsingAnonCredsVc1Bridge({
+      (
+        pexService as unknown as {
+          shouldSignUsingAnonCredsVc1Bridge: (
+            presentationToCreate: typeof bridgeEligiblePresentationToCreate
+          ) => boolean
+        }
+      ).shouldSignUsingAnonCredsVc1Bridge({
         ...bridgeEligiblePresentationToCreate,
         claimFormat: ClaimFormat.DiVp,
       })

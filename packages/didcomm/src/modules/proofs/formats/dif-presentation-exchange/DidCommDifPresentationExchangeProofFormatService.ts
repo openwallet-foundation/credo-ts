@@ -332,10 +332,10 @@ export class DidCommDifPresentationExchangeProofFormatService
         })
       } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
         if (this.shouldVerifyUsingAnonCredsVc1Bridge(parsedPresentation, jsonPresentation.presentation_submission)) {
-          const anoncredsBridgeService = agentContext.dependencyManager.resolve<IAnonCredsVc1BridgeService>(
+          const anoncredsVc1BridgeService = agentContext.dependencyManager.resolve<IAnonCredsVc1BridgeService>(
             AnonCredsVc1BridgeServiceSymbol
           )
-          const proofVerificationResult = await anoncredsBridgeService.verifyPresentation(agentContext, {
+          const proofVerificationResult = await anoncredsVc1BridgeService.verifyPresentation(agentContext, {
             presentation: parsedPresentation as W3cJsonLdVerifiablePresentation,
             presentationDefinition: request.presentation_definition,
             presentationSubmission: jsonPresentation.presentation_submission,
