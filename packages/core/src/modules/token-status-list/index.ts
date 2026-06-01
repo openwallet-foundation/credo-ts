@@ -1,4 +1,4 @@
-export { StatusListCwt, type StatusListCwtOptions } from '@owf/token-status-list'
+export { StatusList, StatusListCwt, type StatusListCwtOptions } from '@owf/token-status-list'
 export * from './TokenStatusListApi'
 export * from './TokenStatusListModule'
 export * from './TokenStatusListOptions'

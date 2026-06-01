@@ -1,5 +1,6 @@
-import { StatusListCwt, StatusType } from '@owf/token-status-list'
+import { StatusList, StatusListCwt, StatusType } from '@owf/token-status-list'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
+import { Jwt } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { KeyManagementApi, type KmsJwkPublicEc, PublicJwk } from '../../../modules/kms'
 import type { CreateTokenStatusListOptions } from '../TokenStatusListOptions'
@@ -40,8 +41,7 @@ describe('TokenStatusListService', () => {
     test('creates a CWT status list with sign1', async () => {
       const options = {
         format: 'cwt',
-        statusListLength: 16,
-        bitsPerStatus: 1,
+        statusList: { statusListLength: 16, bitsPerStatus: 1 },
         statusListUri: 'https://example.com/status/1',
         keyId: key.keyId,
       } satisfies CreateTokenStatusListOptions
@@ -59,11 +59,106 @@ describe('TokenStatusListService', () => {
       expect(cwt.payload.statusList.statusList.length).toBe(16)
     })
 
+    test('creates a CWT status list with a pre-built StatusList instance', async () => {
+      const preBuilt = new StatusList(new Array(8).fill(0), 2)
+
+      const result = await tokenStatusListService.createTokenStatusList(agentContext, {
+        format: 'cwt',
+        statusList: preBuilt,
+        statusListUri: 'https://example.com/status/2',
+        keyId: key.keyId,
+      })
+
+      expect(result.format).toBe('cwt')
+      const cwt = StatusListCwt.fromToken(result.statusList as Uint8Array)
+      expect(cwt.payload.statusList.getBitsPerStatus()).toBe(2)
+      expect(cwt.payload.statusList.statusList.length).toBe(8)
+    })
+
+    test('creates a CWT status list with issuedAt, expiresAt and timeToLive', async () => {
+      const issuedAt = new Date('2025-01-01T00:00:00Z')
+      const expiresAt = new Date('2026-01-01T00:00:00Z')
+
+      const result = await tokenStatusListService.createTokenStatusList(agentContext, {
+        format: 'cwt',
+        statusList: { statusListLength: 8, bitsPerStatus: 1 },
+        statusListUri: 'https://example.com/status/3',
+        keyId: key.keyId,
+        issuedAt,
+        expiresAt,
+        timeToLive: 3600,
+      })
+
+      expect(result.format).toBe('cwt')
+      const cwt = StatusListCwt.fromToken(result.statusList as Uint8Array)
+      expect(cwt.payload.issuedAt).toEqual(issuedAt)
+      expect(cwt.payload.expirationTime).toEqual(expiresAt)
+      expect(cwt.payload.timeToLive).toBe(3600)
+    })
+
+    test('creates a JWT status list', async () => {
+      const result = await tokenStatusListService.createTokenStatusList(agentContext, {
+        format: 'jwt',
+        statusList: { statusListLength: 16, bitsPerStatus: 1 },
+        statusListUri: 'https://example.com/status/1',
+        keyId: key.keyId,
+      })
+
+      expect(result.format).toBe('jwt')
+      expect(typeof result.statusList).toBe('string')
+
+      const jwt = Jwt.fromSerializedJwt(result.statusList as string)
+      expect(jwt.payload.additionalClaims.status_list).toBeDefined()
+      expect(jwt.payload.additionalClaims.sub).toBe('https://example.com/status/1')
+      expect(typeof jwt.payload.additionalClaims.iat).toBe('number')
+    })
+
+    test('creates a JWT status list with issuedAt, expiresAt, timeToLive, and additionalPayload', async () => {
+      const issuedAt = new Date('2025-06-01T00:00:00Z')
+      const expiresAt = new Date('2026-06-01T00:00:00Z')
+
+      const result = await tokenStatusListService.createTokenStatusList(agentContext, {
+        format: 'jwt',
+        statusList: { statusListLength: 8, bitsPerStatus: 1 },
+        statusListUri: 'https://example.com/status/4',
+        keyId: key.keyId,
+        issuedAt,
+        expiresAt,
+        timeToLive: 86400,
+        additionalPayload: { iss: 'https://issuer.example.com' },
+      })
+
+      expect(result.format).toBe('jwt')
+      const jwt = Jwt.fromSerializedJwt(result.statusList as string)
+      const claims = jwt.payload.additionalClaims
+
+      expect(claims.iat).toBe(Math.floor(issuedAt.getTime() / 1000))
+      expect(claims.exp).toBe(Math.floor(expiresAt.getTime() / 1000))
+      expect(claims.ttl).toBe(86400)
+      expect(claims.iss).toBe('https://issuer.example.com')
+      expect(claims.sub).toBe('https://example.com/status/4')
+    })
+
+    test('creates a JWT status list with a pre-built StatusList instance', async () => {
+      const preBuilt = new StatusList(new Array(8).fill(0), 2)
+
+      const result = await tokenStatusListService.createTokenStatusList(agentContext, {
+        format: 'jwt',
+        statusList: preBuilt,
+        statusListUri: 'https://example.com/status/5',
+        keyId: key.keyId,
+      })
+
+      expect(result.format).toBe('jwt')
+      const jwt = Jwt.fromSerializedJwt(result.statusList as string)
+      const statusListClaim = jwt.payload.additionalClaims.status_list as { bits: number; lst: string }
+      expect(statusListClaim.bits).toBe(2)
+    })
+
     test('throws error for unsupported format', async () => {
       const options = {
         format: 'invalid' as const,
-        statusListLength: 16,
-        bitsPerStatus: 1,
+        statusList: { statusListLength: 16, bitsPerStatus: 1 },
         hostingUri: 'https://example.com/status/1',
         keyId: key.keyId,
       }
@@ -79,8 +174,7 @@ describe('TokenStatusListService', () => {
 
       const options: CreateTokenStatusListOptions = {
         format: 'cwt',
-        statusListLength: 16,
-        bitsPerStatus: 1,
+        statusList: { statusListLength: 16, bitsPerStatus: 1 },
         statusListUri: 'https://example.com/status/1',
         keyId: key.keyId,
       }
@@ -91,18 +185,15 @@ describe('TokenStatusListService', () => {
 
   describe('updateTokenStatusList', () => {
     test('updates a CWT status list', async () => {
-      // First create a CWT status list
       const createOptions: CreateTokenStatusListOptions = {
         format: 'cwt',
-        statusListLength: 16,
-        bitsPerStatus: 1,
+        statusList: { statusListLength: 16, bitsPerStatus: 1 },
         statusListUri: 'https://example.com/status/1',
         keyId: key.keyId,
       }
 
       const { statusList } = await tokenStatusListService.createTokenStatusList(agentContext, createOptions)
 
-      // Now update it
       const result = await tokenStatusListService.updateTokenStatusList(agentContext, {
         token: statusList as Uint8Array,
         status: { index: 3, status: StatusType.Invalid },
@@ -112,9 +203,93 @@ describe('TokenStatusListService', () => {
       expect(result).toBeDefined()
       expect(result.statusList).toBeInstanceOf(Uint8Array)
 
-      // Verify the status was updated
       const cwt = StatusListCwt.fromToken(result.statusList)
       expect(cwt.payload.statusList.getStatus(3)).toBe(1)
+    })
+
+    test('updates a CWT status list with new issuedAt and expiresAt', async () => {
+      const { statusList } = await tokenStatusListService.createTokenStatusList(agentContext, {
+        format: 'cwt',
+        statusList: { statusListLength: 8, bitsPerStatus: 1 },
+        statusListUri: 'https://example.com/status/1',
+        keyId: key.keyId,
+      })
+
+      const newIssuedAt = new Date('2025-03-01T00:00:00Z')
+      const newExpiresAt = new Date('2026-03-01T00:00:00Z')
+
+      const result = await tokenStatusListService.updateTokenStatusList(agentContext, {
+        token: statusList as Uint8Array,
+        status: { index: 0, status: StatusType.Invalid },
+        keyId: key.keyId,
+        issuedAt: newIssuedAt,
+        expiresAt: newExpiresAt,
+        timeToLive: 7200,
+      })
+
+      const cwt = StatusListCwt.fromToken(result.statusList)
+      expect(cwt.payload.issuedAt).toEqual(newIssuedAt)
+      expect(cwt.payload.expirationTime).toEqual(newExpiresAt)
+      expect(cwt.payload.timeToLive).toBe(7200)
+    })
+
+    test('updates a JWT status list', async () => {
+      const issuedAt = new Date('2025-01-01T00:00:00Z')
+
+      const { statusList } = await tokenStatusListService.createTokenStatusList(agentContext, {
+        format: 'jwt',
+        statusList: { statusListLength: 16, bitsPerStatus: 1 },
+        statusListUri: 'https://example.com/status/1',
+        keyId: key.keyId,
+        issuedAt,
+      })
+
+      const newIssuedAt = new Date('2025-06-01T00:00:00Z')
+
+      const result = await tokenStatusListService.updateTokenStatusList(agentContext, {
+        token: statusList as string,
+        status: { index: 5, status: StatusType.Invalid },
+        keyId: key.keyId,
+        issuedAt: newIssuedAt,
+      })
+
+      expect(typeof result.statusList).toBe('string')
+      const jwt = Jwt.fromSerializedJwt(result.statusList as string)
+      const claims = jwt.payload.additionalClaims
+
+      expect(claims.iat).toBe(Math.floor(newIssuedAt.getTime() / 1000))
+
+      // Verify entry was updated
+      const { getListFromStatusListJWT } = await import('@owf/token-status-list')
+      const list = getListFromStatusListJWT(result.statusList as string)
+      expect(list.getStatus(5)).toBe(StatusType.Invalid)
+    })
+
+    test('updates a JWT status list with new expiresAt, timeToLive, and additionalPayload', async () => {
+      const { statusList } = await tokenStatusListService.createTokenStatusList(agentContext, {
+        format: 'jwt',
+        statusList: { statusListLength: 8, bitsPerStatus: 1 },
+        statusListUri: 'https://example.com/status/6',
+        keyId: key.keyId,
+      })
+
+      const newExpiresAt = new Date('2027-01-01T00:00:00Z')
+
+      const result = await tokenStatusListService.updateTokenStatusList(agentContext, {
+        token: statusList as string,
+        status: { index: 2, status: StatusType.Suspended },
+        keyId: key.keyId,
+        expiresAt: newExpiresAt,
+        timeToLive: 1800,
+        additionalPayload: { custom_claim: 'value' },
+      })
+
+      const jwt = Jwt.fromSerializedJwt(result.statusList as string)
+      const claims = jwt.payload.additionalClaims
+
+      expect(claims.exp).toBe(Math.floor(newExpiresAt.getTime() / 1000))
+      expect(claims.ttl).toBe(1800)
+      expect(claims.custom_claim).toBe('value')
     })
 
     test('throws error when updating with invalid token type', async () => {
@@ -130,18 +305,15 @@ describe('TokenStatusListService', () => {
 
   describe('batchUpdateTokenStatusList', () => {
     test('batch updates a CWT status list', async () => {
-      // First create a CWT status list
       const createOptions: CreateTokenStatusListOptions = {
         format: 'cwt',
-        statusListLength: 24,
-        bitsPerStatus: 1,
+        statusList: { statusListLength: 24, bitsPerStatus: 1 },
         statusListUri: 'https://example.com/status/1',
         keyId: key.keyId,
       }
 
       const { statusList } = await tokenStatusListService.createTokenStatusList(agentContext, createOptions)
 
-      // Now update multiple
       const result = await tokenStatusListService.updateTokenStatusList(agentContext, {
         token: statusList as Uint8Array,
         status: [
@@ -155,17 +327,42 @@ describe('TokenStatusListService', () => {
       expect(result).toBeDefined()
       expect(result.statusList).toBeInstanceOf(Uint8Array)
 
-      // Verify the statuses were updated
       const cwt = StatusListCwt.fromToken(result.statusList)
       expect(cwt.payload.statusList.getStatus(1)).toBe(1)
       expect(cwt.payload.statusList.getStatus(7)).toBe(1)
       expect(cwt.payload.statusList.getStatus(12)).toBe(1)
     })
+
+    test('batch updates a JWT status list', async () => {
+      const { statusList } = await tokenStatusListService.createTokenStatusList(agentContext, {
+        format: 'jwt',
+        statusList: { statusListLength: 24, bitsPerStatus: 1 },
+        statusListUri: 'https://example.com/status/7',
+        keyId: key.keyId,
+      })
+
+      const result = await tokenStatusListService.updateTokenStatusList(agentContext, {
+        token: statusList as string,
+        status: [
+          { index: 2, status: StatusType.Invalid },
+          { index: 9, status: StatusType.Suspended },
+          { index: 15, status: StatusType.Invalid },
+        ],
+        keyId: key.keyId,
+      })
+
+      expect(typeof result.statusList).toBe('string')
+
+      const { getListFromStatusListJWT } = await import('@owf/token-status-list')
+      const list = getListFromStatusListJWT(result.statusList as string)
+      expect(list.getStatus(2)).toBe(StatusType.Invalid)
+      expect(list.getStatus(9)).toBe(StatusType.Suspended)
+      expect(list.getStatus(15)).toBe(StatusType.Invalid)
+    })
   })
 
   describe('fetchTokenStatusList', () => {
     test('method exists and can be invoked', async () => {
-      // Test that the method exists and has the correct signature
       expect(tokenStatusListService.fetchTokenStatusList).toBeDefined()
       expect(typeof tokenStatusListService.fetchTokenStatusList).toBe('function')
     })

@@ -80,7 +80,7 @@ export interface X509VerificationContext {
   /**
    * The certificate chain provided with the data to be verified. The trusted certificates
    * are determined before verification and thus it is not verified that the data was actually
-   * signed by the private key assocaited with the leaf certificate in the certificate chain, or
+   * signed by the private key associated with the leaf certificate in the certificate chain, or
    * whether the certificate chain is valid. However if the certificate
    * does not match, or is not valid, verification will always fail at a later stage
    */
@@ -104,9 +104,9 @@ export interface X509ModuleConfigOptions {
   /**
    * Optional callback method that will be called to dynamically get trusted certificates for a verification.
    * It will provide the `agentContext` and `verificationContext` allowing to dynamically set the trusted certificates
-   * for a tenant or verificaiton context.
+   * for a tenant or verification context.
    *
-   * If no certificaets should be trusted an empty array should be returned. If `undefined` is returned
+   * If no certificates should be trusted an empty array should be returned. If `undefined` is returned
    * it will fallback to the globally registered trusted certificates
    *
    * @returns An array of base64-encoded certificate strings or PEM certificate strings.
