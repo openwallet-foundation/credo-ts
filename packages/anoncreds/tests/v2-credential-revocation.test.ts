@@ -52,6 +52,7 @@ describe('IC v2 credential revocation', () => {
       attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],
       supportRevocation: true,
       registries: [inMemoryRegistry],
+      // didCommVersion: 'v2', // TODO: credential protocol connection lookup needs v2 support; use v1 for now
     }))
   })
 
