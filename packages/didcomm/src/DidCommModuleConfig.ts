@@ -21,6 +21,10 @@ import {
 } from './transport'
 import { DidCommMimeType } from './types'
 import type { DidCommVersion } from './util/didcommVersion'
+import type {
+  DidCommV2AnoncryptContentEncryptionAlgorithm,
+  DidCommV2AuthcryptContentEncryptionAlgorithm,
+} from './v2/types'
 
 export interface DidCommModuleConfigOptions {
   endpoints?: string[]
@@ -49,6 +53,22 @@ export interface DidCommModuleConfigOptions {
    * @default PeerDidNumAlgo.ShortFormAndLongForm (did:peer:4)
    */
   peerDidNumAlgoForV2OOB?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
+
+  /**
+   * Default content encryption algorithm for DIDComm v2 authcrypt envelopes. Spec restricts
+   * authcrypt to A256CBC-HS512.
+   *
+   * @default 'A256CBC-HS512'
+   */
+  v2DefaultAuthcryptContentEncryption?: DidCommV2AuthcryptContentEncryptionAlgorithm
+
+  /**
+   * Default content encryption algorithm for DIDComm v2 anoncrypt envelopes. A256CBC-HS512 is
+   * REQUIRED per spec; A256GCM is RECOMMENDED; XC20P is OPTIONAL (SICPA's default).
+   *
+   * @default 'A256CBC-HS512'
+   */
+  v2DefaultAnoncryptContentEncryption?: DidCommV2AnoncryptContentEncryptionAlgorithm
 
   /**
    * Configuration for the connection module.
@@ -250,5 +270,13 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
   /** Peer DID numAlgo for V2 OOB. Defaults to did:peer:4. */
   public get peerDidNumAlgoForV2OOB() {
     return this.options.peerDidNumAlgoForV2OOB ?? PeerDidNumAlgo.ShortFormAndLongForm
+  }
+
+  public get v2DefaultAuthcryptContentEncryption(): DidCommV2AuthcryptContentEncryptionAlgorithm {
+    return this.options.v2DefaultAuthcryptContentEncryption ?? 'A256CBC-HS512'
+  }
+
+  public get v2DefaultAnoncryptContentEncryption(): DidCommV2AnoncryptContentEncryptionAlgorithm {
+    return this.options.v2DefaultAnoncryptContentEncryption ?? 'A256CBC-HS512'
   }
 }

@@ -150,6 +150,7 @@ export class DidCommMessageSender {
           recipientKey: recipientX25519,
           senderKey: senderX25519,
           senderKeySkid: keys.senderKeySkid,
+          contentEncryptionAlgorithm: this.didCommModuleConfig.v2DefaultAuthcryptContentEncryption,
         })
       } catch (error) {
         agentContext.config.logger.debug('DIDComm v2 authcrypt pack failed, falling back to v1', { error })
@@ -216,6 +217,7 @@ export class DidCommMessageSender {
       recipientKey: recipientX25519,
       senderKey: senderX25519,
       senderKeySkid: keys.senderKeySkid,
+      contentEncryptionAlgorithm: this.didCommModuleConfig.v2DefaultAuthcryptContentEncryption,
     })
 
     const recipientNext = this.resolveRecipientNextForMediationForward(connection, plaintext, keys)
@@ -237,6 +239,7 @@ export class DidCommMessageSender {
       })
       payload = await this.v2EnvelopeService.packAnoncrypt(agentContext, forwardPlaintext, {
         recipientKey: routingKeyX25519,
+        contentEncryptionAlgorithm: this.didCommModuleConfig.v2DefaultAnoncryptContentEncryption,
       })
     }
     return payload
@@ -313,6 +316,7 @@ export class DidCommMessageSender {
           recipientKey: recipientX25519,
           senderKey: senderX25519,
           senderKeySkid: keys.senderKeySkid,
+          contentEncryptionAlgorithm: this.didCommModuleConfig.v2DefaultAuthcryptContentEncryption,
         })
       } catch (error) {
         agentContext.config.logger.debug('DIDComm v2 authcrypt pack failed, falling back to v1', { error })
