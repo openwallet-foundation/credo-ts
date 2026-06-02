@@ -18,7 +18,12 @@ import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__
 import type { EventReplaySubject } from './events'
 
 import { setupEventReplaySubjects } from './events'
-import { getAgentOptions, makeConnection } from './helpers'
+import {
+  getAgentOptions,
+  getDefaultDidCommConfigForTests,
+  getDefaultDidCommVersionForTests,
+  makeConnection,
+} from './helpers'
 import { setupSubjectTransports } from './transport'
 
 export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>
@@ -97,6 +102,7 @@ export async function setupJsonLdTests<
   autoAcceptCredentials,
   autoAcceptProofs,
   createConnections,
+  didCommVersion,
 }: {
   issuerName: string
   holderName: string
@@ -104,7 +110,13 @@ export async function setupJsonLdTests<
   autoAcceptCredentials?: DidCommAutoAcceptCredential
   autoAcceptProofs?: DidCommAutoAcceptProof
   createConnections?: CreateConnections
+  /** DIDComm envelope version for connections. Defaults to DIDCOMM_VERSION env var, else v1. */
+  didCommVersion?: 'v1' | 'v2'
 }): Promise<SetupJsonLdTestsReturn<VerifierName, CreateConnections>> {
+  const resolvedDidCommVersion = didCommVersion ?? getDefaultDidCommVersionForTests()
+  const extraDidCommConfigForVersion: DidCommModuleConfigOptions =
+    resolvedDidCommVersion === 'v2' ? { didcommVersions: ['v1', 'v2'] } : {}
+
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
@@ -115,6 +127,8 @@ export async function setupJsonLdTests<
         autoAcceptProofs,
         extraDidCommConfig: {
           endpoints: ['rxjs:issuer'],
+          ...getDefaultDidCommConfigForTests(),
+          ...extraDidCommConfigForVersion,
         },
       }),
       { requireDidcomm: true }
@@ -131,6 +145,8 @@ export async function setupJsonLdTests<
         autoAcceptProofs,
         extraDidCommConfig: {
           endpoints: ['rxjs:holder'],
+          ...getDefaultDidCommConfigForTests(),
+          ...extraDidCommConfigForVersion,
         },
       }),
       { requireDidcomm: true }
@@ -148,6 +164,8 @@ export async function setupJsonLdTests<
             autoAcceptProofs,
             extraDidCommConfig: {
               endpoints: ['rxjs:verifier'],
+              ...getDefaultDidCommConfigForTests(),
+              ...extraDidCommConfigForVersion,
             },
           }),
           { requireDidcomm: true }
@@ -171,10 +189,14 @@ export async function setupJsonLdTests<
   let holderVerifierConnection: DidCommConnectionRecord | undefined
 
   if (createConnections ?? true) {
-    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)
+    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent, {
+      didCommVersion: resolvedDidCommVersion,
+    })
 
     if (verifierAgent) {
-      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
+      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent, {
+        didCommVersion: resolvedDidCommVersion,
+      })
     }
   }
 
