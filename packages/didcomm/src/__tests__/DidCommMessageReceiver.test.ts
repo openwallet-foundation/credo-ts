@@ -3,7 +3,7 @@ import { Agent } from '../../../core/src/agent/Agent'
 import { getAgentOptions } from '../../../core/tests/helpers'
 import { setupSubjectTransports } from '../../../core/tests/transport'
 import { DidCommMessageReceiver } from '../DidCommMessageReceiver'
-import { isDidCommV2EncryptedMessage } from '../util/didcommVersion'
+import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
 
 describe('DidCommMessageReceiver', () => {
   describe('v2 message handling', () => {
@@ -33,6 +33,34 @@ describe('DidCommMessageReceiver', () => {
 
       const receiver = agent.dependencyManager.resolve(DidCommMessageReceiver)
       await expect(receiver.receiveMessage(v2Message, { contextCorrelationId: 'default' })).rejects.toThrow(
+        /v2 is not enabled/
+      )
+
+      await agent.shutdown()
+    })
+
+    it('throws when receiving v2 signed message and v2 is not in didcommVersions', async () => {
+      const agent = new Agent(
+        getAgentOptions('ReceiverSignedTest', { didcommVersions: ['v1'] }, {}, undefined, { requireDidcomm: true })
+      )
+      setupSubjectTransports([agent])
+      await agent.initialize()
+
+      const protectedHeader = JsonEncoder.toBase64Url({
+        typ: 'application/didcomm-signed+json',
+        alg: 'EdDSA',
+        kid: 'did:example:alice#key-1',
+      })
+
+      const signedMessage = {
+        payload: JsonEncoder.toBase64Url({ id: 'm', type: 'test', from: 'did:example:alice' }),
+        signatures: [{ protected: protectedHeader, signature: 'AA' }],
+      }
+
+      expect(isDidCommV2SignedMessage(signedMessage)).toBe(true)
+
+      const receiver = agent.dependencyManager.resolve(DidCommMessageReceiver)
+      await expect(receiver.receiveMessage(signedMessage, { contextCorrelationId: 'default' })).rejects.toThrow(
         /v2 is not enabled/
       )
 

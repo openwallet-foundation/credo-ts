@@ -1,9 +1,10 @@
 import { CredoError, JsonEncoder } from '@credo-ts/core'
 import type { DidCommConnectionRecord } from '../modules/connections/repository'
-import type { DidCommV2EncryptedMessage } from '../v2/types'
+import type { DidCommV2EncryptedMessage, DidCommV2SignedMessage } from '../v2/types'
 import { isValidJweStructure } from './JWE'
 
 const DIDCOMM_V2_TYP = 'application/didcomm-encrypted+json'
+const DIDCOMM_V2_SIGNED_TYP = 'application/didcomm-signed+json'
 const DIDCOMM_V1_TYP = 'JWM/1.0'
 
 /**
@@ -60,6 +61,34 @@ export function isDidCommV2AuthcryptMessage(message: unknown): boolean {
   } catch {
     return false
   }
+}
+
+/**
+ * Detect whether a message is a DIDComm v2 signed message (JWS general serialization).
+ * v2 signed messages use typ: 'application/didcomm-signed+json' in each signature's protected header,
+ * with `payload` (base64url JWM bytes) and `signatures` (array with per-signature kid in unprotected header) at the top level.
+ *
+ * @param message - The message to check
+ * @returns true if the message is DIDComm v2 signed format
+ */
+export function isDidCommV2SignedMessage(message: unknown): message is DidCommV2SignedMessage {
+  if (!message || typeof message !== 'object') return false
+  const m = message as { payload?: unknown; signatures?: unknown }
+  if (typeof m.payload !== 'string' || !Array.isArray(m.signatures) || m.signatures.length === 0) {
+    return false
+  }
+  for (const sig of m.signatures) {
+    if (!sig || typeof sig !== 'object') return false
+    const s = sig as { protected?: unknown; signature?: unknown; header?: unknown }
+    if (typeof s.protected !== 'string' || typeof s.signature !== 'string') return false
+    try {
+      const protectedJson = JsonEncoder.fromBase64Url(s.protected)
+      if (protectedJson?.typ !== DIDCOMM_V2_SIGNED_TYP) return false
+    } catch {
+      return false
+    }
+  }
+  return true
 }
 
 /**

@@ -41,6 +41,7 @@ export interface DidCommV2Attachment {
 
 export const DIDCOMM_V2_PLAIN_MIME_TYPE = 'application/didcomm-plain+json'
 export const DIDCOMM_V2_ENCRYPTED_MIME_TYPE = 'application/didcomm-encrypted+json'
+export const DIDCOMM_V2_SIGNED_MIME_TYPE = 'application/didcomm-signed+json'
 
 export type DidCommV2AuthcryptContentEncryptionAlgorithm = 'A256CBC-HS512'
 export type DidCommV2AnoncryptContentEncryptionAlgorithm = 'A256CBC-HS512' | 'A256GCM' | 'XC20P'
@@ -65,3 +66,23 @@ export interface DidCommV2EncryptedMessage {
   ciphertext: string
   tag: string
 }
+
+export interface DidCommV2JwsSignature {
+  protected: string
+  signature: string
+  // Optional: spec puts kid in `protected`, SICPA fixtures put it here. Verifiers accept either.
+  header?: { kid?: string }
+}
+
+/**
+ * DIDComm v2 signed message (JWS in JSON General Serialization, typ application/didcomm-signed+json).
+ * `payload` is the base64url-encoded plaintext bytes.
+ */
+export interface DidCommV2SignedMessage {
+  payload: string
+  signatures: DidCommV2JwsSignature[]
+}
+
+/** Algorithms required by DIDComm v2.1: verify all three, sign at least one. */
+export const DIDCOMM_V2_SIGNING_ALGORITHMS = ['EdDSA', 'ES256', 'ES256K'] as const
+export type DidCommV2SigningAlgorithm = (typeof DIDCOMM_V2_SIGNING_ALGORITHMS)[number]
