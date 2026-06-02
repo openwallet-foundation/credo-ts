@@ -21,7 +21,11 @@ import {
 } from './transport'
 import { DidCommMimeType } from './types'
 import type { DidCommVersion } from './util/didcommVersion'
-import type { DidCommV2KeyAgreementCurve } from './v2/types'
+import type {
+  DidCommV2AnoncryptContentEncryptionAlgorithm,
+  DidCommV2AuthcryptContentEncryptionAlgorithm,
+  DidCommV2KeyAgreementCurve,
+} from './v2/types'
 
 export interface DidCommModuleConfigOptions {
   endpoints?: string[]
@@ -58,6 +62,22 @@ export interface DidCommModuleConfigOptions {
    * @default 'X25519'
    */
   v2KeyAgreementCurve?: DidCommV2KeyAgreementCurve
+
+  /**
+   * Default content encryption algorithm for DIDComm v2 authcrypt envelopes. Spec restricts
+   * authcrypt to A256CBC-HS512.
+   *
+   * @default 'A256CBC-HS512'
+   */
+  v2DefaultAuthcryptContentEncryption?: DidCommV2AuthcryptContentEncryptionAlgorithm
+
+  /**
+   * Default content encryption algorithm for DIDComm v2 anoncrypt envelopes. A256CBC-HS512 is
+   * REQUIRED per spec; A256GCM is RECOMMENDED; XC20P is OPTIONAL (SICPA's default).
+   *
+   * @default 'A256CBC-HS512'
+   */
+  v2DefaultAnoncryptContentEncryption?: DidCommV2AnoncryptContentEncryptionAlgorithm
 
   /**
    * Configuration for the connection module.
@@ -268,5 +288,13 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
   /** keyAgreement curve for DIDComm v2 outbound routing. Defaults to X25519. */
   public get v2KeyAgreementCurve(): DidCommV2KeyAgreementCurve {
     return this.options.v2KeyAgreementCurve ?? 'X25519'
+  }
+
+  public get v2DefaultAuthcryptContentEncryption(): DidCommV2AuthcryptContentEncryptionAlgorithm {
+    return this.options.v2DefaultAuthcryptContentEncryption ?? 'A256CBC-HS512'
+  }
+
+  public get v2DefaultAnoncryptContentEncryption(): DidCommV2AnoncryptContentEncryptionAlgorithm {
+    return this.options.v2DefaultAnoncryptContentEncryption ?? 'A256CBC-HS512'
   }
 }

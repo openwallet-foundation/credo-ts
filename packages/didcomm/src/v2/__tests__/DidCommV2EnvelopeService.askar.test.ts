@@ -9,7 +9,11 @@ import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
 
 import { computeApu, computeApv } from '../apuApv'
 import { DidCommV2EnvelopeService } from '../DidCommV2EnvelopeService'
-import type { DidCommV2ContentEncryptionAlgorithm, DidCommV2PlaintextMessage } from '../types'
+import type {
+  DidCommV2AnoncryptContentEncryptionAlgorithm,
+  DidCommV2AuthcryptContentEncryptionAlgorithm,
+  DidCommV2PlaintextMessage,
+} from '../types'
 
 describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
   const agentContext = getAgentContext({
@@ -62,9 +66,8 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
   }
 
   describe('authcrypt', () => {
-    it.each<DidCommV2ContentEncryptionAlgorithm>([
+    it.each<DidCommV2AuthcryptContentEncryptionAlgorithm>([
       'A256CBC-HS512',
-      'A256GCM',
     ])('round-trips with %s content encryption', async (enc) => {
       const encrypted = await envelopeService.pack(agentContext, plaintext, {
         senderKey,
@@ -102,9 +105,10 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
   })
 
   describe('anoncrypt', () => {
-    it.each<DidCommV2ContentEncryptionAlgorithm>([
+    it.each<DidCommV2AnoncryptContentEncryptionAlgorithm>([
       'A256CBC-HS512',
       'A256GCM',
+      'XC20P',
     ])('round-trips with %s content encryption', async (enc) => {
       const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
         recipientKey,
@@ -155,9 +159,8 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       p256RecipientKey.keyId = recipient.keyId
     })
 
-    it.each<DidCommV2ContentEncryptionAlgorithm>([
+    it.each<DidCommV2AuthcryptContentEncryptionAlgorithm>([
       'A256CBC-HS512',
-      'A256GCM',
     ])('authcrypt round-trips with %s content encryption', async (enc) => {
       const encrypted = await envelopeService.pack(agentContext, plaintext, {
         senderKey: p256SenderKey,
@@ -189,7 +192,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       expect(resolvedSender).not.toBeNull()
     })
 
-    it.each<DidCommV2ContentEncryptionAlgorithm>([
+    it.each<DidCommV2AnoncryptContentEncryptionAlgorithm>([
       'A256CBC-HS512',
       'A256GCM',
     ])('anoncrypt round-trips with %s content encryption', async (enc) => {
