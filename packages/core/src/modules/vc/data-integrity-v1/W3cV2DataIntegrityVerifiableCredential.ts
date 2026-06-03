@@ -8,10 +8,9 @@ export interface W3cV2DataIntegrityVerifiableCredentialOptions {
 }
 
 /**
- * Stub model for future DI VC support.
+ * Represents a Verifiable Credential secured with Data Integrity proof(s).
  *
- * This class intentionally provides shape compatibility only and does not
- * implement Data Integrity proof verification.
+ * @see https://www.w3.org/TR/vc-data-integrity/
  */
 export class W3cV2DataIntegrityVerifiableCredential {
   public constructor(options: W3cV2DataIntegrityVerifiableCredentialOptions) {
@@ -20,6 +19,7 @@ export class W3cV2DataIntegrityVerifiableCredential {
       validate: false,
     })
 
+    // Validates the credential structure and proof presence
     this.validate()
   }
 
@@ -29,23 +29,64 @@ export class W3cV2DataIntegrityVerifiableCredential {
     })
   }
 
+  /**
+   * The original credential object with embedded Data Integrity proof(s).
+   */
   public readonly securedCredential: Record<string, unknown> & { proof: unknown }
+
+  /**
+   * Resolved credential is the fully resolved {@link W3cV2Credential} instance.
+   */
   public readonly resolvedCredential: W3cV2Credential
 
+  /**
+   * The JSON representation of this credential.
+   */
   public get encoded() {
     return JSON.stringify(this.securedCredential)
   }
 
+  /**
+   * The {@link ClaimFormat} of the credential.
+   *
+   * For W3C VC Data Integrity credentials this is always `di_vc`.
+   */
   public get claimFormat(): ClaimFormat.DiVc {
     return ClaimFormat.DiVc
   }
 
+  /**
+   * Validates the credential and proof structure.
+   */
   public validate() {
+    // Validate the resolved credential according to the data model
     MessageValidator.validateSync(this.resolvedCredential)
 
+    // Validate that proof field exists and is properly structured
     const proof = this.securedCredential.proof
-    if (!proof || typeof proof !== 'object') {
-      throw new CredoError('The provided Data Integrity credential must include a proof object or proof array.')
+    if (!proof) {
+      throw new CredoError('The provided credential does not have a proof field.')
+    }
+
+    // Proof should be either a single proof object or an array of proofs
+    if (typeof proof !== 'object') {
+      throw new CredoError('The proof field must be an object or array of objects.')
+    }
+
+    if (
+      !Array.isArray(proof) &&
+      typeof proof === 'object' &&
+      (!('type' in proof) || proof.type !== 'DataIntegrityProof')
+    ) {
+      throw new CredoError('The proof must have type "DataIntegrityProof".')
+    }
+
+    if (Array.isArray(proof)) {
+      for (const p of proof) {
+        if (typeof p !== 'object' || !('type' in p) || p.type !== 'DataIntegrityProof') {
+          throw new CredoError('All proofs in the proof array must have type "DataIntegrityProof".')
+        }
+      }
     }
   }
 }

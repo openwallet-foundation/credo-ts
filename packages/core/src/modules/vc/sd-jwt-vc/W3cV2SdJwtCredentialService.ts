@@ -13,6 +13,7 @@ import {
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
 } from '../../sd-jwt-vc/utils'
+import { CREDENTIALS_CONTEXT_V2_URL } from '../constants'
 import type {
   W3cV2JsonCredential,
   W3cV2JsonPresentation,
@@ -25,6 +26,11 @@ import {
   getVerificationMethodForJwt,
   validateAndResolveVerificationMethod,
 } from '../v2-jwt-utils'
+import {
+  validateVc2ContextBaseline,
+  validateVc2CredentialStatus,
+  validateVc2CredentialValidityPeriod,
+} from '../validators'
 import type {
   W3cV2SdJwtSignCredentialOptions,
   W3cV2SdJwtSignPresentationOptions,
@@ -137,9 +143,37 @@ export class W3cV2SdJwtCredentialService {
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
+        validationResults.validations.dataModel = validateVc2ContextBaseline(credential.resolvedCredential.context)
+        if (!validationResults.validations.dataModel.isValid) {
+          return validationResults
+        }
+
+        const firstContext = Array.isArray(credential.resolvedCredential.context)
+          ? credential.resolvedCredential.context[0]
+          : credential.resolvedCredential.context
+        if (firstContext !== CREDENTIALS_CONTEXT_V2_URL) {
+          validationResults.validations.dataModel = {
+            isValid: false,
+            error: new CredoError(`VC2 @context must start with '${CREDENTIALS_CONTEXT_V2_URL}'`),
+          }
+
+          return validationResults
+        }
+
         validationResults.validations.dataModel = {
           isValid: true,
         }
+
+        validationResults.validations.validityPeriod = validateVc2CredentialValidityPeriod({
+          validFrom: credential.resolvedCredential.validFrom,
+          validUntil: credential.resolvedCredential.validUntil,
+          skewSeconds: agentContext.config.validitySkewSeconds,
+        })
+
+        validationResults.validations.credentialStatus = validateVc2CredentialStatus({
+          credentialStatus: credential.resolvedCredential.credentialStatus,
+          credentialFormat: 'SD-JWT',
+        })
       } catch (error) {
         validationResults.validations.dataModel = {
           isValid: false,
@@ -255,7 +289,11 @@ export class W3cV2SdJwtCredentialService {
   ): Promise<W3cV2VerifyPresentationResult> {
     const validationResults: W3cV2VerifyPresentationResult = {
       isValid: false,
-      validations: {},
+      presentation: {
+        isValid: false,
+        validations: {},
+      },
+      credentialEntries: [],
     }
 
     const sdjwt = new SDJwtInstance({
@@ -280,11 +318,23 @@ export class W3cV2SdJwtCredentialService {
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
-        validationResults.validations.dataModel = {
+        const contextValidationResult = validateVc2ContextBaseline(presentation.resolvedPresentation.context)
+        if (!contextValidationResult.isValid) {
+          throw contextValidationResult.error
+        }
+
+        const firstContext = Array.isArray(presentation.resolvedPresentation.context)
+          ? presentation.resolvedPresentation.context[0]
+          : presentation.resolvedPresentation.context
+        if (firstContext !== CREDENTIALS_CONTEXT_V2_URL) {
+          throw new CredoError(`VC2 @context must start with '${CREDENTIALS_CONTEXT_V2_URL}'`)
+        }
+
+        validationResults.presentation.validations.dataModel = {
           isValid: true,
         }
       } catch (error) {
-        validationResults.validations.dataModel = {
+        validationResults.presentation.validations.dataModel = {
           isValid: false,
           error,
         }
@@ -307,11 +357,11 @@ export class W3cV2SdJwtCredentialService {
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
-        validationResults.validations.presentationSignature = {
+        validationResults.presentation.validations.presentationSignature = {
           isValid: true,
         }
       } catch (error) {
-        validationResults.validations.presentationSignature = {
+        validationResults.presentation.validations.presentationSignature = {
           isValid: false,
           error,
         }
@@ -323,7 +373,7 @@ export class W3cV2SdJwtCredentialService {
         presentation.resolvedPresentation.holderId &&
         proverVerificationMethod.controller !== presentation.resolvedPresentation.holderId
       ) {
-        validationResults.validations.holderIsSigner = {
+        validationResults.presentation.validations.holderIsSigner = {
           isValid: false,
           error: new CredoError(
             `Presentation is signed using verification method ${proverVerificationMethod.id}, while the holder of the presentation is '${presentation.resolvedPresentation.holderId}'`
@@ -332,7 +382,7 @@ export class W3cV2SdJwtCredentialService {
       } else {
         // If no holderId is present, this validation passes by default as there can't be
         // a mismatch between the 'holder' property and the signer of the presentation.
-        validationResults.validations.holderIsSigner = {
+        validationResults.presentation.validations.holderIsSigner = {
           isValid: true,
         }
       }
@@ -341,7 +391,7 @@ export class W3cV2SdJwtCredentialService {
       const credentials = asArray(presentation.resolvedPresentation.verifiableCredential)
 
       // Verify all credentials in parallel, and await the result
-      validationResults.validations.credentials = await Promise.all(
+      validationResults.credentialEntries = await Promise.all(
         credentials.map(async (credential) => {
           if (
             !(credential instanceof W3cV2EnvelopedVerifiableCredential) ||
@@ -376,10 +426,11 @@ export class W3cV2SdJwtCredentialService {
         })
       )
 
-      // Deeply nested check whether all validations have passed
-      validationResults.isValid = Object.values(validationResults.validations).every((v) =>
-        Array.isArray(v) ? v.every((vv) => vv.isValid) : v.isValid
+      validationResults.presentation.isValid = Object.values(validationResults.presentation.validations).every(
+        (validation) => validation.isValid
       )
+      validationResults.isValid =
+        validationResults.presentation.isValid && validationResults.credentialEntries.every((entry) => entry.isValid)
 
       return validationResults
     } catch (error) {

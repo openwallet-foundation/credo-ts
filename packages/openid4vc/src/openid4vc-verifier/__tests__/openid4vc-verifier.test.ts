@@ -1,8 +1,10 @@
 import { Jwt, utils } from '@credo-ts/core'
+import { Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { type AgentType, createAgentFromModules } from '../../../tests/utils'
 import { openBadgeDcqlQuery, universityDegreePresentationDefinition } from '../../../tests/utilsVp'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
+import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
 
 const modules = {
   openid4vc: new OpenId4VcModule({
@@ -81,6 +83,90 @@ describe('OpenId4VcVerifier', () => {
       })
 
       expect(verificationSession.expiresAt).toEqual(utils.addSecondsToDate(verificationSession.createdAt, 60 * 60))
+    })
+
+    it('throws for invalid presentation definition structure', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+      await expect(
+        verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+          requestSigner: {
+            method: 'did',
+            didUrl: verifier.kid,
+          },
+          verifierId: openIdVerifier.verifierId,
+          presentationExchange: {
+            definition: { id: 'invalid-pd-without-required-fields' } as never,
+          },
+          version: 'v1.draft24',
+        })
+      ).rejects.toThrow('not a valid PresentationDefinition')
+    })
+
+    it('throws for invalid dcql query structure', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+      await expect(
+        verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+          requestSigner: {
+            method: 'did',
+            didUrl: verifier.kid,
+          },
+          verifierId: openIdVerifier.verifierId,
+          dcql: {
+            query: { id: 'invalid-dcql-without-credentials' } as never,
+          },
+        })
+      ).rejects.toThrow()
+    })
+
+    it('rejects SD-JWT presentations for PEX responses', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier.kid,
+        },
+        verifierId: openIdVerifier.verifierId,
+        presentationExchange: {
+          definition: universityDegreePresentationDefinition,
+        },
+        version: 'v1.draft24',
+      })
+
+      const verifierService = verifier.agent.dependencyManager.resolve(OpenId4VpVerifierService)
+      const parseAuthorizationResponseSpy = vi
+        .spyOn(
+          verifierService as unknown as {
+            parseAuthorizationResponse: (...args: unknown[]) => Promise<unknown>
+          },
+          'parseAuthorizationResponse'
+        )
+        .mockResolvedValue({
+          type: 'pex',
+          pex: {
+            presentations: ['header.payload.signature~disclosure~kb'],
+            presentationSubmission: {
+              id: 'submission-id',
+              definition_id: universityDegreePresentationDefinition.id,
+              descriptor_map: [],
+            },
+            presentationDefinition: universityDegreePresentationDefinition,
+          },
+          verificationSession,
+          authorizationResponsePayload: {},
+        } as never)
+
+      try {
+        await expect(
+          verifierService.verifyAuthorizationResponse(verifier.agent.context, {
+            verificationSession,
+            authorizationResponse: {},
+          })
+        ).rejects.toThrow(Oauth2ServerErrorResponseError)
+      } finally {
+        parseAuthorizationResponseSpy.mockRestore()
+      }
     })
   })
 })

@@ -17,7 +17,7 @@ interface W3cV2JsonCredentialSubject {
   [key: string]: unknown
 }
 
-interface W3cV2JsonStatus {
+interface W3cV2JsonCredentialStatus {
   id?: string
   type: string
   [key: string]: unknown
@@ -55,7 +55,7 @@ export interface W3cV2JsonCredential {
   credentialSubject: SingleOrArray<W3cV2JsonCredentialSubject>
   validFrom?: string
   validUntil?: string
-  status?: SingleOrArray<W3cV2JsonStatus>
+  credentialStatus?: SingleOrArray<W3cV2JsonCredentialStatus>
   credentialSchema?: SingleOrArray<W3cV2JsonCredentialSchema>
   refreshService?: SingleOrArray<W3cV2JsonRefreshService>
   termsOfUse?: SingleOrArray<W3cV2JsonTermsOfUse>

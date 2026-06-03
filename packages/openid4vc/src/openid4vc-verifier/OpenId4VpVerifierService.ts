@@ -150,6 +150,16 @@ export class OpenId4VpVerifierService {
       )
     }
 
+    if (options.presentationExchange) {
+      const pex = agentContext.dependencyManager.resolve(DifPresentationExchangeService)
+      pex.validatePresentationDefinition(options.presentationExchange.definition)
+    }
+
+    if (options.dcql) {
+      const dcqlService = agentContext.dependencyManager.resolve(DcqlService)
+      dcqlService.validateDcqlQuery(options.dcql.query)
+    }
+
     // For now we only support presentations with holder binding.
     if (options.dcql?.query.credentials.some((c) => c.require_cryptographic_holder_binding === false)) {
       throw new CredoError(
@@ -634,6 +644,19 @@ export class OpenId4VpVerifierService {
         const submission = result.pex.presentationSubmission as DifPresentationExchangeSubmission
         const definition = result.pex.presentationDefinition as unknown as DifPresentationExchangeDefinition
 
+        const presentationsArray = Array.isArray(encodedPresentations) ? encodedPresentations : [encodedPresentations]
+        const sdJwtPresentationIndexes = presentationsArray.flatMap((presentation, index) =>
+          this.claimFormatFromEncodedPresentation(presentation) === ClaimFormat.SdJwtDc ? [index] : []
+        )
+
+        if (sdJwtPresentationIndexes.length > 0) {
+          throw new Oauth2ServerErrorResponseError({
+            error: Oauth2ErrorCodes.InvalidRequest,
+            error_description:
+              'SD-JWT VC presentations are not supported in Presentation Exchange responses at this time.',
+          })
+        }
+
         pex.validatePresentationDefinition(definition)
 
         try {
@@ -648,7 +671,6 @@ export class OpenId4VpVerifierService {
           )
         }
 
-        const presentationsArray = Array.isArray(encodedPresentations) ? encodedPresentations : [encodedPresentations]
         const presentationVerificationResults = await Promise.all(
           presentationsArray.map((presentation) => {
             return this.verifyPresentation(agentContext, {
@@ -783,6 +805,7 @@ export class OpenId4VpVerifierService {
         : undefined
 
     if (result.type === 'pex') {
+      const pex = agentContext.dependencyManager.resolve(DifPresentationExchangeService)
       const presentationDefinition =
         authorizationRequestPayload.presentation_definition as unknown as DifPresentationExchangeDefinition
       const submission = openid4vpAuthorizationResponsePayload.presentation_submission as
@@ -793,11 +816,30 @@ export class OpenId4VpVerifierService {
         throw new CredoError('Unable to extract submission from the response.')
       }
 
+      pex.validatePresentationDefinition(presentationDefinition)
+      pex.validatePresentationSubmission(submission)
+
+      const sdJwtPresentationIndexes = result.pex.presentations.flatMap((presentation, index) =>
+        this.claimFormatFromEncodedPresentation(presentation) === ClaimFormat.SdJwtDc ? [index] : []
+      )
+
+      if (sdJwtPresentationIndexes.length > 0) {
+        throw new CredoError(
+          'SD-JWT VC presentations are not supported in Presentation Exchange responses at this time.'
+        )
+      }
+
       const verifiablePresentations = result.pex.presentations.map((presentation) =>
         this.decodePresentation(agentContext, {
           presentation,
           format: this.claimFormatFromEncodedPresentation(presentation),
         })
+      )
+
+      pex.validatePresentation(
+        presentationDefinition,
+        verifiablePresentations.length === 1 ? verifiablePresentations[0] : verifiablePresentations,
+        submission
       )
 
       presentationExchange = {

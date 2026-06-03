@@ -70,12 +70,16 @@ export class W3cV2JwtVerifiablePresentation {
     const header = jwt.header
     const payload = jwt.payload
 
+    if (header.alg === 'none') {
+      throw new CredoError(`The provided W3C VP JWT uses 'alg'='none', which is not allowed.`)
+    }
+
     if ('typ' in header && header.typ !== 'vp+jwt') {
       throw new CredoError(`The provided W3C VP JWT does not have the correct 'typ' header.`)
     }
 
-    if ('cyt' in header && header.cyt !== 'vp') {
-      throw new CredoError(`The provided W3C VP JWT does not have the correct 'cyt' header.`)
+    if ('cty' in header && header.cty !== 'vp') {
+      throw new CredoError(`The provided W3C VP JWT does not have the correct 'cty' header.`)
     }
 
     const iss = header.iss ?? payload.iss

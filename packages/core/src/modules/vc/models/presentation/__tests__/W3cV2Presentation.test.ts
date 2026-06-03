@@ -1,5 +1,8 @@
 import { JsonTransformer } from '../../../../../utils'
+import { ENVELOPED_VERIFIABLE_PRESENTATION_TYPE } from '../../../constants'
 import { W3cV2DataIntegrityVerifiableCredential } from '../../../data-integrity-v1'
+import { CredoEs256DidKeyJwtVp } from '../../../jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
+import { W3cV2EnvelopedVerifiablePresentation } from '../W3cV2EnvelopedVerifiablePresentation'
 import { W3cV2Presentation } from '../W3cV2Presentation'
 
 const validPresentation = {
@@ -31,6 +34,12 @@ const validEmbeddedDiCredential = {
     verificationMethod: 'did:key:z6Mkissuer#z6Mkissuer',
     proofValue: 'zProof',
   },
+}
+
+const nestedEnvelopedPresentationEntry = {
+  '@context': 'https://www.w3.org/ns/credentials/v2',
+  type: ENVELOPED_VERIFIABLE_PRESENTATION_TYPE,
+  id: `data:application/vp+jwt,${CredoEs256DidKeyJwtVp}`,
 }
 
 describe('W3cV2Presentation', () => {
@@ -95,10 +104,10 @@ describe('W3cV2Presentation', () => {
     )
   })
 
-  test('throws an error when verifiableCredential is not a credential or an array of credentials', () => {
+  test('allows missing verifiableCredential but rejects invalid verifiableCredential entries', () => {
     expect(() =>
       JsonTransformer.fromJSON({ ...validPresentation, verifiableCredential: undefined }, W3cV2Presentation)
-    ).toThrow(/verifiableCredential value must be an instance of, or an array of instances containing/)
+    ).not.toThrow()
 
     expect(() =>
       JsonTransformer.fromJSON({ ...validPresentation, verifiableCredential: [] }, W3cV2Presentation)
@@ -137,6 +146,37 @@ describe('W3cV2Presentation', () => {
 
     expect(credentials[0]).not.toBeInstanceOf(W3cV2DataIntegrityVerifiableCredential)
     expect(credentials[1]).toBeInstanceOf(W3cV2DataIntegrityVerifiableCredential)
+    expect(JsonTransformer.toJSON(presentation)).toEqual(jsonPresentation)
+  })
+
+  test('accepts EnvelopedVerifiablePresentation entries in verifiableCredential', () => {
+    const jsonPresentation = {
+      ...validPresentation,
+      verifiableCredential: [nestedEnvelopedPresentationEntry],
+    }
+
+    const presentation = JsonTransformer.fromJSON(jsonPresentation, W3cV2Presentation)
+    const credentials = Array.isArray(presentation.verifiableCredential)
+      ? presentation.verifiableCredential
+      : [presentation.verifiableCredential]
+
+    expect(credentials[0]).toBeInstanceOf(W3cV2EnvelopedVerifiablePresentation)
+    expect(JsonTransformer.toJSON(presentation)).toEqual(jsonPresentation)
+  })
+
+  test('accepts mixed enveloped VC and nested EnvelopedVerifiablePresentation entries', () => {
+    const jsonPresentation = {
+      ...validPresentation,
+      verifiableCredential: [validPresentation.verifiableCredential[0], nestedEnvelopedPresentationEntry],
+    }
+
+    const presentation = JsonTransformer.fromJSON(jsonPresentation, W3cV2Presentation)
+    const credentials = Array.isArray(presentation.verifiableCredential)
+      ? presentation.verifiableCredential
+      : [presentation.verifiableCredential]
+
+    expect(credentials[0]).not.toBeInstanceOf(W3cV2EnvelopedVerifiablePresentation)
+    expect(credentials[1]).toBeInstanceOf(W3cV2EnvelopedVerifiablePresentation)
     expect(JsonTransformer.toJSON(presentation)).toEqual(jsonPresentation)
   })
 

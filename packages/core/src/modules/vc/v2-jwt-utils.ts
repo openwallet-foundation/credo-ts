@@ -15,7 +15,7 @@ import { extractKeyFromHolderBinding, parseHolderBindingFromCredential } from '.
 import { W3cV2JwtVerifiableCredential } from './jwt-vc/W3cV2JwtVerifiableCredential'
 import { W3cV2JwtVerifiablePresentation } from './jwt-vc/W3cV2JwtVerifiablePresentation'
 import { W3cV2EnvelopedVerifiableCredential } from './models/credential/W3cV2EnvelopedVerifiableCredential'
-import { W3cV2Presentation } from './models/presentation/W3cV2Presentation'
+import type { W3cV2Presentation } from './models/presentation/W3cV2Presentation'
 import { W3cV2SdJwtVerifiableCredential } from './sd-jwt-vc/W3cV2SdJwtVerifiableCredential'
 import { W3cV2SdJwtVerifiablePresentation } from './sd-jwt-vc/W3cV2SdJwtVerifiablePresentation'
 
@@ -49,34 +49,92 @@ export async function extractHolderFromPresentationCredentials(
   agentContext: AgentContext,
   presentation: W3cV2Presentation
 ) {
-  // At the moment, we only support signing presentations with a single credential
-  // Technically, it should be possible to support more than a single one. However,
-  // in the context we support (OID4VP) it doesn't make sense to support multiple ones.
   const credentials = asArray(presentation.verifiableCredential)
-  if (credentials.length !== 1) {
-    throw new CredoError('Only a single verifiable credential is supported in a presentation')
+
+  const holderDid = presentation.holderId
+  if (holderDid) {
+    if (!isDid(holderDid)) {
+      throw new CredoError(`Presentation holder '${holderDid}' is not a valid did`)
+    }
+
+    const dids = agentContext.resolve(DidsApi)
+    const { didDocument, keys } = await dids.resolveCreatedDidDocumentWithKeys(holderDid)
+
+    const authenticationMethods =
+      didDocument.authentication
+        ?.map((entry) => (typeof entry === 'string' ? didDocument.dereferenceVerificationMethod(entry) : entry))
+        .filter((entry): entry is VerificationMethod => !!entry) ?? []
+
+    const candidateMethods = authenticationMethods.filter((method) =>
+      keys?.some(({ didDocumentRelativeKeyId }) => method.id.endsWith(didDocumentRelativeKeyId))
+    )
+
+    if (candidateMethods.length === 0) {
+      throw new CredoError(
+        `Unable to determine signer key for presentation holder '${holderDid}'. No locally controlled authentication verification method found.`
+      )
+    }
+
+    if (candidateMethods.length > 1) {
+      throw new CredoError(
+        `Unable to deterministically resolve signer key for presentation holder '${holderDid}'. Multiple locally controlled authentication verification methods found.`
+      )
+    }
+
+    const selectedMethod = candidateMethods[0]
+    const publicJwk = getPublicJwkFromVerificationMethod(selectedMethod)
+    publicJwk.keyId =
+      keys?.find(({ didDocumentRelativeKeyId }) => selectedMethod.id.endsWith(didDocumentRelativeKeyId))?.kmsKeyId ??
+      publicJwk.legacyKeyId
+
+    const [alg] = publicJwk.supportedSignatureAlgorithms
+    if (!alg) {
+      throw new CredoError(
+        `No supported JWA signature algorithms found for holder verification method '${selectedMethod.id}'`
+      )
+    }
+
+    return {
+      alg,
+      publicJwk,
+      cnf: {
+        kid: selectedMethod.id,
+      },
+    }
   }
 
-  const credential = credentials[0]
-  if (!(credential instanceof W3cV2EnvelopedVerifiableCredential)) {
-    throw new CredoError('Only enveloped credentials are supported when signing JWT/SD-JWT presentations')
+  const fallbackHolders: Array<Awaited<ReturnType<typeof extractKeyFromHolderBinding>>> = []
+
+  for (const credential of credentials) {
+    if (!(credential instanceof W3cV2EnvelopedVerifiableCredential)) continue
+
+    let claims: Record<string, unknown>
+    if (credential.envelopedCredential instanceof W3cV2SdJwtVerifiableCredential) {
+      claims = credential.envelopedCredential.sdJwt.prettyClaims
+    } else if (credential.envelopedCredential instanceof W3cV2JwtVerifiableCredential) {
+      claims = credential.envelopedCredential.jwt.payload.toJson()
+    } else {
+      continue
+    }
+
+    const holderBinding = parseHolderBindingFromCredential(claims)
+    if (!holderBinding) continue
+
+    fallbackHolders.push(await extractKeyFromHolderBinding(agentContext, holderBinding, { forSigning: true }))
   }
 
-  let claims: Record<string, unknown>
-
-  if (credential.envelopedCredential instanceof W3cV2SdJwtVerifiableCredential) {
-    claims = credential.envelopedCredential.sdJwt.prettyClaims
-  } else {
-    claims = credential.envelopedCredential.jwt.payload.toJson()
+  if (fallbackHolders.length === 0) {
+    throw new CredoError('Unable to determine signer from presentation credentials, and presentation.holder is missing')
   }
 
-  // We require the credential to include a holder binding in the form of a 'cnf' claim
-  const holderBinding = parseHolderBindingFromCredential(claims)
-  if (!holderBinding) {
-    throw new CredoError('No holder binding found in credential included in presentation')
+  const uniqueFallbackHolders = new Map(fallbackHolders.map((holder) => [holder.publicJwk.fingerprint, holder]))
+  if (uniqueFallbackHolders.size > 1) {
+    throw new CredoError(
+      'Unable to determine signer from presentation credentials. Multiple distinct holder bindings found and presentation.holder is missing.'
+    )
   }
 
-  return await extractKeyFromHolderBinding(agentContext, holderBinding, { forSigning: true })
+  return uniqueFallbackHolders.values().next().value as Awaited<ReturnType<typeof extractKeyFromHolderBinding>>
 }
 
 /**

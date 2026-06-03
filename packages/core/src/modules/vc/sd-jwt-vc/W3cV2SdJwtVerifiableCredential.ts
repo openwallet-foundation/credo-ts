@@ -68,12 +68,16 @@ export class W3cV2SdJwtVerifiableCredential {
     const header = sdJwt.header
     const payload = sdJwt.prettyClaims
 
+    if (header.alg === 'none') {
+      throw new CredoError(`The provided W3C VC SD-JWT uses 'alg'='none', which is not allowed.`)
+    }
+
     if ('typ' in header && header.typ !== 'vc+sd-jwt') {
       throw new CredoError(`The provided W3C VC SD-JWT does not have the correct 'typ' header.`)
     }
 
-    if ('cyt' in header && header.cyt !== 'vc') {
-      throw new CredoError(`The provided W3C VC SD-JWT does not have the correct 'cyt' header.`)
+    if ('cty' in header && header.cty !== 'vc') {
+      throw new CredoError(`The provided W3C VC SD-JWT does not have the correct 'cty' header.`)
     }
 
     const iss = header.iss ?? payload.iss

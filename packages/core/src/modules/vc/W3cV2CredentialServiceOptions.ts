@@ -1,6 +1,10 @@
 import type { HashName } from '../../crypto'
 import type { KnownJwaSignatureAlgorithm } from '../kms'
 import type { IDisclosureFrame, IPresentationFrame, SdJwtVcHolderBinding } from '../sd-jwt-vc'
+import type {
+  W3cV2DataIntegrityVerifiableCredential,
+  W3cV2DataIntegrityVerifiablePresentation,
+} from './data-integrity-v1'
 import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
 import type { ClaimFormat, W3cV2Credential, W3cV2Presentation } from './models'
 import type { W3cV2CredentialRecord } from './repository'
@@ -117,15 +121,6 @@ export interface W3cV2SdJwtVerifyCredentialOptions extends W3cV2VerifyCredential
   credential: W3cV2SdJwtVerifiableCredential | string // string must be encoded VC SD-JWT
 }
 
-export interface W3cV2DiSignCredentialOptions extends W3cV2SignCredentialOptionsBase {
-  format: ClaimFormat.DiVc
-}
-
-export interface W3cV2DiVerifyCredentialOptions extends W3cV2VerifyCredentialOptionsBase {
-  // Future DI implementation will narrow this to a dedicated verifiable DI credential model.
-  credential: { claimFormat: ClaimFormat.DiVc } | Record<string, unknown>
-}
-
 interface W3cV2SignPresentationOptionsBase {
   /**
    * The format of the presentation to be signed.
@@ -196,15 +191,6 @@ export interface W3cV2SdJwtVerifyPresentationOptions extends W3cV2VerifyPresenta
   presentation: W3cV2SdJwtVerifiablePresentation | string // string must be encoded VP SD-JWT
 }
 
-export interface W3cV2DiSignPresentationOptions extends W3cV2SignPresentationOptionsBase {
-  format: ClaimFormat.DiVp
-}
-
-export interface W3cV2DiVerifyPresentationOptions extends W3cV2VerifyPresentationOptionsBase {
-  // Future DI implementation will narrow this to a dedicated verifiable DI presentation model.
-  presentation: { claimFormat: ClaimFormat.DiVp } | Record<string, unknown>
-}
-
 export interface W3cV2StoreCredentialOptions {
   record: W3cV2CredentialRecord
 }
@@ -216,4 +202,49 @@ export interface W3cV2SdJwtVcPresentOptions {
    * Use true to disclose everything
    */
   presentationFrame?: IPresentationFrame | true
+}
+
+/**
+ * Data Integrity (di_vc) credential signing options
+ */
+export interface W3cV2DiSignCredentialOptions extends W3cV2SignCredentialOptionsBase {
+  format: ClaimFormat.DiVc
+
+  /**
+   * The cryptosuite to use for signing (e.g., 'eddsa-jcs-2022')
+   */
+  cryptosuite: string
+}
+
+/**
+ * Data Integrity (di_vc) credential verification options
+ */
+export interface W3cV2DiVerifyCredentialOptions extends W3cV2VerifyCredentialOptionsBase {
+  credential: W3cV2DataIntegrityVerifiableCredential
+}
+
+/**
+ * Data Integrity (di_vp) presentation signing options
+ */
+export interface W3cV2DiSignPresentationOptions extends W3cV2SignPresentationOptionsBase {
+  format: ClaimFormat.DiVp
+
+  /**
+   * URI of the verificationMethod to be used for signing the presentation proof.
+   *
+   * Must be a valid did url pointing to a key.
+   */
+  verificationMethod: string
+
+  /**
+   * The cryptosuite to use for signing (e.g., 'eddsa-jcs-2022')
+   */
+  cryptosuite: string
+}
+
+/**
+ * Data Integrity (di_vp) presentation verification options
+ */
+export interface W3cV2DiVerifyPresentationOptions extends W3cV2VerifyPresentationOptionsBase {
+  presentation: W3cV2DataIntegrityVerifiablePresentation
 }
