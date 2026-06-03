@@ -18,9 +18,14 @@ export const getSign1Context = (agentContext: AgentContext): Sign1Context => {
         throw new CredoError('Missing required keyId on CoseKey for signing mdoc')
       }
 
+      const algorithm = input.algorithm ?? input.key.algorithm
+      const jwaAlgorithm = algorithm
+        ? knownJwaFromCoseSignatureAlgorithm(algorithm as KnownCoseSignatureAlgorithm)
+        : PublicJwk.fromUnknown(input.key.jwk).signatureAlgorithm
+
       const { signature } = await kms.sign({
         data: input.toBeSigned,
-        algorithm: knownJwaFromCoseSignatureAlgorithm(input.algorithm as KnownCoseSignatureAlgorithm),
+        algorithm: jwaAlgorithm,
         keyId: input.key.keyId,
       })
 

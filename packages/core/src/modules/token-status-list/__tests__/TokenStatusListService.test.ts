@@ -2,7 +2,8 @@ import { StatusListCwt, StatusType } from '@owf/token-status-list'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { CredoError } from '../../../error'
 import { KeyManagementApi, type KmsJwkPublicEc, PublicJwk } from '../../../modules/kms'
-import type { CreateTokenStatusListOptions } from '../TokenStatusListOptions'
+import { X509Certificate, X509Service } from '../../x509'
+import type { CreateTokenStatusListOptions, UpdateTokenStatusListOptions } from '../TokenStatusListOptions'
 import { TokenStatusListService } from '../TokenStatusListService'
 
 describe('TokenStatusListService', () => {
@@ -12,20 +13,32 @@ describe('TokenStatusListService', () => {
   const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
   let key: PublicJwk
+  let certificate: X509Certificate
   let jwkWithAlg: KmsJwkPublicEc & { alg: string; kid: string }
 
   beforeAll(async () => {
-    // node kms does not seem to add the alg to the JWK, which is defined on the `key`
-    const createdKey = await kms.createKey({
+    const currentDate = new Date()
+    currentDate.setDate(currentDate.getDate() - 1)
+    const nextDay = new Date(currentDate)
+    nextDay.setDate(currentDate.getDate() + 2)
+    const issuerKey = await kms.createKey({
       type: {
         kty: 'EC',
         crv: 'P-256',
       },
     })
-    key = PublicJwk.fromPublicJwk(createdKey.publicJwk)
+    key = PublicJwk.fromPublicJwk(issuerKey.publicJwk)
+    certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
+      validity: {
+        notBefore: currentDate,
+        notAfter: nextDay,
+      },
+      issuer: 'C=DE',
+    })
 
     jwkWithAlg = {
-      ...createdKey.publicJwk,
+      ...issuerKey.publicJwk,
       alg: 'ES256',
     }
 
@@ -43,7 +56,10 @@ describe('TokenStatusListService', () => {
         statusListLength: 16,
         bitsPerStatus: 1,
         statusListUri: 'https://example.com/status/1',
-        keyId: key.keyId,
+        signer: {
+          method: 'x5c',
+          x5c: [certificate],
+        },
       } satisfies CreateTokenStatusListOptions
 
       const result = await tokenStatusListService.createTokenStatusList(agentContext, options)
@@ -65,7 +81,10 @@ describe('TokenStatusListService', () => {
         statusListLength: 16,
         bitsPerStatus: 1,
         hostingUri: 'https://example.com/status/1',
-        keyId: key.keyId,
+        signer: {
+          method: 'x5c',
+          x5c: [certificate],
+        },
       }
 
       // @ts-expect-error: invalid format on purpose to test the code
@@ -82,7 +101,10 @@ describe('TokenStatusListService', () => {
         statusListLength: 16,
         bitsPerStatus: 1,
         statusListUri: 'https://example.com/status/1',
-        keyId: key.keyId,
+        signer: {
+          method: 'x5c',
+          x5c: [certificate],
+        },
       }
 
       await expect(tokenStatusListService.createTokenStatusList(agentContext, options)).rejects.toThrow(CredoError)
@@ -97,7 +119,10 @@ describe('TokenStatusListService', () => {
         statusListLength: 16,
         bitsPerStatus: 1,
         statusListUri: 'https://example.com/status/1',
-        keyId: key.keyId,
+        signer: {
+          method: 'x5c',
+          x5c: [certificate],
+        },
       }
 
       const { statusList } = await tokenStatusListService.createTokenStatusList(agentContext, createOptions)
@@ -106,7 +131,10 @@ describe('TokenStatusListService', () => {
       const result = await tokenStatusListService.updateTokenStatusList(agentContext, {
         token: statusList as Uint8Array,
         status: { index: 3, status: StatusType.Invalid },
-        keyId: key.keyId,
+        signer: {
+          method: 'x5c',
+          x5c: [certificate],
+        },
       })
 
       expect(result).toBeDefined()
@@ -121,10 +149,15 @@ describe('TokenStatusListService', () => {
       const options = {
         token: 123 as unknown as Uint8Array,
         status: { index: 0, status: StatusType.Invalid },
-        keyId: key.keyId,
+        signer: {
+          method: 'x5c',
+          x5c: [certificate],
+        },
       }
 
-      await expect(tokenStatusListService.updateTokenStatusList(agentContext, options)).rejects.toThrow(CredoError)
+      await expect(
+        tokenStatusListService.updateTokenStatusList(agentContext, options as UpdateTokenStatusListOptions<Uint8Array>)
+      ).rejects.toThrow(CredoError)
     })
   })
 
@@ -136,7 +169,10 @@ describe('TokenStatusListService', () => {
         statusListLength: 24,
         bitsPerStatus: 1,
         statusListUri: 'https://example.com/status/1',
-        keyId: key.keyId,
+        signer: {
+          method: 'x5c',
+          x5c: [certificate],
+        },
       }
 
       const { statusList } = await tokenStatusListService.createTokenStatusList(agentContext, createOptions)
@@ -149,7 +185,10 @@ describe('TokenStatusListService', () => {
           { index: 7, status: StatusType.Invalid },
           { index: 12, status: StatusType.Invalid },
         ],
-        keyId: key.keyId,
+        signer: {
+          method: 'x5c',
+          x5c: [certificate],
+        },
       })
 
       expect(result).toBeDefined()

@@ -1,4 +1,4 @@
-import { CoseKey, jwkToCoseKey, SignatureAlgorithm } from '@owf/cose'
+import { CoseKey, jwkToCoseKey, RegisteredCwtHeaderClaimKey, SignatureAlgorithm } from '@owf/cose'
 import {
   createHeaderAndPayload,
   fetchStatusList,
@@ -33,21 +33,31 @@ export class TokenStatusListService {
     agentContext: AgentContext,
     options: CreateTokenStatusListOptions<Format>
   ): Promise<Extract<TokenStatusListResult, { format: Format }>> {
+    if (options.signer.method !== 'x5c') {
+      throw new Error('Only an x5c signer is allowed for signing a token status list.')
+    }
+    const [signingCertificate] = options.signer.x5c
+
     const statusList = new StatusList(
       new Array(options.statusListLength).fill(0),
       options.bitsPerStatus,
       options.aggregationUri
     )
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
-    const jwk = await kms.getPublicKey({ keyId: options.keyId })
+    const jwk = await kms.getPublicKey({ keyId: signingCertificate.keyId })
     if (!options.algorithm && !jwk.alg) {
       throw new CredoError(
-        `Found JWK for key id '${options.keyId}', but did not find a required algorithm or provided algorithm in options`
+        `Found JWK for key id '${signingCertificate.keyId}' on signingCertificate, but did not find a required algorithm or provided algorithm in options`
       )
     }
     if (options.format === 'cwt') {
-      // TODO: set x509 certs in the header
-      const cwt = new StatusListCwt({ payload: { statusList, subject: options.statusListUri, ...options.claims } })
+      const cwt = new StatusListCwt({
+        payload: { statusList, subject: options.statusListUri, ...options.claims },
+        protectedHeaders: new Map<number, unknown>([
+          [RegisteredCwtHeaderClaimKey.X5Chain, options.signer.x5c.map((cert) => cert.rawCertificate)],
+          [RegisteredCwtHeaderClaimKey.Algorithm, jwkToCoseKey.alg(options.algorithm ?? jwk.alg)],
+        ]),
+      })
       const shouldAuthenticate = jwk.alg?.toUpperCase().startsWith('HS')
       if (shouldAuthenticate) {
         const mac0Context = getMac0Context(agentContext)
@@ -61,7 +71,10 @@ export class TokenStatusListService {
         return {
           format: options.format,
           statusList: await cwt.signAndEncode(
-            { signingKey: CoseKey.fromJwk(jwk), algorithm: jwkToCoseKey.alg(options.algorithm) as SignatureAlgorithm },
+            {
+              signingKey: CoseKey.fromJwk(jwk),
+              algorithm: jwkToCoseKey.alg(options.algorithm ?? jwk.alg) as SignatureAlgorithm,
+            },
             sign1Context
           ),
           parsed: cwt,
@@ -78,7 +91,7 @@ export class TokenStatusListService {
       const jwsService = agentContext.dependencyManager.resolve(JwsService)
       const jws = await jwsService.createJwsCompact(agentContext, {
         payload: new JwtPayload({ additionalClaims: payload }),
-        keyId: options.keyId,
+        keyId: signingCertificate.keyId,
         protectedHeaderOptions: header as JwsProtectedHeaderOptions,
       })
       return {
@@ -91,6 +104,9 @@ export class TokenStatusListService {
     throw new CredoError(`Could not create token status list with format '${options.format}'`)
   }
 
+  /**
+   * @todo what do we allow to update and what don't we? Do we need to see if the same x5c is used?
+   */
   public async updateTokenStatusList(
     agentContext: AgentContext,
     options: UpdateTokenStatusListOptions<string>
@@ -103,11 +119,16 @@ export class TokenStatusListService {
     agentContext: AgentContext,
     options: UpdateTokenStatusListOptions<Uint8Array | string>
   ): Promise<{ statusList: Uint8Array | string; parsed: StatusListCwt | Jwt }> {
+    if (options.signer.method !== 'x5c') {
+      throw new Error('Only an x5c signer is allowed for signing a token status list.')
+    }
+    const [signingCertificate] = options.signer.x5c
+
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
-    const jwk = await kms.getPublicKey({ keyId: options.keyId })
+    const jwk = await kms.getPublicKey({ keyId: signingCertificate.keyId })
     if (!options.algorithm && !jwk.alg) {
       throw new CredoError(
-        `Found JWK for key id '${options.keyId}', but did not find a required algorithm in the key or supplied in the options`
+        `Found JWK for key id '${signingCertificate.keyId}' in certificate, but did not find a required algorithm in the key or supplied in the options`
       )
     }
     if (options.token instanceof Uint8Array) {
@@ -125,9 +146,13 @@ export class TokenStatusListService {
         return { statusList: await cwt.authenticateAndEncode({ key: CoseKey.fromJwk(jwk) }, mac0Context), parsed: cwt }
       } else {
         const sign1Context = getSign1Context(agentContext)
+
         return {
           statusList: await cwt.signAndEncode(
-            { signingKey: CoseKey.fromJwk(jwk), algorithm: jwkToCoseKey.alg(options.algorithm) as SignatureAlgorithm },
+            {
+              signingKey: CoseKey.fromJwk(jwk),
+              algorithm: jwkToCoseKey.alg(options.algorithm ?? jwk.alg) as SignatureAlgorithm,
+            },
             sign1Context
           ),
           parsed: cwt,
@@ -147,7 +172,7 @@ export class TokenStatusListService {
       const jwsService = agentContext.dependencyManager.resolve(JwsService)
       const jws = await jwsService.createJwsCompact(agentContext, {
         payload: new JwtPayload({ additionalClaims: { ...jwt, status_list: statusList } }),
-        keyId: options.keyId,
+        keyId: signingCertificate.keyId,
         protectedHeaderOptions: jwt.header as JwsProtectedHeaderOptions,
       })
       return {

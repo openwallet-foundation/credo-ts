@@ -2,6 +2,7 @@ import { type BitsPerStatus, StatusListCwt, StatusType } from '@owf/token-status
 import type { Jwt } from '../../crypto'
 import type { SingleOrArray } from '../../types'
 import type { KnownJwaSignatureAlgorithm } from '../kms'
+import type { TokenStatusListSigner } from './TokenStatusListSigner'
 
 export type TokenStatusListFormat = 'cwt' | 'jwt'
 
@@ -12,10 +13,7 @@ export type CreateTokenStatusListOptions<Format extends TokenStatusListFormat = 
   statusListUri: string
   aggregationUri?: string
 
-  /**
-   * Will determine whether it will be signed or authenticated
-   */
-  keyId: string
+  signer: TokenStatusListSigner
   algorithm?: KnownJwaSignatureAlgorithm
 
   claims?: {
@@ -34,10 +32,7 @@ export type UpdateTokenStatusListOptions<TSL extends Uint8Array | string> = {
   token: TSL
   status: SingleOrArray<{ index: number; status: StatusType }>
 
-  /**
-   * Will determine whether it will be signed or authenticated
-   */
-  keyId: string
+  signer: TokenStatusListSigner
   algorithm?: KnownJwaSignatureAlgorithm
 }
 

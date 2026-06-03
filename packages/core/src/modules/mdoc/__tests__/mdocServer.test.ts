@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer'
 import { MediaTypes, StatusType } from '@owf/token-status-list'
 import nock from 'nock'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
-import { KeyManagementApi, P256PublicJwk, PublicJwk } from '../../kms'
+import { KeyManagementApi, KnownJwaSignatureAlgorithms, P256PublicJwk, PublicJwk } from '../../kms'
 import { TokenStatusListApi } from '../../token-status-list'
 import { X509ModuleConfig, X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
@@ -23,6 +23,36 @@ const getNextMonth = () => {
 
 const kms = agentContext.resolve(KeyManagementApi)
 const tokenStatusList = agentContext.resolve(TokenStatusListApi)
+
+const holderKey = await kms.createKey({
+  type: {
+    kty: 'EC',
+    crv: 'P-256',
+  },
+})
+const issuerKey = await kms.createKey({
+  type: {
+    kty: 'EC',
+    crv: 'P-256',
+  },
+})
+
+const currentDate = new Date()
+currentDate.setDate(currentDate.getDate() - 1)
+const nextDay = new Date(currentDate)
+nextDay.setDate(currentDate.getDate() + 2)
+
+const certificate = await X509Service.createCertificate(agentContext, {
+  authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
+  validity: {
+    notBefore: currentDate,
+    notAfter: nextDay,
+  },
+  issuer: 'C=DE',
+})
+
+certificate.keyId = issuerKey.keyId
+
 describe('mdoc service test', () => {
   test('can get issuer-auth protected-header alg', async () => {
     const mdoc = Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url)
@@ -42,33 +72,6 @@ describe('mdoc service test', () => {
   })
 
   test('can create and verify mdoc', async () => {
-    const holderKey = await kms.createKey({
-      type: {
-        kty: 'EC',
-        crv: 'P-256',
-      },
-    })
-    const issuerKey = await kms.createKey({
-      type: {
-        kty: 'EC',
-        crv: 'P-256',
-      },
-    })
-
-    const currentDate = new Date()
-    currentDate.setDate(currentDate.getDate() - 1)
-    const nextDay = new Date(currentDate)
-    nextDay.setDate(currentDate.getDate() + 2)
-
-    const certificate = await X509Service.createCertificate(agentContext, {
-      authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
-      validity: {
-        notBefore: currentDate,
-        notAfter: nextDay,
-      },
-      issuer: 'C=DE',
-    })
-
     const mdoc = await Mdoc.sign(agentContext, {
       docType: 'org.iso.18013.5.1.mDL',
       holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
@@ -101,24 +104,14 @@ describe('mdoc service test', () => {
 
   test('can create and verify mdoc with status', async () => {
     const statusListUri = 'https://example.org/token-status-list/8'
-    const holderKey = await kms.createKey({
-      type: {
-        kty: 'EC',
-        crv: 'P-256',
-      },
-    })
-    const issuerKey = await kms.createKey({
-      type: {
-        kty: 'EC',
-        crv: 'P-256',
-      },
-    })
-
     const { statusList } = await tokenStatusList.createTokenStatusList({
       bitsPerStatus: 1,
       format: 'cwt',
-      keyId: issuerKey.keyId,
-      algorithm: 'ES256',
+      signer: {
+        method: 'x5c',
+        x5c: [certificate],
+      },
+      algorithm: KnownJwaSignatureAlgorithms.ES256,
       statusListLength: 10,
       statusListUri,
     })
@@ -126,8 +119,11 @@ describe('mdoc service test', () => {
     const { statusList: updatedStatusList } = await tokenStatusList.updateTokenStatusList({
       status: { status: StatusType.Valid, index: 1 },
       token: statusList,
-      keyId: issuerKey.keyId,
-      algorithm: 'ES256',
+      signer: {
+        method: 'x5c',
+        x5c: [certificate],
+      },
+      algorithm: KnownJwaSignatureAlgorithms.ES256,
     })
 
     nock('https://example.org')
@@ -139,15 +135,6 @@ describe('mdoc service test', () => {
     currentDate.setDate(currentDate.getDate() - 1)
     const nextDay = new Date(currentDate)
     nextDay.setDate(currentDate.getDate() + 2)
-
-    const certificate = await X509Service.createCertificate(agentContext, {
-      authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
-      validity: {
-        notBefore: currentDate,
-        notAfter: nextDay,
-      },
-      issuer: 'C=DE',
-    })
 
     const mdoc = await Mdoc.sign(agentContext, {
       docType: 'org.iso.18013.5.1.mDL',
@@ -182,33 +169,6 @@ describe('mdoc service test', () => {
   })
 
   test('can create and verify mdoc with legacy certificate format', async () => {
-    const holderKey = await kms.createKey({
-      type: {
-        kty: 'EC',
-        crv: 'P-256',
-      },
-    })
-    const issuerKey = await kms.createKey({
-      type: {
-        kty: 'EC',
-        crv: 'P-256',
-      },
-    })
-
-    const currentDate = new Date()
-    currentDate.setDate(currentDate.getDate() - 1)
-    const nextDay = new Date(currentDate)
-    nextDay.setDate(currentDate.getDate() + 2)
-
-    const certificate = await X509Service.createCertificate(agentContext, {
-      authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
-      validity: {
-        notBefore: currentDate,
-        notAfter: nextDay,
-      },
-      issuer: 'C=DE',
-    })
-
     const mdoc = await Mdoc.sign(agentContext, {
       docType: 'org.iso.18013.5.1.mDL',
       holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
