@@ -25,7 +25,7 @@ import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { TypedArrayEncoder } from './../../utils'
 import { PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc'
-import { X509Certificate } from '../x509'
+import { X509Certificate, X509ModuleConfig } from '../x509'
 import type { Mdoc } from './Mdoc'
 import { MdocError } from './MdocError'
 import type {
@@ -291,6 +291,7 @@ export class MdocDeviceResponse {
   }
 
   public async verify(agentContext: AgentContext, options: Omit<MdocDeviceResponseVerifyOptions, 'deviceResponse'>) {
+    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
     const mdocContext = getMdocContext(agentContext)
 
     defaultVerificationCallback({
@@ -299,13 +300,15 @@ export class MdocDeviceResponse {
       category: 'DOCUMENT_FORMAT',
     })
 
+    const trustedCertificates = x509ModuleConfig.convertLegacyTrustedCertificates(options.trustedCertificates ?? [])
+
     await this.deviceResponse
       .verify(
         {
-          trustedCertificates:
-            options.trustedCertificates?.map(
-              (certificate) => X509Certificate.fromEncodedCertificate(certificate).rawCertificate
-            ) ?? [],
+          trustedCertificates: trustedCertificates.map(({ issuance, status }) => ({
+            issuance: issuance.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+            status: status?.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+          })),
           disableCertificateChainValidation: false,
           now: options.now,
           skewSeconds: agentContext.config.validitySkewSeconds,

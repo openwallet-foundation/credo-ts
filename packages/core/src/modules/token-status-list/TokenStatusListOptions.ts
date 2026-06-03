@@ -1,6 +1,7 @@
 import { type BitsPerStatus, StatusListCwt, StatusType } from '@owf/token-status-list'
 import type { Jwt } from '../../crypto'
 import type { SingleOrArray } from '../../types'
+import type { KnownJwaSignatureAlgorithm } from '../kms'
 
 export type TokenStatusListFormat = 'cwt' | 'jwt'
 
@@ -15,6 +16,14 @@ export type CreateTokenStatusListOptions<Format extends TokenStatusListFormat = 
    * Will determine whether it will be signed or authenticated
    */
   keyId: string
+  algorithm?: KnownJwaSignatureAlgorithm
+
+  claims?: {
+    issuedAt?: Date
+    expirationTime?: Date
+    timeToLive?: number
+    additionalClaims?: Map<number | string, unknown>
+  }
 }
 
 export type TokenStatusListResult =
@@ -29,6 +38,7 @@ export type UpdateTokenStatusListOptions<TSL extends Uint8Array | string> = {
    * Will determine whether it will be signed or authenticated
    */
   keyId: string
+  algorithm?: KnownJwaSignatureAlgorithm
 }
 
 export type FetchTokenStatusListOptions<AcceptedFormats extends TokenStatusListFormat = TokenStatusListFormat> = {

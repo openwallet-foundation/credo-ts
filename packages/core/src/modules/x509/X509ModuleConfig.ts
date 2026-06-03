@@ -5,6 +5,12 @@ import type { SdJwtVc } from '../sd-jwt-vc'
 import type { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from '../vc'
 
 import { X509Certificate } from './X509Certificate'
+import type { EncodedX509Certificate } from './X509ServiceOptions'
+
+export type X509VerificationTrustedCertificates = {
+  issuance: EncodedX509Certificate[]
+  status?: EncodedX509Certificate[]
+}
 
 export type X509VerificationTypeCredential = {
   type: 'credential'
@@ -59,6 +65,17 @@ export type X509VerificationTypeOpenId4VciCredentialIssuerMetadata = {
   }
 }
 
+export type X509VerificationTypeOAuthTokenStatusList = {
+  type: 'oauthTokenStatusList'
+
+  credential: SdJwtVc | Mdoc | W3cJwtVerifiableCredential | W3cJwtVerifiablePresentation
+
+  /**
+   * The `id` of the `OpenId4VcVerificationSessionRecord` that this verification is bound to.
+   */
+  openId4VcVerificationSessionId?: string
+}
+
 export type X509VerificationTypeOauth2ClientAttestation = {
   type: 'oauth2ClientAttestation'
 
@@ -92,6 +109,7 @@ export interface X509VerificationContext {
     | X509VerificationTypeOauth2ClientAttestation
     | X509VerificationTypeOpenId4VciKeyAttestation
     | X509VerificationTypeOpenId4VciCredentialIssuerMetadata
+    | X509VerificationTypeOAuthTokenStatusList
 }
 
 export interface X509ModuleConfigOptions {
@@ -106,7 +124,7 @@ export interface X509ModuleConfigOptions {
    * It will provide the `agentContext` and `verificationContext` allowing to dynamically set the trusted certificates
    * for a tenant or verificaiton context.
    *
-   * If no certificaets should be trusted an empty array should be returned. If `undefined` is returned
+   * If no certificates should be trusted an empty array should be returned. If `undefined` is returned
    * it will fallback to the globally registered trusted certificates
    *
    * @returns An array of base64-encoded certificate strings or PEM certificate strings.
@@ -114,7 +132,11 @@ export interface X509ModuleConfigOptions {
   getTrustedCertificatesForVerification?(
     agentContext: AgentContext,
     verificationContext: X509VerificationContext
-  ): Promise<string[] | undefined> | string[] | undefined
+  ):
+    | Promise<string[] | undefined | X509VerificationTrustedCertificates[]>
+    | string[]
+    | X509VerificationTrustedCertificates[]
+    | undefined
 }
 
 export class X509ModuleConfig {
@@ -162,5 +184,13 @@ export class X509ModuleConfig {
     }
 
     this.#trustedCertificates.push(certificateInstance)
+  }
+
+  public convertLegacyTrustedCertificates(
+    trustedCertificates: string[] | X509VerificationTrustedCertificates[]
+  ): X509VerificationTrustedCertificates[] {
+    return trustedCertificates.every((tc) => typeof tc === 'string')
+      ? trustedCertificates.map((tc) => ({ issuance: [tc] }))
+      : (trustedCertificates as X509VerificationTrustedCertificates[])
   }
 }

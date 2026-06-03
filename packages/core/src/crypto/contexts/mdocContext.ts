@@ -1,7 +1,7 @@
 import { p256 } from '@noble/curves/nist.js'
 import { hkdf } from '@noble/hashes/hkdf.js'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { type MdocContext } from '@owf/mdoc'
+import { CoseKey, type MdocContext } from '@owf/mdoc'
 import { AgentContext } from '../../agent'
 import { CredoWebCrypto, Hasher } from '../../crypto'
 import { X509Certificate, X509Service } from '../../modules/x509'
@@ -43,18 +43,29 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
     },
 
     x509: {
-      ...getSign1Context(agentContext).x509,
+      getIssuerNameField: (input) => {
+        const x509Certificate = X509Certificate.fromRawCertificate(input.certificate)
+        return x509Certificate.getIssuerNameField(input.field)
+      },
+      getPublicKey: async (input) => {
+        const certificate = X509Certificate.fromRawCertificate(input.certificate)
+        return CoseKey.fromJwk(certificate.publicJwk.toJson())
+      },
       verifyCertificateChain: async (input) => {
         const certificateChain = input.x5chain.map((cert) => X509Certificate.fromRawCertificate(cert).toString('pem'))
         const trustedCertificates = input.trustedCertificates.map((cert) =>
           X509Certificate.fromRawCertificate(cert).toString('pem')
         ) as [string, ...string[]]
 
-        await X509Service.validateCertificateChain(agentContext, {
-          certificateChain,
-          trustedCertificates,
-          verificationDate: input.now ?? now,
-        })
+        return {
+          chain: (
+            await X509Service.validateCertificateChain(agentContext, {
+              certificateChain,
+              trustedCertificates,
+              verificationDate: input.now ?? now,
+            })
+          ).map((cert) => cert.rawCertificate),
+        }
       },
       getCertificateData: async (input) => {
         const { certificate } = input

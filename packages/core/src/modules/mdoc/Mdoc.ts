@@ -169,17 +169,16 @@ export class Mdoc {
       X509Certificate.fromRawCertificate(certificate)
     )
 
-    let trustedCertificates = options?.trustedCertificates
-    if (!trustedCertificates) {
-      trustedCertificates =
-        (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
-          verification: {
-            type: 'credential',
-            credential: this,
-          },
-          certificateChain,
-        })) ?? x509ModuleConfig.trustedCertificates
-    }
+    const trustedCertificates =
+      options?.trustedCertificates ??
+      (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
+        verification: {
+          type: 'credential',
+          credential: this,
+        },
+        certificateChain,
+      })) ??
+      x509ModuleConfig.trustedCertificates
 
     if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
@@ -188,12 +187,15 @@ export class Mdoc {
     const mdocContext = getMdocContext(agentContext, {
       now: options?.now,
     })
+
     try {
+      const convertedTrustedCertificates = x509ModuleConfig.convertLegacyTrustedCertificates(trustedCertificates)
       await Holder.verifyIssuerSigned(
         {
-          trustedCertificates: trustedCertificates.map(
-            (cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate
-          ),
+          trustedCertificates: convertedTrustedCertificates.map(({ issuance, status }) => ({
+            issuance: issuance.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+            status: status?.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+          })),
           issuerSigned: this.issuerSigned,
           disableCertificateChainValidation: false,
           disableStatusValidation: false,

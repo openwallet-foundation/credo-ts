@@ -1,4 +1,4 @@
-import { CoseKey } from '@owf/cose'
+import { CoseKey, jwkToCoseKey, SignatureAlgorithm } from '@owf/cose'
 import {
   createHeaderAndPayload,
   fetchStatusList,
@@ -40,11 +40,14 @@ export class TokenStatusListService {
     )
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
     const jwk = await kms.getPublicKey({ keyId: options.keyId })
-    if (!jwk.alg) {
-      throw new CredoError(`Found JWK for key id '${options.keyId}', but did not find a required algorithm`)
+    if (!options.algorithm && !jwk.alg) {
+      throw new CredoError(
+        `Found JWK for key id '${options.keyId}', but did not find a required algorithm or provided algorithm in options`
+      )
     }
     if (options.format === 'cwt') {
-      const cwt = StatusListCwt.createFromStatusListAndSubject(statusList, options.statusListUri)
+      // TODO: set x509 certs in the header
+      const cwt = new StatusListCwt({ payload: { statusList, subject: options.statusListUri, ...options.claims } })
       const shouldAuthenticate = jwk.alg?.toUpperCase().startsWith('HS')
       if (shouldAuthenticate) {
         const mac0Context = getMac0Context(agentContext)
@@ -57,7 +60,10 @@ export class TokenStatusListService {
         const sign1Context = getSign1Context(agentContext)
         return {
           format: options.format,
-          statusList: await cwt.signAndEncode({ signingKey: CoseKey.fromJwk(jwk) }, sign1Context),
+          statusList: await cwt.signAndEncode(
+            { signingKey: CoseKey.fromJwk(jwk), algorithm: jwkToCoseKey.alg(options.algorithm) as SignatureAlgorithm },
+            sign1Context
+          ),
           parsed: cwt,
         } as Extract<TokenStatusListResult, { format: Format }>
       }
@@ -67,7 +73,7 @@ export class TokenStatusListService {
       const { header, payload } = createHeaderAndPayload(
         statusList,
         { cnf: { jwk } },
-        { alg: jwk.alg, typ: 'statuslist+jwt' }
+        { alg: (options.algorithm as string) ?? jwk.alg, typ: 'statuslist+jwt' }
       )
       const jwsService = agentContext.dependencyManager.resolve(JwsService)
       const jws = await jwsService.createJwsCompact(agentContext, {
@@ -99,8 +105,10 @@ export class TokenStatusListService {
   ): Promise<{ statusList: Uint8Array | string; parsed: StatusListCwt | Jwt }> {
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
     const jwk = await kms.getPublicKey({ keyId: options.keyId })
-    if (!jwk.alg) {
-      throw new CredoError(`Found JWK for key id '${options.keyId}', but did not find a required algorithm`)
+    if (!options.algorithm && !jwk.alg) {
+      throw new CredoError(
+        `Found JWK for key id '${options.keyId}', but did not find a required algorithm in the key or supplied in the options`
+      )
     }
     if (options.token instanceof Uint8Array) {
       const cwt = StatusListCwt.fromToken(options.token)
@@ -117,7 +125,13 @@ export class TokenStatusListService {
         return { statusList: await cwt.authenticateAndEncode({ key: CoseKey.fromJwk(jwk) }, mac0Context), parsed: cwt }
       } else {
         const sign1Context = getSign1Context(agentContext)
-        return { statusList: await cwt.signAndEncode({ signingKey: CoseKey.fromJwk(jwk) }, sign1Context), parsed: cwt }
+        return {
+          statusList: await cwt.signAndEncode(
+            { signingKey: CoseKey.fromJwk(jwk), algorithm: jwkToCoseKey.alg(options.algorithm) as SignatureAlgorithm },
+            sign1Context
+          ),
+          parsed: cwt,
+        }
       }
     } else if (typeof options.token === 'string') {
       // TODO: we need to update the token-status-list library JWT code to be in sync with CWT
