@@ -29,6 +29,28 @@ export interface X509ValidateCertificateChainOptions {
   verificationDate?: Date
 
   trustedCertificates?: Array<EncodedX509Certificate>
+
+  /**
+   * Whether to allow trusting intermediate or leaf certificates (non-root certificates)
+   * as the root for verification.
+   *
+   * When true, validation can succeed if a trusted certificate is found in the chain
+   * even if it's not self-signed (root certificate).
+   *
+   * This is useful for scenarios like ISO 18013-5 mDL where the root certificate
+   * is not included in the chain, and you trust the leaf certificate directly as
+   * the root certificate is not available. But it disables an important part of the
+   * full certificate chain verification.
+   *
+   * When false, only self-signed root certificates in the trusted list will be accepted,
+   * and the signature of any trusted intermediate must be verifiable.
+   *
+   * NOTE: the default behavior will change in a future version. If you rely on this value
+   * being true, it is recommended to explicitly set it to true.
+   *
+   * @default true
+   */
+  allowNonRootTrustedCertificate?: boolean
 }
 
 export interface X509GetLeafCertificateOptions {
