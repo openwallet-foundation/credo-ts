@@ -58,65 +58,69 @@ export class TokenStatusListService {
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
     const jwk = await kms.getPublicKey({ keyId })
 
-    if (options.format === 'cwt') {
-      const cwtPayload = StatusListCwtPayload.create({
-        subject: options.statusListUri,
-        statusList,
-        issuedAt,
-        expirationTime: options.expiresAt,
-        timeToLive: options.timeToLive,
-        additionalClaims: options.additionalPayload,
-      })
-      const cwtFull = new StatusListCwt({
-        payload: cwtPayload,
-        protectedHeaders: new Map<number, unknown>([
-          [RegisteredCwtHeaderClaimKey.X5Chain, options.signer.x5c.map((cert) => cert.rawCertificate)],
-          [RegisteredCwtHeaderClaimKey.Algorithm, jwkToCoseKey.alg(options.alg)],
-        ]),
-      })
-      const shouldAuthenticate = jwk.alg?.toUpperCase().startsWith('HS')
+    try {
+      if (options.format === 'cwt') {
+        const cwtPayload = StatusListCwtPayload.create({
+          subject: options.statusListUri,
+          statusList,
+          issuedAt,
+          expirationTime: options.expiresAt,
+          timeToLive: options.timeToLive,
+          additionalClaims: options.additionalPayload,
+        })
+        const cwtFull = new StatusListCwt({
+          payload: cwtPayload,
+          protectedHeaders: new Map<number, unknown>([
+            [RegisteredCwtHeaderClaimKey.X5Chain, options.signer.x5c.map((cert) => cert.rawCertificate)],
+            [RegisteredCwtHeaderClaimKey.Algorithm, jwkToCoseKey.alg(options.alg)],
+          ]),
+        })
+        const shouldAuthenticate = jwk.alg?.toUpperCase().startsWith('HS')
 
-      return {
-        format: options.format,
-        // Mac0 vs Sign1
-        statusList: shouldAuthenticate
-          ? await cwtFull.authenticateAndEncode({ key: CoseKey.fromJwk(jwk) }, getMac0Context(agentContext))
-          : await cwtFull.signAndEncode(
-              { signingKey: CoseKey.fromJwk(jwk), algorithm: jwkToCoseKey.alg(options.alg) as SignatureAlgorithm },
-              getSign1Context(agentContext)
-            ),
-        parsed: cwtFull,
-      } as Extract<TokenStatusListResult, { format: Format }>
-    }
-
-    if (options.format === 'jwt') {
-      const basePayload: Record<string, unknown> = {
-        ...options.additionalPayload,
-        sub: options.statusListUri,
-        iat: dateToSeconds(issuedAt),
-      }
-      if (options.expiresAt !== undefined) {
-        basePayload.exp = dateToSeconds(options.expiresAt)
-      }
-      if (options.timeToLive !== undefined) {
-        basePayload.ttl = options.timeToLive
+        return {
+          format: options.format,
+          // Mac0 vs Sign1
+          statusList: shouldAuthenticate
+            ? await cwtFull.authenticateAndEncode({ key: CoseKey.fromJwk(jwk) }, getMac0Context(agentContext))
+            : await cwtFull.signAndEncode(
+                { signingKey: CoseKey.fromJwk(jwk), algorithm: jwkToCoseKey.alg(options.alg) as SignatureAlgorithm },
+                getSign1Context(agentContext)
+              ),
+          parsed: cwtFull,
+        } as Extract<TokenStatusListResult, { format: Format }>
       }
 
-      const { header, payload } = createHeaderAndPayload(statusList, basePayload as { sub: string; iat: number }, {
-        alg: options.alg,
-        typ: 'statuslist+jwt',
-      })
-      const jwsService = agentContext.dependencyManager.resolve(JwsService)
-      const jws = await jwsService.createJwsCompact(agentContext, {
-        payload: new JwtPayload({ additionalClaims: payload }),
-        keyId,
-        protectedHeaderOptions: header as JwsProtectedHeaderOptions,
-      })
-      return {
-        format: 'jwt',
-        statusList: jws,
-        parsed: Jwt.fromSerializedJwt(jws),
-      } as Extract<TokenStatusListResult, { format: Format }>
+      if (options.format === 'jwt') {
+        const basePayload: Record<string, unknown> = {
+          ...options.additionalPayload,
+          sub: options.statusListUri,
+          iat: dateToSeconds(issuedAt),
+        }
+        if (options.expiresAt !== undefined) {
+          basePayload.exp = dateToSeconds(options.expiresAt)
+        }
+        if (options.timeToLive !== undefined) {
+          basePayload.ttl = options.timeToLive
+        }
+
+        const { header, payload } = createHeaderAndPayload(statusList, basePayload as { sub: string; iat: number }, {
+          alg: options.alg,
+          typ: 'statuslist+jwt',
+        })
+        const jwsService = agentContext.dependencyManager.resolve(JwsService)
+        const jws = await jwsService.createJwsCompact(agentContext, {
+          payload: new JwtPayload({ additionalClaims: payload }),
+          keyId,
+          protectedHeaderOptions: header as JwsProtectedHeaderOptions,
+        })
+        return {
+          format: 'jwt',
+          statusList: jws,
+          parsed: Jwt.fromSerializedJwt(jws),
+        } as Extract<TokenStatusListResult, { format: Format }>
+      }
+    } catch (e) {
+      throw new CredoError(`Unable to authenticate or sign the token status list`, { cause: e })
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: `options` is never due to only having two options, but it can ofcourse still happen
@@ -142,110 +146,114 @@ export class TokenStatusListService {
     const now = options.now ?? new Date()
     const issuedAt = options.issuedAt ?? now
 
-    if (options.token instanceof Uint8Array) {
-      const cwt = StatusListCwt.fromToken(options.token)
-      if (Array.isArray(options.status)) {
-        for (const { index, status } of options.status) {
-          cwt.updateStatusList(index, status)
+    try {
+      if (options.token instanceof Uint8Array) {
+        const cwt = StatusListCwt.fromToken(options.token)
+        if (Array.isArray(options.status)) {
+          for (const { index, status } of options.status) {
+            cwt.updateStatusList(index, status)
+          }
+        } else {
+          cwt.updateStatusList(options.status.index, options.status.status)
         }
-      } else {
-        cwt.updateStatusList(options.status.index, options.status.status)
-      }
 
-      // Apply updated timing claims
-      const updatedPayload = StatusListCwtPayload.create({
-        subject: cwt.payload.subject,
-        statusList: cwt.payload.statusList,
-        issuedAt,
-        expirationTime: options.expiresAt ?? cwt.payload.expirationTime,
-        timeToLive: options.timeToLive ?? cwt.payload.timeToLive,
-      })
-      const updatedCwt = new StatusListCwt({
-        payload: updatedPayload,
-        protectedHeaders: new Map<number, unknown>([
-          [RegisteredCwtHeaderClaimKey.X5Chain, options.signer.x5c.map((cert) => cert.rawCertificate)],
-          [RegisteredCwtHeaderClaimKey.Algorithm, jwkToCoseKey.alg(options.alg)],
-        ]),
-      })
+        // Apply updated timing claims
+        const updatedPayload = StatusListCwtPayload.create({
+          subject: cwt.payload.subject,
+          statusList: cwt.payload.statusList,
+          issuedAt,
+          expirationTime: options.expiresAt ?? cwt.payload.expirationTime,
+          timeToLive: options.timeToLive ?? cwt.payload.timeToLive,
+        })
+        const updatedCwt = new StatusListCwt({
+          payload: updatedPayload,
+          protectedHeaders: new Map<number, unknown>([
+            [RegisteredCwtHeaderClaimKey.X5Chain, options.signer.x5c.map((cert) => cert.rawCertificate)],
+            [RegisteredCwtHeaderClaimKey.Algorithm, jwkToCoseKey.alg(options.alg)],
+          ]),
+        })
 
-      const shouldAuthenticate = jwk.alg?.toUpperCase().startsWith('HS')
-      if (shouldAuthenticate) {
-        const mac0Context = getMac0Context(agentContext)
+        const shouldAuthenticate = jwk.alg?.toUpperCase().startsWith('HS')
+        if (shouldAuthenticate) {
+          const mac0Context = getMac0Context(agentContext)
+          return {
+            format: 'cwt',
+            statusList: await updatedCwt.authenticateAndEncode({ key: CoseKey.fromJwk(jwk) }, mac0Context),
+            parsed: updatedCwt,
+          } as Extract<TokenStatusListResult, { format: Format }>
+        } else {
+          const sign1Context = getSign1Context(agentContext)
+          return {
+            format: 'cwt',
+            statusList: await updatedCwt.signAndEncode(
+              { signingKey: CoseKey.fromJwk(jwk), algorithm: jwkToCoseKey.alg(options.alg) as SignatureAlgorithm },
+              sign1Context
+            ),
+            parsed: updatedCwt,
+          } as Extract<TokenStatusListResult, { format: Format }>
+        }
+      } else if (typeof options.token === 'string') {
+        const statusList = getListFromStatusListJWT(options.token)
+        const jwt = Jwt.fromSerializedJwt(options.token)
+
+        if (Array.isArray(options.status)) {
+          for (const { index, status } of options.status) {
+            statusList.setStatus(index, status)
+          }
+        } else {
+          statusList.setStatus(options.status.index, options.status.status)
+        }
+
+        // toJson() spreads additionalClaims first then overwrites with named fields (which may be undefined),
+        // so we pull sub from additionalClaims explicitly to preserve it.
+        const existingClaims = {
+          ...jwt.payload.additionalClaims,
+          ...(jwt.payload.iss !== undefined && { iss: jwt.payload.iss }),
+          ...(jwt.payload.sub !== undefined && { sub: jwt.payload.sub }),
+          ...(jwt.payload.aud !== undefined && { aud: jwt.payload.aud }),
+          ...(jwt.payload.exp !== undefined && { exp: jwt.payload.exp }),
+          ...(jwt.payload.nbf !== undefined && { nbf: jwt.payload.nbf }),
+          ...(jwt.payload.jti !== undefined && { jti: jwt.payload.jti }),
+        }
+        const updatedPayload: Record<string, unknown> = {
+          ...existingClaims,
+          ...options.additionalPayload,
+          iat: Math.floor(issuedAt.getTime() / 1000),
+        }
+        if (options.expiresAt !== undefined) {
+          updatedPayload.exp = Math.floor(options.expiresAt.getTime() / 1000)
+        }
+        if (options.timeToLive !== undefined) {
+          updatedPayload.ttl = options.timeToLive
+        }
+
+        // createHeaderAndPayload will overwrite status_list with the updated one
+        const { header, payload } = createHeaderAndPayload(
+          statusList,
+          updatedPayload as { sub: string; iat: number },
+          { ...jwt.header, alg: jwk.alg, typ: 'statuslist+jwt' } as {
+            alg: string
+            typ: 'statuslist+jwt'
+          }
+        )
+
+        const jwsService = agentContext.dependencyManager.resolve(JwsService)
+        const jws = await jwsService.createJwsCompact(agentContext, {
+          payload: new JwtPayload({ additionalClaims: payload }),
+          keyId,
+          protectedHeaderOptions: header as JwsProtectedHeaderOptions,
+        })
         return {
-          format: 'cwt',
-          statusList: await updatedCwt.authenticateAndEncode({ key: CoseKey.fromJwk(jwk) }, mac0Context),
-          parsed: updatedCwt,
-        } as Extract<TokenStatusListResult, { format: Format }>
-      } else {
-        const sign1Context = getSign1Context(agentContext)
-        return {
-          format: 'cwt',
-          statusList: await updatedCwt.signAndEncode(
-            { signingKey: CoseKey.fromJwk(jwk), algorithm: jwkToCoseKey.alg(options.alg) as SignatureAlgorithm },
-            sign1Context
-          ),
-          parsed: updatedCwt,
+          format: 'jwt',
+          statusList: jws,
+          parsed: Jwt.fromSerializedJwt(jws),
         } as Extract<TokenStatusListResult, { format: Format }>
       }
-    } else if (typeof options.token === 'string') {
-      const statusList = getListFromStatusListJWT(options.token)
-      const jwt = Jwt.fromSerializedJwt(options.token)
-
-      if (Array.isArray(options.status)) {
-        for (const { index, status } of options.status) {
-          statusList.setStatus(index, status)
-        }
-      } else {
-        statusList.setStatus(options.status.index, options.status.status)
-      }
-
-      // toJson() spreads additionalClaims first then overwrites with named fields (which may be undefined),
-      // so we pull sub from additionalClaims explicitly to preserve it.
-      const existingClaims = {
-        ...jwt.payload.additionalClaims,
-        ...(jwt.payload.iss !== undefined && { iss: jwt.payload.iss }),
-        ...(jwt.payload.sub !== undefined && { sub: jwt.payload.sub }),
-        ...(jwt.payload.aud !== undefined && { aud: jwt.payload.aud }),
-        ...(jwt.payload.exp !== undefined && { exp: jwt.payload.exp }),
-        ...(jwt.payload.nbf !== undefined && { nbf: jwt.payload.nbf }),
-        ...(jwt.payload.jti !== undefined && { jti: jwt.payload.jti }),
-      }
-      const updatedPayload: Record<string, unknown> = {
-        ...existingClaims,
-        ...options.additionalPayload,
-        iat: Math.floor(issuedAt.getTime() / 1000),
-      }
-      if (options.expiresAt !== undefined) {
-        updatedPayload.exp = Math.floor(options.expiresAt.getTime() / 1000)
-      }
-      if (options.timeToLive !== undefined) {
-        updatedPayload.ttl = options.timeToLive
-      }
-
-      // createHeaderAndPayload will overwrite status_list with the updated one
-      const { header, payload } = createHeaderAndPayload(
-        statusList,
-        updatedPayload as { sub: string; iat: number },
-        { ...jwt.header, alg: jwk.alg, typ: 'statuslist+jwt' } as {
-          alg: string
-          typ: 'statuslist+jwt'
-        }
-      )
-
-      const jwsService = agentContext.dependencyManager.resolve(JwsService)
-      const jws = await jwsService.createJwsCompact(agentContext, {
-        payload: new JwtPayload({ additionalClaims: payload }),
-        keyId,
-        protectedHeaderOptions: header as JwsProtectedHeaderOptions,
-      })
-      return {
-        format: 'jwt',
-        statusList: jws,
-        parsed: Jwt.fromSerializedJwt(jws),
-      } as Extract<TokenStatusListResult, { format: Format }>
+    } catch (e) {
+      throw new CredoError(`Unable to update the token status list`, { cause: e })
     }
 
-    throw new CredoError(`Could not update status list in token for token '${options.token}'`)
+    throw new CredoError(`Invalid token format for token '${options.token}'. Only string and Uint8Array are supported`)
   }
 
   public async fetchTokenStatusList<AcceptedFormats extends TokenStatusListFormat>(

@@ -65,17 +65,6 @@ export type X509VerificationTypeOpenId4VciCredentialIssuerMetadata = {
   }
 }
 
-export type X509VerificationTypeOAuthTokenStatusList = {
-  type: 'oauthTokenStatusList'
-
-  credential: SdJwtVc | Mdoc | W3cJwtVerifiableCredential | W3cJwtVerifiablePresentation
-
-  /**
-   * The `id` of the `OpenId4VcVerificationSessionRecord` that this verification is bound to.
-   */
-  openId4VcVerificationSessionId?: string
-}
-
 export type X509VerificationTypeOauth2ClientAttestation = {
   type: 'oauth2ClientAttestation'
 
@@ -109,7 +98,6 @@ export interface X509VerificationContext {
     | X509VerificationTypeOauth2ClientAttestation
     | X509VerificationTypeOpenId4VciKeyAttestation
     | X509VerificationTypeOpenId4VciCredentialIssuerMetadata
-    | X509VerificationTypeOAuthTokenStatusList
 }
 
 export interface X509ModuleConfigOptions {
