@@ -1,20 +1,24 @@
 import { StatusListCwt, StatusType } from '@owf/token-status-list'
-import { getAgentConfig, getAgentContext } from '../../../../tests'
+import { getAgentOptions } from '../../../../tests'
+import { Agent } from '../../../agent/Agent'
+import { JwsService, Jwt } from '../../../crypto'
 import { CredoError } from '../../../error'
-import { KeyManagementApi, type KmsJwkPublicEc, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../modules/kms'
+import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../modules/kms'
+import { DidKey } from '../../dids'
 import { X509Certificate, X509Service } from '../../x509'
 import type { CreateTokenStatusListOptions, UpdateTokenStatusListOptions } from '../TokenStatusListOptions'
 import { TokenStatusListService } from '../TokenStatusListService'
 
 describe('TokenStatusListService', () => {
-  const agentConfig = getAgentConfig('TokenStatusListService')
-  const agentContext = getAgentContext({ agentConfig })
-  const tokenStatusListService = agentContext.dependencyManager.resolve(TokenStatusListService)
-  const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
+  const agent = new Agent(getAgentOptions('TokenStatusListService'))
+  const agentContext = agent.context
 
+  const tokenStatusListService = agent.context.dependencyManager.resolve(TokenStatusListService)
+  const kms = agent.context.dependencyManager.resolve(KeyManagementApi)
+
+  let didUrl: string
   let key: PublicJwk
   let certificate: X509Certificate
-  let jwkWithAlg: KmsJwkPublicEc & { alg: string; kid: string }
 
   beforeAll(async () => {
     const currentDate = new Date()
@@ -27,8 +31,22 @@ describe('TokenStatusListService', () => {
         crv: 'P-256',
       },
     })
+    const issuerDidKey = new DidKey(PublicJwk.fromPublicJwk(issuerKey.publicJwk))
+    const issuerDidDocument = issuerDidKey.didDocument
+    didUrl = (issuerDidDocument.verificationMethod ?? [])[0].id
+    await agent.dids.import({
+      didDocument: issuerDidDocument,
+      did: issuerDidDocument.id,
+      keys: [
+        {
+          didDocumentRelativeKeyId: `#${didUrl.split('#')[1]}`,
+          kmsKeyId: issuerKey.keyId,
+        },
+      ],
+    })
+
     key = PublicJwk.fromPublicJwk(issuerKey.publicJwk)
-    certificate = await X509Service.createCertificate(agentContext, {
+    certificate = await X509Service.createCertificate(agent.context, {
       authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
       validity: {
         notBefore: currentDate,
@@ -36,13 +54,6 @@ describe('TokenStatusListService', () => {
       },
       issuer: 'C=DE',
     })
-
-    jwkWithAlg = {
-      ...issuerKey.publicJwk,
-      alg: 'ES256',
-    }
-
-    vi.spyOn(kms, 'getPublicKey').mockImplementation(async () => jwkWithAlg)
   })
 
   afterAll(() => {
@@ -117,6 +128,79 @@ describe('TokenStatusListService', () => {
 
       await expect(tokenStatusListService.createTokenStatusList(agentContext, options)).rejects.toThrow(CredoError)
     })
+
+    test('create token status list with did', async () => {
+      const options = {
+        format: 'jwt',
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        statusList: {
+          statusListLength: 16,
+          bitsPerStatus: 1,
+        },
+        statusListUri: 'https://example.com/status/1',
+        signer: {
+          method: 'did',
+          didUrl: didUrl,
+        },
+      } satisfies CreateTokenStatusListOptions
+
+      const result = await tokenStatusListService.createTokenStatusList(agentContext, options)
+
+      expect(result).toBeDefined()
+      expect(result.statusList).toBeTypeOf('string')
+      expect(result.format).toStrictEqual('jwt')
+
+      const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+      const { header, payload } = Jwt.fromSerializedJwt(result.statusList as string)
+      expect(header.kid).toStrictEqual(didUrl)
+      expect(payload.additionalClaims.status_list).toBeDefined()
+
+      await expect(
+        jwsService.verifyJws(agentContext, {
+          jws: result.statusList as string,
+          resolveJwsSigner: () => ({ method: 'did', didUrl, jwk: key }),
+        })
+      ).resolves.toBeTruthy()
+    })
+  })
+
+  test('create token status list with invalid did', async () => {
+    const options = {
+      format: 'jwt',
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: {
+        statusListLength: 16,
+        bitsPerStatus: 1,
+      },
+      statusListUri: 'https://example.com/status/1',
+      signer: {
+        method: 'did',
+        didUrl: 'did:invalid',
+      },
+    } satisfies CreateTokenStatusListOptions
+
+    await expect(tokenStatusListService.createTokenStatusList(agentContext, options)).rejects.toThrow('invalid did')
+  })
+
+  test('create token status list with did in cwt format, not supported', async () => {
+    const options = {
+      format: 'cwt',
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: {
+        statusListLength: 16,
+        bitsPerStatus: 1,
+      },
+      statusListUri: 'https://example.com/status/1',
+      signer: {
+        method: 'did',
+        didUrl: didUrl,
+      },
+    } satisfies CreateTokenStatusListOptions
+
+    await expect(tokenStatusListService.createTokenStatusList(agentContext, options)).rejects.toThrow(
+      'Unable to authenticate or sign the token status list'
+    )
   })
 
   describe('updateTokenStatusList', () => {

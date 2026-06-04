@@ -28,9 +28,4 @@ export interface TokenStatusListSignerJwk {
   jwk: Kms.PublicJwk
 }
 
-export interface OpenId4VcJwtIssuerJwkEncoded {
-  method: 'jwk'
-  jwk: Kms.KmsJwkPublic
-}
-
 export type TokenStatusListSigner = TokenStatusListSignerDid | TokenStatusListSignerX5c | TokenStatusListSignerJwk

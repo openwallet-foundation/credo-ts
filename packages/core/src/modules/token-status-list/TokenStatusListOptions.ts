@@ -18,8 +18,7 @@ export type StatusListInput =
       aggregationUri?: string
     }
 
-type CreateCwtTokenStatusListOptions = {
-  format: 'cwt'
+type CreateBaseTokenStatusListOptions = {
   statusList: StatusListInput
   statusListUri: string
 
@@ -47,48 +46,27 @@ type CreateCwtTokenStatusListOptions = {
    * Time-to-live in seconds. Instructs relying parties how long to cache the status list.
    */
   timeToLive?: number
+}
+
+type CreateCwtTokenStatusListOptions = {
+  format: 'cwt'
 
   /**
    * Additional claims to include in the token payload.
    */
   additionalPayload?: Map<number, unknown>
-}
+} & CreateBaseTokenStatusListOptions
 
 type CreateJwtTokenStatusListOptions = {
   format: 'jwt'
   statusList: StatusListInput
   statusListUri: string
 
-  signer: TokenStatusListSigner
-
-  alg: KnownJwaSignatureAlgorithm
-
-  /**
-   * The issuance time of the status list token. Defaults to `now`.
-   */
-  issuedAt?: Date
-
-  /**
-   * Used to derive `issuedAt` when `issuedAt` is not provided. Defaults to the current time.
-   * Not included in the token itself.
-   */
-  now?: Date
-
-  /**
-   * The expiration time of the status list token.
-   */
-  expiresAt?: Date
-
-  /**
-   * Time-to-live in seconds. Instructs relying parties how long to cache the status list.
-   */
-  timeToLive?: number
-
   /**
    * Additional claims to include in the token payload.
    */
   additionalPayload?: Record<string, unknown>
-}
+} & CreateBaseTokenStatusListOptions
 
 export type CreateTokenStatusListOptions = CreateJwtTokenStatusListOptions | CreateCwtTokenStatusListOptions
 
@@ -96,77 +74,29 @@ export type TokenStatusListResult =
   | { format: 'cwt'; statusList: Uint8Array; parsed: StatusListCwt }
   | { format: 'jwt'; statusList: string; parsed: Jwt }
 
+type UpdateBaseTokenStatusListOptions = Omit<CreateBaseTokenStatusListOptions, 'statusList' | 'statusListUri'> & {
+  status: SingleOrArray<{ index: number; status: number }>
+}
+
 type UpdateCwtTokenStatusListOptions = {
   format: 'cwt'
   token: Uint8Array
-  status: SingleOrArray<{ index: number; status: number }>
-
-  signer: TokenStatusListSigner
-
-  alg: KnownJwaSignatureAlgorithm
-
-  /**
-   * The issuance time of the updated status list token. Defaults to `now`.
-   */
-  issuedAt?: Date
-
-  /**
-   * Used to derive `issuedAt` when `issuedAt` is not provided. Defaults to the current time.
-   * Not included in the token itself.
-   */
-  now?: Date
-
-  /**
-   * The expiration time of the updated status list token.
-   */
-  expiresAt?: Date
-
-  /**
-   * Time-to-live in seconds.
-   */
-  timeToLive?: number
 
   /**
    * Additional claims to include in the token payload.
    */
   additionalPayload?: Map<number, unknown>
-}
+} & UpdateBaseTokenStatusListOptions
 
 type UpdateJwtTokenStatusListOptions = {
   format: 'jwt'
   token: string
-  status: SingleOrArray<{ index: number; status: number }>
-
-  signer: TokenStatusListSigner
-
-  alg: KnownJwaSignatureAlgorithm
-
-  /**
-   * The issuance time of the updated status list token. Defaults to `now`.
-   */
-  issuedAt?: Date
-
-  /**
-   * Used to derive `issuedAt` when `issuedAt` is not provided. Defaults to the current time.
-   * Not included in the token itself.
-   */
-  now?: Date
-
-  /**
-   * The expiration time of the updated status list token.
-   */
-  expiresAt?: Date
-
-  /**
-   * Time-to-live in seconds.
-   */
-  timeToLive?: number
 
   /**
    * Additional claims to include in the token payload.
    */
   additionalPayload?: Record<string, unknown>
-}
+} & UpdateBaseTokenStatusListOptions
 
 export type UpdateTokenStatusListOptions = UpdateCwtTokenStatusListOptions | UpdateJwtTokenStatusListOptions
 

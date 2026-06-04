@@ -14,6 +14,7 @@ import { getSign1Context } from '../../crypto/contexts/sign1Context'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import { dateToSeconds } from '../../utils'
+import { DidsApi } from '../dids'
 import { KeyManagementApi } from '../kms'
 import type {
   CreateTokenStatusListOptions,
@@ -41,13 +42,26 @@ export class TokenStatusListService {
     options: CreateTokenStatusListOptions
   ): Promise<Extract<TokenStatusListResult, { format: Format }>> {
     // TODO: jwk could also be supported
-    if (options.signer.method !== 'x5c') {
+    if (options.signer.method !== 'x5c' && options.signer.method !== 'did') {
       throw new Error(
         `signer method '${options.signer.method}' is not supported for creating a token status list. Only x5c is`
       )
     }
 
-    const [{ keyId }] = options.signer.x5c
+    let keyId: string | undefined
+    if (options.signer.method === 'x5c') {
+      keyId = options.signer.x5c[0].keyId
+    } else if (options.signer.method === 'did') {
+      const dids = agentContext.dependencyManager.resolve(DidsApi)
+      const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(options.signer.didUrl)
+      keyId = publicJwk.keyId
+    }
+
+    if (!keyId) {
+      throw new CredoError(
+        `Unable to establish key id for signer method '${options.signer.method}' when creating a token status list`
+      )
+    }
 
     const statusList =
       options.statusList instanceof StatusList ? options.statusList : emptyStatusList(options.statusList)
@@ -60,6 +74,9 @@ export class TokenStatusListService {
 
     try {
       if (options.format === 'cwt') {
+        if (options.signer.method !== 'x5c') {
+          throw new CredoError('For a CWT Token Status List, only a signer of type x5c is supported.')
+        }
         const cwtPayload = StatusListCwtPayload.create({
           subject: options.statusListUri,
           statusList,
@@ -107,11 +124,19 @@ export class TokenStatusListService {
           alg: options.alg,
           typ: 'statuslist+jwt',
         })
+        const headerWithKeyReference = {
+          ...header,
+          ...(options.signer.method === 'x5c'
+            ? { x5c: options.signer.x5c.map((cert) => cert.toString('base64')) }
+            : {}),
+          ...(options.signer.method === 'did' ? { kid: options.signer.didUrl } : {}),
+        }
+
         const jwsService = agentContext.dependencyManager.resolve(JwsService)
         const jws = await jwsService.createJwsCompact(agentContext, {
           payload: new JwtPayload({ additionalClaims: payload }),
           keyId,
-          protectedHeaderOptions: header as JwsProtectedHeaderOptions,
+          protectedHeaderOptions: headerWithKeyReference as JwsProtectedHeaderOptions,
         })
         return {
           format: 'jwt',
@@ -204,24 +229,13 @@ export class TokenStatusListService {
           statusList.setStatus(options.status.index, options.status.status)
         }
 
-        // toJson() spreads additionalClaims first then overwrites with named fields (which may be undefined),
-        // so we pull sub from additionalClaims explicitly to preserve it.
-        const existingClaims = {
-          ...jwt.payload.additionalClaims,
-          ...(jwt.payload.iss !== undefined && { iss: jwt.payload.iss }),
-          ...(jwt.payload.sub !== undefined && { sub: jwt.payload.sub }),
-          ...(jwt.payload.aud !== undefined && { aud: jwt.payload.aud }),
-          ...(jwt.payload.exp !== undefined && { exp: jwt.payload.exp }),
-          ...(jwt.payload.nbf !== undefined && { nbf: jwt.payload.nbf }),
-          ...(jwt.payload.jti !== undefined && { jti: jwt.payload.jti }),
-        }
         const updatedPayload: Record<string, unknown> = {
-          ...existingClaims,
+          ...jwt.payload.toJson(),
           ...options.additionalPayload,
-          iat: Math.floor(issuedAt.getTime() / 1000),
+          iat: dateToSeconds(issuedAt),
         }
         if (options.expiresAt !== undefined) {
-          updatedPayload.exp = Math.floor(options.expiresAt.getTime() / 1000)
+          updatedPayload.exp = dateToSeconds(options.expiresAt)
         }
         if (options.timeToLive !== undefined) {
           updatedPayload.ttl = options.timeToLive

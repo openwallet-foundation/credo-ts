@@ -165,13 +165,12 @@ export class JwtPayload {
   public toJson(): JwtPayloadJson {
     return {
       ...this.additionalClaims,
-      iss: this.iss,
-      sub: this.sub,
-      aud: this.aud,
-      exp: this.exp,
-      nbf: this.nbf,
-      iat: this.iat,
-      jti: this.jti,
+      ...(this.iss !== undefined && { iss: this.iss }),
+      ...(this.sub !== undefined && { sub: this.sub }),
+      ...(this.aud !== undefined && { aud: this.aud }),
+      ...(this.exp !== undefined && { exp: this.exp }),
+      ...(this.nbf !== undefined && { nbf: this.nbf }),
+      ...(this.jti !== undefined && { jti: this.jti }),
     }
   }
 
