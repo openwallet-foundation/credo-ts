@@ -347,7 +347,7 @@ export class DidCommDifPresentationExchangeProofFormatService
             validations: {},
             error: {
               name: 'AnonCredsVc1BridgeError',
-              message: 'Verifying the anoncreds VC1 bridge proof failed. An unknown error occurred.',
+              message: 'Verifying the anoncreds VC1 proof failed. An unknown error occurred.',
             },
           }
         } else {
