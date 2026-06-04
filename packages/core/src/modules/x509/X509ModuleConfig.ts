@@ -5,6 +5,7 @@ import type { SdJwtVc } from '../sd-jwt-vc/SdJwtVcService'
 import type { W3cJwtVerifiableCredential } from '../vc/jwt-vc/W3cJwtVerifiableCredential'
 import type { W3cJwtVerifiablePresentation } from '../vc/jwt-vc/W3cJwtVerifiablePresentation'
 import { X509Certificate } from './X509Certificate'
+import { type X509RevocationCheckOptions } from './X509ValidationOptions'
 
 export type X509VerificationTrustedCertificates = {
   issuance: string[]
@@ -109,7 +110,7 @@ export interface X509ModuleConfigOptions {
   /**
    * Optional callback method that will be called to dynamically get trusted certificates for a verification.
    * It will provide the `agentContext` and `verificationContext` allowing to dynamically set the trusted certificates
-   * for a tenant or verificaiton context.
+   * for a tenant or verification context.
    *
    * If no certificates should be trusted an empty array should be returned. If `undefined` is returned
    * it will fallback to the globally registered trusted certificates
@@ -124,16 +125,35 @@ export interface X509ModuleConfigOptions {
     | string[]
     | X509VerificationTrustedCertificates[]
     | undefined
+
+  /**
+   * Configuration for certificate revocation checking
+   * @default
+   * ```
+   * {
+   *  mode: X509RevocationCheckMode.SoftFail, // do not fail on network error
+   *  checkFullChain: false, // only check leaf
+   *  timeoutMs: 5000, // 5 seconds
+   *  maxCrlSizeBytes: 10485760, // 10MB
+   *  crlCacheExpirySeconds: 3600 // 1 hour
+   * }
+   * ```
+   */
+  revocationCheck?: X509RevocationCheckOptions
 }
 
 export class X509ModuleConfig {
   #trustedCertificates?: X509Certificate[]
   #getTrustedCertificatesForVerification?: X509ModuleConfigOptions['getTrustedCertificatesForVerification']
+  #revocationCheck?: X509RevocationCheckOptions
 
   public constructor(options?: X509ModuleConfigOptions) {
     this.setTrustedCertificates(options?.trustedCertificates)
     if (options?.getTrustedCertificatesForVerification) {
       this.setTrustedCertificatesForVerification(options.getTrustedCertificatesForVerification)
+    }
+    if (options?.revocationCheck) {
+      this.#revocationCheck = options.revocationCheck
     }
   }
 
@@ -149,6 +169,14 @@ export class X509ModuleConfig {
 
   public setTrustedCertificatesForVerification(fn: X509ModuleConfigOptions['getTrustedCertificatesForVerification']) {
     this.#getTrustedCertificatesForVerification = fn
+  }
+
+  public get revocationCheck(): X509RevocationCheckOptions | undefined {
+    return this.#revocationCheck
+  }
+
+  public setRevocationCheck(options?: X509RevocationCheckOptions) {
+    this.#revocationCheck = options
   }
 
   public setTrustedCertificates(trustedCertificates?: Array<string | X509Certificate>) {
