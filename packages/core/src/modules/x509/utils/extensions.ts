@@ -1,3 +1,4 @@
+import { DistributionPoint, DistributionPointName, GeneralName, Reason } from '@peculiar/asn1-x509'
 import {
   AuthorityKeyIdentifierExtension,
   BasicConstraintsExtension,
@@ -105,5 +106,26 @@ export const createCrlDistributionPointsExtension = (
 ) => {
   if (!options) return
 
-  return new CRLDistributionPointsExtension(options.urls, options.markAsCritical)
+  // Build a single distribution point whose `fullName` holds all URLs as alternate locations
+  // (mirrors). This mirrors how {@link X509Certificate.crlDistributionPoints} parses the
+  // extension (one distribution point with multiple URLs), so creation and parsing round-trip.
+  const distributionPoint = new DistributionPoint({
+    distributionPoint: new DistributionPointName({
+      fullName: options.urls.map((url) => new GeneralName({ uniformResourceIdentifier: url })),
+    }),
+  })
+
+  if (options.reasons && options.reasons.length > 0) {
+    // The ASN.1 BIT STRING uses bit `i` for revocation reason code `i` (e.g. keyCompromise = bit 1).
+    const reasonBits = options.reasons.reduce((mask, reason) => mask | (1 << reason), 0)
+    const reason = new Reason()
+    reason.fromNumber(reasonBits)
+    distributionPoint.reasons = reason
+  }
+
+  if (options.crlIssuer) {
+    distributionPoint.cRLIssuer = [new GeneralName({ uniformResourceIdentifier: options.crlIssuer })]
+  }
+
+  return new CRLDistributionPointsExtension([distributionPoint], options.markAsCritical)
 }

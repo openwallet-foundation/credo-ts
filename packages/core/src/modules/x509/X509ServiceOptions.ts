@@ -1,6 +1,7 @@
 import type { GeneralNameType } from '@peculiar/x509'
 import { PublicJwk } from '../kms'
 import type { X509Certificate, X509ExtendedKeyUsage, X509KeyUsage } from './X509Certificate'
+import type { X509RevocationReason } from './X509CrlDistributionPoint'
 
 type AddMarkAsCritical<T extends Record<string, Record<string, unknown>>> = T & {
   [K in keyof T]: T[K] & {
@@ -91,6 +92,24 @@ export type X509CertificateExtensionsOptions = AddMarkAsCritical<{
   }
   crlDistributionPoints?: {
     urls: Array<string>
+
+    /**
+     * Revocation reasons covered by this distribution point.
+     *
+     * If omitted, this distribution point is a "full" distribution point covering all
+     * revocation reasons. If provided, the distribution point only covers the given reasons.
+     */
+    reasons?: Array<X509RevocationReason>
+
+    /**
+     * The CRL issuer, when the CRL is issued by an entity other than the certificate issuer
+     * (an indirect CRL), as a URI.
+     *
+     * NOTE: indirect CRLs are not verified during revocation checking; this is provided for
+     * completeness so the created certificate matches what {@link X509Certificate.crlDistributionPoints}
+     * can express.
+     */
+    crlIssuer?: string
   }
 }>
 

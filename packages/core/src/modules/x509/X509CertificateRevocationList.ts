@@ -1,7 +1,8 @@
 import * as x509 from '@peculiar/x509'
 import type { AgentContext } from '../../agent'
 
-import { CredoWebCrypto } from '../../crypto/webcrypto'
+import { CredoWebCrypto, CredoWebCryptoKey, publicJwkToCryptoKeyAlgorithm } from '../../crypto/webcrypto'
+import { x509SignatureAlgorithmToJwa } from './utils'
 import { X509Certificate } from './X509Certificate'
 import { X509Error } from './X509Error'
 
@@ -9,6 +10,14 @@ export interface RevokedCertificate {
   serialNumber: string
   revocationDate: Date
   reason?: number
+}
+
+/**
+ * Normalize a hexadecimal serial number for comparison by lowercasing and stripping leading
+ * zeros, so that e.g. `0A1B2C` and `0a1b2c` are treated as equal.
+ */
+function normalizeSerialNumber(serialNumber: string): string {
+  return serialNumber.toLowerCase().replace(/^0+/, '') || '0'
 }
 
 /**
@@ -82,16 +91,29 @@ export class X509CertificateRevocationList {
   }
 
   /**
+   * Check if the CRL is not yet valid (before its thisUpdate date).
+   */
+  public isNotYetValid(date = new Date()): boolean {
+    return date < this.thisUpdate
+  }
+
+  /**
    * Verify the CRL signature using the issuer's certificate
    */
   public async verify(
     agentContext: AgentContext,
     issuerCertificate: X509Certificate
   ): Promise<{ isValid: boolean; error?: Error }> {
+    const webCrypto = new CredoWebCrypto(agentContext)
+
     try {
-      const webCrypto = new CredoWebCrypto(agentContext)
-      const rawX509Certificate = new x509.X509Certificate(issuerCertificate.rawCertificate)
-      const isValid = await this.crl.verify({ publicKey: rawX509Certificate }, webCrypto)
+      const publicJwk = issuerCertificate.publicJwk
+      const cryptoKeyAlgorithm = publicJwkToCryptoKeyAlgorithm(publicJwk, {
+        alg: publicJwk.kty === 'RSA' ? x509SignatureAlgorithmToJwa(this.crl.signatureAlgorithm) : undefined,
+      })
+      const publicCryptoKey = new CredoWebCryptoKey(publicJwk, cryptoKeyAlgorithm, true, 'public', ['verify'])
+
+      const isValid = await this.crl.verify({ publicKey: publicCryptoKey }, webCrypto)
 
       if (!isValid) {
         return {
@@ -112,21 +134,27 @@ export class X509CertificateRevocationList {
   }
 
   /**
-   * Check if a certificate is revoked in this CRL
+   * Check if a certificate is revoked in this CRL.
+   *
+   * We compare serial numbers ourselves (normalizing case and leading zeros) instead of
+   * delegating to `@peculiar/x509`'s `X509Crl.findRevoked`. The latter eagerly resolves the
+   * global crypto provider (even though it isn't needed for a serial number comparison), which
+   * throws when no provider has been registered globally.
    */
   public findRevoked(certificate: X509Certificate): RevokedCertificate | null {
-    const rawCertificate = new x509.X509Certificate(certificate.rawCertificate)
-    const revokedEntry = this.crl.findRevoked(rawCertificate)
+    const target = normalizeSerialNumber(certificate.data.serialNumber)
 
-    if (!revokedEntry) {
-      return null
+    for (const entry of this.crl.entries) {
+      if (normalizeSerialNumber(entry.serialNumber) === target) {
+        return {
+          serialNumber: entry.serialNumber,
+          revocationDate: entry.revocationDate,
+          reason: entry.reason,
+        }
+      }
     }
 
-    return {
-      serialNumber: revokedEntry.serialNumber,
-      revocationDate: revokedEntry.revocationDate,
-      reason: revokedEntry.reason,
-    }
+    return null
   }
 
   /**

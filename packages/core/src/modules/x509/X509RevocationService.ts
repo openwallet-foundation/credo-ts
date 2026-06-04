@@ -1,8 +1,8 @@
 import type { AgentContext } from '../../agent'
 
-import { fetchCrl } from './utils/crlFetcher'
+import { fetchCrl, getCachedCrl, setCachedCrl } from './utils/crlFetcher'
 import { X509Certificate } from './X509Certificate'
-import { X509CertificateRevocationList } from './X509CertificateRevocationList'
+import { type RevokedCertificate, X509CertificateRevocationList } from './X509CertificateRevocationList'
 import { ALL_REVOCATION_REASONS_MASK, X509RevocationReason } from './X509CrlDistributionPoint'
 import { X509Error } from './X509Error'
 import { X509RevocationCheckMode, type X509RevocationCheckOptions } from './X509ValidationOptions'
@@ -14,6 +14,12 @@ export interface X509RevocationCheckResult {
   details?: string
   method?: 'crl'
 }
+
+/**
+ * Default maximum cache TTL for a verified CRL (1 hour). The actual TTL is capped by the CRL's
+ * `nextUpdate`.
+ */
+const DEFAULT_CRL_CACHE_EXPIRY_SECONDS = 3600
 
 // biome-ignore lint/complexity/noStaticOnlyClass: Service class pattern used in Credo
 export class X509RevocationService {
@@ -89,7 +95,7 @@ export class X509RevocationService {
       : X509RevocationService.calculateAllReasonsInDPs(distributionPoints)
 
     let coveredReasons = 0 // Bitmask of covered reason codes
-    const allRevokedEntries: Array<{ serialNumber: string; revocationDate: Date; reason?: number }> = []
+    const coveredCrls: X509CertificateRevocationList[] = []
     const fetchedDPs: string[] = []
     const fetchErrors: string[] = [] // Track errors for DPs we couldn't fetch
     const unsupportedDPs: Array<{ reasons: number; feature: string }> = [] // Track DPs we can't process
@@ -133,8 +139,9 @@ export class X509RevocationService {
       coveredReasons |= dpReasonMask
       fetchedDPs.push(result.usedUrl)
 
-      // Collect all revoked entries from this CRL
-      allRevokedEntries.push(...result.crl.revokedCertificates)
+      // Keep the verified CRL so we can look up the certificate using the same
+      // (format-normalizing) matching logic as the single distribution point path.
+      coveredCrls.push(result.crl)
 
       // Check if we've covered all required reasons
       if ((coveredReasons & requiredReasonsMask) === requiredReasonsMask) {
@@ -172,9 +179,14 @@ export class X509RevocationService {
       throw new X509Error(errorMsg)
     }
 
-    // Step 4: Check if certificate is in any of the collected revoked entries
-    const certSerial = certificate.data.serialNumber
-    const revokedEntry = allRevokedEntries.find((entry) => entry.serialNumber === certSerial)
+    // Step 4: Check if certificate is in any of the collected CRLs.
+    // Use the CRL's own findRevoked so serial number formats are normalized consistently
+    // with the single distribution point path.
+    let revokedEntry: RevokedCertificate | null = null
+    for (const crl of coveredCrls) {
+      revokedEntry = crl.findRevoked(certificate)
+      if (revokedEntry) break
+    }
 
     if (revokedEntry) {
       return {
@@ -328,13 +340,16 @@ export class X509RevocationService {
     // Try each URL (these are mirrors) until one succeeds
     for (const url of urls) {
       try {
-        const crlData = await fetchCrl({
-          url,
-          timeoutMs: options.timeoutMs,
-          maxSizeBytes: options.maxCrlSizeBytes,
-          agentContext,
-          cacheExpirySeconds: options.crlCacheExpirySeconds,
-        })
+        // Use a cached (previously verified) CRL if available, otherwise fetch it.
+        const cachedData = await getCachedCrl(agentContext, url)
+        const crlData =
+          cachedData ??
+          (await fetchCrl({
+            url,
+            timeoutMs: options.timeoutMs,
+            maxSizeBytes: options.maxCrlSizeBytes,
+            agentContext,
+          }))
 
         const crl = X509CertificateRevocationList.fromRaw(crlData)
 
@@ -345,10 +360,32 @@ export class X509RevocationService {
           continue
         }
 
-        // Check if CRL is still valid (not expired)
+        // The CRL issuer must match the certificate's issuer (i.e. the issuer certificate's
+        // subject). The signature check above only proves the key matches; this binds the name too.
+        if (crl.issuer !== issuerCertificate.subject) {
+          lastError = `CRL issuer '${crl.issuer}' does not match certificate issuer '${issuerCertificate.subject}' for ${url}`
+          continue
+        }
+
+        // Check the CRL validity window (thisUpdate <= verificationDate <= nextUpdate)
+        if (crl.isNotYetValid(verificationDate)) {
+          lastError = `CRL from ${url} is not yet valid (thisUpdate: ${crl.thisUpdate.toISOString()})`
+          continue
+        }
         if (crl.isExpired(verificationDate)) {
           lastError = `CRL from ${url} has expired (nextUpdate: ${crl.nextUpdate?.toISOString() ?? 'unknown'})`
           continue
+        }
+
+        // Cache only freshly-fetched, fully-verified CRLs, with a TTL bounded by nextUpdate so an
+        // expired CRL is never served from the cache.
+        if (!cachedData) {
+          const ttlSeconds = X509RevocationService.computeCacheTtlSeconds(
+            crl,
+            verificationDate,
+            options.crlCacheExpirySeconds
+          )
+          await setCachedCrl(agentContext, url, crlData, ttlSeconds)
         }
 
         // Successfully fetched and verified CRL
@@ -364,6 +401,22 @@ export class X509RevocationService {
       success: false,
       error: lastError ?? `All CRL URLs failed: ${urls.join(', ')}`,
     }
+  }
+
+  /**
+   * Compute the cache TTL (in seconds) for a verified CRL: the time until its `nextUpdate`, capped
+   * at `maxSeconds` (default 1 hour). Returns 0 when the CRL is already at/after `nextUpdate` so it
+   * is not cached.
+   */
+  private static computeCacheTtlSeconds(
+    crl: X509CertificateRevocationList,
+    verificationDate: Date,
+    maxSeconds = DEFAULT_CRL_CACHE_EXPIRY_SECONDS
+  ): number {
+    if (!crl.nextUpdate) return maxSeconds
+
+    const secondsUntilNextUpdate = Math.floor((crl.nextUpdate.getTime() - verificationDate.getTime()) / 1000)
+    return Math.max(0, Math.min(maxSeconds, secondsUntilNextUpdate))
   }
 
   /**

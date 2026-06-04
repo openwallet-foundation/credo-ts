@@ -239,16 +239,14 @@ export class X509Certificate {
       // If reasons is undefined/null, this is a "full" distribution point covering all reasons
       let reasons: X509RevocationReason[] | undefined
       if (dp.reasons !== undefined && dp.reasons !== null) {
-        // The reasons field is a bit string (number) representing which reason codes are covered
-        // Convert to array of reason code numbers
-        const reasonBits = Number(dp.reasons)
-        if (!Number.isNaN(reasonBits)) {
-          reasons = []
-          for (let i = 0; i <= 8; i++) {
-            // Check if bit i is set (reasons 0-8)
-            if ((reasonBits & (1 << i)) !== 0) {
-              reasons.push(i)
-            }
+        // The reasons field is an ASN.1 BIT STRING. `toNumber()` returns a bitmask where
+        // bit `i` corresponds to revocation reason code `i` (e.g. keyCompromise = bit 1).
+        const reasonBits = dp.reasons.toNumber()
+        reasons = []
+        for (let i = 0; i <= 8; i++) {
+          // Check if bit i is set (reasons 0-8)
+          if ((reasonBits & (1 << i)) !== 0) {
+            reasons.push(i)
           }
         }
       }
@@ -346,6 +344,7 @@ export class X509Certificate {
         notBefore: options.validity?.notBefore,
         notAfter: options.validity?.notAfter,
         extensions: extensions.filter((e) => e !== undefined),
+        serialNumber: options.serialNumber,
       },
       webCrypto
     )
