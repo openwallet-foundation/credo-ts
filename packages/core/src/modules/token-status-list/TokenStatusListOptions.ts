@@ -54,7 +54,7 @@ type CreateCwtTokenStatusListOptions = {
   /**
    * Additional claims to include in the token payload.
    */
-  additionalPayload?: Map<number, unknown>
+  additionalPayload?: Map<number | string, unknown>
 } & CreateBaseTokenStatusListOptions
 
 type CreateJwtTokenStatusListOptions = {
@@ -85,7 +85,7 @@ type UpdateCwtTokenStatusListOptions = {
   /**
    * Additional claims to include in the token payload.
    */
-  additionalPayload?: Map<number, unknown>
+  additionalPayload?: Map<number | string, unknown>
 } & UpdateBaseTokenStatusListOptions
 
 type UpdateJwtTokenStatusListOptions = {

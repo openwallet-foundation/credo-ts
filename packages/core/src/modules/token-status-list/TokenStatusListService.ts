@@ -14,7 +14,7 @@ import { getSign1Context } from '../../crypto/contexts/sign1Context'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import { dateToSeconds } from '../../utils'
-import { DidsApi } from '../dids'
+import { DidsApi, parseDid } from '../dids'
 import { KeyManagementApi } from '../kms'
 import type {
   CreateTokenStatusListOptions,
@@ -44,7 +44,7 @@ export class TokenStatusListService {
     // TODO: jwk could also be supported
     if (options.signer.method !== 'x5c' && options.signer.method !== 'did') {
       throw new Error(
-        `signer method '${options.signer.method}' is not supported for creating a token status list. Only x5c is`
+        `signer method '${options.signer.method}' is not supported for creating a token status list. Only x5c and did`
       )
     }
 
@@ -112,6 +112,7 @@ export class TokenStatusListService {
           ...options.additionalPayload,
           sub: options.statusListUri,
           iat: dateToSeconds(issuedAt),
+          ...(options.signer.method === 'did' ? { iss: parseDid(options.signer.didUrl).did } : {}),
         }
         if (options.expiresAt !== undefined) {
           basePayload.exp = dateToSeconds(options.expiresAt)
@@ -129,7 +130,7 @@ export class TokenStatusListService {
           ...(options.signer.method === 'x5c'
             ? { x5c: options.signer.x5c.map((cert) => cert.toString('base64')) }
             : {}),
-          ...(options.signer.method === 'did' ? { kid: options.signer.didUrl } : {}),
+          ...(options.signer.method === 'did' ? { kid: `#${parseDid(options.signer.didUrl).fragment}` } : {}),
         }
 
         const jwsService = agentContext.dependencyManager.resolve(JwsService)

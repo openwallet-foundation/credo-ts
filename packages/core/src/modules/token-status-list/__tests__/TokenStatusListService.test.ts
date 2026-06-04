@@ -4,7 +4,7 @@ import { Agent } from '../../../agent/Agent'
 import { JwsService, Jwt } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../modules/kms'
-import { DidKey } from '../../dids'
+import { DidKey, parseDid } from '../../dids'
 import { X509Certificate, X509Service } from '../../x509'
 import type { CreateTokenStatusListOptions, UpdateTokenStatusListOptions } from '../TokenStatusListOptions'
 import { TokenStatusListService } from '../TokenStatusListService'
@@ -153,7 +153,8 @@ describe('TokenStatusListService', () => {
       const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
       const { header, payload } = Jwt.fromSerializedJwt(result.statusList as string)
-      expect(header.kid).toStrictEqual(didUrl)
+      expect(header.kid).toStrictEqual(`#${parseDid(didUrl).fragment}`)
+      expect(payload.iss).toStrictEqual(parseDid(didUrl).did)
       expect(payload.additionalClaims.status_list).toBeDefined()
 
       await expect(
