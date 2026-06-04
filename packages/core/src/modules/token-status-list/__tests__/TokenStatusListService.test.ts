@@ -1,7 +1,7 @@
 import { StatusListCwt, StatusType } from '@owf/token-status-list'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { CredoError } from '../../../error'
-import { KeyManagementApi, type KmsJwkPublicEc, PublicJwk } from '../../../modules/kms'
+import { KeyManagementApi, type KmsJwkPublicEc, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../modules/kms'
 import { X509Certificate, X509Service } from '../../x509'
 import type { CreateTokenStatusListOptions, UpdateTokenStatusListOptions } from '../TokenStatusListOptions'
 import { TokenStatusListService } from '../TokenStatusListService'
@@ -53,8 +53,11 @@ describe('TokenStatusListService', () => {
     test('creates a CWT status list with sign1', async () => {
       const options = {
         format: 'cwt',
-        statusListLength: 16,
-        bitsPerStatus: 1,
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        statusList: {
+          statusListLength: 16,
+          bitsPerStatus: 1,
+        },
         statusListUri: 'https://example.com/status/1',
         signer: {
           method: 'x5c',
@@ -78,9 +81,12 @@ describe('TokenStatusListService', () => {
     test('throws error for unsupported format', async () => {
       const options = {
         format: 'invalid' as const,
-        statusListLength: 16,
-        bitsPerStatus: 1,
-        hostingUri: 'https://example.com/status/1',
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        statusList: {
+          statusListLength: 16,
+          bitsPerStatus: 1,
+        },
+        statusListUri: 'https://example.com/status/1',
         signer: {
           method: 'x5c',
           x5c: [certificate],
@@ -96,16 +102,18 @@ describe('TokenStatusListService', () => {
       const keyWithoutAlg = { ...key.toJson(), alg: undefined }
       vi.spyOn(kms, 'getPublicKey').mockResolvedValueOnce(keyWithoutAlg)
 
-      const options: CreateTokenStatusListOptions = {
+      const options = {
         format: 'cwt',
-        statusListLength: 16,
-        bitsPerStatus: 1,
+        statusList: {
+          statusListLength: 16,
+          bitsPerStatus: 1,
+        },
         statusListUri: 'https://example.com/status/1',
         signer: {
           method: 'x5c',
           x5c: [certificate],
         },
-      }
+      } as unknown as CreateTokenStatusListOptions
 
       await expect(tokenStatusListService.createTokenStatusList(agentContext, options)).rejects.toThrow(CredoError)
     })
@@ -116,8 +124,11 @@ describe('TokenStatusListService', () => {
       // First create a CWT status list
       const createOptions: CreateTokenStatusListOptions = {
         format: 'cwt',
-        statusListLength: 16,
-        bitsPerStatus: 1,
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        statusList: {
+          statusListLength: 16,
+          bitsPerStatus: 1,
+        },
         statusListUri: 'https://example.com/status/1',
         signer: {
           method: 'x5c',
@@ -129,6 +140,8 @@ describe('TokenStatusListService', () => {
 
       // Now update it
       const result = await tokenStatusListService.updateTokenStatusList(agentContext, {
+        format: 'cwt',
+        alg: KnownJwaSignatureAlgorithms.ES256,
         token: statusList as Uint8Array,
         status: { index: 3, status: StatusType.Invalid },
         signer: {
@@ -141,7 +154,7 @@ describe('TokenStatusListService', () => {
       expect(result.statusList).toBeInstanceOf(Uint8Array)
 
       // Verify the status was updated
-      const cwt = StatusListCwt.fromToken(result.statusList)
+      const cwt = StatusListCwt.fromToken(result.statusList as Uint8Array)
       expect(cwt.payload.statusList.getStatus(3)).toBe(1)
     })
 
@@ -156,7 +169,7 @@ describe('TokenStatusListService', () => {
       }
 
       await expect(
-        tokenStatusListService.updateTokenStatusList(agentContext, options as UpdateTokenStatusListOptions<Uint8Array>)
+        tokenStatusListService.updateTokenStatusList(agentContext, options as UpdateTokenStatusListOptions)
       ).rejects.toThrow(CredoError)
     })
   })
@@ -166,8 +179,11 @@ describe('TokenStatusListService', () => {
       // First create a CWT status list
       const createOptions: CreateTokenStatusListOptions = {
         format: 'cwt',
-        statusListLength: 24,
-        bitsPerStatus: 1,
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        statusList: {
+          statusListLength: 24,
+          bitsPerStatus: 1,
+        },
         statusListUri: 'https://example.com/status/1',
         signer: {
           method: 'x5c',
@@ -179,6 +195,8 @@ describe('TokenStatusListService', () => {
 
       // Now update multiple
       const result = await tokenStatusListService.updateTokenStatusList(agentContext, {
+        format: 'cwt',
+        alg: KnownJwaSignatureAlgorithms.ES256,
         token: statusList as Uint8Array,
         status: [
           { index: 1, status: StatusType.Invalid },
@@ -195,7 +213,7 @@ describe('TokenStatusListService', () => {
       expect(result.statusList).toBeInstanceOf(Uint8Array)
 
       // Verify the statuses were updated
-      const cwt = StatusListCwt.fromToken(result.statusList)
+      const cwt = StatusListCwt.fromToken(result.statusList as Uint8Array)
       expect(cwt.payload.statusList.getStatus(1)).toBe(1)
       expect(cwt.payload.statusList.getStatus(7)).toBe(1)
       expect(cwt.payload.statusList.getStatus(12)).toBe(1)

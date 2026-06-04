@@ -105,25 +105,28 @@ describe('mdoc service test', () => {
   test('can create and verify mdoc with status', async () => {
     const statusListUri = 'https://example.org/token-status-list/8'
     const { statusList } = await tokenStatusList.createTokenStatusList({
-      bitsPerStatus: 1,
       format: 'cwt',
       signer: {
         method: 'x5c',
         x5c: [certificate],
       },
-      algorithm: KnownJwaSignatureAlgorithms.ES256,
-      statusListLength: 10,
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: {
+        statusListLength: 10,
+        bitsPerStatus: 1,
+      },
       statusListUri,
     })
 
     const { statusList: updatedStatusList } = await tokenStatusList.updateTokenStatusList({
+      format: 'cwt',
       status: { status: StatusType.Valid, index: 1 },
-      token: statusList,
+      token: statusList as Uint8Array,
       signer: {
         method: 'x5c',
         x5c: [certificate],
       },
-      algorithm: KnownJwaSignatureAlgorithms.ES256,
+      alg: KnownJwaSignatureAlgorithms.ES256,
     })
 
     nock('https://example.org')
