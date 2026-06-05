@@ -1,6 +1,7 @@
 import {
   AgentContext,
   CredoError,
+  type EncodedX509Certificate,
   Hasher,
   JsonEncoder,
   JwsService,
@@ -11,6 +12,7 @@ import {
   X509Certificate,
   X509ModuleConfig,
   X509Service,
+  type X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import type {
   CallbackContext,
@@ -29,7 +31,7 @@ import { getPublicJwkFromDid } from './utils'
 export function getOid4vcJwtVerifyCallback(
   agentContext: AgentContext,
   options?: {
-    trustedCertificates?: string[]
+    trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
 
     issuanceSessionId?: string
 

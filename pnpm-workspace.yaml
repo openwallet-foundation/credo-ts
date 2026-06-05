@@ -47,4 +47,3 @@ onlyBuiltDependencies:
   - cbor-extract
   - koffi
   - zstd-napi
-
