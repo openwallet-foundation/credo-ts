@@ -23,6 +23,7 @@ import {
   X509ModuleConfig,
   type X509VerificationTrustedCertificates,
 } from '../x509'
+import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
@@ -593,9 +594,7 @@ export class SdJwtVcService {
 
       await X509Service.validateCertificateChain(agentContext, {
         certificateChain: sdJwtVc.jwt.header.x5c,
-        trustedCertificates: x509ModuleConfig
-          .convertLegacyTrustedCertificates(trustedCertificates)
-          .flatMap(({ issuance }) => issuance),
+        trustedCertificates: convertLegacyTrustedCertificates(trustedCertificates).flatMap(({ issuance }) => issuance),
       })
 
       return {

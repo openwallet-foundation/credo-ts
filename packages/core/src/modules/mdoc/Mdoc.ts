@@ -4,7 +4,9 @@ import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { ClaimFormat } from '../vc/index'
-import { X509Certificate, X509ModuleConfig } from '../x509'
+import { X509Certificate } from '../x509'
+import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
+import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
@@ -189,7 +191,7 @@ export class Mdoc {
     })
 
     try {
-      const convertedTrustedCertificates = x509ModuleConfig.convertLegacyTrustedCertificates(trustedCertificates)
+      const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates)
       await Holder.verifyIssuerSigned(
         {
           trustedCertificates: convertedTrustedCertificates.map(({ issuance, status }) => ({

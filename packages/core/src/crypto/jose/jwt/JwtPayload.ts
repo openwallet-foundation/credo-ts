@@ -171,6 +171,7 @@ export class JwtPayload {
       ...(this.exp !== undefined && { exp: this.exp }),
       ...(this.nbf !== undefined && { nbf: this.nbf }),
       ...(this.jti !== undefined && { jti: this.jti }),
+      ...(this.iat !== undefined && { iat: this.iat }),
     }
   }
 

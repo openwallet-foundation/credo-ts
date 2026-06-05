@@ -25,7 +25,8 @@ import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { TypedArrayEncoder } from './../../utils'
 import { PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc'
-import { X509Certificate, X509ModuleConfig } from '../x509'
+import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
+import { X509Certificate } from '../x509/X509Certificate'
 import type { Mdoc } from './Mdoc'
 import { MdocError } from './MdocError'
 import type {
@@ -291,7 +292,6 @@ export class MdocDeviceResponse {
   }
 
   public async verify(agentContext: AgentContext, options: Omit<MdocDeviceResponseVerifyOptions, 'deviceResponse'>) {
-    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
     const mdocContext = getMdocContext(agentContext)
 
     defaultVerificationCallback({
@@ -300,7 +300,7 @@ export class MdocDeviceResponse {
       category: 'DOCUMENT_FORMAT',
     })
 
-    const trustedCertificates = x509ModuleConfig.convertLegacyTrustedCertificates(options.trustedCertificates ?? [])
+    const trustedCertificates = convertLegacyTrustedCertificates(options.trustedCertificates ?? [])
 
     await this.deviceResponse
       .verify(

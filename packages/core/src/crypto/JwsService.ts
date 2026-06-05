@@ -10,12 +10,10 @@ import {
   PublicJwk,
 } from '../modules/kms'
 import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
-import {
-  type EncodedX509Certificate,
-  X509ModuleConfig,
-  type X509VerificationTrustedCertificates,
-} from '../modules/x509'
+import { convertLegacyTrustedCertificates } from '../modules/x509/utils/convertLegacyTrustedCertificates'
+import { X509ModuleConfig, type X509VerificationTrustedCertificates } from '../modules/x509/X509ModuleConfig'
 import { X509Service } from './../modules/x509/X509Service'
+import { type EncodedX509Certificate } from '../modules/x509/X509ServiceOptions'
 import { injectable } from '../plugins'
 import { isJsonObject } from '../types'
 import { JsonEncoder, TypedArrayEncoder } from '../utils'
@@ -278,7 +276,7 @@ export class JwsService {
         )
       }
 
-      const convertedTrustedCertificates = x509ModuleConfig.convertLegacyTrustedCertificates(trustedCertificates)
+      const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates)
 
       await X509Service.validateCertificateChain(agentContext, {
         certificateChain: jwsSigner.x5c,

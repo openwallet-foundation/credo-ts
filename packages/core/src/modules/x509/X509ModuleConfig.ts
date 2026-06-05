@@ -1,15 +1,14 @@
-import type { AgentContext } from '../../agent'
-import type { JwtPayload } from '../../crypto'
+import type { AgentContext } from '../../agent/context/AgentContext'
+import type { JwtPayload } from '../../crypto/jose/jwt/JwtPayload'
 import type { Mdoc } from '../mdoc/Mdoc'
-import type { SdJwtVc } from '../sd-jwt-vc'
-import type { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from '../vc'
-
+import type { SdJwtVc } from '../sd-jwt-vc/SdJwtVcService'
+import type { W3cJwtVerifiableCredential } from '../vc/jwt-vc/W3cJwtVerifiableCredential'
+import type { W3cJwtVerifiablePresentation } from '../vc/jwt-vc/W3cJwtVerifiablePresentation'
 import { X509Certificate } from './X509Certificate'
-import type { EncodedX509Certificate } from './X509ServiceOptions'
 
 export type X509VerificationTrustedCertificates = {
-  issuance: EncodedX509Certificate[]
-  status?: EncodedX509Certificate[]
+  issuance: string[]
+  status?: string[]
 }
 
 export type X509VerificationTypeCredential = {
@@ -172,13 +171,5 @@ export class X509ModuleConfig {
     }
 
     this.#trustedCertificates.push(certificateInstance)
-  }
-
-  public convertLegacyTrustedCertificates(
-    trustedCertificates: string[] | X509VerificationTrustedCertificates[]
-  ): X509VerificationTrustedCertificates[] {
-    return trustedCertificates.every((tc) => typeof tc === 'string')
-      ? trustedCertificates.map((tc) => ({ issuance: [tc] }))
-      : (trustedCertificates as X509VerificationTrustedCertificates[])
   }
 }
