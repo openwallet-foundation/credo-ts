@@ -20,7 +20,7 @@ function asDidPurpose(proofPurpose: string): DidPurpose | undefined {
   return (DID_PROOF_PURPOSES as string[]).includes(proofPurpose) ? (proofPurpose as DidPurpose) : undefined
 }
 
-export class W3cDataIntegrityProofPurposeValidator {
+export class W3cV2DataIntegrityProofPurposeValidator {
   public async validate(
     agentContext: AgentContext,
     proof: DataIntegrityCryptosuiteProof

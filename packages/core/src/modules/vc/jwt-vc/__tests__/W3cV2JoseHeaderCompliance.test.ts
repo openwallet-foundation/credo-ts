@@ -113,6 +113,118 @@ describe('W3cV2 JOSE header and data model compliance', () => {
     expect(() => W3cV2SdJwtVerifiablePresentation.fromCompact(compact)).not.toThrow()
   })
 
+  test('accepts vc+jwt when JOSE header iss conflicts with payload iss (SHOULD)', () => {
+    const withPayloadIss = rewriteCompactJwtPayload(CredoEs256DidJwkJwtVcJwt, (payload) => ({
+      ...payload,
+      iss:
+        typeof payload.issuer === 'string'
+          ? payload.issuer
+          : typeof payload.issuer === 'object' && payload.issuer && 'id' in payload.issuer
+            ? (payload.issuer.id as string)
+            : 'did:example:issuer',
+    }))
+    const compact = rewriteCompactJoseHeader(withPayloadIss, (header) => ({
+      ...header,
+      iss: 'did:example:issuer-b',
+    }))
+
+    expect(() => W3cV2JwtVerifiableCredential.fromCompact(compact)).not.toThrow()
+  })
+
+  test('accepts vc+sd-jwt when JOSE header iss conflicts with payload iss (SHOULD)', () => {
+    const withPayloadIss = rewriteSdJwtPayload(CredoEs256DidJwkJwtVcSdJwt, (payload) => ({
+      ...payload,
+      iss:
+        typeof payload.issuer === 'string'
+          ? payload.issuer
+          : typeof payload.issuer === 'object' && payload.issuer && 'id' in payload.issuer
+            ? (payload.issuer.id as string)
+            : 'did:example:issuer',
+    }))
+    const compact = rewriteSdJwtJoseHeader(withPayloadIss, (header) => ({
+      ...header,
+      iss: 'did:example:issuer-b',
+    }))
+
+    expect(() => W3cV2SdJwtVerifiableCredential.fromCompact(compact)).not.toThrow()
+  })
+
+  test('rejects vc+jwt when payload iss conflicts with credential issuer', () => {
+    const compact = rewriteCompactJwtPayload(CredoEs256DidJwkJwtVcJwt, (payload) => ({
+      ...payload,
+      iss: 'did:example:not-the-issuer',
+    }))
+
+    expect(() => W3cV2JwtVerifiableCredential.fromCompact(compact)).toThrow(/'iss' and 'issuer'/)
+  })
+
+  test('rejects vc+sd-jwt when payload iss conflicts with credential issuer', () => {
+    const compact = rewriteSdJwtPayload(CredoEs256DidJwkJwtVcSdJwt, (payload) => ({
+      ...payload,
+      iss: 'did:example:not-the-issuer',
+    }))
+
+    expect(() => W3cV2SdJwtVerifiableCredential.fromCompact(compact)).toThrow(/'iss' and 'issuer'/)
+  })
+
+  test('accepts vc+jwt when payload jti conflicts with credential id (SHOULD)', () => {
+    const compact = rewriteCompactJwtPayload(CredoEs256DidJwkJwtVcJwt, (payload) => ({
+      ...payload,
+      id: 'urn:cred:expected',
+      jti: 'urn:cred:actual',
+    }))
+
+    expect(() => W3cV2JwtVerifiableCredential.fromCompact(compact)).not.toThrow()
+  })
+
+  test('accepts vc+sd-jwt when payload jti conflicts with credential id (SHOULD)', () => {
+    const compact = rewriteSdJwtPayload(CredoEs256DidJwkJwtVcSdJwt, (payload) => ({
+      ...payload,
+      id: 'urn:cred:expected',
+      jti: 'urn:cred:actual',
+    }))
+
+    expect(() => W3cV2SdJwtVerifiableCredential.fromCompact(compact)).not.toThrow()
+  })
+
+  test('accepts vc+jwt when payload sub conflicts with credentialSubject.id (SHOULD)', () => {
+    const compact = rewriteCompactJwtPayload(CredoEs256DidJwkJwtVcJwt, (payload) => ({
+      ...payload,
+      sub: 'did:example:not-the-subject',
+    }))
+
+    expect(() => W3cV2JwtVerifiableCredential.fromCompact(compact)).not.toThrow()
+  })
+
+  test('accepts vc+sd-jwt when payload sub conflicts with credentialSubject.id (SHOULD)', () => {
+    const compact = rewriteSdJwtPayload(CredoEs256DidJwkJwtVcSdJwt, (payload) => ({
+      ...payload,
+      sub: 'did:example:not-the-subject',
+    }))
+
+    expect(() => W3cV2SdJwtVerifiableCredential.fromCompact(compact)).not.toThrow()
+  })
+
+  test('accepts vp+jwt when payload jti conflicts with presentation id (SHOULD)', () => {
+    const compact = rewriteCompactJwtPayload(CredoEs256DidKeyJwtVpJwt, (payload) => ({
+      ...payload,
+      id: 'urn:vp:expected',
+      jti: 'urn:vp:actual',
+    }))
+
+    expect(() => W3cV2JwtVerifiablePresentation.fromCompact(compact)).not.toThrow()
+  })
+
+  test('accepts vp+sd-jwt when payload jti conflicts with presentation id (SHOULD)', () => {
+    const compact = rewriteSdJwtPayload(CredoEs256DidKeyJwtVpSdJwt, (payload) => ({
+      ...payload,
+      id: 'urn:vp:expected',
+      jti: 'urn:vp:actual',
+    }))
+
+    expect(() => W3cV2SdJwtVerifiablePresentation.fromCompact(compact)).not.toThrow()
+  })
+
   test('rejects vc+jwt payloads that include forbidden vc claim', () => {
     const compact = rewriteCompactJwtPayload(CredoEs256DidJwkJwtVcJwt, (payload) => ({ ...payload, vc: {} }))
 

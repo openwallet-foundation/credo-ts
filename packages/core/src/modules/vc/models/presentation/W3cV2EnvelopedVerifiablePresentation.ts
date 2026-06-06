@@ -30,6 +30,17 @@ export class W3cV2EnvelopedVerifiablePresentation {
   public type!: SingleOrArray<string>
 }
 
+export function isEnvelopedVerifiablePresentationEntry(
+  value: unknown
+): value is W3cV2EnvelopedVerifiablePresentationOptions {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+
+  const type = (value as { type?: unknown }).type
+  const values = Array.isArray(type) ? type : [type]
+
+  return values.some((entry) => entry === ENVELOPED_VERIFIABLE_PRESENTATION_TYPE)
+}
+
 export function IsEnvelopedVerifiablePresentationType(validationOptions?: ValidationOptions): PropertyDecorator {
   return ValidateBy(
     {

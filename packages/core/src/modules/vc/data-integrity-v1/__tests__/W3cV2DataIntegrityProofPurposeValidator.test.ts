@@ -8,15 +8,15 @@ import {
   type W3cDataIntegrityCryptosuiteProof as DataIntegrityCryptosuiteProof,
   W3cDataIntegrityProcessingErrorCode as DataIntegrityProcessingErrorCode,
 } from '../../../w3c-di/internal'
-import { W3cDataIntegrityProofPurposeValidator } from '../W3cDataIntegrityProofPurposeValidator'
+import { W3cV2DataIntegrityProofPurposeValidator } from '../W3cV2DataIntegrityProofPurposeValidator'
 
 const validProofValue = MultiBaseEncoder.encode(TypedArrayEncoder.fromUtf8String('proof-value'), 'base58btc')
 
 describe('proofPurpose', () => {
   test('rejects unsupported proof purposes', async () => {
-    const validator = new W3cDataIntegrityProofPurposeValidator()
+    const validator = new W3cV2DataIntegrityProofPurposeValidator()
     const agentContext = getAgentContext({
-      agentConfig: getAgentConfig('W3cDataIntegrityProofPurposeValidatorTest'),
+      agentConfig: getAgentConfig('W3cV2DataIntegrityProofPurposeValidatorTest'),
     })
 
     const result = await validator.validate(agentContext as AgentContext, {
@@ -38,9 +38,9 @@ describe('proofPurpose', () => {
       }),
     })
 
-    const validator = new W3cDataIntegrityProofPurposeValidator()
+    const validator = new W3cV2DataIntegrityProofPurposeValidator()
     const agentContext = getAgentContext({
-      agentConfig: getAgentConfig('W3cDataIntegrityProofPurposeValidatorTest'),
+      agentConfig: getAgentConfig('W3cV2DataIntegrityProofPurposeValidatorTest'),
       registerInstances: [[DidsApi, { resolveDidDocument }]],
     })
 
@@ -59,9 +59,9 @@ describe('proofPurpose', () => {
   test('rejects missing verificationMethod for proof purpose validation', async () => {
     const resolveDidDocument = vi.fn()
 
-    const validator = new W3cDataIntegrityProofPurposeValidator()
+    const validator = new W3cV2DataIntegrityProofPurposeValidator()
     const agentContext = getAgentContext({
-      agentConfig: getAgentConfig('W3cDataIntegrityProofPurposeValidatorTest'),
+      agentConfig: getAgentConfig('W3cV2DataIntegrityProofPurposeValidatorTest'),
       registerInstances: [[DidsApi, { resolveDidDocument }]],
     })
 
@@ -83,9 +83,9 @@ describe('proofPurpose', () => {
   test('rejects non-string verificationMethod for proof purpose validation', async () => {
     const resolveDidDocument = vi.fn()
 
-    const validator = new W3cDataIntegrityProofPurposeValidator()
+    const validator = new W3cV2DataIntegrityProofPurposeValidator()
     const agentContext = getAgentContext({
-      agentConfig: getAgentConfig('W3cDataIntegrityProofPurposeValidatorTest'),
+      agentConfig: getAgentConfig('W3cV2DataIntegrityProofPurposeValidatorTest'),
       registerInstances: [[DidsApi, { resolveDidDocument }]],
     })
 

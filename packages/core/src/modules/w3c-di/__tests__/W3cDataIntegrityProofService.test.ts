@@ -360,6 +360,44 @@ describe('W3cDataIntegrityProofService', () => {
     expect(mockCreateByCryptosuite).toHaveBeenCalledTimes(1)
   })
 
+  test('verifyProof omits undefined object fields at the service boundary before calling cryptosuite', async () => {
+    const verifyProof = vi.fn().mockResolvedValue({
+      verified: true,
+      verifiedDocument: { type: ['Example'] },
+    })
+
+    mockCreateByCryptosuite.mockReturnValue({ verifyProof })
+
+    const securedDocument = {
+      id: undefined,
+      type: ['Example'],
+      nested: {
+        keep: 'value',
+        remove: undefined,
+      },
+      proof: {
+        type: 'DataIntegrityProof',
+        cryptosuite: 'eddsa-jcs-2022',
+        verificationMethod: 'did:example:123#key-1',
+        proofPurpose: 'assertionMethod',
+        proofValue: validProofValue,
+      },
+    } as unknown as W3cDataIntegritySingleProofSecuredDocument
+
+    const result = await service.verifyProof(agentContext, securedDocument)
+
+    expect(result.verified).toBe(true)
+    expect(verifyProof).toHaveBeenCalledWith({
+      unsecuredDocument: {
+        type: ['Example'],
+        nested: {
+          keep: 'value',
+        },
+      },
+      proof: securedDocument.proof,
+    })
+  })
+
   test('verifyProof rejects malformed verificationMethod values before cryptosuite verification', async () => {
     mockCreateByCryptosuite.mockReturnValue({
       verifyProof: vi.fn().mockResolvedValue({

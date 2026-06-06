@@ -6,7 +6,6 @@ import { injectable } from '../../../plugins'
 import { asArray, JsonTransformer, MessageValidator, nowInSeconds } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { extractKeyFromHolderBinding } from '../../sd-jwt-vc/utils'
-import { CREDENTIALS_CONTEXT_V2_URL } from '../constants'
 import type { W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models'
 import { validateCredentialSubjectAuthentication } from '../util'
 import {
@@ -118,20 +117,10 @@ export class W3cV2JwtCredentialService {
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
+        this.logCredentialShouldWarnings(agentContext, credential)
+
         validationResults.validations.dataModel = validateVc2ContextBaseline(credential.resolvedCredential.context)
         if (!validationResults.validations.dataModel.isValid) {
-          return validationResults
-        }
-
-        const firstContext = Array.isArray(credential.resolvedCredential.context)
-          ? credential.resolvedCredential.context[0]
-          : credential.resolvedCredential.context
-        if (firstContext !== CREDENTIALS_CONTEXT_V2_URL) {
-          validationResults.validations.dataModel = {
-            isValid: false,
-            error: new CredoError(`VC2 @context must start with '${CREDENTIALS_CONTEXT_V2_URL}'`),
-          }
-
           return validationResults
         }
 
@@ -148,6 +137,7 @@ export class W3cV2JwtCredentialService {
         validationResults.validations.credentialStatus = validateVc2CredentialStatus({
           credentialStatus: credential.resolvedCredential.credentialStatus,
           credentialFormat: 'JWT',
+          verifyCredentialStatus: options.verifyCredentialStatus,
         })
       } catch (error) {
         validationResults.validations.dataModel = {
@@ -305,6 +295,8 @@ export class W3cV2JwtCredentialService {
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
+        this.logPresentationShouldWarnings(agentContext, presentation)
+
         // Make sure challenge matches nonce
         if (options.challenge !== presentation.jwt.payload.additionalClaims.nonce) {
           throw new CredoError(`JWT payload 'nonce' does not match challenge '${options.challenge}'`)
@@ -318,13 +310,6 @@ export class W3cV2JwtCredentialService {
         const contextValidationResult = validateVc2ContextBaseline(presentation.resolvedPresentation.context)
         if (!contextValidationResult.isValid) {
           throw contextValidationResult.error
-        }
-
-        const firstContext = Array.isArray(presentation.resolvedPresentation.context)
-          ? presentation.resolvedPresentation.context[0]
-          : presentation.resolvedPresentation.context
-        if (firstContext !== CREDENTIALS_CONTEXT_V2_URL) {
-          throw new CredoError(`VC2 @context must start with '${CREDENTIALS_CONTEXT_V2_URL}'`)
         }
 
         validationResults.presentation.validations.dataModel = {
@@ -442,6 +427,67 @@ export class W3cV2JwtCredentialService {
     } catch (error) {
       validationResults.error = error
       return validationResults
+    }
+  }
+
+  private logCredentialShouldWarnings(agentContext: AgentContext, credential: W3cV2JwtVerifiableCredential) {
+    const payload = credential.jwt.payload
+    const headerIss = credential.jwt.header.iss
+
+    if (typeof headerIss === 'string' && typeof payload.iss === 'string' && headerIss !== payload.iss) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: JOSE header iss conflicts with payload iss', {
+        format: 'vc+jwt',
+        headerIss,
+        payloadIss: payload.iss,
+      })
+    }
+
+    if (
+      typeof payload.jti === 'string' &&
+      credential.resolvedCredential.id &&
+      credential.resolvedCredential.id !== payload.jti
+    ) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: jti claim conflicts with credential id', {
+        format: 'vc+jwt',
+        jti: payload.jti,
+        credentialId: credential.resolvedCredential.id,
+      })
+    }
+
+    if (typeof payload.sub === 'string' && !credential.resolvedCredential.credentialSubjectIds.includes(payload.sub)) {
+      agentContext.config.logger.warn(
+        'VC-JOSE-COSE SHOULD warning: sub claim does not match any credentialSubject.id',
+        {
+          format: 'vc+jwt',
+          sub: payload.sub,
+          credentialSubjectIds: credential.resolvedCredential.credentialSubjectIds,
+        }
+      )
+    }
+  }
+
+  private logPresentationShouldWarnings(agentContext: AgentContext, presentation: W3cV2JwtVerifiablePresentation) {
+    const payload = presentation.jwt.payload
+    const headerIss = presentation.jwt.header.iss
+
+    if (typeof headerIss === 'string' && typeof payload.iss === 'string' && headerIss !== payload.iss) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: JOSE header iss conflicts with payload iss', {
+        format: 'vp+jwt',
+        headerIss,
+        payloadIss: payload.iss,
+      })
+    }
+
+    if (
+      typeof payload.jti === 'string' &&
+      presentation.resolvedPresentation.id &&
+      presentation.resolvedPresentation.id !== payload.jti
+    ) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: jti claim conflicts with presentation id', {
+        format: 'vp+jwt',
+        jti: payload.jti,
+        presentationId: presentation.resolvedPresentation.id,
+      })
     }
   }
 }

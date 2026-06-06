@@ -1,7 +1,7 @@
 import type { AgentContext } from '../../../agent/context'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
-import { asArray, JsonTransformer, MessageValidator } from '../../../utils'
+import { JsonTransformer, MessageValidator } from '../../../utils'
 import {
   createW3cDataIntegrityCredoError as createDataIntegrityCredoError,
   type W3cDataIntegrityIssueList as DataIntegrityIssueList,
@@ -10,32 +10,31 @@ import {
 import { CREDENTIALS_CONTEXT_V2_URL } from '../constants'
 import { ClaimFormat } from '../models/ClaimFormat'
 import { W3cV2Credential } from '../models/credential/W3cV2Credential'
-import { W3cV2EnvelopedVerifiableCredential } from '../models/credential/W3cV2EnvelopedVerifiableCredential'
 import type { W3cV2VerifiableCredential } from '../models/credential/W3cV2VerifiableCredential'
 import { W3cV2Presentation } from '../models/presentation/W3cV2Presentation'
 import type { W3cV2VerifiablePresentation } from '../models/presentation/W3cV2VerifiablePresentation'
 import type { W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models/W3cV2VerifyResult'
-import { validateVc2ContextBaseline } from '../validators'
+import { validateVc2ContextBaseline, validateVc2CredentialStatus } from '../validators'
 import type {
   W3cV2DiSignCredentialOptions,
   W3cV2DiSignPresentationOptions,
   W3cV2DiVerifyCredentialOptions,
   W3cV2DiVerifyPresentationOptions,
 } from '../W3cV2CredentialServiceOptions'
-import { W3cDataIntegrityContextValidator } from './W3cDataIntegrityContextValidator'
-import { W3cDataIntegrityProofPurposeValidator } from './W3cDataIntegrityProofPurposeValidator'
+import { W3cV2DataIntegrityContextValidator } from './W3cV2DataIntegrityContextValidator'
+import { W3cV2DataIntegrityProofPurposeValidator } from './W3cV2DataIntegrityProofPurposeValidator'
 import { W3cV2DataIntegrityVerifiableCredential } from './W3cV2DataIntegrityVerifiableCredential'
 import { W3cV2DataIntegrityVerifiablePresentation } from './W3cV2DataIntegrityVerifiablePresentation'
 
 @injectable()
 export class W3cV2DataIntegrityCredentialService {
   private dataIntegrityProofService: DataIntegrityProofService
-  private contextValidator: W3cDataIntegrityContextValidator
-  private proofPurposeValidator = new W3cDataIntegrityProofPurposeValidator()
+  private contextValidator: W3cV2DataIntegrityContextValidator
+  private proofPurposeValidator = new W3cV2DataIntegrityProofPurposeValidator()
 
   public constructor(
     dataIntegrityProofService: DataIntegrityProofService,
-    contextValidator: W3cDataIntegrityContextValidator
+    contextValidator: W3cV2DataIntegrityContextValidator
   ) {
     this.dataIntegrityProofService = dataIntegrityProofService
     this.contextValidator = contextValidator
@@ -57,13 +56,6 @@ export class W3cV2DataIntegrityCredentialService {
       throw contextValidation.error ?? new CredoError('VC2 credential @context validation failed')
     }
 
-    const firstContext = Array.isArray(unsecuredCredential['@context'])
-      ? unsecuredCredential['@context'][0]
-      : unsecuredCredential['@context']
-    if (firstContext !== CREDENTIALS_CONTEXT_V2_URL) {
-      throw new CredoError(`VC2 @context must start with '${CREDENTIALS_CONTEXT_V2_URL}'`)
-    }
-
     const proofResult = await this.dataIntegrityProofService.createProof(agentContext, {
       unsecuredDocument: unsecuredCredential,
       verificationMethod: options.verificationMethod,
@@ -75,9 +67,11 @@ export class W3cV2DataIntegrityCredentialService {
       throw createDataIntegrityCredoError(proofResult.errors)
     }
 
-    return W3cV2DataIntegrityVerifiableCredential.fromObject({
-      ...unsecuredCredential,
-      proof: proofResult.proof,
+    return new W3cV2DataIntegrityVerifiableCredential({
+      securedCredential: {
+        ...unsecuredCredential,
+        proof: proofResult.proof,
+      },
     })
   }
 
@@ -113,11 +107,20 @@ export class W3cV2DataIntegrityCredentialService {
       }
     }
 
+    const credentialStatus = validateVc2CredentialStatus({
+      credentialStatus: securedCredential.credentialStatus,
+      credentialFormat: 'DI',
+      verifyCredentialStatus: options.verifyCredentialStatus,
+    })
+
+    const isValid = credentialStatus.isValid
+
     return {
-      isValid: true,
+      isValid,
       validations: {
         dataModel: { isValid: true },
         signature: { isValid: true },
+        credentialStatus,
         issuerIsSigner: { isValid: true },
       },
     }
@@ -141,13 +144,6 @@ export class W3cV2DataIntegrityCredentialService {
       throw contextValidation.error ?? new CredoError('VC2 presentation @context validation failed')
     }
 
-    const firstContext = Array.isArray(unsecuredPresentation['@context'])
-      ? unsecuredPresentation['@context'][0]
-      : unsecuredPresentation['@context']
-    if (firstContext !== CREDENTIALS_CONTEXT_V2_URL) {
-      throw new CredoError(`VC2 @context must start with '${CREDENTIALS_CONTEXT_V2_URL}'`)
-    }
-
     const proofResult = await this.dataIntegrityProofService.createProof(agentContext, {
       unsecuredDocument: unsecuredPresentation,
       verificationMethod: options.verificationMethod,
@@ -161,9 +157,14 @@ export class W3cV2DataIntegrityCredentialService {
       throw createDataIntegrityCredoError(proofResult.errors)
     }
 
-    return W3cV2DataIntegrityVerifiablePresentation.fromObject({
+    const securedPresentation = {
       ...unsecuredPresentation,
       proof: proofResult.proof,
+    }
+
+    return new W3cV2DataIntegrityVerifiablePresentation({
+      securedPresentation,
+      resolvedPresentation: JsonTransformer.fromJSON(securedPresentation, W3cV2Presentation, { validate: false }),
     })
   }
 
@@ -172,11 +173,6 @@ export class W3cV2DataIntegrityCredentialService {
     options: W3cV2DiVerifyPresentationOptions
   ): Promise<W3cV2VerifyPresentationResult> {
     const securedPresentation = options.presentation.securedPresentation
-
-    const credentialShapeError = this.getCredentialShapeError(options)
-    if (credentialShapeError) {
-      return this.invalidPresentationResult('dataModel', credentialShapeError)
-    }
 
     const verificationResult = Array.isArray(securedPresentation.proof)
       ? await this.dataIntegrityProofService.verifyProofSetAndChain(agentContext, securedPresentation as never, {
@@ -267,31 +263,5 @@ export class W3cV2DataIntegrityCredentialService {
       },
       credentialEntries: [],
     }
-  }
-
-  private getCredentialShapeError(options: W3cV2DiVerifyPresentationOptions): CredoError | null {
-    const verifiableCredential = options.presentation.resolvedPresentation?.verifiableCredential
-    if (!verifiableCredential) {
-      return null
-    }
-
-    const credentials = asArray(verifiableCredential)
-
-    for (const credential of credentials) {
-      if (credential instanceof W3cV2DataIntegrityVerifiableCredential) continue
-
-      const claimFormat =
-        credential instanceof W3cV2EnvelopedVerifiableCredential
-          ? credential.claimFormat
-          : 'claimFormat' in credential && typeof credential.claimFormat === 'string'
-            ? credential.claimFormat
-            : 'unknown'
-
-      return new CredoError(
-        `Unsupported credential entry shape '${claimFormat}' in DI VP verification path. Presentations in DI format must contain embedded DI credentials.`
-      )
-    }
-
-    return null
   }
 }

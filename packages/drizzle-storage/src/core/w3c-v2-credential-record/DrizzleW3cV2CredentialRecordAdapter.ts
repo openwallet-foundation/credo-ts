@@ -63,6 +63,7 @@ export class DrizzleW3cV2CredentialRecordAdapter extends BaseDrizzleRecordAdapte
       types,
       givenId,
       claimFormat,
+      cryptosuites,
       algs,
       customTags,
       ...remainingValues
@@ -77,6 +78,7 @@ export class DrizzleW3cV2CredentialRecordAdapter extends BaseDrizzleRecordAdapte
       types,
       givenId: givenId ?? undefined,
       claimFormat,
+      cryptosuites: cryptosuites ?? undefined,
       algs: algs ?? undefined,
       ...customTags,
     })

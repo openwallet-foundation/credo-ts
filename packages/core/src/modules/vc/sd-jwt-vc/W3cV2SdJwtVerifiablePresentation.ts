@@ -65,7 +65,7 @@ export class W3cV2SdJwtVerifiablePresentation {
     // Validate the resolved credential according to the data model
     MessageValidator.validateSync(this.resolvedPresentation)
 
-    // Basic JWT validations to ensure compliance to the specification
+    // JWT validations to ensure compliance to the specification
     const sdJwt = this.sdJwt
     const header = sdJwt.header
     const payload = sdJwt.prettyClaims
@@ -82,9 +82,8 @@ export class W3cV2SdJwtVerifiablePresentation {
       throw new CredoError(`The provided W3C VP JWT does not have the correct 'cty' header.`)
     }
 
-    const iss = header.iss ?? payload.iss
-    if (iss && this.resolvedPresentation.holderId) {
-      if (this.resolvedPresentation.holderId !== iss) {
+    if (payload.iss && this.resolvedPresentation.holderId) {
+      if (this.resolvedPresentation.holderId !== payload.iss) {
         throw new CredoError(`The provided W3C VP SD-JWT has both 'iss' and 'holder' claims, but they differ.`)
       }
     }

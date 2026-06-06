@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
 import type { AgentContext } from '../../../../agent/context'
 import { W3cDataIntegrityProcessingErrorCode as DataIntegrityProcessingErrorCode } from '../../../w3c-di/internal'
-import { W3cDataIntegrityContextValidator } from '../W3cDataIntegrityContextValidator'
+import { W3cV2DataIntegrityContextValidator } from '../W3cV2DataIntegrityContextValidator'
 
 const VC_V2_KNOWN_CONTEXT = ['https://www.w3.org/ns/credentials/v2']
 const DI_PINNED_CONTEXTS = [
@@ -12,19 +12,19 @@ const DI_PINNED_CONTEXTS = [
   'https://w3id.org/security/jwk/v1',
 ]
 
-describe('W3cDataIntegrityContextValidator (§4.6 Context Validation)', () => {
+describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => {
   let agentContext: AgentContext
-  let validator: W3cDataIntegrityContextValidator
+  let validator: W3cV2DataIntegrityContextValidator
 
   beforeEach(() => {
     vi.restoreAllMocks()
 
     agentContext = getAgentContext({
-      agentConfig: getAgentConfig('W3cDataIntegrityContextValidatorTest'),
+      agentConfig: getAgentConfig('W3cV2DataIntegrityContextValidatorTest'),
     })
 
     // VC processing baseline: credentials/v2 knownContext (configured by caller/module)
-    validator = new W3cDataIntegrityContextValidator().configure({
+    validator = new W3cV2DataIntegrityContextValidator().configure({
       knownContext: VC_V2_KNOWN_CONTEXT,
       recompactInvalidContexts: false,
     })
@@ -78,7 +78,7 @@ describe('W3cDataIntegrityContextValidator (§4.6 Context Validation)', () => {
     })
 
     test('triggers when order differs for a multi-element configured knownContext', async () => {
-      const orderedValidator = new W3cDataIntegrityContextValidator().configure({
+      const orderedValidator = new W3cV2DataIntegrityContextValidator().configure({
         knownContext: ['https://www.w3.org/ns/credentials/v2', 'https://example.org/custom/v1'],
         recompactInvalidContexts: false,
       })
@@ -145,7 +145,7 @@ describe('W3cDataIntegrityContextValidator (§4.6 Context Validation)', () => {
 
   describe('step 3.1: recompaction', () => {
     test('configured validator with recompact=true must not silently accept missing @context', async () => {
-      const recompactingValidator = new W3cDataIntegrityContextValidator().configure({
+      const recompactingValidator = new W3cV2DataIntegrityContextValidator().configure({
         knownContext: VC_V2_KNOWN_CONTEXT,
         recompactInvalidContexts: true,
       })
@@ -160,7 +160,7 @@ describe('W3cDataIntegrityContextValidator (§4.6 Context Validation)', () => {
     })
 
     test('configured validator with recompact=true rejects extra URIs that cannot be resolved', async () => {
-      const recompactingValidator = new W3cDataIntegrityContextValidator().configure({
+      const recompactingValidator = new W3cV2DataIntegrityContextValidator().configure({
         knownContext: VC_V2_KNOWN_CONTEXT,
         recompactInvalidContexts: true,
       })
@@ -178,7 +178,7 @@ describe('W3cDataIntegrityContextValidator (§4.6 Context Validation)', () => {
     })
 
     test('recompaction can validate by removing nested proof context content not in knownContext', async () => {
-      const recompactingValidator = new W3cDataIntegrityContextValidator().configure({
+      const recompactingValidator = new W3cV2DataIntegrityContextValidator().configure({
         knownContext: VC_V2_KNOWN_CONTEXT,
       })
 
@@ -194,7 +194,51 @@ describe('W3cDataIntegrityContextValidator (§4.6 Context Validation)', () => {
 
       expect(result.validated).toBe(true)
       expect(result.errors).toHaveLength(0)
+      expect(result.warnings.length).toBeGreaterThanOrEqual(1)
+      expect(result.warnings.some((warning) => warning.title === 'Nested @context detected in document')).toBe(true)
       expect(result.validatedDocument).not.toBeNull()
+    })
+
+    test('recompaction tolerates id set to undefined on DI documents and does not raise JSON-LD @id errors', async () => {
+      const recompactingValidator = new W3cV2DataIntegrityContextValidator().configure({
+        knownContext: VC_V2_KNOWN_CONTEXT,
+      })
+
+      const result = await recompactingValidator.validate(agentContext, {
+        '@context': 'https://www.w3.org/ns/credentials/v2',
+        id: undefined,
+        proof: {
+          type: 'DataIntegrityProof',
+          '@context': 'https://example.org/evil/v1',
+          cryptosuite: 'eddsa-rdfc-2022',
+        },
+      })
+
+      expect(result.validated).toBe(true)
+      expect(result.errors).toHaveLength(0)
+      expect(result.warnings.some((warning) => warning.title === 'Nested @context detected in document')).toBe(true)
+      expect(result.validatedDocument).not.toBeNull()
+    })
+
+    test('with recompact=false, trigger conditions are errors and warnings remain empty', async () => {
+      const strictValidator = new W3cV2DataIntegrityContextValidator().configure({
+        knownContext: VC_V2_KNOWN_CONTEXT,
+        recompactInvalidContexts: false,
+      })
+
+      const result = await strictValidator.validate(agentContext, {
+        '@context': 'https://www.w3.org/ns/credentials/v2',
+        id: 'urn:example:test',
+        credentialSubject: {
+          '@context': 'https://example.org/custom/v1',
+          id: 'did:example:subject',
+        },
+      })
+
+      expect(result.validated).toBe(false)
+      expect(result.errors.some((error) => error.title === 'Nested @context detected in document')).toBe(true)
+      expect(result.warnings).toHaveLength(0)
+      expect(result.validatedDocument).toBeNull()
     })
   })
 
@@ -202,7 +246,7 @@ describe('W3cDataIntegrityContextValidator (§4.6 Context Validation)', () => {
 
   describe('step 3c: URI hash verification (§2.4 normative hashes)', () => {
     test('passes for each encountered spec-pinned DI URI with bundled local context (no fetch required)', async () => {
-      const diOnlyValidator = new W3cDataIntegrityContextValidator().configure({
+      const diOnlyValidator = new W3cV2DataIntegrityContextValidator().configure({
         knownContext: DI_PINNED_CONTEXTS,
       })
 
@@ -219,7 +263,7 @@ describe('W3cDataIntegrityContextValidator (§4.6 Context Validation)', () => {
     })
 
     test('does not perform DI hash verification when only credentials/v2 is encountered', async () => {
-      const vcOnlyValidator = new W3cDataIntegrityContextValidator().configure({
+      const vcOnlyValidator = new W3cV2DataIntegrityContextValidator().configure({
         knownContext: VC_V2_KNOWN_CONTEXT,
       })
 
@@ -238,7 +282,7 @@ describe('W3cDataIntegrityContextValidator (§4.6 Context Validation)', () => {
 
     test('passes with custom knownContext URI not in DI_SPEC_CONTEXT_HASHES (no hash verification required)', async () => {
       const customContext = ['https://example.org/custom/context/v1']
-      const customValidator = new W3cDataIntegrityContextValidator().configure({
+      const customValidator = new W3cV2DataIntegrityContextValidator().configure({
         knownContext: customContext,
       })
 
@@ -253,7 +297,7 @@ describe('W3cDataIntegrityContextValidator (§4.6 Context Validation)', () => {
     })
 
     test('DI hash-pinned context checks are independent from VC baseline knownContext', async () => {
-      const vcOnlyValidator = new W3cDataIntegrityContextValidator().configure({
+      const vcOnlyValidator = new W3cV2DataIntegrityContextValidator().configure({
         knownContext: VC_V2_KNOWN_CONTEXT,
         recompactInvalidContexts: false,
       })

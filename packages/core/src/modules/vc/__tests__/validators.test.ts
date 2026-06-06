@@ -12,12 +12,11 @@ describe('validateVc2ContextBaseline', () => {
     })
   })
 
-  test('allows non-vc2 first entry in structural baseline validator', () => {
+  test('returns invalid when first entry is not credentials/v2', () => {
     const result = validateVc2ContextBaseline(['https://example.org/context/v1', CREDENTIALS_CONTEXT_V2_URL])
 
-    expect(result).toEqual({
-      isValid: true,
-    })
+    expect(result.isValid).toBe(false)
+    expect(result.error?.message).toContain("VC2 @context must start with 'https://www.w3.org/ns/credentials/v2'")
   })
 
   test('returns invalid when one of the entries is not a URL/object', () => {

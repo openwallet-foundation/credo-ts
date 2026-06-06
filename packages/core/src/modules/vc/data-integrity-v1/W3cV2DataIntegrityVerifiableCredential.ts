@@ -3,8 +3,10 @@ import { JsonTransformer, MessageValidator } from '../../../utils'
 import { ClaimFormat } from '../models/ClaimFormat'
 import { W3cV2Credential } from '../models/credential/W3cV2Credential'
 
+export type W3cV2DataIntegritySecuredCredential = Record<string, unknown> & { proof: unknown }
+
 export interface W3cV2DataIntegrityVerifiableCredentialOptions {
-  securedCredential: Record<string, unknown> & { proof: unknown }
+  securedCredential: W3cV2DataIntegritySecuredCredential
 }
 
 /**
@@ -23,7 +25,7 @@ export class W3cV2DataIntegrityVerifiableCredential {
     this.validate()
   }
 
-  public static fromObject(credential: Record<string, unknown> & { proof: unknown }) {
+  public static fromObject(credential: W3cV2DataIntegritySecuredCredential) {
     return new W3cV2DataIntegrityVerifiableCredential({
       securedCredential: credential,
     })
@@ -32,7 +34,7 @@ export class W3cV2DataIntegrityVerifiableCredential {
   /**
    * The original credential object with embedded Data Integrity proof(s).
    */
-  public readonly securedCredential: Record<string, unknown> & { proof: unknown }
+  public readonly securedCredential: W3cV2DataIntegritySecuredCredential
 
   /**
    * Resolved credential is the fully resolved {@link W3cV2Credential} instance.

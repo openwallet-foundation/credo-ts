@@ -165,9 +165,10 @@ export class W3cDataIntegrityProofService {
     options: W3cDataIntegrityVerifyProofOptions = {}
   ): Promise<W3cDataIntegrityVerifySuccess | W3cDataIntegrityVerifyFailure> {
     try {
-      assertSingleProofDocument(securedDocument)
+      const normalisedSecuredDocument = omitUndefinedFields(securedDocument)
+      assertSingleProofDocument(normalisedSecuredDocument)
 
-      return await this.verifySingleProofCore(agentContext, securedDocument, options)
+      return await this.verifySingleProofCore(agentContext, normalisedSecuredDocument, options)
     } catch (error) {
       if (!(error instanceof Error)) {
         throw error
@@ -198,9 +199,10 @@ export class W3cDataIntegrityProofService {
     options: W3cDataIntegrityVerifyProofOptions = {}
   ): Promise<W3cDataIntegrityVerifySuccess | W3cDataIntegrityVerifyFailure> {
     try {
-      assertMultiProofDocument(securedDocument)
+      const normalisedSecuredDocument = omitUndefinedFields(securedDocument)
+      assertMultiProofDocument(normalisedSecuredDocument)
 
-      const proofs = securedDocument.proof
+      const proofs = normalisedSecuredDocument.proof
       const requiredMemberIssues = proofs
         .map((proof, index) => {
           const requiredMemberValidationError = validateProofRequiredMembers(proof)
@@ -259,7 +261,7 @@ export class W3cDataIntegrityProofService {
 
       const proofIdToIndex = this.createProofIdToIndexMap(proofs)
 
-      const { proof: _, ...unsecuredDocument } = securedDocument
+      const { proof: _, ...unsecuredDocument } = normalisedSecuredDocument
       for (const [_index, proof] of proofs.entries()) {
         const matchingProofIndices = this.getMatchingProofIndices(proof, proofIdToIndex)
         const matchingProofs = matchingProofIndices.map((matchingProofIndex) => proofs[matchingProofIndex])

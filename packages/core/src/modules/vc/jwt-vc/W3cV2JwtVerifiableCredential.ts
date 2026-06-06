@@ -65,7 +65,7 @@ export class W3cV2JwtVerifiableCredential {
     // Validate the resolved credential according to the data model
     MessageValidator.validateSync(this.resolvedCredential)
 
-    // Basic JWT validations to ensure compliance to the specification
+    // JWT validations to ensure compliance to the specification
     const jwt = this.jwt
     const header = jwt.header
     const payload = jwt.payload
@@ -82,22 +82,9 @@ export class W3cV2JwtVerifiableCredential {
       throw new CredoError(`The provided W3C VC JWT does not have the correct 'cty' header.`)
     }
 
-    const iss = header.iss ?? payload.iss
-    if (iss) {
-      if (this.resolvedCredential.issuerId !== iss) {
+    if (payload.iss) {
+      if (this.resolvedCredential.issuerId !== payload.iss) {
         throw new CredoError(`The provided W3C VC JWT has both 'iss' and 'issuer' claims, but they differ.`)
-      }
-    }
-
-    if (payload.jti) {
-      if (this.resolvedCredential.id && this.resolvedCredential.id !== payload.jti) {
-        throw new CredoError(`The provided W3C VC JWT has both 'jti' and 'id' claims, but they differ.`)
-      }
-    }
-
-    if (payload.sub) {
-      if (!this.resolvedCredential.credentialSubjectIds.includes(payload.sub)) {
-        throw new CredoError(`The provided W3C VC JWT has a 'sub' claim, but it does not match any credentialSubject.`)
       }
     }
   }

@@ -1,6 +1,9 @@
 import { JsonTransformer } from '../../../../../utils'
 import { ENVELOPED_VERIFIABLE_PRESENTATION_TYPE } from '../../../constants'
-import { W3cV2DataIntegrityVerifiableCredential } from '../../../data-integrity-v1'
+import {
+  W3cV2DataIntegrityVerifiableCredential,
+  W3cV2DataIntegrityVerifiablePresentation,
+} from '../../../data-integrity-v1'
 import { CredoEs256DidKeyJwtVp } from '../../../jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
 import { W3cV2EnvelopedVerifiablePresentation } from '../W3cV2EnvelopedVerifiablePresentation'
 import { W3cV2Presentation } from '../W3cV2Presentation'
@@ -32,6 +35,20 @@ const validEmbeddedDiCredential = {
     cryptosuite: 'eddsa-jcs-2022',
     proofPurpose: 'assertionMethod',
     verificationMethod: 'did:key:z6Mkissuer#z6Mkissuer',
+    proofValue: 'zProof',
+  },
+}
+
+const validEmbeddedDiPresentation = {
+  '@context': ['https://www.w3.org/ns/credentials/v2', 'https://w3id.org/security/data-integrity/v2'],
+  type: ['VerifiablePresentation', 'ExamplePresentation'],
+  holder: 'did:key:z6Mkholder',
+  verifiableCredential: [validEmbeddedDiCredential],
+  proof: {
+    type: 'DataIntegrityProof',
+    cryptosuite: 'eddsa-jcs-2022',
+    proofPurpose: 'authentication',
+    verificationMethod: 'did:key:z6Mkholder#z6Mkholder',
     proofValue: 'zProof',
   },
 }
@@ -115,7 +132,7 @@ describe('W3cV2Presentation', () => {
 
     expect(() =>
       JsonTransformer.fromJSON({ ...validPresentation, verifiableCredential: [{ random: 'prop' }] }, W3cV2Presentation)
-    ).toThrow(/W3cV2EnvelopedVerifiableCredential: Failed to validate class/)
+    ).toThrow(/Unsupported verifiableCredential entry shape in W3cV2Presentation./)
   })
 
   test('accepts an embedded DI credential entry', () => {
@@ -147,6 +164,47 @@ describe('W3cV2Presentation', () => {
     expect(credentials[0]).not.toBeInstanceOf(W3cV2DataIntegrityVerifiableCredential)
     expect(credentials[1]).toBeInstanceOf(W3cV2DataIntegrityVerifiableCredential)
     expect(JsonTransformer.toJSON(presentation)).toEqual(jsonPresentation)
+  })
+
+  test('accepts an embedded DI presentation entry', () => {
+    const jsonPresentation = {
+      ...validPresentation,
+      verifiableCredential: [validEmbeddedDiPresentation],
+    }
+
+    const presentation = JsonTransformer.fromJSON(jsonPresentation, W3cV2Presentation)
+    const credentials = Array.isArray(presentation.verifiableCredential)
+      ? presentation.verifiableCredential
+      : [presentation.verifiableCredential]
+
+    expect(credentials[0]).toBeInstanceOf(W3cV2DataIntegrityVerifiablePresentation)
+    expect(JsonTransformer.toJSON(presentation)).toEqual(jsonPresentation)
+  })
+
+  test('parses embedded DI presentation consistently across constructor and transformer paths', () => {
+    const constructorPresentation = new W3cV2Presentation({
+      context: validPresentation['@context'],
+      type: 'VerifiablePresentation',
+      verifiableCredential: [validEmbeddedDiPresentation],
+    })
+
+    const transformerPresentation = JsonTransformer.fromJSON(
+      {
+        ...validPresentation,
+        verifiableCredential: [validEmbeddedDiPresentation],
+      },
+      W3cV2Presentation
+    )
+
+    const constructorEntries = Array.isArray(constructorPresentation.verifiableCredential)
+      ? constructorPresentation.verifiableCredential
+      : [constructorPresentation.verifiableCredential]
+    const transformerEntries = Array.isArray(transformerPresentation.verifiableCredential)
+      ? transformerPresentation.verifiableCredential
+      : [transformerPresentation.verifiableCredential]
+
+    expect(constructorEntries[0]).toBeInstanceOf(W3cV2DataIntegrityVerifiablePresentation)
+    expect(transformerEntries[0]).toBeInstanceOf(W3cV2DataIntegrityVerifiablePresentation)
   })
 
   test('accepts EnvelopedVerifiablePresentation entries in verifiableCredential', () => {

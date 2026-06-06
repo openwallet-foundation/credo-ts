@@ -357,7 +357,7 @@ describe('W3cV2SdJwtCredentialService', () => {
       expect(result.validations.dataModel?.error?.message).toContain('JWT expired at 1577836800')
     })
 
-    test('returns invalid result when credentialStatus is present', async () => {
+    test('returns invalid result when credentialStatus is present and verifyCredentialStatus is enabled', async () => {
       const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
 
       jwtVc.resolvedCredential.credentialStatus = new W3cV2CredentialStatus({
@@ -367,6 +367,7 @@ describe('W3cV2SdJwtCredentialService', () => {
 
       const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
         credential: jwtVc,
+        verifyCredentialStatus: true,
       })
 
       expect(result.isValid).toBe(false)
@@ -394,6 +395,68 @@ describe('W3cV2SdJwtCredentialService', () => {
       expect(result.validations.validityPeriod?.error?.message).toContain(
         'Credential is not valid yet based on validFrom'
       )
+    })
+
+    test('logs SHOULD warning for JOSE header iss conflict with payload iss', async () => {
+      const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+      const warnSpy = vi.spyOn(agentContext.config.logger, 'warn')
+
+      jwtVc.sdJwt.prettyClaims.iss = jwtVc.resolvedCredential.issuerId
+      jwtVc.sdJwt.header.iss = 'did:example:different-header-iss'
+
+      await w3cV2JwtCredentialService.verifyCredential(agentContext, {
+        credential: jwtVc,
+      })
+
+      expect(warnSpy).toHaveBeenCalledWith('VC-JOSE-COSE SHOULD warning: JOSE header iss conflicts with payload iss', {
+        format: 'vc+sd-jwt',
+        headerIss: 'did:example:different-header-iss',
+        payloadIss: jwtVc.resolvedCredential.issuerId,
+      })
+
+      warnSpy.mockRestore()
+    })
+
+    test('logs SHOULD warning for jti and credential id conflict', async () => {
+      const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+      const warnSpy = vi.spyOn(agentContext.config.logger, 'warn')
+
+      jwtVc.resolvedCredential.id = 'urn:example:credential-id'
+      jwtVc.sdJwt.prettyClaims.jti = 'urn:example:different-jti'
+
+      await w3cV2JwtCredentialService.verifyCredential(agentContext, {
+        credential: jwtVc,
+      })
+
+      expect(warnSpy).toHaveBeenCalledWith('VC-JOSE-COSE SHOULD warning: jti claim conflicts with credential id', {
+        format: 'vc+sd-jwt',
+        jti: 'urn:example:different-jti',
+        credentialId: 'urn:example:credential-id',
+      })
+
+      warnSpy.mockRestore()
+    })
+
+    test('logs SHOULD warning for sub mismatch with credentialSubject.id', async () => {
+      const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+      const warnSpy = vi.spyOn(agentContext.config.logger, 'warn')
+
+      jwtVc.sdJwt.prettyClaims.sub = 'did:example:not-a-subject'
+
+      await w3cV2JwtCredentialService.verifyCredential(agentContext, {
+        credential: jwtVc,
+      })
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        'VC-JOSE-COSE SHOULD warning: sub claim does not match any credentialSubject.id',
+        {
+          format: 'vc+sd-jwt',
+          sub: 'did:example:not-a-subject',
+          credentialSubjectIds: jwtVc.resolvedCredential.credentialSubjectIds,
+        }
+      )
+
+      warnSpy.mockRestore()
     })
   })
 
@@ -598,6 +661,60 @@ describe('W3cV2SdJwtCredentialService', () => {
         },
         credentialEntries: [],
       })
+    })
+
+    test('fails verification when challenge does not match nonce', async () => {
+      const result = await w3cV2JwtCredentialService.verifyPresentation(agentContext, {
+        presentation: CredoEs256DidKeyJwtVp,
+        challenge: 'mismatched-challenge',
+        domain: 'example.com',
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.presentation.isValid).toBe(false)
+      expect(result.presentation.validations.dataModel?.isValid).toBe(false)
+      expect(result.presentation.validations.dataModel?.error).toBeInstanceOf(CredoError)
+      expect(result.presentation.validations.dataModel?.error?.message).toContain(
+        "JWT payload 'nonce' does not match challenge"
+      )
+    })
+
+    test('fails verification when requested domain is not in aud', async () => {
+      const result = await w3cV2JwtCredentialService.verifyPresentation(agentContext, {
+        presentation: CredoEs256DidKeyJwtVp,
+        challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
+        domain: 'unexpected.example.com',
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.presentation.isValid).toBe(false)
+      expect(result.presentation.validations.dataModel?.isValid).toBe(false)
+      expect(result.presentation.validations.dataModel?.error).toBeInstanceOf(CredoError)
+      expect(result.presentation.validations.dataModel?.error?.message).toContain(
+        "JWT payload 'aud' does not include domain 'unexpected.example.com'"
+      )
+    })
+
+    test('logs SHOULD warning for presentation jti and id conflict', async () => {
+      const jwtVp = W3cV2SdJwtVerifiablePresentation.fromCompact(CredoEs256DidKeyJwtVp)
+      const warnSpy = vi.spyOn(agentContext.config.logger, 'warn')
+
+      jwtVp.resolvedPresentation.id = 'urn:example:vp-id'
+      jwtVp.sdJwt.prettyClaims.jti = 'urn:example:different-vp-jti'
+
+      await w3cV2JwtCredentialService.verifyPresentation(agentContext, {
+        presentation: jwtVp,
+        challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
+        domain: 'example.com',
+      })
+
+      expect(warnSpy).toHaveBeenCalledWith('VC-JOSE-COSE SHOULD warning: jti claim conflicts with presentation id', {
+        format: 'vp+sd-jwt',
+        jti: 'urn:example:different-vp-jti',
+        presentationId: 'urn:example:vp-id',
+      })
+
+      warnSpy.mockRestore()
     })
   })
 })

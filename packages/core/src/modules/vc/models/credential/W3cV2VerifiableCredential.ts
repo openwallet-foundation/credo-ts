@@ -22,11 +22,11 @@ export const decodeW3cV2VerifiableCredential = (v: unknown) => {
     try {
       const parsedJson = JSON.parse(trimmedValue)
       if (parsedJson && typeof parsedJson === 'object' && !Array.isArray(parsedJson)) {
-        return W3cV2DataIntegrityVerifiableCredential.fromObject(
-          parsedJson as Record<string, unknown> & {
+        return new W3cV2DataIntegrityVerifiableCredential({
+          securedCredential: parsedJson as Record<string, unknown> & {
             proof: unknown
-          }
-        )
+          },
+        })
       }
     } catch {
       // Not JSON; continue with compact encodings.
@@ -97,16 +97,16 @@ export function W3cV2VerifiableCredentialTransformer() {
 
 /**
  * A Secured W3C Verifiable Credential (VC) as defined in the W3C VC Data Model 2.0
- * and secured according to the VC-JOSE-COSE specification.
+ * and secured according to VC-JOSE-COSE and Data Integrity mechanisms.
  *
  * It can be one of:
  * - A verifiable credential encoded as a JWT.
  * - A verifiable credential encoded as a SD-JWT.
+ * - A Data Integrity verifiable credential.
  *
  * @see https://www.w3.org/TR/vc-data-model-2.0/
  * @see https://www.w3.org/TR/vc-jose-cose/
- *
- * TODO: add support for embedded proof mechanisms (Verifiable Credential Data Integrity 1.0)
+ * @see https://www.w3.org/TR/vc-data-integrity/
  */
 export type W3cV2VerifiableCredential<
   Format extends ClaimFormat.JwtW3cVc | ClaimFormat.SdJwtW3cVc | ClaimFormat.DiVc | unknown = unknown,

@@ -1,19 +1,26 @@
 import { Expose, instanceToPlain, Transform, TransformationType } from 'class-transformer'
 import { IsOptional, ValidateNested } from 'class-validator'
+import { CredoError } from '../../../../error'
 import type { JsonObject, SingleOrArray } from '../../../../types'
 import { JsonTransformer, mapSingleOrArray } from '../../../../utils'
 import { IsInstanceOrArrayOfInstances, IsNever, IsUri } from '../../../../utils/validators'
 import { CREDENTIALS_CONTEXT_V2_URL, VERIFIABLE_PRESENTATION_TYPE } from '../../constants'
 import {
+  type W3cV2DataIntegritySecuredCredential,
   W3cV2DataIntegrityVerifiableCredential,
-  type W3cV2DataIntegrityVerifiableCredentialOptions,
 } from '../../data-integrity-v1/W3cV2DataIntegrityVerifiableCredential'
+import {
+  type W3cV2DataIntegritySecuredPresentation,
+  W3cV2DataIntegrityVerifiablePresentation,
+} from '../../data-integrity-v1/W3cV2DataIntegrityVerifiablePresentation'
 import { IsCredentialJsonLdContext, IsVerifiablePresentationType } from '../../validators'
 import {
+  isEnvelopedVerifiableCredentialEntry,
   W3cV2EnvelopedVerifiableCredential,
   type W3cV2EnvelopedVerifiableCredentialOptions,
 } from '../credential/W3cV2EnvelopedVerifiableCredential'
 import {
+  isEnvelopedVerifiablePresentationEntry,
   W3cV2EnvelopedVerifiablePresentation,
   type W3cV2EnvelopedVerifiablePresentationOptions,
 } from './W3cV2EnvelopedVerifiablePresentation'
@@ -24,11 +31,13 @@ export type W3cV2PresentationCredentialEntry =
   | W3cV2EnvelopedVerifiableCredential
   | W3cV2EnvelopedVerifiablePresentation
   | W3cV2DataIntegrityVerifiableCredential
+  | W3cV2DataIntegrityVerifiablePresentation
 
 export type W3cV2PresentationCredentialEntryOptions =
   | W3cV2EnvelopedVerifiableCredentialOptions
   | W3cV2EnvelopedVerifiablePresentationOptions
-  | W3cV2DataIntegrityVerifiableCredentialOptions['securedCredential']
+  | W3cV2DataIntegritySecuredCredential
+  | W3cV2DataIntegritySecuredPresentation
   | W3cV2PresentationCredentialEntry
 
 export interface W3cV2PresentationOptions {
@@ -50,7 +59,8 @@ export class W3cV2Presentation {
           if (
             entry instanceof W3cV2EnvelopedVerifiableCredential ||
             entry instanceof W3cV2EnvelopedVerifiablePresentation ||
-            entry instanceof W3cV2DataIntegrityVerifiableCredential
+            entry instanceof W3cV2DataIntegrityVerifiableCredential ||
+            entry instanceof W3cV2DataIntegrityVerifiablePresentation
           ) {
             return entry
           }
@@ -59,11 +69,22 @@ export class W3cV2Presentation {
             return new W3cV2EnvelopedVerifiablePresentation(entry)
           }
 
-          if (isEmbeddedDataIntegrityCredential(entry)) {
-            return W3cV2DataIntegrityVerifiableCredential.fromObject(entry)
+          if (isEmbeddedDataIntegrityPresentationEntry(entry)) {
+            return new W3cV2DataIntegrityVerifiablePresentation({
+              securedPresentation: entry,
+              resolvedPresentation: JsonTransformer.fromJSON(entry, W3cV2Presentation, { validate: false }),
+            })
           }
 
-          return new W3cV2EnvelopedVerifiableCredential(entry as W3cV2EnvelopedVerifiableCredentialOptions)
+          if (isEmbeddedDataIntegrityCredential(entry)) {
+            return new W3cV2DataIntegrityVerifiableCredential({ securedCredential: entry })
+          }
+
+          if (isEnvelopedVerifiableCredentialEntry(entry)) {
+            return new W3cV2EnvelopedVerifiableCredential(entry)
+          }
+
+          throw new CredoError('Unsupported verifiableCredential entry shape in W3cV2Presentation.')
         })
       }
 
@@ -96,6 +117,7 @@ export class W3cV2Presentation {
       W3cV2EnvelopedVerifiableCredential,
       W3cV2EnvelopedVerifiablePresentation,
       W3cV2DataIntegrityVerifiableCredential,
+      W3cV2DataIntegrityVerifiablePresentation,
     ],
   })
   @ValidateNested({ each: true })
@@ -118,46 +140,65 @@ export class W3cV2Presentation {
   }
 }
 
-function isEmbeddedDataIntegrityCredential(
+export function isEmbeddedDataIntegrityPresentationEntry(
   value: unknown
-): value is W3cV2DataIntegrityVerifiableCredentialOptions['securedCredential'] {
+): value is W3cV2DataIntegritySecuredPresentation {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  if (!('proof' in value) || !('type' in value)) return false
+
+  const candidate = value as { type?: unknown }
+  if (Array.isArray(candidate.type)) {
+    return candidate.type.includes(VERIFIABLE_PRESENTATION_TYPE)
+  }
+
+  return candidate.type === VERIFIABLE_PRESENTATION_TYPE
+}
+
+function isEmbeddedDataIntegrityCredential(value: unknown): value is W3cV2DataIntegritySecuredCredential {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false
 
   return 'proof' in value
-}
-
-function isEnvelopedVerifiablePresentationEntry(value: unknown): value is W3cV2EnvelopedVerifiablePresentationOptions {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
-
-  const type = (value as { type?: unknown }).type
-  const values = Array.isArray(type) ? type : [type]
-
-  return values.some((entry) => entry === 'EnvelopedVerifiablePresentation')
 }
 
 function jsonToCredentialEntry(value: unknown): W3cV2PresentationCredentialEntry {
   if (
     value instanceof W3cV2EnvelopedVerifiableCredential ||
     value instanceof W3cV2EnvelopedVerifiablePresentation ||
-    value instanceof W3cV2DataIntegrityVerifiableCredential
+    value instanceof W3cV2DataIntegrityVerifiableCredential ||
+    value instanceof W3cV2DataIntegrityVerifiablePresentation
   ) {
     return value
   }
 
   if (isEnvelopedVerifiablePresentationEntry(value)) {
-    return JsonTransformer.fromJSON(value, W3cV2EnvelopedVerifiablePresentation)
+    return new W3cV2EnvelopedVerifiablePresentation(value)
+  }
+
+  if (isEmbeddedDataIntegrityPresentationEntry(value)) {
+    return new W3cV2DataIntegrityVerifiablePresentation({
+      securedPresentation: value,
+      resolvedPresentation: JsonTransformer.fromJSON(value, W3cV2Presentation, { validate: false }),
+    })
   }
 
   if (isEmbeddedDataIntegrityCredential(value)) {
-    return W3cV2DataIntegrityVerifiableCredential.fromObject(value)
+    return new W3cV2DataIntegrityVerifiableCredential({ securedCredential: value })
   }
 
-  return JsonTransformer.fromJSON(value, W3cV2EnvelopedVerifiableCredential)
+  if (isEnvelopedVerifiableCredentialEntry(value)) {
+    return JsonTransformer.fromJSON(value, W3cV2EnvelopedVerifiableCredential)
+  }
+
+  throw new CredoError('Unsupported verifiableCredential entry shape in W3cV2Presentation.')
 }
 
 function credentialEntryToJson(value: unknown) {
   if (value instanceof W3cV2DataIntegrityVerifiableCredential) {
     return value.securedCredential
+  }
+
+  if (value instanceof W3cV2DataIntegrityVerifiablePresentation) {
+    return value.securedPresentation
   }
 
   return instanceToPlain(value)

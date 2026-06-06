@@ -637,8 +637,14 @@ export class DcqlService {
     }
 
     if (validCredential.record.type === 'W3cV2CredentialRecord') {
+      const claimFormat = validCredential.record.firstCredential.claimFormat
+
+      if (claimFormat === ClaimFormat.DiVc) {
+        throw new DcqlError('DCQL credential selection does not support W3C V2 Data Integrity credentials yet')
+      }
+
       return {
-        claimFormat: validCredential.record.firstCredential.claimFormat,
+        claimFormat,
         credentialRecord: validCredential.record,
         disclosedPayload: validCredential.claims.valid_claim_sets[0].output as JsonObject,
       } as const
@@ -889,13 +895,15 @@ export class DcqlService {
           createdPresentation = signedPresentation
         } else if (presentationToCreate.claimFormat === ClaimFormat.JwtW3cVp) {
           const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
+          const firstCredential = presentationToCreate.credentialRecord.firstCredential
+
+          if (firstCredential.claimFormat === ClaimFormat.DiVc) {
+            throw new DcqlError('DCQL JWT W3C VP creation does not support W3C V2 Data Integrity credentials yet')
+          }
+
           const w3cV2Presentation = new W3cV2Presentation({
-            holder: presentationToCreate.credentialRecord.firstCredential.resolvedCredential.credentialSubjectIds[0],
-            verifiableCredential: [
-              W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(
-                presentationToCreate.credentialRecord.firstCredential
-              ),
-            ],
+            holder: firstCredential.resolvedCredential.credentialSubjectIds[0],
+            verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(firstCredential)],
           })
 
           const signedPresentation = await w3cV2CredentialService.signPresentation<ClaimFormat.JwtW3cVp>(agentContext, {

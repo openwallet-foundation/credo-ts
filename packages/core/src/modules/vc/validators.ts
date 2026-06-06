@@ -3,7 +3,12 @@ import type { ValidationOptions } from 'class-validator'
 import { buildMessage, isString, isURL, ValidateBy } from 'class-validator'
 import { CredoError } from '../../error'
 import { isJsonObject } from '../../types'
-import { CREDENTIALS_CONTEXT_V1_URL, VERIFIABLE_CREDENTIAL_TYPE, VERIFIABLE_PRESENTATION_TYPE } from './constants'
+import {
+  CREDENTIALS_CONTEXT_V1_URL,
+  CREDENTIALS_CONTEXT_V2_URL,
+  VERIFIABLE_CREDENTIAL_TYPE,
+  VERIFIABLE_PRESENTATION_TYPE,
+} from './constants'
 
 export interface IsCredentialJsonLdContextValidationOptions extends ValidationOptions {
   /**
@@ -121,6 +126,13 @@ export function validateVc2ContextBaseline(context: unknown): ValidationResult {
     }
   }
 
+  if (contextArray[0] !== CREDENTIALS_CONTEXT_V2_URL) {
+    return {
+      isValid: false,
+      error: new CredoError(`VC2 @context must start with '${CREDENTIALS_CONTEXT_V2_URL}'`),
+    }
+  }
+
   const hasOnlyValidEntries = contextArray.every((entry) => {
     if (typeof entry === 'string') return isURL(entry)
     return isJsonObject(entry)
@@ -140,9 +152,10 @@ export function validateVc2ContextBaseline(context: unknown): ValidationResult {
 
 export function validateVc2CredentialStatus(options: {
   credentialStatus?: unknown
-  credentialFormat: 'JWT' | 'SD-JWT'
+  credentialFormat: 'JWT' | 'SD-JWT' | 'DI'
+  verifyCredentialStatus?: boolean
 }): ValidationResult {
-  if (!options.credentialStatus) {
+  if (!options.verifyCredentialStatus || !options.credentialStatus) {
     return {
       isValid: true,
     }

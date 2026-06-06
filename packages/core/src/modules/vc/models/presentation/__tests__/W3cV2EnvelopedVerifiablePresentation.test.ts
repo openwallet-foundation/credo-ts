@@ -24,4 +24,17 @@ describe('W3cV2EnvelopedVerifiablePresentation', () => {
       )
     ).toThrow(ENVELOPED_VERIFIABLE_PRESENTATION_TYPE)
   })
+
+  test('accepts valid envelope id as data URI', () => {
+    expect(() =>
+      JsonTransformer.fromJSON(
+        {
+          '@context': 'https://www.w3.org/ns/credentials/v2',
+          id: jwtVpDataUri,
+          type: ENVELOPED_VERIFIABLE_PRESENTATION_TYPE,
+        },
+        W3cV2EnvelopedVerifiablePresentation
+      )
+    ).not.toThrow()
+  })
 })

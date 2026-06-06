@@ -4,11 +4,8 @@ import { asArray, JsonTransformer } from '../../../utils'
 import { CredentialMultiInstanceState } from '../../../utils/credentialUseTypes'
 import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
-import { W3cV2JwtVerifiableCredential } from '../jwt-vc'
 import { ClaimFormat, type W3cV2VerifiableCredential } from '../models'
-import { W3cV2SdJwtVerifiableCredential } from '../sd-jwt-vc'
-
-type W3cV2StoredVerifiableCredential = W3cV2VerifiableCredential<ClaimFormat.JwtW3cVc | ClaimFormat.SdJwtW3cVc>
+import { decodeW3cV2VerifiableCredential } from '../models/credential/W3cV2VerifiableCredential'
 
 export interface W3cV2CredentialRecordOptions {
   id?: string
@@ -32,9 +29,10 @@ export type DefaultW3cV2CredentialTags = {
   schemaIds: Array<string>
   contexts: Array<string>
   givenId?: string
-  claimFormat: W3cV2StoredVerifiableCredential['claimFormat']
+  claimFormat: W3cV2VerifiableCredential['claimFormat']
 
   types: Array<string>
+  cryptosuites?: Array<string>
   algs?: Array<string>
 
   /**
@@ -77,7 +75,7 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
    * Only here for class transformation. If credential is set we transform
    * it to the new credentialInstances array format
    */
-  private set credential(credential: W3cV2StoredVerifiableCredential) {
+  private set credential(credential: W3cV2VerifiableCredential) {
     this.credentialInstances = [
       {
         // NOTE: we have to type the `set` method the same as the `get`. Previously
@@ -88,14 +86,12 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
     ]
   }
 
-  public get firstCredential(): W3cV2StoredVerifiableCredential {
+  public get firstCredential(): W3cV2VerifiableCredential {
     const credential = this.credentialInstances[0].credential
-    return credential.includes('~')
-      ? W3cV2SdJwtVerifiableCredential.fromCompact(credential)
-      : W3cV2JwtVerifiableCredential.fromCompact(credential)
+    return decodeW3cV2VerifiableCredential(credential)
   }
 
-  public static fromCredential(credential: W3cV2StoredVerifiableCredential) {
+  public static fromCredential(credential: W3cV2VerifiableCredential) {
     return new W3cV2CredentialRecord({
       credentialInstances: [
         {
@@ -129,6 +125,17 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
       tags.algs = [credential.jwt.header.alg]
     } else if (credential.claimFormat === ClaimFormat.SdJwtW3cVc) {
       tags.algs = [credential.sdJwt.header.alg]
+    } else if (credential.claimFormat === ClaimFormat.DiVc) {
+      const proofValues = Array.isArray(credential.securedCredential.proof)
+        ? credential.securedCredential.proof
+        : [credential.securedCredential.proof]
+
+      const cryptosuites = proofValues
+        .filter((proof): proof is Record<string, unknown> => typeof proof === 'object' && proof !== null)
+        .map((proof) => proof.cryptosuite)
+        .filter((value): value is string => typeof value === 'string')
+
+      tags.cryptosuites = [...new Set(cryptosuites)]
     }
 
     return tags

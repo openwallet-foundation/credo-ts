@@ -4,6 +4,7 @@ import { TypedArrayEncoder } from '../../../../../utils/TypedArrayEncoder'
 import { W3cV2DataIntegrityVerifiableCredential } from '../../../data-integrity-v1'
 import { W3cV2JwtVerifiableCredential } from '../../../jwt-vc'
 import { W3cV2SdJwtVerifiableCredential } from '../../../sd-jwt-vc'
+import { ClaimFormat } from '../../ClaimFormat'
 import { decodeW3cV2VerifiableCredential } from '../W3cV2VerifiableCredential'
 
 describe('decodeW3cV2VerifiableCredential', () => {
@@ -12,14 +13,12 @@ describe('decodeW3cV2VerifiableCredential', () => {
   })
 
   test('routes JSON object payload to DI credential decoder', () => {
-    const diSpy = vi
-      .spyOn(W3cV2DataIntegrityVerifiableCredential, 'fromObject')
-      .mockReturnValue({ claimFormat: 'di_vc' } as never)
+    const result = decodeW3cV2VerifiableCredential(
+      '   {"@context":["https://www.w3.org/ns/credentials/v2","https://w3id.org/security/data-integrity/v2"],"type":["VerifiableCredential"],"issuer":"did:key:z6Mkissuer","credentialSubject":{"id":"did:key:z6Mksubject"},"proof":{"type":"DataIntegrityProof"}}'
+    )
 
-    const result = decodeW3cV2VerifiableCredential('   {"proof":{"type":"DataIntegrityProof"}}')
-
-    expect(diSpy).toHaveBeenCalledTimes(1)
-    expect(result).toEqual({ claimFormat: 'di_vc' })
+    expect(result).toBeInstanceOf(W3cV2DataIntegrityVerifiableCredential)
+    expect(result.claimFormat).toBe(ClaimFormat.DiVc)
   })
 
   test('routes compact with vc+sd-jwt typ to SD-JWT VC decoder', () => {
