@@ -541,8 +541,8 @@ importers:
         specifier: 0.3.0-alpha-20260528103055
         version: 0.3.0-alpha-20260528103055
       '@owf/mdoc':
-        specifier: 0.7.0-alpha-20260528123930
-        version: 0.7.0-alpha-20260528123930
+        specifier: 0.7.0-alpha-20260605164430
+        version: 0.7.0-alpha-20260605164430
       '@owf/token-status-list':
         specifier: 0.3.0-alpha-20260528103055
         version: 0.3.0-alpha-20260528103055
@@ -3177,14 +3177,23 @@ packages:
   '@owf/cose@0.3.0-alpha-20260528103055':
     resolution: {integrity: sha512-tAjVENKLL5G2taSM766rDEJrMy29qAeL78y4Bzr62wZpRhFG+Rk77+GPbQZqcEK9iBFF6A1RPrqWpKzdYfO+sA==}
 
+  '@owf/cose@0.3.0-alpha-20260605053037':
+    resolution: {integrity: sha512-kagiAfAEqykFGNYjUdXkhRVVJSVQ16vGwbGxHMeh0kCJzAJg+TXrPF7DvLImLw7mAp5Ha7f3+Pgza1TRk3TeYw==}
+
   '@owf/identity-common@0.3.0-alpha-20260528103055':
     resolution: {integrity: sha512-0QbJwZbqWMXfJeE+H+2/wWyFXM2duap2Fft/jNOFZVM8yMW9Gkv9BgeUTJJ07zi+WwvHToKNm0Tes8nwKT7eZA==}
 
-  '@owf/mdoc@0.7.0-alpha-20260528123930':
-    resolution: {integrity: sha512-L0jlP6P01Vt42szmHAP0RCAHzoBp/4A1HE0eNVXgxMI9JvTV2kB1bDtr+nq1EH0nLZybpnTCec9dw/GHF4wGsw==}
+  '@owf/identity-common@0.3.0-alpha-20260605053037':
+    resolution: {integrity: sha512-Eh4AUhJHXptgWdV9sQjd1Ob3m2geoKDltfdHiY4I9w6u7UkUPyjtQjSpRrVhHoo7KQeQ7mGI3qrOpqj91zNUjA==}
+
+  '@owf/mdoc@0.7.0-alpha-20260605164430':
+    resolution: {integrity: sha512-ynCT/d1P866WWJwrXQSmqtmSmfViHpI05XdnvcZLqNUzByzXVguF0jLGkbiVN0xeW4b2HdTabejYKM2LghNMKw==}
 
   '@owf/token-status-list@0.3.0-alpha-20260528103055':
     resolution: {integrity: sha512-TfdTj8qY9kImgTxuBuD/DeFs23RSEOZxbgH+tM6KkWkcyRw00ryt+iDXQaTWZDxjgdYs8aHf9ZnZ4BbKPGoVRA==}
+
+  '@owf/token-status-list@0.3.0-alpha-20260605053037':
+    resolution: {integrity: sha512-dAHmkhzwHDp2mFA7u02fp2ERuxihKGYgIXCOqoVwlgHekQq3Y+Vd9RPlXMaHaj03q1fhriTrBZmpyMdP+DKGmw==}
 
   '@oxc-project/runtime@0.101.0':
     resolution: {integrity: sha512-t3qpfVZIqSiLQ5Kqt/MC4Ge/WCOGrrcagAdzTcDaggupjiGxUx4nJF2v6wUCXWSzWHn5Ns7XLv13fCJEwCOERQ==}
@@ -11628,19 +11637,36 @@ snapshots:
       zod: 4.4.3
       zod-validation-error: 5.0.0(zod@4.4.3)
 
+  '@owf/cose@0.3.0-alpha-20260605053037':
+    dependencies:
+      '@owf/identity-common': 0.3.0-alpha-20260605053037
+      cbor-x: 1.6.4
+      zod: 4.4.3
+      zod-validation-error: 5.0.0(zod@4.4.3)
+
   '@owf/identity-common@0.3.0-alpha-20260528103055': {}
 
-  '@owf/mdoc@0.7.0-alpha-20260528123930':
+  '@owf/identity-common@0.3.0-alpha-20260605053037': {}
+
+  '@owf/mdoc@0.7.0-alpha-20260605164430':
     dependencies:
-      '@owf/cose': 0.3.0-alpha-20260528103055
-      '@owf/identity-common': 0.3.0-alpha-20260528103055
-      '@owf/token-status-list': 0.3.0-alpha-20260528103055
+      '@owf/cose': 0.3.0-alpha-20260605053037
+      '@owf/identity-common': 0.3.0-alpha-20260605053037
+      '@owf/token-status-list': 0.3.0-alpha-20260605053037
       zod: 4.4.3
 
   '@owf/token-status-list@0.3.0-alpha-20260528103055':
     dependencies:
       '@owf/cose': 0.3.0-alpha-20260528103055
       '@owf/identity-common': 0.3.0-alpha-20260528103055
+      cbor-x: 1.6.4
+      pako: 2.1.0
+      zod: 4.4.3
+
+  '@owf/token-status-list@0.3.0-alpha-20260605053037':
+    dependencies:
+      '@owf/cose': 0.3.0-alpha-20260605053037
+      '@owf/identity-common': 0.3.0-alpha-20260605053037
       cbor-x: 1.6.4
       pako: 2.1.0
       zod: 4.4.3
