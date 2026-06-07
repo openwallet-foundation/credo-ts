@@ -1,10 +1,15 @@
-import type { AgentContext } from '../../agent'
-import type { JwtPayload } from '../../crypto'
+import type { AgentContext } from '../../agent/context/AgentContext'
+import type { JwtPayload } from '../../crypto/jose/jwt/JwtPayload'
 import type { Mdoc } from '../mdoc/Mdoc'
-import type { SdJwtVc } from '../sd-jwt-vc'
-import type { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from '../vc'
-
+import type { SdJwtVc } from '../sd-jwt-vc/SdJwtVcService'
+import type { W3cJwtVerifiableCredential } from '../vc/jwt-vc/W3cJwtVerifiableCredential'
+import type { W3cJwtVerifiablePresentation } from '../vc/jwt-vc/W3cJwtVerifiablePresentation'
 import { X509Certificate } from './X509Certificate'
+
+export type X509VerificationTrustedCertificates = {
+  issuance: string[]
+  status?: string[]
+}
 
 export type X509VerificationTypeCredential = {
   type: 'credential'
@@ -106,7 +111,7 @@ export interface X509ModuleConfigOptions {
    * It will provide the `agentContext` and `verificationContext` allowing to dynamically set the trusted certificates
    * for a tenant or verificaiton context.
    *
-   * If no certificaets should be trusted an empty array should be returned. If `undefined` is returned
+   * If no certificates should be trusted an empty array should be returned. If `undefined` is returned
    * it will fallback to the globally registered trusted certificates
    *
    * @returns An array of base64-encoded certificate strings or PEM certificate strings.
@@ -114,7 +119,11 @@ export interface X509ModuleConfigOptions {
   getTrustedCertificatesForVerification?(
     agentContext: AgentContext,
     verificationContext: X509VerificationContext
-  ): Promise<string[] | undefined> | string[] | undefined
+  ):
+    | Promise<string[] | undefined | X509VerificationTrustedCertificates[]>
+    | string[]
+    | X509VerificationTrustedCertificates[]
+    | undefined
 }
 
 export class X509ModuleConfig {

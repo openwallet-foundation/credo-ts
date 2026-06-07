@@ -14,7 +14,7 @@ type AddMarkAsCritical<T extends Record<string, Record<string, unknown>>> = T & 
 export type EncodedX509Certificate = string
 
 export interface X509ValidateCertificateChainOptions {
-  certificateChain: Array<EncodedX509Certificate>
+  certificateChain: EncodedX509Certificate[]
 
   certificate?: EncodedX509Certificate
 
@@ -28,7 +28,7 @@ export interface X509ValidateCertificateChainOptions {
    */
   verificationDate?: Date
 
-  trustedCertificates?: Array<EncodedX509Certificate>
+  trustedCertificates?: EncodedX509Certificate[]
 }
 
 export interface X509GetLeafCertificateOptions {
