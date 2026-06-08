@@ -109,33 +109,28 @@ export async function generateCrl(
   }
 ): Promise<Uint8Array> {
   const webCrypto = new CredoWebCrypto(agentContext)
-  x509.cryptoProvider.set(webCrypto)
 
-  try {
-    const signingKey = new CredoWebCryptoKey(
-      options.issuerKey,
-      publicJwkToCryptoKeyAlgorithm(options.issuerKey),
-      false,
-      'private',
-      ['sign']
-    )
+  const signingKey = new CredoWebCryptoKey(
+    options.issuerKey,
+    publicJwkToCryptoKeyAlgorithm(options.issuerKey),
+    false,
+    'private',
+    ['sign']
+  )
 
-    const crl = await x509.X509CrlGenerator.create(
-      {
-        issuer: options.issuerName,
-        thisUpdate: options.thisUpdate,
-        nextUpdate: options.nextUpdate,
-        signingKey,
-        signingAlgorithm: { name: 'ECDSA', hash: 'SHA-256' },
-        entries: options.entries,
-      },
-      webCrypto
-    )
+  const crl = await x509.X509CrlGenerator.create(
+    {
+      issuer: options.issuerName,
+      thisUpdate: options.thisUpdate,
+      nextUpdate: options.nextUpdate,
+      signingKey,
+      signingAlgorithm: { name: 'ECDSA', hash: 'SHA-256' },
+      entries: options.entries,
+    },
+    webCrypto
+  )
 
-    return new Uint8Array(crl.rawData)
-  } finally {
-    x509.cryptoProvider.clear()
-  }
+  return new Uint8Array(crl.rawData)
 }
 
 /**
@@ -161,52 +156,47 @@ export async function generateLeafWithPartitionedDistributionPoints(
   }
 ): Promise<Uint8Array> {
   const webCrypto = new CredoWebCrypto(agentContext)
-  x509.cryptoProvider.set(webCrypto)
 
-  try {
-    const signingKey = new CredoWebCryptoKey(
-      options.issuerKey,
-      publicJwkToCryptoKeyAlgorithm(options.issuerKey),
-      false,
-      'private',
-      ['sign']
-    )
-    const publicKey = new CredoWebCryptoKey(
-      options.subjectPublicKey,
-      publicJwkToCryptoKeyAlgorithm(options.issuerKey),
-      true,
-      'public',
-      ['verify']
-    )
+  const signingKey = new CredoWebCryptoKey(
+    options.issuerKey,
+    publicJwkToCryptoKeyAlgorithm(options.issuerKey),
+    false,
+    'private',
+    ['sign']
+  )
+  const publicKey = new CredoWebCryptoKey(
+    options.subjectPublicKey,
+    publicJwkToCryptoKeyAlgorithm(options.issuerKey),
+    true,
+    'public',
+    ['verify']
+  )
 
-    const distributionPoints = options.distributionPoints.map(({ url, reason }) => {
-      const dp = new DistributionPoint({
-        distributionPoint: new DistributionPointName({
-          fullName: [new GeneralName({ uniformResourceIdentifier: url })],
-        }),
-      })
-      const reasons = new Reason()
-      reasons.fromNumber(1 << reason)
-      dp.reasons = reasons
-      return dp
+  const distributionPoints = options.distributionPoints.map(({ url, reason }) => {
+    const dp = new DistributionPoint({
+      distributionPoint: new DistributionPointName({
+        fullName: [new GeneralName({ uniformResourceIdentifier: url })],
+      }),
     })
+    const reasons = new Reason()
+    reasons.fromNumber(1 << reason)
+    dp.reasons = reasons
+    return dp
+  })
 
-    const certificate = await x509.X509CertificateGenerator.create(
-      {
-        signingKey,
-        publicKey,
-        issuer: options.issuerName,
-        subject: `CN=${options.subjectCommonName}`,
-        notBefore: options.notBefore,
-        notAfter: options.notAfter,
-        serialNumber: options.serialNumber,
-        extensions: [new x509.CRLDistributionPointsExtension(distributionPoints)],
-      },
-      webCrypto
-    )
+  const certificate = await x509.X509CertificateGenerator.create(
+    {
+      signingKey,
+      publicKey,
+      issuer: options.issuerName,
+      subject: `CN=${options.subjectCommonName}`,
+      notBefore: options.notBefore,
+      notAfter: options.notAfter,
+      serialNumber: options.serialNumber,
+      extensions: [new x509.CRLDistributionPointsExtension(distributionPoints)],
+    },
+    webCrypto
+  )
 
-    return new Uint8Array(certificate.rawData)
-  } finally {
-    x509.cryptoProvider.clear()
-  }
+  return new Uint8Array(certificate.rawData)
 }
