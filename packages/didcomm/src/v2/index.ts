@@ -15,6 +15,8 @@ export {
   DIDCOMM_V2_SIGNING_ALGORITHMS,
   type DidCommV2EncryptedMessage,
   type DidCommV2JwsSignature,
+  type DidCommV2KeyAgreementCurve,
+  type DidCommV2KeyAgreementJwk,
   type DidCommV2PlaintextMessage,
   type DidCommV2SignedMessage,
   type DidCommV2SigningAlgorithm,

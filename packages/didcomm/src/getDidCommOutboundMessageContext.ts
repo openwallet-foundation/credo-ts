@@ -16,6 +16,7 @@ import {
 import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
 import { DidCommRoutingService } from './modules/routing'
 import { DidCommMessageRepository, DidCommMessageRole } from './repository'
+import type { DidCommV2KeyAgreementJwk } from './v2/types'
 
 /**
  * Maybe these methods should be moved to a service, but that would require
@@ -284,12 +285,12 @@ async function createOurService(
 
     recipientPublicJwk.keyId = oobRecordRecipientRouting.recipientKeyId ?? recipientPublicJwk.legacyKeyId
 
-    // Restore the independent X25519 key agreement key from metadata if available.
-    let keyAgreementKey: Kms.PublicJwk<Kms.X25519PublicJwk> | undefined
+    // Restore the independent keyAgreement key (X25519 or P-256) from metadata if available.
+    let keyAgreementKey: DidCommV2KeyAgreementJwk | undefined
     if (oobRecordRecipientRouting.keyAgreementKeyFingerprint) {
       keyAgreementKey = Kms.PublicJwk.fromFingerprint(
         oobRecordRecipientRouting.keyAgreementKeyFingerprint
-      ) as Kms.PublicJwk<Kms.X25519PublicJwk>
+      ) as DidCommV2KeyAgreementJwk
       keyAgreementKey.keyId = oobRecordRecipientRouting.keyAgreementKeyId ?? keyAgreementKey.legacyKeyId
     }
 

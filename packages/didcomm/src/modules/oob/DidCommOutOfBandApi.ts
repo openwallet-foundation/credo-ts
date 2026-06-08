@@ -36,7 +36,7 @@ import {
   supportsIncomingMessageType,
 } from '../../util/messageType'
 import { parseInvitationShortUrl } from '../../util/parseInvitation'
-import type { DidCommV2Attachment } from '../../v2/types'
+import type { DidCommV2Attachment, DidCommV2KeyAgreementJwk } from '../../v2/types'
 import {
   DidCommConnectionInvitationMessage,
   DidCommConnectionRecord,
@@ -792,12 +792,12 @@ export class DidCommOutOfBandApi {
       ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       recipientPublicJwk.keyId = recipientRouting.recipientKeyId ?? recipientPublicJwk.legacyKeyId
 
-      // Restore the independent X25519 key agreement key from metadata if available.
-      let keyAgreementKey: Kms.PublicJwk<Kms.X25519PublicJwk> | undefined
+      // Restore the independent keyAgreement key (X25519 or P-256) from metadata if available.
+      let keyAgreementKey: DidCommV2KeyAgreementJwk | undefined
       if (recipientRouting.keyAgreementKeyFingerprint) {
         keyAgreementKey = Kms.PublicJwk.fromFingerprint(
           recipientRouting.keyAgreementKeyFingerprint
-        ) as Kms.PublicJwk<Kms.X25519PublicJwk>
+        ) as DidCommV2KeyAgreementJwk
         keyAgreementKey.keyId = recipientRouting.keyAgreementKeyId ?? keyAgreementKey.legacyKeyId
       }
 

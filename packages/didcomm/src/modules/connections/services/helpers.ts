@@ -12,6 +12,7 @@ import {
   didToNumAlgo2DidDocument,
   didToNumAlgo4DidDocument,
   getEd25519VerificationKey2018,
+  getJsonWebKey2020,
   getPublicJwkFromVerificationMethod,
   getX25519KeyAgreementKey2019,
   IndyAgentService,
@@ -25,6 +26,7 @@ import {
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
+import type { DidCommV2KeyAgreementJwk } from '../../../v2/types'
 import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import type { DidCommOutOfBandInlineServiceKey } from '../../oob/repository/DidCommOutOfBandRecord'
 import type { DidDoc, PublicKey } from '../models'
@@ -37,6 +39,36 @@ import { EmbeddedAuthentication } from '../models'
  */
 export function toX25519(jwk: Kms.PublicJwk): Kms.PublicJwk<Kms.X25519PublicJwk> {
   return jwk.is(Kms.X25519PublicJwk) ? jwk : (jwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+}
+
+/**
+ * Normalize a PublicJwk to a DIDComm v2 keyAgreement key (X25519 or P-256).
+ * Ed25519 inputs are birationally converted to X25519 per RFC 7748.
+ */
+export function toKeyAgreement(jwk: Kms.PublicJwk): DidCommV2KeyAgreementJwk {
+  if (jwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk)) {
+    return jwk as DidCommV2KeyAgreementJwk
+  }
+  if (jwk.is(Kms.Ed25519PublicJwk)) {
+    return jwk.convertTo(Kms.X25519PublicJwk)
+  }
+  throw new CredoError(`Unsupported keyAgreement curve: ${jwk.jwkTypeHumanDescription}`)
+}
+
+/**
+ * Compare two keys for keyAgreement equivalence. Direct fingerprint match for same-curve keys;
+ * bridges Ed25519 <-> X25519 via the RFC 7748 birational map. Returns false for non-bridgeable
+ * cross-curve combinations (e.g. P-256 vs Ed25519).
+ */
+export function keyAgreementsEqual(a: Kms.PublicJwk, b: Kms.PublicJwk): boolean {
+  if (a.fingerprint === b.fingerprint) return true
+  if (a.is(Kms.Ed25519PublicJwk) && b.is(Kms.X25519PublicJwk)) {
+    return a.convertTo(Kms.X25519PublicJwk).fingerprint === b.fingerprint
+  }
+  if (a.is(Kms.X25519PublicJwk) && b.is(Kms.Ed25519PublicJwk)) {
+    return a.fingerprint === b.convertTo(Kms.X25519PublicJwk).fingerprint
+  }
+  return false
 }
 
 export function convertToNewDidDocument(didDoc: DidDoc, keys?: DidDocumentKey[]) {
@@ -270,9 +302,10 @@ export async function createPeerDidForV2OOB(
     throw new CredoError('DIDComm v2 OOB requires Ed25519 recipient key')
   }
 
-  // Use separate X25519 key from routing if available (independent KMS key),
-  // otherwise fall back to deriving from Ed25519 (legacy behavior).
-  const x25519Key = routing.keyAgreementKey
+  // Use separate keyAgreement key from routing if available (independent KMS key),
+  // otherwise derive X25519 from Ed25519 via the birational map. There is no birational
+  // derivation to P-256, so a P-256 keyAgreement must be supplied via routing.keyAgreementKey.
+  const keyAgreementJwk: DidCommV2KeyAgreementJwk = routing.keyAgreementKey
     ? routing.keyAgreementKey
     : Kms.PublicJwk.fromPublicKey({
         crv: 'X25519',
@@ -286,12 +319,10 @@ export async function createPeerDidForV2OOB(
     publicJwk: recipientKey,
     controller: '#id',
   })
-  const x25519Vm = getX25519KeyAgreementKey2019({
-    id: '#key-2',
-    publicJwk: x25519Key,
-    controller: '#id',
-  })
-  didDocumentBuilder.addAuthentication(ed25519Vm).addKeyAgreement(x25519Vm)
+  const keyAgreementVm = keyAgreementJwk.is(Kms.X25519PublicJwk)
+    ? getX25519KeyAgreementKey2019({ id: '#key-2', publicJwk: keyAgreementJwk, controller: '#id' })
+    : getJsonWebKey2020({ did: '#id', publicJwk: keyAgreementJwk, verificationMethodId: '#key-2' })
+  didDocumentBuilder.addAuthentication(ed25519Vm).addKeyAgreement(keyAgreementVm)
 
   // For v2 peer DIDs, keep the routing DID as the service URI (CM 2.0 DID-as-endpoint).
   // v2 senders resolve this via DidCommDocumentService.expandV2EndpointIfRoutingDid which
@@ -319,13 +350,13 @@ export async function createPeerDidForV2OOB(
   const didDocument = didDocumentBuilder.build()
   // Map each verification method to its own KMS key ID.
   // #key-1 (Ed25519 auth) → Ed25519 KMS key
-  // #key-2 (X25519 keyAgreement) → X25519 KMS key (independent, or Ed25519 fallback)
-  const x25519KmsKeyId = routing.keyAgreementKey
+  // #key-2 (keyAgreement) → independent keyAgreement KMS key, or Ed25519 fallback (X25519 only)
+  const keyAgreementKmsKeyId = routing.keyAgreementKey
     ? (routing.keyAgreementKey.keyId ?? routing.keyAgreementKey.legacyKeyId)
     : (recipientKey.keyId ?? recipientKey.legacyKeyId)
   const keys: DidDocumentKey[] = [
     { didDocumentRelativeKeyId: '#key-1', kmsKeyId: recipientKey.keyId ?? recipientKey.legacyKeyId },
-    { didDocumentRelativeKeyId: '#key-2', kmsKeyId: x25519KmsKeyId },
+    { didDocumentRelativeKeyId: '#key-2', kmsKeyId: keyAgreementKmsKeyId },
   ]
 
   await assertNoCreatedDidExistsForKeys(agentContext, [recipientKey])

@@ -35,14 +35,24 @@ export function encryptEcdh1Pu(options: {
 }) {
   const { keyAgreement, encryption, senderKey, recipientKey, data, ephemeralKey: providedEphemeralKey } = options
 
-  if (senderKey.algorithm !== KeyAlgorithm.X25519 || recipientKey.algorithm !== KeyAlgorithm.X25519) {
+  const supportedAlgorithms: KeyAlgorithm[] = [KeyAlgorithm.X25519, KeyAlgorithm.EcSecp256r1]
+  if (!supportedAlgorithms.includes(senderKey.algorithm) || !supportedAlgorithms.includes(recipientKey.algorithm)) {
     throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      'ECDH-1PU+A256KW requires X25519 sender and recipient keys',
+      'ECDH-1PU+A256KW requires X25519 or P-256 sender and recipient keys',
       'askar'
     )
   }
-  if (providedEphemeralKey && providedEphemeralKey.algorithm !== KeyAlgorithm.X25519) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError('ECDH-1PU+A256KW requires an X25519 ephemeral key', 'askar')
+  if (senderKey.algorithm !== recipientKey.algorithm) {
+    throw new Kms.KeyManagementAlgorithmNotSupportedError(
+      'ECDH-1PU+A256KW sender and recipient keys must be on the same curve',
+      'askar'
+    )
+  }
+  if (providedEphemeralKey && providedEphemeralKey.algorithm !== recipientKey.algorithm) {
+    throw new Kms.KeyManagementAlgorithmNotSupportedError(
+      'ECDH-1PU+A256KW ephemeral key must match the recipient curve',
+      'askar'
+    )
   }
   const askarEncryptionAlgorithm = jwkEncToAskarAlg[encryption.algorithm as keyof typeof jwkEncToAskarAlg]
   if (!askarEncryptionAlgorithm) {
@@ -52,7 +62,7 @@ export function encryptEcdh1Pu(options: {
     )
   }
 
-  const ephemeralKey = providedEphemeralKey ?? Key.generate(KeyAlgorithm.X25519)
+  const ephemeralKey = providedEphemeralKey ?? Key.generate(recipientKey.algorithm)
   const ownsEphemeralKey = !providedEphemeralKey
   const apu = keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array([])
   const apv = keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array([])
@@ -77,11 +87,7 @@ export function encryptEcdh1Pu(options: {
       })
     )
     const wrappedKey = derivedKey.wrapKey({ other: contentEncryptionKey })
-    const ephemeralPublicKey = {
-      kty: 'OKP',
-      crv: 'X25519',
-      x: TypedArrayEncoder.toBase64Url(ephemeralKey.publicBytes),
-    } as const
+    const ephemeralPublicKey = ephemeralKey.jwkPublic as Kms.KmsJwkPublicEcdh
 
     return {
       encrypted: aeadResult.encrypted,
@@ -288,8 +294,18 @@ function deriveDecryptionKeyEcdh1Pu(options: {
 }) {
   const { keyAgreement, decryption, ephemeralKey, senderKey, recipientKey } = options
 
-  if (recipientKey.algorithm !== KeyAlgorithm.X25519) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError('ECDH-1PU+A256KW requires X25519 recipient key', 'askar')
+  const supportedAlgorithms: KeyAlgorithm[] = [KeyAlgorithm.X25519, KeyAlgorithm.EcSecp256r1]
+  if (!supportedAlgorithms.includes(recipientKey.algorithm)) {
+    throw new Kms.KeyManagementAlgorithmNotSupportedError(
+      'ECDH-1PU+A256KW requires X25519 or P-256 recipient key',
+      'askar'
+    )
+  }
+  if (ephemeralKey.algorithm !== recipientKey.algorithm || senderKey.algorithm !== recipientKey.algorithm) {
+    throw new Kms.KeyManagementAlgorithmNotSupportedError(
+      'ECDH-1PU+A256KW sender, ephemeral, and recipient keys must be on the same curve',
+      'askar'
+    )
   }
 
   const askarEncryptionAlgorithm = jwkEncToAskarAlg[decryption.algorithm as keyof typeof jwkEncToAskarAlg]

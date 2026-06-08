@@ -56,7 +56,7 @@ import {
   assertNoCreatedDidExistsForKeys,
   convertToNewDidDocument,
   getResolvedDidcommServiceWithSigningKeyId,
-  toX25519,
+  keyAgreementsEqual,
 } from './helpers'
 
 export interface ConnectionRequestParams {
@@ -619,21 +619,18 @@ export class DidCommConnectionService {
         )
       }
 
-      // Check if recipientKey is in ourService
-      // DIDComm v2 decrypt returns X25519; ourService may have Ed25519. Normalize both to X25519 for comparison.
+      // Check if recipientKey is in ourService. Compare bridges Ed25519 <-> X25519 (legacy v1)
+      // and matches same-curve keys directly for v2 X25519 / P-256.
       if (recipientKey && ourService) {
-        const recipientX25519 = toX25519(recipientKey)
-        const recipientKeyFound = ourService.recipientKeys.some((key) => recipientX25519.equals(toX25519(key)))
+        const recipientKeyFound = ourService.recipientKeys.some((key) => keyAgreementsEqual(recipientKey, key))
         if (!recipientKeyFound) {
           throw new CredoError(`Recipient key ${recipientKey.fingerprint} not found in our service`)
         }
       }
 
-      // Check if senderKey is in theirService
-      // DIDComm v2 returns X25519; theirService may have Ed25519. Normalize both to X25519 for comparison.
+      // Check if senderKey is in theirService. Same compare semantics as the recipient check above.
       if (senderKey && theirService) {
-        const senderX25519 = toX25519(senderKey)
-        const senderKeyFound = theirService.recipientKeys.some((key) => senderX25519.equals(toX25519(key)))
+        const senderKeyFound = theirService.recipientKeys.some((key) => keyAgreementsEqual(senderKey, key))
         if (!senderKeyFound) {
           throw new CredoError(`Sender key ${senderKey.fingerprint} not found in their service.`)
         }

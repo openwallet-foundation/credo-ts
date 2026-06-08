@@ -33,7 +33,7 @@ import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import type { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from './DidCommConnectionService'
-import { createPeerDidForV2OOB, toX25519 } from './helpers'
+import { createPeerDidForV2OOB, toKeyAgreement } from './helpers'
 
 export interface FromPriorPayload {
   iss: string
@@ -253,8 +253,8 @@ export class DidCommDidRotateV2Service {
     }
 
     const recipientEd25519 = service.recipientKeys[0]
-    const recipientX25519 = toX25519(recipientEd25519)
-    recipientX25519.keyId = recipientEd25519.hasKeyId ? recipientEd25519.keyId : new DidKey(recipientEd25519).did
+    const recipientKeyAgreement = toKeyAgreement(recipientEd25519)
+    recipientKeyAgreement.keyId = recipientEd25519.hasKeyId ? recipientEd25519.keyId : new DidKey(recipientEd25519).did
 
     const empty = new DidCommEmptyMessage({ fromPrior: fromPriorJwt })
     const plaintext: DidCommV2PlaintextMessage = {
@@ -267,17 +267,17 @@ export class DidCommDidRotateV2Service {
 
     const v2EnvelopeService = agentContext.dependencyManager.resolve(DidCommV2EnvelopeService)
     let payload = await v2EnvelopeService.packAnoncrypt(agentContext, plaintext, {
-      recipientKey: recipientX25519,
+      recipientKey: recipientKeyAgreement,
     })
 
     if (service.routingKeys.length > 0) {
-      const recipientNext = new DidKey(toX25519(recipientEd25519)).did
+      const recipientNext = new DidKey(toKeyAgreement(recipientEd25519)).did
       const reversed = [...service.routingKeys].reverse()
       for (let i = 0; i < reversed.length; i++) {
         const routingKey = reversed[i]
         const next = i === reversed.length - 1 ? recipientNext : new DidKey(reversed[i + 1]).did
-        const routingX25519 = toX25519(routingKey)
-        routingX25519.keyId = new DidKey(routingKey).did
+        const routingKeyAgreement = toKeyAgreement(routingKey)
+        routingKeyAgreement.keyId = new DidKey(routingKey).did
         const forwardPlaintext = DidCommForwardV2Message.createV2PlaintextMessage({
           to: [new DidKey(routingKey).did],
           next,
@@ -290,7 +290,7 @@ export class DidCommDidRotateV2Service {
           ],
         })
         payload = await v2EnvelopeService.packAnoncrypt(agentContext, forwardPlaintext, {
-          recipientKey: routingX25519,
+          recipientKey: routingKeyAgreement,
         })
       }
     }

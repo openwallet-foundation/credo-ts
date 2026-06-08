@@ -11,29 +11,23 @@ import {
   parseDid,
   RecordNotFoundError,
 } from '@credo-ts/core'
-import { getResolvedDidcommServiceWithSigningKeyId } from '../modules/connections/services/helpers'
+import { getResolvedDidcommServiceWithSigningKeyId, toKeyAgreement } from '../modules/connections/services/helpers'
 import { DidCommOutOfBandRole } from '../modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRepository } from '../modules/oob/repository/DidCommOutOfBandRepository'
 import { DidCommOutOfBandRecordMetadataKeys } from '../modules/oob/repository/outOfBandRecordMetadataTypes'
 import { DidCommMediatorRoutingRepository } from '../modules/routing/repository'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
-import type { DidCommV2EncryptedMessage } from './types'
+import type { DidCommV2EncryptedMessage, DidCommV2KeyAgreementJwk } from './types'
 
 type ResolvedRecipientKey = {
-  recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }
+  recipientKey: DidCommV2KeyAgreementJwk & { keyId: string }
   matchedKid: string
 }
 
-/**
- * Ensure the JWK is X25519. If it's Ed25519, convert via birational map (legacy compat).
- * If it's already X25519, return as-is.
- */
-function toX25519WithKeyId(jwk: Kms.PublicJwk, keyId: string): Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string } {
-  const x25519 = jwk.is(Kms.X25519PublicJwk)
-    ? (jwk as Kms.PublicJwk<Kms.X25519PublicJwk>)
-    : (jwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-  x25519.keyId = keyId
-  return x25519 as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string }
+function toKeyAgreementWithKeyId(jwk: Kms.PublicJwk, keyId: string): DidCommV2KeyAgreementJwk & { keyId: string } {
+  const ka = toKeyAgreement(jwk)
+  ka.keyId = keyId
+  return ka as DidCommV2KeyAgreementJwk & { keyId: string }
 }
 
 /**
@@ -115,10 +109,7 @@ export class DidCommV2KeyResolver {
    * Per DIDComm v2 spec, `skid` is a DID URL into the sender's `keyAgreement`.
    * Used for ECDH-1PU authcrypt verification.
    */
-  public async resolveSenderKey(
-    agentContext: AgentContext,
-    skid: string
-  ): Promise<Kms.PublicJwk<Kms.X25519PublicJwk> | null> {
+  public async resolveSenderKey(agentContext: AgentContext, skid: string): Promise<DidCommV2KeyAgreementJwk | null> {
     if (!skid.startsWith('did:')) return null
 
     try {
@@ -143,17 +134,11 @@ export class DidCommV2KeyResolver {
 
       if (!senderJwk) return null
 
-      const x25519 = senderJwk.is(Kms.X25519PublicJwk)
-        ? senderJwk
-        : (senderJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-      if (vmId && !x25519.hasKeyId) {
-        x25519.keyId = vmId.startsWith('did:')
-          ? vmId
-          : vmId.startsWith('#')
-            ? `${didOnly}${vmId}`
-            : `${didOnly}#${vmId}`
+      const ka = toKeyAgreement(senderJwk)
+      if (vmId && !ka.hasKeyId) {
+        ka.keyId = vmId.startsWith('did:') ? vmId : vmId.startsWith('#') ? `${didOnly}${vmId}` : `${didOnly}#${vmId}`
       }
-      return x25519 as Kms.PublicJwk<Kms.X25519PublicJwk>
+      return ka
     } catch {
       return null
     }
@@ -186,7 +171,7 @@ export class DidCommV2KeyResolver {
       }
 
       const keyId = kmsKeyId ?? (publicJwk.hasKeyId ? publicJwk.keyId : publicJwk.legacyKeyId)
-      return { recipientKey: toX25519WithKeyId(publicJwk, keyId), matchedKid: kid }
+      return { recipientKey: toKeyAgreementWithKeyId(publicJwk, keyId), matchedKid: kid }
     } catch {
       return null
     }
@@ -212,7 +197,7 @@ export class DidCommV2KeyResolver {
         })
         const routingKey = record?.routingKeysWithKeyId.find((rk) => kidPublicJwk.equals(rk))
         if (routingKey?.keyId) {
-          return { recipientKey: toX25519WithKeyId(routingKey, routingKey.keyId), matchedKid: kid }
+          return { recipientKey: toKeyAgreementWithKeyId(routingKey, routingKey.keyId), matchedKid: kid }
         }
       }
 
@@ -226,7 +211,7 @@ export class DidCommV2KeyResolver {
             try {
               const derivedX25519 = (routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
               if (derivedX25519.fingerprint === kidPublicJwk.fingerprint && routingKey.keyId) {
-                return { recipientKey: toX25519WithKeyId(derivedX25519, routingKey.keyId), matchedKid: kid }
+                return { recipientKey: toKeyAgreementWithKeyId(derivedX25519, routingKey.keyId), matchedKid: kid }
               }
             } catch {}
           }
@@ -275,7 +260,7 @@ export class DidCommV2KeyResolver {
           vm.id.endsWith(didDocumentRelativeKeyId)
         )?.kmsKeyId
         const keyId = kmsKeyId ?? (vmJwk.hasKeyId ? vmJwk.keyId : vmJwk.legacyKeyId)
-        return { recipientKey: toX25519WithKeyId(vmJwk, keyId), matchedKid: kid }
+        return { recipientKey: toKeyAgreementWithKeyId(vmJwk, keyId), matchedKid: kid }
       }
     } catch (error) {
       if (!(error instanceof RecordNotFoundError)) throw error
@@ -310,7 +295,7 @@ export class DidCommV2KeyResolver {
         const recipientKey = resolvedService.recipientKeys.find((rk) => rk.fingerprint === fingerprint)
         if (!recipientKey) continue
         const keyId = recipientKey.hasKeyId ? recipientKey.keyId : recipientKey.legacyKeyId
-        return { recipientKey: toX25519WithKeyId(recipientKey, keyId), matchedKid: kid }
+        return { recipientKey: toKeyAgreementWithKeyId(recipientKey, keyId), matchedKid: kid }
       }
     }
 
@@ -321,12 +306,12 @@ export class DidCommV2KeyResolver {
       // Independent X25519 key — direct match
       if (recipientRouting.keyAgreementKeyFingerprint === fingerprint) {
         const keyId = recipientRouting.keyAgreementKeyId ?? kidPublicJwk.legacyKeyId
-        return { recipientKey: toX25519WithKeyId(kidPublicJwk, keyId), matchedKid: kid }
+        return { recipientKey: toKeyAgreementWithKeyId(kidPublicJwk, keyId), matchedKid: kid }
       }
       // Legacy Ed25519 fallback
       if (recipientRouting.recipientKeyFingerprint === fingerprint) {
         const keyId = recipientRouting.recipientKeyId ?? kidPublicJwk.legacyKeyId
-        return { recipientKey: toX25519WithKeyId(kidPublicJwk, keyId), matchedKid: kid }
+        return { recipientKey: toKeyAgreementWithKeyId(kidPublicJwk, keyId), matchedKid: kid }
       }
     }
 
@@ -343,7 +328,7 @@ export class DidCommV2KeyResolver {
     })
     if (!kmsPublic) return null
 
-    const publicJwk = Kms.PublicJwk.fromPublicJwk(kmsPublic as Kms.KmsJwkPublicOkp)
-    return { recipientKey: toX25519WithKeyId(publicJwk, kid), matchedKid: kid }
+    const publicJwk = Kms.PublicJwk.fromPublicJwk(kmsPublic as Kms.KmsJwkPublicAsymmetric)
+    return { recipientKey: toKeyAgreementWithKeyId(publicJwk, kid), matchedKid: kid }
   }
 }

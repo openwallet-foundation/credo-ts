@@ -30,13 +30,18 @@ import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import { DidCommConnectionMetadataKeys } from './modules/connections/repository/DidCommConnectionMetadataTypes'
-import { toX25519 } from './modules/connections/services/helpers'
+import { toKeyAgreement } from './modules/connections/services/helpers'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import { DidCommForwardV2Message } from './modules/routing/protocol/v2/messages'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
-import { buildV2PlaintextFromMessage, DidCommV2EnvelopeService, type DidCommV2PlaintextMessage } from './v2'
+import {
+  buildV2PlaintextFromMessage,
+  DidCommV2EnvelopeService,
+  type DidCommV2KeyAgreementJwk,
+  type DidCommV2PlaintextMessage,
+} from './v2'
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -122,14 +127,14 @@ export class DidCommMessageSender {
       keys.senderKey
     ) {
       try {
-        const recipientX25519 = toX25519(keys.recipientKeys[0])
+        const recipientKeyAgreement = toKeyAgreement(keys.recipientKeys[0])
         // Use did:key as kid when no explicit keyId — includes multicodec prefix so receiver
-        // can unambiguously determine the key type (Ed25519 vs X25519).
-        recipientX25519.keyId = keys.recipientKeys[0].hasKeyId
+        // can unambiguously determine the key type.
+        recipientKeyAgreement.keyId = keys.recipientKeys[0].hasKeyId
           ? keys.recipientKeys[0].keyId
           : new DidKey(keys.recipientKeys[0]).did
-        const senderX25519 = toX25519(keys.senderKey)
-        senderX25519.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
+        const senderKeyAgreementJwk = toKeyAgreement(keys.senderKey)
+        senderKeyAgreementJwk.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
         const plaintext = buildV2PlaintextFromMessage(message, {
           useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,
           ...(connection?.did && connection?.theirDid
@@ -147,8 +152,8 @@ export class DidCommMessageSender {
           hasFromPrior: plaintext.from_prior !== undefined,
         })
         encryptedMessage = await this.v2EnvelopeService.pack(agentContext, plaintext, {
-          recipientKey: recipientX25519,
-          senderKey: senderX25519,
+          recipientKey: recipientKeyAgreement,
+          senderKey: senderKeyAgreementJwk,
           senderKeySkid: keys.senderKeySkid,
           contentEncryptionAlgorithm: this.didCommModuleConfig.v2DefaultAuthcryptContentEncryption,
         })
@@ -180,11 +185,11 @@ export class DidCommMessageSender {
     _plaintext: DidCommV2PlaintextMessage,
     keys: EnvelopeKeys
   ): string {
-    // toX25519 ensures we always build the did:key from an X25519 fingerprint,
+    // toKeyAgreement ensures we always build the did:key from a keyAgreement fingerprint,
     // so the form matches what the holder registered regardless of whether the
-    // peer DID stored an Ed25519 auth VM or an X25519 keyAgreement VM.
-    const x25519 = toX25519(keys.recipientKeys[0])
-    return new DidKey(x25519).did
+    // peer DID stored an Ed25519 auth VM or a keyAgreement VM (X25519 or P-256).
+    const keyAgreement = toKeyAgreement(keys.recipientKeys[0])
+    return new DidKey(keyAgreement).did
   }
 
   private async packV2WithForward(
@@ -193,15 +198,15 @@ export class DidCommMessageSender {
     keys: EnvelopeKeys,
     connection?: DidCommConnectionRecord
   ): Promise<DidCommEncryptedMessage> {
-    const recipientX25519 = toX25519(keys.recipientKeys[0])
-    recipientX25519.keyId = keys.recipientKeys[0].hasKeyId
+    const recipientKeyAgreement = toKeyAgreement(keys.recipientKeys[0])
+    recipientKeyAgreement.keyId = keys.recipientKeys[0].hasKeyId
       ? keys.recipientKeys[0].keyId
       : new DidKey(keys.recipientKeys[0]).did
     if (!keys.senderKey) {
       throw new CredoError('DIDComm v2 pack requires a sender key')
     }
-    const senderX25519 = toX25519(keys.senderKey)
-    senderX25519.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
+    const senderKeyAgreementJwk = toKeyAgreement(keys.senderKey)
+    senderKeyAgreementJwk.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
 
     const tagsTheirDid = connection?.getTags().theirDid
     const theirDidForEnvelope =
@@ -214,8 +219,8 @@ export class DidCommMessageSender {
     })
 
     let payload = await this.v2EnvelopeService.pack(agentContext, plaintext, {
-      recipientKey: recipientX25519,
-      senderKey: senderX25519,
+      recipientKey: recipientKeyAgreement,
+      senderKey: senderKeyAgreementJwk,
       senderKeySkid: keys.senderKeySkid,
       contentEncryptionAlgorithm: this.didCommModuleConfig.v2DefaultAuthcryptContentEncryption,
     })
@@ -225,8 +230,8 @@ export class DidCommMessageSender {
     for (let i = 0; i < routingKeysReversed.length; i++) {
       const routingKey = routingKeysReversed[i]
       const next = i === routingKeysReversed.length - 1 ? recipientNext : new DidKey(routingKeysReversed[i + 1]).did
-      const routingKeyX25519 = toX25519(routingKey)
-      routingKeyX25519.keyId = new DidKey(routingKey).did
+      const routingKeyAgreement = toKeyAgreement(routingKey)
+      routingKeyAgreement.keyId = new DidKey(routingKey).did
       const attachment = {
         id: utils.uuid(),
         media_type: 'application/didcomm-encrypted+json',
@@ -238,7 +243,7 @@ export class DidCommMessageSender {
         attachments: [attachment],
       })
       payload = await this.v2EnvelopeService.packAnoncrypt(agentContext, forwardPlaintext, {
-        recipientKey: routingKeyX25519,
+        recipientKey: routingKeyAgreement,
         contentEncryptionAlgorithm: this.didCommModuleConfig.v2DefaultAnoncryptContentEncryption,
       })
     }
@@ -288,14 +293,14 @@ export class DidCommMessageSender {
       keys.senderKey
     ) {
       try {
-        const recipientX25519 = toX25519(keys.recipientKeys[0])
+        const recipientKeyAgreement = toKeyAgreement(keys.recipientKeys[0])
         // Use existing keyId (DID URL pointing to keyAgreement VM) when available,
         // otherwise fall back to did:key for connectionless return route
-        recipientX25519.keyId = keys.recipientKeys[0].hasKeyId
+        recipientKeyAgreement.keyId = keys.recipientKeys[0].hasKeyId
           ? keys.recipientKeys[0].keyId
           : new DidKey(keys.recipientKeys[0]).did
-        const senderX25519 = toX25519(keys.senderKey)
-        senderX25519.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
+        const senderKeyAgreementJwk = toKeyAgreement(keys.senderKey)
+        senderKeyAgreementJwk.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
         const plaintext = buildV2PlaintextFromMessage(message, {
           useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,
           ...(connection?.did && connection?.theirDid
@@ -313,8 +318,8 @@ export class DidCommMessageSender {
           hasFromPrior: plaintext.from_prior !== undefined,
         })
         encryptedMessage = await this.v2EnvelopeService.pack(agentContext, plaintext, {
-          recipientKey: recipientX25519,
-          senderKey: senderX25519,
+          recipientKey: recipientKeyAgreement,
+          senderKey: senderKeyAgreementJwk,
           senderKeySkid: keys.senderKeySkid,
           contentEncryptionAlgorithm: this.didCommModuleConfig.v2DefaultAuthcryptContentEncryption,
         })
@@ -542,19 +547,19 @@ export class DidCommMessageSender {
       )
     }
 
-    // For DIDComm v2 authcrypt (ECDH-1PU): resolve the independent X25519 keyAgreement key
+    // For DIDComm v2 authcrypt (ECDH-1PU): resolve the independent keyAgreement key
     // if it has its own kmsKeyId. This avoids using the Ed25519-derived X25519 (which would
     // produce a different public key than what skid points to with independent keys).
-    let senderKeyAgreement: { publicJwk: Kms.PublicJwk<Kms.X25519PublicJwk>; vmId: string } | undefined
+    let senderKeyAgreement: { publicJwk: DidCommV2KeyAgreementJwk; vmId: string } | undefined
     for (const kaRef of didDocument.keyAgreement ?? []) {
       const vm = typeof kaRef === 'string' ? didDocument.dereferenceVerificationMethod(kaRef) : kaRef
       try {
         const jwk = getPublicJwkFromVerificationMethod(vm)
-        if (!jwk.is(Kms.X25519PublicJwk)) continue
+        if (!jwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk)) continue
         const kmsKeyId = keys?.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
         if (kmsKeyId) {
           jwk.keyId = kmsKeyId
-          senderKeyAgreement = { publicJwk: jwk as Kms.PublicJwk<Kms.X25519PublicJwk>, vmId: vm.id }
+          senderKeyAgreement = { publicJwk: jwk as DidCommV2KeyAgreementJwk, vmId: vm.id }
           break
         }
       } catch {}
@@ -564,14 +569,16 @@ export class DidCommMessageSender {
     const shouldAddReturnRoute =
       message.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(didDocument)
 
-    // When the connection uses DIDComm v2, prefer services with X25519 (keyAgreement) recipient keys.
-    // DID documents with dual v1/v2 services return both from resolveServicesFromDid; using v1
-    // recipientKeys (Ed25519) with v2 packing creates an incorrect kid (did:key:z6Mk… instead of
-    // a keyAgreement VM DID URL), which the recipient cannot resolve.
+    // When the connection uses DIDComm v2, prefer services with a keyAgreement (X25519 or P-256)
+    // recipient key. DID documents with dual v1/v2 services return both from resolveServicesFromDid;
+    // using v1 recipientKeys (Ed25519) with v2 packing creates an incorrect kid (did:key:z6Mk… instead
+    // of a keyAgreement VM DID URL), which the recipient cannot resolve.
     const useV2ForServiceOrder = (connection.didcommVersion ?? 'v1') === 'v2'
     const orderedServices = useV2ForServiceOrder
       ? (() => {
-          const v2Svcs = services.filter((s) => s.recipientKeys.some((k) => k.is(Kms.X25519PublicJwk)))
+          const v2Svcs = services.filter((s) =>
+            s.recipientKeys.some((k) => k.is(Kms.X25519PublicJwk, Kms.P256PublicJwk))
+          )
           return v2Svcs.length > 0 ? [...v2Svcs, ...services.filter((s) => !v2Svcs.includes(s))] : services
         })()
       : services
@@ -595,12 +602,12 @@ export class DidCommMessageSender {
         if (id.startsWith('#')) return `${didDocument.id}${id}`
         return undefined
       }
-      // Legacy fallback: find first X25519 keyAgreement VM
+      // Legacy fallback: find first keyAgreement VM (X25519 or P-256)
       const kaVm = (didDocument.keyAgreement ?? [])
         .map((ref) => (typeof ref === 'string' ? didDocument.dereferenceVerificationMethod(ref) : ref))
         .find((vm) => {
           try {
-            return getPublicJwkFromVerificationMethod(vm).is(Kms.X25519PublicJwk)
+            return getPublicJwkFromVerificationMethod(vm).is(Kms.X25519PublicJwk, Kms.P256PublicJwk)
           } catch {
             return false
           }
@@ -935,7 +942,7 @@ export class DidCommMessageSender {
                   typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
                 if (seen.has(verificationMethod.id)) continue
                 const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-                if (publicJwk.is(Kms.Ed25519PublicJwk) || publicJwk.is(Kms.X25519PublicJwk)) {
+                if (publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk, Kms.P256PublicJwk)) {
                   seen.add(verificationMethod.id)
                   const jwk = publicJwk
                   if (verificationMethod?.id && !jwk.hasKeyId) {
