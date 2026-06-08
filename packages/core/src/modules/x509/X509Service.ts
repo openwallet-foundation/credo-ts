@@ -325,7 +325,7 @@ export class X509Service {
     for (let i = 0; i < certificateChain.length - 1; i++) {
       const cert = certificateChain[i]
       const peculiarCert = new x509.X509Certificate(cert.rawCertificate)
-      const basicConstraintsExt = peculiarCert.getExtension('2.5.29.19')
+      const basicConstraintsExt = peculiarCert.getExtension(X509ExtensionIdentifier.BasicConstraints)
 
       if (!basicConstraintsExt) {
         return {

@@ -72,7 +72,7 @@ export class X509Api {
   /**
    * Fetch a CRL from a URL and parse it, optionally verifying it against an issuer certificate.
    *
-   * @param options X509GetCertificateRevocationListOptions
+   * @param options X509FetchCertificateRevocationListOptions
    */
   public async fetchCertificateRevocationList(options: X509FetchCertificateRevocationListOptions) {
     return await X509RevocationService.fetchCertificateRevocationList(this.agentContext, options)

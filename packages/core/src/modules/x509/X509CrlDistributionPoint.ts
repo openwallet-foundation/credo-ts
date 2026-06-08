@@ -15,7 +15,7 @@ export enum X509RevocationReason {
 }
 
 /**
- * All possible revocation reason codes as a bitmask
+ * All possible revocation reason codes as a bitmask.
  * Covers reasons 0-8 (9 total reasons)
  */
 export const ALL_REVOCATION_REASONS_MASK = 0b111111111 // bits 0-8 set
@@ -41,8 +41,11 @@ export interface X509CrlDistributionPoint {
   reasons?: number[]
 
   /**
-   * Optional CRL issuer (if different from certificate issuer)
-   * Currently not supported - will be undefined
+   * Optional CRL issuer (if different from certificate issuer), as a URI.
+   *
+   * This is parsed and populated when present, but indirect CRLs are NOT verified during
+   * revocation checking: a distribution point carrying a `crlIssuer` is recognised and skipped
+   * (tracked as an unsupported feature) rather than fetched against the certificate issuer.
    */
   crlIssuer?: string
 }

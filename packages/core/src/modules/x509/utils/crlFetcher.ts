@@ -29,7 +29,7 @@ export interface CrlFetchOptions {
 const DEFAULT_MAX_CRL_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
 
 /**
- * Default cache expiry time in milliseconds (5 seconds)
+ * Default CRL fetch timeout in milliseconds (5 seconds)
  */
 const DEFAULT_TIMEOUT_MILLISECONDS = 5000
 

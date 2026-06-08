@@ -131,7 +131,7 @@ describe('X509Service', () => {
         new x509.X509Certificate(intermediateCert.rawCertificate),
       ],
     })
-    // The builder returns [Root, Intermediate, Leaf]
+    // The builder returns [Leaf, Intermediate, Root] (leaf first, root last)
     certificateChain = (await builder.build(new x509.X509Certificate(leafCert.rawCertificate))).map((c) =>
       c.toString('base64')
     )
