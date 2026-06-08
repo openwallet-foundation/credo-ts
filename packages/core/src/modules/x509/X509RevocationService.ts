@@ -143,8 +143,13 @@ export class X509RevocationService {
 
     const verificationDate = options.verificationDate ?? new Date()
 
-    // Step 1: Check if there's a "full" distribution point (one with no reasons specified)
-    const fullDistributionPoint = distributionPoints.find((dp) => dp.reasons === undefined)
+    // Step 1: Check if there's a "full" distribution point (no reasons specified). Indirect CRLs
+    // (those with a crlIssuer) are excluded here - we can't verify them, so they fall through to the
+    // partitioned path below where they are tracked as an unsupported feature instead of being
+    // fetched and failing verification against the wrong issuer.
+    const fullDistributionPoint = distributionPoints.find(
+      (dp) => dp.reasons === undefined && dp.crlIssuer === undefined
+    )
 
     if (fullDistributionPoint) {
       // Full DP covers all reasons - just fetch and check this one CRL
@@ -228,7 +233,34 @@ export class X509RevocationService {
       }
     }
 
-    // Step 3: Verify we covered all required revocation reasons
+    // Step 3: Check if the certificate is revoked in any CRL we DID collect. Presence on a scoped
+    // CRL is a definitive revocation regardless of whether every required reason partition was
+    // obtained, so this must be checked BEFORE concluding anything about coverage completeness -
+    // otherwise an unreachable partition could mask a revocation we already have proof of.
+    // Use the CRL's own findRevoked so serial number formats are normalized consistently with the
+    // single distribution point path.
+    let revokedEntry: RevokedCertificate | null = null
+    for (const crl of coveredCrls) {
+      revokedEntry = crl.findRevoked(certificate)
+      if (revokedEntry) break
+    }
+
+    if (revokedEntry) {
+      return {
+        isValid: false,
+        isRevoked: true,
+        error: new X509Error(
+          `Certificate '${certificate.subject}' has been revoked. ` +
+            `Revocation date: ${revokedEntry.revocationDate.toISOString()}` +
+            (revokedEntry.reason !== undefined ? `, reason: ${revokedEntry.reason}` : '')
+        ),
+        details: `Revoked on ${revokedEntry.revocationDate.toISOString()}`,
+        method: 'crl',
+      }
+    }
+
+    // Step 4: The certificate was not found revoked. We can only conclude it is NOT revoked if we
+    // actually covered all required revocation reasons; otherwise the status is indeterminate.
     if ((coveredReasons & requiredReasonsMask) !== requiredReasonsMask) {
       const missingReasons = requiredReasonsMask & ~coveredReasons
       const coveredNames = X509RevocationService.reasonMaskToNames(coveredReasons)
@@ -269,30 +301,7 @@ export class X509RevocationService {
       throw availabilityOnly ? new X509CrlUnavailableError(errorMsg) : new X509Error(errorMsg)
     }
 
-    // Step 4: Check if certificate is in any of the collected CRLs.
-    // Use the CRL's own findRevoked so serial number formats are normalized consistently
-    // with the single distribution point path.
-    let revokedEntry: RevokedCertificate | null = null
-    for (const crl of coveredCrls) {
-      revokedEntry = crl.findRevoked(certificate)
-      if (revokedEntry) break
-    }
-
-    if (revokedEntry) {
-      return {
-        isValid: false,
-        isRevoked: true,
-        error: new X509Error(
-          `Certificate '${certificate.subject}' has been revoked. ` +
-            `Revocation date: ${revokedEntry.revocationDate.toISOString()}` +
-            (revokedEntry.reason !== undefined ? `, reason: ${revokedEntry.reason}` : '')
-        ),
-        details: `Revoked on ${revokedEntry.revocationDate.toISOString()}`,
-        method: 'crl',
-      }
-    }
-
-    // Certificate not found in any CRL - it's valid
+    // Certificate not found in any CRL and all required reasons covered - it's valid
     return {
       isValid: true,
       isRevoked: false,

@@ -14,6 +14,7 @@ import { X509RevocationCheckMode, type X509RevocationCheckOptions } from '../X50
 import {
   createP256Key,
   generateCrl,
+  generateLeafWithPartitionedDistributionPoints,
   mockCrl,
   mockCrlHttpError,
   mockCrlNetworkError,
@@ -379,6 +380,80 @@ describe('X509RevocationService', () => {
       })
       expect(soft.isValid).toBe(true)
     })
+
+    it('reports revoked from a reachable partition even when another required partition is unreachable', async () => {
+      const SUPERSEDED_URL = 'https://crl.example/superseded.crl'
+      const leaf = X509Certificate.fromRawCertificate(
+        await generateLeafWithPartitionedDistributionPoints(agentContext, {
+          issuerKey,
+          issuerName: issuerCertificate.subject,
+          subjectPublicKey: await createP256Key(kmsApi),
+          subjectCommonName: 'Partitioned Revoked Leaf 2005',
+          serialNumber: '2005',
+          notBefore: lastMonth,
+          notAfter: nextMonth,
+          distributionPoints: [
+            { url: KEY_COMPROMISE_URL, reason: X509RevocationReason.KeyCompromise },
+            { url: SUPERSEDED_URL, reason: X509RevocationReason.Superseded },
+          ],
+        })
+      )
+
+      // The keyCompromise partition is reachable and lists the leaf as revoked; the superseded
+      // partition is unreachable. The verified CRL is cached after the first check, so a single
+      // interceptor covers both modes; the failed superseded fetch is never cached.
+      mockCrl(
+        KEY_COMPROMISE_URL,
+        await crlBytes({ entries: [{ serialNumber: '2005', reason: x509.X509CrlReason.keyCompromise }] })
+      )
+      mockCrlNetworkError(SUPERSEDED_URL, { times: 2 })
+
+      for (const mode of [X509RevocationCheckMode.SoftFail, X509RevocationCheckMode.Require]) {
+        const result = await checkRevocation(leaf, issuerCertificate, { mode })
+        expect(result.isValid).toBe(false)
+        expect(result.isRevoked).toBe(true)
+      }
+    })
+
+    it('reports revoked from a fetched partition even when required coverage is structurally incomplete', async () => {
+      // A single partitioned DP (keyCompromise) lists the leaf as revoked, but a reason it does not
+      // publish is also required. The revocation must still be reported rather than a coverage error.
+      const leaf = await createLeaf({
+        serialNumber: '2006',
+        crlDistributionPoints: { urls: [KEY_COMPROMISE_URL], reasons: [X509RevocationReason.KeyCompromise] },
+      })
+      mockCrl(
+        KEY_COMPROMISE_URL,
+        await crlBytes({ entries: [{ serialNumber: '2006', reason: x509.X509CrlReason.keyCompromise }] })
+      )
+
+      for (const mode of [X509RevocationCheckMode.SoftFail, X509RevocationCheckMode.Require]) {
+        const result = await checkRevocation(leaf, issuerCertificate, {
+          mode,
+          requiredReasons: [X509RevocationReason.KeyCompromise, X509RevocationReason.Superseded],
+        })
+        expect(result.isValid).toBe(false)
+        expect(result.isRevoked).toBe(true)
+      }
+    })
+  })
+
+  it('treats an indirect-CRL distribution point as an unsupported feature rather than fetching it', async () => {
+    const leaf = await createLeaf({
+      serialNumber: '4001',
+      crlDistributionPoints: { urls: [FULL_URL], crlIssuer: 'https://other-issuer.example/indirect.crl' },
+    })
+    // The DP is indirect (has a crlIssuer), so it must not be fetched/verified against our issuer.
+    const scope = mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+
+    for (const mode of [X509RevocationCheckMode.SoftFail, X509RevocationCheckMode.Require]) {
+      const result = await checkRevocation(leaf, issuerCertificate, { mode })
+      // Unsupported coverage is an integrity-class failure, so it is not soft-failable.
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain('Unsupported CRL feature')
+    }
+    // The indirect CRL URL was never fetched.
+    expect(scope.isDone()).toBe(false)
   })
 
   it('honors a custom verificationDate for CRL expiry', async () => {

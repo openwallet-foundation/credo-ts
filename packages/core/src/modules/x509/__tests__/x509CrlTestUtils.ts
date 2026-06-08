@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer'
+import { DistributionPoint, DistributionPointName, GeneralName, Reason } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 import type { Scope } from 'nock'
 import nock from 'nock'
@@ -132,6 +133,79 @@ export async function generateCrl(
     )
 
     return new Uint8Array(crl.rawData)
+  } finally {
+    x509.cryptoProvider.clear()
+  }
+}
+
+/**
+ * Build a leaf certificate (signed by `issuerKey`) carrying a single CRL Distribution Points
+ * extension with multiple **partitioned** distribution points. The `createCertificate` helper only
+ * writes a single distribution point, so this constructs the cert directly via `@peculiar/x509` for
+ * tests that need reason-partitioned CRLs across several DPs.
+ *
+ * Returns the DER bytes of the certificate (parse with `X509Certificate.fromRawCertificate`).
+ */
+export async function generateLeafWithPartitionedDistributionPoints(
+  agentContext: AgentContext,
+  options: {
+    issuerKey: PublicJwk
+    issuerName: string
+    subjectPublicKey: PublicJwk
+    subjectCommonName: string
+    serialNumber: string
+    notBefore: Date
+    notAfter: Date
+    /** Each entry becomes a partitioned distribution point covering the single given reason (a ReasonFlags bit index). */
+    distributionPoints: Array<{ url: string; reason: number }>
+  }
+): Promise<Uint8Array> {
+  const webCrypto = new CredoWebCrypto(agentContext)
+  x509.cryptoProvider.set(webCrypto)
+
+  try {
+    const signingKey = new CredoWebCryptoKey(
+      options.issuerKey,
+      publicJwkToCryptoKeyAlgorithm(options.issuerKey),
+      false,
+      'private',
+      ['sign']
+    )
+    const publicKey = new CredoWebCryptoKey(
+      options.subjectPublicKey,
+      publicJwkToCryptoKeyAlgorithm(options.issuerKey),
+      true,
+      'public',
+      ['verify']
+    )
+
+    const distributionPoints = options.distributionPoints.map(({ url, reason }) => {
+      const dp = new DistributionPoint({
+        distributionPoint: new DistributionPointName({
+          fullName: [new GeneralName({ uniformResourceIdentifier: url })],
+        }),
+      })
+      const reasons = new Reason()
+      reasons.fromNumber(1 << reason)
+      dp.reasons = reasons
+      return dp
+    })
+
+    const certificate = await x509.X509CertificateGenerator.create(
+      {
+        signingKey,
+        publicKey,
+        issuer: options.issuerName,
+        subject: `CN=${options.subjectCommonName}`,
+        notBefore: options.notBefore,
+        notAfter: options.notAfter,
+        serialNumber: options.serialNumber,
+        extensions: [new x509.CRLDistributionPointsExtension(distributionPoints)],
+      },
+      webCrypto
+    )
+
+    return new Uint8Array(certificate.rawData)
   } finally {
     x509.cryptoProvider.clear()
   }

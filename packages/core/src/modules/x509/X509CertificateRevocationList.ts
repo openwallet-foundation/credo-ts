@@ -19,6 +19,17 @@ function normalizeSerialNumber(serialNumber: string): string {
 }
 
 /**
+ * Byte-for-byte equality of two `Uint8Array`s.
+ */
+function uint8ArraysEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false
+  }
+  return true
+}
+
+/**
  * Wrapper class for X.509 Certificate Revocation List (CRL)
  * Provides a clean interface over the @peculiar/x509 CRL implementation
  */
@@ -130,8 +141,10 @@ export class X509CertificateRevocationList {
       }
     }
 
-    // 2. The signature only proves the key matches; this binds the issuer name too.
-    if (this.issuer !== issuerCertificate.subject) {
+    // 2. The signature only proves the key matches; this binds the issuer name too. Compare the
+    // DER-encoded distinguished names (not their string forms) for an exact, encoding-stable match.
+    const crlIssuerNameBytes = new Uint8Array(this.crl.issuerName.toArrayBuffer())
+    if (!uint8ArraysEqual(crlIssuerNameBytes, issuerCertificate.subjectNameBytes)) {
       return {
         isValid: false,
         error: new X509Error(

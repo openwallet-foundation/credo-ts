@@ -192,8 +192,9 @@ export class X509Certificate {
    * Get CRL Distribution Points with full structure including URLs, reasons, and CRL issuer.
    * Based on RFC 5280 Section 4.2.1.13
    *
-   * NOTE: cRLIssuer is currently not supported and will always be undefined.
-   * Only fullName (URI) distribution points are supported, not nameRelativeToCRLIssuer.
+   * NOTE: only the URI form is surfaced for both the distribution point name (fullName) and the
+   * cRLIssuer; nameRelativeToCRLIssuer and non-URI general names are ignored. Indirect CRLs
+   * (those with a cRLIssuer) are surfaced here but are not verified during revocation checking.
    */
   public get crlDistributionPoints(): X509CrlDistributionPoint[] {
     const crlDistributionPointsExt = this.getMatchingExtensions<x509.CRLDistributionPointsExtension>(
@@ -251,10 +252,23 @@ export class X509Certificate {
         }
       }
 
+      // Extract the cRLIssuer URI (indirect CRL), if present. Only the URI (uniformResourceIdentifier)
+      // form is surfaced. Indirect CRLs are not verified during revocation checking, but exposing the
+      // field lets the revocation service recognise and skip such distribution points.
+      let crlIssuer: string | undefined
+      if (dp.cRLIssuer) {
+        for (const generalName of dp.cRLIssuer) {
+          if (generalName.uniformResourceIdentifier) {
+            crlIssuer = generalName.uniformResourceIdentifier
+            break
+          }
+        }
+      }
+
       result.push({
         urls,
         reasons,
-        crlIssuer: undefined, // Not currently supported
+        crlIssuer,
       })
     }
 
@@ -356,6 +370,14 @@ export class X509Certificate {
 
   public get subject() {
     return this.x509Certificate.subject
+  }
+
+  /**
+   * The DER-encoded subject distinguished name. Use this for exact, encoding-stable name comparison
+   * (e.g. binding a CRL to its issuer) rather than the string form returned by {@link subject}.
+   */
+  public get subjectNameBytes(): Uint8Array {
+    return new Uint8Array(this.x509Certificate.subjectName.toArrayBuffer())
   }
 
   public get issuer() {

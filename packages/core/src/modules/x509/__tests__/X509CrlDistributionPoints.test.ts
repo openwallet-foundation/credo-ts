@@ -80,14 +80,14 @@ describe('X509Certificate.crlDistributionPoints', () => {
     ])
   })
 
-  it('always reports crlIssuer as undefined even when present (indirect CRLs are not supported)', async () => {
+  it('surfaces the cRLIssuer URI for an indirect distribution point', async () => {
     const certificate = await createWithCrl({
       urls: ['https://crl.example/indirect.crl'],
       crlIssuer: 'https://other-issuer.example',
     })
 
     expect(certificate.crlDistributionPoints).toHaveLength(1)
-    expect(certificate.crlDistributionPoints[0].crlIssuer).toBeUndefined()
+    expect(certificate.crlDistributionPoints[0].crlIssuer).toBe('https://other-issuer.example')
   })
 
   it('throws when there are multiple CRL Distribution Points extensions', async () => {
