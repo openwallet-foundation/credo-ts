@@ -1329,7 +1329,7 @@ export class OpenId4VpVerifierService {
       }
 
       if (!isValid) {
-        throw new CredoError(`Error occured during verification of presentation.${cause ? ` ${cause.message}` : ''}`, {
+        throw new CredoError(`Error occurred during verification of presentation.${cause ? ` ${cause.message}` : ''}`, {
           cause,
         })
       }
