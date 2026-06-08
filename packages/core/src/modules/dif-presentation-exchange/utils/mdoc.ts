@@ -55,7 +55,7 @@ export function inputDescriptorToDocumentRequest(inputDescriptor: InputDescripto
 }
 
 export function assertMdocInputDescriptor(inputDescriptor: InputDescriptorV2) {
-  if (!inputDescriptor.format || !inputDescriptor.format.mso_mdoc) {
+  if (!inputDescriptor.format?.mso_mdoc) {
     throw new DifPresentationExchangeError(`Input descriptor must contain 'mso_mdoc' format property`)
   }
 

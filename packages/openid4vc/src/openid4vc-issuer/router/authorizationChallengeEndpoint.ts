@@ -330,8 +330,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
   })
   const allowedStates = [OpenId4VcIssuanceSessionState.AuthorizationInitiated]
   if (
-    !issuanceSession?.presentation ||
-    !issuanceSession.presentation.openId4VcVerificationSessionId ||
+    !issuanceSession?.presentation?.openId4VcVerificationSessionId ||
     !issuanceSession.presentation.authSession ||
     !allowedStates.includes(issuanceSession.state)
   ) {

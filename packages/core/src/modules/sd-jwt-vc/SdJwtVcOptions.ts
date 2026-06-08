@@ -1,7 +1,7 @@
 import type { SdJwtVcPayload } from '@sd-jwt/sd-jwt-vc'
 import type { HashName } from '../../crypto'
 import { PublicJwk } from '../kms'
-import type { EncodedX509Certificate, X509Certificate } from '../x509'
+import type { EncodedX509Certificate, X509Certificate, X509VerificationTrustedCertificates } from '../x509'
 import { SdJwtVcRecord } from './repository'
 import type { SdJwtVc } from './SdJwtVcService'
 
@@ -161,10 +161,19 @@ export type SdJwtVcVerifyOptions = {
    * has a status, it will not be fetched and verified.
    *
    * @default true
+   * @deprecated use `disableStatusValidation`
    */
   verifyCredentialStatus?: boolean
 
-  trustedCertificates?: EncodedX509Certificate[]
+  /**
+   * Whether to disable the status validation of the credential. If set to true and the credential
+   * has a status, it will not be fetched and verified.
+   *
+   * @default false
+   */
+  disableStatusValidation?: boolean
+
+  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
 
   /**
    * Date that should be used as the current time. If not provided, current time will be used.

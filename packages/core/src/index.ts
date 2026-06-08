@@ -40,14 +40,13 @@ export {
 export { DidRecordMetadataKeys } from './modules/dids/repository/didRecordMetadataTypes'
 export * from './modules/dif-presentation-exchange'
 export * from './modules/generic-records'
-
 /**
  * @deprecated import from `@credo-ts/core/kms` instead
  */
 export * as Kms from './modules/kms'
-
 export * from './modules/mdoc'
 export * from './modules/sd-jwt-vc'
+export * from './modules/token-status-list'
 export * from './modules/vc'
 export * from './modules/x509'
 export * from './plugins'

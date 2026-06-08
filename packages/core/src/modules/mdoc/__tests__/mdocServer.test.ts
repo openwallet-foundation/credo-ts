@@ -1,6 +1,11 @@
+import { Buffer } from 'node:buffer'
+import { MediaTypes, StatusType } from '@owf/token-status-list'
+import nock from 'nock'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
-import { KeyManagementApi, P256PublicJwk, PublicJwk } from '../../kms'
-import { X509ModuleConfig, X509Service } from '../../x509'
+import { KeyManagementApi, KnownJwaSignatureAlgorithms, P256PublicJwk, PublicJwk } from '../../kms'
+import { TokenStatusListApi } from '../../token-status-list'
+import { X509ModuleConfig } from '../../x509/X509ModuleConfig'
+import { X509Service } from '../../x509/X509Service'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
 import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } from './mdoc.fixtures'
@@ -18,6 +23,37 @@ const getNextMonth = () => {
 }
 
 const kms = agentContext.resolve(KeyManagementApi)
+const tokenStatusList = agentContext.resolve(TokenStatusListApi)
+
+const holderKey = await kms.createKey({
+  type: {
+    kty: 'EC',
+    crv: 'P-256',
+  },
+})
+const issuerKey = await kms.createKey({
+  type: {
+    kty: 'EC',
+    crv: 'P-256',
+  },
+})
+
+const currentDate = new Date()
+currentDate.setDate(currentDate.getDate() - 1)
+const nextDay = new Date(currentDate)
+nextDay.setDate(currentDate.getDate() + 2)
+
+const certificate = await X509Service.createCertificate(agentContext, {
+  authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
+  validity: {
+    notBefore: currentDate,
+    notAfter: nextDay,
+  },
+  issuer: 'C=DE',
+})
+
+certificate.keyId = issuerKey.keyId
+
 describe('mdoc service test', () => {
   test('can get issuer-auth protected-header alg', async () => {
     const mdoc = Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url)
@@ -37,33 +73,106 @@ describe('mdoc service test', () => {
   })
 
   test('can create and verify mdoc', async () => {
-    const holderKey = await kms.createKey({
-      type: {
-        kty: 'EC',
-        crv: 'P-256',
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: {
+        hello: {
+          world: 'world',
+          nicer: 'dicer',
+        },
+      },
+      issuerCertificate: certificate,
+      validityInfo: {
+        validUntil: nextDay,
       },
     })
-    const issuerKey = await kms.createKey({
-      type: {
-        kty: 'EC',
-        crv: 'P-256',
+
+    expect(mdoc.alg).toBe('ES256')
+    expect(mdoc.docType).toBe('org.iso.18013.5.1.mDL')
+    expect(mdoc.issuerSignedNamespaces).toStrictEqual({
+      hello: {
+        world: 'world',
+        nicer: 'dicer',
       },
     })
+
+    const { isValid } = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [certificate.toString('base64')] }],
+    })
+    expect(isValid).toBeTruthy()
+  })
+
+  test('can create and verify mdoc with status', async () => {
+    const statusListUri = 'https://example.org/token-status-list/8'
+    const { statusList } = await tokenStatusList.createTokenStatusList({
+      format: 'cwt',
+      signer: {
+        method: 'x5c',
+        x5c: [certificate],
+      },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: {
+        statusListLength: 10,
+        bitsPerStatus: 1,
+      },
+      statusListUri,
+    })
+
+    const { statusList: updatedStatusList } = await tokenStatusList.updateTokenStatusList({
+      format: 'cwt',
+      status: { status: StatusType.Valid, index: 1 },
+      token: statusList as Uint8Array,
+      signer: {
+        method: 'x5c',
+        x5c: [certificate],
+      },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+    })
+
+    nock('https://example.org')
+      .persist()
+      .get('/token-status-list/8')
+      .reply(200, Buffer.from(updatedStatusList), { 'Content-Type': MediaTypes.StatusListCwt })
 
     const currentDate = new Date()
     currentDate.setDate(currentDate.getDate() - 1)
     const nextDay = new Date(currentDate)
     nextDay.setDate(currentDate.getDate() + 2)
 
-    const certificate = await X509Service.createCertificate(agentContext, {
-      authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
-      validity: {
-        notBefore: currentDate,
-        notAfter: nextDay,
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: {
+        hello: {
+          world: 'world',
+          nicer: 'dicer',
+        },
       },
-      issuer: 'C=DE',
+      issuerCertificate: certificate,
+      validityInfo: {
+        validUntil: nextDay,
+      },
+      statusInfo: { index: 1, uri: statusListUri },
     })
 
+    expect(mdoc.alg).toBe('ES256')
+    expect(mdoc.docType).toBe('org.iso.18013.5.1.mDL')
+    expect(mdoc.issuerSignedNamespaces).toStrictEqual({
+      hello: {
+        world: 'world',
+        nicer: 'dicer',
+      },
+    })
+
+    const x = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [certificate.toString('base64')], status: [certificate.toString('base64')] }],
+    })
+
+    expect(x.isValid).toBeTruthy()
+  })
+
+  test('can create and verify mdoc with legacy certificate format', async () => {
     const mdoc = await Mdoc.sign(agentContext, {
       docType: 'org.iso.18013.5.1.mDL',
       holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
@@ -145,7 +254,7 @@ describe('mdoc service test', () => {
     })
 
     const verifyResult = await mdoc.verify(agentContext, {
-      trustedCertificates: [certificate.toString('base64')],
+      trustedCertificates: [{ issuance: [certificate.toString('base64')] }],
     })
     expect(verifyResult).toEqual({
       error: "Country name (C) must be present in the issuer certificate's subject distinguished name",
@@ -195,7 +304,7 @@ describe('mdoc service test', () => {
           clientId: 'something',
           responseUri: 'something',
         },
-        trustedCertificates: [certificate.toString('pem')],
+        trustedCertificates: [{ issuance: [certificate.toString('pem')] }],
       })
     ).rejects.toThrow('Mdoc with doctype org.iso.18013.5.1.mDL is not valid')
   })

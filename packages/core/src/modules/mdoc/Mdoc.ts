@@ -1,10 +1,12 @@
 import { DeviceKey, DeviceKeyInfo, Holder, Issuer, IssuerSigned, SignatureAlgorithm } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
+import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { ClaimFormat } from '../vc/index'
-import { X509Certificate, X509ModuleConfig } from '../x509'
-import { getMdocContext } from './MdocContext'
+import { X509Certificate } from '../x509'
+import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
+import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
@@ -69,12 +71,17 @@ export class Mdoc {
   }
 
   public get alg(): KnownJwaSignatureAlgorithm {
-    const algName = this.issuerSigned.issuerAuth.signatureAlgorithmName
-    if (isKnownJwaSignatureAlgorithm(algName)) {
-      return algName
+    const jwaAlg = this.issuerSigned.issuerAuth.jwaAlgorithm
+
+    if (!jwaAlg) {
+      throw new MdocError('The IssuerAuth does not have a valid signature algorithm in the header')
     }
 
-    throw new MdocError(`Cannot parse mdoc. The signature algorithm '${algName}' is not supported.`)
+    if (isKnownJwaSignatureAlgorithm(jwaAlg)) {
+      return jwaAlg
+    }
+
+    throw new MdocError(`Cannot parse mdoc. The signature algorithm '${jwaAlg}' is not supported.`)
   }
 
   public get validityInfo() {
@@ -141,6 +148,15 @@ export class Mdoc {
         : [issuerCertificate.rawCertificate],
       deviceKeyInfo: DeviceKeyInfo.create({ deviceKey: DeviceKey.fromJwk(holderKey.toJson()) }),
       signingKey: issuerKey.toJson(),
+      status: options.statusInfo
+        ? {
+            statusList: {
+              idx: options.statusInfo.index,
+              uri: options.statusInfo.uri,
+              certificate: options.statusInfo.certificate?.rawCertificate,
+            },
+          }
+        : undefined,
     })
 
     return new Mdoc(issuerSigned)
@@ -155,17 +171,16 @@ export class Mdoc {
       X509Certificate.fromRawCertificate(certificate)
     )
 
-    let trustedCertificates = options?.trustedCertificates
-    if (!trustedCertificates) {
-      trustedCertificates =
-        (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
-          verification: {
-            type: 'credential',
-            credential: this,
-          },
-          certificateChain,
-        })) ?? x509ModuleConfig.trustedCertificates
-    }
+    const trustedCertificates =
+      options?.trustedCertificates ??
+      (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
+        verification: {
+          type: 'credential',
+          credential: this,
+        },
+        certificateChain,
+      })) ??
+      x509ModuleConfig.trustedCertificates
 
     if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
@@ -174,14 +189,18 @@ export class Mdoc {
     const mdocContext = getMdocContext(agentContext, {
       now: options?.now,
     })
+
     try {
+      const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates)
       await Holder.verifyIssuerSigned(
         {
-          trustedCertificates: trustedCertificates.map(
-            (cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate
-          ),
+          trustedCertificates: convertedTrustedCertificates.map(({ issuance, status }) => ({
+            issuance: issuance.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+            status: status?.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+          })),
           issuerSigned: this.issuerSigned,
           disableCertificateChainValidation: false,
+          disableStatusValidation: false,
           now: options?.now,
         },
         mdocContext
