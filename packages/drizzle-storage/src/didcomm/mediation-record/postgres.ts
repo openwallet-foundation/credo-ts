@@ -12,7 +12,7 @@ export const didcommMediationRoleEnum = pgEnum('DidcommMediationRole', didcommMe
 
 export const didcommMediationPickupStrategies = exhaustiveArray(
   {} as DidCommMediatorPickupStrategy,
-  ['PickUpV1', 'PickUpV2', 'PickUpV2LiveMode', 'Implicit', 'None'] as const
+  ['PickUpV1', 'PickUpV2', 'PickUpV2LiveMode', 'PickUpV3', 'PickUpV3LiveMode', 'Implicit', 'None'] as const
 )
 export const didcommMediationPickupStrategyEnum = pgEnum(
   'DidcommMediationPickupStrategry',
@@ -32,6 +32,10 @@ export const didcommMediation = pgTable(
     recipientKeys: text('recipient_keys').array().notNull(),
     routingKeys: text('routing_keys').array().notNull(),
     pickupStrategy: didcommMediationPickupStrategyEnum('pickup_strategy'),
+
+    routingDid: text('routing_did'),
+    recipientDids: text('recipient_dids').array(),
+    mediationProtocolVersion: text('mediation_protocol_version'),
 
     default: boolean(),
   },
