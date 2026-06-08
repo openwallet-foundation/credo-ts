@@ -34,8 +34,13 @@ export interface X509RevocationCheckOptions {
   mode?: X509RevocationCheckMode
 
   /**
-   * Whether to check revocation for all certificates in chain (except root)
-   * @default false (only check end-entity certificate)
+   * Whether to check revocation for all certificates in the chain (except the root).
+   *
+   * Defaults to `true`, so every certificate in the chain (the end-entity and any intermediate CAs)
+   * is checked, as RFC 5280 expects. Set to `false` to only check the end-entity/leaf certificate,
+   * which is faster but weaker.
+   *
+   * @default true
    */
   checkFullChain?: boolean
 
@@ -72,7 +77,9 @@ export interface X509RevocationCheckOptions {
    * If a certificate only has distribution points with specific reasons, this array determines
    * which reasons must be covered for the check to be considered complete.
    *
-   * @default All revocation reasons must be covered
+   * @default The reasons actually published across the certificate's CRL distribution points.
+   * There is no point requiring coverage of reasons the issuer never published a distribution point
+   * for, so by default only the reasons present in the certificate's DPs are required.
    *
    * Set to a subset to only require coverage of specific reasons.
    */

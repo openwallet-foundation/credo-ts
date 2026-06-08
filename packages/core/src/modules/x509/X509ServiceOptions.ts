@@ -2,6 +2,7 @@ import type { GeneralNameType } from '@peculiar/x509'
 import { PublicJwk } from '../kms'
 import type { X509Certificate, X509ExtendedKeyUsage, X509KeyUsage } from './X509Certificate'
 import type { X509RevocationReason } from './X509CrlDistributionPoint'
+import type { X509RevocationCheckOptions } from './X509ValidationOptions'
 
 type AddMarkAsCritical<T extends Record<string, Record<string, unknown>>> = T & {
   [K in keyof T]: T[K] & {
@@ -60,6 +61,67 @@ export interface X509GetLeafCertificateOptions {
 
 export interface X509ParseCertificateOptions {
   encodedCertificate: string
+}
+
+export interface X509CheckCertificateRevocationOptions {
+  /**
+   * The certificate to check, as a base64/PEM-encoded string or an {@link X509Certificate} instance.
+   */
+  certificate: EncodedX509Certificate | X509Certificate
+
+  /**
+   * The issuer certificate that signed the CRL, as a base64/PEM-encoded string or an
+   * {@link X509Certificate} instance. This is required to verify the CRL signature.
+   */
+  issuerCertificate: EncodedX509Certificate | X509Certificate
+
+  /**
+   * Options controlling how revocation is checked. When omitted, the module's configured
+   * `revocationCheck` options are used, falling back to {@link X509RevocationCheckMode.SoftFail}.
+   */
+  revocationCheckOptions?: X509RevocationCheckOptions
+}
+
+export interface X509FetchCertificateRevocationListOptions {
+  /**
+   * The URL to fetch the CRL from.
+   */
+  url: string
+
+  /**
+   * The issuer certificate the CRL should be verified against, as a base64/PEM-encoded string or an
+   * {@link X509Certificate} instance.
+   *
+   * When provided, the CRL signature, issuer name, and validity window are verified, and an error is
+   * thrown on failure. When omitted, the CRL is fetched and parsed but NOT verified.
+   */
+  issuerCertificate?: EncodedX509Certificate | X509Certificate
+
+  /**
+   * Timeout in milliseconds for the CRL fetch.
+   * @default 5000
+   */
+  timeoutMs?: number
+
+  /**
+   * Maximum size in bytes for the CRL download.
+   * @default 10485760 (10 MB)
+   */
+  maxCrlSizeBytes?: number
+
+  /**
+   * The date used to check the CRL validity window (thisUpdate/nextUpdate). Only used when
+   * `issuerCertificate` is provided.
+   * @default new Date() (current time)
+   */
+  verificationDate?: Date
+}
+
+export interface X509ParseCertificateRevocationListOptions {
+  /**
+   * The CRL as a base64- or PEM-encoded string.
+   */
+  encodedCertificateRevocationList: string
 }
 
 export interface X509CreateCertificateChainOptions {

@@ -34,7 +34,7 @@ describe('X509Service revocation (end-to-end)', () => {
   let intermediateSerial: string
   let certificateChain: string[]
 
-  function setMode(mode: X509RevocationCheckMode, checkFullChain = false) {
+  function setMode(mode: X509RevocationCheckMode, checkFullChain = true) {
     agentContext.dependencyManager.resolve(X509ModuleConfig).setRevocationCheck({ mode, checkFullChain })
   }
 
@@ -144,6 +144,7 @@ describe('X509Service revocation (end-to-end)', () => {
 
   it('validates the chain when the leaf is not revoked (SoftFail)', async () => {
     setMode(X509RevocationCheckMode.SoftFail)
+    mockCrl(INTERMEDIATE_CRL_URL, await intermediateCrlBytes([]))
     const scope = mockCrl(LEAF_CRL_URL, await leafCrlBytes([]))
 
     const chain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
@@ -153,7 +154,9 @@ describe('X509Service revocation (end-to-end)', () => {
 
   it('rejects the chain when the leaf is revoked (Require)', async () => {
     setMode(X509RevocationCheckMode.Require)
-    // The CRL is cached after the first validation, so a single interceptor covers both calls.
+    // Verified CRLs are cached after the first validation, so a single interceptor each covers both
+    // calls. The intermediate is checked first (and not revoked), then the revoked leaf fails.
+    mockCrl(INTERMEDIATE_CRL_URL, await intermediateCrlBytes([]))
     mockCrl(LEAF_CRL_URL, await leafCrlBytes([leafSerial]))
 
     await expect(X509Service.validateCertificateChain(agentContext, { certificateChain })).rejects.toThrow(
@@ -170,6 +173,7 @@ describe('X509Service revocation (end-to-end)', () => {
 
   it('rejects a revoked leaf even in SoftFail mode', async () => {
     setMode(X509RevocationCheckMode.SoftFail)
+    mockCrl(INTERMEDIATE_CRL_URL, await intermediateCrlBytes([]))
     mockCrl(LEAF_CRL_URL, await leafCrlBytes([leafSerial]))
 
     await expect(X509Service.validateCertificateChain(agentContext, { certificateChain })).rejects.toThrow(
@@ -178,7 +182,9 @@ describe('X509Service revocation (end-to-end)', () => {
   })
 
   it('passes on network failure in SoftFail but fails in Require', async () => {
-    // A failed fetch is not cached, so both validations attempt a fetch.
+    // The intermediate is reachable and not revoked (cached after the first validation); the leaf
+    // CRL fails with a network error. A failed fetch is not cached, so both validations re-fetch it.
+    mockCrl(INTERMEDIATE_CRL_URL, await intermediateCrlBytes([]))
     mockCrlNetworkError(LEAF_CRL_URL, { times: 2 })
 
     setMode(X509RevocationCheckMode.SoftFail)
@@ -213,6 +219,8 @@ describe('X509Service revocation (end-to-end)', () => {
 
   it('rejects an expired CRL in Require mode (verificationDate defaults to now)', async () => {
     setMode(X509RevocationCheckMode.Require)
+    // The intermediate CRL is valid; the leaf CRL is expired and must fail.
+    mockCrl(INTERMEDIATE_CRL_URL, await intermediateCrlBytes([]))
     mockCrl(LEAF_CRL_URL, await leafCrlBytes([], lastMonth, twoMonthsAgo))
 
     await expect(X509Service.validateCertificateChain(agentContext, { certificateChain })).rejects.toThrow(

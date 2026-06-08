@@ -55,7 +55,8 @@ export interface X509ValidationResult {
   validations: Partial<X509CertificateValidations>
 
   /**
-   * Error that occurred during validation
+   * The error that caused validation to fail. Validation is fail-fast: it stops
+   * at the first failing check.
    */
   error?: Error
 }

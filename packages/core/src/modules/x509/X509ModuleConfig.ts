@@ -132,7 +132,7 @@ export interface X509ModuleConfigOptions {
    * ```
    * {
    *  mode: X509RevocationCheckMode.SoftFail, // do not fail on network error
-   *  checkFullChain: false, // only check leaf
+   *  checkFullChain: true, // check the leaf and all intermediate CAs
    *  timeoutMs: 5000, // 5 seconds
    *  maxCrlSizeBytes: 10485760, // 10MB
    *  crlCacheExpirySeconds: 3600 // 1 hour

@@ -1,11 +1,19 @@
 import type { AgentContext } from '../../agent'
-
+import { CredoWebCrypto } from '../../crypto/webcrypto'
+import { injectable } from '../../plugins'
 import { fetchCrl, getCachedCrl, setCachedCrl } from './utils/crlFetcher'
 import { X509Certificate } from './X509Certificate'
 import { type RevokedCertificate, X509CertificateRevocationList } from './X509CertificateRevocationList'
 import { ALL_REVOCATION_REASONS_MASK, X509RevocationReason } from './X509CrlDistributionPoint'
-import { X509Error } from './X509Error'
+import { X509CrlUnavailableError, X509Error } from './X509Error'
+import { X509ModuleConfig } from './X509ModuleConfig'
+import type {
+  X509CheckCertificateRevocationOptions,
+  X509FetchCertificateRevocationListOptions,
+  X509ParseCertificateRevocationListOptions,
+} from './X509ServiceOptions'
 import { X509RevocationCheckMode, type X509RevocationCheckOptions } from './X509ValidationOptions'
+import type { X509CertificateSingleValidationResult } from './X509ValidationResult'
 
 export interface X509RevocationCheckResult {
   isValid: boolean
@@ -21,33 +29,97 @@ export interface X509RevocationCheckResult {
  */
 const DEFAULT_CRL_CACHE_EXPIRY_SECONDS = 3600
 
+@injectable()
 // biome-ignore lint/complexity/noStaticOnlyClass: Service class pattern used in Credo
 export class X509RevocationService {
   /**
-   * Checks the revocation status of a certificate using CRL
-   * @param agentContext The agent context
-   * @param certificate The certificate to check
-   * @param issuerCertificate The issuer certificate (needed to verify CRL signature)
-   * @param options Revocation check options
-   * @returns Revocation check result
+   * Check the revocation status of a single certificate using CRL.
    */
-  public static async checkRevocation(
+  public static async checkCertificateRevocation(
     agentContext: AgentContext,
-    certificate: X509Certificate,
-    issuerCertificate: X509Certificate,
-    options: X509RevocationCheckOptions
+    { certificate, issuerCertificate, revocationCheckOptions }: X509CheckCertificateRevocationOptions
   ): Promise<X509RevocationCheckResult> {
-    const mode = options.mode ?? X509RevocationCheckMode.SoftFail
+    const parsedCertificate =
+      certificate instanceof X509Certificate ? certificate : X509Certificate.fromEncodedCertificate(certificate)
+    const parsedIssuerCertificate =
+      issuerCertificate instanceof X509Certificate
+        ? issuerCertificate
+        : X509Certificate.fromEncodedCertificate(issuerCertificate)
 
+    const options = revocationCheckOptions ??
+      agentContext.dependencyManager.resolve(X509ModuleConfig).revocationCheck ?? {
+        mode: X509RevocationCheckMode.SoftFail,
+      }
+
+    const mode = options.mode ?? X509RevocationCheckMode.SoftFail
     if (mode === X509RevocationCheckMode.Disabled) {
       return { isValid: true, details: 'Revocation checking disabled' }
     }
 
     try {
-      return await X509RevocationService.checkCrl(agentContext, certificate, issuerCertificate, options)
+      return await X509RevocationService.checkCrl(agentContext, parsedCertificate, parsedIssuerCertificate, options)
     } catch (error) {
       return X509RevocationService.handleRevocationError(error, mode)
     }
+  }
+
+  /**
+   * Check the revocation status of every certificate in a chain (the leaf and, unless
+   * `checkFullChain` is disabled, the intermediate CAs). The root is skipped as it is self-issued and
+   * not covered by a CRL we can fetch and verify.
+   *
+   * The chain must be ordered from root (index 0) to leaf (last index); each certificate's issuer is
+   * the certificate that precedes it in the chain.
+   */
+  public static async checkCertificateChainRevocation(
+    agentContext: AgentContext,
+    certificateChain: X509Certificate[],
+    config: X509ModuleConfig,
+    verificationDate: Date
+  ): Promise<X509CertificateSingleValidationResult> {
+    const configuredRevocationCheck = config.revocationCheck
+    if (!configuredRevocationCheck || configuredRevocationCheck.mode === X509RevocationCheckMode.Disabled) {
+      return { isValid: true, details: 'Revocation checking disabled' }
+    }
+
+    // Use the chain's verificationDate for CRL validity (thisUpdate/nextUpdate) checks
+    // unless the revocation config explicitly overrides it.
+    const revocationConfig: X509RevocationCheckOptions = {
+      ...configuredRevocationCheck,
+      verificationDate: configuredRevocationCheck.verificationDate ?? verificationDate,
+    }
+
+    // The chain is ordered from root (index 0) to leaf (last index). A certificate's issuer is the
+    // certificate that precedes it in the chain. The root certificate (index 0) is skipped.
+    const checkFullChain = revocationConfig.checkFullChain ?? true
+    const startIndex = checkFullChain ? 1 : certificateChain.length - 1
+
+    for (let i = startIndex; i < certificateChain.length; i++) {
+      const certificate = certificateChain[i]
+      // The issuer is the preceding certificate in the chain.
+      const issuerCertificate = certificateChain[i - 1]
+
+      if (!issuerCertificate) {
+        // No issuer available (e.g. a single self-signed certificate); nothing to check.
+        continue
+      }
+
+      const result = await X509RevocationService.checkCertificateRevocation(agentContext, {
+        certificate,
+        issuerCertificate,
+        revocationCheckOptions: revocationConfig,
+      })
+
+      if (!result.isValid) {
+        return {
+          isValid: false,
+          error: result.error,
+          details: result.details,
+        }
+      }
+    }
+
+    return { isValid: true, details: 'No certificates are revoked' }
   }
 
   /**
@@ -100,6 +172,9 @@ export class X509RevocationService {
     const fetchErrors: string[] = [] // Track errors for DPs we couldn't fetch
     const unsupportedDPs: Array<{ reasons: number; feature: string }> = [] // Track DPs we can't process
 
+    // Whether any DP downloaded a CRL that then failed verification/validity
+    let integrityFailure = false
+
     for (const dp of distributionPoints) {
       // Calculate which reasons this DP covers
       const dpReasonMask = X509RevocationService.calculateReasonMask(dp.reasons)
@@ -132,6 +207,10 @@ export class X509RevocationService {
         // CRL fetch failed - track the error but don't fail immediately
         // Another DP might cover the same reasons
         fetchErrors.push(`URLs ${dp.urls.join(', ')}: ${result.error}`)
+
+        // A downloaded-but-rejected CRL is an integrity failure
+        if (result.reachable) integrityFailure = true
+
         continue
       }
 
@@ -165,8 +244,10 @@ export class X509RevocationService {
         `Certificate revocation status cannot be fully determined.`
 
       // Include unsupported DP info if any missing reasons could have been covered by them
+      let unsupportedCoversMissing = false
       for (const unsupported of unsupportedDPs) {
         if (unsupported.reasons & missingReasons) {
+          unsupportedCoversMissing = true
           const unsupportedReasons = X509RevocationService.reasonMaskToNames(unsupported.reasons & missingReasons)
           errorMsg += ` Unsupported CRL feature ${unsupported.feature} covers missing reasons: [${unsupportedReasons.join(', ')}].`
         }
@@ -176,7 +257,16 @@ export class X509RevocationService {
         errorMsg += ` Fetch errors: ${fetchErrors.join('; ')}`
       }
 
-      throw new X509Error(errorMsg)
+      // Check if the missing reasons are covered by any DP (even if we couldn't fetch its CRL):
+      // if not, it's a structural gap that can't be soft-failed.
+      const reasonsPublishedByAnyDp = X509RevocationService.calculateAllReasonsInDPs(distributionPoints)
+      const structuralGap = (missingReasons & ~reasonsPublishedByAnyDp) !== 0
+
+      // The coverage gap is soft-failable only when it is purely caused by CRLs we could not reach;
+      // an integrity failure, an unsupported feature, or a structural gap is never soft-failed.
+      const availabilityOnly = !integrityFailure && !unsupportedCoversMissing && !structuralGap
+
+      throw availabilityOnly ? new X509CrlUnavailableError(errorMsg) : new X509Error(errorMsg)
     }
 
     // Step 4: Check if certificate is in any of the collected CRLs.
@@ -290,10 +380,11 @@ export class X509RevocationService {
     )
 
     if (!result.success) {
-      throw new X509Error(
+      const message =
         `Failed to fetch CRL from distribution point (URLs: ${distributionPoint.urls.join(', ')}). ` +
-          `Error: ${result.error}`
-      )
+        `Error: ${result.error}`
+
+      throw result.reachable ? new X509Error(message) : new X509CrlUnavailableError(message)
     }
 
     // Check if certificate is in the CRL
@@ -333,73 +424,94 @@ export class X509RevocationService {
     verificationDate: Date,
     options: X509RevocationCheckOptions
   ): Promise<
-    { success: true; crl: X509CertificateRevocationList; usedUrl: string } | { success: false; error: string }
+    | { success: true; crl: X509CertificateRevocationList; usedUrl: string }
+    | { success: false; error: string; reachable: boolean }
   > {
     let lastError: string | undefined
 
+    // Whether at least one URL produced a downloaded CRL
+    let reachable = false
+
+    const webCrypto = new CredoWebCrypto(agentContext)
+
     // Try each URL (these are mirrors) until one succeeds
     for (const url of urls) {
-      try {
-        // Use a cached (previously verified) CRL if available, otherwise fetch it.
-        const cachedData = await getCachedCrl(agentContext, url)
-        const crlData =
-          cachedData ??
-          (await fetchCrl({
-            url,
-            timeoutMs: options.timeoutMs,
-            maxSizeBytes: options.maxCrlSizeBytes,
-            agentContext,
-          }))
+      const result = await X509RevocationService.fetchVerifyAndCacheCrl(
+        agentContext,
+        { url, issuerCertificate, verificationDate, options, useCache: true },
+        webCrypto
+      )
 
-        const crl = X509CertificateRevocationList.fromRaw(crlData)
+      if (result.success) return { success: true, crl: result.crl, usedUrl: url }
 
-        // Verify CRL signature with issuer's public key
-        const verifyResult = await crl.verify(agentContext, issuerCertificate)
-        if (!verifyResult.isValid) {
-          lastError = `CRL signature verification failed for ${url}`
-          continue
-        }
-
-        // The CRL issuer must match the certificate's issuer (i.e. the issuer certificate's
-        // subject). The signature check above only proves the key matches; this binds the name too.
-        if (crl.issuer !== issuerCertificate.subject) {
-          lastError = `CRL issuer '${crl.issuer}' does not match certificate issuer '${issuerCertificate.subject}' for ${url}`
-          continue
-        }
-
-        // Check the CRL validity window (thisUpdate <= verificationDate <= nextUpdate)
-        if (crl.isNotYetValid(verificationDate)) {
-          lastError = `CRL from ${url} is not yet valid (thisUpdate: ${crl.thisUpdate.toISOString()})`
-          continue
-        }
-        if (crl.isExpired(verificationDate)) {
-          lastError = `CRL from ${url} has expired (nextUpdate: ${crl.nextUpdate?.toISOString() ?? 'unknown'})`
-          continue
-        }
-
-        // Cache only freshly-fetched, fully-verified CRLs, with a TTL bounded by nextUpdate so an
-        // expired CRL is never served from the cache.
-        if (!cachedData) {
-          const ttlSeconds = X509RevocationService.computeCacheTtlSeconds(
-            crl,
-            verificationDate,
-            options.crlCacheExpirySeconds
-          )
-          await setCachedCrl(agentContext, url, crlData, ttlSeconds)
-        }
-
-        // Successfully fetched and verified CRL
-        return { success: true, crl, usedUrl: url }
-      } catch (error) {
-        lastError = error instanceof Error ? error.message : String(error)
-        // Continue to next URL
-      }
+      lastError = result.error
+      if (result.reachable) reachable = true
     }
 
     // All URLs failed
     return {
       success: false,
       error: lastError ?? `All CRL URLs failed: ${urls.join(', ')}`,
+      reachable,
+    }
+  }
+
+  /**
+   * Download a single CRL (optionally from the cache), parse it, and verify it against the issuer.
+   */
+  private static async fetchVerifyAndCacheCrl(
+    agentContext: AgentContext,
+    {
+      url,
+      issuerCertificate,
+      verificationDate,
+      options,
+      useCache,
+    }: {
+      url: string
+      issuerCertificate: X509Certificate
+      verificationDate: Date
+      options: { timeoutMs?: number; maxCrlSizeBytes?: number; crlCacheExpirySeconds?: number }
+      useCache: boolean
+    },
+    webCrypto: CredoWebCrypto
+  ): Promise<
+    { success: true; crl: X509CertificateRevocationList } | { success: false; error: string; reachable: boolean }
+  > {
+    // Whether we obtained the CRL bytes (from cache or a successful download).
+    let reachable = false
+
+    try {
+      // Use a cached (previously verified) CRL if available, otherwise fetch it.
+      const cachedData = useCache ? await getCachedCrl(agentContext, url) : null
+      const crlData =
+        cachedData ??
+        (await fetchCrl({ url, timeoutMs: options.timeoutMs, maxSizeBytes: options.maxCrlSizeBytes, agentContext }))
+
+      reachable = true
+
+      const crl = X509CertificateRevocationList.fromRaw(crlData)
+
+      // Verify the CRL signature, issuer-name binding, and validity window against the issuer.
+      const verifyResult = await crl.verify({ issuerCertificate, verificationDate }, webCrypto)
+      if (!verifyResult.isValid) {
+        return { success: false, error: verifyResult.error?.message ?? 'CRL verification failed', reachable }
+      }
+
+      // Cache only freshly-fetched, fully-verified CRLs, with a TTL bounded by nextUpdate so an
+      // expired CRL is never served from the cache.
+      if (useCache && !cachedData) {
+        const ttlSeconds = X509RevocationService.computeCacheTtlSeconds(
+          crl,
+          verificationDate,
+          options.crlCacheExpirySeconds
+        )
+        await setCachedCrl(agentContext, url, crlData, ttlSeconds)
+      }
+
+      return { success: true, crl }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error), reachable }
     }
   }
 
@@ -425,30 +537,87 @@ export class X509RevocationService {
   private static handleRevocationError(error: unknown, mode: X509RevocationCheckMode): X509RevocationCheckResult {
     const errorMessage = error instanceof Error ? error.message : String(error)
 
-    switch (mode) {
-      case X509RevocationCheckMode.SoftFail:
-        // Allow validation to succeed despite revocation check failure
-        // This means we weren't able to verify, if the check was successful but the certificate
-        // is revoked it won't be returned as valid in SoftFail mode
-        return {
-          isValid: true,
-          details: `Revocation check failed but SoftFail mode allowed: ${errorMessage}`,
-        }
-
-      case X509RevocationCheckMode.Require:
-        // Fail the entire validation
-        return {
-          isValid: false,
-          error: new X509Error(`Required revocation check failed: ${errorMessage}`, {
-            cause: error instanceof Error ? error : undefined,
-          }),
-        }
-
-      default:
-        return {
-          isValid: true,
-          details: 'Revocation checking disabled',
-        }
+    if (mode === X509RevocationCheckMode.Disabled) {
+      return {
+        isValid: true,
+        details: 'Revocation checking disabled',
+      }
     }
+
+    // SoftFail only tolerates an availability failure (the CRL could not be obtained)
+    if (mode === X509RevocationCheckMode.SoftFail && error instanceof X509CrlUnavailableError) {
+      return {
+        isValid: true,
+        details: `CRL could not be obtained but SoftFail mode allowed it: ${errorMessage}`,
+      }
+    }
+
+    // Remaining cases result in validation failure
+    return {
+      isValid: false,
+      error: new X509Error(`Required revocation check failed: ${errorMessage}`, {
+        cause: error instanceof Error ? error : undefined,
+      }),
+    }
+  }
+
+  /**
+   * Fetch a CRL from a URL and parse it into an {@link X509CertificateRevocationList}.
+   *
+   * When `issuerCertificate` is provided, the CRL's signature, issuer name, and validity window are
+   * verified, and an error is thrown on failure. When omitted, the CRL is returned unverified.
+   */
+  public static async fetchCertificateRevocationList(
+    agentContext: AgentContext,
+    {
+      url,
+      issuerCertificate,
+      timeoutMs,
+      maxCrlSizeBytes,
+      verificationDate = new Date(),
+    }: X509FetchCertificateRevocationListOptions
+  ): Promise<X509CertificateRevocationList> {
+    // Without an issuer certificate we cannot verify the CRL; just fetch and parse it.
+    if (!issuerCertificate) {
+      const crlData = await fetchCrl({ url, timeoutMs, maxSizeBytes: maxCrlSizeBytes, agentContext })
+      return X509CertificateRevocationList.fromRaw(crlData)
+    }
+
+    const parsedIssuerCertificate =
+      issuerCertificate instanceof X509Certificate
+        ? issuerCertificate
+        : X509Certificate.fromEncodedCertificate(issuerCertificate)
+
+    const result = await X509RevocationService.fetchVerifyAndCacheCrl(
+      agentContext,
+      {
+        url,
+        issuerCertificate: parsedIssuerCertificate,
+        verificationDate,
+        options: { timeoutMs, maxCrlSizeBytes },
+        // This is an explicit, one-off fetch; don't read from or populate the revocation cache.
+        useCache: false,
+      },
+      new CredoWebCrypto(agentContext)
+    )
+
+    if (!result.success) {
+      // Distinguish an availability failure (could not download) from an integrity failure
+      // (downloaded but rejected), mirroring the revocation engine's classification.
+      throw result.reachable
+        ? new X509Error(`CRL from ${url} could not be verified: ${result.error}`)
+        : new X509CrlUnavailableError(result.error)
+    }
+
+    return result.crl
+  }
+
+  /**
+   * Parse a base64- or PEM-encoded CRL into an {@link X509CertificateRevocationList}.
+   */
+  public static parseCertificateRevocationList({
+    encodedCertificateRevocationList,
+  }: X509ParseCertificateRevocationListOptions): X509CertificateRevocationList {
+    return X509CertificateRevocationList.fromEncoded(encodedCertificateRevocationList)
   }
 }

@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { Agent } from '../../../agent/Agent'
 import type { AgentContext } from '../../../agent/context'
+import { CredoWebCrypto } from '../../../crypto/webcrypto'
 import { TypedArrayEncoder } from '../../../utils'
 import type { KeyManagementApi, PublicJwk } from '../../kms'
 import { X509Certificate } from '../X509Certificate'
@@ -125,15 +126,15 @@ describe('X509CertificateRevocationList', () => {
     expect(X509CertificateRevocationList.fromRaw(crlBytes).isNotYetValid()).toBe(false)
   })
 
-  it('verifies the CRL signature with the correct issuer', async () => {
+  it('verifies the CRL against the correct issuer', async () => {
     const crl = X509CertificateRevocationList.fromRaw(crlBytes)
-    const result = await crl.verify(agentContext, issuerCertificate)
+    const result = await crl.verify({ issuerCertificate }, new CredoWebCrypto(agentContext))
     expect(result.isValid).toBe(true)
   })
 
   it('fails verification against the wrong issuer', async () => {
     const crl = X509CertificateRevocationList.fromRaw(crlBytes)
-    const result = await crl.verify(agentContext, otherCertificate)
+    const result = await crl.verify({ issuerCertificate: otherCertificate }, new CredoWebCrypto(agentContext))
     expect(result.isValid).toBe(false)
     expect(result.error).toBeInstanceOf(X509Error)
   })

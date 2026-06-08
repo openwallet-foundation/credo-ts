@@ -1,6 +1,4 @@
 import * as x509 from '@peculiar/x509'
-import type { AgentContext } from '../../agent'
-
 import { CredoWebCrypto, CredoWebCryptoKey, publicJwkToCryptoKeyAlgorithm } from '../../crypto/webcrypto'
 import { x509SignatureAlgorithmToJwa } from './utils'
 import { X509Certificate } from './X509Certificate'
@@ -98,14 +96,19 @@ export class X509CertificateRevocationList {
   }
 
   /**
-   * Verify the CRL signature using the issuer's certificate
+   * Verify this CRL with the issuer's certificate.
    */
   public async verify(
-    agentContext: AgentContext,
-    issuerCertificate: X509Certificate
+    {
+      issuerCertificate,
+      verificationDate: now = new Date(),
+    }: {
+      issuerCertificate: X509Certificate
+      verificationDate?: Date
+    },
+    webCrypto: CredoWebCrypto
   ): Promise<{ isValid: boolean; error?: Error }> {
-    const webCrypto = new CredoWebCrypto(agentContext)
-
+    // 1. Verify the CRL signature with the issuer's public key.
     try {
       const publicJwk = issuerCertificate.publicJwk
       const cryptoKeyAlgorithm = publicJwkToCryptoKeyAlgorithm(publicJwk, {
@@ -116,13 +119,8 @@ export class X509CertificateRevocationList {
       const isValid = await this.crl.verify({ publicKey: publicCryptoKey }, webCrypto)
 
       if (!isValid) {
-        return {
-          isValid: false,
-          error: new X509Error('CRL signature verification failed'),
-        }
+        return { isValid: false, error: new X509Error('CRL signature verification failed') }
       }
-
-      return { isValid: true }
     } catch (error) {
       return {
         isValid: false,
@@ -131,6 +129,33 @@ export class X509CertificateRevocationList {
         }),
       }
     }
+
+    // 2. The signature only proves the key matches; this binds the issuer name too.
+    if (this.issuer !== issuerCertificate.subject) {
+      return {
+        isValid: false,
+        error: new X509Error(
+          `CRL issuer '${this.issuer}' does not match certificate issuer '${issuerCertificate.subject}'`
+        ),
+      }
+    }
+
+    // 3. Check the CRL validity window.
+    if (this.isNotYetValid(now)) {
+      return {
+        isValid: false,
+        error: new X509Error(`CRL is not yet valid (thisUpdate: ${this.thisUpdate.toISOString()})`),
+      }
+    }
+
+    if (this.isExpired(now)) {
+      return {
+        isValid: false,
+        error: new X509Error(`CRL has expired (nextUpdate: ${this.nextUpdate?.toISOString() ?? 'unknown'})`),
+      }
+    }
+
+    return { isValid: true }
   }
 
   /**

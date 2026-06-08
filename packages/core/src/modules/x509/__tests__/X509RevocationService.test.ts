@@ -10,7 +10,7 @@ import { X509Certificate } from '../X509Certificate'
 import { X509RevocationReason } from '../X509CrlDistributionPoint'
 import { X509RevocationService } from '../X509RevocationService'
 import { X509Service } from '../X509Service'
-import { X509RevocationCheckMode } from '../X509ValidationOptions'
+import { X509RevocationCheckMode, type X509RevocationCheckOptions } from '../X509ValidationOptions'
 import {
   createP256Key,
   generateCrl,
@@ -101,11 +101,23 @@ describe('X509RevocationService', () => {
     })
   }
 
+  function checkRevocation(
+    certificate: X509Certificate,
+    issuerCertificate: X509Certificate,
+    revocationCheckOptions: X509RevocationCheckOptions
+  ) {
+    return X509RevocationService.checkCertificateRevocation(agentContext, {
+      certificate,
+      issuerCertificate,
+      revocationCheckOptions,
+    })
+  }
+
   it('returns valid without fetching when mode is Disabled', async () => {
     const leaf = await createLeaf({ serialNumber: '1001', crlDistributionPoints: { urls: [FULL_URL] } })
     const scope = mockCrl(FULL_URL, await crlBytes({ entries: [] }))
 
-    const result = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+    const result = await checkRevocation(leaf, issuerCertificate, {
       mode: X509RevocationCheckMode.Disabled,
     })
 
@@ -117,7 +129,7 @@ describe('X509RevocationService', () => {
   it('returns valid when the certificate has no distribution points', async () => {
     const leaf = await createLeaf({ serialNumber: '1002' })
 
-    const result = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+    const result = await checkRevocation(leaf, issuerCertificate, {
       mode: X509RevocationCheckMode.Require,
     })
 
@@ -129,7 +141,7 @@ describe('X509RevocationService', () => {
     const leaf = await createLeaf({ serialNumber: '1003', crlDistributionPoints: { urls: [FULL_URL] } })
     mockCrl(FULL_URL, await crlBytes({ entries: [{ serialNumber: 'dead' }] }))
 
-    const result = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+    const result = await checkRevocation(leaf, issuerCertificate, {
       mode: X509RevocationCheckMode.Require,
     })
 
@@ -144,7 +156,9 @@ describe('X509RevocationService', () => {
     mockCrl(FULL_URL, await crlBytes({ entries: [{ serialNumber: '1004', reason: x509.X509CrlReason.keyCompromise }] }))
 
     for (const mode of [X509RevocationCheckMode.SoftFail, X509RevocationCheckMode.Require]) {
-      const result = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, { mode })
+      const result = await checkRevocation(leaf, issuerCertificate, {
+        mode,
+      })
       expect(result.isValid).toBe(false)
       expect(result.isRevoked).toBe(true)
       expect(result.error?.message).toContain('has been revoked')
@@ -156,13 +170,13 @@ describe('X509RevocationService', () => {
     // A failed fetch is not cached, so both checks attempt a fetch.
     mockCrlNetworkError(FULL_URL, { times: 2 })
 
-    const soft = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+    const soft = await checkRevocation(leaf, issuerCertificate, {
       mode: X509RevocationCheckMode.SoftFail,
     })
     expect(soft.isValid).toBe(true)
     expect(soft.details).toContain('SoftFail')
 
-    const required = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+    const required = await checkRevocation(leaf, issuerCertificate, {
       mode: X509RevocationCheckMode.Require,
     })
     expect(required.isValid).toBe(false)
@@ -173,32 +187,35 @@ describe('X509RevocationService', () => {
     const leaf = await createLeaf({ serialNumber: '1006', crlDistributionPoints: { urls: [FULL_URL] } })
     mockCrlHttpError(FULL_URL, 404)
 
-    const required = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+    const required = await checkRevocation(leaf, issuerCertificate, {
       mode: X509RevocationCheckMode.Require,
     })
     expect(required.isValid).toBe(false)
   })
 
-  it('fails Require mode when the CRL signature does not verify', async () => {
+  it('fails both Require and SoftFail when the CRL signature does not verify', async () => {
     const leaf = await createLeaf({ serialNumber: '1007', crlDistributionPoints: { urls: [FULL_URL] } })
     // Sign the CRL with a different key than the issuer certificate. A CRL that fails verification
     // is not cached, so both checks fetch.
     mockCrl(FULL_URL, await crlBytes({ entries: [], issuerKeyOverride: otherIssuerKey }), { times: 2 })
 
-    const required = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+    const required = await checkRevocation(leaf, issuerCertificate, {
       mode: X509RevocationCheckMode.Require,
     })
     expect(required.isValid).toBe(false)
 
-    const soft = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+    // A downloaded-but-invalid CRL is an integrity failure, not a network failure, so SoftFail does
+    // not tolerate it.
+    const soft = await checkRevocation(leaf, issuerCertificate, {
       mode: X509RevocationCheckMode.SoftFail,
     })
-    expect(soft.isValid).toBe(true)
+    expect(soft.isValid).toBe(false)
   })
 
-  it('fails Require mode when the CRL issuer name does not match the certificate issuer', async () => {
+  it('fails both Require and SoftFail when the CRL issuer name does not match the certificate issuer', async () => {
     const leaf = await createLeaf({ serialNumber: '100a', crlDistributionPoints: { urls: [FULL_URL] } })
-    // Correctly signed by the issuer key, but the CRL carries a different issuer name.
+    // Correctly signed by the issuer key, but the CRL carries a different issuer name. A rejected
+    // CRL is not cached, so both checks fetch.
     mockCrl(
       FULL_URL,
       await generateCrl(agentContext, {
@@ -207,24 +224,39 @@ describe('X509RevocationService', () => {
         thisUpdate: lastMonth,
         nextUpdate: nextMonth,
         entries: [],
-      })
+      }),
+      { times: 2 }
     )
 
-    const required = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+    const required = await checkRevocation(leaf, issuerCertificate, {
       mode: X509RevocationCheckMode.Require,
     })
     expect(required.isValid).toBe(false)
+
+    // An issuer mismatch is an integrity failure, not a network failure, so SoftFail rejects it too.
+    const soft = await checkRevocation(leaf, issuerCertificate, {
+      mode: X509RevocationCheckMode.SoftFail,
+    })
+    expect(soft.isValid).toBe(false)
   })
 
-  it('fails Require mode when the CRL has expired', async () => {
+  it('fails both Require and SoftFail when the CRL has expired', async () => {
     const leaf = await createLeaf({ serialNumber: '1008', crlDistributionPoints: { urls: [FULL_URL] } })
-    mockCrl(FULL_URL, await crlBytes({ entries: [], thisUpdate: twoMonthsAgo, nextUpdate: lastMonth }))
+    // An expired CRL is not cached, so both checks fetch.
+    mockCrl(FULL_URL, await crlBytes({ entries: [], thisUpdate: twoMonthsAgo, nextUpdate: lastMonth }), { times: 2 })
 
-    const required = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+    const required = await checkRevocation(leaf, issuerCertificate, {
       mode: X509RevocationCheckMode.Require,
     })
     expect(required.isValid).toBe(false)
     expect(required.error?.message).toContain('expired')
+
+    // An expired CRL is a staleness/integrity problem, not a network failure, so SoftFail does not
+    // tolerate it either.
+    const soft = await checkRevocation(leaf, issuerCertificate, {
+      mode: X509RevocationCheckMode.SoftFail,
+    })
+    expect(soft.isValid).toBe(false)
   })
 
   it('falls back to a mirror URL when the first URL fails', async () => {
@@ -235,7 +267,7 @@ describe('X509RevocationService', () => {
     const mirrorA = mockCrlNetworkError(MIRROR_URL_A)
     const mirrorB = mockCrl(MIRROR_URL_B, await crlBytes({ entries: [] }))
 
-    const result = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+    const result = await checkRevocation(leaf, issuerCertificate, {
       mode: X509RevocationCheckMode.Require,
     })
     expect(result.isValid).toBe(true)
@@ -264,7 +296,7 @@ describe('X509RevocationService', () => {
       mockCrl(KEY_COMPROMISE_URL, await crlBytes({ entries: [] }))
 
       // Only require the reason that is actually published.
-      const result = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+      const result = await checkRevocation(leaf, issuerCertificate, {
         mode: X509RevocationCheckMode.Require,
         requiredReasons: [X509RevocationReason.KeyCompromise],
       })
@@ -293,7 +325,7 @@ describe('X509RevocationService', () => {
         await crlBytes({ entries: [{ serialNumber: 'ab', reason: x509.X509CrlReason.keyCompromise }] })
       )
 
-      const result = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+      const result = await checkRevocation(leaf, issuerCertificate, {
         mode: X509RevocationCheckMode.Require,
         requiredReasons: [X509RevocationReason.KeyCompromise],
       })
@@ -301,24 +333,49 @@ describe('X509RevocationService', () => {
       expect(result.isRevoked).toBe(true)
     })
 
-    it('fails Require but passes SoftFail when a required partitioned reason is unreachable', async () => {
+    it('fails both Require and SoftFail when a required reason is published by no distribution point', async () => {
       const leaf = await createLeaf({
         serialNumber: '2003',
         crlDistributionPoints: { urls: [KEY_COMPROMISE_URL], reasons: [X509RevocationReason.KeyCompromise] },
       })
 
-      // The DP only covers keyCompromise; require a reason it does not cover. No fetch is needed
-      // because coverage of the required reasons cannot be satisfied.
-      const required = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+      // The DP only covers keyCompromise; require a reason no DP covers. No fetch is needed because
+      // coverage of the required reasons cannot be satisfied. This is a structural gap, not a
+      // network failure, so SoftFail must not tolerate it either.
+      const required = await checkRevocation(leaf, issuerCertificate, {
         mode: X509RevocationCheckMode.Require,
         requiredReasons: [X509RevocationReason.KeyCompromise, X509RevocationReason.Superseded],
       })
       expect(required.isValid).toBe(false)
       expect(required.error?.message).toContain('revocation reasons')
 
-      const soft = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+      const soft = await checkRevocation(leaf, issuerCertificate, {
         mode: X509RevocationCheckMode.SoftFail,
         requiredReasons: [X509RevocationReason.KeyCompromise, X509RevocationReason.Superseded],
+      })
+      expect(soft.isValid).toBe(false)
+    })
+
+    it('passes SoftFail when a required partitioned reason is only unreachable due to a network error', async () => {
+      const leaf = await createLeaf({
+        serialNumber: '2004',
+        crlDistributionPoints: { urls: [KEY_COMPROMISE_URL], reasons: [X509RevocationReason.KeyCompromise] },
+      })
+
+      // The DP publishes the required reason but cannot be fetched. The coverage gap is purely an
+      // availability problem (no integrity failure, no structural gap), so SoftFail tolerates it
+      // while Require does not. A failed fetch is not cached, so both checks attempt a fetch.
+      mockCrlNetworkError(KEY_COMPROMISE_URL, { times: 2 })
+
+      const required = await checkRevocation(leaf, issuerCertificate, {
+        mode: X509RevocationCheckMode.Require,
+        requiredReasons: [X509RevocationReason.KeyCompromise],
+      })
+      expect(required.isValid).toBe(false)
+
+      const soft = await checkRevocation(leaf, issuerCertificate, {
+        mode: X509RevocationCheckMode.SoftFail,
+        requiredReasons: [X509RevocationReason.KeyCompromise],
       })
       expect(soft.isValid).toBe(true)
     })
@@ -329,7 +386,7 @@ describe('X509RevocationService', () => {
     mockCrl(FULL_URL, await crlBytes({ entries: [], thisUpdate: twoMonthsAgo, nextUpdate: lastMonth }))
 
     // With a verificationDate before the CRL's nextUpdate, the CRL is still valid.
-    const result = await X509RevocationService.checkRevocation(agentContext, leaf, issuerCertificate, {
+    const result = await checkRevocation(leaf, issuerCertificate, {
       mode: X509RevocationCheckMode.Require,
       verificationDate: new Date(twoMonthsAgo.getTime() + 24 * 60 * 60 * 1000),
     })

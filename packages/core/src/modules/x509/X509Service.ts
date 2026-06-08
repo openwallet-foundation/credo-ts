@@ -17,7 +17,7 @@ import type {
   X509ParseCertificateSigningRequestOptions,
   X509ValidateCertificateChainOptions,
 } from './X509ServiceOptions'
-import { X509RevocationCheckMode, type X509RevocationCheckOptions } from './X509ValidationOptions'
+import { X509RevocationCheckMode } from './X509ValidationOptions'
 import type { X509CertificateSingleValidationResult, X509ValidationResult } from './X509ValidationResult'
 
 @injectable()
@@ -191,7 +191,7 @@ export class X509Service {
 
     // Phase 5: Revocation checking (if enabled)
     if (config.revocationCheck && config.revocationCheck.mode !== X509RevocationCheckMode.Disabled) {
-      validations.revocationStatus = await X509Service.checkRevocationForChain(
+      validations.revocationStatus = await X509RevocationService.checkCertificateChainRevocation(
         agentContext,
         parsedChain,
         config,
@@ -350,61 +350,5 @@ export class X509Service {
     }
 
     return { isValid: true }
-  }
-
-  /**
-   * Checks revocation status for certificates in the chain
-   */
-  private static async checkRevocationForChain(
-    agentContext: AgentContext,
-    certificateChain: X509Certificate[],
-    config: X509ModuleConfig,
-    verificationDate: Date
-  ): Promise<X509CertificateSingleValidationResult> {
-    const configuredRevocationCheck = config.revocationCheck
-    if (!configuredRevocationCheck || configuredRevocationCheck.mode === X509RevocationCheckMode.Disabled) {
-      return { isValid: true, details: 'Revocation checking disabled' }
-    }
-
-    // Use the chain's verificationDate for CRL validity (thisUpdate/nextUpdate) checks
-    // unless the revocation config explicitly overrides it.
-    const revocationConfig: X509RevocationCheckOptions = {
-      ...configuredRevocationCheck,
-      verificationDate: configuredRevocationCheck.verificationDate ?? verificationDate,
-    }
-
-    // The chain is ordered from root (index 0) to leaf (last index). A certificate's issuer is
-    // the certificate that precedes it in the chain. The root certificate (index 0) is skipped
-    // as it is self-issued and not covered by a CRL we can fetch and verify.
-    const checkFullChain = revocationConfig.checkFullChain ?? false
-    const startIndex = checkFullChain ? 1 : certificateChain.length - 1
-
-    for (let i = startIndex; i < certificateChain.length; i++) {
-      const certificate = certificateChain[i]
-      // The issuer is the preceding certificate in the chain.
-      const issuerCertificate = certificateChain[i - 1]
-
-      if (!issuerCertificate) {
-        // No issuer available (e.g. a single self-signed certificate); nothing to check.
-        continue
-      }
-
-      const result = await X509RevocationService.checkRevocation(
-        agentContext,
-        certificate,
-        issuerCertificate,
-        revocationConfig
-      )
-
-      if (!result.isValid) {
-        return {
-          isValid: false,
-          error: result.error,
-          details: result.details,
-        }
-      }
-    }
-
-    return { isValid: true, details: 'No certificates are revoked' }
   }
 }
