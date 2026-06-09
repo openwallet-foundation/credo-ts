@@ -246,8 +246,7 @@ export class DidDocument {
   }): Array<{
     verificationMethod: VerificationMethod
     publicJwk: PublicJwk<
-      | (MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk)
-      | P256PublicJwk
+      (MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk) | P256PublicJwk
     >
   }> {
     const recipientKeys: Array<{
@@ -334,8 +333,7 @@ export class DidDocument {
       return recipientKeys as Array<{
         verificationMethod: VerificationMethod
         publicJwk: PublicJwk<
-          | (MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk)
-          | P256PublicJwk
+          (MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk) | P256PublicJwk
         >
       }>
     }

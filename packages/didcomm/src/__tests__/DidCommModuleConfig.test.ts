@@ -28,6 +28,23 @@ describe('DidCommModuleConfig', () => {
         /v2KeyAgreementCurve 'P-256' requires 'v2' in didcommVersions/
       )
     })
+
+    it("returns 'P-384' when configured with v2 enabled", () => {
+      const config = new DidCommModuleConfig({ didcommVersions: ['v1', 'v2'], v2KeyAgreementCurve: 'P-384' })
+      expect(config.v2KeyAgreementCurve).toBe('P-384')
+    })
+
+    it("throws when 'P-384' is set without v2 in didcommVersions", () => {
+      expect(() => new DidCommModuleConfig({ v2KeyAgreementCurve: 'P-384' })).toThrow(
+        /v2KeyAgreementCurve 'P-384' requires 'v2' in didcommVersions/
+      )
+    })
+
+    it("throws when 'P-384' is set with only v1 in didcommVersions", () => {
+      expect(() => new DidCommModuleConfig({ didcommVersions: ['v1'], v2KeyAgreementCurve: 'P-384' })).toThrow(
+        /v2KeyAgreementCurve 'P-384' requires 'v2' in didcommVersions/
+      )
+    })
   })
 
   describe('v2 default content encryption', () => {

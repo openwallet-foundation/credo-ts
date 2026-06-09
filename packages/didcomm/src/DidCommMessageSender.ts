@@ -555,7 +555,7 @@ export class DidCommMessageSender {
       const vm = typeof kaRef === 'string' ? didDocument.dereferenceVerificationMethod(kaRef) : kaRef
       try {
         const jwk = getPublicJwkFromVerificationMethod(vm)
-        if (!jwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk)) continue
+        if (!jwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) continue
         const kmsKeyId = keys?.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
         if (kmsKeyId) {
           jwk.keyId = kmsKeyId
@@ -577,7 +577,7 @@ export class DidCommMessageSender {
     const orderedServices = useV2ForServiceOrder
       ? (() => {
           const v2Svcs = services.filter((s) =>
-            s.recipientKeys.some((k) => k.is(Kms.X25519PublicJwk, Kms.P256PublicJwk))
+            s.recipientKeys.some((k) => k.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk))
           )
           return v2Svcs.length > 0 ? [...v2Svcs, ...services.filter((s) => !v2Svcs.includes(s))] : services
         })()
@@ -607,7 +607,7 @@ export class DidCommMessageSender {
         .map((ref) => (typeof ref === 'string' ? didDocument.dereferenceVerificationMethod(ref) : ref))
         .find((vm) => {
           try {
-            return getPublicJwkFromVerificationMethod(vm).is(Kms.X25519PublicJwk, Kms.P256PublicJwk)
+            return getPublicJwkFromVerificationMethod(vm).is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)
           } catch {
             return false
           }
@@ -942,7 +942,7 @@ export class DidCommMessageSender {
                   typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
                 if (seen.has(verificationMethod.id)) continue
                 const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-                if (publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk, Kms.P256PublicJwk)) {
+                if (publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
                   seen.add(verificationMethod.id)
                   const jwk = publicJwk
                   if (verificationMethod?.id && !jwk.hasKeyId) {

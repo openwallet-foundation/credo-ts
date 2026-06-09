@@ -42,11 +42,11 @@ export function toX25519(jwk: Kms.PublicJwk): Kms.PublicJwk<Kms.X25519PublicJwk>
 }
 
 /**
- * Normalize a PublicJwk to a DIDComm v2 keyAgreement key (X25519 or P-256).
+ * Normalize a PublicJwk to a DIDComm v2 keyAgreement key (X25519, P-256, or P-384).
  * Ed25519 inputs are birationally converted to X25519 per RFC 7748.
  */
 export function toKeyAgreement(jwk: Kms.PublicJwk): DidCommV2KeyAgreementJwk {
-  if (jwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk)) {
+  if (jwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
     return jwk as DidCommV2KeyAgreementJwk
   }
   if (jwk.is(Kms.Ed25519PublicJwk)) {

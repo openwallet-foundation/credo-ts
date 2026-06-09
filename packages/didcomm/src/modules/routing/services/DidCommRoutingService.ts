@@ -3,6 +3,7 @@ import { EventEmitter, injectable, Kms } from '@credo-ts/core'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
 import type { DidCommV2KeyAgreementJwk } from '../../../v2/types'
+import { keyTypeForCurve } from '../../../v2/types'
 import type { DidCommRoutingCreatedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
 
@@ -35,12 +36,11 @@ export class DidCommRoutingService {
     // Create separate keyAgreement key for V2 (ECDH-ES / ECDH-1PU) only when the agent
     // supports DIDComm V2. V1-only agents derive X25519 from Ed25519 at runtime via Askar's
     // birational map, so no separate key is needed. Curve selected via
-    // DidCommModuleConfig.v2KeyAgreementCurve (X25519 default; P-256 supported).
+    // DidCommModuleConfig.v2KeyAgreementCurve (X25519 default; P-256 and P-384 supported).
     let keyAgreementKey: DidCommV2KeyAgreementJwk | undefined
     if (didcommConfig.acceptsV2) {
-      const curve = didcommConfig.v2KeyAgreementCurve
       const createdKeyAgreementKey = await kms.createKey({
-        type: curve === 'P-256' ? { kty: 'EC', crv: 'P-256' } : { kty: 'OKP', crv: 'X25519' },
+        type: keyTypeForCurve(didcommConfig.v2KeyAgreementCurve),
       })
       keyAgreementKey = Kms.PublicJwk.fromPublicJwk(createdKeyAgreementKey.publicJwk) as DidCommV2KeyAgreementJwk
       keyAgreementKey.keyId = createdKeyAgreementKey.keyId

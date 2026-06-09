@@ -1746,6 +1746,42 @@ describe('AskarKeyManagementService', () => {
 
       expect(decrypted.data).toEqual(new Uint8Array([1, 2, 3]))
     })
+
+    it('encrypts and decrypts with A256CBC-HS512 and ECDH-1PU+A256KW on P-384', async () => {
+      const senderKey = await service.createKey(agentContext, { type: { kty: 'EC', crv: 'P-384' } })
+      const recipientKey = await service.createKey(agentContext, { type: { kty: 'EC', crv: 'P-384' } })
+
+      const result = await service.encrypt(agentContext, {
+        key: {
+          keyAgreement: {
+            keyId: senderKey.keyId,
+            algorithm: 'ECDH-1PU+A256KW',
+            externalPublicJwk: recipientKey.publicJwk,
+          },
+        },
+        encryption: { algorithm: 'A256CBC-HS512' },
+        data: new Uint8Array([1, 2, 3]),
+      })
+
+      expect(result.encryptedKey?.ephemeralPublicKey?.kty).toBe('EC')
+      expect(result.encryptedKey?.ephemeralPublicKey?.crv).toBe('P-384')
+
+      const decrypted = await service.decrypt(agentContext, {
+        key: {
+          keyAgreement: {
+            keyId: recipientKey.keyId,
+            algorithm: 'ECDH-1PU+A256KW',
+            encryptedKey: result.encryptedKey as Kms.KmsEncryptedKey,
+            ephemeralPublicJwk: result.encryptedKey?.ephemeralPublicKey as Kms.KmsJwkPublicEcdh,
+            senderPublicJwk: senderKey.publicJwk,
+          },
+        },
+        decryption: { algorithm: 'A256CBC-HS512', iv: result.iv as Uint8Array, tag: result.tag as Uint8Array },
+        encrypted: result.encrypted,
+      })
+
+      expect(decrypted.data).toEqual(new Uint8Array([1, 2, 3]))
+    })
   })
 
   describe('didcomm', () => {

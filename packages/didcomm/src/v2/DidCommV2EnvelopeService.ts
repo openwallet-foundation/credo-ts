@@ -20,9 +20,12 @@ import type {
   DidCommV2SignedMessage,
   DidCommV2SigningAlgorithm,
 } from './types'
-import { DIDCOMM_V2_SIGNED_MIME_TYPE, DIDCOMM_V2_SIGNING_ALGORITHMS } from './types'
+import { DIDCOMM_V2_SIGNED_MIME_TYPE, DIDCOMM_V2_SIGNING_ALGORITHMS, keyTypeForCurve } from './types'
 
-type EpkJwk = { kty: 'OKP'; crv: 'X25519'; x: string } | { kty: 'EC'; crv: 'P-256'; x: string; y: string }
+type EpkJwk =
+  | { kty: 'OKP'; crv: 'X25519'; x: string }
+  | { kty: 'EC'; crv: 'P-256'; x: string; y: string }
+  | { kty: 'EC'; crv: 'P-384'; x: string; y: string }
 
 export interface DidCommV2EnvelopeKeys {
   recipientKey: DidCommV2KeyAgreementJwk
@@ -87,9 +90,7 @@ export class DidCommV2EnvelopeService {
     const apu = computeApu(skid)
     const apv = computeApv([recipientKid])
 
-    const ephemeralKey = await kms.createKey({
-      type: recipientCurve === 'X25519' ? { kty: 'OKP', crv: 'X25519' } : { kty: 'EC', crv: 'P-256' },
-    })
+    const ephemeralKey = await kms.createKey({ type: keyTypeForCurve(recipientCurve) })
     try {
       const epkJwk = toEpkJwk(ephemeralKey.publicJwk, recipientCurve)
 
@@ -160,9 +161,7 @@ export class DidCommV2EnvelopeService {
     const recipientKid = keys.recipientKey.keyId
     const apv = computeApv([recipientKid])
 
-    const ephemeralKey = await kms.createKey({
-      type: recipientCurve === 'X25519' ? { kty: 'OKP', crv: 'X25519' } : { kty: 'EC', crv: 'P-256' },
-    })
+    const ephemeralKey = await kms.createKey({ type: keyTypeForCurve(recipientCurve) })
 
     try {
       const epkJwk = toEpkJwk(ephemeralKey.publicJwk, recipientCurve)
@@ -343,6 +342,11 @@ export class DidCommV2EnvelopeService {
     if (recipientCurve === 'P-256') {
       if (!senderKey.is(Kms.P256PublicJwk)) {
         throw new CredoError('Sender key must be P-256 when recipient is P-256')
+      }
+      senderForKdf = senderKey
+    } else if (recipientCurve === 'P-384') {
+      if (!senderKey.is(Kms.P384PublicJwk)) {
+        throw new CredoError('Sender key must be P-384 when recipient is P-384')
       }
       senderForKdf = senderKey
     } else {
@@ -534,13 +538,14 @@ function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0
 }
 
-function getKeyAgreementCurve(jwk: DidCommV2KeyAgreementJwk): 'X25519' | 'P-256' {
+function getKeyAgreementCurve(jwk: DidCommV2KeyAgreementJwk): 'X25519' | 'P-256' | 'P-384' {
   if (jwk.is(Kms.X25519PublicJwk)) return 'X25519'
   if (jwk.is(Kms.P256PublicJwk)) return 'P-256'
+  if (jwk.is(Kms.P384PublicJwk)) return 'P-384'
   throw new CredoError('Unsupported keyAgreement curve for DIDComm v2')
 }
 
-function toEpkJwk(publicJwk: unknown, expectedCurve: 'X25519' | 'P-256'): EpkJwk {
+function toEpkJwk(publicJwk: unknown, expectedCurve: 'X25519' | 'P-256' | 'P-384'): EpkJwk {
   if (typeof publicJwk !== 'object' || publicJwk === null) {
     throw new CredoError('Invalid ephemeral public key')
   }
@@ -551,8 +556,8 @@ function toEpkJwk(publicJwk: unknown, expectedCurve: 'X25519' | 'P-256'): EpkJwk
     }
     return { kty: 'OKP', crv: 'X25519', x: jwk.x }
   }
-  if (jwk.kty !== 'EC' || jwk.crv !== 'P-256' || typeof jwk.x !== 'string' || typeof jwk.y !== 'string') {
-    throw new CredoError('Expected EC/P-256 ephemeral key for DIDComm v2 envelope')
+  if (jwk.kty !== 'EC' || jwk.crv !== expectedCurve || typeof jwk.x !== 'string' || typeof jwk.y !== 'string') {
+    throw new CredoError(`Expected EC/${expectedCurve} ephemeral key for DIDComm v2 envelope`)
   }
-  return { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y }
+  return { kty: 'EC', crv: expectedCurve, x: jwk.x, y: jwk.y }
 }

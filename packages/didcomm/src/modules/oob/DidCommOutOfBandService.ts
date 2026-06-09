@@ -296,8 +296,9 @@ export class DidCommOutOfBandService {
       if (typeof service === 'string') {
         const allServices = await this.didCommDocumentService.resolveServicesFromDid(agentContext, service)
         const didService = preferDidcommV2
-          ? (allServices.find((s) => s.recipientKeys.some((k) => k.is(Kms.X25519PublicJwk, Kms.P256PublicJwk))) ??
-            allServices[0])
+          ? (allServices.find((s) =>
+              s.recipientKeys.some((k) => k.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk))
+            ) ?? allServices[0])
           : allServices[0]
 
         if (didService) return didService
