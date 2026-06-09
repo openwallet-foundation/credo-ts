@@ -1,6 +1,7 @@
 import type { Agent } from '@credo-ts/core'
 import type {
   DidCommBasicMessageStateChangedEvent,
+  DidCommBasicMessageV2StateChangedEvent,
   DidCommCredentialExchangeRecord,
   DidCommCredentialStateChangedEvent,
   DidCommProofExchangeRecord,
@@ -70,11 +71,24 @@ export class Listener {
   }
 
   public messageListener(agent: Agent, name: string) {
+    const showReceivedMessage = (content: string) => {
+      this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${content}\n`))
+    }
+
     agent.events.on(
       DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
       async (event: DidCommBasicMessageStateChangedEvent) => {
         if (event.payload.basicMessageRecord.role === DidCommBasicMessageRole.Receiver) {
-          this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${event.payload.message.content}\n`))
+          showReceivedMessage(event.payload.message.content)
+        }
+      }
+    )
+
+    agent.events.on(
+      DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged,
+      async (event: DidCommBasicMessageV2StateChangedEvent) => {
+        if (event.payload.basicMessageRecord.role === DidCommBasicMessageRole.Receiver) {
+          showReceivedMessage(event.payload.message.content)
         }
       }
     )

@@ -26,8 +26,17 @@ export {
   verkeyToPublicJwk,
 } from './modules/dids/helpers'
 export { didDocumentJsonToNumAlgo1Did } from './modules/dids/methods/peer/peerDidNumAlgo1'
-export { didDocumentToNumAlgo2Did } from './modules/dids/methods/peer/peerDidNumAlgo2'
-export { didDocumentToNumAlgo4Did } from './modules/dids/methods/peer/peerDidNumAlgo4'
+export {
+  didDocumentToNumAlgo2Did,
+  didToNumAlgo2DidDocument,
+} from './modules/dids/methods/peer/peerDidNumAlgo2'
+export {
+  didDocumentToNumAlgo4Did,
+  didToNumAlgo4DidDocument,
+  getAlternativeDidsForNumAlgo4Did,
+  getDidPeer4ShortFormForEquivalence,
+  isShortFormDidPeer4,
+} from './modules/dids/methods/peer/peerDidNumAlgo4'
 export { DidRecordMetadataKeys } from './modules/dids/repository/didRecordMetadataTypes'
 export * from './modules/dif-presentation-exchange'
 export * from './modules/generic-records'
