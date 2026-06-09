@@ -241,9 +241,8 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       p384RecipientKey.keyId = recipient.keyId
     })
 
-    it.each<DidCommV2ContentEncryptionAlgorithm>([
+    it.each<DidCommV2AuthcryptContentEncryptionAlgorithm>([
       'A256CBC-HS512',
-      'A256GCM',
     ])('authcrypt round-trips with %s content encryption', async (enc) => {
       const encrypted = await envelopeService.pack(agentContext, plaintext, {
         senderKey: p384SenderKey,
@@ -273,7 +272,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       expect(resolvedSender).not.toBeNull()
     })
 
-    it.each<DidCommV2ContentEncryptionAlgorithm>([
+    it.each<DidCommV2AnoncryptContentEncryptionAlgorithm>([
       'A256CBC-HS512',
       'A256GCM',
     ])('anoncrypt round-trips with %s content encryption', async (enc) => {
