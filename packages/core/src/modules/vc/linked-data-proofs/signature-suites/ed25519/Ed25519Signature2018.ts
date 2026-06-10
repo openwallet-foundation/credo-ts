@@ -1,13 +1,17 @@
 import { MultiBaseEncoder, TypedArrayEncoder } from '../../../../../utils'
 import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../constants'
-import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../jsonldUtil'
-import { _includesContext } from '../../jsonldUtil'
-import jsonld from '../../libraries/jsonld'
+import jsonld from '../../../jsonld/jsonld'
+import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../proof-ops/jsonldUtil'
+import { _includesContext } from '../../proof-ops/jsonldUtil'
 import type { JwsLinkedDataSignatureOptions } from '../JwsLinkedDataSignature'
 import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
 
 import { ED25519_SUITE_CONTEXT_URL_2018, ED25519_SUITE_CONTEXT_URL_2020 } from './constants'
 import { ed25519Signature2018Context } from './context'
+
+const jsonldWithHasValue = jsonld as typeof jsonld & {
+  hasValue(document: JsonLdDoc, key: string, value: string): boolean
+}
 
 type Ed25519Signature2018Options = Pick<
   JwsLinkedDataSignatureOptions,
@@ -211,8 +215,7 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
 }
 
 function _isEd2018Key(verificationMethod: JsonLdDoc) {
-  // @ts-expect-error - .hasValue is not part of the public API
-  return jsonld.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2018')
+  return jsonldWithHasValue.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2018')
 }
 
 function _includesEd2018Context(document: JsonLdDoc) {
@@ -220,8 +223,7 @@ function _includesEd2018Context(document: JsonLdDoc) {
 }
 
 function _isEd2020Key(verificationMethod: JsonLdDoc) {
-  // @ts-expect-error - .hasValue is not part of the public API
-  return jsonld.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2020')
+  return jsonldWithHasValue.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2020')
 }
 
 function _includesEd2020Context(document: JsonLdDoc) {

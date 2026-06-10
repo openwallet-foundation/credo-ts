@@ -1,6 +1,6 @@
 import { IsOptional, IsString } from 'class-validator'
 
-import { IsUri } from '../../../../utils'
+import { IsUri } from '../../../../utils/validators'
 
 export interface LinkedDataProofOptions {
   type: string

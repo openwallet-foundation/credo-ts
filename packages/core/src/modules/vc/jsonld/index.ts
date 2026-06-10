@@ -1,6 +1,6 @@
+import * as jsonldSignatures from '../linked-data-proofs/adapters/jsonld-signatures-adapter'
+import * as vc from '../linked-data-proofs/adapters/vc-adapter'
 import * as jsonld from './jsonld'
-import * as jsonldSignatures from './jsonld-signatures'
-import * as vc from './vc'
 
 export { defaultDocumentLoader } from './documentLoader'
 

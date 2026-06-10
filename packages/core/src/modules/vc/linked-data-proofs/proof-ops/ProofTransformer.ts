@@ -1,9 +1,9 @@
 import { instanceToPlain, plainToInstance, Transform, TransformationType } from 'class-transformer'
 import type { SingleOrArray } from '../../../../types'
-import type { DataIntegrityProofOptions } from './DataIntegrityProof'
-import { DataIntegrityProof } from './DataIntegrityProof'
-import type { LinkedDataProofOptions } from './LinkedDataProof'
-import { LinkedDataProof } from './LinkedDataProof'
+import type { DataIntegrityProofOptions } from '../models/DataIntegrityProof'
+import { DataIntegrityProof } from '../models/DataIntegrityProof'
+import type { LinkedDataProofOptions } from '../models/LinkedDataProof'
+import { LinkedDataProof } from '../models/LinkedDataProof'
 
 export function ProofTransformer() {
   return Transform(

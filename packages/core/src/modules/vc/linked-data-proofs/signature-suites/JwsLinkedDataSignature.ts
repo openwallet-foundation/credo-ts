@@ -4,9 +4,9 @@
 
 import { CredoError } from '../../../../error'
 import { JsonEncoder, TypedArrayEncoder } from '../../../../utils'
-import type { DocumentLoader, Proof, VerificationMethod } from '../jsonldUtil'
-import { suites } from '../libraries/jsonld-signatures'
+import { suites } from '../adapters/jsonld-signatures-adapter'
 import type { LdKeyPair } from '../models/LdKeyPair'
+import type { DocumentLoader, Proof, VerificationMethod } from '../proof-ops/jsonldUtil'
 
 const LinkedDataSignature = suites.LinkedDataSignature
 export interface JwsLinkedDataSignatureOptions {
