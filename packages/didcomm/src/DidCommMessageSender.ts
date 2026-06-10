@@ -105,7 +105,7 @@ export class DidCommMessageSender {
     const isConnectionResponse = typeof message.type === 'string' && message.type.endsWith('connections/1.0/response')
     const useV1ForConnection = isConnectionRequest || isConnectionResponse
 
-    const useV2ForPacking = connection ? (connection.didcommVersion ?? 'v1') === 'v2' : this.didCommModuleConfig.sendsV2
+    const useV2ForPacking = connection ? (connection.didcommVersion ?? 'v1') === 'v2' : false
 
     if (
       !useV1ForConnection &&
@@ -273,9 +273,7 @@ export class DidCommMessageSender {
       typeof message.type === 'string' && message.type.endsWith('connections/1.0/response')
     const useV1ForConnectionSession = isConnectionRequestSession || isConnectionResponseSession
 
-    const useV2ForSessionPacking = connection
-      ? (connection.didcommVersion ?? 'v1') === 'v2'
-      : this.didCommModuleConfig.sendsV2
+    const useV2ForSessionPacking = connection ? (connection.didcommVersion ?? 'v1') === 'v2' : false
 
     if (
       !useV1ForConnectionSession &&
