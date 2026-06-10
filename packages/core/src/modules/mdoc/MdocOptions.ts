@@ -2,7 +2,7 @@ import { type ValidityInfoOptions } from '@owf/mdoc'
 import type { DcqlQuery } from 'dcql'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import { PublicJwk } from '../kms'
-import type { EncodedX509Certificate, X509Certificate } from '../x509'
+import type { EncodedX509Certificate, X509Certificate, X509VerificationTrustedCertificates } from '../x509'
 import { Mdoc } from './Mdoc'
 import { MdocRecord } from './repository'
 
@@ -15,7 +15,7 @@ export interface MdocStoreOptions {
 }
 
 export type MdocVerifyOptions = {
-  trustedCertificates?: EncodedX509Certificate[]
+  trustedCertificates?: EncodedX509Certificate[] | Array<X509VerificationTrustedCertificates>
   now?: Date
 }
 
@@ -88,7 +88,7 @@ export type MdocDeviceResponseDcqlQueryOptions = {
 }
 
 export type MdocDeviceResponseVerifyOptions = {
-  trustedCertificates?: EncodedX509Certificate[]
+  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
   sessionTranscriptOptions: MdocSessionTranscriptOptions
   /**
    * The base64Url-encoded device response string.
