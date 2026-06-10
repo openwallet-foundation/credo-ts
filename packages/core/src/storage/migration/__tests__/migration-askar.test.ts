@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 import path from 'path'
 
+import { AskarStoreManager } from '../../../../../askar/src/AskarStoreManager'
 import {
   DidCommCredentialExchangeRecord,
   DidCommCredentialExchangeRepository,
@@ -36,6 +37,11 @@ describe('UpdateAssistant | Aries Askar', () => {
     })
 
     await updateAssistant.initialize()
+
+    // Explicitly provision the askar store before adding data. The store is no longer auto-created
+    // when saving records on a non-initialized agent, so we simulate an existing store (as would be
+    // the case for a real storage update) by provisioning it up front.
+    await agent.dependencyManager.resolve(AskarStoreManager).provisionStore(agent.context)
   })
 
   afterEach(async () => {

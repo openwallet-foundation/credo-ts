@@ -6,7 +6,6 @@ import {
   injectable,
   JsonTransformer,
   StorageVersionRecord,
-  CredoError,
 } from '@credo-ts/core'
 import { KdfMethod, Session, Store, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
 
@@ -533,14 +532,7 @@ export class AskarStoreManager {
     }
   }
 
-  public async getInitializedStoreWithProfile(
-    agentContext: AgentContext,
-    options: { provisionIfNotExists?: boolean } = {}
-  ) {
-    if (!agentContext.isInitialized) {
-      throw new CredoError('Agent context is not initialized')
-    }
-    
+  public async getInitializedStoreWithProfile(agentContext: AgentContext) {
     let store = this.getStore(agentContext, {
       // In case we use a profile per wallet, we want to use the parent store, otherwise we only
       // want to use a store that is directly registered on this context.
@@ -551,7 +543,11 @@ export class AskarStoreManager {
       try {
         store = await this.openStore(agentContext)
       } catch (error) {
-        if (error instanceof AskarStoreNotFoundError && options.provisionIfNotExists) {
+        // We only auto-provision a store within the agent context initialization lifecycle. This
+        // prevents accidentally creating a new store when a record is queried while the agent is
+        // not initialized (e.g. before initialization or after shutdown), which previously could
+        // lead to an unexpected (empty) store being created.
+        if (error instanceof AskarStoreNotFoundError && agentContext.isInitialized) {
           store = await this.provisionStore(agentContext)
         } else {
           throw error
