@@ -27,7 +27,7 @@ jobs:
     if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
     steps:
       - uses: actions/checkout@v6.0.2
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
       - name: Setup NodeJS
         uses: actions/setup-node@v6
@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
         # Each shard runs a set of the tests
         # Make sure to UPDATE THE TEST command with the total length of
         # the shards if you change this!!
@@ -63,7 +63,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6.0.2
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
       - name: Setup NodeJS
         id: setup-node
@@ -93,13 +93,13 @@ jobs:
 
       # Upload coverage for shard
       - run: mv coverage/coverage-final.json coverage/${{ matrix.shard }}.json
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-unit-${{ matrix.shard }}
           path: coverage/${{ matrix.shard }}.json
           overwrite: true
 
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.1
         if: failure()
         with:
           name: failed-tests-${{ matrix.node-version }}-unit-${{ matrix.shard }}
@@ -114,7 +114,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
 
     steps:
       - uses: actions/checkout@v6.0.2
@@ -129,7 +129,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
       # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
       - name: pnpm cache path
@@ -153,13 +153,13 @@ jobs:
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/e2e.json
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-e2e
           path: coverage/e2e.json
           overwrite: true
 
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.1
         if: failure()
         with:
           name: failed-tests-${{ matrix.node-version }}-e2e
@@ -174,7 +174,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
 
     steps:
       - uses: actions/checkout@v6.0.2
@@ -189,7 +189,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
       # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
       - name: pnpm cache path
@@ -217,13 +217,13 @@ jobs:
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/drizzle.json
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-drizzle
           path: coverage/drizzle.json
           overwrite: true
 
-      - uses: actions/upload-artifact@v6.0.0
+      - uses: actions/upload-artifact@v7.0.1
         if: failure()
         with:
           name: failed-tests-${{ matrix.node-version }}-drizzle
@@ -235,13 +235,13 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [e2e-tests, unit-tests, drizzle-tests]
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
-          pattern: coverage-artifacts-20-*
+          pattern: coverage-artifacts-22-*
           path: coverage
           merge-multiple: true
 
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6
         with:
           directory: coverage
           token: ${{ secrets.CODECOV_TOKEN }}

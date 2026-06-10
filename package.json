@@ -53,7 +53,7 @@
     "@types/ws": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "cors": "^2.8.6",
-    "drizzle-kit": "^0.31.8",
+    "drizzle-kit": "^0.31.10",
     "express": "catalog:",
     "nock": "catalog:",
     "reflect-metadata": "catalog:",
@@ -63,15 +63,10 @@
     "tsyringe": "catalog:",
     "typescript": "catalog:",
     "undici": "^6.23.0",
-    "vite": "npm:rolldown-vite@^7.3.1",
+    "vite": "^8.0.14",
     "vite-node": "^5.3.0",
     "vitest": "catalog:",
     "ws": "catalog:"
-  },
-  "pnpm": {
-    "overrides": {
-      "vite": "npm:rolldown-vite@latest"
-    }
   },
   "resolutions": {
     "undici": "^6.20.1"

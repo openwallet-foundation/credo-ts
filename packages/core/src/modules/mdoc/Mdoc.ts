@@ -1,20 +1,12 @@
-import type { IssuerSignedDocument } from '@animo-id/mdoc'
-import {
-  COSEKey,
-  cborEncode,
-  DeviceSignedDocument,
-  Document,
-  parseDeviceSigned,
-  parseIssuerSigned,
-  Verifier,
-} from '@animo-id/mdoc'
+import { DeviceKey, DeviceKeyInfo, Holder, Issuer, IssuerSigned, SignatureAlgorithm } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
-import { TypedArrayEncoder } from './../../utils'
+import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { ClaimFormat } from '../vc/index'
-import { X509Certificate, X509ModuleConfig } from '../x509'
-import { getMdocContext } from './MdocContext'
+import { X509Certificate } from '../x509'
+import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
+import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
@@ -24,13 +16,13 @@ import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } f
  * which are the actual credentials being issued to holders.
  */
 export class Mdoc {
-  public base64Url: string
+  public get base64Url() {
+    return this.issuerSigned.encodedForOid4Vci
+  }
+
   #deviceKeyId?: string
 
-  private constructor(public issuerSignedDocument: IssuerSignedDocument | DeviceSignedDocument) {
-    const issuerSigned = issuerSignedDocument.prepare().get('issuerSigned')
-    this.base64Url = TypedArrayEncoder.toBase64URL(cborEncode(issuerSigned))
-  }
+  public constructor(public issuerSigned: IssuerSigned) {}
 
   /**
    * claim format is convenience method added to all credential instances
@@ -43,17 +35,17 @@ export class Mdoc {
    * Encoded is convenience method added to all credential instances
    */
   public get encoded() {
-    return this.base64Url
+    return this.issuerSigned.encodedForOid4Vci
   }
 
   /**
    * Get the device key to which the mdoc is bound
    */
   public get deviceKey(): PublicJwk {
-    const deviceKeyRaw = this.issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
-    if (!deviceKeyRaw) throw new MdocError('Could not extract device key from mdoc')
+    const publicJwk = PublicJwk.fromUnknown(
+      this.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.deviceKey.jwk
+    )
 
-    const publicJwk = PublicJwk.fromUnknown(COSEKey.import(deviceKeyRaw).toJWK())
     if (this.#deviceKeyId) publicJwk.keyId = this.#deviceKeyId
     return publicJwk
   }
@@ -69,75 +61,53 @@ export class Mdoc {
     return undefined
   }
 
-  public static fromBase64Url(mdocBase64Url: string, expectedDocType?: string): Mdoc {
-    const issuerSignedDocument = parseIssuerSigned(TypedArrayEncoder.fromBase64(mdocBase64Url), expectedDocType)
-    return new Mdoc(issuerSignedDocument)
-  }
-
-  public static fromIssuerSignedDocument(issuerSignedBase64Url: string, expectedDocType?: string): Mdoc {
-    return new Mdoc(parseIssuerSigned(TypedArrayEncoder.fromBase64(issuerSignedBase64Url), expectedDocType))
-  }
-
-  public static fromDeviceSignedDocument(
-    issuerSignedBase64Url: string,
-    deviceSignedBase64Url: string,
-    expectedDocType?: string
-  ): Mdoc {
-    return new Mdoc(
-      parseDeviceSigned(
-        TypedArrayEncoder.fromBase64(deviceSignedBase64Url),
-        TypedArrayEncoder.fromBase64(issuerSignedBase64Url),
-        expectedDocType
-      )
-    )
+  public static fromBase64Url(mdocBase64Url: string): Mdoc {
+    const issuerSigned = IssuerSigned.fromEncodedForOid4Vci(mdocBase64Url)
+    return new Mdoc(issuerSigned)
   }
 
   public get docType(): string {
-    return this.issuerSignedDocument.docType
+    return this.issuerSigned.issuerAuth.mobileSecurityObject.docType
   }
 
   public get alg(): KnownJwaSignatureAlgorithm {
-    const algName = this.issuerSignedDocument.issuerSigned.issuerAuth.algName
-    if (!algName) {
-      throw new MdocError('Cannot extract the signature algorithm from the mdoc.')
-    }
-    if (isKnownJwaSignatureAlgorithm(algName)) {
-      return algName
+    const jwaAlg = this.issuerSigned.issuerAuth.jwaAlgorithm
+
+    if (!jwaAlg) {
+      throw new MdocError('The IssuerAuth does not have a valid signature algorithm in the header')
     }
 
-    throw new MdocError(`Cannot parse mdoc. The signature algorithm '${algName}' is not supported.`)
+    if (isKnownJwaSignatureAlgorithm(jwaAlg)) {
+      return jwaAlg
+    }
+
+    throw new MdocError(`Cannot parse mdoc. The signature algorithm '${jwaAlg}' is not supported.`)
   }
 
   public get validityInfo() {
-    return this.issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.validityInfo
-  }
-
-  public get deviceSignedNamespaces(): MdocNameSpaces | null {
-    if (this.issuerSignedDocument instanceof DeviceSignedDocument === false) {
-      return null
+    const { signed, validFrom, validUntil } = this.issuerSigned.issuerAuth.mobileSecurityObject.validityInfo
+    return {
+      signed,
+      validFrom,
+      validUntil,
     }
-
-    return Object.fromEntries(
-      Array.from(this.issuerSignedDocument.allDeviceSignedNamespaces.entries()).map(([namespace, value]) => [
-        namespace,
-        Object.fromEntries(Array.from(value.entries())),
-      ])
-    )
   }
 
   public get issuerSignedCertificateChain() {
-    return this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain
+    return this.issuerSigned.issuerAuth.certificateChain
   }
 
   public get signingCertificate() {
-    return this.issuerSignedDocument.issuerSigned.issuerAuth.certificate
+    return this.issuerSigned.issuerAuth.certificate
   }
 
   public get issuerSignedNamespaces(): MdocNameSpaces {
+    if (!this.issuerSigned.issuerNamespaces?.issuerNamespaces) return {}
+
     return Object.fromEntries(
-      Array.from(this.issuerSignedDocument.allIssuerSignedNamespaces.entries()).map(([namespace, value]) => [
+      Array.from(this.issuerSigned.issuerNamespaces.issuerNamespaces.entries()).map(([namespace, value]) => [
         namespace,
-        Object.fromEntries(Array.from(value.entries())),
+        Object.fromEntries(Array.from(value.values()).map((v) => [v.elementIdentifier, v.elementValue])),
       ])
     )
   }
@@ -146,16 +116,13 @@ export class Mdoc {
     const { docType, validityInfo, namespaces, holderKey, issuerCertificate } = options
     const mdocContext = getMdocContext(agentContext)
 
-    const document = new Document(docType, mdocContext)
-      .useDigestAlgorithm('SHA-256')
-      .addValidityInfo(validityInfo)
-      .addDeviceKeyInfo({ deviceKey: holderKey.toJson() })
+    const issuer = new Issuer(docType, mdocContext)
 
     for (const [namespace, namespaceRecord] of Object.entries(namespaces)) {
-      document.addIssuerNameSpace(namespace, namespaceRecord)
+      issuer.addIssuerNamespace(namespace, namespaceRecord)
     }
 
-    const issuerKey = issuerCertificate.publicJwk
+    const issuerKey = Array.isArray(issuerCertificate) ? issuerCertificate[0].publicJwk : issuerCertificate.publicJwk
     const alg = issuerKey.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
     if (!alg) {
       throw new MdocError(
@@ -167,16 +134,32 @@ export class Mdoc {
       )
     }
 
-    const issuerSignedDocument = await document.sign(
-      {
-        issuerPrivateKey: issuerKey.toJson(),
-        alg,
-        issuerCertificate: issuerCertificate.rawCertificate,
+    const now = new Date()
+    const issuerSigned = await issuer.sign({
+      digestAlgorithm: 'SHA-256',
+      validityInfo: {
+        ...validityInfo,
+        signed: validityInfo.signed ?? now,
+        validFrom: validityInfo.validFrom ?? now,
       },
-      mdocContext
-    )
+      algorithm: SignatureAlgorithm[alg],
+      certificates: Array.isArray(issuerCertificate)
+        ? issuerCertificate.map((c) => c.rawCertificate)
+        : [issuerCertificate.rawCertificate],
+      deviceKeyInfo: DeviceKeyInfo.create({ deviceKey: DeviceKey.fromJwk(holderKey.toJson()) }),
+      signingKey: issuerKey.toJson(),
+      status: options.statusInfo
+        ? {
+            statusList: {
+              idx: options.statusInfo.index,
+              uri: options.statusInfo.uri,
+              certificate: options.statusInfo.certificate?.rawCertificate,
+            },
+          }
+        : undefined,
+    })
 
-    return new Mdoc(issuerSignedDocument)
+    return new Mdoc(issuerSigned)
   }
 
   public async verify(
@@ -184,21 +167,20 @@ export class Mdoc {
     options?: MdocVerifyOptions
   ): Promise<{ isValid: true } | { isValid: false; error: string }> {
     const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
-    const certificateChain = this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain.map((certificate) =>
+    const certificateChain = this.issuerSigned.issuerAuth.certificateChain.map((certificate) =>
       X509Certificate.fromRawCertificate(certificate)
     )
 
-    let trustedCertificates = options?.trustedCertificates
-    if (!trustedCertificates) {
-      trustedCertificates =
-        (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
-          verification: {
-            type: 'credential',
-            credential: this,
-          },
-          certificateChain,
-        })) ?? x509ModuleConfig.trustedCertificates
-    }
+    const trustedCertificates =
+      options?.trustedCertificates ??
+      (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
+        verification: {
+          type: 'credential',
+          credential: this,
+        },
+        certificateChain,
+      })) ??
+      x509ModuleConfig.trustedCertificates
 
     if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
@@ -207,21 +189,23 @@ export class Mdoc {
     const mdocContext = getMdocContext(agentContext, {
       now: options?.now,
     })
+
     try {
-      const verifier = new Verifier()
-      await verifier.verifyIssuerSignature(
+      const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates)
+      await Holder.verifyIssuerSigned(
         {
-          trustedCertificates: trustedCertificates.map(
-            (cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate
-          ),
-          issuerAuth: this.issuerSignedDocument.issuerSigned.issuerAuth,
+          trustedCertificates: convertedTrustedCertificates.map(({ issuance, status }) => ({
+            issuance: issuance.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+            status: status?.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+          })),
+          issuerSigned: this.issuerSigned,
           disableCertificateChainValidation: false,
+          disableStatusValidation: false,
           now: options?.now,
         },
         mdocContext
       )
 
-      await verifier.verifyData({ mdoc: this.issuerSignedDocument }, mdocContext)
       return { isValid: true }
     } catch (error) {
       return { isValid: false, error: error.message }

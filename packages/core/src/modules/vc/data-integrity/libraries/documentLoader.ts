@@ -9,25 +9,29 @@ import { getNativeDocumentLoader } from './nativeDocumentLoader'
 
 export type DocumentLoaderWithContext = (agentContext: AgentContext) => DocumentLoader
 
-export function defaultDocumentLoader(agentContext: AgentContext): DocumentLoader {
+export function defaultDocumentLoader(
+  agentContext: AgentContext,
+  additionalContexts: Record<string, unknown> = {}
+): DocumentLoader {
   const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
+  const contexts = { ...DEFAULT_CONTEXTS, ...additionalContexts }
 
   async function loader(url: string) {
     // Check if in the default contexts shipped with Credo
-    if (url in DEFAULT_CONTEXTS) {
+    if (url in contexts) {
       return {
         contextUrl: null,
         documentUrl: url,
-        document: DEFAULT_CONTEXTS[url as keyof typeof DEFAULT_CONTEXTS],
+        document: contexts[url as keyof typeof contexts],
       }
     }
 
     const withoutFragment = url.split('#')[0]
-    if (withoutFragment in DEFAULT_CONTEXTS) {
+    if (withoutFragment in contexts) {
       return {
         contextUrl: null,
         documentUrl: url,
-        document: DEFAULT_CONTEXTS[url as keyof typeof DEFAULT_CONTEXTS],
+        document: contexts[url as keyof typeof contexts],
       }
     }
 

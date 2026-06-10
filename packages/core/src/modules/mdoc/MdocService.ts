@@ -4,6 +4,7 @@ import type { Query, QueryOptions } from '../../storage/StorageService'
 import { Mdoc } from './Mdoc'
 import { MdocDeviceResponse } from './MdocDeviceResponse'
 import type {
+  MdocDeviceResponseDcqlQueryOptions,
   MdocDeviceResponseOptions,
   MdocDeviceResponsePresentationDefinitionOptions,
   MdocDeviceResponseVerifyOptions,
@@ -18,10 +19,10 @@ import { MdocRecord, MdocRepository } from './repository'
  */
 @injectable()
 export class MdocService {
-  private MdocRepository: MdocRepository
+  private mdocRepository: MdocRepository
 
   public constructor(mdocRepository: MdocRepository) {
-    this.MdocRepository = mdocRepository
+    this.mdocRepository = mdocRepository
   }
 
   public mdocFromBase64Url(hexEncodedMdoc: string) {
@@ -44,7 +45,11 @@ export class MdocService {
     agentContext: AgentContext,
     options: MdocDeviceResponsePresentationDefinitionOptions
   ) {
-    return MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agentContext, options)
+    return MdocDeviceResponse.createDeviceResponseWithPresentationDefinition(agentContext, options)
+  }
+
+  public async createDcqlQueryDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseDcqlQueryOptions) {
+    return MdocDeviceResponse.createDeviceResponseWithDcqlQuery(agentContext, options)
   }
 
   public async verifyDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseVerifyOptions) {
@@ -53,17 +58,17 @@ export class MdocService {
   }
 
   public async store(agentContext: AgentContext, options: MdocStoreOptions) {
-    await this.MdocRepository.save(agentContext, options.record)
+    await this.mdocRepository.save(agentContext, options.record)
 
     return options.record
   }
 
   public async getById(agentContext: AgentContext, id: string): Promise<MdocRecord> {
-    return await this.MdocRepository.getById(agentContext, id)
+    return await this.mdocRepository.getById(agentContext, id)
   }
 
   public async getAll(agentContext: AgentContext): Promise<Array<MdocRecord>> {
-    return await this.MdocRepository.getAll(agentContext)
+    return await this.mdocRepository.getAll(agentContext)
   }
 
   public async findByQuery(
@@ -71,14 +76,14 @@ export class MdocService {
     query: Query<MdocRecord>,
     queryOptions?: QueryOptions
   ): Promise<Array<MdocRecord>> {
-    return await this.MdocRepository.findByQuery(agentContext, query, queryOptions)
+    return await this.mdocRepository.findByQuery(agentContext, query, queryOptions)
   }
 
   public async deleteById(agentContext: AgentContext, id: string) {
-    await this.MdocRepository.deleteById(agentContext, id)
+    await this.mdocRepository.deleteById(agentContext, id)
   }
 
   public async update(agentContext: AgentContext, mdocRecord: MdocRecord) {
-    await this.MdocRepository.update(agentContext, mdocRecord)
+    await this.mdocRepository.update(agentContext, mdocRecord)
   }
 }

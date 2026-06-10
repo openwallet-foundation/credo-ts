@@ -1,7 +1,6 @@
 import { JsonEncoder } from '../../../../utils'
 import { PublicJwk } from '../../../kms'
 import { parseDid } from '../../domain/parse'
-
 import { getDidJwkDocument } from './didJwkDidDocument'
 
 export class DidJwk {
@@ -20,7 +19,7 @@ export class DidJwk {
 
   public static fromDid(did: string) {
     const parsed = parseDid(did)
-    const jwkJson = JsonEncoder.fromBase64(parsed.id)
+    const jwkJson = JsonEncoder.fromBase64Url(parsed.id)
 
     // This validates the jwk
     const publicJwk = PublicJwk.fromUnknown(jwkJson)
@@ -37,7 +36,7 @@ export class DidJwk {
   }
 
   public static fromPublicJwk(publicJwk: PublicJwk) {
-    const did = `did:jwk:${JsonEncoder.toBase64URL(publicJwk.toJson({ includeKid: false }))}`
+    const did = `did:jwk:${JsonEncoder.toBase64Url(publicJwk.toJson({ includeKid: false }))}`
 
     return new DidJwk(did, publicJwk)
   }

@@ -14,6 +14,7 @@ import { JSONPath } from '@astronautlabs/jsonpath'
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
 import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 import { Rules } from '@sphereon/pex-models'
+import type { AgentContext } from 'packages/core/src/agent'
 import { Hasher } from '../../../crypto'
 import { CredoError } from '../../../error'
 import type { JsonObject } from '../../../types'
@@ -31,6 +32,7 @@ import type {
 import { getSphereonOriginalVerifiableCredential } from './transform'
 
 export async function getCredentialsForRequest(
+  agentContext: AgentContext,
   // PEX instance with hasher defined
   pex: PEX,
   presentationDefinition: IPresentationDefinition,
@@ -120,7 +122,7 @@ export async function getCredentialsForRequest(
     )
 
     const mdoc = verifiableCredential.credentialRecord.firstCredential
-    verifiableCredential.disclosedPayload = MdocDeviceResponse.limitDisclosureToInputDescriptor({
+    verifiableCredential.disclosedPayload = await MdocDeviceResponse.limitDisclosureToInputDescriptor(agentContext, {
       inputDescriptor: {
         id: mdoc.docType,
         format: {

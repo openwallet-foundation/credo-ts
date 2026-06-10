@@ -880,7 +880,7 @@ export class OpenId4VciHolderService {
             : { jwk: (await dids.resolveVerificationMethodFromCreatedDidRecord(didUrl)).publicJwk, didUrl }
         )
       )
-      if (!keys.every((key) => Kms.assymetricJwkKeyTypeMatches(key.jwk.toJson(), firstKey.toJson()))) {
+      if (!keys.every((key) => Kms.asymmetricJwkKeyTypeMatches(key.jwk.toJson(), firstKey.toJson()))) {
         throw new CredoError('Expected all did urls to point to the same key type')
       }
 
@@ -951,7 +951,7 @@ export class OpenId4VciHolderService {
 
       const firstJwk = credentialBinding.keys[0]
 
-      if (!credentialBinding.keys.every((key) => Kms.assymetricJwkKeyTypeMatches(key.toJson(), firstJwk.toJson()))) {
+      if (!credentialBinding.keys.every((key) => Kms.asymmetricJwkKeyTypeMatches(key.toJson(), firstJwk.toJson()))) {
         throw new CredoError('Expected all keys for binding method jwk to use the same key type')
       }
 
@@ -979,8 +979,10 @@ export class OpenId4VciHolderService {
                   issuerMetadata: options.metadata,
                   signer: {
                     method: 'jwk',
-                    publicJwk: jwk.toJson() as Jwk,
+                    // There's no need to include the kid in the jwk sent to the issuer, we only store the key id internally
+                    publicJwk: jwk.toJson({ includeKid: false }) as Jwk,
                     alg: algorithm,
+                    kid: jwk.hasKeyId ? jwk.keyId : undefined,
                   },
                   nonce: options.cNonce,
                   clientId: options.clientId,
@@ -1260,9 +1262,12 @@ export class OpenId4VciHolderService {
         )
 
         if (!verificationResults.every((result) => result.isValid)) {
-          agentContext.config.logger.error('Failed to validate credential(s)', { verificationResults })
+          const resultsWithoutCredentials = verificationResults.map(({ sdJwtVc, ...rest }) => rest)
+          agentContext.config.logger.error('Failed to validate credential(s)', {
+            verificationResults: resultsWithoutCredentials,
+          })
           throw new CredoError(
-            `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(verificationResults, replaceError)}`
+            `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(resultsWithoutCredentials, replaceError)}`
           )
         }
 

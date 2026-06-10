@@ -1,5 +1,5 @@
-import { AgentConfig, Buffer, DependencyManager, type Module } from '@credo-ts/core'
-
+import { AgentConfig, DependencyManager, type Module } from '@credo-ts/core'
+import { Buffer } from 'buffer'
 import { HederaModuleConfig, type HederaModuleConfigOptions } from './HederaModuleConfig'
 import { HederaLedgerService } from './ledger'
 

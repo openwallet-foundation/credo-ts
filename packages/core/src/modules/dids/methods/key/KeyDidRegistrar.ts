@@ -3,7 +3,7 @@ import type { XOR } from '../../../../types'
 import {
   KeyManagementApi,
   type KmsCreateKeyOptions,
-  type KmsCreateKeyTypeAssymetric,
+  type KmsCreateKeyTypeAsymmetric,
   type KmsJwkPublicAsymmetric,
   PublicJwk,
 } from '../../../kms'
@@ -131,7 +131,7 @@ export interface KeyDidCreateOptions extends DidCreateOptions {
    * You can create a did:key based on an existing `keyId`, or provide `createKey` options
    * to create a new key.
    */
-  options: XOR<{ createKey: KmsCreateKeyOptions<KmsCreateKeyTypeAssymetric> }, { keyId: string }>
+  options: XOR<{ createKey: KmsCreateKeyOptions<KmsCreateKeyTypeAsymmetric> }, { keyId: string }>
 }
 
 // Update and Deactivate not supported for did:key

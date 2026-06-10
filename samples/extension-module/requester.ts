@@ -17,7 +17,7 @@ const run = async () => {
   // Setup the agent
   const agent = new Agent({
     config: {
-      logger: new ConsoleLogger(LogLevel.info),
+      logger: new ConsoleLogger(LogLevel.Info),
     },
     modules: {
       askar: new AskarModule({

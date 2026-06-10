@@ -31,7 +31,11 @@ import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciChainedAuthorizationServerConfig,
 } from '../shared/models/OpenId4VciAuthorizationServerConfig'
-import { OpenId4VcIssuanceSessionRecord, type OpenId4VcIssuerRecordProps } from './repository'
+import {
+  OpenId4VcIssuanceSessionRecord,
+  type OpenId4VcIssuanceSessionRecordTransaction,
+  type OpenId4VcIssuerRecordProps,
+} from './repository'
 
 export interface OpenId4VciCredentialRequestAuthorization {
   authorizationServer: string
@@ -92,6 +96,15 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
    * @default false
    */
   requirePresentationDuringIssuance?: boolean
+
+  /**
+   * Optional OAuth 2.0 scope value(s) for authorization code flow.
+   *
+   * This can be used to align with HAIP requirement that the issuer includes a scope
+   * value so the wallet can identify the desired credential type and use it in the
+   * authorization request `scope` parameter.
+   */
+  scope?: string
 }
 
 interface OpenId4VciCreateCredentialOfferOptionsBase {
@@ -377,6 +390,11 @@ export interface OpenId4VciDeferredCredentialRequestToCredentialMapperOptions {
   issuanceSession: OpenId4VcIssuanceSessionRecord
 
   /**
+   * The transaction associated with this request.
+   */
+  transaction: OpenId4VcIssuanceSessionRecordTransaction
+
+  /**
    * The deferred credential request received from the wallet
    */
   deferredCredentialRequest: OpenId4VciDeferredCredentialRequest
@@ -422,6 +440,10 @@ export interface OpenId4VciSignW3cV2Credentials {
 export type OpenId4VciDeferredCredentials = {
   type: 'deferral'
   transactionId: string
+
+  /**
+   * The interval in seconds that the wallet should wait before trying to check the status of the issuance again.
+   */
   interval: number
 }
 
@@ -449,7 +471,7 @@ export type OpenId4VciCreateIssuerOptions = {
    * }
    * ```
    */
-  accessTokenSignerKeyType?: Kms.KmsCreateKeyTypeAssymetric
+  accessTokenSignerKeyType?: Kms.KmsCreateKeyTypeAsymmetric
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]

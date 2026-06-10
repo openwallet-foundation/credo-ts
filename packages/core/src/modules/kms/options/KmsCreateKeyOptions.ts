@@ -58,10 +58,10 @@ export const zKmsCreateKeyTypeOct = z.discriminatedUnion('algorithm', [
 ])
 export type KmsCreateKeyTypeOct = z.output<typeof zKmsCreateKeyTypeOct>
 
-export const zKmsCreateKeyTypeAssymetric = z.union([zKmsCreateKeyTypeEc, zKmsCreateKeyTypeOkp, zKmsCreateKeyTypeRsa])
-export type KmsCreateKeyTypeAssymetric = z.output<typeof zKmsCreateKeyTypeAssymetric>
+export const zKmsCreateKeyTypeAsymmetric = z.union([zKmsCreateKeyTypeEc, zKmsCreateKeyTypeOkp, zKmsCreateKeyTypeRsa])
+export type KmsCreateKeyTypeAsymmetric = z.output<typeof zKmsCreateKeyTypeAsymmetric>
 
-// TOOD: see if we can use nested discriminated union with zod?
+// TODO: see if we can use nested discriminated union with zod?
 export const zKmsCreateKeyType = z.union([
   zKmsCreateKeyTypeEc,
   zKmsCreateKeyTypeOkp,

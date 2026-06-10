@@ -1,18 +1,9 @@
 import { AsnParser } from '@peculiar/asn1-schema'
-import {
-  id_ce_authorityKeyIdentifier,
-  id_ce_extKeyUsage,
-  id_ce_issuerAltName,
-  id_ce_keyUsage,
-  id_ce_subjectAltName,
-  id_ce_subjectKeyIdentifier,
-  SubjectPublicKeyInfo,
-} from '@peculiar/asn1-x509'
+import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { publicJwkToCryptoKeyAlgorithm, spkiToPublicJwk } from '../../crypto/webcrypto/utils'
-import type { AnyUint8Array } from '../../types'
 import { TypedArrayEncoder } from '../../utils'
 import { asymmetricPublicJwkMatches, PublicJwk } from '../kms'
 import {
@@ -25,7 +16,10 @@ import {
   createKeyUsagesExtension,
   createSubjectAlternativeNameExtension,
   createSubjectKeyIdentifierExtension,
+  X509ExtensionIdentifier,
+  x509SignatureAlgorithmToJwa,
 } from './utils'
+import type { X509CrlDistributionPoint, X509RevocationReason } from './X509CrlDistributionPoint'
 import { X509Error } from './X509Error'
 import type { X509CreateCertificateOptions } from './X509ServiceOptions'
 
@@ -53,13 +47,13 @@ export enum X509ExtendedKeyUsage {
 
 export type X509CertificateOptions = {
   publicJwk: PublicJwk
-  privateKey?: AnyUint8Array
+  privateKey?: Uint8Array
   x509Certificate: x509.X509Certificate
 }
 
 export class X509Certificate {
   public publicJwk: PublicJwk
-  public privateKey?: AnyUint8Array
+  public privateKey?: Uint8Array
   private x509Certificate: x509.X509Certificate
 
   private constructor(options: X509CertificateOptions) {
@@ -80,7 +74,7 @@ export class X509Certificate {
     return this.publicJwk.hasKeyId
   }
 
-  public static fromRawCertificate(rawCertificate: AnyUint8Array): X509Certificate {
+  public static fromRawCertificate(rawCertificate: Uint8Array): X509Certificate {
     const certificate = new x509.X509Certificate(rawCertificate)
     return X509Certificate.parseCertificate(certificate)
   }
@@ -112,12 +106,12 @@ export class X509Certificate {
   }
 
   public get subjectAlternativeNames() {
-    const san = this.getMatchingExtensions<x509.SubjectAlternativeNameExtension>(id_ce_subjectAltName)
+    const san = this.getMatchingExtensions<x509.SubjectAlternativeNameExtension>(X509ExtensionIdentifier.SubjectAltName)
     return san?.flatMap((s) => s.names.items).map((i) => ({ type: i.type, value: i.value })) ?? []
   }
 
   public get issuerAlternativeNames() {
-    const ian = this.getMatchingExtensions<x509.IssuerAlternativeNameExtension>(id_ce_issuerAltName)
+    const ian = this.getMatchingExtensions<x509.IssuerAlternativeNameExtension>(X509ExtensionIdentifier.IssuerAltName)
     return ian?.flatMap((i) => i.names.items).map((i) => ({ type: i.type, value: i.value })) ?? []
   }
 
@@ -138,9 +132,9 @@ export class X509Certificate {
   }
 
   public get authorityKeyIdentifier() {
-    const keyIds = this.getMatchingExtensions<x509.AuthorityKeyIdentifierExtension>(id_ce_authorityKeyIdentifier)?.map(
-      (e) => e.keyId
-    )
+    const keyIds = this.getMatchingExtensions<x509.AuthorityKeyIdentifierExtension>(
+      X509ExtensionIdentifier.AuthorityKeyIdentifier
+    )?.map((e) => e.keyId)
 
     if (keyIds && keyIds.length > 1) {
       throw new X509Error('Multiple Authority Key Identifiers are not allowed')
@@ -150,9 +144,9 @@ export class X509Certificate {
   }
 
   public get subjectKeyIdentifier() {
-    const keyIds = this.getMatchingExtensions<x509.SubjectKeyIdentifierExtension>(id_ce_subjectKeyIdentifier)?.map(
-      (e) => e.keyId
-    )
+    const keyIds = this.getMatchingExtensions<x509.SubjectKeyIdentifierExtension>(
+      X509ExtensionIdentifier.SubjectKeyIdentifier
+    )?.map((e) => e.keyId)
 
     if (keyIds && keyIds.length > 1) {
       throw new X509Error('Multiple Subject Key Identifiers are not allowed')
@@ -163,24 +157,29 @@ export class X509Certificate {
 
   // biome-ignore lint/suspicious/useGetterReturn: no explanation
   public get keyUsage() {
-    const keyUsages = this.getMatchingExtensions<x509.KeyUsagesExtension>(id_ce_keyUsage)?.map((e) => e.usages)
+    const keyUsages = this.getMatchingExtensions<x509.KeyUsagesExtension>(X509ExtensionIdentifier.KeyUsage)?.map(
+      (e) => e.usages
+    )
 
     if (keyUsages && keyUsages.length > 1) {
       throw new X509Error('Multiple Key Usages are not allowed')
     }
 
     if (keyUsages) {
-      return Object.values(X509KeyUsage)
-        .filter((key): key is number => typeof key === 'number')
-        .filter((flagValue) => (keyUsages[0] & flagValue) === flagValue)
-        .map((flagValue) => flagValue as X509KeyUsage)
+      return (
+        Object.values(X509KeyUsage)
+          .filter((key): key is number => typeof key === 'number')
+          // KeyUsage is stored as bit value
+          .filter((flagValue) => (keyUsages[0] & flagValue) === flagValue)
+          .map((flagValue) => flagValue as X509KeyUsage)
+      )
     }
   }
 
   public get extendedKeyUsage() {
-    const extendedKeyUsages = this.getMatchingExtensions<x509.ExtendedKeyUsageExtension>(id_ce_extKeyUsage)?.map(
-      (e) => e.usages
-    )
+    const extendedKeyUsages = this.getMatchingExtensions<x509.ExtendedKeyUsageExtension>(
+      X509ExtensionIdentifier.ExtendedKeyUsage
+    )?.map((e) => e.usages)
 
     if (extendedKeyUsages && extendedKeyUsages.length > 1) {
       throw new X509Error('Multiple Key Usages are not allowed')
@@ -189,7 +188,94 @@ export class X509Certificate {
     return (extendedKeyUsages?.[0] as Array<X509ExtendedKeyUsage> | undefined) ?? []
   }
 
-  public isExtensionCritical(id: string): boolean {
+  /**
+   * Get CRL Distribution Points with full structure including URLs, reasons, and CRL issuer.
+   * Based on RFC 5280 Section 4.2.1.13
+   *
+   * NOTE: only the URI form is surfaced for both the distribution point name (fullName) and the
+   * cRLIssuer; nameRelativeToCRLIssuer and non-URI general names are ignored. Indirect CRLs
+   * (those with a cRLIssuer) are surfaced here but are not verified during revocation checking.
+   */
+  public get crlDistributionPoints(): X509CrlDistributionPoint[] {
+    const crlDistributionPointsExt = this.getMatchingExtensions<x509.CRLDistributionPointsExtension>(
+      X509ExtensionIdentifier.CrlDistributionPoints
+    )
+
+    if (crlDistributionPointsExt && crlDistributionPointsExt.length > 1) {
+      throw new X509Error('Multiple CRL Distribution Points extensions are not allowed')
+    }
+
+    const ext = crlDistributionPointsExt?.[0]
+    if (!ext) {
+      return []
+    }
+
+    const distributionPoints = ext.distributionPoints
+    if (!distributionPoints || distributionPoints.length === 0) {
+      return []
+    }
+
+    const result: X509CrlDistributionPoint[] = []
+
+    for (const dp of distributionPoints) {
+      // Extract URLs - @peculiar library stores these as uniformResourceIdentifier in fullName
+      const urls: string[] = []
+
+      // fullName is an array of GeneralName objects
+      if (dp.distributionPoint?.fullName) {
+        for (const generalName of dp.distributionPoint.fullName) {
+          // GeneralName has uniformResourceIdentifier property for URLs
+          if (generalName.uniformResourceIdentifier) {
+            urls.push(generalName.uniformResourceIdentifier)
+          }
+        }
+      }
+
+      // Skip distribution points with no URLs
+      if (urls.length === 0) {
+        continue
+      }
+
+      // Extract reasons if present
+      // If reasons is undefined/null, this is a "full" distribution point covering all reasons
+      let reasons: X509RevocationReason[] | undefined
+      if (dp.reasons !== undefined && dp.reasons !== null) {
+        // The reasons field is an ASN.1 BIT STRING. `toNumber()` returns a bitmask where
+        // bit `i` corresponds to revocation reason code `i` (e.g. keyCompromise = bit 1).
+        const reasonBits = dp.reasons.toNumber()
+        reasons = []
+        for (let i = 0; i <= 8; i++) {
+          // Check if bit i is set (reasons 0-8)
+          if ((reasonBits & (1 << i)) !== 0) {
+            reasons.push(i)
+          }
+        }
+      }
+
+      // Extract the cRLIssuer URI (indirect CRL), if present. Only the URI (uniformResourceIdentifier)
+      // form is surfaced. Indirect CRLs are not verified during revocation checking, but exposing the
+      // field lets the revocation service recognise and skip such distribution points.
+      let crlIssuer: string | undefined
+      if (dp.cRLIssuer) {
+        for (const generalName of dp.cRLIssuer) {
+          if (generalName.uniformResourceIdentifier) {
+            crlIssuer = generalName.uniformResourceIdentifier
+            break
+          }
+        }
+      }
+
+      result.push({
+        urls,
+        reasons,
+        crlIssuer,
+      })
+    }
+
+    return result
+  }
+
+  public isExtensionCritical(id: X509ExtensionIdentifier | string): boolean {
     const extension = this.getMatchingExtensions(id)
     if (!extension) {
       throw new X509Error(`extension with id '${id}' is not found`)
@@ -272,6 +358,7 @@ export class X509Certificate {
         notBefore: options.validity?.notBefore,
         notAfter: options.validity?.notAfter,
         extensions: extensions.filter((e) => e !== undefined),
+        serialNumber: options.serialNumber,
       },
       webCrypto
     )
@@ -283,6 +370,14 @@ export class X509Certificate {
 
   public get subject() {
     return this.x509Certificate.subject
+  }
+
+  /**
+   * The DER-encoded subject distinguished name. Use this for exact, encoding-stable name comparison
+   * (e.g. binding a CRL to its issuer) rather than the string form returned by {@link subject}.
+   */
+  public get subjectNameBytes(): Uint8Array {
+    return new Uint8Array(this.x509Certificate.subjectName.toArrayBuffer())
   }
 
   public get issuer() {
@@ -314,7 +409,10 @@ export class X509Certificate {
   ) {
     let publicCryptoKey: CredoWebCryptoKey | undefined
     if (publicJwk) {
-      const cryptoKeyAlgorithm = publicJwkToCryptoKeyAlgorithm(publicJwk)
+      const cryptoKeyAlgorithm = publicJwkToCryptoKeyAlgorithm(publicJwk, {
+        alg: publicJwk.kty === 'RSA' ? x509SignatureAlgorithmToJwa(this.x509Certificate.signatureAlgorithm) : undefined,
+      })
+
       publicCryptoKey = new CredoWebCryptoKey(publicJwk, cryptoKeyAlgorithm, true, 'public', ['verify'])
     }
 

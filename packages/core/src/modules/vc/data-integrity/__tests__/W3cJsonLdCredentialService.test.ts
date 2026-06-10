@@ -49,7 +49,7 @@ const agentConfig = getAgentConfig('W3cJsonLdCredentialServiceTest')
 const agentContext = getAgentContext({
   agentConfig,
   registerInstances: [
-    [InjectionSymbols.Logger, new ConsoleLogger(LogLevel.off)],
+    [InjectionSymbols.Logger, new ConsoleLogger(LogLevel.Off)],
     [DidsModuleConfig, new DidsModuleConfig({})],
     [DidRepository, new DidRepository(inMemoryStorage, new EventEmitter(agentDependencies, new Subject()))],
   ],
@@ -63,7 +63,7 @@ const w3cJsonLdCredentialService = new W3cJsonLdCredentialService(
 )
 
 describe('W3cJsonLdCredentialsService', () => {
-  const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
+  const privateKey = TypedArrayEncoder.fromUtf8String('testseed000000000000000000000001')
 
   describe('Utility methods', () => {
     describe('getVerificationMethodTypesByProofType', () => {

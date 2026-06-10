@@ -56,9 +56,9 @@ export function assertJwkAsymmetric(
 ): asserts jwk is KmsJwkPublicAsymmetric | KmsJwkPrivateAsymmetric {
   if (!isJwkAsymmetric(jwk)) {
     if (keyId) {
-      throw new KeyManagementError(`Expected jwk with keyId ${keyId} to be an assymetric jwk, but found kty 'oct'`)
+      throw new KeyManagementError(`Expected jwk with keyId ${keyId} to be an asymmetric jwk, but found kty 'oct'`)
     }
-    throw new KeyManagementError("Expected jwk to be an assymetric jwk, but found kty 'oct'")
+    throw new KeyManagementError("Expected jwk to be an asymmetric jwk, but found kty 'oct'")
   }
 }
 

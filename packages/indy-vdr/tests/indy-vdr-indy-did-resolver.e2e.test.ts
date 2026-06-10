@@ -69,7 +69,7 @@ describe('indy-vdr DID Resolver E2E', () => {
   test('resolve a did with endpoints', async () => {
     const unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
       agent,
-      TypedArrayEncoder.fromString('000000000000000000000000Trustee9')
+      TypedArrayEncoder.fromUtf8String('000000000000000000000000Trustee9')
     )
 
     // First we need to create a new DID and add ATTRIB endpoint to it

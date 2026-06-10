@@ -2,6 +2,7 @@ import * as didJwsz6Mkf from '../../../../../core/src/crypto/__tests__/__fixture
 import * as didJwsz6Mkv from '../../../../../core/src/crypto/__tests__/__fixtures__/didJwsz6Mkv'
 import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
 import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
+import { TypedArrayEncoder } from '../../../../../core/src/utils/TypedArrayEncoder'
 import { DidCommAttachment, DidCommAttachmentData } from '../DidCommAttachment'
 
 const mockJson = {
@@ -94,6 +95,60 @@ describe('Decorators | DidCommAttachment', () => {
 
     const gotData = decorator.getDataAsJson()
     expect(mockJson.data.json).toEqual(gotData)
+  })
+
+  describe('getDataAsUint8Array', () => {
+    // Bytes chosen so their base64 encoding exercises both `+` and `/` characters
+    // (the ones that differ between the standard and url-safe alphabets) *and*
+    // requires `=` padding. This way the url-alphabet / no-padding variants
+    // below are genuinely different strings from the canonical base64, not
+    // no-ops.
+    const payload = new Uint8Array([0xff, 0xe0, 0x3f, 0xff, 0xfe])
+    const padded = TypedArrayEncoder.toBase64(payload) // has '+', '/', and '=' padding
+    const unpadded = padded.replace(/=+$/, '')
+    const urlPadded = padded.replace(/\+/g, '-').replace(/\//g, '_')
+    const urlUnpadded = unpadded.replace(/\+/g, '-').replace(/\//g, '_')
+
+    test.each([
+      ['standard base64 with padding', padded],
+      ['base64url with padding', urlPadded],
+      ['base64url without padding', urlUnpadded],
+    ])('decodes %s', (_label, encoded) => {
+      const attachment = new DidCommAttachment({
+        id: 'some-uuid',
+        data: new DidCommAttachmentData({ base64: encoded }),
+      })
+      expect(attachment.getDataAsUint8Array()).toEqual(payload)
+    })
+
+    it('throws when no base64 payload is present', () => {
+      const attachment = new DidCommAttachment({
+        id: 'some-uuid',
+        data: new DidCommAttachmentData({ json: { hello: 'world' } }),
+      })
+      expect(() => attachment.getDataAsUint8Array()).toThrow(/No base64 attachment data found/)
+    })
+
+    it('throws a clear error for genuinely invalid input', () => {
+      const attachment = new DidCommAttachment({
+        id: 'some-uuid',
+        data: new DidCommAttachmentData({ base64: 'this is definitely not base64 $$$' }),
+      })
+      expect(() => attachment.getDataAsUint8Array()).toThrow(
+        /Could not decode attachment data as base64url or base64 string/
+      )
+    })
+
+    it('getDataAsJson delegates to getDataAsUint8Array, accepting base64url-without-padding too', () => {
+      const json = { hello: 'world' }
+      const standardPadded = JsonEncoder.toBase64(json)
+      const urlNoPad = standardPadded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+      const attachment = new DidCommAttachment({
+        id: 'some-uuid',
+        data: new DidCommAttachmentData({ base64: urlNoPad }),
+      })
+      expect(attachment.getDataAsJson()).toEqual(json)
+    })
   })
 
   describe('addJws', () => {

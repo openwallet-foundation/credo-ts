@@ -1,7 +1,6 @@
 import { CredoError } from '../../../error'
 import { replaceError } from '../../../logger/replaceError'
 import type { Jwk } from '../../../modules/kms'
-import type { Buffer } from '../../../utils'
 import { JsonEncoder, TypedArrayEncoder } from '../../../utils'
 import { JwtPayload } from './JwtPayload'
 
@@ -17,7 +16,7 @@ interface JwtHeader {
 interface JwtOptions {
   payload: JwtPayload
   header: JwtHeader
-  signature: Buffer
+  signature: Uint8Array
 
   serializedJwt: string
 }
@@ -27,7 +26,7 @@ export class Jwt {
 
   public readonly payload: JwtPayload
   public readonly header: JwtHeader
-  public readonly signature: Buffer
+  public readonly signature: Uint8Array
 
   /**
    * Compact serialization of the JWT. Contains the payload, header, and signature.
@@ -51,9 +50,9 @@ export class Jwt {
 
     try {
       return new Jwt({
-        header: JsonEncoder.fromBase64(header),
-        payload: JwtPayload.fromJson(JsonEncoder.fromBase64(payload)),
-        signature: TypedArrayEncoder.fromBase64(signature),
+        header: JsonEncoder.fromBase64Url(header),
+        payload: JwtPayload.fromJson(JsonEncoder.fromBase64Url(payload)),
+        signature: TypedArrayEncoder.fromBase64Url(signature),
         serializedJwt,
       })
     } catch (error) {

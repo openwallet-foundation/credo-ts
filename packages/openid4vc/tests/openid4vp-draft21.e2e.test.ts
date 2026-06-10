@@ -1,5 +1,14 @@
-import type { DifPresentationExchangeDefinitionV2, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
-import { ClaimFormat, Kms, MdocRecord, parseDid, SdJwtVcRecord, X509Service } from '@credo-ts/core'
+import {
+  ClaimFormat,
+  type DifPresentationExchangeDefinitionV2,
+  Kms,
+  MdocDeviceResponse,
+  MdocRecord,
+  parseDid,
+  type SdJwtVc,
+  SdJwtVcRecord,
+  X509Service,
+} from '@credo-ts/core'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
@@ -11,6 +20,16 @@ import { createAgentFromModules, waitForVerificationSessionRecordSubject } from 
 const serverPort = 1236
 const baseUrl = `http://localhost:${serverPort}`
 const verificationBaseUrl = `${baseUrl}/oid4vp`
+
+// Create ISO 18013-5 compliant root and leaf certificates
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
 
 describe('OpenID4VP Draft 21', () => {
   let expressApp: Express
@@ -359,6 +378,7 @@ describe('OpenID4VP Draft 21', () => {
 
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate,
       namespaces: {
@@ -591,15 +611,15 @@ describe('OpenID4VP Draft 21', () => {
     )
 
     const presentation = presentationExchange?.presentations[0] as MdocDeviceResponse
-    expect(presentation.documents).toHaveLength(1)
-
-    const mdocResponse = presentation.documents[0]
+    expect(presentation.deviceResponse.documents).toHaveLength(1)
 
     // name SHOULD NOT be disclosed
-    expect(mdocResponse.issuerSignedNamespaces).toStrictEqual({
-      'eu.europa.ec.eudi.pid.1': {
-        degree: 'bachelor',
-        name: 'John Doe',
+    expect(presentation.issuerClaims).toStrictEqual({
+      'org.eu.university': {
+        'eu.europa.ec.eudi.pid.1': {
+          degree: 'bachelor',
+          name: 'John Doe',
+        },
       },
     })
 
@@ -622,22 +642,7 @@ describe('OpenID4VP Draft 21', () => {
         ],
       },
       presentations: [
-        {
-          base64Url: expect.any(String),
-          documents: [
-            {
-              issuerSignedDocument: {
-                docType: 'org.eu.university',
-                issuerSigned: {
-                  nameSpaces: new Map([['eu.europa.ec.eudi.pid.1', [{}, {}]]]),
-                  issuerAuth: expect.any(Object),
-                },
-                deviceSigned: expect.any(Object),
-              },
-              base64Url: expect.any(String),
-            },
-          ],
-        },
+        expect.any(MdocDeviceResponse),
         {
           encoded: expect.any(String),
           claimFormat: ClaimFormat.SdJwtDc,
