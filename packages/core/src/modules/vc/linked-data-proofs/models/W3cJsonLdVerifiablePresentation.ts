@@ -3,11 +3,11 @@ import { asArray, IsInstanceOrArrayOfInstances, JsonTransformer } from '../../..
 import { ClaimFormat } from '../../models'
 import type { W3cPresentationOptions } from '../../models/presentation/W3cPresentation'
 import { W3cPresentation } from '../../models/presentation/W3cPresentation'
+import { ProofTransformer } from '../proof-ops/ProofTransformer'
 import type { DataIntegrityProofOptions } from './DataIntegrityProof'
 import { DataIntegrityProof } from './DataIntegrityProof'
 import type { LinkedDataProofOptions } from './LinkedDataProof'
 import { LinkedDataProof } from './LinkedDataProof'
-import { ProofTransformer } from './ProofTransformer'
 
 export interface W3cJsonLdVerifiablePresentationOptions extends W3cPresentationOptions {
   proof: LinkedDataProofOptions | DataIntegrityProofOptions

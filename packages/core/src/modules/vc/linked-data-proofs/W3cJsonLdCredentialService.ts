@@ -7,6 +7,7 @@ import { asArray, JsonTransformer } from '../../../utils'
 import { DidsApi, parseDid, VerificationMethod } from '../../dids'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type'
 import { PublicJwk } from '../../kms'
+import jsonld from '../jsonld/jsonld'
 import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 import { w3cDate } from '../util'
@@ -17,11 +18,10 @@ import type {
   W3cJsonLdVerifyPresentationOptions,
 } from '../W3cCredentialServiceOptions'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
-import { assertOnlyW3cJsonLdVerifiableCredentials } from './jsonldUtil'
-import jsonld from './libraries/jsonld'
-import vc from './libraries/vc'
-import { W3cJsonLdVerifiableCredential } from './models'
+import vc from './adapters/vc-adapter'
+import { W3cJsonLdVerifiableCredential } from './models/W3cJsonLdVerifiableCredential'
 import { W3cJsonLdVerifiablePresentation } from './models/W3cJsonLdVerifiablePresentation'
+import { assertOnlyW3cJsonLdVerifiableCredentials } from './proof-ops/jsonldUtil'
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
 
 /**

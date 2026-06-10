@@ -3,8 +3,8 @@ import { ValidationError } from 'class-validator'
 import { ClassValidationError, CredoError } from '../../../../error'
 import type { SingleOrArray } from '../../../../types'
 import { JsonTransformer } from '../../../../utils'
-import { W3cJsonLdVerifiableCredential } from '../../data-integrity/models/W3cJsonLdVerifiableCredential'
 import { W3cJwtVerifiableCredential } from '../../jwt-vc/W3cJwtVerifiableCredential'
+import { W3cJsonLdVerifiableCredential } from '../../linked-data-proofs/models/W3cJsonLdVerifiableCredential'
 import type { ClaimFormat } from '../ClaimFormat'
 
 const getCredential = (v: unknown) => {

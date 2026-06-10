@@ -3,8 +3,8 @@ import { CredoError } from '../error'
 import { VerificationMethod } from '../modules/dids'
 import { getPublicJwkFromVerificationMethod } from '../modules/dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi, PublicJwk } from '../modules/kms'
-import type { LdKeyPairOptions } from '../modules/vc/data-integrity/models/LdKeyPair'
-import { LdKeyPair } from '../modules/vc/data-integrity/models/LdKeyPair'
+import type { LdKeyPairOptions } from '../modules/vc/linked-data-proofs/models/LdKeyPair'
+import { LdKeyPair } from '../modules/vc/linked-data-proofs/models/LdKeyPair'
 import { JsonTransformer, MessageValidator } from '../utils'
 
 interface KmsKeyPairOptions extends LdKeyPairOptions {
