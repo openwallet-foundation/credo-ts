@@ -138,6 +138,7 @@ export class DidCommConnectionsApi {
         throw new CredoError('Routing is required for v2 OOB accept to create did:peer:2')
       }
       const { did } = await createPeerDidForV2OOB(this.agentContext, routing)
+      await this.routingService.registerRecipientDidForV2Routing(this.agentContext, routing, did)
       const connectionRecord = await this.connectionService.createConnection(
         this.agentContext,
         {

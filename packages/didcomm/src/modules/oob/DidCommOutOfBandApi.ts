@@ -372,6 +372,7 @@ export class DidCommOutOfBandApi {
       const numAlgo = config.peerDidNumAlgoForV2OOB ?? this.didCommModuleConfig.peerDidNumAlgoForV2OOB
       const result = await createPeerDidForV2OOB(this.agentContext, routing, numAlgo)
       did = result.did
+      await this.routingService.registerRecipientDidForV2Routing(this.agentContext, routing, did)
       recipientKeyFingerprints = [routing.recipientKey.fingerprint]
       // Include the X25519 key agreement fingerprint for recipient key matching.
       // Uses the independent keyAgreementKey if available, otherwise derives from Ed25519.
@@ -697,6 +698,7 @@ export class DidCommOutOfBandApi {
         routingKeyFingerprints: routing.routingKeys.map((key) => key.fingerprint),
         endpoints: routing.endpoints,
         mediatorId: routing.mediatorId,
+        routingDid: routing.routingDid,
       })
       outOfBandRecord.setTags({ recipientRoutingKeyFingerprint: routing.recipientKey.fingerprint })
     }
@@ -810,6 +812,7 @@ export class DidCommOutOfBandApi {
         ),
         endpoints: recipientRouting.endpoints,
         mediatorId: recipientRouting.mediatorId,
+        routingDid: recipientRouting.routingDid,
       }
     }
 
