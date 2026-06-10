@@ -285,12 +285,14 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     Jwk1 extends SupportedPublicJwk,
     Jwk2 extends SupportedPublicJwk = Jwk1,
     Jwk3 extends SupportedPublicJwk = Jwk1,
+    Jwk4 extends SupportedPublicJwk = Jwk1,
   >(
     jwkType1: Constructor<Jwk1>,
     jwkType2?: Constructor<Jwk2>,
-    jwkType3?: Constructor<Jwk3>
-  ): this is PublicJwk<Jwk1> | PublicJwk<Jwk2> | PublicJwk<Jwk3> {
-    const types = [jwkType1, jwkType2, jwkType3].filter(Boolean) as Constructor<SupportedPublicJwk>[]
+    jwkType3?: Constructor<Jwk3>,
+    jwkType4?: Constructor<Jwk4>
+  ): this is PublicJwk<Jwk1> | PublicJwk<Jwk2> | PublicJwk<Jwk3> | PublicJwk<Jwk4> {
+    const types = [jwkType1, jwkType2, jwkType3, jwkType4].filter(Boolean) as Constructor<SupportedPublicJwk>[]
     return types.some((type) => this.jwk.constructor === type)
   }
 

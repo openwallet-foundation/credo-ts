@@ -56,6 +56,7 @@ import {
   assertNoCreatedDidExistsForKeys,
   convertToNewDidDocument,
   getResolvedDidcommServiceWithSigningKeyId,
+  keyAgreementsEqual,
 } from './helpers'
 
 export interface ConnectionRequestParams {
@@ -270,12 +271,14 @@ export class DidCommConnectionService {
       const dids = agentContext.resolve(DidsApi)
       const resolved = await dids.resolveCreatedDidDocumentWithKeys(parseDid(firstService).did)
 
-      const recipientKeys = resolved.didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+      const recipientKeys = resolved.didDocument
+        .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+        .filter(({ publicJwk }) => publicJwk.is(Kms.Ed25519PublicJwk))
       if (recipientKeys.length === 0) {
         throw new CredoError(`Unable to extract signing key for connection response from did '${firstService}'`)
       }
 
-      signingKey = recipientKeys[0].publicJwk
+      signingKey = recipientKeys[0].publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       // TOOD: we probably need an util: addKeyIdToVerificationMethodKey
       signingKey.keyId =
         resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
@@ -355,7 +358,14 @@ export class DidCommConnectionService {
     // as the recipient key(s) in the connection invitation message
     const signerVerkey = message.connectionSig.signer
 
-    const invitationKey = Kms.PublicJwk.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0])
+    const recipientKeyFingerprints = outOfBandRecord.getTags().recipientKeyFingerprints
+    if (!recipientKeyFingerprints?.length) {
+      throw new ConnectionProblemReportError(
+        'Out-of-band record has no recipient key fingerprints for invitation key verification',
+        { problemCode: ConnectionProblemReportReason.ResponseProcessingError }
+      )
+    }
+    const invitationKey = Kms.PublicJwk.fromFingerprint(recipientKeyFingerprints[0])
     if (!invitationKey.is(Kms.Ed25519PublicJwk)) {
       throw new ConnectionProblemReportError(
         `Expected invitation key to be an Ed25519 key, found ${invitationKey.jwkTypeHumanDescription}`,
@@ -609,17 +619,18 @@ export class DidCommConnectionService {
         )
       }
 
-      // Check if recipientKey is in ourService
+      // Check if recipientKey is in ourService. Compare bridges Ed25519 <-> X25519 (legacy v1)
+      // and matches same-curve keys directly for v2 X25519 / P-256.
       if (recipientKey && ourService) {
-        const recipientKeyFound = ourService.recipientKeys.some((key) => recipientKey.equals(key))
+        const recipientKeyFound = ourService.recipientKeys.some((key) => keyAgreementsEqual(recipientKey, key))
         if (!recipientKeyFound) {
           throw new CredoError(`Recipient key ${recipientKey.fingerprint} not found in our service`)
         }
       }
 
-      // Check if senderKey is in theirService
+      // Check if senderKey is in theirService. Same compare semantics as the recipient check above.
       if (senderKey && theirService) {
-        const senderKeyFound = theirService.recipientKeys.some((key) => senderKey.equals(key))
+        const senderKeyFound = theirService.recipientKeys.some((key) => keyAgreementsEqual(senderKey, key))
         if (!senderKeyFound) {
           throw new CredoError(`Sender key ${senderKey.fingerprint} not found in their service.`)
         }
@@ -801,6 +812,35 @@ export class DidCommConnectionService {
     return this.connectionRepository.findSingleByQuery(agentContext, { theirDid })
   }
 
+  /**
+   * Find connection by their DID or by sender key. Used when findConnection fails (e.g. connection in
+   * RequestReceived, or DID format mismatch). Tries: 1) exact theirDid, 2) resolve theirDid via
+   * DidRepository (handles alternative forms), 3) resolve sender key to their DID.
+   */
+  public async findByTheirDidOrSender(
+    agentContext: AgentContext,
+    opts: { theirDid?: string; senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk> }
+  ): Promise<DidCommConnectionRecord | null> {
+    const { theirDid, senderKey } = opts
+    if (theirDid) {
+      const byDid = await this.findByTheirDid(agentContext, theirDid)
+      if (byDid) return byDid
+      const didRecord = await this.didRepository.findReceivedDid(agentContext, theirDid)
+      if (didRecord) {
+        const byCanonical = await this.findByTheirDid(agentContext, didRecord.did)
+        if (byCanonical) return byCanonical
+      }
+    }
+    if (senderKey) {
+      const theirDidRecord = await this.didRepository.findReceivedDidByRecipientKey(agentContext, senderKey)
+      if (theirDidRecord) {
+        const byKey = await this.findByTheirDid(agentContext, theirDidRecord.did)
+        if (byKey) return byKey
+      }
+    }
+    return null
+  }
+
   public async findByOurDid(agentContext: AgentContext, ourDid: string): Promise<DidCommConnectionRecord | null> {
     return this.connectionRepository.findSingleByQuery(agentContext, { did: ourDid })
   }
@@ -856,10 +896,14 @@ export class DidCommConnectionService {
 
   public async createConnection(
     agentContext: AgentContext,
-    options: DidCommConnectionRecordProps
+    options: DidCommConnectionRecordProps,
+    emitStateChanged = false
   ): Promise<DidCommConnectionRecord> {
     const connectionRecord = new DidCommConnectionRecord(options)
     await this.connectionRepository.save(agentContext, connectionRecord)
+    if (emitStateChanged) {
+      this.emitStateChangedEvent(agentContext, connectionRecord, null)
+    }
     return connectionRecord
   }
 
@@ -1017,6 +1061,9 @@ export class DidCommConnectionService {
     connectionId: string,
     timeoutMs = 20000
   ): Promise<DidCommConnectionRecord> {
+    if (!connectionId) {
+      throw new CredoError('connectionId is required for returnWhenIsConnected')
+    }
     const isConnected = (connection: DidCommConnectionRecord) => {
       return connection.id === connectionId && connection.state === DidCommDidExchangeState.Completed
     }
