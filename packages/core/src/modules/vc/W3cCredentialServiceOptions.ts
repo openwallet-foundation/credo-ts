@@ -83,7 +83,7 @@ interface W3cVerifyCredentialOptionsBase {
   credential: unknown
 
   /**
-   * Whether to verify the credentialStatus, if present.
+   * whether to verify the credentialstatus, if present.
    */
   verifyCredentialStatus?: boolean
 }
