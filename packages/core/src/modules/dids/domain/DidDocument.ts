@@ -4,7 +4,7 @@ import { CredoError } from '../../../error'
 import { TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
-import { Ed25519PublicJwk, P256PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
+import { Ed25519PublicJwk, P256PublicJwk, P384PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
 import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
 import { getPublicJwkFromVerificationMethod } from './key-type'
 import type { DidDocumentService } from './service'
@@ -227,7 +227,7 @@ export class DidDocument {
   }
 
   // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
-  public get recipientKeys(): PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk>[] {
+  public get recipientKeys(): PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>[] {
     return this.getRecipientKeysWithVerificationMethod({
       // False for now to avoid breaking changes
       mapX25519ToEd25519: false,
@@ -246,12 +246,14 @@ export class DidDocument {
   }): Array<{
     verificationMethod: VerificationMethod
     publicJwk: PublicJwk<
-      (MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk) | P256PublicJwk
+      | (MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk)
+      | P256PublicJwk
+      | P384PublicJwk
     >
   }> {
     const recipientKeys: Array<{
       verificationMethod: VerificationMethod
-      publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk>
+      publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>
     }> = []
 
     const seenVerificationMethodIds: string[] = []
@@ -316,7 +318,7 @@ export class DidDocument {
           }
 
           const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-          if (!publicJwk.is(Ed25519PublicJwk, X25519PublicJwk, P256PublicJwk)) {
+          if (!publicJwk.is(Ed25519PublicJwk, X25519PublicJwk, P256PublicJwk, P384PublicJwk)) {
             continue
           }
 
@@ -333,13 +335,15 @@ export class DidDocument {
       return recipientKeys as Array<{
         verificationMethod: VerificationMethod
         publicJwk: PublicJwk<
-          (MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk) | P256PublicJwk
+          | (MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk)
+          | P256PublicJwk
+          | P384PublicJwk
         >
       }>
     }
 
     return recipientKeys.flatMap(({ publicJwk, verificationMethod }) => {
-      if (publicJwk.is(Ed25519PublicJwk, P256PublicJwk)) return [{ publicJwk, verificationMethod }]
+      if (publicJwk.is(Ed25519PublicJwk, P256PublicJwk, P384PublicJwk)) return [{ publicJwk, verificationMethod }]
 
       const matchingEd25519Key = findMatchingEd25519Key(publicJwk as PublicJwk<X25519PublicJwk>, this)
 
