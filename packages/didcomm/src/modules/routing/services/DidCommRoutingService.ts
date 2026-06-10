@@ -1,11 +1,12 @@
 import type { AgentContext } from '@credo-ts/core'
-import { EventEmitter, injectable, Kms } from '@credo-ts/core'
+import { CredoError, EventEmitter, getDidPeer4ShortFormForEquivalence, injectable, Kms } from '@credo-ts/core'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
 import type { DidCommV2KeyAgreementJwk } from '../../../v2/types'
 import { keyTypeForCurve } from '../../../v2/types'
 import type { DidCommRoutingCreatedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
+import { KeylistUpdateActionV2 } from '../protocol/v2/messages'
 
 import { DidCommMediationRecipientService } from './DidCommMediationRecipientService'
 
@@ -68,6 +69,30 @@ export class DidCommRoutingService {
     })
 
     return routing
+  }
+
+  /**
+   * Register a newly created v2 connection did:peer with the CM 2.0 mediator keylist so
+   * routing/2.0 Forwards carrying that DID as `next` match by string equality.
+   * No-op when routing is not mediated.
+   */
+  public async registerRecipientDidForV2Routing(
+    agentContext: AgentContext,
+    routing: DidCommRouting,
+    did: string
+  ): Promise<void> {
+    if (!routing.mediatorId) return
+
+    const mediationRecord = await this.mediationRecipientService.getById(agentContext, routing.mediatorId)
+    if (mediationRecord.mediationProtocolVersion !== 'v2') return
+
+    const recipientDid = getDidPeer4ShortFormForEquivalence(did) ?? did
+    const updatedRecord = await this.mediationRecipientService.keylistUpdateAndAwaitV2(agentContext, mediationRecord, [
+      { recipientDid, action: KeylistUpdateActionV2.add },
+    ])
+    if (!updatedRecord.recipientDids?.includes(recipientDid)) {
+      throw new CredoError(`Mediator did not confirm keylist registration of recipient did '${recipientDid}'`)
+    }
   }
 
   public async removeRouting(agentContext: AgentContext, options: RemoveRoutingOptions) {

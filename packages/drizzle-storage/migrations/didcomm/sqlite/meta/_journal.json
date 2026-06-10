@@ -15,6 +15,20 @@
       "when": 1763065535740,
       "tag": "0001_remove_linked_attachments",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1779956791633,
+      "tag": "0002_open_killmonger",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1779962128548,
+      "tag": "0003_low_killer_shrike",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,7 @@ import {
   didToNumAlgo2DidDocument,
   didToNumAlgo4DidDocument,
   EventEmitter,
+  getDidPeer4ShortFormForEquivalence,
   getPublicJwkFromVerificationMethod,
   injectable,
   Kms,
@@ -104,7 +105,7 @@ export class DidCommMessageSender {
     const isConnectionResponse = typeof message.type === 'string' && message.type.endsWith('connections/1.0/response')
     const useV1ForConnection = isConnectionRequest || isConnectionResponse
 
-    const useV2ForPacking = connection ? (connection.didcommVersion ?? 'v1') === 'v2' : this.didCommModuleConfig.sendsV2
+    const useV2ForPacking = connection ? (connection.didcommVersion ?? 'v1') === 'v2' : false
 
     if (
       !useV1ForConnection &&
@@ -175,19 +176,22 @@ export class DidCommMessageSender {
   /**
    * Value for Forward `next` / mediator keylist lookup.
    *
-   * Per DIDComm v2 spec (routing/2.0) and Coordinate Mediation 2.0 spec, `next` MUST
-   * exactly match the value the recipient registered via `keylist-update` — mediators
-   * perform string-equality lookup, not DID/key equivalence.
-   *
+   * routing/2.0 describes `next` as the identifier of the next hop (typically a DID) that
+   * the mediator matches against what the recipient pre-registered (CM 2.0 keylist-update).
+   * Credo's mediator compares by string equality, so this must emit the same canonical
+   * form the recipient registers.
    */
   private resolveRecipientNextForMediationForward(
-    _connection: DidCommConnectionRecord | undefined,
+    connection: DidCommConnectionRecord | undefined,
     _plaintext: DidCommV2PlaintextMessage,
     keys: EnvelopeKeys
   ): string {
-    // toKeyAgreement ensures we always build the did:key from a keyAgreement fingerprint,
-    // so the form matches what the holder registered regardless of whether the
-    // peer DID stored an Ed25519 auth VM or a keyAgreement VM (X25519 or P-256).
+    // CM 2.0 recipients register their connection did:peer with the mediator, so prefer
+    // that DID (short-form canonicalized like the mediator's keylist store and lookup).
+    const theirDid = connection?.theirDid
+    if (theirDid) return getDidPeer4ShortFormForEquivalence(theirDid) ?? theirDid
+
+    // No recipient DID known: routing/2.0 allows a key for the last hop.
     const keyAgreement = toKeyAgreement(keys.recipientKeys[0])
     return new DidKey(keyAgreement).did
   }
@@ -229,7 +233,8 @@ export class DidCommMessageSender {
     const routingKeysReversed = [...keys.routingKeys].reverse()
     for (let i = 0; i < routingKeysReversed.length; i++) {
       const routingKey = routingKeysReversed[i]
-      const next = i === routingKeysReversed.length - 1 ? recipientNext : new DidKey(routingKeysReversed[i + 1]).did
+      // next points at the enclosed hop (recipient at i === 0); single-routing-key tests cannot detect an inverted chain
+      const next = i === 0 ? recipientNext : new DidKey(routingKeysReversed[i - 1]).did
       const routingKeyAgreement = toKeyAgreement(routingKey)
       routingKeyAgreement.keyId = new DidKey(routingKey).did
       const attachment = {
@@ -268,9 +273,7 @@ export class DidCommMessageSender {
       typeof message.type === 'string' && message.type.endsWith('connections/1.0/response')
     const useV1ForConnectionSession = isConnectionRequestSession || isConnectionResponseSession
 
-    const useV2ForSessionPacking = connection
-      ? (connection.didcommVersion ?? 'v1') === 'v2'
-      : this.didCommModuleConfig.sendsV2
+    const useV2ForSessionPacking = connection ? (connection.didcommVersion ?? 'v1') === 'v2' : false
 
     if (
       !useV1ForConnectionSession &&

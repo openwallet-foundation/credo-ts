@@ -28,6 +28,7 @@ import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../../
 import { DidCommDocumentService } from '../../../services/DidCommDocumentService'
 import { DidCommV2EnvelopeService, type DidCommV2PlaintextMessage } from '../../../v2'
 import { DidCommForwardV2Message } from '../../routing/protocol/v2/messages'
+import { DidCommRoutingService } from '../../routing/services/DidCommRoutingService'
 import type { DidCommConnectionDidRotatedEvent } from '../DidCommConnectionEvents'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import type { DidCommConnectionRecord } from '../repository'
@@ -87,6 +88,10 @@ export class DidCommDidRotateV2Service {
 
     const priorDid = connection.did
     const { did: newDid } = await createPeerDidForV2OOB(agentContext, routing)
+    // Register the rotated DID with the mediator BEFORE committing the rotation, so a failed
+    // registration cannot leave a connection whose inbound forwards the mediator can't route.
+    const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
+    await routingService.registerRecipientDidForV2Routing(agentContext, routing, newDid)
     const fromPriorJwt = await this.createFromPriorForRotation(agentContext, priorDid, newDid)
 
     connection.previousDids = [...connection.previousDids, priorDid]

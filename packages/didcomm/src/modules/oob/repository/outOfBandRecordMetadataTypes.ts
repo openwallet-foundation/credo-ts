@@ -26,6 +26,7 @@ export type DidCommOutOfBandRecordMetadata = {
     routingKeyFingerprints: string[]
     endpoints: string[]
     mediatorId?: string
+    routingDid?: string
   }
   [DidCommOutOfBandRecordMetadataKeys.LegacyInvitation]: {
     /**

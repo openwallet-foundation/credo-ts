@@ -15,6 +15,20 @@
       "when": 1763065535482,
       "tag": "0001_remove_linked_attachments",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779956789915,
+      "tag": "0002_wooden_spitfire",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779962127185,
+      "tag": "0003_material_colossus",
+      "breakpoints": true
     }
   ]
 }

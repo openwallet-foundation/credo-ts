@@ -324,6 +324,13 @@ export async function createPeerDidForV2OOB(
     : getJsonWebKey2020({ did: '#id', publicJwk: keyAgreementJwk, verificationMethodId: '#key-2' })
   didDocumentBuilder.addAuthentication(ed25519Vm).addKeyAgreement(keyAgreementVm)
 
+  // A mediator without a routingDid means CM 1.0, which gives v2 senders no forward route to discover
+  if (routing.mediatorId && !routing.routingDid) {
+    throw new CredoError(
+      'DIDComm v2 OOB with mediated routing requires Coordinate Mediation 2.0. The mediation connection uses Coordinate Mediation 1.0; re-provision mediation over a DIDComm v2 connection or create a v1 invitation.'
+    )
+  }
+
   // For v2 peer DIDs, keep the routing DID as the service URI (CM 2.0 DID-as-endpoint).
   // v2 senders resolve this via DidCommDocumentService.expandV2EndpointIfRoutingDid which
   // extracts the mediator's transport URL AND routing keys — needed so the sender wraps

@@ -6,6 +6,7 @@ import {
   DidRecord,
   DidRepository,
   DidResolverService,
+  didKeyToEd25519PublicJwk,
   didToNumAlgo2DidDocument,
   didToNumAlgo4DidDocument,
   findMatchingEd25519Key,
@@ -98,10 +99,16 @@ export class DidCommDocumentService {
   ): Promise<Kms.PublicJwk<Kms.Ed25519PublicJwk>[]> {
     const routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
     for (const routingKey of routingKeyRefs) {
-      const routingDidDocument = await this.didResolverService.resolveDidDocument(agentContext, routingKey)
-      const publicJwk = getPublicJwkFromVerificationMethod(
-        routingDidDocument.dereferenceKey(routingKey, ['authentication', 'keyAgreement'])
-      )
+      // routingKeys entries are commonly bare did:key DIDs, which dereferenceKey cannot resolve
+      let publicJwk: Kms.PublicJwk
+      if (routingKey.startsWith('did:key:') && !routingKey.includes('#')) {
+        publicJwk = didKeyToEd25519PublicJwk(routingKey)
+      } else {
+        const routingDidDocument = await this.didResolverService.resolveDidDocument(agentContext, routingKey)
+        publicJwk = getPublicJwkFromVerificationMethod(
+          routingDidDocument.dereferenceKey(routingKey, ['authentication', 'keyAgreement'])
+        )
+      }
       if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
         throw new CredoError(`Expected Ed25519PublicJwk but found ${publicJwk.JwkClass.name}`)
       }
