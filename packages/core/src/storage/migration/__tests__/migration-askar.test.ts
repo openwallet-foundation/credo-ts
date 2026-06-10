@@ -38,9 +38,7 @@ describe('UpdateAssistant | Aries Askar', () => {
 
     await updateAssistant.initialize()
 
-    // Explicitly provision the askar store before adding data. The store is no longer auto-created
-    // when saving records on a non-initialized agent, so we simulate an existing store (as would be
-    // the case for a real storage update) by provisioning it up front.
+    // Provision the store up front, as it's no longer auto-created on a non-initialized agent
     await agent.dependencyManager.resolve(AskarStoreManager).provisionStore(agent.context)
   })
 

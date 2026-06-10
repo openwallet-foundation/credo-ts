@@ -278,7 +278,6 @@ export function getAgentContext({
   }
 
   const agentContext = new AgentContext({ dependencyManager, contextCorrelationId, isRootAgentContext })
-  // Tests using this helper expect a ready-to-use (initialized) context, so storage can be accessed.
   agentContext.isInitialized = isInitialized
   agentContext.dependencyManager.registerInstance(
     Kms.KeyManagementModuleConfig,

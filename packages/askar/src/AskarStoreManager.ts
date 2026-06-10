@@ -543,10 +543,7 @@ export class AskarStoreManager {
       try {
         store = await this.openStore(agentContext)
       } catch (error) {
-        // We only auto-provision a store within the agent context initialization lifecycle. This
-        // prevents accidentally creating a new store when a record is queried while the agent is
-        // not initialized (e.g. before initialization or after shutdown), which previously could
-        // lead to an unexpected (empty) store being created.
+        // Only auto-provision a store when the agent context is initialized
         if (error instanceof AskarStoreNotFoundError && agentContext.isInitialized) {
           store = await this.provisionStore(agentContext)
         } else {
