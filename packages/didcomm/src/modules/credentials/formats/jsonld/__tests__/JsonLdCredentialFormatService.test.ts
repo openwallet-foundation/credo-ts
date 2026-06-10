@@ -576,4 +576,15 @@ describe('JsonLd CredentialFormatService', () => {
       expect(areCredentialsEqual).toBe(false)
     })
   })
+
+  describe('Delete Credential', () => {
+    test('routes deletion to W3cCredentialService using credential record id', async () => {
+      const credentialRecordId = 'w3c-record-id'
+
+      await jsonLdFormatService.deleteCredentialById(agentContext, credentialRecordId)
+
+      expect(w3cCredentialService.removeCredentialRecord).toHaveBeenCalledTimes(1)
+      expect(w3cCredentialService.removeCredentialRecord).toHaveBeenCalledWith(agentContext, credentialRecordId)
+    })
+  })
 })
