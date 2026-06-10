@@ -2,11 +2,13 @@ import type {
   AgentContext,
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeSubmission,
+  EncodedX509Certificate,
   IAnonCredsVc1BridgeService,
   JsonValue,
   W3cJsonPresentation,
   W3cVerifiablePresentation,
   W3cVerifyPresentationResult,
+  X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import {
   ANONCREDS_VC1_BRIDGE_CRYPTOSUITE,
@@ -308,8 +310,7 @@ export class DidCommDifPresentationExchangeProofFormatService
         const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
         const certificateChain = extractX509CertificatesFromJwt(parsedPresentation.jwt)
-        let trustedCertificates: string[] | undefined
-
+        let trustedCertificates: EncodedX509Certificate[] | X509VerificationTrustedCertificates[] | undefined
         if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
           trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
             certificateChain,

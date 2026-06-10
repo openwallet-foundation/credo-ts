@@ -1,10 +1,16 @@
-import type { AgentContext } from '../../agent'
-import type { JwtPayload } from '../../crypto'
+import type { AgentContext } from '../../agent/context/AgentContext'
+import type { JwtPayload } from '../../crypto/jose/jwt/JwtPayload'
 import type { Mdoc } from '../mdoc/Mdoc'
-import type { SdJwtVc } from '../sd-jwt-vc'
-import type { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from '../vc'
-
+import type { SdJwtVc } from '../sd-jwt-vc/SdJwtVcService'
+import type { W3cJwtVerifiableCredential } from '../vc/jwt-vc/W3cJwtVerifiableCredential'
+import type { W3cJwtVerifiablePresentation } from '../vc/jwt-vc/W3cJwtVerifiablePresentation'
 import { X509Certificate } from './X509Certificate'
+import { type X509RevocationCheckOptions } from './X509ValidationOptions'
+
+export type X509VerificationTrustedCertificates = {
+  issuance: string[]
+  status?: string[]
+}
 
 export type X509VerificationTypeCredential = {
   type: 'credential'
@@ -104,9 +110,9 @@ export interface X509ModuleConfigOptions {
   /**
    * Optional callback method that will be called to dynamically get trusted certificates for a verification.
    * It will provide the `agentContext` and `verificationContext` allowing to dynamically set the trusted certificates
-   * for a tenant or verificaiton context.
+   * for a tenant or verification context.
    *
-   * If no certificaets should be trusted an empty array should be returned. If `undefined` is returned
+   * If no certificates should be trusted an empty array should be returned. If `undefined` is returned
    * it will fallback to the globally registered trusted certificates
    *
    * @returns An array of base64-encoded certificate strings or PEM certificate strings.
@@ -114,17 +120,40 @@ export interface X509ModuleConfigOptions {
   getTrustedCertificatesForVerification?(
     agentContext: AgentContext,
     verificationContext: X509VerificationContext
-  ): Promise<string[] | undefined> | string[] | undefined
+  ):
+    | Promise<string[] | undefined | X509VerificationTrustedCertificates[]>
+    | string[]
+    | X509VerificationTrustedCertificates[]
+    | undefined
+
+  /**
+   * Configuration for certificate revocation checking
+   * @default
+   * ```
+   * {
+   *  mode: X509RevocationCheckMode.SoftFail, // do not fail on network error
+   *  checkFullChain: true, // check the leaf and all intermediate CAs
+   *  timeoutMs: 5000, // 5 seconds
+   *  maxCrlSizeBytes: 10485760, // 10MB
+   *  crlCacheExpirySeconds: 3600 // 1 hour
+   * }
+   * ```
+   */
+  revocationCheck?: X509RevocationCheckOptions
 }
 
 export class X509ModuleConfig {
   #trustedCertificates?: X509Certificate[]
   #getTrustedCertificatesForVerification?: X509ModuleConfigOptions['getTrustedCertificatesForVerification']
+  #revocationCheck?: X509RevocationCheckOptions
 
   public constructor(options?: X509ModuleConfigOptions) {
     this.setTrustedCertificates(options?.trustedCertificates)
     if (options?.getTrustedCertificatesForVerification) {
       this.setTrustedCertificatesForVerification(options.getTrustedCertificatesForVerification)
+    }
+    if (options?.revocationCheck) {
+      this.#revocationCheck = options.revocationCheck
     }
   }
 
@@ -140,6 +169,14 @@ export class X509ModuleConfig {
 
   public setTrustedCertificatesForVerification(fn: X509ModuleConfigOptions['getTrustedCertificatesForVerification']) {
     this.#getTrustedCertificatesForVerification = fn
+  }
+
+  public get revocationCheck(): X509RevocationCheckOptions | undefined {
+    return this.#revocationCheck
+  }
+
+  public setRevocationCheck(options?: X509RevocationCheckOptions) {
+    this.#revocationCheck = options
   }
 
   public setTrustedCertificates(trustedCertificates?: Array<string | X509Certificate>) {

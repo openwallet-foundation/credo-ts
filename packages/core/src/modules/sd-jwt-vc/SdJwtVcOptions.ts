@@ -1,7 +1,7 @@
 import type { SdJwtVcPayload } from '@sd-jwt/sd-jwt-vc'
 import type { HashName } from '../../crypto'
 import { PublicJwk } from '../kms'
-import type { EncodedX509Certificate, X509Certificate } from '../x509'
+import type { EncodedX509Certificate, X509Certificate, X509VerificationTrustedCertificates } from '../x509'
 import { SdJwtVcRecord } from './repository'
 import type { SdJwtVc } from './SdJwtVcService'
 
@@ -173,7 +173,7 @@ export type SdJwtVcVerifyOptions = {
    */
   disableStatusValidation?: boolean
 
-  trustedCertificates?: EncodedX509Certificate[]
+  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
 
   /**
    * Date that should be used as the current time. If not provided, current time will be used.

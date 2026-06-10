@@ -1,6 +1,4 @@
-import type { StatusListCwt } from '@owf/token-status-list'
 import { AgentContext } from '../../agent'
-import type { Jwt } from '../../crypto'
 import { injectable } from '../../plugins'
 import type {
   CreateTokenStatusListOptions,
@@ -26,24 +24,15 @@ export class TokenStatusListApi {
   }
 
   public async createTokenStatusList<Format extends TokenStatusListFormat>(
-    options: CreateTokenStatusListOptions<Format>
+    options: CreateTokenStatusListOptions
   ): Promise<Extract<TokenStatusListResult, { format: Format }>> {
     return this.tokenStatusListService.createTokenStatusList(this.agentContext, options)
   }
 
-  public async updateTokenStatusList(
-    options: UpdateTokenStatusListOptions<string>
-  ): Promise<{ statusList: string; parsed: Jwt }>
-  public async updateTokenStatusList(
-    options: UpdateTokenStatusListOptions<Uint8Array>
-  ): Promise<{ statusList: Uint8Array; parsed: StatusListCwt }>
-  public async updateTokenStatusList(
-    options: UpdateTokenStatusListOptions<Uint8Array | string>
-  ): Promise<{ statusList: Uint8Array | string; parsed: StatusListCwt | Jwt }> {
-    return this.tokenStatusListService.updateTokenStatusList(
-      this.agentContext,
-      options as UpdateTokenStatusListOptions<Uint8Array>
-    )
+  public async updateTokenStatusList<Format extends TokenStatusListFormat>(
+    options: UpdateTokenStatusListOptions
+  ): Promise<Extract<TokenStatusListResult, { format: Format }>> {
+    return this.tokenStatusListService.updateTokenStatusList(this.agentContext, options)
   }
 
   public async fetchTokenStatusList<AcceptedFormats extends TokenStatusListFormat>(
