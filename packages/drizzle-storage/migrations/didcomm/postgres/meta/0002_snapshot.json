@@ -88,12 +88,8 @@
           "name": "didcommBasicMessage_fk_context",
           "tableFrom": "DidcommBasicMessage",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -101,14 +97,8 @@
           "name": "DidcommBasicMessage_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk",
           "tableFrom": "DidcommBasicMessage",
           "tableTo": "DidcommConnection",
-          "columnsFrom": [
-            "connection_id",
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "id",
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["connection_id", "context_correlation_id"],
+          "columnsTo": ["id", "context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -116,10 +106,7 @@
       "compositePrimaryKeys": {
         "didcommBasicMessage_pk": {
           "name": "didcommBasicMessage_pk",
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ]
+          "columns": ["context_correlation_id", "id"]
         }
       },
       "uniqueConstraints": {},
@@ -279,12 +266,8 @@
           "name": "didcommConnection_fk_context",
           "tableFrom": "DidcommConnection",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -292,20 +275,14 @@
       "compositePrimaryKeys": {
         "didcommConnection_pk": {
           "name": "didcommConnection_pk",
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ]
+          "columns": ["context_correlation_id", "id"]
         }
       },
       "uniqueConstraints": {
         "DidcommConnection_context_correlation_id_thread_id_unique": {
           "name": "DidcommConnection_context_correlation_id_thread_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "context_correlation_id",
-            "thread_id"
-          ]
+          "columns": ["context_correlation_id", "thread_id"]
         }
       },
       "policies": {},
@@ -434,12 +411,8 @@
           "name": "didcommCredentialExchange_fk_context",
           "tableFrom": "DidcommCredentialExchange",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -447,10 +420,7 @@
       "compositePrimaryKeys": {
         "didcommCredentialExchange_pk": {
           "name": "didcommCredentialExchange_pk",
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ]
+          "columns": ["context_correlation_id", "id"]
         }
       },
       "uniqueConstraints": {},
@@ -554,12 +524,8 @@
           "name": "didcommMessage_fk_context",
           "tableFrom": "DidcommMessage",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -567,10 +533,7 @@
       "compositePrimaryKeys": {
         "didcommMessage_pk": {
           "name": "didcommMessage_pk",
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ]
+          "columns": ["context_correlation_id", "id"]
         }
       },
       "uniqueConstraints": {},
@@ -700,12 +663,8 @@
           "name": "didcommMediation_fk_context",
           "tableFrom": "DidcommMediation",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -713,14 +672,8 @@
           "name": "DidcommMediation_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk",
           "tableFrom": "DidcommMediation",
           "tableTo": "DidcommConnection",
-          "columnsFrom": [
-            "connection_id",
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "id",
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["connection_id", "context_correlation_id"],
+          "columnsTo": ["id", "context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -728,10 +681,7 @@
       "compositePrimaryKeys": {
         "didcommMediation_pk": {
           "name": "didcommMediation_pk",
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ]
+          "columns": ["context_correlation_id", "id"]
         }
       },
       "uniqueConstraints": {},
@@ -798,12 +748,8 @@
           "name": "didcommMediatorRouting_fk_context",
           "tableFrom": "DidcommMediatorRouting",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -811,10 +757,7 @@
       "compositePrimaryKeys": {
         "didcommMediatorRouting_pk": {
           "name": "didcommMediatorRouting_pk",
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ]
+          "columns": ["context_correlation_id", "id"]
         }
       },
       "uniqueConstraints": {},
@@ -949,12 +892,8 @@
           "name": "didcommOutOfBand_fk_context",
           "tableFrom": "DidcommOutOfBand",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -962,10 +901,7 @@
       "compositePrimaryKeys": {
         "didcommOutOfBand_pk": {
           "name": "didcommOutOfBand_pk",
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ]
+          "columns": ["context_correlation_id", "id"]
         }
       },
       "uniqueConstraints": {},
@@ -1077,12 +1013,8 @@
           "name": "didcommProofExchange_fk_context",
           "tableFrom": "DidcommProofExchange",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1090,14 +1022,8 @@
           "name": "DidcommProofExchange_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk",
           "tableFrom": "DidcommProofExchange",
           "tableTo": "DidcommConnection",
-          "columnsFrom": [
-            "connection_id",
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "id",
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["connection_id", "context_correlation_id"],
+          "columnsTo": ["id", "context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1105,21 +1031,14 @@
       "compositePrimaryKeys": {
         "didcommProofExchange_pk": {
           "name": "didcommProofExchange_pk",
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ]
+          "columns": ["context_correlation_id", "id"]
         }
       },
       "uniqueConstraints": {
         "DidcommProofExchange_context_correlation_id_thread_id_role_unique": {
           "name": "DidcommProofExchange_context_correlation_id_thread_id_role_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "context_correlation_id",
-            "thread_id",
-            "role"
-          ]
+          "columns": ["context_correlation_id", "thread_id", "role"]
         }
       },
       "policies": {},
@@ -1131,27 +1050,17 @@
     "public.DidcommBasicMessageRole": {
       "name": "DidcommBasicMessageRole",
       "schema": "public",
-      "values": [
-        "sender",
-        "receiver"
-      ]
+      "values": ["sender", "receiver"]
     },
     "public.DidcommConnectionHandshakeProtocol": {
       "name": "DidcommConnectionHandshakeProtocol",
       "schema": "public",
-      "values": [
-        "https://didcomm.org/didexchange/1.x",
-        "https://didcomm.org/connections/1.x",
-        "None"
-      ]
+      "values": ["https://didcomm.org/didexchange/1.x", "https://didcomm.org/connections/1.x", "None"]
     },
     "public.DidcommConnectionRole": {
       "name": "DidcommConnectionRole",
       "schema": "public",
-      "values": [
-        "requester",
-        "responder"
-      ]
+      "values": ["requester", "responder"]
     },
     "public.DidcommConnectionState": {
       "name": "DidcommConnectionState",
@@ -1171,19 +1080,12 @@
     "public.DidcommCredentialExchangeAutoAccept": {
       "name": "DidcommCredentialExchangeAutoAccept",
       "schema": "public",
-      "values": [
-        "always",
-        "contentApproved",
-        "never"
-      ]
+      "values": ["always", "contentApproved", "never"]
     },
     "public.DidcommCredentialExchangeRole": {
       "name": "DidcommCredentialExchangeRole",
       "schema": "public",
-      "values": [
-        "issuer",
-        "holder"
-      ]
+      "values": ["issuer", "holder"]
     },
     "public.DidcommCredentialExchangeState": {
       "name": "DidcommCredentialExchangeState",
@@ -1205,75 +1107,42 @@
     "public.DidcommMessageRole": {
       "name": "DidcommMessageRole",
       "schema": "public",
-      "values": [
-        "sender",
-        "receiver"
-      ]
+      "values": ["sender", "receiver"]
     },
     "public.DidcommMediationPickupStrategry": {
       "name": "DidcommMediationPickupStrategry",
       "schema": "public",
-      "values": [
-        "PickUpV1",
-        "PickUpV2",
-        "PickUpV2LiveMode",
-        "PickUpV3",
-        "PickUpV3LiveMode",
-        "Implicit",
-        "None"
-      ]
+      "values": ["PickUpV1", "PickUpV2", "PickUpV2LiveMode", "PickUpV3", "PickUpV3LiveMode", "Implicit", "None"]
     },
     "public.DidcommMediationRole": {
       "name": "DidcommMediationRole",
       "schema": "public",
-      "values": [
-        "MEDIATOR",
-        "RECIPIENT"
-      ]
+      "values": ["MEDIATOR", "RECIPIENT"]
     },
     "public.DidcommMediationState": {
       "name": "DidcommMediationState",
       "schema": "public",
-      "values": [
-        "requested",
-        "granted",
-        "denied"
-      ]
+      "values": ["requested", "granted", "denied"]
     },
     "public.DidcommOutOfBandRole": {
       "name": "DidcommOutOfBandRole",
       "schema": "public",
-      "values": [
-        "sender",
-        "receiver"
-      ]
+      "values": ["sender", "receiver"]
     },
     "public.DidcommOutOfBandState": {
       "name": "DidcommOutOfBandState",
       "schema": "public",
-      "values": [
-        "initial",
-        "await-response",
-        "prepare-response",
-        "done"
-      ]
+      "values": ["initial", "await-response", "prepare-response", "done"]
     },
     "public.DidcommProofExchangeAutoAccept": {
       "name": "DidcommProofExchangeAutoAccept",
       "schema": "public",
-      "values": [
-        "always",
-        "contentApproved",
-        "never"
-      ]
+      "values": ["always", "contentApproved", "never"]
     },
     "public.DidcommProofExchangeRole": {
       "name": "DidcommProofExchangeRole",
       "schema": "public",
-      "values": [
-        "verifier",
-        "prover"
-      ]
+      "values": ["verifier", "prover"]
     },
     "public.DidcommProofExchangeState": {
       "name": "DidcommProofExchangeState",
