@@ -1,4 +1,4 @@
-import type { AgentContext } from '../../../../agent'
+import type { AgentContext } from '../../../../agent/context'
 import type {
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,

@@ -2,7 +2,7 @@ import { CredoError } from '../../../error'
 import { injectAll, injectable } from '../../../plugins'
 import { PublicJwk, type SupportedPublicJwkClass } from '../../kms/jwk/PublicJwk'
 
-import { suites } from './libraries/jsonld-signatures'
+import { suites } from './adapters/jsonld-signatures-adapter'
 
 const LinkedDataSignature = suites.LinkedDataSignature
 

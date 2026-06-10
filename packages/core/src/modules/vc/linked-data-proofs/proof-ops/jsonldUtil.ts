@@ -1,11 +1,11 @@
-import { CredoError } from '../../../error'
-import type { JsonObject, JsonValue } from '../../../types'
-import { SECURITY_CONTEXT_URL } from '../constants'
-import jsonld from './libraries/jsonld'
-import type { GetProofsOptions } from './models/GetProofsOptions'
-import type { GetProofsResult } from './models/GetProofsResult'
-import type { GetTypeOptions } from './models/GetTypeOptions'
-import { W3cJsonLdVerifiableCredential } from './models/W3cJsonLdVerifiableCredential'
+import { CredoError } from '../../../../error'
+import type { JsonObject, JsonValue } from '../../../../types'
+import { SECURITY_CONTEXT_URL } from '../../constants'
+import jsonld from '../../jsonld/jsonld'
+import { W3cJsonLdVerifiableCredential } from '../models/W3cJsonLdVerifiableCredential'
+import type { GetProofsOptions } from './types/GetProofsOptions'
+import type { GetProofsResult } from './types/GetProofsResult'
+import type { GetTypeOptions } from './types/GetTypeOptions'
 
 export type JsonLdDoc = Record<string, unknown>
 export interface VerificationMethod extends JsonObject {

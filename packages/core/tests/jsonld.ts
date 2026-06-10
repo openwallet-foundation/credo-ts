@@ -14,7 +14,7 @@ import {
   DidCommProofV2Protocol,
 } from '../../didcomm/src'
 import { Agent, CacheModule, InMemoryLruCache, W3cCredentialsModule } from '../src'
-import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
+import { customDocumentLoader } from '../src/modules/vc/linked-data-proofs/__tests__/documentLoader'
 import type { EventReplaySubject } from './events'
 
 import { setupEventReplaySubjects } from './events'
