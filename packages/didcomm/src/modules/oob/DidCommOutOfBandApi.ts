@@ -182,7 +182,7 @@ export class DidCommOutOfBandApi {
   private assertAgentSupportsDidCommVersion(version: DidCommVersion): void {
     if (!this.didCommModuleConfig.didcommVersions.includes(version)) {
       throw new CredoError(
-        `DID document advertises DIDComm ${version} but this agent is configured with didcommVersions: [${this.didCommModuleConfig.didcommVersions.join(', ')}] only. Update the DID document or add "${version}" to didcommVersions in DidCommModuleConfig.`
+        `DIDComm ${version} is not enabled for this agent. Configured didcommVersions: [${this.didCommModuleConfig.didcommVersions.join(', ')}]. Add "${version}" to didcommVersions in DidCommModuleConfig.`
       )
     }
   }
@@ -222,6 +222,7 @@ export class DidCommOutOfBandApi {
         : this.didCommModuleConfig.sendsV2
           ? 'v2'
           : 'v1')
+    this.assertAgentSupportsDidCommVersion(didCommVersion)
     const autoAcceptConnection = config.autoAcceptConnection ?? this.connectionsApi.config.autoAcceptConnections
 
     // V2 OOB path: no handshake, did:peer:2, first-message connection establishment
@@ -814,6 +815,9 @@ export class DidCommOutOfBandApi {
 
     const { handshakeProtocols } = outOfBandInvitation
     const isV2Invitation = !!outOfBandInvitation.v2Invitation
+
+    // Enforce didcommVersions here so the explicit/scanned receive path fails fast like the implicit one.
+    this.assertAgentSupportsDidCommVersion(isV2Invitation ? 'v2' : 'v1')
 
     // V2 OOB: create connection with protocol None, no handshake messages sent
     if (isV2Invitation) {
