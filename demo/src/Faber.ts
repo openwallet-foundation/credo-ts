@@ -93,7 +93,7 @@ export class Faber extends BaseAgent {
   }
 
   private async printConnectionInvite() {
-    const outOfBand = await this.agent.didcomm.oob.createInvitation()
+    const outOfBand = await this.agent.didcomm.oob.createInvitation(this.useDidCommV2 ? { didCommVersion: 'v2' } : {})
     this.outOfBandId = outOfBand.id
 
     console.log(
@@ -115,26 +115,31 @@ export class Faber extends BaseAgent {
     const getConnectionRecord = (outOfBandId: string) =>
       new Promise<DidCommConnectionRecord>((resolve, reject) => {
         // Timeout of 20 seconds
-        const timeoutId = setTimeout(() => reject(new Error(redText(Output.MissingConnectionRecord))), 20000)
+        const timeoutId = setTimeout(() => {
+          clearInterval(pollId)
+          reject(new Error(redText(Output.MissingConnectionRecord)))
+        }, 20000)
 
-        // Start listener
+        const tryResolve = (connectionRecord: DidCommConnectionRecord) => {
+          clearTimeout(timeoutId)
+          clearInterval(pollId)
+          resolve(connectionRecord)
+        }
+
+        // Listen for connection state changed event (e.g. v1 handshake)
         this.agent.events.on<DidCommConnectionStateChangedEvent>(
           DidCommConnectionEventTypes.DidCommConnectionStateChanged,
           (e) => {
             if (e.payload.connectionRecord.outOfBandId !== outOfBandId) return
-
-            clearTimeout(timeoutId)
-            resolve(e.payload.connectionRecord)
+            tryResolve(e.payload.connectionRecord)
           }
         )
 
-        // Also retrieve the connection record by invitation if the event has already fired
-        void this.agent.didcomm.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {
-          if (connectionRecord) {
-            clearTimeout(timeoutId)
-            resolve(connectionRecord)
-          }
-        })
+        // Poll for connection (v2 OOB: connection is created when first message arrives)
+        const pollId = setInterval(async () => {
+          const [connectionRecord] = await this.agent.didcomm.connections.findAllByOutOfBandId(outOfBandId)
+          if (connectionRecord?.id) tryResolve(connectionRecord)
+        }, 1000)
       })
 
     const connectionRecord = await getConnectionRecord(this.outOfBandId)

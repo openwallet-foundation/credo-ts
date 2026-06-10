@@ -92,7 +92,10 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
       did: this.did,
       methodSpecificIdentifier: did.id,
 
-      // Calculate if we have a did document, otherwise use the already present recipient keys
+      // Calculate if we have a did document, otherwise use the already present recipient keys.
+      // For numAlgo 2/4 peer DIDs the didDocument is not stored inline; PeerDidRegistrar already
+      // writes X25519 fingerprints to _tags at registration time. For numAlgo 1 (stored inline)
+      // we keep fingerprints as-is (Ed25519) so v1 lookups remain consistent.
       recipientKeyFingerprints: this.didDocument
         ? this.didDocument.recipientKeys.map((recipientKey) => recipientKey.fingerprint)
         : this._tags.recipientKeyFingerprints,
