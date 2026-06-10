@@ -1,6 +1,6 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator'
 
-import { IsUri } from '../../../../utils'
+import { IsUri } from '../../../../utils/validators'
 
 export interface DataIntegrityProofOptions {
   type: string

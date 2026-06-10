@@ -8,8 +8,8 @@ import {
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
 } from '../../../../../../../core/src/modules/vc'
-import { Ed25519Signature2018Fixtures } from '../../../../../../../core/src/modules/vc/data-integrity/__tests__/fixtures'
-import { W3cJsonLdCredentialService } from '../../../../../../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService'
+import { Ed25519Signature2018Fixtures } from '../../../../../../../core/src/modules/vc/linked-data-proofs/__tests__/fixtures'
+import { W3cJsonLdCredentialService } from '../../../../../../../core/src/modules/vc/linked-data-proofs/W3cJsonLdCredentialService'
 import { JsonTransformer } from '../../../../../../../core/src/utils'
 import { JsonEncoder } from '../../../../../../../core/src/utils/JsonEncoder'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../../core/tests/helpers'
@@ -28,7 +28,7 @@ import type {
 import { DidCommJsonLdCredentialFormatService } from '../DidCommJsonLdCredentialFormatService'
 
 vi.mock('../../../../../../../core/src/modules/vc/W3cCredentialService')
-vi.mock('../../../../../../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService')
+vi.mock('../../../../../../../core/src/modules/vc/linked-data-proofs/W3cJsonLdCredentialService')
 vi.mock('../../../../../../../core/src/modules/dids/services/DidResolverService')
 
 const W3cCredentialServiceMock = W3cCredentialService as MockedClassConstructor<typeof W3cCredentialService>

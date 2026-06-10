@@ -1,6 +1,6 @@
-import type { DocumentLoaderWithContext } from './data-integrity/libraries/documentLoader'
+import type { DocumentLoaderWithContext } from './jsonld/documentLoader'
 
-import { defaultDocumentLoader } from './data-integrity/libraries/documentLoader'
+import { defaultDocumentLoader } from './jsonld/documentLoader'
 
 /**
  * W3cCredentialsModuleConfigOptions defines the interface for the options of the W3cCredentialsModuleConfig class.

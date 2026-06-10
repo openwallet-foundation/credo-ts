@@ -5,11 +5,11 @@ import { ClaimFormat } from '../../models/ClaimFormat'
 import type { W3cCredentialOptions } from '../../models/credential/W3cCredential'
 import { W3cCredential } from '../../models/credential/W3cCredential'
 import type { W3cJsonCredential } from '../../models/credential/W3cJsonCredential'
+import { ProofTransformer } from '../proof-ops/ProofTransformer'
 import type { DataIntegrityProofOptions } from './DataIntegrityProof'
 import { DataIntegrityProof } from './DataIntegrityProof'
 import type { LinkedDataProofOptions } from './LinkedDataProof'
 import { LinkedDataProof } from './LinkedDataProof'
-import { ProofTransformer } from './ProofTransformer'
 
 export interface W3cJsonLdVerifiableCredentialOptions extends W3cCredentialOptions {
   proof: SingleOrArray<LinkedDataProofOptions | DataIntegrityProofOptions>
