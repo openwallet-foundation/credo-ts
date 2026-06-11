@@ -1,15 +1,15 @@
 import { JSONPath } from '@astronautlabs/jsonpath'
 import type {
   AgentContext,
-  AnoncredsDataIntegrityVerifyPresentation,
+  AnonCredsVc1BridgeVerifyPresentation,
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
-  IAnonCredsDataIntegrityService,
+  IAnonCredsVc1BridgeService,
   W3cCredentialRecord,
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
 import {
-  ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
+  ANONCREDS_VC1_BRIDGE_CRYPTOSUITE,
   ClaimFormat,
   CredoError,
   deepEquality,
@@ -34,14 +34,14 @@ import { getW3cAnonCredsCredentialMetadata } from './utils'
 export type PathComponent = string | number
 
 @injectable()
-export class AnonCredsDataIntegrityService implements IAnonCredsDataIntegrityService {
+export class AnonCredsVc1BridgeService implements IAnonCredsVc1BridgeService {
   private getDataIntegrityProof(credential: W3cJsonLdVerifiableCredential) {
-    const cryptosuite = ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE
+    const cryptosuite = ANONCREDS_VC1_BRIDGE_CRYPTOSUITE
     if (Array.isArray(credential.proof)) {
       const proof = credential.proof.find(
         (proof) => proof.type === 'DataIntegrityProof' && 'cryptosuite' in proof && proof.cryptosuite === cryptosuite
       )
-      if (!proof) throw new CredoError(`Could not find ${ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE} proof`)
+      if (!proof) throw new CredoError(`Could not find ${ANONCREDS_VC1_BRIDGE_CRYPTOSUITE} proof`)
       return proof
     }
 
@@ -49,7 +49,7 @@ export class AnonCredsDataIntegrityService implements IAnonCredsDataIntegritySer
       credential.proof.type !== 'DataIntegrityProof' ||
       !('cryptosuite' in credential.proof && credential.proof.cryptosuite === cryptosuite)
     ) {
-      throw new CredoError(`Could not find ${ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE} proof`)
+      throw new CredoError(`Could not find ${ANONCREDS_VC1_BRIDGE_CRYPTOSUITE} proof`)
     }
 
     return credential.proof
@@ -286,7 +286,7 @@ export class AnonCredsDataIntegrityService implements IAnonCredsDataIntegritySer
     return w3cPresentation
   }
 
-  public async verifyPresentation(agentContext: AgentContext, options: AnoncredsDataIntegrityVerifyPresentation) {
+  public async verifyPresentation(agentContext: AgentContext, options: AnonCredsVc1BridgeVerifyPresentation) {
     const { presentation, presentationDefinition, presentationSubmission, challenge } = options
 
     const credentialDefinitionIds = new Set<string>()

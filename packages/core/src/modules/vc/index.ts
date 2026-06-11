@@ -1,3 +1,4 @@
+export * from './anoncreds-vc1-bridge'
 export * from './constants'
 export * from './jsonld'
 export * from './jwt-vc'
