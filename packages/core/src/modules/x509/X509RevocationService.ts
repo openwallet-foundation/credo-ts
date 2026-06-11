@@ -3,7 +3,7 @@ import { CredoWebCrypto } from '../../crypto/webcrypto'
 import { injectable } from '../../plugins'
 import { fetchCrl, getCachedCrl, setCachedCrl } from './utils/crlFetcher'
 import { X509Certificate } from './X509Certificate'
-import { type RevokedCertificate, X509CertificateRevocationList } from './X509CertificateRevocationList'
+import { X509CertificateRevocationList, type X509CertificateRevocationListEntry } from './X509CertificateRevocationList'
 import { ALL_REVOCATION_REASONS_MASK, X509RevocationReason } from './X509CrlDistributionPoint'
 import { X509CrlUnavailableError, X509Error } from './X509Error'
 import { X509ModuleConfig } from './X509ModuleConfig'
@@ -239,7 +239,7 @@ export class X509RevocationService {
     // otherwise an unreachable partition could mask a revocation we already have proof of.
     // Use the CRL's own findRevoked so serial number formats are normalized consistently with the
     // single distribution point path.
-    let revokedEntry: RevokedCertificate | null = null
+    let revokedEntry: X509CertificateRevocationListEntry | null = null
     for (const crl of coveredCrls) {
       revokedEntry = crl.findRevoked(certificate)
       if (revokedEntry) break

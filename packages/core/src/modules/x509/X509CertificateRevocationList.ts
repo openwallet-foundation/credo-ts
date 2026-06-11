@@ -1,13 +1,43 @@
 import * as x509 from '@peculiar/x509'
-import { CredoWebCrypto, CredoWebCryptoKey, publicJwkToCryptoKeyAlgorithm } from '../../crypto/webcrypto'
-import { x509SignatureAlgorithmToJwa } from './utils'
+import {
+  CredoWebCrypto,
+  CredoWebCryptoKey,
+  jwaAlgorithmToKeySignParams,
+  publicJwkToCryptoKeyAlgorithm,
+} from '../../crypto/webcrypto'
+import {
+  convertName,
+  createAuthorityKeyIdentifierExtension,
+  createCrlEntryCertificateIssuerExtension,
+  createCrlNumberExtension,
+  createIssuingDistributionPointExtension,
+  x509SignatureAlgorithmToJwa,
+} from './utils'
 import { X509Certificate } from './X509Certificate'
 import { X509Error } from './X509Error'
+import type { X509CreateCertificateRevocationListOptions } from './X509ServiceOptions'
 
-export interface RevokedCertificate {
+/**
+ * Reason a certificate was revoked, as carried in a CRL entry's `reasonCode` extension
+ * (RFC 5280 §5.3.1 `CRLReason`).
+ */
+export enum X509CertificateRevocationListEntryReason {
+  Unused = 0,
+  KeyCompromise = 1,
+  CACompromise = 2,
+  AffiliationChanged = 3,
+  Superseded = 4,
+  CessationOfOperation = 5,
+  CertificateHold = 6,
+  RemoveFromCrl = 8,
+  PrivilegeWithdrawn = 9,
+  AACompromise = 10,
+}
+
+export interface X509CertificateRevocationListEntry {
   serialNumber: string
   revocationDate: Date
-  reason?: number
+  reason?: X509CertificateRevocationListEntryReason
 }
 
 /**
@@ -62,6 +92,67 @@ export class X509CertificateRevocationList {
     } catch (error) {
       throw new X509Error('Failed to parse encoded CRL', { cause: error instanceof Error ? error : undefined })
     }
+  }
+
+  /**
+   * Create and sign a new CRL.
+   *
+   * Supports the CRL Number, Authority Key Identifier and Issuing Distribution Point extensions, as
+   * well as indirect CRLs (per-entry `certificateIssuer`). See `options.extensions` / entry options.
+   *
+   * NOTE: scoped (Issuing Distribution Point) and indirect CRLs can be created here, but are not yet
+   * validated during revocation checking.
+   */
+  public static async create(
+    options: X509CreateCertificateRevocationListOptions,
+    webCrypto: CredoWebCrypto
+  ): Promise<X509CertificateRevocationList> {
+    const signingKey = new CredoWebCryptoKey(
+      options.authorityKey,
+      publicJwkToCryptoKeyAlgorithm(options.authorityKey),
+      false,
+      'private',
+      ['sign']
+    )
+
+    const entries = options.entries?.map((entry) => {
+      const serialNumber = entry.serialNumber ?? entry.certificate?.data.serialNumber
+      if (!serialNumber) {
+        throw new X509Error('A CRL entry must provide either a serialNumber or a certificate')
+      }
+
+      return {
+        serialNumber,
+        revocationDate: entry.revocationDate,
+        // X509CrlEntryReason mirrors @peculiar/x509's X509CrlReason (RFC 5280 CRLReason) values.
+        reason: entry.reason === undefined ? undefined : (entry.reason as number as x509.X509CrlReason),
+        // For indirect CRLs, the certificateIssuer is carried as a (critical) CRL entry extension.
+        extensions: entry.issuer === undefined ? undefined : [createCrlEntryCertificateIssuerExtension(entry.issuer)],
+      } satisfies x509.X509CrlEntryParams
+    })
+
+    const extensions: Array<x509.Extension | undefined> = [
+      createCrlNumberExtension(options.extensions?.crlNumber),
+      createAuthorityKeyIdentifierExtension(options.extensions?.authorityKeyIdentifier, {
+        publicJwk: options.authorityKey,
+      }),
+      createIssuingDistributionPointExtension(options.extensions?.issuingDistributionPoint),
+    ]
+
+    const crl = await x509.X509CrlGenerator.create(
+      {
+        issuer: convertName(options.issuer),
+        thisUpdate: options.validity?.thisUpdate,
+        nextUpdate: options.validity?.nextUpdate,
+        signingKey,
+        signingAlgorithm: jwaAlgorithmToKeySignParams(options.authorityKey.signatureAlgorithm),
+        entries,
+        extensions: extensions.filter((extension): extension is x509.Extension => extension !== undefined),
+      },
+      webCrypto
+    )
+
+    return new X509CertificateRevocationList(crl)
   }
 
   /**
@@ -179,7 +270,7 @@ export class X509CertificateRevocationList {
    * global crypto provider (even though it isn't needed for a serial number comparison), which
    * throws when no provider has been registered globally.
    */
-  public findRevoked(certificate: X509Certificate): RevokedCertificate | null {
+  public findRevoked(certificate: X509Certificate): X509CertificateRevocationListEntry | null {
     const target = normalizeSerialNumber(certificate.data.serialNumber)
 
     for (const entry of this.crl.entries) {
@@ -187,7 +278,7 @@ export class X509CertificateRevocationList {
         return {
           serialNumber: entry.serialNumber,
           revocationDate: entry.revocationDate,
-          reason: entry.reason,
+          reason: entry.reason as unknown as X509CertificateRevocationListEntryReason | undefined,
         }
       }
     }
@@ -198,14 +289,14 @@ export class X509CertificateRevocationList {
   /**
    * Get all revoked certificates in this CRL
    */
-  public get revokedCertificates(): RevokedCertificate[] {
-    const revoked: RevokedCertificate[] = []
+  public get revokedCertificates(): X509CertificateRevocationListEntry[] {
+    const revoked: X509CertificateRevocationListEntry[] = []
 
     for (const entry of this.crl.entries) {
       revoked.push({
         serialNumber: entry.serialNumber,
         revocationDate: entry.revocationDate,
-        reason: entry.reason,
+        reason: entry.reason as unknown as X509CertificateRevocationListEntryReason | undefined,
       })
     }
 

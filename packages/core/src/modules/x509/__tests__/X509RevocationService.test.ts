@@ -1,4 +1,3 @@
-import * as x509 from '@peculiar/x509'
 import nock from 'nock'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
@@ -7,13 +6,13 @@ import type { AgentContext } from '../../../agent/context'
 import type { InMemoryLruCache } from '../../cache'
 import type { KeyManagementApi, PublicJwk } from '../../kms'
 import { X509Certificate } from '../X509Certificate'
+import { X509CertificateRevocationListEntryReason } from '../X509CertificateRevocationList'
 import { X509RevocationReason } from '../X509CrlDistributionPoint'
 import { X509RevocationService } from '../X509RevocationService'
 import { X509Service } from '../X509Service'
 import { X509RevocationCheckMode, type X509RevocationCheckOptions } from '../X509ValidationOptions'
 import {
   createP256Key,
-  generateCrl,
   generateLeafWithPartitionedDistributionPoints,
   mockCrl,
   mockCrlHttpError,
@@ -84,22 +83,22 @@ describe('X509RevocationService', () => {
   }
 
   async function crlBytes(options: {
-    entries?: Array<{ serialNumber: string; reason?: x509.X509CrlReason }>
+    entries?: Array<{ serialNumber: string; reason?: X509CertificateRevocationListEntryReason }>
     issuerKeyOverride?: PublicJwk
     nextUpdate?: Date
     thisUpdate?: Date
   }) {
-    return generateCrl(agentContext, {
-      issuerName: issuerCertificate.subject,
-      issuerKey: options.issuerKeyOverride ?? issuerKey,
-      thisUpdate: options.thisUpdate ?? lastMonth,
-      nextUpdate: options.nextUpdate ?? nextMonth,
+    const crl = await X509Service.createCertificateRevocationList(agentContext, {
+      authorityKey: options.issuerKeyOverride ?? issuerKey,
+      issuer: issuerCertificate.subject,
+      validity: { thisUpdate: options.thisUpdate ?? lastMonth, nextUpdate: options.nextUpdate ?? nextMonth },
       entries: options.entries?.map((e) => ({
         serialNumber: e.serialNumber,
         revocationDate: lastMonth,
         reason: e.reason,
       })),
     })
+    return crl.rawCertificateRevocationList
   }
 
   function checkRevocation(
@@ -154,7 +153,12 @@ describe('X509RevocationService', () => {
   it('detects a revoked certificate and fails in both SoftFail and Require modes', async () => {
     const leaf = await createLeaf({ serialNumber: '1004', crlDistributionPoints: { urls: [FULL_URL] } })
     // The CRL bytes are cached after the first fetch, so a single interceptor covers both checks.
-    mockCrl(FULL_URL, await crlBytes({ entries: [{ serialNumber: '1004', reason: x509.X509CrlReason.keyCompromise }] }))
+    mockCrl(
+      FULL_URL,
+      await crlBytes({
+        entries: [{ serialNumber: '1004', reason: X509CertificateRevocationListEntryReason.KeyCompromise }],
+      })
+    )
 
     for (const mode of [X509RevocationCheckMode.SoftFail, X509RevocationCheckMode.Require]) {
       const result = await checkRevocation(leaf, issuerCertificate, {
@@ -219,13 +223,14 @@ describe('X509RevocationService', () => {
     // CRL is not cached, so both checks fetch.
     mockCrl(
       FULL_URL,
-      await generateCrl(agentContext, {
-        issuerName: 'CN=Someone Else',
-        issuerKey,
-        thisUpdate: lastMonth,
-        nextUpdate: nextMonth,
-        entries: [],
-      }),
+      (
+        await X509Service.createCertificateRevocationList(agentContext, {
+          authorityKey: issuerKey,
+          issuer: 'CN=Someone Else',
+          validity: { thisUpdate: lastMonth, nextUpdate: nextMonth },
+          entries: [],
+        })
+      ).rawCertificateRevocationList,
       { times: 2 }
     )
 
@@ -323,7 +328,9 @@ describe('X509RevocationService', () => {
       // Publish the revocation with a non-leading-zero serial to exercise normalization.
       mockCrl(
         KEY_COMPROMISE_URL,
-        await crlBytes({ entries: [{ serialNumber: 'ab', reason: x509.X509CrlReason.keyCompromise }] })
+        await crlBytes({
+          entries: [{ serialNumber: 'ab', reason: X509CertificateRevocationListEntryReason.KeyCompromise }],
+        })
       )
 
       const result = await checkRevocation(leaf, issuerCertificate, {
@@ -404,7 +411,9 @@ describe('X509RevocationService', () => {
       // interceptor covers both modes; the failed superseded fetch is never cached.
       mockCrl(
         KEY_COMPROMISE_URL,
-        await crlBytes({ entries: [{ serialNumber: '2005', reason: x509.X509CrlReason.keyCompromise }] })
+        await crlBytes({
+          entries: [{ serialNumber: '2005', reason: X509CertificateRevocationListEntryReason.KeyCompromise }],
+        })
       )
       mockCrlNetworkError(SUPERSEDED_URL, { times: 2 })
 
@@ -424,7 +433,9 @@ describe('X509RevocationService', () => {
       })
       mockCrl(
         KEY_COMPROMISE_URL,
-        await crlBytes({ entries: [{ serialNumber: '2006', reason: x509.X509CrlReason.keyCompromise }] })
+        await crlBytes({
+          entries: [{ serialNumber: '2006', reason: X509CertificateRevocationListEntryReason.KeyCompromise }],
+        })
       )
 
       for (const mode of [X509RevocationCheckMode.SoftFail, X509RevocationCheckMode.Require]) {
