@@ -85,54 +85,6 @@ export async function createP256Key(kmsApi: KeyManagementApi): Promise<PublicJwk
   return PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
 }
 
-export interface GeneratedCrlEntry {
-  /** Hexadecimal serial number */
-  serialNumber: string
-  revocationDate?: Date
-  reason?: x509.X509CrlReason
-}
-
-/**
- * Generate a CRL signed by the given issuer key. The CRL `issuer` must match the issuer
- * certificate subject DN so that signature/issuer verification succeeds.
- *
- * Returns the DER bytes of the CRL.
- */
-export async function generateCrl(
-  agentContext: AgentContext,
-  options: {
-    issuerName: string
-    issuerKey: PublicJwk
-    entries?: GeneratedCrlEntry[]
-    thisUpdate?: Date
-    nextUpdate?: Date
-  }
-): Promise<Uint8Array> {
-  const webCrypto = new CredoWebCrypto(agentContext)
-
-  const signingKey = new CredoWebCryptoKey(
-    options.issuerKey,
-    publicJwkToCryptoKeyAlgorithm(options.issuerKey),
-    false,
-    'private',
-    ['sign']
-  )
-
-  const crl = await x509.X509CrlGenerator.create(
-    {
-      issuer: options.issuerName,
-      thisUpdate: options.thisUpdate,
-      nextUpdate: options.nextUpdate,
-      signingKey,
-      signingAlgorithm: { name: 'ECDSA', hash: 'SHA-256' },
-      entries: options.entries,
-    },
-    webCrypto
-  )
-
-  return new Uint8Array(crl.rawData)
-}
-
 /**
  * Build a leaf certificate (signed by `issuerKey`) carrying a single CRL Distribution Points
  * extension with multiple **partitioned** distribution points. The `createCertificate` helper only

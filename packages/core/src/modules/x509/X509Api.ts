@@ -7,6 +7,7 @@ import { X509Service } from './X509Service'
 import type {
   X509CheckCertificateRevocationOptions,
   X509CreateCertificateOptions,
+  X509CreateCertificateRevocationListOptions,
   X509CreateCertificateSigningRequestOptions,
   X509FetchCertificateRevocationListOptions,
   X509ParseCertificateRevocationListOptions,
@@ -40,6 +41,15 @@ export class X509Api {
    */
   public async createCertificateSigningRequest(options: X509CreateCertificateSigningRequestOptions) {
     return await X509Service.createCertificateSigningRequest(this.agentContext, options)
+  }
+
+  /**
+   * Creates and signs a X.509 Certificate Revocation List (CRL).
+   *
+   * @param options X509CreateCertificateRevocationListOptions
+   */
+  public async createCertificateRevocationList(options: X509CreateCertificateRevocationListOptions) {
+    return await X509Service.createCertificateRevocationList(this.agentContext, options)
   }
 
   /**
