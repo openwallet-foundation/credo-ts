@@ -1,19 +1,39 @@
-import { DistributionPoint, DistributionPointName, GeneralName, Reason } from '@peculiar/asn1-x509'
+import { AsnConvert } from '@peculiar/asn1-schema'
+import {
+  Name as AsnName,
+  CertificateIssuer,
+  CRLNumber,
+  DistributionPoint,
+  DistributionPointName,
+  GeneralName,
+  IssuingDistributionPoint,
+  id_ce_certificateIssuer,
+  id_ce_cRLNumber,
+  id_ce_issuingDistributionPoint,
+  Reason,
+} from '@peculiar/asn1-x509'
 import {
   AuthorityKeyIdentifierExtension,
   BasicConstraintsExtension,
   CRLDistributionPointsExtension,
   ExtendedKeyUsageExtension,
+  Extension,
   IssuerAlternativeNameExtension,
   KeyUsagesExtension,
   SubjectAlternativeNameExtension,
   SubjectKeyIdentifierExtension,
+  Name as X509Name,
 } from '@peculiar/x509'
 import { Hasher } from '../../../crypto/hashes/Hasher'
 import { publicJwkToSpki } from '../../../crypto/webcrypto/utils'
 import { TypedArrayEncoder } from '../../../utils'
 import { PublicJwk } from '../../kms'
-import type { X509CertificateExtensionsOptions } from '../X509ServiceOptions'
+import type {
+  X509CertificateExtensionsOptions,
+  X509CertificateIssuerAndSubjectOptions,
+  X509CertificateRevocationListExtensionsOptions,
+} from '../X509ServiceOptions'
+import { convertName } from './nameConversion'
 
 /**
  * X.509 extension OIDs defined in RFC 5280
@@ -128,4 +148,56 @@ export const createCrlDistributionPointsExtension = (
   }
 
   return new CRLDistributionPointsExtension([distributionPoint], options.markAsCritical)
+}
+
+export const createCrlNumberExtension = (options: X509CertificateRevocationListExtensionsOptions['crlNumber']) => {
+  if (!options) return
+
+  // There is no high-level CRL Number extension in @peculiar/x509, so build it from the ASN.1 type.
+  const value = AsnConvert.serialize(new CRLNumber(options.value))
+
+  return new Extension(id_ce_cRLNumber, options.markAsCritical ?? false, value)
+}
+
+export const createIssuingDistributionPointExtension = (
+  options: X509CertificateRevocationListExtensionsOptions['issuingDistributionPoint']
+) => {
+  if (!options) return
+
+  const issuingDistributionPoint = new IssuingDistributionPoint({
+    onlyContainsUserCerts: options.onlyContainsUserCerts ?? false,
+    onlyContainsCACerts: options.onlyContainsCACerts ?? false,
+    indirectCRL: options.indirectCRL ?? false,
+    onlyContainsAttributeCerts: options.onlyContainsAttributeCerts ?? false,
+  })
+
+  if (options.fullName && options.fullName.length > 0) {
+    issuingDistributionPoint.distributionPoint = new DistributionPointName({
+      fullName: options.fullName.map((url) => new GeneralName({ uniformResourceIdentifier: url })),
+    })
+  }
+
+  if (options.onlySomeReasons && options.onlySomeReasons.length > 0) {
+    const reason = new Reason()
+    reason.fromNumber(options.onlySomeReasons.reduce((mask, value) => mask | (1 << value), 0))
+    issuingDistributionPoint.onlySomeReasons = reason
+  }
+
+  // RFC 5280 §5.2.5: the issuing distribution point extension MUST be critical.
+  return new Extension(
+    id_ce_issuingDistributionPoint,
+    options.markAsCritical ?? true,
+    AsnConvert.serialize(issuingDistributionPoint)
+  )
+}
+
+/**
+ * Build the `certificateIssuer` CRL entry extension (RFC 5280 §5.3.3) used by indirect CRLs to
+ * indicate the issuer of the revoked certificate. This extension is always critical.
+ */
+export const createCrlEntryCertificateIssuerExtension = (issuer: string | X509CertificateIssuerAndSubjectOptions) => {
+  const name = AsnConvert.parse(new X509Name(convertName(issuer)).toArrayBuffer(), AsnName)
+  const certificateIssuer = new CertificateIssuer([new GeneralName({ directoryName: name })])
+
+  return new Extension(id_ce_certificateIssuer, true, AsnConvert.serialize(certificateIssuer))
 }
