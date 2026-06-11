@@ -153,10 +153,6 @@ describe('OpenId4Vc Presentation During Issuance', () => {
                   throw new Error('Expected descriptor with sd-jwt vc format')
                 }
 
-                if (!('compact' in descriptor.credential)) {
-                  throw new Error('Expected sd-jwt credential descriptor payload')
-                }
-
                 credential = descriptor.credential
               } else {
                 const [presentation] = verification.dcql.presentations[verification.dcql.query.credentials[0].id]

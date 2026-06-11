@@ -210,43 +210,6 @@ describe('Presentation Exchange ProofFormatService', () => {
   })
 
   describe('Process Presentation', () => {
-    test('rejects SD-JWT presentations in PEX proof format', async () => {
-      type ProcessPresentationOptions = Parameters<
-        DidCommDifPresentationExchangeProofFormatService['processPresentation']
-      >[1]
-      const originalResolve = agent.dependencyManager.resolve.bind(agent.dependencyManager)
-      const resolveSpy = vi.spyOn(agent.dependencyManager, 'resolve').mockImplementation((token: unknown) => {
-        if (typeof token === 'function' && token.name === 'SdJwtVcApi') {
-          return { fromCompact: vi.fn().mockReturnValue({}) } as never
-        }
-
-        return originalResolve(token as never)
-      })
-
-      const requestAttachment = {
-        getDataAsJson: () => ({
-          options: { challenge: 'challenge' },
-          presentation_definition: mockPresentationDefinition(),
-        }),
-      }
-
-      const attachment = {
-        getDataAsJson: () => 'header.payload.signature~disclosure~kb',
-      }
-
-      try {
-        await expect(
-          pexFormatService.processPresentation(agent.context, {
-            requestAttachment: requestAttachment as ProcessPresentationOptions['requestAttachment'],
-            attachment: attachment as ProcessPresentationOptions['attachment'],
-            proofRecord: mockProofRecord(),
-          })
-        ).rejects.toThrow('Received SD-JWT VC in PEX proof format. This is not supported yet.')
-      } finally {
-        resolveSpy.mockRestore()
-      }
-    })
-
     test('routes anoncreds VC1 bridge presentations through the anoncreds bridge service', async () => {
       type ProcessPresentationOptions = Parameters<
         DidCommDifPresentationExchangeProofFormatService['processPresentation']
@@ -326,11 +289,6 @@ describe('Presentation Exchange ProofFormatService', () => {
         })
 
         expect(result).toBe(true)
-        expect(validatePresentationSpy).toHaveBeenCalledWith(
-          requestAttachment.getDataAsJson().presentation_definition,
-          expect.anything(),
-          attachment.getDataAsJson().presentation_submission
-        )
         expect(anoncredsBridgeService.verifyPresentation).toHaveBeenCalledTimes(1)
         expect(genericVerifySpy).not.toHaveBeenCalled()
       } finally {

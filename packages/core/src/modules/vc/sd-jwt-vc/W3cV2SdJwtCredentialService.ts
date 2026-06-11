@@ -19,7 +19,6 @@ import type {
   W3cV2VerifyCredentialResult,
   W3cV2VerifyPresentationResult,
 } from '../models'
-import { validateCredentialSubjectAuthentication } from '../util'
 import {
   extractHolderFromPresentationCredentials,
   getVerificationMethodForJwt,
@@ -37,7 +36,6 @@ import type {
   W3cV2SdJwtVerifyCredentialOptions,
   W3cV2SdJwtVerifyPresentationOptions,
 } from '../W3cV2CredentialServiceOptions'
-import { W3cV2EnvelopedVerifiableCredential } from '../models/credential/W3cV2EnvelopedVerifiableCredential'
 import { sdJwtVcHasher } from './W3cV2SdJwt'
 import { W3cV2SdJwtVerifiableCredential } from './W3cV2SdJwtVerifiableCredential'
 import { W3cV2SdJwtVerifiablePresentation } from './W3cV2SdJwtVerifiablePresentation'
@@ -214,7 +212,9 @@ export class W3cV2SdJwtCredentialService {
         }
       }
 
-      validationResults.isValid = Object.values(validationResults.validations).every((v) => v.isValid)
+      validationResults.isValid = Object.values(validationResults.validations).every(
+        (validation) => validation?.isValid === true
+      )
       return validationResults
     } catch (error) {
       validationResults.error = error
@@ -295,7 +295,7 @@ export class W3cV2SdJwtCredentialService {
       try {
         // If instance is provided as input, we want to validate the presentation
         if (options.presentation instanceof W3cV2SdJwtVerifiablePresentation) {
-          MessageValidator.validateSync(options.presentation.resolvedPresentation)
+          options.presentation.validate()
         }
 
         presentation =
@@ -383,50 +383,13 @@ export class W3cV2SdJwtCredentialService {
         }
       }
 
-      // To keep things simple, we only support JWT VCs in JWT VPs for now
-      const credentials = asArray(presentation.resolvedPresentation.verifiableCredential)
-
-      // Verify all credentials in parallel, and await the result
-      validationResults.credentialEntries = await Promise.all(
-        credentials.map(async (credential) => {
-          if (
-            !(credential instanceof W3cV2EnvelopedVerifiableCredential) ||
-            !(credential.envelopedCredential instanceof W3cV2SdJwtVerifiableCredential)
-          ) {
-            return {
-              isValid: false,
-              error: new CredoError(
-                'Credential is not of format SD-JWT. Presentations in SD-JWT format can only contain credentials in SD-JWT format.'
-              ),
-              validations: {},
-            }
-          }
-
-          const credentialResult = await this.verifyCredential(agentContext, {
-            credential: credential.envelopedCredential,
-          })
-
-          const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(
-            credential.resolvedCredential.credentialSubjectIds,
-            proverVerificationMethod.controller
-          )
-
-          return {
-            ...credentialResult,
-            isValid: credentialResult.isValid && credentialSubjectAuthentication.isValid,
-            validations: {
-              ...credentialResult.validations,
-              credentialSubjectAuthentication,
-            },
-          }
-        })
-      )
-
       validationResults.presentation.isValid = Object.values(validationResults.presentation.validations).every(
         (validation) => validation.isValid
       )
-      validationResults.isValid =
-        validationResults.presentation.isValid && validationResults.credentialEntries.every((entry) => entry.isValid)
+
+      // Credential-entry dispatch is orchestrated by W3cV2CredentialService.
+      // This service verifies VP container integrity only.
+      validationResults.isValid = validationResults.presentation.isValid
 
       return validationResults
     } catch (error) {

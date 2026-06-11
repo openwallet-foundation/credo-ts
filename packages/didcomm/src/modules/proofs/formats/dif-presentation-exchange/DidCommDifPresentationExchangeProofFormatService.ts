@@ -21,7 +21,6 @@ import {
   extractX509CertificatesFromJwt,
   JsonTransformer,
   Kms,
-  SdJwtVcApi,
   TypedArrayEncoder,
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
@@ -269,21 +268,11 @@ export class DidCommDifPresentationExchangeProofFormatService
 
     // TODO: we should probably move this transformation logic into the VC module, so it
     // can be reused in Credo when we need to go from encoded -> parsed
+    if (typeof presentation === 'string' && presentation.includes('~')) {
+      // NOTE: we need to define in the PEX RFC where to put the presentation_submission
+      throw new CredoError('Received SD-JWT VC in PEX proof format. This is not supported yet.')
+    }
     if (typeof presentation === 'string') {
-      try {
-        const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
-        sdJwtVcApi.fromCompact(presentation)
-
-        // NOTE: we need to define in the PEX RFC where to put the presentation_submission
-        throw new CredoError('Received SD-JWT VC in PEX proof format. This is not supported yet.')
-      } catch (error) {
-        if (error instanceof CredoError && error.message.includes('Received SD-JWT VC in PEX proof format')) {
-          throw error
-        }
-
-        // Not an SD-JWT presentation, continue with other parsers.
-      }
-
       // If it's a string, we expect it to be a JWT VP
       parsedPresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
       jsonPresentation = parsedPresentation.presentation.toJSON()
@@ -310,11 +299,7 @@ export class DidCommDifPresentationExchangeProofFormatService
     try {
       ps.validatePresentationDefinition(request.presentation_definition)
       ps.validatePresentationSubmission(jsonPresentation.presentation_submission)
-      ps.validatePresentation(
-        request.presentation_definition,
-        parsedPresentation,
-        jsonPresentation.presentation_submission
-      )
+      ps.validatePresentation(request.presentation_definition, parsedPresentation)
 
       let verificationResult: W3cVerifyPresentationResult
 

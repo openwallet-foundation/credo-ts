@@ -7,7 +7,6 @@ import { asArray, JsonTransformer, MessageValidator, nowInSeconds } from '../../
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { extractKeyFromHolderBinding } from '../../sd-jwt-vc/utils'
 import type { W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models'
-import { validateCredentialSubjectAuthentication } from '../util'
 import {
   extractHolderFromPresentationCredentials,
   getVerificationMethodForJwt,
@@ -24,7 +23,6 @@ import type {
   W3cV2JwtVerifyCredentialOptions,
   W3cV2JwtVerifyPresentationOptions,
 } from '../W3cV2CredentialServiceOptions'
-import { W3cV2EnvelopedVerifiableCredential } from '../models/credential/W3cV2EnvelopedVerifiableCredential'
 import { W3cV2JwtVerifiableCredential } from './W3cV2JwtVerifiableCredential'
 import { W3cV2JwtVerifiablePresentation } from './W3cV2JwtVerifiablePresentation'
 
@@ -211,7 +209,9 @@ export class W3cV2JwtCredentialService {
         }
       }
 
-      validationResults.isValid = Object.values(validationResults.validations).every((v) => v.isValid)
+      validationResults.isValid = Object.values(validationResults.validations).every(
+        (validation) => validation?.isValid === true
+      )
 
       return validationResults
     } catch (error) {
@@ -327,10 +327,9 @@ export class W3cV2JwtCredentialService {
       const proverVerificationMethod = await getVerificationMethodForJwt(agentContext, presentation, ['authentication'])
       const proverPublicKey = getPublicJwkFromVerificationMethod(proverVerificationMethod)
 
-      let signatureResult: VerifyJwsResult | undefined
       try {
         // Verify the JWS signature
-        signatureResult = await this.jwsService.verifyJws(agentContext, {
+        const signatureResult = await this.jwsService.verifyJws(agentContext, {
           jws: presentation.jwt.serializedJwt,
           allowedJwsSignerMethods: ['did'],
           jwsSigner: {
@@ -378,50 +377,13 @@ export class W3cV2JwtCredentialService {
         }
       }
 
-      // To keep things simple, we only support JWT VCs in JWT VPs for now
-      const credentials = asArray(presentation.resolvedPresentation.verifiableCredential)
-
-      // Verify all credentials in parallel, and await the result
-      validationResults.credentialEntries = await Promise.all(
-        credentials.map(async (credential) => {
-          if (
-            !(credential instanceof W3cV2EnvelopedVerifiableCredential) ||
-            !(credential.envelopedCredential instanceof W3cV2JwtVerifiableCredential)
-          ) {
-            return {
-              isValid: false,
-              error: new CredoError(
-                'Credential is not of format JWT. Presentations in JWT format can only contain credentials in JWT format.'
-              ),
-              validations: {},
-            }
-          }
-
-          const credentialResult = await this.verifyCredential(agentContext, {
-            credential: credential.envelopedCredential,
-          })
-
-          const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(
-            credential.resolvedCredential.credentialSubjectIds,
-            proverVerificationMethod.controller
-          )
-
-          return {
-            ...credentialResult,
-            isValid: credentialResult.isValid && credentialSubjectAuthentication.isValid,
-            validations: {
-              ...credentialResult.validations,
-              credentialSubjectAuthentication,
-            },
-          }
-        })
-      )
-
       validationResults.presentation.isValid = Object.values(validationResults.presentation.validations).every(
         (validation) => validation.isValid
       )
-      validationResults.isValid =
-        validationResults.presentation.isValid && validationResults.credentialEntries.every((entry) => entry.isValid)
+
+      // Credential-entry dispatch is orchestrated by W3cV2CredentialService.
+      // This service verifies VP container integrity only.
+      validationResults.isValid = validationResults.presentation.isValid
 
       return validationResults
     } catch (error) {

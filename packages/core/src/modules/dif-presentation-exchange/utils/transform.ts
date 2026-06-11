@@ -32,25 +32,15 @@ export function getVerifiablePresentationFromEncoded(
   agentContext: AgentContext,
   encodedVerifiablePresentation: string | W3cJsonPresentation | SphereonW3CVerifiablePresentation
 ) {
-  if (typeof encodedVerifiablePresentation === 'string') {
+  if (typeof encodedVerifiablePresentation === 'string' && encodedVerifiablePresentation.includes('~')) {
     const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
-
-    try {
-      return sdJwtVcApi.fromCompact(encodedVerifiablePresentation)
-    } catch {
-      // Not an SD-JWT VC compact value.
-    }
-
-    if (Jwt.format.test(encodedVerifiablePresentation)) {
-      return W3cJwtVerifiablePresentation.fromSerializedJwt(encodedVerifiablePresentation)
-    }
-
-    return MdocDeviceResponse.fromBase64Url(encodedVerifiablePresentation)
+    return sdJwtVcApi.fromCompact(encodedVerifiablePresentation)
   }
-
+  if (typeof encodedVerifiablePresentation === 'string' && Jwt.format.test(encodedVerifiablePresentation)) {
+    return W3cJwtVerifiablePresentation.fromSerializedJwt(encodedVerifiablePresentation)
+  }
   if (typeof encodedVerifiablePresentation === 'object' && '@context' in encodedVerifiablePresentation) {
     return JsonTransformer.fromJSON(encodedVerifiablePresentation, W3cJsonLdVerifiablePresentation)
   }
-
   return MdocDeviceResponse.fromBase64Url(encodedVerifiablePresentation)
 }
