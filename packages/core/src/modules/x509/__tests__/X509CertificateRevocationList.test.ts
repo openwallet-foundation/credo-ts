@@ -1,4 +1,3 @@
-import * as x509 from '@peculiar/x509'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { Agent } from '../../../agent/Agent'
@@ -7,10 +6,13 @@ import { CredoWebCrypto } from '../../../crypto/webcrypto'
 import { TypedArrayEncoder } from '../../../utils'
 import type { KeyManagementApi, PublicJwk } from '../../kms'
 import { X509Certificate } from '../X509Certificate'
-import { X509CertificateRevocationList } from '../X509CertificateRevocationList'
+import {
+  X509CertificateRevocationList,
+  X509CertificateRevocationListEntryReason,
+} from '../X509CertificateRevocationList'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
-import { createP256Key, generateCrl, setupCrlAgent } from './x509CrlTestUtils'
+import { createP256Key, setupCrlAgent } from './x509CrlTestUtils'
 
 describe('X509CertificateRevocationList', () => {
   let agent: Agent
@@ -51,16 +53,21 @@ describe('X509CertificateRevocationList', () => {
       extensions: { basicConstraints: { ca: true } },
     })
 
-    crlBytes = await generateCrl(agentContext, {
-      issuerName: issuerCertificate.subject,
-      issuerKey,
-      thisUpdate: lastMonth,
-      nextUpdate: nextMonth,
-      entries: [
-        { serialNumber: revokedSerial, revocationDate: lastMonth, reason: x509.X509CrlReason.keyCompromise },
-        { serialNumber: 'ff', revocationDate: lastMonth },
-      ],
-    })
+    crlBytes = (
+      await X509Service.createCertificateRevocationList(agentContext, {
+        authorityKey: issuerKey,
+        issuer: issuerCertificate.subject,
+        validity: { thisUpdate: lastMonth, nextUpdate: nextMonth },
+        entries: [
+          {
+            serialNumber: revokedSerial,
+            revocationDate: lastMonth,
+            reason: X509CertificateRevocationListEntryReason.KeyCompromise,
+          },
+          { serialNumber: 'ff', revocationDate: lastMonth },
+        ],
+      })
+    ).rawCertificateRevocationList
   })
 
   afterAll(async () => {
@@ -100,24 +107,23 @@ describe('X509CertificateRevocationList', () => {
     expect(crl.isExpired(new Date(nextMonth.getTime() + 1000))).toBe(true)
     expect(crl.isExpired(lastMonth)).toBe(false)
 
-    const noNextUpdate = await generateCrl(agentContext, {
-      issuerName: issuerCertificate.subject,
-      issuerKey,
-      thisUpdate: lastMonth,
-    })
+    const noNextUpdate = (
+      await X509Service.createCertificateRevocationList(agentContext, {
+        authorityKey: issuerKey,
+        issuer: issuerCertificate.subject,
+        validity: { thisUpdate: lastMonth },
+      })
+    ).rawCertificateRevocationList
     expect(X509CertificateRevocationList.fromRaw(noNextUpdate).isExpired(nextMonth)).toBe(false)
   })
 
   it('reports whether the CRL is not yet valid (before thisUpdate)', async () => {
     const futureNextUpdate = new Date(nextMonth.getTime() + 30 * 24 * 60 * 60 * 1000)
-    const futureCrl = X509CertificateRevocationList.fromRaw(
-      await generateCrl(agentContext, {
-        issuerName: issuerCertificate.subject,
-        issuerKey,
-        thisUpdate: nextMonth,
-        nextUpdate: futureNextUpdate,
-      })
-    )
+    const futureCrl = await X509Service.createCertificateRevocationList(agentContext, {
+      authorityKey: issuerKey,
+      issuer: issuerCertificate.subject,
+      validity: { thisUpdate: nextMonth, nextUpdate: futureNextUpdate },
+    })
 
     expect(futureCrl.isNotYetValid(new Date())).toBe(true)
     expect(futureCrl.isNotYetValid(new Date(nextMonth.getTime() + 1000))).toBe(false)
@@ -153,7 +159,7 @@ describe('X509CertificateRevocationList', () => {
 
     const entry = crl.findRevoked(revokedCert)
     expect(entry).not.toBeNull()
-    expect(entry?.reason).toBe(x509.X509CrlReason.keyCompromise)
+    expect(entry?.reason).toBe(X509CertificateRevocationListEntryReason.KeyCompromise)
   })
 
   it('returns null for a certificate that is not revoked', async () => {
