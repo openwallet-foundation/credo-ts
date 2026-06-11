@@ -543,7 +543,8 @@ export class AskarStoreManager {
       try {
         store = await this.openStore(agentContext)
       } catch (error) {
-        if (error instanceof AskarStoreNotFoundError) {
+        // Only auto-provision a store when the agent context is initialized
+        if (error instanceof AskarStoreNotFoundError && agentContext.isInitialized) {
           store = await this.provisionStore(agentContext)
         } else {
           throw error

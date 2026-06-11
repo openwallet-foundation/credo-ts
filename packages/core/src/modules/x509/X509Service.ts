@@ -6,11 +6,13 @@ import { CertificateSigningRequest } from './CertificateSigningRequest'
 import { X509ExtensionIdentifier } from './utils'
 import { validateCriticalExtensionsForChain } from './utils/criticalExtensions'
 import { X509Certificate } from './X509Certificate'
+import { X509CertificateRevocationList } from './X509CertificateRevocationList'
 import { X509Error, X509ValidationError } from './X509Error'
 import { X509ModuleConfig } from './X509ModuleConfig'
 import { X509RevocationService } from './X509RevocationService'
 import type {
   X509CreateCertificateOptions,
+  X509CreateCertificateRevocationListOptions,
   X509CreateCertificateSigningRequestOptions,
   X509GetLeafCertificateOptions,
   X509ParseCertificateOptions,
@@ -253,6 +255,17 @@ export class X509Service {
     const csr = await CertificateSigningRequest.create(options, webCrypto)
 
     return csr
+  }
+
+  public static async createCertificateRevocationList(
+    agentContext: AgentContext,
+    options: X509CreateCertificateRevocationListOptions
+  ) {
+    const webCrypto = new CredoWebCrypto(agentContext)
+
+    const crl = await X509CertificateRevocationList.create(options, webCrypto)
+
+    return crl
   }
 
   public static parseCertificateSigningRequest({
