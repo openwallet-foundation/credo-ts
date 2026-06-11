@@ -13,6 +13,11 @@ import {
   getVerificationMethodForJwt,
   validateAndResolveVerificationMethod,
 } from '../v2-jwt-utils'
+import {
+  validateVc2ContextBaseline,
+  validateVc2CredentialStatus,
+  validateVc2CredentialValidityPeriod,
+} from '../validators'
 import type {
   W3cV2JwtSignCredentialOptions,
   W3cV2JwtSignPresentationOptions,
@@ -111,9 +116,28 @@ export class W3cV2JwtCredentialService {
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
+        this.logCredentialShouldWarnings(agentContext, credential)
+
+        validationResults.validations.dataModel = validateVc2ContextBaseline(credential.resolvedCredential.context)
+        if (!validationResults.validations.dataModel.isValid) {
+          return validationResults
+        }
+
         validationResults.validations.dataModel = {
           isValid: true,
         }
+
+        validationResults.validations.validityPeriod = validateVc2CredentialValidityPeriod({
+          validFrom: credential.resolvedCredential.validFrom,
+          validUntil: credential.resolvedCredential.validUntil,
+          skewSeconds: agentContext.config.validitySkewSeconds,
+        })
+
+        validationResults.validations.credentialStatus = validateVc2CredentialStatus({
+          credentialStatus: credential.resolvedCredential.credentialStatus,
+          credentialFormat: 'JWT',
+          verifyCredentialStatus: options.verifyCredentialStatus,
+        })
       } catch (error) {
         validationResults.validations.dataModel = {
           isValid: false,
@@ -186,7 +210,9 @@ export class W3cV2JwtCredentialService {
         }
       }
 
-      validationResults.isValid = Object.values(validationResults.validations).every((v) => v.isValid)
+      validationResults.isValid = Object.values(validationResults.validations).every(
+        (validation) => validation?.isValid === true
+      )
 
       return validationResults
     } catch (error) {
@@ -245,7 +271,11 @@ export class W3cV2JwtCredentialService {
   ): Promise<W3cV2VerifyPresentationResult> {
     const validationResults: W3cV2VerifyPresentationResult = {
       isValid: false,
-      validations: {},
+      presentation: {
+        isValid: false,
+        validations: {},
+      },
+      credentialEntries: [],
     }
 
     try {
@@ -266,6 +296,8 @@ export class W3cV2JwtCredentialService {
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
+        this.logPresentationShouldWarnings(agentContext, presentation)
+
         // Make sure challenge matches nonce
         if (options.challenge !== presentation.jwt.payload.additionalClaims.nonce) {
           throw new CredoError(`JWT payload 'nonce' does not match challenge '${options.challenge}'`)
@@ -276,11 +308,16 @@ export class W3cV2JwtCredentialService {
           throw new CredoError(`JWT payload 'aud' does not include domain '${options.domain}'`)
         }
 
-        validationResults.validations.dataModel = {
+        const contextValidationResult = validateVc2ContextBaseline(presentation.resolvedPresentation.context)
+        if (!contextValidationResult.isValid) {
+          throw contextValidationResult.error
+        }
+
+        validationResults.presentation.validations.dataModel = {
           isValid: true,
         }
       } catch (error) {
-        validationResults.validations.dataModel = {
+        validationResults.presentation.validations.dataModel = {
           isValid: false,
           error,
         }
@@ -291,10 +328,9 @@ export class W3cV2JwtCredentialService {
       const proverVerificationMethod = await getVerificationMethodForJwt(agentContext, presentation, ['authentication'])
       const proverPublicKey = getPublicJwkFromVerificationMethod(proverVerificationMethod)
 
-      let signatureResult: VerifyJwsResult | undefined
       try {
         // Verify the JWS signature
-        signatureResult = await this.jwsService.verifyJws(agentContext, {
+        const signatureResult = await this.jwsService.verifyJws(agentContext, {
           jws: presentation.jwt.serializedJwt,
           allowedJwsSignerMethods: ['did'],
           jwsSigner: {
@@ -306,17 +342,17 @@ export class W3cV2JwtCredentialService {
         })
 
         if (!signatureResult.isValid) {
-          validationResults.validations.presentationSignature = {
+          validationResults.presentation.validations.presentationSignature = {
             isValid: false,
             error: new CredoError('Invalid JWS signature on presentation'),
           }
         } else {
-          validationResults.validations.presentationSignature = {
+          validationResults.presentation.validations.presentationSignature = {
             isValid: true,
           }
         }
       } catch (error) {
-        validationResults.validations.presentationSignature = {
+        validationResults.presentation.validations.presentationSignature = {
           isValid: false,
           error,
         }
@@ -328,7 +364,7 @@ export class W3cV2JwtCredentialService {
         presentation.resolvedPresentation.holderId &&
         proverVerificationMethod.controller !== presentation.resolvedPresentation.holderId
       ) {
-        validationResults.validations.holderIsSigner = {
+        validationResults.presentation.validations.holderIsSigner = {
           isValid: false,
           error: new CredoError(
             `Presentation is signed using verification method ${proverVerificationMethod.id}, while the holder of the presentation is '${presentation.resolvedPresentation.holderId}'`
@@ -337,56 +373,84 @@ export class W3cV2JwtCredentialService {
       } else {
         // If no holderId is present, this validation passes by default as there can't be
         // a mismatch between the 'holder' property and the signer of the presentation.
-        validationResults.validations.holderIsSigner = {
+        validationResults.presentation.validations.holderIsSigner = {
           isValid: true,
         }
       }
 
-      // To keep things simple, we only support JWT VCs in JWT VPs for now
-      const credentials = asArray(presentation.resolvedPresentation.verifiableCredential)
-
-      // Verify all credentials in parallel, and await the result
-      validationResults.validations.credentials = await Promise.all(
-        credentials.map(async (credential) => {
-          if (!(credential.envelopedCredential instanceof W3cV2JwtVerifiableCredential)) {
-            return {
-              isValid: false,
-              error: new CredoError(
-                'Credential is not of format JWT. Presentations in JWT format can only contain credentials in JWT format.'
-              ),
-              validations: {},
-            }
-          }
-
-          const credentialResult = await this.verifyCredential(agentContext, {
-            credential: credential.envelopedCredential,
-          })
-
-          const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(
-            credential.resolvedCredential.credentialSubjectIds,
-            proverVerificationMethod.controller
-          )
-
-          return {
-            ...credentialResult,
-            isValid: credentialResult.isValid && credentialSubjectAuthentication.isValid,
-            validations: {
-              ...credentialResult.validations,
-              credentialSubjectAuthentication,
-            },
-          }
-        })
+      validationResults.presentation.isValid = Object.values(validationResults.presentation.validations).every(
+        (validation) => validation.isValid
       )
 
-      // Deeply nested check whether all validations have passed
-      validationResults.isValid = Object.values(validationResults.validations).every((v) =>
-        Array.isArray(v) ? v.every((vv) => vv.isValid) : v.isValid
-      )
+      // Credential-entry dispatch is orchestrated by W3cV2CredentialService.
+      // This service verifies VP container integrity only.
+      validationResults.isValid = validationResults.presentation.isValid
 
       return validationResults
     } catch (error) {
       validationResults.error = error
       return validationResults
+    }
+  }
+
+  private logCredentialShouldWarnings(agentContext: AgentContext, credential: W3cV2JwtVerifiableCredential) {
+    const payload = credential.jwt.payload
+    const headerIss = credential.jwt.header.iss
+
+    if (typeof headerIss === 'string' && typeof payload.iss === 'string' && headerIss !== payload.iss) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: JOSE header iss conflicts with payload iss', {
+        format: 'vc+jwt',
+        headerIss,
+        payloadIss: payload.iss,
+      })
+    }
+
+    if (
+      typeof payload.jti === 'string' &&
+      credential.resolvedCredential.id &&
+      credential.resolvedCredential.id !== payload.jti
+    ) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: jti claim conflicts with credential id', {
+        format: 'vc+jwt',
+        jti: payload.jti,
+        credentialId: credential.resolvedCredential.id,
+      })
+    }
+
+    if (typeof payload.sub === 'string' && !credential.resolvedCredential.credentialSubjectIds.includes(payload.sub)) {
+      agentContext.config.logger.warn(
+        'VC-JOSE-COSE SHOULD warning: sub claim does not match any credentialSubject.id',
+        {
+          format: 'vc+jwt',
+          sub: payload.sub,
+          credentialSubjectIds: credential.resolvedCredential.credentialSubjectIds,
+        }
+      )
+    }
+  }
+
+  private logPresentationShouldWarnings(agentContext: AgentContext, presentation: W3cV2JwtVerifiablePresentation) {
+    const payload = presentation.jwt.payload
+    const headerIss = presentation.jwt.header.iss
+
+    if (typeof headerIss === 'string' && typeof payload.iss === 'string' && headerIss !== payload.iss) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: JOSE header iss conflicts with payload iss', {
+        format: 'vp+jwt',
+        headerIss,
+        payloadIss: payload.iss,
+      })
+    }
+
+    if (
+      typeof payload.jti === 'string' &&
+      presentation.resolvedPresentation.id &&
+      presentation.resolvedPresentation.id !== payload.jti
+    ) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: jti claim conflicts with presentation id', {
+        format: 'vp+jwt',
+        jti: payload.jti,
+        presentationId: presentation.resolvedPresentation.id,
+      })
     }
   }
 }
