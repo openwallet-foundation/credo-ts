@@ -329,6 +329,16 @@ export type X509CertificateRevocationListExtensionsOptions = AddMarkAsCritical<{
   }
 
   /**
+   * Delta CRL Indicator (RFC 5280 §5.2.4): marks this CRL as a delta CRL whose base (complete) CRL
+   * has the given CRL Number.
+   *
+   * Per RFC 5280 this extension MUST be critical (the default).
+   */
+  deltaCrlIndicator?: {
+    value: number
+  }
+
+  /**
    * Authority Key Identifier (RFC 5280 §5.2.1) identifying the CRL issuer's signing key
    * (the `authorityKey`).
    */

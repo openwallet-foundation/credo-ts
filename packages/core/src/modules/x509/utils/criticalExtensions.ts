@@ -1,7 +1,7 @@
 import * as x509 from '@peculiar/x509'
 import { X509Error } from '../X509Error'
 import type { X509CertificateSingleValidationResult } from '../X509ValidationResult'
-import { X509ExtensionIdentifier } from './extensions'
+import { X509CrlExtensionIdentifier, X509ExtensionIdentifier } from './extensions'
 
 /**
  * Registry of critical extensions that Credo understands and can validate
@@ -19,6 +19,15 @@ export const knownCriticalExtensions = [
   // Extensions not yet validated by Credo but recognized:
   // X509ExtensionIdentifier.NameConstraints, // currently not validated
   // X509ExtensionIdentifier.PolicyConstraints, // currently not validated
+]
+
+/**
+ * Registry of critical CRL extensions that Credo understands and can process.
+ * Based on RFC 5280 Section 5.2
+ */
+export const knownCriticalCrlExtensions = [
+  X509CrlExtensionIdentifier.IssuingDistributionPoint,
+  X509CrlExtensionIdentifier.DeltaCrlIndicator,
 ]
 
 export interface CriticalExtensionValidationResult {
@@ -73,4 +82,32 @@ export function validateCriticalExtensionsForChain(
   }
 
   return { isValid: true }
+}
+
+/**
+ * Validates that all critical extensions on a CRL are understood by Credo
+ * Per RFC 5280 Section 6.3.3: a CRL bearing a critical extension that is not recognized (or that
+ * cannot be processed) MUST NOT be used, as it may change the CRL's meaning (e.g. its scope).
+ */
+export function validateCriticalCrlExtensions(crl: x509.X509Crl): CriticalExtensionValidationResult {
+  const unknownCriticalExtensions: string[] = []
+
+  for (const extension of crl.extensions) {
+    if (extension.critical && !knownCriticalCrlExtensions.includes(extension.type as X509CrlExtensionIdentifier)) {
+      unknownCriticalExtensions.push(extension.type)
+    }
+  }
+
+  if (unknownCriticalExtensions.length > 0) {
+    return {
+      isValid: false,
+      unknownCriticalExtensions,
+      error: new X509Error(
+        `CRL contains unknown critical extensions: ${unknownCriticalExtensions.join(', ')}. ` +
+          `Per RFC 5280, a CRL with unrecognized critical extensions MUST NOT be used.`
+      ),
+    }
+  }
+
+  return { isValid: true, unknownCriticalExtensions: [] }
 }

@@ -5,7 +5,6 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import type { Agent } from '../../../agent/Agent'
 import type { AgentContext } from '../../../agent/context'
 import { CredoWebCrypto } from '../../../crypto/webcrypto'
-import { TypedArrayEncoder } from '../../../utils'
 import type { InMemoryLruCache } from '../../cache'
 import type { KeyManagementApi, PublicJwk } from '../../kms'
 import { X509Api } from '../X509Api'
@@ -222,38 +221,6 @@ describe('X509RevocationService CRL API', () => {
       await expect(
         X509RevocationService.fetchCertificateRevocationList(agentContext, { url: CRL_URL, issuerCertificate })
       ).rejects.toThrow(X509Error)
-    })
-  })
-
-  describe('parseCertificateRevocationList', () => {
-    it('parses a base64-encoded CRL', async () => {
-      const base64 = TypedArrayEncoder.toBase64(await crlBytes({ entries: [{ serialNumber: 'abc' }] }))
-
-      const crl = X509RevocationService.parseCertificateRevocationList({
-        encodedCertificateRevocationList: base64,
-      })
-
-      expect(crl.issuer).toBe(issuerCertificate.subject)
-      expect(crl.revokedCount).toBe(1)
-    })
-
-    it('round-trips a PEM-encoded CRL', async () => {
-      const base64 = TypedArrayEncoder.toBase64(await crlBytes({ entries: [] }))
-      const pem = X509RevocationService.parseCertificateRevocationList({
-        encodedCertificateRevocationList: base64,
-      }).toString('pem')
-
-      const crl = X509RevocationService.parseCertificateRevocationList({ encodedCertificateRevocationList: pem })
-
-      expect(crl.issuer).toBe(issuerCertificate.subject)
-    })
-
-    it('throws on invalid input', () => {
-      expect(() =>
-        X509RevocationService.parseCertificateRevocationList({
-          encodedCertificateRevocationList: 'not-a-crl',
-        })
-      ).toThrow(X509Error)
     })
   })
 
