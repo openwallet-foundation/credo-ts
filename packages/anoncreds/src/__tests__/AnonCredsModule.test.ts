@@ -1,10 +1,10 @@
 import type { DependencyManager } from '@credo-ts/core'
-import { AnonCredsDataIntegrityServiceSymbol } from '@credo-ts/core'
+import { AnonCredsVc1BridgeServiceSymbol } from '@credo-ts/core'
 import { anoncreds } from '../../tests/helpers'
 import { AnonCredsModule } from '../AnonCredsModule'
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../anoncreds-rs'
-import { AnonCredsDataIntegrityService } from '../anoncreds-rs/AnonCredsDataIntegrityService'
+import { AnonCredsVc1BridgeService } from '../anoncreds-rs/AnonCredsVc1BridgeService'
 import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionRepository,
@@ -59,8 +59,8 @@ describe('AnonCredsModule', () => {
     )
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
-      AnonCredsDataIntegrityServiceSymbol,
-      AnonCredsDataIntegrityService
+      AnonCredsVc1BridgeServiceSymbol,
+      AnonCredsVc1BridgeService
     )
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
