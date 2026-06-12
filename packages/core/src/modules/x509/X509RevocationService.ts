@@ -12,7 +12,6 @@ import { X509ModuleConfig } from './X509ModuleConfig'
 import type {
   X509CheckCertificateRevocationOptions,
   X509FetchCertificateRevocationListOptions,
-  X509ParseCertificateRevocationListOptions,
 } from './X509ServiceOptions'
 import { X509RevocationCheckMode, type X509RevocationCheckOptions } from './X509ValidationOptions'
 import type { X509CertificateSingleValidationResult } from './X509ValidationResult'
@@ -707,14 +706,5 @@ export class X509RevocationService {
     }
 
     return result.crl
-  }
-
-  /**
-   * Parse a base64- or PEM-encoded CRL into an {@link X509CertificateRevocationList}.
-   */
-  public static parseCertificateRevocationList({
-    encodedCertificateRevocationList,
-  }: X509ParseCertificateRevocationListOptions): X509CertificateRevocationList {
-    return X509CertificateRevocationList.fromEncoded(encodedCertificateRevocationList)
   }
 }
