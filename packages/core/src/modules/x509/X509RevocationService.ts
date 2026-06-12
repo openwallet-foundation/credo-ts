@@ -202,6 +202,7 @@ export class X509RevocationService {
       // Try to fetch CRL from this distribution point
       const result = await X509RevocationService.fetchAndVerifyCrl(
         agentContext,
+        certificate,
         dp.urls,
         issuerCertificate,
         verificationDate,
@@ -382,6 +383,7 @@ export class X509RevocationService {
   ): Promise<X509RevocationCheckResult> {
     const result = await X509RevocationService.fetchAndVerifyCrl(
       agentContext,
+      certificate,
       distributionPoint.urls,
       issuerCertificate,
       verificationDate,
@@ -423,11 +425,63 @@ export class X509RevocationService {
   }
 
   /**
+   * Determine whether a verified CRL can be used to authoritatively determine the revocation status
+   * of `certificate`. Uses the CRL's own extensions (RFC 5280 §5.2.4 Delta CRL Indicator and §5.2.5
+   * Issuing Distribution Point) to reject CRLs we cannot correctly interpret as a complete, direct
+   * CRL covering this certificate. Returns a human-readable reason when the CRL must be rejected.
+   */
+  private static checkCrlApplicability(
+    crl: X509CertificateRevocationList,
+    certificate: X509Certificate
+  ): { usable: true } | { usable: false; reason: string } {
+    // A delta CRL only lists changes relative to a base CRL. We do not process delta CRLs, so a
+    // certificate's absence from one is not proof it is unrevoked: treating it as a complete CRL
+    // could let a certificate revoked on the base CRL appear valid.
+    if (crl.deltaCrlIndicator !== undefined) {
+      return { usable: false, reason: 'CRL is a delta CRL, which is not supported for revocation checking' }
+    }
+
+    const issuingDistributionPoint = crl.issuingDistributionPoint
+    if (issuingDistributionPoint) {
+      // An indirect CRL may revoke certificates from issuers other than the one that signed it (via
+      // the per-entry certificateIssuer extension), so its entries cannot be reliably attributed to
+      // this certificate's issuer. We do not process indirect CRLs.
+      if (issuingDistributionPoint.indirectCRL) {
+        return { usable: false, reason: 'CRL is an indirect CRL, which is not supported for revocation checking' }
+      }
+
+      // This CRL only covers attribute certificates, never the public-key certificate being checked.
+      if (issuingDistributionPoint.onlyContainsAttributeCerts) {
+        return { usable: false, reason: 'CRL only covers attribute certificates' }
+      }
+
+      // The CRL is scoped to a certificate category that excludes the certificate being checked, so
+      // its (non-)presence says nothing about this certificate's revocation status.
+      const isCertificateAuthority = certificate.isCertificateAuthority
+      if (issuingDistributionPoint.onlyContainsUserCerts && isCertificateAuthority) {
+        return {
+          usable: false,
+          reason: 'CRL only covers end-entity certificates but the certificate is a CA certificate',
+        }
+      }
+      if (issuingDistributionPoint.onlyContainsCACerts && !isCertificateAuthority) {
+        return {
+          usable: false,
+          reason: 'CRL only covers CA certificates but the certificate is an end-entity certificate',
+        }
+      }
+    }
+
+    return { usable: true }
+  }
+
+  /**
    * Fetch and verify a CRL from a list of mirror URLs
    * Tries each URL in order until one succeeds
    */
   private static async fetchAndVerifyCrl(
     agentContext: AgentContext,
+    certificate: X509Certificate,
     urls: string[],
     issuerCertificate: X509Certificate,
     verificationDate: Date,
@@ -451,7 +505,20 @@ export class X509RevocationService {
         webCrypto
       )
 
-      if (result.success) return { success: true, crl: result.crl, usedUrl: url }
+      if (result.success) {
+        // A verified CRL is only authoritative for this certificate if it is a complete, direct CRL
+        // whose scope covers the certificate. Otherwise its (non-)presence proves nothing about the
+        // certificate's revocation status, so it must not be used.
+        const applicability = X509RevocationService.checkCrlApplicability(result.crl, certificate)
+        if (applicability.usable) return { success: true, crl: result.crl, usedUrl: url }
+
+        // The CRL was downloaded and verified, but cannot be used for this certificate. Treat it as
+        // reachable so the coverage gap is classified as an integrity (hard) failure rather than a
+        // soft-failable availability failure - we did obtain a CRL, it is just not one we can use.
+        lastError = `CRL from ${url} cannot be used: ${applicability.reason}`
+        reachable = true
+        continue
+      }
 
       lastError = result.error
       if (result.reachable) reachable = true
