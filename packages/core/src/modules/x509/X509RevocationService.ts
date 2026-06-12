@@ -1,6 +1,8 @@
+import * as x509 from '@peculiar/x509'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto } from '../../crypto/webcrypto'
 import { injectable } from '../../plugins'
+import { validateCriticalCrlExtensions } from './utils/criticalExtensions'
 import { fetchCrl, getCachedCrl, setCachedCrl } from './utils/crlFetcher'
 import { X509Certificate } from './X509Certificate'
 import { X509CertificateRevocationList, type X509CertificateRevocationListEntry } from './X509CertificateRevocationList'
@@ -70,6 +72,10 @@ export class X509RevocationService {
    *
    * The chain must be ordered from root (index 0) to leaf (last index); each certificate's issuer is
    * the certificate that precedes it in the chain.
+   *
+   * The same CRL handling limitations as {@link checkCertificateRevocation} apply (CRL only; delta
+   * and indirect CRLs rejected; no IDP distribution-point-name matching; no `onlySomeReasons`
+   * cross-check; Freshest CRL / AIA and `invalidityDate` not processed).
    */
   public static async checkCertificateChainRevocation(
     agentContext: AgentContext,
@@ -434,6 +440,16 @@ export class X509RevocationService {
     crl: X509CertificateRevocationList,
     certificate: X509Certificate
   ): { usable: true } | { usable: false; reason: string } {
+    // RFC 5280 §6.3.3: a CRL bearing a critical extension we do not recognize MUST NOT be used, as
+    // that extension may change the CRL's meaning (e.g. its scope) in ways we cannot account for.
+    const criticalExtensions = validateCriticalCrlExtensions(new x509.X509Crl(crl.rawCertificateRevocationList))
+    if (!criticalExtensions.isValid) {
+      return {
+        usable: false,
+        reason: criticalExtensions.error?.message ?? 'CRL contains unrecognized critical extensions',
+      }
+    }
+
     // A delta CRL only lists changes relative to a base CRL. We do not process delta CRLs, so a
     // certificate's absence from one is not proof it is unrevoked: treating it as a complete CRL
     // could let a certificate revoked on the base CRL appear valid.
@@ -640,8 +656,13 @@ export class X509RevocationService {
   /**
    * Fetch a CRL from a URL and parse it into an {@link X509CertificateRevocationList}.
    *
-   * When `issuerCertificate` is provided, the CRL's signature, issuer name, and validity window are
-   * verified, and an error is thrown on failure. When omitted, the CRL is returned unverified.
+   * When `issuerCertificate` is provided, the CRL's signature, issuer name, issuer `cRLSign` key
+   * usage, and validity window are verified, and an error is thrown on failure. When omitted, the CRL
+   * is returned unverified.
+   *
+   * Note: this is a raw fetch+parse helper. Unlike {@link checkCertificateRevocation}, it does not
+   * apply revocation-scope/applicability checks (delta/indirect/IDP scope), so it will return a delta
+   * or scoped CRL as-is for inspection.
    */
   public static async fetchCertificateRevocationList(
     agentContext: AgentContext,
