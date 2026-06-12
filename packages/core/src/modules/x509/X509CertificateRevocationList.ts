@@ -17,7 +17,7 @@ import {
   X509CrlExtensionIdentifier,
   x509SignatureAlgorithmToJwa,
 } from './utils'
-import { X509Certificate } from './X509Certificate'
+import { X509Certificate, X509KeyUsage } from './X509Certificate'
 import type { X509RevocationReason } from './X509CrlDistributionPoint'
 import { X509Error } from './X509Error'
 import type { X509CreateCertificateRevocationListOptions } from './X509ServiceOptions'
@@ -367,7 +367,20 @@ export class X509CertificateRevocationList {
       }
     }
 
-    // 3. Check the CRL validity window.
+    // 3. RFC 5280 §6.3.3(f): the issuer certificate must be authorized to sign CRLs. Key Usage is
+    // optional; when present, it MUST include the cRLSign bit. An empty result means the extension is
+    // absent, so all usages are permitted (a well-formed Key Usage always asserts at least one bit).
+    const issuerKeyUsage = issuerCertificate.keyUsage
+    if (issuerKeyUsage && issuerKeyUsage.length > 0 && !issuerKeyUsage.includes(X509KeyUsage.CrlSign)) {
+      return {
+        isValid: false,
+        error: new X509Error(
+          `CRL issuer '${issuerCertificate.subject}' is not authorized to sign CRLs (key usage does not include cRLSign)`
+        ),
+      }
+    }
+
+    // 4. Check the CRL validity window.
     if (this.isNotYetValid(now)) {
       return {
         isValid: false,
