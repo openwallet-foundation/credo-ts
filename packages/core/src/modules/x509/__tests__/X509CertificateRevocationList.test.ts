@@ -5,11 +5,13 @@ import type { AgentContext } from '../../../agent/context'
 import { CredoWebCrypto } from '../../../crypto/webcrypto'
 import { TypedArrayEncoder } from '../../../utils'
 import type { KeyManagementApi, PublicJwk } from '../../kms'
+import { X509CrlExtensionIdentifier } from '../utils'
 import { X509Certificate } from '../X509Certificate'
 import {
   X509CertificateRevocationList,
   X509CertificateRevocationListEntryReason,
 } from '../X509CertificateRevocationList'
+import { X509RevocationReason } from '../X509CrlDistributionPoint'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
 import { createP256Key, setupCrlAgent } from './x509CrlTestUtils'
@@ -188,5 +190,61 @@ describe('X509CertificateRevocationList', () => {
     const crl = X509CertificateRevocationList.fromRaw(crlBytes)
     const same = X509CertificateRevocationList.fromRaw(crlBytes)
     expect(crl.equal(same)).toBe(true)
+  })
+
+  describe('extensions', () => {
+    it('returns undefined for a CRL without the corresponding extensions', () => {
+      const crl = X509CertificateRevocationList.fromRaw(crlBytes)
+      expect(crl.crlNumber).toBeUndefined()
+      expect(crl.deltaCrlIndicator).toBeUndefined()
+      expect(crl.issuingDistributionPoint).toBeUndefined()
+    })
+
+    it('exposes the CRL Number extension', async () => {
+      const crl = await X509Service.createCertificateRevocationList(agentContext, {
+        authorityKey: issuerKey,
+        issuer: issuerCertificate.subject,
+        validity: { thisUpdate: lastMonth, nextUpdate: nextMonth },
+        extensions: {
+          crlNumber: { value: 42 },
+        },
+      })
+
+      expect(crl.crlNumber).toBe(42)
+      // RFC 5280 §5.2.3: the CRL Number extension must not be critical.
+      expect(crl.isExtensionCritical(X509CrlExtensionIdentifier.CrlNumber)).toBe(false)
+    })
+
+    it('exposes the Issuing Distribution Point extension', async () => {
+      const crl = await X509Service.createCertificateRevocationList(agentContext, {
+        authorityKey: issuerKey,
+        issuer: issuerCertificate.subject,
+        validity: { thisUpdate: lastMonth, nextUpdate: nextMonth },
+        extensions: {
+          issuingDistributionPoint: {
+            fullName: ['https://example.com/crl'],
+            onlyContainsUserCerts: true,
+            onlySomeReasons: [X509RevocationReason.KeyCompromise, X509RevocationReason.CACompromise],
+          },
+        },
+      })
+
+      const idp = crl.issuingDistributionPoint
+      expect(idp).toBeDefined()
+      expect(idp?.fullName).toEqual(['https://example.com/crl'])
+      expect(idp?.onlyContainsUserCerts).toBe(true)
+      expect(idp?.onlyContainsCACerts).toBe(false)
+      expect(idp?.indirectCRL).toBe(false)
+      expect(idp?.onlyContainsAttributeCerts).toBe(false)
+      expect(idp?.onlySomeReasons).toEqual([X509RevocationReason.KeyCompromise, X509RevocationReason.CACompromise])
+
+      // RFC 5280 §5.2.5: the Issuing Distribution Point extension must be critical (the default).
+      expect(crl.isExtensionCritical(X509CrlExtensionIdentifier.IssuingDistributionPoint)).toBe(true)
+    })
+
+    it('throws when querying criticality of an extension that is not present', () => {
+      const crl = X509CertificateRevocationList.fromRaw(crlBytes)
+      expect(() => crl.isExtensionCritical(X509CrlExtensionIdentifier.CrlNumber)).toThrow(X509Error)
+    })
   })
 })
