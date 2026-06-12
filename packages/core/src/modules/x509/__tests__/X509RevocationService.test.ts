@@ -5,11 +5,12 @@ import type { Agent } from '../../../agent/Agent'
 import type { AgentContext } from '../../../agent/context'
 import type { InMemoryLruCache } from '../../cache'
 import type { KeyManagementApi, PublicJwk } from '../../kms'
-import { X509Certificate } from '../X509Certificate'
+import { X509Certificate, X509KeyUsage } from '../X509Certificate'
 import { X509CertificateRevocationListEntryReason } from '../X509CertificateRevocationList'
 import { X509RevocationReason } from '../X509CrlDistributionPoint'
 import { X509RevocationService } from '../X509RevocationService'
 import { X509Service } from '../X509Service'
+import type { X509CreateCertificateRevocationListOptions } from '../X509ServiceOptions'
 import { X509RevocationCheckMode, type X509RevocationCheckOptions } from '../X509ValidationOptions'
 import {
   createP256Key,
@@ -70,7 +71,14 @@ describe('X509RevocationService', () => {
   async function createLeaf(options: {
     serialNumber: string
     crlDistributionPoints?: { urls: string[]; reasons?: X509RevocationReason[]; crlIssuer?: string }
+    /** When true, the certificate is created as a CA (basicConstraints cA = true). */
+    ca?: boolean
   }): Promise<X509Certificate> {
+    const extensions = {
+      ...(options.crlDistributionPoints ? { crlDistributionPoints: options.crlDistributionPoints } : {}),
+      ...(options.ca ? { basicConstraints: { ca: true } } : {}),
+    }
+
     return X509Service.createCertificate(agentContext, {
       serialNumber: options.serialNumber,
       issuer: issuerCertificate.subject,
@@ -78,7 +86,7 @@ describe('X509RevocationService', () => {
       subject: { commonName: `Leaf ${options.serialNumber}` },
       subjectPublicKey: await createP256Key(kmsApi),
       validity: { notBefore: lastMonth, notAfter: nextMonth },
-      extensions: options.crlDistributionPoints ? { crlDistributionPoints: options.crlDistributionPoints } : undefined,
+      extensions: Object.keys(extensions).length > 0 ? extensions : undefined,
     })
   }
 
@@ -87,6 +95,7 @@ describe('X509RevocationService', () => {
     issuerKeyOverride?: PublicJwk
     nextUpdate?: Date
     thisUpdate?: Date
+    extensions?: X509CreateCertificateRevocationListOptions['extensions']
   }) {
     const crl = await X509Service.createCertificateRevocationList(agentContext, {
       authorityKey: options.issuerKeyOverride ?? issuerKey,
@@ -97,6 +106,7 @@ describe('X509RevocationService', () => {
         revocationDate: lastMonth,
         reason: e.reason,
       })),
+      extensions: options.extensions,
     })
     return crl.rawCertificateRevocationList
   }
@@ -477,5 +487,167 @@ describe('X509RevocationService', () => {
       verificationDate: new Date(twoMonthsAgo.getTime() + 24 * 60 * 60 * 1000),
     })
     expect(result.isValid).toBe(true)
+  })
+
+  describe('CRL scope and type validation', () => {
+    // These CRLs are correctly signed and verify, but their own extensions (delta indicator /
+    // issuing distribution point) mean they cannot be treated as an authoritative complete CRL for
+    // the certificate being checked. The engine must reject them rather than concluding "not
+    // revoked", and because the CRL was obtained the gap is an integrity (not soft-failable) failure.
+    it('rejects a delta CRL instead of treating it as a complete CRL', async () => {
+      const leaf = await createLeaf({ serialNumber: '4001', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(FULL_URL, await crlBytes({ entries: [], extensions: { deltaCrlIndicator: { value: 1 } } }))
+
+      const result = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.SoftFail })
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain('delta CRL')
+    })
+
+    it('rejects an indirect CRL (issuing distribution point indirectCRL)', async () => {
+      const leaf = await createLeaf({ serialNumber: '4002', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(
+        FULL_URL,
+        await crlBytes({ entries: [], extensions: { issuingDistributionPoint: { indirectCRL: true } } })
+      )
+
+      const result = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.SoftFail })
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain('indirect CRL')
+    })
+
+    it('rejects a CRL that only covers attribute certificates', async () => {
+      const leaf = await createLeaf({ serialNumber: '4003', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(
+        FULL_URL,
+        await crlBytes({ entries: [], extensions: { issuingDistributionPoint: { onlyContainsAttributeCerts: true } } })
+      )
+
+      const result = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.SoftFail })
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain('attribute certificates')
+    })
+
+    it('rejects a user-certs-only CRL when checking a CA certificate', async () => {
+      const caCertificate = await createLeaf({
+        serialNumber: '4004',
+        crlDistributionPoints: { urls: [FULL_URL] },
+        ca: true,
+      })
+      mockCrl(
+        FULL_URL,
+        await crlBytes({ entries: [], extensions: { issuingDistributionPoint: { onlyContainsUserCerts: true } } })
+      )
+
+      const result = await checkRevocation(caCertificate, issuerCertificate, { mode: X509RevocationCheckMode.SoftFail })
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain('end-entity certificates')
+    })
+
+    it('rejects a CA-certs-only CRL when checking an end-entity certificate', async () => {
+      const leaf = await createLeaf({ serialNumber: '4005', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(
+        FULL_URL,
+        await crlBytes({ entries: [], extensions: { issuingDistributionPoint: { onlyContainsCACerts: true } } })
+      )
+
+      const result = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.SoftFail })
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain('CA certificates')
+    })
+
+    it('uses an in-scope user-certs-only CRL to detect revocation of an end-entity certificate', async () => {
+      const leaf = await createLeaf({ serialNumber: '4006', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(
+        FULL_URL,
+        await crlBytes({
+          entries: [{ serialNumber: '4006', reason: X509CertificateRevocationListEntryReason.KeyCompromise }],
+          extensions: { issuingDistributionPoint: { onlyContainsUserCerts: true } },
+        })
+      )
+
+      const result = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(result.isValid).toBe(false)
+      expect(result.isRevoked).toBe(true)
+    })
+
+    it('uses an in-scope CA-certs-only CRL when checking a CA certificate', async () => {
+      const caCertificate = await createLeaf({
+        serialNumber: '4007',
+        crlDistributionPoints: { urls: [FULL_URL] },
+        ca: true,
+      })
+      mockCrl(
+        FULL_URL,
+        await crlBytes({ entries: [], extensions: { issuingDistributionPoint: { onlyContainsCACerts: true } } })
+      )
+
+      const result = await checkRevocation(caCertificate, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(result.isValid).toBe(true)
+      expect(result.isRevoked).toBe(false)
+    })
+
+    it('rejects a CRL bearing an unrecognized critical extension', async () => {
+      const leaf = await createLeaf({ serialNumber: '4008', crlDistributionPoints: { urls: [FULL_URL] } })
+      // A CRL Number marked critical violates RFC 5280 §5.2.3 (it MUST be non-critical) and is a
+      // critical extension the engine must treat as unrecognized-for-criticality, so the CRL is
+      // unusable. A failed-to-verify CRL is not cached, so both checks fetch.
+      mockCrl(
+        FULL_URL,
+        await crlBytes({ entries: [], extensions: { crlNumber: { value: 1, markAsCritical: true } } }),
+        {
+          times: 2,
+        }
+      )
+
+      const required = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(required.isValid).toBe(false)
+      expect(required.error?.message).toContain('unrecognized critical extension')
+
+      // Not soft-failable: the CRL was obtained, it just cannot be used.
+      const soft = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.SoftFail })
+      expect(soft.isValid).toBe(false)
+    })
+
+    it('fails when the CRL issuer certificate is not authorized to sign CRLs (no cRLSign)', async () => {
+      // Same key and subject as issuerCertificate, but a key usage that omits cRLSign. The CRL still
+      // verifies (signature + issuer name), but the issuer is not authorized to sign CRLs.
+      const issuerWithoutCrlSign = await X509Service.createCertificate(agentContext, {
+        serialNumber: '0b',
+        issuer: { commonName: 'Issuer CA' },
+        authorityKey: issuerKey,
+        validity: { notBefore: lastMonth, notAfter: nextMonth },
+        extensions: { basicConstraints: { ca: true }, keyUsage: { usages: [X509KeyUsage.KeyCertSign] } },
+      })
+      const leaf = await createLeaf({ serialNumber: '4009', crlDistributionPoints: { urls: [FULL_URL] } })
+      // A rejected CRL is not cached, so both checks fetch.
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }), { times: 2 })
+
+      const required = await checkRevocation(leaf, issuerWithoutCrlSign, { mode: X509RevocationCheckMode.Require })
+      expect(required.isValid).toBe(false)
+      expect(required.error?.message).toContain('cRLSign')
+
+      // An unauthorized issuer is an integrity failure, not a network failure, so SoftFail rejects it.
+      const soft = await checkRevocation(leaf, issuerWithoutCrlSign, { mode: X509RevocationCheckMode.SoftFail })
+      expect(soft.isValid).toBe(false)
+    })
+
+    it('accepts a CRL whose issuer certificate has cRLSign key usage', async () => {
+      const issuerWithCrlSign = await X509Service.createCertificate(agentContext, {
+        serialNumber: '0c',
+        issuer: { commonName: 'Issuer CA' },
+        authorityKey: issuerKey,
+        validity: { notBefore: lastMonth, notAfter: nextMonth },
+        extensions: {
+          basicConstraints: { ca: true },
+          keyUsage: { usages: [X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign] },
+        },
+      })
+      const leaf = await createLeaf({ serialNumber: '400a', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+
+      const result = await checkRevocation(leaf, issuerWithCrlSign, { mode: X509RevocationCheckMode.Require })
+      expect(result.isValid).toBe(true)
+      expect(result.isRevoked).toBe(false)
+    })
   })
 })

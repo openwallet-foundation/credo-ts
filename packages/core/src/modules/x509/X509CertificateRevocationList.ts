@@ -1,3 +1,5 @@
+import { AsnParser } from '@peculiar/asn1-schema'
+import { IssuingDistributionPoint as AsnIssuingDistributionPoint, BaseCRLNumber, CRLNumber } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 import {
   CredoWebCrypto,
@@ -10,10 +12,13 @@ import {
   createAuthorityKeyIdentifierExtension,
   createCrlEntryCertificateIssuerExtension,
   createCrlNumberExtension,
+  createDeltaCrlIndicatorExtension,
   createIssuingDistributionPointExtension,
+  X509CrlExtensionIdentifier,
   x509SignatureAlgorithmToJwa,
 } from './utils'
-import { X509Certificate } from './X509Certificate'
+import { X509Certificate, X509KeyUsage } from './X509Certificate'
+import type { X509RevocationReason } from './X509CrlDistributionPoint'
 import { X509Error } from './X509Error'
 import type { X509CreateCertificateRevocationListOptions } from './X509ServiceOptions'
 
@@ -38,6 +43,24 @@ export interface X509CertificateRevocationListEntry {
   serialNumber: string
   revocationDate: Date
   reason?: X509CertificateRevocationListEntryReason
+}
+
+/**
+ * Parsed Issuing Distribution Point CRL extension (RFC 5280 §5.2.5), describing the scope of a CRL.
+ */
+export interface X509IssuingDistributionPoint {
+  /** Distribution point name as a list of URIs (other GeneralName forms are ignored). */
+  fullName: string[]
+  /** Whether the CRL only covers end-entity certificates. */
+  onlyContainsUserCerts: boolean
+  /** Whether the CRL only covers CA certificates. */
+  onlyContainsCACerts: boolean
+  /** The revocation reasons this CRL is limited to (reasonFlags bits), if scoped. */
+  onlySomeReasons?: X509RevocationReason[]
+  /** Whether this is an indirect CRL (entries may carry a `certificateIssuer`). */
+  indirectCRL: boolean
+  /** Whether the CRL only covers attribute certificates. */
+  onlyContainsAttributeCerts: boolean
 }
 
 /**
@@ -100,8 +123,9 @@ export class X509CertificateRevocationList {
    * Supports the CRL Number, Authority Key Identifier and Issuing Distribution Point extensions, as
    * well as indirect CRLs (per-entry `certificateIssuer`). See `options.extensions` / entry options.
    *
-   * NOTE: scoped (Issuing Distribution Point) and indirect CRLs can be created here, but are not yet
-   * validated during revocation checking.
+   * NOTE: indirect CRLs and CRLs whose Issuing Distribution Point scope does not cover the
+   * certificate being checked are rejected during revocation checking (delta CRLs are likewise not
+   * processed), so such CRLs are not treated as authoritative proof that a certificate is unrevoked.
    */
   public static async create(
     options: X509CreateCertificateRevocationListOptions,
@@ -133,6 +157,7 @@ export class X509CertificateRevocationList {
 
     const extensions: Array<x509.Extension | undefined> = [
       createCrlNumberExtension(options.extensions?.crlNumber),
+      createDeltaCrlIndicatorExtension(options.extensions?.deltaCrlIndicator),
       createAuthorityKeyIdentifierExtension(options.extensions?.authorityKeyIdentifier, {
         publicJwk: options.authorityKey,
       }),
@@ -197,6 +222,104 @@ export class X509CertificateRevocationList {
     return date < this.thisUpdate
   }
 
+  private getMatchingExtensions<T = { critical: boolean }>(objectIdentifier: string): Array<T> {
+    return this.crl.extensions.filter((e) => e.type === objectIdentifier) as Array<T>
+  }
+
+  /**
+   * CRL Number (RFC 5280 §5.2.3): the monotonically increasing sequence number of this CRL.
+   */
+  public get crlNumber(): number | undefined {
+    const extensions = this.getMatchingExtensions<x509.Extension>(X509CrlExtensionIdentifier.CrlNumber)
+
+    if (extensions.length > 1) {
+      throw new X509Error('Multiple CRL Number extensions are not allowed')
+    }
+
+    const extension = extensions[0]
+    if (!extension) return undefined
+
+    return AsnParser.parse(extension.value, CRLNumber).value
+  }
+
+  /**
+   * Delta CRL Indicator (RFC 5280 §5.2.4): when present, this CRL is a delta CRL and the value is
+   * the CRL Number of the base (complete) CRL it is relative to. `undefined` for a complete CRL.
+   */
+  public get deltaCrlIndicator(): number | undefined {
+    const extensions = this.getMatchingExtensions<x509.Extension>(X509CrlExtensionIdentifier.DeltaCrlIndicator)
+
+    if (extensions.length > 1) {
+      throw new X509Error('Multiple Delta CRL Indicator extensions are not allowed')
+    }
+
+    const extension = extensions[0]
+    if (!extension) return undefined
+
+    return AsnParser.parse(extension.value, BaseCRLNumber).value
+  }
+
+  /**
+   * Issuing Distribution Point (RFC 5280 §5.2.5), describing the scope of this CRL.
+   *
+   * NOTE: only the URI form of the distribution point name is surfaced; other GeneralName forms and
+   * `nameRelativeToCRLIssuer` are ignored.
+   */
+  public get issuingDistributionPoint(): X509IssuingDistributionPoint | undefined {
+    const extensions = this.getMatchingExtensions<x509.Extension>(X509CrlExtensionIdentifier.IssuingDistributionPoint)
+
+    if (extensions.length > 1) {
+      throw new X509Error('Multiple Issuing Distribution Point extensions are not allowed')
+    }
+
+    const extension = extensions[0]
+    if (!extension) return undefined
+
+    const idp = AsnParser.parse(extension.value, AsnIssuingDistributionPoint)
+
+    const fullName: string[] = []
+    if (idp.distributionPoint?.fullName) {
+      for (const generalName of idp.distributionPoint.fullName) {
+        if (generalName.uniformResourceIdentifier) {
+          fullName.push(generalName.uniformResourceIdentifier)
+        }
+      }
+    }
+
+    let onlySomeReasons: X509RevocationReason[] | undefined
+    if (idp.onlySomeReasons) {
+      // The ASN.1 BIT STRING uses bit `i` for revocation reason code `i` (e.g. keyCompromise = bit 1).
+      const reasonBits = idp.onlySomeReasons.toNumber()
+      onlySomeReasons = []
+      for (let i = 0; i <= 8; i++) {
+        if ((reasonBits & (1 << i)) !== 0) {
+          onlySomeReasons.push(i)
+        }
+      }
+    }
+
+    return {
+      fullName,
+      onlyContainsUserCerts: idp.onlyContainsUserCerts,
+      onlyContainsCACerts: idp.onlyContainsCACerts,
+      onlySomeReasons,
+      indirectCRL: idp.indirectCRL,
+      onlyContainsAttributeCerts: idp.onlyContainsAttributeCerts,
+    }
+  }
+
+  /**
+   * Whether the extension with the given id is marked critical. Throws if the extension is absent.
+   */
+  public isExtensionCritical(id: X509CrlExtensionIdentifier | string): boolean {
+    const extensions = this.getMatchingExtensions(id)
+    if (extensions.length === 0) {
+      throw new X509Error(`extension with id '${id}' is not found`)
+    }
+
+    return !!extensions[0].critical
+  }
+
   /**
    * Verify this CRL with the issuer's certificate.
    */
@@ -244,7 +367,20 @@ export class X509CertificateRevocationList {
       }
     }
 
-    // 3. Check the CRL validity window.
+    // 3. RFC 5280 §6.3.3(f): the issuer certificate must be authorized to sign CRLs. Key Usage is
+    // optional; when present, it MUST include the cRLSign bit. An empty result means the extension is
+    // absent, so all usages are permitted (a well-formed Key Usage always asserts at least one bit).
+    const issuerKeyUsage = issuerCertificate.keyUsage
+    if (issuerKeyUsage && issuerKeyUsage.length > 0 && !issuerKeyUsage.includes(X509KeyUsage.CrlSign)) {
+      return {
+        isValid: false,
+        error: new X509Error(
+          `CRL issuer '${issuerCertificate.subject}' is not authorized to sign CRLs (key usage does not include cRLSign)`
+        ),
+      }
+    }
+
+    // 4. Check the CRL validity window.
     if (this.isNotYetValid(now)) {
       return {
         isValid: false,
