@@ -1,4 +1,6 @@
+export * from './anoncreds-vc1-bridge'
 export * from './constants'
+export * from './data-integrity-v1'
 export * from './jsonld'
 export * from './jwt-vc'
 export * from './linked-data-proofs'

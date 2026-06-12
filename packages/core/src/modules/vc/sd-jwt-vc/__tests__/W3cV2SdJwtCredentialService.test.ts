@@ -20,9 +20,16 @@ import { DidJwk, DidKey, DidRepository, DidsApi, DidsModuleConfig } from '../../
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
 import { X509ModuleConfig } from '../../../x509/X509ModuleConfig'
 import { CREDENTIALS_CONTEXT_V2_URL } from '../../constants'
-import { ClaimFormat, W3cV2Credential, W3cV2EnvelopedVerifiableCredential, W3cV2Presentation } from '../../models'
+import {
+  ClaimFormat,
+  W3cV2Credential,
+  W3cV2CredentialStatus,
+  W3cV2EnvelopedVerifiableCredential,
+  W3cV2Presentation,
+} from '../../models'
 import { W3cV2SdJwtCredentialService } from '../W3cV2SdJwtCredentialService'
 import { W3cV2SdJwtVerifiableCredential } from '../W3cV2SdJwtVerifiableCredential'
+import { W3cV2SdJwtVerifiablePresentation } from '../W3cV2SdJwtVerifiablePresentation'
 import {
   CredoEs256DidJwkJwtVc,
   CredoEs256DidJwkJwtVcIssuerSeed,
@@ -75,6 +82,7 @@ Date.prototype.getTime = vi.fn(function () {
 describe('W3cV2SdJwtCredentialService', () => {
   let issuerDidJwk: DidJwk
   let holderDidKey: DidKey
+  let secondHolderDidKey: DidKey
 
   beforeAll(async () => {
     const issuerPrivateJwk = transformSeedToPrivateJwk({
@@ -119,6 +127,29 @@ describe('W3cV2SdJwtCredentialService', () => {
         {
           didDocumentRelativeKeyId: `#${holderDidKey.publicJwk.fingerprint}`,
           kmsKeyId: importedHolderKey.keyId,
+        },
+      ],
+    })
+
+    const secondHolderPrivateJwk = transformSeedToPrivateJwk({
+      type: {
+        kty: 'OKP',
+        crv: 'Ed25519',
+      },
+      seed: TypedArrayEncoder.fromUtf8String('00000000000000000000000000000My2'),
+    }).privateJwk
+
+    const importedSecondHolderKey = await kms.importKey({
+      privateJwk: secondHolderPrivateJwk,
+    })
+
+    secondHolderDidKey = new DidKey(PublicJwk.fromPublicJwk(importedSecondHolderKey.publicJwk))
+    await dids.import({
+      did: secondHolderDidKey.did,
+      keys: [
+        {
+          didDocumentRelativeKeyId: `#${secondHolderDidKey.publicJwk.fingerprint}`,
+          kmsKeyId: importedSecondHolderKey.keyId,
         },
       ],
     })
@@ -240,8 +271,14 @@ describe('W3cV2SdJwtCredentialService', () => {
           dataModel: {
             isValid: true,
           },
+          validityPeriod: {
+            isValid: true,
+          },
           // This validates whether the signature is valid
           signature: {
+            isValid: true,
+          },
+          credentialStatus: {
             isValid: true,
           },
           // This validates whether the issuer is also the signer of the credential
@@ -319,6 +356,108 @@ describe('W3cV2SdJwtCredentialService', () => {
 
       expect(result.validations.dataModel?.error?.message).toContain('JWT expired at 1577836800')
     })
+
+    test('returns invalid result when credentialStatus is present and verifyCredentialStatus is enabled', async () => {
+      const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+
+      jwtVc.resolvedCredential.credentialStatus = new W3cV2CredentialStatus({
+        id: 'https://example.com/status/1',
+        type: 'StatusList2021Entry',
+      })
+
+      const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
+        credential: jwtVc,
+        verifyCredentialStatus: true,
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.validations.credentialStatus).toMatchObject({
+        isValid: false,
+      })
+      expect(result.validations.credentialStatus?.error?.message).toContain(
+        'Verifying credential status is not supported'
+      )
+    })
+
+    test('returns invalid result when credential is not yet valid based on validFrom', async () => {
+      const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+
+      jwtVc.resolvedCredential.validFrom = '2999-01-01T00:00:00Z'
+
+      const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
+        credential: jwtVc,
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.validations.validityPeriod).toMatchObject({
+        isValid: false,
+      })
+      expect(result.validations.validityPeriod?.error?.message).toContain(
+        'Credential is not valid yet based on validFrom'
+      )
+    })
+
+    test('logs SHOULD warning for JOSE header iss conflict with payload iss', async () => {
+      const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+      const warnSpy = vi.spyOn(agentContext.config.logger, 'warn')
+
+      jwtVc.sdJwt.prettyClaims.iss = jwtVc.resolvedCredential.issuerId
+      jwtVc.sdJwt.header.iss = 'did:example:different-header-iss'
+
+      await w3cV2JwtCredentialService.verifyCredential(agentContext, {
+        credential: jwtVc,
+      })
+
+      expect(warnSpy).toHaveBeenCalledWith('VC-JOSE-COSE SHOULD warning: JOSE header iss conflicts with payload iss', {
+        format: 'vc+sd-jwt',
+        headerIss: 'did:example:different-header-iss',
+        payloadIss: jwtVc.resolvedCredential.issuerId,
+      })
+
+      warnSpy.mockRestore()
+    })
+
+    test('logs SHOULD warning for jti and credential id conflict', async () => {
+      const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+      const warnSpy = vi.spyOn(agentContext.config.logger, 'warn')
+
+      jwtVc.resolvedCredential.id = 'urn:example:credential-id'
+      jwtVc.sdJwt.prettyClaims.jti = 'urn:example:different-jti'
+
+      await w3cV2JwtCredentialService.verifyCredential(agentContext, {
+        credential: jwtVc,
+      })
+
+      expect(warnSpy).toHaveBeenCalledWith('VC-JOSE-COSE SHOULD warning: jti claim conflicts with credential id', {
+        format: 'vc+sd-jwt',
+        jti: 'urn:example:different-jti',
+        credentialId: 'urn:example:credential-id',
+      })
+
+      warnSpy.mockRestore()
+    })
+
+    test('logs SHOULD warning for sub mismatch with credentialSubject.id', async () => {
+      const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+      const warnSpy = vi.spyOn(agentContext.config.logger, 'warn')
+
+      jwtVc.sdJwt.prettyClaims.sub = 'did:example:not-a-subject'
+
+      await w3cV2JwtCredentialService.verifyCredential(agentContext, {
+        credential: jwtVc,
+      })
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        'VC-JOSE-COSE SHOULD warning: sub claim does not match any credentialSubject.id',
+        {
+          format: 'vc+sd-jwt',
+          sub: 'did:example:not-a-subject',
+          credentialSubjectIds: jwtVc.resolvedCredential.credentialSubjectIds,
+        }
+      )
+
+      warnSpy.mockRestore()
+    })
   })
 
   describe('signPresentation', () => {
@@ -345,6 +484,155 @@ describe('W3cV2SdJwtCredentialService', () => {
 
       expect(signedJwtVp.encoded).toEqual(CredoEs256DidKeyJwtVp)
     })
+
+    test('signs an SD-JWT vp with multiple enveloped credentials', async () => {
+      const parsedSdJwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+
+      const envelopedCredential = W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(parsedSdJwtVc)
+
+      const presentation = new W3cV2Presentation({
+        context: [CREDENTIALS_CONTEXT_V2_URL],
+        type: ['VerifiablePresentation'],
+        verifiableCredential: [envelopedCredential, envelopedCredential],
+        id: 'urn:multi-sd-jwt-vp',
+        holder: holderDidKey.did,
+      })
+
+      const signedJwtVp = await w3cV2JwtCredentialService.signPresentation(agentContext, {
+        presentation,
+        challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
+        domain: 'example.com',
+        format: ClaimFormat.SdJwtW3cVp,
+      })
+
+      const decodedCredentials = Array.isArray(signedJwtVp.resolvedPresentation.verifiableCredential)
+        ? signedJwtVp.resolvedPresentation.verifiableCredential
+        : [signedJwtVp.resolvedPresentation.verifiableCredential]
+
+      expect(decodedCredentials).toHaveLength(2)
+    })
+
+    test('signs a holder-driven SD-JWT vp without enclosed credentials', async () => {
+      const presentation = new W3cV2Presentation({
+        context: [CREDENTIALS_CONTEXT_V2_URL],
+        type: ['VerifiablePresentation'],
+        id: 'urn:holder-only-sd-jwt-vp',
+        holder: holderDidKey.did,
+      })
+
+      await expect(
+        w3cV2JwtCredentialService.signPresentation(agentContext, {
+          presentation,
+          challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
+          domain: 'example.com',
+          format: ClaimFormat.SdJwtW3cVp,
+        })
+      ).resolves.toBeInstanceOf(W3cV2SdJwtVerifiablePresentation)
+    })
+
+    test('signs when included credentials are missing holder binding cnf', async () => {
+      const credential = JsonTransformer.fromJSON(Ed256DidJwkJwtVcUnsigned, W3cV2Credential)
+
+      const credentialWithoutCnfA = await w3cV2JwtCredentialService.signCredential(agentContext, {
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        format: ClaimFormat.SdJwtW3cVc,
+        verificationMethod: issuerDidJwk.verificationMethodId,
+        credential,
+        disclosureFrame: {
+          credentialSubject: {
+            _sd: ['achievement'],
+          },
+        },
+      })
+
+      const credentialWithoutCnfB = await w3cV2JwtCredentialService.signCredential(agentContext, {
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        format: ClaimFormat.SdJwtW3cVc,
+        verificationMethod: issuerDidJwk.verificationMethodId,
+        credential,
+        disclosureFrame: {
+          credentialSubject: {
+            _sd: ['achievement'],
+          },
+        },
+      })
+
+      const presentation = new W3cV2Presentation({
+        context: [CREDENTIALS_CONTEXT_V2_URL],
+        type: ['VerifiablePresentation'],
+        verifiableCredential: [
+          W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credentialWithoutCnfA),
+          W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credentialWithoutCnfB),
+        ],
+        id: 'urn:missing-cnf-sd-jwt-vp',
+        holder: holderDidKey.did,
+      })
+
+      await expect(
+        w3cV2JwtCredentialService.signPresentation(agentContext, {
+          presentation,
+          challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
+          domain: 'example.com',
+          format: ClaimFormat.SdJwtW3cVp,
+        })
+      ).resolves.toBeInstanceOf(W3cV2SdJwtVerifiablePresentation)
+    })
+
+    test('signs when included credentials use different holder binding keys', async () => {
+      const credential = JsonTransformer.fromJSON(Ed256DidJwkJwtVcUnsigned, W3cV2Credential)
+
+      const credentialForFirstHolder = await w3cV2JwtCredentialService.signCredential(agentContext, {
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        format: ClaimFormat.SdJwtW3cVc,
+        verificationMethod: issuerDidJwk.verificationMethodId,
+        credential,
+        holder: {
+          method: 'did',
+          didUrl: `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`,
+        },
+        disclosureFrame: {
+          credentialSubject: {
+            _sd: ['achievement'],
+          },
+        },
+      })
+
+      const credentialForSecondHolder = await w3cV2JwtCredentialService.signCredential(agentContext, {
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        format: ClaimFormat.SdJwtW3cVc,
+        verificationMethod: issuerDidJwk.verificationMethodId,
+        credential,
+        holder: {
+          method: 'did',
+          didUrl: `${secondHolderDidKey.did}#${secondHolderDidKey.publicJwk.fingerprint}`,
+        },
+        disclosureFrame: {
+          credentialSubject: {
+            _sd: ['achievement'],
+          },
+        },
+      })
+
+      const presentation = new W3cV2Presentation({
+        context: [CREDENTIALS_CONTEXT_V2_URL],
+        type: ['VerifiablePresentation'],
+        verifiableCredential: [
+          W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credentialForFirstHolder),
+          W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(credentialForSecondHolder),
+        ],
+        id: 'urn:mismatched-holder-sd-jwt-vp',
+        holder: holderDidKey.did,
+      })
+
+      await expect(
+        w3cV2JwtCredentialService.signPresentation(agentContext, {
+          presentation,
+          challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
+          domain: 'example.com',
+          format: ClaimFormat.SdJwtW3cVp,
+        })
+      ).resolves.toBeInstanceOf(W3cV2SdJwtVerifiablePresentation)
+    })
   })
 
   describe('verifyPresentation', () => {
@@ -357,37 +645,76 @@ describe('W3cV2SdJwtCredentialService', () => {
 
       expect(result).toEqual({
         isValid: true,
-        validations: {
-          dataModel: {
-            isValid: true,
-          },
-          presentationSignature: {
-            isValid: true,
-          },
-          holderIsSigner: {
-            isValid: true,
-          },
-          credentials: [
-            {
+        presentation: {
+          isValid: true,
+          validations: {
+            dataModel: {
               isValid: true,
-              validations: {
-                dataModel: {
-                  isValid: true,
-                },
-                signature: {
-                  isValid: true,
-                },
-                issuerIsSigner: {
-                  isValid: true,
-                },
-                credentialSubjectAuthentication: {
-                  isValid: true,
-                },
-              },
             },
-          ],
+            presentationSignature: {
+              isValid: true,
+            },
+            holderIsSigner: {
+              isValid: true,
+            },
+          },
         },
+        credentialEntries: [],
       })
+    })
+
+    test('fails verification when challenge does not match nonce', async () => {
+      const result = await w3cV2JwtCredentialService.verifyPresentation(agentContext, {
+        presentation: CredoEs256DidKeyJwtVp,
+        challenge: 'mismatched-challenge',
+        domain: 'example.com',
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.presentation.isValid).toBe(false)
+      expect(result.presentation.validations.dataModel?.isValid).toBe(false)
+      expect(result.presentation.validations.dataModel?.error).toBeInstanceOf(CredoError)
+      expect(result.presentation.validations.dataModel?.error?.message).toContain(
+        "JWT payload 'nonce' does not match challenge"
+      )
+    })
+
+    test('fails verification when requested domain is not in aud', async () => {
+      const result = await w3cV2JwtCredentialService.verifyPresentation(agentContext, {
+        presentation: CredoEs256DidKeyJwtVp,
+        challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
+        domain: 'unexpected.example.com',
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.presentation.isValid).toBe(false)
+      expect(result.presentation.validations.dataModel?.isValid).toBe(false)
+      expect(result.presentation.validations.dataModel?.error).toBeInstanceOf(CredoError)
+      expect(result.presentation.validations.dataModel?.error?.message).toContain(
+        "JWT payload 'aud' does not include domain 'unexpected.example.com'"
+      )
+    })
+
+    test('logs SHOULD warning for presentation jti and id conflict', async () => {
+      const jwtVp = W3cV2SdJwtVerifiablePresentation.fromCompact(CredoEs256DidKeyJwtVp)
+      const warnSpy = vi.spyOn(agentContext.config.logger, 'warn')
+
+      jwtVp.resolvedPresentation.id = 'urn:example:vp-id'
+      jwtVp.sdJwt.prettyClaims.jti = 'urn:example:different-vp-jti'
+
+      await w3cV2JwtCredentialService.verifyPresentation(agentContext, {
+        presentation: jwtVp,
+        challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
+        domain: 'example.com',
+      })
+
+      expect(warnSpy).toHaveBeenCalledWith('VC-JOSE-COSE SHOULD warning: jti claim conflicts with presentation id', {
+        format: 'vp+sd-jwt',
+        jti: 'urn:example:different-vp-jti',
+        presentationId: 'urn:example:vp-id',
+      })
+
+      warnSpy.mockRestore()
     })
   })
 })
