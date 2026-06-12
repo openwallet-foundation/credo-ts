@@ -1,6 +1,7 @@
 import { AsnConvert } from '@peculiar/asn1-schema'
 import {
   Name as AsnName,
+  BaseCRLNumber,
   CertificateIssuer,
   CRLNumber,
   DistributionPoint,
@@ -9,6 +10,7 @@ import {
   IssuingDistributionPoint,
   id_ce_certificateIssuer,
   id_ce_cRLNumber,
+  id_ce_deltaCRLIndicator,
   id_ce_issuingDistributionPoint,
   Reason,
 } from '@peculiar/asn1-x509'
@@ -181,6 +183,19 @@ export const createCrlNumberExtension = (options: X509CertificateRevocationListE
   const value = AsnConvert.serialize(new CRLNumber(options.value))
 
   return new Extension(id_ce_cRLNumber, options.markAsCritical ?? false, value)
+}
+
+export const createDeltaCrlIndicatorExtension = (
+  options: X509CertificateRevocationListExtensionsOptions['deltaCrlIndicator']
+) => {
+  if (!options) return
+
+  // There is no high-level Delta CRL Indicator extension in @peculiar/x509, so build it from the
+  // ASN.1 type. The value is the CRL Number of the base (complete) CRL this delta CRL is relative to.
+  const value = AsnConvert.serialize(new BaseCRLNumber(options.value))
+
+  // RFC 5280 §5.2.4: the delta CRL indicator extension MUST be critical.
+  return new Extension(id_ce_deltaCRLIndicator, options.markAsCritical ?? true, value)
 }
 
 export const createIssuingDistributionPointExtension = (

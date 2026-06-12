@@ -215,6 +215,21 @@ describe('X509CertificateRevocationList', () => {
       expect(crl.isExtensionCritical(X509CrlExtensionIdentifier.CrlNumber)).toBe(false)
     })
 
+    it('exposes the Delta CRL Indicator extension', async () => {
+      const crl = await X509Service.createCertificateRevocationList(agentContext, {
+        authorityKey: issuerKey,
+        issuer: issuerCertificate.subject,
+        validity: { thisUpdate: lastMonth, nextUpdate: nextMonth },
+        extensions: {
+          deltaCrlIndicator: { value: 7 },
+        },
+      })
+
+      expect(crl.deltaCrlIndicator).toBe(7)
+      // RFC 5280 §5.2.4: the Delta CRL Indicator extension must be critical (the default).
+      expect(crl.isExtensionCritical(X509CrlExtensionIdentifier.DeltaCrlIndicator)).toBe(true)
+    })
+
     it('exposes the Issuing Distribution Point extension', async () => {
       const crl = await X509Service.createCertificateRevocationList(agentContext, {
         authorityKey: issuerKey,

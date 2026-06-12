@@ -12,6 +12,7 @@ import {
   createAuthorityKeyIdentifierExtension,
   createCrlEntryCertificateIssuerExtension,
   createCrlNumberExtension,
+  createDeltaCrlIndicatorExtension,
   createIssuingDistributionPointExtension,
   X509CrlExtensionIdentifier,
   x509SignatureAlgorithmToJwa,
@@ -122,8 +123,9 @@ export class X509CertificateRevocationList {
    * Supports the CRL Number, Authority Key Identifier and Issuing Distribution Point extensions, as
    * well as indirect CRLs (per-entry `certificateIssuer`). See `options.extensions` / entry options.
    *
-   * NOTE: scoped (Issuing Distribution Point) and indirect CRLs can be created here, but are not yet
-   * validated during revocation checking.
+   * NOTE: indirect CRLs and CRLs whose Issuing Distribution Point scope does not cover the
+   * certificate being checked are rejected during revocation checking (delta CRLs are likewise not
+   * processed), so such CRLs are not treated as authoritative proof that a certificate is unrevoked.
    */
   public static async create(
     options: X509CreateCertificateRevocationListOptions,
@@ -155,6 +157,7 @@ export class X509CertificateRevocationList {
 
     const extensions: Array<x509.Extension | undefined> = [
       createCrlNumberExtension(options.extensions?.crlNumber),
+      createDeltaCrlIndicatorExtension(options.extensions?.deltaCrlIndicator),
       createAuthorityKeyIdentifierExtension(options.extensions?.authorityKeyIdentifier, {
         publicJwk: options.authorityKey,
       }),
