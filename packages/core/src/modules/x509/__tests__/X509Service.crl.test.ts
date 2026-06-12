@@ -10,7 +10,10 @@ import type { InMemoryLruCache } from '../../cache'
 import type { KeyManagementApi, PublicJwk } from '../../kms'
 import { X509Api } from '../X509Api'
 import { X509Certificate } from '../X509Certificate'
-import { X509CertificateRevocationListEntryReason } from '../X509CertificateRevocationList'
+import {
+  X509CertificateRevocationList,
+  X509CertificateRevocationListEntryReason,
+} from '../X509CertificateRevocationList'
 import { X509RevocationReason } from '../X509CrlDistributionPoint'
 import { X509Error } from '../X509Error'
 import { X509RevocationService } from '../X509RevocationService'
@@ -229,9 +232,7 @@ describe('X509RevocationService CRL API', () => {
     it('parses a base64-encoded CRL', async () => {
       const base64 = TypedArrayEncoder.toBase64(await crlBytes({ entries: [{ serialNumber: 'abc' }] }))
 
-      const crl = X509RevocationService.parseCertificateRevocationList({
-        encodedCertificateRevocationList: base64,
-      })
+      const crl = X509CertificateRevocationList.fromEncoded(base64)
 
       expect(crl.issuer).toBe(issuerCertificate.subject)
       expect(crl.revokedCount).toBe(1)
@@ -239,21 +240,14 @@ describe('X509RevocationService CRL API', () => {
 
     it('round-trips a PEM-encoded CRL', async () => {
       const base64 = TypedArrayEncoder.toBase64(await crlBytes({ entries: [] }))
-      const pem = X509RevocationService.parseCertificateRevocationList({
-        encodedCertificateRevocationList: base64,
-      }).toString('pem')
-
-      const crl = X509RevocationService.parseCertificateRevocationList({ encodedCertificateRevocationList: pem })
+      const pem = X509CertificateRevocationList.fromEncoded(base64).toString('pem')
+      const crl = X509CertificateRevocationList.fromEncoded(pem)
 
       expect(crl.issuer).toBe(issuerCertificate.subject)
     })
 
     it('throws on invalid input', () => {
-      expect(() =>
-        X509RevocationService.parseCertificateRevocationList({
-          encodedCertificateRevocationList: 'not-a-crl',
-        })
-      ).toThrow(X509Error)
+      expect(() => X509CertificateRevocationList.fromEncoded('not-a-crl')).toThrow(X509Error)
     })
   })
 
