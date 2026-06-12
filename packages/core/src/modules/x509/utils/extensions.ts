@@ -1,6 +1,7 @@
 import { AsnConvert } from '@peculiar/asn1-schema'
 import {
   Name as AsnName,
+  BaseCRLNumber,
   CertificateIssuer,
   CRLNumber,
   DistributionPoint,
@@ -9,6 +10,7 @@ import {
   IssuingDistributionPoint,
   id_ce_certificateIssuer,
   id_ce_cRLNumber,
+  id_ce_deltaCRLIndicator,
   id_ce_issuingDistributionPoint,
   Reason,
 } from '@peculiar/asn1-x509'
@@ -59,6 +61,30 @@ export enum X509ExtensionIdentifier {
   NameConstraints = '2.5.29.30',
   /** Policy Constraints (RFC 5280 Section 4.2.1.11) */
   PolicyConstraints = '2.5.29.36',
+}
+
+/**
+ * X.509 CRL extension OIDs defined in RFC 5280 Section 5.2.
+ *
+ * These are the extensions that may appear on a CRL itself. They are distinct from the per-entry
+ * CRL extensions of RFC 5280 Section 5.3 (such as `reasonCode`, `invalidityDate` and
+ * `certificateIssuer`), which are carried on individual revoked entries rather than the CRL.
+ */
+export enum X509CrlExtensionIdentifier {
+  /** Authority Key Identifier (RFC 5280 Section 5.2.1) */
+  AuthorityKeyIdentifier = '2.5.29.35',
+  /** Issuer Alternative Name (RFC 5280 Section 5.2.2) */
+  IssuerAltName = '2.5.29.18',
+  /** CRL Number (RFC 5280 Section 5.2.3) */
+  CrlNumber = '2.5.29.20',
+  /** Delta CRL Indicator (RFC 5280 Section 5.2.4) */
+  DeltaCrlIndicator = '2.5.29.27',
+  /** Issuing Distribution Point (RFC 5280 Section 5.2.5) */
+  IssuingDistributionPoint = '2.5.29.28',
+  /** Freshest CRL, a.k.a. Delta CRL Distribution Point (RFC 5280 Section 5.2.6) */
+  FreshestCrl = '2.5.29.46',
+  /** Authority Information Access (RFC 5280 Section 5.2.7) */
+  AuthorityInformationAccess = '1.3.6.1.5.5.7.1.1',
 }
 
 export const createSubjectKeyIdentifierExtension = (
@@ -157,6 +183,19 @@ export const createCrlNumberExtension = (options: X509CertificateRevocationListE
   const value = AsnConvert.serialize(new CRLNumber(options.value))
 
   return new Extension(id_ce_cRLNumber, options.markAsCritical ?? false, value)
+}
+
+export const createDeltaCrlIndicatorExtension = (
+  options: X509CertificateRevocationListExtensionsOptions['deltaCrlIndicator']
+) => {
+  if (!options) return
+
+  // There is no high-level Delta CRL Indicator extension in @peculiar/x509, so build it from the
+  // ASN.1 type. The value is the CRL Number of the base (complete) CRL this delta CRL is relative to.
+  const value = AsnConvert.serialize(new BaseCRLNumber(options.value))
+
+  // RFC 5280 §5.2.4: the delta CRL indicator extension MUST be critical.
+  return new Extension(id_ce_deltaCRLIndicator, options.markAsCritical ?? true, value)
 }
 
 export const createIssuingDistributionPointExtension = (

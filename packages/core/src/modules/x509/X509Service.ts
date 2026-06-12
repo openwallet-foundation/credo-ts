@@ -5,7 +5,7 @@ import { injectable } from '../../plugins'
 import { CertificateSigningRequest } from './CertificateSigningRequest'
 import { X509ExtensionIdentifier } from './utils'
 import { validateCriticalExtensionsForChain } from './utils/criticalExtensions'
-import { X509Certificate } from './X509Certificate'
+import { X509Certificate, X509KeyUsage } from './X509Certificate'
 import { X509CertificateRevocationList } from './X509CertificateRevocationList'
 import { X509Error, X509ValidationError } from './X509Error'
 import { X509ModuleConfig } from './X509ModuleConfig'
@@ -42,9 +42,20 @@ export class X509Service {
    * Validation checks performed:
    *   - Chain validation (structure, signatures, validity, trust anchor)
    *   - Basic constraints are valid for CA certificates
+   *   - Key usage of issuing CA certificates includes `keyCertSign` (when the extension is present)
    *   - Path length constraints are satisfied
    *   - All critical extensions are understood and valid
    *   - Certificates have not been revoked (CRL) - if enabled
+   *
+   * Limitations (RFC 5280 features not enforced here):
+   *   - Revocation is checked via CRL only; OCSP is not supported.
+   *   - Name Constraints (§4.2.1.10), Policy Constraints (§4.2.1.11), and Certificate Policies
+   *     (§4.2.1.4) are not enforced. A certificate carrying one of these as a *critical* extension is
+   *     rejected (unrecognized critical extension); a non-critical occurrence is ignored.
+   *   - Extended Key Usage is parsed but not enforced.
+   *   - Key Usage is only enforced when the extension is present (it is optional; absent means
+   *     unrestricted).
+   *   - Subject/Issuer Alternative Names only surface the URI and DNS GeneralName forms.
    */
   public static async validateCertificateChain(
     agentContext: AgentContext,
@@ -172,6 +183,16 @@ export class X509Service {
       )
     }
 
+    // Phase 2.5: Key usage validation for issuing CA certificates
+    validations.keyUsage = X509Service.validateKeyUsageForChain(parsedChain)
+    if (!validations.keyUsage.isValid) {
+      throw new X509ValidationError(validations.keyUsage.error?.message ?? 'Key usage validation failed', {
+        isValid: false,
+        validations,
+        error: validations.keyUsage.error,
+      })
+    }
+
     // Phase 3: Path length constraint validation
     validations.pathLength = X509Service.validatePathLengthConstraints(parsedChain)
     if (!validations.pathLength.isValid) {
@@ -257,6 +278,16 @@ export class X509Service {
     return csr
   }
 
+  /**
+   * Creates and signs a X.509 Certificate Revocation List (CRL).
+   *
+   * Supported CRL extensions: CRL Number (§5.2.3), Delta CRL Indicator (§5.2.4), Authority Key
+   * Identifier (§5.2.1) and Issuing Distribution Point (§5.2.5), plus the per-entry
+   * `certificateIssuer` extension (§5.3.3) for indirect CRLs. Other CRL extensions are not produced.
+   *
+   * Note: issuer/subject names built from a structured object only support the `CN`, `C`, `OU` and
+   * `ST` distinguished-name attributes; pass a raw DN string to use any other attribute.
+   */
   public static async createCertificateRevocationList(
     agentContext: AgentContext,
     options: X509CreateCertificateRevocationListOptions
@@ -285,7 +316,9 @@ export class X509Service {
   ): X509CertificateSingleValidationResult {
     let currentPathLength = 0
 
-    // Iterate from trust anchor (end) to leaf (start)
+    // The chain is ordered root-first (index 0) to leaf (last index). Iterate from the leaf upward,
+    // counting the intermediate CAs encountered so each CA's pathLenConstraint can be checked against
+    // the number of CAs that follow it toward the leaf.
     for (let i = certificateChain.length - 1; i >= 0; i--) {
       const cert = certificateChain[i]
       const peculiarCert = new x509.X509Certificate(cert.rawCertificate)
@@ -358,6 +391,38 @@ export class X509Service {
           error: new X509Error(
             `Certificate '${cert.subject}' is used as a CA but does not have basicConstraints with ca=true`
           ),
+        }
+      }
+    }
+
+    return { isValid: true }
+  }
+
+  /**
+   * Validates the Key Usage extension of the issuing CA certificates in the chain.
+   * Per RFC 5280 §4.2.1.3 / §6.1.4(n): a certificate used to sign other certificates MUST, when it
+   * asserts a Key Usage extension, include the `keyCertSign` bit.
+   *
+   * Key Usage is optional in a certificate; when the extension is absent, all usages are permitted
+   * and no constraint is enforced. Only the issuing certificates (every certificate except the leaf)
+   * are checked.
+   */
+  private static validateKeyUsageForChain(certificateChain: X509Certificate[]): X509CertificateSingleValidationResult {
+    // Every certificate except the last one (the leaf/end-entity) issues the next certificate in the
+    // chain, mirroring the set checked by validateBasicConstraintsForChain.
+    for (let i = 0; i < certificateChain.length - 1; i++) {
+      const cert = certificateChain[i]
+      const keyUsage = cert.keyUsage
+
+      // An empty result means no Key Usage extension is present, so the key is unrestricted and there
+      // is nothing to enforce (a well-formed Key Usage extension always asserts at least one bit).
+      if (keyUsage && keyUsage.length > 0 && !keyUsage.includes(X509KeyUsage.KeyCertSign)) {
+        return {
+          isValid: false,
+          error: new X509Error(
+            `Certificate '${cert.subject}' is used as a CA but its key usage does not include keyCertSign`
+          ),
+          details: 'Missing keyCertSign key usage',
         }
       }
     }
