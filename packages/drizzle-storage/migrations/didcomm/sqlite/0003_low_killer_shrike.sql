@@ -1,0 +1,1 @@
+ALTER TABLE `DidcommConnection` ADD `didcomm_version` text;
