@@ -189,6 +189,22 @@ export class X509Certificate {
   }
 
   /**
+   * Whether this certificate is a certificate authority (the Basic Constraints `cA` flag is set).
+   * Returns `false` when the Basic Constraints extension is absent (e.g. an end-entity certificate).
+   */
+  public get isCertificateAuthority(): boolean {
+    const basicConstraints = this.getMatchingExtensions<x509.BasicConstraintsExtension>(
+      X509ExtensionIdentifier.BasicConstraints
+    )
+
+    if (basicConstraints && basicConstraints.length > 1) {
+      throw new X509Error('Multiple Basic Constraints extensions are not allowed')
+    }
+
+    return basicConstraints?.[0]?.ca ?? false
+  }
+
+  /**
    * Get CRL Distribution Points with full structure including URLs, reasons, and CRL issuer.
    * Based on RFC 5280 Section 4.2.1.13
    *
