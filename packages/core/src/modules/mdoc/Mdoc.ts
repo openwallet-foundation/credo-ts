@@ -192,19 +192,49 @@ export class Mdoc {
 
     try {
       const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates)
-      await Holder.verifyIssuerSigned(
-        {
-          trustedCertificates: convertedTrustedCertificates.map(({ issuance, status }) => ({
-            issuance: issuance.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
-            status: status?.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
-          })),
-          issuerSigned: this.issuerSigned,
-          disableCertificateChainValidation: false,
-          disableStatusValidation: false,
-          now: options?.now,
-        },
-        mdocContext
-      )
+      const { trustedIssuanceChain, trustedStatusListChain, trustedIdentifierListChain } =
+        await Holder.verifyIssuerSigned(
+          {
+            trustedCertificates: convertedTrustedCertificates.map(({ issuance, status }) => ({
+              issuance: issuance.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+              status: status?.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+            })),
+            issuerSigned: this.issuerSigned,
+            disableCertificateChainValidation: false,
+            disableStatusValidation: false,
+            now: options?.now,
+          },
+          mdocContext
+        )
+
+      const x509ChainsAreEqual = (a: X509Certificate[], b: X509Certificate[]) =>
+        a.length === b.length && a.every((cert, i) => cert.equal(b[i]))
+
+      const issuanceChain = trustedIssuanceChain.map((c) => X509Certificate.fromRawCertificate(c))
+
+      if (!x509ChainsAreEqual(certificateChain, issuanceChain)) {
+        throw new MdocError('Certificate chain does not match the trusted issuance chain')
+      }
+
+      if (
+        trustedIdentifierListChain &&
+        !x509ChainsAreEqual(
+          trustedIdentifierListChain.map((c) => X509Certificate.fromRawCertificate(c)),
+          issuanceChain
+        )
+      ) {
+        throw new MdocError('Trusted identifier list chain does not match the trusted issuance chain')
+      }
+
+      if (
+        trustedStatusListChain &&
+        !x509ChainsAreEqual(
+          trustedStatusListChain.map((c) => X509Certificate.fromRawCertificate(c)),
+          issuanceChain
+        )
+      ) {
+        throw new MdocError('Trusted status list chain does not match the trusted issuance chain')
+      }
 
       return { isValid: true }
     } catch (error) {

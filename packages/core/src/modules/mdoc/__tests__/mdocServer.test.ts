@@ -346,6 +346,79 @@ describe('mdoc service test', () => {
     })
   })
 
+  test('verify succeeds when status list is signed with the same certificate as the issuance certificate', async () => {
+    const statusListUri = 'https://example.org/token-status-list/same-cert'
+    const { statusList } = await tokenStatusList.createTokenStatusList({
+      format: 'cwt',
+      signer: { method: 'x5c', x5c: [certificate] },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: { statusListLength: 10, bitsPerStatus: 1 },
+      statusListUri,
+    })
+
+    nock('https://example.org')
+      .persist()
+      .get('/token-status-list/same-cert')
+      .reply(200, Buffer.from(statusList as Uint8Array), { 'Content-Type': MediaTypes.StatusListCwt })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+      statusInfo: { index: 1, uri: statusListUri },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [certificate.toString('base64')], status: [certificate.toString('base64')] }],
+    })
+
+    expect(result.isValid).toBe(true)
+  })
+
+  test('verify fails when status list is signed with a different certificate than the issuance certificate', async () => {
+    const issuerKey2 = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const certificate2 = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(issuerKey2.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE',
+    })
+    certificate2.keyId = issuerKey2.keyId
+
+    const statusListUri = 'https://example.org/token-status-list/different-cert'
+    const { statusList } = await tokenStatusList.createTokenStatusList({
+      format: 'cwt',
+      signer: { method: 'x5c', x5c: [certificate2] },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: { statusListLength: 10, bitsPerStatus: 1 },
+      statusListUri,
+    })
+
+    nock('https://example.org')
+      .persist()
+      .get('/token-status-list/different-cert')
+      .reply(200, Buffer.from(statusList as Uint8Array), { 'Content-Type': MediaTypes.StatusListCwt })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+      statusInfo: { index: 1, uri: statusListUri },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [certificate.toString('base64')], status: [certificate2.toString('base64')] }],
+    })
+
+    expect(result).toEqual({
+      isValid: false,
+      error: 'Trusted status list chain does not match the trusted issuance chain',
+    })
+  })
+
   // FIXME: test is skipped due to a breaking change in mdoc library that prevents us to
   // specify a custom verification date (it does not take the parameter into account)
   // This is needed in this test because the certificate is only valid from 2024-08-12 and 2024-08-24

@@ -158,13 +158,26 @@ export class TokenStatusListService {
     options: UpdateTokenStatusListOptions
   ): Promise<Extract<TokenStatusListResult, { format: Format }>> {
     // TODO: jwk could also be supported
-    if (options.signer.method !== 'x5c') {
+    if (options.signer.method !== 'x5c' && options.signer.method !== 'did') {
       throw new Error(
-        `signer method '${options.signer.method}' is not supported for creating a token status list. Only x5c is`
+        `signer method '${options.signer.method}' is not supported for updating a token status list. Only x5c and did`
       )
     }
 
-    const [{ keyId }] = options.signer.x5c
+    let keyId: string | undefined
+    if (options.signer.method === 'x5c') {
+      keyId = options.signer.x5c[0].keyId
+    } else if (options.signer.method === 'did') {
+      const dids = agentContext.dependencyManager.resolve(DidsApi)
+      const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(options.signer.didUrl)
+      keyId = publicJwk.keyId
+    }
+
+    if (!keyId) {
+      throw new CredoError(
+        `Unable to establish key id for signer method '${options.signer.method}' when updating a token status list`
+      )
+    }
 
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
     const jwk = await kms.getPublicKey({ keyId })
@@ -174,6 +187,9 @@ export class TokenStatusListService {
 
     try {
       if (options.token instanceof Uint8Array) {
+        if (options.signer.method !== 'x5c') {
+          throw new CredoError('For a CWT Token Status List, only a signer of type x5c is supported.')
+        }
         const cwt = StatusListCwt.fromToken(options.token)
         if (Array.isArray(options.status)) {
           for (const { index, status } of options.status) {
