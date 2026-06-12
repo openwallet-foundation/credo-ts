@@ -1,4 +1,12 @@
-import { DeviceKey, DeviceKeyInfo, Holder, Issuer, IssuerSigned, SignatureAlgorithm } from '@owf/mdoc'
+import {
+  DeviceKey,
+  DeviceKeyInfo,
+  Holder,
+  Issuer,
+  IssuerSigned,
+  KeyAuthorizations,
+  SignatureAlgorithm,
+} from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
 import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
@@ -10,6 +18,7 @@ import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
+import { getDeviceKeyAuthorizationsFromMdoc } from './mdocUtil'
 
 /**
  * This class represents a IssuerSigned Mdoc Document,
@@ -112,8 +121,12 @@ export class Mdoc {
     )
   }
 
+  public get deviceKeyAuthorizations() {
+    return getDeviceKeyAuthorizationsFromMdoc(this)
+  }
+
   public static async sign(agentContext: AgentContext, options: MdocSignOptions) {
-    const { docType, validityInfo, namespaces, holderKey, issuerCertificate } = options
+    const { docType, validityInfo, namespaces, holderKey, issuerCertificate, deviceKeyAuthorizations } = options
     const mdocContext = getMdocContext(agentContext)
 
     const issuer = new Issuer(docType, mdocContext)
@@ -135,6 +148,20 @@ export class Mdoc {
     }
 
     const now = new Date()
+    const deviceKey = DeviceKey.fromJwk(holderKey.toJson())
+    let keyAuthorizations: KeyAuthorizations | undefined
+    if (deviceKeyAuthorizations) {
+      const { namespaces, dataElements } = deviceKeyAuthorizations
+      const hasDataElements = dataElements && Object.keys(dataElements).length > 0
+      if (namespaces?.length || hasDataElements) {
+        keyAuthorizations = KeyAuthorizations.create({
+          ...(namespaces?.length ? { namespaces } : {}),
+          ...(hasDataElements ? { dataElements: new Map(Object.entries(dataElements)) } : {}),
+        })
+      }
+    }
+    const deviceKeyInfo = DeviceKeyInfo.create(keyAuthorizations ? { deviceKey, keyAuthorizations } : { deviceKey })
+
     const issuerSigned = await issuer.sign({
       digestAlgorithm: 'SHA-256',
       validityInfo: {
@@ -146,7 +173,7 @@ export class Mdoc {
       certificates: Array.isArray(issuerCertificate)
         ? issuerCertificate.map((c) => c.rawCertificate)
         : [issuerCertificate.rawCertificate],
-      deviceKeyInfo: DeviceKeyInfo.create({ deviceKey: DeviceKey.fromJwk(holderKey.toJson()) }),
+      deviceKeyInfo,
       signingKey: issuerKey.toJson(),
       status: options.statusInfo
         ? {
