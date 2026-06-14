@@ -3,6 +3,7 @@ import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 
 import { DidCommBasicMessagesModule } from '../DidCommBasicMessagesModule'
 import { DidCommBasicMessagesModuleConfig } from '../DidCommBasicMessagesModuleConfig'
+import { DidCommBasicMessageV2Service } from '../protocol/v2'
 import { DidCommBasicMessageRepository } from '../repository'
 import { DidCommBasicMessageService } from '../services'
 
@@ -25,8 +26,9 @@ describe('BasicMessagesModule', () => {
       DidCommBasicMessagesModuleConfig,
       expect.any(DidCommBasicMessagesModuleConfig)
     )
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommBasicMessageService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommBasicMessageV2Service)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommBasicMessageRepository)
   })
 })

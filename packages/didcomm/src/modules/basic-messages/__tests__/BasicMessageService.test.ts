@@ -4,7 +4,7 @@ import { getAgentContext, getMockConnection } from '../../../../../core/tests/he
 import { DidCommInboundMessageContext } from '../../../models'
 import { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
 import { DidCommBasicMessage } from '../protocol/v1'
-import { DidCommBasicMessageV2 } from '../protocol/v2'
+import { DidCommBasicMessageV2, DidCommBasicMessageV2Service } from '../protocol/v2'
 import { DidCommBasicMessageRecord } from '../repository/DidCommBasicMessageRecord'
 import { DidCommBasicMessageRepository } from '../repository/DidCommBasicMessageRepository'
 import { DidCommBasicMessageService } from '../services'
@@ -23,6 +23,7 @@ const agentContext = getAgentContext()
 
 describe('BasicMessageService', () => {
   let basicMessageService: DidCommBasicMessageService
+  let basicMessageV2Service: DidCommBasicMessageV2Service
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
@@ -30,6 +31,7 @@ describe('BasicMessageService', () => {
 
   beforeEach(() => {
     basicMessageService = new DidCommBasicMessageService(basicMessageRepository, eventEmitter)
+    basicMessageV2Service = new DidCommBasicMessageV2Service(basicMessageRepository, eventEmitter)
   })
 
   describe('createMessage', () => {
@@ -83,9 +85,9 @@ describe('BasicMessageService', () => {
     })
   })
 
-  describe('createMessageV2', () => {
+  describe('createMessage (v2 service)', () => {
     it('creates v2 message and record with protocolVersion 2.0', async () => {
-      const { message, record } = await basicMessageService.createMessageV2(
+      const { message, record } = await basicMessageV2Service.createMessage(
         agentContext,
         'hello v2',
         mockConnectionRecord
@@ -111,7 +113,7 @@ describe('BasicMessageService', () => {
     })
 
     it('creates v2 message with parentThreadId', async () => {
-      const { message, record } = await basicMessageService.createMessageV2(
+      const { message, record } = await basicMessageV2Service.createMessage(
         agentContext,
         'reply',
         mockConnectionRecord,
@@ -123,7 +125,7 @@ describe('BasicMessageService', () => {
     })
   })
 
-  describe('saveV2', () => {
+  describe('save (v2 service)', () => {
     it('stores v2 record and emits DidCommBasicMessageV2StateChanged', async () => {
       const basicMessageV2 = new DidCommBasicMessageV2({
         id: '123',
@@ -135,7 +137,7 @@ describe('BasicMessageService', () => {
 
       vi.mocked(basicMessageRepository.save).mockClear()
 
-      await basicMessageService.saveV2(messageContext, mockConnectionRecord)
+      await basicMessageV2Service.save(messageContext, mockConnectionRecord)
 
       expect(basicMessageRepository.save).toHaveBeenCalledTimes(1)
       const savedRecord = vi.mocked(basicMessageRepository.save).mock.calls[0][1]
