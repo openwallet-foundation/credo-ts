@@ -63,7 +63,7 @@ pnpm alice:v2
 pnpm faber:v2
 ```
 
-Or set `DIDCOMM_V2=true` (or `USE_DIDCOMM_V2=true`) before running the regular commands.
+Or set `DIDCOMM_VERSION=v2` before running the regular commands. The demo runs exclusively on the selected DIDComm version (`v1` by default).
 
 ### Usage
 

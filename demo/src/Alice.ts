@@ -60,7 +60,7 @@ export class Alice extends BaseAgent {
     const connectionRecord = await this.receiveConnectionRequest(invitation_url)
     // For v2 OOB: connection is created on inviter's side when they receive first message.
     // Send trust-ping so Faber creates the connection.
-    if (this.useDidCommV2) {
+    if (this.didcommVersion === 'v2') {
       await this.agent.didcomm.connections.sendPing(connectionRecord.id, {})
     }
     this.connectionRecordFaberId = await this.waitForConnection(connectionRecord)
