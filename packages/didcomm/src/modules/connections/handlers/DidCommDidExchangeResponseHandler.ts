@@ -9,7 +9,6 @@ import type { DidCommConnectionsModuleConfig, DidExchangeProtocol } from '..'
 import { DidCommDidExchangeResponseMessage } from '../messages'
 import { DidCommDidExchangeRole, DidCommHandshakeProtocol } from '../models'
 import type { DidCommConnectionService } from '../services'
-import { keyAgreementsEqual } from '../services/helpers'
 
 export class DidCommDidExchangeResponseHandler implements DidCommMessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
@@ -59,10 +58,8 @@ export class DidCommDidExchangeResponseHandler implements DidCommMessageHandler 
     }
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
-    // connection record did. The compare bridges Ed25519 <-> X25519 (legacy v1) and matches
-    // same-curve keys directly for v2 X25519 / P-256.
-    const recipientKeyFound = ourDidDocument.recipientKeys.some((key) => keyAgreementsEqual(recipientKey, key))
-    if (!recipientKeyFound) {
+    // connection record did
+    if (!ourDidDocument.recipientKeys.find((key) => key.fingerprint === recipientKey.fingerprint)) {
       throw new CredoError(`Recipient key ${recipientKey.fingerprint} not found in did document recipient keys.`)
     }
 
