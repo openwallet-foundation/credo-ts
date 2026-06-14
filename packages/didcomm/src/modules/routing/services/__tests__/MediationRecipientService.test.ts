@@ -263,7 +263,7 @@ describe('DidCommMediationRecipientService', () => {
           role: DidCommMediationRole.Recipient,
           state: DidCommMediationState.Requested,
           threadId: 'threadId',
-          mediationProtocolVersion: 'v2',
+          protocolVersion: 'v2',
         })
         mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(v2Record)
 
@@ -290,7 +290,7 @@ describe('DidCommMediationRecipientService', () => {
           role: DidCommMediationRole.Recipient,
           state: DidCommMediationState.Granted,
           threadId: 'threadId',
-          mediationProtocolVersion: 'v2',
+          protocolVersion: 'v2',
           recipientDids: ['did:peer:2.xyz'], // Initially has xyz so remove can succeed
         })
         mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(v2Record)
@@ -349,7 +349,7 @@ describe('DidCommMediationRecipientService', () => {
           role: DidCommMediationRole.Recipient,
           state: DidCommMediationState.Granted,
           threadId: 'thread-id',
-          mediationProtocolVersion: 'v2',
+          protocolVersion: 'v2',
           routingDid: 'did:peer:2.mediator',
         })
 

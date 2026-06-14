@@ -84,7 +84,7 @@ export class DidCommRoutingService {
     if (!routing.mediatorId) return
 
     const mediationRecord = await this.mediationRecipientService.getById(agentContext, routing.mediatorId)
-    if (mediationRecord.mediationProtocolVersion !== 'v2') return
+    if (mediationRecord.protocolVersion !== 'v2') return
 
     const recipientDid = getDidPeer4ShortFormForEquivalence(did) ?? did
     const updatedRecord = await this.mediationRecipientService.keylistUpdateAndAwaitV2(agentContext, mediationRecord, [

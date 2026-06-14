@@ -1,6 +1,5 @@
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Transform } from 'class-transformer'
-import type { DidCommVersion } from '../../../util/didcommVersion'
 import { DidCommMediatorPickupStrategy } from '../DidCommMediatorPickupStrategy'
 import type { DidCommMediationRole } from '../models/DidCommMediationRole'
 import { DidCommMediationState } from '../models/DidCommMediationState'
@@ -17,7 +16,7 @@ export interface DidCommMediationRecordProps {
   routingKeys?: string[]
   routingDid?: string
   recipientDids?: string[]
-  mediationProtocolVersion?: DidCommVersion
+  protocolVersion?: string
   pickupStrategy?: DidCommMediatorPickupStrategy
   tags?: CustomDidCommMediationTags
 }
@@ -64,10 +63,8 @@ export class DidCommMediationRecord
    */
   public recipientDids?: string[]
 
-  /**
-   * Protocol version used for this record: 'v1' or 'v2'.
-   */
-  public mediationProtocolVersion?: DidCommVersion
+  /** Coordinate Mediation protocol version; undefined = v1. */
+  public protocolVersion?: string
 
   @Transform(({ value }) => {
     if (value === 'Explicit') {
@@ -95,7 +92,7 @@ export class DidCommMediationRecord
       this.routingKeys = props.routingKeys || []
       this.routingDid = props.routingDid
       this.recipientDids = props.recipientDids || []
-      this.mediationProtocolVersion = props.mediationProtocolVersion
+      this.protocolVersion = props.protocolVersion
       this.state = props.state
       this.role = props.role
       this.endpoint = props.endpoint ?? undefined

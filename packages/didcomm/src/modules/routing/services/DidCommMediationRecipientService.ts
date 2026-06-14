@@ -102,7 +102,7 @@ export class DidCommMediationRecipientService {
       state: DidCommMediationState.Requested,
       role: DidCommMediationRole.Recipient,
       connectionId: connection.id,
-      mediationProtocolVersion: 'v2',
+      protocolVersion: 'v2',
     })
 
     await this.connectionService.addConnectionType(agentContext, connection, DidCommConnectionType.Mediator)
@@ -150,7 +150,7 @@ export class DidCommMediationRecipientService {
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
     mediationRecord.assertState(DidCommMediationState.Requested)
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== 'v2') {
+    if (mediationRecord.protocolVersion !== 'v2') {
       throw new CredoError('processMediationGrantV2 requires mediation protocol version 2.0')
     }
 
@@ -210,7 +210,7 @@ export class DidCommMediationRecipientService {
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== 'v2') {
+    if (mediationRecord.protocolVersion !== 'v2') {
       throw new CredoError('processKeylistUpdateResultsV2 requires mediation protocol version 2.0')
     }
 
@@ -243,7 +243,7 @@ export class DidCommMediationRecipientService {
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== 'v2') {
+    if (mediationRecord.protocolVersion !== 'v2') {
       throw new CredoError('processKeylistV2 requires mediation protocol version 2.0')
     }
 
@@ -264,7 +264,7 @@ export class DidCommMediationRecipientService {
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== 'v2') {
+    if (mediationRecord.protocolVersion !== 'v2') {
       throw new CredoError('keylistUpdateAndAwaitV2 requires mediation protocol version 2.0')
     }
 
@@ -397,7 +397,14 @@ export class DidCommMediationRecipientService {
     // Return early if no mediation record
     if (!mediationRecord) return routing
 
-    if (mediationRecord.mediationProtocolVersion === 'v2') {
+    if (mediationRecord.protocolVersion === 'v2') {
+      const routingDid = mediationRecord.routingDid
+      if (!routingDid) {
+        throw new CredoError(
+          `Mediation record '${mediationRecord.id}' uses Coordinate Mediation 2.0 but has no routingDid`
+        )
+      }
+
       // Register the Ed25519 did:key (for V1 senders) and the separate X25519 did:key
       // (for V2 senders) with the mediator's keylist. These are independent keys, each
       // with their own KMS key ID.
@@ -416,11 +423,11 @@ export class DidCommMediationRecipientService {
       }
       mediationRecord = await this.keylistUpdateAndAwaitV2(agentContext, mediationRecord, keylistUpdates)
       return {
-        ...routing,
-        mediatorId: mediationRecord.id,
-        routingDid: mediationRecord.routingDid,
         endpoints: routing.endpoints,
-        routingKeys: routing.routingKeys,
+        recipientKey: routing.recipientKey,
+        keyAgreementKey: routing.keyAgreementKey,
+        mediatorId: mediationRecord.id,
+        routingDid,
       }
     }
 
@@ -433,9 +440,10 @@ export class DidCommMediationRecipientService {
     ])
 
     return {
-      ...routing,
-      mediatorId: mediationRecord.id,
       endpoints: mediationRecord.endpoint ? [mediationRecord.endpoint] : routing.endpoints,
+      recipientKey: routing.recipientKey,
+      keyAgreementKey: routing.keyAgreementKey,
+      mediatorId: mediationRecord.id,
       routingKeys: mediationRecord.routingKeys.map((key) =>
         Kms.PublicJwk.fromPublicKey({ kty: 'OKP', crv: 'Ed25519', publicKey: TypedArrayEncoder.fromBase58(key) })
       ),
@@ -452,7 +460,7 @@ export class DidCommMediationRecipientService {
       throw new CredoError('No mediation record to remove routing from has been found')
     }
 
-    if (mediationRecord.mediationProtocolVersion === 'v2') {
+    if (mediationRecord.protocolVersion === 'v2') {
       // V2 mediators accept both Ed25519 and X25519 keys as did:key.
       const recipientDids = recipientKeys.map((key) => new DidKey(key).did)
       await this.keylistUpdateAndAwaitV2(

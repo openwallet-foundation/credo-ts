@@ -1,5 +1,6 @@
 import { Kms } from '@credo-ts/core'
 import { DidCommV1Service, IndyAgentService, VerificationMethod } from '../../../../../core/src/modules/dids'
+import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
 import {
   DidDoc,
   Ed25119Sig2018,
@@ -8,7 +9,7 @@ import {
   ReferencedAuthentication,
   RsaSig2018,
 } from '../models'
-import { convertToNewDidDocument, keyAgreementsEqual, toKeyAgreement } from '../services/helpers'
+import { convertToNewDidDocument, keyAgreementsEqual, routingToServices, toKeyAgreement } from '../services/helpers'
 
 const key = new Ed25119Sig2018({
   id: 'did:sov:SKJVx2kn373FNgvff1SbJo#4',
@@ -248,6 +249,72 @@ describe('toKeyAgreement', () => {
       y: 'EmxC44wNJp_2EVUyMv-Zo2sj_HCmGRfL6QyJUkBNbHc',
     })
     expect(() => toKeyAgreement(secp256k1Jwk)).toThrow(/secp256k1/)
+  })
+})
+
+describe('routingToServices', () => {
+  const recipientKey = Kms.PublicJwk.fromFingerprint(
+    'z6MkwFkSP4uv5PhhKJCGehtjuZedkotC7VF64xtMsxuM8R3W'
+  ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+
+  const mediatorRoutingKey = Kms.PublicJwk.fromFingerprint(
+    'z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE'
+  ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+
+  // CM 2.0 routing DID carrying an Ed25519 verification key + mediator endpoint
+  const ed25519RoutingDid = `did:peer:2.V${mediatorRoutingKey.fingerprint}.S${JsonEncoder.toBase64Url({
+    t: 'dm',
+    s: 'https://mediator.example.com',
+    r: [],
+    a: ['didcomm/v2'],
+  })}`
+
+  // The repo's own MEDIATOR_ROUTING_DID fixture: a single X25519 keyAgreement key, no Ed25519 key
+  const x25519OnlyRoutingDid =
+    'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.SeyJ0IjoiZG0iLCJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCIsInIiOltdLCJhIjoibm9uZSMxIn0'
+
+  it('CM 1.0: maps each endpoint to a service with the routing keys as-is', () => {
+    const services = routingToServices({
+      recipientKey,
+      endpoints: ['https://agent-1.com', 'https://agent-2.com'],
+      routingKeys: [mediatorRoutingKey],
+    })
+
+    expect(services).toEqual([
+      {
+        id: '#inline-0',
+        serviceEndpoint: 'https://agent-1.com',
+        recipientKeys: [recipientKey],
+        routingKeys: [mediatorRoutingKey],
+      },
+      {
+        id: '#inline-1',
+        serviceEndpoint: 'https://agent-2.com',
+        recipientKeys: [recipientKey],
+        routingKeys: [mediatorRoutingKey],
+      },
+    ])
+  })
+
+  it('CM 2.0: resolves an Ed25519-bearing routing DID to the mediator endpoint + Ed25519 routing keys', () => {
+    const services = routingToServices({ recipientKey, endpoints: [], routingDid: ed25519RoutingDid })
+
+    expect(services).toHaveLength(1)
+    expect(services[0].serviceEndpoint).toBe('https://mediator.example.com')
+    expect(services[0].recipientKeys.map((k) => k.fingerprint)).toEqual([recipientKey.fingerprint])
+    expect(services[0].routingKeys.map((k) => k.fingerprint)).toEqual([mediatorRoutingKey.fingerprint])
+  })
+
+  it('CM 2.0: throws when the routing DID exposes no Ed25519 routing key (X25519-only)', () => {
+    expect(() => routingToServices({ recipientKey, endpoints: [], routingDid: x25519OnlyRoutingDid })).toThrow(
+      /exposes no Ed25519 routing key/
+    )
+  })
+
+  it('CM 2.0: throws when the routing DID cannot be resolved', () => {
+    expect(() => routingToServices({ recipientKey, endpoints: [], routingDid: 'did:peer:4zInvalidShortForm' })).toThrow(
+      /Unable to resolve Coordinate Mediation 2.0 routing DID/
+    )
   })
 })
 
