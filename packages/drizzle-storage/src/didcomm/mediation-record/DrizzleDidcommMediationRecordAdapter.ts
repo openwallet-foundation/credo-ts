@@ -36,7 +36,7 @@ export class DrizzleDidcommMediationRecordAdapter extends BaseDrizzleRecordAdapt
       pickupStrategy: record.pickupStrategy,
       routingDid: record.routingDid,
       recipientDids: record.recipientDids,
-      mediationProtocolVersion: record.mediationProtocolVersion,
+      protocolVersion: record.protocolVersion,
       customTags,
     }
   }

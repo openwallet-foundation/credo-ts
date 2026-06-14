@@ -35,7 +35,7 @@ export const didcommMediation = pgTable(
 
     routingDid: text('routing_did'),
     recipientDids: text('recipient_dids').array(),
-    mediationProtocolVersion: text('mediation_protocol_version'),
+    protocolVersion: text('protocol_version'),
 
     default: boolean(),
   },

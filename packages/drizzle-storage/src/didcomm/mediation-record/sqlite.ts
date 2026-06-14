@@ -20,7 +20,7 @@ export const didcommMediation = sqliteTable(
 
     routingDid: text('routing_did'),
     recipientDids: text('recipient_dids', { mode: 'json' }).$type<string[]>(),
-    mediationProtocolVersion: text('mediation_protocol_version'),
+    protocolVersion: text('protocol_version'),
 
     default: integer({ mode: 'boolean' }),
   },

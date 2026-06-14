@@ -19,15 +19,8 @@
     {
       "idx": 2,
       "version": "6",
-      "when": 1779956791633,
-      "tag": "0002_open_killmonger",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1779962128548,
-      "tag": "0003_low_killer_shrike",
+      "when": 1781282712528,
+      "tag": "0002_abnormal_gunslinger",
       "breakpoints": true
     }
   ]
