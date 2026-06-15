@@ -186,7 +186,7 @@ describe('OpenId4VcHolder', () => {
         .rejects.toThrow('JWT nbf and vc.issuanceDate do not match')
     })
 
-    it.only('Should successfully receive credential from animo openid4vc playground using the pre-authorized flow using a jwk EdDSA subject and vc+sd-jwt credential', async () => {
+    it('Should successfully receive credential from animo openid4vc playground using the pre-authorized flow using a jwk EdDSA subject and vc+sd-jwt credential', async () => {
       const fixture = animoOpenIdPlaygroundDraft11SdJwtVc
 
       nock('https://openid4vc.animo.id')
