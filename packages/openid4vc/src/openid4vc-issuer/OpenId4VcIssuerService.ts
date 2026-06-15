@@ -33,6 +33,7 @@ import {
   Oauth2ServerErrorResponseError,
   PkceCodeChallengeMethod,
   preAuthorizedCodeGrantIdentifier,
+  refreshTokenGrantIdentifier,
 } from '@openid4vc/oauth2'
 import {
   type CredentialConfigurationSupportedWithFormats,
@@ -1119,7 +1120,11 @@ export class OpenId4VcIssuerService {
 
       jwks_uri: joinUriParts(issuerUrl, [config.jwksEndpointPath]),
 
-      grant_types_supported: [authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier],
+      grant_types_supported: [
+        authorizationCodeGrantIdentifier,
+        preAuthorizedCodeGrantIdentifier,
+        refreshTokenGrantIdentifier,
+      ],
 
       authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
       authorization_endpoint: joinUriParts(issuerUrl, [config.authorizationEndpoint]),
