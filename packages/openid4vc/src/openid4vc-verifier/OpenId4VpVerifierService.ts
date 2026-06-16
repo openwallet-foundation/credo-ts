@@ -341,7 +341,7 @@ export class OpenId4VpVerifierService {
       // Only store payload for unsiged requests
       authorizationRequestPayload: authorizationRequest.jar
         ? undefined
-        : authorizationRequest.authorizationRequestPayload,
+        : (authorizationRequest.authorizationRequestPayload as OpenId4VpAuthorizationRequestPayload),
       authorizationRequestJwt: authorizationRequest.jar?.authorizationRequestJwt,
       authorizationRequestUri: hostedAuthorizationRequestUri,
       authorizationRequestId,

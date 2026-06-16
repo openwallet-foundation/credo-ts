@@ -457,6 +457,69 @@ gTqhM3BGMuf+
     expect(leafCertificate.publicJwk.is(P256PublicJwk)).toBe(true)
   })
 
+  describe('key usage validation', () => {
+    async function buildChain(intermediateKeyUsage?: X509KeyUsage[]): Promise<Array<string>> {
+      const rootKey = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+      const intermediateKey = PublicJwk.fromPublicJwk(
+        (await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+      )
+      const leafKey = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+
+      const root = await X509Service.createCertificate(agentContext, {
+        serialNumber: '01',
+        issuer: { commonName: 'KU Root' },
+        authorityKey: rootKey,
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: { basicConstraints: { ca: true } },
+      })
+      const intermediate = await X509Service.createCertificate(agentContext, {
+        serialNumber: '02',
+        issuer: root.subject,
+        authorityKey: rootKey,
+        subject: { commonName: 'KU Intermediate' },
+        subjectPublicKey: intermediateKey,
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: {
+          basicConstraints: { ca: true },
+          ...(intermediateKeyUsage ? { keyUsage: { usages: intermediateKeyUsage } } : {}),
+        },
+      })
+      const leaf = await X509Service.createCertificate(agentContext, {
+        serialNumber: '03',
+        issuer: intermediate.subject,
+        authorityKey: intermediateKey,
+        subject: { commonName: 'KU Leaf' },
+        subjectPublicKey: leafKey,
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+      })
+
+      // x5c order: leaf first, root last.
+      return [leaf, intermediate, root].map((c) => c.toString('base64'))
+    }
+
+    it('rejects a chain whose issuing CA has key usage without keyCertSign', async () => {
+      const certificateChain = await buildChain([X509KeyUsage.DigitalSignature])
+
+      await expect(X509Service.validateCertificateChain(agentContext, { certificateChain })).rejects.toThrow(
+        'keyCertSign'
+      )
+    })
+
+    it('accepts a chain whose issuing CA has key usage including keyCertSign', async () => {
+      const certificateChain = await buildChain([X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign])
+
+      const validatedChain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
+      expect(validatedChain.length).toBe(3)
+    })
+
+    it('accepts a chain whose issuing CA has no key usage extension (unrestricted)', async () => {
+      const certificateChain = await buildChain()
+
+      const validatedChain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
+      expect(validatedChain.length).toBe(3)
+    })
+  })
+
   it('should verify a certificate chain where the root certificate is not in the provided chain, but is in trusted certificates', async () => {
     const authorityKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const documentSignerKey = await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })
