@@ -2,41 +2,32 @@ import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
-import type { DidCommAttachment } from '../../../../../decorators/attachment/DidCommAttachment'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
-export interface DidCommMessageDeliveryV3MessageOptions {
+export interface DidCommStatusRequestV4MessageOptions {
   id?: string
   recipientDid?: string
-  threadId?: string
-  attachments: DidCommAttachment[]
 }
 
-export class DidCommMessageDeliveryV3Message extends DidCommMessage {
+export class DidCommStatusRequestV4Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: DidCommMessageDeliveryV3MessageOptions) {
+  public constructor(options?: DidCommStatusRequestV4MessageOptions) {
     super()
 
     if (options) {
       this.id = options.id ?? this.generateId()
       this.recipientDid = options.recipientDid
-      this.appendedAttachments = options.attachments
-      if (options.threadId) {
-        this.setThread({
-          threadId: options.threadId,
-        })
-      }
     }
     this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @IsValidMessageType(DidCommMessageDeliveryV3Message.type)
-  public readonly type = DidCommMessageDeliveryV3Message.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/3.0/delivery')
+  @IsValidMessageType(DidCommStatusRequestV4Message.type)
+  public readonly type = DidCommStatusRequestV4Message.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/message-pickup/4.0/status-request')
 
   @IsString()
   @IsOptional()

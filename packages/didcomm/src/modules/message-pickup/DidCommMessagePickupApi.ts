@@ -32,7 +32,7 @@ import type { DidCommMessagePickupSession, DidCommMessagePickupSessionRole } fro
 import type {
   DidCommMessagePickupV1Protocol,
   DidCommMessagePickupV2Protocol,
-  DidCommMessagePickupV3Protocol,
+  DidCommMessagePickupV4Protocol,
 } from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 import { DidCommMessagePickupSessionService } from './services/DidCommMessagePickupSessionService'
@@ -55,7 +55,7 @@ export class DidCommMessagePickupApi<
   MPPs extends DidCommMessagePickupProtocol[] = [
     DidCommMessagePickupV1Protocol,
     DidCommMessagePickupV2Protocol,
-    DidCommMessagePickupV3Protocol,
+    DidCommMessagePickupV4Protocol,
   ],
 > implements DidCommMessagePickupApi<MPPs>
 {
@@ -149,8 +149,8 @@ export class DidCommMessagePickupApi<
     }
 
     const connectionRecord = await this.connectionService.getById(this.agentContext, session.connectionId)
-    if (session.protocolVersion === 'v3') {
-      assertDidCommV2Connection(connectionRecord, 'Message Pickup 3.0')
+    if (session.protocolVersion === 'v4') {
+      assertDidCommV2Connection(connectionRecord, 'Message Pickup 4.0')
     } else {
       assertDidCommV1Connection(connectionRecord, 'Message Pickup')
     }
@@ -192,8 +192,8 @@ export class DidCommMessagePickupApi<
       throw new CredoError(`No active live mode session found with id ${pickupSessionId}`)
     }
     const connectionRecord = await this.connectionService.getById(this.agentContext, session.connectionId)
-    if (session.protocolVersion === 'v3') {
-      assertDidCommV2Connection(connectionRecord, 'Message Pickup 3.0')
+    if (session.protocolVersion === 'v4') {
+      assertDidCommV2Connection(connectionRecord, 'Message Pickup 4.0')
     } else {
       assertDidCommV1Connection(connectionRecord, 'Message Pickup')
     }
@@ -202,8 +202,8 @@ export class DidCommMessagePickupApi<
 
     const deliverMessagesReturn = await protocol.createDeliveryMessage(this.agentContext, {
       connectionRecord,
-      recipientKey: session.protocolVersion === 'v3' ? undefined : recipientKey,
-      recipientDid: session.protocolVersion === 'v3' ? recipientKey : undefined,
+      recipientKey: session.protocolVersion === 'v4' ? undefined : recipientKey,
+      recipientDid: session.protocolVersion === 'v4' ? recipientKey : undefined,
       batchSize,
     })
 
@@ -230,8 +230,8 @@ export class DidCommMessagePickupApi<
    */
   public async pickupMessages(options: PickupMessagesOptions<MPPs>): Promise<PickupMessagesReturnType> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
-    if (options.protocolVersion === 'v3') {
-      assertDidCommV2Connection(connectionRecord, 'Message Pickup 3.0')
+    if (options.protocolVersion === 'v4') {
+      assertDidCommV2Connection(connectionRecord, 'Message Pickup 4.0')
     } else {
       assertDidCommV1Connection(connectionRecord, 'Message Pickup')
     }
@@ -286,8 +286,8 @@ export class DidCommMessagePickupApi<
    */
   public async setLiveDeliveryMode(options: SetLiveDeliveryModeOptions): Promise<SetLiveDeliveryModeReturnType> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
-    if (options.protocolVersion === 'v3') {
-      assertDidCommV2Connection(connectionRecord, 'Message Pickup 3.0')
+    if (options.protocolVersion === 'v4') {
+      assertDidCommV2Connection(connectionRecord, 'Message Pickup 4.0')
     } else {
       assertDidCommV1Connection(connectionRecord, 'Message Pickup')
     }

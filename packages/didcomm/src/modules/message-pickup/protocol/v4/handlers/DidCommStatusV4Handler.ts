@@ -1,17 +1,17 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import { DidCommOutboundMessageContext } from '../../../../../models'
-import type { DidCommMessagePickupV3Protocol } from '../DidCommMessagePickupV3Protocol'
-import { DidCommStatusV3Message } from '../messages'
+import type { DidCommMessagePickupV4Protocol } from '../DidCommMessagePickupV4Protocol'
+import { DidCommStatusV4Message } from '../messages'
 
-export class DidCommStatusV3Handler implements DidCommMessageHandler {
-  public supportedMessages = [DidCommStatusV3Message]
-  private protocol: DidCommMessagePickupV3Protocol
+export class DidCommStatusV4Handler implements DidCommMessageHandler {
+  public supportedMessages = [DidCommStatusV4Message]
+  private protocol: DidCommMessagePickupV4Protocol
 
-  public constructor(protocol: DidCommMessagePickupV3Protocol) {
+  public constructor(protocol: DidCommMessagePickupV4Protocol) {
     this.protocol = protocol
   }
 
-  public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommStatusV3Handler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommStatusV4Handler>) {
     const connection = messageContext.assertReadyConnection()
     const deliveryRequestMessage = await this.protocol.processStatus(messageContext)
 

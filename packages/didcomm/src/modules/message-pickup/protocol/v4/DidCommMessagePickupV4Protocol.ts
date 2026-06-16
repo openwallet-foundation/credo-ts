@@ -7,12 +7,10 @@ import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
-import { DidCommProblemReportError } from '../../../../errors'
 import type { DidCommInboundMessageContext } from '../../../../models'
 import { DidCommOutboundMessageContext, DidCommProtocol } from '../../../../models'
 import type { DidCommEncryptedMessage } from '../../../../types'
 import { assertDidCommV2Connection } from '../../../../util/didcommVersion'
-import { DidCommRoutingProblemReportReason } from '../../../routing/error'
 import type { MessagePickupCompletedEvent } from '../../DidCommMessagePickupEvents'
 import { DidCommMessagePickupEventTypes } from '../../DidCommMessagePickupEvents'
 import { DidCommMessagePickupModuleConfig } from '../../DidCommMessagePickupModuleConfig'
@@ -27,43 +25,46 @@ import type {
   SetLiveDeliveryModeProtocolOptions,
   SetLiveDeliveryModeProtocolReturnType,
 } from '../DidCommMessagePickupProtocolOptions'
+import { DidCommMessagePickupV4ProblemReportError, DidCommMessagePickupV4ProblemReportReason } from './errors'
 import {
-  DidCommDeliveryRequestV3Handler,
-  DidCommLiveDeliveryChangeV3Handler,
-  DidCommMessageDeliveryV3Handler,
-  DidCommMessagesReceivedV3Handler,
-  DidCommStatusRequestV3Handler,
-  DidCommStatusV3Handler,
+  DidCommDeliveryRequestV4Handler,
+  DidCommLiveDeliveryChangeV4Handler,
+  DidCommMessageDeliveryV4Handler,
+  DidCommMessagePickupV4ProblemReportHandler,
+  DidCommMessagesReceivedV4Handler,
+  DidCommStatusRequestV4Handler,
+  DidCommStatusV4Handler,
 } from './handlers'
 import {
-  DidCommDeliveryRequestV3Message,
-  DidCommLiveDeliveryChangeV3Message,
-  DidCommMessageDeliveryV3Message,
-  DidCommMessagesReceivedV3Message,
-  DidCommStatusRequestV3Message,
-  DidCommStatusV3Message,
+  DidCommDeliveryRequestV4Message,
+  DidCommLiveDeliveryChangeV4Message,
+  DidCommMessageDeliveryV4Message,
+  DidCommMessagesReceivedV4Message,
+  DidCommStatusRequestV4Message,
+  DidCommStatusV4Message,
 } from './messages'
 
 @injectable()
-export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProtocol {
-  public readonly version = 'v3' as const
+export class DidCommMessagePickupV4Protocol extends DidCommBaseMessagePickupProtocol {
+  public readonly version = 'v4' as const
 
   public register(
     messageHandlerRegistry: DidCommMessageHandlerRegistry,
     featureRegistry: DidCommFeatureRegistry
   ): void {
     messageHandlerRegistry.registerMessageHandlers([
-      new DidCommStatusRequestV3Handler(this),
-      new DidCommDeliveryRequestV3Handler(this),
-      new DidCommMessagesReceivedV3Handler(this),
-      new DidCommStatusV3Handler(this),
-      new DidCommMessageDeliveryV3Handler(this),
-      new DidCommLiveDeliveryChangeV3Handler(this),
+      new DidCommStatusRequestV4Handler(this),
+      new DidCommDeliveryRequestV4Handler(this),
+      new DidCommMessagesReceivedV4Handler(this),
+      new DidCommStatusV4Handler(this),
+      new DidCommMessageDeliveryV4Handler(this),
+      new DidCommLiveDeliveryChangeV4Handler(this),
+      new DidCommMessagePickupV4ProblemReportHandler(),
     ])
 
     featureRegistry.register(
       new DidCommProtocol({
-        id: 'https://didcomm.org/messagepickup/3.0',
+        id: 'https://didcomm.org/message-pickup/4.0',
         roles: ['mediator', 'recipient'],
       })
     )
@@ -75,9 +76,9 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
   ): Promise<PickupMessagesProtocolReturnType<DidCommMessage>> {
     const { connectionRecord, recipientDid } = options
     connectionRecord.assertReady()
-    assertDidCommV2Connection(connectionRecord, 'Message Pickup 3.0')
+    assertDidCommV2Connection(connectionRecord, 'Message Pickup 4.0')
 
-    const message = new DidCommStatusRequestV3Message({
+    const message = new DidCommStatusRequestV4Message({
       recipientDid,
     })
 
@@ -90,7 +91,7 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
   ): Promise<DeliverMessagesProtocolReturnType<DidCommMessage> | undefined> {
     const { connectionRecord, recipientKey, recipientDid, messages } = options
     connectionRecord.assertReady()
-    assertDidCommV2Connection(connectionRecord, 'Message Pickup 3.0')
+    assertDidCommV2Connection(connectionRecord, 'Message Pickup 4.0')
 
     const queueTransportRepository =
       agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
@@ -121,7 +122,7 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
     )
 
     return {
-      message: new DidCommMessageDeliveryV3Message({
+      message: new DidCommMessageDeliveryV4Message({
         attachments,
         recipientDid: recipientDidForQueue,
       }),
@@ -134,20 +135,20 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
   ): Promise<SetLiveDeliveryModeProtocolReturnType<DidCommMessage>> {
     const { connectionRecord, liveDelivery } = options
     connectionRecord.assertReady()
-    assertDidCommV2Connection(connectionRecord, 'Message Pickup 3.0')
+    assertDidCommV2Connection(connectionRecord, 'Message Pickup 4.0')
 
     return {
-      message: new DidCommLiveDeliveryChangeV3Message({
+      message: new DidCommLiveDeliveryChangeV4Message({
         liveDelivery,
       }),
     }
   }
 
   public async processStatusRequest(
-    messageContext: DidCommInboundMessageContext<DidCommStatusRequestV3Message>
+    messageContext: DidCommInboundMessageContext<DidCommStatusRequestV4Message>
   ): Promise<DidCommOutboundMessageContext | undefined> {
     const connection = messageContext.assertReadyConnection()
-    assertDidCommV2Connection(connection, 'Message Pickup 3.0')
+    assertDidCommV2Connection(connection, 'Message Pickup 4.0')
 
     const recipientDid = messageContext.message.recipientDid
     const agentContext = messageContext.agentContext
@@ -155,7 +156,7 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
     const queueTransportRepository =
       agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
 
-    const statusMessage = new DidCommStatusV3Message({
+    const statusMessage = new DidCommStatusV4Message({
       threadId: messageContext.message.threadId,
       recipientDid,
       messageCount: await queueTransportRepository.getAvailableMessageCount(agentContext, {
@@ -171,10 +172,10 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
   }
 
   public async processDeliveryRequest(
-    messageContext: DidCommInboundMessageContext<DidCommDeliveryRequestV3Message>
+    messageContext: DidCommInboundMessageContext<DidCommDeliveryRequestV4Message>
   ): Promise<DidCommOutboundMessageContext> {
     const connection = messageContext.assertReadyConnection()
-    assertDidCommV2Connection(connection, 'Message Pickup 3.0')
+    assertDidCommV2Connection(connection, 'Message Pickup 4.0')
 
     const recipientDid = messageContext.message.recipientDid
     const { agentContext, message } = messageContext
@@ -185,7 +186,7 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
     const messages = await queueTransportRepository.takeFromQueue(agentContext, {
       connectionId: connection.id,
       recipientDid,
-      limit: message.limit,
+      limit: message.messageCountLimit,
     })
 
     const attachments = messages.map(
@@ -199,30 +200,24 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
         })
     )
 
-    const outboundMessageContext =
-      messages.length > 0
-        ? new DidCommMessageDeliveryV3Message({
-            threadId: messageContext.message.threadId,
-            recipientDid,
-            attachments,
-          })
-        : new DidCommStatusV3Message({
-            threadId: messageContext.message.threadId,
-            recipientDid,
-            messageCount: 0,
-          })
+    // Pickup 4.0: an empty queue is answered with a delivery carrying an empty attachments array
+    const deliveryMessage = new DidCommMessageDeliveryV4Message({
+      threadId: messageContext.message.threadId,
+      recipientDid,
+      attachments,
+    })
 
-    return new DidCommOutboundMessageContext(outboundMessageContext, {
+    return new DidCommOutboundMessageContext(deliveryMessage, {
       agentContext: messageContext.agentContext,
       connection,
     })
   }
 
   public async processMessagesReceived(
-    messageContext: DidCommInboundMessageContext<DidCommMessagesReceivedV3Message>
+    messageContext: DidCommInboundMessageContext<DidCommMessagesReceivedV4Message>
   ): Promise<DidCommOutboundMessageContext> {
     const connection = messageContext.assertReadyConnection()
-    assertDidCommV2Connection(connection, 'Message Pickup 3.0')
+    assertDidCommV2Connection(connection, 'Message Pickup 4.0')
 
     const { agentContext, message } = messageContext
 
@@ -236,7 +231,7 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
       })
     }
 
-    const statusMessage = new DidCommStatusV3Message({
+    const statusMessage = new DidCommStatusV4Message({
       threadId: messageContext.message.threadId,
       messageCount: await queueTransportRepository.getAvailableMessageCount(agentContext, {
         connectionId: connection.id,
@@ -250,13 +245,13 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
   }
 
   public async processStatus(
-    messageContext: DidCommInboundMessageContext<DidCommStatusV3Message>
-  ): Promise<DidCommDeliveryRequestV3Message | null> {
+    messageContext: DidCommInboundMessageContext<DidCommStatusV4Message>
+  ): Promise<DidCommDeliveryRequestV4Message | null> {
     const { message: statusMessage } = messageContext
     const { messageCount, recipientDid } = statusMessage
 
     const connection = messageContext.assertReadyConnection()
-    assertDidCommV2Connection(connection, 'Message Pickup 3.0')
+    assertDidCommV2Connection(connection, 'Message Pickup 4.0')
 
     const messagePickupModuleConfig = messageContext.agentContext.dependencyManager.resolve(
       DidCommMessagePickupModuleConfig
@@ -278,19 +273,19 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
     const { maximumBatchSize: maximumMessagePickup } = messagePickupModuleConfig
     const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
 
-    return new DidCommDeliveryRequestV3Message({
-      limit,
+    return new DidCommDeliveryRequestV4Message({
+      messageCountLimit: limit,
       recipientDid,
     })
   }
 
   public async processLiveDeliveryChange(
-    messageContext: DidCommInboundMessageContext<DidCommLiveDeliveryChangeV3Message>
+    messageContext: DidCommInboundMessageContext<DidCommLiveDeliveryChangeV4Message>
   ): Promise<DidCommOutboundMessageContext> {
     const { agentContext, message, sessionId } = messageContext
 
     const connection = messageContext.assertReadyConnection()
-    assertDidCommV2Connection(connection, 'Message Pickup 3.0')
+    assertDidCommV2Connection(connection, 'Message Pickup 4.0')
 
     const queueTransportRepository =
       agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
@@ -299,13 +294,13 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
 
     if (message.liveDelivery) {
       if (!sessionId) {
-        throw new DidCommProblemReportError('Connection does not support Live Delivery', {
-          problemCode: 'e.m.live-mode-not-supported',
+        throw new DidCommMessagePickupV4ProblemReportError('Connection does not support Live Delivery', {
+          problemCode: DidCommMessagePickupV4ProblemReportReason.LiveModeNotSupported,
         })
       }
       sessionService.saveLiveSession(agentContext, {
         connectionId: connection.id,
-        protocolVersion: 'v3',
+        protocolVersion: 'v4',
         role: DidCommMessagePickupSessionRole.MessageHolder,
         transportSessionId: sessionId,
       })
@@ -313,7 +308,7 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
       sessionService.removeLiveSession(agentContext, { connectionId: connection.id })
     }
 
-    const statusMessage = new DidCommStatusV3Message({
+    const statusMessage = new DidCommStatusV4Message({
       threadId: message.threadId,
       liveDelivery: message.liveDelivery,
       messageCount: await queueTransportRepository.getAvailableMessageCount(agentContext, {
@@ -328,19 +323,23 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
   }
 
   public async processDelivery(
-    messageContext: DidCommInboundMessageContext<DidCommMessageDeliveryV3Message>
-  ): Promise<DidCommMessagesReceivedV3Message> {
+    messageContext: DidCommInboundMessageContext<DidCommMessageDeliveryV4Message>
+  ): Promise<DidCommMessagesReceivedV4Message | undefined> {
     const connection = messageContext.assertReadyConnection()
-    assertDidCommV2Connection(connection, 'Message Pickup 3.0')
+    assertDidCommV2Connection(connection, 'Message Pickup 4.0')
 
     const { appendedAttachments } = messageContext.message
 
     const eventEmitter = messageContext.agentContext.dependencyManager.resolve(EventEmitter)
 
-    if (!appendedAttachments)
-      throw new DidCommProblemReportError('Error processing attachments', {
-        problemCode: DidCommRoutingProblemReportReason.ErrorProcessingAttachments,
+    // Pickup 4.0: an empty delivery means the queue is drained; signal completion and send no ack
+    if (!appendedAttachments || appendedAttachments.length === 0) {
+      eventEmitter.emit<MessagePickupCompletedEvent>(messageContext.agentContext, {
+        type: DidCommMessagePickupEventTypes.MessagePickupCompleted,
+        payload: { connection, threadId: messageContext.message.threadId },
       })
+      return undefined
+    }
 
     const ids: string[] = []
     for (const attachment of appendedAttachments) {
@@ -358,7 +357,7 @@ export class DidCommMessagePickupV3Protocol extends DidCommBaseMessagePickupProt
       })
     }
 
-    return new DidCommMessagesReceivedV3Message({
+    return new DidCommMessagesReceivedV4Message({
       messageIdList: ids,
     })
   }

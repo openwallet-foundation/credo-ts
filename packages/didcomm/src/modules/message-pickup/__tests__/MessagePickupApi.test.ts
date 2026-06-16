@@ -18,10 +18,10 @@ import {
   DidCommMessageDeliveryV2Message,
   DidCommMessagePickupV1Protocol,
   DidCommMessagePickupV2Protocol,
-  DidCommMessagePickupV3Protocol,
+  DidCommMessagePickupV4Protocol,
 } from '../protocol'
 import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
-import { DidCommMessageDeliveryV3Message } from '../protocol/v3'
+import { DidCommMessageDeliveryV4Message } from '../protocol/v4'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
 
 const mockConnection = getMockConnection({
@@ -46,7 +46,7 @@ const messagePickupModuleConfig = new DidCommMessagePickupModuleConfig({
   protocols: [
     new DidCommMessagePickupV1Protocol(),
     new DidCommMessagePickupV2Protocol(),
-    new DidCommMessagePickupV3Protocol(),
+    new DidCommMessagePickupV4Protocol(),
   ],
 })
 
@@ -151,14 +151,14 @@ describe('DidCommMessagePickupApi', () => {
     ).rejects.toThrow(CredoError)
   })
 
-  it('sends v3 delivery message when session uses v3 protocol', async () => {
+  it('sends v4 delivery message when session uses v4 protocol', async () => {
     const mockConnectionV3 = getMockConnection({
       state: DidCommDidExchangeState.Completed,
     })
     mockConnectionV3.didcommVersion = 'v2'
     mockFunction(messagePickupSessionService.getLiveSession).mockReturnValue({
       connectionId: mockConnectionV3.id,
-      protocolVersion: 'v3',
+      protocolVersion: 'v4',
     } as DidCommMessagePickupSession)
     mockFunction(connectionService.getById).mockResolvedValue(mockConnectionV3)
     mockFunction(queueTransportRepository.takeFromQueue).mockResolvedValue([
@@ -178,6 +178,6 @@ describe('DidCommMessagePickupApi', () => {
     const sendMessageMock = messageSender.sendMessage as MockedFunction<(typeof messageSender)['sendMessage']>
     expect(sendMessageMock).toHaveBeenCalledTimes(1)
     const [outboundCtx] = sendMessageMock.mock.calls[0]
-    expect(outboundCtx.message.type).toEqual(DidCommMessageDeliveryV3Message.type.messageTypeUri)
+    expect(outboundCtx.message.type).toEqual(DidCommMessageDeliveryV4Message.type.messageTypeUri)
   })
 })
