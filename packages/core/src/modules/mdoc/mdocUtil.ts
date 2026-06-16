@@ -19,6 +19,27 @@ export function getDeviceKeyAuthorizationsFromMdoc(mdoc: Mdoc): KeyAuthorization
   return getDeviceKeyAuthorizationsFromIssuerSigned(mdoc.issuerSigned)
 }
 
+function hasMdocNameSpaces(nameSpaces: MdocNameSpaces): boolean {
+  return Object.keys(nameSpaces).length > 0
+}
+
+export function assertRequestedDeviceNameSpacesWithinDeviceKeyAuthorizations(
+  keyAuthorizations: KeyAuthorizations | undefined,
+  deviceNameSpaces?: MdocNameSpaces
+): void {
+  if (!deviceNameSpaces || !hasMdocNameSpaces(deviceNameSpaces)) {
+    return
+  }
+
+  if (!isDeviceKeyAuthorizationEnforced(keyAuthorizations)) {
+    throw new MdocError(
+      'Cannot include device-signed nameSpaces: MSO deviceKeyInfo.keyAuthorizations is missing or empty'
+    )
+  }
+
+  assertNameSpacesWithinDeviceKeyAuthorizations(keyAuthorizations, deviceNameSpaces)
+}
+
 export function assertNameSpacesWithinDeviceKeyAuthorizations(
   keyAuthorizations: KeyAuthorizations | undefined,
   nameSpaces: MdocNameSpaces
@@ -82,12 +103,18 @@ export function assertDocumentNameSpacesWithinDeviceKeyAuthorizations(
   keyAuthorizations: KeyAuthorizations | undefined,
   document: Document
 ): void {
+  const deviceSignedNameSpaces = getDeviceSignedNameSpacesFromDocument(document)
+  const issuerSignedNameSpaces = getIssuerSignedNameSpacesFromDocument(document)
+
+  if (hasMdocNameSpaces(deviceSignedNameSpaces) && !isDeviceKeyAuthorizationEnforced(keyAuthorizations)) {
+    throw new MdocError(
+      'Device-signed nameSpaces are present but MSO deviceKeyInfo.keyAuthorizations is missing or empty'
+    )
+  }
+
   if (!isDeviceKeyAuthorizationEnforced(keyAuthorizations)) {
     return
   }
-
-  const deviceSignedNameSpaces = getDeviceSignedNameSpacesFromDocument(document)
-  const issuerSignedNameSpaces = getIssuerSignedNameSpacesFromDocument(document)
 
   assertNameSpacesWithinDeviceKeyAuthorizations(keyAuthorizations, deviceSignedNameSpaces)
   assertNameSpacesWithinDeviceKeyAuthorizations(keyAuthorizations, issuerSignedNameSpaces)

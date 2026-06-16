@@ -359,6 +359,55 @@ describe('mdoc device key authorizations', () => {
     ).resolves.toBeUndefined()
   })
 
+  test('holder rejects deviceNameSpaces when MSO keyAuthorizations is missing', async () => {
+    const holderKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const { certificate, nextDay } = await createCertificate()
+
+    const mdoc = await Mdoc.sign(agent.context, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: {
+        'org.iso.18013.5.1': {
+          family_name: 'Doe',
+        },
+      },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+    })
+
+    const sessionTranscriptOptions = {
+      type: 'openId4VpDraft18' as const,
+      mdocGeneratedNonce: 'mdoc-nonce',
+      verifierGeneratedNonce: 'verifier-nonce',
+      clientId: 'client-id',
+      responseUri: 'https://verifier.example/response',
+    }
+
+    await expect(
+      MdocDeviceResponse.createDeviceResponse(agent.context, {
+        mdocs: [mdoc],
+        documentRequests: [
+          {
+            docType: 'org.iso.18013.5.1.mDL',
+            nameSpaces: {
+              'org.iso.18013.5.1': {
+                family_name: true,
+              },
+            },
+          },
+        ],
+        deviceNameSpaces: {
+          'org.example.transaction': {
+            transaction_id: 'tx-123',
+          },
+        },
+        sessionTranscriptOptions,
+      })
+    ).rejects.toThrow(
+      'Cannot include device-signed nameSpaces: MSO deviceKeyInfo.keyAuthorizations is missing or empty'
+    )
+  })
+
   test('holder rejects device response with unauthorized deviceNameSpaces', async () => {
     const holderKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const { certificate, nextDay } = await createCertificate()

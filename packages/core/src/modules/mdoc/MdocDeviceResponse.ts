@@ -37,7 +37,11 @@ import type {
   MdocSessionTranscriptOptions,
 } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
-import { assertDocumentNameSpacesWithinDeviceKeyAuthorizations, nameSpacesRecordToMap } from './mdocUtil'
+import {
+  assertDocumentNameSpacesWithinDeviceKeyAuthorizations,
+  assertRequestedDeviceNameSpacesWithinDeviceKeyAuthorizations,
+  nameSpacesRecordToMap,
+} from './mdocUtil'
 import { convertDocumentRequest } from './utils/convertDocumentRequest'
 
 export type DeviceAndIssuerClaims = {
@@ -249,6 +253,10 @@ export class MdocDeviceResponse {
           ),
       })
 
+      const keyAuthorizations =
+        document.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.keyAuthorizations
+      assertRequestedDeviceNameSpacesWithinDeviceKeyAuthorizations(keyAuthorizations, options.deviceNameSpaces)
+
       const mdocContext = getMdocContext(agentContext)
       const deviceResponse = await DeviceResponse.createWithDeviceRequest(
         {
@@ -282,8 +290,6 @@ export class MdocDeviceResponse {
       }
 
       const createdDocument = deviceResponse.documents[0]
-      const keyAuthorizations =
-        createdDocument.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.keyAuthorizations
       assertDocumentNameSpacesWithinDeviceKeyAuthorizations(keyAuthorizations, createdDocument)
 
       documents.push(createdDocument)
