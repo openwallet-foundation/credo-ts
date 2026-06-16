@@ -252,7 +252,7 @@ describe('mdoc device key authorizations', () => {
     ).resolves.toBeUndefined()
   })
 
-  test('verifier rejects device response with unauthorized disclosed data element', async () => {
+  test('holder rejects device response with unauthorized disclosed data element', async () => {
     const holderKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const { certificate, nextDay } = await createCertificate()
 
@@ -282,24 +282,19 @@ describe('mdoc device key authorizations', () => {
       responseUri: 'https://verifier.example/response',
     }
 
-    const deviceResponse = await MdocDeviceResponse.createDeviceResponse(agent.context, {
-      mdocs: [mdoc],
-      documentRequests: [
-        {
-          docType: 'org.iso.18013.5.1.mDL',
-          nameSpaces: {
-            'org.iso.18013.5.1': {
-              given_name: true,
+    await expect(
+      MdocDeviceResponse.createDeviceResponse(agent.context, {
+        mdocs: [mdoc],
+        documentRequests: [
+          {
+            docType: 'org.iso.18013.5.1.mDL',
+            nameSpaces: {
+              'org.iso.18013.5.1': {
+                given_name: true,
+              },
             },
           },
-        },
-      ],
-      sessionTranscriptOptions,
-    })
-
-    await expect(
-      MdocDeviceResponse.fromBase64Url(deviceResponse.encoded).verify(agent.context, {
-        trustedCertificates: [certificate.toString('base64')],
+        ],
         sessionTranscriptOptions,
       })
     ).rejects.toThrow("Device key is not authorized for data element 'given_name' in namespace 'org.iso.18013.5.1'")
@@ -364,7 +359,7 @@ describe('mdoc device key authorizations', () => {
     ).resolves.toBeUndefined()
   })
 
-  test('verifier rejects device response with unauthorized deviceNameSpaces', async () => {
+  test('holder rejects device response with unauthorized deviceNameSpaces', async () => {
     const holderKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const { certificate, nextDay } = await createCertificate()
 
@@ -394,29 +389,24 @@ describe('mdoc device key authorizations', () => {
       responseUri: 'https://verifier.example/response',
     }
 
-    const deviceResponse = await MdocDeviceResponse.createDeviceResponse(agent.context, {
-      mdocs: [mdoc],
-      documentRequests: [
-        {
-          docType: 'org.iso.18013.5.1.mDL',
-          nameSpaces: {
-            'org.iso.18013.5.1': {
-              family_name: true,
+    await expect(
+      MdocDeviceResponse.createDeviceResponse(agent.context, {
+        mdocs: [mdoc],
+        documentRequests: [
+          {
+            docType: 'org.iso.18013.5.1.mDL',
+            nameSpaces: {
+              'org.iso.18013.5.1': {
+                family_name: true,
+              },
             },
           },
+        ],
+        deviceNameSpaces: {
+          'org.iso.18013.5.1': {
+            transaction_id: 'tx-123',
+          },
         },
-      ],
-      deviceNameSpaces: {
-        'org.iso.18013.5.1': {
-          transaction_id: 'tx-123',
-        },
-      },
-      sessionTranscriptOptions,
-    })
-
-    await expect(
-      MdocDeviceResponse.fromBase64Url(deviceResponse.encoded).verify(agent.context, {
-        trustedCertificates: [certificate.toString('base64')],
         sessionTranscriptOptions,
       })
     ).rejects.toThrow("Device key is not authorized for data element 'transaction_id' in namespace 'org.iso.18013.5.1'")

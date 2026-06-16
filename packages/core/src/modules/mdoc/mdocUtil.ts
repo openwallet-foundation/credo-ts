@@ -19,9 +19,6 @@ export function getDeviceKeyAuthorizationsFromMdoc(mdoc: Mdoc): KeyAuthorization
   return getDeviceKeyAuthorizationsFromIssuerSigned(mdoc.issuerSigned)
 }
 
-/**
- * Verifier: ensure presented nameSpaces are within MSO deviceKeyInfo.keyAuthorizations.
- */
 export function assertNameSpacesWithinDeviceKeyAuthorizations(
   keyAuthorizations: KeyAuthorizations | undefined,
   nameSpaces: MdocNameSpaces
@@ -81,10 +78,6 @@ export function getIssuerSignedNameSpacesFromDocument(document: Document): MdocN
   )
 }
 
-/**
- * Verifier: ensure deviceSigned and issuerSigned nameSpaces in a device response document
- * are within MSO deviceKeyInfo.keyAuthorizations.
- */
 export function assertDocumentNameSpacesWithinDeviceKeyAuthorizations(
   keyAuthorizations: KeyAuthorizations | undefined,
   document: Document

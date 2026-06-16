@@ -279,7 +279,13 @@ export class MdocDeviceResponse {
       if (!deviceResponse.documents) {
         throw new MdocError('Device response does not contain any documents')
       }
-      documents.push(deviceResponse.documents[0])
+
+      const createdDocument = deviceResponse.documents[0]
+      const keyAuthorizations =
+        createdDocument.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.keyAuthorizations
+      assertDocumentNameSpacesWithinDeviceKeyAuthorizations(keyAuthorizations, createdDocument)
+
+      documents.push(createdDocument)
     }
 
     return new MdocDeviceResponse(
