@@ -184,6 +184,10 @@ export class OpenId4VciHolderService {
       dpop,
     })
 
+    if (authorizationResult.authorizationFlow === AuthorizationFlow.InteractiveAuthorizationOpenid4vp) {
+      throw new CredoError('Interactive Authorization is not supported yet.')
+    }
+
     if (authorizationResult.authorizationFlow === AuthorizationFlow.PresentationDuringIssuance) {
       return {
         authorizationFlow: AuthorizationFlow.PresentationDuringIssuance,
@@ -979,8 +983,10 @@ export class OpenId4VciHolderService {
                   issuerMetadata: options.metadata,
                   signer: {
                     method: 'jwk',
-                    publicJwk: jwk.toJson() as Jwk,
+                    // There's no need to include the kid in the jwk sent to the issuer, we only store the key id internally
+                    publicJwk: jwk.toJson({ includeKid: false }) as Jwk,
                     alg: algorithm,
+                    kid: jwk.hasKeyId ? jwk.keyId : undefined,
                   },
                   nonce: options.cNonce,
                   clientId: options.clientId,

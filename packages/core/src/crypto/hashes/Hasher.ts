@@ -1,5 +1,5 @@
 import { CredoError } from '../../error'
-import { TypedArrayEncoder } from '../../utils'
+import { TypedArrayEncoder } from '../../utils/TypedArrayEncoder'
 
 import { Sha1 } from './Sha1'
 import { Sha256 } from './Sha256'

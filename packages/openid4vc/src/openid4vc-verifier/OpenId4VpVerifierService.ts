@@ -8,6 +8,7 @@ import {
   type DifPresentationExchangeDefinition,
   DifPresentationExchangeService,
   type DifPresentationExchangeSubmission,
+  type EncodedX509Certificate,
   EventEmitter,
   extractPresentationsWithDescriptorsFromSubmission,
   extractX509CertificatesFromJwt,
@@ -45,6 +46,7 @@ import {
   X509Certificate,
   X509ModuleConfig,
   X509Service,
+  type X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
@@ -339,7 +341,7 @@ export class OpenId4VpVerifierService {
       // Only store payload for unsiged requests
       authorizationRequestPayload: authorizationRequest.jar
         ? undefined
-        : authorizationRequest.authorizationRequestPayload,
+        : (authorizationRequest.authorizationRequestPayload as OpenId4VpAuthorizationRequestPayload),
       authorizationRequestJwt: authorizationRequest.jar?.authorizationRequestJwt,
       authorizationRequestUri: hostedAuthorizationRequestUri,
       authorizationRequestId,
@@ -1172,7 +1174,7 @@ export class OpenId4VpVerifierService {
         const jwt = Jwt.fromSerializedJwt(presentation.split('~')[0])
         const certificateChain = extractX509CertificatesFromJwt(jwt)
 
-        let trustedCertificates: string[] | undefined
+        let trustedCertificates: EncodedX509Certificate[] | X509VerificationTrustedCertificates[] | undefined
         if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
           trustedCertificates = await x509Config.getTrustedCertificatesForVerification(agentContext, {
             certificateChain,
@@ -1222,18 +1224,17 @@ export class OpenId4VpVerifierService {
             X509Certificate.fromRawCertificate(cert)
           )
 
-          let trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain,
-            verification: {
-              type: 'credential',
-              credential: mdoc,
-              openId4VcVerificationSessionId: options.verificationSessionId,
-            },
-          })
-
-          if (!trustedCertificates) {
-            trustedCertificates = x509Config.trustedCertificates ?? []
-          }
+          const trustedCertificates =
+            (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+              certificateChain,
+              verification: {
+                type: 'credential',
+                credential: mdoc,
+                openId4VcVerificationSessionId: options.verificationSessionId,
+              },
+            })) ??
+            x509Config.trustedCertificates ??
+            []
 
           let sessionTranscriptOptions: MdocSessionTranscriptOptions
           if (options.origin && options.version === 'v1') {
@@ -1328,7 +1329,7 @@ export class OpenId4VpVerifierService {
       }
 
       if (!isValid) {
-        throw new CredoError(`Error occured during verification of presentation.${cause ? ` ${cause.message}` : ''}`, {
+        throw new CredoError(`Error occurred during verification of presentation.${cause ? ` ${cause.message}` : ''}`, {
           cause,
         })
       }
