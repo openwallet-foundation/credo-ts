@@ -1,21 +1,21 @@
 import type { AgentContext } from '@credo-ts/core'
 import { EventEmitter, injectable } from '@credo-ts/core'
-import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
-import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
-import type { DidCommInboundMessageContext } from '../../../models'
-import { DidCommProtocol } from '../../../models'
-import type { DidCommConnectionRecord } from '../../connections'
-import type { DidCommBasicMessageStateChangedEvent } from '../DidCommBasicMessageEvents'
-import { DidCommBasicMessageEventTypes } from '../DidCommBasicMessageEvents'
-import { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
-import { DidCommBasicMessage } from '../protocol/v1'
-import { DidCommBasicMessageHandler } from '../protocol/v1/handlers'
-import { DidCommBasicMessageRecord, DidCommBasicMessageRepository } from '../repository'
-import { DidCommBaseBasicMessageService } from './DidCommBaseBasicMessageService'
+import { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
+import type { DidCommInboundMessageContext } from '../../../../models'
+import { DidCommProtocol } from '../../../../models'
+import type { DidCommConnectionRecord } from '../../../connections'
+import type { DidCommBasicMessageV2StateChangedEvent } from '../../DidCommBasicMessageEvents'
+import { DidCommBasicMessageEventTypes } from '../../DidCommBasicMessageEvents'
+import { DidCommBasicMessageRole } from '../../DidCommBasicMessageRole'
+import { DidCommBasicMessageRecord, DidCommBasicMessageRepository } from '../../repository'
+import { DidCommBaseBasicMessageService } from '../../services/DidCommBaseBasicMessageService'
+import { DidCommBasicMessageV2Handler } from './handlers'
+import { DidCommBasicMessageV2 } from './messages'
 
 @injectable()
-export class DidCommBasicMessageService extends DidCommBaseBasicMessageService {
-  public readonly version = 'v1'
+export class DidCommBasicMessageV2Service extends DidCommBaseBasicMessageService {
+  public readonly version = 'v2'
 
   // biome-ignore lint/complexity/noUselessConstructor: tsyringe needs an own constructor for design:paramtypes
   public constructor(basicMessageRepository: DidCommBasicMessageRepository, eventEmitter: EventEmitter) {
@@ -23,10 +23,10 @@ export class DidCommBasicMessageService extends DidCommBaseBasicMessageService {
   }
 
   public register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new DidCommBasicMessageHandler(this))
+    messageHandlerRegistry.registerMessageHandler(new DidCommBasicMessageV2Handler(this))
     featureRegistry.register(
       new DidCommProtocol({
-        id: 'https://didcomm.org/basicmessage/1.0',
+        id: 'https://didcomm.org/basicmessage/2.0',
         roles: [DidCommBasicMessageRole.Sender, DidCommBasicMessageRole.Receiver],
       })
     )
@@ -34,25 +34,22 @@ export class DidCommBasicMessageService extends DidCommBaseBasicMessageService {
 
   public async createMessage(
     agentContext: AgentContext,
-    message: string,
+    content: string,
     connectionRecord: DidCommConnectionRecord,
     parentThreadId?: string
   ) {
-    const basicMessage = new DidCommBasicMessage({ content: message })
+    const basicMessage = new DidCommBasicMessageV2({ content, parentThreadId })
 
-    // If no parentThreadid is defined, there is no need to explicitly send a thread decorator
-    if (parentThreadId) {
-      basicMessage.setThread({ parentThreadId })
-    }
+    const sentTimeIso = new Date(basicMessage.createdTime * 1000).toISOString()
 
     const basicMessageRecord = new DidCommBasicMessageRecord({
-      sentTime: basicMessage.sentTime.toISOString(),
+      sentTime: sentTimeIso,
       content: basicMessage.content,
       connectionId: connectionRecord.id,
       role: DidCommBasicMessageRole.Sender,
       threadId: basicMessage.threadId,
       parentThreadId,
-      protocolVersion: 'v1',
+      protocolVersion: 'v2',
     })
 
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)
@@ -61,21 +58,20 @@ export class DidCommBasicMessageService extends DidCommBaseBasicMessageService {
     return { message: basicMessage, record: basicMessageRecord }
   }
 
-  /**
-   * @todo use connection from message context
-   */
   public async save(
-    { message, agentContext }: DidCommInboundMessageContext<DidCommBasicMessage>,
+    { message, agentContext }: DidCommInboundMessageContext<DidCommBasicMessageV2>,
     connection: DidCommConnectionRecord
   ) {
+    const sentTimeIso = new Date(message.createdTime * 1000).toISOString()
+
     const basicMessageRecord = new DidCommBasicMessageRecord({
-      sentTime: message.sentTime.toISOString(),
+      sentTime: sentTimeIso,
       content: message.content,
       connectionId: connection.id,
       role: DidCommBasicMessageRole.Receiver,
       threadId: message.threadId,
       parentThreadId: message.thread?.parentThreadId,
-      protocolVersion: 'v1',
+      protocolVersion: 'v2',
     })
 
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)
@@ -85,10 +81,10 @@ export class DidCommBasicMessageService extends DidCommBaseBasicMessageService {
   private emitStateChangedEvent(
     agentContext: AgentContext,
     basicMessageRecord: DidCommBasicMessageRecord,
-    basicMessage: DidCommBasicMessage
+    basicMessage: DidCommBasicMessageV2
   ) {
-    this.eventEmitter.emit<DidCommBasicMessageStateChangedEvent>(agentContext, {
-      type: DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+    this.eventEmitter.emit<DidCommBasicMessageV2StateChangedEvent>(agentContext, {
+      type: DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged,
       payload: { message: basicMessage, basicMessageRecord: basicMessageRecord.clone() },
     })
   }

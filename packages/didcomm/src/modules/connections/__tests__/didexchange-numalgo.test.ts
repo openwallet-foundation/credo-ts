@@ -152,7 +152,7 @@ async function didExchangeNumAlgoBaseTest(options: {
         {
           id: 'didcomm',
           recipientKeys: [didRouting.recipientKey],
-          routingKeys: didRouting.routingKeys,
+          routingKeys: didRouting.routingKeys ?? [],
           serviceEndpoint: didRouting.endpoints[0],
         },
       ],

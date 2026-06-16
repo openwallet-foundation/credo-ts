@@ -274,7 +274,7 @@ export class DidCommMediationRecipientApi {
     const mediatorPickupStrategy = await this.getPickupStrategyForMediator(mediatorRecord, pickupStrategy)
     const mediatorConnection = await this.connectionService.getById(this.agentContext, mediatorRecord.connectionId)
 
-    if (mediatorRecord.mediationProtocolVersion === 'v2') {
+    if (mediatorRecord.protocolVersion === 'v2') {
       assertDidCommV2Connection(mediatorConnection, 'Mediation 2.0')
     } else {
       assertDidCommV1Connection(mediatorConnection, 'Mediation')
@@ -391,7 +391,7 @@ export class DidCommMediationRecipientApi {
     // For Coordinate Mediation 2.0 (DIDComm v2), message pickup v1/v2 protocols won't work
     // because the connection is v2 and those protocols require v1 connections.
     // Auto-upgrade to Message Pickup 3.0 equivalents.
-    if (mediator.mediationProtocolVersion === 'v2') {
+    if (mediator.protocolVersion === 'v2') {
       if (
         !mediatorPickupStrategy ||
         mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV1 ||
@@ -399,6 +399,11 @@ export class DidCommMediationRecipientApi {
       ) {
         mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3
       } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV2LiveMode) {
+        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3LiveMode
+      } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.Implicit) {
+        this.logger.warn(
+          `Pickup strategy 'Implicit' is not compatible with Coordinate Mediation 2.0. Upgrading to 'PickUpV3LiveMode'.`
+        )
         mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3LiveMode
       }
       if (persistCoercion) {
@@ -535,7 +540,7 @@ export class DidCommMediationRecipientApi {
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
     const connection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)
 
-    if (mediationRecord.mediationProtocolVersion === 'v2') {
+    if (mediationRecord.protocolVersion === 'v2') {
       const message = this.mediationRecipientService.createKeylistUpdateV2Message(mediationRecord, [
         { recipientDid: recipientKeyOrDid, action: action as unknown as KeylistUpdateActionV2 },
       ])
@@ -579,7 +584,7 @@ export class DidCommMediationRecipientApi {
   ): Promise<void> {
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
-    if (mediationRecord.mediationProtocolVersion !== 'v2') {
+    if (mediationRecord.protocolVersion !== 'v2') {
       throw new CredoError('keylistQuery is only supported for Coordinate Mediation 2.0')
     }
     const connection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)

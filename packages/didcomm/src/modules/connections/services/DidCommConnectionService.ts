@@ -57,6 +57,7 @@ import {
   convertToNewDidDocument,
   getResolvedDidcommServiceWithSigningKeyId,
   keyAgreementsEqual,
+  routingToServices,
 } from './helpers'
 
 export interface ConnectionRequestParams {
@@ -991,13 +992,13 @@ export class DidCommConnectionService {
     const auth = new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)
 
     // IndyAgentService is old service type
-    const services = routing.endpoints.map(
-      (endpoint, index) =>
+    const services = routingToServices(routing).map(
+      (service, index) =>
         new IndyAgentService({
           id: `${indyDid}#IndyAgentService-${index + 1}`,
-          serviceEndpoint: endpoint,
+          serviceEndpoint: service.serviceEndpoint,
           recipientKeys: [recipientKeyBase58],
-          routingKeys: routing.routingKeys.map((key) => TypedArrayEncoder.toBase58(key.publicKey.publicKey)),
+          routingKeys: service.routingKeys.map((key) => TypedArrayEncoder.toBase58(key.publicKey.publicKey)),
           // Order of endpoint determines priority
           priority: index,
         })

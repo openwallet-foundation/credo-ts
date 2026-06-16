@@ -44,7 +44,7 @@ import {
   DidCommHandshakeProtocol,
 } from '../connections'
 import { DidCommConnectionsApi } from '../connections/DidCommConnectionsApi'
-import { createPeerDidForV2OOB } from '../connections/services/helpers'
+import { createPeerDidForV2OOB, routingToServices } from '../connections/services/helpers'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
 import {
   convertToNewInvitation,
@@ -275,17 +275,17 @@ export class DidCommOutOfBandApi {
       const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
       mediatorId = routing?.mediatorId
 
-      services = routing.endpoints.map((endpoint, index) => {
+      services = routingToServices(routing).map((service) => {
         // Store the key id for the recipient key
         invitationInlineServiceKeys.push({
           kmsKeyId: routing.recipientKey.keyId,
           recipientKeyFingerprint: routing.recipientKey.fingerprint,
         })
         return new OutOfBandDidCommService({
-          id: `#inline-${index}`,
-          serviceEndpoint: endpoint,
-          recipientKeys: [routing.recipientKey].map((key) => new DidKey(key).did),
-          routingKeys: routing.routingKeys.map((key) => new DidKey(key).did),
+          id: service.id,
+          serviceEndpoint: service.serviceEndpoint,
+          recipientKeys: service.recipientKeys.map((key) => new DidKey(key).did),
+          routingKeys: service.routingKeys.map((key) => new DidKey(key).did),
         })
       })
     }
@@ -695,7 +695,7 @@ export class DidCommOutOfBandApi {
         recipientKeyId: routing.recipientKey.keyId,
         keyAgreementKeyFingerprint: routing.keyAgreementKey?.fingerprint,
         keyAgreementKeyId: routing.keyAgreementKey?.keyId,
-        routingKeyFingerprints: routing.routingKeys.map((key) => key.fingerprint),
+        routingKeyFingerprints: (routing.routingKeys ?? []).map((key) => key.fingerprint),
         endpoints: routing.endpoints,
         mediatorId: routing.mediatorId,
         routingDid: routing.routingDid,
@@ -804,16 +804,20 @@ export class DidCommOutOfBandApi {
         keyAgreementKey.keyId = recipientRouting.keyAgreementKeyId ?? keyAgreementKey.legacyKeyId
       }
 
-      routing = {
+      const baseRouting = {
         recipientKey: recipientPublicJwk,
         keyAgreementKey,
-        routingKeys: recipientRouting.routingKeyFingerprints.map(
-          (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
-        ),
         endpoints: recipientRouting.endpoints,
         mediatorId: recipientRouting.mediatorId,
-        routingDid: recipientRouting.routingDid,
       }
+      routing = recipientRouting.routingDid
+        ? { ...baseRouting, routingDid: recipientRouting.routingDid }
+        : {
+            ...baseRouting,
+            routingKeys: recipientRouting.routingKeyFingerprints.map(
+              (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+            ),
+          }
     }
 
     const { handshakeProtocols } = outOfBandInvitation

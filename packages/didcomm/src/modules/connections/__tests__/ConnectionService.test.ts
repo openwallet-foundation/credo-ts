@@ -9,6 +9,7 @@ import { DidCommV1Service } from '../../../../../core/src/modules/dids/domain/se
 import { didDocumentJsonToNumAlgo1Did } from '../../../../../core/src/modules/dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../../../../../core/src/modules/dids/repository'
 import { indyDidFromPublicKeyBase58 } from '../../../../../core/src/utils/did'
+import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
 import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
 import { uuid } from '../../../../../core/src/utils/uuid'
 import {
@@ -158,6 +159,37 @@ describe('DidCommConnectionService', () => {
         })
       )
       expect(message.imageUrl).toBe(connectionImageUrl)
+    })
+
+    it('resolves a Coordinate Mediation 2.0 routing did to the mediator endpoint and routing keys', async () => {
+      expect.assertions(1)
+
+      const mediatorRoutingKey = Kms.PublicJwk.fromFingerprint(
+        'z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE'
+      ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+      const routingDid = `did:peer:2.V${mediatorRoutingKey.fingerprint}.S${JsonEncoder.toBase64Url({
+        t: 'dm',
+        s: 'https://mediator.example.com',
+        r: [],
+        a: ['didcomm/v2'],
+      })}`
+
+      const outOfBand = getMockOutOfBand({ state: DidCommOutOfBandState.PrepareResponse })
+      const config = {
+        label: 'alice',
+        routing: { recipientKey: myRouting.recipientKey, endpoints: myRouting.endpoints, routingDid },
+      }
+
+      const { message } = await connectionService.createRequest(agentContext, outOfBand, config)
+
+      expect(message.connection.didDoc?.service).toEqual([
+        new IndyAgentService({
+          id: 'XpwgBjsC2wh3eHcMW6ZRJT#IndyAgentService-1',
+          serviceEndpoint: 'https://mediator.example.com',
+          recipientKeys: ['HoVPnpfUjrDECoMZy8vu4U6dwEcLhbzjNwyS3gwLDCG8'],
+          routingKeys: [TypedArrayEncoder.toBase58(mediatorRoutingKey.publicKey.publicKey)],
+        }),
+      ])
     })
 
     it('returns a connection request message containing a custom label', async () => {

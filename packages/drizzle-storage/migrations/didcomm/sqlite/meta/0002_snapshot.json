@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5d5ee59b-e77b-4b1b-ba21-2786088fb7e4",
+  "id": "6cfac836-2c30-4911-86b4-fc93d8b5472e",
   "prevId": "2b95f214-61e4-4d06-b2ef-340d0169c983",
   "tables": {
     "DidcommBasicMessage": {
@@ -86,6 +86,13 @@
         },
         "parent_thread_id": {
           "name": "parent_thread_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "protocol_version": {
+          "name": "protocol_version",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -260,6 +267,13 @@
         },
         "protocol": {
           "name": "protocol",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "didcomm_version": {
+          "name": "didcomm_version",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -703,8 +717,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "mediation_protocol_version": {
-          "name": "mediation_protocol_version",
+        "protocol_version": {
+          "name": "protocol_version",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

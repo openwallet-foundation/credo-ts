@@ -1,5 +1,5 @@
 {
-  "id": "5b923db3-7cb8-47e0-91dd-7537a61291bd",
+  "id": "6ba8ec44-a5f7-4778-a42d-c4f35e112596",
   "prevId": "578767a4-33a4-471f-9f81-6976f44b3070",
   "version": "7",
   "dialect": "postgresql",
@@ -77,6 +77,12 @@
         },
         "parent_thread_id": {
           "name": "parent_thread_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "protocol_version": {
+          "name": "protocol_version",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -237,6 +243,13 @@
         "protocol": {
           "name": "protocol",
           "type": "DidcommConnectionHandshakeProtocol",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "didcomm_version": {
+          "name": "didcomm_version",
+          "type": "DidcommConnectionVersion",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
@@ -644,8 +657,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "mediation_protocol_version": {
-          "name": "mediation_protocol_version",
+        "protocol_version": {
+          "name": "protocol_version",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -1076,6 +1089,11 @@
         "abandoned",
         "completed"
       ]
+    },
+    "public.DidcommConnectionVersion": {
+      "name": "DidcommConnectionVersion",
+      "schema": "public",
+      "values": ["v1", "v2"]
     },
     "public.DidcommCredentialExchangeAutoAccept": {
       "name": "DidcommCredentialExchangeAutoAccept",

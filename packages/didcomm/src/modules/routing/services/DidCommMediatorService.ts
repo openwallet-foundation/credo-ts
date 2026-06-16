@@ -374,7 +374,7 @@ export class DidCommMediatorService {
       role: DidCommMediationRole.Mediator,
       state: DidCommMediationState.Requested,
       threadId: messageContext.message.threadId,
-      mediationProtocolVersion: 'v2',
+      protocolVersion: 'v2',
     })
 
     await this.mediationRepository.save(messageContext.agentContext, mediationRecord)
@@ -413,7 +413,7 @@ export class DidCommMediatorService {
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Mediator)
-    if (mediationRecord.mediationProtocolVersion !== 'v2') {
+    if (mediationRecord.protocolVersion !== 'v2') {
       throw new CredoError('Keylist update v2 requires mediation protocol version 2.0')
     }
 
@@ -457,7 +457,7 @@ export class DidCommMediatorService {
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Mediator)
-    if (mediationRecord.mediationProtocolVersion !== 'v2') {
+    if (mediationRecord.protocolVersion !== 'v2') {
       throw new CredoError('Keylist query v2 requires mediation protocol version 2.0')
     }
 

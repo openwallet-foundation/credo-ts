@@ -38,7 +38,7 @@ export class DidCommMediatorApi {
     const connectionRecord = await this.connectionService.getById(this.agentContext, record.connectionId)
 
     const { message, mediationRecord } =
-      record.mediationProtocolVersion === 'v2'
+      record.protocolVersion === 'v2'
         ? await this.mediatorService.createGrantMediationMessageV2(this.agentContext, record)
         : await this.mediatorService.createGrantMediationMessage(this.agentContext, record)
 

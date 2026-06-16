@@ -2,13 +2,11 @@ import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
-import { DidCommProtocol } from '../../models'
-import { DidCommBasicMessageRole } from './DidCommBasicMessageRole'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommBasicMessagesApi } from './DidCommBasicMessagesApi'
 import type { DidCommBasicMessagesModuleConfigOptions } from './DidCommBasicMessagesModuleConfig'
 import { DidCommBasicMessagesModuleConfig } from './DidCommBasicMessagesModuleConfig'
-import { DidCommBasicMessageHandler } from './protocol/v1/handlers'
-import { DidCommBasicMessageV2Handler } from './protocol/v2/handlers'
+import { DidCommBasicMessageV2Service } from './protocol/v2'
 import { DidCommBasicMessageRepository } from './repository'
 import { DidCommBasicMessageService } from './services'
 
@@ -26,32 +24,24 @@ export class DidCommBasicMessagesModule implements Module {
   public register(dependencyManager: DependencyManager) {
     dependencyManager.registerInstance(DidCommBasicMessagesModuleConfig, this.config)
     dependencyManager.registerSingleton(DidCommBasicMessageService)
+    dependencyManager.registerSingleton(DidCommBasicMessageV2Service)
     dependencyManager.registerSingleton(DidCommBasicMessageRepository)
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
     const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
     const messageHandlerRegistry = agentContext.resolve(DidCommMessageHandlerRegistry)
-    const basicMessageService = agentContext.resolve(DidCommBasicMessageService)
+    const didcommVersions = agentContext.resolve(DidCommModuleConfig).didcommVersions
 
-    if (this.config.supportsV1) {
-      messageHandlerRegistry.registerMessageHandler(new DidCommBasicMessageHandler(basicMessageService))
-      featureRegistry.register(
-        new DidCommProtocol({
-          id: 'https://didcomm.org/basicmessage/1.0',
-          roles: [DidCommBasicMessageRole.Sender, DidCommBasicMessageRole.Receiver],
-        })
-      )
-    }
+    const services = [
+      agentContext.resolve(DidCommBasicMessageService),
+      agentContext.resolve(DidCommBasicMessageV2Service),
+    ] as const
 
-    if (this.config.supportsV2) {
-      messageHandlerRegistry.registerMessageHandler(new DidCommBasicMessageV2Handler(basicMessageService))
-      featureRegistry.register(
-        new DidCommProtocol({
-          id: 'https://didcomm.org/basicmessage/2.0',
-          roles: [DidCommBasicMessageRole.Sender, DidCommBasicMessageRole.Receiver],
-        })
-      )
+    for (const service of services) {
+      if (this.config.protocols.includes(service.version) && didcommVersions.includes(service.version)) {
+        service.register(messageHandlerRegistry, featureRegistry)
+      }
     }
   }
 }

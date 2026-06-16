@@ -1,16 +1,18 @@
-import type { DidCommVersion } from '../../util/didcommVersion'
+import type { DidCommBasicMessageV2Service } from './protocol/v2'
+import type { DidCommBasicMessageService } from './services'
+
+export type DidCommBasicMessageProtocolVersion = (DidCommBasicMessageService | DidCommBasicMessageV2Service)['version']
+
 /**
  * DidCommBasicMessagesModuleConfigOptions defines the interface for the options of the DidCommBasicMessagesModuleConfig class.
  */
 export interface DidCommBasicMessagesModuleConfigOptions {
   /**
-   * Basic message protocol versions to enable.
-   * - 1.0: Original BasicMessage (https://didcomm.org/basicmessage/1.0)
-   * - 2.0: BasicMessage 2.0 (https://didcomm.org/basicmessage/2.0), works over both DIDComm v1 and v2
-   *
-   * @default ['v1']
+   * Basic message protocol versions to enable. A version is only registered when the matching
+   * DIDComm version is also enabled in `DidCommModuleConfig.didcommVersions`.
+   * @default ['v1', 'v2']
    */
-  protocols?: DidCommVersion[]
+  protocols?: DidCommBasicMessageProtocolVersion[]
 }
 
 export class DidCommBasicMessagesModuleConfig {
@@ -21,17 +23,7 @@ export class DidCommBasicMessagesModuleConfig {
   }
 
   /** Basic message protocol versions enabled. */
-  public get protocols(): DidCommVersion[] {
-    return this.options.protocols ?? ['v1']
-  }
-
-  /** Whether BasicMessage 1.0 is enabled. */
-  public get supportsV1(): boolean {
-    return this.protocols.includes('v1')
-  }
-
-  /** Whether BasicMessage 2.0 is enabled. */
-  public get supportsV2(): boolean {
-    return this.protocols.includes('v2')
+  public get protocols(): DidCommBasicMessageProtocolVersion[] {
+    return this.options.protocols ?? ['v1', 'v2']
   }
 }

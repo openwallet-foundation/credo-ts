@@ -1,11 +1,12 @@
 import type { AgentContext, BaseRecordAny, ResolvedDidCommService } from '@credo-ts/core'
-import { CredoError, DidKey, Kms, utils } from '@credo-ts/core'
+import { CredoError, DidKey, Kms } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { ServiceDecorator } from './decorators/service/ServiceDecorator'
 import type { DidCommRouting } from './models'
 import { DidCommOutboundMessageContext } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
+import { routingToServices } from './modules/connections/services/helpers'
 import type { DidCommOutOfBandRecord } from './modules/oob'
 import {
   DidCommInvitationType,
@@ -294,15 +295,20 @@ async function createOurService(
       keyAgreementKey.keyId = oobRecordRecipientRouting.keyAgreementKeyId ?? keyAgreementKey.legacyKeyId
     }
 
-    routing = {
+    const baseRouting = {
       recipientKey: recipientPublicJwk,
       keyAgreementKey,
-      routingKeys: oobRecordRecipientRouting.routingKeyFingerprints.map(
-        (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
-      ),
       endpoints: oobRecordRecipientRouting.endpoints,
       mediatorId: oobRecordRecipientRouting.mediatorId,
     }
+    routing = oobRecordRecipientRouting.routingDid
+      ? { ...baseRouting, routingDid: oobRecordRecipientRouting.routingDid }
+      : {
+          ...baseRouting,
+          routingKeys: oobRecordRecipientRouting.routingKeyFingerprints.map(
+            (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+          ),
+        }
   }
 
   if (!routing) {
@@ -319,9 +325,10 @@ async function createOurService(
         recipientKeyId: routing.recipientKey.keyId,
         keyAgreementKeyFingerprint: routing.keyAgreementKey?.fingerprint,
         keyAgreementKeyId: routing.keyAgreementKey?.keyId,
-        routingKeyFingerprints: routing.routingKeys.map((key) => key.fingerprint),
+        routingKeyFingerprints: (routing.routingKeys ?? []).map((key) => key.fingerprint),
         endpoints: routing.endpoints,
         mediatorId: routing.mediatorId,
+        routingDid: routing.routingDid,
       })
       outOfBandRecord.setTags({ recipientRoutingKeyFingerprint: routing.recipientKey.fingerprint })
       const outOfBandRepository = agentContext.resolve(DidCommOutOfBandRepository)
@@ -329,12 +336,8 @@ async function createOurService(
     }
   }
 
-  return {
-    id: utils.uuid(),
-    serviceEndpoint: routing.endpoints[0],
-    recipientKeys: [routing.recipientKey],
-    routingKeys: routing.routingKeys,
-  }
+  const [service] = routingToServices(routing)
+  return service
 }
 
 async function addExchangeDataToMessage(

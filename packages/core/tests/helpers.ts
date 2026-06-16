@@ -12,6 +12,8 @@ import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
 import type {
   DidCommBasicMessage,
   DidCommBasicMessageStateChangedEvent,
+  DidCommBasicMessageV2,
+  DidCommBasicMessageV2StateChangedEvent,
   DidCommConnectionDidRotatedEvent,
   DidCommConnectionRecordProps,
   DidCommConnectionStateChangedEvent,
@@ -702,9 +704,9 @@ export async function waitForDidRotate(
 export async function waitForBasicMessage(
   agent: Agent,
   { content, connectionId }: { content?: string; connectionId?: string }
-): Promise<DidCommBasicMessage> {
+): Promise<DidCommBasicMessage | DidCommBasicMessageV2> {
   return new Promise((resolve) => {
-    const listener = (event: DidCommBasicMessageStateChangedEvent) => {
+    const listener = (event: DidCommBasicMessageStateChangedEvent | DidCommBasicMessageV2StateChangedEvent) => {
       const contentMatches = content === undefined || event.payload.message.content === content
       const connectionIdMatches =
         connectionId === undefined || event.payload.basicMessageRecord.connectionId === connectionId
@@ -714,6 +716,10 @@ export async function waitForBasicMessage(
           DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
           listener
         )
+        agent.events.off<DidCommBasicMessageV2StateChangedEvent>(
+          DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged,
+          listener
+        )
 
         resolve(event.payload.message)
       }
@@ -721,6 +727,10 @@ export async function waitForBasicMessage(
 
     agent.events.on<DidCommBasicMessageStateChangedEvent>(
       DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+      listener
+    )
+    agent.events.on<DidCommBasicMessageV2StateChangedEvent>(
+      DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged,
       listener
     )
   })

@@ -88,7 +88,7 @@ describe('Mediation 2.0 + Pickup 3.0 Combined', () => {
         expect(mediatorRecipientConn.didcommVersion).toBe('v2')
 
         const mediationRecord = await recipientAgent.didcomm.mediationRecipient.provision(recipientMediatorConn)
-        expect(mediationRecord.mediationProtocolVersion).toBe('v2')
+        expect(mediationRecord.protocolVersion).toBe('v2')
         expect(mediationRecord.routingDid).toBe(MEDIATOR_ROUTING_DID)
         expect(mediationRecord.recipientDids?.length).toBeGreaterThan(0)
 
@@ -119,6 +119,6 @@ describe('Mediation v2 + Pickup v3 - API validation', () => {
 
   it('DidCommMediationRecipientApi initiates pickup with v3 for v2 mediators', () => {
     expect(typeof DidCommMediationRecipientApi.prototype.initiateMessagePickup).toBe('function')
-    // When mediator has mediationProtocolVersion === 'v2', initiateMessagePickup uses PickUpV3 by default
+    // When mediator has protocolVersion === 'v2', initiateMessagePickup uses PickUpV3 by default
   })
 })

@@ -197,20 +197,33 @@ function resolveRoutingDid(routingDid: string): {
   endpoint: string
   routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
 } {
-  const routingDoc = routingDid.startsWith('did:peer:4')
-    ? didToNumAlgo4DidDocument(routingDid)
-    : didToNumAlgo2DidDocument(routingDid)
+  let routingDoc: ReturnType<typeof didToNumAlgo2DidDocument>
+  try {
+    routingDoc = routingDid.startsWith('did:peer:4')
+      ? didToNumAlgo4DidDocument(routingDid)
+      : didToNumAlgo2DidDocument(routingDid)
+  } catch (error) {
+    throw new CredoError(
+      `Unable to resolve Coordinate Mediation 2.0 routing DID '${routingDid}' for DIDComm v1 routing: ${
+        error instanceof Error ? error.message : 'unknown error'
+      }`
+    )
+  }
 
   // Extract the first service's transport URL
-  let endpoint = routingDid // fallback to DID if no service found
+  let endpoint: string | undefined
   const firstSvc = routingDoc.service?.[0]
   if (firstSvc) {
-    const resolved =
+    endpoint =
       typeof firstSvc.serviceEndpoint === 'string'
         ? firstSvc.serviceEndpoint
         : ((firstSvc.serviceEndpoint as { uri?: string; s?: string })?.uri ??
           (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.s)
-    if (resolved) endpoint = resolved
+  }
+  if (!endpoint) {
+    throw new CredoError(
+      `Coordinate Mediation 2.0 routing DID '${routingDid}' has no resolvable transport endpoint; DIDComm v1 routing requires a dialable serviceEndpoint.`
+    )
   }
 
   // Extract Ed25519 routing keys from authentication (for v1 Forward compatibility).
@@ -229,6 +242,15 @@ function resolveRoutingDid(routingDid: string): {
     }
   }
 
+  // A CM 2.0 routing DID exposing only X25519/P-256 keyAgreement keys leaves v1 Forward packing with no
+  // Ed25519 routing key, so the sender skips forward-wrapping and posts a message the mediator cannot
+  // decrypt. Fail loud at construction time instead of emitting an unreachable service.
+  if (routingKeys.length === 0) {
+    throw new CredoError(
+      `Coordinate Mediation 2.0 routing DID '${routingDid}' exposes no Ed25519 routing key; DIDComm v1 Forward routing requires one. Use a routing DID that includes an Ed25519 authentication/verification method, or create a DIDComm v2 invitation.`
+    )
+  }
+
   return { endpoint, routingKeys }
 }
 
@@ -242,7 +264,7 @@ export function routingToServices(routing: DidCommRouting): ResolvedDidCommServi
         id: '#inline-0',
         serviceEndpoint: resolved.endpoint,
         recipientKeys: [routing.recipientKey],
-        routingKeys: [...resolved.routingKeys, ...routing.routingKeys],
+        routingKeys: resolved.routingKeys,
       },
     ]
   }
@@ -251,7 +273,7 @@ export function routingToServices(routing: DidCommRouting): ResolvedDidCommServi
     id: `#inline-${index}`,
     serviceEndpoint: endpoint,
     recipientKeys: [routing.recipientKey],
-    routingKeys: routing.routingKeys,
+    routingKeys: routing.routingKeys ?? [],
   }))
 }
 

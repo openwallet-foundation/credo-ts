@@ -162,7 +162,7 @@ describe('Rotation E2E tests', () => {
           {
             id: 'didcomm',
             recipientKeys: [didRouting.recipientKey],
-            routingKeys: didRouting.routingKeys,
+            routingKeys: didRouting.routingKeys ?? [],
             serviceEndpoint: didRouting.endpoints[0],
           },
         ],
@@ -238,7 +238,7 @@ describe('Rotation E2E tests', () => {
           {
             id: 'didcomm',
             recipientKeys: [didRouting.recipientKey],
-            routingKeys: didRouting.routingKeys,
+            routingKeys: didRouting.routingKeys ?? [],
             serviceEndpoint: didRouting.endpoints[0],
           },
         ],
@@ -321,7 +321,7 @@ describe('Rotation E2E tests', () => {
           {
             id: 'didcomm',
             recipientKeys: [didRouting.recipientKey],
-            routingKeys: didRouting.routingKeys,
+            routingKeys: didRouting.routingKeys ?? [],
             serviceEndpoint: didRouting.endpoints[0],
           },
         ],

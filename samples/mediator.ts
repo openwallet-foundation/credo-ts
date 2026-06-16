@@ -11,8 +11,8 @@
  * url that is returned by the '/invitation/ endpoint. This will connect
  * to the mediator, request mediation and set the mediator as default.
  *
- * Mediation 2.0 + Pickup 3.0: Set MEDIATION_V2=true to enable. For v2,
- * clients must use v2 OOB invitations (didCommVersion: 'v2').
+ * Set DIDCOMM_VERSION=v2 to run the mediator on DIDComm v2 (Mediation 2.0 +
+ * Pickup 3.0). Clients must then use v2 OOB invitations.
  */
 
 import { AskarModule } from '@credo-ts/askar'
@@ -40,13 +40,14 @@ const socketServer = new WebSocketServer({ noServer: true })
 
 const endpoints = process.env.AGENT_ENDPOINTS?.split(',') ?? [`http://localhost:${port}`, `ws://localhost:${port}`]
 const _wsEndpoint = endpoints.find((e) => e.startsWith('ws://')) ?? `ws://localhost:${port}`
-const enableMediationV2 = process.env.MEDIATION_V2 === 'true'
+const didcommVersion = process.env.DIDCOMM_VERSION === 'v2' ? 'v2' : 'v1'
 
 // For Mediation 2.0, mediator needs a routing DID (did:peer:2 with service endpoint).
 // Use MEDIATOR_ROUTING_DID to override. Default for ws://localhost:3001:
 const DEFAULT_V2_ROUTING_DID =
   'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.SeyJ0IjoiZG0iLCJzIjoid3M6Ly9sb2NhbGhvc3Q6MzAwMSIsInIiOltdLCJhIjoibm9uZSMxIn0'
-const mediatorRoutingDid = process.env.MEDIATOR_ROUTING_DID ?? (enableMediationV2 ? DEFAULT_V2_ROUTING_DID : undefined)
+const mediatorRoutingDid =
+  process.env.MEDIATOR_ROUTING_DID ?? (didcommVersion === 'v2' ? DEFAULT_V2_ROUTING_DID : undefined)
 
 const logger = new TestLogger(LogLevel.Info)
 
@@ -74,16 +75,16 @@ const agent = new Agent({
     }),
     didcomm: new DidCommModule({
       endpoints,
-      didcommVersions: enableMediationV2 ? ['v1', 'v2'] : ['v1'],
+      didcommVersions: [didcommVersion],
       transports: {
         inbound: [httpInboundTransport, wsInboundTransport],
         outbound: [httpOutboundTransport, wsOutboundTransport],
       },
       mediator: {
         autoAcceptMediationRequests: true,
-        ...(enableMediationV2 && mediatorRoutingDid
+        ...(didcommVersion === 'v2' && mediatorRoutingDid
           ? {
-              mediationProtocolVersions: ['v1', 'v2'] as const,
+              mediationProtocolVersions: ['v2'] as const,
               mediatorRoutingDid,
             }
           : {}),
@@ -95,19 +96,15 @@ const agent = new Agent({
   },
 })
 
-// Create invitation: GET /invitation (v1) or GET /invitation?v2=1 (v2 OOB, when MEDIATION_V2=true)
+// Create invitation: GET /invitation (follows the configured DIDComm version)
 httpInboundTransport.app.get('/invitation', async (req, res) => {
   if (typeof req.query.c_i === 'string') {
     const invitation = DidCommConnectionInvitationMessage.fromUrl(req.url)
     res.send(invitation.toJSON())
   } else {
-    const useV2 = req.query.v2 === '1' && enableMediationV2
-    const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation(
-      useV2 ? { didCommVersion: 'v2' } : undefined
-    )
+    const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation()
     const httpEndpoint = endpoints.find((e) => e.startsWith('http'))
-    const url = outOfBandInvitation.toUrl({ domain: `${httpEndpoint}/invitation` })
-    res.send(useV2 ? { url, v2: true } : url)
+    res.send(outOfBandInvitation.toUrl({ domain: `${httpEndpoint}/invitation` }))
   }
 })
 
