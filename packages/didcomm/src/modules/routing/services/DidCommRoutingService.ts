@@ -1,9 +1,12 @@
 import type { AgentContext } from '@credo-ts/core'
-import { EventEmitter, injectable, Kms } from '@credo-ts/core'
+import { CredoError, EventEmitter, getDidPeer4ShortFormForEquivalence, injectable, Kms } from '@credo-ts/core'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
+import type { DidCommV2KeyAgreementJwk } from '../../../v2/types'
+import { keyTypeForCurve } from '../../../v2/types'
 import type { DidCommRoutingCreatedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
+import { KeylistUpdateActionV2 } from '../protocol/v2/messages'
 
 import { DidCommMediationRecipientService } from './DidCommMediationRecipientService'
 
@@ -26,13 +29,29 @@ export class DidCommRoutingService {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
     const didcommConfig = agentContext.resolve(DidCommModuleConfig)
 
-    // Create and store new key
-    const recipientKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+    // Create Ed25519 key for authentication/signing (used by V1 and V2).
+    const createdKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+    const recipientKey = Kms.PublicJwk.fromPublicJwk(createdKey.publicJwk)
+    recipientKey.keyId = createdKey.keyId
+
+    // Create separate keyAgreement key for V2 (ECDH-ES / ECDH-1PU) only when the agent
+    // supports DIDComm V2. V1-only agents derive X25519 from Ed25519 at runtime via Askar's
+    // birational map, so no separate key is needed. Curve selected via
+    // DidCommModuleConfig.v2KeyAgreementCurve (X25519 default; P-256 and P-384 supported).
+    let keyAgreementKey: DidCommV2KeyAgreementJwk | undefined
+    if (didcommConfig.acceptsV2) {
+      const createdKeyAgreementKey = await kms.createKey({
+        type: keyTypeForCurve(didcommConfig.v2KeyAgreementCurve),
+      })
+      keyAgreementKey = Kms.PublicJwk.fromPublicJwk(createdKeyAgreementKey.publicJwk) as DidCommV2KeyAgreementJwk
+      keyAgreementKey.keyId = createdKeyAgreementKey.keyId
+    }
 
     let routing: DidCommRouting = {
       endpoints: didcommConfig.endpoints,
       routingKeys: [],
-      recipientKey: Kms.PublicJwk.fromPublicJwk(recipientKey.publicJwk),
+      recipientKey,
+      keyAgreementKey,
     }
 
     // Extend routing with mediator keys (if applicable)
@@ -50,6 +69,30 @@ export class DidCommRoutingService {
     })
 
     return routing
+  }
+
+  /**
+   * Register a newly created v2 connection did:peer with the CM 2.0 mediator keylist so
+   * routing/2.0 Forwards carrying that DID as `next` match by string equality.
+   * No-op when routing is not mediated.
+   */
+  public async registerRecipientDidForV2Routing(
+    agentContext: AgentContext,
+    routing: DidCommRouting,
+    did: string
+  ): Promise<void> {
+    if (!routing.mediatorId) return
+
+    const mediationRecord = await this.mediationRecipientService.getById(agentContext, routing.mediatorId)
+    if (mediationRecord.protocolVersion !== 'v2') return
+
+    const recipientDid = getDidPeer4ShortFormForEquivalence(did) ?? did
+    const updatedRecord = await this.mediationRecipientService.keylistUpdateAndAwaitV2(agentContext, mediationRecord, [
+      { recipientDid, action: KeylistUpdateActionV2.add },
+    ])
+    if (!updatedRecord.recipientDids?.includes(recipientDid)) {
+      throw new CredoError(`Mediator did not confirm keylist registration of recipient did '${recipientDid}'`)
+    }
   }
 
   public async removeRouting(agentContext: AgentContext, options: RemoveRoutingOptions) {
@@ -72,9 +115,11 @@ export interface GetRoutingOptions {
 
 export interface RemoveRoutingOptions {
   /**
-   * Keys to remove routing from
+   * Recipient keys to remove routing from. May include both Ed25519 and X25519 keys.
+   * V1 mediators only use Ed25519 keys; V2 mediators use both directly (as did:key).
+   * X25519 keys are passed through as-is without birational derivation.
    */
-  recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+  recipientKeys: (Kms.PublicJwk<Kms.Ed25519PublicJwk> | Kms.PublicJwk<Kms.X25519PublicJwk>)[]
 
   /**
    * Identifier of the mediator used when routing has been set up
