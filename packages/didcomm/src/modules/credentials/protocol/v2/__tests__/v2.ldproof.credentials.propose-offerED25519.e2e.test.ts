@@ -6,7 +6,7 @@ import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { Agent } from '../../../../../../../core/src/agent/Agent'
 import { CacheModule, InMemoryLruCache } from '../../../../../../../core/src/modules/cache'
 import { W3cCredentialsModule } from '../../../../../../../core/src/modules/vc'
-import { customDocumentLoader } from '../../../../../../../core/src/modules/vc/data-integrity/__tests__/documentLoader'
+import { customDocumentLoader } from '../../../../../../../core/src/modules/vc/linked-data-proofs/__tests__/documentLoader'
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransformer'
 import type { EventReplaySubject } from '../../../../../../../core/tests'
@@ -123,7 +123,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
 
     const key = await faberAgent.kms.importKey({
       privateJwk: transformPrivateKeyToPrivateJwk({
-        privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+        privateKey: TypedArrayEncoder.fromUtf8String('testseed000000000000000000000001'),
         type: {
           crv: 'Ed25519',
           kty: 'OKP',

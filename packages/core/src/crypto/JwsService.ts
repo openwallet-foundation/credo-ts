@@ -10,10 +10,12 @@ import {
   PublicJwk,
 } from '../modules/kms'
 import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
-import { type EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
+import { convertLegacyTrustedCertificates } from '../modules/x509/utils/convertLegacyTrustedCertificates'
+import { X509ModuleConfig, type X509VerificationTrustedCertificates } from '../modules/x509/X509ModuleConfig'
 import { X509Service } from './../modules/x509/X509Service'
+import { type EncodedX509Certificate } from '../modules/x509/X509ServiceOptions'
 import { injectable } from '../plugins'
-import { type AnyUint8Array, isJsonObject } from '../types'
+import { isJsonObject } from '../types'
 import { JsonEncoder, TypedArrayEncoder } from '../utils'
 import type { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
 import type {
@@ -65,17 +67,17 @@ export class JwsService {
     }
 
     const payload =
-      options.payload instanceof JwtPayload ? JsonEncoder.toBuffer(options.payload.toJson()) : options.payload
+      options.payload instanceof JwtPayload ? JsonEncoder.toUint8Array(options.payload.toJson()) : options.payload
 
-    const base64Payload = TypedArrayEncoder.toBase64URL(payload)
-    const base64UrlProtectedHeader = JsonEncoder.toBase64URL(this.buildProtected(options.protectedHeaderOptions))
+    const base64Payload = TypedArrayEncoder.toBase64Url(payload)
+    const base64UrlProtectedHeader = JsonEncoder.toBase64Url(this.buildProtected(options.protectedHeaderOptions))
 
     const signResult = await kms.sign({
       algorithm: alg,
-      data: TypedArrayEncoder.fromString(`${base64UrlProtectedHeader}.${base64Payload}`),
+      data: TypedArrayEncoder.fromUtf8String(`${base64UrlProtectedHeader}.${base64Payload}`),
       keyId: options.keyId,
     })
-    const signature = TypedArrayEncoder.toBase64URL(signResult.signature)
+    const signature = TypedArrayEncoder.toBase64Url(signResult.signature)
 
     return {
       base64Payload,
@@ -171,7 +173,7 @@ export class JwsService {
 
     const jwsSigners: JwsSignerWithJwk[] = []
     for (const jws of signatures) {
-      const protectedJson = JsonEncoder.fromBase64(jws.protected)
+      const protectedJson = JsonEncoder.fromBase64Url(jws.protected)
 
       if (!isJsonObject(protectedJson)) {
         throw new CredoError('Unable to verify JWS, protected header is not a valid JSON object.')
@@ -205,8 +207,8 @@ export class JwsService {
         )
       }
 
-      const data = TypedArrayEncoder.fromString(`${jws.protected}.${payload}`)
-      const signature = TypedArrayEncoder.fromBase64(jws.signature)
+      const data = TypedArrayEncoder.fromUtf8String(`${jws.protected}.${payload}`)
+      const signature = TypedArrayEncoder.fromBase64Url(jws.signature)
       jwsSigners.push(jwsSigner)
 
       const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
@@ -259,14 +261,14 @@ export class JwsService {
     agentContext: AgentContext,
     options: {
       jwsSigner: JwsSignerWithJwk
-      trustedCertificates?: EncodedX509Certificate[]
+      trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
     }
   ) {
     const { jwsSigner } = options
+    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
     if (jwsSigner.method === 'x5c') {
-      const trustedCertificatesFromConfig =
-        agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates ?? []
+      const trustedCertificatesFromConfig = x509ModuleConfig.trustedCertificates ?? []
       const trustedCertificates = options.trustedCertificates ?? trustedCertificatesFromConfig
       if (trustedCertificates.length === 0) {
         throw new CredoError(
@@ -274,9 +276,11 @@ export class JwsService {
         )
       }
 
+      const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates)
+
       await X509Service.validateCertificateChain(agentContext, {
         certificateChain: jwsSigner.x5c,
-        trustedCertificates,
+        trustedCertificates: convertedTrustedCertificates.flatMap(({ issuance }) => issuance),
       })
     }
   }
@@ -360,7 +364,7 @@ export class JwsService {
 }
 
 export interface CreateJwsOptions {
-  payload: AnyUint8Array | JwtPayload
+  payload: Uint8Array | JwtPayload
   keyId: string
   header: Record<string, unknown>
   protectedHeaderOptions: JwsProtectedHeaderOptions
@@ -398,7 +402,7 @@ export interface VerifyJwsOptions {
    */
   resolveJwsSigner?: JwsSignerResolver
 
-  trustedCertificates?: EncodedX509Certificate[]
+  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
 }
 
 export type JwsSignerResolver = (options: {

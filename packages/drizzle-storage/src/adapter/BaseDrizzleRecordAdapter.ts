@@ -302,7 +302,6 @@ export abstract class BaseDrizzleRecordAdapter<
           })
         }
 
-        // biome-ignore lint/correctness/noUnusedVariables: <explanation>
         const { contextCorrelationId, ...item } = result
         return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
       }
@@ -327,7 +326,6 @@ export abstract class BaseDrizzleRecordAdapter<
           })
         }
 
-        // biome-ignore lint/correctness/noUnusedVariables: <explanation>
         const { contextCorrelationId, ...item } = result
         return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
       }

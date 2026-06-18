@@ -1,10 +1,13 @@
-import type { DcqlQuery, DifPresentationExchangeDefinitionV2, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
 import {
   ClaimFormat,
   DateOnly,
+  type DcqlQuery,
+  type DifPresentationExchangeDefinitionV2,
   Kms,
+  MdocDeviceResponse,
   MdocRecord,
   parseDid,
+  type SdJwtVc,
   SdJwtVcRecord,
   W3cCredential,
   W3cCredentialRecord,
@@ -37,6 +40,16 @@ import { openBadgePresentationDefinition, universityDegreePresentationDefinition
 const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const verificationBaseUrl = `${baseUrl}/oid4vp`
+
+// Create ISO 18013-5 compliant root and leaf certificates
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+  return nextMonth
+}
 
 describe('OpenID4VP Draft 24', () => {
   let expressApp: Express
@@ -1532,6 +1545,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate,
       namespaces: {
@@ -1674,6 +1688,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate,
       namespaces: {
@@ -1904,105 +1919,88 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const presentation = presentationExchange?.presentations[0] as MdocDeviceResponse
-    expect(presentation.documents).toHaveLength(1)
+    expect(presentation.deviceResponse.documents).toHaveLength(1)
 
-    const mdocResponse = presentation.documents[0]
-
-    // name SHOULD NOT be disclosed
-    expect(mdocResponse.issuerSignedNamespaces).toStrictEqual({
-      'eu.europa.ec.eudi.pid.1': {
-        degree: 'bachelor',
-        name: 'John Doe',
+    expect(presentation.issuerClaims).toStrictEqual({
+      'org.eu.university': {
+        'eu.europa.ec.eudi.pid.1': {
+          name: 'John Doe',
+          degree: 'bachelor',
+        },
       },
     })
 
-    expect(presentationExchange).toEqual({
-      definition: presentationDefinition,
-      submission: {
-        id: expect.any(String),
-        definition_id: 'mDL-sample-req',
-        descriptor_map: [
-          {
-            id: 'org.eu.university',
-            format: 'mso_mdoc',
-            path: '$[0]',
-          },
-          {
-            id: 'OpenBadgeCredentialDescriptor',
-            format: 'vc+sd-jwt',
-            path: '$[1]',
-          },
-        ],
-      },
-      presentations: [
+    expect(presentationExchange?.definition).toEqual(presentationDefinition)
+    expect(presentationExchange?.submission).toEqual({
+      id: expect.any(String),
+      definition_id: 'mDL-sample-req',
+      descriptor_map: [
         {
-          base64Url: expect.any(String),
-          documents: [
-            {
-              issuerSignedDocument: {
-                docType: 'org.eu.university',
-                issuerSigned: {
-                  nameSpaces: new Map([['eu.europa.ec.eudi.pid.1', [{}, {}]]]),
-                  issuerAuth: expect.any(Object),
-                },
-                deviceSigned: expect.any(Object),
-              },
-              base64Url: expect.any(String),
-            },
-          ],
+          id: 'org.eu.university',
+          format: 'mso_mdoc',
+          path: '$[0]',
         },
         {
-          encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtDc,
-          compact: expect.any(String),
-          header: {
-            alg: 'EdDSA',
-            kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
-            typ: 'dc+sd-jwt',
-          },
-          kbJwt: {
-            header: {
-              alg: 'EdDSA',
-              typ: 'kb+jwt',
-            },
-            payload: {
-              aud: 'x509_san_dns:localhost',
-              iat: expect.any(Number),
-              nonce: verificationSession.requestPayload.nonce,
-              sd_hash: expect.any(String),
-            },
-          },
-          holder: {
-            didUrl:
-              'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
-            method: 'did',
-          },
-          payload: {
-            _sd: [expect.any(String), expect.any(String)],
-            _sd_alg: 'sha-256',
-            cnf: {
-              kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
-            },
-            iat: expect.any(Number),
-            iss: 'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
-            vct: 'OpenBadgeCredential',
-            degree: 'bachelor',
-          },
-          // university SHOULD be disclosed
-          prettyClaims: {
-            cnf: {
-              kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
-            },
-            iat: expect.any(Number),
-            iss: 'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
-            vct: 'OpenBadgeCredential',
-            degree: 'bachelor',
-            university: 'innsbruck',
-          },
+          id: 'OpenBadgeCredentialDescriptor',
+          format: 'vc+sd-jwt',
+          path: '$[1]',
         },
       ],
-      descriptors: expect.any(Array),
     })
+    expect(presentationExchange?.descriptors).toEqual(expect.any(Array))
+
+    expect(presentationExchange?.presentations).toEqual([
+      expect.any(MdocDeviceResponse),
+      {
+        encoded: expect.any(String),
+        claimFormat: ClaimFormat.SdJwtDc,
+        compact: expect.any(String),
+        header: {
+          alg: 'EdDSA',
+          kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
+          typ: 'dc+sd-jwt',
+        },
+        kbJwt: {
+          header: {
+            alg: 'EdDSA',
+            typ: 'kb+jwt',
+          },
+          payload: {
+            aud: 'x509_san_dns:localhost',
+            iat: expect.any(Number),
+            nonce: verificationSession.requestPayload.nonce,
+            sd_hash: expect.any(String),
+          },
+        },
+        holder: {
+          didUrl:
+            'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+          method: 'did',
+        },
+        payload: {
+          _sd: [expect.any(String), expect.any(String)],
+          _sd_alg: 'sha-256',
+          cnf: {
+            kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+          },
+          iat: expect.any(Number),
+          iss: 'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
+          vct: 'OpenBadgeCredential',
+          degree: 'bachelor',
+        },
+        // university SHOULD be disclosed
+        prettyClaims: {
+          cnf: {
+            kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
+          },
+          iat: expect.any(Number),
+          iss: 'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
+          vct: 'OpenBadgeCredential',
+          degree: 'bachelor',
+          university: 'innsbruck',
+        },
+      },
+    ])
   })
 
   it('e2e flow with verifier endpoints verifying two sd-jwt-vcs with selective disclosure', async () => {
@@ -2445,13 +2443,14 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate: selfSignedCertificate,
       namespaces: {
         'eu.europa.ec.eudi.pid.1': {
           university: 'innsbruck',
           degree: 'bachelor',
-          date: date,
+          date,
           name: 'John Doe',
           not: 'disclosed',
         },
@@ -2721,13 +2720,15 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const presentation = dcql?.presentations.orgeuuniversity?.[0] as MdocDeviceResponse
-    expect(presentation.documents).toHaveLength(1)
+    expect(presentation.deviceResponse.documents).toHaveLength(1)
 
-    expect(presentation.documents[0].issuerSignedNamespaces).toEqual({
-      'eu.europa.ec.eudi.pid.1': {
-        date,
-        name: 'John Doe',
-        degree: 'bachelor',
+    expect(presentation.issuerClaims).toStrictEqual({
+      'org.eu.university': {
+        'eu.europa.ec.eudi.pid.1': {
+          name: 'John Doe',
+          degree: 'bachelor',
+          date: date,
+        },
       },
     })
   })

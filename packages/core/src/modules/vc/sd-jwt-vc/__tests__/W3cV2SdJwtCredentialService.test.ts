@@ -18,7 +18,7 @@ import { JsonTransformer, TypedArrayEncoder } from '../../../../utils'
 import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
 import { DidJwk, DidKey, DidRepository, DidsApi, DidsModuleConfig } from '../../../dids'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
-import { X509ModuleConfig } from '../../../x509'
+import { X509ModuleConfig } from '../../../x509/X509ModuleConfig'
 import { CREDENTIALS_CONTEXT_V2_URL } from '../../constants'
 import { ClaimFormat, W3cV2Credential, W3cV2EnvelopedVerifiableCredential, W3cV2Presentation } from '../../models'
 import { W3cV2SdJwtCredentialService } from '../W3cV2SdJwtCredentialService'
@@ -66,7 +66,7 @@ const dids = agentContext.dependencyManager.resolve(DidsApi)
 const w3cV2JwtCredentialService = new W3cV2SdJwtCredentialService()
 
 kms.randomBytes = vi.fn(function () {
-  return TypedArrayEncoder.fromString('salt')
+  return TypedArrayEncoder.fromUtf8String('salt')
 })
 Date.prototype.getTime = vi.fn(function () {
   return 1698151532000

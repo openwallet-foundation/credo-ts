@@ -8,6 +8,7 @@ import {
   type DifPresentationExchangeDefinition,
   DifPresentationExchangeService,
   type DifPresentationExchangeSubmission,
+  type EncodedX509Certificate,
   EventEmitter,
   extractPresentationsWithDescriptorsFromSubmission,
   extractX509CertificatesFromJwt,
@@ -24,6 +25,7 @@ import {
   joinUriParts,
   Kms,
   type Logger,
+  Mdoc,
   MdocDeviceResponse,
   type MdocSessionTranscriptOptions,
   type MdocSupportedSignatureAlgorithm,
@@ -44,6 +46,7 @@ import {
   X509Certificate,
   X509ModuleConfig,
   X509Service,
+  type X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
@@ -116,8 +119,8 @@ export class OpenId4VpVerifierService {
     options: OpenId4VpCreateAuthorizationRequestOptions & { verifier: OpenId4VcVerifierRecord }
   ): Promise<OpenId4VpCreateAuthorizationRequestReturn> {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
-    const nonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
-    const state = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
+    const nonce = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
+    const state = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
 
     const responseMode = options.responseMode ?? 'direct_post.jwt'
     const isDcApiRequest = responseMode === 'dc_api' || responseMode === 'dc_api.jwt'
@@ -293,7 +296,7 @@ export class OpenId4VpVerifierService {
       nonce,
       presentation_definition: options.presentationExchange?.definition,
       dcql_query: options.dcql?.query,
-      transaction_data: options.transactionData?.map((entry) => JsonEncoder.toBase64URL(entry)),
+      transaction_data: options.transactionData?.map((entry) => JsonEncoder.toBase64Url(entry)),
       response_mode: responseMode,
       response_type: 'vp_token',
       client_metadata,
@@ -335,10 +338,10 @@ export class OpenId4VpVerifierService {
     const verificationSession = new OpenId4VcVerificationSessionRecord({
       authorizationResponseRedirectUri: options.authorizationResponseRedirectUri,
 
-      // Only store payload for unsiged requests
+      // Only store payload for unsigned requests
       authorizationRequestPayload: authorizationRequest.jar
         ? undefined
-        : authorizationRequest.authorizationRequestPayload,
+        : (authorizationRequest.authorizationRequestPayload as OpenId4VpAuthorizationRequestPayload),
       authorizationRequestJwt: authorizationRequest.jar?.authorizationRequestJwt,
       authorizationRequestUri: hostedAuthorizationRequestUri,
       authorizationRequestId,
@@ -524,7 +527,7 @@ export class OpenId4VpVerifierService {
 
       // NOTE: apu is needed for mDOC over OID4VP without DC API up to draft 24
       const mdocGeneratedNonce = result.jarm?.jarmHeader.apu
-        ? TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64(result.jarm?.jarmHeader.apu))
+        ? TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(result.jarm?.jarmHeader.apu))
         : undefined
 
       if (result.type === 'dcql') {
@@ -573,7 +576,9 @@ export class OpenId4VpVerifierService {
         const errorMessages = presentationVerificationResults
           .flatMap(([credentialId, presentations], index) =>
             presentations.map((result) =>
-              !result.verified ? `\t- ${credentialId}[${index}]: ${result.reason}` : undefined
+              !result.verified
+                ? `\t- ${credentialId}[${index}]: ${[result.reason, result.cause?.message].filter((i) => i !== undefined).join(', ')}`
+                : undefined
             )
           )
           .filter((i) => i !== undefined)
@@ -663,7 +668,7 @@ export class OpenId4VpVerifierService {
         )
 
         const errorMessages = presentationVerificationResults
-          .map((result, index) => (!result.verified ? `\t- [${index}]: ${result.reason}` : undefined))
+          .map((result, index) => (!result.verified ? `\t- [${index}]: ${result.reason} - ${result.cause}` : undefined))
           .filter((i) => i !== undefined)
         if (errorMessages.length > 0) {
           throw new Oauth2ServerErrorResponseError(
@@ -990,7 +995,6 @@ export class OpenId4VpVerifierService {
     return {
       ...jarmClientMetadata,
       ...verifier.clientMetadata,
-      response_types_supported: ['vp_token'],
 
       // for v1 version we only include the vp_formats_supported for formats we're requesting.
       // TODO: should allow dynamically setting the supported algs
@@ -1146,7 +1150,7 @@ export class OpenId4VpVerifierService {
         presentation: VerifiablePresentation
         transactionData?: TransactionDataHashesCredentials[string]
       }
-    | { verified: false; reason: string }
+    | { verified: false; reason: string; cause?: Error }
   > {
     const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
     const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
@@ -1169,7 +1173,7 @@ export class OpenId4VpVerifierService {
         const jwt = Jwt.fromSerializedJwt(presentation.split('~')[0])
         const certificateChain = extractX509CertificatesFromJwt(jwt)
 
-        let trustedCertificates: string[] | undefined
+        let trustedCertificates: EncodedX509Certificate[] | X509VerificationTrustedCertificates[] | undefined
         if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
           trustedCertificates = await x509Config.getTrustedCertificatesForVerification(agentContext, {
             certificateChain,
@@ -1203,28 +1207,33 @@ export class OpenId4VpVerifierService {
           throw new CredoError('Expected vp_token entry for format mso_mdoc to be of type string')
         }
         const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(presentation)
-        if (mdocDeviceResponse.documents.length === 0) {
+        const document = mdocDeviceResponse.deviceResponse.documents?.[0]
+        if (!document) {
           throw new CredoError('mdoc device response does not contain any mdocs')
         }
+
+        const mdoc = new Mdoc(document.issuerSigned)
 
         const deviceResponses = mdocDeviceResponse.splitIntoSingleDocumentResponses()
 
         for (const deviceResponseIndex of deviceResponses.keys()) {
           const mdocDeviceResponse = deviceResponses[deviceResponseIndex]
 
-          const document = mdocDeviceResponse.documents[0]
-          const certificateChain = document.issuerSignedCertificateChain.map((cert) =>
+          const certificateChain = mdoc.issuerSignedCertificateChain.map((cert) =>
             X509Certificate.fromRawCertificate(cert)
           )
 
-          const trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain,
-            verification: {
-              type: 'credential',
-              credential: document,
-              openId4VcVerificationSessionId: options.verificationSessionId,
-            },
-          })
+          const trustedCertificates =
+            (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+              certificateChain,
+              verification: {
+                type: 'credential',
+                credential: mdoc,
+                openId4VcVerificationSessionId: options.verificationSessionId,
+              },
+            })) ??
+            x509Config.trustedCertificates ??
+            []
 
           let sessionTranscriptOptions: MdocSessionTranscriptOptions
           if (options.origin && options.version === 'v1') {
@@ -1319,7 +1328,7 @@ export class OpenId4VpVerifierService {
       }
 
       if (!isValid) {
-        throw new CredoError(`Error occured during verification of presentation.${cause ? ` ${cause.message}` : ''}`, {
+        throw new CredoError(`Error occurred during verification of presentation.${cause ? ` ${cause.message}` : ''}`, {
           cause,
         })
       }
@@ -1335,6 +1344,7 @@ export class OpenId4VpVerifierService {
       return {
         verified: false,
         reason: error.message,
+        cause: error.cause,
       }
     }
   }

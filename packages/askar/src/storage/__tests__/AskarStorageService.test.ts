@@ -101,7 +101,7 @@ describe('AskarStorageService', () => {
             name: 'some-id',
             // biome-ignore lint/style/noNonNullAssertion: no explanation
             sessionHandle: session.handle!,
-            value: TypedArrayEncoder.fromString('{}'),
+            value: TypedArrayEncoder.fromUtf8String('{}'),
             tags: {
               someBoolean: '1',
               someOtherBoolean: '0',

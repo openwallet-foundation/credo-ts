@@ -1,6 +1,6 @@
 import type { JwsDetachedFormat, JwsFlattenedDetachedFormat, JwsGeneralFormat } from '@credo-ts/core'
 
-import { CredoError, JsonEncoder, type JsonValue, utils } from '@credo-ts/core'
+import { CredoError, JsonEncoder, type JsonValue, TypedArrayEncoder, utils } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 import { IsDate, IsHash, IsInstance, IsInt, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -136,11 +136,38 @@ export class DidCommAttachment {
   public data!: DidCommAttachmentData
 
   /*
+   * Helper function returning the raw bytes of a base64 attachment payload.
+   *
+   * The DIDComm/Aries RFC 0017 spec mandates base64url for `data.base64`, so we try
+   * decoding it as base64url first. Credo itself (and other implementations) has
+   * historically emitted standard base64 with `+`/`/` and `=` padding, so we fall
+   * back to that to preserve interop with older agents.
+   */
+  public getDataAsUint8Array(): Uint8Array {
+    if (typeof this.data.base64 !== 'string') {
+      throw new CredoError('No base64 attachment data found.')
+    }
+    try {
+      // `fromBase64Url` expects the no-padding variant, strip trailing `=` so
+      // both padded and unpadded base64url inputs are accepted.
+      return TypedArrayEncoder.fromBase64Url(this.data.base64.replace(/=+$/, ''))
+    } catch (base64UrlError) {
+      try {
+        return TypedArrayEncoder.fromBase64(this.data.base64)
+      } catch {
+        throw new CredoError('Could not decode attachment data as base64url or base64 string.', {
+          cause: base64UrlError,
+        })
+      }
+    }
+  }
+
+  /*
    * Helper function returning JSON representation of attachment data (if present). Tries to obtain the data from .base64 or .json, throws an error otherwise
    */
   public getDataAsJson<T>(): T {
     if (typeof this.data.base64 === 'string') {
-      return JsonEncoder.fromBase64(this.data.base64) as T
+      return JsonEncoder.fromUint8Array(this.getDataAsUint8Array()) as T
     }
     if (this.data.json) {
       return this.data.json as T

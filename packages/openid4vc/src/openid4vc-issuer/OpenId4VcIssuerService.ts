@@ -33,6 +33,7 @@ import {
   Oauth2ServerErrorResponseError,
   PkceCodeChallengeMethod,
   preAuthorizedCodeGrantIdentifier,
+  refreshTokenGrantIdentifier,
 } from '@openid4vc/oauth2'
 import {
   type CredentialConfigurationSupportedWithFormats,
@@ -320,6 +321,14 @@ export class OpenId4VcIssuerService {
       })
     }
 
+    // TODO: support credential response encryption
+    if (parsedCredentialRequest.credentialResponseEncryption) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidCredentialRequest,
+        error_description: `Credential response encryption is not supported.`,
+      })
+    }
+
     if (credentialRequest.format && !format && !parsedCredentialRequest.credentialConfigurationId) {
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.UnsupportedCredentialFormat,
@@ -414,13 +423,16 @@ export class OpenId4VcIssuerService {
     const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
 
     if (signOptionsOrDeferral.type === 'deferral') {
-      credentialResponse = vcIssuer.createCredentialResponse({
-        transactionId: signOptionsOrDeferral.transactionId,
-        interval: signOptionsOrDeferral.interval,
-        cNonce,
-        cNonceExpiresInSeconds,
-        credentialRequest: parsedCredentialRequest,
-      })
+      // TODO: support credential response encryption
+      credentialResponse = (
+        await vcIssuer.createCredentialResponse({
+          transactionId: signOptionsOrDeferral.transactionId,
+          interval: signOptionsOrDeferral.interval,
+          cNonce,
+          cNonceExpiresInSeconds,
+          credentialRequest: parsedCredentialRequest,
+        })
+      ).credentialResponse
 
       // Save transaction data for deferred issuance
       issuanceSession.transactions.push({
@@ -449,17 +461,20 @@ export class OpenId4VcIssuerService {
         expectedLength: verifiedCredentialRequestProofs.keys.length,
       })
 
-      credentialResponse = vcIssuer.createCredentialResponse({
-        credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
-        credentials: credentialRequest.proofs
-          ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
-            ? credentials.credentials.map((c) => ({ credential: c }))
-            : credentials.credentials
-          : undefined,
-        cNonce,
-        cNonceExpiresInSeconds,
-        credentialRequest: parsedCredentialRequest,
-      })
+      // TODO: support credential response encryption
+      credentialResponse = (
+        await vcIssuer.createCredentialResponse({
+          credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
+          credentials: credentialRequest.proofs
+            ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
+              ? credentials.credentials.map((c) => ({ credential: c }))
+              : credentials.credentials
+            : undefined,
+          cNonce,
+          cNonceExpiresInSeconds,
+          credentialRequest: parsedCredentialRequest,
+        })
+      ).credentialResponse
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
       const newState =
@@ -513,10 +528,13 @@ export class OpenId4VcIssuerService {
     const remainingInterval = deferredUntil ? Math.round((deferredUntil - now) / 1000) : undefined
     if (remainingInterval && remainingInterval > 0) {
       return {
-        deferredCredentialResponse: vcIssuer.createDeferredCredentialResponse({
-          interval: remainingInterval,
-          transactionId: transaction.transactionId,
-        }),
+        // TODO: support credential response encryption
+        deferredCredentialResponse: (
+          await vcIssuer.createDeferredCredentialResponse({
+            interval: remainingInterval,
+            transactionId: transaction.transactionId,
+          })
+        ).deferredCredentialResponse,
         issuanceSession,
       }
     }
@@ -548,10 +566,13 @@ export class OpenId4VcIssuerService {
 
     let deferredCredentialResponse: DeferredCredentialResponse
     if (signOptionsOrDeferral.type === 'deferral') {
-      deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
-        interval: signOptionsOrDeferral.interval,
-        transactionId: signOptionsOrDeferral.transactionId,
-      })
+      // TODO: support credential response encryption
+      deferredCredentialResponse = (
+        await vcIssuer.createDeferredCredentialResponse({
+          interval: signOptionsOrDeferral.interval,
+          transactionId: signOptionsOrDeferral.transactionId,
+        })
+      ).deferredCredentialResponse
 
       // Update transaction with the new deferredUntil value
       issuanceSession.transactions = issuanceSession.transactions.map((tx) => {
@@ -574,9 +595,12 @@ export class OpenId4VcIssuerService {
         expectedLength: transaction.numberOfCredentials,
       })
 
-      deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
-        credentials: credentials.credentials.map((c) => ({ credential: c })),
-      })
+      // TODO: support credential response encryption
+      deferredCredentialResponse = (
+        await vcIssuer.createDeferredCredentialResponse({
+          credentials: credentials.credentials.map((c) => ({ credential: c })),
+        })
+      ).deferredCredentialResponse
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
 
@@ -1096,7 +1120,11 @@ export class OpenId4VcIssuerService {
 
       jwks_uri: joinUriParts(issuerUrl, [config.jwksEndpointPath]),
 
-      grant_types_supported: [authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier],
+      grant_types_supported: [
+        authorizationCodeGrantIdentifier,
+        preAuthorizedCodeGrantIdentifier,
+        refreshTokenGrantIdentifier,
+      ],
 
       authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
       authorization_endpoint: joinUriParts(issuerUrl, [config.authorizationEndpoint]),
@@ -1441,7 +1469,7 @@ export class OpenId4VcIssuerService {
       const { txCode, authorizationServerUrl, preAuthorizedCode } = preAuthorizedCodeFlowConfig
 
       grants[preAuthorizedCodeGrantIdentifier] = {
-        'pre-authorized_code': preAuthorizedCode ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
+        'pre-authorized_code': preAuthorizedCode ?? TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
         tx_code: txCode,
         authorization_server: config.issuerMetadata.credentialIssuer.authorization_servers
           ? authorizationServerUrl
@@ -1453,6 +1481,7 @@ export class OpenId4VcIssuerService {
     if (authorizationCodeFlowConfig) {
       const { requirePresentationDuringIssuance } = authorizationCodeFlowConfig
       let authorizationServerUrl = authorizationCodeFlowConfig.authorizationServerUrl
+      const scope = authorizationCodeFlowConfig.scope
 
       if (requirePresentationDuringIssuance) {
         if (authorizationServerUrl && authorizationServerUrl !== issuerMetadata.credentialIssuer.credential_issuer) {
@@ -1475,10 +1504,11 @@ export class OpenId4VcIssuerService {
         issuer_state:
           // TODO: the issuer_state should not be guessable, so it's best if we generate it and now allow the user to provide it?
           // but same is true for the pre-auth code and users of credo can also provide that value. We can't easily do unique constraint with askat
-          authorizationCodeFlowConfig.issuerState ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
+          authorizationCodeFlowConfig.issuerState ?? TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
         authorization_server: config.issuerMetadata.credentialIssuer.authorization_servers
           ? authorizationServerUrl
           : undefined,
+        scope,
       }
     }
 

@@ -12,10 +12,12 @@ import {
 } from '@credo-ts/core'
 import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import {
+  authorizationCodeGrantIdentifier,
   calculateJwkThumbprint,
   HashAlgorithm,
   Oauth2AuthorizationServer,
   preAuthorizedCodeGrantIdentifier,
+  refreshTokenGrantIdentifier,
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow, type CredentialRequest } from '@openid4vc/openid4vci'
 import { randomUUID } from 'crypto'
@@ -41,6 +43,16 @@ import {
 const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
+
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+
+  return nextMonth
+}
 
 describe('OpenId4Vci (Deferred)', () => {
   let expressApp: Express
@@ -138,6 +150,7 @@ describe('OpenId4Vci (Deferred)', () => {
                   format: ClaimFormat.MsoMdoc,
                   credentials: transaction.holderBinding.keys.map((holderBinding) => ({
                     docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
+                    validityInfo: { validUntil: getNextMonth() },
                     issuerCertificate: credentialIssuerCertificate,
                     holderKey: holderBinding.jwk,
                     namespaces: {
@@ -258,6 +271,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         issuer: 'http://localhost:4747',
         token_endpoint: 'http://localhost:4747/token',
         authorization_endpoint: 'http://localhost:4747/authorize',
+        grant_types_supported: [
+          authorizationCodeGrantIdentifier,
+          preAuthorizedCodeGrantIdentifier,
+          refreshTokenGrantIdentifier,
+        ],
       } satisfies AuthorizationServerMetadata)
     )
     app.get('/jwks.json', (_req, res) =>

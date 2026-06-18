@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
@@ -1265,30 +1264,30 @@ describe('AskarKeyManagementService', () => {
       }
 
       const [encodedHeader /* encryptionKey */, , encodedIv, encodedCiphertext, encodedTag] = compactJwe.split('.')
-      const header = JsonEncoder.fromBase64(encodedHeader)
+      const header = JsonEncoder.fromBase64Url(encodedHeader)
 
       const recipientKey = await service.importKey(agentContext, { privateJwk: privateKeyJwk })
       const { data } = await service.decrypt(agentContext, {
         decryption: {
           algorithm: 'A256GCM',
-          iv: TypedArrayEncoder.fromBase64(encodedIv),
-          tag: TypedArrayEncoder.fromBase64(encodedTag),
-          aad: TypedArrayEncoder.fromString(encodedHeader),
+          iv: TypedArrayEncoder.fromBase64Url(encodedIv),
+          tag: TypedArrayEncoder.fromBase64Url(encodedTag),
+          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
         },
         key: {
           keyAgreement: {
             algorithm: 'ECDH-ES',
             externalPublicJwk: header.epk,
             keyId: recipientKey.keyId,
-            apu: TypedArrayEncoder.fromBase64(header.apu),
-            apv: TypedArrayEncoder.fromBase64(header.apv),
+            apu: TypedArrayEncoder.fromBase64Url(header.apu),
+            apv: TypedArrayEncoder.fromBase64Url(header.apv),
           },
         },
-        encrypted: TypedArrayEncoder.fromBase64(encodedCiphertext),
+        encrypted: TypedArrayEncoder.fromBase64Url(encodedCiphertext),
       })
 
       expect(header).toEqual(expectedHeader)
-      expect(JsonEncoder.fromBuffer(data)).toEqual(decodedPayload)
+      expect(JsonEncoder.fromUint8Array(data)).toEqual(decodedPayload)
     })
   })
 
@@ -1723,19 +1722,19 @@ describe('AskarKeyManagementService', () => {
         iv,
         tag,
       } = await service.encrypt(agentContext, {
-        data: JsonEncoder.toBuffer({
+        data: JsonEncoder.toUint8Array({
           '@type': 'https://didcomm.org/message/1.0/message',
         }),
         encryption: {
           algorithm: 'XC20P',
-          aad: JsonEncoder.toBuffer({
+          aad: JsonEncoder.toUint8Array({
             the: 'header',
           }),
         },
         key: {
           privateJwk: {
             kty: 'oct',
-            k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+            k: TypedArrayEncoder.toBase64Url(contentEncryptionKey),
           },
         },
       })
@@ -1755,14 +1754,14 @@ describe('AskarKeyManagementService', () => {
         encrypted: encryptedKey,
       })
 
-      expect(Buffer.from(decryptedKey).equals(Buffer.from(contentEncryptionKey))).toEqual(true)
+      expect(TypedArrayEncoder.equals(decryptedKey, contentEncryptionKey)).toEqual(true)
 
       const { data: decryptedMessage } = await service.decrypt(agentContext, {
         decryption: {
           algorithm: 'XC20P',
           iv,
           tag,
-          aad: JsonEncoder.toBuffer({
+          aad: JsonEncoder.toUint8Array({
             the: 'header',
           }),
         },
@@ -1770,12 +1769,12 @@ describe('AskarKeyManagementService', () => {
         key: {
           privateJwk: {
             kty: 'oct',
-            k: TypedArrayEncoder.toBase64URL(decryptedKey),
+            k: TypedArrayEncoder.toBase64Url(decryptedKey),
           },
         },
       })
 
-      expect(JsonEncoder.fromBuffer(decryptedMessage)).toEqual({
+      expect(JsonEncoder.fromUint8Array(decryptedMessage)).toEqual({
         '@type': 'https://didcomm.org/message/1.0/message',
       })
     })
@@ -1797,7 +1796,7 @@ describe('AskarKeyManagementService', () => {
       const senderPublicJwk = Kms.PublicJwk.fromPublicJwk(senderKey.publicJwk)
 
       const { encrypted: encryptedSender } = await service.encrypt(agentContext, {
-        data: TypedArrayEncoder.fromString(TypedArrayEncoder.toBase58(senderPublicJwk.publicKey.publicKey)),
+        data: TypedArrayEncoder.fromUtf8String(TypedArrayEncoder.toBase58(senderPublicJwk.publicKey.publicKey)),
         encryption: {
           algorithm: 'XSALSA20-POLY1305',
         },
@@ -1828,19 +1827,19 @@ describe('AskarKeyManagementService', () => {
         iv,
         tag,
       } = await service.encrypt(agentContext, {
-        data: JsonEncoder.toBuffer({
+        data: JsonEncoder.toUint8Array({
           '@type': 'https://didcomm.org/message/1.0/message',
         }),
         encryption: {
           algorithm: 'XC20P',
-          aad: JsonEncoder.toBuffer({
+          aad: JsonEncoder.toUint8Array({
             the: 'header',
           }),
         },
         key: {
           privateJwk: {
             kty: 'oct',
-            k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+            k: TypedArrayEncoder.toBase64Url(contentEncryptionKey),
           },
         },
       })
@@ -1879,14 +1878,14 @@ describe('AskarKeyManagementService', () => {
         encrypted: encryptedKey,
       })
 
-      expect(Buffer.from(decryptedKey).equals(Buffer.from(contentEncryptionKey))).toEqual(true)
+      expect(TypedArrayEncoder.equals(decryptedKey, contentEncryptionKey)).toEqual(true)
 
       const { data: decryptedMessage } = await service.decrypt(agentContext, {
         decryption: {
           algorithm: 'XC20P',
           iv,
           tag,
-          aad: JsonEncoder.toBuffer({
+          aad: JsonEncoder.toUint8Array({
             the: 'header',
           }),
         },
@@ -1894,12 +1893,12 @@ describe('AskarKeyManagementService', () => {
         key: {
           privateJwk: {
             kty: 'oct',
-            k: TypedArrayEncoder.toBase64URL(decryptedKey),
+            k: TypedArrayEncoder.toBase64Url(decryptedKey),
           },
         },
       })
 
-      expect(JsonEncoder.fromBuffer(decryptedMessage)).toEqual({
+      expect(JsonEncoder.fromUint8Array(decryptedMessage)).toEqual({
         '@type': 'https://didcomm.org/message/1.0/message',
       })
     })

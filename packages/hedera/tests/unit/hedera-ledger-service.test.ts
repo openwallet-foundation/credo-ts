@@ -76,7 +76,7 @@ const mockKeyId = 'mock-key-id'
 const mockPublicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } = {
   crv: 'Ed25519',
   kty: 'OKP',
-  x: TypedArrayEncoder.toBase64URL(privateKey.publicKey.toBytesRaw()),
+  x: TypedArrayEncoder.toBase64Url(privateKey.publicKey.toBytesRaw()),
   kid: 'test-key-id',
 }
 

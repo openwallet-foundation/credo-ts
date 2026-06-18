@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer'
 import {
   verify as _verify,
   constants,
@@ -8,7 +7,7 @@ import {
   timingSafeEqual,
 } from 'node:crypto'
 import { promisify } from 'node:util'
-import { type AnyUint8Array, type CanBePromise, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { type CanBePromise, Kms, TypedArrayEncoder } from '@credo-ts/core'
 
 import { mapJwaSignatureAlgorithmToNode } from './sign'
 
@@ -17,12 +16,14 @@ const verify = promisify(_verify)
 export function performVerify(
   key: Kms.KmsJwkPrivate | Kms.KmsJwkPublicEc | Kms.KmsJwkPublicOkp | Kms.KmsJwkPublicRsa,
   algorithm: Kms.KnownJwaSignatureAlgorithm,
-  data: AnyUint8Array,
-  signature: AnyUint8Array
+  data: Uint8Array,
+  signature: Uint8Array
 ): CanBePromise<boolean> {
   const nodeAlgorithm = mapJwaSignatureAlgorithmToNode(algorithm)
   const nodeKey =
-    key.kty === 'oct' ? createSecretKey(TypedArrayEncoder.fromBase64(key.k)) : createPublicKey({ format: 'jwk', key })
+    key.kty === 'oct'
+      ? createSecretKey(TypedArrayEncoder.fromBase64Url(key.k))
+      : createPublicKey({ format: 'jwk', key })
 
   switch (key.kty) {
     case 'RSA':
@@ -47,7 +48,7 @@ export function performVerify(
         .update(data)
         .digest()
 
-      return timingSafeEqual(expectedHmac, Buffer.from(signature))
+      return timingSafeEqual(expectedHmac, signature)
     }
     default:
       // @ts-expect-error

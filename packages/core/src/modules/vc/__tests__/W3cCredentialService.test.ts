@@ -4,13 +4,15 @@ import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests
 import type { AgentContext } from '../../../agent'
 import { JwsService } from '../../../crypto'
 import { asArray, JsonTransformer } from '../../../utils'
-import { W3cJsonLdVerifiableCredential } from '../data-integrity'
-import { customDocumentLoader } from '../data-integrity/__tests__/documentLoader'
-import { Ed25519Signature2018Fixtures } from '../data-integrity/__tests__/fixtures'
-import jsonld from '../data-integrity/libraries/jsonld'
-import { SignatureSuiteRegistry } from '../data-integrity/SignatureSuiteRegistry'
-import { W3cJsonLdCredentialService } from '../data-integrity/W3cJsonLdCredentialService'
+import jsonld from '../jsonld/jsonld'
 import { W3cJwtCredentialService } from '../jwt-vc'
+import {
+  SignatureSuiteRegistry,
+  W3cJsonLdCredentialService,
+  W3cJsonLdVerifiableCredential,
+} from '../linked-data-proofs'
+import { customDocumentLoader } from '../linked-data-proofs/__tests__/documentLoader'
+import { Ed25519Signature2018Fixtures } from '../linked-data-proofs/__tests__/fixtures'
 import { W3cPresentation } from '../models'
 import { W3cCredentialRecord, W3cCredentialRepository } from '../repository'
 import { W3cCredentialService } from '../W3cCredentialService'

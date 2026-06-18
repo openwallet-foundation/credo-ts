@@ -32,6 +32,7 @@ import {
   type VpToken,
 } from '@openid4vc/openid4vp'
 import type { OpenId4VpVersion } from '../openid4vc-verifier'
+import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
@@ -127,7 +128,12 @@ export class OpenId4VpHolderService {
 
     const verifiedAuthorizationRequest = await openid4vpClient.resolveOpenId4vpAuthorizationRequest({
       authorizationRequestPayload: params,
-      origin: options?.origin,
+      responseMode: options?.origin
+        ? {
+            type: 'dc_api',
+            expectedOrigin: options.origin,
+          }
+        : { type: 'direct_post' },
     })
 
     const { client, pex, transactionData, dcql } = verifiedAuthorizationRequest
@@ -144,7 +150,8 @@ export class OpenId4VpHolderService {
     }
 
     const returnValue = {
-      authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
+      authorizationRequestPayload:
+        verifiedAuthorizationRequest.authorizationRequestPayload as OpenId4VpAuthorizationRequestPayload,
       origin: options?.origin,
       signedAuthorizationRequest: verifiedAuthorizationRequest.jar
         ? {
@@ -269,7 +276,7 @@ export class OpenId4VpHolderService {
       // see if any specified an alg array
       const [transactionDataHahsesAlg] = supportedAllowedHashAlgs
       const transactionDataHashes = entries.map((entry) =>
-        TypedArrayEncoder.toBase64URL(Hasher.hash(entry.encoded, transactionDataHahsesAlg))
+        TypedArrayEncoder.toBase64Url(Hasher.hash(entry.encoded, transactionDataHahsesAlg))
       )
 
       updatedCredentials[credentialId] = updatedCredentials[credentialId].map((credential) => {
@@ -302,7 +309,7 @@ export class OpenId4VpHolderService {
     const { authorizationRequestPayload, presentationExchange, dcql, transactionData } = options
 
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
-    const authorizationResponseNonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
+    const authorizationResponseNonce = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
     const { nonce } = authorizationRequestPayload
 
     let openid4vpVersionNumber = parseAuthorizationRequestVersion(authorizationRequestPayload)

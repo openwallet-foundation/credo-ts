@@ -19,6 +19,7 @@ import {
 import { DidsApi, getPublicJwkFromVerificationMethod, VerificationMethod } from '../dids'
 import type { VerifiableCredential, VerifiablePresentation } from '../dif-presentation-exchange/index'
 import {
+  Mdoc,
   MdocApi,
   MdocDeviceResponse,
   type MdocNameSpaces,
@@ -42,7 +43,7 @@ import {
   W3cV2EnvelopedVerifiableCredential,
   W3cV2Presentation,
 } from '../vc'
-import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
+import { purposes } from '../vc/linked-data-proofs/adapters/jsonld-signatures-adapter'
 import { W3cV2SdJwtCredentialService, W3cV2SdJwtVerifiableCredential } from '../vc/sd-jwt-vc'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
@@ -186,7 +187,7 @@ export class DcqlService {
       const akiValues = (credential.header.x5c as string[] | undefined)
         ?.map((c) => {
           const akiHex = X509Certificate.fromEncodedCertificate(c).authorityKeyIdentifier
-          return akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
+          return akiHex ? TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromHex(akiHex)) : undefined
         })
         .filter((aki) => aki !== undefined)
 
@@ -202,7 +203,7 @@ export class DcqlService {
       const akiValues = credential.issuerSignedCertificateChain
         .map((c) => {
           const akiHex = X509Certificate.fromRawCertificate(c).authorityKeyIdentifier
-          return akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
+          return akiHex ? TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromHex(akiHex)) : undefined
         })
         .filter((aki) => aki !== undefined)
 
@@ -253,16 +254,29 @@ export class DcqlService {
       } satisfies DcqlSdJwtVcCredential
     }
     if (presentation.claimFormat === ClaimFormat.MsoMdoc) {
-      if (presentation.documents.length !== 1) {
+      if (!presentation.deviceResponse.documents || presentation.deviceResponse.documents.length !== 1) {
         throw new DcqlError('MDOC presentations must contain exactly one document')
       }
 
       return {
         cryptographic_holder_binding: true,
         credential_format: 'mso_mdoc',
-        authority: this.getAuthorityForCredential(presentation.documents[0]),
-        doctype: presentation.documents[0].docType,
-        namespaces: presentation.documents[0].issuerSignedNamespaces,
+        authority: this.getAuthorityForCredential(new Mdoc(presentation.deviceResponse.documents[0].issuerSigned)),
+        doctype: presentation.deviceResponse.documents[0].docType,
+        namespaces: Object.entries(
+          Object.fromEntries(presentation.deviceResponse.documents[0].issuerSigned.issuerNamespaces.issuerNamespaces)
+        ).reduce(
+          (prev, [key, value]) => ({
+            // biome-ignore lint/performance/noAccumulatingSpread: time complexity not relevant here
+            ...prev,
+            [key]: value.reduce<Record<string, unknown>>(
+              // biome-ignore lint/performance/noAccumulatingSpread: time complexity not relevant here
+              (prev, curr) => ({ ...prev, [curr.elementIdentifier]: curr.elementValue }),
+              {}
+            ),
+          }),
+          {}
+        ),
       } satisfies DcqlMdocCredential
     }
     if (presentation.claimFormat === ClaimFormat.JwtVp) {
@@ -762,7 +776,7 @@ export class DcqlService {
             ],
             sessionTranscriptOptions: mdocSessionTranscript,
           })
-          const deviceResponseBase64Url = TypedArrayEncoder.toBase64URL(deviceResponse)
+          const deviceResponseBase64Url = deviceResponse.encoded
 
           encodedCreatedPresentation = deviceResponseBase64Url
           createdPresentation = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)

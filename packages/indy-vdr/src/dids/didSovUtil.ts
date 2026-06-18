@@ -1,5 +1,4 @@
 import {
-  Buffer,
   CredoError,
   convertPublicKeyToX25519,
   DidCommV1Service,
@@ -49,7 +48,7 @@ export function getFullVerkey(did: string, verkey: string) {
 
   // Create base58 encoded public key (32 bytes)
   return TypedArrayEncoder.toBase58(
-    Buffer.concat([
+    TypedArrayEncoder.concat([
       // Take did identifier (16 bytes)
       TypedArrayEncoder.fromBase58(id),
       // Concat the abbreviated verkey (16 bytes)

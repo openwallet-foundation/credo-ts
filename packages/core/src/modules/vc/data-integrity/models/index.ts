@@ -1,5 +1,0 @@
-export * from './DataIntegrityProof'
-export * from './IAnonCredsDataIntegrityService'
-export * from './LdKeyPair'
-export * from './W3cJsonLdVerifiableCredential'
-export * from './W3cJsonLdVerifiablePresentation'

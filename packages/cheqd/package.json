@@ -4,7 +4,7 @@
     "cli": "./build/index.mjs",
     "import": "./src/index.ts"
   },
-  "version": "0.6.3",
+  "version": "0.7.0",
   "files": [
     "build"
   ],
@@ -37,6 +37,7 @@
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@stablelib/ed25519": "catalog:",
+    "buffer": "^6.0.3",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
     "rxjs": "catalog:",

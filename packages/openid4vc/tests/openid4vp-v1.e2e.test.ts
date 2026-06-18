@@ -1,11 +1,13 @@
-import type { DcqlQuery, MdocDeviceResponse, SdJwtVc, W3cV2SdJwtVerifiablePresentation } from '@credo-ts/core'
 import {
   asArray,
   ClaimFormat,
   DateOnly,
+  type DcqlQuery,
   Kms,
+  MdocDeviceResponse,
   MdocRecord,
   parseDid,
+  type SdJwtVc,
   SdJwtVcRecord,
   TypedArrayEncoder,
   W3cCredential,
@@ -16,6 +18,7 @@ import {
   W3cV2CredentialRecord,
   W3cV2CredentialSubject,
   W3cV2Issuer,
+  type W3cV2SdJwtVerifiablePresentation,
   w3cDate,
   X509ExtendedKeyUsage,
   X509KeyUsage,
@@ -592,6 +595,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const { dcql } = await verifierTenant1_2.modules.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession1.id
     )
+
     expect(dcql).toMatchObject({
       query: {
         credentials: [
@@ -618,6 +622,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         ],
       },
     })
+
     expect(
       asArray(
         (dcql?.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
@@ -1064,7 +1069,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?response_type=vp_token&client_id=redirect_uri%3A${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_uri=${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_mode=direct_post&nonce=${authorizationRequestObject.nonce}&dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22OpenBadgeCredentialDescriptor%22%2C%22format%22%3A%22dc%2Bsd-jwt%22%2C%22meta%22%3A%7B%22vct_values%22%3A%5B%22OpenBadgeCredential%22%5D%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22university%22%5D%7D%5D%7D%5D%7D&client_metadata=%7B%22vp_formats_supported%22%3A%7B%22dc%2Bsd-jwt%22%3A%7B%22sd-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%2C%22kb-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%7D%7D%2C%22response_types_supported%22%3A%5B%22vp_token%22%5D%7D&state=${authorizationRequestObject.state}`
+      `openid4vp://?response_type=vp_token&client_id=redirect_uri%3A${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_uri=${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_mode=direct_post&nonce=${authorizationRequestObject.nonce}&dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22OpenBadgeCredentialDescriptor%22%2C%22format%22%3A%22dc%2Bsd-jwt%22%2C%22meta%22%3A%7B%22vct_values%22%3A%5B%22OpenBadgeCredential%22%5D%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22university%22%5D%7D%5D%7D%5D%7D&client_metadata=%7B%22vp_formats_supported%22%3A%7B%22dc%2Bsd-jwt%22%3A%7B%22sd-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%2C%22kb-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%7D%7D%7D&state=${authorizationRequestObject.state}`
     )
 
     const resolvedAuthorizationRequest =
@@ -2183,8 +2188,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         })
       ).publicJwk
     )
+
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate,
       namespaces: {
@@ -2326,6 +2333,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
       holderKey,
+      validityInfo: { validUntil: getNextMonth() },
       issuerCertificate,
       namespaces: {
         'eu.europa.ec.eudi.pid.1': {
@@ -2568,15 +2576,15 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const { dcql } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     const mdocPresentation = dcql?.presentations.university[0] as MdocDeviceResponse
-    expect(mdocPresentation.documents).toHaveLength(1)
-
-    const mdocResponse = mdocPresentation.documents[0]
+    expect(mdocPresentation.deviceResponse.documents).toHaveLength(1)
 
     // name SHOULD NOT be disclosed
-    expect(mdocResponse.issuerSignedNamespaces).toStrictEqual({
-      'eu.europa.ec.eudi.pid.1': {
-        degree: 'bachelor',
-        name: 'John Doe',
+    expect(mdocPresentation.issuerClaims).toStrictEqual({
+      'org.eu.university': {
+        'eu.europa.ec.eudi.pid.1': {
+          degree: 'bachelor',
+          name: 'John Doe',
+        },
       },
     })
 
@@ -2637,24 +2645,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
             },
           },
         ],
-        university: [
-          {
-            base64Url: expect.any(String),
-            documents: [
-              {
-                issuerSignedDocument: {
-                  docType: 'org.eu.university',
-                  issuerSigned: {
-                    nameSpaces: new Map([['eu.europa.ec.eudi.pid.1', [{}, {}]]]),
-                    issuerAuth: expect.any(Object),
-                  },
-                  deviceSigned: expect.any(Object),
-                },
-                base64Url: expect.any(String),
-              },
-            ],
-          },
-        ],
+        university: [expect.any(MdocDeviceResponse)],
       },
     })
   })
@@ -2711,6 +2702,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate: selfSignedCertificate,
       namespaces: {
@@ -2989,13 +2981,15 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const presentation = dcql?.presentations.university?.[0] as MdocDeviceResponse
-    expect(presentation.documents).toHaveLength(1)
+    expect(presentation.deviceResponse.documents).toHaveLength(1)
 
-    expect(presentation.documents[0].issuerSignedNamespaces).toEqual({
-      'eu.europa.ec.eudi.pid.1': {
-        date,
-        name: 'John Doe',
-        degree: 'bachelor',
+    expect(presentation.issuerClaims).toEqual({
+      'org.eu.university': {
+        'eu.europa.ec.eudi.pid.1': {
+          date,
+          name: 'John Doe',
+          degree: 'bachelor',
+        },
       },
     })
   })
@@ -3062,7 +3056,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     if (!akiValue) {
       throw new Error('Leaf certificate must have an authorityKeyIdentifier')
     }
-    const akiBase64Url = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiValue))
+    const akiBase64Url = TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromHex(akiValue))
 
     // Set trusted certificates
     verifier.agent.x509.config.setTrustedCertificates([rootCertificate.toString('pem')])
@@ -3102,6 +3096,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     // Sign and store mDoc with only leaf certificate
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
+      validityInfo: { validUntil: getNextMonth() },
       holderKey,
       issuerCertificate: leafCertificate,
       namespaces: {
@@ -3364,14 +3359,14 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     verifier.agent.x509.config.addTrustedCertificate(verifierCertificate.toString('base64'))
 
     // Create DCQL query with DIFFERENT AKI value that doesn't match the credential
-    const wrongAkiValue = TypedArrayEncoder.toBase64URL(new Uint8Array(20).fill(0xff))
+    const wrongAkiValue = TypedArrayEncoder.toBase64Url(new Uint8Array(20).fill(0xff))
 
     // Get the AKI value from the leaf certificate for use in trusted_authorities
     const akiValue = leafCertificate.authorityKeyIdentifier
     if (!akiValue) {
       throw new Error('Leaf certificate must have an authorityKeyIdentifier')
     }
-    const akiBase64Url = TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiValue))
+    const akiBase64Url = TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromHex(akiValue))
 
     const dcqlQuery = {
       credentials: [

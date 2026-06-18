@@ -6,7 +6,7 @@ describe('Hedera AnonCreds support', () => {
   let agent: Agent
   let issuerId: string
 
-  const logger = new ConsoleLogger(LogLevel.error)
+  const logger = new ConsoleLogger(LogLevel.Error)
   const cache = new InMemoryLruCache({ limit: 10 })
 
   beforeAll(async () => {

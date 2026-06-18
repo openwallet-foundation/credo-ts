@@ -1,10 +1,24 @@
-import { CredoWebCrypto, Hasher, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
-import { id_ce_basicConstraints, id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
+import {
+  CredoWebCrypto,
+  Hasher,
+  TypedArrayEncoder,
+  X509ExtendedKeyUsage,
+  X509ExtensionIdentifier,
+  X509KeyUsage,
+} from '@credo-ts/core'
 import * as x509 from '@peculiar/x509'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
-import { KeyManagementApi, KeyManagementModuleConfig, type KmsJwkPublicEc, P256PublicJwk, PublicJwk } from '../../kms'
+import {
+  KeyManagementApi,
+  KeyManagementModuleConfig,
+  type KmsJwkPublicEc,
+  type KmsJwkPublicRsa,
+  P256PublicJwk,
+  PublicJwk,
+} from '../../kms'
 import { X509Error } from '../X509Error'
+import { X509ModuleConfig } from '../X509ModuleConfig'
 import { X509Service } from '../X509Service'
 
 /**
@@ -49,6 +63,10 @@ const kmsApi = new KeyManagementApi(
 )
 agentContext.dependencyManager.registerInstance(KeyManagementApi, kmsApi)
 
+// Register X509ModuleConfig
+const x509ModuleConfig = new X509ModuleConfig({})
+agentContext.dependencyManager.registerInstance(X509ModuleConfig, x509ModuleConfig)
+
 describe('X509Service', () => {
   let certificateChain: Array<string>
 
@@ -69,6 +87,12 @@ describe('X509Service', () => {
         notBefore: getLastMonth(),
         notAfter: getNextMonth(),
       },
+      extensions: {
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 2,
+        },
+      },
     })
 
     const intermediateCert = await X509Service.createCertificate(agentContext, {
@@ -80,6 +104,12 @@ describe('X509Service', () => {
       validity: {
         notBefore: getLastMonth(),
         notAfter: getNextMonth(),
+      },
+      extensions: {
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 1,
+        },
       },
     })
 
@@ -101,6 +131,7 @@ describe('X509Service', () => {
         new x509.X509Certificate(intermediateCert.rawCertificate),
       ],
     })
+    // The builder returns [Leaf, Intermediate, Root] (leaf first, root last)
     certificateChain = (await builder.build(new x509.X509Certificate(leafCert.rawCertificate))).map((c) =>
       c.toString('base64')
     )
@@ -137,8 +168,8 @@ describe('X509Service', () => {
       },
     })
 
-    expect(certificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
-    expect(certificate.isExtensionCritical(id_ce_extKeyUsage)).toStrictEqual(false)
+    expect(certificate.isExtensionCritical(X509ExtensionIdentifier.KeyUsage)).toStrictEqual(true)
+    expect(certificate.isExtensionCritical(X509ExtensionIdentifier.ExtendedKeyUsage)).toStrictEqual(false)
   })
 
   it('should create a valid self-signed certifcate with extensions', async () => {
@@ -209,8 +240,16 @@ describe('X509Service', () => {
       },
     })
 
-    expect(mdocRootCertificate.isExtensionCritical(id_ce_basicConstraints)).toStrictEqual(true)
-    expect(mdocRootCertificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
+    // Verify CRL distribution points structure
+    expect(mdocRootCertificate.crlDistributionPoints).toHaveLength(1)
+    expect(mdocRootCertificate.crlDistributionPoints[0]).toMatchObject({
+      urls: ['https://animo.id'],
+      reasons: undefined, // Full distribution point (covers all reasons)
+      crlIssuer: undefined,
+    })
+
+    expect(mdocRootCertificate.isExtensionCritical(X509ExtensionIdentifier.BasicConstraints)).toStrictEqual(true)
+    expect(mdocRootCertificate.isExtensionCritical(X509ExtensionIdentifier.KeyUsage)).toStrictEqual(true)
 
     expect(mdocRootCertificate).toMatchObject({
       ianUriNames: expect.arrayContaining(['animo.id']),
@@ -266,8 +305,10 @@ describe('X509Service', () => {
       },
     })
 
-    expect(mdocDocumentSignerCertificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
-    expect(mdocDocumentSignerCertificate.isExtensionCritical(id_ce_extKeyUsage)).toStrictEqual(true)
+    expect(mdocDocumentSignerCertificate.isExtensionCritical(X509ExtensionIdentifier.KeyUsage)).toStrictEqual(true)
+    expect(mdocDocumentSignerCertificate.isExtensionCritical(X509ExtensionIdentifier.ExtendedKeyUsage)).toStrictEqual(
+      true
+    )
 
     expect(mdocDocumentSignerCertificate).toMatchObject({
       ianUriNames: expect.arrayContaining(['animo.id']),
@@ -339,7 +380,7 @@ describe('X509Service', () => {
 
     const publicKey = x509Certificate.publicJwk.publicKey
     if (publicKey.kty !== 'EC') {
-      throw new Error('uexpected kty value')
+      throw new Error('unexpected kty value')
     }
 
     expect(publicKey.crv).toStrictEqual('P-256')
@@ -351,6 +392,47 @@ describe('X509Service', () => {
     expect(x509Certificate.publicJwk.toJson()).toMatchObject({
       x: 'iTwtg0eQbcbNabf2Nq9L_VM_lhhPCq2s0Qgw2kRx29s',
       y: 'YKwXDRz8U0-uLZ3NSI93R_35eNkl6jHp6Qg8OCup7VM',
+    })
+  })
+
+  it('should correctly parse an RSA-signed X.509 certificate', async () => {
+    const encodedCertificate = `-----BEGIN CERTIFICATE-----
+MIIFRTCCAy2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAqMSgwJgYDVQQDDB9FdXJv
+cGVhbiBDb21taXNzaW9uIFJvb3QgQ0EgLSAyMB4XDTE2MTAwNDExMjExN1oXDTQ2
+MTAwNDExMjExN1owKjEoMCYGA1UEAwwfRXVyb3BlYW4gQ29tbWlzc2lvbiBSb290
+IENBIC0gMjCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAL4JYI9CBISZ
+uBOBknpxCRX306sYm4tQPm5H2l5f4fDESYbthbv8FEOFUPu/uh/L5FuCsPgjDkHp
+6lQqfWV0QG8550pLWI82B5EgE/tN0F4Iwq5OVzOwK+qkHpcXLwxZATNYmfgTGAb2
+mcvVZ8ZkhL4cm6fWqjGzpX9av4R1uqRMKxm/0xuUXx37034g1/fMvzZ3V4rLGOwE
+GluagitBcZhpXXnAFZAu6QF07dokW7vgOOm392TlVgJrv94qN73gMfl/CGQd8Sb3
+t75HhYQ9kGyXEkFzOyPvwBlvV6hCOvElU+2u/HPYYz5lrC0u3MHPos16XF5/XJ7M
+/H9DDtA5mv3B9xO+/67fdaMyXaUJzoiE3decIUgLQC0Qh5hNs1kdkBnufmYRvpe9
+sUHWCsk39cNwVX+vp8EKDjtkiQbFuYIqvFckBbm7AcJlUt4jj6SJHVhECM4SCVd+
+oUtsaTStKUrrVjvuXgzN65qfzafesiaimXYWD60gRp7OoCiN9QwkCiRD1Iqs9irE
+E2DrIz15suuTb2+esrKciiIqyENUeYQolLhPvfdsZhdrtlFsDxM+/IPl7xz0V66k
+A97FtQuiVFOrZaj1YdjSpSfUlscpUfJHMebdd36zQ85oFyGERx7VHpjwE8bw4w4n
+DfnCKsz4xe7gZZX3CaKBCng6F4KiVXZHAgMBAAGjdjB0MA8GA1UdEwEB/wQFMAMB
+Af8wHQYDVR0OBBYEFC+klbkQluW624UvF9NUjFzbrNNXMB8GA1UdIwQYMBaAFC+k
+lbkQluW624UvF9NUjFzbrNNXMBEGA1UdIAQKMAgwBgYEVR0gADAOBgNVHQ8BAf8E
+BAMCAQYwDQYJKoZIhvcNAQELBQADggIBAFPypMzasOt82j0geV8hJOopri91Jc1d
+/fpc6mlubXb8E/scI9qqWQVUMlqiJkCyZl1TVis0bCPFvSlDl/hhwS5vnC0rBmCT
+XXEEsQmsEasw/IR4e7bNAF+l/pPmggh7u+Y00kjYt1XweA2Of/+xf4nAk3HiX02I
+ToHmY/Y4nlLP3bt1oac01Zv7sHPogmQrFFAvuoC4k+e6vJP0XveSp/vBpfKrdCNj
+nViZ3J8gUzrRowi10U812/A5NtZFvKOYXPTFi4vznYMmZsfgejUab5f/j+ycgrFl
+svw8vhYwWsJhWM/oPVNGnfYusa/8aovhwOiCe6lnn3o2jIASIPy6ReSzqZpqImKm
+UGdARWSFCJw4NX1m2dg4GnMjSlWFv5fEnyF0wZlqniarr2TsRek85N6vIaklzc0k
+A5gNgWLTxXMbr8rNta1RtXcN+SH8QgQ8CKgjbq4PSD/WPoOxRcZemGTXBdgxhTjZ
+JgwaQU4L810bScOcQ9cI1QB0/Iq+7fQOg9xIl3mvSoEhnP36Dr3uoi+yem1UhnjU
+9DHE0uKYpHjlHXP6LHvjfQZyS3ba3S0/nYsVf24b4UEja3PehnHhdzyJx/cHRJpN
+T5ibC5pZWL61QgOrDHuSBQnEQUMmYwNoqS+HQvu532NjlSfG6ffmDuEkGuBMM1jY
+gTqhM3BGMuf+
+-----END CERTIFICATE-----`
+
+    const x509Certificate = X509Service.parseCertificate(agentContext, { encodedCertificate })
+    expect(x509Certificate.publicJwk.toJson()).toMatchObject({
+      kty: 'RSA',
+      e: 'AQAB',
+      n: 'AL4JYI9CBISZuBOBknpxCRX306sYm4tQPm5H2l5f4fDESYbthbv8FEOFUPu_uh_L5FuCsPgjDkHp6lQqfWV0QG8550pLWI82B5EgE_tN0F4Iwq5OVzOwK-qkHpcXLwxZATNYmfgTGAb2mcvVZ8ZkhL4cm6fWqjGzpX9av4R1uqRMKxm_0xuUXx37034g1_fMvzZ3V4rLGOwEGluagitBcZhpXXnAFZAu6QF07dokW7vgOOm392TlVgJrv94qN73gMfl_CGQd8Sb3t75HhYQ9kGyXEkFzOyPvwBlvV6hCOvElU-2u_HPYYz5lrC0u3MHPos16XF5_XJ7M_H9DDtA5mv3B9xO-_67fdaMyXaUJzoiE3decIUgLQC0Qh5hNs1kdkBnufmYRvpe9sUHWCsk39cNwVX-vp8EKDjtkiQbFuYIqvFckBbm7AcJlUt4jj6SJHVhECM4SCVd-oUtsaTStKUrrVjvuXgzN65qfzafesiaimXYWD60gRp7OoCiN9QwkCiRD1Iqs9irEE2DrIz15suuTb2-esrKciiIqyENUeYQolLhPvfdsZhdrtlFsDxM-_IPl7xz0V66kA97FtQuiVFOrZaj1YdjSpSfUlscpUfJHMebdd36zQ85oFyGERx7VHpjwE8bw4w4nDfnCKsz4xe7gZZX3CaKBCng6F4KiVXZH',
     })
   })
 
@@ -373,6 +455,69 @@ describe('X509Service', () => {
 
     const leafCertificate = validatedChain[validatedChain.length - 1]
     expect(leafCertificate.publicJwk.is(P256PublicJwk)).toBe(true)
+  })
+
+  describe('key usage validation', () => {
+    async function buildChain(intermediateKeyUsage?: X509KeyUsage[]): Promise<Array<string>> {
+      const rootKey = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+      const intermediateKey = PublicJwk.fromPublicJwk(
+        (await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+      )
+      const leafKey = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+
+      const root = await X509Service.createCertificate(agentContext, {
+        serialNumber: '01',
+        issuer: { commonName: 'KU Root' },
+        authorityKey: rootKey,
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: { basicConstraints: { ca: true } },
+      })
+      const intermediate = await X509Service.createCertificate(agentContext, {
+        serialNumber: '02',
+        issuer: root.subject,
+        authorityKey: rootKey,
+        subject: { commonName: 'KU Intermediate' },
+        subjectPublicKey: intermediateKey,
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: {
+          basicConstraints: { ca: true },
+          ...(intermediateKeyUsage ? { keyUsage: { usages: intermediateKeyUsage } } : {}),
+        },
+      })
+      const leaf = await X509Service.createCertificate(agentContext, {
+        serialNumber: '03',
+        issuer: intermediate.subject,
+        authorityKey: intermediateKey,
+        subject: { commonName: 'KU Leaf' },
+        subjectPublicKey: leafKey,
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+      })
+
+      // x5c order: leaf first, root last.
+      return [leaf, intermediate, root].map((c) => c.toString('base64'))
+    }
+
+    it('rejects a chain whose issuing CA has key usage without keyCertSign', async () => {
+      const certificateChain = await buildChain([X509KeyUsage.DigitalSignature])
+
+      await expect(X509Service.validateCertificateChain(agentContext, { certificateChain })).rejects.toThrow(
+        'keyCertSign'
+      )
+    })
+
+    it('accepts a chain whose issuing CA has key usage including keyCertSign', async () => {
+      const certificateChain = await buildChain([X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign])
+
+      const validatedChain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
+      expect(validatedChain.length).toBe(3)
+    })
+
+    it('accepts a chain whose issuing CA has no key usage extension (unrestricted)', async () => {
+      const certificateChain = await buildChain()
+
+      const validatedChain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
+      expect(validatedChain.length).toBe(3)
+    })
   })
 
   it('should verify a certificate chain where the root certificate is not in the provided chain, but is in trusted certificates', async () => {
@@ -555,5 +700,28 @@ describe('X509Service', () => {
     expect(chain.length).toStrictEqual(2)
     expect((chain[0].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual('P-384')
     expect((chain[1].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual('P-256')
+  })
+
+  it('should correctly parse EU certificate chain', async () => {
+    const x5c = [
+      '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',
+    ]
+
+    const trustedCertificates = [
+      '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',
+    ]
+
+    const chain = await X509Service.validateCertificateChain(agentContext, {
+      certificateChain: x5c,
+      trustedCertificates,
+      verificationDate: new Date('2026-04-01T22:30Z'),
+    })
+
+    expect(chain.length).toStrictEqual(3)
+
+    expect((chain[0].publicJwk.toJson() as KmsJwkPublicRsa).kty).toStrictEqual('RSA')
+    expect((chain[1].publicJwk.toJson() as KmsJwkPublicRsa).kty).toStrictEqual('RSA')
+    expect((chain[2].publicJwk.toJson() as KmsJwkPublicRsa).kty).toStrictEqual('RSA')
   })
 })

@@ -31,14 +31,13 @@ export { didDocumentToNumAlgo4Did } from './modules/dids/methods/peer/peerDidNum
 export { DidRecordMetadataKeys } from './modules/dids/repository/didRecordMetadataTypes'
 export * from './modules/dif-presentation-exchange'
 export * from './modules/generic-records'
-
 /**
  * @deprecated import from `@credo-ts/core/kms` instead
  */
 export * as Kms from './modules/kms'
-
 export * from './modules/mdoc'
 export * from './modules/sd-jwt-vc'
+export * from './modules/token-status-list'
 export * from './modules/vc'
 export * from './modules/x509'
 export * from './plugins'
@@ -58,7 +57,6 @@ export type {
 } from './storage/StorageService'
 export { decodeCursor, encodeCursor, recordToCursor } from './storage/StorageService'
 export type {
-  AnyUint8Array,
   CanBePromise,
   InitConfig,
   JsonArray,
@@ -68,14 +66,12 @@ export type {
   Optional,
   ResolvedDidCommService,
   SingleOrArray,
-  Uint8ArrayBuffer,
   XOR,
 } from './types'
 export { isJsonObject, isNonEmptyArray, mapNonEmptyArray } from './types'
 export {
   asArray,
   type BaseName,
-  Buffer,
   DateTransformer,
   deepEquality,
   equalsIgnoreOrder,
@@ -93,7 +89,6 @@ export {
   MultiHashEncoder,
   TypedArrayEncoder,
 } from './utils'
-export { base64ToBase64URL } from './utils/base64'
 export type {
   CredentialMultiInstanceUseUpdateMode,
   UseInstanceFromCredentialRecordOptions,

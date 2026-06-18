@@ -73,7 +73,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           parsedRefreshToken = openId4VcIssuerService.parseRefreshToken(agentContext, grant.refreshToken)
           query = {
             preAuthorizedCode: parsedRefreshToken.preAuthorizedCode,
-            authorizationCode: parsedRefreshToken.issuerState,
+            issuerState: parsedRefreshToken.issuerState,
           }
           break
         default:

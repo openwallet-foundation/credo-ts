@@ -69,7 +69,7 @@ export function encodeCredentialValue(value: unknown) {
     value = 'None'
   }
 
-  const buffer = TypedArrayEncoder.fromString(String(value))
+  const buffer = TypedArrayEncoder.fromUtf8String(String(value))
   const hash = Hasher.hash(buffer, 'sha-256')
 
   return bytesToBigint(hash).toString()

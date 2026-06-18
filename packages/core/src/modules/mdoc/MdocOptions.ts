@@ -1,12 +1,12 @@
-import type { ValidityInfo } from '@animo-id/mdoc'
-import type { AnyUint8Array } from '../../types'
+import { type ValidityInfoOptions } from '@owf/mdoc'
+import type { DcqlQuery } from 'dcql'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import { PublicJwk } from '../kms'
-import type { EncodedX509Certificate, X509Certificate } from '../x509'
+import type { EncodedX509Certificate, X509Certificate, X509VerificationTrustedCertificates } from '../x509'
 import { Mdoc } from './Mdoc'
 import { MdocRecord } from './repository'
 
-export { DateOnly } from '@animo-id/mdoc'
+export { DateOnly } from '@owf/mdoc'
 
 export type MdocNameSpaces = Record<string, Record<string, unknown>>
 
@@ -15,7 +15,7 @@ export interface MdocStoreOptions {
 }
 
 export type MdocVerifyOptions = {
-  trustedCertificates?: EncodedX509Certificate[]
+  trustedCertificates?: EncodedX509Certificate[] | Array<X509VerificationTrustedCertificates>
   now?: Date
 }
 
@@ -36,8 +36,8 @@ export type MdocOpenId4VpDraft18SessionTranscriptOptions = {
 }
 
 export type MdocSessionTranscriptByteOptions = {
-  type: 'sesionTranscriptBytes'
-  sessionTranscriptBytes: AnyUint8Array
+  type: 'sessionTranscriptBytes'
+  sessionTranscriptBytes: Uint8Array
 }
 
 export type MdocOpenId4VpDcApiSessionTranscriptOptions = {
@@ -80,8 +80,15 @@ export type MdocDeviceResponsePresentationDefinitionOptions = {
   sessionTranscriptOptions: MdocSessionTranscriptOptions
 }
 
+export type MdocDeviceResponseDcqlQueryOptions = {
+  mdocs: [Mdoc, ...Mdoc[]]
+  dcqlQuery: DcqlQuery
+  deviceNameSpaces?: MdocNameSpaces
+  sessionTranscriptOptions: MdocSessionTranscriptOptions
+}
+
 export type MdocDeviceResponseVerifyOptions = {
-  trustedCertificates?: EncodedX509Certificate[]
+  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
   sessionTranscriptOptions: MdocSessionTranscriptOptions
   /**
    * The base64Url-encoded device response string.
@@ -92,14 +99,20 @@ export type MdocDeviceResponseVerifyOptions = {
 
 export type MdocSignOptions = {
   docType: 'org.iso.18013.5.1.mDL' | (string & {})
-  validityInfo?: Partial<ValidityInfo>
+  validityInfo: Omit<ValidityInfoOptions, 'validFrom' | 'signed'> &
+    Partial<Pick<ValidityInfoOptions, 'signed' | 'validFrom'>>
   namespaces: MdocNameSpaces
 
   /**
+   * The X509 certificate (or certificate chain) to use for signing the mDOC.
+   * When an array of certificates is provided, the first certificate is
+   * used for signing, and the entire chain is included in the mDOC.
    *
-   * The X509 certificate to use for signing the mDOC. The certificate MUST have a
-   * publicJwk with key id configured, enabling signing with the KMS
+   * The signing certificate MUST have a publicJwk with key id configured,
+   * enabling signing with the KMS.
    */
-  issuerCertificate: X509Certificate
+  issuerCertificate: X509Certificate | X509Certificate[]
   holderKey: PublicJwk
+
+  statusInfo?: { index: number; uri: string; certificate?: X509Certificate }
 }

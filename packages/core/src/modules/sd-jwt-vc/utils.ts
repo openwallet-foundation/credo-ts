@@ -62,10 +62,6 @@ export async function extractKeyFromHolderBinding(
     const publicJwk = holder.jwk
     const alg = publicJwk.supportedSignatureAlgorithms[0]
 
-    // FIXME: shouldn't we use `if (forSigning && !publicJwk.keyId)`, or at least use keyId over legacyKeyId
-    // It depends on whether we foresee security issues with trusting the `kid` field in the issued credential jwk.
-    // If there is no key id configured when signing, we assume this credential was issued before we included key ids
-    // and the we use the legacy key id.
     if (forSigning) {
       publicJwk.keyId = jwkKeyId ?? publicJwk.legacyKeyId
     }
@@ -91,11 +87,11 @@ export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Sign
   return async (input: string) => {
     const result = await kms.sign({
       keyId: key.keyId,
-      data: TypedArrayEncoder.fromString(input),
+      data: TypedArrayEncoder.fromUtf8String(input),
       algorithm: key.signatureAlgorithm,
     })
 
-    return TypedArrayEncoder.toBase64URL(result.signature)
+    return TypedArrayEncoder.toBase64Url(result.signature)
   }
 }
 
@@ -107,11 +103,11 @@ export function getSdJwtVerifier(agentContext: AgentContext, key: PublicJwk): Ve
 
   return async (message: string, signatureBase64Url: string) => {
     const result = await kms.verify({
-      signature: TypedArrayEncoder.fromBase64(signatureBase64Url),
+      signature: TypedArrayEncoder.fromBase64Url(signatureBase64Url),
       key: {
         publicJwk: key.toJson(),
       },
-      data: TypedArrayEncoder.fromString(message),
+      data: TypedArrayEncoder.fromUtf8String(message),
       algorithm: key.signatureAlgorithm,
     })
 

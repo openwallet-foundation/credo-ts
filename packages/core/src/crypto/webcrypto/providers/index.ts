@@ -1,3 +1,6 @@
 export * from './CredoEcdsaProvider'
+export * from './CredoEd25519Provider'
+export * from './CredoRsaPssProvider'
+export * from './CredoRsaSsaProvider'
 export * from './CredoSha1Provider'
 export * from './CredoSha256Provider'

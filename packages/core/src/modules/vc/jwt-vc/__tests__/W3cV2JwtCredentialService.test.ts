@@ -19,7 +19,7 @@ import { JsonTransformer, TypedArrayEncoder } from '../../../../utils'
 import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
 import { DidJwk, DidKey, DidRepository, DidsApi, DidsModuleConfig } from '../../../dids'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
-import { X509ModuleConfig } from '../../../x509'
+import { X509ModuleConfig } from '../../../x509/X509ModuleConfig'
 import { CREDENTIALS_CONTEXT_V2_URL } from '../../constants'
 import { ClaimFormat, W3cV2Credential, W3cV2EnvelopedVerifiableCredential, W3cV2Presentation } from '../../models'
 import { W3cV2JwtCredentialService } from '../W3cV2JwtCredentialService'
@@ -66,7 +66,7 @@ const agentContext = getAgentContext({
 const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
 kms.randomBytes = vi.fn(function () {
-  return TypedArrayEncoder.fromString('salt')
+  return TypedArrayEncoder.fromUtf8String('salt')
 })
 Date.prototype.getTime = vi.fn(function () {
   return 1698151532000
@@ -312,7 +312,7 @@ describe('W3cV2JwtCredentialService', () => {
     })
 
     test('returns invalid result when signature is not valid', async () => {
-      const jwtVc = W3cV2JwtVerifiableCredential.fromCompact(`${CredoEs256DidJwkJwtVc}a`)
+      const jwtVc = W3cV2JwtVerifiableCredential.fromCompact(`${CredoEs256DidJwkJwtVc}ey`)
 
       const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
         credential: jwtVc,

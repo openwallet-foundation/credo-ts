@@ -1,6 +1,5 @@
 import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry, DidCommProtocol } from '@credo-ts/didcomm'
 import type { DependencyManager } from '../../../core/src/plugins/DependencyManager'
-
 import { getAgentConfig, getAgentContext } from '../../../core/tests'
 import { DrpcModule } from '../DrpcModule'
 import { DrpcRole } from '../models'

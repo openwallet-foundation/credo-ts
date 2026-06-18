@@ -15,6 +15,7 @@ const featureRegistry = {
 const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
 
 const dependencyManager = {
+  isRegistered: vi.fn(),
   registerInstance: vi.fn(),
   registerSingleton: vi.fn(),
   registerContextScoped: vi.fn(),

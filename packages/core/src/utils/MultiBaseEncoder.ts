@@ -1,22 +1,21 @@
-import type { AnyUint8Array, Uint8ArrayBuffer } from '../types'
-import { decodeFromBase58, encodeToBase58 } from './base58'
+import { TypedArrayEncoder } from './TypedArrayEncoder'
 
 export type BaseName = 'base58btc'
 
 type EncodingMap = {
-  [key in BaseName]: (data: AnyUint8Array) => string
+  [key in BaseName]: (data: Uint8Array) => string
 }
 
 type DecodingMap = {
-  [key: string]: (data: string) => { data: Uint8ArrayBuffer; baseName: BaseName }
+  [key: string]: (data: string) => { data: Uint8Array; baseName: BaseName }
 }
 
 const multibaseEncodingMap: EncodingMap = {
-  base58btc: (data) => `z${encodeToBase58(data)}`,
+  base58btc: (data) => `z${TypedArrayEncoder.toBase58(data)}`,
 }
 
 const multibaseDecodingMap: DecodingMap = {
-  z: (data) => ({ data: decodeFromBase58(data.substring(1)), baseName: 'base58btc' }),
+  z: (data) => ({ data: TypedArrayEncoder.fromBase58(data.substring(1)), baseName: 'base58btc' }),
 }
 
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
@@ -28,7 +27,7 @@ export class MultiBaseEncoder {
    * @param buffer the buffer that has to be encoded
    * @param baseName the encoding algorithm
    */
-  public static encode(buffer: AnyUint8Array, baseName: BaseName) {
+  public static encode(buffer: Uint8Array, baseName: BaseName) {
     const encode = multibaseEncodingMap[baseName]
 
     if (!encode) {
@@ -46,7 +45,7 @@ export class MultiBaseEncoder {
    *
    * @returns decoded data and the multi base name
    */
-  public static decode(data: string): { data: Uint8ArrayBuffer; baseName: string } {
+  public static decode(data: string): { data: Uint8Array; baseName: string } {
     const prefix = data[0]
     const decode = multibaseDecodingMap[prefix]
 

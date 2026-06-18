@@ -24,9 +24,9 @@ import { askar, askarPostgresStorageConfig } from '../../askar/tests/helpers'
 import didKeyP256 from '../../core/src/modules/dids/__tests__/__fixtures__/didKeyP256.json'
 import { sprindFunkeTestVectorBase64Url } from '../../core/src/modules/mdoc/__tests__/mdoc.fixtures'
 import { sdJwtVcWithSingleDisclosure } from '../../core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.fixtures'
-import { customDocumentLoader } from '../../core/src/modules/vc/data-integrity/__tests__/documentLoader'
-import { Ed25519Signature2018Fixtures } from '../../core/src/modules/vc/data-integrity/__tests__/fixtures'
 import { CredoEs256DidJwkJwtVc } from '../../core/src/modules/vc/jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
+import { customDocumentLoader } from '../../core/src/modules/vc/linked-data-proofs/__tests__/documentLoader'
+import { Ed25519Signature2018Fixtures } from '../../core/src/modules/vc/linked-data-proofs/__tests__/fixtures'
 import testLogger from '../../core/tests/logger'
 import { actionMenuBundle } from '../../drizzle-storage/src/action-menu/bundle'
 import { anoncredsBundle } from '../../drizzle-storage/src/anoncreds/bundle'
@@ -75,7 +75,7 @@ async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
       crv: 'Ed25519',
       kty: 'OKP',
     },
-    privateKey: TypedArrayEncoder.fromString('afjdemoverysercure00000000000000'),
+    privateKey: TypedArrayEncoder.fromUtf8String('afjdemoverysercure00000000000000'),
   })
 
   privateJwk.kid = 'consistent-kid'
