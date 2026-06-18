@@ -1,10 +1,12 @@
 import type { AgentContext, BaseRecordAny, ResolvedDidCommService } from '@credo-ts/core'
-import { CredoError, Kms, utils } from '@credo-ts/core'
+import { CredoError, DidKey, Kms } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
+import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { ServiceDecorator } from './decorators/service/ServiceDecorator'
 import type { DidCommRouting } from './models'
 import { DidCommOutboundMessageContext } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
+import { routingToServices } from './modules/connections/services/helpers'
 import type { DidCommOutOfBandRecord } from './modules/oob'
 import {
   DidCommInvitationType,
@@ -15,6 +17,7 @@ import {
 import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
 import { DidCommRoutingService } from './modules/routing'
 import { DidCommMessageRepository, DidCommMessageRole } from './repository'
+import type { DidCommV2KeyAgreementJwk } from './v2/types'
 
 /**
  * Maybe these methods should be moved to a service, but that would require
@@ -124,13 +127,18 @@ export async function getConnectionlessOutboundMessageContext(
   // Adds the ~service and ~thread.pthid (if oob is used) to the message and updates it in storage.
   await addExchangeDataToMessage(agentContext, { message, ourService, outOfBandRecord, associatedRecord })
 
+  const senderKey = ourService.recipientKeys[0]
+  // For DIDComm v2: skid must be resolvable. Use did:key so recipient can resolve via tryParseKidAsPublicJwk
+  const senderKeySkid = new DidKey(senderKey).did
+
   return new DidCommOutboundMessageContext(message, {
     agentContext: agentContext,
     associatedRecord,
     serviceParams: {
       service: recipientService,
-      senderKey: ourService.recipientKeys[0],
+      senderKey,
       returnRoute: true,
+      senderKeySkid,
     },
   })
 }
@@ -172,19 +180,25 @@ async function getServicesForMessage(
     outOfBandRecord?: DidCommOutOfBandRecord
   }
 ) {
+  // Key off sendsV2 config; invitationType is @Exclude()-decorated and lost after the OOB record's storage round-trip.
+  const preferDidcommV2 = agentContext.dependencyManager.resolve(DidCommModuleConfig).sendsV2
+
+  // v1 ~service holds raw base58 keys with no DID URL keyId; for v2 OOB Receiver, re-resolve via the OOB record to get a keyAgreement vm.
+  const skipLastReceivedServiceForV2 = preferDidcommV2 && outOfBandRecord?.role === DidCommOutOfBandRole.Receiver
+
   let ourService = lastSentMessage?.service?.resolvedDidCommService
-  let recipientService = lastReceivedMessage.service?.resolvedDidCommService
+  let recipientService = skipLastReceivedServiceForV2 ? undefined : lastReceivedMessage.service?.resolvedDidCommService
 
   const outOfBandService = agentContext.dependencyManager.resolve(DidCommOutOfBandService)
 
-  // Check if valid
   if (outOfBandRecord?.role === DidCommOutOfBandRole.Sender) {
     // Extract ourService from the oob record if not on a previous message
     if (!ourService) {
       ourService = await outOfBandService.getResolvedServiceForOutOfBandServices(
         agentContext,
         outOfBandRecord.outOfBandInvitation.getServices(),
-        outOfBandRecord.invitationInlineServiceKeys
+        outOfBandRecord.invitationInlineServiceKeys,
+        preferDidcommV2
       )
     }
 
@@ -203,7 +217,9 @@ async function getServicesForMessage(
     if (!recipientService) {
       recipientService = await outOfBandService.getResolvedServiceForOutOfBandServices(
         agentContext,
-        outOfBandRecord.outOfBandInvitation.getServices()
+        outOfBandRecord.outOfBandInvitation.getServices(),
+        undefined,
+        preferDidcommV2
       )
     }
 
@@ -269,14 +285,30 @@ async function createOurService(
     ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
     recipientPublicJwk.keyId = oobRecordRecipientRouting.recipientKeyId ?? recipientPublicJwk.legacyKeyId
-    routing = {
+
+    // Restore the independent keyAgreement key (X25519 or P-256) from metadata if available.
+    let keyAgreementKey: DidCommV2KeyAgreementJwk | undefined
+    if (oobRecordRecipientRouting.keyAgreementKeyFingerprint) {
+      keyAgreementKey = Kms.PublicJwk.fromFingerprint(
+        oobRecordRecipientRouting.keyAgreementKeyFingerprint
+      ) as DidCommV2KeyAgreementJwk
+      keyAgreementKey.keyId = oobRecordRecipientRouting.keyAgreementKeyId ?? keyAgreementKey.legacyKeyId
+    }
+
+    const baseRouting = {
       recipientKey: recipientPublicJwk,
-      routingKeys: oobRecordRecipientRouting.routingKeyFingerprints.map(
-        (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
-      ),
+      keyAgreementKey,
       endpoints: oobRecordRecipientRouting.endpoints,
       mediatorId: oobRecordRecipientRouting.mediatorId,
     }
+    routing = oobRecordRecipientRouting.routingDid
+      ? { ...baseRouting, routingDid: oobRecordRecipientRouting.routingDid }
+      : {
+          ...baseRouting,
+          routingKeys: oobRecordRecipientRouting.routingKeyFingerprints.map(
+            (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+          ),
+        }
   }
 
   if (!routing) {
@@ -291,9 +323,12 @@ async function createOurService(
       outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.RecipientRouting, {
         recipientKeyFingerprint: routing.recipientKey.fingerprint,
         recipientKeyId: routing.recipientKey.keyId,
-        routingKeyFingerprints: routing.routingKeys.map((key) => key.fingerprint),
+        keyAgreementKeyFingerprint: routing.keyAgreementKey?.fingerprint,
+        keyAgreementKeyId: routing.keyAgreementKey?.keyId,
+        routingKeyFingerprints: (routing.routingKeys ?? []).map((key) => key.fingerprint),
         endpoints: routing.endpoints,
         mediatorId: routing.mediatorId,
+        routingDid: routing.routingDid,
       })
       outOfBandRecord.setTags({ recipientRoutingKeyFingerprint: routing.recipientKey.fingerprint })
       const outOfBandRepository = agentContext.resolve(DidCommOutOfBandRepository)
@@ -301,12 +336,8 @@ async function createOurService(
     }
   }
 
-  return {
-    id: utils.uuid(),
-    serviceEndpoint: routing.endpoints[0],
-    recipientKeys: [routing.recipientKey],
-    routingKeys: routing.routingKeys,
-  }
+  const [service] = routingToServices(routing)
+  return service
 }
 
 async function addExchangeDataToMessage(

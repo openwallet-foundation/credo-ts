@@ -1,3 +1,4 @@
+import type { DidCommVersion } from '../../util/didcommVersion'
 import type { DidCommMediatorPickupStrategy } from './DidCommMediatorPickupStrategy'
 
 /**
@@ -13,6 +14,8 @@ export interface DidCommMediationRecipientModuleConfigOptions {
    * - `DidCommMediatorPickupStrategy.PickUpV1`         - explicitly pick up messages from the mediator in periodic loops according to [RFC 0212 Pickup Protocol](https://github.com/hyperledger/aries-rfcs/blob/main/features/0212-pickup/README.md)
    * - `DidCommMediatorPickupStrategy.PickUpV2`         - pick up messages from the mediator in periodic loops according to [RFC 0685 Pickup V2 Protocol](https://github.com/hyperledger/aries-rfcs/tree/main/features/0685-pickup-v2/README.md).
    * - `DidCommMediatorPickupStrategy.PickUpV2LiveMode` - pick up messages from the mediator using Live Mode as specified in [RFC 0685 Pickup V2 Protocol](https://github.com/hyperledger/aries-rfcs/tree/main/features/0685-pickup-v2/README.md).
+   * - `DidCommMediatorPickupStrategy.PickUpV3`         - pick up messages using [Message Pickup 3.0](https://didcomm.org/messagepickup/3.0/). Use with Coordinate Mediation 2.0.
+   * - `DidCommMediatorPickupStrategy.PickUpV3LiveMode` - pick up messages using Message Pickup 3.0 in Live Mode. Use with Coordinate Mediation 2.0.
    * - `DidCommMediatorPickupStrategy.Implicit`         - Open a WebSocket with the mediator to implicitly receive messages. (currently used by Aries Cloud Agent Python)
    * - `DidCommMediatorPickupStrategy.None`             - Do not retrieve messages from the mediator automatically. You can launch manual pickup flows afterwards.
    *
@@ -66,6 +69,14 @@ export interface DidCommMediationRecipientModuleConfigOptions {
    * Supports both RFC 0434 Out Of Band v1 and RFC 0160 Connections v1 invitations.
    */
   mediatorInvitationUrl?: string
+
+  /**
+   * Mediation protocol versions to support. When 'v2' is included, Coordinate Mediation 2.0 handlers are registered.
+   * Use with DIDComm v2 connections.
+   *
+   * @default ['v1']
+   */
+  mediationProtocolVersions?: DidCommVersion[]
 }
 
 export class DidCommMediationRecipientModuleConfig {
@@ -103,5 +114,10 @@ export class DidCommMediationRecipientModuleConfig {
   /** See {@link DidCommMediationRecipientModuleConfigOptions.mediatorInvitationUrl} */
   public get mediatorInvitationUrl() {
     return this.options.mediatorInvitationUrl
+  }
+
+  /** See {@link DidCommMediationRecipientModuleConfigOptions.mediationProtocolVersions} */
+  public get mediationProtocolVersions(): DidCommVersion[] {
+    return this.options.mediationProtocolVersions ?? ['v1']
   }
 }
