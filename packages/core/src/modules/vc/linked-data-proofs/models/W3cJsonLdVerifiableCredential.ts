@@ -2,9 +2,8 @@ import { ValidateNested } from 'class-validator'
 import { CredoError } from '../../../../error'
 import type { SingleOrArray } from '../../../../types'
 import { asArray, IsInstanceOrArrayOfInstances, JsonTransformer, mapSingleOrArray } from '../../../../utils'
-import type { AnonCredsVc1BridgeProofOptions } from '../../anoncreds-vc1-bridge/AnonCredsVc1BridgeProof'
-import { AnonCredsVc1BridgeProof } from '../../anoncreds-vc1-bridge/AnonCredsVc1BridgeProof'
-import { ANONCREDS_VC1_BRIDGE_CRYPTOSUITE } from '../../anoncreds-vc1-bridge/IAnonCredsVc1BridgeService'
+import type { AnonCredsW3cBridgeProofOptions } from '../../anoncreds-w3c-bridge'
+import { ANONCREDS_W3C_BRIDGE_CRYPTOSUITE, AnonCredsW3cBridgeProof } from '../../anoncreds-w3c-bridge'
 import { ClaimFormat } from '../../models/ClaimFormat'
 import type { W3cCredentialOptions } from '../../models/credential/W3cCredential'
 import { W3cCredential } from '../../models/credential/W3cCredential'
@@ -14,18 +13,18 @@ import type { LinkedDataProofOptions } from './LinkedDataProof'
 import { LinkedDataProof } from './LinkedDataProof'
 
 export interface W3cJsonLdVerifiableCredentialOptions extends W3cCredentialOptions {
-  proof: SingleOrArray<LinkedDataProofOptions | AnonCredsVc1BridgeProofOptions>
+  proof: SingleOrArray<LinkedDataProofOptions | AnonCredsW3cBridgeProofOptions>
 }
 
-const mapProofOptionToProofClass = (proof: LinkedDataProofOptions | AnonCredsVc1BridgeProofOptions) => {
+const mapProofOptionToProofClass = (proof: LinkedDataProofOptions | AnonCredsW3cBridgeProofOptions) => {
   if ('cryptosuite' in proof) {
-    if (proof.type !== 'DataIntegrityProof' || proof.cryptosuite !== ANONCREDS_VC1_BRIDGE_CRYPTOSUITE) {
+    if (proof.type !== 'DataIntegrityProof' || proof.cryptosuite !== ANONCREDS_W3C_BRIDGE_CRYPTOSUITE) {
       throw new CredoError(
-        `VC1 bridge proofs only support DataIntegrityProof with cryptosuite ${ANONCREDS_VC1_BRIDGE_CRYPTOSUITE}`
+        `W3C bridge proofs only support DataIntegrityProof with cryptosuite ${ANONCREDS_W3C_BRIDGE_CRYPTOSUITE}`
       )
     }
 
-    return new AnonCredsVc1BridgeProof(proof)
+    return new AnonCredsW3cBridgeProof(proof)
   }
 
   return new LinkedDataProof(proof)
@@ -40,22 +39,27 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
   }
 
   @ProofTransformer()
-  @IsInstanceOrArrayOfInstances({ classType: [LinkedDataProof, AnonCredsVc1BridgeProof] })
+  @IsInstanceOrArrayOfInstances({ classType: [LinkedDataProof, AnonCredsW3cBridgeProof] })
   @ValidateNested()
-  public proof!: SingleOrArray<LinkedDataProof | AnonCredsVc1BridgeProof>
+  public proof!: SingleOrArray<LinkedDataProof | AnonCredsW3cBridgeProof>
 
   public get proofTypes(): Array<string> {
     const proofArray = asArray(this.proof) ?? []
     return proofArray.map((proof) => proof.type)
   }
 
-  public get anoncredsVc1BridgeCryptosuites(): Array<string> {
+  public get anoncredsW3cBridgeCryptosuites(): Array<string> {
     const proofArray = asArray(this.proof) ?? []
     return proofArray
       .filter(
-        (proof): proof is AnonCredsVc1BridgeProof => proof.type === 'DataIntegrityProof' && 'cryptosuite' in proof
+        (proof): proof is AnonCredsW3cBridgeProof => proof.type === 'DataIntegrityProof' && 'cryptosuite' in proof
       )
       .map((proof) => proof.cryptosuite)
+  }
+
+  /** @deprecated Use anoncredsW3cBridgeCryptosuites */
+  public get dataIntegrityCryptosuites(): Array<string> {
+    return this.anoncredsW3cBridgeCryptosuites
   }
 
   public toJson() {

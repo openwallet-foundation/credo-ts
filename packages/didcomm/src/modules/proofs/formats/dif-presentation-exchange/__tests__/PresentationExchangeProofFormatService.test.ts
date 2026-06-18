@@ -6,7 +6,7 @@ import {
   DifPresentationExchangeService,
 } from '../../../../../../../core/src/modules/dif-presentation-exchange'
 import {
-  AnonCredsVc1BridgeServiceSymbol,
+  AnonCredsW3cBridgeServiceSymbol,
   CREDENTIALS_CONTEXT_V1_URL,
   W3cCredentialRecord,
   W3cCredentialRepository,
@@ -274,7 +274,7 @@ describe('Presentation Exchange ProofFormatService', () => {
         verifyPresentation: vi.fn().mockResolvedValue(true),
       }
       const resolveSpy = vi.spyOn(agent.dependencyManager, 'resolve').mockImplementation((token: unknown) => {
-        if (token === AnonCredsVc1BridgeServiceSymbol) {
+        if (token === AnonCredsW3cBridgeServiceSymbol) {
           return anoncredsBridgeService as never
         }
 

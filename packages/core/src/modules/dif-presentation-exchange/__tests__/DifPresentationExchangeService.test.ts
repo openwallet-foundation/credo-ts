@@ -522,7 +522,7 @@ describe('DifPresentationExchangeService', () => {
     await mdocRepository.deleteById(agentContext, randomMdoc.id)
   })
 
-  test('selects the anoncreds VC1 bridge only for LDP presentations', () => {
+  test('selects the anoncreds W3C bridge only for LDP presentations', () => {
     const anoncredsBridgeCredential = JsonTransformer.fromJSON(
       {
         '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/security/data-integrity/v2'],
@@ -558,21 +558,21 @@ describe('DifPresentationExchangeService', () => {
     expect(
       (
         pexService as unknown as {
-          shouldSignUsingAnonCredsVc1Bridge: (
+          shouldSignUsingAnonCredsW3cBridge: (
             presentationToCreate: typeof bridgeEligiblePresentationToCreate
           ) => boolean
         }
-      ).shouldSignUsingAnonCredsVc1Bridge(bridgeEligiblePresentationToCreate)
+      ).shouldSignUsingAnonCredsW3cBridge(bridgeEligiblePresentationToCreate)
     ).toBe(true)
 
     expect(
       (
         pexService as unknown as {
-          shouldSignUsingAnonCredsVc1Bridge: (
+          shouldSignUsingAnonCredsW3cBridge: (
             presentationToCreate: typeof bridgeEligiblePresentationToCreate
           ) => boolean
         }
-      ).shouldSignUsingAnonCredsVc1Bridge({
+      ).shouldSignUsingAnonCredsW3cBridge({
         ...bridgeEligiblePresentationToCreate,
         claimFormat: ClaimFormat.DiVp,
       })

@@ -1,4 +1,4 @@
-export * from './anoncreds-vc1-bridge'
+export * from './anoncreds-w3c-bridge'
 export * from './constants'
 export * from './data-integrity-v1'
 export * from './jsonld'
