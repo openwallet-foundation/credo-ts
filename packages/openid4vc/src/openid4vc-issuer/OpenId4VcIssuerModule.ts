@@ -132,12 +132,21 @@ export class OpenId4VcIssuerModule implements Module {
 
     // This one will be called for all errors that are thrown
     wellKnownEndpointsRouter.use(
-      async (_error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
+      async (error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
         const { agentContext } = getRequestContext(req)
+
+        // Check if the error is specifically a payload limit issue
+        if (error instanceof Error && error.name === 'PayloadTooLargeError') {
+          return res.status(413).json({
+            error: 'invalid_request',
+            message: `The request body exceeds the maximum allowed limit.`,
+          })
+        }
 
         if (!res.headersSent) {
           agentContext.config.logger.warn(
-            'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.'
+            'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.',
+            { error }
           )
 
           res.status(500).json({
@@ -167,9 +176,9 @@ export class OpenId4VcIssuerModule implements Module {
     const basePath = new URL(this.config.baseUrl).pathname
 
     // parse application/x-www-form-urlencoded
-    issuerContextRouter.use(urlencoded({ extended: false }))
+    issuerContextRouter.use(urlencoded({ extended: false, limit: '1mb' }))
     // parse application/json
-    issuerContextRouter.use(json())
+    issuerContextRouter.use(json({ limit: '1mb' }))
 
     // Register the issuer endpoints under /:issuerId
     issuerContextRouter.param('issuerId', issuerIdParamHandler)
@@ -200,12 +209,21 @@ export class OpenId4VcIssuerModule implements Module {
 
     // This one will be called for all errors that are thrown
     issuerContextRouter.use(
-      async (_error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
+      async (error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
         const { agentContext } = getRequestContext(req)
+
+        // Check if the error is specifically a payload limit issue
+        if (error instanceof Error && error.name === 'PayloadTooLargeError') {
+          return res.status(413).json({
+            error: 'invalid_request',
+            message: `The request body exceeds the maximum allowed limit.`,
+          })
+        }
 
         if (!res.headersSent) {
           agentContext.config.logger.warn(
-            'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.'
+            'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.',
+            { error }
           )
 
           res.status(500).json({
