@@ -490,6 +490,42 @@ describe('mdoc service test', () => {
     expect(result.isValid).toBe(true)
   })
 
+  test('verify succeeds when the trusted certificate is the root CA of the issuance chain', async () => {
+    const rootKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const leafKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+    const rootCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(rootKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=Root',
+      extensions: { basicConstraints: { ca: true } },
+    })
+    rootCertificate.keyId = rootKey.keyId
+
+    const leafCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(rootKey.publicJwk),
+      subjectPublicKey: PublicJwk.fromPublicJwk(leafKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=Root',
+      subject: 'C=DE,CN=Leaf',
+    })
+    leafCertificate.keyId = leafKey.keyId
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: leafCertificate,
+      validityInfo: { validUntil: nextDay },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [rootCertificate.toString('base64')] }],
+    })
+
+    expect(result.isValid).toBe(true)
+  })
+
   // FIXME: test is skipped due to a breaking change in mdoc library that prevents us to
   // specify a custom verification date (it does not take the parameter into account)
   // This is needed in this test because the certificate is only valid from 2024-08-12 and 2024-08-24

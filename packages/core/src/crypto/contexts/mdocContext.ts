@@ -58,14 +58,16 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
           X509Certificate.fromRawCertificate(cert).toString('pem')
         ) as [string, ...string[]]
 
+        const validatedChain = await X509Service.validateCertificateChain(agentContext, {
+          certificateChain,
+          trustedCertificates,
+          verificationDate: input.now ?? now,
+        })
+
+        // X509Service.validateCertificateChain returns the chain root-first. The mdoc context contract
+        // requires the chain to be leaf-first with the trust anchor (root) as the last entry, so reverse here.
         return {
-          chain: (
-            await X509Service.validateCertificateChain(agentContext, {
-              certificateChain,
-              trustedCertificates,
-              verificationDate: input.now ?? now,
-            })
-          ).map((cert) => cert.rawCertificate),
+          chain: validatedChain.map((cert) => cert.rawCertificate).reverse(),
         }
       },
       getCertificateData: async (input) => {

@@ -191,9 +191,10 @@ export class Mdoc {
     })
 
     try {
-      // When no dedicated `status` certificates are configured for a trusted entry, fall back to its `issuance`
-      // certificates. Using the issuance certificates means the status/identifier list chains must validate
-      // against the same trust anchor as issuance.
+      // The underlying mdoc library requires `status` certificates to validate status/identifier lists.
+      // When the user has not configured dedicated `status` certs for a trusted entry, fall back to that
+      // entry's `issuance` certs — chain equality between the status/identifier and issuance chains is
+      // then enforced below so the fallback can't widen the trust set unintentionally.
       const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates).map(
         ({ issuance, status }) => ({
           issuance,
@@ -222,13 +223,18 @@ export class Mdoc {
 
       const issuanceChain = trustedIssuanceChain.map((c) => X509Certificate.fromRawCertificate(c))
 
-      if (!x509ChainsAreEqual(certificateChain, issuanceChain)) {
+      // The mdoc x5chain is leaf-first and does not include the trust anchor. The validated chain returned by
+      // the library is leaf-first with the resolved trust anchor appended, so the mdoc chain must equal its leaf-end prefix.
+      const certificateChainMatchesIssuanceChain =
+        certificateChain.length <= issuanceChain.length &&
+        certificateChain.every((cert, i) => cert.equal(issuanceChain[i]))
+      if (!certificateChainMatchesIssuanceChain) {
         throw new MdocError('Certificate chain does not match the trusted issuance chain')
       }
 
-      const issuanceRoot = issuanceChain[issuanceChain.length - 1]
+      const issuanceTrustAnchor = issuanceChain[issuanceChain.length - 1]
       const matchedTrustedCertificates = convertedTrustedCertificates.find(({ issuance }) =>
-        issuance.some((cert) => X509Certificate.fromEncodedCertificate(cert).equal(issuanceRoot))
+        issuance.some((cert) => X509Certificate.fromEncodedCertificate(cert).equal(issuanceTrustAnchor))
       )
       const hasDedicatedStatusCertificates = matchedTrustedCertificates?.hasDedicatedStatusCertificates ?? false
 
