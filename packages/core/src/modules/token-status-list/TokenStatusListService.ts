@@ -160,7 +160,7 @@ export class TokenStatusListService {
     // TODO: jwk could also be supported
     if (options.signer.method !== 'x5c' && options.signer.method !== 'did') {
       throw new Error(
-        `signer method '${options.signer.method}' is not supported for updating a token status list. Only x5c and did`
+        `signer method '${options.signer.method}' is not supported for updating a token status list. Only x5c and did are`
       )
     }
 

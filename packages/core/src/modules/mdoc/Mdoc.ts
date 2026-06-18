@@ -216,24 +216,36 @@ export class Mdoc {
         throw new MdocError('Certificate chain does not match the trusted issuance chain')
       }
 
-      if (
-        trustedIdentifierListChain &&
-        !x509ChainsAreEqual(
-          trustedIdentifierListChain.map((c) => X509Certificate.fromRawCertificate(c)),
-          issuanceChain
-        )
-      ) {
-        throw new MdocError('Trusted identifier list chain does not match the trusted issuance chain')
-      }
+      // The matched trusted certificates entry is the one whose `issuance` contains the trust anchor (root) of the issuance chain.
+      // When that entry has dedicated `status` certificates, the status/identifier list chains are allowed to use a different
+      // trust anchor than the issuance chain. Otherwise the library falls back to the issuance certificates for status/identifier
+      // validation, so we require those chains to match the issuance chain.
+      const issuanceRoot = issuanceChain[issuanceChain.length - 1]
+      const matchedTrustedCertificates = convertedTrustedCertificates.find(({ issuance }) =>
+        issuance.some((cert) => X509Certificate.fromEncodedCertificate(cert).equal(issuanceRoot))
+      )
+      const hasDedicatedStatusCertificates = (matchedTrustedCertificates?.status?.length ?? 0) > 0
 
-      if (
-        trustedStatusListChain &&
-        !x509ChainsAreEqual(
-          trustedStatusListChain.map((c) => X509Certificate.fromRawCertificate(c)),
-          issuanceChain
-        )
-      ) {
-        throw new MdocError('Trusted status list chain does not match the trusted issuance chain')
+      if (!hasDedicatedStatusCertificates) {
+        if (
+          trustedIdentifierListChain &&
+          !x509ChainsAreEqual(
+            trustedIdentifierListChain.map((c) => X509Certificate.fromRawCertificate(c)),
+            issuanceChain
+          )
+        ) {
+          throw new MdocError('Trusted identifier list chain does not match the trusted issuance chain')
+        }
+
+        if (
+          trustedStatusListChain &&
+          !x509ChainsAreEqual(
+            trustedStatusListChain.map((c) => X509Certificate.fromRawCertificate(c)),
+            issuanceChain
+          )
+        ) {
+          throw new MdocError('Trusted status list chain does not match the trusted issuance chain')
+        }
       }
 
       return { isValid: true }
