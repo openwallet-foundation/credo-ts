@@ -191,13 +191,23 @@ export class Mdoc {
     })
 
     try {
-      const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates)
+      // When no dedicated `status` certificates are configured for a trusted entry, fall back to its `issuance`
+      // certificates. The underlying mdoc library requires `status` to be set, and using the issuance certificates
+      // means the status/identifier list chains must validate against the same trust anchor as issuance.
+      const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates).map(
+        ({ issuance, status }) => ({
+          issuance,
+          status: status && status.length > 0 ? status : issuance,
+          hasDedicatedStatusCertificates: !!status && status.length > 0,
+        })
+      )
+
       const { trustedIssuanceChain, trustedStatusListChain, trustedIdentifierListChain } =
         await Holder.verifyIssuerSigned(
           {
             trustedCertificates: convertedTrustedCertificates.map(({ issuance, status }) => ({
               issuance: issuance.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
-              status: status?.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
+              status: status.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
             })),
             issuerSigned: this.issuerSigned,
             disableCertificateChainValidation: false,
@@ -212,19 +222,28 @@ export class Mdoc {
 
       const issuanceChain = trustedIssuanceChain.map((c) => X509Certificate.fromRawCertificate(c))
 
-      if (!x509ChainsAreEqual(certificateChain, issuanceChain)) {
+      // The mdoc's certificate chain does not include the trust anchor (root), but the chain returned by the
+      // verification library is root-first and may include the trust anchor. We align both chains at the leaf
+      // end and require every cert in the mdoc chain to match the corresponding cert in the validated chain.
+      const mdocChainMatchesIssuance =
+        certificateChain.length <= issuanceChain.length &&
+        certificateChain.every((cert, i) =>
+          cert.equal(issuanceChain[issuanceChain.length - certificateChain.length + i])
+        )
+      if (!mdocChainMatchesIssuance) {
         throw new MdocError('Certificate chain does not match the trusted issuance chain')
       }
 
-      // The matched trusted certificates entry is the one whose `issuance` contains the trust anchor (root) of the issuance chain.
-      // When that entry has dedicated `status` certificates, the status/identifier list chains are allowed to use a different
-      // trust anchor than the issuance chain. Otherwise the library falls back to the issuance certificates for status/identifier
-      // validation, so we require those chains to match the issuance chain.
-      const issuanceRoot = issuanceChain[issuanceChain.length - 1]
+      // Find the matching trusted entry by checking whether any of its issuance certificates appears in the
+      // validated chain. mdoc certificate chains do not include the root certificate, so matching by chain root
+      // equality would fail whenever the user trusts an actual root CA — we match against the full chain instead.
       const matchedTrustedCertificates = convertedTrustedCertificates.find(({ issuance }) =>
-        issuance.some((cert) => X509Certificate.fromEncodedCertificate(cert).equal(issuanceRoot))
+        issuance.some((trustedCert) => {
+          const parsed = X509Certificate.fromEncodedCertificate(trustedCert)
+          return issuanceChain.some((chainCert) => parsed.equal(chainCert))
+        })
       )
-      const hasDedicatedStatusCertificates = (matchedTrustedCertificates?.status?.length ?? 0) > 0
+      const hasDedicatedStatusCertificates = matchedTrustedCertificates?.hasDedicatedStatusCertificates ?? false
 
       if (!hasDedicatedStatusCertificates) {
         if (
@@ -234,7 +253,9 @@ export class Mdoc {
             issuanceChain
           )
         ) {
-          throw new MdocError('Trusted identifier list chain does not match the trusted issuance chain')
+          throw new MdocError(
+            'Trusted identifier list chain does not match the trusted issuance chain, and no trusted status certificates were provided for the trusted issuance certificate'
+          )
         }
 
         if (
@@ -244,7 +265,9 @@ export class Mdoc {
             issuanceChain
           )
         ) {
-          throw new MdocError('Trusted status list chain does not match the trusted issuance chain')
+          throw new MdocError(
+            'Trusted status list chain does not match the trusted issuance chain, and no trusted status certificates were provided for the trusted issuance certificate'
+          )
         }
       }
 
