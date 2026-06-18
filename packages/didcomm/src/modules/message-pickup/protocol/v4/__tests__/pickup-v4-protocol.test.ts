@@ -262,10 +262,7 @@ describe('DidCommMessagePickupV4Protocol', () => {
   })
 
   describe('processMessagesReceived', () => {
-    test('messages received partially', async () => {
-      mockFunction(queueTransportRepository.takeFromQueue).mockReturnValue(queuedMessages)
-      mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(4)
-
+    test('removes the acknowledged messages and returns no status (4.0 fire-and-forget)', async () => {
       const messagesReceived = new DidCommMessagesReceivedV4Message({
         messageIdList: ['1', '2'],
       })
@@ -275,20 +272,9 @@ describe('DidCommMessagePickupV4Protocol', () => {
         agentContext,
       })
 
-      const { connection, message } = await pickupProtocol.processMessagesReceived(messageContext)
+      const result = await pickupProtocol.processMessagesReceived(messageContext)
 
-      expect(connection).toEqual(mockConnection)
-      expect(message).toEqual(
-        new DidCommStatusV4Message({
-          id: message.id,
-          threadId: messagesReceived.threadId,
-          messageCount: 4,
-        })
-      )
-      expect(queueTransportRepository.getAvailableMessageCount).toHaveBeenCalledWith(
-        agentContext,
-        expect.objectContaining({ connectionId: mockConnection.id })
-      )
+      expect(result).toBeUndefined()
       expect(queueTransportRepository.removeMessages).toHaveBeenCalledWith(agentContext, {
         connectionId: mockConnection.id,
         messageIds: ['1', '2'],

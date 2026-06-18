@@ -12,6 +12,7 @@ export class DidCommMessagesReceivedV4Handler implements DidCommMessageHandler {
 
   public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidCommMessagesReceivedV4Handler>) {
     messageContext.assertReadyConnection()
-    return this.protocol.processMessagesReceived(messageContext)
+    await this.protocol.processMessagesReceived(messageContext)
+    return undefined
   }
 }

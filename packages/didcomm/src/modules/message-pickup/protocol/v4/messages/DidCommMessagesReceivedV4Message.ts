@@ -2,7 +2,6 @@ import { Expose } from 'class-transformer'
 import { IsArray } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
-import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
@@ -22,8 +21,6 @@ export class DidCommMessagesReceivedV4Message extends DidCommMessage {
       this.id = options.id ?? this.generateId()
       this.messageIdList = options.messageIdList
     }
-    // 4.0 omits return_route here, but credo's status-driven pickup loop needs the mediator's status reply on the same channel.
-    this.setReturnRouting(ReturnRouteTypes.all)
   }
 
   @IsValidMessageType(DidCommMessagesReceivedV4Message.type)

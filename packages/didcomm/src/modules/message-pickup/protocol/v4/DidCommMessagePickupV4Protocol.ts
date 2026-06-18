@@ -215,7 +215,7 @@ export class DidCommMessagePickupV4Protocol extends DidCommBaseMessagePickupProt
 
   public async processMessagesReceived(
     messageContext: DidCommInboundMessageContext<DidCommMessagesReceivedV4Message>
-  ): Promise<DidCommOutboundMessageContext> {
+  ): Promise<void> {
     const connection = messageContext.assertReadyConnection()
     assertDidCommV2Connection(connection, 'Message Pickup 4.0')
 
@@ -224,24 +224,13 @@ export class DidCommMessagePickupV4Protocol extends DidCommBaseMessagePickupProt
     const queueTransportRepository =
       agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
 
+    // Pickup 4.0: messages-received is a fire-and-forget ack; remove the messages and send no status back.
     if (message.messageIdList.length) {
       await queueTransportRepository.removeMessages(agentContext, {
         connectionId: connection.id,
         messageIds: message.messageIdList,
       })
     }
-
-    const statusMessage = new DidCommStatusV4Message({
-      threadId: messageContext.message.threadId,
-      messageCount: await queueTransportRepository.getAvailableMessageCount(agentContext, {
-        connectionId: connection.id,
-      }),
-    })
-
-    return new DidCommOutboundMessageContext(statusMessage, {
-      agentContext: messageContext.agentContext,
-      connection,
-    })
   }
 
   public async processStatus(
