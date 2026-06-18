@@ -391,10 +391,11 @@ describe('E2E Pick Up protocol', () => {
         connectionId: mediatorRecipientConnection.id,
       })
 
-    await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, 'hello pickup V4')
-    expect(await queuedCount()).toBe(1)
+    for (let i = 0; i < 11; i++) {
+      await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, `hello pickup V4 ${i}`)
+    }
+    expect(await queuedCount()).toBe(11)
 
-    // Run the full v4 pickup loop to completion; messages-received clears the queue.
     await recipientAgent.didcomm.messagePickup.pickupMessages({
       connectionId: recipientMediatorConnection.id,
       protocolVersion: 'v4',
