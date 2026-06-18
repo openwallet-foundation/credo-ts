@@ -11,7 +11,7 @@ import { X509ValidationError } from '../X509Error'
 import { X509ModuleConfig } from '../X509ModuleConfig'
 import { X509Service } from '../X509Service'
 import { X509RevocationCheckMode } from '../X509ValidationOptions'
-import { createP256Key, generateCrl, mockCrl, mockCrlNetworkError, setupCrlAgent } from './x509CrlTestUtils'
+import { createP256Key, mockCrl, mockCrlNetworkError, setupCrlAgent } from './x509CrlTestUtils'
 
 const LEAF_CRL_URL = 'https://crl.example/leaf.crl'
 const INTERMEDIATE_CRL_URL = 'https://crl.example/intermediate.crl'
@@ -112,24 +112,24 @@ describe('X509Service revocation (end-to-end)', () => {
 
   /** DER bytes of a CRL signed by the intermediate, covering the leaf. */
   async function leafCrlBytes(revokedSerials: string[] = [], nextUpdate = nextMonth, thisUpdate = lastMonth) {
-    return generateCrl(agentContext, {
-      issuerName: intermediateSubject,
-      issuerKey: intermediateKey,
-      thisUpdate,
-      nextUpdate,
+    const crl = await X509Service.createCertificateRevocationList(agentContext, {
+      authorityKey: intermediateKey,
+      issuer: intermediateSubject,
+      validity: { thisUpdate, nextUpdate },
       entries: revokedSerials.map((serialNumber) => ({ serialNumber, revocationDate: lastMonth })),
     })
+    return crl.rawCertificateRevocationList
   }
 
   /** DER bytes of a CRL signed by the root, covering the intermediate. */
   async function intermediateCrlBytes(revokedSerials: string[] = []) {
-    return generateCrl(agentContext, {
-      issuerName: rootSubject,
-      issuerKey: rootKey,
-      thisUpdate: lastMonth,
-      nextUpdate: nextMonth,
+    const crl = await X509Service.createCertificateRevocationList(agentContext, {
+      authorityKey: rootKey,
+      issuer: rootSubject,
+      validity: { thisUpdate: lastMonth, nextUpdate: nextMonth },
       entries: revokedSerials.map((serialNumber) => ({ serialNumber, revocationDate: lastMonth })),
     })
+    return crl.rawCertificateRevocationList
   }
 
   it('skips revocation checking when disabled', async () => {

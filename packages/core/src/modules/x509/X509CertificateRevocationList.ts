@@ -1,13 +1,66 @@
+import { AsnParser } from '@peculiar/asn1-schema'
+import { IssuingDistributionPoint as AsnIssuingDistributionPoint, BaseCRLNumber, CRLNumber } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
-import { CredoWebCrypto, CredoWebCryptoKey, publicJwkToCryptoKeyAlgorithm } from '../../crypto/webcrypto'
-import { x509SignatureAlgorithmToJwa } from './utils'
-import { X509Certificate } from './X509Certificate'
+import {
+  CredoWebCrypto,
+  CredoWebCryptoKey,
+  jwaAlgorithmToKeySignParams,
+  publicJwkToCryptoKeyAlgorithm,
+} from '../../crypto/webcrypto'
+import {
+  convertName,
+  createAuthorityKeyIdentifierExtension,
+  createCrlEntryCertificateIssuerExtension,
+  createCrlNumberExtension,
+  createDeltaCrlIndicatorExtension,
+  createIssuingDistributionPointExtension,
+  X509CrlExtensionIdentifier,
+  x509SignatureAlgorithmToJwa,
+} from './utils'
+import { X509Certificate, X509KeyUsage } from './X509Certificate'
+import type { X509RevocationReason } from './X509CrlDistributionPoint'
 import { X509Error } from './X509Error'
+import type { X509CreateCertificateRevocationListOptions } from './X509ServiceOptions'
 
-export interface RevokedCertificate {
+/**
+ * Reason a certificate was revoked, as carried in a CRL entry's `reasonCode` extension
+ * (RFC 5280 §5.3.1 `CRLReason`).
+ */
+export enum X509CertificateRevocationListEntryReason {
+  Unused = 0,
+  KeyCompromise = 1,
+  CACompromise = 2,
+  AffiliationChanged = 3,
+  Superseded = 4,
+  CessationOfOperation = 5,
+  CertificateHold = 6,
+  RemoveFromCrl = 8,
+  PrivilegeWithdrawn = 9,
+  AACompromise = 10,
+}
+
+export interface X509CertificateRevocationListEntry {
   serialNumber: string
   revocationDate: Date
-  reason?: number
+  reason?: X509CertificateRevocationListEntryReason
+}
+
+/**
+ * Parsed Issuing Distribution Point CRL extension (RFC 5280 §5.2.5), describing the scope of a CRL.
+ */
+export interface X509IssuingDistributionPoint {
+  /** Distribution point name as a list of URIs (other GeneralName forms are ignored). */
+  fullName: string[]
+  /** Whether the CRL only covers end-entity certificates. */
+  onlyContainsUserCerts: boolean
+  /** Whether the CRL only covers CA certificates. */
+  onlyContainsCACerts: boolean
+  /** The revocation reasons this CRL is limited to (reasonFlags bits), if scoped. */
+  onlySomeReasons?: X509RevocationReason[]
+  /** Whether this is an indirect CRL (entries may carry a `certificateIssuer`). */
+  indirectCRL: boolean
+  /** Whether the CRL only covers attribute certificates. */
+  onlyContainsAttributeCerts: boolean
 }
 
 /**
@@ -65,6 +118,69 @@ export class X509CertificateRevocationList {
   }
 
   /**
+   * Create and sign a new CRL.
+   *
+   * Supports the CRL Number, Authority Key Identifier and Issuing Distribution Point extensions, as
+   * well as indirect CRLs (per-entry `certificateIssuer`). See `options.extensions` / entry options.
+   *
+   * NOTE: indirect CRLs and CRLs whose Issuing Distribution Point scope does not cover the
+   * certificate being checked are rejected during revocation checking (delta CRLs are likewise not
+   * processed), so such CRLs are not treated as authoritative proof that a certificate is unrevoked.
+   */
+  public static async create(
+    options: X509CreateCertificateRevocationListOptions,
+    webCrypto: CredoWebCrypto
+  ): Promise<X509CertificateRevocationList> {
+    const signingKey = new CredoWebCryptoKey(
+      options.authorityKey,
+      publicJwkToCryptoKeyAlgorithm(options.authorityKey),
+      false,
+      'private',
+      ['sign']
+    )
+
+    const entries = options.entries?.map((entry) => {
+      const serialNumber = entry.serialNumber ?? entry.certificate?.data.serialNumber
+      if (!serialNumber) {
+        throw new X509Error('A CRL entry must provide either a serialNumber or a certificate')
+      }
+
+      return {
+        serialNumber,
+        revocationDate: entry.revocationDate,
+        // X509CrlEntryReason mirrors @peculiar/x509's X509CrlReason (RFC 5280 CRLReason) values.
+        reason: entry.reason === undefined ? undefined : (entry.reason as number as x509.X509CrlReason),
+        // For indirect CRLs, the certificateIssuer is carried as a (critical) CRL entry extension.
+        extensions: entry.issuer === undefined ? undefined : [createCrlEntryCertificateIssuerExtension(entry.issuer)],
+      } satisfies x509.X509CrlEntryParams
+    })
+
+    const extensions: Array<x509.Extension | undefined> = [
+      createCrlNumberExtension(options.extensions?.crlNumber),
+      createDeltaCrlIndicatorExtension(options.extensions?.deltaCrlIndicator),
+      createAuthorityKeyIdentifierExtension(options.extensions?.authorityKeyIdentifier, {
+        publicJwk: options.authorityKey,
+      }),
+      createIssuingDistributionPointExtension(options.extensions?.issuingDistributionPoint),
+    ]
+
+    const crl = await x509.X509CrlGenerator.create(
+      {
+        issuer: convertName(options.issuer),
+        thisUpdate: options.validity?.thisUpdate,
+        nextUpdate: options.validity?.nextUpdate,
+        signingKey,
+        signingAlgorithm: jwaAlgorithmToKeySignParams(options.authorityKey.signatureAlgorithm),
+        entries,
+        extensions: extensions.filter((extension): extension is x509.Extension => extension !== undefined),
+      },
+      webCrypto
+    )
+
+    return new X509CertificateRevocationList(crl)
+  }
+
+  /**
    * Get the raw CRL data
    */
   public get rawCertificateRevocationList(): Uint8Array {
@@ -104,6 +220,104 @@ export class X509CertificateRevocationList {
    */
   public isNotYetValid(date = new Date()): boolean {
     return date < this.thisUpdate
+  }
+
+  private getMatchingExtensions<T = { critical: boolean }>(objectIdentifier: string): Array<T> {
+    return this.crl.extensions.filter((e) => e.type === objectIdentifier) as Array<T>
+  }
+
+  /**
+   * CRL Number (RFC 5280 §5.2.3): the monotonically increasing sequence number of this CRL.
+   */
+  public get crlNumber(): number | undefined {
+    const extensions = this.getMatchingExtensions<x509.Extension>(X509CrlExtensionIdentifier.CrlNumber)
+
+    if (extensions.length > 1) {
+      throw new X509Error('Multiple CRL Number extensions are not allowed')
+    }
+
+    const extension = extensions[0]
+    if (!extension) return undefined
+
+    return AsnParser.parse(extension.value, CRLNumber).value
+  }
+
+  /**
+   * Delta CRL Indicator (RFC 5280 §5.2.4): when present, this CRL is a delta CRL and the value is
+   * the CRL Number of the base (complete) CRL it is relative to. `undefined` for a complete CRL.
+   */
+  public get deltaCrlIndicator(): number | undefined {
+    const extensions = this.getMatchingExtensions<x509.Extension>(X509CrlExtensionIdentifier.DeltaCrlIndicator)
+
+    if (extensions.length > 1) {
+      throw new X509Error('Multiple Delta CRL Indicator extensions are not allowed')
+    }
+
+    const extension = extensions[0]
+    if (!extension) return undefined
+
+    return AsnParser.parse(extension.value, BaseCRLNumber).value
+  }
+
+  /**
+   * Issuing Distribution Point (RFC 5280 §5.2.5), describing the scope of this CRL.
+   *
+   * NOTE: only the URI form of the distribution point name is surfaced; other GeneralName forms and
+   * `nameRelativeToCRLIssuer` are ignored.
+   */
+  public get issuingDistributionPoint(): X509IssuingDistributionPoint | undefined {
+    const extensions = this.getMatchingExtensions<x509.Extension>(X509CrlExtensionIdentifier.IssuingDistributionPoint)
+
+    if (extensions.length > 1) {
+      throw new X509Error('Multiple Issuing Distribution Point extensions are not allowed')
+    }
+
+    const extension = extensions[0]
+    if (!extension) return undefined
+
+    const idp = AsnParser.parse(extension.value, AsnIssuingDistributionPoint)
+
+    const fullName: string[] = []
+    if (idp.distributionPoint?.fullName) {
+      for (const generalName of idp.distributionPoint.fullName) {
+        if (generalName.uniformResourceIdentifier) {
+          fullName.push(generalName.uniformResourceIdentifier)
+        }
+      }
+    }
+
+    let onlySomeReasons: X509RevocationReason[] | undefined
+    if (idp.onlySomeReasons) {
+      // The ASN.1 BIT STRING uses bit `i` for revocation reason code `i` (e.g. keyCompromise = bit 1).
+      const reasonBits = idp.onlySomeReasons.toNumber()
+      onlySomeReasons = []
+      for (let i = 0; i <= 8; i++) {
+        if ((reasonBits & (1 << i)) !== 0) {
+          onlySomeReasons.push(i)
+        }
+      }
+    }
+
+    return {
+      fullName,
+      onlyContainsUserCerts: idp.onlyContainsUserCerts,
+      onlyContainsCACerts: idp.onlyContainsCACerts,
+      onlySomeReasons,
+      indirectCRL: idp.indirectCRL,
+      onlyContainsAttributeCerts: idp.onlyContainsAttributeCerts,
+    }
+  }
+
+  /**
+   * Whether the extension with the given id is marked critical. Throws if the extension is absent.
+   */
+  public isExtensionCritical(id: X509CrlExtensionIdentifier | string): boolean {
+    const extensions = this.getMatchingExtensions(id)
+    if (extensions.length === 0) {
+      throw new X509Error(`extension with id '${id}' is not found`)
+    }
+
+    return !!extensions[0].critical
   }
 
   /**
@@ -153,7 +367,20 @@ export class X509CertificateRevocationList {
       }
     }
 
-    // 3. Check the CRL validity window.
+    // 3. RFC 5280 §6.3.3(f): the issuer certificate must be authorized to sign CRLs. Key Usage is
+    // optional; when present, it MUST include the cRLSign bit. An empty result means the extension is
+    // absent, so all usages are permitted (a well-formed Key Usage always asserts at least one bit).
+    const issuerKeyUsage = issuerCertificate.keyUsage
+    if (issuerKeyUsage && issuerKeyUsage.length > 0 && !issuerKeyUsage.includes(X509KeyUsage.CrlSign)) {
+      return {
+        isValid: false,
+        error: new X509Error(
+          `CRL issuer '${issuerCertificate.subject}' is not authorized to sign CRLs (key usage does not include cRLSign)`
+        ),
+      }
+    }
+
+    // 4. Check the CRL validity window.
     if (this.isNotYetValid(now)) {
       return {
         isValid: false,
@@ -179,7 +406,7 @@ export class X509CertificateRevocationList {
    * global crypto provider (even though it isn't needed for a serial number comparison), which
    * throws when no provider has been registered globally.
    */
-  public findRevoked(certificate: X509Certificate): RevokedCertificate | null {
+  public findRevoked(certificate: X509Certificate): X509CertificateRevocationListEntry | null {
     const target = normalizeSerialNumber(certificate.data.serialNumber)
 
     for (const entry of this.crl.entries) {
@@ -187,7 +414,7 @@ export class X509CertificateRevocationList {
         return {
           serialNumber: entry.serialNumber,
           revocationDate: entry.revocationDate,
-          reason: entry.reason,
+          reason: entry.reason as unknown as X509CertificateRevocationListEntryReason | undefined,
         }
       }
     }
@@ -198,14 +425,14 @@ export class X509CertificateRevocationList {
   /**
    * Get all revoked certificates in this CRL
    */
-  public get revokedCertificates(): RevokedCertificate[] {
-    const revoked: RevokedCertificate[] = []
+  public get revokedCertificates(): X509CertificateRevocationListEntry[] {
+    const revoked: X509CertificateRevocationListEntry[] = []
 
     for (const entry of this.crl.entries) {
       revoked.push({
         serialNumber: entry.serialNumber,
         revocationDate: entry.revocationDate,
-        reason: entry.reason,
+        reason: entry.reason as unknown as X509CertificateRevocationListEntryReason | undefined,
       })
     }
 

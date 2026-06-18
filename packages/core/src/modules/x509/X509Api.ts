@@ -7,9 +7,9 @@ import { X509Service } from './X509Service'
 import type {
   X509CheckCertificateRevocationOptions,
   X509CreateCertificateOptions,
+  X509CreateCertificateRevocationListOptions,
   X509CreateCertificateSigningRequestOptions,
   X509FetchCertificateRevocationListOptions,
-  X509ParseCertificateRevocationListOptions,
   X509ParseCertificateSigningRequestOptions,
   X509ValidateCertificateChainOptions,
 } from './X509ServiceOptions'
@@ -40,6 +40,15 @@ export class X509Api {
    */
   public async createCertificateSigningRequest(options: X509CreateCertificateSigningRequestOptions) {
     return await X509Service.createCertificateSigningRequest(this.agentContext, options)
+  }
+
+  /**
+   * Creates and signs a X.509 Certificate Revocation List (CRL).
+   *
+   * @param options X509CreateCertificateRevocationListOptions
+   */
+  public async createCertificateRevocationList(options: X509CreateCertificateRevocationListOptions) {
+    return await X509Service.createCertificateRevocationList(this.agentContext, options)
   }
 
   /**
@@ -76,14 +85,5 @@ export class X509Api {
    */
   public async fetchCertificateRevocationList(options: X509FetchCertificateRevocationListOptions) {
     return await X509RevocationService.fetchCertificateRevocationList(this.agentContext, options)
-  }
-
-  /**
-   * Parse a base64- or PEM-encoded CRL into an X509CertificateRevocationList.
-   *
-   * @param options X509ParseCertificateRevocationListOptions
-   */
-  public parseCertificateRevocationList(options: X509ParseCertificateRevocationListOptions) {
-    return X509RevocationService.parseCertificateRevocationList(options)
   }
 }

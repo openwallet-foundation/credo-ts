@@ -44,7 +44,7 @@ export interface X509CrlDistributionPoint {
    * Optional CRL issuer (if different from certificate issuer), as a URI.
    *
    * This is parsed and populated when present, but indirect CRLs are NOT verified during
-   * revocation checking: a distribution point carrying a `crlIssuer` is recognised and skipped
+   * revocation checking: a distribution point carrying a `crlIssuer` is recognized and skipped
    * (tracked as an unsupported feature) rather than fetched against the certificate issuer.
    */
   crlIssuer?: string

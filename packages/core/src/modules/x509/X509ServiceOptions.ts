@@ -1,6 +1,7 @@
 import type { GeneralNameType } from '@peculiar/x509'
 import { PublicJwk } from '../kms'
 import type { X509Certificate, X509ExtendedKeyUsage, X509KeyUsage } from './X509Certificate'
+import type { X509CertificateRevocationListEntryReason } from './X509CertificateRevocationList'
 import type { X509RevocationReason } from './X509CrlDistributionPoint'
 import type { X509RevocationCheckOptions } from './X509ValidationOptions'
 
@@ -280,4 +281,124 @@ export interface X509CreateCertificateSigningRequestOptions {
 
 export interface X509ParseCertificateSigningRequestOptions {
   encodedCertificateSigningRequest: string
+}
+
+export interface X509CertificateRevocationListEntryOptions {
+  /**
+   * Hexadecimal serial number of the revoked certificate.
+   *
+   * Provide either `serialNumber` or `certificate`.
+   */
+  serialNumber?: string
+
+  /**
+   * The revoked certificate. Its serial number will be used.
+   *
+   * Provide either `serialNumber` or `certificate`.
+   */
+  certificate?: X509Certificate
+
+  /**
+   * Date the certificate was revoked.
+   *
+   * @default now
+   */
+  revocationDate?: Date
+
+  /**
+   * Reason the certificate was revoked (CRL entry `reasonCode`).
+   */
+  reason?: X509CertificateRevocationListEntryReason
+
+  /**
+   * The issuer of the revoked certificate, for indirect CRLs (RFC 5280 §5.3.3 `certificateIssuer`
+   * CRL entry extension). Only meaningful when the CRL is an indirect CRL
+   * (`issuingDistributionPoint.indirectCRL`).
+   */
+  issuer?: string | X509CertificateIssuerAndSubjectOptions
+}
+
+export type X509CertificateRevocationListExtensionsOptions = AddMarkAsCritical<{
+  /**
+   * CRL Number (RFC 5280 §5.2.3): a monotonically increasing sequence number for a given CRL scope.
+   *
+   * NOTE: per RFC 5280 this extension MUST NOT be marked critical.
+   */
+  crlNumber?: {
+    value: number
+  }
+
+  /**
+   * Delta CRL Indicator (RFC 5280 §5.2.4): marks this CRL as a delta CRL whose base (complete) CRL
+   * has the given CRL Number.
+   *
+   * Per RFC 5280 this extension MUST be critical (the default).
+   */
+  deltaCrlIndicator?: {
+    value: number
+  }
+
+  /**
+   * Authority Key Identifier (RFC 5280 §5.2.1) identifying the CRL issuer's signing key
+   * (the `authorityKey`).
+   */
+  authorityKeyIdentifier?: {
+    include: boolean
+  }
+
+  /**
+   * Issuing Distribution Point (RFC 5280 §5.2.5), used to scope a CRL.
+   *
+   * Per RFC 5280 this extension MUST be critical (the default).
+   */
+  issuingDistributionPoint?: {
+    /** Distribution point name as a list of URIs. */
+    fullName?: string[]
+    onlyContainsUserCerts?: boolean
+    onlyContainsCACerts?: boolean
+    /** The revocation reasons this CRL covers (reasonFlags bits). */
+    onlySomeReasons?: X509RevocationReason[]
+    /** Whether this is an indirect CRL (entries may carry a `certificateIssuer`). */
+    indirectCRL?: boolean
+    onlyContainsAttributeCerts?: boolean
+  }
+}>
+
+export interface X509CreateCertificateRevocationListOptions {
+  /**
+   * The key that will be used to sign the CRL (the CRL issuer's key).
+   */
+  authorityKey: PublicJwk
+
+  /**
+   * The issuer of the CRL. Must match the issuer certificate's subject.
+   */
+  issuer: string | X509CertificateIssuerAndSubjectOptions
+
+  /**
+   * Validity dates of the CRL.
+   */
+  validity?: {
+    /**
+     * The date this CRL was issued.
+     *
+     * @default now
+     */
+    thisUpdate?: Date
+
+    /**
+     * The date by which the next CRL will be issued.
+     */
+    nextUpdate?: Date
+  }
+
+  /**
+   * The revoked certificate entries.
+   */
+  entries?: Array<X509CertificateRevocationListEntryOptions>
+
+  /**
+   * X.509 v2 CRL extensions to be added to the CRL.
+   */
+  extensions?: X509CertificateRevocationListExtensionsOptions
 }
