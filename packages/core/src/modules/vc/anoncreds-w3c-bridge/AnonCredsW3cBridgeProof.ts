@@ -2,7 +2,7 @@ import { IsEnum, IsOptional, IsString } from 'class-validator'
 
 import { IsUri } from '../../../utils/validators'
 
-export interface AnonCredsVc1BridgeProofOptions {
+export interface AnonCredsW3cBridgeProofOptions {
   type: string
   cryptosuite: string
   verificationMethod: string
@@ -22,8 +22,8 @@ export interface AnonCredsVc1BridgeProofOptions {
  * Represents a `DataIntegrityProof`-shaped wire payload used by the anoncreds VC1 bridge,
  * while keeping the bridge-specific model separate from true linked-data proof types.
  */
-export class AnonCredsVc1BridgeProof {
-  public constructor(options: AnonCredsVc1BridgeProofOptions) {
+export class AnonCredsW3cBridgeProof {
+  public constructor(options: AnonCredsW3cBridgeProofOptions) {
     if (options) {
       this.type = options.type
       this.cryptosuite = options.cryptosuite

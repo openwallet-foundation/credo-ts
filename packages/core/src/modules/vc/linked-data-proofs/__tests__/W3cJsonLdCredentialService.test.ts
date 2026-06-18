@@ -17,7 +17,7 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../../dids'
 import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../../kms'
-import { AnonCredsVc1BridgeProof } from '../../anoncreds-vc1-bridge/AnonCredsVc1BridgeProof'
+import { AnonCredsW3cBridgeProof } from '../../anoncreds-w3c-bridge'
 import { ClaimFormat, W3cCredential } from '../../models'
 import { W3cPresentation } from '../../models/presentation/W3cPresentation'
 import { W3cCredentialsModuleConfig } from '../../W3cCredentialsModuleConfig'
@@ -66,7 +66,7 @@ const w3cJsonLdCredentialService = new W3cJsonLdCredentialService(
 describe('W3cJsonLdCredentialsService', () => {
   const privateKey = TypedArrayEncoder.fromUtf8String('testseed000000000000000000000001')
 
-  describe('VC1 bridge proof boundary', () => {
+  describe('AnonCreds W3C bridge proof boundary', () => {
     it('accepts DataIntegrityProof with anoncreds-2023 cryptosuite for credential and presentation', () => {
       const vc = JsonTransformer.fromJSON(
         {
@@ -97,11 +97,11 @@ describe('W3cJsonLdCredentialsService', () => {
         W3cJsonLdVerifiablePresentation
       )
 
-      expect(vc.proof).toBeInstanceOf(AnonCredsVc1BridgeProof)
-      expect(vp.proof).toBeInstanceOf(AnonCredsVc1BridgeProof)
+      expect(vc.proof).toBeInstanceOf(AnonCredsW3cBridgeProof)
+      expect(vp.proof).toBeInstanceOf(AnonCredsW3cBridgeProof)
     })
 
-    it('exposes anoncreds VC1 bridge cryptosuites for credential and presentation', () => {
+    it('exposes anoncreds W3C bridge cryptosuites for credential and presentation', () => {
       const vc = JsonTransformer.fromJSON(
         {
           ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
@@ -131,8 +131,8 @@ describe('W3cJsonLdCredentialsService', () => {
         W3cJsonLdVerifiablePresentation
       )
 
-      expect(vc.anoncredsVc1BridgeCryptosuites).toEqual(['anoncreds-2023'])
-      expect(vp.anoncredsVc1BridgeCryptosuites).toEqual(['anoncreds-2023'])
+      expect(vc.anoncredsW3cBridgeCryptosuites).toEqual(['anoncreds-2023'])
+      expect(vp.anoncredsW3cBridgeCryptosuites).toEqual(['anoncreds-2023'])
     })
 
     it('rejects DataIntegrityProof with non-anoncreds cryptosuite for credential and presentation', () => {
@@ -150,7 +150,7 @@ describe('W3cJsonLdCredentialsService', () => {
           },
           W3cJsonLdVerifiableCredential
         )
-      ).toThrow('VC1 bridge proofs only support DataIntegrityProof with cryptosuite anoncreds-2023')
+      ).toThrow('W3C bridge proofs only support DataIntegrityProof with cryptosuite anoncreds-2023')
 
       expect(() =>
         JsonTransformer.fromJSON(
@@ -167,10 +167,10 @@ describe('W3cJsonLdCredentialsService', () => {
           },
           W3cJsonLdVerifiablePresentation
         )
-      ).toThrow('VC1 bridge proofs only support DataIntegrityProof with cryptosuite anoncreds-2023')
+      ).toThrow('W3C bridge proofs only support DataIntegrityProof with cryptosuite anoncreds-2023')
     })
 
-    it('rejects mixed proofs when anoncreds VC1 proof is hidden in an array', async () => {
+    it('rejects mixed proofs when anoncreds W3C bridge proof is hidden in an array', async () => {
       const mixedCredential = JsonTransformer.fromJSON(
         {
           ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
@@ -194,7 +194,7 @@ describe('W3cJsonLdCredentialsService', () => {
 
       expect(result.isValid).toBe(false)
       expect(result.error).toBeInstanceOf(Error)
-      expect(result.error?.message).toContain('VC1 bridge proof with cryptosuite anoncreds-2023')
+      expect(result.error?.message).toContain('W3C bridge proof with cryptosuite anoncreds-2023')
     })
   })
 
@@ -335,7 +335,7 @@ describe('W3cJsonLdCredentialsService', () => {
 
         expect(result.isValid).toBe(false)
         expect(result.error).toBeInstanceOf(Error)
-        expect(result.error?.message).toContain('must be verified through the anoncreds VC1 bridge path')
+        expect(result.error?.message).toContain('must be verified through the anoncreds W3C bridge path')
       })
 
       it('should fail because of invalid signature', async () => {
@@ -485,7 +485,7 @@ describe('W3cJsonLdCredentialsService', () => {
 
         expect(result.isValid).toBe(false)
         expect(result.error).toBeInstanceOf(Error)
-        expect(result.error?.message).toContain('must be verified through the anoncreds VC1 bridge path')
+        expect(result.error?.message).toContain('must be verified through the anoncreds W3C bridge path')
       })
 
       it('should fail when presentation signature is not valid', async () => {
