@@ -6,30 +6,30 @@ import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportD
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
-export interface DidCommDeliveryRequestV3MessageOptions {
+export interface DidCommDeliveryRequestV4MessageOptions {
   id?: string
   recipientDid?: string
-  limit: number
+  messageCountLimit: number
 }
 
-export class DidCommDeliveryRequestV3Message extends DidCommMessage {
+export class DidCommDeliveryRequestV4Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: DidCommDeliveryRequestV3MessageOptions) {
+  public constructor(options: DidCommDeliveryRequestV4MessageOptions) {
     super()
 
     if (options) {
       this.id = options.id ?? this.generateId()
       this.recipientDid = options.recipientDid
-      this.limit = options.limit
+      this.messageCountLimit = options.messageCountLimit
     }
     this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @IsValidMessageType(DidCommDeliveryRequestV3Message.type)
-  public readonly type = DidCommDeliveryRequestV3Message.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/3.0/delivery-request')
+  @IsValidMessageType(DidCommDeliveryRequestV4Message.type)
+  public readonly type = DidCommDeliveryRequestV4Message.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/message-pickup/4.0/delivery-request')
 
   @IsString()
   @IsOptional()
@@ -37,5 +37,6 @@ export class DidCommDeliveryRequestV3Message extends DidCommMessage {
   public recipientDid?: string
 
   @IsInt()
-  public limit!: number
+  @Expose({ name: 'message_count_limit' })
+  public messageCountLimit!: number
 }

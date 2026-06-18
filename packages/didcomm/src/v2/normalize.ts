@@ -28,7 +28,21 @@ function mapV2AttachmentToV1(att: DidCommV2Attachment): Record<string, unknown> 
  * @returns A v1-shaped plaintext message suitable for transformAndValidate and handler dispatch
  */
 export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidCommPlaintextMessage {
-  const { type, id, from, to, thid, pthid, body, lang, attachments, created_time, expires_time, ...rest } = v2
+  const {
+    type,
+    id,
+    from,
+    to,
+    thid,
+    pthid,
+    body,
+    lang,
+    attachments,
+    created_time,
+    expires_time,
+    return_route,
+    ...rest
+  } = v2
 
   const v1: DidCommPlaintextMessage = {
     '@type': type,
@@ -53,6 +67,10 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidComm
 
   if (attachments !== undefined && Array.isArray(attachments) && attachments.length > 0) {
     v1['~attach'] = attachments.map(mapV2AttachmentToV1)
+  }
+
+  if (return_route !== undefined) {
+    v1['~transport'] = { return_route }
   }
 
   // TODO: Do we need to convert created_time/expires_time from epoch seconds (v2) to Date/~timing (v1)?

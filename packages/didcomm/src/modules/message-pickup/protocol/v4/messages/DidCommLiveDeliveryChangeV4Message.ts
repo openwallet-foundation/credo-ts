@@ -6,16 +6,16 @@ import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportD
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
-export interface DidCommLiveDeliveryChangeV3MessageOptions {
+export interface DidCommLiveDeliveryChangeV4MessageOptions {
   id?: string
   liveDelivery: boolean
 }
 
-export class DidCommLiveDeliveryChangeV3Message extends DidCommMessage {
+export class DidCommLiveDeliveryChangeV4Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: DidCommLiveDeliveryChangeV3MessageOptions) {
+  public constructor(options: DidCommLiveDeliveryChangeV4MessageOptions) {
     super()
 
     if (options) {
@@ -25,9 +25,9 @@ export class DidCommLiveDeliveryChangeV3Message extends DidCommMessage {
     this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @IsValidMessageType(DidCommLiveDeliveryChangeV3Message.type)
-  public readonly type = DidCommLiveDeliveryChangeV3Message.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/3.0/live-delivery-change')
+  @IsValidMessageType(DidCommLiveDeliveryChangeV4Message.type)
+  public readonly type = DidCommLiveDeliveryChangeV4Message.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/message-pickup/4.0/live-delivery-change')
 
   @IsBoolean()
   @Expose({ name: 'live_delivery' })

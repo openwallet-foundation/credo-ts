@@ -1,16 +1,3 @@
-/**
- * E2E tests for Coordinate Mediation 2.0 + Message Pickup 3.0 combined flow.
- *
- * Full flow: provision mediation v2 → keylist-update → sender forwards message via mediator
- * → recipient picks up via Pickup v3.
- *
- * Requires v2 connections (DIDComm v2). Run with DIDCOMM_VERSION=v2.
- *
- * Known limitation: V2 Forward - when routing uses routingDid only (no routing keys), the sender
- * encrypts directly for the recipient. The mediator receives a message it cannot decrypt, so it never
- * gets queued. Full E2E (forward → pickup) works with v1 mediation. For v2, provision and pickup
- * v3 protocol work; the forward path needs v2 Forward message support (encrypt for mediator).
- */
 import { Subject } from 'rxjs'
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
@@ -24,10 +11,10 @@ import { DidCommMediatorPickupStrategy } from '../DidCommMediatorPickupStrategy'
 const MEDIATOR_ROUTING_DID =
   'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc.SeyJ0IjoiZG0iLCJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbS9lbmRwb2ludCIsInIiOltdLCJhIjoibm9uZSMxIn0'
 
-describe('Mediation 2.0 + Pickup 3.0 Combined', () => {
+describe('Mediation 2.0 + Pickup 4.0 Combined', () => {
   describe('full flow E2E', () => {
     it.runIf(process.env.DIDCOMM_VERSION === 'v2')(
-      'provision v2 → keylist-update → pickup v3 (status)',
+      'provision v2 → keylist-update → pickup v4 (status)',
       async () => {
         const mediatorMessages = new Subject<SubjectMessage>()
         const recipientMessages = new Subject<SubjectMessage>()
@@ -63,7 +50,7 @@ describe('Mediation 2.0 + Pickup 3.0 Combined', () => {
               didcommVersions: ['v1', 'v2'],
               mediationRecipient: {
                 mediationProtocolVersions: ['v1', 'v2'],
-                mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV3,
+                mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV4,
                 mediatorPollingInterval: 200,
               },
             },
@@ -96,11 +83,11 @@ describe('Mediation 2.0 + Pickup 3.0 Combined', () => {
 
         await recipientAgent.didcomm.messagePickup.pickupMessages({
           connectionId: mediationRecord.connectionId,
-          protocolVersion: 'v3',
+          protocolVersion: 'v4',
           recipientDid: mediationRecord.recipientDids?.[0],
           awaitCompletion: true,
         })
-        // Pickup v3 status/delivery flow completed (message_count may be 0)
+        // Pickup v4 status/delivery flow completed (message_count may be 0)
 
         await recipientAgent.didcomm.mediationRecipient.stopMessagePickup()
         await mediatorAgent.shutdown()
@@ -111,14 +98,14 @@ describe('Mediation 2.0 + Pickup 3.0 Combined', () => {
   })
 })
 
-describe('Mediation v2 + Pickup v3 - API validation', () => {
-  it('DidCommMediatorPickupStrategy includes PickUpV3 strategies', () => {
-    expect(DidCommMediatorPickupStrategy.PickUpV3).toBe('PickUpV3')
-    expect(DidCommMediatorPickupStrategy.PickUpV3LiveMode).toBe('PickUpV3LiveMode')
+describe('Mediation v2 + Pickup v4 - API validation', () => {
+  it('DidCommMediatorPickupStrategy includes PickUpV4 strategies', () => {
+    expect(DidCommMediatorPickupStrategy.PickUpV4).toBe('PickUpV4')
+    expect(DidCommMediatorPickupStrategy.PickUpV4LiveMode).toBe('PickUpV4LiveMode')
   })
 
-  it('DidCommMediationRecipientApi initiates pickup with v3 for v2 mediators', () => {
+  it('DidCommMediationRecipientApi initiates pickup with v4 for v2 mediators', () => {
     expect(typeof DidCommMediationRecipientApi.prototype.initiateMessagePickup).toBe('function')
-    // When mediator has protocolVersion === 'v2', initiateMessagePickup uses PickUpV3 by default
+    // When mediator has protocolVersion === 'v2', initiateMessagePickup uses PickUpV4 by default
   })
 })

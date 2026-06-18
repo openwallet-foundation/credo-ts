@@ -85,6 +85,7 @@ export function buildV2PlaintextFromMessage(
     '~thread': thread,
     '~l10n': l10n,
     '~attach': attach,
+    '~transport': transport,
     created_time,
     expires_time,
     from,
@@ -109,6 +110,12 @@ export function buildV2PlaintextFromMessage(
 
   if (l10n && typeof l10n === 'object' && 'locale' in l10n && l10n.locale !== undefined) {
     v2.lang = l10n.locale as string
+  }
+
+  // DIDComm v2 carries return_route as a top-level header, not the v1 ~transport decorator.
+  if (transport && typeof transport === 'object') {
+    const returnRoute = (transport as Record<string, unknown>).return_route
+    if (returnRoute !== undefined) v2.return_route = returnRoute as string
   }
 
   if (attach !== undefined && Array.isArray(attach) && attach.length > 0) {

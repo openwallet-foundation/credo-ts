@@ -1,4 +1,5 @@
 import { DidCommAttachment, DidCommAttachmentData } from '../../decorators/attachment/DidCommAttachment'
+import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidCommTrustPingMessage } from '../../modules/connections/messages/DidCommTrustPingMessage'
 import { buildV2PlaintextFromMessage } from '../plaintextBuilder'
 
@@ -42,6 +43,14 @@ describe('buildV2PlaintextFromMessage', () => {
       media_type: 'application/json',
       data: { json: { foo: 'bar' } },
     })
+  })
+
+  it('lifts ~transport return_route to a top-level v2 return_route header', () => {
+    const message = new DidCommTrustPingMessage({ comment: 'hi' })
+    message.setReturnRouting(ReturnRouteTypes.all)
+    const v2 = buildV2PlaintextFromMessage(message)
+    expect(v2.return_route).toBe('all')
+    expect(v2.body).not.toHaveProperty('~transport')
   })
 
   it('round-trip: message with thread, locale, and attachment produces v2 with all fields', () => {

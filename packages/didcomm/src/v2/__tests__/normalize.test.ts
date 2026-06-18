@@ -12,6 +12,18 @@ describe('normalizeV2PlaintextToV1', () => {
     expect(v1['@id']).toBe('msg-123')
   })
 
+  it('maps a top-level return_route header to the ~transport decorator', () => {
+    const v2: DidCommV2PlaintextMessage = {
+      id: 'msg-rr',
+      type: 'https://didcomm.org/message-pickup/4.0/status-request',
+      body: {},
+      return_route: 'all',
+    }
+    const v1 = normalizeV2PlaintextToV1(v2)
+    expect(v1['~transport']).toEqual({ return_route: 'all' })
+    expect(v1).not.toHaveProperty('return_route')
+  })
+
   it('spreads body into top level', () => {
     const v2: DidCommV2PlaintextMessage = {
       id: 'msg-1',

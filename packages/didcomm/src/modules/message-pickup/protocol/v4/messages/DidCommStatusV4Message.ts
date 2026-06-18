@@ -1,35 +1,31 @@
-import { Expose, Transform } from 'class-transformer'
-import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
+import { Expose } from 'class-transformer'
+import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
-import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
-import { DateParser } from '../../../../../util/transformers'
 
-export interface DidCommStatusV3MessageOptions {
+export interface DidCommStatusV4MessageOptions {
   id?: string
   recipientDid?: string
   threadId: string
   messageCount: number
-  longestWaitedSeconds?: number
-  newestReceivedTime?: Date
-  oldestReceivedTime?: Date
+  newestReceivedTime?: number
+  oldestReceivedTime?: number
   totalBytes?: number
   liveDelivery?: boolean
 }
 
-export class DidCommStatusV3Message extends DidCommMessage {
+export class DidCommStatusV4Message extends DidCommMessage {
   public readonly allowQueueTransport = false
   public readonly supportedDidCommVersions: DidCommVersion[] = ['v2']
 
-  public constructor(options: DidCommStatusV3MessageOptions) {
+  public constructor(options: DidCommStatusV4MessageOptions) {
     super()
     if (options) {
       this.id = options.id ?? this.generateId()
       this.recipientDid = options.recipientDid
       this.messageCount = options.messageCount
-      this.longestWaitedSeconds = options.longestWaitedSeconds
       this.newestReceivedTime = options.newestReceivedTime
       this.oldestReceivedTime = options.oldestReceivedTime
       this.totalBytes = options.totalBytes
@@ -38,12 +34,11 @@ export class DidCommStatusV3Message extends DidCommMessage {
         threadId: options.threadId,
       })
     }
-    this.setReturnRouting(ReturnRouteTypes.all)
   }
 
-  @IsValidMessageType(DidCommStatusV3Message.type)
-  public readonly type = DidCommStatusV3Message.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/3.0/status')
+  @IsValidMessageType(DidCommStatusV4Message.type)
+  public readonly type = DidCommStatusV4Message.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/message-pickup/4.0/status')
 
   @IsString()
   @IsOptional()
@@ -56,20 +51,13 @@ export class DidCommStatusV3Message extends DidCommMessage {
 
   @IsInt()
   @IsOptional()
-  @Expose({ name: 'longest_waited_seconds' })
-  public longestWaitedSeconds?: number
-
   @Expose({ name: 'newest_received_time' })
-  @Transform(({ value }) => DateParser(value))
-  @IsDate()
-  @IsOptional()
-  public newestReceivedTime?: Date
+  public newestReceivedTime?: number
 
+  @IsInt()
   @IsOptional()
-  @Transform(({ value }) => DateParser(value))
-  @IsDate()
   @Expose({ name: 'oldest_received_time' })
-  public oldestReceivedTime?: Date
+  public oldestReceivedTime?: number
 
   @IsOptional()
   @IsInt()
