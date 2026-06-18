@@ -192,8 +192,8 @@ export class Mdoc {
 
     try {
       // When no dedicated `status` certificates are configured for a trusted entry, fall back to its `issuance`
-      // certificates. The underlying mdoc library requires `status` to be set, and using the issuance certificates
-      // means the status/identifier list chains must validate against the same trust anchor as issuance.
+      // certificates. Using the issuance certificates means the status/identifier list chains must validate
+      // against the same trust anchor as issuance.
       const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates).map(
         ({ issuance, status }) => ({
           issuance,
@@ -222,26 +222,13 @@ export class Mdoc {
 
       const issuanceChain = trustedIssuanceChain.map((c) => X509Certificate.fromRawCertificate(c))
 
-      // The mdoc's certificate chain does not include the trust anchor (root), but the chain returned by the
-      // verification library is root-first and may include the trust anchor. We align both chains at the leaf
-      // end and require every cert in the mdoc chain to match the corresponding cert in the validated chain.
-      const mdocChainMatchesIssuance =
-        certificateChain.length <= issuanceChain.length &&
-        certificateChain.every((cert, i) =>
-          cert.equal(issuanceChain[issuanceChain.length - certificateChain.length + i])
-        )
-      if (!mdocChainMatchesIssuance) {
+      if (!x509ChainsAreEqual(certificateChain, issuanceChain)) {
         throw new MdocError('Certificate chain does not match the trusted issuance chain')
       }
 
-      // Find the matching trusted entry by checking whether any of its issuance certificates appears in the
-      // validated chain. mdoc certificate chains do not include the root certificate, so matching by chain root
-      // equality would fail whenever the user trusts an actual root CA — we match against the full chain instead.
+      const issuanceRoot = issuanceChain[issuanceChain.length - 1]
       const matchedTrustedCertificates = convertedTrustedCertificates.find(({ issuance }) =>
-        issuance.some((trustedCert) => {
-          const parsed = X509Certificate.fromEncodedCertificate(trustedCert)
-          return issuanceChain.some((chainCert) => parsed.equal(chainCert))
-        })
+        issuance.some((cert) => X509Certificate.fromEncodedCertificate(cert).equal(issuanceRoot))
       )
       const hasDedicatedStatusCertificates = matchedTrustedCertificates?.hasDedicatedStatusCertificates ?? false
 
