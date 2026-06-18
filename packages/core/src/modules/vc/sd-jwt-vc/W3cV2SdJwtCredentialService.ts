@@ -14,12 +14,12 @@ import {
   parseHolderBindingFromCredential,
 } from '../../sd-jwt-vc/utils'
 import type {
-  SingleValidationResult,
   W3cV2JsonCredential,
   W3cV2JsonPresentation,
   W3cV2VerifyCredentialResult,
   W3cV2VerifyPresentationResult,
 } from '../models'
+import { validateCredentialSubjectAuthentication } from '../util'
 import {
   extractHolderFromPresentationCredentials,
   getVerificationMethodForJwt,
@@ -356,32 +356,10 @@ export class W3cV2SdJwtCredentialService {
             credential: credential.envelopedCredential,
           })
 
-          let credentialSubjectAuthentication: SingleValidationResult
-
-          // Check whether any of the credentialSubjectIds for each credential is the same as the controller of the verificationMethod
-          // This authenticates the presentation creator controls one of the credentialSubject ids.
-          // NOTE: this doesn't take into account the case where the credentialSubject is no the holder. In the
-          // future we can add support for other flows, but for now this is the most common use case.
-          // TODO: should this be handled on a higher level? I don't really see it being handled in the jsonld lib
-          // or in the did-jwt-vc lib (it seems they don't even verify the credentials itself), but we probably need some
-          // more experience on the use cases before we loosen the restrictions (as it means we need to handle it on a higher layer).
-          const credentialSubjectIds = credential.resolvedCredential.credentialSubjectIds
-          const presentationAuthenticatesCredentialSubject = credentialSubjectIds.some(
-            (subjectId) => proverVerificationMethod.controller === subjectId
+          const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(
+            credential.resolvedCredential.credentialSubjectIds,
+            proverVerificationMethod.controller
           )
-
-          if (credentialSubjectIds.length > 0 && !presentationAuthenticatesCredentialSubject) {
-            credentialSubjectAuthentication = {
-              isValid: false,
-              error: new CredoError(
-                'Credential has one or more credentialSubject ids, but presentation does not authenticate credential subject'
-              ),
-            }
-          } else {
-            credentialSubjectAuthentication = {
-              isValid: true,
-            }
-          }
 
           return {
             ...credentialResult,

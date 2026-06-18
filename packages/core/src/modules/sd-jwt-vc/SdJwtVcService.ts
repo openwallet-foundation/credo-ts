@@ -17,7 +17,13 @@ import { fetchWithTimeout } from '../../utils/fetch'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc/index'
-import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
+import {
+  type EncodedX509Certificate,
+  X509Certificate,
+  X509ModuleConfig,
+  type X509VerificationTrustedCertificates,
+} from '../x509'
+import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
@@ -376,7 +382,7 @@ export class SdJwtVcService {
       // If keyBinding is present, verify the key binding
       try {
         if (keyBinding) {
-          if (!sdJwtVc.kbJwt || !sdJwtVc.kbJwt.payload) {
+          if (!sdJwtVc.kbJwt?.payload) {
             throw new SdJwtVcError('Keybinding is required for verification of the sd-jwt-vc')
           }
 
@@ -547,9 +553,9 @@ export class SdJwtVcService {
     agentContext: AgentContext,
     sdJwtVc: SDJwt<Header, Payload>,
     credoSdJwtVc: SdJwtVc<Header, Payload>,
-    _trustedCertificates?: EncodedX509Certificate[]
+    _trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
   ): Promise<SdJwtVcIssuer> {
-    const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
     if (!sdJwtVc.jwt?.payload) {
       throw new SdJwtVcError('Credential not exist')
     }
@@ -567,19 +573,18 @@ export class SdJwtVcService {
         throw new SdJwtVcError('Invalid x5c header in credential. Not an array of strings.')
       }
 
-      let trustedCertificates = _trustedCertificates
       const certificateChain = sdJwtVc.jwt.header.x5c.map((cert) => X509Certificate.fromEncodedCertificate(cert))
 
-      if (!trustedCertificates) {
-        trustedCertificates =
-          (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain,
-            verification: {
-              type: 'credential',
-              credential: credoSdJwtVc,
-            },
-          })) ?? x509Config.trustedCertificates
-      }
+      const trustedCertificates =
+        _trustedCertificates ??
+        (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
+          certificateChain,
+          verification: {
+            type: 'credential',
+            credential: credoSdJwtVc,
+          },
+        })) ??
+        x509ModuleConfig.trustedCertificates
 
       if (!trustedCertificates) {
         throw new SdJwtVcError(
@@ -589,7 +594,7 @@ export class SdJwtVcService {
 
       await X509Service.validateCertificateChain(agentContext, {
         certificateChain: sdJwtVc.jwt.header.x5c,
-        trustedCertificates,
+        trustedCertificates: convertLegacyTrustedCertificates(trustedCertificates).flatMap(({ issuance }) => issuance),
       })
 
       return {
@@ -739,7 +744,7 @@ export class SdJwtVcService {
     let response = firstResponse
 
     // If the response is not ok, try the legacy URL (will be removed in 0.7)
-    if (!response || !response?.ok) {
+    if (!response?.ok) {
       // modify the uri based on https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-04.html#section-6.3.1
       const vctElements = vct.split('/')
       vctElements.splice(3, 0, '.well-known/vct')

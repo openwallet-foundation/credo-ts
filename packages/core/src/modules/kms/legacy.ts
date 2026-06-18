@@ -1,6 +1,6 @@
 import { TypedArrayEncoder } from '../../utils'
 import { KeyManagementError } from './error/KeyManagementError'
-import { PublicJwk } from './jwk'
+import type { PublicJwk } from './jwk/PublicJwk'
 
 /**
  * Returns the legacy key id based on the public key encoded as base58
@@ -9,15 +9,15 @@ import { PublicJwk } from './jwk'
  */
 export function legacyKeyIdFromPublicJwk(publicJwk: PublicJwk) {
   // Compressed public keys were used for legacy key ids
-  const compresedPublicKey = publicJwk.compressedPublicKey
-  if (compresedPublicKey) {
-    return TypedArrayEncoder.toBase58(compresedPublicKey.publicKey)
+  const compressedPublicKey = publicJwk.compressedPublicKey
+  if (compressedPublicKey) {
+    return TypedArrayEncoder.toBase58(compressedPublicKey.publicKey)
   }
 
   const publicKey = publicJwk.publicKey
   if (publicKey.kty === 'RSA') {
     throw new KeyManagementError(
-      'Unable to derive legacy key id from RSA key. Support for RSA keys was only added after explit key ids were added.'
+      'Unable to derive legacy key id from RSA key. Support for RSA keys was only added after explicit key ids were added.'
     )
   }
 

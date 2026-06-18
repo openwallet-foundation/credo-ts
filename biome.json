@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -48,7 +48,7 @@
         "noRestrictedGlobals": {
           "level": "error",
           "options": {
-            "deniedGlobals": { "Buffer": "TODO: Add a custom message here." }
+            "deniedGlobals": { "Buffer": "Import Buffer from the '@credo-ts/core' package." }
           }
         },
         "noRestrictedImports": {
@@ -71,7 +71,8 @@
         "noInvalidUseBeforeDeclaration": "error"
       },
       "suspicious": {
-        "noConsole": "error"
+        "noConsole": "error",
+        "noImportCycles": "error"
       },
       "complexity": {
         "noBannedTypes": "error"

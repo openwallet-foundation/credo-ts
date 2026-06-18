@@ -1096,7 +1096,7 @@ export class DidCommCredentialV1Protocol
     const offerMessage = await this.findOfferMessage(agentContext, credentialExchangeRecord.id)
 
     // Do not auto accept if missing properties
-    if (!offerMessage || !offerMessage.credentialPreview) return false
+    if (!offerMessage?.credentialPreview) return false
     if (!proposalMessage.credentialPreview || !proposalMessage.credentialDefinitionId) return false
 
     const credentialOfferJson = offerMessage.indyCredentialOffer
@@ -1136,7 +1136,7 @@ export class DidCommCredentialV1Protocol
 
     // Do not auto accept if missing properties
     if (!offerMessage.credentialPreview) return false
-    if (!proposalMessage || !proposalMessage.credentialPreview || !proposalMessage.credentialDefinitionId) return false
+    if (!proposalMessage?.credentialPreview || !proposalMessage.credentialDefinitionId) return false
 
     const credentialOfferJson = offerMessage.indyCredentialOffer
 

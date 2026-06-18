@@ -6,6 +6,7 @@ import { GenericRecordsModule } from '../modules/generic-records'
 import { KeyManagementModule } from '../modules/kms'
 import { MdocModule } from '../modules/mdoc/MdocModule'
 import { SdJwtVcModule } from '../modules/sd-jwt-vc'
+import { TokenStatusListModule } from '../modules/token-status-list/TokenStatusListModule'
 import { W3cCredentialsModule } from '../modules/vc'
 import { W3cDataIntegrityModule } from '../modules/w3c-di'
 import { X509Module } from '../modules/x509'
@@ -115,6 +116,7 @@ function getDefaultAgentModules() {
     x509: () => new X509Module(),
     mdoc: () => new MdocModule(),
     kms: () => new KeyManagementModule({}),
+    tokenStatusList: () => new TokenStatusListModule(),
   } as const
 }
 
