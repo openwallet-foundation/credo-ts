@@ -192,14 +192,15 @@ export class Mdoc {
 
     try {
       // The underlying mdoc library requires `status` certificates to validate status/identifier lists.
-      // When the user has not configured dedicated `status` certs for a trusted entry, fall back to that
-      // entry's `issuance` certs — chain equality between the status/identifier and issuance chains is
-      // then enforced below so the fallback can't widen the trust set unintentionally.
+      // When the user has not configured a `status` field at all (undefined) for a trusted entry, fall
+      // back to that entry's `issuance` certs — chain equality between the status/identifier and issuance
+      // chains is then enforced below so the fallback can't widen the trust set unintentionally. An
+      // explicitly-empty `status: []` is treated as a deliberate user choice and passed through unchanged.
       const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates).map(
         ({ issuance, status }) => ({
           issuance,
-          status: status && status.length > 0 ? status : issuance,
-          hasDedicatedStatusCertificates: !!status && status.length > 0,
+          status: status ?? issuance,
+          hasDedicatedStatusCertificates: status !== undefined,
         })
       )
 

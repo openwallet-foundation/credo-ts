@@ -459,6 +459,37 @@ describe('mdoc service test', () => {
     })
   })
 
+  test('verify fails when an empty status certificates array is configured', async () => {
+    const statusListUri = 'https://example.org/token-status-list/empty-status-config'
+    const { statusList } = await tokenStatusList.createTokenStatusList({
+      format: 'cwt',
+      signer: { method: 'x5c', x5c: [certificate] },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: { statusListLength: 10, bitsPerStatus: 1 },
+      statusListUri,
+    })
+
+    nock('https://example.org')
+      .persist()
+      .get('/token-status-list/empty-status-config')
+      .reply(200, Buffer.from(statusList as Uint8Array), { 'Content-Type': MediaTypes.StatusListCwt })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+      statusInfo: { index: 1, uri: statusListUri },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [certificate.toString('base64')], status: [] }],
+    })
+
+    expect(result.isValid).toBe(false)
+  })
+
   test('verify succeeds when status list is signed with the same certificate as the issuance certificate and no dedicated status certificates are configured', async () => {
     const statusListUri = 'https://example.org/token-status-list/same-cert-no-status-config'
     const { statusList } = await tokenStatusList.createTokenStatusList({
