@@ -95,11 +95,13 @@ export class DidCommW3cV2SdJwtCredentialFormatService implements DidCommCredenti
     if (!w3cV2SdJwtFormat)
       throw new CredoError("Missing w3cV2SdJwt credential format data");
 
-    const {
-      credential: credentialJson,
-      bindingRequired,
-      didCommSignedAttachmentBinding,
-    } = w3cV2SdJwtFormat;
+    const { credential, bindingRequired, didCommSignedAttachmentBinding } =
+      w3cV2SdJwtFormat;
+
+    const credentialJson =
+      credential instanceof W3cV2Credential
+        ? JsonTransformer.toJSON(credential)
+        : credential;
 
     if ("proof" in credentialJson)
       throw new CredoError(

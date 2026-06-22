@@ -3,6 +3,7 @@ import type {
   JsonObject,
   Kms,
   SdJwtVcHolderBinding,
+  W3cV2Credential,
 } from "@credo-ts/core";
 import type { DidCommCredentialFormat } from "../DidCommCredentialFormat";
 import type {
@@ -18,7 +19,7 @@ export interface DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions {
 }
 
 export interface DidCommW3cV2SdJwtOfferCredentialFormat {
-  credential: JsonObject;
+  credential: W3cV2Credential | JsonObject;
   bindingRequired?: boolean;
   didCommSignedAttachmentBinding?: DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions;
 }
