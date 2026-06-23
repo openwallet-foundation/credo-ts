@@ -7,7 +7,7 @@
     },
     "./kms": "./src/modules/kms/index.ts"
   },
-  "version": "0.6.3",
+  "version": "0.7.0",
   "files": [
     "build"
   ],
@@ -27,12 +27,10 @@
     }
   },
   "browser": {
-    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.js": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.native.js",
-    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.mjs": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.native.mjs"
+    "./build/modules/vc/jsonld/nativeDocumentLoader.mjs": "./build/modules/vc/jsonld/nativeDocumentLoader.native.mjs"
   },
   "react-native": {
-    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.js": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.native.js",
-    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.mjs": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.native.mjs"
+    "./build/modules/vc/jsonld/nativeDocumentLoader.mjs": "./build/modules/vc/jsonld/nativeDocumentLoader.native.mjs"
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/core",
   "repository": {
@@ -53,7 +51,9 @@
     "@multiformats/base-x": "^4.0.1",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
-    "@owf/mdoc": "^0.6.0",
+    "@owf/cose": "^0.3.0",
+    "@owf/mdoc": "0.7.0-alpha-20260612121208",
+    "@owf/token-status-list": "^0.3.0",
     "@peculiar/asn1-ecc": "^2.6.0",
     "@peculiar/asn1-rsa": "^2.6.0",
     "@peculiar/asn1-schema": "^2.6.0",
@@ -62,7 +62,6 @@
     "@scure/base": "^2.0.0",
     "@sd-jwt/core": "^0.19.0",
     "@sd-jwt/decode": "^0.19.0",
-    "@sd-jwt/jwt-status-list": "^0.19.0",
     "@sd-jwt/present": "^0.19.0",
     "@sd-jwt/sd-jwt-vc": "^0.19.0",
     "@sd-jwt/types": "^0.19.0",

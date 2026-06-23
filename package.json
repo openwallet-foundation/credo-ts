@@ -48,7 +48,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "catalog:",
     "@types/node": "catalog:",
-    "@types/supertest": "^6.0.3",
+    "@types/supertest": "^7.2.0",
     "@types/varint": "^6.0.3",
     "@types/ws": "catalog:",
     "@vitest/coverage-v8": "catalog:",
@@ -63,15 +63,10 @@
     "tsyringe": "catalog:",
     "typescript": "catalog:",
     "undici": "^6.23.0",
-    "vite": "npm:rolldown-vite@^7.3.1",
+    "vite": "^8.0.14",
     "vite-node": "^5.3.0",
     "vitest": "catalog:",
     "ws": "catalog:"
-  },
-  "pnpm": {
-    "overrides": {
-      "vite": "npm:rolldown-vite@latest"
-    }
   },
   "resolutions": {
     "undici": "^6.20.1"
