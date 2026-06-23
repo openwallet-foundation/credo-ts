@@ -5,7 +5,7 @@ import {
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
 
-import { Ed25519Signature2018Fixtures } from '../../../../core/src/modules/vc/data-integrity/__tests__/fixtures'
+import { Ed25519Signature2018Fixtures } from '../../../../core/src/modules/vc/linked-data-proofs/__tests__/fixtures'
 import { W3cAnonCredsCredentialMetadataKey } from '../metadata'
 import { type AnonCredsCredentialTags, getAnonCredsTagsFromRecord } from '../w3cAnonCredsUtils'
 

@@ -3,11 +3,13 @@ import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import { CREDENTIALS_CONTEXT_V1_URL } from './constants'
-import { W3cJsonLdVerifiableCredential } from './data-integrity'
-import { W3cJsonLdVerifiablePresentation } from './data-integrity/models/W3cJsonLdVerifiablePresentation'
-import { W3cJsonLdCredentialService } from './data-integrity/W3cJsonLdCredentialService'
 import { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from './jwt-vc'
 import { W3cJwtCredentialService } from './jwt-vc/W3cJwtCredentialService'
+import {
+  W3cJsonLdCredentialService,
+  W3cJsonLdVerifiableCredential,
+  W3cJsonLdVerifiablePresentation,
+} from './linked-data-proofs'
 import type {
   W3cVerifiableCredential,
   W3cVerifiablePresentation,

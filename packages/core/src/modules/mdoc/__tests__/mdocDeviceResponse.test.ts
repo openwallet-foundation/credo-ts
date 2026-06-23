@@ -155,7 +155,7 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
 
     await expect(
       deviceResponse.verify(agent.context, {
-        trustedCertificates: [rootCertificate],
+        trustedCertificates: [{ issuance: [rootCertificate] }],
         now: new Date('2025-04-04'),
         sessionTranscriptOptions: {
           type: 'openId4VpDcApiDraft24',

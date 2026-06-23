@@ -499,12 +499,19 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         throw new CredoError('No revocation entry found for the given timestamp.')
       }
 
-      if (!isRevocationStatusListShape(revocationEntryResourceObject.content)) {
+      // The signed attested resource does not embed the timestamp, so we inject it before validating the shape
+      const selectedEntry = revocationEntries.find((entry) => entry.id === revocationEntryId)
+      const revocationStatusListContent = {
+        ...(revocationEntryResourceObject.content as object),
+        timestamp: selectedEntry?.timestamp,
+      }
+
+      if (!isRevocationStatusListShape(revocationStatusListContent)) {
         throw new CredoError('Resolved revocation entry content is not a valid revocation status list.')
       }
 
       return {
-        revocationStatusList: revocationEntryResourceObject.content as AnonCredsRevocationStatusList,
+        revocationStatusList: revocationStatusListContent as AnonCredsRevocationStatusList,
         resolutionMetadata: revocationEntryResolutionResult.dereferencingMetadata || {},
         revocationStatusListMetadata: revocationEntryResourceObject.metadata || {},
       }
