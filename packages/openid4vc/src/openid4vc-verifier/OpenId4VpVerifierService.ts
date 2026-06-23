@@ -338,7 +338,7 @@ export class OpenId4VpVerifierService {
     const verificationSession = new OpenId4VcVerificationSessionRecord({
       authorizationResponseRedirectUri: options.authorizationResponseRedirectUri,
 
-      // Only store payload for unsiged requests
+      // Only store payload for unsigned requests
       authorizationRequestPayload: authorizationRequest.jar
         ? undefined
         : (authorizationRequest.authorizationRequestPayload as OpenId4VpAuthorizationRequestPayload),
@@ -995,7 +995,6 @@ export class OpenId4VpVerifierService {
     return {
       ...jarmClientMetadata,
       ...verifier.clientMetadata,
-      response_types_supported: ['vp_token'],
 
       // for v1 version we only include the vp_formats_supported for formats we're requesting.
       // TODO: should allow dynamically setting the supported algs
