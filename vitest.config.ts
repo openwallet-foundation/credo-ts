@@ -32,8 +32,13 @@ export default defineConfig({
         test: {
           name: 'unit',
           include: ['**/*.{test,spec}.?(c|m)[jt]s?(x)'],
-          // Ignore e2e tests
-          exclude: ['**/node_modules/**', '**/build/**', '**/*.e2e.{test,spec}.?(c|m)[jt]s?(x)'],
+          // Ignore e2e and conformance tests
+          exclude: [
+            '**/node_modules/**',
+            '**/build/**',
+            '**/*.e2e.{test,spec}.?(c|m)[jt]s?(x)',
+            '**/*.conformance.{test,spec}.?(c|m)[jt]s?(x)',
+          ],
         },
       },
       {
@@ -50,6 +55,20 @@ export default defineConfig({
         test: {
           name: 'drizzle',
           include: ['**/*.drizzle.e2e.{test,spec}.?(c|m)[jt]s?(x)'],
+        },
+      },
+      {
+        // OIDF conformance suite tests. These spin up the OpenID Foundation
+        // conformance suite in Docker (via testcontainers) and drive credo-ts
+        // against it, so they are kept in a dedicated project that is never run
+        // by the default `unit`/`e2e` runs.
+        extends: true,
+        test: {
+          name: 'conformance',
+          include: ['**/*.conformance.{test,spec}.?(c|m)[jt]s?(x)'],
+          // Image pulls + container boot + many sequential modules are slow.
+          testTimeout: 1_800_000,
+          hookTimeout: 600_000,
         },
       },
     ],

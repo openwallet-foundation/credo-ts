@@ -123,6 +123,11 @@ jobs:
       - name: Setup services
         run: docker compose up -d
 
+      # The OIDF conformance suite runs in testcontainers and reaches the
+      # credo-ts verifier on the host via this alias.
+      - name: Add testcontainers host alias
+        run: echo "127.0.0.1 host.testcontainers.internal" | sudo tee -a /etc/hosts
+
       - name: Setup NodeJS
         id: setup-node
         uses: actions/setup-node@v6
@@ -164,6 +169,23 @@ jobs:
         with:
           name: failed-tests-${{ matrix.node-version }}-e2e
           path: testlogs
+          overwrite: true
+
+      # OIDF conformance suite. Runs after the e2e tests in the same job so the
+      # docker daemon and dependencies are already set up. Pulls the conformance
+      # suite images (MongoDB + Java server + nginx) via testcontainers and
+      # drives the credo-ts verifier against them.
+      - name: Run OIDF conformance tests
+        env:
+          TESTCONTAINERS_HOST_OVERRIDE: host.testcontainers.internal
+        run: pnpm test:conformance
+
+      - uses: actions/upload-artifact@v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: oidf-conformance-logs-${{ matrix.node-version }}
+          path: tmp/oidf/logs
+          if-no-files-found: ignore
           overwrite: true
 
   drizzle-tests:
