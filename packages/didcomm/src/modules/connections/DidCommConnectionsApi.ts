@@ -2,6 +2,7 @@ import type { Query, QueryOptions } from '@credo-ts/core'
 import { AgentContext, CredoError, DidResolverService, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { DidCommEmptyMessage } from '../../messages'
 import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
@@ -14,6 +15,7 @@ import { DidCommConnectionRequestMessage, DidCommDidExchangeRequestMessage } fro
 import type { DidCommConnectionType } from './models'
 import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
 import type { DidCommConnectionRecord } from './repository'
+import { DidCommConnectionMetadataKeys } from './repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService, DidCommDidRotateService, DidCommDidRotateV2Service } from './services'
 import { createPeerDidForV2OOB } from './services/helpers'
 
@@ -331,12 +333,53 @@ export class DidCommConnectionsApi {
    * Note: any did created or imported in agent wallet can be used as `toDid`, as long as
    * there are valid DIDComm services in its DID Document.
    *
+   * For v2 connections a new peer DID is always created (`toDid` is unsupported).
+   *
    * @param options connectionId and optional target did and routing configuration
    * @returns object containing the new did
    */
-  public async rotate(options: { connectionId: string; toDid?: string; routing?: DidCommRouting }) {
+  public async rotate(options: {
+    connectionId: string
+    toDid?: string
+    routing?: DidCommRouting
+  }): Promise<{ newDid: string }> {
     const { connectionId, toDid } = options
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
+
+    if (connection.didcommVersion === 'v2') {
+      if (toDid) {
+        throw new CredoError("Rotating a DIDComm v2 connection to a specific 'toDid' is not supported")
+      }
+
+      const pendingRotation = connection.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)
+      if (pendingRotation) {
+        return { newDid: pendingRotation.newDid }
+      }
+
+      const didRotateV2Service = this.agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
+      const routing =
+        options.routing ??
+        (await this.routingService.getRouting(this.agentContext, { mediatorId: connection.mediatorId }))
+
+      const { newDid } = await didRotateV2Service.rotateOurDid(this.agentContext, connection, routing)
+
+      // from_prior re-attaches to the next outbound, so a failed notification must not fail the rotation
+      try {
+        await this.messageSender.sendMessage(
+          new DidCommOutboundMessageContext(new DidCommEmptyMessage({}), {
+            agentContext: this.agentContext,
+            connection,
+          })
+        )
+      } catch (error) {
+        this.agentContext.config.logger.warn(
+          'Failed to deliver v2 rotation notification; from_prior will ride the next outbound message',
+          { connectionId: connection.id, error: error instanceof Error ? error.message : String(error) }
+        )
+      }
+
+      return { newDid }
+    }
 
     if (toDid && options.routing) {
       throw new CredoError(`'routing' is disallowed when defining 'toDid'`)
