@@ -183,7 +183,7 @@ export class Mdoc {
       })
 
       trustedCertificates =
-        trustedIssuers?.trustedIssuers.map((t) => t.certificate) ??
+        trustedIssuers?.trustedIssuers ??
         (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
           verification: {
             type: 'credential',

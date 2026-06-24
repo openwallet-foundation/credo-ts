@@ -19,7 +19,7 @@ import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig } from '../x509'
-import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
+import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
@@ -64,9 +64,13 @@ export interface SdJwtVc<
   header: Header
 
   /**
-   * The issuer of the credential
+   * The issuer of the credential.
+   *
+   * This is `undefined` when the credential's issuer cannot be resolved to a supported
+   * signing method (only `did` and `x5c` are supported). Decoding a credential never fails
+   * because of an unsupported issuer; verification does enforce a supported issuer.
    */
-  issuer: SdJwtVcIssuer
+  issuer?: SdJwtVcIssuer
 
   /**
    * The holder of the credential
@@ -311,8 +315,7 @@ export class SdJwtVcService {
 
     let trustedIssuers = _trustedIssuers
     if (trustedCertificates) {
-      if (!trustedIssuers) trustedIssuers = []
-      trustedIssuers.push(...trustedCertificates.map((c) => ({ method: 'x509' as const, certificate: c })))
+      trustedIssuers = [...(trustedIssuers ?? []), ...legacyTrustedCertificatesToTrustedIssuers(trustedCertificates)]
     }
 
     try {
@@ -571,7 +574,12 @@ export class SdJwtVcService {
   ) {
     const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
-    if (sdJwtVc.issuer.method === 'x5c') {
+    const issuer = sdJwtVc.issuer
+    if (!issuer) {
+      throw new SdJwtVcError('Unsupported signing method for SD-JWT VC. Only did and x5c are supported at the moment.')
+    }
+
+    if (issuer.method === 'x5c') {
       // NOTE: we can't use the 'simpler' call directly to `ensureTrustedSigner` due to having to incorporate the
       // legacy X509 API. In the future we can simplify this.
       let x509Issuers = trustedIssuers?.filter((t) => t.method === 'x509')
@@ -579,11 +587,14 @@ export class SdJwtVcService {
       const context = {
         verification: { type: 'credential', credential: sdJwtVc },
         signer: {
-          certificateChain: sdJwtVc.issuer.x5c,
+          certificateChain: issuer.x5c,
           method: 'x509',
         },
       } as const
 
+      // `trustedIssuers` may already be populated by a caller that pre-resolved trust with a richer
+      // context (e.g. OpenID4VP passing the `oid4VpCredential` context). When it didn't (value is
+      // `undefined`), we resolve here with the plain `credential` context; the decision is the same.
       if (!x509Issuers) {
         x509Issuers = (await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, context))
           ?.trustedIssuers
@@ -593,7 +604,7 @@ export class SdJwtVcService {
       if (!x509Issuers) {
         const legacyTrustedCertificates =
           (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain: sdJwtVc.issuer.x5c,
+            certificateChain: issuer.x5c,
             verification: {
               type: 'credential',
               credential: sdJwtVc,
@@ -601,9 +612,7 @@ export class SdJwtVcService {
           })) ?? x509Config.trustedCertificates
 
         if (legacyTrustedCertificates) {
-          x509Issuers = convertLegacyTrustedCertificates(legacyTrustedCertificates)
-            .flatMap(({ issuance }) => issuance)
-            .map((certificate) => ({ method: 'x509' as const, certificate }))
+          x509Issuers = legacyTrustedCertificatesToTrustedIssuers(legacyTrustedCertificates)
         }
       }
 
@@ -613,23 +622,25 @@ export class SdJwtVcService {
         )
       }
       await TrustedIssuerContext.ensureTrustedSigner(agentContext, context, x509Issuers)
+      return
     }
 
-    if (sdJwtVc.issuer.method === 'did') {
-      // Mimic original behavior: no trusted entities means we by default allow the did.
-      if (!trustedIssuers) return
-
+    if (issuer.method === 'did') {
+      // `ensureTrustedSigner` consults the `getTrustedIssuersForVerification` callback and, to mimic
+      // the original behavior, allows the did by default when neither explicit trusted issuers nor the
+      // callback return any trusted issuers.
       await TrustedIssuerContext.ensureTrustedSigner(
         agentContext,
         {
           verification: { type: 'credential', credential: sdJwtVc },
           signer: {
-            didUrl: sdJwtVc.issuer.didUrl,
+            didUrl: issuer.didUrl,
             method: 'did',
           },
         },
         trustedIssuers
       )
+      return
     }
 
     throw new SdJwtVcError('Unsupported signing method for SD-JWT VC. Only did and x5c are supported at the moment.')

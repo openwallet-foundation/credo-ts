@@ -1,7 +1,6 @@
 import {
   AgentContext,
   ClaimFormat,
-  convertLegacyTrustedCertificates,
   CredoError,
   type DcqlEncodedPresentations,
   type DcqlQuery,
@@ -9,7 +8,6 @@ import {
   type DifPresentationExchangeDefinition,
   DifPresentationExchangeService,
   type DifPresentationExchangeSubmission,
-  type EncodedX509Certificate,
   EventEmitter,
   extractPresentationsWithDescriptorsFromSubmission,
   getDomainFromUrl,
@@ -25,6 +23,7 @@ import {
   joinUriParts,
   Kms,
   type Logger,
+  legacyTrustedCertificatesToTrustedIssuers,
   Mdoc,
   MdocDeviceResponse,
   type MdocSessionTranscriptOptions,
@@ -35,6 +34,7 @@ import {
   type QueryOptions,
   SdJwtVcApi,
   SignatureSuiteRegistry,
+  type TrustedIssuer,
   TrustedIssuerContext,
   TypedArrayEncoder,
   utils,
@@ -47,7 +47,6 @@ import {
   X509Certificate,
   X509ModuleConfig,
   X509Service,
-  type X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
@@ -1173,38 +1172,41 @@ export class OpenId4VpVerifierService {
         const sdJwtVc = sdJwtVcApi.fromCompact(presentation)
         const issuer = sdJwtVc.issuer
 
-        let trustedIssuers = (
-          await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
-            signer:
-              issuer.method === 'x5c'
-                ? {
-                    method: 'x509',
-                    certificateChain: issuer.x5c,
-                  }
-                : { method: 'did', didUrl: issuer.didUrl },
-            verification: {
-              type: 'oid4VpCredential',
-              credential: sdJwtVc,
-              openId4VcVerificationSessionRecord: options.verificationSession,
-            } satisfies OpenId4VcVerificationTypes,
-          })
-        )?.trustedIssuers
-
-        if (!trustedIssuers && issuer.method === 'x5c') {
-          const legacyTrustedCertificates =
-            (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-              certificateChain: issuer.x5c,
+        // `issuer` is undefined when the credential is not did/x5c signed. In that case we leave
+        // `trustedIssuers` undefined and let `sdJwtVcApi.verify` surface the unsupported-issuer error.
+        let trustedIssuers: TrustedIssuer[] | undefined
+        if (issuer) {
+          trustedIssuers = (
+            await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+              signer:
+                issuer.method === 'x5c'
+                  ? {
+                      method: 'x509',
+                      certificateChain: issuer.x5c,
+                    }
+                  : { method: 'did', didUrl: issuer.didUrl },
               verification: {
-                type: 'credential',
+                type: 'openId4VpCredential',
                 credential: sdJwtVc,
-                openId4VcVerificationSessionId: options.verificationSession.id,
-              },
-            })) ?? x509Config.trustedCertificates
+                openId4VcVerificationSessionRecord: options.verificationSession,
+              } satisfies OpenId4VcVerificationTypes,
+            })
+          )?.trustedIssuers
 
-          if (legacyTrustedCertificates) {
-            trustedIssuers = convertLegacyTrustedCertificates(legacyTrustedCertificates)
-              .flatMap(({ issuance }) => issuance)
-              .map((certificate) => ({ method: 'x509' as const, certificate }))
+          if (!trustedIssuers && issuer.method === 'x5c') {
+            const legacyTrustedCertificates =
+              (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+                certificateChain: issuer.x5c,
+                verification: {
+                  type: 'credential',
+                  credential: sdJwtVc,
+                  openId4VcVerificationSessionId: options.verificationSession.id,
+                },
+              })) ?? x509Config.trustedCertificates
+
+            if (legacyTrustedCertificates) {
+              trustedIssuers = legacyTrustedCertificatesToTrustedIssuers(legacyTrustedCertificates)
+            }
           }
         }
 
@@ -1249,12 +1251,12 @@ export class OpenId4VpVerifierService {
                   certificateChain,
                 },
                 verification: {
-                  type: 'oid4VpCredential',
+                  type: 'openId4VpCredential',
                   credential: mdoc,
                   openId4VcVerificationSessionRecord: options.verificationSession,
                 } satisfies OpenId4VcVerificationTypes,
               })
-            )?.trustedIssuers.map((t) => t.certificate) ??
+            )?.trustedIssuers ??
             (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
               certificateChain,
               verification: {
