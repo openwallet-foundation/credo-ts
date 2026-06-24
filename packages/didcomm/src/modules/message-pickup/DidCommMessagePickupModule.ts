@@ -7,7 +7,7 @@ import { DidCommMessagePickupModuleConfig } from './DidCommMessagePickupModuleCo
 import {
   DidCommMessagePickupV1Protocol,
   DidCommMessagePickupV2Protocol,
-  DidCommMessagePickupV3Protocol,
+  DidCommMessagePickupV4Protocol,
 } from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 import { DidCommMessagePickupSessionService } from './services'
@@ -18,7 +18,7 @@ import { DidCommMessagePickupSessionService } from './services'
 export type DefaultDidCommMessagePickupProtocols = [
   DidCommMessagePickupV1Protocol,
   DidCommMessagePickupV2Protocol,
-  DidCommMessagePickupV3Protocol,
+  DidCommMessagePickupV4Protocol,
 ]
 
 // MessagePickupModuleOptions makes the protocols property optional from the config, as it will set it when not provided.
@@ -42,7 +42,7 @@ export class DidCommMessagePickupModule<
       protocols: config?.protocols ?? [
         new DidCommMessagePickupV1Protocol(),
         new DidCommMessagePickupV2Protocol(),
-        new DidCommMessagePickupV3Protocol(),
+        new DidCommMessagePickupV4Protocol(),
       ],
     }) as DidCommMessagePickupModuleConfig<MessagePickupProtocols>
   }

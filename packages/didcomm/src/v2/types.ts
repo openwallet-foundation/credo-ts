@@ -27,6 +27,7 @@ export interface DidCommV2PlaintextMessage {
   created_time?: number
   expires_time?: number
   lang?: string
+  return_route?: string
   attachments?: DidCommV2Attachment[]
   body?: Record<string, unknown>
   from_prior?: string

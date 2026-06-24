@@ -6,7 +6,6 @@ import { getAgentContext, getMockConnection, mockFunction } from '../../../../..
 import { DidCommMessageSender } from '../../../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../../../DidCommModuleConfig'
 import { DidCommAttachment } from '../../../../../decorators/attachment/DidCommAttachment'
-import { DidCommProblemReportError } from '../../../../../errors/problem-reports/DidCommProblemReportError'
 import { DidCommInboundMessageContext } from '../../../../../models'
 import { InMemoryQueueTransportRepository } from '../../../../../transport/queue/InMemoryQueueTransportRepository'
 import type { DidCommEncryptedMessage } from '../../../../../types'
@@ -15,14 +14,15 @@ import { DidCommMessagePickupModuleConfig } from '../../../DidCommMessagePickupM
 import { DidCommMessagePickupSessionService } from '../../../services/DidCommMessagePickupSessionService'
 import { DidCommMessagePickupV1Protocol } from '../../v1'
 import { DidCommMessagePickupV2Protocol } from '../../v2'
-import { DidCommMessagePickupV3Protocol } from '../DidCommMessagePickupV3Protocol'
+import { DidCommMessagePickupV4Protocol } from '../DidCommMessagePickupV4Protocol'
+import { DidCommMessagePickupV4ProblemReportError } from '../errors'
 import {
-  DidCommDeliveryRequestV3Message,
-  DidCommLiveDeliveryChangeV3Message,
-  DidCommMessageDeliveryV3Message,
-  DidCommMessagesReceivedV3Message,
-  DidCommStatusRequestV3Message,
-  DidCommStatusV3Message,
+  DidCommDeliveryRequestV4Message,
+  DidCommLiveDeliveryChangeV4Message,
+  DidCommMessageDeliveryV4Message,
+  DidCommMessagesReceivedV4Message,
+  DidCommStatusRequestV4Message,
+  DidCommStatusV4Message,
 } from '../messages'
 
 const mockConnection = getMockConnection({
@@ -52,7 +52,7 @@ const messagePickupModuleConfig = new DidCommMessagePickupModuleConfig({
   protocols: [
     new DidCommMessagePickupV1Protocol(),
     new DidCommMessagePickupV2Protocol(),
-    new DidCommMessagePickupV3Protocol(),
+    new DidCommMessagePickupV4Protocol(),
   ],
 })
 const messageSender = new MessageSenderMock()
@@ -84,18 +84,18 @@ const queuedMessages = [
   { id: '3', encryptedMessage, receivedAt: new Date() },
 ]
 
-describe('DidCommMessagePickupV3Protocol', () => {
-  let pickupProtocol: DidCommMessagePickupV3Protocol
+describe('DidCommMessagePickupV4Protocol', () => {
+  let pickupProtocol: DidCommMessagePickupV4Protocol
 
   beforeEach(async () => {
-    pickupProtocol = new DidCommMessagePickupV3Protocol()
+    pickupProtocol = new DidCommMessagePickupV4Protocol()
   })
 
   describe('processStatusRequest', () => {
     test('no available messages in queue', async () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(0)
 
-      const statusRequest = new DidCommStatusRequestV3Message({})
+      const statusRequest = new DidCommStatusRequestV4Message({})
 
       const messageContext = new DidCommInboundMessageContext(statusRequest, {
         connection: mockConnection,
@@ -108,7 +108,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
       expect(connection).toEqual(mockConnection)
       expect(message).toEqual(
-        new DidCommStatusV3Message({
+        new DidCommStatusV4Message({
           id: message.id,
           threadId: statusRequest.threadId,
           messageCount: 0,
@@ -122,7 +122,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
     test('multiple messages in queue', async () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(5)
-      const statusRequest = new DidCommStatusRequestV3Message({})
+      const statusRequest = new DidCommStatusRequestV4Message({})
 
       const messageContext = new DidCommInboundMessageContext(statusRequest, {
         connection: mockConnection,
@@ -135,7 +135,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
       expect(connection).toEqual(mockConnection)
       expect(message).toEqual(
-        new DidCommStatusV3Message({
+        new DidCommStatusV4Message({
           id: message.id,
           threadId: statusRequest.threadId,
           messageCount: 5,
@@ -150,7 +150,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
     test('status request specifying recipient_did', async () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(10)
 
-      const statusRequest = new DidCommStatusRequestV3Message({
+      const statusRequest = new DidCommStatusRequestV4Message({
         recipientDid: 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc',
       })
 
@@ -171,7 +171,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
     test('no available messages in queue', async () => {
       mockFunction(queueTransportRepository.takeFromQueue).mockReturnValue([])
 
-      const deliveryRequest = new DidCommDeliveryRequestV3Message({ limit: 10 })
+      const deliveryRequest = new DidCommDeliveryRequestV4Message({ messageCountLimit: 10 })
 
       const messageContext = new DidCommInboundMessageContext(deliveryRequest, {
         connection: mockConnection,
@@ -181,13 +181,10 @@ describe('DidCommMessagePickupV3Protocol', () => {
       const { connection, message } = await pickupProtocol.processDeliveryRequest(messageContext)
 
       expect(connection).toEqual(mockConnection)
-      expect(message).toEqual(
-        new DidCommStatusV3Message({
-          id: message.id,
-          threadId: deliveryRequest.threadId,
-          messageCount: 0,
-        })
-      )
+      // Pickup 4.0: an empty queue is answered with a delivery carrying no attachments, not a status
+      expect(message).toBeInstanceOf(DidCommMessageDeliveryV4Message)
+      expect(message.appendedAttachments ?? []).toEqual([])
+      expect((message as DidCommMessageDeliveryV4Message).toV2Plaintext().attachments).toEqual([])
       expect(queueTransportRepository.takeFromQueue).toHaveBeenCalledWith(
         agentContext,
         expect.objectContaining({ connectionId: mockConnection.id, limit: 10 })
@@ -197,7 +194,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
     test('less messages in queue than limit', async () => {
       mockFunction(queueTransportRepository.takeFromQueue).mockReturnValue(queuedMessages)
 
-      const deliveryRequest = new DidCommDeliveryRequestV3Message({ limit: 10 })
+      const deliveryRequest = new DidCommDeliveryRequestV4Message({ messageCountLimit: 10 })
 
       const messageContext = new DidCommInboundMessageContext(deliveryRequest, {
         connection: mockConnection,
@@ -207,7 +204,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
       const { connection, message } = await pickupProtocol.processDeliveryRequest(messageContext)
 
       expect(connection).toEqual(mockConnection)
-      expect(message).toBeInstanceOf(DidCommMessageDeliveryV3Message)
+      expect(message).toBeInstanceOf(DidCommMessageDeliveryV4Message)
       expect(message.threadId).toEqual(deliveryRequest.threadId)
       expect(message.appendedAttachments?.length).toEqual(3)
       expect(message.appendedAttachments).toEqual(
@@ -222,6 +219,19 @@ describe('DidCommMessagePickupV3Protocol', () => {
           )
         )
       )
+
+      const plaintext = (message as DidCommMessageDeliveryV4Message).toV2Plaintext()
+      expect(plaintext.attachments).toHaveLength(3)
+      expect(plaintext.attachments).toEqual(
+        expect.arrayContaining(
+          queuedMessages.map((msg) =>
+            expect.objectContaining({
+              id: msg.id,
+              data: expect.objectContaining({ base64: expect.any(String) }),
+            })
+          )
+        )
+      )
       expect(queueTransportRepository.takeFromQueue).toHaveBeenCalledWith(
         agentContext,
         expect.objectContaining({ connectionId: mockConnection.id, limit: 10 })
@@ -231,8 +241,8 @@ describe('DidCommMessagePickupV3Protocol', () => {
     test('delivery request specifying recipient_did', async () => {
       mockFunction(queueTransportRepository.takeFromQueue).mockReturnValue(queuedMessages)
 
-      const deliveryRequest = new DidCommDeliveryRequestV3Message({
-        limit: 10,
+      const deliveryRequest = new DidCommDeliveryRequestV4Message({
+        messageCountLimit: 10,
         recipientDid: 'did:peer:2.Ez6LSbysY2xFMRpGMhb7tFTLMpeuPRaqaWM1yECx2AtzE3KCc',
       })
 
@@ -252,11 +262,8 @@ describe('DidCommMessagePickupV3Protocol', () => {
   })
 
   describe('processMessagesReceived', () => {
-    test('messages received partially', async () => {
-      mockFunction(queueTransportRepository.takeFromQueue).mockReturnValue(queuedMessages)
-      mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(4)
-
-      const messagesReceived = new DidCommMessagesReceivedV3Message({
+    test('removes the acknowledged messages and returns no status (4.0 fire-and-forget)', async () => {
+      const messagesReceived = new DidCommMessagesReceivedV4Message({
         messageIdList: ['1', '2'],
       })
 
@@ -265,20 +272,9 @@ describe('DidCommMessagePickupV3Protocol', () => {
         agentContext,
       })
 
-      const { connection, message } = await pickupProtocol.processMessagesReceived(messageContext)
+      const result = await pickupProtocol.processMessagesReceived(messageContext)
 
-      expect(connection).toEqual(mockConnection)
-      expect(message).toEqual(
-        new DidCommStatusV3Message({
-          id: message.id,
-          threadId: messagesReceived.threadId,
-          messageCount: 4,
-        })
-      )
-      expect(queueTransportRepository.getAvailableMessageCount).toHaveBeenCalledWith(
-        agentContext,
-        expect.objectContaining({ connectionId: mockConnection.id })
-      )
+      expect(result).toBeUndefined()
       expect(queueTransportRepository.removeMessages).toHaveBeenCalledWith(agentContext, {
         connectionId: mockConnection.id,
         messageIds: ['1', '2'],
@@ -302,7 +298,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
   describe('processStatus', () => {
     it('if status request has a message count of zero returns nothing', async () => {
-      const status = new DidCommStatusV3Message({
+      const status = new DidCommStatusV4Message({
         threadId: uuid(),
         messageCount: 0,
       })
@@ -318,7 +314,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
     })
 
     it('if it has a message count greater than zero return a valid delivery request', async () => {
-      const status = new DidCommStatusV3Message({
+      const status = new DidCommStatusV4Message({
         threadId: uuid(),
         messageCount: 1,
       })
@@ -327,23 +323,24 @@ describe('DidCommMessagePickupV3Protocol', () => {
       const deliveryRequestMessage = await pickupProtocol.processStatus(messageContext)
       expect(deliveryRequestMessage)
       expect(deliveryRequestMessage).toEqual(
-        new DidCommDeliveryRequestV3Message({ id: deliveryRequestMessage?.id, limit: 1 })
+        new DidCommDeliveryRequestV4Message({ id: deliveryRequestMessage?.id, messageCountLimit: 1 })
       )
     })
   })
 
   describe('processDelivery', () => {
-    it('if the delivery has no attachments expect an error', async () => {
-      const messageContext = new DidCommInboundMessageContext({} as DidCommMessageDeliveryV3Message, {
-        connection: mockConnection,
-        agentContext,
-      })
+    it('Pickup 4.0: an empty delivery returns no acknowledgement', async () => {
+      const messageContext = new DidCommInboundMessageContext(
+        new DidCommMessageDeliveryV4Message({ threadId: uuid(), attachments: [] }),
+        { connection: mockConnection, agentContext }
+      )
 
-      await expect(pickupProtocol.processDelivery(messageContext)).rejects.toThrowError(DidCommProblemReportError)
+      const result = await pickupProtocol.processDelivery(messageContext)
+      expect(result).toBeUndefined()
     })
 
     it('should return a message received with a message id list in it', async () => {
-      const messageDeliveryMessage = new DidCommMessageDeliveryV3Message({
+      const messageDeliveryMessage = new DidCommMessageDeliveryV4Message({
         threadId: uuid(),
         attachments: [
           new DidCommAttachment({
@@ -360,18 +357,19 @@ describe('DidCommMessagePickupV3Protocol', () => {
       })
 
       const messagesReceivedMessage = await pickupProtocol.processDelivery(messageContext)
+      if (!messagesReceivedMessage) throw new Error('Expected a messages-received message')
 
       expect(messagesReceivedMessage).toEqual(
-        new DidCommMessagesReceivedV3Message({
+        new DidCommMessagesReceivedV4Message({
           id: messagesReceivedMessage.id,
           messageIdList: ['1'],
         })
       )
     })
 
-    it('handles base64 attachments per Message Pickup 3.0 spec', async () => {
+    it('handles base64 attachments per Message Pickup 4.0 spec', async () => {
       const encryptedMsg = { protected: 'p', iv: 'i', ciphertext: 'c', tag: 't' }
-      const messageDeliveryMessage = new DidCommMessageDeliveryV3Message({
+      const messageDeliveryMessage = new DidCommMessageDeliveryV4Message({
         threadId: uuid(),
         attachments: [
           new DidCommAttachment({
@@ -388,6 +386,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
       })
 
       const messagesReceivedMessage = await pickupProtocol.processDelivery(messageContext)
+      if (!messagesReceivedMessage) throw new Error('Expected a messages-received message')
 
       expect(messagesReceivedMessage.messageIdList).toEqual(['1'])
     })
@@ -395,7 +394,7 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
   describe('processLiveDeliveryChange', () => {
     test('throws problem report when live_delivery is true but no sessionId (non-persistent transport)', async () => {
-      const liveDeliveryChange = new DidCommLiveDeliveryChangeV3Message({ liveDelivery: true })
+      const liveDeliveryChange = new DidCommLiveDeliveryChangeV4Message({ liveDelivery: true })
 
       const messageContext = new DidCommInboundMessageContext(liveDeliveryChange, {
         connection: mockConnection,
@@ -404,17 +403,22 @@ describe('DidCommMessagePickupV3Protocol', () => {
       })
 
       await expect(pickupProtocol.processLiveDeliveryChange(messageContext)).rejects.toThrowError(
-        DidCommProblemReportError
+        DidCommMessagePickupV4ProblemReportError
       )
-      await expect(pickupProtocol.processLiveDeliveryChange(messageContext)).rejects.toThrow(
-        'Connection does not support Live Delivery'
-      )
+
+      const error = await pickupProtocol.processLiveDeliveryChange(messageContext).catch((e) => e)
+      const problemReport = error.problemReport.toV2Plaintext()
+      expect(problemReport.type).toBe('https://didcomm.org/message-pickup/4.0/problem-report')
+      expect(problemReport.body).toEqual({
+        code: 'e.m.live-mode-not-supported',
+        comment: 'Connection does not support Live Delivery',
+      })
     })
 
     test('saves live session when live_delivery is true and sessionId is present', async () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(3)
 
-      const liveDeliveryChange = new DidCommLiveDeliveryChangeV3Message({ liveDelivery: true })
+      const liveDeliveryChange = new DidCommLiveDeliveryChangeV4Message({ liveDelivery: true })
 
       const messageContext = new DidCommInboundMessageContext(liveDeliveryChange, {
         connection: mockConnection,
@@ -424,15 +428,15 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
       const { message } = await pickupProtocol.processLiveDeliveryChange(messageContext)
 
-      expect(message).toBeInstanceOf(DidCommStatusV3Message)
-      expect((message as DidCommStatusV3Message).liveDelivery).toBe(true)
-      expect((message as DidCommStatusV3Message).messageCount).toBe(3)
+      expect(message).toBeInstanceOf(DidCommStatusV4Message)
+      expect((message as DidCommStatusV4Message).liveDelivery).toBe(true)
+      expect((message as DidCommStatusV4Message).messageCount).toBe(3)
     })
 
     test('removes live session when live_delivery is false', async () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(0)
 
-      const liveDeliveryChange = new DidCommLiveDeliveryChangeV3Message({ liveDelivery: false })
+      const liveDeliveryChange = new DidCommLiveDeliveryChangeV4Message({ liveDelivery: false })
 
       const messageContext = new DidCommInboundMessageContext(liveDeliveryChange, {
         connection: mockConnection,
@@ -441,9 +445,9 @@ describe('DidCommMessagePickupV3Protocol', () => {
 
       const { message } = await pickupProtocol.processLiveDeliveryChange(messageContext)
 
-      expect(message).toBeInstanceOf(DidCommStatusV3Message)
-      expect((message as DidCommStatusV3Message).liveDelivery).toBe(false)
-      expect((message as DidCommStatusV3Message).messageCount).toBe(0)
+      expect(message).toBeInstanceOf(DidCommStatusV4Message)
+      expect((message as DidCommStatusV4Message).liveDelivery).toBe(false)
+      expect((message as DidCommStatusV4Message).messageCount).toBe(0)
     })
   })
 })

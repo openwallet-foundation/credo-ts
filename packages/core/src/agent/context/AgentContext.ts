@@ -23,6 +23,8 @@ export class AgentContext {
 
   public readonly isRootAgentContext: boolean
 
+  private _isInitialized = false
+
   public constructor({
     dependencyManager,
     contextCorrelationId,
@@ -35,6 +37,15 @@ export class AgentContext {
     this.dependencyManager = dependencyManager
     this.contextCorrelationId = contextCorrelationId
     this.isRootAgentContext = isRootAgentContext
+  }
+
+  public get isInitialized(): boolean {
+    return this._isInitialized
+  }
+
+  /** @internal */
+  public set isInitialized(value: boolean) {
+    this._isInitialized = value
   }
 
   /**

@@ -6,13 +6,14 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { Agent } from '../../../../../core/src/agent/Agent'
 import {
   getAgentOptions,
+  makeConnection,
   waitForAgentMessageProcessedEvent,
   waitForBasicMessage,
 } from '../../../../../core/tests/helpers'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { DidCommHandshakeProtocol } from '../../connections'
 import { DidCommMessageForwardingStrategy } from '../../routing/DidCommMessageForwardingStrategy'
 import { DidCommMessagesReceivedV2Message, DidCommStatusV2Message } from '../protocol'
-import { DidCommStatusV3Message } from '../protocol/v3'
 
 const recipientOptions = getAgentOptions('Mediation Pickup Loop Recipient', undefined, undefined, undefined, {
   requireDidcomm: true,
@@ -332,8 +333,11 @@ describe('E2E Pick Up protocol', () => {
     expect(basicMessage.content).toBe(message)
   })
 
-  // V3 pickup requires DIDComm v2 connections (v2 OOB). Skipped until v2 OOB E2E is available.
-  test.skip('E2E manual Pick Up V3 loop', async () => {
+  // Full Message Pickup 4.0 protocol loop over a v2 connection: a message is queued for an offline
+  // recipient, then drained via the v4 cascade (status-request -> status -> delivery-request ->
+  // delivery -> messages-received -> status), verifying the recipient drives the loop and that
+  // messages-received empties the mediator queue on acknowledgement.
+  test('E2E manual Pick Up V4 loop', async () => {
     const mediatorMessages = new Subject<SubjectMessage>()
     const subjectMap = { 'wss://mediator': mediatorMessages }
 
@@ -348,14 +352,14 @@ describe('E2E Pick Up protocol', () => {
         didcommVersions: ['v1', 'v2'],
       },
       {},
-      undefined,
+      {},
       { requireDidcomm: true, inMemory: false }
     )
     const recipientOptionsV2 = getAgentOptions(
       'Mediation Pickup Loop Recipient V2',
       { didcommVersions: ['v1', 'v2'] },
       {},
-      undefined,
+      {},
       { requireDidcomm: true, inMemory: false }
     )
 
@@ -364,53 +368,40 @@ describe('E2E Pick Up protocol', () => {
     mediatorAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const mediatorOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
-      label: 'mediator invitation',
-      handshake: true,
-      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-    })
-
     recipientAgent = new Agent(recipientOptionsV2)
     recipientAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 
-    let { connectionRecord: recipientMediatorConnection } = await recipientAgent.didcomm.oob.receiveInvitationFromUrl(
-      mediatorOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com/ssi' }),
-      { label: 'recipient' }
+    // Recipient has no inbound endpoint, so the mediator must queue anything it sends.
+    const [recipientMediatorConnection, mediatorRecipientConnection] = await makeConnection(
+      recipientAgent,
+      mediatorAgent,
+      { didCommVersion: 'v2' }
     )
+    expect(recipientMediatorConnection.didcommVersion).toBe('v2')
 
-    if (!recipientMediatorConnection) throw new Error('Expected recipientMediatorConnection to be defined')
-    recipientMediatorConnection = await recipientAgent.didcomm.connections.returnWhenIsConnected(
-      recipientMediatorConnection.id
-    )
-
-    let [mediatorRecipientConnection] = await mediatorAgent.didcomm.connections.findAllByOutOfBandId(
-      mediatorOutOfBandRecord.id
-    )
-    if (!mediatorRecipientConnection) throw new Error('Expected mediatorRecipientConnection to be defined')
-    mediatorRecipientConnection = await mediatorAgent.didcomm.connections.returnWhenIsConnected(
-      mediatorRecipientConnection.id
-    )
-
+    // Drop the live session so the next message lands in the queue.
     await recipientAgent.shutdown()
     await recipientAgent.initialize()
 
-    const message = 'hello pickup V3'
-    await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
+    const queueTransportRepository =
+      mediatorAgent.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
+    const queuedCount = () =>
+      queueTransportRepository.getAvailableMessageCount(mediatorAgent.context, {
+        connectionId: mediatorRecipientConnection.id,
+      })
 
-    const basicMessagePromise = waitForBasicMessage(recipientAgent, { content: message })
+    for (let i = 0; i < 11; i++) {
+      await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, `hello pickup V4 ${i}`)
+    }
+    expect(await queuedCount()).toBe(11)
+
     await recipientAgent.didcomm.messagePickup.pickupMessages({
       connectionId: recipientMediatorConnection.id,
-      protocolVersion: 'v3',
-      recipientDid: recipientMediatorConnection?.did,
+      protocolVersion: 'v4',
+      awaitCompletion: true,
     })
 
-    const firstStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
-      messageType: DidCommStatusV3Message.type.messageTypeUri,
-    })
-    expect((firstStatusMessage as DidCommStatusV3Message).messageCount).toBe(1)
-
-    const basicMessage = await basicMessagePromise
-    expect(basicMessage.content).toBe(message)
-  })
+    expect(await queuedCount()).toBe(0)
+  }, 60000)
 })

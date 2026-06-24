@@ -229,17 +229,17 @@ export class DidCommMediationRecipientApi {
                 liveDelivery: true,
                 protocolVersion: 'v2',
               })
-            } else if (pickupStrategy === DidCommMediatorPickupStrategy.PickUpV3LiveMode) {
+            } else if (pickupStrategy === DidCommMediatorPickupStrategy.PickUpV4LiveMode) {
               await this.messagePickupApi.pickupMessages({
                 connectionId: mediator.connectionId,
-                protocolVersion: 'v3',
+                protocolVersion: 'v4',
                 awaitCompletion: true,
               })
 
               await this.messagePickupApi.setLiveDeliveryMode({
                 connectionId: mediator.connectionId,
                 liveDelivery: true,
-                protocolVersion: 'v3',
+                protocolVersion: 'v4',
               })
             } else {
               await this.initiateImplicitMode(mediator)
@@ -304,10 +304,10 @@ export class DidCommMediationRecipientApi {
           })
         return subscription
       }
-      case DidCommMediatorPickupStrategy.PickUpV3: {
+      case DidCommMediatorPickupStrategy.PickUpV4: {
         const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
 
-        this.logger.info(`Starting explicit pickup of messages from mediator '${mediatorRecord.id}' using v3`)
+        this.logger.info(`Starting explicit pickup of messages from mediator '${mediatorRecord.id}' using v4`)
         const subscription = interval(mediatorPollingInterval)
           .pipe(takeUntil(stopConditions$))
           .subscribe({
@@ -315,7 +315,7 @@ export class DidCommMediationRecipientApi {
               await this.messagePickupApi.pickupMessages({
                 connectionId: mediatorConnection.id,
                 batchSize: this.config.maximumMessagePickup,
-                protocolVersion: 'v3',
+                protocolVersion: 'v4',
               })
             },
             complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
@@ -340,20 +340,20 @@ export class DidCommMediationRecipientApi {
         })
 
         break
-      case DidCommMediatorPickupStrategy.PickUpV3LiveMode:
-        this.logger.info(`Starting Live Mode pickup of messages from mediator '${mediatorRecord.id}' using v3`)
+      case DidCommMediatorPickupStrategy.PickUpV4LiveMode:
+        this.logger.info(`Starting Live Mode pickup of messages from mediator '${mediatorRecord.id}' using v4`)
         await this.monitorMediatorWebSocketEvents(mediatorRecord, mediatorPickupStrategy)
 
         await this.messagePickupApi.pickupMessages({
           connectionId: mediatorConnection.id,
-          protocolVersion: 'v3',
+          protocolVersion: 'v4',
           awaitCompletion: true,
         })
 
         await this.messagePickupApi.setLiveDeliveryMode({
           connectionId: mediatorConnection.id,
           liveDelivery: true,
-          protocolVersion: 'v3',
+          protocolVersion: 'v4',
         })
 
         break
@@ -378,7 +378,7 @@ export class DidCommMediationRecipientApi {
 
   /**
    * Picks the pickup strategy for a mediator. Tries `requested`, then the stored strategy, then
-   * the config default, and adjusts it to match the mediator's CM version (CM 2.0 → Pickup v3,
+   * the config default, and adjusts it to match the mediator's CM version (CM 2.0 → Pickup v4,
    * CM 1.0 → Pickup v2). Saves the adjusted strategy only when there's no `requested` override.
    */
   private async getPickupStrategyForMediator(
@@ -390,21 +390,21 @@ export class DidCommMediationRecipientApi {
 
     // For Coordinate Mediation 2.0 (DIDComm v2), message pickup v1/v2 protocols won't work
     // because the connection is v2 and those protocols require v1 connections.
-    // Auto-upgrade to Message Pickup 3.0 equivalents.
+    // Auto-upgrade to Message Pickup 4.0 equivalents.
     if (mediator.protocolVersion === 'v2') {
       if (
         !mediatorPickupStrategy ||
         mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV1 ||
         mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV2
       ) {
-        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3
+        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV4
       } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV2LiveMode) {
-        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3LiveMode
+        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV4LiveMode
       } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.Implicit) {
         this.logger.warn(
-          `Pickup strategy 'Implicit' is not compatible with Coordinate Mediation 2.0. Upgrading to 'PickUpV3LiveMode'.`
+          `Pickup strategy 'Implicit' is not compatible with Coordinate Mediation 2.0. Upgrading to 'PickUpV4LiveMode'.`
         )
-        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV3LiveMode
+        mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV4LiveMode
       }
       if (persistCoercion) {
         mediator.pickupStrategy = mediatorPickupStrategy
@@ -413,21 +413,21 @@ export class DidCommMediationRecipientApi {
       return mediatorPickupStrategy
     }
 
-    // For Coordinate Mediation 1.0, Message Pickup 3.0 won't work because it requires a v2
-    // connection. Downgrade v3 strategies to their v2 equivalents (symmetric with the v2 upgrade
+    // For Coordinate Mediation 1.0, Message Pickup 4.0 won't work because it requires a v2
+    // connection. Downgrade v4 strategies to their v2 equivalents (symmetric with the v2 upgrade
     // above) so a globally-configured pickup strategy still works against a CM 1.0 mediator.
-    if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV3) {
+    if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV4) {
       this.logger.warn(
-        `Pickup strategy 'PickUpV3' is not compatible with Coordinate Mediation 1.0. Downgrading to 'PickUpV2'.`
+        `Pickup strategy 'PickUpV4' is not compatible with Coordinate Mediation 1.0. Downgrading to 'PickUpV2'.`
       )
       mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV2
       if (persistCoercion) {
         mediator.pickupStrategy = mediatorPickupStrategy
         await this.mediationRepository.update(this.agentContext, mediator)
       }
-    } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV3LiveMode) {
+    } else if (mediatorPickupStrategy === DidCommMediatorPickupStrategy.PickUpV4LiveMode) {
       this.logger.warn(
-        `Pickup strategy 'PickUpV3LiveMode' is not compatible with Coordinate Mediation 1.0. Downgrading to 'PickUpV2LiveMode'.`
+        `Pickup strategy 'PickUpV4LiveMode' is not compatible with Coordinate Mediation 1.0. Downgrading to 'PickUpV2LiveMode'.`
       )
       mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV2LiveMode
       if (persistCoercion) {

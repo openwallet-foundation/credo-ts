@@ -126,7 +126,7 @@ export function assertDidCommV1Connection(connection: DidCommConnectionRecord, p
 }
 
 /**
- * Throws if the connection uses DIDComm v1. Use for protocols that require v2 (e.g. Coordinate Mediation 2.0, Message Pickup 3.0).
+ * Throws if the connection uses DIDComm v1. Use for protocols that require v2 (e.g. Coordinate Mediation 2.0, Message Pickup 4.0).
  *
  * @param connection - The connection record to check
  * @param protocolName - Name of the protocol for the error message

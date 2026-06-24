@@ -12,7 +12,7 @@ export const didcommMediationRoleEnum = pgEnum('DidcommMediationRole', didcommMe
 
 export const didcommMediationPickupStrategies = exhaustiveArray(
   {} as DidCommMediatorPickupStrategy,
-  ['PickUpV1', 'PickUpV2', 'PickUpV2LiveMode', 'PickUpV3', 'PickUpV3LiveMode', 'Implicit', 'None'] as const
+  ['PickUpV1', 'PickUpV2', 'PickUpV2LiveMode', 'PickUpV4', 'PickUpV4LiveMode', 'Implicit', 'None'] as const
 )
 export const didcommMediationPickupStrategyEnum = pgEnum(
   'DidcommMediationPickupStrategry',
