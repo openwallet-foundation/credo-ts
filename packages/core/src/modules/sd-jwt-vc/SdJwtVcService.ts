@@ -5,9 +5,10 @@ import { selectDisclosures } from '@sd-jwt/present'
 import { SDJwtVcInstance, type VcTFetcher } from '@sd-jwt/sd-jwt-vc'
 import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/types'
 import { AgentContext } from '../../agent'
+import { TrustedIssuerContext } from '../../agent/TrustedIssuerContext'
+import type { TrustedIssuer } from '../../agent/TrustedIssuersForVerification'
 import { Hasher, JwtPayload } from '../../crypto'
 import { CredoError } from '../../error'
-import { X509Service } from '../../modules/x509/X509Service'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
@@ -17,12 +18,7 @@ import { fetchWithTimeout } from '../../utils/fetch'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc/index'
-import {
-  type EncodedX509Certificate,
-  X509Certificate,
-  X509ModuleConfig,
-  type X509VerificationTrustedCertificates,
-} from '../x509'
+import { X509Certificate, X509ModuleConfig } from '../x509'
 import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
@@ -45,6 +41,7 @@ import {
   getSdJwtSigner,
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
+  parseIssuerFromCredential,
   resolveDidUrl,
   resolveSigningPublicJwkFromDidUrl,
 } from './utils'
@@ -65,6 +62,11 @@ export interface SdJwtVc<
   encoded: string
   compact: string
   header: Header
+
+  /**
+   * The issuer of the credential
+   */
+  issuer: SdJwtVcIssuer
 
   /**
    * The holder of the credential
@@ -170,6 +172,7 @@ export class SdJwtVcService {
       compact,
       prettyClaims,
       header: header,
+      issuer: options.issuer,
       holder: options.holder,
       payload: sdJwtPayload,
       claimFormat: ClaimFormat.SdJwtDc,
@@ -274,7 +277,15 @@ export class SdJwtVcService {
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
-    { compactSdJwtVc, keyBinding, requiredClaimKeys, fetchTypeMetadata, trustedCertificates, now }: SdJwtVcVerifyOptions
+    {
+      compactSdJwtVc,
+      keyBinding,
+      requiredClaimKeys,
+      fetchTypeMetadata,
+      trustedCertificates,
+      trustedIssuers: _trustedIssuers,
+      now,
+    }: SdJwtVcVerifyOptions
   ): Promise<
     | {
         isValid: true
@@ -296,11 +307,19 @@ export class SdJwtVcService {
     })
     let sdJwtVc: SDJwt<Header, Payload>
     let holderBinding: SdJwtVcHolderBinding | undefined
+    let issuer: SdJwtVcIssuer
+
+    let trustedIssuers = _trustedIssuers
+    if (trustedCertificates) {
+      if (!trustedIssuers) trustedIssuers = []
+      trustedIssuers.push(...trustedCertificates.map((c) => ({ method: 'x509' as const, certificate: c })))
+    }
 
     try {
       sdJwtVc = (await sdjwt.decode(compactSdJwtVc)) as SDJwt<Header, Payload>
       if (!sdJwtVc.jwt) throw new CredoError('Invalid sd-jwt-vc')
       holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt.payload) ?? undefined
+      issuer = parseIssuerFromCredential(sdJwtVc.jwt.header, sdJwtVc.jwt.payload)
     } catch (error) {
       return {
         isValid: false,
@@ -314,6 +333,7 @@ export class SdJwtVcService {
       compact: compactSdJwtVc,
       prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
       holder: holderBinding,
+      issuer,
 
       kbJwt: sdJwtVc.kbJwt
         ? {
@@ -327,19 +347,14 @@ export class SdJwtVcService {
 
     let typeMetadataChain: NonEmptyArray<SdJwtVcTypeMetadata> | undefined
     try {
-      const credentialIssuer = await this.parseIssuerFromCredential(
-        agentContext,
-        sdJwtVc,
-        returnSdJwtVc,
-        trustedCertificates
-      )
-      const issuer = await this.extractKeyFromIssuer(agentContext, credentialIssuer)
+      await this.verifyIssuer(agentContext, returnSdJwtVc, trustedIssuers)
+      const issuerWithKey = await this.extractKeyFromIssuer(agentContext, issuer)
       const holder = returnSdJwtVc.holder
         ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder)
         : undefined
 
       sdjwt.config({
-        verifier: getSdJwtVerifier(agentContext, issuer.publicJwk),
+        verifier: getSdJwtVerifier(agentContext, issuerWithKey.publicJwk),
         kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
       })
 
@@ -549,97 +564,72 @@ export class SdJwtVcService {
     throw new SdJwtVcError("Unsupported credential issuer. Only 'did' and 'x5c' is supported at the moment.")
   }
 
-  private async parseIssuerFromCredential<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
+  private async verifyIssuer<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
     agentContext: AgentContext,
-    sdJwtVc: SDJwt<Header, Payload>,
-    credoSdJwtVc: SdJwtVc<Header, Payload>,
-    _trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
-  ): Promise<SdJwtVcIssuer> {
-    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
-    if (!sdJwtVc.jwt?.payload) {
-      throw new SdJwtVcError('Credential not exist')
-    }
+    sdJwtVc: SdJwtVc<Header, Payload>,
+    trustedIssuers?: TrustedIssuer[]
+  ) {
+    const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
-    const iss = sdJwtVc.jwt.payload.iss as string | undefined
+    if (sdJwtVc.issuer.method === 'x5c') {
+      // NOTE: we can't use the 'simpler' call directly to `ensureTrustedSigner` due to having to incorporate the
+      // legacy X509 API. In the future we can simplify this.
+      let x509Issuers = trustedIssuers?.filter((t) => t.method === 'x509')
 
-    if (sdJwtVc.jwt.header?.x5c) {
-      if (!Array.isArray(sdJwtVc.jwt.header.x5c)) {
-        throw new SdJwtVcError('Invalid x5c header in credential. Not an array.')
+      const context = {
+        verification: { type: 'credential', credential: sdJwtVc },
+        signer: {
+          certificateChain: sdJwtVc.issuer.x5c,
+          method: 'x509',
+        },
+      } as const
+
+      if (!x509Issuers) {
+        x509Issuers = (await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, context))
+          ?.trustedIssuers
       }
-      if (sdJwtVc.jwt.header.x5c.length === 0) {
-        throw new SdJwtVcError('Invalid x5c header in credential. Empty array.')
+
+      // Fall back to legacy x509-specific API
+      if (!x509Issuers) {
+        const legacyTrustedCertificates =
+          (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+            certificateChain: sdJwtVc.issuer.x5c,
+            verification: {
+              type: 'credential',
+              credential: sdJwtVc,
+            },
+          })) ?? x509Config.trustedCertificates
+
+        if (legacyTrustedCertificates) {
+          x509Issuers = convertLegacyTrustedCertificates(legacyTrustedCertificates)
+            .flatMap(({ issuance }) => issuance)
+            .map((certificate) => ({ method: 'x509' as const, certificate }))
+        }
       }
-      if (sdJwtVc.jwt.header.x5c.some((x5c) => typeof x5c !== 'string')) {
-        throw new SdJwtVcError('Invalid x5c header in credential. Not an array of strings.')
-      }
 
-      const certificateChain = sdJwtVc.jwt.header.x5c.map((cert) => X509Certificate.fromEncodedCertificate(cert))
-
-      const trustedCertificates =
-        _trustedCertificates ??
-        (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
-          certificateChain,
-          verification: {
-            type: 'credential',
-            credential: credoSdJwtVc,
-          },
-        })) ??
-        x509ModuleConfig.trustedCertificates
-
-      if (!trustedCertificates) {
+      if (!x509Issuers) {
         throw new SdJwtVcError(
           'No trusted certificates configured for X509 certificate chain validation. Issuer cannot be verified.'
         )
       }
-
-      await X509Service.validateCertificateChain(agentContext, {
-        certificateChain: sdJwtVc.jwt.header.x5c,
-        trustedCertificates: convertLegacyTrustedCertificates(trustedCertificates).flatMap(({ issuance }) => issuance),
-      })
-
-      return {
-        method: 'x5c',
-        x5c: certificateChain,
-        issuer: iss,
-      }
+      await TrustedIssuerContext.ensureTrustedSigner(agentContext, context, x509Issuers)
     }
 
-    if (iss?.startsWith('did:')) {
-      // If `did` is used, we require a relative KID to be present to identify
-      // the key used by issuer to sign the sd-jwt-vc
+    if (sdJwtVc.issuer.method === 'did') {
+      // Mimic original behavior: no trusted entities means we by default allow the did.
+      if (!trustedIssuers) return
 
-      if (!sdJwtVc.jwt?.header) {
-        throw new SdJwtVcError('Credential does not contain a header')
-      }
-
-      if (!sdJwtVc.jwt.header.kid) {
-        throw new SdJwtVcError('Credential does not contain a kid in the header')
-      }
-
-      const issuerKid = sdJwtVc.jwt.header.kid as string
-
-      let didUrl: string
-      if (issuerKid.startsWith('#')) {
-        didUrl = `${iss}${issuerKid}`
-      } else if (issuerKid.startsWith('did:')) {
-        const didFromKid = parseDid(issuerKid)
-        if (didFromKid.did !== iss) {
-          throw new SdJwtVcError(
-            `kid in header is an absolute DID URL, but the did (${didFromKid.did}) does not match with the 'iss' did (${iss})`
-          )
-        }
-
-        didUrl = issuerKid
-      } else {
-        throw new SdJwtVcError(
-          'Invalid issuer kid for did. Only absolute or relative (starting with #) did urls are supported.'
-        )
-      }
-
-      return {
-        method: 'did',
-        didUrl,
-      }
+      await TrustedIssuerContext.ensureTrustedSigner(
+        agentContext,
+        {
+          verification: { type: 'credential', credential: sdJwtVc },
+          signer: {
+            didUrl: sdJwtVc.issuer.didUrl,
+            method: 'did',
+          },
+        },
+        trustedIssuers
+      )
     }
 
     throw new SdJwtVcError('Unsupported signing method for SD-JWT VC. Only did and x5c are supported at the moment.')
