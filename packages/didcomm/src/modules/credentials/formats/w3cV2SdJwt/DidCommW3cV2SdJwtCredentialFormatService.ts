@@ -3,6 +3,7 @@ import {
   ClaimFormat,
   CredoError,
   DidsApi,
+  getPublicJwkFromVerificationMethod,
   JsonEncoder,
   JsonTransformer,
   Kms,
@@ -356,30 +357,30 @@ export class DidCommW3cV2SdJwtCredentialFormatService implements DidCommCredenti
       W3cV2Credential,
     );
 
-    // Determine verification method
-    let verificationMethod = w3cV2SdJwtFormat?.verificationMethod;
+    // Determine verification method and signing algorithm
+    let verificationMethod = w3cV2SdJwtFormat?.verificationMethod
+    let alg = w3cV2SdJwtFormat?.alg
+
+    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+    const issuerDid =
+      typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id
+    const didDocument = await didsApi.resolveDidDocument(issuerDid)
+
     if (!verificationMethod) {
-      const didsApi = agentContext.dependencyManager.resolve(DidsApi);
-      const issuerDid =
-        typeof credential.issuer === "string"
-          ? credential.issuer
-          : credential.issuer.id;
-      const didDocument = await didsApi.resolveDidDocument(issuerDid);
       const vms =
-        didDocument.assertionMethod ??
-        didDocument.authentication ??
-        didDocument.verificationMethod;
+        didDocument.assertionMethod ?? didDocument.authentication ?? didDocument.verificationMethod
       if (!vms || vms.length === 0) {
-        throw new CredoError("No verification method found for issuer DID");
+        throw new CredoError('No verification method found for issuer DID')
       }
-      verificationMethod = typeof vms[0] === "string" ? vms[0] : vms[0].id;
+      verificationMethod = typeof vms[0] === 'string' ? vms[0] : vms[0].id
     }
 
-    // Determine signing algorithm
-    const alg =
-      w3cV2SdJwtFormat?.alg ??
-      this.getSupportedJwaSignatureAlgorithms(agentContext)[0];
-    if (!alg) throw new CredoError("No supported signing algorithm found");
+    if (!alg) {
+      const vm = didDocument.dereferenceKey(verificationMethod)
+      const vmJwk = getPublicJwkFromVerificationMethod(vm)
+      alg = vmJwk.supportedSignatureAlgorithms[0] as Kms.KnownJwaSignatureAlgorithm
+    }
+    if (!alg) throw new CredoError('No supported signing algorithm found')
 
     const verifiableCredential = await w3cV2CredentialService.signCredential(
       agentContext,

@@ -3,7 +3,6 @@ import {
   CredoError,
   DidsApi,
   getPublicJwkFromVerificationMethod,
-  JsonEncoder,
   JwsService,
   JwtPayload,
   Kms,
@@ -123,7 +122,7 @@ export async function verifyDidCommSignedAttachment(
       protected: jws.protected,
       signature: jws.signature,
       payload: TypedArrayEncoder.toBase64Url(
-        TypedArrayEncoder.fromBase64(signedAttachment.data.base64),
+        signedAttachment.getDataAsUint8Array(),
       ),
     },
     allowedJwsSignerMethods: ["did"],
@@ -152,9 +151,7 @@ export async function verifyDidCommSignedAttachment(
   if (!isValid)
     throw new CredoError("Failed to validate signature of signed attachment");
 
-  const payload = JsonEncoder.fromBase64(signedAttachment.data.base64) as {
-    nonce: string;
-  };
+  const payload = signedAttachment.getDataAsJson<{ nonce: string }>();
   if (!payload.nonce || typeof payload.nonce !== "string") {
     throw new CredoError("Invalid payload in signed attachment");
   }
