@@ -1,6 +1,7 @@
 import {
   AgentContext,
   ClaimFormat,
+  convertLegacyTrustedCertificates,
   CredoError,
   type DcqlEncodedPresentations,
   type DcqlQuery,
@@ -11,7 +12,6 @@ import {
   type EncodedX509Certificate,
   EventEmitter,
   extractPresentationsWithDescriptorsFromSubmission,
-  extractX509CertificatesFromJwt,
   getDomainFromUrl,
   Hasher,
   type HashName,
@@ -35,6 +35,7 @@ import {
   type QueryOptions,
   SdJwtVcApi,
   SignatureSuiteRegistry,
+  TrustedIssuerContext,
   TypedArrayEncoder,
   utils,
   type VerifiablePresentation,
@@ -63,7 +64,7 @@ import {
   zOpenid4vpAuthorizationResponse,
 } from '@openid4vc/openid4vp'
 import { getOid4vcCallbacks } from '../shared/callbacks'
-import type { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
+import type { OpenId4VcVerificationTypes, OpenId4VpAuthorizationRequestPayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import {
@@ -564,7 +565,7 @@ export class OpenId4VpVerifierService {
                   origin: options.origin,
                   responseUri,
                   mdocGeneratedNonce,
-                  verificationSessionId: result.verificationSession.id,
+                  verificationSession: result.verificationSession,
                   presentation,
                 })
               )
@@ -659,7 +660,7 @@ export class OpenId4VpVerifierService {
               encryptionJwk: encryptionPublicJwk,
               responseUri,
               mdocGeneratedNonce,
-              verificationSessionId: result.verificationSession.id,
+              verificationSession: result.verificationSession,
               presentation,
               format: this.claimFormatFromEncodedPresentation(presentation),
               origin: options.origin,
@@ -1138,7 +1139,7 @@ export class OpenId4VpVerifierService {
       responseUri?: string
       mdocGeneratedNonce?: string
       origin?: string
-      verificationSessionId: string
+      verificationSession: OpenId4VcVerificationSessionRecord
       presentation: string | Record<string, unknown>
       format: ClaimFormat.LdpVp | ClaimFormat.JwtVp | ClaimFormat.SdJwtW3cVp | ClaimFormat.SdJwtDc | ClaimFormat.MsoMdoc
       version: OpenId4VpVersion
@@ -1170,24 +1171,41 @@ export class OpenId4VpVerifierService {
         }
 
         const sdJwtVc = sdJwtVcApi.fromCompact(presentation)
-        const jwt = Jwt.fromSerializedJwt(presentation.split('~')[0])
-        const certificateChain = extractX509CertificatesFromJwt(jwt)
+        const issuer = sdJwtVc.issuer
 
-        let trustedCertificates: EncodedX509Certificate[] | X509VerificationTrustedCertificates[] | undefined
-        if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
-          trustedCertificates = await x509Config.getTrustedCertificatesForVerification(agentContext, {
-            certificateChain,
+        let trustedIssuers = (
+          await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+            signer:
+              issuer.method === 'x5c'
+                ? {
+                    method: 'x509',
+                    certificateChain: issuer.x5c,
+                  }
+                : { method: 'did', didUrl: issuer.didUrl },
             verification: {
-              type: 'credential',
+              type: 'oid4VpCredential',
               credential: sdJwtVc,
-              openId4VcVerificationSessionId: options.verificationSessionId,
-            },
+              openId4VcVerificationSessionRecord: options.verificationSession,
+            } satisfies OpenId4VcVerificationTypes,
           })
-        }
+        )?.trustedIssuers
 
-        if (!trustedCertificates) {
-          // We also take from the config here to avoid the callback being called again
-          trustedCertificates = x509Config.trustedCertificates ?? []
+        if (!trustedIssuers && issuer.method === 'x5c') {
+          const legacyTrustedCertificates =
+            (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+              certificateChain: issuer.x5c,
+              verification: {
+                type: 'credential',
+                credential: sdJwtVc,
+                openId4VcVerificationSessionId: options.verificationSession.id,
+              },
+            })) ?? x509Config.trustedCertificates
+
+          if (legacyTrustedCertificates) {
+            trustedIssuers = convertLegacyTrustedCertificates(legacyTrustedCertificates)
+              .flatMap(({ issuance }) => issuance)
+              .map((certificate) => ({ method: 'x509' as const, certificate }))
+          }
         }
 
         const verificationResult = await sdJwtVcApi.verify({
@@ -1196,7 +1214,7 @@ export class OpenId4VpVerifierService {
             audience: options.audience,
             nonce: options.nonce,
           },
-          trustedCertificates,
+          trustedIssuers,
         })
 
         isValid = verificationResult.isValid
@@ -1224,12 +1242,25 @@ export class OpenId4VpVerifierService {
           )
 
           const trustedCertificates =
+            (
+              await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+                signer: {
+                  method: 'x509',
+                  certificateChain,
+                },
+                verification: {
+                  type: 'oid4VpCredential',
+                  credential: mdoc,
+                  openId4VcVerificationSessionRecord: options.verificationSession,
+                } satisfies OpenId4VcVerificationTypes,
+              })
+            )?.trustedIssuers.map((t) => t.certificate) ??
             (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
               certificateChain,
               verification: {
                 type: 'credential',
                 credential: mdoc,
-                openId4VcVerificationSessionId: options.verificationSessionId,
+                openId4VcVerificationSessionId: options.verificationSession.id,
               },
             })) ??
             x509Config.trustedCertificates ??
