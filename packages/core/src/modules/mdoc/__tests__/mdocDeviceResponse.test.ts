@@ -3,7 +3,7 @@ import { Optionality } from '@sphereon/pex-models'
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { PublicJwk } from '../../kms'
-import { X509Service } from '../../x509'
+import { X509Certificate, X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
 
@@ -165,5 +165,74 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
         },
       })
     ).resolves.toBeUndefined()
+  })
+
+  describe('verify with getTrustedIssuersForVerification', () => {
+    const createIssuerCertificate = async () => {
+      const issuerKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const notBefore = new Date()
+      notBefore.setDate(notBefore.getDate() - 1)
+      const notAfter = new Date()
+      notAfter.setDate(notAfter.getDate() + 1)
+
+      return X509Service.createCertificate(agent.context, {
+        issuer: {
+          countryName: 'DE',
+          commonName: 'Credo',
+        },
+        authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
+        validity: { notBefore, notAfter },
+      })
+    }
+
+    const signMdoc = async (issuerCertificate: X509Certificate) => {
+      const holderKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      return Mdoc.sign(agent.context, {
+        docType: 'org.iso.18013.5.1.mDL',
+        validityInfo: { validUntil: getNextMonth() },
+        holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+        namespaces: { hello: { world: 'from-mdoc' } },
+        issuerCertificate,
+      })
+    }
+
+    afterEach(() => {
+      agent.context.config.setTrustedIssuersForVerification(undefined)
+    })
+
+    test('accepts an mdoc whose issuer certificate is returned as a trusted issuer', async () => {
+      const certificate = await createIssuerCertificate()
+      const mdoc = await signMdoc(certificate)
+
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'x509', issuance: [certificate.toString('base64')] }],
+      }))
+
+      const result = await mdoc.verify(agent.context)
+      expect(result.isValid).toBe(true)
+    })
+
+    test('rejects an mdoc when a different certificate is trusted', async () => {
+      const certificate = await createIssuerCertificate()
+      const otherCertificate = await createIssuerCertificate()
+      const mdoc = await signMdoc(certificate)
+
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'x509', issuance: [otherCertificate.toString('base64')] }],
+      }))
+
+      const result = await mdoc.verify(agent.context)
+      expect(result.isValid).toBe(false)
+    })
+
+    test('returning an empty trusted issuers array hard-rejects the mdoc', async () => {
+      const certificate = await createIssuerCertificate()
+      const mdoc = await signMdoc(certificate)
+
+      agent.context.config.setTrustedIssuersForVerification(async () => ({ trustedIssuers: [] }))
+
+      const result = await mdoc.verify(agent.context)
+      expect(result.isValid).toBe(false)
+    })
   })
 })

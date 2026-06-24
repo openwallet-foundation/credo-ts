@@ -1,4 +1,5 @@
 import type { AgentContext } from '../../../agent/context'
+import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
 import { createKmsKeyPairClass } from '../../../crypto/KmsKeyPair'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
@@ -105,6 +106,14 @@ export class W3cJsonLdCredentialService {
   ): Promise<W3cVerifyCredentialResult> {
     try {
       const verifyCredentialStatus = options.verifyCredentialStatus ?? true
+
+      // Ensure the issuer is trusted according to the (optional) `getTrustedIssuersForVerification`
+      // callback. For did-based issuers this is a no-op when no trusted issuers are configured,
+      // preserving the previous "trust any valid signature" behavior. Throws when the issuer is not trusted.
+      await TrustedIssuerContext.ensureTrustedSigner(agentContext, {
+        signer: { method: 'did', didUrl: options.credential.issuerId },
+        verification: { type: 'credential', credential: options.credential },
+      })
 
       const suites = this.getSignatureSuitesForCredential(agentContext, options.credential)
 

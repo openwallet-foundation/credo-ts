@@ -2,7 +2,7 @@ import type { SdJwtVcPayload } from '@sd-jwt/sd-jwt-vc'
 import type { TrustedIssuer } from '../../agent/TrustedIssuersForVerification'
 import type { HashName } from '../../crypto'
 import { PublicJwk } from '../kms'
-import type { EncodedX509Certificate, X509Certificate } from '../x509'
+import type { EncodedX509Certificate, X509Certificate, X509VerificationTrustedCertificates } from '../x509'
 import { SdJwtVcRecord } from './repository'
 import type { SdJwtVc } from './SdJwtVcService'
 
@@ -177,14 +177,13 @@ export type SdJwtVcVerifyOptions = {
   /**
    * Trusted certificates for the verification.
    *
-   * @deprecated use `trustedIssuers` instead. Entries will be merged with `trustedIssuers`
+   * @deprecated use `trustedIssuers` instead.
    */
-  trustedCertificates?: EncodedX509Certificate[]
+  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
 
   /**
-   * Trusted issuers for the verification.
-   *
-   * Entries will be merged with `trustedCertificates`
+   * Trusted issuers for the verification. Only entries whose `method` matches the credential signer
+   * method are considered (x509 entries gate x5c-signed credentials, did entries gate did-signed ones).
    */
   trustedIssuers?: TrustedIssuer[]
 
