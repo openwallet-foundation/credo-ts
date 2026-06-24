@@ -67,7 +67,7 @@ export default defineConfig({
           name: 'conformance',
           include: ['**/*.conformance.{test,spec}.?(c|m)[jt]s?(x)'],
           // Image pulls + container boot + many sequential modules are slow.
-          testTimeout: 1_800_000,
+          testTimeout: 600_000,
           hookTimeout: 600_000,
         },
       },

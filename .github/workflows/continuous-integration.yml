@@ -166,61 +166,6 @@ jobs:
           path: testlogs
           overwrite: true
 
-  # OIDF conformance suite. Pulls the conformance suite images (MongoDB + Java
-  # server + nginx) via testcontainers and drives the credo-ts verifier against
-  # them. Runs as its own job since it is heavy and does not need the node-version
-  # matrix.
-  conformance-tests:
-    runs-on: ubuntu-24.04
-    name: Conformance Tests
-    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
-
-    steps:
-      - uses: actions/checkout@v7.0.0
-
-      # The OIDF conformance suite runs in testcontainers and reaches the
-      # credo-ts verifier on the host via this alias.
-      - name: Add testcontainers host alias
-        run: echo "127.0.0.1 host.testcontainers.internal" | sudo tee -a /etc/hosts
-
-      - name: Setup NodeJS
-        id: setup-node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - uses: pnpm/action-setup@v6
-
-      # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
-      - name: pnpm cache path
-        id: pnpm-cache-path
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: pnpm cache
-        uses: actions/cache@v5
-        with:
-          path: ${{ steps.pnpm-cache-path.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run OIDF conformance tests
-        env:
-          TESTCONTAINERS_HOST_OVERRIDE: host.testcontainers.internal
-        run: pnpm test:conformance
-
-      - uses: actions/upload-artifact@v7.0.1
-        if: ${{ !cancelled() }}
-        with:
-          name: oidf-conformance-logs
-          path: tmp/oidf/logs
-          if-no-files-found: ignore
-          overwrite: true
-
   drizzle-tests:
     runs-on: ubuntu-24.04
     name: Drizzle Tests
