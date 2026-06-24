@@ -18,9 +18,12 @@ type TrustedIssuerForSigner<SignerMethod extends VerificationSigner['method']> =
 
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class TrustedIssuerContext {
-  public static async getTrustedIssuersForVerification<Signer extends VerificationSigner>(
+  public static async getTrustedIssuersForVerification<
+    Signer extends VerificationSigner,
+    AdditionalVerificationTypes extends { type: string } = never,
+  >(
     agentContext: AgentContext,
-    context: TrustedIssuersForVerificationContext<Signer, any>
+    context: TrustedIssuersForVerificationContext<Signer, AdditionalVerificationTypes>
   ): Promise<TrustedIssuersForVerificationResult<TrustedIssuerForSigner<Signer['method']>> | undefined> {
     // Call the user-registered callback
     const trustedIssuers = await agentContext.config.getTrustedIssuersForVerification?.(agentContext, context)
@@ -43,9 +46,12 @@ export class TrustedIssuerContext {
     }
   }
 
-  public static async ensureTrustedSigner<Signer extends VerificationSigner>(
+  public static async ensureTrustedSigner<
+    Signer extends VerificationSigner,
+    AdditionalVerificationTypes extends { type: string } = never,
+  >(
     agentContext: AgentContext,
-    context: TrustedIssuersForVerificationContext<Signer>,
+    context: TrustedIssuersForVerificationContext<Signer, AdditionalVerificationTypes>,
     /**
      * The trusted issuer to verify the signer against. If not provided
      * the signer will be dynamically fetched.

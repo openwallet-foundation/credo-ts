@@ -1,7 +1,10 @@
-import type { PublicJwk } from '../modules/kms'
 import type { Mdoc } from '../modules/mdoc/Mdoc'
 import type { SdJwtVc } from '../modules/sd-jwt-vc'
-import type { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from '../modules/vc'
+import type {
+  W3cJwtVerifiableCredential,
+  W3cV2JwtVerifiableCredential,
+  W3cV2SdJwtVerifiableCredential,
+} from '../modules/vc'
 import type { X509Certificate } from '../modules/x509/X509Certificate'
 
 export interface VerificationSignerDid {
@@ -52,7 +55,12 @@ export interface TrustedIssuersForVerificationResult<T extends TrustedIssuer = T
 
 export type VerificationTypeCredential = {
   type: 'credential'
-  credential: SdJwtVc | Mdoc | W3cJwtVerifiableCredential | W3cJwtVerifiablePresentation
+  credential:
+    | SdJwtVc
+    | Mdoc
+    | W3cJwtVerifiableCredential
+    | W3cV2JwtVerifiableCredential
+    | W3cV2SdJwtVerifiableCredential
 }
 
 export interface TrustedIssuersForVerificationContext<

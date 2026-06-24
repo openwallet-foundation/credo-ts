@@ -56,7 +56,7 @@ export interface InitConfig {
    * ```ts
    * getTrustedIssuersForVerification: async (
    *   agentContext,
-   *   context: TrustedIssuersForVerificationContext<OpenId4VcVerificationTypes>
+   *   context: TrustedIssuersForVerificationContext<VerificationSigner, OpenId4VcVerificationTypes>
    * ) => { ... }
    * ```
    */

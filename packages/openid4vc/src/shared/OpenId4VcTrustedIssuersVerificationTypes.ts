@@ -1,4 +1,4 @@
-import type { JwtPayload } from '@credo-ts/core'
+import type { JwtPayload, Mdoc, SdJwtVc } from '@credo-ts/core'
 import type { OpenId4VcIssuanceSessionRecord } from '../openid4vc-issuer/repository'
 import type { OpenId4VcVerificationSessionRecord } from '../openid4vc-verifier/repository'
 
@@ -44,17 +44,17 @@ export type OpenId4VcVerificationTypeOauth2ClientAttestation = {
 export type OpenId4VcVerificationTypeOid4VpCredential = {
   type: 'oid4VpCredential'
   openId4VcVerificationSessionRecord: OpenId4VcVerificationSessionRecord
-  credential: import('@credo-ts/core').SdJwtVc | import('@credo-ts/core').Mdoc
+  credential: SdJwtVc | Mdoc
 }
 
 /**
- * Union of all OpenID4VC-specific verification types. Pass this as the generic
- * parameter to `TrustedEntitiesForVerificationContext` to get full type coverage:
+ * Union of all OpenID4VC-specific verification types. Pass this as the additional verification
+ * types generic parameter to `TrustedIssuersForVerificationContext` to get full type coverage:
  *
  * ```ts
- * getTrustedEntitiesForVerification: async (
+ * getTrustedIssuersForVerification: async (
  *   agentContext,
- *   context: TrustedEntitiesForVerificationContext<OpenId4VcVerificationTypes>
+ *   context: TrustedIssuersForVerificationContext<VerificationSigner, OpenId4VcVerificationTypes>
  * ) => { ... }
  * ```
  */

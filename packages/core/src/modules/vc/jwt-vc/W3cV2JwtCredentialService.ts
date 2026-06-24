@@ -1,4 +1,5 @@
 import type { AgentContext } from '../../../agent/context'
+import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
 import { JwsService, JwtPayload } from '../../../crypto'
 import type { VerifyJwsResult } from '../../../crypto/JwsService'
 import { CredoError } from '../../../error'
@@ -125,6 +126,14 @@ export class W3cV2JwtCredentialService {
 
       const issuerVerificationMethod = await getVerificationMethodForJwt(agentContext, credential, ['assertionMethod'])
       const issuerPublicKey = getPublicJwkFromVerificationMethod(issuerVerificationMethod)
+
+      // Ensure the issuer is trusted according to the (optional) `getTrustedIssuersForVerification`
+      // callback. For did-based issuers this is a no-op when no trusted issuers are configured,
+      // preserving the previous "trust any valid signature" behavior. Throws when the issuer is not trusted.
+      await TrustedIssuerContext.ensureTrustedSigner(agentContext, {
+        signer: { method: 'did', didUrl: issuerVerificationMethod.id },
+        verification: { type: 'credential', credential },
+      })
 
       let signatureResult: VerifyJwsResult | undefined
       try {
