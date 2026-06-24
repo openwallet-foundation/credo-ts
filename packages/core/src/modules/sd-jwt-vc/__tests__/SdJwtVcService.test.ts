@@ -1295,6 +1295,177 @@ describe('SdJwtVcService', () => {
     })
   })
 
+  describe('SdJwtVcService.verify with getTrustedIssuersForVerification', () => {
+    const presentDid = () =>
+      sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleJwtVc,
+        presentationFrame: {},
+        verifierMetadata: { issuedAt: Date.now() / 1000, audience: verifierDid, nonce: 'salt' },
+      })
+
+    const presentX509 = () =>
+      sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleX509.sdJwtVc,
+        presentationFrame: {},
+        verifierMetadata: { issuedAt: Date.now() / 1000, audience: verifierDid, nonce: 'salt' },
+      })
+
+    afterEach(() => {
+      const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
+      agent.context.config.setTrustedIssuersForVerification(undefined)
+      x509ModuleConfig.setTrustedCertificatesForVerification(undefined)
+      x509ModuleConfig.setTrustedCertificates(undefined)
+    })
+
+    test('did issuer is accepted when returned as a trusted issuer', async () => {
+      const presentation = await presentDid()
+      const issuerDid = issuerDidUrl.split('#')[0]
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'did', did: issuerDid }],
+      }))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('did issuer is rejected when not in the trusted issuers', async () => {
+      const presentation = await presentDid()
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [
+          { method: 'did', did: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y' },
+        ],
+      }))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+      if (!verificationResult.isValid) {
+        expect(verificationResult.error?.message).toContain('is not trusted')
+      }
+    })
+
+    test('x509 issuer is accepted when its certificate is returned as a trusted issuer', async () => {
+      const presentation = await presentX509()
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'x509', issuance: [simpleX509.trustedCertificate] }],
+      }))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('x509 issuer is rejected when a different certificate is trusted', async () => {
+      const presentation = await presentX509()
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'x509', issuance: [funkeX509.trustedCertificate] }],
+      }))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+    })
+
+    test('returning an empty trusted issuers array hard-rejects an x509 issuer', async () => {
+      const presentation = await presentX509()
+      agent.context.config.setTrustedIssuersForVerification(async () => ({ trustedIssuers: [] }))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+    })
+
+    test('the generic callback takes precedence over the deprecated x509 callback', async () => {
+      const presentation = await presentX509()
+
+      // Deprecated x509 callback would trust the correct certificate...
+      agent.context.dependencyManager
+        .resolve(X509ModuleConfig)
+        .setTrustedCertificatesForVerification(async () => [simpleX509.trustedCertificate])
+      // ...but the generic callback takes precedence and trusts a different certificate.
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'x509', issuance: [funkeX509.trustedCertificate] }],
+      }))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+    })
+
+    test('did issuer is allowed by default when no trusted issuers are configured', async () => {
+      const presentation = await presentDid()
+
+      // No `getTrustedIssuersForVerification` callback set: did issuers remain allowed by default,
+      // preserving the pre-existing (v0.7.0) behavior.
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('falls back to the deprecated x509 callback when no generic callback is set', async () => {
+      const presentation = await presentX509()
+      const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
+      x509ModuleConfig.setTrustedCertificates(undefined)
+
+      // Only the deprecated x509 callback is configured (no generic callback): it must still gate
+      // verification, exactly as in v0.7.0.
+      x509ModuleConfig.setTrustedCertificatesForVerification(async () => [simpleX509.trustedCertificate])
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('falls back to statically configured trusted certificates when no callback is set', async () => {
+      const presentation = await presentX509()
+      const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
+
+      // Neither callback configured: the static `trustedCertificates` list is the final fallback.
+      x509ModuleConfig.setTrustedCertificates([simpleX509.trustedCertificate])
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+  })
+
   describe('SdJwtVcService.fetchTypeMetadata', () => {
     test('Fetch type metadata from new vct URL path', async () => {
       const mockMetadata = {
