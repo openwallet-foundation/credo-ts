@@ -1,5 +1,7 @@
+import { CredoError, PeerDidNumAlgo } from '@credo-ts/core'
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type {
+  DidCommBasicMessagesModuleConfigOptions,
   DidCommConnectionsModuleConfigOptions,
   DidCommCredentialProtocol,
   DidCommMessagePickupModuleConfigOptions,
@@ -14,6 +16,12 @@ import type { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCo
 import type { DidCommInboundTransport, DidCommOutboundTransport, DidCommQueueTransportRepository } from './transport'
 import { InMemoryQueueTransportRepository } from './transport/queue/InMemoryQueueTransportRepository'
 import { DidCommMimeType } from './types'
+import type { DidCommVersion } from './util/didcommVersion'
+import type {
+  DidCommV2AnoncryptContentEncryptionAlgorithm,
+  DidCommV2AuthcryptContentEncryptionAlgorithm,
+  DidCommV2KeyAgreementCurve,
+} from './v2/types'
 
 export interface DidCommModuleConfigOptions {
   endpoints?: string[]
@@ -26,6 +34,46 @@ export interface DidCommModuleConfigOptions {
   didCommMimeType?: string
   useDidKeyInProtocols?: boolean
   queueTransportRepository?: DidCommQueueTransportRepository
+
+  /**
+   * DIDComm versions to support. When v2 is included, the agent accepts and sends v2 envelopes
+   * (when the connection supports it). Connection request/response always use v1 for compatibility.
+   *
+   * @default ['v1']
+   */
+  didcommVersions?: DidCommVersion[]
+
+  /**
+   * Peer DID numAlgo for V2 OOB invitation creation. did:peer:4 (ShortFormAndLongForm) uses a shorter
+   * identifier; did:peer:2 (MultipleInceptionKeyWithoutDoc) embeds endpoints in the DID. Use peer:2 for legacy.
+   *
+   * @default PeerDidNumAlgo.ShortFormAndLongForm (did:peer:4)
+   */
+  peerDidNumAlgoForV2OOB?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
+
+  /**
+   * keyAgreement curve for DIDComm v2 outbound routing. X25519, P-256, and P-384 are MUST-support
+   * curves per DIDComm Messaging v2.1. P-256 and P-384 require 'v2' in `didcommVersions`.
+   *
+   * @default 'X25519'
+   */
+  v2KeyAgreementCurve?: DidCommV2KeyAgreementCurve
+
+  /**
+   * Default content encryption algorithm for DIDComm v2 authcrypt envelopes. Spec restricts
+   * authcrypt to A256CBC-HS512.
+   *
+   * @default 'A256CBC-HS512'
+   */
+  v2DefaultAuthcryptContentEncryption?: DidCommV2AuthcryptContentEncryptionAlgorithm
+
+  /**
+   * Default content encryption algorithm for DIDComm v2 anoncrypt envelopes. A256CBC-HS512 is
+   * REQUIRED per spec; A256GCM is RECOMMENDED; XC20P is OPTIONAL (SICPA's default).
+   *
+   * @default 'A256CBC-HS512'
+   */
+  v2DefaultAnoncryptContentEncryption?: DidCommV2AnoncryptContentEncryptionAlgorithm
 
   /**
    * Configuration for the connection module.
@@ -68,14 +116,13 @@ export interface DidCommModuleConfigOptions {
   proofs?: boolean | DidCommProofsModuleConfigOptions<DidCommProofProtocol[]>
 
   /**
-   * Configuration to enable to basic messages module
+   * Configuration for the basic messages module.
+   * Disable by passing `false`. Enable with default (1.0 only) by passing `true`.
+   * Pass options to enable 1.0 and/or 2.0 protocols.
    *
-   * The basic messages module is enabled by default,
-   * but can be disabled by passing `false`
-   *
-   * @default true
+   * @default true (1.0 only)
    */
-  basicMessages?: boolean
+  basicMessages?: boolean | DidCommBasicMessagesModuleConfigOptions
 
   /**
    * Configuration for the message pickup module
@@ -136,6 +183,13 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
     this._inboundTransports = options?.transports?.inbound ?? []
     this._outboundTransports = options?.transports?.outbound ?? []
     this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryQueueTransportRepository()
+
+    if (
+      (this.options.v2KeyAgreementCurve === 'P-256' || this.options.v2KeyAgreementCurve === 'P-384') &&
+      !(this.options.didcommVersions ?? ['v1']).includes('v2')
+    ) {
+      throw new CredoError(`v2KeyAgreementCurve '${this.options.v2KeyAgreementCurve}' requires 'v2' in didcommVersions`)
+    }
 
     this.enabledModules = {
       connections: true,
@@ -208,5 +262,38 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
    */
   public get queueTransportRepository() {
     return this._queueTransportRepository
+  }
+
+  /** DIDComm versions the agent supports. */
+  public get didcommVersions(): DidCommVersion[] {
+    return this.options.didcommVersions ?? ['v1']
+  }
+
+  /** Whether the agent accepts inbound DIDComm v2 encrypted messages. */
+  public get acceptsV2() {
+    return this.didcommVersions.includes('v2')
+  }
+
+  /** Whether the agent sends outbound messages using DIDComm v2 envelope when supported. */
+  public get sendsV2() {
+    return this.didcommVersions.includes('v2')
+  }
+
+  /** Peer DID numAlgo for V2 OOB. Defaults to did:peer:4. */
+  public get peerDidNumAlgoForV2OOB() {
+    return this.options.peerDidNumAlgoForV2OOB ?? PeerDidNumAlgo.ShortFormAndLongForm
+  }
+
+  /** keyAgreement curve for DIDComm v2 outbound routing. Defaults to X25519. */
+  public get v2KeyAgreementCurve(): DidCommV2KeyAgreementCurve {
+    return this.options.v2KeyAgreementCurve ?? 'X25519'
+  }
+
+  public get v2DefaultAuthcryptContentEncryption(): DidCommV2AuthcryptContentEncryptionAlgorithm {
+    return this.options.v2DefaultAuthcryptContentEncryption ?? 'A256CBC-HS512'
+  }
+
+  public get v2DefaultAnoncryptContentEncryption(): DidCommV2AnoncryptContentEncryptionAlgorithm {
+    return this.options.v2DefaultAnoncryptContentEncryption ?? 'A256CBC-HS512'
   }
 }

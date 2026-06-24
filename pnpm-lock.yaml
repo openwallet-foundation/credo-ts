@@ -673,6 +673,9 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
+      '@stablelib/ed25519':
+        specifier: 'catalog:'
+        version: 2.0.2
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1
@@ -692,6 +695,9 @@ importers:
       '@animo-id/pex':
         specifier: 'catalog:'
         version: 6.1.1
+      '@openwallet-foundation/askar-nodejs':
+        specifier: 'catalog:'
+        version: 0.6.0
       '@sphereon/pex-models':
         specifier: 'catalog:'
         version: 2.3.2
