@@ -205,7 +205,7 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
       const mdoc = await signMdoc(certificate)
 
       agent.context.config.setTrustedIssuersForVerification(async () => ({
-        trustedIssuers: [{ method: 'x509', certificate: certificate.toString('base64') }],
+        trustedIssuers: [{ method: 'x509', issuance: [certificate.toString('base64')] }],
       }))
 
       const result = await mdoc.verify(agent.context)
@@ -218,7 +218,7 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
       const mdoc = await signMdoc(certificate)
 
       agent.context.config.setTrustedIssuersForVerification(async () => ({
-        trustedIssuers: [{ method: 'x509', certificate: otherCertificate.toString('base64') }],
+        trustedIssuers: [{ method: 'x509', issuance: [otherCertificate.toString('base64')] }],
       }))
 
       const result = await mdoc.verify(agent.context)

@@ -37,8 +37,11 @@ export interface TrustedIssuerDid {
 export interface TrustedIssuerX509 {
   method: 'x509'
 
-  /** Base64 DER or PEM encoded trusted root certificate */
-  certificate: string
+  /** Base64 DER or PEM encoded certificate that is trusted as an issuer */
+  issuance: string[]
+
+  /** Base64 DER or PEM encoded certificate that are trusted as status list signers */
+  status?: string[]
 }
 
 export type TrustedIssuer = TrustedIssuerDid | TrustedIssuerX509
