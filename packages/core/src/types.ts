@@ -60,11 +60,19 @@ export interface InitConfig {
    * ) => { ... }
    * ```
    */
-  getTrustedIssuersForVerification?<AdditionalVerificationTypes extends { type: string } = never>(
-    agentContext: AgentContext,
-    context: TrustedIssuersForVerificationContext<VerificationSigner, AdditionalVerificationTypes>
-  ): Promise<TrustedIssuersForVerificationResult | undefined>
+  getTrustedIssuersForVerification?: GetTrustedIssuersForVerificationCallback
 }
+
+/**
+ * Callback to dynamically resolve trusted issuers for a verification context.
+ */
+export type GetTrustedIssuersForVerificationCallback = <
+  Signer extends VerificationSigner = VerificationSigner,
+  AdditionalVerificationTypes extends { type: string } = never,
+>(
+  agentContext: AgentContext,
+  context: TrustedIssuersForVerificationContext<Signer, AdditionalVerificationTypes>
+) => Promise<TrustedIssuersForVerificationResult | undefined>
 
 export type JsonValue = string | number | boolean | null | JsonObject | JsonArray
 export type JsonArray = Array<JsonValue>

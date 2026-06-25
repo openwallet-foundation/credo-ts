@@ -1,14 +1,14 @@
 import { DEFAULT_SKEW_TIME } from '../crypto/jose/jwt/JwtPayload'
 import type { Logger } from '../logger'
 import { ConsoleLogger, LogLevel } from '../logger'
-import type { InitConfig } from '../types'
+import type { GetTrustedIssuersForVerificationCallback, InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
 
 export class AgentConfig {
   private initConfig: InitConfig
   public logger: Logger
   public readonly agentDependencies: AgentDependencies
-  #getTrustedIssuersForVerification?: InitConfig['getTrustedIssuersForVerification']
+  #getTrustedIssuersForVerification?: GetTrustedIssuersForVerificationCallback
 
   public constructor(initConfig: InitConfig, agentDependencies: AgentDependencies) {
     this.initConfig = initConfig
@@ -36,7 +36,7 @@ export class AgentConfig {
     return this.#getTrustedIssuersForVerification
   }
 
-  public setTrustedIssuersForVerification(fn: InitConfig['getTrustedIssuersForVerification']) {
+  public setTrustedIssuersForVerification(fn: GetTrustedIssuersForVerificationCallback) {
     this.#getTrustedIssuersForVerification = fn
   }
 
