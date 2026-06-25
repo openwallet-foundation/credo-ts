@@ -6,6 +6,15 @@ import type {
   W3cV2SdJwtVerifiableCredential,
 } from '../modules/vc'
 import type { X509Certificate } from '../modules/x509/X509Certificate'
+import type { AgentContext } from './context'
+
+/**
+ * Callback to dynamically resolve trusted issuers for a verification context.
+ */
+export type GetTrustedIssuersForVerificationCallback<AdditionalVerificationTypes extends { type: string } = never> = (
+  agentContext: AgentContext,
+  context: TrustedIssuersForVerificationContext<VerificationSigner, AdditionalVerificationTypes>
+) => Promise<TrustedIssuersForVerificationResult | undefined>
 
 export interface VerificationSignerDid {
   method: 'did'

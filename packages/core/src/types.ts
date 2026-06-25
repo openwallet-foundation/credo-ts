@@ -1,9 +1,4 @@
-import type { AgentContext } from './agent'
-import type {
-  TrustedIssuersForVerificationContext,
-  TrustedIssuersForVerificationResult,
-  VerificationSigner,
-} from './agent/TrustedIssuersForVerification'
+import type { GetTrustedIssuersForVerificationCallback } from './agent/TrustedIssuersForVerification'
 import type { Logger } from './logger'
 import { Ed25519PublicJwk, PublicJwk } from './modules/kms'
 
@@ -60,10 +55,7 @@ export interface InitConfig {
    * ) => { ... }
    * ```
    */
-  getTrustedIssuersForVerification?<AdditionalVerificationTypes extends { type: string } = never>(
-    agentContext: AgentContext,
-    context: TrustedIssuersForVerificationContext<VerificationSigner, AdditionalVerificationTypes>
-  ): Promise<TrustedIssuersForVerificationResult | undefined>
+  getTrustedIssuersForVerification?: GetTrustedIssuersForVerificationCallback
 }
 
 export type JsonValue = string | number | boolean | null | JsonObject | JsonArray
