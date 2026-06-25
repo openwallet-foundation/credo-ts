@@ -1,3 +1,9 @@
+import type { AgentContext } from './agent'
+import type {
+  TrustedIssuersForVerificationContext,
+  TrustedIssuersForVerificationResult,
+  VerificationSigner,
+} from './agent/TrustedIssuersForVerification'
 import type { Logger } from './logger'
 import { Ed25519PublicJwk, PublicJwk } from './modules/kms'
 
@@ -35,6 +41,29 @@ export interface InitConfig {
    * @default 30
    */
   validitySkewSeconds?: number
+
+  /**
+   * Optional callback to dynamically resolve trusted issuers for a verification context.
+   *
+   * This is the primary trust anchor resolution hook. It is called before the X.509-module-level
+   * `getTrustedCertificatesForVerification` callback and before the global `trustedCertificates` list.
+   *
+   * Return `{ trustedIssuers: [] }` to hard-reject (trust nothing, skip remaining fallbacks).
+   * Return `undefined` to fall through to the next resolution layer.
+   *
+   * Extension packages (e.g. `@credo-ts/openid4vc`) export additional verification types that can
+   * be composed into the generic parameter, e.g.:
+   * ```ts
+   * getTrustedIssuersForVerification: async (
+   *   agentContext,
+   *   context: TrustedIssuersForVerificationContext<VerificationSigner, OpenId4VcVerificationTypes>
+   * ) => { ... }
+   * ```
+   */
+  getTrustedIssuersForVerification?<AdditionalVerificationTypes extends { type: string } = never>(
+    agentContext: AgentContext,
+    context: TrustedIssuersForVerificationContext<VerificationSigner, AdditionalVerificationTypes>
+  ): Promise<TrustedIssuersForVerificationResult | undefined>
 }
 
 export type JsonValue = string | number | boolean | null | JsonObject | JsonArray
