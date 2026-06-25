@@ -71,7 +71,7 @@ export function getOid4vcJwtVerifyCallback(
           } satisfies OpenId4VcVerificationTypes,
         })
         if (genericResult !== undefined) {
-          trustedCertificates = genericResult.trustedIssuers.map((e) => e.certificate)
+          trustedCertificates = genericResult.trustedIssuers
         } else {
           trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
             certificateChain,
@@ -110,7 +110,7 @@ export function getOid4vcJwtVerifyCallback(
             } satisfies OpenId4VcVerificationTypes,
           })
           if (genericResult !== undefined) {
-            trustedCertificates = genericResult.trustedIssuers.map((e) => e.certificate)
+            trustedCertificates = genericResult.trustedIssuers
           }
         }
         if (trustedCertificates === undefined) {
@@ -141,7 +141,7 @@ export function getOid4vcJwtVerifyCallback(
           } satisfies OpenId4VcVerificationTypes,
         })
         if (genericResult !== undefined) {
-          trustedCertificates = genericResult.trustedIssuers.map((e) => e.certificate)
+          trustedCertificates = genericResult.trustedIssuers
         } else {
           trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
             certificateChain,
@@ -180,7 +180,7 @@ export function getOid4vcJwtVerifyCallback(
             } satisfies OpenId4VcVerificationTypes,
           })
           if (genericResult !== undefined) {
-            trustedCertificates = genericResult.trustedIssuers.map((e) => e.certificate)
+            trustedCertificates = genericResult.trustedIssuers
           }
         }
         if (trustedCertificates === undefined) {

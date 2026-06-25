@@ -7,7 +7,6 @@ import type {
   TrustedIssuerDid,
   TrustedIssuersForVerificationContext,
   TrustedIssuersForVerificationResult,
-  TrustedIssuerX509,
   VerificationSigner,
 } from './TrustedIssuersForVerification'
 
@@ -52,10 +51,7 @@ export class TrustedIssuerContext {
   >(
     agentContext: AgentContext,
     context: TrustedIssuersForVerificationContext<Signer, AdditionalVerificationTypes>,
-    /**
-     * The trusted issuer to verify the signer against. If not provided
-     * the signer will be dynamically fetched.
-     */
+    // The trusted issuers to verify the signer against. If not provided they will be dynamically fetched.
     _trustedIssuers?: TrustedIssuer[]
   ) {
     const signer = context.signer
@@ -71,11 +67,11 @@ export class TrustedIssuerContext {
         )
       }
 
-      const x509Issuers = trustedIssuers.filter((t) => t.method === 'x509') as TrustedIssuerX509[]
+      const x509Issuers = trustedIssuers.filter((t) => t.method === 'x509')
       await X509Service.validateCertificateChain(agentContext, {
         // TODO: we should allow x509 cert instance here
         certificateChain: signer.certificateChain.map((certificate) => certificate.toString('base64')),
-        trustedCertificates: x509Issuers.map((t) => t.certificate),
+        trustedCertificates: x509Issuers.flatMap((t) => t.issuance),
       })
     } else if (signer.method === 'did') {
       // For DIDs we do allow verification to continue if there's no trusted issuers returned. To mimic original behavior.

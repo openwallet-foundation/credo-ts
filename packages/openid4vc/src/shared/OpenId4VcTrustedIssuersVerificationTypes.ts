@@ -42,7 +42,7 @@ export type OpenId4VcVerificationTypeOauth2ClientAttestation = {
  * is verified as part of an OpenID4VP presentation flow.
  */
 export type OpenId4VcVerificationTypeOid4VpCredential = {
-  type: 'oid4VpCredential'
+  type: 'openId4VpCredential'
   openId4VcVerificationSessionRecord: OpenId4VcVerificationSessionRecord
   credential: SdJwtVc | Mdoc
 }

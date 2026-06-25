@@ -12,7 +12,9 @@ export function convertLegacyTrustedCertificates(
 export function legacyTrustedCertificatesToTrustedIssuers(
   trustedCertificates: string[] | X509VerificationTrustedCertificates[]
 ): TrustedIssuerX509[] {
-  return convertLegacyTrustedCertificates(trustedCertificates)
-    .flatMap(({ issuance }) => issuance)
-    .map((certificate) => ({ method: 'x509', certificate }))
+  return convertLegacyTrustedCertificates(trustedCertificates).map((certificate) => ({
+    method: 'x509',
+    issuance: certificate.issuance,
+    status: certificate.status,
+  }))
 }

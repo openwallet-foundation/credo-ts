@@ -1186,7 +1186,7 @@ export class OpenId4VpVerifierService {
                     }
                   : { method: 'did', didUrl: issuer.didUrl },
               verification: {
-                type: 'oid4VpCredential',
+                type: 'openId4VpCredential',
                 credential: sdJwtVc,
                 openId4VcVerificationSessionRecord: options.verificationSession,
               } satisfies OpenId4VcVerificationTypes,
@@ -1251,12 +1251,12 @@ export class OpenId4VpVerifierService {
                   certificateChain,
                 },
                 verification: {
-                  type: 'oid4VpCredential',
+                  type: 'openId4VpCredential',
                   credential: mdoc,
                   openId4VcVerificationSessionRecord: options.verificationSession,
                 } satisfies OpenId4VcVerificationTypes,
               })
-            )?.trustedIssuers.map((t) => t.certificate) ??
+            )?.trustedIssuers ??
             (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
               certificateChain,
               verification: {

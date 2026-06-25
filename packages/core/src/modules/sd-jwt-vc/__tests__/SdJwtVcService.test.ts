@@ -1356,7 +1356,7 @@ describe('SdJwtVcService', () => {
     test('x509 issuer is accepted when its certificate is returned as a trusted issuer', async () => {
       const presentation = await presentX509()
       agent.context.config.setTrustedIssuersForVerification(async () => ({
-        trustedIssuers: [{ method: 'x509', certificate: simpleX509.trustedCertificate }],
+        trustedIssuers: [{ method: 'x509', issuance: [simpleX509.trustedCertificate] }],
       }))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
@@ -1371,7 +1371,7 @@ describe('SdJwtVcService', () => {
     test('x509 issuer is rejected when a different certificate is trusted', async () => {
       const presentation = await presentX509()
       agent.context.config.setTrustedIssuersForVerification(async () => ({
-        trustedIssuers: [{ method: 'x509', certificate: funkeX509.trustedCertificate }],
+        trustedIssuers: [{ method: 'x509', issuance: [funkeX509.trustedCertificate] }],
       }))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
@@ -1405,7 +1405,7 @@ describe('SdJwtVcService', () => {
         .setTrustedCertificatesForVerification(async () => [simpleX509.trustedCertificate])
       // ...but the generic callback takes precedence and trusts a different certificate.
       agent.context.config.setTrustedIssuersForVerification(async () => ({
-        trustedIssuers: [{ method: 'x509', certificate: funkeX509.trustedCertificate }],
+        trustedIssuers: [{ method: 'x509', issuance: [funkeX509.trustedCertificate] }],
       }))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
