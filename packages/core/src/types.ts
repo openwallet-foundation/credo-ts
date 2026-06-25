@@ -60,9 +60,12 @@ export interface InitConfig {
    * ) => { ... }
    * ```
    */
-  getTrustedIssuersForVerification?<AdditionalVerificationTypes extends { type: string } = never>(
+  getTrustedIssuersForVerification?<
+    Signer extends VerificationSigner = VerificationSigner,
+    AdditionalVerificationTypes extends { type: string } = never,
+  >(
     agentContext: AgentContext,
-    context: TrustedIssuersForVerificationContext<VerificationSigner, AdditionalVerificationTypes>
+    context: TrustedIssuersForVerificationContext<Signer, AdditionalVerificationTypes>
   ): Promise<TrustedIssuersForVerificationResult | undefined>
 }
 
