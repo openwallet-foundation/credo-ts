@@ -342,7 +342,7 @@ describe('W3cJwtCredentialService', () => {
     test('accepts a credential whose issuer did is trusted', async () => {
       const credential = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)
       agentContext.config.setTrustedIssuersForVerification(async () => ({
-        trustedIssuers: [{ method: 'did', did: credential.issuerId }],
+        trustedIssuers: [{ method: 'did', issuance: credential.issuerId }],
       }))
 
       const result = await w3cJwtCredentialService.verifyCredential(agentContext, { credential })
@@ -353,7 +353,7 @@ describe('W3cJwtCredentialService', () => {
     test('rejects a credential whose issuer did is not trusted', async () => {
       agentContext.config.setTrustedIssuersForVerification(async () => ({
         trustedIssuers: [
-          { method: 'did', did: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y' },
+          { method: 'did', issuance: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y' },
         ],
       }))
 

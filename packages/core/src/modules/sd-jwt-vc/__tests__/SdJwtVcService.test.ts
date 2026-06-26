@@ -1360,7 +1360,7 @@ describe('SdJwtVcService', () => {
       const presentation = await presentDid()
       const issuerDid = issuerDidUrl.split('#')[0]
       agent.context.config.setTrustedIssuersForVerification(async () => ({
-        trustedIssuers: [{ method: 'did', did: issuerDid }],
+        trustedIssuers: [{ method: 'did', issuance: issuerDid }],
       }))
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
@@ -1376,7 +1376,7 @@ describe('SdJwtVcService', () => {
       const presentation = await presentDid()
       agent.context.config.setTrustedIssuersForVerification(async () => ({
         trustedIssuers: [
-          { method: 'did', did: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y' },
+          { method: 'did', issuance: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y' },
         ],
       }))
 
@@ -1555,7 +1555,7 @@ describe('SdJwtVcService', () => {
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
-        trustedIssuers: [{ method: 'did', did: issuerDid() }],
+        trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
       })
 
       expect(verificationResult.isValid).toBe(true)
@@ -1582,7 +1582,7 @@ describe('SdJwtVcService', () => {
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
-        trustedIssuers: [{ method: 'did', did: issuerDid() }],
+        trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
       })
 
       expect(verificationResult.isValid).toBe(false)
@@ -1601,7 +1601,7 @@ describe('SdJwtVcService', () => {
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
-        trustedIssuers: [{ method: 'did', did: issuerDid() }],
+        trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
         disableStatusValidation: true,
       })
 
