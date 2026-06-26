@@ -13,6 +13,7 @@ import {
   TypedArrayEncoder,
   X509Certificate,
   X509ModuleConfig,
+  X509Service,
 } from '@credo-ts/core'
 import { createHeaderAndPayload, StatusList } from '@owf/token-status-list'
 import { Jwt, SDJwt } from '@sd-jwt/core'
@@ -123,6 +124,44 @@ const generateStatusList = async (
     protectedHeaderOptions: {
       ...header,
       alg: 'EdDSA',
+    },
+  })
+}
+
+// Generates a status list JWT signed with an `x5c` header (x509), instead of a `kid` (did).
+const generateX509StatusList = async (
+  agentContext: AgentContext,
+  key: PublicJwk,
+  certificate: X509Certificate,
+  length: number,
+  revokedIndexes: number[]
+): Promise<string> => {
+  const statusList = new StatusList(
+    Array.from({ length }, (_, i) => (revokedIndexes.includes(i) ? 1 : 0)),
+    1
+  )
+
+  const { payload } = createHeaderAndPayload(
+    statusList,
+    {
+      iss: 'https://example.com',
+      sub: 'https://example.com/status/1',
+      iat: Date.now() / 1000,
+    },
+    {
+      alg: 'ES256',
+      typ: 'statuslist+jwt',
+    }
+  )
+
+  const jwsService = agentContext.dependencyManager.resolve(JwsService)
+  return jwsService.createJwsCompact(agentContext, {
+    keyId: key.keyId,
+    payload: JwtPayload.fromJson(payload),
+    protectedHeaderOptions: {
+      alg: 'ES256',
+      typ: 'statuslist+jwt',
+      x5c: [certificate.toString('base64')],
     },
   })
 }
@@ -1292,6 +1331,359 @@ describe('SdJwtVcService', () => {
         error: new SDJWTException('Verify Error: Invalid JWT Signature'),
         sdJwtVc: expect.any(Object),
       })
+    })
+  })
+
+  describe('SdJwtVcService.verify with getTrustedIssuersForVerification', () => {
+    const presentDid = () =>
+      sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleJwtVc,
+        presentationFrame: {},
+        verifierMetadata: { issuedAt: Date.now() / 1000, audience: verifierDid, nonce: 'salt' },
+      })
+
+    const presentX509 = () =>
+      sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleX509.sdJwtVc,
+        presentationFrame: {},
+        verifierMetadata: { issuedAt: Date.now() / 1000, audience: verifierDid, nonce: 'salt' },
+      })
+
+    afterEach(() => {
+      const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
+      agent.context.config.setTrustedIssuersForVerification(undefined)
+      x509ModuleConfig.setTrustedCertificatesForVerification(undefined)
+      x509ModuleConfig.setTrustedCertificates(undefined)
+    })
+
+    test('did issuer is accepted when returned as a trusted issuer', async () => {
+      const presentation = await presentDid()
+      const issuerDid = issuerDidUrl.split('#')[0]
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'did', issuance: issuerDid }],
+      }))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('did issuer is rejected when not in the trusted issuers', async () => {
+      const presentation = await presentDid()
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [
+          { method: 'did', issuance: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y' },
+        ],
+      }))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+      if (!verificationResult.isValid) {
+        expect(verificationResult.error?.message).toContain('is not trusted')
+      }
+    })
+
+    test('x509 issuer is accepted when its certificate is returned as a trusted issuer', async () => {
+      const presentation = await presentX509()
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'x509', issuance: [simpleX509.trustedCertificate] }],
+      }))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('x509 issuer is rejected when a different certificate is trusted', async () => {
+      const presentation = await presentX509()
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'x509', issuance: [funkeX509.trustedCertificate] }],
+      }))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+    })
+
+    test('returning an empty trusted issuers array hard-rejects an x509 issuer', async () => {
+      const presentation = await presentX509()
+      agent.context.config.setTrustedIssuersForVerification(async () => ({ trustedIssuers: [] }))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+    })
+
+    test('the generic callback takes precedence over the deprecated x509 callback', async () => {
+      const presentation = await presentX509()
+
+      // Deprecated x509 callback would trust the correct certificate...
+      agent.context.dependencyManager
+        .resolve(X509ModuleConfig)
+        .setTrustedCertificatesForVerification(async () => [simpleX509.trustedCertificate])
+      // ...but the generic callback takes precedence and trusts a different certificate.
+      agent.context.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'x509', issuance: [funkeX509.trustedCertificate] }],
+      }))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+    })
+
+    test('did issuer is allowed by default when no trusted issuers are configured', async () => {
+      const presentation = await presentDid()
+
+      // No `getTrustedIssuersForVerification` callback set: did issuers remain allowed by default,
+      // preserving the pre-existing (v0.7.0) behavior.
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('falls back to the deprecated x509 callback when no generic callback is set', async () => {
+      const presentation = await presentX509()
+      const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
+      x509ModuleConfig.setTrustedCertificates(undefined)
+
+      // Only the deprecated x509 callback is configured (no generic callback): it must still gate
+      // verification, exactly as in v0.7.0.
+      x509ModuleConfig.setTrustedCertificatesForVerification(async () => [simpleX509.trustedCertificate])
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('falls back to statically configured trusted certificates when no callback is set', async () => {
+      const presentation = await presentX509()
+      const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
+
+      // Neither callback configured: the static `trustedCertificates` list is the final fallback.
+      x509ModuleConfig.setTrustedCertificates([simpleX509.trustedCertificate])
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
+        requiredClaimKeys: ['claim'],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+  })
+
+  describe('SdJwtVcService.verify status list against the matched trusted issuer', () => {
+    const issuerDid = () => issuerDidUrl.split('#')[0]
+
+    const createSigningCertificate = async (commonName: string) => {
+      const key = PublicJwk.fromPublicJwk((await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+      const certificate = await X509Service.createCertificate(agent.context, {
+        authorityKey: key,
+        issuer: { commonName },
+        validity: { notBefore: new Date('2020-01-01'), notAfter: new Date('2035-01-01') },
+      })
+      certificate.keyId = key.keyId
+      return { key, certificate }
+    }
+
+    const signX509CredentialWithStatus = async (certificate: X509Certificate) => {
+      const signed = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          vct: 'IdentityCredential',
+          claim: 'some-claim',
+          status: { status_list: { idx: 12, uri: 'https://example.com/status-list' } },
+        } as SdJwtVcPayload,
+        issuer: { method: 'x5c', x5c: [certificate] },
+      })
+
+      return sdJwtVcService.present(agent.context, { sdJwtVc: signed, presentationFrame: {} })
+    }
+
+    const mockStatusList = (statusList: string) =>
+      nock('https://example.com')
+        .get('/status-list')
+        .matchHeader('accept', 'application/statuslist+jwt')
+        .reply(200, statusList, { 'Content-Type': 'application/statuslist+jwt' })
+
+    afterEach(() => {
+      const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
+      agent.context.config.setTrustedIssuersForVerification(undefined)
+      x509ModuleConfig.setTrustedCertificatesForVerification(undefined)
+      x509ModuleConfig.setTrustedCertificates(undefined)
+    })
+
+    test('did: status list signed by the trusted issuer did is accepted', async () => {
+      mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, []))
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('did: status list signed by a different did is rejected', async () => {
+      const otherKey = PublicJwk.fromPublicJwk(
+        (await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      )
+      const otherDidDocument = new DidKey(otherKey).didDocument
+      const otherDidUrl = (otherDidDocument.verificationMethod ?? [])[0].id
+      await agent.dids.import({
+        didDocument: otherDidDocument,
+        did: otherDidDocument.id,
+        keys: [{ didDocumentRelativeKeyId: `#${otherDidUrl.split('#')[1]}`, kmsKeyId: otherKey.keyId }],
+      })
+
+      mockStatusList(await generateStatusList(agent.context, otherKey, otherDidUrl, 24, []))
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+      if (!verificationResult.isValid) {
+        expect(verificationResult.error?.message).toContain('Status List JWT verification failed')
+      }
+    })
+
+    test('status validation can be disabled even when the credential is revoked', async () => {
+      mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [12]))
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: simpleSdJwtVcWithStatus,
+        presentationFrame: {},
+      })
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        trustedIssuers: [{ method: 'did', issuance: issuerDid() }],
+        disableStatusValidation: true,
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('x509: status list signed by a dedicated trusted status certificate is accepted', async () => {
+      const issuance = await createSigningCertificate('Issuance')
+      const status = await createSigningCertificate('Status')
+
+      const presentation = await signX509CredentialWithStatus(issuance.certificate)
+      mockStatusList(await generateX509StatusList(agent.context, status.key, status.certificate, 24, []))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        trustedIssuers: [
+          {
+            method: 'x509',
+            issuance: [issuance.certificate.toString('base64')],
+            status: [status.certificate.toString('base64')],
+          },
+        ],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('x509: status list signed by a certificate not in the status certificates is rejected', async () => {
+      const issuance = await createSigningCertificate('Issuance')
+      const status = await createSigningCertificate('Status')
+
+      const presentation = await signX509CredentialWithStatus(issuance.certificate)
+      mockStatusList(await generateX509StatusList(agent.context, status.key, status.certificate, 24, []))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        trustedIssuers: [
+          {
+            method: 'x509',
+            issuance: [issuance.certificate.toString('base64')],
+            // Status list is signed by `status`, but only `issuance` is trusted to sign status lists.
+            status: [issuance.certificate.toString('base64')],
+          },
+        ],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+      if (!verificationResult.isValid) {
+        expect(verificationResult.error?.message).toContain('Status List JWT verification failed')
+      }
+    })
+
+    test('x509: falls back to the issuance certificates when no status certificates are configured', async () => {
+      const issuance = await createSigningCertificate('Issuance')
+
+      const presentation = await signX509CredentialWithStatus(issuance.certificate)
+      // Status list is signed by the issuance certificate (same as the credential signer).
+      mockStatusList(await generateX509StatusList(agent.context, issuance.key, issuance.certificate, 24, []))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        trustedIssuers: [{ method: 'x509', issuance: [issuance.certificate.toString('base64')] }],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
+    test('x509: an empty status certificates array rejects any status list', async () => {
+      const issuance = await createSigningCertificate('Issuance')
+
+      const presentation = await signX509CredentialWithStatus(issuance.certificate)
+      mockStatusList(await generateX509StatusList(agent.context, issuance.key, issuance.certificate, 24, []))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        trustedIssuers: [{ method: 'x509', issuance: [issuance.certificate.toString('base64')], status: [] }],
+      })
+
+      expect(verificationResult.isValid).toBe(false)
+      if (!verificationResult.isValid) {
+        expect(verificationResult.error?.message).toContain('Status List JWT verification failed')
+      }
     })
   })
 

@@ -465,11 +465,12 @@ export class DcqlService {
                               record.firstCredential instanceof W3cV2SdJwtVerifiableCredential
                             ? {
                                 output: agentContext.dependencyManager
-                                  .resolve(SdJwtVcService)
+                                  .resolve(W3cV2SdJwtCredentialService)
                                   .applyDisclosuresForPayload(
                                     record.firstCredential.encoded,
                                     claimSet.output as JsonObject
-                                  ).prettyClaims as { [key: string]: JsonValue },
+                                  )
+                                  .resolvedCredential.toJSON() as { [key: string]: JsonValue },
                               }
                             : {}),
                       })),
@@ -519,9 +520,9 @@ export class DcqlService {
                           record.firstCredential instanceof W3cV2SdJwtVerifiableCredential
                         ? {
                             output: agentContext.dependencyManager
-                              .resolve(SdJwtVcService)
+                              .resolve(W3cV2SdJwtCredentialService)
                               .applyDisclosuresForPayload(record.firstCredential.encoded, claimSet.output as JsonObject)
-                              .prettyClaims as { [key: string]: JsonValue },
+                              .resolvedCredential.toJSON() as { [key: string]: JsonValue },
                           }
                         : {}),
                   })),
