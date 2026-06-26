@@ -1,6 +1,7 @@
 import type { Mdoc } from '../modules/mdoc/Mdoc'
 import type { SdJwtVc } from '../modules/sd-jwt-vc'
 import type {
+  W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
   W3cV2JwtVerifiableCredential,
   W3cV2SdJwtVerifiableCredential,
@@ -61,6 +62,7 @@ export type VerificationTypeCredential = {
   credential:
     | SdJwtVc
     | Mdoc
+    | W3cJsonLdVerifiableCredential
     | W3cJwtVerifiableCredential
     | W3cV2JwtVerifiableCredential
     | W3cV2SdJwtVerifiableCredential
