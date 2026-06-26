@@ -615,6 +615,9 @@ importers:
       ec-compression:
         specifier: 0.0.1-alpha.12
         version: 0.0.1-alpha.12
+      json-canonicalize:
+        specifier: ^2.0.0
+        version: 2.0.0
       lru_map:
         specifier: ^0.4.1
         version: 0.4.1

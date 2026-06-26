@@ -29,9 +29,11 @@ import {
   MultiHashEncoder,
   type Proof,
   TypedArrayEncoder,
+  W3cDataIntegrityApi,
+  type W3cDataIntegritySingleProofSecuredDocument,
+  type W3cDataIntegrityUnsecuredDocument,
 } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
-import { EddsaJcs2022Cryptosuite, type UnsecuredDocument } from '../../cryptosuites'
 import { WebVhDidResolver } from '../../dids'
 import { isWebVhAttestedResource, parseResourceId, WebVhAttestedResource } from '../../resources'
 import { WebVhAnonCredsResource } from '../utils/transform'
@@ -694,9 +696,11 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async verifyProof(agentContext: AgentContext, attestedResource: WebVhAttestedResource): Promise<boolean> {
-    const cryptosuite = new EddsaJcs2022Cryptosuite(agentContext)
+    const dataIntegrity = agentContext.dependencyManager.resolve(W3cDataIntegrityApi)
     try {
-      const verificationResult = await cryptosuite.verifyProof(attestedResource)
+      const verificationResult = await dataIntegrity.verifyProof(
+        attestedResource as unknown as W3cDataIntegritySingleProofSecuredDocument
+      )
       return verificationResult.verified
     } catch (error) {
       agentContext.config.logger.error('Error during proof validation of did:webvh resource', {
@@ -709,23 +713,24 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
   public async createProof(
     agentContext: AgentContext,
-    unsecuredDocument: UnsecuredDocument,
+    unsecuredDocument: W3cDataIntegrityUnsecuredDocument,
     verificationMethod: string
   ) {
-    const cryptosuite = new EddsaJcs2022Cryptosuite(agentContext)
+    const dataIntegrity = agentContext.dependencyManager.resolve(W3cDataIntegrityApi)
     try {
-      const creationResult = await cryptosuite.createProof(unsecuredDocument, {
-        type: 'DataIntegrityProof',
+      const creationResult = await dataIntegrity.createProofOrThrow({
+        unsecuredDocument,
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod,
         proofPurpose: 'assertionMethod',
       })
-      return creationResult
+      return creationResult.proof
     } catch (error) {
       agentContext.config.logger.error('Error during proof creation of did:webvh resource', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
       })
+      throw error
     }
   }
 
