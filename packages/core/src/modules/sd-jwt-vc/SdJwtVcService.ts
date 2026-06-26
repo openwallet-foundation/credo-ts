@@ -2,8 +2,8 @@ import type { NonEmptyArray } from '@animo-id/pex'
 import type { SDJwt } from '@sd-jwt/core'
 import { decodeSdJwtSync } from '@sd-jwt/decode'
 import { selectDisclosures } from '@sd-jwt/present'
-import { SDJwtVcInstance, type VcTFetcher } from '@sd-jwt/sd-jwt-vc'
-import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/types'
+import { type SDJWTVCConfig, SDJwtVcInstance, type VcTFetcher } from '@sd-jwt/sd-jwt-vc'
+import type { DisclosureFrame, PresentationFrame, SDJWTConfig, Verifier } from '@sd-jwt/types'
 import { AgentContext } from '../../agent'
 import { TrustedIssuerContext } from '../../agent/TrustedIssuerContext'
 import type { TrustedIssuer } from '../../agent/TrustedIssuersForVerification'
@@ -12,13 +12,13 @@ import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type { JsonObject } from '../../types'
-import { dateToSeconds, IntegrityVerifier, nowInSeconds, TypedArrayEncoder } from '../../utils'
+import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc/index'
-import { X509Certificate, X509ModuleConfig } from '../x509'
+import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
@@ -45,8 +45,6 @@ import {
   resolveDidUrl,
   resolveSigningPublicJwkFromDidUrl,
 } from './utils'
-
-type SdJwtVcConfig = SDJwtVcInstance['userConfig']
 
 export interface SdJwtVc<
   Header extends SdJwtVcHeader = SdJwtVcHeader,
@@ -288,6 +286,8 @@ export class SdJwtVcService {
       fetchTypeMetadata,
       trustedCertificates,
       trustedIssuers: _trustedIssuers,
+      disableStatusValidation,
+      verifyCredentialStatus,
       now,
     }: SdJwtVcVerifyOptions
   ): Promise<
@@ -350,16 +350,28 @@ export class SdJwtVcService {
 
     let typeMetadataChain: NonEmptyArray<SdJwtVcTypeMetadata> | undefined
     try {
-      await this.verifyIssuer(agentContext, returnSdJwtVc, trustedIssuers)
+      const { trustedIssuer } = await this.verifyIssuer(agentContext, returnSdJwtVc, trustedIssuers)
       const issuerWithKey = await this.extractKeyFromIssuer(agentContext, issuer)
       const holder = returnSdJwtVc.holder
         ? await extractKeyFromHolderBinding(agentContext, returnSdJwtVc.holder)
         : undefined
 
+      // The library always verifies the status list when the credential has one. We can only neutralize
+      // the status value check (revoked/suspended); the status list signature is still verified.
+      const statusValidationDisabled = disableStatusValidation === true || verifyCredentialStatus === false
+
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, issuerWithKey.publicJwk),
         kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
-      })
+        statusVerifier: this.getStatusVerifier(agentContext, {
+          matchedTrustedIssuer: trustedIssuer,
+          credentialIssuerKey: issuerWithKey.publicJwk,
+          statusValidationDisabled,
+        }),
+        ...(statusValidationDisabled ? { statusValidator: async () => {} } : {}),
+
+        // TODO: remove weird typing after updating to >= 0.19.1 of the library
+      } satisfies SDJWTVCConfig as SDJWTConfig)
 
       try {
         await sdjwt.verify(compactSdJwtVc, {
@@ -621,15 +633,15 @@ export class SdJwtVcService {
           'No trusted certificates configured for X509 certificate chain validation. Issuer cannot be verified.'
         )
       }
-      await TrustedIssuerContext.ensureTrustedSigner(agentContext, context, x509Issuers)
-      return
+
+      return await TrustedIssuerContext.ensureTrustedSigner(agentContext, context, x509Issuers)
     }
 
     if (issuer.method === 'did') {
       // `ensureTrustedSigner` consults the `getTrustedIssuersForVerification` callback and, to mimic
       // the original behavior, allows the did by default when neither explicit trusted issuers nor the
       // callback return any trusted issuers.
-      await TrustedIssuerContext.ensureTrustedSigner(
+      return await TrustedIssuerContext.ensureTrustedSigner(
         agentContext,
         {
           verification: { type: 'credential', credential: sdJwtVc },
@@ -640,13 +652,12 @@ export class SdJwtVcService {
         },
         trustedIssuers
       )
-      return
     }
 
     throw new SdJwtVcError('Unsupported signing method for SD-JWT VC. Only did and x5c are supported at the moment.')
   }
 
-  private getBaseSdJwtConfig(agentContext: AgentContext): SdJwtVcConfig {
+  private getBaseSdJwtConfig(agentContext: AgentContext): SDJWTVCConfig {
     const kms = agentContext.resolve(KeyManagementApi)
 
     return {
@@ -673,6 +684,87 @@ export class SdJwtVcService {
       }
 
       return await response.text()
+    }
+  }
+
+  /**
+   * Builds a `Verifier` for the status list JWT signature, gated by the trusted issuer that was matched
+   * for the credential issuer (the status list signer is not always the credential issuer).
+   *
+   * The library's `Verifier` only receives the unsigned token (`<header>.<payload>`) and the signature,
+   * so the status list JWT's own header (`x5c`/`kid`) is recovered by decoding the first segment.
+   */
+  private getStatusVerifier(
+    agentContext: AgentContext,
+    {
+      matchedTrustedIssuer,
+      credentialIssuerKey,
+      statusValidationDisabled,
+    }: {
+      matchedTrustedIssuer: TrustedIssuer | undefined
+      credentialIssuerKey: PublicJwk
+      statusValidationDisabled?: boolean
+    }
+  ): Verifier {
+    return async (data, signatureBase64Url) => {
+      // If status validation is disabled, tell the library everything is ok
+      if (statusValidationDisabled) {
+        return true
+      }
+
+      // No matched trusted issuer (e.g. did default-allow path with no configured trusted issuers).
+      // Preserve the previous behavior of verifying the status list with the credential issuer key.
+      if (!matchedTrustedIssuer) {
+        return getSdJwtVerifier(agentContext, credentialIssuerKey)(data, signatureBase64Url)
+      }
+
+      let header: { x5c?: string[]; kid?: string }
+      try {
+        header = JsonEncoder.fromBase64Url(data.split('.')[0])
+      } catch {
+        return false
+      }
+
+      if (matchedTrustedIssuer.method === 'x509') {
+        // Mirror mdoc: fall back to the issuance certificates when no dedicated status certificates are
+        // configured. An explicit empty array means "trust no status list signer".
+        const statusCertificates = matchedTrustedIssuer.status ?? matchedTrustedIssuer.issuance
+        if (!header.x5c?.length || statusCertificates.length === 0) return false
+
+        try {
+          // Trust check only: ensure the status list certificate chain anchors in the status certificates.
+          await X509Service.validateCertificateChain(agentContext, {
+            certificateChain: header.x5c,
+            trustedCertificates: statusCertificates,
+          })
+        } catch {
+          return false
+        }
+
+        // The signer is the leaf, i.e. the first entry of the leaf-first `x5c` header (the chain returned
+        // by `validateCertificateChain` is root-first, so we don't use it to derive the signer key here).
+        const signerJwk = X509Certificate.fromEncodedCertificate(header.x5c[0]).publicJwk
+        return getSdJwtVerifier(agentContext, signerJwk)(data, signatureBase64Url)
+      }
+
+      // did: require the status list signer did to equal the trusted issuer did. The signer did is the
+      // `iss` of the status list payload; the `kid` header is typically a relative reference (e.g.
+      // `#key-1`) that has to be resolved against that did.
+      try {
+        const payload = JsonEncoder.fromBase64Url(data.split('.')[1])
+        const statusListIssuerDid = payload.iss
+        if (typeof statusListIssuerDid !== 'string') return false
+        if (parseDid(statusListIssuerDid).did !== parseDid(matchedTrustedIssuer.did).did) return false
+
+        const didUrl = header.kid?.startsWith('#') ? `${statusListIssuerDid}${header.kid}` : header.kid
+        if (!didUrl) return false
+
+        const { verificationMethod } = await resolveDidUrl(agentContext, didUrl)
+        const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+        return getSdJwtVerifier(agentContext, publicJwk)(data, signatureBase64Url)
+      } catch {
+        return false
+      }
     }
   }
 

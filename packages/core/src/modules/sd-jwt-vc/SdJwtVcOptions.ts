@@ -159,7 +159,9 @@ export type SdJwtVcVerifyOptions = {
 
   /**
    * Whether to verify the status of the credential. If set to false and the credential
-   * has a status, it will not be fetched and verified.
+   * has a status, it will not be checked. Due to a limitation of the library we use,
+   * the status list will still be fetched and checked, but the result will not influence
+   * the verification result.
    *
    * @default true
    * @deprecated use `disableStatusValidation`
@@ -167,8 +169,10 @@ export type SdJwtVcVerifyOptions = {
   verifyCredentialStatus?: boolean
 
   /**
-   * Whether to disable the status validation of the credential. If set to true and the credential
-   * has a status, it will not be fetched and verified.
+   * Whether to verify the status of the credential. If set to false and the credential
+   * has a status, it will not be checked. Due to a limitation of the library we use,
+   * the status list will still be fetched and checked, but the result will not influence
+   * the verification result.
    *
    * @default false
    */
