@@ -1,8 +1,8 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator'
 
-import { IsUri } from '../../../../utils/validators'
+import { IsUri } from '../../../utils/validators'
 
-export interface DataIntegrityProofOptions {
+export interface AnonCredsW3cBridgeProofOptions {
   type: string
   cryptosuite: string
   verificationMethod: string
@@ -17,13 +17,13 @@ export interface DataIntegrityProofOptions {
 }
 
 /**
- * Linked Data Proof
- * @see https://w3c.github.io/vc-data-model/#proofs-signatures
+ * VC1 anoncreds compatibility proof model.
  *
- * @class LinkedDataProof
+ * Represents a `DataIntegrityProof`-shaped wire payload used by the anoncreds VC1 bridge,
+ * while keeping the bridge-specific model separate from true linked-data proof types.
  */
-export class DataIntegrityProof {
-  public constructor(options: DataIntegrityProofOptions) {
+export class AnonCredsW3cBridgeProof {
+  public constructor(options: AnonCredsW3cBridgeProofOptions) {
     if (options) {
       this.type = options.type
       this.cryptosuite = options.cryptosuite
