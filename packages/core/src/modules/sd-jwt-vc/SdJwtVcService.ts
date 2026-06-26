@@ -65,17 +65,13 @@ export interface SdJwtVc<
 
   /**
    * The issuer of the credential.
-   *
-   * This is `undefined` when the credential's issuer cannot be resolved to a supported
-   * signing method (only `did` and `x5c` are supported). Decoding a credential never fails
-   * because of an unsupported issuer; verification does enforce a supported issuer.
    */
   issuer?: SdJwtVcIssuer
 
   /**
    * The holder of the credential
    */
-  holder: SdJwtVcHolderBinding | undefined
+  holder?: SdJwtVcHolderBinding
 
   // TODO: payload type here is a lie, as it is the signed payload (so fields replaced with _sd)
   payload: Payload
@@ -311,7 +307,7 @@ export class SdJwtVcService {
     })
     let sdJwtVc: SDJwt<Header, Payload>
     let holderBinding: SdJwtVcHolderBinding | undefined
-    let issuer: SdJwtVcIssuer
+    let issuer: SdJwtVcIssuer | undefined
 
     let trustedIssuers = _trustedIssuers
     if (trustedCertificates) {
@@ -327,6 +323,15 @@ export class SdJwtVcService {
       return {
         isValid: false,
         error,
+      }
+    }
+
+    if (!issuer) {
+      return {
+        isValid: false,
+        error: new SdJwtVcError(
+          'Unsupported signing method for SD-JWT VC. Only did and x5c are supported at the moment.'
+        ),
       }
     }
 
