@@ -49,13 +49,13 @@ export type OpenId4VcVerificationTypeOid4VpCredential = {
 
 /**
  * Union of all OpenID4VC-specific verification types. Pass this as the additional verification
- * types generic parameter to `TrustedIssuersForVerificationContext` to get full type coverage:
+ * types generic parameter to `GetTrustedIssuersForVerification` to get full type coverage:
  *
  * ```ts
- * getTrustedIssuersForVerification: async (
- *   agentContext,
- *   context: TrustedIssuersForVerificationContext<VerificationSigner, OpenId4VcVerificationTypes>
- * ) => { ... }
+ * const getTrustedIssuersForVerification: GetTrustedIssuersForVerification<
+ *   VerificationSigner,
+ *   OpenId4VcVerificationTypes
+ * > = async (agentContext, { verification, signer }) => { ... }
  * ```
  */
 export type OpenId4VcVerificationTypes =

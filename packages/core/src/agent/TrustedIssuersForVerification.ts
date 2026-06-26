@@ -7,6 +7,7 @@ import type {
   W3cV2SdJwtVerifiableCredential,
 } from '../modules/vc'
 import type { X509Certificate } from '../modules/x509/X509Certificate'
+import type { AgentContext } from './context'
 
 export interface VerificationSignerDid {
   method: 'did'
@@ -82,3 +83,18 @@ export interface TrustedIssuersForVerificationContext<
    */
   verification: VerificationTypeCredential | AdditionalVerificationTypes
 }
+
+/**
+ * Signature for the `getTrustedIssuersForVerification` callback.
+ *
+ * Extension packages (e.g. `@credo-ts/openid4vc`) export additional verification types that can be
+ * composed into the `AdditionalVerificationTypes` generic parameter to get full type coverage on
+ * `verification`, e.g. `GetTrustedIssuersForVerification<VerificationSigner, OpenId4VcVerificationTypes>`.
+ */
+export type GetTrustedIssuersForVerification<
+  Signer extends VerificationSigner = VerificationSigner,
+  AdditionalVerificationTypes extends { type: string } = never,
+> = (
+  agentContext: AgentContext,
+  context: TrustedIssuersForVerificationContext<Signer, AdditionalVerificationTypes>
+) => Promise<TrustedIssuersForVerificationResult | undefined>

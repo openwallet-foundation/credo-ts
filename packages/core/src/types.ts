@@ -1,9 +1,4 @@
-import type { AgentContext } from './agent'
-import type {
-  TrustedIssuersForVerificationContext,
-  TrustedIssuersForVerificationResult,
-  VerificationSigner,
-} from './agent/TrustedIssuersForVerification'
+import type { GetTrustedIssuersForVerification, VerificationSigner } from './agent/TrustedIssuersForVerification'
 import type { Logger } from './logger'
 import { Ed25519PublicJwk, PublicJwk } from './modules/kms'
 
@@ -52,21 +47,17 @@ export interface InitConfig {
    * Return `undefined` to fall through to the next resolution layer.
    *
    * Extension packages (e.g. `@credo-ts/openid4vc`) export additional verification types that can
-   * be composed into the generic parameter, e.g.:
+   * be composed into the `AdditionalVerificationTypes` generic parameter to get full type coverage
+   * on `verification`, e.g.:
    * ```ts
-   * getTrustedIssuersForVerification: async (
-   *   agentContext,
-   *   context: TrustedIssuersForVerificationContext<VerificationSigner, OpenId4VcVerificationTypes>
-   * ) => { ... }
+   * const getTrustedIssuersForVerification: GetTrustedIssuersForVerification<
+   *   VerificationSigner,
+   *   OpenId4VcVerificationTypes
+   * > = async (agentContext, { verification, signer }) => { ... }
    * ```
    */
-  getTrustedIssuersForVerification?<
-    Signer extends VerificationSigner = VerificationSigner,
-    AdditionalVerificationTypes extends { type: string } = never,
-  >(
-    agentContext: AgentContext,
-    context: TrustedIssuersForVerificationContext<Signer, AdditionalVerificationTypes>
-  ): Promise<TrustedIssuersForVerificationResult | undefined>
+  // biome-ignore lint/suspicious/noExplicitAny: the additional verification types are open for extension by other packages
+  getTrustedIssuersForVerification?: GetTrustedIssuersForVerification<VerificationSigner, any>
 }
 
 export type JsonValue = string | number | boolean | null | JsonObject | JsonArray
