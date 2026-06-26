@@ -726,7 +726,7 @@ export class SdJwtVcService {
         const payload = JsonEncoder.fromBase64Url(data.split('.')[1])
         const statusListIssuerDid = payload.iss
         if (typeof statusListIssuerDid !== 'string') return false
-        if (parseDid(statusListIssuerDid).did !== parseDid(matchedTrustedIssuer.did).did) return false
+        if (parseDid(statusListIssuerDid).did !== parseDid(matchedTrustedIssuer.issuance).did) return false
 
         const didUrl = header.kid?.startsWith('#') ? `${statusListIssuerDid}${header.kid}` : header.kid
         if (!didUrl) return false

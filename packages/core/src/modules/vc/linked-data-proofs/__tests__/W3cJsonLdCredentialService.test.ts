@@ -268,7 +268,7 @@ describe('W3cJsonLdCredentialsService', () => {
           W3cJsonLdVerifiableCredential
         )
         agentContext.config.setTrustedIssuersForVerification(async () => ({
-          trustedIssuers: [{ method: 'did', did: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL' }],
+          trustedIssuers: [{ method: 'did', issuance: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL' }],
         }))
 
         const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
@@ -282,7 +282,7 @@ describe('W3cJsonLdCredentialsService', () => {
           W3cJsonLdVerifiableCredential
         )
         agentContext.config.setTrustedIssuersForVerification(async () => ({
-          trustedIssuers: [{ method: 'did', did: 'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV' }],
+          trustedIssuers: [{ method: 'did', issuance: 'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV' }],
         }))
 
         const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
