@@ -5,9 +5,11 @@ import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
 import { JwtPayload } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
+import type { JsonObject } from '../../../types'
 import { asArray, JsonTransformer, MessageValidator, nowInSeconds, TypedArrayEncoder } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi } from '../../kms'
+import { applyDisclosuresForPayload } from '../../sd-jwt-vc/disclosureFrame'
 import {
   extractKeyFromHolderBinding,
   getSdJwtSigner,
@@ -406,6 +408,14 @@ export class W3cV2SdJwtCredentialService {
     const disclosedCompact = await sdjwt.present(originalCompact, presentationFrame)
 
     return W3cV2SdJwtVerifiableCredential.fromCompact(disclosedCompact)
+  }
+
+  public applyDisclosuresForPayload(
+    compactSdJwtVc: string,
+    requestedPayload: JsonObject
+  ): W3cV2SdJwtVerifiableCredential {
+    const sdJwt = applyDisclosuresForPayload(compactSdJwtVc, requestedPayload)
+    return W3cV2SdJwtVerifiableCredential.fromCompact(sdJwt)
   }
 
   private validateDisclosureFrame(disclosureFrame?: DisclosureFrame<W3cV2JsonCredential | W3cV2JsonPresentation>) {

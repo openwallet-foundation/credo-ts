@@ -1,13 +1,11 @@
 import type { NonEmptyArray } from '@animo-id/pex'
 import type { SDJwt } from '@sd-jwt/core'
-import { decodeSdJwtSync } from '@sd-jwt/decode'
-import { selectDisclosures } from '@sd-jwt/present'
 import { type SDJWTVCConfig, SDJwtVcInstance, type VcTFetcher } from '@sd-jwt/sd-jwt-vc'
 import type { DisclosureFrame, PresentationFrame, SDJWTConfig, Verifier } from '@sd-jwt/types'
 import { AgentContext } from '../../agent'
 import { TrustedIssuerContext } from '../../agent/TrustedIssuerContext'
 import type { TrustedIssuer } from '../../agent/TrustedIssuersForVerification'
-import { Hasher, JwtPayload } from '../../crypto'
+import { JwtPayload } from '../../crypto'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
@@ -21,7 +19,7 @@ import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
-import { buildDisclosureFrameForPayload } from './disclosureFrame'
+import { applyDisclosuresForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcError } from './SdJwtVcError'
 import { SdJwtVcModuleConfig } from './SdJwtVcModuleConfig'
@@ -186,29 +184,7 @@ export class SdJwtVcService {
   }
 
   public applyDisclosuresForPayload(compactSdJwtVc: string, requestedPayload: JsonObject): SdJwtVc {
-    const decoded = decodeSdJwtSync(compactSdJwtVc, Hasher.hash)
-    const presentationFrame = buildDisclosureFrameForPayload(requestedPayload) ?? {}
-
-    if (decoded.kbJwt) {
-      throw new SdJwtVcError('Cannot apply limit disclosure on an sd-jwt with key binding jwt')
-    }
-
-    const requiredDisclosures = selectDisclosures(
-      decoded.jwt.payload,
-      // Map to sd-jwt disclosure format
-      decoded.disclosures.map((d) => ({
-        digest: d.digestSync({ alg: 'sha-256', hasher: Hasher.hash }),
-        encoded: d.encode(),
-        key: d.key,
-        salt: d.salt,
-        value: d.value,
-      })),
-      presentationFrame as { [key: string]: boolean }
-    )
-    const [jwt] = compactSdJwtVc.split('~')
-    const disclosuresString =
-      requiredDisclosures.length > 0 ? `${requiredDisclosures.map((d) => d.encoded).join('~')}~` : ''
-    const sdJwt = `${jwt}~${disclosuresString}`
+    const sdJwt = applyDisclosuresForPayload(compactSdJwtVc, requestedPayload)
     const disclosedDecoded = decodeSdJwtVc(sdJwt)
     return disclosedDecoded
   }
