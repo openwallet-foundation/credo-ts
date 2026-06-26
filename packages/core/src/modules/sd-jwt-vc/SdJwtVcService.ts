@@ -62,18 +62,14 @@ export interface SdJwtVc<
   header: Header
 
   /**
-   * The issuer of the credential.
-   *
-   * This is `undefined` when the credential's issuer cannot be resolved to a supported
-   * signing method (only `did` and `x5c` are supported). Decoding a credential never fails
-   * because of an unsupported issuer; verification does enforce a supported issuer.
+   * The issuer of the credential
    */
-  issuer?: SdJwtVcIssuer
+  issuer: SdJwtVcIssuer
 
   /**
    * The holder of the credential
    */
-  holder: SdJwtVcHolderBinding | undefined
+  holder?: SdJwtVcHolderBinding
 
   // TODO: payload type here is a lie, as it is the signed payload (so fields replaced with _sd)
   payload: Payload
