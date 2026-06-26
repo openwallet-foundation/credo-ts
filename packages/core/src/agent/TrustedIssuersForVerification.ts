@@ -33,7 +33,7 @@ export interface TrustedIssuerDid {
   method: 'did'
 
   /** A DID that is trusted as an issuer */
-  did: string
+  issuance: string
 }
 
 export interface TrustedIssuerX509 {

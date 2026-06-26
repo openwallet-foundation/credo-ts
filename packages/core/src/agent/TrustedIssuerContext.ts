@@ -94,7 +94,7 @@ export class TrustedIssuerContext {
       const signerDid = parseDid(signer.didUrl)
 
       const trustedIssuer = didIssuers.find((t) => {
-        const did = parseDid(t.did)
+        const did = parseDid(t.issuance)
         return signerDid.did === did.did
       })
 
