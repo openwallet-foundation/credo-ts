@@ -306,7 +306,7 @@ export class OpenId4VpHolderService {
     options: OpenId4VpAcceptAuthorizationRequestOptions
   ) {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
-    const { authorizationRequestPayload, presentationExchange, dcql, transactionData } = options
+    const { authorizationRequestPayload, presentationExchange, dcql, transactionData, mdocDeviceNameSpaces } = options
 
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
     const authorizationResponseNonce = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
@@ -459,6 +459,7 @@ export class OpenId4VpHolderService {
           domain: audience,
           presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
           mdocSessionTranscript: mdocSessionTranscript,
+          mdocDeviceNameSpaces,
         })
 
       vpToken =
@@ -487,6 +488,7 @@ export class OpenId4VpHolderService {
         challenge: nonce,
         domain: audience,
         mdocSessionTranscript: mdocSessionTranscript,
+        mdocDeviceNameSpaces,
       })
 
       vpToken = encodedDcqlPresentation

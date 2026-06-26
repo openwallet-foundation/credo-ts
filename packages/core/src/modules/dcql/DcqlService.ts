@@ -733,6 +733,7 @@ export class DcqlService {
       challenge: string
       domain?: string
       mdocSessionTranscript?: MdocSessionTranscriptOptions
+      mdocDeviceNameSpaces?: MdocNameSpaces
     }
   ): Promise<{
     dcqlPresentation: DcqlPresentation
@@ -775,6 +776,7 @@ export class DcqlService {
               },
             ],
             sessionTranscriptOptions: mdocSessionTranscript,
+            deviceNameSpaces: options.mdocDeviceNameSpaces,
           })
           const deviceResponseBase64Url = deviceResponse.encoded
 

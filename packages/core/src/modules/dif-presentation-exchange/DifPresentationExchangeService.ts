@@ -16,7 +16,7 @@ import { uuid } from '../../utils/uuid'
 import type { VerificationMethod } from '../dids'
 import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
 import { getJwkHumanDescription } from '../kms'
-import { MdocApi, MdocRecord, type MdocSessionTranscriptOptions } from '../mdoc'
+import { MdocApi, type MdocNameSpaces, MdocRecord, type MdocSessionTranscriptOptions } from '../mdoc'
 import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
 import { SdJwtVcApi } from '../sd-jwt-vc'
@@ -169,6 +169,7 @@ export class DifPresentationExchangeService {
        * Mdoc openid4vp specific options
        */
       mdocSessionTranscript?: MdocSessionTranscriptOptions
+      mdocDeviceNameSpaces?: MdocNameSpaces
     }
   ) {
     const { presentationDefinition, domain, challenge, mdocSessionTranscript } = options
@@ -216,6 +217,7 @@ export class DifPresentationExchangeService {
           mdocs: [credential.firstCredential],
           presentationDefinition,
           sessionTranscriptOptions: mdocSessionTranscript,
+          deviceNameSpaces: options.mdocDeviceNameSpaces,
         })
 
         if (presentationSubmissionLocation !== DifPresentationExchangeSubmissionLocation.EXTERNAL) {

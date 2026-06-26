@@ -167,3 +167,297 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
     ).resolves.toBeUndefined()
   })
 })
+
+describe('mdoc device key authorizations', () => {
+  const agent = new Agent(getAgentOptions('mdoc-key-auth-agent', {}))
+
+  beforeAll(async () => {
+    await agent.initialize()
+  })
+
+  const createCertificate = async () => {
+    const issuerKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const currentDate = new Date()
+    currentDate.setDate(currentDate.getDate() - 1)
+    const nextDay = new Date(currentDate)
+    nextDay.setDate(currentDate.getDate() + 2)
+
+    const certificate = await X509Service.createCertificate(agent.context, {
+      issuer: 'C=DE',
+      authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
+      validity: {
+        notBefore: currentDate,
+        notAfter: nextDay,
+      },
+    })
+
+    return { certificate, nextDay }
+  }
+
+  test('holder can create and verifier can validate device response within authorizations', async () => {
+    const holderKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const { certificate, nextDay } = await createCertificate()
+
+    const mdoc = await Mdoc.sign(agent.context, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: {
+        'org.iso.18013.5.1': {
+          family_name: 'Doe',
+          given_name: 'Jane',
+        },
+      },
+      deviceKeyAuthorizations: {
+        namespaces: ['org.iso.18013.5.1'],
+        dataElements: {
+          'org.iso.18013.5.1': ['family_name', 'given_name'],
+        },
+      },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+    })
+
+    const deviceResponse = await MdocDeviceResponse.createDeviceResponse(agent.context, {
+      mdocs: [mdoc],
+      documentRequests: [
+        {
+          docType: 'org.iso.18013.5.1.mDL',
+          nameSpaces: {
+            'org.iso.18013.5.1': {
+              family_name: true,
+            },
+          },
+        },
+      ],
+      sessionTranscriptOptions: {
+        type: 'openId4VpDraft18',
+        mdocGeneratedNonce: 'mdoc-nonce',
+        verifierGeneratedNonce: 'verifier-nonce',
+        clientId: 'client-id',
+        responseUri: 'https://verifier.example/response',
+      },
+    })
+
+    await expect(
+      MdocDeviceResponse.fromBase64Url(deviceResponse.encoded).verify(agent.context, {
+        trustedCertificates: [certificate.toString('base64')],
+        sessionTranscriptOptions: {
+          type: 'openId4VpDraft18',
+          mdocGeneratedNonce: 'mdoc-nonce',
+          verifierGeneratedNonce: 'verifier-nonce',
+          clientId: 'client-id',
+          responseUri: 'https://verifier.example/response',
+        },
+      })
+    ).resolves.toBeUndefined()
+  })
+
+  test('holder rejects device response with unauthorized disclosed data element', async () => {
+    const holderKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const { certificate, nextDay } = await createCertificate()
+
+    const mdoc = await Mdoc.sign(agent.context, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: {
+        'org.iso.18013.5.1': {
+          family_name: 'Doe',
+          given_name: 'Jane',
+        },
+      },
+      deviceKeyAuthorizations: {
+        dataElements: {
+          'org.iso.18013.5.1': ['family_name'],
+        },
+      },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+    })
+
+    const sessionTranscriptOptions = {
+      type: 'openId4VpDraft18' as const,
+      mdocGeneratedNonce: 'mdoc-nonce',
+      verifierGeneratedNonce: 'verifier-nonce',
+      clientId: 'client-id',
+      responseUri: 'https://verifier.example/response',
+    }
+
+    await expect(
+      MdocDeviceResponse.createDeviceResponse(agent.context, {
+        mdocs: [mdoc],
+        documentRequests: [
+          {
+            docType: 'org.iso.18013.5.1.mDL',
+            nameSpaces: {
+              'org.iso.18013.5.1': {
+                given_name: true,
+              },
+            },
+          },
+        ],
+        sessionTranscriptOptions,
+      })
+    ).rejects.toThrow("Device key is not authorized for data element 'given_name' in namespace 'org.iso.18013.5.1'")
+  })
+
+  test('verifier accepts device response with authorized device-only nameSpaces', async () => {
+    const holderKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const { certificate, nextDay } = await createCertificate()
+
+    const mdoc = await Mdoc.sign(agent.context, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: {
+        'org.iso.18013.5.1': {
+          family_name: 'Doe',
+        },
+      },
+      deviceKeyAuthorizations: {
+        namespaces: ['org.iso.18013.5.1', 'org.example.transaction'],
+        dataElements: {
+          'org.iso.18013.5.1': ['family_name'],
+          'org.example.transaction': ['transaction_id'],
+        },
+      },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+    })
+
+    const sessionTranscriptOptions = {
+      type: 'openId4VpDraft18' as const,
+      mdocGeneratedNonce: 'mdoc-nonce',
+      verifierGeneratedNonce: 'verifier-nonce',
+      clientId: 'client-id',
+      responseUri: 'https://verifier.example/response',
+    }
+
+    const deviceResponse = await MdocDeviceResponse.createDeviceResponse(agent.context, {
+      mdocs: [mdoc],
+      documentRequests: [
+        {
+          docType: 'org.iso.18013.5.1.mDL',
+          nameSpaces: {
+            'org.iso.18013.5.1': {
+              family_name: true,
+            },
+          },
+        },
+      ],
+      deviceNameSpaces: {
+        'org.example.transaction': {
+          transaction_id: 'tx-123',
+        },
+      },
+      sessionTranscriptOptions,
+    })
+
+    await expect(
+      MdocDeviceResponse.fromBase64Url(deviceResponse.encoded).verify(agent.context, {
+        trustedCertificates: [certificate.toString('base64')],
+        sessionTranscriptOptions,
+      })
+    ).resolves.toBeUndefined()
+  })
+
+  test('holder rejects deviceNameSpaces when MSO keyAuthorizations is missing', async () => {
+    const holderKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const { certificate, nextDay } = await createCertificate()
+
+    const mdoc = await Mdoc.sign(agent.context, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: {
+        'org.iso.18013.5.1': {
+          family_name: 'Doe',
+        },
+      },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+    })
+
+    const sessionTranscriptOptions = {
+      type: 'openId4VpDraft18' as const,
+      mdocGeneratedNonce: 'mdoc-nonce',
+      verifierGeneratedNonce: 'verifier-nonce',
+      clientId: 'client-id',
+      responseUri: 'https://verifier.example/response',
+    }
+
+    await expect(
+      MdocDeviceResponse.createDeviceResponse(agent.context, {
+        mdocs: [mdoc],
+        documentRequests: [
+          {
+            docType: 'org.iso.18013.5.1.mDL',
+            nameSpaces: {
+              'org.iso.18013.5.1': {
+                family_name: true,
+              },
+            },
+          },
+        ],
+        deviceNameSpaces: {
+          'org.example.transaction': {
+            transaction_id: 'tx-123',
+          },
+        },
+        sessionTranscriptOptions,
+      })
+    ).rejects.toThrow(
+      'Cannot include device-signed nameSpaces: MSO deviceKeyInfo.keyAuthorizations is missing or empty'
+    )
+  })
+
+  test('holder rejects device response with unauthorized deviceNameSpaces', async () => {
+    const holderKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const { certificate, nextDay } = await createCertificate()
+
+    const mdoc = await Mdoc.sign(agent.context, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: {
+        'org.iso.18013.5.1': {
+          family_name: 'Doe',
+        },
+      },
+      deviceKeyAuthorizations: {
+        namespaces: ['org.iso.18013.5.1'],
+        dataElements: {
+          'org.iso.18013.5.1': ['family_name'],
+        },
+      },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+    })
+
+    const sessionTranscriptOptions = {
+      type: 'openId4VpDraft18' as const,
+      mdocGeneratedNonce: 'mdoc-nonce',
+      verifierGeneratedNonce: 'verifier-nonce',
+      clientId: 'client-id',
+      responseUri: 'https://verifier.example/response',
+    }
+
+    await expect(
+      MdocDeviceResponse.createDeviceResponse(agent.context, {
+        mdocs: [mdoc],
+        documentRequests: [
+          {
+            docType: 'org.iso.18013.5.1.mDL',
+            nameSpaces: {
+              'org.iso.18013.5.1': {
+                family_name: true,
+              },
+            },
+          },
+        ],
+        deviceNameSpaces: {
+          'org.iso.18013.5.1': {
+            transaction_id: 'tx-123',
+          },
+        },
+        sessionTranscriptOptions,
+      })
+    ).rejects.toThrow("Device key is not authorized for data element 'transaction_id' in namespace 'org.iso.18013.5.1'")
+  })
+})

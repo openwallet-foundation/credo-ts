@@ -203,6 +203,136 @@ describe('mdoc service test', () => {
     expect(isValid).toBeTruthy()
   })
 
+  test('embeds device key authorizations in MSO when provided', async () => {
+    const holderKey = await kms.createKey({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
+    })
+    const issuerKey = await kms.createKey({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
+    })
+
+    const currentDate = new Date()
+    currentDate.setDate(currentDate.getDate() - 1)
+    const nextDay = new Date(currentDate)
+    nextDay.setDate(currentDate.getDate() + 2)
+
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
+      validity: {
+        notBefore: currentDate,
+        notAfter: nextDay,
+      },
+      issuer: 'C=DE',
+    })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: {
+        'org.iso.18013.5.1': {
+          family_name: 'Doe',
+          given_name: 'Jane',
+        },
+      },
+      deviceKeyAuthorizations: {
+        namespaces: ['org.iso.18013.5.1'],
+        dataElements: {
+          'org.iso.18013.5.1': ['family_name', 'given_name'],
+        },
+      },
+      issuerCertificate: certificate,
+      validityInfo: {
+        validUntil: nextDay,
+      },
+    })
+
+    const keyAuthorizations = mdoc.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.keyAuthorizations
+    expect(keyAuthorizations?.namespaces).toEqual(['org.iso.18013.5.1'])
+    expect(keyAuthorizations?.dataElements?.get('org.iso.18013.5.1')).toEqual(['family_name', 'given_name'])
+  })
+
+  test('omits device key authorizations when not provided', async () => {
+    const holderKey = await kms.createKey({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
+    })
+    const issuerKey = await kms.createKey({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
+    })
+
+    const currentDate = new Date()
+    currentDate.setDate(currentDate.getDate() - 1)
+    const nextDay = new Date(currentDate)
+    nextDay.setDate(currentDate.getDate() + 2)
+
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
+      validity: {
+        notBefore: currentDate,
+        notAfter: nextDay,
+      },
+      issuer: 'C=DE',
+    })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: {
+        hello: {
+          world: 'world',
+        },
+      },
+      issuerCertificate: certificate,
+      validityInfo: {
+        validUntil: nextDay,
+      },
+    })
+
+    expect(mdoc.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.keyAuthorizations).toBeUndefined()
+  })
+
+  test('embeds device-only key authorizations not present in issuance payload', async () => {
+    const holderKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const issuerKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const nextDay = new Date()
+    nextDay.setDate(nextDay.getDate() + 2)
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
+      validity: { notBefore: new Date(), notAfter: nextDay },
+      issuer: 'C=DE',
+    })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { 'org.iso.18013.5.1': { family_name: 'Doe' } },
+      deviceKeyAuthorizations: {
+        namespaces: ['org.iso.18013.5.1', 'org.example.transaction'],
+        dataElements: {
+          'org.iso.18013.5.1': ['family_name'],
+          'org.example.transaction': ['transaction_id'],
+        },
+      },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+    })
+
+    const keyAuthorizations = mdoc.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.keyAuthorizations
+    expect(keyAuthorizations?.namespaces).toEqual(['org.iso.18013.5.1', 'org.example.transaction'])
+    expect(keyAuthorizations?.dataElements?.get('org.example.transaction')).toEqual(['transaction_id'])
+  })
+
   test('throws error when mdoc is invalid (missing C= in cert)', async () => {
     const holderKey = await kms.createKey({
       type: {
