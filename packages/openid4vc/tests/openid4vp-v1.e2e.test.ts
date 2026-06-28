@@ -623,12 +623,15 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     })
 
-    expect(
-      asArray(
-        (dcql?.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
-          .verifiableCredential
-      )[0].resolvedCredential
-    ).toMatchObject({
+    const openBadgeEntry = asArray(
+      (dcql?.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+        .verifiableCredential
+    )[0]
+    if (!openBadgeEntry || !('resolvedCredential' in openBadgeEntry)) {
+      throw new Error('Expected EnvelopedVerifiableCredential entry in OpenBadgeCredentialDescriptor presentation')
+    }
+
+    expect(openBadgeEntry.resolvedCredential).toMatchObject({
       type: ['VerifiableCredential', 'OpenBadgeCredential'],
       credentialSubject: {
         id: holder1.did,
@@ -689,12 +692,15 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         ],
       },
     })
-    expect(
-      asArray(
-        (dcql2?.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
-          .verifiableCredential
-      )[0].resolvedCredential
-    ).toMatchObject({
+    const universityDegreeEntry = asArray(
+      (dcql2?.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+        .verifiableCredential
+    )[0]
+    if (!universityDegreeEntry || !('resolvedCredential' in universityDegreeEntry)) {
+      throw new Error('Expected EnvelopedVerifiableCredential entry in UniversityDegree presentation')
+    }
+
+    expect(universityDegreeEntry.resolvedCredential).toMatchObject({
       type: ['VerifiableCredential', 'UniversityDegreeCredential'],
       credentialSubject: {
         id: holder1.did,
