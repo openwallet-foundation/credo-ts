@@ -20,7 +20,6 @@ import type {
 import type { W3cV2DataIntegrityContextValidationResult } from '../W3cV2DataIntegrityContextValidator'
 import { W3cV2DataIntegrityContextValidator } from '../W3cV2DataIntegrityContextValidator'
 import { W3cV2DataIntegrityCredentialService } from '../W3cV2DataIntegrityCredentialService'
-import { W3cV2DataIntegrityProofPurposeValidator } from '../W3cV2DataIntegrityProofPurposeValidator'
 import { CredoDidKeyDiExampleCredentialToSign } from './fixtures/credo-di-vc'
 
 describe('W3cV2DataIntegrityCredentialService', () => {
@@ -229,6 +228,9 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     expect(result.isValid).toBe(false)
     expect((proofService.verifyProof as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1)
+    expect((proofService.verifyProof as ReturnType<typeof vi.fn>).mock.calls[0]?.[2]).toMatchObject({
+      expectedProofPurpose: 'assertionMethod',
+    })
     expect((contextPolicyValidator.validate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0)
   })
 
@@ -256,10 +258,6 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     const service = new W3cV2DataIntegrityCredentialService(proofService, contextPolicyValidator as never)
 
-    const proofPurposeSpy = vi
-      .spyOn(W3cV2DataIntegrityProofPurposeValidator.prototype, 'validate')
-      .mockResolvedValue(undefined)
-
     const result = await service.verifyCredential(
       {} as never,
       {
@@ -275,7 +273,6 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     expect(result.isValid).toBe(true)
     expect(result.validations.credentialStatus?.isValid).toBe(true)
-    proofPurposeSpy.mockRestore()
   })
 
   test('verifyCredential allows DI credentialStatus by default when status verification is disabled', async () => {
@@ -302,10 +299,6 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     const service = new W3cV2DataIntegrityCredentialService(proofService, contextPolicyValidator as never)
 
-    const proofPurposeSpy = vi
-      .spyOn(W3cV2DataIntegrityProofPurposeValidator.prototype, 'validate')
-      .mockResolvedValue(undefined)
-
     const result = await service.verifyCredential(
       {} as never,
       {
@@ -327,7 +320,6 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     expect(result.isValid).toBe(true)
     expect(result.validations.credentialStatus?.isValid).toBe(true)
-    proofPurposeSpy.mockRestore()
   })
 
   test('verifyCredential marks DI credentialStatus as unsupported when status verification is enabled', async () => {
@@ -354,10 +346,6 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     const service = new W3cV2DataIntegrityCredentialService(proofService, contextPolicyValidator as never)
 
-    const proofPurposeSpy = vi
-      .spyOn(W3cV2DataIntegrityProofPurposeValidator.prototype, 'validate')
-      .mockResolvedValue(undefined)
-
     const result = await service.verifyCredential(
       {} as never,
       {
@@ -382,7 +370,6 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     expect(result.validations.credentialStatus?.isValid).toBe(false)
     expect(result.validations.credentialStatus?.error?.message).toContain('not supported')
     expect(result.validations.credentialStatus?.error?.message).toContain('DI')
-    proofPurposeSpy.mockRestore()
   })
 
   test('signCredential rejects invalid VC2 @context before invoking proof service', async () => {
@@ -465,14 +452,19 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     expect(createProofOptions.unsecuredDocument['@context']).toEqual(['https://www.w3.org/ns/credentials/v2'])
   })
 
-  test('verifyPresentation returns CredoError with DI context for proof purpose failures', async () => {
+  test('verifyPresentation returns CredoError with DI context for proof verification failures', async () => {
     const proofService = {
       verifyProof: vi.fn().mockResolvedValue({
-        verified: true,
-        verifiedDocument: {
-          id: 'urn:example:test',
-        },
+        verified: false,
+        verifiedDocument: null,
         mediaType: null,
+        errors: [
+          {
+            type: DataIntegrityProcessingErrorCode.ProofVerificationError,
+            title: 'Unsupported proof purpose for verification relationship validation',
+            detail: "Proof purpose 'unsupported' is not one of assertionMethod, authentication",
+          },
+        ],
       }),
       verifyProofSetAndChain: vi.fn(),
       createProof: vi.fn(),
@@ -557,6 +549,11 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     expect(result.isValid).toBe(false)
     expect((proofService.verifyProof as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1)
+    expect((proofService.verifyProof as ReturnType<typeof vi.fn>).mock.calls[0]?.[2]).toMatchObject({
+      expectedProofPurpose: 'authentication',
+      challenge: 'challenge',
+      domain: 'example.com',
+    })
     expect((contextPolicyValidator.validate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0)
   })
 
@@ -584,10 +581,6 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     const service = new W3cV2DataIntegrityCredentialService(proofService, contextPolicyValidator as never)
 
-    const proofPurposeSpy = vi
-      .spyOn(W3cV2DataIntegrityProofPurposeValidator.prototype, 'validate')
-      .mockResolvedValue(undefined)
-
     const result = await service.verifyPresentation(
       {} as never,
       {
@@ -609,7 +602,6 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     expect((proofService.verifyProof as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1)
     expect((proofService.verifyProofSetAndChain as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0)
     expect((contextPolicyValidator.validate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1)
-    proofPurposeSpy.mockRestore()
   })
 
   test('verifyPresentation does not reject unknown credential entry shapes by shape in DI VP path', async () => {
@@ -636,10 +628,6 @@ describe('W3cV2DataIntegrityCredentialService', () => {
 
     const service = new W3cV2DataIntegrityCredentialService(proofService, contextPolicyValidator as never)
 
-    const proofPurposeSpy = vi
-      .spyOn(W3cV2DataIntegrityProofPurposeValidator.prototype, 'validate')
-      .mockResolvedValue(undefined)
-
     const result = await service.verifyPresentation(
       {} as never,
       {
@@ -661,7 +649,6 @@ describe('W3cV2DataIntegrityCredentialService', () => {
     expect((proofService.verifyProof as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1)
     expect((proofService.verifyProofSetAndChain as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0)
     expect((contextPolicyValidator.validate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1)
-    proofPurposeSpy.mockRestore()
   })
 
   describe('Integration tests against core Data Integrity module', () => {

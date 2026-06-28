@@ -1,7 +1,6 @@
 import { CredoError } from '../../../error'
 import {
   W3cV2DataIntegrityCredentialService,
-  W3cV2DataIntegrityProofPurposeValidator,
   W3cV2DataIntegrityVerifiableCredential,
   W3cV2DataIntegrityVerifiablePresentation,
 } from '../data-integrity-v1'
@@ -344,9 +343,6 @@ describe('W3cV2CredentialService routing', () => {
       proofService as never,
       contextPolicyValidator as never
     )
-    const proofPurposeSpy = vi
-      .spyOn(W3cV2DataIntegrityProofPurposeValidator.prototype, 'validate')
-      .mockResolvedValue(undefined)
 
     const serviceWithRealDi = new W3cV2CredentialService(
       repository as never,
@@ -372,7 +368,6 @@ describe('W3cV2CredentialService routing', () => {
     expect(proofService.verifyProofSetAndChain).not.toHaveBeenCalled()
     expect(jwtService.verifyCredential).toHaveBeenCalledTimes(1)
     expect(sdJwtService.verifyCredential).toHaveBeenCalledTimes(1)
-    proofPurposeSpy.mockRestore()
   })
 
   test('non-DI signCredential routes to jwt service unchanged', async () => {

@@ -2,6 +2,7 @@ import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import type { AgentContext } from '../../../agent/context'
 import { TypedArrayEncoder } from '../../../utils'
 import { MultiBaseEncoder } from '../../../utils/MultiBaseEncoder'
+import { DidsApi } from '../../dids'
 import { W3cDataIntegrityCryptosuiteRegistry } from '../W3cDataIntegrityCryptosuiteRegistry'
 import { W3cDataIntegrityProcessingError, W3cDataIntegrityProcessingErrorCode } from '../W3cDataIntegrityError'
 import type {
@@ -64,6 +65,12 @@ describe('W3cDataIntegrityProofService', () => {
     agentContext = getAgentContext({
       agentConfig: getAgentConfig('DataIntegrityProofServiceTest'),
       registerInstances: [
+        [
+          DidsApi,
+          {
+            resolveDidDocument: mockResolveDidDocument,
+          },
+        ],
         [
           W3cDataIntegrityCryptosuiteRegistry,
           {
@@ -616,7 +623,7 @@ describe('W3cDataIntegrityProofService', () => {
     expect(result).toMatchObject({ errors: [{ type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR' }] })
   })
 
-  test('verifyProof allows unsupported proof purpose values when no proof-purpose validator is registered', async () => {
+  test('verifyProof rejects unsupported proof purpose values', async () => {
     mockCreateByCryptosuite.mockReturnValue({
       verifyProof: vi.fn().mockResolvedValue({
         verified: true,
@@ -635,8 +642,105 @@ describe('W3cDataIntegrityProofService', () => {
       },
     })
 
-    expect(result.verified).toBe(true)
+    expect(result.verified).toBe(false)
+    expect(result).toMatchObject({ errors: [{ type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR' }] })
+    expect(mockResolveDidDocument).not.toHaveBeenCalled()
+    expect(mockCreateByCryptosuite).not.toHaveBeenCalled()
+  })
+
+  test('verifyProof rejects verification methods not authorised for proof purpose', async () => {
+    const didDocumentRelationships = new Map<string, string[]>([['did:example:123#key-1', ['authentication']]])
+    const dereferenceKey = vi.fn().mockImplementation((keyId: string, allowedPurposes?: string[]) => {
+      const relationships = didDocumentRelationships.get(keyId) ?? []
+      const isAuthorised = (allowedPurposes ?? []).some((purpose) => relationships.includes(purpose))
+
+      if (!isAuthorised) {
+        throw new Error(`Key '${keyId}' does not satisfy one of the required verification relationships`)
+      }
+
+      return { id: keyId }
+    })
+
+    mockResolveDidDocument.mockResolvedValue({
+      dereferenceKey,
+    })
+
+    mockCreateByCryptosuite.mockReturnValue({
+      verifyProof: vi.fn().mockResolvedValue({
+        verified: true,
+        verifiedDocument: { id: 'urn:example:test' },
+      }),
+    })
+
+    const result = await service.verifyProof(agentContext, {
+      id: 'urn:example:test',
+      proof: {
+        type: 'DataIntegrityProof',
+        cryptosuite: 'eddsa-jcs-2022',
+        verificationMethod: 'did:example:123#key-1',
+        proofPurpose: 'assertionMethod',
+        proofValue: validProofValue,
+      },
+    })
+
+    expect(result.verified).toBe(false)
+    expect(result).toMatchObject({ errors: [{ type: 'https://w3id.org/security#PROOF_VERIFICATION_ERROR' }] })
+    expect(mockResolveDidDocument).toHaveBeenCalledTimes(1)
+    expect(mockResolveDidDocument).toHaveBeenCalledWith('did:example:123#key-1')
+    expect(dereferenceKey).toHaveBeenCalledTimes(1)
+    expect(dereferenceKey).toHaveBeenCalledWith('did:example:123#key-1', ['assertionMethod'])
+    expect(mockCreateByCryptosuite).not.toHaveBeenCalled()
+  })
+
+  test('verifyProof accepts verification methods authorised for proof purpose and continues with cryptosuite verification', async () => {
+    const didDocumentRelationships = new Map<string, string[]>([['did:example:123#key-1', ['assertionMethod']]])
+    const dereferenceKey = vi.fn().mockImplementation((keyId: string, allowedPurposes?: string[]) => {
+      const relationships = didDocumentRelationships.get(keyId) ?? []
+      const isAuthorised = (allowedPurposes ?? []).some((purpose) => relationships.includes(purpose))
+
+      if (!isAuthorised) {
+        throw new Error(`Key '${keyId}' does not satisfy one of the required verification relationships`)
+      }
+
+      return { id: keyId }
+    })
+
+    const verifyProof = vi.fn().mockResolvedValue({
+      verified: true,
+      verifiedDocument: { id: 'urn:example:test' },
+    })
+
+    mockResolveDidDocument.mockResolvedValue({
+      dereferenceKey,
+    })
+
+    mockCreateByCryptosuite.mockReturnValue({
+      verifyProof,
+    })
+
+    const result = await service.verifyProof(agentContext, {
+      id: 'urn:example:test',
+      proof: {
+        type: 'DataIntegrityProof',
+        cryptosuite: 'eddsa-jcs-2022',
+        verificationMethod: 'did:example:123#key-1',
+        proofPurpose: 'assertionMethod',
+        proofValue: validProofValue,
+      },
+    })
+
+    expect(result).toEqual({
+      verified: true,
+      verifiedDocument: { id: 'urn:example:test' },
+      mediaType: null,
+    })
+    expect(mockResolveDidDocument).toHaveBeenCalledTimes(1)
+    expect(mockResolveDidDocument).toHaveBeenCalledWith('did:example:123#key-1')
+    expect(dereferenceKey).toHaveBeenCalledTimes(1)
+    expect(dereferenceKey).toHaveBeenCalledWith('did:example:123#key-1', ['assertionMethod'])
     expect(mockCreateByCryptosuite).toHaveBeenCalledTimes(1)
+    expect(mockCreateByCryptosuite).toHaveBeenCalledWith(agentContext, 'eddsa-jcs-2022')
+    expect(verifyProof).toHaveBeenCalledTimes(1)
   })
 
   test('verifyProof rejects proofs without verificationMethod', async () => {
