@@ -4,6 +4,7 @@ import { asArray, equalsIgnoreOrder } from '../../utils'
 import type { W3cDataIntegrityCryptosuite, W3cDataIntegrityProofVerificationInput } from './cryptosuites/types'
 import { omitUndefinedFields } from './proof-processing/normalisation'
 import { parseW3cDataIntegrityProofDocument } from './proof-processing/parsing'
+import { validateProofPurposeVerificationRelationship } from './proof-processing/proof-purpose-validation'
 import { validateProofChainStructure } from './proof-processing/proof-set-validation'
 import {
   assertCreatedProofPostconditions,
@@ -347,7 +348,7 @@ export class W3cDataIntegrityProofService {
 
   /**
    * Implements VC Data Integrity v1.0 §4.4 steps 5-8 for a single-proof input.
-   * Runs proof policy checks, field-format checks, and cryptosuite verification.
+   * Runs proof checks, field-format checks, relationship validation, and cryptosuite verification.
    */
   private async verifySingleProofCore(
     agentContext: AgentContext,
@@ -368,6 +369,11 @@ export class W3cDataIntegrityProofService {
     const proofFieldFormatError = validateProofFieldFormats(proof)
     if (proofFieldFormatError) {
       return proofFieldFormatError
+    }
+
+    const proofPurposeValidationError = await validateProofPurposeVerificationRelationship(agentContext, proof)
+    if (proofPurposeValidationError) {
+      return proofPurposeValidationError
     }
 
     const cryptosuite = this.dataIntegrityCryptosuiteRegistry.createByCryptosuite(agentContext, proof.cryptosuite)
