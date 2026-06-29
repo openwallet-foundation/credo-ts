@@ -157,10 +157,14 @@ export class W3cV2SdJwtCredentialService {
       // Ensure the issuer is trusted according to the (optional) `getTrustedIssuersForVerification`
       // callback. For did-based issuers this is a no-op when no trusted issuers are configured,
       // preserving the previous "trust any valid signature" behavior. Throws when the issuer is not trusted.
-      await TrustedIssuerContext.ensureTrustedSigner(agentContext, {
-        signer: { method: 'did', didUrl: issuerVerificationMethod.id },
-        verification: { type: 'credential', credential },
-      })
+      await TrustedIssuerContext.ensureTrustedSigner(
+        agentContext,
+        {
+          signer: { method: 'did', didUrl: issuerVerificationMethod.id },
+          verification: { type: 'credential', credential },
+        },
+        options.trustedIssuers
+      )
 
       const holderBinding = parseHolderBindingFromCredential(credential.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
@@ -365,6 +369,7 @@ export class W3cV2SdJwtCredentialService {
 
           const credentialResult = await this.verifyCredential(agentContext, {
             credential: credential.envelopedCredential,
+            trustedIssuers: options.trustedIssuers,
           })
 
           const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(

@@ -690,18 +690,32 @@ export class SdJwtVcService {
         return getSdJwtVerifier(agentContext, credentialIssuerKey)(data, signatureBase64Url)
       }
 
+      // A failure to extract or authorize the status list signer is thrown (rather than returning
+      // `false`) so the verification result carries the actual reason instead of a generic
+      // "invalid signature". Only the final signature check returns a boolean.
       let header: { x5c?: string[]; kid?: string }
       try {
         header = JsonEncoder.fromBase64Url(data.split('.')[0])
-      } catch {
-        return false
+      } catch (error) {
+        throw new SdJwtVcError('Unable to decode the status list JWT header to extract the status list signer.', {
+          cause: error,
+        })
       }
 
       if (matchedTrustedIssuer.method === 'x509') {
         // Mirror mdoc: fall back to the issuance certificates when no dedicated status certificates are
         // configured. An explicit empty array means "trust no status list signer".
+        const hasDedicatedStatusCertificates = matchedTrustedIssuer.status !== undefined
         const statusCertificates = matchedTrustedIssuer.status ?? matchedTrustedIssuer.issuance
-        if (!header.x5c?.length || statusCertificates.length === 0) return false
+
+        if (!header.x5c?.length) {
+          throw new SdJwtVcError('Unable to extract the status list signer: the status list JWT has no x5c header.')
+        }
+        if (statusCertificates.length === 0) {
+          throw new SdJwtVcError(
+            'No trusted status list certificates configured for the trusted issuer. The status list signer cannot be verified.'
+          )
+        }
 
         try {
           // Trust check only: ensure the status list certificate chain anchors in the status certificates.
@@ -709,34 +723,59 @@ export class SdJwtVcService {
             certificateChain: header.x5c,
             trustedCertificates: statusCertificates,
           })
-        } catch {
-          return false
+        } catch (error) {
+          throw new SdJwtVcError(
+            'The status list certificate chain could not be validated against the trusted status certificates.',
+            { cause: error }
+          )
         }
 
         // The signer is the leaf, i.e. the first entry of the leaf-first `x5c` header (the chain returned
         // by `validateCertificateChain` is root-first, so we don't use it to derive the signer key here).
         const signerJwk = X509Certificate.fromEncodedCertificate(header.x5c[0]).publicJwk
+
+        // Mirror mdoc: when no dedicated status certificates were configured, the fallback to the issuance
+        // certificates must not widen the trust set. The status list signer is therefore required to be the
+        // same key as the credential issuer (issuance-only -> must be the same chain/key). When dedicated
+        // status certificates are configured, any signer anchoring in them is accepted.
+        if (!hasDedicatedStatusCertificates && !signerJwk.equals(credentialIssuerKey)) {
+          throw new SdJwtVcError(
+            'The status list signer does not match the credential issuer, and no dedicated trusted status certificates were configured for the trusted issuer.'
+          )
+        }
+
         return getSdJwtVerifier(agentContext, signerJwk)(data, signatureBase64Url)
       }
 
       // did: require the status list signer did to equal the trusted issuer did. The signer did is the
       // `iss` of the status list payload; the `kid` header is typically a relative reference (e.g.
       // `#key-1`) that has to be resolved against that did.
+      let statusListIssuerDid: unknown
       try {
-        const payload = JsonEncoder.fromBase64Url(data.split('.')[1])
-        const statusListIssuerDid = payload.iss
-        if (typeof statusListIssuerDid !== 'string') return false
-        if (parseDid(statusListIssuerDid).did !== parseDid(matchedTrustedIssuer.issuance).did) return false
-
-        const didUrl = header.kid?.startsWith('#') ? `${statusListIssuerDid}${header.kid}` : header.kid
-        if (!didUrl) return false
-
-        const { verificationMethod } = await resolveDidUrl(agentContext, didUrl)
-        const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-        return getSdJwtVerifier(agentContext, publicJwk)(data, signatureBase64Url)
-      } catch {
-        return false
+        statusListIssuerDid = JsonEncoder.fromBase64Url(data.split('.')[1]).iss
+      } catch (error) {
+        throw new SdJwtVcError('Unable to decode the status list JWT payload to extract the status list signer.', {
+          cause: error,
+        })
       }
+
+      if (typeof statusListIssuerDid !== 'string') {
+        throw new SdJwtVcError('Unable to extract the status list signer: the status list JWT payload has no `iss`.')
+      }
+      if (parseDid(statusListIssuerDid).did !== parseDid(matchedTrustedIssuer.issuance).did) {
+        throw new SdJwtVcError(
+          `The status list signer did '${parseDid(statusListIssuerDid).did}' does not match the trusted issuer did.`
+        )
+      }
+
+      const didUrl = header.kid?.startsWith('#') ? `${statusListIssuerDid}${header.kid}` : header.kid
+      if (!didUrl) {
+        throw new SdJwtVcError('Unable to resolve the status list signer: the status list JWT has no `kid` header.')
+      }
+
+      const { verificationMethod } = await resolveDidUrl(agentContext, didUrl)
+      const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      return getSdJwtVerifier(agentContext, publicJwk)(data, signatureBase64Url)
     }
   }
 

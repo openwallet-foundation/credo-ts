@@ -105,9 +105,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         })
       }
 
-      oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
-        issuanceSessionId: issuanceSession.id,
-      })
+      oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })
       let verificationResult: VerifyAccessTokenRequestReturn
 
       if (grant.grantType === preAuthorizedCodeGrantIdentifier) {
