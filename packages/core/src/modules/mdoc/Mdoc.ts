@@ -1,5 +1,6 @@
 import { DeviceKey, DeviceKeyInfo, Holder, Issuer, IssuerSigned, SignatureAlgorithm } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
+import { TrustedIssuerContext } from '../../agent/TrustedIssuerContext'
 import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
@@ -171,16 +172,27 @@ export class Mdoc {
       X509Certificate.fromRawCertificate(certificate)
     )
 
-    const trustedCertificates =
-      options?.trustedCertificates ??
-      (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
-        verification: {
-          type: 'credential',
-          credential: this,
+    let trustedCertificates = options?.trustedCertificates
+    if (!trustedCertificates) {
+      const trustedIssuers = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+        verification: { type: 'credential', credential: this },
+        signer: {
+          certificateChain,
+          method: 'x509',
         },
-        certificateChain,
-      })) ??
-      x509ModuleConfig.trustedCertificates
+      })
+
+      trustedCertificates =
+        trustedIssuers?.trustedIssuers ??
+        (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
+          verification: {
+            type: 'credential',
+            credential: this,
+          },
+          certificateChain,
+        })) ??
+        x509ModuleConfig.trustedCertificates
+    }
 
     if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
