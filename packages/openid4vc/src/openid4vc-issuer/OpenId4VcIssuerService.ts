@@ -559,7 +559,7 @@ export class OpenId4VcIssuerService {
     ])
     const { issuanceSession } = options
     const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
-    const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
+    const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
     const parsedCredentialRequest = vcIssuer.parseCredentialRequest({
@@ -771,7 +771,7 @@ export class OpenId4VcIssuerService {
     }
 
     const issuer = await this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
-    const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
+    const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
 
     // Optimization: if the deferral interval hasn't passed yet, we immediately
     // return a new deferral response with the remaining interval. This avoids
@@ -893,7 +893,7 @@ export class OpenId4VcIssuerService {
       options
     const { proofs } = parsedCredentialRequest
 
-    const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
+    const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
     const allowedProofTypes = credentialConfiguration.proof_types_supported ?? {
@@ -1600,7 +1600,7 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  public getIssuer(agentContext: AgentContext, options: { issuanceSessionId?: string } = {}) {
+  public getIssuer(agentContext: AgentContext, options: { issuanceSession?: OpenId4VcIssuanceSessionRecord } = {}) {
     return new Openid4vciIssuer({
       callbacks: getOid4vcCallbacks(agentContext, options),
     })
@@ -1617,7 +1617,10 @@ export class OpenId4VcIssuerService {
     })
   }
 
-  public getOauth2AuthorizationServer(agentContext: AgentContext, options: { issuanceSessionId?: string } = {}) {
+  public getOauth2AuthorizationServer(
+    agentContext: AgentContext,
+    options: { issuanceSession?: OpenId4VcIssuanceSessionRecord } = {}
+  ) {
     return new Oauth2AuthorizationServer({
       callbacks: getOid4vcCallbacks(agentContext, options),
     })

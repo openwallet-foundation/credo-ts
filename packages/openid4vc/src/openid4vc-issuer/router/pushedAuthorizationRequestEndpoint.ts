@@ -83,9 +83,7 @@ export async function handlePushedAuthorizationRequest(
     )
   }
 
-  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
-    issuanceSessionId: issuanceSession.id,
-  })
+  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })
 
   const { clientAttestation, dpop } = await authorizationServer.verifyPushedAuthorizationRequest({
     authorizationRequest: parsedAuthorizationRequest.authorizationRequest,
