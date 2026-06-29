@@ -1,4 +1,4 @@
-import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
+import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/core'
 import { Hasher } from '../../crypto'
 import { ClaimFormat } from '../vc/index'
 import type { SdJwtVcHeader, SdJwtVcPayload } from './SdJwtVcOptions'

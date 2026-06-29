@@ -1,5 +1,4 @@
-import { decodeSdJwtSync } from '@sd-jwt/decode'
-import { selectDisclosures } from '@sd-jwt/present'
+import { decodeSdJwtSync, selectDisclosures } from '@sd-jwt/core'
 import { isObject } from 'class-validator'
 import { Hasher } from '../../crypto'
 import type { JsonObject } from '../../types'

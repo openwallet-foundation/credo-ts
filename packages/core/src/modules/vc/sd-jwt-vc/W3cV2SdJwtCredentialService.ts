@@ -1,5 +1,4 @@
-import { SDJwtInstance } from '@sd-jwt/core'
-import type { DisclosureFrame, PresentationFrame, SDJWTConfig } from '@sd-jwt/types'
+import { type DisclosureFrame, type PresentationFrame, type SDJWTConfig, SDJwtInstance } from '@sd-jwt/core'
 import type { AgentContext } from '../../../agent/context'
 import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
 import { JwtPayload } from '../../../crypto'

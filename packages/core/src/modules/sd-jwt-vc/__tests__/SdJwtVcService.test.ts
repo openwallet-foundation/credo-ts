@@ -16,8 +16,7 @@ import {
   X509Service,
 } from '@credo-ts/core'
 import { createHeaderAndPayload, StatusList } from '@owf/token-status-list'
-import { Jwt, SDJwt } from '@sd-jwt/core'
-import { SDJWTException } from '@sd-jwt/utils'
+import { Jwt, SDJWTException, SDJwt } from '@sd-jwt/core'
 import { randomUUID } from 'crypto'
 import nock from 'nock'
 import { vi } from 'vitest'
