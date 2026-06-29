@@ -1,4 +1,4 @@
-import type { Signer, Verifier } from '@sd-jwt/types'
+import type { Signer, Verifier } from '@sd-jwt/core'
 import { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'

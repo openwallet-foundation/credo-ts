@@ -1,7 +1,6 @@
 import type { NonEmptyArray } from '@animo-id/pex'
-import type { SDJwt } from '@sd-jwt/core'
-import { type SDJWTVCConfig, SDJwtVcInstance, type VcTFetcher } from '@sd-jwt/sd-jwt-vc'
-import type { DisclosureFrame, PresentationFrame, SDJWTConfig, Verifier } from '@sd-jwt/types'
+import type { DisclosureFrame, PresentationFrame, SDJwt, Verifier } from '@sd-jwt/core'
+import { type SDJWTVCConfig, SDJwtVcInstance, type VCTFetcher } from '@sd-jwt/sd-jwt-vc'
 import { AgentContext } from '../../agent'
 import { TrustedIssuerContext } from '../../agent/TrustedIssuerContext'
 import type { TrustedIssuer } from '../../agent/TrustedIssuersForVerification'
@@ -309,7 +308,6 @@ export class SdJwtVcService {
       prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
       holder: holderBinding,
       issuer,
-
       kbJwt: sdJwtVc.kbJwt
         ? {
             payload: sdJwtVc.kbJwt.payload as Record<string, unknown>,
@@ -335,15 +333,15 @@ export class SdJwtVcService {
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, issuerWithKey.publicJwk),
         kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
-        statusVerifier: this.getStatusVerifier(agentContext, {
-          matchedTrustedIssuer: trustedIssuer,
-          credentialIssuerKey: issuerWithKey.publicJwk,
-          statusValidationDisabled,
-        }),
-        ...(statusValidationDisabled ? { statusValidator: async () => {} } : {}),
-
-        // TODO: remove weird typing after updating to >= 0.19.1 of the library
-      } satisfies SDJWTVCConfig as SDJWTConfig)
+        ...(statusValidationDisabled
+          ? {}
+          : {
+              statusVerifier: this.getStatusVerifier(agentContext, {
+                matchedTrustedIssuer: trustedIssuer,
+                credentialIssuerKey: issuerWithKey.publicJwk,
+              }),
+            }),
+      })
 
       try {
         await sdjwt.verify(compactSdJwtVc, {
@@ -351,6 +349,7 @@ export class SdJwtVcService {
           keyBindingNonce: keyBinding?.nonce,
           currentDate: dateToSeconds(now ?? new Date()),
           skewSeconds: agentContext.config.validitySkewSeconds,
+          disableStatusVerification: statusValidationDisabled,
         })
       } catch (error) {
         return {
@@ -671,19 +670,12 @@ export class SdJwtVcService {
     {
       matchedTrustedIssuer,
       credentialIssuerKey,
-      statusValidationDisabled,
     }: {
       matchedTrustedIssuer: TrustedIssuer | undefined
       credentialIssuerKey: PublicJwk
-      statusValidationDisabled?: boolean
     }
   ): Verifier {
     return async (data, signatureBase64Url) => {
-      // If status validation is disabled, tell the library everything is ok
-      if (statusValidationDisabled) {
-        return true
-      }
-
       // No matched trusted issuer (e.g. did default-allow path with no configured trusted issuers).
       // Preserve the previous behavior of verifying the status list with the credential issuer key.
       if (!matchedTrustedIssuer) {
@@ -786,7 +778,7 @@ export class SdJwtVcService {
       throwErrorOnFetchError = true,
       throwErrorOnUnsupportedVctValue = true,
     }: { baseVct: string; throwErrorOnFetchError?: boolean; throwErrorOnUnsupportedVctValue?: boolean }
-  ): VcTFetcher {
+  ): VCTFetcher {
     const sdJwtVcConfig = agentContext.dependencyManager.resolve(SdJwtVcModuleConfig)
     return async (uri: string, integrity) => {
       if (sdJwtVcConfig.customTypeMetadataResolver) {
