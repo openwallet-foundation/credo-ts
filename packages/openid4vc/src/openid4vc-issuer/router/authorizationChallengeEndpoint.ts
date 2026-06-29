@@ -239,9 +239,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     )
   }
 
-  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
-    issuanceSessionId: issuanceSession.id,
-  })
+  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })
   const { clientAttestation, dpop } = await authorizationServer.verifyAuthorizationChallengeRequest({
     authorizationChallengeRequest,
     authorizationServerMetadata: issuerMetadata.authorizationServers[0],
@@ -389,9 +387,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
     )
   }
 
-  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
-    issuanceSessionId: issuanceSession.id,
-  })
+  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })
   const { clientAttestation, dpop } = await authorizationServer.verifyAuthorizationChallengeRequest({
     authorizationChallengeRequest,
     authorizationServerMetadata: issuerMetadata.authorizationServers[0],

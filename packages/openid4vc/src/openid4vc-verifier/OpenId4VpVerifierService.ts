@@ -1,5 +1,6 @@
 import {
   AgentContext,
+  asArray,
   ClaimFormat,
   CredoError,
   type DcqlEncodedPresentations,
@@ -8,10 +9,8 @@ import {
   type DifPresentationExchangeDefinition,
   DifPresentationExchangeService,
   type DifPresentationExchangeSubmission,
-  type EncodedX509Certificate,
   EventEmitter,
   extractPresentationsWithDescriptorsFromSubmission,
-  extractX509CertificatesFromJwt,
   getDomainFromUrl,
   Hasher,
   type HashName,
@@ -25,6 +24,7 @@ import {
   joinUriParts,
   Kms,
   type Logger,
+  legacyTrustedCertificatesToTrustedIssuers,
   Mdoc,
   MdocDeviceResponse,
   type MdocSessionTranscriptOptions,
@@ -35,6 +35,9 @@ import {
   type QueryOptions,
   SdJwtVcApi,
   SignatureSuiteRegistry,
+  type TrustedIssuer,
+  TrustedIssuerContext,
+  type TrustedIssuerDid,
   TypedArrayEncoder,
   utils,
   type VerifiablePresentation,
@@ -46,7 +49,6 @@ import {
   X509Certificate,
   X509ModuleConfig,
   X509Service,
-  type X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
@@ -63,7 +65,11 @@ import {
   zOpenid4vpAuthorizationResponse,
 } from '@openid4vc/openid4vp'
 import { getOid4vcCallbacks } from '../shared/callbacks'
-import type { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
+import type {
+  OpenId4VcVerificationTypeOid4VpCredential,
+  OpenId4VcVerificationTypes,
+  OpenId4VpAuthorizationRequestPayload,
+} from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import {
@@ -564,7 +570,7 @@ export class OpenId4VpVerifierService {
                   origin: options.origin,
                   responseUri,
                   mdocGeneratedNonce,
-                  verificationSessionId: result.verificationSession.id,
+                  verificationSession: result.verificationSession,
                   presentation,
                 })
               )
@@ -659,7 +665,7 @@ export class OpenId4VpVerifierService {
               encryptionJwk: encryptionPublicJwk,
               responseUri,
               mdocGeneratedNonce,
-              verificationSessionId: result.verificationSession.id,
+              verificationSession: result.verificationSession,
               presentation,
               format: this.claimFormatFromEncodedPresentation(presentation),
               origin: options.origin,
@@ -1138,7 +1144,7 @@ export class OpenId4VpVerifierService {
       responseUri?: string
       mdocGeneratedNonce?: string
       origin?: string
-      verificationSessionId: string
+      verificationSession: OpenId4VcVerificationSessionRecord
       presentation: string | Record<string, unknown>
       format: ClaimFormat.LdpVp | ClaimFormat.JwtVp | ClaimFormat.SdJwtW3cVp | ClaimFormat.SdJwtDc | ClaimFormat.MsoMdoc
       version: OpenId4VpVersion
@@ -1170,24 +1176,44 @@ export class OpenId4VpVerifierService {
         }
 
         const sdJwtVc = sdJwtVcApi.fromCompact(presentation)
-        const jwt = Jwt.fromSerializedJwt(presentation.split('~')[0])
-        const certificateChain = extractX509CertificatesFromJwt(jwt)
+        const issuer = sdJwtVc.issuer
 
-        let trustedCertificates: EncodedX509Certificate[] | X509VerificationTrustedCertificates[] | undefined
-        if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
-          trustedCertificates = await x509Config.getTrustedCertificatesForVerification(agentContext, {
-            certificateChain,
-            verification: {
-              type: 'credential',
-              credential: sdJwtVc,
-              openId4VcVerificationSessionId: options.verificationSessionId,
-            },
-          })
-        }
+        // `issuer` is undefined when the credential is not did/x5c signed. In that case we leave
+        // `trustedIssuers` undefined and let `sdJwtVcApi.verify` surface the unsupported-issuer error.
+        let trustedIssuers: TrustedIssuer[] | undefined
+        if (issuer) {
+          trustedIssuers = (
+            await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+              signer:
+                issuer.method === 'x5c'
+                  ? {
+                      method: 'x509',
+                      certificateChain: issuer.x5c,
+                    }
+                  : { method: 'did', didUrl: issuer.didUrl },
+              verification: {
+                type: 'openId4VpCredential',
+                credential: sdJwtVc,
+                openId4VcVerificationSessionRecord: options.verificationSession,
+              } satisfies OpenId4VcVerificationTypes,
+            })
+          )?.trustedIssuers
 
-        if (!trustedCertificates) {
-          // We also take from the config here to avoid the callback being called again
-          trustedCertificates = x509Config.trustedCertificates ?? []
+          if (!trustedIssuers && issuer.method === 'x5c') {
+            const legacyTrustedCertificates =
+              (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+                certificateChain: issuer.x5c,
+                verification: {
+                  type: 'credential',
+                  credential: sdJwtVc,
+                  openId4VcVerificationSessionId: options.verificationSession.id,
+                },
+              })) ?? x509Config.trustedCertificates
+
+            if (legacyTrustedCertificates) {
+              trustedIssuers = legacyTrustedCertificatesToTrustedIssuers(legacyTrustedCertificates)
+            }
+          }
         }
 
         const verificationResult = await sdJwtVcApi.verify({
@@ -1196,7 +1222,7 @@ export class OpenId4VpVerifierService {
             audience: options.audience,
             nonce: options.nonce,
           },
-          trustedCertificates,
+          trustedIssuers,
         })
 
         isValid = verificationResult.isValid
@@ -1224,12 +1250,25 @@ export class OpenId4VpVerifierService {
           )
 
           const trustedCertificates =
+            (
+              await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+                signer: {
+                  method: 'x509',
+                  certificateChain,
+                },
+                verification: {
+                  type: 'openId4VpCredential',
+                  credential: mdoc,
+                  openId4VcVerificationSessionRecord: options.verificationSession,
+                } satisfies OpenId4VcVerificationTypes,
+              })
+            )?.trustedIssuers ??
             (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
               certificateChain,
               verification: {
                 type: 'credential',
                 credential: mdoc,
-                openId4VcVerificationSessionId: options.verificationSessionId,
+                openId4VcVerificationSessionId: options.verificationSession.id,
               },
             })) ??
             x509Config.trustedCertificates ??
@@ -1292,11 +1331,18 @@ export class OpenId4VpVerifierService {
           throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
         }
 
-        verifiablePresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
+        const jwtVp = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
+        verifiablePresentation = jwtVp
+        const trustedIssuers = await this.getOid4vpW3cTrustedIssuers(
+          agentContext,
+          options.verificationSession,
+          asArray(jwtVp.verifiableCredential).map((credential) => ({ credential, issuerId: credential.issuerId }))
+        )
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
           presentation,
           challenge: options.nonce,
           domain: options.audience,
+          trustedIssuers,
         })
 
         isValid = verificationResult.isValid
@@ -1306,21 +1352,38 @@ export class OpenId4VpVerifierService {
           throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
         }
 
-        verifiablePresentation = W3cV2SdJwtVerifiablePresentation.fromCompact(presentation)
+        const sdJwtW3cVp = W3cV2SdJwtVerifiablePresentation.fromCompact(presentation)
+        verifiablePresentation = sdJwtW3cVp
+        const trustedIssuers = await this.getOid4vpW3cTrustedIssuers(
+          agentContext,
+          options.verificationSession,
+          asArray(sdJwtW3cVp.resolvedPresentation.verifiableCredential).map((enveloped) => ({
+            credential: enveloped.envelopedCredential,
+            issuerId: enveloped.resolvedCredential.issuerId,
+          }))
+        )
         const verificationResult = await this.w3cV2CredentialService.verifyPresentation(agentContext, {
-          presentation: verifiablePresentation,
+          presentation: sdJwtW3cVp,
           challenge: options.nonce,
           domain: options.audience,
+          trustedIssuers,
         })
 
         isValid = verificationResult.isValid
         cause = verificationResult.error
       } else {
-        verifiablePresentation = JsonTransformer.fromJSON(presentation, W3cJsonLdVerifiablePresentation)
+        const ldpVp = JsonTransformer.fromJSON(presentation, W3cJsonLdVerifiablePresentation)
+        verifiablePresentation = ldpVp
+        const trustedIssuers = await this.getOid4vpW3cTrustedIssuers(
+          agentContext,
+          options.verificationSession,
+          asArray(ldpVp.verifiableCredential).map((credential) => ({ credential, issuerId: credential.issuerId }))
+        )
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
-          presentation: verifiablePresentation,
+          presentation: ldpVp,
           challenge: options.nonce,
           domain: options.audience,
+          trustedIssuers,
         })
 
         isValid = verificationResult.isValid
@@ -1347,6 +1410,28 @@ export class OpenId4VpVerifierService {
         cause: error.cause,
       }
     }
+  }
+
+  private async getOid4vpW3cTrustedIssuers(
+    agentContext: AgentContext,
+    verificationSession: OpenId4VcVerificationSessionRecord,
+    credentials: Array<{ credential: OpenId4VcVerificationTypeOid4VpCredential['credential']; issuerId: string }>
+  ): Promise<TrustedIssuerDid[] | undefined> {
+    const resolved = await Promise.all(
+      credentials.map(({ credential, issuerId }) =>
+        TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+          signer: { method: 'did', didUrl: issuerId },
+          verification: {
+            type: 'openId4VpCredential',
+            credential,
+            openId4VcVerificationSessionRecord: verificationSession,
+          } satisfies OpenId4VcVerificationTypes,
+        })
+      )
+    )
+
+    if (!resolved.some((result) => result !== undefined)) return undefined
+    return resolved.flatMap((result) => result?.trustedIssuers ?? [])
   }
 
   /**
