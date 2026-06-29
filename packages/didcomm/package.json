@@ -39,7 +39,7 @@
   "devDependencies": {
     "@animo-id/pex": "catalog:",
     "@sphereon/pex-models": "catalog:",
-    "@types/luxon": "^3.7.1",
+    "@types/luxon": "^3.7.2",
     "reflect-metadata": "catalog:",
     "typescript": "catalog:"
   }
