@@ -136,10 +136,14 @@ export class W3cJwtCredentialService {
       // Ensure the issuer is trusted according to the (optional) `getTrustedIssuersForVerification`
       // callback. For did-based issuers this is a no-op when no trusted issuers are configured,
       // preserving the previous "trust any valid signature" behavior. Throws when the issuer is not trusted.
-      await TrustedIssuerContext.ensureTrustedSigner(agentContext, {
-        signer: { method: 'did', didUrl: issuerVerificationMethod.id },
-        verification: { type: 'credential', credential },
-      })
+      await TrustedIssuerContext.ensureTrustedSigner(
+        agentContext,
+        {
+          signer: { method: 'did', didUrl: issuerVerificationMethod.id },
+          verification: { type: 'credential', credential },
+        },
+        options.trustedIssuers
+      )
 
       let signatureResult: VerifyJwsResult | undefined
       try {
@@ -390,6 +394,7 @@ export class W3cJwtCredentialService {
           const credentialResult = await this.verifyCredential(agentContext, {
             credential,
             verifyCredentialStatus: options.verifyCredentialStatus,
+            trustedIssuers: options.trustedIssuers,
           })
 
           const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(

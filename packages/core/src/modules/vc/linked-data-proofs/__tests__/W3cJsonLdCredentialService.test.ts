@@ -342,6 +342,27 @@ describe('W3cJsonLdCredentialsService', () => {
         })
       })
 
+      it('should reject a presentation whose embedded credential issuer is not trusted', async () => {
+        const vp = JsonTransformer.fromJSON(
+          Ed25519Signature2018Fixtures.TEST_VP_DOCUMENT_SIGNED,
+          W3cJsonLdVerifiablePresentation
+        )
+
+        agentContext.config.setTrustedIssuersForVerification(async () => ({
+          trustedIssuers: [{ method: 'did', issuance: 'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV' }],
+        }))
+
+        const result = await w3cJsonLdCredentialService.verifyPresentation(agentContext, {
+          presentation: vp,
+          challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
+        })
+
+        agentContext.config.setTrustedIssuersForVerification(undefined)
+
+        expect(result.isValid).toBe(false)
+        expect(result.error?.message).toContain('is not trusted')
+      })
+
       it('should fail when presentation signature is not valid', async () => {
         const vp = JsonTransformer.fromJSON(
           {

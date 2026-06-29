@@ -222,7 +222,10 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
       }))
 
       const result = await mdoc.verify(agent.context)
-      expect(result.isValid).toBe(false)
+      expect(result).toEqual({
+        isValid: false,
+        error: 'No trusted certificate was found while validating the X.509 chain',
+      })
     })
 
     test('returning an empty trusted issuers array hard-rejects the mdoc', async () => {
@@ -232,7 +235,10 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
       agent.context.config.setTrustedIssuersForVerification(async () => ({ trustedIssuers: [] }))
 
       const result = await mdoc.verify(agent.context)
-      expect(result.isValid).toBe(false)
+      expect(result).toEqual({
+        isValid: false,
+        error: 'No trusted certificates found. Cannot verify issuer signature.',
+      })
     })
   })
 })

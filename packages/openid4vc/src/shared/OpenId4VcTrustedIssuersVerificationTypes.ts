@@ -1,4 +1,12 @@
-import type { JwtPayload, Mdoc, SdJwtVc } from '@credo-ts/core'
+import type {
+  JwtPayload,
+  Mdoc,
+  SdJwtVc,
+  W3cJsonLdVerifiableCredential,
+  W3cJwtVerifiableCredential,
+  W3cV2JwtVerifiableCredential,
+  W3cV2SdJwtVerifiableCredential,
+} from '@credo-ts/core'
 import type { OpenId4VcIssuanceSessionRecord } from '../openid4vc-issuer/repository'
 import type { OpenId4VcVerificationSessionRecord } from '../openid4vc-verifier/repository'
 
@@ -44,7 +52,13 @@ export type OpenId4VcVerificationTypeOauth2ClientAttestation = {
 export type OpenId4VcVerificationTypeOid4VpCredential = {
   type: 'openId4VpCredential'
   openId4VcVerificationSessionRecord: OpenId4VcVerificationSessionRecord
-  credential: SdJwtVc | Mdoc
+  credential:
+    | SdJwtVc
+    | Mdoc
+    | W3cJsonLdVerifiableCredential
+    | W3cJwtVerifiableCredential
+    | W3cV2JwtVerifiableCredential
+    | W3cV2SdJwtVerifiableCredential
 }
 
 /**
