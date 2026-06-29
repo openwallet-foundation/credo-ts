@@ -13,6 +13,7 @@ import {
   getAllowedAndRequestedScopeValues,
   getCredentialConfigurationsSupportedForScopes,
   getOfferedCredentials,
+  getRequestedCredentialConfigurationsForScope,
   getScopesFromCredentialConfigurationsSupported,
 } from '../../shared'
 import {
@@ -24,7 +25,7 @@ import {
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
-import type { OpenId4VcIssuerRecord } from '../repository'
+import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../repository'
 import { handlePushedAuthorizationRequest } from './pushedAuthorizationRequestEndpoint'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
@@ -101,13 +102,6 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
   const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
   const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
 
-  if (!authorizationChallengeRequest.issuer_state) {
-    throw new Oauth2ServerErrorResponseError({
-      error: Oauth2ErrorCodes.InvalidRequest,
-      error_description: `Missing required 'issuer_state' parameter. Only requests initiated by a credential offer are supported for authorization challenge.`,
-    })
-  }
-
   if (!authorizationChallengeRequest.scope) {
     throw new Oauth2ServerErrorResponseError({
       error: Oauth2ErrorCodes.InvalidScope,
@@ -115,26 +109,70 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     })
   }
 
-  const issuanceSession = await openId4VcIssuerService.findSingleIssuanceSessionByQuery(agentContext, {
-    issuerId: issuer.issuerId,
-    issuerState: authorizationChallengeRequest.issuer_state,
-  })
+  let issuanceSession: OpenId4VcIssuanceSessionRecord | null
+  if (authorizationChallengeRequest.issuer_state) {
+    // Issuer-initiated: the request was initiated by a credential offer.
+    issuanceSession = await openId4VcIssuerService.findSingleIssuanceSessionByQuery(agentContext, {
+      issuerId: issuer.issuerId,
+      issuerState: authorizationChallengeRequest.issuer_state,
+    })
 
-  const allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
-  if (!issuanceSession || !allowedStates.includes(issuanceSession.state)) {
-    throw new Oauth2ServerErrorResponseError(
-      {
-        error: Oauth2ErrorCodes.InvalidRequest,
-        error_description: `Invalid 'issuer_state' parameter`,
-      },
-      {
-        internalMessage: !issuanceSession
-          ? `Issuance session not found for 'issuer_state' parameter '${authorizationChallengeRequest.issuer_state}'`
-          : `Issuance session '${issuanceSession.id}' has state '${
-              issuanceSession.state
-            }' but expected one of ${allowedStates.join(', ')}`,
-      }
-    )
+    const allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
+    if (!issuanceSession || !allowedStates.includes(issuanceSession.state)) {
+      throw new Oauth2ServerErrorResponseError(
+        {
+          error: Oauth2ErrorCodes.InvalidRequest,
+          error_description: `Invalid 'issuer_state' parameter`,
+        },
+        {
+          internalMessage: !issuanceSession
+            ? `Issuance session not found for 'issuer_state' parameter '${authorizationChallengeRequest.issuer_state}'`
+            : `Issuance session '${issuanceSession.id}' has state '${
+                issuanceSession.state
+              }' but expected one of ${allowedStates.join(', ')}`,
+        }
+      )
+    }
+  } else {
+    // Wallet-initiated: no credential offer. Let the application decide whether to allow it and
+    // create the issuance session through the `getWalletInitiatedIssuanceSession` callback.
+    const { requestedScopes, requestedCredentialConfigurations } = getRequestedCredentialConfigurationsForScope({
+      credentialConfigurationsSupported: issuerMetadata.credentialIssuer.credential_configurations_supported,
+      requestedScope: authorizationChallengeRequest.scope,
+    })
+
+    if (requestedScopes.length === 0 || Object.keys(requestedCredentialConfigurations).length === 0) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidScope,
+        error_description: `No requested 'scope' values match with the credential configurations supported by the issuer.`,
+      })
+    }
+
+    // The authorization challenge endpoint can handle both the chained authorization server flow
+    // and the presentation during issuance flow.
+    issuanceSession = await openId4VcIssuerService.getDynamicIssuanceSession(agentContext, {
+      origin: 'authorizationChallengeRequest',
+      issuer,
+      clientId: authorizationChallengeRequest.client_id,
+      requestedScopes,
+      requestedCredentialConfigurations:
+        requestedCredentialConfigurations as OpenId4VciCredentialConfigurationsSupportedWithFormats,
+      supportedAuthorizationFlows: ['chained', 'presentation'],
+      walletAttestation: parseResult.clientAttestation,
+      dpop: parseResult.dpop,
+      request,
+    })
+
+    if (!issuanceSession) {
+      throw new Oauth2ServerErrorResponseError(
+        {
+          error: Oauth2ErrorCodes.AccessDenied,
+        },
+        {
+          internalMessage: `Received authorization challenge request without 'issuer_state', and the 'getDynamicIssuanceSession' callback is not configured on the openid4vc issuer module.`,
+        }
+      )
+    }
   }
 
   if (issuanceSession?.chainedIdentity?.externalAuthorizationServerUrl) {
