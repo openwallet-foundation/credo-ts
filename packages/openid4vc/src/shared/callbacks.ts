@@ -8,6 +8,7 @@ import {
   type JwsSignerWithJwk,
   JwtPayload,
   Kms,
+  TrustedIssuerContext,
   TypedArrayEncoder,
   X509Certificate,
   X509ModuleConfig,
@@ -24,7 +25,8 @@ import type {
   VerifyJwtCallback,
 } from '@openid4vc/oauth2'
 import { clientAuthenticationDynamic, decodeJwtHeader } from '@openid4vc/oauth2'
-import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
+import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
+import type { OpenId4VcVerificationTypes } from './OpenId4VcTrustedIssuersVerificationTypes'
 
 import { getPublicJwkFromDid } from './utils'
 
@@ -33,7 +35,7 @@ export function getOid4vcJwtVerifyCallback(
   options?: {
     trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
 
-    issuanceSessionId?: string
+    issuanceSession?: OpenId4VcIssuanceSessionRecord
 
     /**
      * Whether this verification callback should assume a JAR authorization is verified
@@ -48,6 +50,8 @@ export function getOid4vcJwtVerifyCallback(
 
   return async (signer, { compact, header, payload }) => {
     let trustedCertificates = options?.trustedCertificates
+
+    // oauth2 secured authorization request (JAR)
     if (
       signer.method === 'x5c' &&
       (header.typ === 'oauth-authz-req+jwt' || options?.isAuthorizationRequestJwt) &&
@@ -55,77 +59,132 @@ export function getOid4vcJwtVerifyCallback(
     ) {
       const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
       const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+      const jwtPayload = JwtPayload.fromJson(payload)
 
-      trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-        certificateChain,
-        verification: {
-          type: 'oauth2SecuredAuthorizationRequest',
-          authorizationRequest: {
-            jwt: compact,
-            payload: JwtPayload.fromJson(payload),
-          },
-        },
-      })
+      if (certificateChain) {
+        const genericResult = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+          signer: { method: 'x509', certificateChain },
+          verification: {
+            type: 'oauth2SecuredAuthorizationRequest',
+            authorizationRequest: { jwt: compact, payload: jwtPayload },
+          } satisfies OpenId4VcVerificationTypes,
+        })
+        if (genericResult !== undefined) {
+          trustedCertificates = genericResult.trustedIssuers
+        } else {
+          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+            certificateChain,
+            verification: {
+              type: 'oauth2SecuredAuthorizationRequest',
+              authorizationRequest: { jwt: compact, payload: jwtPayload },
+            },
+          })
+        }
+      }
     }
 
+    // OID4VCI key attestation
     if (
       signer.method === 'x5c' &&
       (header.typ === 'keyattestation+jwt' || header.typ === 'key-attestation+jwt') &&
-      options?.issuanceSessionId &&
+      options?.issuanceSession &&
       !trustedCertificates
     ) {
       const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
       const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+      const jwtPayload = JwtPayload.fromJson(payload)
 
-      trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-        certificateChain,
-        verification: {
-          type: 'openId4VciKeyAttestation',
-          openId4VcIssuanceSessionId: options.issuanceSessionId,
-          keyAttestation: {
-            jwt: compact,
-            payload: JwtPayload.fromJson(payload),
-          },
-        },
-      })
+      if (certificateChain) {
+        if (agentContext.config.getTrustedIssuersForVerification) {
+          const genericResult = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+            signer: { method: 'x509', certificateChain },
+            verification: {
+              type: 'openId4VciKeyAttestation',
+              openId4VcIssuanceSessionRecord: options.issuanceSession,
+              keyAttestation: { jwt: compact, payload: jwtPayload },
+            } satisfies OpenId4VcVerificationTypes,
+          })
+          if (genericResult !== undefined) {
+            trustedCertificates = genericResult.trustedIssuers
+          }
+        }
+        if (trustedCertificates === undefined) {
+          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+            certificateChain,
+            verification: {
+              type: 'openId4VciKeyAttestation',
+              openId4VcIssuanceSessionId: options.issuanceSession.id,
+              keyAttestation: { jwt: compact, payload: jwtPayload },
+            },
+          })
+        }
+      }
     }
 
+    // OID4VCI credential issuer metadata
     if (signer.method === 'x5c' && header.typ === 'openidvci-issuer-metadata+jwt' && !trustedCertificates) {
       const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
       const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+      const jwtPayload = JwtPayload.fromJson(payload)
 
-      trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-        certificateChain,
-        verification: {
-          type: 'openId4VciCredentialIssuerMetadata',
-          credentialIssuerMetadata: {
-            jwt: compact,
-            payload: JwtPayload.fromJson(payload),
-          },
-        },
-      })
+      if (certificateChain) {
+        const genericResult = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+          signer: { method: 'x509', certificateChain },
+          verification: {
+            type: 'openId4VciCredentialIssuerMetadata',
+            credentialIssuerMetadata: { jwt: compact, payload: jwtPayload },
+          } satisfies OpenId4VcVerificationTypes,
+        })
+        if (genericResult !== undefined) {
+          trustedCertificates = genericResult.trustedIssuers
+        } else {
+          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+            certificateChain,
+            verification: {
+              type: 'openId4VciCredentialIssuerMetadata',
+              credentialIssuerMetadata: { jwt: compact, payload: jwtPayload },
+            },
+          })
+        }
+      }
     }
 
+    // OAuth2 client attestation
     if (
       signer.method === 'x5c' &&
       header.typ === 'oauth-client-attestation+jwt' &&
-      options?.issuanceSessionId &&
+      options?.issuanceSession &&
       !trustedCertificates
     ) {
       const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
       const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+      const jwtPayload = JwtPayload.fromJson(payload)
 
-      trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-        certificateChain,
-        verification: {
-          type: 'oauth2ClientAttestation',
-          openId4VcIssuanceSessionId: options.issuanceSessionId,
-          clientAttestation: {
-            jwt: compact,
-            payload: JwtPayload.fromJson(payload),
-          },
-        },
-      })
+      if (certificateChain) {
+        if (agentContext.config.getTrustedIssuersForVerification) {
+          const genericResult = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+            signer: { method: 'x509', certificateChain },
+            verification: {
+              type: 'oauth2ClientAttestation',
+              openId4VcIssuanceSessionRecord: options.issuanceSession,
+              clientAttestation: { jwt: compact, payload: jwtPayload },
+            } satisfies OpenId4VcVerificationTypes,
+          })
+          if (genericResult !== undefined) {
+            trustedCertificates = genericResult.trustedIssuers
+          }
+        }
+        if (trustedCertificates === undefined) {
+          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+            certificateChain,
+            verification: {
+              type: 'oauth2ClientAttestation',
+              openId4VcIssuanceSessionId: options.issuanceSession.id,
+              clientAttestation: { jwt: compact, payload: jwtPayload },
+            },
+          })
+        }
+      }
     }
 
     const alg = signer.alg as Kms.KnownJwaSignatureAlgorithm
@@ -404,7 +463,7 @@ export function getOid4vcCallbacks(
   options?: {
     trustedCertificates?: string[]
     isVerifyOpenId4VpAuthorizationRequest?: boolean
-    issuanceSessionId?: string
+    issuanceSession?: OpenId4VcIssuanceSessionRecord
   }
 ) {
   const kms = agentContext.resolve(Kms.KeyManagementApi)
@@ -419,7 +478,7 @@ export function getOid4vcCallbacks(
     verifyJwt: getOid4vcJwtVerifyCallback(agentContext, {
       trustedCertificates: options?.trustedCertificates,
       isAuthorizationRequestJwt: options?.isVerifyOpenId4VpAuthorizationRequest,
-      issuanceSessionId: options?.issuanceSessionId,
+      issuanceSession: options?.issuanceSession,
     }),
     fetch: agentContext.config.agentDependencies.fetch,
     encryptJwe: getOid4vcEncryptJweCallback(agentContext),
