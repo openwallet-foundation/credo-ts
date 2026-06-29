@@ -1,12 +1,14 @@
-import { SDJwtInstance } from '@sd-jwt/core'
-import type { DisclosureFrame, PresentationFrame, SDJWTConfig } from '@sd-jwt/types'
+import { type DisclosureFrame, type PresentationFrame, type SDJWTConfig, SDJwtInstance } from '@sd-jwt/core'
 import type { AgentContext } from '../../../agent/context'
+import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
 import { JwtPayload } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
+import type { JsonObject } from '../../../types'
 import { asArray, JsonTransformer, MessageValidator, nowInSeconds, TypedArrayEncoder } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi } from '../../kms'
+import { applyDisclosuresForPayload } from '../../sd-jwt-vc/disclosureFrame'
 import {
   extractKeyFromHolderBinding,
   getSdJwtSigner,
@@ -150,6 +152,18 @@ export class W3cV2SdJwtCredentialService {
 
       const issuerVerificationMethod = await getVerificationMethodForJwt(agentContext, credential, ['assertionMethod'])
       const issuerPublicKey = getPublicJwkFromVerificationMethod(issuerVerificationMethod)
+
+      // Ensure the issuer is trusted according to the (optional) `getTrustedIssuersForVerification`
+      // callback. For did-based issuers this is a no-op when no trusted issuers are configured,
+      // preserving the previous "trust any valid signature" behavior. Throws when the issuer is not trusted.
+      await TrustedIssuerContext.ensureTrustedSigner(
+        agentContext,
+        {
+          signer: { method: 'did', didUrl: issuerVerificationMethod.id },
+          verification: { type: 'credential', credential },
+        },
+        options.trustedIssuers
+      )
 
       const holderBinding = parseHolderBindingFromCredential(credential.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
@@ -354,6 +368,7 @@ export class W3cV2SdJwtCredentialService {
 
           const credentialResult = await this.verifyCredential(agentContext, {
             credential: credential.envelopedCredential,
+            trustedIssuers: options.trustedIssuers,
           })
 
           const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(
@@ -397,6 +412,14 @@ export class W3cV2SdJwtCredentialService {
     const disclosedCompact = await sdjwt.present(originalCompact, presentationFrame)
 
     return W3cV2SdJwtVerifiableCredential.fromCompact(disclosedCompact)
+  }
+
+  public applyDisclosuresForPayload(
+    compactSdJwtVc: string,
+    requestedPayload: JsonObject
+  ): W3cV2SdJwtVerifiableCredential {
+    const sdJwt = applyDisclosuresForPayload(compactSdJwtVc, requestedPayload)
+    return W3cV2SdJwtVerifiableCredential.fromCompact(sdJwt)
   }
 
   private validateDisclosureFrame(disclosureFrame?: DisclosureFrame<W3cV2JsonCredential | W3cV2JsonPresentation>) {
