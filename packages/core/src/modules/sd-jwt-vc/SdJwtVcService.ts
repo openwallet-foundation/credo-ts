@@ -334,6 +334,7 @@ export class SdJwtVcService {
         statusVerifier: this.getStatusVerifier(agentContext, {
           matchedTrustedIssuer: trustedIssuer,
           credentialIssuerKey: issuerWithKey.publicJwk,
+          credentialIssuerCertificateChain: issuer.method === 'x5c' ? issuer.x5c : undefined,
         }),
       })
 
@@ -664,9 +665,11 @@ export class SdJwtVcService {
     {
       matchedTrustedIssuer,
       credentialIssuerKey,
+      credentialIssuerCertificateChain,
     }: {
       matchedTrustedIssuer: TrustedIssuer | undefined
       credentialIssuerKey: PublicJwk
+      credentialIssuerCertificateChain?: X509Certificate[]
     }
   ): Verifier {
     return async (data, signatureBase64Url) => {
@@ -689,8 +692,10 @@ export class SdJwtVcService {
       }
 
       if (matchedTrustedIssuer.method === 'x509') {
-        // Mirror mdoc: fall back to the issuance certificates when no dedicated status certificates are
-        // configured. An explicit empty array means "trust no status list signer".
+        if (!credentialIssuerCertificateChain) {
+          throw new SdJwtVcError('Missing credential issuer certificate chain for x509 status list verification.')
+        }
+
         const hasDedicatedStatusCertificates = matchedTrustedIssuer.status !== undefined
         const statusCertificates = matchedTrustedIssuer.status ?? matchedTrustedIssuer.issuance
 
@@ -716,20 +721,19 @@ export class SdJwtVcService {
           )
         }
 
-        // The signer is the leaf, i.e. the first entry of the leaf-first `x5c` header (the chain returned
-        // by `validateCertificateChain` is root-first, so we don't use it to derive the signer key here).
-        const signerJwk = X509Certificate.fromEncodedCertificate(header.x5c[0]).publicJwk
-
-        // Mirror mdoc: when no dedicated status certificates were configured, the fallback to the issuance
-        // certificates must not widen the trust set. The status list signer is therefore required to be the
-        // same key as the credential issuer (issuance-only -> must be the same chain/key). When dedicated
-        // status certificates are configured, any signer anchoring in them is accepted.
-        if (!hasDedicatedStatusCertificates && !signerJwk.equals(credentialIssuerKey)) {
+        // Mirror mdoc: when no dedicated status certificate is configured, the status list must
+        // be signed by the exact same key as the credential issuer.
+        const statusListChain = header.x5c.map((certificate) => X509Certificate.fromEncodedCertificate(certificate))
+        const chainMatchesCredentialIssuer =
+          statusListChain.length === credentialIssuerCertificateChain.length &&
+          statusListChain.every((certificate, index) => certificate.equal(credentialIssuerCertificateChain[index]))
+        if (!hasDedicatedStatusCertificates && !chainMatchesCredentialIssuer) {
           throw new SdJwtVcError(
-            'The status list signer does not match the credential issuer, and no dedicated trusted status certificates were configured for the trusted issuer.'
+            'The status list signer chain does not match the credential issuer chain, and no dedicated trusted status certificates were configured for the trusted issuer.'
           )
         }
 
+        const signerJwk = statusListChain[0].publicJwk
         return getSdJwtVerifier(agentContext, signerJwk)(data, signatureBase64Url)
       }
 
