@@ -37,7 +37,11 @@ import type {
   MdocSessionTranscriptOptions,
 } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
-import { nameSpacesRecordToMap } from './mdocUtil'
+import {
+  assertDocumentNameSpacesWithinDeviceKeyAuthorizations,
+  assertRequestedDeviceNameSpacesWithinDeviceKeyAuthorizations,
+  nameSpacesRecordToMap,
+} from './mdocUtil'
 import { convertDocumentRequest } from './utils/convertDocumentRequest'
 
 export type DeviceAndIssuerClaims = {
@@ -249,6 +253,10 @@ export class MdocDeviceResponse {
           ),
       })
 
+      const keyAuthorizations =
+        document.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.keyAuthorizations
+      assertRequestedDeviceNameSpacesWithinDeviceKeyAuthorizations(keyAuthorizations, options.deviceNameSpaces)
+
       const mdocContext = getMdocContext(agentContext)
       const deviceResponse = await DeviceResponse.createWithDeviceRequest(
         {
@@ -280,7 +288,11 @@ export class MdocDeviceResponse {
       if (!deviceResponse.documents) {
         throw new MdocError('Device response does not contain any documents')
       }
-      documents.push(deviceResponse.documents[0])
+
+      const createdDocument = deviceResponse.documents[0]
+      assertDocumentNameSpacesWithinDeviceKeyAuthorizations(keyAuthorizations, createdDocument)
+
+      documents.push(createdDocument)
     }
 
     return new MdocDeviceResponse(
@@ -324,6 +336,11 @@ export class MdocDeviceResponse {
           cause: error,
         })
       })
+
+    for (const document of this.deviceResponse.documents ?? []) {
+      const keyAuthorizations = document.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.keyAuthorizations
+      assertDocumentNameSpacesWithinDeviceKeyAuthorizations(keyAuthorizations, document)
+    }
   }
 
   private static async calculateSessionTranscriptBytes(

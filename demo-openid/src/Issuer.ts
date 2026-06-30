@@ -349,35 +349,35 @@ export class Issuer extends BaseAgent<{
     issuer.issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
       issuerId: '726222ad-7624-4f12-b15b-e08aa7042ffa',
       credentialConfigurationsSupported,
-      authorizationServerConfigs: [
-        {
-          type: 'direct',
-          issuer: PROVIDER_HOST,
-          clientAuthentication: {
-            clientId: 'issuer-server',
-            clientSecret: 'issuer-server',
-          },
-        },
-        ...((GOOGLE_ENABLED
-          ? [
-              {
-                type: 'chained',
-                issuer: 'https://accounts.google.com',
-                clientAuthentication: {
-                  type: 'clientSecret',
-                  clientId: GOOGLE_CLIENT_ID,
-                  clientSecret: GOOGLE_CLIENT_SECRET,
-                },
-                scopesMapping: {
-                  'openid4vc:credential:OpenBadgeCredential': [
-                    'openid',
-                    'https://www.googleapis.com/auth/userinfo.email',
-                  ],
-                },
-              },
-            ]
-          : []) as OpenId4VciAuthorizationServerConfig[]),
-      ],
+      // authorizationServerConfigs: [
+      //   {
+      //     type: 'direct',
+      //     issuer: PROVIDER_HOST,
+      //     clientAuthentication: {
+      //       clientId: 'issuer-server',
+      //       clientSecret: 'issuer-server',
+      //     },
+      //   },
+      //   ...((GOOGLE_ENABLED
+      //     ? [
+      //         {
+      //           type: 'chained',
+      //           issuer: 'https://accounts.google.com',
+      //           clientAuthentication: {
+      //             type: 'clientSecret',
+      //             clientId: GOOGLE_CLIENT_ID,
+      //             clientSecret: GOOGLE_CLIENT_SECRET,
+      //           },
+      //           scopesMapping: {
+      //             'openid4vc:credential:OpenBadgeCredential': [
+      //               'openid',
+      //               'https://www.googleapis.com/auth/userinfo.email',
+      //             ],
+      //           },
+      //         },
+      //       ]
+      //     : []) as OpenId4VciAuthorizationServerConfig[]),
+      // ],
     })
 
     const issuerMetadata = await issuer.agent.openid4vc.issuer.getIssuerMetadata(issuer.issuerRecord.issuerId)

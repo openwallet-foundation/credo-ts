@@ -5,6 +5,7 @@ import type {
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
   EncodedX509Certificate,
+  MdocNameSpaces,
 } from '@credo-ts/core'
 import type { ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
@@ -134,4 +135,13 @@ export interface OpenId4VpAcceptAuthorizationRequestOptions {
    * Required in combination with the DC Api
    */
   origin?: string
+
+  /**
+   * Device-signed nameSpaces to include in mso_mdoc device responses.
+   *
+   * For presentation-time attributes authorized in the MSO keyAuthorizations but not in
+   * the issuer-signed payload. Credo validates these namespaces and data elements
+   * against the MSO keyAuthorizations before creating the presentation.
+   */
+  mdocDeviceNameSpaces?: MdocNameSpaces
 }

@@ -97,11 +97,36 @@ export type MdocDeviceResponseVerifyOptions = {
   now?: Date
 }
 
+/**
+ * Device key authorizations for MSO `deviceKeyInfo.keyAuthorizations` (CBOR `nameSpaces` / `dataElements`).
+ *
+ * Authorizations may include namespaces and data elements that are not part of the issuer-signed
+ * issuance payload when those entries are intended for device-signed presentation data.
+ */
+export type MdocDeviceKeyAuthorizationsOptions = {
+  /**
+   * Namespace identifiers the device key may use when signing device-signed data.
+   */
+  namespaces?: string[]
+
+  /**
+   * Per-namespace data element identifiers the device key may sign or MAC.
+   */
+  dataElements?: Record<string, string[]>
+}
+
 export type MdocSignOptions = {
   docType: 'org.iso.18013.5.1.mDL' | (string & {})
   validityInfo: Omit<ValidityInfoOptions, 'validFrom' | 'signed'> &
     Partial<Pick<ValidityInfoOptions, 'signed' | 'validFrom'>>
   namespaces: MdocNameSpaces
+
+  /**
+   * Optional device key authorizations embedded in the signed MSO.
+   *
+   * @see {@link MdocDeviceKeyAuthorizationsOptions}
+   */
+  deviceKeyAuthorizations?: MdocDeviceKeyAuthorizationsOptions
 
   /**
    * The X509 certificate (or certificate chain) to use for signing the mDOC.
