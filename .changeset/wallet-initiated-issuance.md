@@ -1,5 +1,5 @@
 ---
-"@credo-ts/openid4vc": minor
+"@credo-ts/openid4vc": patch
 ---
 
 feat(openid4vc): add a `getDynamicIssuanceSession` callback for dynamic (wallet-initiated) issuance that is not bound to a credential offer.
