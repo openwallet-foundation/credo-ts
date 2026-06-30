@@ -1668,6 +1668,43 @@ describe('SdJwtVcService', () => {
       expect(verificationResult.isValid).toBe(true)
     })
 
+    test('x509: falls back to issuance certs for a leaf-under-root chain when no status certs are configured', async () => {
+      const rootKey = PublicJwk.fromPublicJwk(
+        (await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+      )
+      const leafKey = PublicJwk.fromPublicJwk(
+        (await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+      )
+
+      const rootCertificate = await X509Service.createCertificate(agent.context, {
+        authorityKey: rootKey,
+        issuer: { commonName: 'Root' },
+        validity: { notBefore: new Date('2020-01-01'), notAfter: new Date('2035-01-01') },
+        extensions: { basicConstraints: { ca: true } },
+      })
+      rootCertificate.keyId = rootKey.keyId
+
+      const leafCertificate = await X509Service.createCertificate(agent.context, {
+        authorityKey: rootKey,
+        subjectPublicKey: leafKey,
+        issuer: { commonName: 'Root' },
+        subject: { commonName: 'Leaf' },
+        validity: { notBefore: new Date('2020-01-01'), notAfter: new Date('2035-01-01') },
+      })
+      leafCertificate.keyId = leafKey.keyId
+
+      const presentation = await signX509CredentialWithStatus(leafCertificate)
+      // Status list is signed by the same leaf as the credential.
+      mockStatusList(await generateX509StatusList(agent.context, leafKey, leafCertificate, 24, []))
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: presentation,
+        trustedIssuers: [{ method: 'x509', issuance: [rootCertificate.toString('base64')] }],
+      })
+
+      expect(verificationResult.isValid).toBe(true)
+    })
+
     test('x509: an empty status certificates array rejects any status list', async () => {
       const issuance = await createSigningCertificate('Issuance')
 
