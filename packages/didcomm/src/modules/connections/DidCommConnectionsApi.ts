@@ -2,6 +2,7 @@ import type { Query, QueryOptions } from '@credo-ts/core'
 import { AgentContext, CredoError, DidResolverService, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { DidCommEmptyMessage } from '../../messages'
 import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
@@ -334,12 +335,43 @@ export class DidCommConnectionsApi {
    * @param options connectionId and optional target did and routing configuration
    * @returns object containing the new did
    */
-  public async rotate(options: { connectionId: string; toDid?: string; routing?: DidCommRouting }) {
+  public async rotate(options: {
+    connectionId: string
+    toDid?: string
+    routing?: DidCommRouting
+  }): Promise<{ newDid: string }> {
     const { connectionId, toDid } = options
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
     if (toDid && options.routing) {
       throw new CredoError(`'routing' is disallowed when defining 'toDid'`)
+    }
+
+    if (connection.didcommVersion === 'v2') {
+      const didRotateV2Service = this.agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
+      const routing =
+        !toDid && !options.routing
+          ? await this.routingService.getRouting(this.agentContext, { mediatorId: connection.mediatorId })
+          : options.routing
+
+      const { newDid } = await didRotateV2Service.rotateOurDid(this.agentContext, connection, { toDid, routing })
+
+      // from_prior re-attaches to the next outbound, so a failed notification must not fail the rotation
+      try {
+        await this.messageSender.sendMessage(
+          new DidCommOutboundMessageContext(new DidCommEmptyMessage({}), {
+            agentContext: this.agentContext,
+            connection,
+          })
+        )
+      } catch (error) {
+        this.agentContext.config.logger.warn(
+          'Failed to deliver v2 rotation notification; from_prior will ride the next outbound message',
+          { connectionId: connection.id, error: error instanceof Error ? error.message : String(error) }
+        )
+      }
+
+      return { newDid }
     }
 
     let routing = options.routing

@@ -528,7 +528,7 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     const didRotateV2 = aliceAgent.dependencyManager.resolve(DidCommDidRotateV2Service)
     const routing = await aliceAgent.didcomm.mediationRecipient.getRouting({})
     // biome-ignore lint/style/noNonNullAssertion: no explanation
-    const { newDid } = await didRotateV2.rotateOurDid(aliceAgent.context, aliceBobConnection!, routing)
+    const { newDid } = await didRotateV2.rotateOurDid(aliceAgent.context, aliceBobConnection!, { routing })
 
     expect(newDid).not.toEqual(oldAliceDid)
 
@@ -555,6 +555,31 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     const aliceCleared = await aliceAgent.didcomm.connections.findById(aliceBobConnection?.id!)
     expect(aliceCleared?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)).toBeFalsy()
+  })
+
+  test('connections.rotate() mints a new peer DID and delivers from_prior to bob', async () => {
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const oldAliceDid = aliceBobConnection?.did!
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const { newDid } = await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection?.id! })
+
+    expect(newDid).not.toEqual(oldAliceDid)
+    expect(newDid.startsWith('did:peer:')).toBe(true)
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const aliceAfter = await aliceAgent.didcomm.connections.findById(aliceBobConnection?.id!)
+    expect(aliceAfter?.did).toEqual(newDid)
+    expect(aliceAfter?.previousDids).toContain(oldAliceDid)
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await aliceAgent.didcomm.basicMessages.sendMessage(aliceBobConnection?.id!, 'after rotate')
+    await waitForBasicMessage(bobAgent, { content: 'after rotate' })
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const bobAfter = await bobAgent.didcomm.connections.findById(bobAliceConnection?.id!)
+    expect(bobAfter?.theirDid).toEqual(newDid)
+    expect(bobAfter?.previousTheirDids).toContain(oldAliceDid)
   })
 })
 
