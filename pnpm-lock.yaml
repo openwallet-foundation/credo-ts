@@ -541,14 +541,14 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       '@owf/cose':
-        specifier: ^0.3.0
-        version: 0.3.0
+        specifier: ^0.3.1
+        version: 0.3.1
       '@owf/mdoc':
-        specifier: 0.7.0-alpha-20260612121208
-        version: 0.7.0-alpha-20260612121208
+        specifier: ^0.7.0
+        version: 0.7.0
       '@owf/token-status-list':
-        specifier: ^0.3.0
-        version: 0.3.0
+        specifier: ^0.3.1
+        version: 0.3.1
       '@peculiar/asn1-ecc':
         specifier: ^2.6.0
         version: 2.6.1
@@ -3248,8 +3248,8 @@ packages:
   '@openwallet-foundation/askar-shared@0.6.0':
     resolution: {integrity: sha512-O9aaQCZ2BkQ5Z8jqshhqhxbS/rT2nTfN90iW32WKQEh9YUwWERFQcnqKR+XszGhV95jqwZagcwhDb72hFH3VaQ==}
 
-  '@owf/cose@0.3.0':
-    resolution: {integrity: sha512-fED6VqssD2X7QuGffrrbgqTs5xeptupTE0so3syPMgWKvzydwiW4mj9FbML+SPMo6ZZpJeNh/kII9qiK8WcOeA==}
+  '@owf/cose@0.3.1':
+    resolution: {integrity: sha512-uWGLOMUDEsJfo8rIEoPE3rr6AXF4OBZqjkKlruIa7tfVaqy6leVEi/UmT0PY/JPN8RYXQu8F8qWDi3R9NlS9HQ==}
 
   '@owf/identity-common@0.1.0-alpha-20260422101556':
     resolution: {integrity: sha512-0CJhMHXWf+Dn0MpZCeachjFjMjBI2uCJl56Po3dnGiJDis5wVkfWPeCdPJZ2h4fBWwXV0+Owa8nJRxXeruRwrA==}
@@ -3257,15 +3257,18 @@ packages:
   '@owf/identity-common@0.3.0':
     resolution: {integrity: sha512-Ot+T8zHqb9cPqPdHL2edRXjWtRLng95N+auhb9TZq+Jy4HxjRzBUMVnB0wzeV5GCgoIkINcHAeLXFMsHs77hVQ==}
 
-  '@owf/mdoc@0.7.0-alpha-20260612121208':
-    resolution: {integrity: sha512-VnaTspcSw1jLj2a8GDAenreehSZzdCs+4RCgKgHyXVCsQt993gFPfn7XPg6ykmUYV4txM0tbvPsZu8JU94cJjw==}
+  '@owf/identity-common@0.3.1':
+    resolution: {integrity: sha512-DLDZtZYMDiV58zpTYVoDc0uFPdZBkmNL31Az5X7sMEttmnU5JvArw3dqPwSMMlT2VfeB0SiPHsuM5dcnqaeNnw==}
+
+  '@owf/mdoc@0.7.0':
+    resolution: {integrity: sha512-WgYwmpxawDgkMmej719DwlgZ/6gmzCWyyFYf4Z/9eA50Xq/rAi5nQ4oQTu1/79A0IZwwWJdrcJp53yiOQHbUtg==}
     engines: {node: '>=20.19'}
 
   '@owf/token-status-list@0.1.0-alpha-20260422101556':
     resolution: {integrity: sha512-cwZHQPqBaXt3pTbllI6GLafE+Ws8HfEYoOgmpiQiK1sFElkF07mFZt1FTt1YElbMWtEV6YLTh+MjEWdJdRNklA==}
 
-  '@owf/token-status-list@0.3.0':
-    resolution: {integrity: sha512-6XkQIQJVsFyxVdeAD2SVktBFD7wIANVJ/tgGw4D4N6lKadsc2Tb8+Gr1m+UEKbYPnbV6eIUbfpPafulTInruug==}
+  '@owf/token-status-list@0.3.1':
+    resolution: {integrity: sha512-EaudhPEhCDr7oy7iK0iA+8f2ZXg2NtdVQBmhJvz38gGBGmUWnAFNJer583bSx2aT67id8EADaUWO/MMQqn3uVg==}
 
   '@oxc-project/types@0.112.0':
     resolution: {integrity: sha512-m6RebKHIRsax2iCwVpYW2ErQwa4ywHJrE4sCK3/8JK8ZZAWOKXaRJFl/uP51gaVyyXlaS4+chU1nSCdzYf6QqQ==}
@@ -7403,6 +7406,9 @@ packages:
 
   pako@2.1.0:
     resolution: {integrity: sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug==}
+
+  pako@3.0.0:
+    resolution: {integrity: sha512-TGPtlCI1pSUSbkOIxOUUHNrBa0muz4mAp32cYUF3RoSa5c73jiQTKOKo22gaa4DxLggQrda/DAdax5QkcHPvYA==}
 
   parse-json@4.0.0:
     resolution: {integrity: sha512-aOIos8bujGN93/8Ox/jPLh7RwVnPEysynVFE+fQZyg6jKELEHwzgKdLRFHUgXJL6kylijVSBC4BvN9OmsB48Rw==}
@@ -12001,9 +12007,9 @@ snapshots:
       buffer: 6.0.3
       tar: 7.5.7
 
-  '@owf/cose@0.3.0':
+  '@owf/cose@0.3.1':
     dependencies:
-      '@owf/identity-common': 0.3.0
+      '@owf/identity-common': 0.3.1
       cbor-x: 1.6.4
       zod: 4.4.3
       zod-validation-error: 5.0.0(zod@4.4.3)
@@ -12012,11 +12018,13 @@ snapshots:
 
   '@owf/identity-common@0.3.0': {}
 
-  '@owf/mdoc@0.7.0-alpha-20260612121208':
+  '@owf/identity-common@0.3.1': {}
+
+  '@owf/mdoc@0.7.0':
     dependencies:
-      '@owf/cose': 0.3.0
+      '@owf/cose': 0.3.1
       '@owf/identity-common': 0.3.0
-      '@owf/token-status-list': 0.3.0
+      '@owf/token-status-list': 0.3.1
       zod: 4.4.3
 
   '@owf/token-status-list@0.1.0-alpha-20260422101556':
@@ -12025,12 +12033,12 @@ snapshots:
       cbor-x: 1.6.4
       pako: 2.1.0
 
-  '@owf/token-status-list@0.3.0':
+  '@owf/token-status-list@0.3.1':
     dependencies:
-      '@owf/cose': 0.3.0
-      '@owf/identity-common': 0.3.0
+      '@owf/cose': 0.3.1
+      '@owf/identity-common': 0.3.1
       cbor-x: 1.6.4
-      pako: 2.1.0
+      pako: 3.0.0
       zod: 4.4.3
 
   '@oxc-project/types@0.112.0': {}
@@ -16945,6 +16953,8 @@ snapshots:
       '@rollup/rollup-linux-x64-gnu': 4.9.5
 
   pako@2.1.0: {}
+
+  pako@3.0.0: {}
 
   parse-json@4.0.0:
     dependencies:
