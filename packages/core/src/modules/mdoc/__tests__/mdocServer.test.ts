@@ -346,6 +346,421 @@ describe('mdoc service test', () => {
     })
   })
 
+  test('verify succeeds when status list is signed with the same certificate as the issuance certificate', async () => {
+    const statusListUri = 'https://example.org/token-status-list/same-cert'
+    const { statusList } = await tokenStatusList.createTokenStatusList({
+      format: 'cwt',
+      signer: { method: 'x5c', x5c: [certificate] },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: { statusListLength: 10, bitsPerStatus: 1 },
+      statusListUri,
+    })
+
+    nock('https://example.org')
+      .persist()
+      .get('/token-status-list/same-cert')
+      .reply(200, Buffer.from(statusList as Uint8Array), { 'Content-Type': MediaTypes.StatusListCwt })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+      statusInfo: { index: 1, uri: statusListUri },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [certificate.toString('base64')], status: [certificate.toString('base64')] }],
+    })
+
+    expect(result.isValid).toBe(true)
+  })
+
+  test('verify succeeds when status list is signed with a different certificate than the issuance certificate and dedicated status certificates are configured', async () => {
+    const issuerKey2 = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const certificate2 = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(issuerKey2.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE',
+    })
+    certificate2.keyId = issuerKey2.keyId
+
+    const statusListUri = 'https://example.org/token-status-list/different-cert'
+    const { statusList } = await tokenStatusList.createTokenStatusList({
+      format: 'cwt',
+      signer: { method: 'x5c', x5c: [certificate2] },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: { statusListLength: 10, bitsPerStatus: 1 },
+      statusListUri,
+    })
+
+    nock('https://example.org')
+      .persist()
+      .get('/token-status-list/different-cert')
+      .reply(200, Buffer.from(statusList as Uint8Array), { 'Content-Type': MediaTypes.StatusListCwt })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+      statusInfo: { index: 1, uri: statusListUri },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [certificate.toString('base64')], status: [certificate2.toString('base64')] }],
+    })
+
+    expect(result.isValid).toBe(true)
+  })
+
+  test('verify fails when status list is signed with a different certificate than the issuance certificate and no dedicated status certificates are configured', async () => {
+    const issuerKey2 = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const certificate2 = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(issuerKey2.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE',
+    })
+    certificate2.keyId = issuerKey2.keyId
+
+    const statusListUri = 'https://example.org/token-status-list/different-cert-no-status'
+    const { statusList } = await tokenStatusList.createTokenStatusList({
+      format: 'cwt',
+      signer: { method: 'x5c', x5c: [certificate2] },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: { statusListLength: 10, bitsPerStatus: 1 },
+      statusListUri,
+    })
+
+    nock('https://example.org')
+      .persist()
+      .get('/token-status-list/different-cert-no-status')
+      .reply(200, Buffer.from(statusList as Uint8Array), { 'Content-Type': MediaTypes.StatusListCwt })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+      statusInfo: { index: 1, uri: statusListUri },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [certificate.toString('base64'), certificate2.toString('base64')] }],
+    })
+
+    expect(result).toEqual({
+      isValid: false,
+      error:
+        'Trusted status list chain does not match the trusted issuance chain, and no trusted status certificates were provided for the trusted issuance certificate',
+    })
+  })
+
+  test('verify fails when an empty status certificates array is configured', async () => {
+    const statusListUri = 'https://example.org/token-status-list/empty-status-config'
+    const { statusList } = await tokenStatusList.createTokenStatusList({
+      format: 'cwt',
+      signer: { method: 'x5c', x5c: [certificate] },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: { statusListLength: 10, bitsPerStatus: 1 },
+      statusListUri,
+    })
+
+    nock('https://example.org')
+      .persist()
+      .get('/token-status-list/empty-status-config')
+      .reply(200, Buffer.from(statusList as Uint8Array), { 'Content-Type': MediaTypes.StatusListCwt })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+      statusInfo: { index: 1, uri: statusListUri },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [certificate.toString('base64')], status: [] }],
+    })
+
+    expect(result.isValid).toBe(false)
+  })
+
+  test('verify succeeds when status list is signed with the same certificate as the issuance certificate and no dedicated status certificates are configured', async () => {
+    const statusListUri = 'https://example.org/token-status-list/same-cert-no-status-config'
+    const { statusList } = await tokenStatusList.createTokenStatusList({
+      format: 'cwt',
+      signer: { method: 'x5c', x5c: [certificate] },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: { statusListLength: 10, bitsPerStatus: 1 },
+      statusListUri,
+    })
+
+    nock('https://example.org')
+      .persist()
+      .get('/token-status-list/same-cert-no-status-config')
+      .reply(200, Buffer.from(statusList as Uint8Array), { 'Content-Type': MediaTypes.StatusListCwt })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: certificate,
+      validityInfo: { validUntil: nextDay },
+      statusInfo: { index: 1, uri: statusListUri },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [certificate.toString('base64')] }],
+    })
+
+    expect(result.isValid).toBe(true)
+  })
+
+  test('verify succeeds when the trusted certificate is the root CA of the issuance chain', async () => {
+    const rootKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const leafKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+    const rootCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(rootKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=Root',
+      extensions: { basicConstraints: { ca: true } },
+    })
+    rootCertificate.keyId = rootKey.keyId
+
+    const leafCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(rootKey.publicJwk),
+      subjectPublicKey: PublicJwk.fromPublicJwk(leafKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=Root',
+      subject: 'C=DE,CN=Leaf',
+    })
+    leafCertificate.keyId = leafKey.keyId
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: leafCertificate,
+      validityInfo: { validUntil: nextDay },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [rootCertificate.toString('base64')] }],
+    })
+
+    expect(result.isValid).toBe(true)
+  })
+
+  test('verify succeeds when trusted root CA is shared between the issuance and status list chains', async () => {
+    const rootKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const leafKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+    const rootCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(rootKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=Root',
+      extensions: { basicConstraints: { ca: true } },
+    })
+    rootCertificate.keyId = rootKey.keyId
+
+    const leafCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(rootKey.publicJwk),
+      subjectPublicKey: PublicJwk.fromPublicJwk(leafKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=Root',
+      subject: 'C=DE,CN=Leaf',
+    })
+    leafCertificate.keyId = leafKey.keyId
+
+    const statusListUri = 'https://example.org/token-status-list/root-same'
+    const { statusList } = await tokenStatusList.createTokenStatusList({
+      format: 'cwt',
+      signer: { method: 'x5c', x5c: [leafCertificate] },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: { statusListLength: 10, bitsPerStatus: 1 },
+      statusListUri,
+    })
+
+    nock('https://example.org')
+      .persist()
+      .get('/token-status-list/root-same')
+      .reply(200, Buffer.from(statusList as Uint8Array), { 'Content-Type': MediaTypes.StatusListCwt })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: leafCertificate,
+      validityInfo: { validUntil: nextDay },
+      statusInfo: { index: 1, uri: statusListUri },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [{ issuance: [rootCertificate.toString('base64')] }],
+    })
+
+    expect(result.isValid).toBe(true)
+  })
+
+  test('verify succeeds when issuance and status list chains are anchored to different trusted root CAs', async () => {
+    const issuanceRootKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const issuanceLeafKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const statusRootKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const statusLeafKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+    const issuanceRootCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(issuanceRootKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=IssuanceRoot',
+      extensions: { basicConstraints: { ca: true } },
+    })
+    issuanceRootCertificate.keyId = issuanceRootKey.keyId
+
+    const issuanceLeafCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(issuanceRootKey.publicJwk),
+      subjectPublicKey: PublicJwk.fromPublicJwk(issuanceLeafKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=IssuanceRoot',
+      subject: 'C=DE,CN=IssuanceLeaf',
+    })
+    issuanceLeafCertificate.keyId = issuanceLeafKey.keyId
+
+    const statusRootCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(statusRootKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=StatusRoot',
+      extensions: { basicConstraints: { ca: true } },
+    })
+    statusRootCertificate.keyId = statusRootKey.keyId
+
+    const statusLeafCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(statusRootKey.publicJwk),
+      subjectPublicKey: PublicJwk.fromPublicJwk(statusLeafKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=StatusRoot',
+      subject: 'C=DE,CN=StatusLeaf',
+    })
+    statusLeafCertificate.keyId = statusLeafKey.keyId
+
+    const statusListUri = 'https://example.org/token-status-list/root-different'
+    const { statusList } = await tokenStatusList.createTokenStatusList({
+      format: 'cwt',
+      signer: { method: 'x5c', x5c: [statusLeafCertificate] },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: { statusListLength: 10, bitsPerStatus: 1 },
+      statusListUri,
+    })
+
+    nock('https://example.org')
+      .persist()
+      .get('/token-status-list/root-different')
+      .reply(200, Buffer.from(statusList as Uint8Array), { 'Content-Type': MediaTypes.StatusListCwt })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: issuanceLeafCertificate,
+      validityInfo: { validUntil: nextDay },
+      statusInfo: { index: 1, uri: statusListUri },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [
+        {
+          issuance: [issuanceRootCertificate.toString('base64')],
+          status: [statusRootCertificate.toString('base64')],
+        },
+      ],
+    })
+
+    expect(result.isValid).toBe(true)
+  })
+
+  test('verify fails when status list chain is anchored to a different root CA than the issuance chain and no dedicated status certificates are configured', async () => {
+    const issuanceRootKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const issuanceLeafKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const statusRootKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const statusLeafKey = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+    const issuanceRootCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(issuanceRootKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=IssuanceRoot',
+      extensions: { basicConstraints: { ca: true } },
+    })
+    issuanceRootCertificate.keyId = issuanceRootKey.keyId
+
+    const issuanceLeafCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(issuanceRootKey.publicJwk),
+      subjectPublicKey: PublicJwk.fromPublicJwk(issuanceLeafKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=IssuanceRoot',
+      subject: 'C=DE,CN=IssuanceLeaf',
+    })
+    issuanceLeafCertificate.keyId = issuanceLeafKey.keyId
+
+    const statusRootCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(statusRootKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=StatusRoot',
+      extensions: { basicConstraints: { ca: true } },
+    })
+    statusRootCertificate.keyId = statusRootKey.keyId
+
+    const statusLeafCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: PublicJwk.fromPublicJwk(statusRootKey.publicJwk),
+      subjectPublicKey: PublicJwk.fromPublicJwk(statusLeafKey.publicJwk),
+      validity: { notBefore: currentDate, notAfter: nextDay },
+      issuer: 'C=DE,CN=StatusRoot',
+      subject: 'C=DE,CN=StatusLeaf',
+    })
+    statusLeafCertificate.keyId = statusLeafKey.keyId
+
+    const statusListUri = 'https://example.org/token-status-list/root-different-no-status'
+    const { statusList } = await tokenStatusList.createTokenStatusList({
+      format: 'cwt',
+      signer: { method: 'x5c', x5c: [statusLeafCertificate] },
+      alg: KnownJwaSignatureAlgorithms.ES256,
+      statusList: { statusListLength: 10, bitsPerStatus: 1 },
+      statusListUri,
+    })
+
+    nock('https://example.org')
+      .persist()
+      .get('/token-status-list/root-different-no-status')
+      .reply(200, Buffer.from(statusList as Uint8Array), { 'Content-Type': MediaTypes.StatusListCwt })
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+      namespaces: { hello: { world: 'world' } },
+      issuerCertificate: issuanceLeafCertificate,
+      validityInfo: { validUntil: nextDay },
+      statusInfo: { index: 1, uri: statusListUri },
+    })
+
+    const result = await mdoc.verify(agentContext, {
+      trustedCertificates: [
+        {
+          issuance: [issuanceRootCertificate.toString('base64'), statusRootCertificate.toString('base64')],
+        },
+      ],
+    })
+
+    expect(result).toEqual({
+      isValid: false,
+      error:
+        'Trusted status list chain does not match the trusted issuance chain, and no trusted status certificates were provided for the trusted issuance certificate',
+    })
+  })
+
   // FIXME: test is skipped due to a breaking change in mdoc library that prevents us to
   // specify a custom verification date (it does not take the parameter into account)
   // This is needed in this test because the certificate is only valid from 2024-08-12 and 2024-08-24

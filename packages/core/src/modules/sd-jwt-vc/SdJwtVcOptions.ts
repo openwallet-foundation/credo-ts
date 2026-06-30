@@ -1,4 +1,5 @@
 import type { SdJwtVcPayload } from '@sd-jwt/sd-jwt-vc'
+import type { TrustedIssuer } from '../../agent/TrustedIssuersForVerification'
 import type { HashName } from '../../crypto'
 import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate, X509Certificate, X509VerificationTrustedCertificates } from '../x509'
@@ -162,7 +163,7 @@ export type SdJwtVcVerifyOptions = {
 
   /**
    * Whether to verify the status of the credential. If set to false and the credential
-   * has a status, it will not be fetched and verified.
+   * has a status, it will not be checked and the status list will not be fetched.
    *
    * @default true
    * @deprecated use `disableStatusValidation`
@@ -170,14 +171,25 @@ export type SdJwtVcVerifyOptions = {
   verifyCredentialStatus?: boolean
 
   /**
-   * Whether to disable the status validation of the credential. If set to true and the credential
-   * has a status, it will not be fetched and verified.
+   * Whether to verify the status of the credential. If set to true and the credential
+   * has a status, it will not be checked and the status list will not be fetched.
    *
    * @default false
    */
   disableStatusValidation?: boolean
 
+  /**
+   * Trusted certificates for the verification.
+   *
+   * @deprecated use `trustedIssuers` instead.
+   */
   trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
+
+  /**
+   * Trusted issuers for the verification. Only entries whose `method` matches the credential signer
+   * method are considered (x509 entries gate x5c-signed credentials, did entries gate did-signed ones).
+   */
+  trustedIssuers?: TrustedIssuer[]
 
   /**
    * Date that should be used as the current time. If not provided, current time will be used.

@@ -19,6 +19,7 @@ import {
   W3cV2CredentialService,
 } from '@credo-ts/core'
 import {
+  type AccessTokenProfileJwtPayload,
   type AuthorizationServerMetadata,
   authorizationCodeGrantIdentifier,
   calculateJwkThumbprint,
@@ -33,6 +34,8 @@ import {
   Oauth2ServerErrorResponseError,
   PkceCodeChallengeMethod,
   preAuthorizedCodeGrantIdentifier,
+  refreshTokenGrantIdentifier,
+  type TokenIntrospectionResponse,
 } from '@openid4vc/oauth2'
 import {
   type CredentialConfigurationSupportedWithFormats,
@@ -80,6 +83,11 @@ import type {
   OpenId4VciCreateStatelessCredentialOfferOptions,
   OpenId4VciCredentialRequestAuthorization,
   OpenId4VciCredentialRequestToCredentialMapperOptions,
+  OpenId4VciDynamicIssuanceAuthorizationFlow,
+  OpenId4VciDynamicIssuanceSessionOptions,
+  OpenId4VciGetDynamicIssuanceSessionAuthorizationOptions,
+  OpenId4VciGetDynamicIssuanceSessionCredentialOptions,
+  OpenId4VciGetDynamicIssuanceSessionOptions,
   OpenId4VciPreAuthorizedCodeFlowConfig,
   OpenId4VciSignCredentials,
   OpenId4VciSignW3cCredentials,
@@ -290,6 +298,253 @@ export class OpenId4VcIssuerService {
     }
   }
 
+  /**
+   * Resolve and create an issuance session for a dynamic (wallet-initiated) issuance request by
+   * invoking the `getDynamicIssuanceSession` callback, which is the single decision point for
+   * dynamic issuance.
+   *
+   * If no callback is configured, the deprecated `allowDynamicIssuanceSessions` flag is used as a
+   * fallback, but only for the `external` authorization flow (i.e. the credential endpoint). When
+   * the flag is enabled and the `external` flow is supported at the calling endpoint, a session is
+   * created based on the requested credential configurations. Returns `null` if neither the callback
+   * nor the fallback applies (the caller can then produce an appropriate error).
+   *
+   * If the callback denies the request (by throwing or returning `undefined`/`null`), or returns
+   * options for an `authorizationFlow` that is not in `supportedAuthorizationFlows`, an
+   * `Oauth2ServerErrorResponseError` is thrown.
+   *
+   * The flow is validated **before** the session is created, so no session is persisted when the
+   * request is denied or the flow is not supported.
+   */
+  public async getDynamicIssuanceSession(
+    agentContext: AgentContext,
+    options:
+      | Omit<OpenId4VciGetDynamicIssuanceSessionAuthorizationOptions, 'agentContext'>
+      | Omit<OpenId4VciGetDynamicIssuanceSessionCredentialOptions, 'agentContext'>
+  ): Promise<OpenId4VcIssuanceSessionRecord> {
+    const { issuer, clientId, requestedCredentialConfigurations } = options
+    const supportedAuthorizationFlows: OpenId4VciDynamicIssuanceAuthorizationFlow[] =
+      options.supportedAuthorizationFlows
+    const accessTokenPayload = options.origin === 'credentialRequest' ? options.accessTokenPayload : undefined
+
+    const getDynamicIssuanceSession = this.openId4VcIssuerConfig.getDynamicIssuanceSession
+    if (!getDynamicIssuanceSession) {
+      if (
+        !this.openId4VcIssuerConfig.allowDynamicIssuanceSessions ||
+        !supportedAuthorizationFlows.includes('external')
+      ) {
+        throw new Oauth2ServerErrorResponseError(
+          {
+            error: Oauth2ErrorCodes.AccessDenied,
+          },
+          {
+            internalMessage: `No 'getDynamicIssuanceSession' has been registered, and the 'allowDynamicIssuanceSessions' + supportedAuthorizationFlows does not allow dynamic creation.`,
+          }
+        )
+      }
+
+      return this.createDynamicIssuanceSession(agentContext, {
+        issuer,
+        clientId,
+        accessTokenPayload,
+        sessionOptions: {
+          authorizationFlow: 'external',
+          credentialConfigurationIds: Object.keys(requestedCredentialConfigurations),
+        },
+        // The legacy dynamic issuance session honors the global `dpopRequired` config.
+        requireDpop: this.openId4VcIssuerConfig.dpopRequired,
+      })
+    }
+
+    let sessionOptions: OpenId4VciDynamicIssuanceSessionOptions | undefined
+    try {
+      sessionOptions = await getDynamicIssuanceSession({
+        agentContext,
+        ...options,
+      } as OpenId4VciGetDynamicIssuanceSessionOptions)
+    } catch (error) {
+      // Let oauth2 errors propagate so they are serialized to a proper oauth2 error response.
+      if (error instanceof Oauth2ServerErrorResponseError) throw error
+      throw new Oauth2ServerErrorResponseError(
+        {
+          error: Oauth2ErrorCodes.ServerError,
+        },
+        {
+          internalMessage: `Error in 'getDynamicIssuanceSession' callback for dynamic issuance request for issuer '${issuer.issuerId}'.`,
+          cause: error,
+        }
+      )
+    }
+
+    if (!sessionOptions) {
+      throw new Oauth2ServerErrorResponseError(
+        {
+          error: Oauth2ErrorCodes.AccessDenied,
+        },
+        {
+          internalMessage: `The 'getDynamicIssuanceSession' callback denied the dynamic issuance request for issuer '${issuer.issuerId}'.`,
+        }
+      )
+    }
+
+    // Validate the returned flow is supported at the calling endpoint before creating anything.
+    if (!supportedAuthorizationFlows.includes(sessionOptions.authorizationFlow)) {
+      throw new Oauth2ServerErrorResponseError(
+        {
+          error: Oauth2ErrorCodes.ServerError,
+        },
+        {
+          internalMessage: `The 'getDynamicIssuanceSession' callback returned the '${
+            sessionOptions.authorizationFlow
+          }' flow, but only the following flows are supported at this endpoint: ${supportedAuthorizationFlows.join(
+            ', '
+          )}. This is a server side error that needs to be addressed.`,
+        }
+      )
+    }
+
+    return this.createDynamicIssuanceSession(agentContext, {
+      issuer,
+      sessionOptions,
+      clientId,
+      accessTokenPayload,
+    })
+  }
+
+  /**
+   * Create and persist the issuance session for a dynamic (wallet-initiated) issuance request based
+   * on the options returned by the `getDynamicIssuanceSession` callback.
+   *
+   * The created session has either `chainedIdentity` (chained authorization server flow),
+   * `presentation` (presentation during issuance flow), or an `authorization.subject` binding
+   * (external authorization server flow) configured, ready to be processed by the corresponding
+   * endpoint.
+   */
+  private async createDynamicIssuanceSession(
+    agentContext: AgentContext,
+    options: {
+      issuer: OpenId4VcIssuerRecord
+      sessionOptions: OpenId4VciDynamicIssuanceSessionOptions
+      clientId?: string
+      accessTokenPayload?: AccessTokenProfileJwtPayload | TokenIntrospectionResponse
+
+      /**
+       * Whether DPoP is required for the session. Only used for the legacy `external` flow fallback
+       * based on the deprecated `allowDynamicIssuanceSessions` config (for the other flows DPoP is
+       * configured through the session options).
+       */
+      requireDpop?: boolean
+    }
+  ): Promise<OpenId4VcIssuanceSessionRecord> {
+    const { issuer, sessionOptions, accessTokenPayload } = options
+    const { credentialConfigurationIds } = sessionOptions
+    const clientId = sessionOptions.clientId ?? options.clientId
+
+    if (credentialConfigurationIds.length === 0) {
+      throw new CredoError('You need to bind at least one credential configuration to the issuance session.')
+    }
+
+    const invalidConfigurationId = credentialConfigurationIds.find(
+      (id) => !issuer.credentialConfigurationsSupported[id]
+    )
+    if (invalidConfigurationId) {
+      throw new CredoError(
+        `Credential configuration id '${invalidConfigurationId}' is not part of the 'credentialConfigurationsSupported' of issuer '${issuer.issuerId}'.`
+      )
+    }
+
+    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+
+    let chainedIdentity: OpenId4VcIssuanceSessionRecord['chainedIdentity']
+    let presentation: OpenId4VcIssuanceSessionRecord['presentation']
+    let sessionAuthorization: OpenId4VcIssuanceSessionRecord['authorization']
+    let state: OpenId4VcIssuanceSessionState
+
+    if (sessionOptions.authorizationFlow === 'chained') {
+      const { authorizationServerUrl } = sessionOptions
+      const chainedAuthorizationServerConfig = issuer.chainedAuthorizationServerConfigs?.find(
+        (config) => config.issuer === authorizationServerUrl
+      )
+      if (!chainedAuthorizationServerConfig) {
+        throw new CredoError(
+          `Issuer '${issuer.issuerId}' does not have a chained authorization server config for issuer '${authorizationServerUrl}'.`
+        )
+      }
+
+      chainedIdentity = {
+        externalAuthorizationServerUrl: chainedAuthorizationServerConfig.issuer,
+      }
+      // Bind a generated issuer state to the session. Even though there is no credential offer (and
+      // thus no `issuer_state` was provided by a wallet), the issuer state is used to bind the
+      // access token (created later by Credo) to the issuance session at the credential endpoint,
+      // just like the issuer-initiated authorization code flow.
+      sessionAuthorization = { issuerState: utils.uuid() }
+      state = OpenId4VcIssuanceSessionState.OfferCreated
+    } else if (sessionOptions.authorizationFlow === 'presentation') {
+      if (!this.openId4VcIssuerConfig.getVerificationSession) {
+        throw new CredoError(
+          `A 'presentation' authorization flow was requested, but the 'getVerificationSession' callback is not configured on the openid4vc issuer module. This callback is required for presentation during issuance flows.`
+        )
+      }
+
+      presentation = { required: true }
+      sessionAuthorization = { issuerState: utils.uuid() }
+      state = OpenId4VcIssuanceSessionState.OfferCreated
+    } else {
+      // external authorization server: the access token already exists, so we bind the session to
+      // the token subject and put it in the `CredentialRequestReceived` state.
+      const subject = accessTokenPayload?.sub
+      if (!subject) {
+        throw new CredoError(
+          `An 'external' authorization flow was requested, but the access token does not contain a 'sub' claim to bind the issuance session to.`
+        )
+      }
+
+      sessionAuthorization = { subject }
+      state = OpenId4VcIssuanceSessionState.CredentialRequestReceived
+    }
+
+    const createdAt = new Date()
+    const expiresAt = utils.addSecondsToDate(
+      createdAt,
+      sessionOptions.expirationInSeconds ?? this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds
+    )
+
+    // Wallet attestation and refresh tokens only apply to the internal authorization flows. DPoP can
+    // be configured for the internal flows through the session options, or for the legacy `external`
+    // flow fallback through the `requireDpop` override.
+    const internalOptions =
+      sessionOptions.authorizationFlow === 'external'
+        ? { requireDpop: options.requireDpop, requireWalletAttestation: undefined, generateRefreshTokens: undefined }
+        : sessionOptions
+
+    const issuanceSession = new OpenId4VcIssuanceSessionRecord({
+      createdAt,
+      expiresAt,
+      issuerId: issuer.issuerId,
+      state,
+      clientId,
+      credentialOfferId: utils.uuid(),
+      credentialOfferPayload: {
+        credential_configuration_ids: credentialConfigurationIds,
+        credential_issuer: issuerMetadata.credentialIssuer.credential_issuer,
+      },
+      authorization: sessionAuthorization,
+      dpop: internalOptions.requireDpop ? { required: true } : undefined,
+      walletAttestation: internalOptions.requireWalletAttestation ? { required: true } : undefined,
+      chainedIdentity,
+      presentation,
+      issuanceMetadata: sessionOptions.issuanceMetadata,
+      generateRefreshTokens: internalOptions.generateRefreshTokens,
+      openId4VciVersion: sessionOptions.version ?? 'v1',
+    })
+
+    await this.openId4VcIssuanceSessionRepository.save(agentContext, issuanceSession)
+    this.emitStateChangedEvent(agentContext, issuanceSession, null)
+
+    return issuanceSession
+  }
+
   public async createCredentialResponse(
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
@@ -304,7 +559,7 @@ export class OpenId4VcIssuerService {
     ])
     const { issuanceSession } = options
     const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
-    const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
+    const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
     const parsedCredentialRequest = vcIssuer.parseCredentialRequest({
@@ -317,6 +572,14 @@ export class OpenId4VcIssuerService {
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidCredentialRequest,
         error_description: `Using unsupported 'credential_identifier'`,
+      })
+    }
+
+    // TODO: support credential response encryption
+    if (parsedCredentialRequest.credentialResponseEncryption) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidCredentialRequest,
+        error_description: `Credential response encryption is not supported.`,
       })
     }
 
@@ -414,13 +677,16 @@ export class OpenId4VcIssuerService {
     const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
 
     if (signOptionsOrDeferral.type === 'deferral') {
-      credentialResponse = vcIssuer.createCredentialResponse({
-        transactionId: signOptionsOrDeferral.transactionId,
-        interval: signOptionsOrDeferral.interval,
-        cNonce,
-        cNonceExpiresInSeconds,
-        credentialRequest: parsedCredentialRequest,
-      })
+      // TODO: support credential response encryption
+      credentialResponse = (
+        await vcIssuer.createCredentialResponse({
+          transactionId: signOptionsOrDeferral.transactionId,
+          interval: signOptionsOrDeferral.interval,
+          cNonce,
+          cNonceExpiresInSeconds,
+          credentialRequest: parsedCredentialRequest,
+        })
+      ).credentialResponse
 
       // Save transaction data for deferred issuance
       issuanceSession.transactions.push({
@@ -449,17 +715,20 @@ export class OpenId4VcIssuerService {
         expectedLength: verifiedCredentialRequestProofs.keys.length,
       })
 
-      credentialResponse = vcIssuer.createCredentialResponse({
-        credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
-        credentials: credentialRequest.proofs
-          ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
-            ? credentials.credentials.map((c) => ({ credential: c }))
-            : credentials.credentials
-          : undefined,
-        cNonce,
-        cNonceExpiresInSeconds,
-        credentialRequest: parsedCredentialRequest,
-      })
+      // TODO: support credential response encryption
+      credentialResponse = (
+        await vcIssuer.createCredentialResponse({
+          credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
+          credentials: credentialRequest.proofs
+            ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
+              ? credentials.credentials.map((c) => ({ credential: c }))
+              : credentials.credentials
+            : undefined,
+          cNonce,
+          cNonceExpiresInSeconds,
+          credentialRequest: parsedCredentialRequest,
+        })
+      ).credentialResponse
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
       const newState =
@@ -502,7 +771,7 @@ export class OpenId4VcIssuerService {
     }
 
     const issuer = await this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
-    const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
+    const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
 
     // Optimization: if the deferral interval hasn't passed yet, we immediately
     // return a new deferral response with the remaining interval. This avoids
@@ -513,10 +782,13 @@ export class OpenId4VcIssuerService {
     const remainingInterval = deferredUntil ? Math.round((deferredUntil - now) / 1000) : undefined
     if (remainingInterval && remainingInterval > 0) {
       return {
-        deferredCredentialResponse: vcIssuer.createDeferredCredentialResponse({
-          interval: remainingInterval,
-          transactionId: transaction.transactionId,
-        }),
+        // TODO: support credential response encryption
+        deferredCredentialResponse: (
+          await vcIssuer.createDeferredCredentialResponse({
+            interval: remainingInterval,
+            transactionId: transaction.transactionId,
+          })
+        ).deferredCredentialResponse,
         issuanceSession,
       }
     }
@@ -548,10 +820,13 @@ export class OpenId4VcIssuerService {
 
     let deferredCredentialResponse: DeferredCredentialResponse
     if (signOptionsOrDeferral.type === 'deferral') {
-      deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
-        interval: signOptionsOrDeferral.interval,
-        transactionId: signOptionsOrDeferral.transactionId,
-      })
+      // TODO: support credential response encryption
+      deferredCredentialResponse = (
+        await vcIssuer.createDeferredCredentialResponse({
+          interval: signOptionsOrDeferral.interval,
+          transactionId: signOptionsOrDeferral.transactionId,
+        })
+      ).deferredCredentialResponse
 
       // Update transaction with the new deferredUntil value
       issuanceSession.transactions = issuanceSession.transactions.map((tx) => {
@@ -574,9 +849,12 @@ export class OpenId4VcIssuerService {
         expectedLength: transaction.numberOfCredentials,
       })
 
-      deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
-        credentials: credentials.credentials.map((c) => ({ credential: c })),
-      })
+      // TODO: support credential response encryption
+      deferredCredentialResponse = (
+        await vcIssuer.createDeferredCredentialResponse({
+          credentials: credentials.credentials.map((c) => ({ credential: c })),
+        })
+      ).deferredCredentialResponse
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
 
@@ -615,7 +893,7 @@ export class OpenId4VcIssuerService {
       options
     const { proofs } = parsedCredentialRequest
 
-    const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
+    const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
     const allowedProofTypes = credentialConfiguration.proof_types_supported ?? {
@@ -1096,7 +1374,11 @@ export class OpenId4VcIssuerService {
 
       jwks_uri: joinUriParts(issuerUrl, [config.jwksEndpointPath]),
 
-      grant_types_supported: [authorizationCodeGrantIdentifier, preAuthorizedCodeGrantIdentifier],
+      grant_types_supported: [
+        authorizationCodeGrantIdentifier,
+        preAuthorizedCodeGrantIdentifier,
+        refreshTokenGrantIdentifier,
+      ],
 
       authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
       authorization_endpoint: joinUriParts(issuerUrl, [config.authorizationEndpoint]),
@@ -1318,7 +1600,7 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  public getIssuer(agentContext: AgentContext, options: { issuanceSessionId?: string } = {}) {
+  public getIssuer(agentContext: AgentContext, options: { issuanceSession?: OpenId4VcIssuanceSessionRecord } = {}) {
     return new Openid4vciIssuer({
       callbacks: getOid4vcCallbacks(agentContext, options),
     })
@@ -1335,7 +1617,10 @@ export class OpenId4VcIssuerService {
     })
   }
 
-  public getOauth2AuthorizationServer(agentContext: AgentContext, options: { issuanceSessionId?: string } = {}) {
+  public getOauth2AuthorizationServer(
+    agentContext: AgentContext,
+    options: { issuanceSession?: OpenId4VcIssuanceSessionRecord } = {}
+  ) {
     return new Oauth2AuthorizationServer({
       callbacks: getOid4vcCallbacks(agentContext, options),
     })
