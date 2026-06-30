@@ -12,6 +12,7 @@ import {
   getAllowedAndRequestedScopeValues,
   getCredentialConfigurationsSupportedForScopes,
   getOfferedCredentials,
+  getRequestedCredentialConfigurationsForScope,
   getScopesFromCredentialConfigurationsSupported,
 } from '../../shared'
 import {
@@ -82,9 +83,7 @@ export async function handlePushedAuthorizationRequest(
     )
   }
 
-  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
-    issuanceSessionId: issuanceSession.id,
-  })
+  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })
 
   const { clientAttestation, dpop } = await authorizationServer.verifyPushedAuthorizationRequest({
     authorizationRequest: parsedAuthorizationRequest.authorizationRequest,
@@ -309,15 +308,6 @@ export function configurePushedAuthorizationRequestEndpoint(router: Router, conf
           })
         }
 
-        // TODO: we could allow dynamic issuance sessions here. Maybe based on a callback?
-        // Not sure how to decide which credentials are allowed to be requested dynamically
-        if (!parseResult.authorizationRequest.issuer_state) {
-          throw new Oauth2ServerErrorResponseError({
-            error: Oauth2ErrorCodes.InvalidRequest,
-            error_description: `Missing required 'issuer_state' parameter. Only requests initiated by a credential offer are supported for pushed authorization requests.`,
-          })
-        }
-
         if (!parseResult.authorizationRequest.scope) {
           throw new Oauth2ServerErrorResponseError({
             error: Oauth2ErrorCodes.InvalidScope,
@@ -325,21 +315,66 @@ export function configurePushedAuthorizationRequestEndpoint(router: Router, conf
           })
         }
 
-        const issuanceSession = await openId4VcIssuerService.findSingleIssuanceSessionByQuery(agentContext, {
-          issuerId: issuer.issuerId,
-          issuerState: parseResult.authorizationRequest.issuer_state,
-        })
+        let issuanceSession: OpenId4VcIssuanceSessionRecord | null
+        if (parseResult.authorizationRequest.issuer_state) {
+          // Issuer-initiated: the request was initiated by a credential offer.
+          issuanceSession = await openId4VcIssuerService.findSingleIssuanceSessionByQuery(agentContext, {
+            issuerId: issuer.issuerId,
+            issuerState: parseResult.authorizationRequest.issuer_state,
+          })
 
-        if (!issuanceSession) {
-          throw new Oauth2ServerErrorResponseError(
-            {
-              error: Oauth2ErrorCodes.InvalidRequest,
-              error_description: `Invalid 'issuer_state' parameter`,
-            },
-            {
-              internalMessage: `Issuance session not found for 'issuer_state' parameter '${parseResult.authorizationRequest.issuer_state}'`,
-            }
-          )
+          if (!issuanceSession) {
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.InvalidRequest,
+                error_description: `Invalid 'issuer_state' parameter`,
+              },
+              {
+                internalMessage: `Issuance session not found for 'issuer_state' parameter '${parseResult.authorizationRequest.issuer_state}'`,
+              }
+            )
+          }
+        } else {
+          // Wallet-initiated: no credential offer. Let the application decide whether to allow it
+          // and create the issuance session through the `getWalletInitiatedIssuanceSession` callback.
+          const { requestedScopes, requestedCredentialConfigurations } = getRequestedCredentialConfigurationsForScope({
+            credentialConfigurationsSupported: issuerMetadata.credentialIssuer.credential_configurations_supported,
+            requestedScope: parseResult.authorizationRequest.scope,
+          })
+
+          if (requestedScopes.length === 0 || Object.keys(requestedCredentialConfigurations).length === 0) {
+            throw new Oauth2ServerErrorResponseError({
+              error: Oauth2ErrorCodes.InvalidScope,
+              error_description: `No requested 'scope' values match with the credential configurations supported by the issuer.`,
+            })
+          }
+
+          // The pushed authorization request endpoint can only handle the chained authorization
+          // server flow. Presentation during issuance is only supported through the authorization
+          // challenge endpoint.
+          issuanceSession = await openId4VcIssuerService.getDynamicIssuanceSession(agentContext, {
+            origin: 'pushedAuthorizationRequest',
+            issuer,
+            clientId: parseResult.authorizationRequest.client_id,
+            requestedScopes,
+            requestedCredentialConfigurations:
+              requestedCredentialConfigurations as OpenId4VciCredentialConfigurationsSupportedWithFormats,
+            supportedAuthorizationFlows: ['chained'],
+            walletAttestation: parseResult.clientAttestation,
+            dpop: parseResult.dpop,
+            request: requestLike,
+          })
+
+          if (!issuanceSession) {
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.AccessDenied,
+              },
+              {
+                internalMessage: `Received pushed authorization request without 'issuer_state', but the 'getDynamicIssuanceSession' callback is not configured on the openid4vc issuer module.`,
+              }
+            )
+          }
         }
 
         const { pushedAuthorizationResponse } = await handlePushedAuthorizationRequest(agentContext, {
