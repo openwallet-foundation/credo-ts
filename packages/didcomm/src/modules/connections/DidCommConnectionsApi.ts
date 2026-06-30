@@ -15,7 +15,6 @@ import { DidCommConnectionRequestMessage, DidCommDidExchangeRequestMessage } fro
 import type { DidCommConnectionType } from './models'
 import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
 import type { DidCommConnectionRecord } from './repository'
-import { DidCommConnectionMetadataKeys } from './repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService, DidCommDidRotateService, DidCommDidRotateV2Service } from './services'
 import { createPeerDidForV2OOB } from './services/helpers'
 
@@ -333,8 +332,6 @@ export class DidCommConnectionsApi {
    * Note: any did created or imported in agent wallet can be used as `toDid`, as long as
    * there are valid DIDComm services in its DID Document.
    *
-   * For v2 connections a new peer DID is always created (`toDid` is unsupported).
-   *
    * @param options connectionId and optional target did and routing configuration
    * @returns object containing the new did
    */
@@ -346,22 +343,18 @@ export class DidCommConnectionsApi {
     const { connectionId, toDid } = options
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
+    if (toDid && options.routing) {
+      throw new CredoError(`'routing' is disallowed when defining 'toDid'`)
+    }
+
     if (connection.didcommVersion === 'v2') {
-      if (toDid) {
-        throw new CredoError("Rotating a DIDComm v2 connection to a specific 'toDid' is not supported")
-      }
-
-      const pendingRotation = connection.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)
-      if (pendingRotation) {
-        return { newDid: pendingRotation.newDid }
-      }
-
       const didRotateV2Service = this.agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
       const routing =
-        options.routing ??
-        (await this.routingService.getRouting(this.agentContext, { mediatorId: connection.mediatorId }))
+        !toDid && !options.routing
+          ? await this.routingService.getRouting(this.agentContext, { mediatorId: connection.mediatorId })
+          : options.routing
 
-      const { newDid } = await didRotateV2Service.rotateOurDid(this.agentContext, connection, routing)
+      const { newDid } = await didRotateV2Service.rotateOurDid(this.agentContext, connection, { toDid, routing })
 
       // from_prior re-attaches to the next outbound, so a failed notification must not fail the rotation
       try {
@@ -379,10 +372,6 @@ export class DidCommConnectionsApi {
       }
 
       return { newDid }
-    }
-
-    if (toDid && options.routing) {
-      throw new CredoError(`'routing' is disallowed when defining 'toDid'`)
     }
 
     let routing = options.routing

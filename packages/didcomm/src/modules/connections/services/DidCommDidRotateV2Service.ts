@@ -29,6 +29,7 @@ import { DidCommDocumentService } from '../../../services/DidCommDocumentService
 import { DidCommV2EnvelopeService, type DidCommV2PlaintextMessage } from '../../../v2'
 import { DidCommForwardV2Message } from '../../routing/protocol/v2/messages'
 import { DidCommRoutingService } from '../../routing/services/DidCommRoutingService'
+import { getMediationRecordForDidDocument } from '../../routing/services/helpers'
 import type { DidCommConnectionDidRotatedEvent } from '../DidCommConnectionEvents'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import type { DidCommConnectionRecord } from '../repository'
@@ -67,16 +68,16 @@ export class DidCommDidRotateV2Service {
   }
 
   /**
-   * Rotate the local DID on a v2 connection. Generates a new peer DID, writes the from_prior
-   * pending-rotation metadata, and updates the connection record in place so subsequent
-   * outbound messages use the new DID. The signed JWT is attached to every outbound message
-   * until the peer replies to the new DID (cleared via {@link clearPendingRotationIfAcknowledged}).
+   * Rotate our DID on a v2 connection. If `toDid` is given, switch to it (must be a DID we own);
+   * otherwise make a new peer DID from `routing`. Saves the new DID on the connection and stores the
+   * from_prior JWT that later messages carry to tell the other side about the change.
    */
   public async rotateOurDid(
     agentContext: AgentContext,
     connection: DidCommConnectionRecord,
-    routing: DidCommRouting
+    options: { toDid?: string; routing?: DidCommRouting }
   ): Promise<{ newDid: string; fromPriorJwt: string }> {
+    const { toDid, routing } = options
     if (!connection.did) {
       throw new CredoError(`Cannot rotate connection '${connection.id}': no current did`)
     }
@@ -85,18 +86,37 @@ export class DidCommDidRotateV2Service {
         `rotateOurDid only supports v2 connections; '${connection.id}' is ${connection.didcommVersion ?? 'v1'}`
       )
     }
+    if (connection.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)) {
+      throw new CredoError(`There is already an existing opened did rotation flow for connection id ${connection.id}`)
+    }
 
     const priorDid = connection.did
-    const { did: newDid } = await createPeerDidForV2OOB(agentContext, routing)
-    // Register the rotated DID with the mediator BEFORE committing the rotation, so a failed
-    // registration cannot leave a connection whose inbound forwards the mediator can't route.
-    const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
-    await routingService.registerRecipientDidForV2Routing(agentContext, routing, newDid)
+    let newDid: string
+    let mediatorId: string | undefined
+
+    if (toDid) {
+      const dids = agentContext.dependencyManager.resolve(DidsApi)
+      const { didDocument } = await dids.resolveCreatedDidDocumentWithKeys(toDid)
+      newDid = didDocument.id
+      mediatorId = (await getMediationRecordForDidDocument(agentContext, didDocument))?.id
+    } else {
+      if (!routing) {
+        throw new CredoError('Routing configuration must be defined when rotating to a new peer did')
+      }
+      const created = await createPeerDidForV2OOB(agentContext, routing)
+      // Register the rotated DID with the mediator BEFORE committing the rotation, so a failed
+      // registration cannot leave a connection whose inbound forwards the mediator can't route.
+      const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
+      await routingService.registerRecipientDidForV2Routing(agentContext, routing, created.did)
+      newDid = created.did
+      mediatorId = routing.mediatorId
+    }
+
     const fromPriorJwt = await this.createFromPriorForRotation(agentContext, priorDid, newDid)
 
     connection.previousDids = [...connection.previousDids, priorDid]
     connection.did = newDid
-    if (routing.mediatorId) connection.mediatorId = routing.mediatorId
+    if (mediatorId) connection.mediatorId = mediatorId
     connection.metadata.set(DidCommConnectionMetadataKeys.DidRotateV2, {
       fromPriorJwt,
       priorDid,

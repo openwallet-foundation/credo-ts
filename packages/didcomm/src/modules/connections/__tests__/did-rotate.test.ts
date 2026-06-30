@@ -528,7 +528,7 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     const didRotateV2 = aliceAgent.dependencyManager.resolve(DidCommDidRotateV2Service)
     const routing = await aliceAgent.didcomm.mediationRecipient.getRouting({})
     // biome-ignore lint/style/noNonNullAssertion: no explanation
-    const { newDid } = await didRotateV2.rotateOurDid(aliceAgent.context, aliceBobConnection!, routing)
+    const { newDid } = await didRotateV2.rotateOurDid(aliceAgent.context, aliceBobConnection!, { routing })
 
     expect(newDid).not.toEqual(oldAliceDid)
 

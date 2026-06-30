@@ -524,7 +524,7 @@ export class DidCommMessageReceiver {
       const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
       const routing = await routingService.getRouting(agentContext, {})
       const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
-      await didRotateV2Service.rotateOurDid(agentContext, connection, routing)
+      await didRotateV2Service.rotateOurDid(agentContext, connection, { routing })
     } catch (error) {
       this.logger.warn('Failed to rotate inviter DID for v2 OOB connection; continuing with invitation DID', {
         connectionId: connection.id,
