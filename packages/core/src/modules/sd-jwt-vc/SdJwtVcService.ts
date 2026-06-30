@@ -147,14 +147,15 @@ export class SdJwtVcService {
       throw new SdJwtVcError("Missing required parameter 'vct'")
     }
 
+    const { iat: payloadIat, ...payloadWithoutIat } = payload
     const compact = await sdJwt.issue(
       {
-        ...payload,
+        ...payloadWithoutIat,
         cnf: holderBinding?.cnf,
         iss: issuer.iss,
-        iat: nowInSeconds(),
+        ...(payloadIat === null ? {} : { iat: payloadIat ?? nowInSeconds() }),
         vct: payload.vct,
-      },
+      } as unknown as Payload,
       disclosureFrame as DisclosureFrame<Payload>,
       { header }
     )
