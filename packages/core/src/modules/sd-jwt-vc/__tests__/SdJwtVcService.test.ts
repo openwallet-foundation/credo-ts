@@ -273,6 +273,7 @@ describe('SdJwtVcService', () => {
         payload: {
           claim: 'some-claim',
           vct: 'IdentityCredential',
+          iat: Math.floor(Date.now() / 1000),
         },
         holder: {
           method: 'jwk',
@@ -309,6 +310,7 @@ describe('SdJwtVcService', () => {
         payload: {
           claim: 'some-claim',
           vct: 'IdentityCredential',
+          iat: Math.floor(Date.now() / 1000),
         },
         holder: {
           method: 'jwk',
@@ -338,11 +340,64 @@ describe('SdJwtVcService', () => {
       })
     })
 
+    test('Sign sd-jwt-vc with iat explicitly set to null should not include iat in the issued credential', async () => {
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          claim: 'some-claim',
+          vct: 'IdentityCredential',
+          iat: null,
+        },
+        holder: {
+          method: 'jwk',
+          jwk: holderKey,
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+      })
+
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
+
+      expect(sdJwtVc.payload).not.toHaveProperty('iat')
+      expect(sdJwtVc.prettyClaims).not.toHaveProperty('iat')
+      expect(sdJwtVc.prettyClaims).toEqual({
+        claim: 'some-claim',
+        vct: 'IdentityCredential',
+        iss: parseDid(issuerDidUrl).did,
+        cnf: { jwk: holderKey.toJson() },
+      })
+    })
+
+    test('Sign sd-jwt-vc with iat in payload should preserve the provided iat value', async () => {
+      const customIat = 1700000000
+
+      const { compact } = await sdJwtVcService.sign(agent.context, {
+        payload: {
+          claim: 'some-claim',
+          vct: 'IdentityCredential',
+          iat: customIat,
+        },
+        holder: {
+          method: 'jwk',
+          jwk: holderKey,
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+      })
+
+      const sdJwtVc = sdJwtVcService.fromCompact(compact)
+      expect(sdJwtVc.payload.iat).toEqual(customIat)
+    })
+
     test('Sign sd-jwt-vc from a basic payload without disclosures', async () => {
       const { compact } = await sdJwtVcService.sign(agent.context, {
         payload: {
           claim: 'some-claim',
           vct: 'IdentityCredential',
+          iat: Math.floor(Date.now() / 1000),
         },
         holder: {
           method: 'jwk',
@@ -381,6 +436,7 @@ describe('SdJwtVcService', () => {
         payload: {
           claim: 'some-claim',
           vct: 'IdentityCredential',
+          iat: Math.floor(Date.now() / 1000),
         },
         headerType: 'vc+sd-jwt',
         issuer: {
@@ -414,6 +470,7 @@ describe('SdJwtVcService', () => {
           vct: 'IdentityCredential',
           value: false,
           discloseableValue: false,
+          iat: Math.floor(Date.now() / 1000),
         },
         holder: {
           method: 'jwk',
@@ -448,7 +505,7 @@ describe('SdJwtVcService', () => {
 
     test('Create sd-jwt-vc from a basic payload with a disclosure', async () => {
       const { compact, header, prettyClaims, payload } = await sdJwtVcService.sign(agent.context, {
-        payload: { claim: 'some-claim', vct: 'IdentityCredential' },
+        payload: { claim: 'some-claim', vct: 'IdentityCredential', iat: Math.floor(Date.now() / 1000) },
         disclosureFrame: { _sd: ['claim'] },
         holder: {
           method: 'jwk',
@@ -515,6 +572,7 @@ describe('SdJwtVcService', () => {
           is_over_18: true,
           is_over_21: true,
           is_over_65: true,
+          iat: Math.floor(Date.now() / 1000),
         },
         holder: {
           method: 'jwk',
@@ -608,6 +666,7 @@ describe('SdJwtVcService', () => {
           is_over_18: true,
           is_over_21: true,
           is_over_65: true,
+          iat: Math.floor(Date.now() / 1000),
         },
         holder: {
           method: 'jwk',

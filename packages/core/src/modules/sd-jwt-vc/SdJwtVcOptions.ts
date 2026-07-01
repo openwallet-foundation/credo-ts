@@ -73,7 +73,11 @@ export type SdJwtVcHolderBinding = SdJwtVcHolderDidBinding | SdJwtVcHolderJwkBin
 export type SdJwtVcIssuer = SdJwtVcIssuerDid | SdJwtVcIssuerX5c
 
 export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> {
-  payload: Payload
+  /**
+   * If `iat` is omitted from the payload, the current time will be used.
+   * If `iat` is explicitly set to `null`, no `iat` claim will be included in the issued credential.
+   */
+  payload: Omit<Payload, 'iat'> & { iat?: number | null }
 
   /**
    * If holder is not provided, we don't bind the SD-JWT VC to a key (so bearer VC)
