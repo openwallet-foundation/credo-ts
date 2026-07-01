@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.7.1
+
+### Patch Changes
+
+- bd17194: fix: do not include c_nonce_expires_in in nonce endpoint response, it was never part of the nonce endpoint response
+- 1a6562c: fix(openid4vc): include auth-code scope in credential offer
+- 117931c: Updated so that when the holder verifies an incoming credential and it fails, it does not log the entire credential
+- 3f2bef1: Restore detailed mdoc verification error.
+- 20d6ab1: fix: correctly encode kid in the header of cose signatures, and do not include the kid in oid4vci request to the issuer
+- 9b64ef6: feat: increase the max request payload size for oid4vci to 1mb and openid4vp to 5mb to be able to handle payloads containing images
+- cfe86fa: X509 trusted certificates now can be provided in a new format. Previously it was a list of base64/pem/der encoded certificates, but now you can _also_ provide a list of objects in the format `[{issuance: string[], status? :string[]}]`. This is used for the new status indicator on mdoc. First, it looks for the used `issuance` trusted certificates and then validates the `status`, if available, with the `status` trusted certificates associated with the `issuance` property.
+- e97c18b: Add a global `getTrustedIssuersForVerification` agent callback for resolving trusted issuers during verification. Unlike the now-deprecated X.509-module `getTrustedCertificatesForVerification` callback (which it takes precedence over), it supports both X.509 certificate chains and DIDs and is extensible to other trust mechanisms. It is wired into SD-JWT VC, mdoc, W3C V1 JWT and LD-JSON, W3C V2 JWT and SD-JWT, and OpenID4VP verification.
+- 9b64ef6: chore: update to oid4vc-ts 0.5 stable
+- e2871bb: feat(openid4vc): add a `getDynamicIssuanceSession` callback for dynamic (wallet-initiated) issuance that is not bound to a credential offer.
+
+  The callback is the single decision point and application-level abuse-prevention gate for dynamic issuance. It is invoked when:
+
+  - a Pushed Authorization Request or Authorization Challenge request is received by the internal authorization server without an `issuer_state` (the `chained` and `presentation` flows), or
+  - the credential endpoint receives an access token issued by an external authorization server that is not bound to a credential offer (the `external` flow).
+
+  The callback input is typed based on the endpoint that received the request (discriminated by `origin`: `pushedAuthorizationRequest`, `authorizationChallengeRequest`, or `credentialRequest`). For the authorization-server origins the parsed (not yet verified) wallet attestation, DPoP and raw request are available; for the credential-request origin the verified access token payload is available.
+
+  The callback returns options describing the issuance session to create (or throws / returns `undefined` to deny). The returned options are typed based on the chosen `authorizationFlow`:
+
+  - `chained` - authorization is delegated to a chained (internal) authorization server.
+  - `presentation` - authorization is completed using an OpenID4VP presentation during issuance (requires `getVerificationSession`).
+  - `external` - authorization has already been completed at an external authorization server (DPoP/wallet attestation requirements and refresh tokens are not configurable, as these are handled by the external authorization server).
+
+  This enables wallet-initiated issuance for the chained authorization server and presentation during issuance flows, and unifies the existing external authorization server dynamic issuance under the same callback.
+
+  The `allowDynamicIssuanceSessions` configuration option is deprecated, and the `getDynamicIssuanceSession` callback takes precedence.
+
+- cfe86fa: TokenStatusList is a new standard module on the agent. It allows you to create/update/fetch token status lists. It is up to the user to host this, this can be easily done with the `statusList` you receive from the `agent.tokenStatusList.createTokenStatusList(...)` function. Updating the statuslist allows you to change the status list credential state from valid to invalid, but also update the expiry time, rotate certificates, change signing algorithm, etc. Signatures are the default and mac should only be used if the user is aware of the security implications and has good reason to do so.
+- Updated dependencies [f127ff5]
+- Updated dependencies [84dfcf4]
+- Updated dependencies [20d6ab1]
+- Updated dependencies [96dc69b]
+- Updated dependencies [7dfafeb]
+- Updated dependencies [f127ff5]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [e97c18b]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [0a58888]
+- Updated dependencies [1e2088f]
+  - @credo-ts/core@0.7.1
+
 ## 0.7.0
 
 ### Minor Changes
