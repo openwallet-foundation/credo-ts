@@ -1,7 +1,7 @@
 import type { AgentContext, TagsBase } from '@credo-ts/core'
 
 import { RecordDuplicateError, RecordNotFoundError, TypedArrayEncoder } from '@credo-ts/core'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
 import { getAgentConfig, getAgentContext, getAskarStoreConfig } from '../../../../core/tests/helpers'
@@ -27,7 +27,7 @@ describe('AskarStorageService', () => {
     storeManager = new AskarStoreManager(
       new NodeFileSystem(),
       new AskarModuleConfig({
-        askar,
+        askar: NativeAskar.instance,
         store: getAskarStoreConfig('AskarStorageServiceTest', {
           inMemory: true,
         }),
@@ -70,7 +70,7 @@ describe('AskarStorageService', () => {
       })
 
       const retrieveRecord = await storeManager.withSession(agentContext, (session) =>
-        askar.sessionFetch({
+        NativeAskar.instance.sessionFetch({
           category: record.type,
           name: record.id,
           // biome-ignore lint/style/noNonNullAssertion: no explanation
@@ -96,7 +96,7 @@ describe('AskarStorageService', () => {
       await storeManager.withSession(
         agentContext,
         async (session) =>
-          await askar.sessionUpdate({
+          await NativeAskar.instance.sessionUpdate({
             category: TestRecord.type,
             name: 'some-id',
             // biome-ignore lint/style/noNonNullAssertion: no explanation
