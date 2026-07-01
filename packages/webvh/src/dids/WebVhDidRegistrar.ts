@@ -20,7 +20,15 @@ import {
   JsonTransformer,
   Kms,
 } from '@credo-ts/core'
-import { createDID, type DIDLog, MultibaseEncoding, multibaseEncode, updateDID } from 'didwebvh-ts'
+import {
+  createDID,
+  type DIDLog,
+  MultibaseEncoding,
+  multibaseEncode,
+  updateDID,
+  type ServiceEndpoint as WebVhServiceEndpoint,
+  type VerificationMethod as WebVhVerificationMethod,
+} from 'didwebvh-ts'
 
 import { WebVhDidCrypto } from './WebVhDidCrypto'
 import { WebVhDidCryptoSigner } from './WebVhDidCryptoSigner'
@@ -181,12 +189,12 @@ export class WebVhDidRegistrar implements DidRegistrar {
         domain,
         updateKeys,
         ...inputDidDocument,
-        verificationMethods,
+        verificationMethods: verificationMethods as unknown as WebVhVerificationMethod[],
         controller: Array.isArray(controller) ? controller[0] : controller,
         authentication: normalizeMethodArray(authentication),
         assertionMethod: normalizeMethodArray(assertionMethod),
         keyAgreement: normalizeMethodArray(keyAgreement),
-        services,
+        services: services as unknown as WebVhServiceEndpoint[],
       })
       didRecord.metadata.set(WebVhDidRecordMetadataKeys.DidLog, logResult)
       didRecord.didDocument = JsonTransformer.fromJSON(doc, DidDocument)
