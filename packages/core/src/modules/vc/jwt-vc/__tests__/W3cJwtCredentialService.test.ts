@@ -334,6 +334,38 @@ describe('W3cJwtCredentialService', () => {
     })
   })
 
+  describe('verifyCredential with getTrustedIssuersForVerification', () => {
+    afterEach(() => {
+      agentContext.config.setTrustedIssuersForVerification(undefined)
+    })
+
+    test('accepts a credential whose issuer did is trusted', async () => {
+      const credential = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)
+      agentContext.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'did', issuance: credential.issuerId }],
+      }))
+
+      const result = await w3cJwtCredentialService.verifyCredential(agentContext, { credential })
+
+      expect(result.isValid).toBe(true)
+    })
+
+    test('rejects a credential whose issuer did is not trusted', async () => {
+      agentContext.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [
+          { method: 'did', issuance: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y' },
+        ],
+      }))
+
+      const result = await w3cJwtCredentialService.verifyCredential(agentContext, {
+        credential: CredoEs256DidJwkJwtVc,
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain('is not trusted')
+    })
+  })
+
   describe('signPresentation', () => {
     test('signs an ES256 JWT vp', async () => {
       // Create a new instance of the credential from the serialized JWT
