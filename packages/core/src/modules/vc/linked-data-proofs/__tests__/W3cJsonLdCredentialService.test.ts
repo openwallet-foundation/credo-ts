@@ -412,6 +412,41 @@ describe('W3cJsonLdCredentialsService', () => {
       })
     })
 
+    describe('verifyCredential with getTrustedIssuersForVerification', () => {
+      afterEach(() => {
+        agentContext.config.setTrustedIssuersForVerification(undefined)
+      })
+
+      it('should accept a credential whose issuer did is trusted', async () => {
+        const vc = JsonTransformer.fromJSON(
+          Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+          W3cJsonLdVerifiableCredential
+        )
+        agentContext.config.setTrustedIssuersForVerification(async () => ({
+          trustedIssuers: [{ method: 'did', issuance: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL' }],
+        }))
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+        expect(result.isValid).toBe(true)
+      })
+
+      it('should reject a credential whose issuer did is not trusted', async () => {
+        const vc = JsonTransformer.fromJSON(
+          Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+          W3cJsonLdVerifiableCredential
+        )
+        agentContext.config.setTrustedIssuersForVerification(async () => ({
+          trustedIssuers: [{ method: 'did', issuance: 'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV' }],
+        }))
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+
+        expect(result.isValid).toBe(false)
+        expect(result.error?.message).toContain('is not trusted')
+      })
+    })
+
     describe('signPresentation', () => {
       it('should successfully create a presentation from single verifiable credential', async () => {
         const presentation = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_VP_DOCUMENT, W3cPresentation)
@@ -486,6 +521,27 @@ describe('W3cJsonLdCredentialsService', () => {
         expect(result.isValid).toBe(false)
         expect(result.error).toBeInstanceOf(Error)
         expect(result.error?.message).toContain('must be verified through the anoncreds W3C bridge path')
+      })
+
+      it('should reject a presentation whose embedded credential issuer is not trusted', async () => {
+        const vp = JsonTransformer.fromJSON(
+          Ed25519Signature2018Fixtures.TEST_VP_DOCUMENT_SIGNED,
+          W3cJsonLdVerifiablePresentation
+        )
+
+        agentContext.config.setTrustedIssuersForVerification(async () => ({
+          trustedIssuers: [{ method: 'did', issuance: 'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV' }],
+        }))
+
+        const result = await w3cJsonLdCredentialService.verifyPresentation(agentContext, {
+          presentation: vp,
+          challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
+        })
+
+        agentContext.config.setTrustedIssuersForVerification(undefined)
+
+        expect(result.isValid).toBe(false)
+        expect(result.error?.message).toContain('is not trusted')
       })
 
       it('should fail when presentation signature is not valid', async () => {

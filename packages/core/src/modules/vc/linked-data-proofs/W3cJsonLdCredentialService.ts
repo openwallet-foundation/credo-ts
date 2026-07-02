@@ -1,4 +1,6 @@
 import type { AgentContext } from '../../../agent/context'
+import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
+import type { TrustedIssuerDid } from '../../../agent/TrustedIssuersForVerification'
 import { createKmsKeyPairClass } from '../../../crypto/KmsKeyPair'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
@@ -108,6 +110,8 @@ export class W3cJsonLdCredentialService {
       this.assertNoAnonCredsW3cBridgeProof(options.credential.proof)
 
       const verifyCredentialStatus = options.verifyCredentialStatus ?? true
+
+      await this.ensureCredentialIssuerTrusted(agentContext, options.credential, options.trustedIssuers)
 
       const suites = this.getSignatureSuitesForCredential(agentContext, options.credential)
 
@@ -269,9 +273,10 @@ export class W3cJsonLdCredentialService {
       const credentials = asArray(options.presentation.verifiableCredential)
       assertOnlyW3cJsonLdVerifiableCredentials(credentials)
 
-      credentials.forEach((credential) => {
+      for (const credential of credentials) {
         this.assertNoAnonCredsW3cBridgeProof(credential.proof)
-      })
+        await this.ensureCredentialIssuerTrusted(agentContext, credential, options.trustedIssuers)
+      }
 
       const credentialSuites = credentials.map((credential) =>
         this.getSignatureSuitesForCredential(agentContext, credential)
@@ -330,6 +335,37 @@ export class W3cJsonLdCredentialService {
     )[0]['@type']
 
     return asArray(expandedTypes)
+  }
+
+  private async ensureCredentialIssuerTrusted(
+    agentContext: AgentContext,
+    credential: W3cJsonLdVerifiableCredential,
+    trustedIssuers?: TrustedIssuerDid[]
+  ): Promise<void> {
+    const issuerId = credential.issuerId
+
+    // Only enforced for did-based issuers
+    if (!issuerId.startsWith('did:')) return
+
+    const issuerDid = parseDid(issuerId).did
+
+    for (const proof of asArray(credential.proof)) {
+      const verificationMethod = proof.verificationMethod
+      if (!verificationMethod.startsWith('did:') || parseDid(verificationMethod).did !== issuerDid) {
+        throw new CredoError(
+          `The proof verification method '${verificationMethod}' does not match the credential issuer did '${issuerDid}'.`
+        )
+      }
+
+      await TrustedIssuerContext.ensureTrustedSigner(
+        agentContext,
+        {
+          signer: { method: 'did', didUrl: verificationMethod },
+          verification: { type: 'credential', credential },
+        },
+        trustedIssuers
+      )
+    }
   }
 
   private async getPublicJwkFromVerificationMethod(

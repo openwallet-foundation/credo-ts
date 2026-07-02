@@ -4,7 +4,6 @@ import { Oauth2ErrorCodes, Oauth2ResourceUnauthorizedError, Oauth2ServerErrorRes
 import {
   type CredentialConfigurationsSupportedWithFormats,
   getCredentialConfigurationsMatchingRequestFormat,
-  Openid4vciVersion,
 } from '@openid4vc/openid4vci'
 import type { Response, Router } from 'express'
 import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
@@ -190,27 +189,10 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       }
     }
 
-    if (!issuanceSession && config.allowDynamicIssuanceSessions) {
-      agentContext.config.logger.warn(
-        `No issuance session found for incoming credential request for issuer ${issuer.issuerId} and access token data has no issuer_state or pre-authorized_code. Creating on-demand issuance session`,
-        {
-          tokenPayload,
-        }
-      )
-
-      // Use global config when creating a dynamic session
-      if (config.dpopRequired && !resourceRequestResult.dpop) {
-        return sendUnauthorizedError(
-          response,
-          next,
-          agentContext.config.logger,
-          new Oauth2ResourceUnauthorizedError('Missing required DPoP proof', {
-            scheme,
-            error: Oauth2ErrorCodes.InvalidDpopProof,
-          })
-        )
-      }
-
+    if (!issuanceSession) {
+      // No session bound to the access token. This is a dynamic (wallet-initiated) issuance request
+      // for an external authorization server. The credential configurations that can be issued are
+      // derived from the access token scope and the credential request.
       const configurationsForScope = getCredentialConfigurationsSupportedForScopes(
         issuerMetadata.credentialIssuer.credential_configurations_supported,
         tokenPayload.scope?.split(' ') ?? []
@@ -250,53 +232,39 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         )
       }
 
-      const createdAt = new Date()
-      const expiresAt = utils.addSecondsToDate(createdAt, config.statefulCredentialOfferExpirationInSeconds)
+      // Resolve a dynamic (wallet-initiated) issuance session for the external authorization server
+      // flow. This invokes the `getDynamicIssuanceSession` callback, or falls back to the deprecated
+      // `allowDynamicIssuanceSessions` config. Throws an oauth2 error if the request is denied or
+      // neither is configured.
+      try {
+        issuanceSession = await openId4VcIssuerService.getDynamicIssuanceSession(agentContext, {
+          origin: 'credentialRequest',
+          issuer,
+          clientId: tokenPayload.client_id,
+          requestedScopes: tokenPayload.scope?.split(' ') ?? [],
+          requestedCredentialConfigurations: configurationsForToken,
+          supportedAuthorizationFlows: ['external'],
+          accessTokenPayload: tokenPayload,
+        })
+      } catch (error) {
+        if (error instanceof Oauth2ServerErrorResponseError) {
+          return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
+        }
+        return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
+      }
 
-      issuanceSession = new OpenId4VcIssuanceSessionRecord({
-        createdAt,
-        expiresAt,
-        credentialOfferPayload: {
-          credential_configuration_ids: Object.keys(configurationsForToken),
-          credential_issuer: issuerMetadata.credentialIssuer.credential_issuer,
-        },
-        credentialOfferId: utils.uuid(),
-        issuerId: issuer.issuerId,
-        state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
-        clientId: tokenPayload.client_id,
-        dpop: config.dpopRequired
-          ? {
-              required: true,
-            }
-          : undefined,
-        authorization: {
-          subject: tokenPayload.sub,
-        },
-        openId4VciVersion:
-          issuerMetadata.originalDraftVersion === Openid4vciVersion.V1
-            ? 'v1'
-            : issuerMetadata.originalDraftVersion === Openid4vciVersion.Draft15
-              ? 'v1.draft15'
-              : 'v1.draft11-14',
-      })
-
-      // Save and update
-      await issuanceSessionRepository.save(agentContext, issuanceSession)
-      openId4VcIssuerService.emitStateChangedEvent(agentContext, issuanceSession, null)
-    } else if (!issuanceSession) {
-      return sendOauth2ErrorResponse(
-        response,
-        next,
-        agentContext.config.logger,
-        new Oauth2ServerErrorResponseError(
-          {
-            error: Oauth2ErrorCodes.CredentialRequestDenied,
-          },
-          {
-            internalMessage: `Access token without 'issuer_state' or 'pre-authorized_code' issued by external authorization server provided, but 'allowDynamicIssuanceSessions' is disabled. Either bind the access token to a stateful credential offer, or enable 'allowDynamicIssuanceSessions'.`,
-          }
+      // If the created session requires DPoP, ensure a DPoP proof was provided in the request.
+      if (issuanceSession.dpop?.required && !resourceRequestResult.dpop) {
+        return sendUnauthorizedError(
+          response,
+          next,
+          agentContext.config.logger,
+          new Oauth2ResourceUnauthorizedError('Missing required DPoP proof', {
+            scheme,
+            error: Oauth2ErrorCodes.InvalidDpopProof,
+          })
         )
-      )
+      }
     }
 
     try {
@@ -320,11 +288,13 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         credentialResponse.transaction_id ? 202 : 200
       )
     } catch (error) {
-      issuanceSession.errorMessage =
-        typeof error.message === 'string' && error.message !== ''
-          ? error.message
-          : 'Failed to create a credential response'
-      await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
+      if (issuanceSession) {
+        issuanceSession.errorMessage =
+          typeof error.message === 'string' && error.message !== ''
+            ? error.message
+            : 'Failed to create a credential response'
+        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
+      }
 
       if (error instanceof Oauth2ServerErrorResponseError) {
         return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
