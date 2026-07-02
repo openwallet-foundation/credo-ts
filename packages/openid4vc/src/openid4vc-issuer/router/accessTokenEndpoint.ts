@@ -235,6 +235,11 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         })
       }
 
+      await openId4VcIssuerService.verifyClientAttestationPopChallenge(agentContext, issuer, {
+        clientAttestation: verificationResult.clientAttestation,
+        required: config.clientAttestationPopNonceRequired,
+      })
+
       // Do not update the session state if the grant type is refresh token. This
       // avoids the session state going "backwards".
       if (grant.grantType !== refreshTokenGrantIdentifier) {
