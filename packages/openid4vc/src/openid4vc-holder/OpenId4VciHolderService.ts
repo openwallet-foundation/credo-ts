@@ -1484,7 +1484,7 @@ export class OpenId4VciHolderService {
 
     return {
       ...callbacks,
-      clientAuthentication: (options) => {
+      clientAuthentication: async (options) => {
         const { authorizationServerMetadata, url, body } = options
         const oauth2Client = this.getOauth2Client(agentContext)
         const clientAttestationSupported = oauth2Client.isClientAttestationSupported({
@@ -1493,8 +1493,17 @@ export class OpenId4VciHolderService {
 
         // Client attestations
         if (clientAttestation && clientAttestationSupported) {
+          // Draft 09: if the authorization server requires a client attestation pop nonce, fetch a
+          // challenge from its challenge endpoint and include it in the client attestation pop jwt.
+          const challenge =
+            authorizationServerMetadata.client_attestation_pop_nonce_required &&
+            authorizationServerMetadata.challenge_endpoint
+              ? await this.fetchClientAttestationChallenge(agentContext, authorizationServerMetadata.challenge_endpoint)
+              : undefined
+
           return clientAuthenticationClientAttestationJwt({
             clientAttestationJwt: clientAttestation,
+            challenge,
             callbacks,
           })(options)
         }
@@ -1537,6 +1546,37 @@ export class OpenId4VciHolderService {
         throw new CredoError('Unable to perform client authentication.')
       },
     } satisfies Partial<CallbackContext>
+  }
+
+  /**
+   * Fetches a Client Attestation PoP challenge from the authorization server's `challenge_endpoint`
+   * (draft 09 of OAuth 2.0 Attestation-Based Client Authentication).
+   */
+  private async fetchClientAttestationChallenge(
+    agentContext: AgentContext,
+    challengeEndpoint: string
+  ): Promise<string> {
+    const { fetch } = agentContext.config.agentDependencies
+
+    const response = await fetch(challengeEndpoint, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+    })
+
+    if (!response.ok) {
+      throw new CredoError(
+        `Unable to fetch client attestation challenge from '${challengeEndpoint}'. Received response with status ${response.status}`
+      )
+    }
+
+    const body = (await response.json()) as { attestation_challenge?: unknown }
+    if (typeof body.attestation_challenge !== 'string') {
+      throw new CredoError(
+        `Invalid response from client attestation challenge endpoint '${challengeEndpoint}'. Missing 'attestation_challenge' parameter.`
+      )
+    }
+
+    return body.attestation_challenge
   }
 
   private getClient(agentContext: AgentContext, options: { clientAttestation?: string; clientId?: string } = {}) {

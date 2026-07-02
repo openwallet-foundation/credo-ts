@@ -1383,6 +1383,11 @@ export class OpenId4VcIssuerService {
       authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
       authorization_endpoint: joinUriParts(issuerUrl, [config.authorizationEndpoint]),
 
+      // Client Attestation PoP challenge (draft 09). The challenge endpoint is always exposed; the
+      // nonce is only required when explicitly enabled through config.
+      challenge_endpoint: joinUriParts(issuerUrl, [config.clientAttestationChallengeEndpointPath]),
+      client_attestation_pop_nonce_required: config.clientAttestationPopNonceRequired || undefined,
+
       pushed_authorization_request_endpoint: joinUriParts(issuerUrl, [config.pushedAuthorizationRequestEndpoint]),
       require_pushed_authorization_requests: true,
 
@@ -1461,6 +1466,116 @@ export class OpenId4VcIssuerService {
 
     if (!verification.isValid) {
       throw new CredoError('Invalid nonce')
+    }
+  }
+
+  /**
+   * Creates a challenge (nonce) to be included in the `challenge` claim of a Client Attestation
+   * PoP JWT, as defined in draft 09 of OAuth 2.0 Attestation-Based Client Authentication.
+   *
+   * The challenge is a stateless signed JWT, following the same approach as {@link createNonce}.
+   */
+  public async createClientAttestationChallenge(agentContext: AgentContext, issuer: OpenId4VcIssuerRecord) {
+    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    const expiresInSeconds = this.openId4VcIssuerConfig.cNonceExpiresInSeconds
+    const expiresAt = utils.addSecondsToDate(new Date(), expiresInSeconds)
+
+    const key = issuer.resolvedAccessTokenPublicJwk
+    const challenge = await jwsService.createJwsCompact(agentContext, {
+      keyId: key.keyId,
+      payload: JwtPayload.fromJson({
+        iss: issuerMetadata.credentialIssuer.credential_issuer,
+        exp: utils.dateToSeconds(expiresAt),
+      }),
+      protectedHeaderOptions: {
+        typ: 'credo+attestation-challenge',
+        kid: key.keyId,
+        alg: key.signatureAlgorithm,
+      },
+    })
+
+    return { challenge, expiresAt, expiresInSeconds }
+  }
+
+  /**
+   * Verifies a Client Attestation PoP challenge previously issued by {@link createClientAttestationChallenge}.
+   */
+  public async verifyClientAttestationChallenge(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    challenge: string
+  ) {
+    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    const key = issuer.resolvedAccessTokenPublicJwk
+    const jwt = Jwt.fromSerializedJwt(challenge)
+    jwt.payload.validate({
+      skewSeconds: agentContext.config.validitySkewSeconds,
+    })
+
+    if (jwt.payload.iss !== issuerMetadata.credentialIssuer.credential_issuer) {
+      throw new CredoError(`Invalid 'iss' claim in client attestation challenge jwt`)
+    }
+    if (jwt.header.typ !== 'credo+attestation-challenge') {
+      throw new CredoError(`Invalid 'typ' claim in client attestation challenge jwt header`)
+    }
+
+    const verification = await jwsService.verifyJws(agentContext, {
+      jws: challenge,
+      jwsSigner: {
+        method: 'jwk',
+        jwk: key,
+      },
+    })
+
+    if (!verification.isValid) {
+      throw new CredoError('Invalid client attestation challenge')
+    }
+  }
+
+  /**
+   * Enforces the Client Attestation PoP `challenge` (draft 09) on an authorization server verify
+   * result. This is a no-op unless the issuer requires the challenge (`required`), matching the
+   * spec requirement to only validate a challenge that the authorization server itself issued. When
+   * required and a client attestation was provided, its pop jwt must contain a valid `challenge`.
+   */
+  public async verifyClientAttestationPopChallenge(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    options: {
+      clientAttestation?: { clientAttestationPop: { payload: { challenge?: string } } }
+      required: boolean
+    }
+  ) {
+    // The challenge is only validated when the issuer requires it. This keeps behavior unchanged
+    // for issuers that don't opt in to the client attestation pop challenge.
+    if (!options.required) return
+
+    // No client attestation provided, so there's no pop challenge to enforce. Whether a client
+    // attestation itself is required is handled by the authorization server verify call.
+    if (!options.clientAttestation) return
+
+    const challenge = options.clientAttestation.clientAttestationPop.payload.challenge
+    if (!challenge) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidClient,
+        error_description: `Missing required 'challenge' claim in client attestation pop jwt.`,
+      })
+    }
+
+    try {
+      await this.verifyClientAttestationChallenge(agentContext, issuer, challenge)
+    } catch (error) {
+      throw new Oauth2ServerErrorResponseError(
+        {
+          error: Oauth2ErrorCodes.InvalidClient,
+          error_description: `Invalid 'challenge' claim in client attestation pop jwt.`,
+        },
+        { cause: error }
+      )
     }
   }
 

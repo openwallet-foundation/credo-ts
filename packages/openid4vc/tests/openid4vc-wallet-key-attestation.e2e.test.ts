@@ -8,6 +8,7 @@ import {
   OpenId4VcIssuanceSessionState,
   type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerRecord,
+  OpenId4VcIssuerService,
   type OpenId4VciCredentialConfigurationSupportedWithFormats,
   OpenId4VciCredentialFormatProfile,
   OpenId4VcModule,
@@ -72,6 +73,8 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
           app: expressApp,
           issuer: {
             baseUrl: issuerBaseUrl,
+            // Require a client attestation pop challenge (draft 09) for all client attestation based auth
+            clientAttestationPopNonceRequired: true,
             getVerificationSession: async ({ issuanceSession, scopes }) => {
               if (scopes.includes(universityDegreeCredentialConfigurationSupportedMdoc.scope)) {
                 const createRequestReturn = await issuer.agent.openid4vc.verifier.createAuthorizationRequest({
@@ -129,7 +132,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
                   },
                   header: {
                     alg: 'ES256',
-                    typ: 'keyattestation+jwt',
+                    typ: 'key-attestation+jwt',
                     x5c: [expect.any(String)],
                   },
                   signer: {
@@ -679,5 +682,51 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     ).rejects.toThrow(
       `Missing required key attestation. Key attestations are required for proof type 'jwt' in credential configuration 'universityDegree'`
     )
+  })
+
+  it('advertises the client attestation pop challenge endpoint in the authorization server metadata', async () => {
+    const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+      issuerId: issuerRecord.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      authorization: {
+        requireDpop: true,
+        requireWalletAttestation: true,
+      },
+    })
+
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const authorizationServerMetadata = resolvedCredentialOffer.metadata.authorizationServers[0]
+
+    expect(authorizationServerMetadata.client_attestation_pop_nonce_required).toBe(true)
+    expect(authorizationServerMetadata.challenge_endpoint).toEqual(
+      `${issuerBaseUrl}/${issuerRecord.issuerId}/client-attestation-challenge`
+    )
+  })
+
+  it('throws error if the client attestation pop challenge is invalid', async () => {
+    const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+      issuerId: issuerRecord.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      authorization: {
+        requireDpop: true,
+        requireWalletAttestation: true,
+      },
+    })
+
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+    // The holder fetches and includes a valid challenge, but the issuer rejects it (e.g. expired/tampered)
+    const issuerService = issuer.agent.dependencyManager.resolve(OpenId4VcIssuerService)
+    vi.spyOn(issuerService, 'verifyClientAttestationChallenge').mockRejectedValue(new Error('Invalid challenge'))
+
+    await expect(
+      holder.agent.openid4vc.holder.requestToken({
+        resolvedCredentialOffer,
+        walletAttestationJwt,
+        clientId: 'wallet',
+      })
+    ).rejects.toThrow()
   })
 })
