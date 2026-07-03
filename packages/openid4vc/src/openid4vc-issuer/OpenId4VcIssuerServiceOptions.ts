@@ -729,6 +729,8 @@ export type OpenId4VciCreateIssuerOptions = {
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+  clientAttestationSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+  clientAttestationPopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
 
@@ -752,6 +754,8 @@ export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   | 'issuerId'
   | 'display'
   | 'dpopSigningAlgValuesSupported'
+  | 'clientAttestationSigningAlgValuesSupported'
+  | 'clientAttestationPopSigningAlgValuesSupported'
   | 'credentialConfigurationsSupported'
   | 'batchCredentialIssuance'
   | 'authorizationServerConfigs'

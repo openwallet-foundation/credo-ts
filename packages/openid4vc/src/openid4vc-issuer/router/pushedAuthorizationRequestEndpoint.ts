@@ -102,6 +102,11 @@ export async function handlePushedAuthorizationRequest(
     },
   })
 
+  await openId4VcIssuerService.verifyClientAttestationPopChallenge(agentContext, issuer, {
+    clientAttestation,
+    required: config.clientAttestationPopChallengeRequired,
+  })
+
   if (dpop) {
     // Bind dpop jwk thumbprint to session
     issuanceSession.dpop = {
