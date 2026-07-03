@@ -258,7 +258,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
 
   await openId4VcIssuerService.verifyClientAttestationPopChallenge(agentContext, issuer, {
     clientAttestation,
-    required: config.clientAttestationPopNonceRequired,
+    required: config.clientAttestationPopChallengeRequired,
   })
 
   // Bind dpop jwk thumbprint to session
@@ -413,7 +413,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
 
   await openId4VcIssuerService.verifyClientAttestationPopChallenge(agentContext, issuer, {
     clientAttestation,
-    required: config.clientAttestationPopNonceRequired,
+    required: config.clientAttestationPopChallengeRequired,
   })
 
   if (dpop && dpop.jwkThumbprint !== issuanceSession.dpop?.dpopJkt) {

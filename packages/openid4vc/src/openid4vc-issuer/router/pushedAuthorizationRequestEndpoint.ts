@@ -104,7 +104,7 @@ export async function handlePushedAuthorizationRequest(
 
   await openId4VcIssuerService.verifyClientAttestationPopChallenge(agentContext, issuer, {
     clientAttestation,
-    required: config.clientAttestationPopNonceRequired,
+    required: config.clientAttestationPopChallengeRequired,
   })
 
   if (dpop) {

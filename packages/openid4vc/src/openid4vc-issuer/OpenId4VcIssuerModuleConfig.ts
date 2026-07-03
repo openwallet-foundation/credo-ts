@@ -100,17 +100,17 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   walletAttestationsRequired?: boolean
 
   /**
-   * Whether a Client Attestation PoP `challenge` (nonce) is required when a client authenticates using
-   * a client attestation, as defined in draft 09 of OAuth 2.0 Attestation-Based Client Authentication.
+   * Whether a Client Attestation PoP `challenge` is required when a client authenticates using a client
+   * attestation, as defined in draft 09 of OAuth 2.0 Attestation-Based Client Authentication.
    *
-   * When enabled, the authorization server metadata advertises `client_attestation_pop_nonce_required`
-   * and a `challenge_endpoint`, and client attestation pop JWTs must include a valid `challenge`
-   * obtained from that endpoint. The challenge endpoint itself is always exposed regardless of this
-   * value.
+   * When enabled, the authorization server metadata advertises a `challenge_endpoint`, and client
+   * attestation pop JWTs must include a valid `challenge` obtained from that endpoint (per §6.1, offering
+   * a challenge endpoint makes the challenge mandatory). When disabled the challenge endpoint is not
+   * advertised and no challenge is enforced.
    *
    * @default false
    */
-  clientAttestationPopNonceRequired?: boolean
+  clientAttestationPopChallengeRequired?: boolean
 
   /**
    * Whether to allow dynamic issuance sessions based on a credential request.
@@ -397,13 +397,13 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
-   * Whether a Client Attestation PoP `challenge` (nonce) is required when a client authenticates using
-   * a client attestation (draft 09 of OAuth 2.0 Attestation-Based Client Authentication).
+   * Whether a Client Attestation PoP `challenge` is required when a client authenticates using a client
+   * attestation (draft 09 of OAuth 2.0 Attestation-Based Client Authentication).
    *
    * @default false
    */
-  public get clientAttestationPopNonceRequired(): boolean {
-    return this.options.clientAttestationPopNonceRequired ?? false
+  public get clientAttestationPopChallengeRequired(): boolean {
+    return this.options.clientAttestationPopChallengeRequired ?? false
   }
 
   /**

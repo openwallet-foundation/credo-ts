@@ -36,7 +36,9 @@ import {
   type CallbackContext,
   clientAuthenticationAnonymous,
   clientAuthenticationClientAttestationJwt,
+  clientAuthenticationClientAttestationJwtDpop,
   clientAuthenticationNone,
+  decodeJwt,
   getAuthorizationServerMetadataFromList,
   type Jwk,
   Oauth2Client,
@@ -44,6 +46,8 @@ import {
   preAuthorizedCodeGrantIdentifier,
   type RequestDpopOptions,
   refreshTokenGrantIdentifier,
+  requestClientAttestationChallenge,
+  SupportedClientAuthenticationMethod,
 } from '@openid4vc/oauth2'
 import {
   AuthorizationFlow,
@@ -378,10 +382,6 @@ export class OpenId4VciHolderService {
     dpop?: OpenId4VciDpopRequestOptions
   }> {
     const { metadata, credentialOfferPayload } = options.resolvedCredentialOffer
-    const client = this.getClient(agentContext, {
-      clientAttestation: options.walletAttestationJwt,
-      clientId: 'clientId' in options ? options.clientId : undefined,
-    })
     const oauth2Client = this.getOauth2Client(agentContext)
 
     const authorizationServer = options.code
@@ -396,19 +396,49 @@ export class OpenId4VciHolderService {
       authorizationServerMetadata,
     })
 
-    const dpop = options.dpop
-      ? await this.getDpopOptions(agentContext, {
-          ...options.dpop,
-          dpopSigningAlgValuesSupported: [options.dpop.alg],
-        })
-      : // We should be careful about this case. It could just be the user didn't correctly
-        // provide the DPoP from the auth response. In which case different DPoP will be used
-        // However it might be that they only use DPoP for the token request (esp in pre-auth case)
-        isDpopSupported.supported
+    // draft 09 §5.2: when the authorization server supports the DPoP-bound client attestation method, the
+    // client instance key is used as the DPoP key so a single DPoP proof serves as both the DPoP proof and
+    // the client attestation pop. Only applied when there is no pre-existing DPoP binding (i.e. the
+    // pre-authorized code flow); for the authorization code flow the DPoP key is already established at the
+    // pushed authorization request.
+    const dpopBoundClientAttestationKey =
+      isDpopSupported.supported && !options.code && !options.dpop
+        ? this.getDpopBoundClientAttestationKey(options.walletAttestationJwt, authorizationServerMetadata)
+        : undefined
+
+    const client = this.getClient(agentContext, {
+      clientAttestation: options.walletAttestationJwt,
+      clientId: 'clientId' in options ? options.clientId : undefined,
+      dpopBoundClientAttestation: dpopBoundClientAttestationKey !== undefined,
+    })
+
+    // For the DPoP-bound method the single DPoP proof is created by the client authentication callback
+    // (`clientAuthenticationClientAttestationJwtDpop`), so we must NOT also create a standalone DPoP proof
+    // for the request. We only derive the instance-key signer to return the DPoP binding for subsequent
+    // (resource) requests.
+    const dpopBoundSigner =
+      dpopBoundClientAttestationKey && isDpopSupported.supported
         ? await this.getDpopOptions(agentContext, {
+            jwk: dpopBoundClientAttestationKey,
             dpopSigningAlgValuesSupported: isDpopSupported.dpopSigningAlgValuesSupported,
           })
         : undefined
+
+    const dpop = dpopBoundClientAttestationKey
+      ? undefined
+      : options.dpop
+        ? await this.getDpopOptions(agentContext, {
+            ...options.dpop,
+            dpopSigningAlgValuesSupported: [options.dpop.alg],
+          })
+        : // We should be careful about this case. It could just be the user didn't correctly
+          // provide the DPoP from the auth response. In which case different DPoP will be used
+          // However it might be that they only use DPoP for the token request (esp in pre-auth case)
+          isDpopSupported.supported
+          ? await this.getDpopOptions(agentContext, {
+              dpopSigningAlgValuesSupported: isDpopSupported.dpopSigningAlgValuesSupported,
+            })
+          : undefined
 
     const result = options.code
       ? await client.retrieveAuthorizationCodeAccessTokenFromOffer({
@@ -428,13 +458,20 @@ export class OpenId4VciHolderService {
 
     return {
       ...result,
-      dpop: dpop
+      // For the DPoP-bound method the binding is the client instance key (the DPoP proof is created by the
+      // client authentication callback, so `result.dpop` is undefined).
+      dpop: dpopBoundSigner
         ? {
-            ...result.dpop,
-            alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
-            jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
+            alg: dpopBoundSigner.signer.alg as Kms.KnownJwaSignatureAlgorithm,
+            jwk: Kms.PublicJwk.fromUnknown(dpopBoundSigner.signer.publicJwk),
           }
-        : undefined,
+        : dpop
+          ? {
+              ...result.dpop,
+              alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
+              jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
+            }
+          : undefined,
     }
   }
 
@@ -1478,7 +1515,11 @@ export class OpenId4VciHolderService {
 
   private getCallbacks(
     agentContext: AgentContext,
-    { clientAttestation, clientId }: { clientAttestation?: string; clientId?: string } = {}
+    {
+      clientAttestation,
+      clientId,
+      dpopBoundClientAttestation,
+    }: { clientAttestation?: string; clientId?: string; dpopBoundClientAttestation?: boolean } = {}
   ) {
     const callbacks = getOid4vcCallbacks(agentContext)
 
@@ -1493,13 +1534,23 @@ export class OpenId4VciHolderService {
 
         // Client attestations
         if (clientAttestation && clientAttestationSupported) {
-          // Draft 09: if the authorization server requires a client attestation pop nonce, fetch a
-          // challenge from its challenge endpoint and include it in the client attestation pop jwt.
-          const challenge =
-            authorizationServerMetadata.client_attestation_pop_nonce_required &&
-            authorizationServerMetadata.challenge_endpoint
-              ? await this.fetchClientAttestationChallenge(agentContext, authorizationServerMetadata.challenge_endpoint)
-              : undefined
+          // Draft 09: when the authorization server exposes a challenge endpoint, the client MUST include
+          // a fresh challenge in the client attestation pop jwt. Fetch one proactively (covers PAR, token
+          // and authorization challenge). On the token endpoint the library additionally auto-retries the
+          // `use_attestation_challenge` error with a server-provided challenge, which takes precedence.
+          const challenge = authorizationServerMetadata.challenge_endpoint
+            ? (await requestClientAttestationChallenge({ authorizationServerMetadata, callbacks })).challenge
+            : undefined
+
+          // Draft 09 §5.2 DPoP-bound method: at the token endpoint a single DPoP proof (signed with the
+          // client instance key) serves as both the DPoP proof and the client attestation pop jwt.
+          if (dpopBoundClientAttestation && url === authorizationServerMetadata.token_endpoint) {
+            return clientAuthenticationClientAttestationJwtDpop({
+              clientAttestationJwt: clientAttestation,
+              challenge,
+              callbacks,
+            })(options)
+          }
 
           return clientAuthenticationClientAttestationJwt({
             clientAttestationJwt: clientAttestation,
@@ -1548,46 +1599,46 @@ export class OpenId4VciHolderService {
     } satisfies Partial<CallbackContext>
   }
 
-  /**
-   * Fetches a Client Attestation PoP challenge from the authorization server's `challenge_endpoint`
-   * (draft 09 of OAuth 2.0 Attestation-Based Client Authentication).
-   */
-  private async fetchClientAttestationChallenge(
+  private getClient(
     agentContext: AgentContext,
-    challengeEndpoint: string
-  ): Promise<string> {
-    const { fetch } = agentContext.config.agentDependencies
-
-    const response = await fetch(challengeEndpoint, {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-    })
-
-    if (!response.ok) {
-      throw new CredoError(
-        `Unable to fetch client attestation challenge from '${challengeEndpoint}'. Received response with status ${response.status}`
-      )
-    }
-
-    const body = (await response.json()) as { attestation_challenge?: unknown }
-    if (typeof body.attestation_challenge !== 'string') {
-      throw new CredoError(
-        `Invalid response from client attestation challenge endpoint '${challengeEndpoint}'. Missing 'attestation_challenge' parameter.`
-      )
-    }
-
-    return body.attestation_challenge
-  }
-
-  private getClient(agentContext: AgentContext, options: { clientAttestation?: string; clientId?: string } = {}) {
+    options: { clientAttestation?: string; clientId?: string; dpopBoundClientAttestation?: boolean } = {}
+  ) {
     return new Openid4vciClient({
       callbacks: this.getCallbacks(agentContext, options),
     })
   }
 
-  private getOauth2Client(agentContext: AgentContext, options?: { clientAttestation?: string; clientId?: string }) {
+  private getOauth2Client(
+    agentContext: AgentContext,
+    options?: { clientAttestation?: string; clientId?: string; dpopBoundClientAttestation?: boolean }
+  ) {
     return new Oauth2Client({
       callbacks: options ? this.getCallbacks(agentContext, options) : getOid4vcCallbacks(agentContext),
     })
+  }
+
+  /**
+   * Determines whether the DPoP-bound client attestation method (`attest_jwt_client_auth_dpop`, draft 09
+   * §5.2) should be used, and returns the client instance key (the `cnf.jwk` of the client attestation)
+   * to be used as the DPoP key. Returns `undefined` when the method is not applicable.
+   */
+  private getDpopBoundClientAttestationKey(
+    clientAttestationJwt: string | undefined,
+    authorizationServerMetadata: { token_endpoint_auth_methods_supported?: string[] }
+  ): Kms.PublicJwk | undefined {
+    if (!clientAttestationJwt) return undefined
+    if (
+      !authorizationServerMetadata.token_endpoint_auth_methods_supported?.includes(
+        SupportedClientAuthenticationMethod.ClientAttestationJwtDpop
+      )
+    ) {
+      return undefined
+    }
+
+    const { payload } = decodeJwt({ jwt: clientAttestationJwt })
+    const cnfJwk = (payload.cnf as { jwk?: Record<string, unknown> } | undefined)?.jwk
+    if (!cnfJwk) return undefined
+
+    return Kms.PublicJwk.fromUnknown(cnfJwk)
   }
 }

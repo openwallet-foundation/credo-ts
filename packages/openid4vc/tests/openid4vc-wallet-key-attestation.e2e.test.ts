@@ -63,6 +63,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
 
   let attestedKeys: Kms.PublicJwk[]
   let walletAttestationJwt: string
+  let walletInstanceKey: Kms.PublicJwk
 
   beforeEach(async () => {
     expressApp = express()
@@ -74,7 +75,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
           issuer: {
             baseUrl: issuerBaseUrl,
             // Require a client attestation pop challenge (draft 09) for all client attestation based auth
-            clientAttestationPopNonceRequired: true,
+            clientAttestationPopChallengeRequired: true,
             getVerificationSession: async ({ issuanceSession, scopes }) => {
               if (scopes.includes(universityDegreeCredentialConfigurationSupportedMdoc.scope)) {
                 const createRequestReturn = await issuer.agent.openid4vc.verifier.createAuthorizationRequest({
@@ -195,10 +196,13 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     })
 
     const walletProvider = new Openid4vciWalletProvider({ callbacks: getOid4vcCallbacks(holder.agent.context) })
+    walletInstanceKey = Kms.PublicJwk.fromPublicJwk(
+      (await holder.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+    )
     walletAttestationJwt = await walletProvider.createWalletAttestationJwt({
       clientId: 'wallet',
       confirmation: {
-        jwk: (await holder.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk as Jwk,
+        jwk: walletInstanceKey.toJson() as Jwk,
       },
       issuer: 'https://wallet-provider.com',
       signer: {
@@ -287,6 +291,14 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
       issuerId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
       dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+      clientAttestationSigningAlgValuesSupported: [
+        Kms.KnownJwaSignatureAlgorithms.ES256,
+        Kms.KnownJwaSignatureAlgorithms.EdDSA,
+      ],
+      clientAttestationPopSigningAlgValuesSupported: [
+        Kms.KnownJwaSignatureAlgorithms.ES256,
+        Kms.KnownJwaSignatureAlgorithms.EdDSA,
+      ],
       batchCredentialIssuance: {
         batchSize: 10,
       },
@@ -698,10 +710,39 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
     const authorizationServerMetadata = resolvedCredentialOffer.metadata.authorizationServers[0]
 
-    expect(authorizationServerMetadata.client_attestation_pop_nonce_required).toBe(true)
     expect(authorizationServerMetadata.challenge_endpoint).toEqual(
       `${issuerBaseUrl}/${issuerRecord.issuerId}/client-attestation-challenge`
     )
+    // Both methods are advertised because the client attestation, pop and dpop signing algs are set.
+    expect(authorizationServerMetadata.token_endpoint_auth_methods_supported).toEqual(
+      expect.arrayContaining(['attest_jwt_client_auth', 'attest_jwt_client_auth_dpop'])
+    )
+    expect(authorizationServerMetadata.client_attestation_signing_alg_values_supported).toEqual(['ES256', 'EdDSA'])
+    expect(authorizationServerMetadata.client_attestation_pop_signing_alg_values_supported).toEqual(['ES256', 'EdDSA'])
+  })
+
+  it('uses the DPoP-bound client attestation method (attest_jwt_client_auth_dpop) in the pre-authorized flow', async () => {
+    const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+      issuerId: issuerRecord.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      authorization: {
+        requireDpop: true,
+        requireWalletAttestation: true,
+      },
+    })
+
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
+      resolvedCredentialOffer,
+      walletAttestationJwt,
+      clientId: 'wallet',
+    })
+
+    // In the DPoP-bound method the single DPoP proof is signed with the client instance key
+    // (the `cnf.jwk` of the wallet attestation), so the access token is bound to that key.
+    expect(tokenResponse.accessToken).toEqual(expect.any(String))
+    expect(tokenResponse.dpop?.jwk.fingerprint).toEqual(walletInstanceKey.fingerprint)
   })
 
   it('throws error if the client attestation pop challenge is invalid', async () => {
