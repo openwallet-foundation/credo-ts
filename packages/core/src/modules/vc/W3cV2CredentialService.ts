@@ -22,7 +22,6 @@ import type {
 import {
   ClaimFormat,
   decodeW3cV2VerifiablePresentation,
-  presentationFromDataUri,
   W3cV2EnvelopedVerifiableCredential,
   W3cV2EnvelopedVerifiablePresentation,
 } from './models'
@@ -178,7 +177,8 @@ export class W3cV2CredentialService {
    *   to typed presentation instances before routing.
    * - `di_vp` routes through the DI credential service for outer-VP verification.
    * - `di_vc` entries route through the DI credential service for entry verification.
-   * - Nested VP entries are traversed recursively when represented as EnvelopedVerifiablePresentation.
+   * - Nested VP entries are treated as invalid. VC 2.0 verifiable presentations support VC entries,
+   *   not VP-within-VP entries.
    *
    * Return semantics:
    * - `presentation` contains the outer VP verification result.
@@ -289,14 +289,7 @@ export class W3cV2CredentialService {
 
     // Phase 2: walk enclosed credential entries and verify recursively by entry format.
     validationResults.credentialEntries = (
-      await Promise.all(
-        entries.map((entry) =>
-          this.verifyPresentationEntry(agentContext, entry, signerId, {
-            challenge: options.challenge,
-            domain: options.domain,
-          })
-        )
-      )
+      await Promise.all(entries.map((entry) => this.verifyPresentationEntry(agentContext, entry, signerId)))
     ).flat()
 
     validationResults.isValid =
@@ -308,36 +301,14 @@ export class W3cV2CredentialService {
   private async verifyPresentationEntry(
     agentContext: AgentContext,
     entry: W3cV2PresentationCredentialEntry,
-    signerId: string,
-    presentationContext: Pick<W3cV2VerifyPresentationOptions, 'challenge' | 'domain'>
+    signerId: string
   ): Promise<W3cV2PresentationCredentialEntryResult[]> {
     if (entry instanceof W3cV2DataIntegrityVerifiablePresentation) {
-      const nestedPresentationResult = await this.w3cV2DataIntegrityCredentialService.verifyPresentation(agentContext, {
-        challenge: presentationContext.challenge,
-        domain: presentationContext.domain,
-        presentation: entry,
-      } as W3cV2DiVerifyPresentationOptions)
-
-      if (!nestedPresentationResult.presentation.isValid) {
-        return [this.createInvalidCredentialEntryResult(new CredoError('Nested presentation verification failed.'))]
-      }
-
-      const nestedSignerId = entry.resolvedPresentation.holderId
-      if (!nestedSignerId) {
-        return [
-          this.createInvalidCredentialEntryResult(
-            new CredoError('Unable to derive signer id from nested presentation for credential entry validation.')
-          ),
-        ]
-      }
-
-      return (
-        await Promise.all(
-          this.extractCredentialEntriesFromResolvedPresentation(entry.resolvedPresentation).map((nestedEntry) =>
-            this.verifyPresentationEntry(agentContext, nestedEntry, nestedSignerId, presentationContext)
-          )
-        )
-      ).flat()
+      return [
+        this.createInvalidCredentialEntryResult(
+          new CredoError('Nested verifiable presentation entries are not supported in VC 2.0 presentations.')
+        ),
+      ]
     }
 
     if (entry instanceof W3cV2DataIntegrityVerifiableCredential) {
@@ -355,53 +326,11 @@ export class W3cV2CredentialService {
     }
 
     if (entry instanceof W3cV2EnvelopedVerifiablePresentation) {
-      const nestedPresentation = presentationFromDataUri(entry.id)
-
-      const nestedPresentationResult =
-        nestedPresentation instanceof W3cV2JwtVerifiablePresentation
-          ? await this.w3cV2JwtCredentialService.verifyPresentation(agentContext, {
-              challenge: presentationContext.challenge,
-              domain: presentationContext.domain,
-              presentation: nestedPresentation,
-            } as W3cV2JwtVerifyPresentationOptions)
-          : nestedPresentation instanceof W3cV2SdJwtVerifiablePresentation
-            ? await this.w3cV2SdJwtCredentialService.verifyPresentation(agentContext, {
-                challenge: presentationContext.challenge,
-                domain: presentationContext.domain,
-                presentation: nestedPresentation,
-              } as W3cV2SdJwtVerifyPresentationOptions)
-            : undefined
-
-      if (!nestedPresentationResult) {
-        return [
-          this.createInvalidCredentialEntryResult(
-            new CredoError(
-              `Nested presentation entry uses '${this.getClaimFormat(nestedPresentation) ?? 'an unsupported nested presentation format'}'.`
-            )
-          ),
-        ]
-      }
-
-      if (!nestedPresentationResult.presentation.isValid) {
-        return [this.createInvalidCredentialEntryResult(new CredoError('Nested presentation verification failed.'))]
-      }
-
-      const nestedSignerId = await this.deriveSignerIdFromPresentation(agentContext, nestedPresentation)
-      if (!nestedSignerId) {
-        return [
-          this.createInvalidCredentialEntryResult(
-            new CredoError('Unable to derive signer id from nested presentation for credential entry validation.')
-          ),
-        ]
-      }
-
-      return (
-        await Promise.all(
-          asArray(nestedPresentation.resolvedPresentation.verifiableCredential).map((nestedEntry) =>
-            this.verifyPresentationEntry(agentContext, nestedEntry, nestedSignerId, presentationContext)
-          )
-        )
-      ).flat()
+      return [
+        this.createInvalidCredentialEntryResult(
+          new CredoError('Nested verifiable presentation entries are not supported in VC 2.0 presentations.')
+        ),
+      ]
     }
 
     if (!(entry instanceof W3cV2EnvelopedVerifiableCredential)) {
@@ -438,28 +367,6 @@ export class W3cV2CredentialService {
         entry.resolvedCredential.credentialSubjectIds
       ),
     ]
-  }
-
-  private async deriveSignerIdFromPresentation(
-    agentContext: AgentContext,
-    presentation:
-      | W3cV2JwtVerifiablePresentation
-      | W3cV2SdJwtVerifiablePresentation
-      | W3cV2DataIntegrityVerifiablePresentation
-  ): Promise<string | undefined> {
-    if (presentation instanceof W3cV2DataIntegrityVerifiablePresentation) {
-      return presentation.resolvedPresentation.holderId
-    }
-
-    const holderId = presentation.resolvedPresentation.holderId
-    if (holderId) return holderId
-
-    try {
-      const verificationMethod = await getVerificationMethodForJwt(agentContext, presentation, ['authentication'])
-      return verificationMethod.controller
-    } catch {
-      return undefined
-    }
   }
 
   private extractCredentialEntriesFromPresentation(

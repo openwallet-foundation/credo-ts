@@ -57,23 +57,19 @@ export class W3cV2Presentation {
       if (options.verifiableCredential) {
         this.verifiableCredential = mapSingleOrArray(options.verifiableCredential, (entry) => {
           if (
-            entry instanceof W3cV2EnvelopedVerifiableCredential ||
             entry instanceof W3cV2EnvelopedVerifiablePresentation ||
-            entry instanceof W3cV2DataIntegrityVerifiableCredential ||
-            entry instanceof W3cV2DataIntegrityVerifiablePresentation
+            entry instanceof W3cV2DataIntegrityVerifiablePresentation ||
+            isEnvelopedVerifiablePresentationEntry(entry) ||
+            isEmbeddedDataIntegrityPresentationEntry(entry)
+          ) {
+            throw new CredoError('Nested verifiable presentation entries are not supported in VC 2.0 presentations.')
+          }
+
+          if (
+            entry instanceof W3cV2EnvelopedVerifiableCredential ||
+            entry instanceof W3cV2DataIntegrityVerifiableCredential
           ) {
             return entry
-          }
-
-          if (isEnvelopedVerifiablePresentationEntry(entry)) {
-            return new W3cV2EnvelopedVerifiablePresentation(entry)
-          }
-
-          if (isEmbeddedDataIntegrityPresentationEntry(entry)) {
-            return new W3cV2DataIntegrityVerifiablePresentation({
-              securedPresentation: entry,
-              resolvedPresentation: JsonTransformer.fromJSON(entry, W3cV2Presentation, { validate: false }),
-            })
           }
 
           if (isEmbeddedDataIntegrityCredential(entry)) {
@@ -113,12 +109,7 @@ export class W3cV2Presentation {
   @W3cV2PresentationCredentialEntryTransformer()
   @IsOptional()
   @IsInstanceOrArrayOfInstances({
-    classType: [
-      W3cV2EnvelopedVerifiableCredential,
-      W3cV2EnvelopedVerifiablePresentation,
-      W3cV2DataIntegrityVerifiableCredential,
-      W3cV2DataIntegrityVerifiablePresentation,
-    ],
+    classType: [W3cV2EnvelopedVerifiableCredential, W3cV2DataIntegrityVerifiableCredential],
   })
   @ValidateNested({ each: true })
   public verifiableCredential?: SingleOrArray<W3cV2PresentationCredentialEntry>
@@ -162,23 +153,16 @@ function isEmbeddedDataIntegrityCredential(value: unknown): value is W3cV2DataIn
 
 function jsonToCredentialEntry(value: unknown): W3cV2PresentationCredentialEntry {
   if (
-    value instanceof W3cV2EnvelopedVerifiableCredential ||
     value instanceof W3cV2EnvelopedVerifiablePresentation ||
-    value instanceof W3cV2DataIntegrityVerifiableCredential ||
-    value instanceof W3cV2DataIntegrityVerifiablePresentation
+    value instanceof W3cV2DataIntegrityVerifiablePresentation ||
+    isEnvelopedVerifiablePresentationEntry(value) ||
+    isEmbeddedDataIntegrityPresentationEntry(value)
   ) {
+    throw new CredoError('Nested verifiable presentation entries are not supported in VC 2.0 presentations.')
+  }
+
+  if (value instanceof W3cV2EnvelopedVerifiableCredential || value instanceof W3cV2DataIntegrityVerifiableCredential) {
     return value
-  }
-
-  if (isEnvelopedVerifiablePresentationEntry(value)) {
-    return new W3cV2EnvelopedVerifiablePresentation(value)
-  }
-
-  if (isEmbeddedDataIntegrityPresentationEntry(value)) {
-    return new W3cV2DataIntegrityVerifiablePresentation({
-      securedPresentation: value,
-      resolvedPresentation: JsonTransformer.fromJSON(value, W3cV2Presentation, { validate: false }),
-    })
   }
 
   if (isEmbeddedDataIntegrityCredential(value)) {

@@ -68,6 +68,10 @@ const mixedNestedOuterSdJwtVpWithNestedSdJwt = vpMatrixFixtureByName.outerSdJwt_
 const mixedNestedOuterDiVpWithNestedJwt = vpMatrixFixtureByName.outerDi_innerNestedJwtVp.presentation
 const mixedNestedOuterDiVpWithNestedSdJwt = vpMatrixFixtureByName.outerDi_innerNestedSdJwtVp.presentation
 const mixedNestedOuterDiVpWithNestedDi = vpMatrixFixtureByName.outerDi_innerNestedDiVp.presentation
+const mixedOuterJwtVpWithVcAndNestedVp = composePresentationWithEntries(mixedNestedOuterJwtVpWithNestedJwt, [
+  staticJwtCredential,
+  mixedNestedOuterJwtVpWithNestedJwt.resolvedPresentation.verifiableCredential[0],
+])
 
 describe('W3cV2CredentialService routing', () => {
   const repository = {
@@ -564,13 +568,12 @@ describe('W3cV2CredentialService routing', () => {
     expect(result.isValid).toBe(true)
   })
 
-  test('verifyPresentation recursively traverses nested EnvelopedVerifiablePresentation entries', async () => {
+  test('verifyPresentation marks nested EnvelopedVerifiablePresentation entries as invalid', async () => {
     jwtService.verifyPresentation.mockResolvedValue({
       isValid: true,
       presentation: { isValid: true, validations: {} },
       credentialEntries: [],
     })
-    jwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
 
     const result = await service.verifyPresentation(agentContext, {
       presentation: mixedNestedOuterJwtVpWithNestedJwt,
@@ -578,84 +581,75 @@ describe('W3cV2CredentialService routing', () => {
     } as never)
 
     expect(jwtService.verifyPresentation.mock.calls[0]?.[1].presentation).toBe(mixedNestedOuterJwtVpWithNestedJwt)
-    expect(jwtService.verifyPresentation.mock.calls[1]?.[1].presentation).toBeInstanceOf(W3cV2JwtVerifiablePresentation)
-    expect(jwtService.verifyPresentation).toHaveBeenCalledTimes(2)
-    expect(jwtService.verifyCredential).toHaveBeenCalledTimes(1)
+    expect(jwtService.verifyPresentation).toHaveBeenCalledTimes(1)
+    expect(jwtService.verifyCredential).not.toHaveBeenCalled()
+    expect(sdJwtService.verifyPresentation).not.toHaveBeenCalled()
     expect(sdJwtService.verifyCredential).not.toHaveBeenCalled()
     expect(result.credentialEntries).toHaveLength(1)
-    expect(result.credentialEntries[0]?.isValid).toBe(true)
-    expect(result.isValid).toBe(true)
-  })
-
-  test('verifyPresentation marks entry invalid when nested presentation verification fails', async () => {
-    jwtService.verifyPresentation
-      .mockResolvedValueOnce({
-        isValid: true,
-        presentation: { isValid: true, validations: {} },
-        credentialEntries: [],
-      })
-      .mockResolvedValueOnce({
-        isValid: false,
-        presentation: { isValid: false, validations: {} },
-        credentialEntries: [],
-      })
-
-    const result = await service.verifyPresentation(agentContext, {
-      presentation: mixedNestedOuterJwtVpWithNestedJwt,
-      challenge: 'challenge-123',
-    } as never)
-
-    expect(jwtService.verifyPresentation).toHaveBeenCalledTimes(2)
-    expect(jwtService.verifyCredential).not.toHaveBeenCalled()
-    expect(result.credentialEntries).toHaveLength(1)
     expect(result.credentialEntries[0]?.isValid).toBe(false)
-    expect(result.credentialEntries[0]?.error?.message).toContain('Nested presentation verification failed')
+    expect(result.credentialEntries[0]?.error?.message).toContain(
+      'Nested verifiable presentation entries are not supported'
+    )
     expect(result.isValid).toBe(false)
   })
 
-  test('verifyPresentation traverses nested SD-JWT VP entries under JWT outer VP', async () => {
-    jwtService.verifyPresentation.mockResolvedValue({
-      isValid: true,
-      presentation: { isValid: true, validations: {} },
-      credentialEntries: [],
-    })
-    sdJwtService.verifyPresentation.mockResolvedValue({
-      isValid: true,
-      presentation: { isValid: true, validations: {} },
-      credentialEntries: [],
-    })
-    sdJwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
-
-    const result = await service.verifyPresentation(agentContext, {
-      presentation: mixedNestedOuterJwtVpWithNestedSdJwt,
-      challenge: 'challenge-123',
-    } as never)
-
-    expect(jwtService.verifyPresentation.mock.calls[0]?.[1].presentation).toBe(mixedNestedOuterJwtVpWithNestedSdJwt)
-    expect(jwtService.verifyPresentation).toHaveBeenCalledTimes(1)
-    expect(sdJwtService.verifyPresentation.mock.calls[0]?.[1].presentation).toBeInstanceOf(
-      W3cV2SdJwtVerifiablePresentation
-    )
-    expect(sdJwtService.verifyPresentation).toHaveBeenCalledTimes(1)
-    expect(jwtService.verifyCredential).not.toHaveBeenCalled()
-    expect(sdJwtService.verifyCredential).toHaveBeenCalledTimes(1)
-    expect(result.credentialEntries).toHaveLength(1)
-    expect(result.credentialEntries[0]?.isValid).toBe(true)
-    expect(result.isValid).toBe(true)
-  })
-
-  test('verifyPresentation traverses nested JWT VP entries under SD-JWT outer VP', async () => {
-    sdJwtService.verifyPresentation.mockResolvedValue({
-      isValid: true,
-      presentation: { isValid: true, validations: {} },
-      credentialEntries: [],
-    })
+  test('verifyPresentation accepts VC entries but rejects VP-within-VP entries in the same presentation', async () => {
     jwtService.verifyPresentation.mockResolvedValue({
       isValid: true,
       presentation: { isValid: true, validations: {} },
       credentialEntries: [],
     })
     jwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
+
+    const result = await service.verifyPresentation(agentContext, {
+      presentation: mixedOuterJwtVpWithVcAndNestedVp,
+      challenge: 'challenge-123',
+    } as never)
+
+    expect(jwtService.verifyPresentation).toHaveBeenCalledTimes(1)
+    expect(jwtService.verifyCredential).toHaveBeenCalledTimes(1)
+    expect(sdJwtService.verifyPresentation).not.toHaveBeenCalled()
+    expect(sdJwtService.verifyCredential).not.toHaveBeenCalled()
+
+    expect(result.credentialEntries).toHaveLength(2)
+    expect(result.credentialEntries[0]?.isValid).toBe(true)
+    expect(result.credentialEntries[1]?.isValid).toBe(false)
+    expect(result.credentialEntries[1]?.error?.message).toContain(
+      'Nested verifiable presentation entries are not supported'
+    )
+    expect(result.isValid).toBe(false)
+  })
+
+  test('verifyPresentation marks nested SD-JWT VP entries under JWT outer VP as invalid', async () => {
+    jwtService.verifyPresentation.mockResolvedValue({
+      isValid: true,
+      presentation: { isValid: true, validations: {} },
+      credentialEntries: [],
+    })
+
+    const result = await service.verifyPresentation(agentContext, {
+      presentation: mixedNestedOuterJwtVpWithNestedSdJwt,
+      challenge: 'challenge-123',
+    } as never)
+
+    expect(jwtService.verifyPresentation).toHaveBeenCalledTimes(1)
+    expect(sdJwtService.verifyPresentation).not.toHaveBeenCalled()
+    expect(jwtService.verifyCredential).not.toHaveBeenCalled()
+    expect(sdJwtService.verifyCredential).not.toHaveBeenCalled()
+    expect(result.credentialEntries).toHaveLength(1)
+    expect(result.credentialEntries[0]?.isValid).toBe(false)
+    expect(result.credentialEntries[0]?.error?.message).toContain(
+      'Nested verifiable presentation entries are not supported'
+    )
+    expect(result.isValid).toBe(false)
+  })
+
+  test('verifyPresentation marks nested JWT VP entries under SD-JWT outer VP as invalid', async () => {
+    sdJwtService.verifyPresentation.mockResolvedValue({
+      isValid: true,
+      presentation: { isValid: true, validations: {} },
+      credentialEntries: [],
+    })
 
     const result = await service.verifyPresentation(agentContext, {
       presentation: mixedNestedOuterSdJwtVpWithNestedJwt,
@@ -664,22 +658,23 @@ describe('W3cV2CredentialService routing', () => {
 
     expect(sdJwtService.verifyPresentation.mock.calls[0]?.[1].presentation).toBe(mixedNestedOuterSdJwtVpWithNestedJwt)
     expect(sdJwtService.verifyPresentation).toHaveBeenCalledTimes(1)
-    expect(jwtService.verifyPresentation.mock.calls[0]?.[1].presentation).toBeInstanceOf(W3cV2JwtVerifiablePresentation)
-    expect(jwtService.verifyPresentation).toHaveBeenCalledTimes(1)
-    expect(jwtService.verifyCredential).toHaveBeenCalledTimes(1)
+    expect(jwtService.verifyPresentation).not.toHaveBeenCalled()
+    expect(jwtService.verifyCredential).not.toHaveBeenCalled()
     expect(sdJwtService.verifyCredential).not.toHaveBeenCalled()
     expect(result.credentialEntries).toHaveLength(1)
-    expect(result.credentialEntries[0]?.isValid).toBe(true)
-    expect(result.isValid).toBe(true)
+    expect(result.credentialEntries[0]?.isValid).toBe(false)
+    expect(result.credentialEntries[0]?.error?.message).toContain(
+      'Nested verifiable presentation entries are not supported'
+    )
+    expect(result.isValid).toBe(false)
   })
 
-  test('verifyPresentation traverses nested SD-JWT VP entries under SD-JWT outer VP', async () => {
+  test('verifyPresentation marks nested SD-JWT VP entries under SD-JWT outer VP as invalid', async () => {
     sdJwtService.verifyPresentation.mockResolvedValue({
       isValid: true,
       presentation: { isValid: true, validations: {} },
       credentialEntries: [],
     })
-    sdJwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
 
     const result = await service.verifyPresentation(agentContext, {
       presentation: mixedNestedOuterSdJwtVpWithNestedSdJwt,
@@ -687,30 +682,24 @@ describe('W3cV2CredentialService routing', () => {
     } as never)
 
     expect(sdJwtService.verifyPresentation.mock.calls[0]?.[1].presentation).toBe(mixedNestedOuterSdJwtVpWithNestedSdJwt)
-    expect(sdJwtService.verifyPresentation.mock.calls[1]?.[1].presentation).toBeInstanceOf(
-      W3cV2SdJwtVerifiablePresentation
-    )
-    expect(sdJwtService.verifyPresentation).toHaveBeenCalledTimes(2)
+    expect(sdJwtService.verifyPresentation).toHaveBeenCalledTimes(1)
     expect(jwtService.verifyPresentation).not.toHaveBeenCalled()
     expect(jwtService.verifyCredential).not.toHaveBeenCalled()
-    expect(sdJwtService.verifyCredential).toHaveBeenCalledTimes(1)
+    expect(sdJwtService.verifyCredential).not.toHaveBeenCalled()
     expect(result.credentialEntries).toHaveLength(1)
-    expect(result.credentialEntries[0]?.isValid).toBe(true)
-    expect(result.isValid).toBe(true)
+    expect(result.credentialEntries[0]?.isValid).toBe(false)
+    expect(result.credentialEntries[0]?.error?.message).toContain(
+      'Nested verifiable presentation entries are not supported'
+    )
+    expect(result.isValid).toBe(false)
   })
 
-  test('verifyPresentation recursively traverses nested EnvelopedVerifiablePresentation entries under DI outer VP', async () => {
+  test('verifyPresentation marks nested EnvelopedVerifiablePresentation entries under DI outer VP as invalid', async () => {
     diService.verifyPresentation.mockResolvedValue({
       isValid: true,
       presentation: { isValid: true, validations: {} },
       credentialEntries: [],
     })
-    jwtService.verifyPresentation.mockResolvedValue({
-      isValid: true,
-      presentation: { isValid: true, validations: {} },
-      credentialEntries: [],
-    })
-    jwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
 
     const result = await service.verifyPresentation(agentContext, {
       presentation: mixedNestedOuterDiVpWithNestedJwt,
@@ -718,27 +707,24 @@ describe('W3cV2CredentialService routing', () => {
     } as never)
 
     expect(diService.verifyPresentation).toHaveBeenCalledTimes(1)
-    expect(jwtService.verifyPresentation.mock.calls[0]?.[1].presentation).toBeInstanceOf(W3cV2JwtVerifiablePresentation)
-    expect(jwtService.verifyPresentation).toHaveBeenCalledTimes(1)
-    expect(jwtService.verifyCredential).toHaveBeenCalledTimes(1)
+    expect(jwtService.verifyPresentation).not.toHaveBeenCalled()
+    expect(jwtService.verifyCredential).not.toHaveBeenCalled()
+    expect(sdJwtService.verifyPresentation).not.toHaveBeenCalled()
     expect(sdJwtService.verifyCredential).not.toHaveBeenCalled()
     expect(result.credentialEntries).toHaveLength(1)
-    expect(result.credentialEntries[0]?.isValid).toBe(true)
-    expect(result.isValid).toBe(true)
+    expect(result.credentialEntries[0]?.isValid).toBe(false)
+    expect(result.credentialEntries[0]?.error?.message).toContain(
+      'Nested verifiable presentation entries are not supported'
+    )
+    expect(result.isValid).toBe(false)
   })
 
-  test('verifyPresentation recursively traverses nested SD-JWT VP entries under DI outer VP', async () => {
+  test('verifyPresentation marks nested SD-JWT VP entries under DI outer VP as invalid', async () => {
     diService.verifyPresentation.mockResolvedValue({
       isValid: true,
       presentation: { isValid: true, validations: {} },
       credentialEntries: [],
     })
-    sdJwtService.verifyPresentation.mockResolvedValue({
-      isValid: true,
-      presentation: { isValid: true, validations: {} },
-      credentialEntries: [],
-    })
-    jwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
 
     const result = await service.verifyPresentation(agentContext, {
       presentation: mixedNestedOuterDiVpWithNestedSdJwt,
@@ -746,66 +732,61 @@ describe('W3cV2CredentialService routing', () => {
     } as never)
 
     expect(diService.verifyPresentation).toHaveBeenCalledTimes(1)
-    expect(sdJwtService.verifyPresentation.mock.calls[0]?.[1].presentation).toBeInstanceOf(
-      W3cV2SdJwtVerifiablePresentation
-    )
-    expect(sdJwtService.verifyPresentation).toHaveBeenCalledTimes(1)
     expect(jwtService.verifyPresentation).not.toHaveBeenCalled()
     expect(jwtService.verifyCredential).not.toHaveBeenCalled()
-    expect(sdJwtService.verifyCredential).toHaveBeenCalledTimes(1)
+    expect(sdJwtService.verifyPresentation).not.toHaveBeenCalled()
+    expect(sdJwtService.verifyCredential).not.toHaveBeenCalled()
     expect(result.credentialEntries).toHaveLength(1)
-    expect(result.credentialEntries[0]?.isValid).toBe(true)
-    expect(result.isValid).toBe(true)
+    expect(result.credentialEntries[0]?.isValid).toBe(false)
+    expect(result.credentialEntries[0]?.error?.message).toContain(
+      'Nested verifiable presentation entries are not supported'
+    )
+    expect(result.isValid).toBe(false)
   })
 
-  test('verifyPresentation recursively traverses nested DI VP entries under DI outer VP', async () => {
+  test('verifyPresentation marks nested DI VP entries under DI outer VP as invalid', async () => {
     diService.verifyPresentation.mockResolvedValue({
       isValid: true,
       presentation: { isValid: true, validations: {} },
       credentialEntries: [],
     })
-    diService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
-
     const result = await service.verifyPresentation(agentContext, {
       presentation: mixedNestedOuterDiVpWithNestedDi,
       challenge: 'challenge-123',
     } as never)
 
     expect(diService.verifyPresentation.mock.calls[0]?.[1].presentation).toBe(mixedNestedOuterDiVpWithNestedDi)
-    expect(diService.verifyPresentation.mock.calls[1]?.[1].presentation).toBeInstanceOf(
-      W3cV2DataIntegrityVerifiablePresentation
-    )
-    expect(diService.verifyPresentation).toHaveBeenCalledTimes(2)
-    expect(diService.verifyCredential).toHaveBeenCalledTimes(1)
+    expect(diService.verifyPresentation).toHaveBeenCalledTimes(1)
+    expect(diService.verifyCredential).not.toHaveBeenCalled()
     expect(jwtService.verifyPresentation).not.toHaveBeenCalled()
     expect(sdJwtService.verifyPresentation).not.toHaveBeenCalled()
     expect(result.credentialEntries).toHaveLength(1)
-    expect(result.credentialEntries[0]?.isValid).toBe(true)
-    expect(result.isValid).toBe(true)
+    expect(result.credentialEntries[0]?.isValid).toBe(false)
+    expect(result.credentialEntries[0]?.error?.message).toContain(
+      'Nested verifiable presentation entries are not supported'
+    )
+    expect(result.isValid).toBe(false)
   })
 
-  test('verifyPresentation routes nested DI VP entries under non-DI outer VP by shape', async () => {
+  test('verifyPresentation marks nested DI VP entries under non-DI outer VP as invalid', async () => {
     jwtService.verifyPresentation.mockResolvedValue({
       isValid: true,
       presentation: { isValid: true, validations: {} },
       credentialEntries: [],
     })
-    diService.verifyPresentation.mockResolvedValue({
-      isValid: true,
-      presentation: { isValid: true, validations: {} },
-      credentialEntries: [],
-    })
-    diService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
 
     const result = await service.verifyPresentation(agentContext, {
       presentation: mixedNestedOuterJwtVpWithNestedDi,
       challenge: 'challenge-123',
     } as never)
 
-    expect(diService.verifyPresentation).toHaveBeenCalledTimes(1)
-    expect(diService.verifyCredential).toHaveBeenCalledTimes(1)
+    expect(diService.verifyPresentation).not.toHaveBeenCalled()
+    expect(diService.verifyCredential).not.toHaveBeenCalled()
     expect(result.credentialEntries).toHaveLength(1)
-    expect(result.credentialEntries[0]?.isValid).toBe(true)
-    expect(result.isValid).toBe(true)
+    expect(result.credentialEntries[0]?.isValid).toBe(false)
+    expect(result.credentialEntries[0]?.error?.message).toContain(
+      'Nested verifiable presentation entries are not supported'
+    )
+    expect(result.isValid).toBe(false)
   })
 })
