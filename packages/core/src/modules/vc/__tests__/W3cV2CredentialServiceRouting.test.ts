@@ -15,7 +15,11 @@ import {
 } from '../sd-jwt-vc/__tests__/fixtures/credo-sd-jwt-vc'
 import { W3cV2SdJwtVerifiablePresentation } from '../sd-jwt-vc/W3cV2SdJwtVerifiablePresentation'
 import { W3cV2CredentialService } from '../W3cV2CredentialService'
-import { staticDiCredential, staticJwtCredential, staticSdJwtCredential, vpMatrixFixtureByName } from './mixedVpFixture'
+import {
+  invalidNestedVpOuterPresentationsByName,
+  staticJwtCredential,
+  validVcOnlyOuterPresentationsByName,
+} from './W3cV2PresentationRoutingFixtures'
 
 function composePresentationWithEntries<
   T extends { resolvedPresentation: { verifiableCredential: ReadonlyArray<unknown> } },
@@ -33,41 +37,25 @@ function composePresentationWithEntries<
   } as unknown as T
 }
 
-const mixedDiOuterVp = composePresentationWithEntries(vpMatrixFixtureByName.outerDi_innerNestedJwtVp.presentation, [
-  staticJwtCredential,
-  staticSdJwtCredential,
-])
+const mixedDiOuterVp = validVcOnlyOuterPresentationsByName.outerDi_withJwtAndSdJwtVcEntries
 
-const mixedDiOuterVpWithAllEntries = composePresentationWithEntries(
-  vpMatrixFixtureByName.outerDi_innerNestedJwtVp.presentation,
-  [staticJwtCredential, staticSdJwtCredential, staticDiCredential]
-)
+const mixedDiOuterVpWithAllEntries = validVcOnlyOuterPresentationsByName.outerDi_withMixedVcEntries
 
-const mixedDiOnlyOuterVp = composePresentationWithEntries(vpMatrixFixtureByName.outerDi_innerNestedJwtVp.presentation, [
-  staticDiCredential,
-])
+const mixedDiOnlyOuterVp = validVcOnlyOuterPresentationsByName.outerDi_withDiVcOnly
 
-const mixedJwtVp = composePresentationWithEntries(vpMatrixFixtureByName.outerJwt_innerNestedJwtVp.presentation, [
-  staticJwtCredential,
-  staticSdJwtCredential,
-  staticDiCredential,
-])
+const mixedJwtVp = validVcOnlyOuterPresentationsByName.outerJwt_withMixedVcEntries
 
-const mixedSdJwtVp = composePresentationWithEntries(vpMatrixFixtureByName.outerSdJwt_innerNestedJwtVp.presentation, [
-  staticJwtCredential,
-  staticSdJwtCredential,
-  staticDiCredential,
-])
+const mixedSdJwtVp = validVcOnlyOuterPresentationsByName.outerSdJwt_withMixedVcEntries
 
 const mixedVpBaseResolvedPresentation = mixedJwtVp.resolvedPresentation
-const mixedNestedOuterJwtVpWithNestedJwt = vpMatrixFixtureByName.outerJwt_innerNestedJwtVp.presentation
-const mixedNestedOuterJwtVpWithNestedSdJwt = vpMatrixFixtureByName.outerJwt_innerNestedSdJwtVp.presentation
-const mixedNestedOuterJwtVpWithNestedDi = vpMatrixFixtureByName.outerJwt_innerNestedDiVp.presentation
-const mixedNestedOuterSdJwtVpWithNestedJwt = vpMatrixFixtureByName.outerSdJwt_innerNestedJwtVp.presentation
-const mixedNestedOuterSdJwtVpWithNestedSdJwt = vpMatrixFixtureByName.outerSdJwt_innerNestedSdJwtVp.presentation
-const mixedNestedOuterDiVpWithNestedJwt = vpMatrixFixtureByName.outerDi_innerNestedJwtVp.presentation
-const mixedNestedOuterDiVpWithNestedSdJwt = vpMatrixFixtureByName.outerDi_innerNestedSdJwtVp.presentation
-const mixedNestedOuterDiVpWithNestedDi = vpMatrixFixtureByName.outerDi_innerNestedDiVp.presentation
+const mixedNestedOuterJwtVpWithNestedJwt = invalidNestedVpOuterPresentationsByName.outerJwt_withNestedJwtVp
+const mixedNestedOuterJwtVpWithNestedSdJwt = invalidNestedVpOuterPresentationsByName.outerJwt_withNestedSdJwtVp
+const mixedNestedOuterJwtVpWithNestedDi = invalidNestedVpOuterPresentationsByName.outerJwt_withNestedDiVp
+const mixedNestedOuterSdJwtVpWithNestedJwt = invalidNestedVpOuterPresentationsByName.outerSdJwt_withNestedJwtVp
+const mixedNestedOuterSdJwtVpWithNestedSdJwt = invalidNestedVpOuterPresentationsByName.outerSdJwt_withNestedSdJwtVp
+const mixedNestedOuterDiVpWithNestedJwt = invalidNestedVpOuterPresentationsByName.outerDi_withNestedJwtVp
+const mixedNestedOuterDiVpWithNestedSdJwt = invalidNestedVpOuterPresentationsByName.outerDi_withNestedSdJwtVp
+const mixedNestedOuterDiVpWithNestedDi = invalidNestedVpOuterPresentationsByName.outerDi_withNestedDiVp
 const mixedOuterJwtVpWithVcAndNestedVp = composePresentationWithEntries(mixedNestedOuterJwtVpWithNestedJwt, [
   staticJwtCredential,
   mixedNestedOuterJwtVpWithNestedJwt.resolvedPresentation.verifiableCredential[0],
