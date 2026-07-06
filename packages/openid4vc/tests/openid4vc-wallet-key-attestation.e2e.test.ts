@@ -502,6 +502,10 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       clientId: 'wallet',
     })
 
+    // In the authorization-code flow the DPoP-bound method binds the whole interaction (PAR -> token) to
+    // the client instance key: the access token is bound to the wallet attestation's `cnf.jwk`.
+    expect(tokenResponse.dpop?.jwk.fingerprint).toEqual(walletInstanceKey.fingerprint)
+
     // Request credentials
     const credentialResponse = await holder.agent.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,

@@ -171,10 +171,18 @@ export class OpenId4VciHolderService {
       authorizationServer
     )
 
-    // TODO: should we allow key reuse between dpop and wallet attestation?
     const isDpopSupported = oauth2Client.isDpopSupported({ authorizationServerMetadata })
+
+    // draft 09 §5.2: to bind the whole authorization-code interaction to the client instance key, use it
+    // as the DPoP key. At the authorization request the standard client attestation method is used (there
+    // is no combined proof at PAR/authorization requests); committing the instance key here (as `dpop_jkt`)
+    // lets the token endpoint use the DPoP-bound method with the same key.
+    const dpopBoundClientAttestationKey = isDpopSupported.supported
+      ? this.getDpopBoundClientAttestationKey(authCodeFlowOptions.walletAttestationJwt, authorizationServerMetadata)
+      : undefined
     const dpop = isDpopSupported.supported
       ? await this.getDpopOptions(agentContext, {
+          jwk: dpopBoundClientAttestationKey,
           dpopSigningAlgValuesSupported: isDpopSupported.dpopSigningAlgValuesSupported,
         })
       : undefined
@@ -398,12 +406,15 @@ export class OpenId4VciHolderService {
 
     // draft 09 §5.2: when the authorization server supports the DPoP-bound client attestation method, the
     // client instance key is used as the DPoP key so a single DPoP proof serves as both the DPoP proof and
-    // the client attestation pop. Only applied when there is no pre-existing DPoP binding (i.e. the
-    // pre-authorized code flow); for the authorization code flow the DPoP key is already established at the
-    // pushed authorization request.
+    // the client attestation pop. This applies to the pre-authorized flow (no pre-existing DPoP binding)
+    // and to the authorization-code flow when the DPoP key committed at the authorization request
+    // (`options.dpop`) is the client instance key.
+    const instanceKey = isDpopSupported.supported
+      ? this.getDpopBoundClientAttestationKey(options.walletAttestationJwt, authorizationServerMetadata)
+      : undefined
     const dpopBoundClientAttestationKey =
-      isDpopSupported.supported && !options.code && !options.dpop
-        ? this.getDpopBoundClientAttestationKey(options.walletAttestationJwt, authorizationServerMetadata)
+      instanceKey && (!options.dpop || options.dpop.jwk.fingerprint === instanceKey.fingerprint)
+        ? instanceKey
         : undefined
 
     const client = this.getClient(agentContext, {
