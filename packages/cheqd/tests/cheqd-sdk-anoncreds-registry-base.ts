@@ -5,6 +5,40 @@ import { getAgentOptions } from '../../core/tests/helpers'
 import { CheqdAnonCredsRegistry, type CheqdDidCreateOptions } from '../src'
 import { getCheqdModules } from './setupCheqdModule'
 
+const cheqdWriteRetryConfig = {
+  maxAttempts: 4,
+  initialBackoffMs: 500,
+  maxBackoffMs: 5000,
+}
+
+async function withCheqdWriteRetry<T>(operationName: string, operation: () => Promise<T>) {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= cheqdWriteRetryConfig.maxAttempts; attempt++) {
+    try {
+      return await operation()
+    } catch (error) {
+      lastError = error
+
+      if (attempt === cheqdWriteRetryConfig.maxAttempts) {
+        throw new Error(
+          `${operationName} failed (attempt ${attempt}/${cheqdWriteRetryConfig.maxAttempts}, marker=transient/network): ${error instanceof Error ? error.message : String(error)}`
+        )
+      }
+
+      const backoffMs = Math.min(
+        cheqdWriteRetryConfig.initialBackoffMs * 2 ** (attempt - 1),
+        cheqdWriteRetryConfig.maxBackoffMs
+      )
+      await new Promise((resolve) => setTimeout(resolve, backoffMs))
+    }
+  }
+
+  throw new Error(
+    `${operationName} failed (attempt ${cheqdWriteRetryConfig.maxAttempts}/${cheqdWriteRetryConfig.maxAttempts}, marker=transient/network): ${lastError instanceof Error ? lastError.message : String(lastError)}`
+  )
+}
+
 export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: string) {
   let issuerId: string
   const agent = new Agent(getAgentOptions('cheqdAnonCredsRegistry', {}, {}, getCheqdModules(cheqdPayerSeed)))
@@ -42,30 +76,37 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
       privateJwk,
     })
 
-    const did = await agent.dids.create<CheqdDidCreateOptions>({
-      method: 'cheqd',
-      options: {
-        keyId: createdKey.keyId,
-        network: 'testnet',
-        methodSpecificIdAlgo: 'uuid',
-      },
+    const did = await withCheqdWriteRetry('did.create', async () => {
+      const didCreateResult = await agent.dids.create<CheqdDidCreateOptions>({
+        method: 'cheqd',
+        options: {
+          keyId: createdKey.keyId,
+          network: 'testnet',
+          methodSpecificIdAlgo: 'uuid',
+        },
+      })
+
+      if (didCreateResult.didState.state !== 'finished') {
+        throw new Error(`Did creation failed: ${didCreateResult.didState.reason ?? didCreateResult.didState.state}`)
+      }
+
+      return didCreateResult
     })
-    if (did.didState.state !== 'finished') {
-      throw new Error(`Did creation failed ${JSON.stringify(did.didState, null, 2)}`)
-    }
     issuerId = did.didState.did
 
     const dynamicVersion = `1.${Math.random() * 100}`
 
-    const schemaResult = await agent.modules.anoncreds.registerSchema({
-      schema: {
-        attrNames: ['name'],
-        issuerId,
-        name: 'test11',
-        version: dynamicVersion,
-      },
-      options: {},
-    })
+    const schemaResult = await withCheqdWriteRetry('anoncreds.registerSchema', () =>
+      agent.modules.anoncreds.registerSchema({
+        schema: {
+          attrNames: ['name'],
+          issuerId,
+          name: 'test11',
+          version: dynamicVersion,
+        },
+        options: {},
+      })
+    )
 
     expect(JsonTransformer.toJSON(schemaResult)).toMatchObject({
       schemaState: {
@@ -95,22 +136,32 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
       schemaMetadata: {},
     })
 
-    const credentialDefinitionResult = await agent.modules.anoncreds.registerCredentialDefinition({
-      credentialDefinition: {
-        issuerId,
-        tag: 'TAG',
-        schemaId: `${schemaResult.schemaState.schemaId}`,
-      },
-      options: {
-        supportRevocation: true,
-      },
-    })
+    const credentialDefinitionResult = await withCheqdWriteRetry(
+      'anoncreds.registerCredentialDefinition',
+      async () => {
+        const result = await agent.modules.anoncreds.registerCredentialDefinition({
+          credentialDefinition: {
+            issuerId,
+            tag: 'TAG',
+            schemaId: `${schemaResult.schemaState.schemaId}`,
+          },
+          options: {
+            supportRevocation: true,
+          },
+        })
+        const credentialDefinitionState = result.credentialDefinitionState
 
-    if (credentialDefinitionResult.credentialDefinitionState.state !== 'finished') {
-      throw new Error(
-        `Credential definition creation failed ${JSON.stringify(credentialDefinitionResult.credentialDefinitionState, null, 2)}`
-      )
-    }
+        if (credentialDefinitionState.state !== 'finished' || !credentialDefinitionState.credentialDefinitionId) {
+          throw new Error(
+            `Credential definition creation failed: state=${credentialDefinitionState.state}`
+          )
+        }
+
+        return result
+      }
+    )
+
+    const credentialDefinitionState = credentialDefinitionResult.credentialDefinitionState
 
     expect(credentialDefinitionResult).toMatchObject({
       credentialDefinitionState: {
@@ -137,10 +188,10 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
       },
     })
 
-    credentialDefinitionId = credentialDefinitionResult.credentialDefinitionState.credentialDefinitionId as string
+    credentialDefinitionId = credentialDefinitionState.credentialDefinitionId
 
     const credentialDefinitionResponse = await agent.modules.anoncreds.getCredentialDefinition(
-      credentialDefinitionResult.credentialDefinitionState.credentialDefinitionId as string
+      credentialDefinitionState.credentialDefinitionId
     )
 
     expect(credentialDefinitionResponse).toMatchObject({
@@ -195,21 +246,29 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
   })
 
   test('register and resolve revocation registry definition and statusList', async () => {
-    const registerRevocationDefinitionResponse = await agent.modules.anoncreds.registerRevocationRegistryDefinition({
-      options: {},
-      revocationRegistryDefinition: {
-        issuerId,
-        credentialDefinitionId,
-        maximumCredentialNumber: 666,
-        tag: 'TAG',
-      },
-    })
-
-    if (registerRevocationDefinitionResponse.revocationRegistryDefinitionState.state !== 'finished') {
-      throw new Error(
-        `Revocation registry definition creation failed ${JSON.stringify(registerRevocationDefinitionResponse.revocationRegistryDefinitionState, null, 2)}`
-      )
+    if (!credentialDefinitionId) {
+      throw new Error('Missing credentialDefinitionId')
     }
+
+    const registerRevocationDefinitionResponse = await withCheqdWriteRetry(
+      'anoncreds.registerRevocationRegistryDefinition',
+      async () => {
+        const result = await agent.modules.anoncreds.registerRevocationRegistryDefinition({
+          options: {},
+          revocationRegistryDefinition: {
+            issuerId,
+            credentialDefinitionId,
+            maximumCredentialNumber: 666,
+            tag: 'TAG',
+          },
+        })
+        if (result.revocationRegistryDefinitionState.state !== 'finished') {
+          throw new Error(`Revocation registry definition creation failed: ${result.revocationRegistryDefinitionState.state}`)
+        }
+
+        return result
+      }
+    )
 
     const revocationRegistryDefinitionId =
       registerRevocationDefinitionResponse.revocationRegistryDefinitionState.revocationRegistryDefinitionId
@@ -233,19 +292,23 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
       },
     })
 
-    const registerRevocationStatusListResponse = await agent.modules.anoncreds.registerRevocationStatusList({
-      options: {},
-      revocationStatusList: {
-        issuerId,
-        revocationRegistryDefinitionId,
-      },
-    })
+    const registerRevocationStatusListResponse = await withCheqdWriteRetry(
+      'anoncreds.registerRevocationStatusList',
+      async () => {
+        const result = await agent.modules.anoncreds.registerRevocationStatusList({
+          options: {},
+          revocationStatusList: {
+            issuerId,
+            revocationRegistryDefinitionId,
+          },
+        })
+        if (result.revocationStatusListState.state !== 'finished') {
+          throw new Error(`Revocation status list creation failed: ${result.revocationStatusListState.state}`)
+        }
 
-    if (registerRevocationStatusListResponse.revocationStatusListState.state !== 'finished') {
-      throw new Error(
-        `Revocation status list creation failed ${JSON.stringify(registerRevocationStatusListResponse.registrationMetadata, null, 2)}`
-      )
-    }
+        return result
+      }
+    )
 
     const statusListTimestamp =
       registerRevocationStatusListResponse.revocationStatusListState.revocationStatusList.timestamp
