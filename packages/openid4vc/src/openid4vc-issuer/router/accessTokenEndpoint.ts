@@ -240,10 +240,11 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         })
       }
 
-      // Client Attestation PoP challenge (draft 09). At the token endpoint we use the reactive
-      // `use_attestation_challenge` flow: when a required challenge is missing/invalid we mint a fresh
-      // one, return it in the `OAuth-Client-Attestation-Challenge` header, and the client retries.
-      if (config.clientAttestationPopChallengeRequired && verificationResult.clientAttestation) {
+      // Client Attestation PoP challenge (draft 09). A provided challenge is always validated; the reactive
+      // `use_attestation_challenge` flow (mint a fresh challenge, return it in the
+      // `OAuth-Client-Attestation-Challenge` header, client retries) is only used when the challenge is
+      // required. A provided-but-invalid challenge is rejected even when not required.
+      if (verificationResult.clientAttestation) {
         // The method is discriminated by the presence of the client attestation pop jwt (draft 09 §7.3):
         // the standard method has a pop jwt (challenge in its `challenge` claim); the DPoP-bound method
         // (`attest_jwt_client_auth_dpop`) has no pop jwt and carries the challenge in the `nonce` claim of
@@ -266,12 +267,22 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         )
 
         if (!isValid) {
-          const { challenge } = await openId4VcIssuerService.createClientAttestationChallenge(agentContext, issuer)
-          response.set(oauthClientAttestationChallengeHeader, challenge)
-          throw new Oauth2ServerErrorResponseError({
-            error: Oauth2ErrorCodes.UseAttestationChallenge,
-            error_description: 'A fresh client attestation challenge is required in the client attestation pop jwt.',
-          })
+          if (config.clientAttestationPopChallengeRequired) {
+            const { challenge } = await openId4VcIssuerService.createClientAttestationChallenge(agentContext, issuer)
+            response.set(oauthClientAttestationChallengeHeader, challenge)
+            throw new Oauth2ServerErrorResponseError({
+              error: Oauth2ErrorCodes.UseAttestationChallenge,
+              error_description: 'A fresh client attestation challenge is required in the client attestation pop jwt.',
+            })
+          }
+
+          // Not required: a missing challenge is fine, but a provided-but-invalid challenge is rejected.
+          if (popChallenge !== undefined) {
+            throw new Oauth2ServerErrorResponseError({
+              error: Oauth2ErrorCodes.InvalidClient,
+              error_description: `Invalid 'challenge' claim in client attestation pop jwt.`,
+            })
+          }
         }
       }
 

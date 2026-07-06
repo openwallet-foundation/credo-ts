@@ -1581,10 +1581,9 @@ export class OpenId4VcIssuerService {
   }
 
   /**
-   * Enforces the Client Attestation PoP `challenge` (draft 09) on an authorization server verify
-   * result. This is a no-op unless the issuer requires the challenge (`required`), matching the
-   * spec requirement to only validate a challenge that the authorization server itself issued. When
-   * required and a client attestation was provided, its pop jwt must contain a valid `challenge`.
+   * Enforces the Client Attestation PoP `challenge` (draft 09) on an authorization server verify result
+   * (pushed authorization request / authorization challenge). A `challenge` that is present is always
+   * validated; a missing `challenge` is only an error when the issuer requires it (`required`).
    */
   public async verifyClientAttestationPopChallenge(
     agentContext: AgentContext,
@@ -1594,22 +1593,23 @@ export class OpenId4VcIssuerService {
       required: boolean
     }
   ) {
-    // The challenge is only validated when the issuer requires it. This keeps behavior unchanged
-    // for issuers that don't opt in to the client attestation pop challenge.
-    if (!options.required) return
-
     // No client attestation provided, so there's no pop challenge to enforce. Whether a client
     // attestation itself is required is handled by the authorization server verify call.
     if (!options.clientAttestation) return
 
     const challenge = options.clientAttestation.clientAttestationPop.payload.challenge
-    if (!challenge) {
-      throw new Oauth2ServerErrorResponseError({
-        error: Oauth2ErrorCodes.InvalidClient,
-        error_description: `Missing required 'challenge' claim in client attestation pop jwt.`,
-      })
+    if (challenge === undefined) {
+      // A missing challenge is only rejected when the issuer requires it.
+      if (options.required) {
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidClient,
+          error_description: `Missing required 'challenge' claim in client attestation pop jwt.`,
+        })
+      }
+      return
     }
 
+    // A provided challenge is always validated, even when not required.
     try {
       await this.verifyClientAttestationChallenge(agentContext, issuer, challenge)
     } catch (error) {
