@@ -87,12 +87,20 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
       })
 
       if (didCreateResult.didState.state !== 'finished') {
-        throw new Error(`Did creation failed: ${didCreateResult.didState.reason ?? didCreateResult.didState.state}`)
+        throw new Error(`Did creation failed: ${didCreateResult.didState.state}`)
+      }
+
+      if (!didCreateResult.didState.did) {
+        throw new Error('Did creation failed: missing did')
       }
 
       return didCreateResult
     })
-    issuerId = did.didState.did
+    const didId = did.didState.did
+    if (!didId) {
+      throw new Error('Did creation failed: missing did')
+    }
+    issuerId = didId
 
     const dynamicVersion = `1.${Math.random() * 100}`
 
@@ -157,6 +165,11 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
     })
 
     const credentialDefinitionState = credentialDefinitionResult.credentialDefinitionState
+    const credentialDefinitionIdFromResult = credentialDefinitionState.credentialDefinitionId
+
+    if (!credentialDefinitionIdFromResult) {
+      throw new Error('Missing credentialDefinitionId')
+    }
 
     expect(credentialDefinitionResult).toMatchObject({
       credentialDefinitionState: {
@@ -183,10 +196,10 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
       },
     })
 
-    credentialDefinitionId = credentialDefinitionState.credentialDefinitionId
+    credentialDefinitionId = credentialDefinitionIdFromResult
 
     const credentialDefinitionResponse = await agent.modules.anoncreds.getCredentialDefinition(
-      credentialDefinitionState.credentialDefinitionId
+      credentialDefinitionIdFromResult
     )
 
     expect(credentialDefinitionResponse).toMatchObject({
@@ -270,6 +283,10 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
     const revocationRegistryDefinitionId =
       registerRevocationDefinitionResponse.revocationRegistryDefinitionState.revocationRegistryDefinitionId
 
+    if (!revocationRegistryDefinitionId) {
+      throw new Error('Missing revocationRegistryDefinitionId')
+    }
+
     const revocationRegistryDefinitionResponse =
       await agent.modules.anoncreds.getRevocationRegistryDefinition(revocationRegistryDefinitionId)
 
@@ -307,8 +324,16 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
       }
     )
 
-    const statusListTimestamp =
-      registerRevocationStatusListResponse.revocationStatusListState.revocationStatusList.timestamp
+    const revocationStatusList = registerRevocationStatusListResponse.revocationStatusListState.revocationStatusList
+    if (!revocationStatusList) {
+      throw new Error('Missing revocation status list')
+    }
+
+    const statusListTimestamp = revocationStatusList.timestamp
+
+    if (!statusListTimestamp) {
+      throw new Error('Missing revocation status list timestamp')
+    }
 
     const revocationStatusListResponse = await agent.modules.anoncreds.getRevocationStatusList(
       revocationRegistryDefinitionId,
