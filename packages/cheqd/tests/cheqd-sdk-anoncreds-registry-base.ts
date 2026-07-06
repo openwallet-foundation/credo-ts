@@ -136,30 +136,25 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
       schemaMetadata: {},
     })
 
-    const credentialDefinitionResult = await withCheqdWriteRetry(
-      'anoncreds.registerCredentialDefinition',
-      async () => {
-        const result = await agent.modules.anoncreds.registerCredentialDefinition({
-          credentialDefinition: {
-            issuerId,
-            tag: 'TAG',
-            schemaId: `${schemaResult.schemaState.schemaId}`,
-          },
-          options: {
-            supportRevocation: true,
-          },
-        })
-        const credentialDefinitionState = result.credentialDefinitionState
+    const credentialDefinitionResult = await withCheqdWriteRetry('anoncreds.registerCredentialDefinition', async () => {
+      const result = await agent.modules.anoncreds.registerCredentialDefinition({
+        credentialDefinition: {
+          issuerId,
+          tag: 'TAG',
+          schemaId: `${schemaResult.schemaState.schemaId}`,
+        },
+        options: {
+          supportRevocation: true,
+        },
+      })
+      const credentialDefinitionState = result.credentialDefinitionState
 
-        if (credentialDefinitionState.state !== 'finished' || !credentialDefinitionState.credentialDefinitionId) {
-          throw new Error(
-            `Credential definition creation failed: state=${credentialDefinitionState.state}`
-          )
-        }
-
-        return result
+      if (credentialDefinitionState.state !== 'finished' || !credentialDefinitionState.credentialDefinitionId) {
+        throw new Error(`Credential definition creation failed: state=${credentialDefinitionState.state}`)
       }
-    )
+
+      return result
+    })
 
     const credentialDefinitionState = credentialDefinitionResult.credentialDefinitionState
 
@@ -263,7 +258,9 @@ export function cheqdAnonCredsRegistryTest(useCache: boolean, cheqdPayerSeed: st
           },
         })
         if (result.revocationRegistryDefinitionState.state !== 'finished') {
-          throw new Error(`Revocation registry definition creation failed: ${result.revocationRegistryDefinitionState.state}`)
+          throw new Error(
+            `Revocation registry definition creation failed: ${result.revocationRegistryDefinitionState.state}`
+          )
         }
 
         return result
