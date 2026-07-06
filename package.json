@@ -60,7 +60,7 @@
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "supertest": "^7.2.2",
-    "testcontainers": "^12.0.3",
+    "testcontainers": "^12.0.4",
     "tsdown": "^0.20.3",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
