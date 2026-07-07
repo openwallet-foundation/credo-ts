@@ -34,12 +34,12 @@ import { WebVhDidCrypto } from './WebVhDidCrypto'
 import { WebVhDidCryptoSigner } from './WebVhDidCryptoSigner'
 import { WebVhDidRecordMetadataKeys } from './webVhDidRecordMetadataTypes'
 
-interface WebVhDidCreateOptions extends DidCreateOptions {
+export interface WebVhDidCreateOptions extends DidCreateOptions {
   domain: string
   path?: string
 }
 
-interface WebVhDidUpdateOptions extends DidUpdateOptions {
+export interface WebVhDidUpdateOptions extends DidUpdateOptions {
   didDocument: DidDocument
 }
 
