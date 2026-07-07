@@ -248,12 +248,20 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
       ...parseResult.clientAttestation,
       // First session config, fall back to global config
       required: issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired,
+      // draft 09 §5.2: when a client attestation is presented alongside DPoP, the DPoP key must be the
+      // attestation's confirmation key, so the DPoP-bound method can be used at the token endpoint.
+      ensureConfirmationKeyMatchesDpopKey: true,
     },
     dpop: {
       ...parseResult.dpop,
       // First session config, fall back to global config
       required: issuanceSession.dpop?.required ?? config.dpopRequired,
     },
+  })
+
+  await openId4VcIssuerService.verifyClientAttestationPopChallenge(agentContext, issuer, {
+    clientAttestation,
+    required: config.clientAttestationPopChallengeRequired,
   })
 
   // Bind dpop jwk thumbprint to session
@@ -397,6 +405,9 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
       // We only look at the issuance session here. If it is required
       // it will be defined on the issuance session now.
       required: issuanceSession.walletAttestation?.required,
+      // draft 09 §5.2: when a client attestation is presented alongside DPoP, the DPoP key must be the
+      // attestation's confirmation key, so the DPoP-bound method can be used at the token endpoint.
+      ensureConfirmationKeyMatchesDpopKey: true,
     },
     dpop: {
       ...parseResult.dpop,
@@ -404,6 +415,11 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
       // it will be defined on the issuance session now.
       required: issuanceSession.dpop?.required,
     },
+  })
+
+  await openId4VcIssuerService.verifyClientAttestationPopChallenge(agentContext, issuer, {
+    clientAttestation,
+    required: config.clientAttestationPopChallengeRequired,
   })
 
   if (dpop && dpop.jwkThumbprint !== issuanceSession.dpop?.dpopJkt) {

@@ -54,6 +54,8 @@ export class OpenId4VcIssuerApi {
       credentialConfigurationsSupported,
       display,
       dpopSigningAlgValuesSupported,
+      clientAttestationSigningAlgValuesSupported,
+      clientAttestationPopSigningAlgValuesSupported,
       batchCredentialIssuance,
       authorizationServerConfigs,
     } = options
@@ -63,6 +65,8 @@ export class OpenId4VcIssuerApi {
     issuer.credentialConfigurationsSupported = credentialConfigurationsSupported
     issuer.display = display
     issuer.dpopSigningAlgValuesSupported = dpopSigningAlgValuesSupported
+    issuer.clientAttestationSigningAlgValuesSupported = clientAttestationSigningAlgValuesSupported
+    issuer.clientAttestationPopSigningAlgValuesSupported = clientAttestationPopSigningAlgValuesSupported
     issuer.batchCredentialIssuance = batchCredentialIssuance
     issuer.authorizationServerConfigs = authorizationServerConfigs
 
