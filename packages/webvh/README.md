@@ -33,13 +33,14 @@
 In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.
 
 ### Example of usage
+
 #### Module Registration
 
 To use the WebVh module, register it with your agent instance. Below is an example of how to configure the agent with the WebVh AnonCreds registry, DID resolver, and DID registrar:
 
 ```typescript
 import { Agent, DidsModule, AnonCredsModule } from '@credo-ts/core'
-import { WebVhAnonCredsRegistry, WebVhDidResolver, WebVhDidRegistrar } from '@credo-ts/webvh'
+import { WebVhModule, WebVhAnonCredsRegistry, WebVhDidResolver, WebVhDidRegistrar } from '@credo-ts/webvh'
 
 const agent = new Agent({
   config: options.config,
@@ -50,6 +51,7 @@ const agent = new Agent({
         new WebVhAnonCredsRegistry(),
       ],
     }),
+    webvhSdk: new WebVhModule(),
     dids: new DidsModule({
       resolvers: [ new WebVhDidResolver() ],
       registrars: [ new WebVhDidRegistrar() ],
@@ -58,6 +60,26 @@ const agent = new Agent({
 })
 
 await agent.initialize()
+```
+
+#### Resolving DID-Linked Resources With the WebVH API
+
+`WebVhModule` exposes `WebVhApi` via `agent.modules.<key>`. The only method available through this API is `resolveResource()`, which dereferences a DID-linked resource URL (for example a schema or credential definition stored under a `did:webvh` DID):
+
+> Note: `webvhSdk` is only the module key used in this example. You can choose any key name (for example `webvh`) and then access the API through that same key (for example `agent.modules.webvh.resolveResource(...)`).
+
+```typescript
+const result = await agent.modules.webvhSdk.resolveResource(
+  `${publicDid}/resources/${resourceId}`
+)
+
+if ('error' in result) {
+  throw new Error(result.message)
+}
+
+// For JSON resources, result.content is the parsed object.
+// For non-JSON resources, result.content is text.
+const resourceContent = result.content
 ```
 
 #### Creating and Updating a `did:webvh` DID
@@ -77,10 +99,12 @@ if (!publicDid || !didDocument) {
 ```
 
 #### Persisting the DID Record
+
 Internally, every created or updated DID is persisted as a record.
 This involves storing both the DID document and its metadata so that consumers can later retrieve the associated artifacts.
 
 For example, when a did:webvh DID is created, the following structure is saved:
+
 ```typescript
 const didRecord = new DidRecord({
   did: publicDid,
@@ -99,6 +123,7 @@ This means that after creation or update, consumers of the record must retrieve 
 
 The following example demonstrates how to expose the did.jsonl through an API endpoint.
 The endpoint retrieves the artifact from the DID record metadata and serves it to the client:
+
 ```typescript
 @Get('/.well-known/did.jsonl')
 async getDidLog(@Res() res: Response) {
@@ -129,7 +154,7 @@ const webVhdDidRecord = await didRepository.findSingleByQuery(agentContext, {
 
 ### Registering AnonCreds Objects
 
-The AnonCreds module allows registering schemas, credential definitions, revocation registry definitions, and revocation status lists. 
+The AnonCreds module allows registering schemas, credential definitions, revocation registry definitions, and revocation status lists.
 At present, all AnonCreds-related resources are placed under the `resources` subpath. While this convention is illustrated in the examples, it is not explicitly defined in the DID Web AnonCreds method specification. It is therefore important to be aware that this is the current implementation detail, and future revisions may further clarify or expand this structure.
 
 #### Example
@@ -159,7 +184,7 @@ Object registration methods return three key components:
 
 In order to expose attested resources associated with a `did:webvh` DID, it is necessary to serve them through a REST endpoint such as:
 
-```
+```text
 GET /resources/:resourceId
 ```
 

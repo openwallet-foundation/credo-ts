@@ -1,12 +1,14 @@
-import { SDJwtInstance } from '@sd-jwt/core'
-import type { DisclosureFrame, PresentationFrame, SDJWTConfig } from '@sd-jwt/types'
+import { type DisclosureFrame, type PresentationFrame, type SDJWTConfig, SDJwtInstance } from '@sd-jwt/core'
 import type { AgentContext } from '../../../agent/context'
+import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
 import { JwtPayload } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
+import type { JsonObject } from '../../../types'
 import { asArray, JsonTransformer, MessageValidator, nowInSeconds, TypedArrayEncoder } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi } from '../../kms'
+import { applyDisclosuresForPayload } from '../../sd-jwt-vc/disclosureFrame'
 import {
   extractKeyFromHolderBinding,
   getSdJwtSigner,
@@ -14,12 +16,12 @@ import {
   parseHolderBindingFromCredential,
 } from '../../sd-jwt-vc/utils'
 import type {
-  SingleValidationResult,
   W3cV2JsonCredential,
   W3cV2JsonPresentation,
   W3cV2VerifyCredentialResult,
   W3cV2VerifyPresentationResult,
 } from '../models'
+import { validateCredentialSubjectAuthentication } from '../util'
 import {
   extractHolderFromPresentationCredentials,
   getVerificationMethodForJwt,
@@ -150,6 +152,18 @@ export class W3cV2SdJwtCredentialService {
 
       const issuerVerificationMethod = await getVerificationMethodForJwt(agentContext, credential, ['assertionMethod'])
       const issuerPublicKey = getPublicJwkFromVerificationMethod(issuerVerificationMethod)
+
+      // Ensure the issuer is trusted according to the (optional) `getTrustedIssuersForVerification`
+      // callback. For did-based issuers this is a no-op when no trusted issuers are configured,
+      // preserving the previous "trust any valid signature" behavior. Throws when the issuer is not trusted.
+      await TrustedIssuerContext.ensureTrustedSigner(
+        agentContext,
+        {
+          signer: { method: 'did', didUrl: issuerVerificationMethod.id },
+          verification: { type: 'credential', credential },
+        },
+        options.trustedIssuers
+      )
 
       const holderBinding = parseHolderBindingFromCredential(credential.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
@@ -354,34 +368,13 @@ export class W3cV2SdJwtCredentialService {
 
           const credentialResult = await this.verifyCredential(agentContext, {
             credential: credential.envelopedCredential,
+            trustedIssuers: options.trustedIssuers,
           })
 
-          let credentialSubjectAuthentication: SingleValidationResult
-
-          // Check whether any of the credentialSubjectIds for each credential is the same as the controller of the verificationMethod
-          // This authenticates the presentation creator controls one of the credentialSubject ids.
-          // NOTE: this doesn't take into account the case where the credentialSubject is no the holder. In the
-          // future we can add support for other flows, but for now this is the most common use case.
-          // TODO: should this be handled on a higher level? I don't really see it being handled in the jsonld lib
-          // or in the did-jwt-vc lib (it seems they don't even verify the credentials itself), but we probably need some
-          // more experience on the use cases before we loosen the restrictions (as it means we need to handle it on a higher layer).
-          const credentialSubjectIds = credential.resolvedCredential.credentialSubjectIds
-          const presentationAuthenticatesCredentialSubject = credentialSubjectIds.some(
-            (subjectId) => proverVerificationMethod.controller === subjectId
+          const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(
+            credential.resolvedCredential.credentialSubjectIds,
+            proverVerificationMethod.controller
           )
-
-          if (credentialSubjectIds.length > 0 && !presentationAuthenticatesCredentialSubject) {
-            credentialSubjectAuthentication = {
-              isValid: false,
-              error: new CredoError(
-                'Credential has one or more credentialSubject ids, but presentation does not authenticate credential subject'
-              ),
-            }
-          } else {
-            credentialSubjectAuthentication = {
-              isValid: true,
-            }
-          }
 
           return {
             ...credentialResult,
@@ -419,6 +412,14 @@ export class W3cV2SdJwtCredentialService {
     const disclosedCompact = await sdjwt.present(originalCompact, presentationFrame)
 
     return W3cV2SdJwtVerifiableCredential.fromCompact(disclosedCompact)
+  }
+
+  public applyDisclosuresForPayload(
+    compactSdJwtVc: string,
+    requestedPayload: JsonObject
+  ): W3cV2SdJwtVerifiableCredential {
+    const sdJwt = applyDisclosuresForPayload(compactSdJwtVc, requestedPayload)
+    return W3cV2SdJwtVerifiableCredential.fromCompact(sdJwt)
   }
 
   private validateDisclosureFrame(disclosureFrame?: DisclosureFrame<W3cV2JsonCredential | W3cV2JsonPresentation>) {

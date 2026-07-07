@@ -1,8 +1,8 @@
 import { getAnonCredsTagsFromRecord } from '../../../../../../anoncreds/src/utils/w3cAnonCredsUtils'
 import { JsonTransformer } from '../../../../utils'
 import { CredentialMultiInstanceState } from '../../../../utils/credentialUseTypes'
-import { Ed25519Signature2018Fixtures } from '../../data-integrity/__tests__/fixtures'
-import { W3cJsonLdVerifiableCredential } from '../../data-integrity/models'
+import { Ed25519Signature2018Fixtures } from '../../linked-data-proofs/__tests__/fixtures'
+import { W3cJsonLdVerifiableCredential } from '../../linked-data-proofs/models/W3cJsonLdVerifiableCredential'
 import { W3cCredentialRecord } from '../W3cCredentialRecord'
 
 describe('W3cCredentialRecord', () => {

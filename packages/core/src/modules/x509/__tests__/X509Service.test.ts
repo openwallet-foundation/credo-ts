@@ -1,5 +1,11 @@
-import { CredoWebCrypto, Hasher, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
-import { id_ce_basicConstraints, id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
+import {
+  CredoWebCrypto,
+  Hasher,
+  TypedArrayEncoder,
+  X509ExtendedKeyUsage,
+  X509ExtensionIdentifier,
+  X509KeyUsage,
+} from '@credo-ts/core'
 import * as x509 from '@peculiar/x509'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
@@ -12,6 +18,7 @@ import {
   PublicJwk,
 } from '../../kms'
 import { X509Error } from '../X509Error'
+import { X509ModuleConfig } from '../X509ModuleConfig'
 import { X509Service } from '../X509Service'
 
 /**
@@ -56,6 +63,10 @@ const kmsApi = new KeyManagementApi(
 )
 agentContext.dependencyManager.registerInstance(KeyManagementApi, kmsApi)
 
+// Register X509ModuleConfig
+const x509ModuleConfig = new X509ModuleConfig({})
+agentContext.dependencyManager.registerInstance(X509ModuleConfig, x509ModuleConfig)
+
 describe('X509Service', () => {
   let certificateChain: Array<string>
 
@@ -76,6 +87,12 @@ describe('X509Service', () => {
         notBefore: getLastMonth(),
         notAfter: getNextMonth(),
       },
+      extensions: {
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 2,
+        },
+      },
     })
 
     const intermediateCert = await X509Service.createCertificate(agentContext, {
@@ -87,6 +104,12 @@ describe('X509Service', () => {
       validity: {
         notBefore: getLastMonth(),
         notAfter: getNextMonth(),
+      },
+      extensions: {
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 1,
+        },
       },
     })
 
@@ -108,6 +131,7 @@ describe('X509Service', () => {
         new x509.X509Certificate(intermediateCert.rawCertificate),
       ],
     })
+    // The builder returns [Leaf, Intermediate, Root] (leaf first, root last)
     certificateChain = (await builder.build(new x509.X509Certificate(leafCert.rawCertificate))).map((c) =>
       c.toString('base64')
     )
@@ -144,8 +168,8 @@ describe('X509Service', () => {
       },
     })
 
-    expect(certificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
-    expect(certificate.isExtensionCritical(id_ce_extKeyUsage)).toStrictEqual(false)
+    expect(certificate.isExtensionCritical(X509ExtensionIdentifier.KeyUsage)).toStrictEqual(true)
+    expect(certificate.isExtensionCritical(X509ExtensionIdentifier.ExtendedKeyUsage)).toStrictEqual(false)
   })
 
   it('should create a valid self-signed certifcate with extensions', async () => {
@@ -216,8 +240,16 @@ describe('X509Service', () => {
       },
     })
 
-    expect(mdocRootCertificate.isExtensionCritical(id_ce_basicConstraints)).toStrictEqual(true)
-    expect(mdocRootCertificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
+    // Verify CRL distribution points structure
+    expect(mdocRootCertificate.crlDistributionPoints).toHaveLength(1)
+    expect(mdocRootCertificate.crlDistributionPoints[0]).toMatchObject({
+      urls: ['https://animo.id'],
+      reasons: undefined, // Full distribution point (covers all reasons)
+      crlIssuer: undefined,
+    })
+
+    expect(mdocRootCertificate.isExtensionCritical(X509ExtensionIdentifier.BasicConstraints)).toStrictEqual(true)
+    expect(mdocRootCertificate.isExtensionCritical(X509ExtensionIdentifier.KeyUsage)).toStrictEqual(true)
 
     expect(mdocRootCertificate).toMatchObject({
       ianUriNames: expect.arrayContaining(['animo.id']),
@@ -273,8 +305,10 @@ describe('X509Service', () => {
       },
     })
 
-    expect(mdocDocumentSignerCertificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
-    expect(mdocDocumentSignerCertificate.isExtensionCritical(id_ce_extKeyUsage)).toStrictEqual(true)
+    expect(mdocDocumentSignerCertificate.isExtensionCritical(X509ExtensionIdentifier.KeyUsage)).toStrictEqual(true)
+    expect(mdocDocumentSignerCertificate.isExtensionCritical(X509ExtensionIdentifier.ExtendedKeyUsage)).toStrictEqual(
+      true
+    )
 
     expect(mdocDocumentSignerCertificate).toMatchObject({
       ianUriNames: expect.arrayContaining(['animo.id']),
@@ -421,6 +455,69 @@ gTqhM3BGMuf+
 
     const leafCertificate = validatedChain[validatedChain.length - 1]
     expect(leafCertificate.publicJwk.is(P256PublicJwk)).toBe(true)
+  })
+
+  describe('key usage validation', () => {
+    async function buildChain(intermediateKeyUsage?: X509KeyUsage[]): Promise<Array<string>> {
+      const rootKey = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+      const intermediateKey = PublicJwk.fromPublicJwk(
+        (await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+      )
+      const leafKey = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+
+      const root = await X509Service.createCertificate(agentContext, {
+        serialNumber: '01',
+        issuer: { commonName: 'KU Root' },
+        authorityKey: rootKey,
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: { basicConstraints: { ca: true } },
+      })
+      const intermediate = await X509Service.createCertificate(agentContext, {
+        serialNumber: '02',
+        issuer: root.subject,
+        authorityKey: rootKey,
+        subject: { commonName: 'KU Intermediate' },
+        subjectPublicKey: intermediateKey,
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: {
+          basicConstraints: { ca: true },
+          ...(intermediateKeyUsage ? { keyUsage: { usages: intermediateKeyUsage } } : {}),
+        },
+      })
+      const leaf = await X509Service.createCertificate(agentContext, {
+        serialNumber: '03',
+        issuer: intermediate.subject,
+        authorityKey: intermediateKey,
+        subject: { commonName: 'KU Leaf' },
+        subjectPublicKey: leafKey,
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+      })
+
+      // x5c order: leaf first, root last.
+      return [leaf, intermediate, root].map((c) => c.toString('base64'))
+    }
+
+    it('rejects a chain whose issuing CA has key usage without keyCertSign', async () => {
+      const certificateChain = await buildChain([X509KeyUsage.DigitalSignature])
+
+      await expect(X509Service.validateCertificateChain(agentContext, { certificateChain })).rejects.toThrow(
+        'keyCertSign'
+      )
+    })
+
+    it('accepts a chain whose issuing CA has key usage including keyCertSign', async () => {
+      const certificateChain = await buildChain([X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign])
+
+      const validatedChain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
+      expect(validatedChain.length).toBe(3)
+    })
+
+    it('accepts a chain whose issuing CA has no key usage extension (unrestricted)', async () => {
+      const certificateChain = await buildChain()
+
+      const validatedChain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
+      expect(validatedChain.length).toBe(3)
+    })
   })
 
   it('should verify a certificate chain where the root certificate is not in the provided chain, but is in trusted certificates', async () => {

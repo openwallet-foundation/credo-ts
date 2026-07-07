@@ -386,8 +386,10 @@ export class DidCommJsonLdCredentialFormatService
     return supportedFormats.includes(format)
   }
 
-  public async deleteCredentialById(): Promise<void> {
-    throw new Error('Not implemented.')
+  public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+
+    await w3cCredentialService.removeCredentialRecord(agentContext, credentialRecordId)
   }
 
   public areCredentialsEqual = (message1: DidCommAttachment, message2: DidCommAttachment): boolean => {

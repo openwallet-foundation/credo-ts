@@ -10,8 +10,10 @@ import {
   PublicJwk,
 } from '../modules/kms'
 import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
-import { type EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
+import { convertLegacyTrustedCertificates } from '../modules/x509/utils/convertLegacyTrustedCertificates'
+import { X509ModuleConfig, type X509VerificationTrustedCertificates } from '../modules/x509/X509ModuleConfig'
 import { X509Service } from './../modules/x509/X509Service'
+import { type EncodedX509Certificate } from '../modules/x509/X509ServiceOptions'
 import { injectable } from '../plugins'
 import { isJsonObject } from '../types'
 import { JsonEncoder, TypedArrayEncoder } from '../utils'
@@ -259,14 +261,14 @@ export class JwsService {
     agentContext: AgentContext,
     options: {
       jwsSigner: JwsSignerWithJwk
-      trustedCertificates?: EncodedX509Certificate[]
+      trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
     }
   ) {
     const { jwsSigner } = options
+    const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
     if (jwsSigner.method === 'x5c') {
-      const trustedCertificatesFromConfig =
-        agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates ?? []
+      const trustedCertificatesFromConfig = x509ModuleConfig.trustedCertificates ?? []
       const trustedCertificates = options.trustedCertificates ?? trustedCertificatesFromConfig
       if (trustedCertificates.length === 0) {
         throw new CredoError(
@@ -274,9 +276,11 @@ export class JwsService {
         )
       }
 
+      const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates)
+
       await X509Service.validateCertificateChain(agentContext, {
         certificateChain: jwsSigner.x5c,
-        trustedCertificates,
+        trustedCertificates: convertedTrustedCertificates.flatMap(({ issuance }) => issuance),
       })
     }
   }
@@ -398,7 +402,7 @@ export interface VerifyJwsOptions {
    */
   resolveJwsSigner?: JwsSignerResolver
 
-  trustedCertificates?: EncodedX509Certificate[]
+  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
 }
 
 export type JwsSignerResolver = (options: {

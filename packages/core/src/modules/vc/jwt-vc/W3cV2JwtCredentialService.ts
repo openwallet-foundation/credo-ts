@@ -1,4 +1,5 @@
 import type { AgentContext } from '../../../agent/context'
+import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
 import { JwsService, JwtPayload } from '../../../crypto'
 import type { VerifyJwsResult } from '../../../crypto/JwsService'
 import { CredoError } from '../../../error'
@@ -6,7 +7,8 @@ import { injectable } from '../../../plugins'
 import { asArray, JsonTransformer, MessageValidator, nowInSeconds } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { extractKeyFromHolderBinding } from '../../sd-jwt-vc/utils'
-import type { SingleValidationResult, W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models'
+import type { W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models'
+import { validateCredentialSubjectAuthentication } from '../util'
 import {
   extractHolderFromPresentationCredentials,
   getVerificationMethodForJwt,
@@ -124,6 +126,18 @@ export class W3cV2JwtCredentialService {
 
       const issuerVerificationMethod = await getVerificationMethodForJwt(agentContext, credential, ['assertionMethod'])
       const issuerPublicKey = getPublicJwkFromVerificationMethod(issuerVerificationMethod)
+
+      // Ensure the issuer is trusted according to the (optional) `getTrustedIssuersForVerification`
+      // callback. For did-based issuers this is a no-op when no trusted issuers are configured,
+      // preserving the previous "trust any valid signature" behavior. Throws when the issuer is not trusted.
+      await TrustedIssuerContext.ensureTrustedSigner(
+        agentContext,
+        {
+          signer: { method: 'did', didUrl: issuerVerificationMethod.id },
+          verification: { type: 'credential', credential },
+        },
+        options.trustedIssuers
+      )
 
       let signatureResult: VerifyJwsResult | undefined
       try {
@@ -359,34 +373,13 @@ export class W3cV2JwtCredentialService {
 
           const credentialResult = await this.verifyCredential(agentContext, {
             credential: credential.envelopedCredential,
+            trustedIssuers: options.trustedIssuers,
           })
 
-          let credentialSubjectAuthentication: SingleValidationResult
-
-          // Check whether any of the credentialSubjectIds for each credential is the same as the controller of the verificationMethod
-          // This authenticates the presentation creator controls one of the credentialSubject ids.
-          // NOTE: this doesn't take into account the case where the credentialSubject is no the holder. In the
-          // future we can add support for other flows, but for now this is the most common use case.
-          // TODO: should this be handled on a higher level? I don't really see it being handled in the jsonld lib
-          // or in the did-jwt-vc lib (it seems they don't even verify the credentials itself), but we probably need some
-          // more experience on the use cases before we loosen the restrictions (as it means we need to handle it on a higher layer).
-          const credentialSubjectIds = credential.resolvedCredential.credentialSubjectIds
-          const presentationAuthenticatesCredentialSubject = credentialSubjectIds.some(
-            (subjectId) => proverVerificationMethod.controller === subjectId
+          const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(
+            credential.resolvedCredential.credentialSubjectIds,
+            proverVerificationMethod.controller
           )
-
-          if (credentialSubjectIds.length > 0 && !presentationAuthenticatesCredentialSubject) {
-            credentialSubjectAuthentication = {
-              isValid: false,
-              error: new CredoError(
-                'Credential has one or more credentialSubject ids, but presentation does not authenticate credential subject'
-              ),
-            }
-          } else {
-            credentialSubjectAuthentication = {
-              isValid: true,
-            }
-          }
 
           return {
             ...credentialResult,

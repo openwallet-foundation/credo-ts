@@ -54,7 +54,7 @@ export function configureAuthorizationRequestEndpoint(router: Router, config: Op
         })
 
         // Not all requets are signed, and those are not fetcheable
-        if (!verificationSession || !verificationSession.authorizationRequestJwt) {
+        if (!verificationSession?.authorizationRequestJwt) {
           return sendErrorResponse(
             response,
             next,

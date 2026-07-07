@@ -10,7 +10,7 @@ import {
 } from '@credo-ts/core'
 import { MultibaseEncoding, multibaseEncode } from 'didwebvh-ts'
 import { canonicalize } from 'json-canonicalize'
-import { WebVhResource } from '../anoncreds/utils/transform'
+import { WebVhAttestedResource } from '../resources'
 import type { Proof, ProofOptions, UnsecuredDocument } from './types'
 
 export class EddsaJcs2022Cryptosuite {
@@ -44,9 +44,8 @@ export class EddsaJcs2022Cryptosuite {
     const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
     return (
-      didRecord.keys?.find(
-        ({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${verificationMethod.publicKeyMultibase}`
-      )?.kmsKeyId ?? publicJwk.legacyKeyId
+      didRecord.keys?.find(({ didDocumentRelativeKeyId }) => verificationMethod.id.endsWith(didDocumentRelativeKeyId))
+        ?.kmsKeyId ?? publicJwk.legacyKeyId
     )
   }
 
@@ -105,7 +104,7 @@ export class EddsaJcs2022Cryptosuite {
     return verificationResult.verified
   }
 
-  public async verifyProof(securedDocument: WebVhResource) {
+  public async verifyProof(securedDocument: WebVhAttestedResource) {
     // https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
     const { proof, ...unsecuredDocument } = securedDocument
     const { proofValue, ...proofOptions } = securedDocument.proof

@@ -1,5 +1,5 @@
-import type { W3cJsonLdVerifiablePresentation } from '../../data-integrity'
 import type { W3cJwtVerifiablePresentation } from '../../jwt-vc'
+import type { W3cJsonLdVerifiablePresentation } from '../../linked-data-proofs/models/W3cJsonLdVerifiablePresentation'
 import type { ClaimFormat } from '../ClaimFormat'
 
 export type W3cVerifiablePresentation<Format extends ClaimFormat.JwtVp | ClaimFormat.LdpVp | unknown = unknown> =

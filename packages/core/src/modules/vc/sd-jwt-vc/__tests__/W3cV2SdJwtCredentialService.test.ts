@@ -18,7 +18,7 @@ import { JsonTransformer, TypedArrayEncoder } from '../../../../utils'
 import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
 import { DidJwk, DidKey, DidRepository, DidsApi, DidsModuleConfig } from '../../../dids'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
-import { X509ModuleConfig } from '../../../x509'
+import { X509ModuleConfig } from '../../../x509/X509ModuleConfig'
 import { CREDENTIALS_CONTEXT_V2_URL } from '../../constants'
 import { ClaimFormat, W3cV2Credential, W3cV2EnvelopedVerifiableCredential, W3cV2Presentation } from '../../models'
 import { W3cV2SdJwtCredentialService } from '../W3cV2SdJwtCredentialService'
@@ -318,6 +318,38 @@ describe('W3cV2SdJwtCredentialService', () => {
       })
 
       expect(result.validations.dataModel?.error?.message).toContain('JWT expired at 1577836800')
+    })
+  })
+
+  describe('verifyCredential with getTrustedIssuersForVerification', () => {
+    afterEach(() => {
+      agentContext.config.setTrustedIssuersForVerification(undefined)
+    })
+
+    test('accepts a credential whose issuer did is trusted', async () => {
+      const credential = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+      agentContext.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'did', issuance: credential.resolvedCredential.issuerId }],
+      }))
+
+      const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, { credential })
+
+      expect(result.isValid).toBe(true)
+    })
+
+    test('rejects a credential whose issuer did is not trusted', async () => {
+      agentContext.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [
+          { method: 'did', issuance: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y' },
+        ],
+      }))
+
+      const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
+        credential: CredoEs256DidJwkJwtVc,
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain('is not trusted')
     })
   })
 
