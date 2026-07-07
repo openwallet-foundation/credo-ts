@@ -1,9 +1,9 @@
 export {
+  type WebVhDidCreateOptions,
+  WebVhDidRecordMetadataKeys,
   WebVhDidRegistrar,
   WebVhDidResolver,
-  type WebVhDidCreateOptions,
   type WebVhDidUpdateOptions,
-  WebVhDidRecordMetadataKeys,
 } from './dids'
 export * from './resources'
 export { WebVhApi } from './WebVhApi'
