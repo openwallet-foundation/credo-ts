@@ -11,12 +11,16 @@ import {
   OpenId4VcIssuerService,
   type OpenId4VciCredentialConfigurationSupportedWithFormats,
   OpenId4VciCredentialFormatProfile,
+  OpenId4VciKeyAttestationLevel,
   OpenId4VcModule,
   type OpenId4VcVerifierModuleConfigOptions,
 } from '../src'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType } from './utils'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
+
+const highLevels = [OpenId4VciKeyAttestationLevel.High]
+const moderateLevels = [OpenId4VciKeyAttestationLevel.Moderate]
 
 const universityDegreeCredentialConfigurationSupportedMdoc = {
   format: OpenId4VciCredentialFormatProfile.MsoMdoc,
@@ -26,17 +30,40 @@ const universityDegreeCredentialConfigurationSupportedMdoc = {
     jwt: {
       proof_signing_alg_values_supported: ['ES256', 'EdDSA'],
       key_attestations_required: {
-        // TODO: enum for iso enum values
-        key_storage: ['iso_18045_high'],
-        user_authentication: ['iso_18045_high'],
+        key_storage: highLevels,
+        user_authentication: highLevels,
       },
     },
     attestation: {
       proof_signing_alg_values_supported: ['ES256', 'EdDSA'],
       key_attestations_required: {
-        // TODO: enum for iso enum values
-        key_storage: ['iso_18045_high'],
-        user_authentication: ['iso_18045_high'],
+        key_storage: highLevels,
+        user_authentication: highLevels,
+      },
+    },
+  },
+  cryptographic_binding_methods_supported: ['jwk'],
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+
+// Only requires the `moderate` level, used to verify that a stronger attested level (`high`)
+// satisfies a weaker required level.
+const universityDegreeModerateCredentialConfigurationSupportedMdoc = {
+  format: OpenId4VciCredentialFormatProfile.MsoMdoc,
+  scope: 'UniversityDegreeCredentialModerate',
+  doctype: 'UniversityDegreeCredential',
+  proof_types_supported: {
+    jwt: {
+      proof_signing_alg_values_supported: ['ES256', 'EdDSA'],
+      key_attestations_required: {
+        key_storage: moderateLevels,
+        user_authentication: moderateLevels,
+      },
+    },
+    attestation: {
+      proof_signing_alg_values_supported: ['ES256', 'EdDSA'],
+      key_attestations_required: {
+        key_storage: moderateLevels,
+        user_authentication: moderateLevels,
       },
     },
   },
@@ -46,7 +73,13 @@ const universityDegreeCredentialConfigurationSupportedMdoc = {
 const baseUrl = 'http://localhost:3991'
 const issuerBaseUrl = `${baseUrl}/oid4vci`
 const verifierBaseUrl = `${baseUrl}/oid4vp`
-let generateKeyAttestation: (nonce?: string) => Promise<string>
+let generateKeyAttestation: (
+  nonce?: string,
+  levels?: {
+    keyStorage: OpenId4VciKeyAttestationLevel[]
+    userAuthentication: OpenId4VciKeyAttestationLevel[]
+  }
+) => Promise<string>
 
 describe('OpenId4Vc Wallet and Key Attestations', () => {
   let expressApp: Express
@@ -227,7 +260,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         )
     )
 
-    generateKeyAttestation = (nonce?: string) =>
+    generateKeyAttestation = (nonce?: string, levels = { keyStorage: highLevels, userAuthentication: highLevels }) =>
       walletProvider.createKeyAttestationJwt({
         attestedKeys: attestedKeys.map((key) => key.toJson() as Jwk),
         signer: {
@@ -237,8 +270,8 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
           kid: walletProviderCertificate.publicJwk.keyId,
         },
         use: 'proof_type.jwt',
-        keyStorage: ['iso_18045_high'],
-        userAuthentication: ['iso_18045_high'],
+        keyStorage: levels.keyStorage,
+        userAuthentication: levels.userAuthentication,
         // 5 minutes
         expiresAt: utils.addSecondsToDate(new Date(), 300),
         nonce,
@@ -304,6 +337,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       },
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupportedMdoc,
+        universityDegreeModerate: universityDegreeModerateCredentialConfigurationSupportedMdoc,
       },
     })
 
@@ -373,6 +407,82 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         attestedKeys[credentialIndex].fingerprint
       )
     })
+  })
+
+  it('issues when the attested level is stronger than the required level (high satisfies moderate)', async () => {
+    // Offer only requires the `moderate` level
+    const { issuanceSession, credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+      issuerId: issuerRecord.issuerId,
+      credentialConfigurationIds: ['universityDegreeModerate'],
+      preAuthorizedCodeFlowConfig: {},
+      authorization: {
+        requireDpop: true,
+        requireWalletAttestation: true,
+      },
+    })
+
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
+      resolvedCredentialOffer,
+      walletAttestationJwt,
+      clientId: 'wallet',
+    })
+
+    // Wallet attests the stronger `high` level, which should satisfy the required `moderate` level
+    const credentialResponse = await holder.agent.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      credentialBindingResolver: async () => ({
+        method: 'attestation',
+        keyAttestationJwt: await generateKeyAttestation(undefined, {
+          keyStorage: highLevels,
+          userAuthentication: highLevels,
+        }),
+      }),
+    })
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Completed,
+      issuanceSessionId: issuanceSession.id,
+    })
+
+    expect(credentialResponse.credentials).toHaveLength(1)
+    expect(credentialResponse.credentials[0].record.credentialInstances).toHaveLength(10)
+  })
+
+  it('throws error when the attested level is weaker than the required level (moderate does not satisfy high)', async () => {
+    // Offer requires the `high` level
+    const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+      issuerId: issuerRecord.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      authorization: {
+        requireDpop: true,
+        requireWalletAttestation: true,
+      },
+    })
+
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
+      resolvedCredentialOffer,
+      walletAttestationJwt,
+      clientId: 'wallet',
+    })
+
+    // Wallet only attests the weaker `moderate` level, which does not satisfy the required `high` level
+    await expect(
+      holder.agent.openid4vc.holder.requestCredentials({
+        resolvedCredentialOffer,
+        ...tokenResponse,
+        credentialBindingResolver: async () => ({
+          method: 'attestation',
+          keyAttestationJwt: await generateKeyAttestation(undefined, {
+            keyStorage: moderateLevels,
+            userAuthentication: moderateLevels,
+          }),
+        }),
+      })
+    ).rejects.toThrow('Insufficient key_storage for key attestation')
   })
 
   it('e2e flow issuing a batch of mdoc based on wallet and nonce-bound key attestation', async () => {
