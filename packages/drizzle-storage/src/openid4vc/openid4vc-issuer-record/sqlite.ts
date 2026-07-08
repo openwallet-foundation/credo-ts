@@ -37,6 +37,12 @@ export const openid4vcIssuer = sqliteTable(
     dpopSigningAlgValuesSupported: text('dpop_signing_alg_values_supported', { mode: 'json' }).$type<
       [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
     >(),
+    clientAttestationSigningAlgValuesSupported: text('client_attestation_signing_alg_values_supported', {
+      mode: 'json',
+    }).$type<[Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]>(),
+    clientAttestationPopSigningAlgValuesSupported: text('client_attestation_pop_signing_alg_values_supported', {
+      mode: 'json',
+    }).$type<[Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]>(),
     batchCredentialIssuance: text('batch_credential_issuance').$type<OpenId4VciBatchCredentialIssuanceOptions>(),
   },
   (table) => sqliteBaseRecordIndexes(table, 'openid4vcIssuer')

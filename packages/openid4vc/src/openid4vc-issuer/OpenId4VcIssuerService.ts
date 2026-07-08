@@ -35,6 +35,7 @@ import {
   PkceCodeChallengeMethod,
   preAuthorizedCodeGrantIdentifier,
   refreshTokenGrantIdentifier,
+  SupportedClientAuthenticationMethod,
   type TokenIntrospectionResponse,
 } from '@openid4vc/oauth2'
 import {
@@ -59,7 +60,7 @@ import type {
   OpenId4VcJwtIssuer,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
-import { OpenId4VciCredentialFormatProfile } from '../shared'
+import { keyAttestationLevelSatisfies, OpenId4VciCredentialFormatProfile } from '../shared'
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
 import { getCredentialConfigurationsSupportedForScopes, getOfferedCredentials } from '../shared/issuerMetadataUtils'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
@@ -966,7 +967,7 @@ export class OpenId4VcIssuerService {
 
         if (
           expectedKeyStorage &&
-          !expectedKeyStorage.some((keyStorage) => keyAttestation.payload.key_storage?.includes(keyStorage))
+          !keyAttestationLevelSatisfies(expectedKeyStorage, keyAttestation.payload.key_storage)
         ) {
           throw new Oauth2ServerErrorResponseError({
             error: Oauth2ErrorCodes.InvalidProof,
@@ -976,9 +977,7 @@ export class OpenId4VcIssuerService {
 
         if (
           expectedUserAuthentication &&
-          !expectedUserAuthentication.some((userAuthentication) =>
-            keyAttestation.payload.user_authentication?.includes(userAuthentication)
-          )
+          !keyAttestationLevelSatisfies(expectedUserAuthentication, keyAttestation.payload.user_authentication)
         ) {
           throw new Oauth2ServerErrorResponseError({
             error: Oauth2ErrorCodes.InvalidProof,
@@ -1081,7 +1080,7 @@ export class OpenId4VcIssuerService {
 
           if (
             expectedKeyStorage &&
-            !expectedKeyStorage.some((keyStorage) => keyAttestation.payload.key_storage?.includes(keyStorage))
+            !keyAttestationLevelSatisfies(expectedKeyStorage, keyAttestation.payload.key_storage)
           ) {
             throw new Oauth2ServerErrorResponseError({
               error: Oauth2ErrorCodes.InvalidProof,
@@ -1091,9 +1090,7 @@ export class OpenId4VcIssuerService {
 
           if (
             expectedUserAuthentication &&
-            !expectedUserAuthentication.some((userAuthentication) =>
-              keyAttestation.payload.user_authentication?.includes(userAuthentication)
-            )
+            !keyAttestationLevelSatisfies(expectedUserAuthentication, keyAttestation.payload.user_authentication)
           ) {
             throw new Oauth2ServerErrorResponseError({
               error: Oauth2ErrorCodes.InvalidProof,
@@ -1260,6 +1257,8 @@ export class OpenId4VcIssuerService {
       issuerId: options.issuerId ?? utils.uuid(),
       display: options.display,
       dpopSigningAlgValuesSupported: options.dpopSigningAlgValuesSupported,
+      clientAttestationSigningAlgValuesSupported: options.clientAttestationSigningAlgValuesSupported,
+      clientAttestationPopSigningAlgValuesSupported: options.clientAttestationPopSigningAlgValuesSupported,
       accessTokenPublicJwk: accessTokenSignerKey.publicJwk,
       authorizationServerConfigs: options.authorizationServerConfigs,
       credentialConfigurationsSupported: options.credentialConfigurationsSupported,
@@ -1367,6 +1366,20 @@ export class OpenId4VcIssuerService {
         : undefined,
     } satisfies CredentialIssuerMetadata
 
+    const clientAttestationAuthMethods = [
+      // Standard method: Client Attestation JWT + standalone Client Attestation PoP JWT.
+      ...(issuerRecord.clientAttestationSigningAlgValuesSupported &&
+      issuerRecord.clientAttestationPopSigningAlgValuesSupported
+        ? [SupportedClientAuthenticationMethod.ClientAttestationJwt]
+        : []),
+      // DPoP-bound method (§5.2): Client Attestation JWT + DPoP proof.
+      ...(issuerRecord.clientAttestationSigningAlgValuesSupported && issuerRecord.dpopSigningAlgValuesSupported
+        ? [SupportedClientAuthenticationMethod.ClientAttestationJwtDpop]
+        : []),
+    ]
+    const clientAttestationAuthMethodsSupported =
+      clientAttestationAuthMethods.length > 0 ? clientAttestationAuthMethods : undefined
+
     const issuerAuthorizationServer = {
       issuer: issuerUrl,
       token_endpoint: joinUriParts(issuerUrl, [config.accessTokenEndpointPath]),
@@ -1382,6 +1395,19 @@ export class OpenId4VcIssuerService {
 
       authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
       authorization_endpoint: joinUriParts(issuerUrl, [config.authorizationEndpoint]),
+
+      // Client Attestation based client authentication (draft 09)
+      token_endpoint_auth_methods_supported: clientAttestationAuthMethodsSupported,
+
+      // Client Attestation (draft 09) signing algorithm support.
+      client_attestation_signing_alg_values_supported: issuerRecord.clientAttestationSigningAlgValuesSupported,
+      client_attestation_pop_signing_alg_values_supported: issuerRecord.clientAttestationPopSigningAlgValuesSupported,
+
+      // Client Attestation PoP challenge (draft 09). Only advertised when enabled, since per §6.1
+      // offering a challenge endpoint makes including a fresh challenge mandatory for clients.
+      challenge_endpoint: config.clientAttestationPopChallengeRequired
+        ? joinUriParts(issuerUrl, [config.clientAttestationChallengeEndpointPath])
+        : undefined,
 
       pushed_authorization_request_endpoint: joinUriParts(issuerUrl, [config.pushedAuthorizationRequestEndpoint]),
       require_pushed_authorization_requests: true,
@@ -1461,6 +1487,135 @@ export class OpenId4VcIssuerService {
 
     if (!verification.isValid) {
       throw new CredoError('Invalid nonce')
+    }
+  }
+
+  /**
+   * Creates a challenge (nonce) to be included in the `challenge` claim of a Client Attestation
+   * PoP JWT, as defined in draft 09 of OAuth 2.0 Attestation-Based Client Authentication.
+   *
+   * The challenge is a stateless signed JWT, following the same approach as {@link createNonce}.
+   */
+  public async createClientAttestationChallenge(agentContext: AgentContext, issuer: OpenId4VcIssuerRecord) {
+    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    const expiresInSeconds = this.openId4VcIssuerConfig.cNonceExpiresInSeconds
+    const expiresAt = utils.addSecondsToDate(new Date(), expiresInSeconds)
+
+    const key = issuer.resolvedAccessTokenPublicJwk
+    const challenge = await jwsService.createJwsCompact(agentContext, {
+      keyId: key.keyId,
+      payload: JwtPayload.fromJson({
+        iss: issuerMetadata.credentialIssuer.credential_issuer,
+        exp: utils.dateToSeconds(expiresAt),
+      }),
+      protectedHeaderOptions: {
+        typ: 'credo+attestation-challenge',
+        kid: key.keyId,
+        alg: key.signatureAlgorithm,
+      },
+    })
+
+    return { challenge, expiresAt, expiresInSeconds }
+  }
+
+  /**
+   * Verifies a Client Attestation PoP challenge previously issued by {@link createClientAttestationChallenge}.
+   */
+  public async verifyClientAttestationChallenge(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    challenge: string
+  ) {
+    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    const key = issuer.resolvedAccessTokenPublicJwk
+    const jwt = Jwt.fromSerializedJwt(challenge)
+    jwt.payload.validate({
+      skewSeconds: agentContext.config.validitySkewSeconds,
+    })
+
+    if (jwt.payload.iss !== issuerMetadata.credentialIssuer.credential_issuer) {
+      throw new CredoError(`Invalid 'iss' claim in client attestation challenge jwt`)
+    }
+    if (jwt.header.typ !== 'credo+attestation-challenge') {
+      throw new CredoError(`Invalid 'typ' claim in client attestation challenge jwt header`)
+    }
+
+    const verification = await jwsService.verifyJws(agentContext, {
+      jws: challenge,
+      jwsSigner: {
+        method: 'jwk',
+        jwk: key,
+      },
+    })
+
+    if (!verification.isValid) {
+      throw new CredoError('Invalid client attestation challenge')
+    }
+  }
+
+  /**
+   * Non-throwing variant of {@link verifyClientAttestationChallenge}. Returns `false` when no challenge
+   * is provided or it is invalid/expired. Used by the token endpoint to decide whether to respond with
+   * a `use_attestation_challenge` error.
+   */
+  public async isClientAttestationPopChallengeValid(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    challenge?: string
+  ): Promise<boolean> {
+    if (!challenge) return false
+    try {
+      await this.verifyClientAttestationChallenge(agentContext, issuer, challenge)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * Enforces the Client Attestation PoP `challenge` (draft 09) on an authorization server verify result
+   * (pushed authorization request / authorization challenge). A `challenge` that is present is always
+   * validated; a missing `challenge` is only an error when the issuer requires it (`required`).
+   */
+  public async verifyClientAttestationPopChallenge(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    options: {
+      clientAttestation?: { clientAttestationPop: { payload: { challenge?: string } } }
+      required: boolean
+    }
+  ) {
+    // No client attestation provided, so there's no pop challenge to enforce. Whether a client
+    // attestation itself is required is handled by the authorization server verify call.
+    if (!options.clientAttestation) return
+
+    const challenge = options.clientAttestation.clientAttestationPop.payload.challenge
+    if (challenge === undefined) {
+      // A missing challenge is only rejected when the issuer requires it.
+      if (options.required) {
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidClient,
+          error_description: `Missing required 'challenge' claim in client attestation pop jwt.`,
+        })
+      }
+      return
+    }
+
+    // A provided challenge is always validated, even when not required.
+    try {
+      await this.verifyClientAttestationChallenge(agentContext, issuer, challenge)
+    } catch (error) {
+      throw new Oauth2ServerErrorResponseError(
+        {
+          error: Oauth2ErrorCodes.InvalidClient,
+          error_description: `Invalid 'challenge' claim in client attestation pop jwt.`,
+        },
+        { cause: error }
+      )
     }
   }
 

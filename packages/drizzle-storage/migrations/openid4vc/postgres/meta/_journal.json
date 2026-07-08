@@ -22,6 +22,13 @@
       "when": 1762540121982,
       "tag": "0002_add_signed_issuer_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783082532530,
+      "tag": "0003_whole_nick_fury",
+      "breakpoints": true
     }
   ]
 }

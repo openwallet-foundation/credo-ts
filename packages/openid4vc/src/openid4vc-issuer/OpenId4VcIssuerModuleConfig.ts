@@ -100,6 +100,19 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   walletAttestationsRequired?: boolean
 
   /**
+   * Whether a Client Attestation PoP `challenge` is required when a client authenticates using a client
+   * attestation, as defined in draft 09 of OAuth 2.0 Attestation-Based Client Authentication.
+   *
+   * When enabled, the authorization server metadata advertises a `challenge_endpoint`, and client
+   * attestation pop JWTs must include a valid `challenge` obtained from that endpoint (per §6.1, offering
+   * a challenge endpoint makes the challenge mandatory). When disabled the challenge endpoint is not
+   * advertised and no challenge is enforced.
+   *
+   * @default false
+   */
+  clientAttestationPopChallengeRequired?: boolean
+
+  /**
    * Whether to allow dynamic issuance sessions based on a credential request.
    *
    * This only works with **external authorization servers** which issue access tokens without
@@ -184,6 +197,11 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
      * @default /challenge
      */
     authorizationChallenge?: string
+
+    /**
+     * @default /client-attestation-challenge
+     */
+    clientAttestationChallenge?: string
 
     /**
      * @default /offers
@@ -379,6 +397,16 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
+   * Whether a Client Attestation PoP `challenge` is required when a client authenticates using a client
+   * attestation (draft 09 of OAuth 2.0 Attestation-Based Client Authentication).
+   *
+   * @default false
+   */
+  public get clientAttestationPopChallengeRequired(): boolean {
+    return this.options.clientAttestationPopChallengeRequired ?? false
+  }
+
+  /**
    * Whether to allow dynamic issuance sessions based on a credential request.
    *
    * This requires an external authorization server which issues access tokens without
@@ -427,6 +455,13 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get authorizationChallengeEndpointPath(): string {
     return this.options.endpoints?.authorizationChallenge ?? '/challenge'
+  }
+
+  /**
+   * @default /client-attestation-challenge
+   */
+  public get clientAttestationChallengeEndpointPath(): string {
+    return this.options.endpoints?.clientAttestationChallenge ?? '/client-attestation-challenge'
   }
 
   /**
