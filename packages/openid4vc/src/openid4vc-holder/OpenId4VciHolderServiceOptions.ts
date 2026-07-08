@@ -489,8 +489,8 @@ export type OpenId4VciProofOfPossessionProofTypes = Record<
        *  by the `keyStorage` and `userAuthentication` values.
        */
       keyAttestationsRequired?: {
-        keyStorage?: (OpenId4VciKeyAttestationLevel | string)[]
-        userAuthentication?: (OpenId4VciKeyAttestationLevel | string)[]
+        keyStorage?: (OpenId4VciKeyAttestationLevel | (string & {}))[]
+        userAuthentication?: (OpenId4VciKeyAttestationLevel | (string & {}))[]
       }
     }
   | undefined
