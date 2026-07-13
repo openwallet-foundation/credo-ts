@@ -1,4 +1,4 @@
-import { Jwt, utils } from '@credo-ts/core'
+import { Jwt, RecordNotFoundError, utils } from '@credo-ts/core'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { type AgentType, createAgentFromModules } from '../../../tests/utils'
 import { openBadgeDcqlQuery, universityDegreePresentationDefinition } from '../../../tests/utilsVp'
@@ -81,6 +81,32 @@ describe('OpenId4VcVerifier', () => {
       })
 
       expect(verificationSession.expiresAt).toEqual(utils.addSecondsToDate(verificationSession.createdAt, 60 * 60))
+    })
+
+    it('deletes a verification session by id', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier.kid,
+        },
+        verifierId: openIdVerifier.verifierId,
+        dcql: {
+          query: openBadgeDcqlQuery,
+        },
+      })
+
+      await verifier.agent.openid4vc.verifier.deleteVerificationSessionById(verificationSession.id)
+
+      await expect(
+        verifier.agent.openid4vc.verifier.getVerificationSessionById(verificationSession.id)
+      ).rejects.toThrow(RecordNotFoundError)
+    })
+
+    it('throws an error when deleting a non-existent verification session', async () => {
+      await expect(verifier.agent.openid4vc.verifier.deleteVerificationSessionById('non-existent-id')).rejects.toThrow(
+        RecordNotFoundError
+      )
     })
   })
 })

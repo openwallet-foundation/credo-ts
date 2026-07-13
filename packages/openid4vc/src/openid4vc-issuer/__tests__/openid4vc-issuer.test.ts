@@ -16,6 +16,7 @@ import {
   JsonTransformer,
   JwsService,
   JwtPayload,
+  RecordNotFoundError,
   SdJwtVcApi,
   TypedArrayEncoder,
   utils,
@@ -1107,5 +1108,27 @@ describe('OpenId4VcIssuer', () => {
     })
 
     expect(issuanceSession.expiresAt).toEqual(utils.addSecondsToDate(issuanceSession.createdAt, 60 * 60))
+  })
+
+  it('deletes an issuance session by id', async () => {
+    const { issuanceSession } = await issuer.openid4vc.issuer.createCredentialOffer({
+      credentialConfigurationIds: [openBadgeCredential.id],
+      issuerId: openId4VcIssuer.issuerId,
+      preAuthorizedCodeFlowConfig: {
+        preAuthorizedCode: '1234567890',
+      },
+    })
+
+    await issuer.openid4vc.issuer.deleteIssuanceSessionById(issuanceSession.id)
+
+    await expect(issuer.openid4vc.issuer.getIssuanceSessionById(issuanceSession.id)).rejects.toThrow(
+      RecordNotFoundError
+    )
+  })
+
+  it('throws an error when deleting a non-existent issuance session', async () => {
+    await expect(issuer.openid4vc.issuer.deleteIssuanceSessionById('non-existent-id')).rejects.toThrow(
+      RecordNotFoundError
+    )
   })
 })
