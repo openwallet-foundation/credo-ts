@@ -137,4 +137,11 @@ export class OpenId4VcIssuerApi {
   public async getIssuanceSessionById(issuanceSessionId: string) {
     return this.openId4VcIssuerService.getIssuanceSessionById(this.agentContext, issuanceSessionId)
   }
+
+  /**
+   * Delete an issuance session record by id.
+   */
+  public async deleteIssuanceSessionById(issuanceSessionId: string) {
+    return this.openId4VcIssuerService.deleteIssuanceSessionById(this.agentContext, issuanceSessionId)
+  }
 }
