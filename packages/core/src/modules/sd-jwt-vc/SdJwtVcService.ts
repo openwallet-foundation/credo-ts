@@ -135,7 +135,7 @@ export class SdJwtVcService {
 
     const sdJwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
-      signer: getSdJwtSigner(agentContext, issuer.publicJwk),
+      signer: getSdJwtSigner(agentContext, issuer.publicJwk, { jwtHeaderAlg: issuer.alg }),
       hashAlg: 'sha-256',
       signAlg: issuer.alg,
     })
@@ -209,7 +209,7 @@ export class SdJwtVcService {
         })
       : undefined
     sdjwt.config({
-      kbSigner: holder ? getSdJwtSigner(agentContext, holder.publicJwk) : undefined,
+      kbSigner: holder ? getSdJwtSigner(agentContext, holder.publicJwk, { jwtHeaderAlg: holder.alg }) : undefined,
       kbSignAlg: holder?.alg,
     })
 
@@ -330,8 +330,14 @@ export class SdJwtVcService {
       const statusValidationDisabled = disableStatusValidation === true || verifyCredentialStatus === false
 
       sdjwt.config({
-        verifier: getSdJwtVerifier(agentContext, issuerWithKey.publicJwk),
-        kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
+        verifier: getSdJwtVerifier(agentContext, issuerWithKey.publicJwk, {
+          jwtHeaderAlg: sdJwtVc.jwt?.header?.alg as string | undefined,
+        }),
+        kbVerifier: holder
+          ? getSdJwtVerifier(agentContext, holder.publicJwk, {
+              jwtHeaderAlg: sdJwtVc.kbJwt?.header?.alg as string | undefined,
+            })
+          : undefined,
         statusVerifier: this.getStatusVerifier(agentContext, {
           matchedTrustedIssuer: trustedIssuer,
           credentialIssuerKey: issuerWithKey.publicJwk,
@@ -674,16 +680,7 @@ export class SdJwtVcService {
     }
   ): Verifier {
     return async (data, signatureBase64Url) => {
-      // No matched trusted issuer (e.g. did default-allow path with no configured trusted issuers).
-      // Preserve the previous behavior of verifying the status list with the credential issuer key.
-      if (!matchedTrustedIssuer) {
-        return getSdJwtVerifier(agentContext, credentialIssuerKey)(data, signatureBase64Url)
-      }
-
-      // A failure to extract or authorize the status list signer is thrown (rather than returning
-      // `false`) so the verification result carries the actual reason instead of a generic
-      // "invalid signature". Only the final signature check returns a boolean.
-      let header: { x5c?: string[]; kid?: string }
+      let header: { alg?: string; x5c?: string[]; kid?: string }
       try {
         header = JsonEncoder.fromBase64Url(data.split('.')[0])
       } catch (error) {
@@ -691,6 +688,18 @@ export class SdJwtVcService {
           cause: error,
         })
       }
+
+      // No matched trusted issuer (e.g. did default-allow path with no configured trusted issuers).
+      // Preserve the previous behavior of verifying the status list with the credential issuer key.
+      if (!matchedTrustedIssuer) {
+        return getSdJwtVerifier(agentContext, credentialIssuerKey, {
+          jwtHeaderAlg: header.alg,
+        })(data, signatureBase64Url)
+      }
+
+      // A failure to extract or authorize the status list signer is thrown (rather than returning
+      // `false`) so the verification result carries the actual reason instead of a generic
+      // "invalid signature". Only the final signature check returns a boolean.
 
       if (matchedTrustedIssuer.method === 'x509') {
         if (!credentialIssuerCertificateChain) {
@@ -735,7 +744,9 @@ export class SdJwtVcService {
         }
 
         const signerJwk = statusListChain[0].publicJwk
-        return getSdJwtVerifier(agentContext, signerJwk)(data, signatureBase64Url)
+        return getSdJwtVerifier(agentContext, signerJwk, {
+          jwtHeaderAlg: header.alg,
+        })(data, signatureBase64Url)
       }
 
       // did: require the status list signer did to equal the trusted issuer did. The signer did is the
@@ -766,7 +777,9 @@ export class SdJwtVcService {
 
       const { verificationMethod } = await resolveDidUrl(agentContext, didUrl)
       const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-      return getSdJwtVerifier(agentContext, publicJwk)(data, signatureBase64Url)
+      return getSdJwtVerifier(agentContext, publicJwk, {
+        jwtHeaderAlg: header.alg,
+      })(data, signatureBase64Url)
     }
   }
 

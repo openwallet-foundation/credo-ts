@@ -4,6 +4,7 @@ import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
 import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { type Jwk, KeyManagementApi, PublicJwk } from '../kms'
+import { isKnownJwaSignatureAlgorithm, type KnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { X509Certificate } from '../x509/X509Certificate'
 import { SdJwtVcError } from './SdJwtVcError'
 import type { SdJwtVcHolderBinding, SdJwtVcIssuer } from './SdJwtVcOptions'
@@ -80,17 +81,19 @@ export async function extractKeyFromHolderBinding(
   throw new CredoError("Unsupported credential holder binding. Only 'did' and 'jwk' are supported at the moment.")
 }
 
-/**
- * @todo validate the JWT header (alg)
- */
-export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Signer {
+export function getSdJwtSigner(
+  agentContext: AgentContext,
+  key: PublicJwk,
+  options?: { jwtHeaderAlg?: string }
+): Signer {
   const kms = agentContext.resolve(KeyManagementApi)
+  const algorithm = resolveSignatureAlgorithm(key, options?.jwtHeaderAlg)
 
   return async (input: string) => {
     const result = await kms.sign({
       keyId: key.keyId,
       data: TypedArrayEncoder.fromUtf8String(input),
-      algorithm: key.signatureAlgorithm,
+      algorithm,
     })
 
     return TypedArrayEncoder.toBase64Url(result.signature)
@@ -98,10 +101,27 @@ export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Sign
 }
 
 /**
- * @todo validate the JWT header (alg)
+ * Resolve the JWA signature algorithm to use for a JWT operation.
  */
-export function getSdJwtVerifier(agentContext: AgentContext, key: PublicJwk): Verifier {
+export function resolveSignatureAlgorithm(key: PublicJwk, jwtHeaderAlg?: string): KnownJwaSignatureAlgorithm {
+  if (
+    jwtHeaderAlg &&
+    isKnownJwaSignatureAlgorithm(jwtHeaderAlg) &&
+    key.supportedSignatureAlgorithms.includes(jwtHeaderAlg)
+  ) {
+    return jwtHeaderAlg
+  }
+
+  return key.signatureAlgorithm
+}
+
+export function getSdJwtVerifier(
+  agentContext: AgentContext,
+  key: PublicJwk,
+  options?: { jwtHeaderAlg?: string }
+): Verifier {
   const kms = agentContext.resolve(KeyManagementApi)
+  const algorithm = resolveSignatureAlgorithm(key, options?.jwtHeaderAlg)
 
   return async (message: string, signatureBase64Url: string) => {
     const result = await kms.verify({
@@ -110,7 +130,7 @@ export function getSdJwtVerifier(agentContext: AgentContext, key: PublicJwk): Ve
         publicJwk: key.toJson(),
       },
       data: TypedArrayEncoder.fromUtf8String(message),
-      algorithm: key.signatureAlgorithm,
+      algorithm,
     })
 
     return result.verified

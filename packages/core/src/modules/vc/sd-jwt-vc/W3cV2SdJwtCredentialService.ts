@@ -83,7 +83,7 @@ export class W3cV2SdJwtCredentialService {
 
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
-      signer: getSdJwtSigner(agentContext, publicJwk),
+      signer: getSdJwtSigner(agentContext, publicJwk, { jwtHeaderAlg: options.alg }),
       hashAlg: options.hashingAlgorithm ?? 'sha-256',
       signAlg: options.alg,
     })
@@ -169,8 +169,14 @@ export class W3cV2SdJwtCredentialService {
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
       sdJwt.config({
-        verifier: getSdJwtVerifier(agentContext, issuerPublicKey),
-        kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
+        verifier: getSdJwtVerifier(agentContext, issuerPublicKey, {
+          jwtHeaderAlg: credential.sdJwt.header.alg,
+        }),
+        kbVerifier: holder
+          ? getSdJwtVerifier(agentContext, holder.publicJwk, {
+              jwtHeaderAlg: credential.sdJwt.kbJwt?.header?.alg as string | undefined,
+            })
+          : undefined,
       })
 
       try {
@@ -235,7 +241,7 @@ export class W3cV2SdJwtCredentialService {
 
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
-      signer: getSdJwtSigner(agentContext, holder.publicJwk),
+      signer: getSdJwtSigner(agentContext, holder.publicJwk, { jwtHeaderAlg: holder.alg }),
       hashAlg: options.hashingAlgorithm ?? 'sha-256',
       signAlg: holder.alg,
     })
@@ -311,8 +317,14 @@ export class W3cV2SdJwtCredentialService {
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
       sdjwt.config({
-        verifier: getSdJwtVerifier(agentContext, proverPublicKey),
-        kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
+        verifier: getSdJwtVerifier(agentContext, proverPublicKey, {
+          jwtHeaderAlg: presentation.sdJwt.header.alg,
+        }),
+        kbVerifier: holder
+          ? getSdJwtVerifier(agentContext, holder.publicJwk, {
+              jwtHeaderAlg: presentation.sdJwt.kbJwt?.header?.alg as string | undefined,
+            })
+          : undefined,
       })
 
       try {
