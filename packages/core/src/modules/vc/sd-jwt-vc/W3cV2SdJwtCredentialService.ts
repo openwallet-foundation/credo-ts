@@ -81,9 +81,11 @@ export class W3cV2SdJwtCredentialService {
     const disclosureFrame = options.disclosureFrame as DisclosureFrame<W3cV2JsonCredential> | undefined
     this.validateDisclosureFrame(disclosureFrame)
 
+    publicJwk.signatureAlgorithm = options.alg
+
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
-      signer: getSdJwtSigner(agentContext, publicJwk, { jwtHeaderAlg: options.alg }),
+      signer: getSdJwtSigner(agentContext, publicJwk),
       hashAlg: options.hashingAlgorithm ?? 'sha-256',
       signAlg: options.alg,
     })
@@ -168,15 +170,12 @@ export class W3cV2SdJwtCredentialService {
       const holderBinding = parseHolderBindingFromCredential(credential.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
+      issuerPublicKey.setAlgFromJwtHeader(credential.sdJwt.header.alg)
+      holder?.publicJwk.setAlgFromJwtHeader(credential.sdJwt.kbJwt?.header?.alg as string | undefined)
+
       sdJwt.config({
-        verifier: getSdJwtVerifier(agentContext, issuerPublicKey, {
-          jwtHeaderAlg: credential.sdJwt.header.alg,
-        }),
-        kbVerifier: holder
-          ? getSdJwtVerifier(agentContext, holder.publicJwk, {
-              jwtHeaderAlg: credential.sdJwt.kbJwt?.header?.alg as string | undefined,
-            })
-          : undefined,
+        verifier: getSdJwtVerifier(agentContext, issuerPublicKey),
+        kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
       })
 
       try {
@@ -239,9 +238,11 @@ export class W3cV2SdJwtCredentialService {
 
     const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
 
+    holder.publicJwk.signatureAlgorithm = holder.alg
+
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
-      signer: getSdJwtSigner(agentContext, holder.publicJwk, { jwtHeaderAlg: holder.alg }),
+      signer: getSdJwtSigner(agentContext, holder.publicJwk),
       hashAlg: options.hashingAlgorithm ?? 'sha-256',
       signAlg: holder.alg,
     })
@@ -316,15 +317,12 @@ export class W3cV2SdJwtCredentialService {
       const holderBinding = parseHolderBindingFromCredential(presentation.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
+      proverPublicKey.setAlgFromJwtHeader(presentation.sdJwt.header.alg)
+      holder?.publicJwk.setAlgFromJwtHeader(presentation.sdJwt.kbJwt?.header?.alg as string | undefined)
+
       sdjwt.config({
-        verifier: getSdJwtVerifier(agentContext, proverPublicKey, {
-          jwtHeaderAlg: presentation.sdJwt.header.alg,
-        }),
-        kbVerifier: holder
-          ? getSdJwtVerifier(agentContext, holder.publicJwk, {
-              jwtHeaderAlg: presentation.sdJwt.kbJwt?.header?.alg as string | undefined,
-            })
-          : undefined,
+        verifier: getSdJwtVerifier(agentContext, proverPublicKey),
+        kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
       })
 
       try {

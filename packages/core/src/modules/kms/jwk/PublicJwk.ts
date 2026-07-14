@@ -7,7 +7,11 @@ import { KeyManagementError } from '../error/KeyManagementError'
 import { legacyKeyIdFromPublicJwk } from '../legacy'
 import { asymmetricPublicJwkMatches } from './equals'
 import { getJwkHumanDescription } from './humanDescription'
-import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
+import {
+  isKnownJwaSignatureAlgorithm,
+  type KnownJwaKeyAgreementAlgorithm,
+  type KnownJwaSignatureAlgorithm,
+} from './jwa'
 import { calculateJwkThumbprint } from './jwkThumbprint'
 import { assertJwkAsymmetric, type KmsJwkPublicAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
 import {
@@ -207,6 +211,29 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     }
 
     return alg as this['supportedSignatureAlgorithms'][number]
+  }
+
+  public set signatureAlgorithm(alg: KnownJwaSignatureAlgorithm) {
+    const supportedSignatureAlgorithms = this.jwk.supportedSignatureAlgorithms ?? []
+
+    if (!supportedSignatureAlgorithms.some((supportedAlg) => supportedAlg === alg)) {
+      throw new KeyManagementError(`${this.jwkTypeHumanDescription} does not support signature alg '${alg}'.`)
+    }
+
+    this.jwk.jwk.alg = alg
+  }
+
+  /**
+   * Set the signature algorithm from a JWT header `alg` value when it is a known
+   * JWA algorithm supported by this key. Otherwise leaves the key unchanged.
+   */
+  public setAlgFromJwtHeader(jwtHeaderAlg?: string) {
+    if (!jwtHeaderAlg || !isKnownJwaSignatureAlgorithm(jwtHeaderAlg)) return
+
+    const supportedSignatureAlgorithms = this.jwk.supportedSignatureAlgorithms ?? []
+    if (!supportedSignatureAlgorithms.some((supportedAlg) => supportedAlg === jwtHeaderAlg)) return
+
+    this.jwk.jwk.alg = jwtHeaderAlg
   }
 
   public assertSignatureAlgorithmSupported(
