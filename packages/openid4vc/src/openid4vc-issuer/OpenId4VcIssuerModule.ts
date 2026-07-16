@@ -12,6 +12,7 @@ import {
   configureAccessTokenEndpoint,
   configureAuthorizationChallengeEndpoint,
   configureAuthorizationEndpoint,
+  configureClientAttestationChallengeEndpoint,
   configureCredentialEndpoint,
   configureCredentialOfferEndpoint,
   configureDeferredCredentialEndpoint,
@@ -193,6 +194,7 @@ export class OpenId4VcIssuerModule implements Module {
     configureCredentialOfferEndpoint(issuerEndpointsRouter, this.config)
     configureAccessTokenEndpoint(issuerEndpointsRouter, this.config)
     configureAuthorizationChallengeEndpoint(issuerEndpointsRouter, this.config)
+    configureClientAttestationChallengeEndpoint(issuerEndpointsRouter, this.config)
     configureCredentialEndpoint(issuerEndpointsRouter, this.config)
     configureDeferredCredentialEndpoint(issuerEndpointsRouter, this.config)
     configurePushedAuthorizationRequestEndpoint(issuerEndpointsRouter, this.config)

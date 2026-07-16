@@ -192,25 +192,27 @@ export function getOid4vcJwtVerifyCallback(
       throw new CredoError(`Unsupported jwa signatre algorithm '${alg}'`)
     }
 
-    const jwsSigner: JwsSignerWithJwk | undefined =
-      signer.method === 'did'
-        ? {
-            method: 'did',
-            didUrl: signer.didUrl,
-            jwk: await getPublicJwkFromDid(agentContext, signer.didUrl),
-          }
-        : signer.method === 'jwk'
-          ? {
-              method: 'jwk',
-              jwk: Kms.PublicJwk.fromUnknown(signer.publicJwk),
-            }
-          : signer.method === 'x5c'
-            ? {
-                method: 'x5c',
-                x5c: signer.x5c,
-                jwk: X509Certificate.fromEncodedCertificate(signer.x5c[0]).publicJwk,
-              }
-            : undefined
+    let jwsSigner: JwsSignerWithJwk | undefined
+
+    if (signer.method === 'did') {
+      const didPublicJwk = await getPublicJwkFromDid(agentContext, signer.didUrl)
+      jwsSigner = {
+        method: 'did',
+        didUrl: signer.didUrl,
+        jwk: didPublicJwk,
+      }
+    } else if (signer.method === 'jwk') {
+      jwsSigner = {
+        method: 'jwk',
+        jwk: Kms.PublicJwk.fromUnknown(signer.publicJwk),
+      }
+    } else if (signer.method === 'x5c') {
+      jwsSigner = {
+        method: 'x5c',
+        x5c: signer.x5c,
+        jwk: X509Certificate.fromEncodedCertificate(signer.x5c[0]).publicJwk,
+      }
+    }
 
     if (!jwsSigner) {
       throw new CredoError(`Unable to verify jws with unsupported jws signer method '${signer.method}'`)
