@@ -1222,6 +1222,10 @@ export class OpenId4VcIssuerService {
     return this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSessionId)
   }
 
+  public async deleteIssuanceSessionById(agentContext: AgentContext, issuanceSessionId: string) {
+    await this.openId4VcIssuanceSessionRepository.deleteById(agentContext, issuanceSessionId)
+  }
+
   public async getAllIssuers(agentContext: AgentContext) {
     return this.openId4VcIssuerRepository.getAll(agentContext)
   }
