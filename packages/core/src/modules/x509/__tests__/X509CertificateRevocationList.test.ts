@@ -261,5 +261,23 @@ describe('X509CertificateRevocationList', () => {
       const crl = X509CertificateRevocationList.fromRaw(crlBytes)
       expect(() => crl.isExtensionCritical(X509CrlExtensionIdentifier.CrlNumber)).toThrow(X509Error)
     })
+
+    it('exposes the ids of critical extensions only', async () => {
+      const criticalCrl = await X509Service.createCertificateRevocationList(agentContext, {
+        authorityKey: issuerKey,
+        issuer: issuerCertificate.subject,
+        validity: { thisUpdate: lastMonth, nextUpdate: nextMonth },
+        extensions: { crlNumber: { value: 1, markAsCritical: true } },
+      })
+      expect(criticalCrl.criticalExtensionIds).toContain(X509CrlExtensionIdentifier.CrlNumber)
+
+      const nonCriticalCrl = await X509Service.createCertificateRevocationList(agentContext, {
+        authorityKey: issuerKey,
+        issuer: issuerCertificate.subject,
+        validity: { thisUpdate: lastMonth, nextUpdate: nextMonth },
+        extensions: { crlNumber: { value: 1 } },
+      })
+      expect(nonCriticalCrl.criticalExtensionIds).not.toContain(X509CrlExtensionIdentifier.CrlNumber)
+    })
   })
 })

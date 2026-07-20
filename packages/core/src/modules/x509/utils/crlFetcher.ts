@@ -1,8 +1,8 @@
 import type { AgentContext } from '../../../agent'
-import { TypedArrayEncoder } from '../../../utils'
 import { fetchWithTimeout } from '../../../utils/fetch'
 import { CacheModuleConfig } from '../../cache'
 import { X509Error } from '../X509Error'
+import { isX509CrlSummary, type X509CrlSummary } from './crlSummary'
 
 export interface CrlFetchOptions {
   url: string
@@ -33,16 +33,19 @@ const DEFAULT_MAX_CRL_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
  */
 const DEFAULT_TIMEOUT_MILLISECONDS = 5000
 
-function crlCacheKey(url: string): string {
-  return `x509:crl:${url}`
+// Versioned so future summary shape changes can bump the key. Distinct from the legacy
+// `x509:crl:${url}` raw-bytes key, which this version no longer reads or writes but which older
+// Credo versions sharing the cache may still use.
+function crlSummaryCacheKey(url: string): string {
+  return `x509:crl-summary:v1:${url}`
 }
 
 /**
  * Fetches a CRL from a given URL with size limit and timeout enforcement.
  *
  * This does NOT cache: caching is the responsibility of the caller, which should only cache a CRL
- * after it has been verified (see {@link setCachedCrl}), so unverified or expired CRLs are never
- * persisted.
+ * after it has been verified (see {@link setCachedCrlSummary}), so unverified or expired CRLs are
+ * never persisted.
  *
  * @throws {X509Error} If the fetch fails, returns a non-OK status, or exceeds the size limit
  */
@@ -76,28 +79,29 @@ export async function fetchCrl(options: CrlFetchOptions): Promise<Uint8Array> {
 }
 
 /**
- * Return the cached (and previously verified) CRL bytes for a URL, or `null` if not cached.
+ * Return the cached verified CRL summary for a URL, or `null` if not cached. Values that do not
+ * match the expected summary shape are treated as a cache miss, never as an error.
  */
-export async function getCachedCrl(agentContext: AgentContext, url: string): Promise<Uint8Array | null> {
+export async function getCachedCrlSummary(agentContext: AgentContext, url: string): Promise<X509CrlSummary | null> {
   const cache = agentContext.resolve(CacheModuleConfig).cache
-  const cached = await cache.get<string>(agentContext, crlCacheKey(url)).catch(() => null)
-  return cached ? TypedArrayEncoder.fromBase64(cached) : null
+  const cached = await cache.get<unknown>(agentContext, crlSummaryCacheKey(url)).catch(() => null)
+  return isX509CrlSummary(cached) ? cached : null
 }
 
 /**
- * Cache verified CRL bytes for a URL.
+ * Cache the summary of a verified CRL for a URL.
  *
- * Callers must only cache CRLs that have passed verification (signature, issuer, validity window),
- * and should derive `expiresInSeconds` from the CRL's `nextUpdate` so an expired CRL is never
- * served from the cache.
+ * Callers must only cache summaries derived from CRLs that have passed verification, and should
+ * derive `expiresInSeconds` from the CRL's `nextUpdate` so an expired CRL is never served from the
+ * cache.
  */
-export async function setCachedCrl(
+export async function setCachedCrlSummary(
   agentContext: AgentContext,
   url: string,
-  data: Uint8Array,
+  summary: X509CrlSummary,
   expiresInSeconds: number
 ): Promise<void> {
   if (expiresInSeconds <= 0) return
   const cache = agentContext.resolve(CacheModuleConfig).cache
-  await cache.set(agentContext, crlCacheKey(url), TypedArrayEncoder.toBase64(data), expiresInSeconds).catch(() => null)
+  await cache.set(agentContext, crlSummaryCacheKey(url), summary, expiresInSeconds).catch(() => null)
 }
