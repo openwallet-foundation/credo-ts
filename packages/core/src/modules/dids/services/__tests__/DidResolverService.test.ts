@@ -24,6 +24,13 @@ const recordResolverMock = {
   resolve: vi.fn(),
 } as DidResolver
 
+const webResolverMock = {
+  allowsCaching: true,
+  allowsLocalDidRecord: false,
+  supportedMethods: ['web'],
+  resolve: vi.fn(),
+} as DidResolver
+
 const didRepositoryMock = {
   getCreatedDids: vi.fn(),
 } as unknown as DidRepository
@@ -37,7 +44,7 @@ const agentContext = getAgentContext({
 describe('DidResolverService', () => {
   const didResolverService = new DidResolverService(
     agentConfig.logger,
-    new DidsModuleConfig({ resolvers: [didResolverMock, recordResolverMock] }),
+    new DidsModuleConfig({ resolvers: [didResolverMock, recordResolverMock, webResolverMock] }),
     didRepositoryMock
   )
 
@@ -120,6 +127,86 @@ describe('DidResolverService', () => {
 
     // Still called once because served from cache
     expect(didResolverMock.resolve).toHaveBeenCalledTimes(1)
+  })
+
+  it('should not return cached did document when resolved from a different agent context sharing the cache', async () => {
+    const returnValue = {
+      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
+      didDocumentMetadata: {},
+      didResolutionMetadata: {
+        contentType: 'application/did+ld+json',
+      },
+    }
+    mockFunction(didResolverMock.resolve).mockResolvedValue(returnValue)
+
+    const otherAgentContext = getAgentContext({
+      contextCorrelationId: 'other-tenant',
+      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
+    })
+
+    await didResolverService.resolve(agentContext, 'did:key:cross-context')
+    const result = await didResolverService.resolve(otherAgentContext, 'did:key:cross-context')
+
+    expect(result.didResolutionMetadata.servedFromCache).toBe(false)
+    expect(didResolverMock.resolve).toHaveBeenCalledTimes(2)
+  })
+
+  it('should return cached did document from a different agent context for a public did method', async () => {
+    const returnValue = {
+      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
+      didDocumentMetadata: {},
+      didResolutionMetadata: {
+        contentType: 'application/did+ld+json',
+      },
+    }
+    mockFunction(webResolverMock.resolve).mockResolvedValue(returnValue)
+
+    const otherAgentContext = getAgentContext({
+      contextCorrelationId: 'other-tenant',
+      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
+    })
+
+    await didResolverService.resolve(agentContext, 'did:web:cross-context.example')
+    const result = await didResolverService.resolve(otherAgentContext, 'did:web:cross-context.example')
+
+    expect(result.didResolutionMetadata.servedFromCache).toBe(true)
+    expect(webResolverMock.resolve).toHaveBeenCalledTimes(1)
+  })
+
+  it('should resolve again after cache invalidation for a public did method', async () => {
+    const returnValue = {
+      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
+      didDocumentMetadata: {},
+      didResolutionMetadata: {
+        contentType: 'application/did+ld+json',
+      },
+    }
+    mockFunction(webResolverMock.resolve).mockResolvedValue(returnValue)
+
+    await didResolverService.resolve(agentContext, 'did:web:invalidated.example')
+    await didResolverService.invalidateCacheForDid(agentContext, 'did:web:invalidated.example')
+
+    const result = await didResolverService.resolve(agentContext, 'did:web:invalidated.example')
+    expect(result.didResolutionMetadata.servedFromCache).toBe(false)
+    expect(webResolverMock.resolve).toHaveBeenCalledTimes(2)
+  })
+
+  it('should resolve again after the cache is invalidated for the did', async () => {
+    const returnValue = {
+      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
+      didDocumentMetadata: {},
+      didResolutionMetadata: {
+        contentType: 'application/did+ld+json',
+      },
+    }
+    mockFunction(didResolverMock.resolve).mockResolvedValue(returnValue)
+
+    await didResolverService.resolve(agentContext, 'did:key:invalidated')
+    await didResolverService.invalidateCacheForDid(agentContext, 'did:key:invalidated')
+
+    const result = await didResolverService.resolve(agentContext, 'did:key:invalidated')
+    expect(result.didResolutionMetadata.servedFromCache).toBe(false)
+    expect(didResolverMock.resolve).toHaveBeenCalledTimes(2)
   })
 
   it('should return local did document from did record when enabled on resolver and present in storage', async () => {

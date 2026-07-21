@@ -1,9 +1,10 @@
 import nock from 'nock'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getAgentContext } from '../../../../tests/helpers'
 import type { Agent } from '../../../agent/Agent'
 import type { AgentContext } from '../../../agent/context'
-import type { InMemoryLruCache } from '../../cache'
+import { CacheModuleConfig, type InMemoryLruCache } from '../../cache'
 import { fetchCrl, getCachedCrlSummary, setCachedCrlSummary } from '../utils/crlFetcher'
 import type { X509CrlSummary } from '../utils/crlSummary'
 import { X509Error } from '../X509Error'
@@ -92,7 +93,9 @@ describe('CRL summary cache helpers', () => {
 
     await setCachedCrlSummary(agentContext, URL_A, crlSummary, 1234)
 
-    expect(setSpy).toHaveBeenCalledWith(agentContext, `x509:crl-summary:v1:${URL_A}`, crlSummary, 1234)
+    expect(setSpy).toHaveBeenCalledWith(agentContext, `x509:crl-summary:v1:${URL_A}`, crlSummary, 1234, {
+      scope: 'global',
+    })
     setSpy.mockRestore()
   })
 
@@ -107,10 +110,16 @@ describe('CRL summary cache helpers', () => {
   })
 
   it('treats a cached value that is not a valid summary as a miss', async () => {
-    await cache.set(agentContext, `x509:crl-summary:v1:${URL_A}`, 'not a summary', 3600)
+    await cache.set(agentContext, `x509:crl-summary:v1:${URL_A}`, 'not a summary', 3600, { scope: 'global' })
     expect(await getCachedCrlSummary(agentContext, URL_A)).toBeNull()
 
-    await cache.set(agentContext, `x509:crl-summary:v1:${URL_A}`, { ...crlSummary, serialNumbers: ['0a', '0b'] }, 3600)
+    await cache.set(
+      agentContext,
+      `x509:crl-summary:v1:${URL_A}`,
+      { ...crlSummary, serialNumbers: ['0a', '0b'] },
+      3600,
+      { scope: 'global' }
+    )
     expect(await getCachedCrlSummary(agentContext, URL_A)).toBeNull()
   })
 
@@ -119,5 +128,16 @@ describe('CRL summary cache helpers', () => {
 
     expect(await getCachedCrlSummary(agentContext, URL_A)).toBeNull()
     getSpy.mockRestore()
+  })
+
+  it('shares a cached summary across agent contexts', async () => {
+    const otherAgentContext = getAgentContext({
+      contextCorrelationId: 'other-tenant',
+      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
+    })
+
+    await setCachedCrlSummary(agentContext, URL_A, crlSummary, 3600)
+
+    expect(await getCachedCrlSummary(otherAgentContext, URL_A)).toEqual(crlSummary)
   })
 })

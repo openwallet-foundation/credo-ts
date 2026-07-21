@@ -77,7 +77,7 @@ export class DidsModuleConfig {
   }
 
   /** See {@link DidsModuleConfigOptions.resolvers} */
-  public get resolvers() {
+  public get resolvers(): DidResolver[] {
     // This prevents creating new instances every time this property is accessed
     if (this._resolvers) return this._resolvers
 

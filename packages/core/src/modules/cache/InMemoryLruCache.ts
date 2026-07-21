@@ -1,6 +1,6 @@
 import LRUMap from 'lru_map'
 import type { AgentContext } from '../../agent/context'
-import type { Cache } from './Cache'
+import type { Cache, CacheOptions } from './Cache'
 
 export interface InMemoryLruCacheOptions {
   /** The maximum number of entries allowed in the cache */
@@ -10,8 +10,13 @@ export interface InMemoryLruCacheOptions {
 /**
  * In memory LRU cache.
  *
- * This cache can be used with multiple agent context instances, however all instances will share the same cache.
- * If you need the cache to be isolated per agent context instance, make sure to use a different cache implementation.
+ * This cache can be used with multiple agent context instances. Keys are namespaced by the
+ * `contextCorrelationId` of the agent context by default, and by `global:` for entries using the
+ * `'global'` scope. Note that separate root agent instances sharing this cache also share the
+ * `default` context namespace.
+ *
+ * The `limit` applies to the cache as a whole, spanning all contexts and the global scope, so a
+ * busy context can evict entries of other contexts. `clear()` also clears all scopes and contexts.
  */
 export class InMemoryLruCache implements Cache {
   private readonly cache: LRUMap.LRUMap<string, CacheItem>
@@ -20,8 +25,17 @@ export class InMemoryLruCache implements Cache {
     this.cache = new LRUMap.LRUMap<string, CacheItem>(limit)
   }
 
-  public async get<CacheValue>(_agentContext: AgentContext, key: string) {
+  private getNamespacedKey(agentContext: AgentContext, key: string, options?: CacheOptions) {
+    if (options?.scope === 'global') {
+      return `global:${key}`
+    }
+
+    return `${agentContext.contextCorrelationId}:${key}`
+  }
+
+  public async get<CacheValue>(agentContext: AgentContext, key: string, options?: CacheOptions) {
     this.removeExpiredItems()
+    key = this.getNamespacedKey(agentContext, key, options)
     const item = this.cache.get(key)
 
     // Does not exist
@@ -31,10 +45,11 @@ export class InMemoryLruCache implements Cache {
   }
 
   public async set<CacheValue>(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     key: string,
     value: CacheValue,
-    expiresInSeconds?: number
+    expiresInSeconds?: number,
+    options?: CacheOptions
   ): Promise<void> {
     this.removeExpiredItems()
     let expiresDate: Date | undefined
@@ -44,6 +59,7 @@ export class InMemoryLruCache implements Cache {
       expiresDate.setSeconds(expiresDate.getSeconds() + expiresInSeconds)
     }
 
+    key = this.getNamespacedKey(agentContext, key, options)
     this.cache.set(key, {
       expiresAt: expiresDate?.getTime(),
       value,
@@ -54,8 +70,9 @@ export class InMemoryLruCache implements Cache {
     this.cache.clear()
   }
 
-  public async remove(_agentContext: AgentContext, key: string): Promise<void> {
+  public async remove(agentContext: AgentContext, key: string, options?: CacheOptions): Promise<void> {
     this.removeExpiredItems()
+    key = this.getNamespacedKey(agentContext, key, options)
     this.cache.delete(key)
   }
 

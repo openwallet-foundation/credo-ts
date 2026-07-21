@@ -74,7 +74,7 @@ export class IndyVdrPoolService {
     const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
     const cacheKey = `IndyVdrPoolService:${did}`
 
-    const cachedNymResponse = await cache.get<CachedDidResponse>(agentContext, cacheKey)
+    const cachedNymResponse = await cache.get<CachedDidResponse>(agentContext, cacheKey, { scope: 'global' })
     const pool = this.pools.find((pool) => pool.indyNamespace === cachedNymResponse?.indyNamespace)
 
     // If we have the nym response with associated pool in the cache, we'll use that
@@ -121,13 +121,20 @@ export class IndyVdrPoolService {
       value = productionOrNonProduction[0].value
     }
 
-    await cache.set(agentContext, cacheKey, {
-      nymResponse: {
-        did: value.did.nymResponse.did,
-        verkey: value.did.nymResponse.verkey,
+    await cache.set(
+      agentContext,
+      cacheKey,
+      {
+        nymResponse: {
+          did: value.did.nymResponse.did,
+          verkey: value.did.nymResponse.verkey,
+        },
+        indyNamespace: value.did.indyNamespace,
       },
-      indyNamespace: value.did.indyNamespace,
-    })
+      undefined,
+      // Which ledger a public did lives on is not context specific
+      { scope: 'global' }
+    )
     return { pool: value.pool, nymResponse: value.did.nymResponse }
   }
 

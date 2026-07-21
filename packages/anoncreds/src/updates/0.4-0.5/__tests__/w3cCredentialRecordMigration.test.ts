@@ -377,12 +377,13 @@ async function testMigration(
     expect(inMemoryLruCache.get).toHaveBeenCalledTimes(
       options.shouldBeInCache === 'sov' || !options.shouldBeInCache ? 2 : 1
     )
-    expect(inMemoryLruCache.get).toHaveBeenCalledWith(
-      agent.context,
-      options.shouldBeInCache === 'sov' || !options.shouldBeInCache
-        ? `IndySdkPoolService:${issuerId}`
-        : `IndyVdrPoolService:${issuerId}`
-    )
+    if (options.shouldBeInCache === 'sov' || !options.shouldBeInCache) {
+      expect(inMemoryLruCache.get).toHaveBeenCalledWith(agent.context, `IndySdkPoolService:${issuerId}`)
+    } else {
+      expect(inMemoryLruCache.get).toHaveBeenCalledWith(agent.context, `IndyVdrPoolService:${issuerId}`, {
+        scope: 'global',
+      })
+    }
   } else {
     expect(inMemoryLruCache.get).toHaveBeenCalledTimes(0)
   }

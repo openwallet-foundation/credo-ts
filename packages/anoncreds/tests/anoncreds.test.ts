@@ -343,7 +343,8 @@ describe('AnonCreds API', () => {
         // Verify it was cached
         const cached = await cache.get(
           agent.context,
-          'anoncreds:resolver:schema:7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0'
+          'anoncreds:resolver:schema:7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
+          { scope: 'global' }
         )
         expect(cached).toBeDefined()
         expect(cached).toMatchObject({
@@ -401,7 +402,8 @@ describe('AnonCreds API', () => {
         // Verify it was cached
         const cached = await cache.get(
           agent.context,
-          'anoncreds:resolver:credentialDefinition:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG'
+          'anoncreds:resolver:credentialDefinition:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG',
+          { scope: 'global' }
         )
         expect(cached).toBeDefined()
         expect(cached).toMatchObject({
@@ -463,7 +465,8 @@ describe('AnonCreds API', () => {
         // Verify it was cached
         const cached = await cache.get(
           agent.context,
-          'anoncreds:resolver:revocationRegistryDefinition:VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG'
+          'anoncreds:resolver:revocationRegistryDefinition:VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG',
+          { scope: 'global' }
         )
         expect(cached).toBeDefined()
         expect(cached).toMatchObject({
@@ -547,7 +550,8 @@ describe('AnonCreds API', () => {
         // Verify it was cached
         const cached = await cache.get(
           agent.context,
-          `anoncreds:resolver:revocationStatusList:${revRegDefId}:${timestamp}`
+          `anoncreds:resolver:revocationStatusList:${revRegDefId}:${timestamp}`,
+          { scope: 'global' }
         )
         expect(cached).toBeDefined()
         expect(cached).toMatchObject({
