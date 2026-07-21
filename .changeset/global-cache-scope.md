@@ -4,7 +4,7 @@
 "@credo-ts/anoncreds": minor
 ---
 
-feat: the `Cache` interface `get`, `set` and `remove` methods now accept a `CacheOptions` parameter with a `scope` that is either `'context'` (default) or `'global'`, allowing globally reusable data to be shared across agent contexts. The X.509 CRL summary cache, the Indy VDR pool lookup cache and the AnonCreds registry cache use the global scope, as they only hold publicly anchored data. The DID resolver caches documents of public did methods (web, indy, sov, cheqd, hedera, webvh) in the global scope, and documents of other did methods per agent context.
+feat: the `Cache` interface `get`, `set` and `remove` methods now accept a `CacheOptions` parameter with a `scope` that is either `'context'` (default) or `'global'`, allowing globally reusable data to be shared across agent contexts. The X.509 CRL summary cache, the Indy VDR pool lookup cache and the AnonCreds registry cache use the global scope, as they only hold publicly anchored data. The DID resolver caches documents of public did methods in the global scope, and documents of other did methods per agent context; the list of public did methods can be configured with the new `publicDidMethods` option of the dids module (default `['web', 'indy', 'sov', 'cheqd', 'hedera', 'webvh']`).
 
 Behavior changes to be aware of:
 

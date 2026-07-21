@@ -10,6 +10,8 @@ import {
   WebDidResolver,
 } from './methods'
 
+const DEFAULT_PUBLIC_DID_METHODS = ['web', 'indy', 'sov', 'cheqd', 'hedera', 'webvh']
+
 /**
  * DidsModuleConfigOptions defines the interface for the options of the DidsModuleConfig class.
  * This can contain optional parameters that have default values in the config class itself.
@@ -38,6 +40,16 @@ export interface DidsModuleConfigOptions {
    * @default [WebDidResolver, KeyDidResolver, PeerDidResolver, JwkDidResolver]
    */
   resolvers?: DidResolver[]
+
+  /**
+   * Did methods whose documents live in public, context-independent sources: resolving them
+   * yields the same result in any agent context, so their documents can be cached in the global
+   * scope shared across all agent contexts (when the resolver allows caching). Documents of
+   * other did methods are cached per agent context.
+   *
+   * @default ['web', 'indy', 'sov', 'cheqd', 'hedera', 'webvh']
+   */
+  publicDidMethods?: string[]
 }
 
 export class DidsModuleConfig {
@@ -106,5 +118,10 @@ export class DidsModuleConfig {
 
   public addResolver(resolver: DidResolver) {
     this.resolvers.push(resolver)
+  }
+
+  /** See {@link DidsModuleConfigOptions.publicDidMethods} */
+  public get publicDidMethods(): string[] {
+    return this.options.publicDidMethods ?? DEFAULT_PUBLIC_DID_METHODS
   }
 }

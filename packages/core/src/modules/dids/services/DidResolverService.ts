@@ -12,13 +12,6 @@ import { parseDid } from '../domain/parse'
 import { DidRepository } from '../repository'
 import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
 
-/**
- * Did methods whose documents live in public, context-independent sources: resolving them yields
- * the same result in any agent context, so their documents are cached in the global scope shared
- * across all agent contexts. Documents of other did methods are cached per agent context.
- */
-const PUBLIC_DID_METHODS = ['web', 'indy', 'sov', 'cheqd', 'hedera', 'webvh']
-
 @injectable()
 export class DidResolverService {
   private logger: Logger
@@ -182,7 +175,7 @@ export class DidResolverService {
   private getCacheKeyAndScope(parsed: ParsedDid): { cacheKey: string; cacheScope: 'context' | 'global' } {
     return {
       cacheKey: `did:resolver:${parsed.did}`,
-      cacheScope: PUBLIC_DID_METHODS.includes(parsed.method) ? 'global' : 'context',
+      cacheScope: this.didsModuleConfig.publicDidMethods.includes(parsed.method) ? 'global' : 'context',
     }
   }
 

@@ -173,6 +173,34 @@ describe('DidResolverService', () => {
     expect(webResolverMock.resolve).toHaveBeenCalledTimes(1)
   })
 
+  it('should share cached did documents across agent contexts for custom configured public did methods', async () => {
+    const returnValue = {
+      didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
+      didDocumentMetadata: {},
+      didResolutionMetadata: {
+        contentType: 'application/did+ld+json',
+      },
+    }
+    mockFunction(didResolverMock.resolve).mockResolvedValue(returnValue)
+
+    const customDidResolverService = new DidResolverService(
+      agentConfig.logger,
+      new DidsModuleConfig({ resolvers: [didResolverMock], publicDidMethods: ['key'] }),
+      didRepositoryMock
+    )
+
+    const otherAgentContext = getAgentContext({
+      contextCorrelationId: 'other-tenant',
+      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
+    })
+
+    await customDidResolverService.resolve(agentContext, 'did:key:custom-public')
+    const result = await customDidResolverService.resolve(otherAgentContext, 'did:key:custom-public')
+
+    expect(result.didResolutionMetadata.servedFromCache).toBe(true)
+    expect(didResolverMock.resolve).toHaveBeenCalledTimes(1)
+  })
+
   it('should resolve again after cache invalidation for a public did method', async () => {
     const returnValue = {
       didDocument: JsonTransformer.fromJSON(didKeyEd25519Fixture, DidDocument),
