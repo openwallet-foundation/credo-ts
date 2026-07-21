@@ -1,13 +1,18 @@
 import nock from 'nock'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest'
 
 import type { Agent } from '../../../agent/Agent'
 import type { AgentContext } from '../../../agent/context'
 import type { InMemoryLruCache } from '../../cache'
 import type { KeyManagementApi, PublicJwk } from '../../kms'
+import { getCachedCrlSummary } from '../utils/crlFetcher'
 import { X509Certificate, X509KeyUsage } from '../X509Certificate'
-import { X509CertificateRevocationListEntryReason } from '../X509CertificateRevocationList'
+import {
+  X509CertificateRevocationList,
+  X509CertificateRevocationListEntryReason,
+} from '../X509CertificateRevocationList'
 import { X509RevocationReason } from '../X509CrlDistributionPoint'
+import { X509ModuleConfig } from '../X509ModuleConfig'
 import { X509RevocationService } from '../X509RevocationService'
 import { X509Service } from '../X509Service'
 import type { X509CreateCertificateRevocationListOptions } from '../X509ServiceOptions'
@@ -162,7 +167,7 @@ describe('X509RevocationService', () => {
 
   it('detects a revoked certificate and fails in both SoftFail and Require modes', async () => {
     const leaf = await createLeaf({ serialNumber: '1004', crlDistributionPoints: { urls: [FULL_URL] } })
-    // The CRL bytes are cached after the first fetch, so a single interceptor covers both checks.
+    // A verified summary is cached after the first check, so a single interceptor covers both checks.
     mockCrl(
       FULL_URL,
       await crlBytes({
@@ -590,14 +595,8 @@ describe('X509RevocationService', () => {
       const leaf = await createLeaf({ serialNumber: '4008', crlDistributionPoints: { urls: [FULL_URL] } })
       // A CRL Number marked critical violates RFC 5280 §5.2.3 (it MUST be non-critical) and is a
       // critical extension the engine must treat as unrecognized-for-criticality, so the CRL is
-      // unusable. A failed-to-verify CRL is not cached, so both checks fetch.
-      mockCrl(
-        FULL_URL,
-        await crlBytes({ entries: [], extensions: { crlNumber: { value: 1, markAsCritical: true } } }),
-        {
-          times: 2,
-        }
-      )
+      // unusable. The CRL itself verifies, so it is cached and the second check reuses it.
+      mockCrl(FULL_URL, await crlBytes({ entries: [], extensions: { crlNumber: { value: 1, markAsCritical: true } } }))
 
       const required = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
       expect(required.isValid).toBe(false)
@@ -648,6 +647,285 @@ describe('X509RevocationService', () => {
       const result = await checkRevocation(leaf, issuerWithCrlSign, { mode: X509RevocationCheckMode.Require })
       expect(result.isValid).toBe(true)
       expect(result.isRevoked).toBe(false)
+    })
+  })
+
+  describe('verified CRL summary cache', () => {
+    let fromRawSpy: MockInstance
+
+    beforeEach(() => {
+      fromRawSpy = vi.spyOn(X509CertificateRevocationList, 'fromRaw')
+    })
+
+    afterEach(() => {
+      fromRawSpy.mockRestore()
+    })
+
+    it('reuses the cached summary without fetching or parsing', async () => {
+      const leaf = await createLeaf({ serialNumber: '5001', crlDistributionPoints: { urls: [FULL_URL] } })
+      // A single interceptor: the second check must not fetch.
+      mockCrl(FULL_URL, await crlBytes({ entries: [{ serialNumber: 'dead' }] }))
+
+      const first = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(first.isValid).toBe(true)
+      expect(fromRawSpy).toHaveBeenCalledTimes(1)
+
+      const second = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(second).toEqual(first)
+      // No additional parse: the check ran entirely from the cached summary.
+      expect(fromRawSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not reuse a summary for an issuer certificate lacking cRLSign', async () => {
+      // Same subject and key as the issuer that produced the summary, but a key usage without
+      // cRLSign: the fast-path gate re-evaluates the cRLSign check on the provided certificate, so
+      // the check falls back to a fresh fetch and full verification, failing on the missing cRLSign
+      // key usage.
+      const issuerWithCrlSign = await X509Service.createCertificate(agentContext, {
+        serialNumber: '0d',
+        issuer: { commonName: 'Issuer CA' },
+        authorityKey: issuerKey,
+        validity: { notBefore: lastMonth, notAfter: nextMonth },
+        extensions: {
+          basicConstraints: { ca: true },
+          keyUsage: { usages: [X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign] },
+        },
+      })
+      const issuerWithoutCrlSign = await X509Service.createCertificate(agentContext, {
+        serialNumber: '0e',
+        issuer: { commonName: 'Issuer CA' },
+        authorityKey: issuerKey,
+        validity: { notBefore: lastMonth, notAfter: nextMonth },
+        extensions: { basicConstraints: { ca: true }, keyUsage: { usages: [X509KeyUsage.KeyCertSign] } },
+      })
+      const leaf = await createLeaf({ serialNumber: '5003', crlDistributionPoints: { urls: [FULL_URL] } })
+      // The gate miss refetches, so both checks fetch.
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }), { times: 2 })
+
+      const first = await checkRevocation(leaf, issuerWithCrlSign, { mode: X509RevocationCheckMode.Require })
+      expect(first.isValid).toBe(true)
+
+      const second = await checkRevocation(leaf, issuerWithoutCrlSign, { mode: X509RevocationCheckMode.SoftFail })
+      expect(second.isValid).toBe(false)
+      expect(second.error?.message).toContain('cRLSign')
+    })
+
+    it('reuses the summary for a rotated issuer certificate with the same subject and key', async () => {
+      // The summary binds the issuer's subject name and public key — the inputs CRL verification
+      // actually depends on — so a renewed CA certificate (same name and key, new serial/validity)
+      // hits the summary directly without re-parsing.
+      const rotatedIssuer = await X509Service.createCertificate(agentContext, {
+        serialNumber: '0f',
+        issuer: { commonName: 'Issuer CA' },
+        authorityKey: issuerKey,
+        validity: { notBefore: twoMonthsAgo, notAfter: nextMonth },
+        extensions: { basicConstraints: { ca: true } },
+      })
+      const leaf = await createLeaf({ serialNumber: '5004', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+
+      const first = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(first.isValid).toBe(true)
+      expect(fromRawSpy).toHaveBeenCalledTimes(1)
+
+      const second = await checkRevocation(leaf, rotatedIssuer, { mode: X509RevocationCheckMode.Require })
+      expect(second.isValid).toBe(true)
+      expect(fromRawSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not reuse a summary for an issuer certificate with the same name but a different key', async () => {
+      const sameNameDifferentKeyIssuer = await X509Service.createCertificate(agentContext, {
+        serialNumber: '10',
+        issuer: { commonName: 'Issuer CA' },
+        authorityKey: otherIssuerKey,
+        validity: { notBefore: lastMonth, notAfter: nextMonth },
+        extensions: { basicConstraints: { ca: true } },
+      })
+      const leaf = await createLeaf({ serialNumber: '500c', crlDistributionPoints: { urls: [FULL_URL] } })
+      // The gate miss refetches, so both checks fetch.
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }), { times: 2 })
+
+      const first = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(first.isValid).toBe(true)
+
+      // Key thumbprint mismatch: the full re-verification fails on the signature.
+      const second = await checkRevocation(leaf, sameNameDifferentKeyIssuer, {
+        mode: X509RevocationCheckMode.SoftFail,
+      })
+      expect(second.isValid).toBe(false)
+      expect(second.error?.message).toContain('signature')
+    })
+
+    it('falls back to full verification when the summary window does not cover the verification date', async () => {
+      const leaf = await createLeaf({ serialNumber: '5005', crlDistributionPoints: { urls: [FULL_URL] } })
+      const inWindow = new Date(twoMonthsAgo.getTime() + 24 * 60 * 60 * 1000)
+      // Valid at `inWindow` but expired now. Each gate miss refetches, so all three checks fetch.
+      mockCrl(FULL_URL, await crlBytes({ entries: [], thisUpdate: twoMonthsAgo, nextUpdate: lastMonth }), { times: 3 })
+
+      const first = await checkRevocation(leaf, issuerCertificate, {
+        mode: X509RevocationCheckMode.Require,
+        verificationDate: inWindow,
+      })
+      expect(first.isValid).toBe(true)
+
+      // The summary window check rejects the hit; the full path refetches and reproduces the expiry
+      // failure, in both Require and SoftFail (integrity, not availability).
+      const required = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(required.isValid).toBe(false)
+      expect(required.error?.message).toContain('expired')
+
+      const soft = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.SoftFail })
+      expect(soft.isValid).toBe(false)
+    })
+
+    it('falls back to full verification for a verification date before thisUpdate', async () => {
+      const leaf = await createLeaf({ serialNumber: '5006', crlDistributionPoints: { urls: [FULL_URL] } })
+      // The gate miss refetches, so both checks fetch.
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }), { times: 2 })
+
+      const first = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(first.isValid).toBe(true)
+
+      const result = await checkRevocation(leaf, issuerCertificate, {
+        mode: X509RevocationCheckMode.Require,
+        verificationDate: twoMonthsAgo,
+      })
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain('not yet valid')
+    })
+
+    it('reports a revoked certificate identically from the summary, including serial normalization', async () => {
+      const leaf = await createLeaf({ serialNumber: '00bd', crlDistributionPoints: { urls: [FULL_URL] } })
+      // CRL entry 'bd' matches certificate serial '00bd' via normalization.
+      mockCrl(
+        FULL_URL,
+        await crlBytes({
+          entries: [{ serialNumber: 'bd', reason: X509CertificateRevocationListEntryReason.KeyCompromise }],
+        })
+      )
+
+      const first = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(first.isValid).toBe(false)
+      expect(first.isRevoked).toBe(true)
+
+      const second = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(fromRawSpy).toHaveBeenCalledTimes(1)
+      expect(second.isRevoked).toBe(true)
+      expect(second.error?.message).toEqual(first.error?.message)
+      expect(second.details).toEqual(first.details)
+    })
+
+    it('rejects an unusable CRL identically from the summary', async () => {
+      const cases = [
+        { serial: '5007', extensions: { deltaCrlIndicator: { value: 1 } }, message: 'delta CRL' },
+        {
+          serial: '5008',
+          extensions: { crlNumber: { value: 1, markAsCritical: true } },
+          message: 'unrecognized critical extension',
+        },
+        {
+          serial: '5009',
+          extensions: { issuingDistributionPoint: { onlyContainsUserCerts: true } },
+          message: 'end-entity certificates',
+          ca: true,
+        },
+      ] as const
+
+      for (const { serial, extensions, message, ...rest } of cases) {
+        const url = `https://crl.example/${serial}.crl`
+        const leaf = await createLeaf({
+          serialNumber: serial,
+          crlDistributionPoints: { urls: [url] },
+          ca: 'ca' in rest ? rest.ca : undefined,
+        })
+        mockCrl(url, await crlBytes({ entries: [], extensions }))
+
+        const first = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.SoftFail })
+        expect(first.isValid).toBe(false)
+        expect(first.error?.message).toContain(message)
+
+        const parseCount = fromRawSpy.mock.calls.length
+        const second = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.SoftFail })
+        expect(second.isValid).toBe(false)
+        expect(second.error?.message).toEqual(first.error?.message)
+        expect(fromRawSpy.mock.calls.length).toBe(parseCount)
+      }
+    })
+
+    it('treats a malformed cached summary as a miss', async () => {
+      const leaf = await createLeaf({ serialNumber: '500a', crlDistributionPoints: { urls: [FULL_URL] } })
+      await cache.set(agentContext, `x509:crl-summary:v1:${FULL_URL}`, { some: 'garbage' }, 3600)
+      // Single interceptor: the malformed summary causes one fetch, then the rewritten summary is used.
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+
+      const first = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(first.isValid).toBe(true)
+      expect(fromRawSpy).toHaveBeenCalledTimes(1)
+      // The malformed summary was overwritten with a valid one.
+      expect(await getCachedCrlSummary(agentContext, FULL_URL)).not.toBeNull()
+
+      const second = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+      expect(second.isValid).toBe(true)
+      expect(fromRawSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('lets a second agent sharing the cache verify without fetching or parsing', async () => {
+      const { agent: agentB, agentContext: agentContextB } = await setupCrlAgent({ cache })
+      try {
+        const leaf = await createLeaf({ serialNumber: '500b', crlDistributionPoints: { urls: [FULL_URL] } })
+        const scope = mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+
+        const first = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+        expect(first.isValid).toBe(true)
+        expect(scope.isDone()).toBe(true)
+
+        const parseCount = fromRawSpy.mock.calls.length
+        const second = await X509RevocationService.checkCertificateRevocation(agentContextB, {
+          certificate: leaf,
+          issuerCertificate,
+          revocationCheckOptions: { mode: X509RevocationCheckMode.Require },
+        })
+        expect(second.isValid).toBe(true)
+        expect(fromRawSpy.mock.calls.length).toBe(parseCount)
+      } finally {
+        await agentB.shutdown()
+      }
+    })
+
+    it('caches the summary with the configured crlCacheExpirySeconds', async () => {
+      const leaf = await createLeaf({ serialNumber: '500d', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+      const setSpy = vi.spyOn(cache, 'set')
+
+      try {
+        // The CRL's nextUpdate is ~a month away, so the configured expiry is the effective TTL.
+        const result = await checkRevocation(leaf, issuerCertificate, {
+          mode: X509RevocationCheckMode.Require,
+          crlCacheExpirySeconds: 123,
+        })
+        expect(result.isValid).toBe(true)
+        expect(setSpy).toHaveBeenCalledWith(agentContext, `x509:crl-summary:v1:${FULL_URL}`, expect.anything(), 123)
+      } finally {
+        setSpy.mockRestore()
+      }
+    })
+
+    it('falls back to the module-config crlCacheExpirySeconds when per-call options omit it', async () => {
+      const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+      const leaf = await createLeaf({ serialNumber: '500e', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+      const setSpy = vi.spyOn(cache, 'set')
+
+      try {
+        config.setRevocationCheck({ mode: X509RevocationCheckMode.Require, crlCacheExpirySeconds: 77 })
+
+        const result = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
+        expect(result.isValid).toBe(true)
+        expect(setSpy).toHaveBeenCalledWith(agentContext, `x509:crl-summary:v1:${FULL_URL}`, expect.anything(), 77)
+      } finally {
+        config.setRevocationCheck(undefined)
+        setSpy.mockRestore()
+      }
     })
   })
 })
