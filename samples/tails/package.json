@@ -17,7 +17,7 @@
     "@types/express": "catalog:",
     "@types/multer": "^2.0.0",
     "@types/ws": "catalog:",
-    "form-data": "^4.0.5",
+    "form-data": "^4.0.6",
     "multer": "^2.2.0"
   }
 }
