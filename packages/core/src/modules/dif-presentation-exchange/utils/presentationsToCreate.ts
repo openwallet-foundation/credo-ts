@@ -1,3 +1,4 @@
+import { CredoError } from '../../../error'
 import type { JsonObject } from '../../../types'
 import { MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
@@ -70,51 +71,85 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
   // presentations
   for (const [inputDescriptorId, credentials] of Object.entries(credentialsForInputDescriptor)) {
     for (const credential of credentials) {
-      if (credential.claimFormat === ClaimFormat.SdJwtDc) {
-        // SD-JWT-VC always needs it's own presentation
-        presentationsToCreate.push({
-          claimFormat: ClaimFormat.SdJwtDc,
-          subjectIds: [],
-          verifiableCredentials: [
-            {
+      switch (credential.claimFormat) {
+        case ClaimFormat.SdJwtDc: {
+          if (!(credential.credentialRecord instanceof SdJwtVcRecord)) {
+            throw new CredoError(
+              `Claim format SdJwtDc requires SdJwtVcRecord for input descriptor '${inputDescriptorId}'.`
+            )
+          }
+
+          // SD-JWT-VC always needs its own presentation
+          presentationsToCreate.push({
+            claimFormat: ClaimFormat.SdJwtDc,
+            subjectIds: [],
+            verifiableCredentials: [
+              {
+                inputDescriptorId,
+                credential: credential.credentialRecord,
+                additionalPayload: credential.additionalPayload,
+              },
+            ],
+          })
+
+          break
+        }
+        case ClaimFormat.MsoMdoc: {
+          if (!(credential.credentialRecord instanceof MdocRecord)) {
+            throw new CredoError(
+              `Claim format MsoMdoc requires MdocRecord for input descriptor '${inputDescriptorId}'.`
+            )
+          }
+
+          presentationsToCreate.push({
+            claimFormat: ClaimFormat.MsoMdoc,
+            verifiableCredentials: [{ inputDescriptorId, credential: credential.credentialRecord }],
+            subjectIds: [],
+          })
+
+          break
+        }
+        case ClaimFormat.JwtVc:
+        case ClaimFormat.LdpVc: {
+          if (!(credential.credentialRecord instanceof W3cCredentialRecord)) {
+            throw new CredoError(
+              `Claim format JwtVc/LdpVc requires W3cCredentialRecord for input descriptor '${inputDescriptorId}'.`
+            )
+          }
+
+          const subjectId = credential.credentialRecord.firstCredential.credentialSubjectIds[0]
+
+          // NOTE: we only support one subjectId per VP -- once we have proper support
+          // for multiple proofs on an LDP-VP we can add multiple subjectIds to a single VP for LDP-vp only
+          const expectedClaimFormat =
+            credential.credentialRecord.firstCredential.claimFormat === ClaimFormat.LdpVc
+              ? ClaimFormat.LdpVp
+              : ClaimFormat.JwtVp
+
+          const matchingClaimFormatAndSubject = presentationsToCreate.find(
+            (p): p is JwtVpPresentationToCreate | LdpVpPresentationToCreate =>
+              p.claimFormat === expectedClaimFormat && Boolean(p.subjectIds?.includes(subjectId))
+          )
+
+          if (matchingClaimFormatAndSubject) {
+            matchingClaimFormatAndSubject.verifiableCredentials.push({
               inputDescriptorId,
               credential: credential.credentialRecord,
-              additionalPayload: credential.additionalPayload,
-            },
-          ],
-        })
-      } else if (credential.credentialRecord instanceof MdocRecord) {
-        presentationsToCreate.push({
-          claimFormat: ClaimFormat.MsoMdoc,
-          verifiableCredentials: [{ inputDescriptorId, credential: credential.credentialRecord }],
-          subjectIds: [],
-        })
-      } else {
-        const subjectId = credential.credentialRecord.firstCredential.credentialSubjectIds[0]
+            })
+          } else {
+            presentationsToCreate.push({
+              claimFormat: expectedClaimFormat,
+              subjectIds: [subjectId],
+              verifiableCredentials: [{ credential: credential.credentialRecord, inputDescriptorId }],
+            })
+          }
 
-        // NOTE: we only support one subjectId per VP -- once we have proper support
-        // for multiple proofs on an LDP-VP we can add multiple subjectIds to a single VP for LDP-vp only
-        const expectedClaimFormat =
-          credential.credentialRecord.firstCredential.claimFormat === ClaimFormat.LdpVc
-            ? ClaimFormat.LdpVp
-            : ClaimFormat.JwtVp
-
-        const matchingClaimFormatAndSubject = presentationsToCreate.find(
-          (p): p is JwtVpPresentationToCreate =>
-            p.claimFormat === expectedClaimFormat && Boolean(p.subjectIds?.includes(subjectId))
-        )
-
-        if (matchingClaimFormatAndSubject) {
-          matchingClaimFormatAndSubject.verifiableCredentials.push({
-            inputDescriptorId,
-            credential: credential.credentialRecord,
-          })
-        } else {
-          presentationsToCreate.push({
-            claimFormat: expectedClaimFormat,
-            subjectIds: [subjectId],
-            verifiableCredentials: [{ credential: credential.credentialRecord, inputDescriptorId }],
-          })
+          break
+        }
+        default: {
+          const exhaustiveClaimFormat: never = credential
+          void exhaustiveClaimFormat
+          throw new CredoError(`Unsupported claim format for input descriptor '${inputDescriptorId}'.`)
         }
       }
     }
