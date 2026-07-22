@@ -17,6 +17,8 @@ const crlSummary: X509CrlSummary = {
   issuerPublicJwkThumbprint: 'cd'.repeat(32),
   thisUpdate: 1700000000000,
   nextUpdate: 1700003600000,
+  crlSha256: 'ef'.repeat(32),
+  staleAt: 1700001800000,
   criticalExtensionIds: [],
   serialNumbers: ['0a'],
   revocationDates: [1700000000000],

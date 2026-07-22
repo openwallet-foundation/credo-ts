@@ -44,6 +44,10 @@ const zX509CrlSummary = z
     thisUpdate: z.number(),
     /** `nextUpdate` as epoch milliseconds, absent when the CRL has none */
     nextUpdate: z.optional(z.number()),
+    /** SHA-256 (hex) of the DER-encoded CRL bytes, used to revalidate a stale summary without re-parsing */
+    crlSha256: z.string(),
+    /** Epoch milliseconds after which the summary must be revalidated against freshly fetched CRL bytes */
+    staleAt: z.number(),
     deltaCrlIndicator: z.optional(z.number()),
     issuingDistributionPoint: z.optional(
       z.object({
@@ -92,15 +96,23 @@ export function computeIssuerPublicJwkThumbprint(issuerCertificate: X509Certific
   return TypedArrayEncoder.toHex(issuerCertificate.publicJwk.getJwkThumbprint())
 }
 
+export function computeCrlSha256(crlBytes: Uint8Array): string {
+  return TypedArrayEncoder.toHex(Hasher.hash(crlBytes, 'SHA-256'))
+}
+
 /**
  * Derive the cacheable summary of a verified CRL.
+ *
+ * `staleAt` is caching policy (freshness deadline derived from the verification date and the
+ * configured expiry), so it is provided by the caller rather than derived from the CRL.
  *
  * May throw for malformed CRLs (e.g. duplicate extensions, via the delta/issuing-distribution-point
  * getters); callers must then skip caching the summary so such CRLs keep their existing behavior.
  */
 export function buildCrlSummary(
   crl: X509CertificateRevocationList,
-  issuerCertificate: X509Certificate
+  issuerCertificate: X509Certificate,
+  staleAt: number
 ): X509CrlSummary {
   const serialNumbers: string[] = []
   const revocationDates: number[] = []
@@ -118,6 +130,8 @@ export function buildCrlSummary(
     issuerPublicJwkThumbprint: computeIssuerPublicJwkThumbprint(issuerCertificate),
     thisUpdate: crl.thisUpdate.getTime(),
     nextUpdate: crl.nextUpdate?.getTime(),
+    crlSha256: computeCrlSha256(crl.rawCertificateRevocationList),
+    staleAt,
     deltaCrlIndicator: crl.deltaCrlIndicator,
     issuingDistributionPoint: issuingDistributionPoint
       ? {

@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Agent } from '../../../agent/Agent'
 import type { AgentContext } from '../../../agent/context'
 import type { KeyManagementApi, PublicJwk } from '../../kms'
-import { buildCrlSummary, CrlSummaryVerifiedCrl, isX509CrlSummary } from '../utils/crlSummary'
+import { buildCrlSummary, CrlSummaryVerifiedCrl, computeCrlSha256, isX509CrlSummary } from '../utils/crlSummary'
 import type { X509Certificate } from '../X509Certificate'
 import {
   type X509CertificateRevocationList,
@@ -68,8 +68,8 @@ describe('crlSummary', () => {
     })
   }
 
-  function summaryFor(crl: X509CertificateRevocationList) {
-    return buildCrlSummary(crl, issuerCertificate)
+  function summaryFor(crl: X509CertificateRevocationList, staleAt = nextMonth.getTime()) {
+    return buildCrlSummary(crl, issuerCertificate, staleAt)
   }
 
   it('builds a summary that survives a JSON round-trip', async () => {
@@ -91,8 +91,10 @@ describe('crlSummary', () => {
       },
     })
 
-    const summary = summaryFor(crl)
+    const summary = summaryFor(crl, 1700000000000)
     expect(JSON.parse(JSON.stringify(summary))).toEqual(summary)
+    expect(summary.crlSha256).toEqual(computeCrlSha256(crl.rawCertificateRevocationList))
+    expect(summary.staleAt).toEqual(1700000000000)
   })
 
   describe('CrlSummaryVerifiedCrl', () => {
@@ -123,6 +125,8 @@ describe('crlSummary', () => {
         issuerNameSha256: 'ab'.repeat(32),
         issuerPublicJwkThumbprint: 'cd'.repeat(32),
         thisUpdate: lastMonth.getTime(),
+        crlSha256: 'ef'.repeat(32),
+        staleAt: nextMonth.getTime(),
         criticalExtensionIds: [],
         serialNumbers: ['00C3', 'c3'],
         revocationDates: [twoMonthsAgo.getTime(), lastMonth.getTime()],
@@ -175,6 +179,9 @@ describe('crlSummary', () => {
       expect(isX509CrlSummary({})).toBe(false)
       expect(isX509CrlSummary({ ...summary, thisUpdate: 'not a number' })).toBe(false)
       expect(isX509CrlSummary({ ...summary, serialNumbers: [1] })).toBe(false)
+      // The previous summary shape, without the revalidation fields
+      expect(isX509CrlSummary({ ...summary, crlSha256: undefined })).toBe(false)
+      expect(isX509CrlSummary({ ...summary, staleAt: 'not a number' })).toBe(false)
       // Mismatched parallel array lengths
       expect(isX509CrlSummary({ ...summary, revocationDates: [] })).toBe(false)
     })
