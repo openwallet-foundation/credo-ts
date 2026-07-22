@@ -892,21 +892,29 @@ describe('X509RevocationService', () => {
       }
     })
 
-    it('caches the summary with the configured crlCacheExpirySeconds', async () => {
+    it('caches the summary until nextUpdate with the freshness deadline from crlCacheExpirySeconds', async () => {
       const leaf = await createLeaf({ serialNumber: '500d', crlDistributionPoints: { urls: [FULL_URL] } })
-      mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+      // Whole seconds: X.509 dates have second precision, so this keeps the expected TTL exact.
+      const verificationDate = new Date(Math.floor(Date.now() / 1000) * 1000)
+      const nextUpdate = new Date(verificationDate.getTime() + 86400 * 1000)
+      mockCrl(FULL_URL, await crlBytes({ entries: [], nextUpdate }))
       const setSpy = vi.spyOn(cache, 'set')
 
       try {
-        // The CRL's nextUpdate is ~a month away, so the configured expiry is the effective TTL.
         const result = await checkRevocation(leaf, issuerCertificate, {
           mode: X509RevocationCheckMode.Require,
           crlCacheExpirySeconds: 123,
+          verificationDate,
         })
         expect(result.isValid).toBe(true)
-        expect(setSpy).toHaveBeenCalledWith(agentContext, `x509:crl-summary:v1:${FULL_URL}`, expect.anything(), 123, {
-          scope: 'global',
-        })
+        // The entry lives until the CRL's nextUpdate; the configured expiry only sets `staleAt`.
+        expect(setSpy).toHaveBeenCalledWith(
+          agentContext,
+          `x509:crl-summary:v1:${FULL_URL}`,
+          expect.objectContaining({ staleAt: verificationDate.getTime() + 123 * 1000 }),
+          86400,
+          { scope: 'global' }
+        )
       } finally {
         setSpy.mockRestore()
       }
@@ -915,21 +923,128 @@ describe('X509RevocationService', () => {
     it('falls back to the module-config crlCacheExpirySeconds when per-call options omit it', async () => {
       const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
       const leaf = await createLeaf({ serialNumber: '500e', crlDistributionPoints: { urls: [FULL_URL] } })
-      mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+      const verificationDate = new Date(Math.floor(Date.now() / 1000) * 1000)
+      const nextUpdate = new Date(verificationDate.getTime() + 86400 * 1000)
+      mockCrl(FULL_URL, await crlBytes({ entries: [], nextUpdate }))
       const setSpy = vi.spyOn(cache, 'set')
 
       try {
         config.setRevocationCheck({ mode: X509RevocationCheckMode.Require, crlCacheExpirySeconds: 77 })
 
-        const result = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
-        expect(result.isValid).toBe(true)
-        expect(setSpy).toHaveBeenCalledWith(agentContext, `x509:crl-summary:v1:${FULL_URL}`, expect.anything(), 77, {
-          scope: 'global',
+        const result = await checkRevocation(leaf, issuerCertificate, {
+          mode: X509RevocationCheckMode.Require,
+          verificationDate,
         })
+        expect(result.isValid).toBe(true)
+        expect(setSpy).toHaveBeenCalledWith(
+          agentContext,
+          `x509:crl-summary:v1:${FULL_URL}`,
+          expect.objectContaining({ staleAt: verificationDate.getTime() + 77 * 1000 }),
+          86400,
+          { scope: 'global' }
+        )
       } finally {
         config.setRevocationCheck(undefined)
         setSpy.mockRestore()
       }
+    })
+
+    it('revalidates a stale summary by hash without re-parsing when the CRL bytes are unchanged', async () => {
+      const leaf = await createLeaf({ serialNumber: '500f', crlDistributionPoints: { urls: [FULL_URL] } })
+      // Two interceptors: the initial fetch and the revalidation fetch; the third check must not fetch.
+      const scope = mockCrl(FULL_URL, await crlBytes({ entries: [{ serialNumber: 'dead' }] }), { times: 2 })
+
+      const t0 = new Date()
+      const first = await checkRevocation(leaf, issuerCertificate, {
+        mode: X509RevocationCheckMode.Require,
+        crlCacheExpirySeconds: 123,
+        verificationDate: t0,
+      })
+      expect(first.isValid).toBe(true)
+      expect(fromRawSpy).toHaveBeenCalledTimes(1)
+
+      // Past the freshness deadline: the bytes are fetched again, but their unchanged hash means
+      // the cached summary is reused without a second parse, with a refreshed freshness deadline.
+      const t1 = new Date(t0.getTime() + 200 * 1000)
+      const second = await checkRevocation(leaf, issuerCertificate, {
+        mode: X509RevocationCheckMode.Require,
+        crlCacheExpirySeconds: 123,
+        verificationDate: t1,
+      })
+      expect(second).toEqual(first)
+      expect(fromRawSpy).toHaveBeenCalledTimes(1)
+      expect(scope.isDone()).toBe(true)
+      expect((await getCachedCrlSummary(agentContext, FULL_URL))?.staleAt).toBe(t1.getTime() + 123 * 1000)
+
+      // Fresh again after the revalidation: no third fetch (both interceptors are consumed).
+      const third = await checkRevocation(leaf, issuerCertificate, {
+        mode: X509RevocationCheckMode.Require,
+        crlCacheExpirySeconds: 123,
+        verificationDate: new Date(t1.getTime() + 60 * 1000),
+      })
+      expect(third).toEqual(first)
+      expect(fromRawSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('fully re-verifies a stale summary when the CRL bytes changed', async () => {
+      const leaf = await createLeaf({ serialNumber: '5010', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+
+      const t0 = new Date()
+      const first = await checkRevocation(leaf, issuerCertificate, {
+        mode: X509RevocationCheckMode.Require,
+        crlCacheExpirySeconds: 123,
+        verificationDate: t0,
+      })
+      expect(first.isValid).toBe(true)
+      expect(first.isRevoked).toBe(false)
+      const cachedFirst = await getCachedCrlSummary(agentContext, FULL_URL)
+
+      // The distribution point now serves an updated CRL revoking the leaf: the changed hash forces
+      // a full re-verification, which observes the revocation.
+      mockCrl(FULL_URL, await crlBytes({ entries: [{ serialNumber: '5010' }] }))
+      const parseCount = fromRawSpy.mock.calls.length
+      const second = await checkRevocation(leaf, issuerCertificate, {
+        mode: X509RevocationCheckMode.Require,
+        crlCacheExpirySeconds: 123,
+        verificationDate: new Date(t0.getTime() + 200 * 1000),
+      })
+      expect(second.isValid).toBe(false)
+      expect(second.isRevoked).toBe(true)
+      expect(fromRawSpy.mock.calls.length).toBe(parseCount + 1)
+      expect((await getCachedCrlSummary(agentContext, FULL_URL))?.crlSha256).not.toEqual(cachedFirst?.crlSha256)
+    })
+
+    it('treats a failed revalidation fetch as an availability failure, not as a stale hit', async () => {
+      const leaf = await createLeaf({ serialNumber: '5011', crlDistributionPoints: { urls: [FULL_URL] } })
+      mockCrl(FULL_URL, await crlBytes({ entries: [] }))
+
+      const t0 = new Date()
+      const first = await checkRevocation(leaf, issuerCertificate, {
+        mode: X509RevocationCheckMode.Require,
+        crlCacheExpirySeconds: 123,
+        verificationDate: t0,
+      })
+      expect(first.isValid).toBe(true)
+
+      // Stale summary + unreachable distribution point: the stale summary is not served; the
+      // failure is an ordinary availability failure (Require fails, SoftFail tolerates).
+      mockCrlNetworkError(FULL_URL, { times: 2 })
+      const staleDate = new Date(t0.getTime() + 200 * 1000)
+      const required = await checkRevocation(leaf, issuerCertificate, {
+        mode: X509RevocationCheckMode.Require,
+        crlCacheExpirySeconds: 123,
+        verificationDate: staleDate,
+      })
+      expect(required.isValid).toBe(false)
+
+      const soft = await checkRevocation(leaf, issuerCertificate, {
+        mode: X509RevocationCheckMode.SoftFail,
+        crlCacheExpirySeconds: 123,
+        verificationDate: staleDate,
+      })
+      expect(soft.isValid).toBe(true)
+      expect(soft.details).toContain('SoftFail')
     })
   })
 })
