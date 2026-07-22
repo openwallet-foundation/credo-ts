@@ -40,4 +40,42 @@ describe('InMemoryLruCache', () => {
     expect(await cache.get(agentContext, 'three')).toBeNull()
     expect(await cache.get(agentContext, 'two')).toBe('valuetwo')
   })
+
+  it('should isolate entries per agent context by default', async () => {
+    const contextOne = getAgentContext({ contextCorrelationId: 'contextOne' })
+    const contextTwo = getAgentContext({ contextCorrelationId: 'contextTwo' })
+
+    await cache.set(contextOne, 'item', 'somevalue')
+    expect(await cache.get(contextTwo, 'item')).toBeNull()
+    expect(await cache.get(contextOne, 'item')).toBe('somevalue')
+
+    // Removing from another context should not remove the entry
+    await cache.remove(contextTwo, 'item')
+    expect(await cache.get(contextOne, 'item')).toBe('somevalue')
+  })
+
+  it('should share entries with global scope across agent contexts', async () => {
+    const contextOne = getAgentContext({ contextCorrelationId: 'contextOne' })
+    const contextTwo = getAgentContext({ contextCorrelationId: 'contextTwo' })
+
+    await cache.set(contextOne, 'item', 'somevalue', undefined, { scope: 'global' })
+    expect(await cache.get(contextTwo, 'item', { scope: 'global' })).toBe('somevalue')
+
+    // Global and context scopes are disjoint
+    expect(await cache.get(contextOne, 'item')).toBeNull()
+
+    await cache.remove(contextTwo, 'item', { scope: 'global' })
+    expect(await cache.get(contextOne, 'item', { scope: 'global' })).toBeNull()
+  })
+
+  it('should not collide context-scoped keys with global keys', async () => {
+    // context 'x509' with key 'y' must not resolve to the same entry as global key 'x509:y'
+    const context = getAgentContext({ contextCorrelationId: 'x509' })
+
+    await cache.set(context, 'y', 'contextvalue')
+    expect(await cache.get(context, 'x509:y', { scope: 'global' })).toBeNull()
+
+    await cache.set(context, 'x509:y', 'globalvalue', undefined, { scope: 'global' })
+    expect(await cache.get(context, 'y')).toBe('contextvalue')
+  })
 })

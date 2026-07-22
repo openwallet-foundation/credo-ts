@@ -854,7 +854,7 @@ describe('X509RevocationService', () => {
 
     it('treats a malformed cached summary as a miss', async () => {
       const leaf = await createLeaf({ serialNumber: '500a', crlDistributionPoints: { urls: [FULL_URL] } })
-      await cache.set(agentContext, `x509:crl-summary:v1:${FULL_URL}`, { some: 'garbage' }, 3600)
+      await cache.set(agentContext, `x509:crl-summary:v1:${FULL_URL}`, { some: 'garbage' }, 3600, { scope: 'global' })
       // Single interceptor: the malformed summary causes one fetch, then the rewritten summary is used.
       mockCrl(FULL_URL, await crlBytes({ entries: [] }))
 
@@ -904,7 +904,9 @@ describe('X509RevocationService', () => {
           crlCacheExpirySeconds: 123,
         })
         expect(result.isValid).toBe(true)
-        expect(setSpy).toHaveBeenCalledWith(agentContext, `x509:crl-summary:v1:${FULL_URL}`, expect.anything(), 123)
+        expect(setSpy).toHaveBeenCalledWith(agentContext, `x509:crl-summary:v1:${FULL_URL}`, expect.anything(), 123, {
+          scope: 'global',
+        })
       } finally {
         setSpy.mockRestore()
       }
@@ -921,7 +923,9 @@ describe('X509RevocationService', () => {
 
         const result = await checkRevocation(leaf, issuerCertificate, { mode: X509RevocationCheckMode.Require })
         expect(result.isValid).toBe(true)
-        expect(setSpy).toHaveBeenCalledWith(agentContext, `x509:crl-summary:v1:${FULL_URL}`, expect.anything(), 77)
+        expect(setSpy).toHaveBeenCalledWith(agentContext, `x509:crl-summary:v1:${FULL_URL}`, expect.anything(), 77, {
+          scope: 'global',
+        })
       } finally {
         config.setRevocationCheck(undefined)
         setSpy.mockRestore()

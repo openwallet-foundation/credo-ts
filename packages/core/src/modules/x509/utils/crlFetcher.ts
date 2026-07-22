@@ -81,10 +81,12 @@ export async function fetchCrl(options: CrlFetchOptions): Promise<Uint8Array> {
 /**
  * Return the cached verified CRL summary for a URL, or `null` if not cached. Values that do not
  * match the expected summary shape are treated as a cache miss, never as an error.
+ *
+ * Summaries are cached in the global scope: CRLs are public data, shared across all agent contexts.
  */
 export async function getCachedCrlSummary(agentContext: AgentContext, url: string): Promise<X509CrlSummary | null> {
   const cache = agentContext.resolve(CacheModuleConfig).cache
-  const cached = await cache.get<unknown>(agentContext, crlSummaryCacheKey(url)).catch(() => null)
+  const cached = await cache.get<unknown>(agentContext, crlSummaryCacheKey(url), { scope: 'global' }).catch(() => null)
   return isX509CrlSummary(cached) ? cached : null
 }
 
@@ -94,6 +96,8 @@ export async function getCachedCrlSummary(agentContext: AgentContext, url: strin
  * Callers must only cache summaries derived from CRLs that have passed verification, and should
  * derive `expiresInSeconds` from the CRL's `nextUpdate` so an expired CRL is never served from the
  * cache.
+ *
+ * Summaries are cached in the global scope: CRLs are public data, shared across all agent contexts.
  */
 export async function setCachedCrlSummary(
   agentContext: AgentContext,
@@ -103,5 +107,7 @@ export async function setCachedCrlSummary(
 ): Promise<void> {
   if (expiresInSeconds <= 0) return
   const cache = agentContext.resolve(CacheModuleConfig).cache
-  await cache.set(agentContext, crlSummaryCacheKey(url), summary, expiresInSeconds).catch(() => null)
+  await cache
+    .set(agentContext, crlSummaryCacheKey(url), summary, expiresInSeconds, { scope: 'global' })
+    .catch(() => null)
 }
