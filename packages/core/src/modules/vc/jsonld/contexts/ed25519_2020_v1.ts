@@ -1,6 +1,3 @@
-// Ed25519Signature2020 context - released in 2020, not part of the original 2018 credentials v1 context
-// https://w3id.org/security/suites/ed25519-2020/v1
-
 export const ED25519_2020_V1 = {
   '@context': {
     id: '@id',
