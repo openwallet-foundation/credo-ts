@@ -9,6 +9,7 @@ import type {
   OpenId4VciCreateStatelessCredentialOfferOptions,
   OpenId4VcUpdateIssuerRecordOptions,
 } from './OpenId4VcIssuerServiceOptions'
+import { OpenId4VcIssuerRecord } from './repository'
 
 /**
  * @public
@@ -70,6 +71,13 @@ export class OpenId4VcIssuerApi {
     issuer.batchCredentialIssuance = batchCredentialIssuance
     issuer.authorizationServerConfigs = authorizationServerConfigs
 
+    return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
+  }
+
+  /**
+   * Updates an issuer and stores the corresponding updated issuer metadata.
+   */
+  public async updateIssuer(issuer: OpenId4VcIssuerRecord) {
     return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
   }
 
