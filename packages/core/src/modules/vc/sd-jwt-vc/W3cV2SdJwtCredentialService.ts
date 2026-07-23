@@ -81,6 +81,8 @@ export class W3cV2SdJwtCredentialService {
     const disclosureFrame = options.disclosureFrame as DisclosureFrame<W3cV2JsonCredential> | undefined
     this.validateDisclosureFrame(disclosureFrame)
 
+    publicJwk.signatureAlgorithm = options.alg
+
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       signer: getSdJwtSigner(agentContext, publicJwk),
@@ -168,6 +170,9 @@ export class W3cV2SdJwtCredentialService {
       const holderBinding = parseHolderBindingFromCredential(credential.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
+      issuerPublicKey.setAlgFromJwtHeader(credential.sdJwt.header.alg)
+      holder?.publicJwk.setAlgFromJwtHeader(credential.sdJwt.kbJwt?.header?.alg as string | undefined)
+
       sdJwt.config({
         verifier: getSdJwtVerifier(agentContext, issuerPublicKey),
         kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
@@ -232,6 +237,8 @@ export class W3cV2SdJwtCredentialService {
     payload.aud = options.domain
 
     const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
+
+    holder.publicJwk.signatureAlgorithm = holder.alg
 
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
@@ -309,6 +316,9 @@ export class W3cV2SdJwtCredentialService {
       const proverPublicKey = getPublicJwkFromVerificationMethod(proverVerificationMethod)
       const holderBinding = parseHolderBindingFromCredential(presentation.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
+
+      proverPublicKey.setAlgFromJwtHeader(presentation.sdJwt.header.alg)
+      holder?.publicJwk.setAlgFromJwtHeader(presentation.sdJwt.kbJwt?.header?.alg as string | undefined)
 
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, proverPublicKey),

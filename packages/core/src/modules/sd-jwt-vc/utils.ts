@@ -80,9 +80,6 @@ export async function extractKeyFromHolderBinding(
   throw new CredoError("Unsupported credential holder binding. Only 'did' and 'jwk' are supported at the moment.")
 }
 
-/**
- * @todo validate the JWT header (alg)
- */
 export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Signer {
   const kms = agentContext.resolve(KeyManagementApi)
 
@@ -97,9 +94,6 @@ export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Sign
   }
 }
 
-/**
- * @todo validate the JWT header (alg)
- */
 export function getSdJwtVerifier(agentContext: AgentContext, key: PublicJwk): Verifier {
   const kms = agentContext.resolve(KeyManagementApi)
 

@@ -133,6 +133,8 @@ export class SdJwtVcService {
       x5c: issuer.x5c?.map((cert) => cert.toString('base64')),
     } as const
 
+    issuer.publicJwk.signatureAlgorithm = issuer.alg
+
     const sdJwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       signer: getSdJwtSigner(agentContext, issuer.publicJwk),
@@ -208,6 +210,9 @@ export class SdJwtVcService {
           jwkKeyId: typeof sdJwtVc !== 'string' ? sdJwtVc.kmsKeyId : undefined,
         })
       : undefined
+    if (holder) {
+      holder.publicJwk.signatureAlgorithm = holder.alg
+    }
     sdjwt.config({
       kbSigner: holder ? getSdJwtSigner(agentContext, holder.publicJwk) : undefined,
       kbSignAlg: holder?.alg,
@@ -328,6 +333,9 @@ export class SdJwtVcService {
         : undefined
 
       const statusValidationDisabled = disableStatusValidation === true || verifyCredentialStatus === false
+
+      issuerWithKey.publicJwk.setAlgFromJwtHeader(sdJwtVc.jwt?.header?.alg as string | undefined)
+      holder?.publicJwk.setAlgFromJwtHeader(sdJwtVc.kbJwt?.header?.alg as string | undefined)
 
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, issuerWithKey.publicJwk),
@@ -683,7 +691,7 @@ export class SdJwtVcService {
       // A failure to extract or authorize the status list signer is thrown (rather than returning
       // `false`) so the verification result carries the actual reason instead of a generic
       // "invalid signature". Only the final signature check returns a boolean.
-      let header: { x5c?: string[]; kid?: string }
+      let header: { alg?: string; x5c?: string[]; kid?: string }
       try {
         header = JsonEncoder.fromBase64Url(data.split('.')[0])
       } catch (error) {
@@ -735,6 +743,7 @@ export class SdJwtVcService {
         }
 
         const signerJwk = statusListChain[0].publicJwk
+        signerJwk.setAlgFromJwtHeader(header.alg)
         return getSdJwtVerifier(agentContext, signerJwk)(data, signatureBase64Url)
       }
 
@@ -766,6 +775,7 @@ export class SdJwtVcService {
 
       const { verificationMethod } = await resolveDidUrl(agentContext, didUrl)
       const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      publicJwk.setAlgFromJwtHeader(header.alg)
       return getSdJwtVerifier(agentContext, publicJwk)(data, signatureBase64Url)
     }
   }
