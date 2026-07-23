@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.7.1
+
+### Patch Changes
+
+- f127ff5: Mdoc revocation for issuance and verification
+- 84dfcf4: sd-jwt vc does not require IAT to be required anymore
+- fd5016d: feat: the `Cache` interface `get`, `set` and `remove` methods now accept a `CacheOptions` parameter with a `scope` that is either `'context'` (default) or `'global'`, allowing globally reusable data to be shared across agent contexts. The X.509 CRL summary cache, the Indy VDR pool lookup cache and the AnonCreds registry cache use the global scope, as they only hold publicly anchored data. The DID resolver caches documents of public did methods in the global scope, and documents of other did methods per agent context; the list of public did methods can be configured with the new `publicDidMethods` option of the dids module (default `['web', 'indy', 'sov', 'cheqd', 'hedera', 'webvh']`).
+
+  Behavior changes to be aware of:
+
+  - `InMemoryLruCache` now namespaces keys by `contextCorrelationId` by default. This fixes potential cross-context sharing of context-scoped entries (e.g. records cached by `CachedStorageService`) in multi-tenant setups. Single-context agents are not affected.
+  - `RedisCache` stores global-scope entries under a `global:` key prefix. Existing context-scoped Redis entries for the caches that moved to the global scope become cache misses after upgrading and expire through their TTL, causing a one-time refetch.
+
+- 20d6ab1: fix: correctly encode kid in the header of cose signatures, and do not include the kid in oid4vci request to the issuer
+- 96dc69b: fix(mdoc): accept status lists signed by the credential's issuance chain during presentation (device response) verification
+
+  The mdoc presentation verification path (`MdocDeviceResponse.verify`, used by OpenID4VP) did not fall back to the issuance certificates when a trusted issuer was configured without dedicated `status` certificates (`status: undefined`). As a result, an mdoc carrying a token status list signed by the same certificate as the credential failed presentation verification, while the equivalent SD-JWT VC and standalone `Mdoc.verify` cases succeeded. The fallback (and the chain-equality safeguard that prevents it from widening the trust set) is now shared between `Mdoc.verify` and `MdocDeviceResponse.verify`.
+
+- 7dfafeb: Support certificate chain in mdoc signing.
+- f127ff5: Added token-status-list module which allows you to fetch/update/create token-status-list instances for sd-jwt and mdoc
+- cfe86fa: X509 trusted certificates now can be provided in a new format. Previously it was a list of base64/pem/der encoded certificates, but now you can _also_ provide a list of objects in the format `[{issuance: string[], status? :string[]}]`. This is used for the new status indicator on mdoc. First, it looks for the used `issuance` trusted certificates and then validates the `status`, if available, with the `status` trusted certificates associated with the `issuance` property.
+- e97c18b: Add a global `getTrustedIssuersForVerification` agent callback for resolving trusted issuers during verification. Unlike the now-deprecated X.509-module `getTrustedCertificatesForVerification` callback (which it takes precedence over), it supports both X.509 certificate chains and DIDs and is extensible to other trust mechanisms. It is wired into SD-JWT VC, mdoc, W3C V1 JWT and LD-JSON, W3C V2 JWT and SD-JWT, and OpenID4VP verification.
+- cfe86fa: TokenStatusList is a new standard module on the agent. It allows you to create/update/fetch token status lists. It is up to the user to host this, this can be easily done with the `statusList` you receive from the `agent.tokenStatusList.createTokenStatusList(...)` function. Updating the statuslist allows you to change the status list credential state from valid to invalid, but also update the expiry time, rotate certificates, change signing algorithm, etc. Signatures are the default and mac should only be used if the user is aware of the security implications and has good reason to do so.
+- 0a58888: Normalize DID identifiers when authenticating the credential subject of a verifiable presentation. A credential subject id that references a specific verification method (e.g. `did:example:123#0`) now matches the bare DID controller (`did:example:123`), as both refer to the same DID subject. Non-DID identifiers are still compared as-is.
+- 1e2088f: Add X.509 CRL (Certificate Revocation List) verification. Certificate chain validation can now check certificate revocation status against the CRLs referenced in each certificate's CRL Distribution Points extension, with configurable `SoftFail`/`Require`/`Disabled` modes, reason partitioning (RFC 5280 §5.2.5), optional caching (verified CRLs are cached until their `nextUpdate` and, after a configurable freshness period, revalidated against the freshly fetched bytes so unchanged CRLs skip re-parsing and re-verification) and full-chain checking. Revocation checking now also honours the CRL's own extensions: delta CRLs, indirect CRLs, CRLs whose Issuing Distribution Point scope does not cover the certificate being checked, and CRLs bearing an unrecognized critical extension are rejected rather than treated as authoritative proof that the certificate is unrevoked. Key usage is now enforced where RFC 5280 requires it: issuing CA certificates must assert `keyCertSign` and CRL issuers must assert `cRLSign` when they carry a Key Usage extension. The certificate creation API also gained support for revocation reasons on CRL distribution points, and a new `createCertificateRevocationList` API (`X509Api`/`X509Service`) for creating and signing CRLs, including the CRL Number, Delta CRL Indicator, Authority Key Identifier and Issuing Distribution Point extensions.
+
 ## 0.7.0
 
 ### Minor Changes
