@@ -1,6 +1,5 @@
 import { MultiBaseEncoder, TypedArrayEncoder } from '../../../../../utils'
 import { Ed25519PublicJwk, PublicJwk } from '../../../../kms'
-import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../constants'
 import jsonld from '../../../jsonld/jsonld'
 import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../proof-ops/jsonldUtil'
 import { _includesContext } from '../../proof-ops/jsonldUtil'
