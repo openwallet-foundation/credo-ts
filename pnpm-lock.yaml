@@ -603,6 +603,9 @@ importers:
       ec-compression:
         specifier: ^1.0.0
         version: 1.0.0
+      json-canonicalize:
+        specifier: ^2.0.0
+        version: 2.0.0
       lru_map:
         specifier: ^0.4.1
         version: 0.4.1
