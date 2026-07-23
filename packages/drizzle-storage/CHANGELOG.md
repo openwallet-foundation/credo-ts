@@ -1,5 +1,49 @@
 # @credo-ts/drizzle-storage
 
+## 0.7.1
+
+### Patch Changes
+
+- 60efbe0: feat(openid4vc): support the Client Attestation PoP challenge and DPoP-bound method (draft 09 of OAuth 2.0 Attestation-Based Client Authentication)
+
+  - The issuer can require a fresh, server-issued client attestation PoP `challenge` (enabled through the new `clientAttestationPopChallengeRequired` issuer config option). When enabled it advertises a `challenge_endpoint` and, at the token endpoint, uses the reactive `use_attestation_challenge` flow (returning the challenge in the `OAuth-Client-Attestation-Challenge` header) so clients retry automatically. The holder additionally fetches a challenge proactively from the `challenge_endpoint` for the pushed authorization request and authorization challenge endpoints.
+  - Support for the DPoP-bound client attestation method (`attest_jwt_client_auth_dpop`), where a single DPoP proof signed with the client instance key serves as both the DPoP proof and the client attestation PoP. Used automatically when the authorization server advertises it, in both the pre-authorized code flow and the authorization code flow. For the authorization code flow the whole interaction is bound to the client instance key: the authorization request commits the instance key as the DPoP key (`dpop_jkt`, with the issuer enforcing that the client attestation confirmation key matches the DPoP key), and the token endpoint uses the combined DPoP proof with that same key.
+  - The issuer now advertises the new `client_attestation_signing_alg_values_supported` / `client_attestation_pop_signing_alg_values_supported` metadata (configurable per issuer, stored as two nullable columns on the issuer record). Client attestation client authentication is advertised in `token_endpoint_auth_methods_supported` based on those signing algorithms being configured (matching how DPoP support is enabled via `dpop_signing_alg_values_supported`): `attest_jwt_client_auth` when the client attestation and pop signing algs are set, and the DPoP-bound `attest_jwt_client_auth_dpop` when the client attestation and DPoP signing algs are set.
+
+- cfe86fa: X509 trusted certificates now can be provided in a new format. Previously it was a list of base64/pem/der encoded certificates, but now you can _also_ provide a list of objects in the format `[{issuance: string[], status? :string[]}]`. This is used for the new status indicator on mdoc. First, it looks for the used `issuance` trusted certificates and then validates the `status`, if available, with the `status` trusted certificates associated with the `issuance` property.
+- cfe86fa: TokenStatusList is a new standard module on the agent. It allows you to create/update/fetch token status lists. It is up to the user to host this, this can be easily done with the `statusList` you receive from the `agent.tokenStatusList.createTokenStatusList(...)` function. Updating the statuslist allows you to change the status list credential state from valid to invalid, but also update the expiry time, rotate certificates, change signing algorithm, etc. Signatures are the default and mac should only be used if the user is aware of the security implications and has good reason to do so.
+- Updated dependencies [bd17194]
+- Updated dependencies [f127ff5]
+- Updated dependencies [84dfcf4]
+- Updated dependencies [fd5016d]
+- Updated dependencies [1d0c05d]
+- Updated dependencies [1a6562c]
+- Updated dependencies [117931c]
+- Updated dependencies [e18d2cf]
+- Updated dependencies [3f2bef1]
+- Updated dependencies [20d6ab1]
+- Updated dependencies [96dc69b]
+- Updated dependencies [7dfafeb]
+- Updated dependencies [60efbe0]
+- Updated dependencies [4f8bc6f]
+- Updated dependencies [9b64ef6]
+- Updated dependencies [f127ff5]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [e97c18b]
+- Updated dependencies [9b64ef6]
+- Updated dependencies [e2871bb]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [0a58888]
+- Updated dependencies [1e2088f]
+  - @credo-ts/openid4vc@0.7.1
+  - @credo-ts/core@0.7.1
+  - @credo-ts/anoncreds@0.7.1
+  - @credo-ts/question-answer@0.7.1
+  - @credo-ts/action-menu@0.7.1
+  - @credo-ts/didcomm@0.7.1
+  - @credo-ts/drpc@0.7.1
+  - @credo-ts/tenants@0.7.1
+
 ## 0.7.0
 
 ### Patch Changes

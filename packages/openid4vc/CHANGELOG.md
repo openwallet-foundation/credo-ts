@@ -1,5 +1,61 @@
 # Changelog
 
+## 0.7.1
+
+### Patch Changes
+
+- bd17194: fix: do not include c_nonce_expires_in in nonce endpoint response, it was never part of the nonce endpoint response
+- 1d0c05d: Exposed updateIssuer method on OpenId4VcIssuerApi
+- 1a6562c: fix(openid4vc): include auth-code scope in credential offer
+- 117931c: Updated so that when the holder verifies an incoming credential and it fails, it does not log the entire credential
+- e18d2cf: feat: interpret key attestation ISO 18045 levels hierarchically on the issuer, so a stronger attested level (e.g. `iso_18045_high`) satisfies a weaker required level (e.g. `iso_18045_moderate`). Also adds the `OpenId4VciKeyAttestationLevel` enum and `keyAttestationLevelSatisfies` helper.
+- 3f2bef1: Restore detailed mdoc verification error.
+- 20d6ab1: fix: correctly encode kid in the header of cose signatures, and do not include the kid in oid4vci request to the issuer
+- 60efbe0: feat(openid4vc): support the Client Attestation PoP challenge and DPoP-bound method (draft 09 of OAuth 2.0 Attestation-Based Client Authentication)
+
+  - The issuer can require a fresh, server-issued client attestation PoP `challenge` (enabled through the new `clientAttestationPopChallengeRequired` issuer config option). When enabled it advertises a `challenge_endpoint` and, at the token endpoint, uses the reactive `use_attestation_challenge` flow (returning the challenge in the `OAuth-Client-Attestation-Challenge` header) so clients retry automatically. The holder additionally fetches a challenge proactively from the `challenge_endpoint` for the pushed authorization request and authorization challenge endpoints.
+  - Support for the DPoP-bound client attestation method (`attest_jwt_client_auth_dpop`), where a single DPoP proof signed with the client instance key serves as both the DPoP proof and the client attestation PoP. Used automatically when the authorization server advertises it, in both the pre-authorized code flow and the authorization code flow. For the authorization code flow the whole interaction is bound to the client instance key: the authorization request commits the instance key as the DPoP key (`dpop_jkt`, with the issuer enforcing that the client attestation confirmation key matches the DPoP key), and the token endpoint uses the combined DPoP proof with that same key.
+  - The issuer now advertises the new `client_attestation_signing_alg_values_supported` / `client_attestation_pop_signing_alg_values_supported` metadata (configurable per issuer, stored as two nullable columns on the issuer record). Client attestation client authentication is advertised in `token_endpoint_auth_methods_supported` based on those signing algorithms being configured (matching how DPoP support is enabled via `dpop_signing_alg_values_supported`): `attest_jwt_client_auth` when the client attestation and pop signing algs are set, and the DPoP-bound `attest_jwt_client_auth_dpop` when the client attestation and DPoP signing algs are set.
+
+- 4f8bc6f: feat: add `deleteIssuanceSessionById` and `deleteVerificationSessionById` public APIs to allow cleanup of stored OpenID4VC session records.
+- 9b64ef6: feat: increase the max request payload size for oid4vci to 1mb and openid4vp to 5mb to be able to handle payloads containing images
+- cfe86fa: X509 trusted certificates now can be provided in a new format. Previously it was a list of base64/pem/der encoded certificates, but now you can _also_ provide a list of objects in the format `[{issuance: string[], status? :string[]}]`. This is used for the new status indicator on mdoc. First, it looks for the used `issuance` trusted certificates and then validates the `status`, if available, with the `status` trusted certificates associated with the `issuance` property.
+- e97c18b: Add a global `getTrustedIssuersForVerification` agent callback for resolving trusted issuers during verification. Unlike the now-deprecated X.509-module `getTrustedCertificatesForVerification` callback (which it takes precedence over), it supports both X.509 certificate chains and DIDs and is extensible to other trust mechanisms. It is wired into SD-JWT VC, mdoc, W3C V1 JWT and LD-JSON, W3C V2 JWT and SD-JWT, and OpenID4VP verification.
+- 9b64ef6: chore: update to oid4vc-ts 0.5 stable
+- e2871bb: feat(openid4vc): add a `getDynamicIssuanceSession` callback for dynamic (wallet-initiated) issuance that is not bound to a credential offer.
+
+  The callback is the single decision point and application-level abuse-prevention gate for dynamic issuance. It is invoked when:
+
+  - a Pushed Authorization Request or Authorization Challenge request is received by the internal authorization server without an `issuer_state` (the `chained` and `presentation` flows), or
+  - the credential endpoint receives an access token issued by an external authorization server that is not bound to a credential offer (the `external` flow).
+
+  The callback input is typed based on the endpoint that received the request (discriminated by `origin`: `pushedAuthorizationRequest`, `authorizationChallengeRequest`, or `credentialRequest`). For the authorization-server origins the parsed (not yet verified) wallet attestation, DPoP and raw request are available; for the credential-request origin the verified access token payload is available.
+
+  The callback returns options describing the issuance session to create (or throws / returns `undefined` to deny). The returned options are typed based on the chosen `authorizationFlow`:
+
+  - `chained` - authorization is delegated to a chained (internal) authorization server.
+  - `presentation` - authorization is completed using an OpenID4VP presentation during issuance (requires `getVerificationSession`).
+  - `external` - authorization has already been completed at an external authorization server (DPoP/wallet attestation requirements and refresh tokens are not configurable, as these are handled by the external authorization server).
+
+  This enables wallet-initiated issuance for the chained authorization server and presentation during issuance flows, and unifies the existing external authorization server dynamic issuance under the same callback.
+
+  The `allowDynamicIssuanceSessions` configuration option is deprecated, and the `getDynamicIssuanceSession` callback takes precedence.
+
+- cfe86fa: TokenStatusList is a new standard module on the agent. It allows you to create/update/fetch token status lists. It is up to the user to host this, this can be easily done with the `statusList` you receive from the `agent.tokenStatusList.createTokenStatusList(...)` function. Updating the statuslist allows you to change the status list credential state from valid to invalid, but also update the expiry time, rotate certificates, change signing algorithm, etc. Signatures are the default and mac should only be used if the user is aware of the security implications and has good reason to do so.
+- Updated dependencies [f127ff5]
+- Updated dependencies [84dfcf4]
+- Updated dependencies [fd5016d]
+- Updated dependencies [20d6ab1]
+- Updated dependencies [96dc69b]
+- Updated dependencies [7dfafeb]
+- Updated dependencies [f127ff5]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [e97c18b]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [0a58888]
+- Updated dependencies [1e2088f]
+  - @credo-ts/core@0.7.1
+
 ## 0.7.0
 
 ### Minor Changes

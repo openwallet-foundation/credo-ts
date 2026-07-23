@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.7.1
+
+### Patch Changes
+
+- fd5016d: feat: the `Cache` interface `get`, `set` and `remove` methods now accept a `CacheOptions` parameter with a `scope` that is either `'context'` (default) or `'global'`, allowing globally reusable data to be shared across agent contexts. The X.509 CRL summary cache, the Indy VDR pool lookup cache and the AnonCreds registry cache use the global scope, as they only hold publicly anchored data. The DID resolver caches documents of public did methods in the global scope, and documents of other did methods per agent context; the list of public did methods can be configured with the new `publicDidMethods` option of the dids module (default `['web', 'indy', 'sov', 'cheqd', 'hedera', 'webvh']`).
+
+  Behavior changes to be aware of:
+
+  - `InMemoryLruCache` now namespaces keys by `contextCorrelationId` by default. This fixes potential cross-context sharing of context-scoped entries (e.g. records cached by `CachedStorageService`) in multi-tenant setups. Single-context agents are not affected.
+  - `RedisCache` stores global-scope entries under a `global:` key prefix. Existing context-scoped Redis entries for the caches that moved to the global scope become cache misses after upgrading and expire through their TTL, causing a one-time refetch.
+
+- cfe86fa: X509 trusted certificates now can be provided in a new format. Previously it was a list of base64/pem/der encoded certificates, but now you can _also_ provide a list of objects in the format `[{issuance: string[], status? :string[]}]`. This is used for the new status indicator on mdoc. First, it looks for the used `issuance` trusted certificates and then validates the `status`, if available, with the `status` trusted certificates associated with the `issuance` property.
+- cfe86fa: TokenStatusList is a new standard module on the agent. It allows you to create/update/fetch token status lists. It is up to the user to host this, this can be easily done with the `statusList` you receive from the `agent.tokenStatusList.createTokenStatusList(...)` function. Updating the statuslist allows you to change the status list credential state from valid to invalid, but also update the expiry time, rotate certificates, change signing algorithm, etc. Signatures are the default and mac should only be used if the user is aware of the security implications and has good reason to do so.
+- Updated dependencies [f127ff5]
+- Updated dependencies [84dfcf4]
+- Updated dependencies [fd5016d]
+- Updated dependencies [20d6ab1]
+- Updated dependencies [96dc69b]
+- Updated dependencies [7dfafeb]
+- Updated dependencies [f127ff5]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [e97c18b]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [0a58888]
+- Updated dependencies [1e2088f]
+  - @credo-ts/core@0.7.1
+  - @credo-ts/didcomm@0.7.1
+
 ## 0.7.0
 
 ### Minor Changes
