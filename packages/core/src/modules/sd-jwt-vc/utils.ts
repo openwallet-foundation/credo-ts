@@ -3,7 +3,7 @@ import { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
 import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
-import { type Jwk, KeyManagementApi, PublicJwk } from '../kms'
+import { isKnownJwaSignatureAlgorithm, type Jwk, KeyManagementApi, PublicJwk } from '../kms'
 import { X509Certificate } from '../x509/X509Certificate'
 import { SdJwtVcError } from './SdJwtVcError'
 import type { SdJwtVcHolderBinding, SdJwtVcIssuer } from './SdJwtVcOptions'
@@ -81,8 +81,20 @@ export async function extractKeyFromHolderBinding(
 }
 
 /**
- * @todo validate the JWT header (alg)
+ * Set the `alg` from a JWT header on the public jwk, so signing and verification use the
+ * algorithm of the JWT rather than the first supported signature algorithm of the key.
+ *
+ * Throws an error if the alg is not a known JWA signature algorithm, or if the alg is not
+ * supported by the jwk.
  */
+export function setJwkAlgFromJwtHeader(publicJwk: PublicJwk, jwtHeaderAlg: unknown) {
+  if (typeof jwtHeaderAlg !== 'string' || !isKnownJwaSignatureAlgorithm(jwtHeaderAlg)) {
+    throw new CredoError(`Expected JWT header 'alg' to be a known JWA signature algorithm, found '${jwtHeaderAlg}'`)
+  }
+
+  publicJwk.alg = jwtHeaderAlg
+}
+
 export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Signer {
   const kms = agentContext.resolve(KeyManagementApi)
 
@@ -97,9 +109,6 @@ export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Sign
   }
 }
 
-/**
- * @todo validate the JWT header (alg)
- */
 export function getSdJwtVerifier(agentContext: AgentContext, key: PublicJwk): Verifier {
   const kms = agentContext.resolve(KeyManagementApi)
 

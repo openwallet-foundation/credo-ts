@@ -33,9 +33,13 @@ export interface CrlTestAgent {
  * Remember to `await agent.shutdown()` in `afterAll`.
  *
  * @param options.revocationCheck optional revocation configuration for the X509 module
+ * @param options.cache optional cache instance, e.g. to share a cache between two agents
  */
-export async function setupCrlAgent(options?: { revocationCheck?: X509RevocationCheckOptions }): Promise<CrlTestAgent> {
-  const cache = new InMemoryLruCache({ limit: 100 })
+export async function setupCrlAgent(options?: {
+  revocationCheck?: X509RevocationCheckOptions
+  cache?: InMemoryLruCache
+}): Promise<CrlTestAgent> {
+  const cache = options?.cache ?? new InMemoryLruCache({ limit: 100 })
 
   const { config, modules, dependencies } = getAgentOptions(
     'X509 CRL',

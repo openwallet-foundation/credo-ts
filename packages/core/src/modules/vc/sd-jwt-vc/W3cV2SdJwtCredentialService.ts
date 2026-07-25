@@ -14,6 +14,7 @@ import {
   getSdJwtSigner,
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
+  setJwkAlgFromJwtHeader,
 } from '../../sd-jwt-vc/utils'
 import type {
   W3cV2JsonCredential,
@@ -80,6 +81,8 @@ export class W3cV2SdJwtCredentialService {
     // Validate the disclosure frame
     const disclosureFrame = options.disclosureFrame as DisclosureFrame<W3cV2JsonCredential> | undefined
     this.validateDisclosureFrame(disclosureFrame)
+
+    publicJwk.alg = options.alg
 
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
@@ -168,6 +171,11 @@ export class W3cV2SdJwtCredentialService {
       const holderBinding = parseHolderBindingFromCredential(credential.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
+      setJwkAlgFromJwtHeader(issuerPublicKey, credential.sdJwt.header.alg)
+      if (holder && credential.sdJwt.kbJwt) {
+        setJwkAlgFromJwtHeader(holder.publicJwk, credential.sdJwt.kbJwt.header?.alg)
+      }
+
       sdJwt.config({
         verifier: getSdJwtVerifier(agentContext, issuerPublicKey),
         kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
@@ -232,6 +240,8 @@ export class W3cV2SdJwtCredentialService {
     payload.aud = options.domain
 
     const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
+
+    holder.publicJwk.alg = holder.alg
 
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
@@ -309,6 +319,11 @@ export class W3cV2SdJwtCredentialService {
       const proverPublicKey = getPublicJwkFromVerificationMethod(proverVerificationMethod)
       const holderBinding = parseHolderBindingFromCredential(presentation.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
+
+      setJwkAlgFromJwtHeader(proverPublicKey, presentation.sdJwt.header.alg)
+      if (holder && presentation.sdJwt.kbJwt) {
+        setJwkAlgFromJwtHeader(holder.publicJwk, presentation.sdJwt.kbJwt.header?.alg)
+      }
 
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, proverPublicKey),
