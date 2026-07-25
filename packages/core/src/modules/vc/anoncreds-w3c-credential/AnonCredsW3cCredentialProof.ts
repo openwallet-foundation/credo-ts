@@ -2,7 +2,7 @@ import { IsEnum, IsOptional, IsString } from 'class-validator'
 
 import { IsUri } from '../../../utils/validators'
 
-export interface AnonCredsW3cBridgeProofOptions {
+export interface AnonCredsW3cCredentialProofOptions {
   type: string
   cryptosuite: string
   verificationMethod: string
@@ -19,11 +19,11 @@ export interface AnonCredsW3cBridgeProofOptions {
 /**
  * VC1 anoncreds compatibility proof model.
  *
- * Represents a `DataIntegrityProof`-shaped wire payload used by the anoncreds VC1 bridge,
- * while keeping the bridge-specific model separate from true linked-data proof types.
+ * Represents a `DataIntegrityProof`-shaped wire payload used by the anoncreds W3C credential support,
+ * while keeping the credential-specific model separate from true linked-data proof types.
  */
-export class AnonCredsW3cBridgeProof {
-  public constructor(options: AnonCredsW3cBridgeProofOptions) {
+export class AnonCredsW3cCredentialProof {
+  public constructor(options: AnonCredsW3cCredentialProofOptions) {
     if (options) {
       this.type = options.type
       this.cryptosuite = options.cryptosuite

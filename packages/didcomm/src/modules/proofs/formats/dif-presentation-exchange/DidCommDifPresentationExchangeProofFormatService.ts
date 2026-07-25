@@ -3,7 +3,7 @@ import type {
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeSubmission,
   EncodedX509Certificate,
-  IAnonCredsW3cBridgeService,
+  IAnonCredsW3cCredentialService,
   JsonValue,
   W3cJsonPresentation,
   W3cVerifiablePresentation,
@@ -11,8 +11,8 @@ import type {
   X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import {
-  ANONCREDS_W3C_BRIDGE_CRYPTOSUITE,
-  AnonCredsW3cBridgeServiceSymbol,
+  ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE,
+  AnonCredsW3cCredentialServiceSymbol,
   ClaimFormat,
   CredoError,
   DifPresentationExchangeService,
@@ -241,17 +241,17 @@ export class DidCommDifPresentationExchangeProofFormatService
     return { attachment, format }
   }
 
-  private shouldVerifyUsingAnonCredsW3cBridge(
+  private shouldVerifyWithAnonCredsW3cService(
     presentation: W3cVerifiablePresentation,
     presentationSubmission: DifPresentationExchangeSubmission
   ) {
     if (presentation.claimFormat !== ClaimFormat.LdpVp) return false
     const descriptorMap = presentationSubmission.descriptor_map
 
-    const verifyUsingAnonCredsW3cBridge = descriptorMap.every((descriptor) => descriptor.format === ClaimFormat.DiVp)
-    if (!verifyUsingAnonCredsW3cBridge) return false
+    const verifyWithAnonCredsW3c = descriptorMap.every((descriptor) => descriptor.format === ClaimFormat.DiVp)
+    if (!verifyWithAnonCredsW3c) return false
 
-    return presentation.anoncredsW3cBridgeCryptosuites.includes(ANONCREDS_W3C_BRIDGE_CRYPTOSUITE)
+    return presentation.anoncredsW3cCredentialCryptosuites.includes(ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE)
   }
 
   public async processPresentation(
@@ -332,11 +332,11 @@ export class DidCommDifPresentationExchangeProofFormatService
           domain: request.options.domain,
         })
       } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
-        if (this.shouldVerifyUsingAnonCredsW3cBridge(parsedPresentation, jsonPresentation.presentation_submission)) {
-          const anoncredsW3cBridgeService = agentContext.dependencyManager.resolve<IAnonCredsW3cBridgeService>(
-            AnonCredsW3cBridgeServiceSymbol
+        if (this.shouldVerifyWithAnonCredsW3cService(parsedPresentation, jsonPresentation.presentation_submission)) {
+          const anoncredsW3cCredentialService = agentContext.dependencyManager.resolve<IAnonCredsW3cCredentialService>(
+            AnonCredsW3cCredentialServiceSymbol
           )
-          const proofVerificationResult = await anoncredsW3cBridgeService.verifyPresentation(agentContext, {
+          const proofVerificationResult = await anoncredsW3cCredentialService.verifyPresentation(agentContext, {
             presentation: parsedPresentation as W3cJsonLdVerifiablePresentation,
             presentationDefinition: request.presentation_definition,
             presentationSubmission: jsonPresentation.presentation_submission,
@@ -347,8 +347,8 @@ export class DidCommDifPresentationExchangeProofFormatService
             isValid: proofVerificationResult,
             validations: {},
             error: {
-              name: 'AnonCredsW3cBridgeError',
-              message: 'Verifying the anoncreds W3C bridge proof failed. An unknown error occurred.',
+              name: 'AnonCredsW3cCredentialError',
+              message: 'Verifying the anoncreds W3C credential proof failed. An unknown error occurred.',
             },
           }
         } else {

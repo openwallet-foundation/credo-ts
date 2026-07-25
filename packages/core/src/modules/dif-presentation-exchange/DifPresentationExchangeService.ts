@@ -28,8 +28,11 @@ import {
   W3cCredentialService,
   W3cPresentation,
 } from '../vc'
-import type { IAnonCredsW3cBridgeService } from '../vc/anoncreds-w3c-bridge'
-import { ANONCREDS_W3C_BRIDGE_CRYPTOSUITE, AnonCredsW3cBridgeServiceSymbol } from '../vc/anoncreds-w3c-bridge'
+import type { IAnonCredsW3cCredentialService } from '../vc/anoncreds-w3c-credential'
+import {
+  ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE,
+  AnonCredsW3cCredentialServiceSymbol,
+} from '../vc/anoncreds-w3c-credential'
 import { purposes } from '../vc/linked-data-proofs/adapters/jsonld-signatures-adapter'
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import type {
@@ -245,10 +248,10 @@ export class DifPresentationExchangeService {
           getSphereonOriginalVerifiableCredential(c.credential)
         )
 
-        const extraProofOptions = this.shouldSignUsingAnonCredsW3cBridge(presentationToCreate)
+        const extraProofOptions = this.shouldSignUsingAnonCredsW3cService(presentationToCreate)
           ? {
               typeSupportsSelectiveDisclosure: true,
-              type: `DataIntegrityProof.${ANONCREDS_W3C_BRIDGE_CRYPTOSUITE}`,
+              type: `DataIntegrityProof.${ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE}`,
             }
           : {}
 
@@ -465,10 +468,10 @@ export class DifPresentationExchangeService {
 
   /**
    * if all submission descriptors have a format of di | ldp,
-   * and all credentials have an anoncreds bridge proof we default to
-   * signing the presentation using the ANONCREDS_W3C_BRIDGE_CRYPTOSUITE
+   * and all credentials have an anoncreds W3C credential proof we default to
+   * signing the presentation using the ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE
    */
-  private shouldSignUsingAnonCredsW3cBridge(
+  private shouldSignUsingAnonCredsW3cService(
     presentationToCreate: PresentationToCreate,
     presentationSubmission?: DifPresentationExchangeSubmission
   ) {
@@ -482,15 +485,13 @@ export class DifPresentationExchangeService {
         )
       )
 
-    const credentialsAreSignedUsingAnonCredsW3cBridge = presentationToCreate.verifiableCredentials.every(
-      ({ credential }) => {
-        const firstCredential = credential.firstCredential
-        if (firstCredential.claimFormat !== ClaimFormat.LdpVc) return false
-        return firstCredential.anoncredsW3cBridgeCryptosuites.includes(ANONCREDS_W3C_BRIDGE_CRYPTOSUITE)
-      }
-    )
+    const credentialsAreSignedUsingAnonCredsW3c = presentationToCreate.verifiableCredentials.every(({ credential }) => {
+      const firstCredential = credential.firstCredential
+      if (firstCredential.claimFormat !== ClaimFormat.LdpVc) return false
+      return firstCredential.anoncredsW3cCredentialCryptosuites.includes(ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE)
+    })
 
-    return validDescriptorFormat && credentialsAreSignedUsingAnonCredsW3cBridge
+    return validDescriptorFormat && credentialsAreSignedUsingAnonCredsW3c
   }
 
   private getPresentationSignCallback(agentContext: AgentContext, presentationToCreate: PresentationToCreate) {
@@ -534,16 +535,16 @@ export class DifPresentationExchangeService {
         return signedPresentation.encoded as W3CVerifiablePresentation
       }
       if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
-        if (this.shouldSignUsingAnonCredsW3cBridge(presentationToCreate, presentationSubmission)) {
+        if (this.shouldSignUsingAnonCredsW3cService(presentationToCreate, presentationSubmission)) {
           // make sure the descriptors format properties are set correctly
           presentationSubmission.descriptor_map = presentationSubmission.descriptor_map.map((descriptor) => ({
             ...descriptor,
             format: 'di_vp',
           }))
-          const anoncredsBridgeService = agentContext.dependencyManager.resolve<IAnonCredsW3cBridgeService>(
-            AnonCredsW3cBridgeServiceSymbol
+          const anoncredsW3cCredentialService = agentContext.dependencyManager.resolve<IAnonCredsW3cCredentialService>(
+            AnonCredsW3cCredentialServiceSymbol
           )
-          const presentation = await anoncredsBridgeService.createPresentation(agentContext, {
+          const presentation = await anoncredsW3cCredentialService.createPresentation(agentContext, {
             presentationDefinition,
             presentationSubmission,
             selectedCredentialRecords: presentationToCreate.verifiableCredentials.map((vc) => vc.credential),

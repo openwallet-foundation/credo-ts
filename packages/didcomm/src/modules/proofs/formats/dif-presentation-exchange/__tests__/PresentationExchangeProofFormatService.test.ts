@@ -6,7 +6,7 @@ import {
   DifPresentationExchangeService,
 } from '../../../../../../../core/src/modules/dif-presentation-exchange'
 import {
-  AnonCredsW3cBridgeServiceSymbol,
+  AnonCredsW3cCredentialServiceSymbol,
   CREDENTIALS_CONTEXT_V1_URL,
   W3cCredentialRecord,
   W3cCredentialRepository,
@@ -270,12 +270,12 @@ describe('Presentation Exchange ProofFormatService', () => {
         .mockResolvedValue(successfulVerificationResult)
 
       const originalResolve = agent.dependencyManager.resolve.bind(agent.dependencyManager)
-      const anoncredsBridgeService = {
+      const anoncredsCredentialService = {
         verifyPresentation: vi.fn().mockResolvedValue(true),
       }
       const resolveSpy = vi.spyOn(agent.dependencyManager, 'resolve').mockImplementation((token: unknown) => {
-        if (token === AnonCredsW3cBridgeServiceSymbol) {
-          return anoncredsBridgeService as never
+        if (token === AnonCredsW3cCredentialServiceSymbol) {
+          return anoncredsCredentialService as never
         }
 
         return originalResolve(token as never)
@@ -289,7 +289,7 @@ describe('Presentation Exchange ProofFormatService', () => {
         })
 
         expect(result).toBe(true)
-        expect(anoncredsBridgeService.verifyPresentation).toHaveBeenCalledTimes(1)
+        expect(anoncredsCredentialService.verifyPresentation).toHaveBeenCalledTimes(1)
         expect(genericVerifySpy).not.toHaveBeenCalled()
       } finally {
         resolveSpy.mockRestore()

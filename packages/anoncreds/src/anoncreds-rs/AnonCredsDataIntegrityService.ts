@@ -1,1 +1,1 @@
-export { AnonCredsW3cBridgeService as AnonCredsDataIntegrityService } from './AnonCredsW3cBridgeService'
+export { AnonCredsW3cCredentialService as AnonCredsDataIntegrityService } from './AnonCredsW3cCredentialService'

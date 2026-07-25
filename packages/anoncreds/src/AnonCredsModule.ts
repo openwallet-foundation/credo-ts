@@ -1,10 +1,10 @@
 import type { DependencyManager, Module, Update } from '@credo-ts/core'
-import { AnonCredsW3cBridgeServiceSymbol } from '@credo-ts/core'
+import { AnonCredsW3cCredentialServiceSymbol } from '@credo-ts/core'
 import { AnonCredsApi } from './AnonCredsApi'
 import type { AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from './anoncreds-rs'
-import { AnonCredsW3cBridgeService } from './anoncreds-rs/AnonCredsW3cBridgeService'
+import { AnonCredsW3cCredentialService } from './anoncreds-rs/AnonCredsW3cCredentialService'
 import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsKeyCorrectnessProofRepository,
@@ -50,7 +50,7 @@ export class AnonCredsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsIssuerServiceSymbol, AnonCredsRsIssuerService)
     dependencyManager.registerSingleton(AnonCredsVerifierServiceSymbol, AnonCredsRsVerifierService)
 
-    dependencyManager.registerSingleton(AnonCredsW3cBridgeServiceSymbol, AnonCredsW3cBridgeService)
+    dependencyManager.registerSingleton(AnonCredsW3cCredentialServiceSymbol, AnonCredsW3cCredentialService)
   }
 
   public updates = [
