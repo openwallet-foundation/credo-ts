@@ -41,6 +41,7 @@ import {
   parseIssuerFromCredential,
   resolveDidUrl,
   resolveSigningPublicJwkFromDidUrl,
+  setJwkAlgFromJwtHeader,
 } from './utils'
 
 export interface SdJwtVc<
@@ -133,7 +134,7 @@ export class SdJwtVcService {
       x5c: issuer.x5c?.map((cert) => cert.toString('base64')),
     } as const
 
-    issuer.publicJwk.signatureAlgorithm = issuer.alg
+    issuer.publicJwk.alg = issuer.alg
 
     const sdJwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
@@ -211,7 +212,7 @@ export class SdJwtVcService {
         })
       : undefined
     if (holder) {
-      holder.publicJwk.signatureAlgorithm = holder.alg
+      holder.publicJwk.alg = holder.alg
     }
     sdjwt.config({
       kbSigner: holder ? getSdJwtSigner(agentContext, holder.publicJwk) : undefined,
@@ -334,8 +335,8 @@ export class SdJwtVcService {
 
       const statusValidationDisabled = disableStatusValidation === true || verifyCredentialStatus === false
 
-      issuerWithKey.publicJwk.setAlgFromJwtHeader(sdJwtVc.jwt?.header?.alg as string | undefined)
-      holder?.publicJwk.setAlgFromJwtHeader(sdJwtVc.kbJwt?.header?.alg as string | undefined)
+      setJwkAlgFromJwtHeader(issuerWithKey.publicJwk, sdJwtVc.jwt.header?.alg)
+      if (holder && sdJwtVc.kbJwt) setJwkAlgFromJwtHeader(holder.publicJwk, sdJwtVc.kbJwt.header?.alg)
 
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, issuerWithKey.publicJwk),
@@ -682,12 +683,6 @@ export class SdJwtVcService {
     }
   ): Verifier {
     return async (data, signatureBase64Url) => {
-      // No matched trusted issuer (e.g. did default-allow path with no configured trusted issuers).
-      // Preserve the previous behavior of verifying the status list with the credential issuer key.
-      if (!matchedTrustedIssuer) {
-        return getSdJwtVerifier(agentContext, credentialIssuerKey)(data, signatureBase64Url)
-      }
-
       // A failure to extract or authorize the status list signer is thrown (rather than returning
       // `false`) so the verification result carries the actual reason instead of a generic
       // "invalid signature". Only the final signature check returns a boolean.
@@ -698,6 +693,15 @@ export class SdJwtVcService {
         throw new SdJwtVcError('Unable to decode the status list JWT header to extract the status list signer.', {
           cause: error,
         })
+      }
+
+      // No matched trusted issuer (e.g. did default-allow path with no configured trusted issuers).
+      // Preserve the previous behavior of verifying the status list with the credential issuer key.
+      if (!matchedTrustedIssuer) {
+        // Copy the jwk, so the alg of the status list does not affect verification of the credential itself
+        const signerJwk = PublicJwk.fromUnknown(credentialIssuerKey.toJson())
+        setJwkAlgFromJwtHeader(signerJwk, header.alg)
+        return getSdJwtVerifier(agentContext, signerJwk)(data, signatureBase64Url)
       }
 
       if (matchedTrustedIssuer.method === 'x509') {
@@ -743,7 +747,7 @@ export class SdJwtVcService {
         }
 
         const signerJwk = statusListChain[0].publicJwk
-        signerJwk.setAlgFromJwtHeader(header.alg)
+        setJwkAlgFromJwtHeader(signerJwk, header.alg)
         return getSdJwtVerifier(agentContext, signerJwk)(data, signatureBase64Url)
       }
 
@@ -775,7 +779,7 @@ export class SdJwtVcService {
 
       const { verificationMethod } = await resolveDidUrl(agentContext, didUrl)
       const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-      publicJwk.setAlgFromJwtHeader(header.alg)
+      setJwkAlgFromJwtHeader(publicJwk, header.alg)
       return getSdJwtVerifier(agentContext, publicJwk)(data, signatureBase64Url)
     }
   }

@@ -634,7 +634,7 @@ describe('OpenId4VcIssuer', () => {
           credentialConfigurationId: openBadgeCredentialSdJwtVc.id,
           credentials: [
             {
-              alg: 'ES256',
+              alg: 'EdDSA',
               verificationMethod: issuerVerificationMethod.id,
               credential: new W3cV2Credential({
                 type: openBadgeCredentialSdJwtVc.credential_definition.type,

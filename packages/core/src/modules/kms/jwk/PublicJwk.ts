@@ -7,11 +7,7 @@ import { KeyManagementError } from '../error/KeyManagementError'
 import { legacyKeyIdFromPublicJwk } from '../legacy'
 import { asymmetricPublicJwkMatches } from './equals'
 import { getJwkHumanDescription } from './humanDescription'
-import {
-  isKnownJwaSignatureAlgorithm,
-  type KnownJwaKeyAgreementAlgorithm,
-  type KnownJwaSignatureAlgorithm,
-} from './jwa'
+import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
 import { calculateJwkThumbprint } from './jwkThumbprint'
 import { assertJwkAsymmetric, type KmsJwkPublicAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
 import {
@@ -213,27 +209,31 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     return alg as this['supportedSignatureAlgorithms'][number]
   }
 
-  public set signatureAlgorithm(alg: KnownJwaSignatureAlgorithm) {
-    const supportedSignatureAlgorithms = this.jwk.supportedSignatureAlgorithms ?? []
-
-    if (!supportedSignatureAlgorithms.some((supportedAlg) => supportedAlg === alg)) {
-      throw new KeyManagementError(`${this.jwkTypeHumanDescription} does not support signature alg '${alg}'.`)
-    }
-
-    this.jwk.jwk.alg = alg
+  /**
+   * The `alg` field of the jwk, indicating the algorithm the key is intended to be used with.
+   */
+  public get alg(): string | undefined {
+    return this.jwk.jwk.alg
   }
 
   /**
-   * Set the signature algorithm from a JWT header `alg` value when it is a known
-   * JWA algorithm supported by this key. Otherwise leaves the key unchanged.
+   * Set the `alg` field of the jwk, indicating the algorithm the key is intended to be used
+   * with. This restricts the jwk to that algorithm (e.g. {@link signatureAlgorithm} will
+   * return the `alg` when defined).
+   *
+   * If the algorithm is not supported by this jwk an error will be thrown.
    */
-  public setAlgFromJwtHeader(jwtHeaderAlg?: string) {
-    if (!jwtHeaderAlg || !isKnownJwaSignatureAlgorithm(jwtHeaderAlg)) return
+  public set alg(alg: KnownJwaSignatureAlgorithm | KnownJwaKeyAgreementAlgorithm) {
+    const supportedAlgorithms: Array<KnownJwaSignatureAlgorithm | KnownJwaKeyAgreementAlgorithm> = [
+      ...(this.jwk.supportedSignatureAlgorithms ?? []),
+      ...(this.jwk.supportedEncryptionKeyAgreementAlgorithms ?? []),
+    ]
 
-    const supportedSignatureAlgorithms = this.jwk.supportedSignatureAlgorithms ?? []
-    if (!supportedSignatureAlgorithms.some((supportedAlg) => supportedAlg === jwtHeaderAlg)) return
+    if (!supportedAlgorithms.includes(alg)) {
+      throw new KeyManagementError(`${this.jwkTypeHumanDescription} does not support alg '${alg}'.`)
+    }
 
-    this.jwk.jwk.alg = jwtHeaderAlg
+    this.jwk.jwk.alg = alg
   }
 
   public assertSignatureAlgorithmSupported(
