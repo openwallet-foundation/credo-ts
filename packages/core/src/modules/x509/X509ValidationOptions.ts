@@ -57,7 +57,13 @@ export interface X509RevocationCheckOptions {
   maxCrlSizeBytes?: number
 
   /**
-   * Cache expiry time in seconds for CRL data
+   * How long (in seconds) a verified CRL is served from the cache without contacting the
+   * distribution point. After this period the CRL bytes are fetched again: when unchanged (same
+   * SHA-256) the cached CRL is reused without re-parsing or re-verifying, otherwise it is fully
+   * re-verified. Independently of this period, a cached CRL is never served past its own
+   * `nextUpdate`. When unset in per-call revocation options, the value configured on the X509
+   * module's `revocationCheck` applies.
+   *
    * @default 3600 (1 hour)
    */
   crlCacheExpirySeconds?: number
