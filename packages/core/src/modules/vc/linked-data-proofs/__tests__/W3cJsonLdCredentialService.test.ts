@@ -8,6 +8,7 @@ import { ConsoleLogger, LogLevel } from '../../../../logger'
 import { asArray, TypedArrayEncoder } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import {
+  DidDocument,
   DidKey,
   DidRepository,
   DidsApi,
@@ -143,9 +144,90 @@ describe('W3cJsonLdCredentialsService', () => {
             verificationMethod:
               'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV#z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
           })
-        }).rejects.toThrow(
-          `Error issuing W3C JSON-LD VC. Key with key id 'HC8vuuvP8x9kVJizh2eujQjo2JwFQJz6w63szzdbu1Q7' not found in backend 'node'. The key may exist in one of the key management services in which case the key management service does not support the 'sign' operation with algorithm 'EdDSA'`
+        }).rejects.toThrow(`Created did 'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV' not found`)
+      })
+
+      it('calls resolveVerificationMethodFromCreatedDidRecord with assertionMethod purpose', async () => {
+        const spy = vi.spyOn(DidsApi.prototype, 'resolveVerificationMethodFromCreatedDidRecord')
+
+        const credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
+
+        await w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential,
+          proofType: 'Ed25519Signature2018',
+          verificationMethod,
+        })
+
+        expect(spy).toHaveBeenCalledWith(verificationMethod, ['assertionMethod'])
+        spy.mockRestore()
+      })
+
+      it('does not call document loader with issuer VM DID URL for key lookup', async () => {
+        const innerLoader = vi.fn(async (url: string) => customDocumentLoader()(url))
+
+        const trackingDocumentLoader = (_agentContext?: unknown) => innerLoader
+
+        const serviceWithTrackingLoader = new W3cJsonLdCredentialService(
+          signatureSuiteRegistry,
+          new W3cCredentialsModuleConfig({ documentLoader: trackingDocumentLoader })
         )
+
+        const credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
+
+        const result = await serviceWithTrackingLoader.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential,
+          proofType: 'Ed25519Signature2018',
+          verificationMethod,
+        })
+
+        const didUrlCalls = innerLoader.mock.calls.filter(([url]) => url.startsWith('did:'))
+        expect(didUrlCalls).toHaveLength(0)
+
+        expect(result).toBeInstanceOf(W3cJsonLdVerifiableCredential)
+        expect(asArray(result.proof)[0].verificationMethod).toEqual(verificationMethod)
+      })
+
+      it('rejects a verification method not authorized for assertionMethod', async () => {
+        const kms = agentContext.resolve(KeyManagementApi)
+        const didRepository = agentContext.resolve(DidRepository)
+
+        const authOnlyKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+        const authOnlyDid = 'did:example:auth-only-test'
+        const authOnlyVmId = `${authOnlyDid}#auth-key`
+
+        await didRepository.storeCreatedDid(agentContext, {
+          did: authOnlyDid,
+          didDocument: JsonTransformer.fromJSON(
+            {
+              '@context': ['https://www.w3.org/ns/did/v1'],
+              id: authOnlyDid,
+              verificationMethod: [
+                {
+                  id: authOnlyVmId,
+                  type: 'JsonWebKey2020',
+                  controller: authOnlyDid,
+                  publicKeyJwk: authOnlyKey.publicJwk,
+                },
+              ],
+              authentication: [authOnlyVmId],
+            },
+            DidDocument
+          ),
+          keys: [{ didDocumentRelativeKeyId: '#auth-key', kmsKeyId: authOnlyKey.keyId }],
+        })
+
+        const credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
+
+        await expect(
+          w3cJsonLdCredentialService.signCredential(agentContext, {
+            format: ClaimFormat.LdpVc,
+            credential,
+            proofType: 'Ed25519Signature2018',
+            verificationMethod: authOnlyVmId,
+          })
+        ).rejects.toThrow(`Unable to locate verification method with id '${authOnlyVmId}' in purposes assertionMethod`)
       })
     })
 
