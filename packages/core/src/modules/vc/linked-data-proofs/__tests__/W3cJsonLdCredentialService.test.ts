@@ -417,7 +417,7 @@ describe('W3cJsonLdCredentialsService', () => {
 
         expect(result.isValid).toBe(false)
         expect(result.error).toBeInstanceOf(Error)
-        expect(result.error?.message).toContain('must be verified through the anoncreds W3C bridge path')
+        expect(result.error?.message).toContain('must be verified through the anoncreds W3C credential path')
       })
 
       it('should fail because of invalid signature', async () => {
@@ -602,7 +602,7 @@ describe('W3cJsonLdCredentialsService', () => {
 
         expect(result.isValid).toBe(false)
         expect(result.error).toBeInstanceOf(Error)
-        expect(result.error?.message).toContain('must be verified through the anoncreds W3C bridge path')
+        expect(result.error?.message).toContain('must be verified through the anoncreds W3C credential path')
       })
 
       it('should reject a presentation whose embedded credential issuer is not trusted', async () => {
