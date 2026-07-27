@@ -17,6 +17,7 @@ import {
   X509CrlExtensionIdentifier,
   x509SignatureAlgorithmToJwa,
 } from './utils'
+import { normalizeSerialNumber } from './utils/serialNumber'
 import { X509Certificate, X509KeyUsage } from './X509Certificate'
 import type { X509RevocationReason } from './X509CrlDistributionPoint'
 import { X509Error } from './X509Error'
@@ -61,14 +62,6 @@ export interface X509IssuingDistributionPoint {
   indirectCRL: boolean
   /** Whether the CRL only covers attribute certificates. */
   onlyContainsAttributeCerts: boolean
-}
-
-/**
- * Normalize a hexadecimal serial number for comparison by lowercasing and stripping leading
- * zeros, so that e.g. `0A1B2C` and `0a1b2c` are treated as equal.
- */
-function normalizeSerialNumber(serialNumber: string): string {
-  return serialNumber.toLowerCase().replace(/^0+/, '') || '0'
 }
 
 /**
@@ -309,6 +302,13 @@ export class X509CertificateRevocationList {
   }
 
   /**
+   * The object identifiers of all critical extensions on this CRL.
+   */
+  public get criticalExtensionIds(): string[] {
+    return this.crl.extensions.filter((extension) => extension.critical).map((extension) => extension.type)
+  }
+
+  /**
    * Whether the extension with the given id is marked critical. Throws if the extension is absent.
    */
   public isExtensionCritical(id: X509CrlExtensionIdentifier | string): boolean {
@@ -322,6 +322,10 @@ export class X509CertificateRevocationList {
 
   /**
    * Verify this CRL with the issuer's certificate.
+   *
+   * NOTE: the CRL summary cache fast path in `X509RevocationService` reproduces the
+   * issuer-certificate-dependent checks below (public key, subject name, cRLSign key usage). If a
+   * new check depending on the issuer certificate is added here, update that gate in tandem.
    */
   public async verify(
     {

@@ -1,16 +1,29 @@
 import nock from 'nock'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getAgentContext } from '../../../../tests/helpers'
 import type { Agent } from '../../../agent/Agent'
 import type { AgentContext } from '../../../agent/context'
-import { TypedArrayEncoder } from '../../../utils'
-import type { InMemoryLruCache } from '../../cache'
-import { fetchCrl, getCachedCrl, setCachedCrl } from '../utils/crlFetcher'
+import { CacheModuleConfig, type InMemoryLruCache } from '../../cache'
+import { fetchCrl, getCachedCrlSummary, setCachedCrlSummary } from '../utils/crlFetcher'
+import type { X509CrlSummary } from '../utils/crlSummary'
 import { X509Error } from '../X509Error'
 import { mockCrl, mockCrlHttpError, mockCrlNetworkError, setupCrlAgent } from './x509CrlTestUtils'
 
 const URL_A = 'https://crl.example/a.crl'
-const crlData = new Uint8Array([0x30, 0x01, 0x02, 0x03, 0x04, 0x05])
+
+const crlSummary: X509CrlSummary = {
+  issuerNameSha256: 'ab'.repeat(32),
+  issuerPublicJwkThumbprint: 'cd'.repeat(32),
+  thisUpdate: 1700000000000,
+  nextUpdate: 1700003600000,
+  crlSha256: 'ef'.repeat(32),
+  staleAt: 1700001800000,
+  criticalExtensionIds: [],
+  serialNumbers: ['0a'],
+  revocationDates: [1700000000000],
+  reasons: [null],
+}
 
 describe('fetchCrl', () => {
   let agent: Agent
@@ -52,7 +65,7 @@ describe('fetchCrl', () => {
   })
 })
 
-describe('CRL cache helpers', () => {
+describe('CRL summary cache helpers', () => {
   let agent: Agent
   let agentContext: AgentContext
   let cache: InMemoryLruCache
@@ -69,32 +82,64 @@ describe('CRL cache helpers', () => {
     cache.clear()
   })
 
-  it('round-trips cached bytes and returns null on a miss', async () => {
-    expect(await getCachedCrl(agentContext, URL_A)).toBeNull()
+  it('round-trips a cached summary and returns null on a miss', async () => {
+    expect(await getCachedCrlSummary(agentContext, URL_A)).toBeNull()
 
-    await setCachedCrl(agentContext, URL_A, crlData, 3600)
+    await setCachedCrlSummary(agentContext, URL_A, crlSummary, 3600)
 
-    const cached = await getCachedCrl(agentContext, URL_A)
-    expect(cached).not.toBeNull()
-    expect(Array.from(cached as Uint8Array)).toEqual(Array.from(crlData))
+    expect(await getCachedCrlSummary(agentContext, URL_A)).toEqual(crlSummary)
   })
 
-  it('stores the cache entry with the provided expiry', async () => {
+  it('stores the summary under a versioned key with the provided expiry', async () => {
     const setSpy = vi.spyOn(cache, 'set')
 
-    await setCachedCrl(agentContext, URL_A, crlData, 1234)
+    await setCachedCrlSummary(agentContext, URL_A, crlSummary, 1234)
 
-    expect(setSpy).toHaveBeenCalledWith(agentContext, `x509:crl:${URL_A}`, TypedArrayEncoder.toBase64(crlData), 1234)
+    expect(setSpy).toHaveBeenCalledWith(agentContext, `x509:crl-summary:v1:${URL_A}`, crlSummary, 1234, {
+      scope: 'global',
+    })
     setSpy.mockRestore()
   })
 
-  it('does not cache when the TTL is zero or negative', async () => {
+  it('does not cache a summary when the TTL is zero or negative', async () => {
     const setSpy = vi.spyOn(cache, 'set')
 
-    await setCachedCrl(agentContext, URL_A, crlData, 0)
+    await setCachedCrlSummary(agentContext, URL_A, crlSummary, 0)
 
     expect(setSpy).not.toHaveBeenCalled()
-    expect(await getCachedCrl(agentContext, URL_A)).toBeNull()
+    expect(await getCachedCrlSummary(agentContext, URL_A)).toBeNull()
     setSpy.mockRestore()
+  })
+
+  it('treats a cached value that is not a valid summary as a miss', async () => {
+    await cache.set(agentContext, `x509:crl-summary:v1:${URL_A}`, 'not a summary', 3600, { scope: 'global' })
+    expect(await getCachedCrlSummary(agentContext, URL_A)).toBeNull()
+
+    await cache.set(
+      agentContext,
+      `x509:crl-summary:v1:${URL_A}`,
+      { ...crlSummary, serialNumbers: ['0a', '0b'] },
+      3600,
+      { scope: 'global' }
+    )
+    expect(await getCachedCrlSummary(agentContext, URL_A)).toBeNull()
+  })
+
+  it('treats a throwing cache as a miss', async () => {
+    const getSpy = vi.spyOn(cache, 'get').mockRejectedValueOnce(new Error('cache unavailable'))
+
+    expect(await getCachedCrlSummary(agentContext, URL_A)).toBeNull()
+    getSpy.mockRestore()
+  })
+
+  it('shares a cached summary across agent contexts', async () => {
+    const otherAgentContext = getAgentContext({
+      contextCorrelationId: 'other-tenant',
+      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
+    })
+
+    await setCachedCrlSummary(agentContext, URL_A, crlSummary, 3600)
+
+    expect(await getCachedCrlSummary(otherAgentContext, URL_A)).toEqual(crlSummary)
   })
 })

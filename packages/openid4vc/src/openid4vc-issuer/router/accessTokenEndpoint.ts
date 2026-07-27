@@ -2,6 +2,7 @@ import { CredoError, joinUriParts, type Query, utils } from '@credo-ts/core'
 import type { HttpMethod, Jwk, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
 import {
   authorizationCodeGrantIdentifier,
+  decodeJwt,
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
   preAuthorizedCodeGrantIdentifier,
@@ -19,6 +20,10 @@ import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
+
+// draft 09 §6.1 response header carrying a fresh client attestation challenge. The oid4vc-ts library
+// does not export this constant, so it is defined locally.
+const oauthClientAttestationChallengeHeader = 'OAuth-Client-Attestation-Challenge'
 
 export function configureAccessTokenEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.post(config.accessTokenEndpointPath, handleTokenRequest(config))
@@ -105,9 +110,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         })
       }
 
-      oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
-        issuanceSessionId: issuanceSession.id,
-      })
+      oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })
       let verificationResult: VerifyAccessTokenRequestReturn
 
       if (grant.grantType === preAuthorizedCodeGrantIdentifier) {
@@ -235,6 +238,52 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           error: Oauth2ErrorCodes.UnsupportedGrantType,
           error_description: 'Unsupported grant type',
         })
+      }
+
+      // Client Attestation PoP challenge (draft 09). A provided challenge is always validated; the reactive
+      // `use_attestation_challenge` flow (mint a fresh challenge, return it in the
+      // `OAuth-Client-Attestation-Challenge` header, client retries) is only used when the challenge is
+      // required. A provided-but-invalid challenge is rejected even when not required.
+      if (verificationResult.clientAttestation) {
+        // The method is discriminated by the presence of the client attestation pop jwt (draft 09 §7.3):
+        // the standard method has a pop jwt (challenge in its `challenge` claim); the DPoP-bound method
+        // (`attest_jwt_client_auth_dpop`) has no pop jwt and carries the challenge in the `nonce` claim of
+        // the single DPoP proof. A standard-method pop without a challenge stays undefined here (it must
+        // not read a standalone DPoP nonce).
+        const { clientAttestationPop } = verificationResult.clientAttestation
+        let popChallenge: string | undefined
+        if (clientAttestationPop) {
+          popChallenge = clientAttestationPop.payload.challenge
+        } else if (verificationResult.dpop) {
+          const dpopJwt = requestLike.headers.get('DPoP')
+          const dpopNonce = dpopJwt ? decodeJwt({ jwt: dpopJwt }).payload.nonce : undefined
+          popChallenge = typeof dpopNonce === 'string' ? dpopNonce : undefined
+        }
+
+        const isValid = await openId4VcIssuerService.isClientAttestationPopChallengeValid(
+          agentContext,
+          issuer,
+          popChallenge
+        )
+
+        if (!isValid) {
+          if (config.clientAttestationPopChallengeRequired) {
+            const { challenge } = await openId4VcIssuerService.createClientAttestationChallenge(agentContext, issuer)
+            response.set(oauthClientAttestationChallengeHeader, challenge)
+            throw new Oauth2ServerErrorResponseError({
+              error: Oauth2ErrorCodes.UseAttestationChallenge,
+              error_description: 'A fresh client attestation challenge is required in the client attestation pop jwt.',
+            })
+          }
+
+          // Not required: a missing challenge is fine, but a provided-but-invalid challenge is rejected.
+          if (popChallenge !== undefined) {
+            throw new Oauth2ServerErrorResponseError({
+              error: Oauth2ErrorCodes.InvalidClient,
+              error_description: `Invalid 'challenge' claim in client attestation pop jwt.`,
+            })
+          }
+        }
       }
 
       // Do not update the session state if the grant type is refresh token. This

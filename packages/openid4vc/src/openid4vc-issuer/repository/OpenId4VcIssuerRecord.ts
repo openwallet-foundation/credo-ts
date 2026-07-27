@@ -42,6 +42,14 @@ export type OpenId4VcIssuerRecordProps = {
    */
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
+  /**
+   * The signing algorithms supported by this issuer for the Client Attestation JWT and the Client
+   * Attestation PoP JWT (draft 09 of OAuth 2.0 Attestation-Based Client Authentication). Advertised as
+   * `client_attestation_signing_alg_values_supported` / `client_attestation_pop_signing_alg_values_supported`.
+   */
+  clientAttestationSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+  clientAttestationPopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 
@@ -135,6 +143,14 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 
   public dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+  public clientAttestationSigningAlgValuesSupported?: [
+    Kms.KnownJwaSignatureAlgorithm,
+    ...Kms.KnownJwaSignatureAlgorithm[],
+  ]
+  public clientAttestationPopSigningAlgValuesSupported?: [
+    Kms.KnownJwaSignatureAlgorithm,
+    ...Kms.KnownJwaSignatureAlgorithm[],
+  ]
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
   public signedMetadata?: OpenId4VcIssuerRecordSignedMetadata
@@ -176,6 +192,8 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.accessTokenPublicJwk = props.accessTokenPublicJwk
       this.credentialConfigurationsSupported = props.credentialConfigurationsSupported
       this.dpopSigningAlgValuesSupported = props.dpopSigningAlgValuesSupported
+      this.clientAttestationSigningAlgValuesSupported = props.clientAttestationSigningAlgValuesSupported
+      this.clientAttestationPopSigningAlgValuesSupported = props.clientAttestationPopSigningAlgValuesSupported
       this.display = props.display
       this.authorizationServerConfigs = props.authorizationServerConfigs
       this.batchCredentialIssuance = props.batchCredentialIssuance

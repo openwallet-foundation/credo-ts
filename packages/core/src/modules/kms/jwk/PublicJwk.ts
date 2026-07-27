@@ -209,6 +209,33 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     return alg as this['supportedSignatureAlgorithms'][number]
   }
 
+  /**
+   * The `alg` field of the jwk, indicating the algorithm the key is intended to be used with.
+   */
+  public get alg(): string | undefined {
+    return this.jwk.jwk.alg
+  }
+
+  /**
+   * Set the `alg` field of the jwk, indicating the algorithm the key is intended to be used
+   * with. This restricts the jwk to that algorithm (e.g. {@link signatureAlgorithm} will
+   * return the `alg` when defined).
+   *
+   * If the algorithm is not supported by this jwk an error will be thrown.
+   */
+  public set alg(alg: KnownJwaSignatureAlgorithm | KnownJwaKeyAgreementAlgorithm) {
+    const supportedAlgorithms: Array<KnownJwaSignatureAlgorithm | KnownJwaKeyAgreementAlgorithm> = [
+      ...(this.jwk.supportedSignatureAlgorithms ?? []),
+      ...(this.jwk.supportedEncryptionKeyAgreementAlgorithms ?? []),
+    ]
+
+    if (!supportedAlgorithms.includes(alg)) {
+      throw new KeyManagementError(`${this.jwkTypeHumanDescription} does not support alg '${alg}'.`)
+    }
+
+    this.jwk.jwk.alg = alg
+  }
+
   public assertSignatureAlgorithmSupported(
     alg: KnownJwaSignatureAlgorithm
   ): asserts alg is this['supportedSignatureAlgorithms'][number] {

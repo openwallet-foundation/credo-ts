@@ -72,3 +72,25 @@ export function getCredentialConfigurationsSupportedForScopes(
     )
   )
 }
+
+/**
+ * Given all credential configurations supported by an issuer and a requested `scope` parameter
+ * value (space-separated), returns the scopes and credential configurations that were requested
+ * and are also supported by the issuer.
+ */
+export function getRequestedCredentialConfigurationsForScope(options: {
+  credentialConfigurationsSupported: CredentialConfigurationsSupported
+  requestedScope: string
+}): { requestedScopes: string[]; requestedCredentialConfigurations: CredentialConfigurationsSupported } {
+  const allowedScopes = getScopesFromCredentialConfigurationsSupported(options.credentialConfigurationsSupported)
+  const requestedScopes = getAllowedAndRequestedScopeValues({
+    allowedScopes,
+    requestedScope: options.requestedScope,
+  })
+  const requestedCredentialConfigurations = getCredentialConfigurationsSupportedForScopes(
+    options.credentialConfigurationsSupported,
+    requestedScopes
+  )
+
+  return { requestedScopes, requestedCredentialConfigurations }
+}

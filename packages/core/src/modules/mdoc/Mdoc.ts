@@ -1,15 +1,20 @@
 import { DeviceKey, DeviceKeyInfo, Holder, Issuer, IssuerSigned, SignatureAlgorithm } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
+import { TrustedIssuerContext } from '../../agent/TrustedIssuerContext'
 import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate } from '../x509'
-import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
+import {
+  assertMdocStatusListChainsMatchIssuanceChain,
+  convertMdocTrustedCertificates,
+  mdocTrustedCertificatesToRaw,
+} from './mdocUtil'
 
 /**
  * This class represents a IssuerSigned Mdoc Document,
@@ -171,16 +176,27 @@ export class Mdoc {
       X509Certificate.fromRawCertificate(certificate)
     )
 
-    const trustedCertificates =
-      options?.trustedCertificates ??
-      (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
-        verification: {
-          type: 'credential',
-          credential: this,
+    let trustedCertificates = options?.trustedCertificates
+    if (!trustedCertificates) {
+      const trustedIssuers = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+        verification: { type: 'credential', credential: this },
+        signer: {
+          certificateChain,
+          method: 'x509',
         },
-        certificateChain,
-      })) ??
-      x509ModuleConfig.trustedCertificates
+      })
+
+      trustedCertificates =
+        trustedIssuers?.trustedIssuers ??
+        (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
+          verification: {
+            type: 'credential',
+            credential: this,
+          },
+          certificateChain,
+        })) ??
+        x509ModuleConfig.trustedCertificates
+    }
 
     if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
@@ -191,20 +207,36 @@ export class Mdoc {
     })
 
     try {
-      const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates)
-      await Holder.verifyIssuerSigned(
-        {
-          trustedCertificates: convertedTrustedCertificates.map(({ issuance, status }) => ({
-            issuance: issuance.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
-            status: status?.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
-          })),
-          issuerSigned: this.issuerSigned,
-          disableCertificateChainValidation: false,
-          disableStatusValidation: false,
-          now: options?.now,
-        },
-        mdocContext
-      )
+      const convertedTrustedCertificates = convertMdocTrustedCertificates(trustedCertificates)
+
+      const { trustedIssuanceChain, trustedStatusListChain, trustedIdentifierListChain } =
+        await Holder.verifyIssuerSigned(
+          {
+            trustedCertificates: mdocTrustedCertificatesToRaw(convertedTrustedCertificates),
+            issuerSigned: this.issuerSigned,
+            disableCertificateChainValidation: false,
+            disableStatusValidation: false,
+            now: options?.now,
+          },
+          mdocContext
+        )
+
+      const issuanceChain = trustedIssuanceChain.map((c) => X509Certificate.fromRawCertificate(c))
+
+      // The mdoc x5chain is leaf-first and does not include the trust anchor. The validated chain returned by
+      // the library is leaf-first with the resolved trust anchor appended, so the mdoc chain must equal its leaf-end prefix.
+      const certificateChainMatchesIssuanceChain =
+        certificateChain.length <= issuanceChain.length &&
+        certificateChain.every((cert, i) => cert.equal(issuanceChain[i]))
+      if (!certificateChainMatchesIssuanceChain) {
+        throw new MdocError('Certificate chain does not match the trusted issuance chain')
+      }
+
+      assertMdocStatusListChainsMatchIssuanceChain(convertedTrustedCertificates, {
+        trustedIssuanceChain,
+        trustedStatusListChain,
+        trustedIdentifierListChain,
+      })
 
       return { isValid: true }
     } catch (error) {

@@ -25,8 +25,6 @@ import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { TypedArrayEncoder } from './../../utils'
 import { PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc'
-import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
-import { X509Certificate } from '../x509/X509Certificate'
 import type { Mdoc } from './Mdoc'
 import { MdocError } from './MdocError'
 import type {
@@ -37,7 +35,12 @@ import type {
   MdocSessionTranscriptOptions,
 } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
-import { nameSpacesRecordToMap } from './mdocUtil'
+import {
+  assertMdocStatusListChainsMatchIssuanceChain,
+  convertMdocTrustedCertificates,
+  mdocTrustedCertificatesToRaw,
+  nameSpacesRecordToMap,
+} from './mdocUtil'
 import { convertDocumentRequest } from './utils/convertDocumentRequest'
 
 export type DeviceAndIssuerClaims = {
@@ -300,15 +303,12 @@ export class MdocDeviceResponse {
       category: 'DOCUMENT_FORMAT',
     })
 
-    const trustedCertificates = convertLegacyTrustedCertificates(options.trustedCertificates ?? [])
+    const trustedCertificates = convertMdocTrustedCertificates(options.trustedCertificates ?? [])
 
-    await this.deviceResponse
+    const verificationResults = await this.deviceResponse
       .verify(
         {
-          trustedCertificates: trustedCertificates.map(({ issuance, status }) => ({
-            issuance: issuance.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
-            status: status?.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
-          })),
+          trustedCertificates: mdocTrustedCertificatesToRaw(trustedCertificates),
           disableCertificateChainValidation: false,
           now: options.now,
           skewSeconds: agentContext.config.validitySkewSeconds,
@@ -324,6 +324,16 @@ export class MdocDeviceResponse {
           cause: error,
         })
       })
+
+    for (const { trustedIssuanceChain, trustedStatusListChain, trustedIdentifierListChain } of verificationResults) {
+      if (!trustedIssuanceChain) continue
+
+      assertMdocStatusListChainsMatchIssuanceChain(trustedCertificates, {
+        trustedIssuanceChain,
+        trustedStatusListChain,
+        trustedIdentifierListChain,
+      })
+    }
   }
 
   private static async calculateSessionTranscriptBytes(
