@@ -281,6 +281,18 @@ export type OpenId4VciDynamicIssuanceAuthorizationFlow = 'chained' | 'presentati
 
 interface OpenId4VciDynamicIssuanceSessionOptionsBase {
   /**
+   * The id to create the issuance session record with. If not provided, a random id is generated.
+   *
+   * A dynamic issuance session is created by Credo *after* the `getDynamicIssuanceSession` callback
+   * returns, so the callback cannot otherwise know the id of the session it just authorized.
+   * Supplying the id here lets an external system reference the session before it exists, for
+   * example to record it in its own database as part of handling the same request.
+   *
+   * Must be unique. Reusing the id of an existing issuance session overwrites that session.
+   */
+  id?: string
+
+  /**
    * The ids of the credential configurations to bind to this issuance session. All ids must be
    * part of the `credentialConfigurationsSupported` of the issuer.
    */
