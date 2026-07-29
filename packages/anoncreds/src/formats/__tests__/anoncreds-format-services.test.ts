@@ -7,7 +7,7 @@ import {
   InjectionSymbols,
   InMemoryLruCache,
   Kms,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   TypedArrayEncoder,
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
@@ -99,7 +99,7 @@ const agentContext = getAgentContext({
     [AnonCredsKeyCorrectnessProofRepository, anonCredsKeyCorrectnessProofRepository],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [InjectionSymbols.StorageService, storageService],
-    [SignatureSuiteToken, 'default'],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
       CacheModuleConfig,
       new CacheModuleConfig({
