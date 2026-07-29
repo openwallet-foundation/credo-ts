@@ -5,11 +5,7 @@ import {
 } from '../dids'
 import { Ed25519PublicJwk } from '../kms'
 import { W3cJwtCredentialService } from './jwt-vc'
-import {
-  SignatureSuiteRegistry,
-  SignatureSuiteToken,
-  type SuiteInfo,
-} from './linked-data-proofs/SignatureSuiteRegistry'
+import { SignatureSuiteRegistry, type SuiteInfo } from './linked-data-proofs/SignatureSuiteRegistry'
 import { Ed25519Signature2018, Ed25519Signature2020 } from './linked-data-proofs/signature-suites'
 import { W3cJsonLdCredentialService } from './linked-data-proofs/W3cJsonLdCredentialService'
 import { W3cCredentialRepository } from './repository/W3cCredentialRepository'
@@ -41,20 +37,23 @@ export class W3cCredentialsModule implements Module {
     dependencyManager.registerInstance(W3cCredentialsModuleConfig, this.config)
 
     // Always register ed25519 signature suite
-    dependencyManager.registerInstance(SignatureSuiteToken, {
-      suiteClass: Ed25519Signature2018,
-      proofType: 'Ed25519Signature2018',
-      verificationMethodTypes: [
-        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-      ],
-      supportedPublicJwkTypes: [Ed25519PublicJwk],
-    } satisfies SuiteInfo)
-    dependencyManager.registerInstance(SignatureSuiteToken, {
-      suiteClass: Ed25519Signature2020,
-      proofType: 'Ed25519Signature2020',
-      verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
-      supportedPublicJwkTypes: [Ed25519PublicJwk],
-    } satisfies SuiteInfo)
+    const signatureSuiteRegistry = dependencyManager.resolve(SignatureSuiteRegistry)
+    signatureSuiteRegistry.registerSuites([
+      {
+        suiteClass: Ed25519Signature2018,
+        proofType: 'Ed25519Signature2018',
+        verificationMethodTypes: [
+          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+        ],
+        supportedPublicJwkTypes: [Ed25519PublicJwk],
+      } satisfies SuiteInfo,
+      {
+        suiteClass: Ed25519Signature2020,
+        proofType: 'Ed25519Signature2020',
+        verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
+        supportedPublicJwkTypes: [Ed25519PublicJwk],
+      } satisfies SuiteInfo,
+    ])
   }
 }

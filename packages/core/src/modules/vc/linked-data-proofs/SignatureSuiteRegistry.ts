@@ -1,12 +1,11 @@
 import { CredoError } from '../../../error'
-import { injectAll, injectable } from '../../../plugins'
+import { injectable } from '../../../plugins'
 import { PublicJwk, type SupportedPublicJwkClass } from '../../kms/jwk/PublicJwk'
 
 import { suites } from './adapters/jsonld-signatures-adapter'
 
 const LinkedDataSignature = suites.LinkedDataSignature
 
-export const SignatureSuiteToken = Symbol('SignatureSuiteToken')
 export interface SuiteInfo {
   suiteClass: typeof LinkedDataSignature
   proofType: string
@@ -16,12 +15,16 @@ export interface SuiteInfo {
 
 @injectable()
 export class SignatureSuiteRegistry {
-  private suiteMapping: SuiteInfo[]
+  private suiteMapping: SuiteInfo[] = []
 
-  // TODO: replace this signature suite token with just injecting and registering the suites
-  // on the registry. It's a bit ugly/awkward approach.
-  public constructor(@injectAll(SignatureSuiteToken) suites: Array<SuiteInfo | 'default'>) {
-    this.suiteMapping = suites.filter((suite): suite is SuiteInfo => suite !== 'default')
+  public registerSuite(suiteInfo: SuiteInfo) {
+    this.suiteMapping.push(suiteInfo)
+  }
+
+  public registerSuites(suites: SuiteInfo[]) {
+    for (const suite of suites) {
+      this.registerSuite(suite)
+    }
   }
 
   public get supportedProofTypes(): string[] {
