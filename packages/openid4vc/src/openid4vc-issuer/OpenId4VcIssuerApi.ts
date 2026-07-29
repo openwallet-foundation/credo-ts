@@ -7,6 +7,7 @@ import type {
   OpenId4VciCreateDeferredCredentialResponseOptions,
   OpenId4VciCreateIssuerOptions,
   OpenId4VciCreateStatelessCredentialOfferOptions,
+  OpenId4VcUpdateIssuerOptions,
   OpenId4VcUpdateIssuerRecordOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import { OpenId4VcIssuerRecord } from './repository'
@@ -59,6 +60,7 @@ export class OpenId4VcIssuerApi {
       clientAttestationPopSigningAlgValuesSupported,
       batchCredentialIssuance,
       authorizationServerConfigs,
+      metadataSigner,
     } = options
 
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
@@ -71,14 +73,14 @@ export class OpenId4VcIssuerApi {
     issuer.batchCredentialIssuance = batchCredentialIssuance
     issuer.authorizationServerConfigs = authorizationServerConfigs
 
-    return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
+    return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer, { metadataSigner })
   }
 
   /**
    * Updates an issuer and stores the corresponding updated issuer metadata.
    */
-  public async updateIssuer(issuer: OpenId4VcIssuerRecord) {
-    return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
+  public async updateIssuer(issuer: OpenId4VcIssuerRecord, options?: OpenId4VcUpdateIssuerOptions) {
+    return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer, options)
   }
 
   /**

@@ -92,6 +92,7 @@ import type {
   OpenId4VciPreAuthorizedCodeFlowConfig,
   OpenId4VciSignCredentials,
   OpenId4VciSignW3cCredentials,
+  OpenId4VcUpdateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import {
   OpenId4VcIssuanceSessionRecord,
@@ -1234,14 +1235,30 @@ export class OpenId4VcIssuerService {
     return this.openId4VcIssuerRepository.getByIssuerId(agentContext, issuerId)
   }
 
-  public async updateIssuer(agentContext: AgentContext, issuer: OpenId4VcIssuerRecord) {
-    if (issuer.signedMetadata) {
+  public async updateIssuer(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    options?: OpenId4VcUpdateIssuerOptions
+  ) {
+    // An explicitly provided signer takes precedence (including `null` to remove it). Otherwise the
+    // previously configured signer is reused, so the signed metadata stays in sync with the updated
+    // issuer metadata.
+    const metadataSigner =
+      options?.metadataSigner !== undefined
+        ? options.metadataSigner
+        : issuer.signedMetadata
+          ? decodeJwtIssuer(issuer.signedMetadata.signer)
+          : undefined
+
+    if (metadataSigner) {
       const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer, false)
       issuer.signedMetadata = await this.createSignedMetadata(
         agentContext,
         issuerMetadata.credentialIssuer,
-        decodeJwtIssuer(issuer.signedMetadata.signer)
+        metadataSigner
       )
+    } else {
+      issuer.signedMetadata = undefined
     }
 
     await this.openId4VcIssuerRepository.update(agentContext, issuer)
