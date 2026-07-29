@@ -521,6 +521,9 @@ export class OpenId4VcIssuerService {
         : sessionOptions
 
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
+      // Optional: allows the `getDynamicIssuanceSession` callback to bind the session to an id it
+      // generated itself, as it cannot otherwise know the id of the session it just authorized.
+      id: sessionOptions.id,
       createdAt,
       expiresAt,
       issuerId: issuer.issuerId,
