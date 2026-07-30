@@ -10,9 +10,9 @@ import { DidsApi, parseDid } from '../../dids'
 import { PublicJwk } from '../../kms'
 import { ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE } from '../anoncreds-w3c-credential'
 import jsonld from '../jsonld/jsonld'
-import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
+import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
-import { w3cDate } from '../util'
+import { validateCredentialSubjectAuthentication, w3cDate } from '../util'
 import type {
   W3cJsonLdSignCredentialOptions,
   W3cJsonLdSignPresentationOptions,
@@ -299,18 +299,70 @@ export class W3cJsonLdCredentialService {
 
       const { verified: isValid, ...remainingResult } = result
 
-      // We map the result to our own result type to make it easier to work with
-      // however, for now we just add a single vcJs validation result as we don't
-      // have access to the internal validation results of vc-js
+      // The vc-js / jsonld-signatures libraries verify the presentation proof and each embedded
+      // credential's issuer proof, but do NOT bind the presentation signer (holder) to the
+      // credentialSubject of the embedded credentials. Without this check an attacker could wrap
+      // someone else's credential (a data object, not a secret) in a presentation signed with their
+      // own key and have it accepted. Enforce the binding here, mirroring the jwt_vp and sd-jwt paths
+      // (see validateCredentialSubjectAuthentication).
+      //
+      // The holder identity is derived from the verificationMethod of the presentation's
+      // authentication proof(s), which vc-js has already cryptographically verified and authorized
+      // for the authentication purpose. validateCredentialSubjectAuthentication normalizes the DID
+      // URL to its bare DID before comparison; for the DID methods used with linked-data proofs the
+      // verificationMethod's DID equals its controller.
+      const holderProofPurpose = options.purpose?.term ?? 'authentication'
+      const holderVerificationMethods = asArray(options.presentation.proof)
+        .filter((proof) => proof.proofPurpose === holderProofPurpose)
+        .map((proof) => proof.verificationMethod)
+
+      // Surfaced per credential under `credentials[]` to mirror the jwt_vp result shape. The
+      // library-level signature/status validations remain lumped in `vcJs`, so each entry here
+      // only carries the credentialSubjectAuthentication check.
+      const credentialValidations = credentials.map((credential) => {
+        const credentialSubjectIds = credential.credentialSubjectIds
+
+        // A credential without subject identifiers is treated as a bearer credential,
+        // so there is no subject to authenticate.
+        const isAuthenticated =
+          credentialSubjectIds.length === 0 ||
+          holderVerificationMethods.some(
+            (verificationMethod) =>
+              validateCredentialSubjectAuthentication(credentialSubjectIds, verificationMethod).isValid
+          )
+
+        const credentialSubjectAuthentication: SingleValidationResult = isAuthenticated
+          ? { isValid: true }
+          : {
+              isValid: false,
+              error: new CredoError(
+                'Presentation does not authenticate the credentialSubject of one or more included credentials'
+              ),
+            }
+
+        return {
+          isValid: credentialSubjectAuthentication.isValid,
+          validations: { credentialSubjectAuthentication },
+        }
+      })
+
+      // We map the result to our own result type to make it easier to work with. The library
+      // validations are lumped into a single vcJs result as we don't have access to the internal
+      // validation results of vc-js; the credentialSubject authentication check that Credo performs
+      // on top is surfaced per credential under `credentials`.
       return {
-        isValid,
+        isValid: isValid && credentialValidations.every((credential) => credential.isValid),
         validations: {
           vcJs: {
             isValid,
             ...remainingResult,
           },
+          credentials: credentialValidations,
         },
-        error: result.error,
+        error:
+          result.error ??
+          credentialValidations.find((credential) => !credential.isValid)?.validations.credentialSubjectAuthentication
+            .error,
       }
     } catch (error) {
       return {

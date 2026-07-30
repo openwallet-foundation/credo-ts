@@ -288,6 +288,11 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
     const idpClientSecret = 'bar'
     const walletClientId = 'wallet'
 
+    // The callback runs before the issuance session exists, so it cannot otherwise know the id of
+    // the session it just authorized. Supplying one lets it reference the session up front, for
+    // example to record it in an external system as part of handling the same request.
+    const issuanceSessionId = randomUUID()
+
     const getDynamicIssuanceSession: OpenId4VciGetDynamicIssuanceSession = async ({
       requestedScopes,
       requestedCredentialConfigurations,
@@ -297,6 +302,7 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
       expect(supportedAuthorizationFlows).toContain('chained')
 
       return {
+        id: issuanceSessionId,
         authorizationFlow: 'chained',
         authorizationServerUrl: 'http://localhost:4747',
         credentialConfigurationIds: Object.keys(requestedCredentialConfigurations),
@@ -362,9 +368,12 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
       clientId: walletClientId,
     })
 
+    // Filtering on the id the callback supplied also asserts it was actually used for the session:
+    // had it been ignored, the session would carry a generated id and this would time out.
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.Completed,
       contextCorrelationId: issuerTenant.context.contextCorrelationId,
+      issuanceSessionId,
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)

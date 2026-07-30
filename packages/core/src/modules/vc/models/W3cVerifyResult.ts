@@ -75,8 +75,11 @@ interface W3cPresentationValidations {
    * Validation results of the credentials inside the presentation.
    * The order matches the order of credentials in the presentation.
    *
-   * This object extends the credential verification result with the exception that
-   * a new `credentialSubjectAuthentication` has been added.
+   * For jwt_vp presentations each entry extends the credential verification result with an
+   * additional `credentialSubjectAuthentication`. For ldp_vp presentations the credential
+   * signature/status/data-model validations are not broken out per credential (they are all
+   * covered by the single `vcJs` result), so each entry only contains
+   * `credentialSubjectAuthentication` and its `isValid` reflects that check alone.
    */
   credentials: W3cVerifyResult<
     W3cCredentialValidations & {
@@ -88,8 +91,9 @@ interface W3cPresentationValidations {
        * The credentialSubject authentication is deemed valid in the following cases:
        *  - The credential has no credential subject identifiers. In this case the
        *    credential is seen as a bearer credential and thus authentication is not needed.
-       *  - The credential has AT LEAST one credential subject id, and the presentation
-       *    is signed by at least one of the credential subject ids.
+       *  - The credential has AT LEAST one credential subject id, and the presentation is
+       *    signed by (a verification method controlled by) at least one of the credential
+       *    subject ids.
        */
       credentialSubjectAuthentication: SingleValidationResult
     }
@@ -110,12 +114,14 @@ interface W3cPresentationValidations {
 
   /**
    * NOTE: this validation is currently only present for ldp_vp presentations.
-   * When this validation is present, ALL OTHER validations will be skipped.
    *
    * Whether the presentation is valid according to the [vc.js](https://github.com/digitalbazaar/vc)
-   * library. As the library handles all validations, it is not possible to include the other
-   * validation items separately. In the future the vc.js library will be replaced to provide a similar
-   * validation result for all credential formats.
+   * library. As the library handles all validations, the presentation and per-credential
+   * signature/status/data-model checks are not broken out separately (`dataModel`,
+   * `presentationSignature` and the per-credential validations are all covered by this single
+   * result). The holder-binding check that Credo performs on top is still surfaced per credential
+   * under `credentials[].credentialSubjectAuthentication`. In the future the vc.js library will be
+   * replaced to provide a similar validation result for all credential formats.
    */
   vcJs: SingleValidationResult
 }

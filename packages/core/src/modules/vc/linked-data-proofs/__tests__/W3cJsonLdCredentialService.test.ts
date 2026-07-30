@@ -22,6 +22,7 @@ import { AnonCredsW3cCredentialProof } from '../../anoncreds-w3c-credential'
 import { ClaimFormat, W3cCredential } from '../../models'
 import { W3cPresentation } from '../../models/presentation/W3cPresentation'
 import { W3cCredentialsModuleConfig } from '../../W3cCredentialsModuleConfig'
+import { purposes } from '../adapters/jsonld-signatures-adapter'
 import { LinkedDataProof } from '../models/LinkedDataProof'
 import { W3cJsonLdVerifiableCredential } from '../models/W3cJsonLdVerifiableCredential'
 import { W3cJsonLdVerifiablePresentation } from '../models/W3cJsonLdVerifiablePresentation'
@@ -31,6 +32,8 @@ import { Ed25519Signature2018 } from '../signature-suites'
 import { W3cJsonLdCredentialService } from '../W3cJsonLdCredentialService'
 import { customDocumentLoader } from './documentLoader'
 import { Ed25519Signature2018Fixtures } from './fixtures'
+
+const AuthenticationProofPurpose = purposes.AuthenticationProofPurpose
 
 const signatureSuiteRegistry = new SignatureSuiteRegistry([
   {
@@ -575,6 +578,12 @@ describe('W3cJsonLdCredentialsService', () => {
               presentationResult: expect.any(Object),
               credentialResults: expect.any(Array),
             },
+            credentials: [
+              {
+                isValid: true,
+                validations: { credentialSubjectAuthentication: { isValid: true } },
+              },
+            ],
           },
         })
       })
@@ -653,7 +662,102 @@ describe('W3cJsonLdCredentialsService', () => {
               presentationResult: expect.any(Object),
               error: expect.any(Error),
             },
+            credentials: [
+              {
+                isValid: true,
+                validations: { credentialSubjectAuthentication: { isValid: true } },
+              },
+            ],
           },
+        })
+      })
+
+      // Signs a credential to `credentialSubjectId` (issued by issuerDidKey) and wraps it in an
+      // ldp_vp that is signed (authentication proof) by issuerDidKey — the "holder". When the
+      // subject differs from issuerDidKey this models an attacker presenting someone else's
+      // credential under their own key. Both the issuer proof and the presentation proof are valid,
+      // so only the credentialSubject authentication check can reject it.
+      const signPresentationForSubject = async (credentialSubjectId: string) => {
+        const credential = JsonTransformer.fromJSON(
+          {
+            ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT,
+            issuer: issuerDidKey.did,
+            credentialSubject: {
+              id: credentialSubjectId,
+              degree: {
+                type: 'BachelorDegree',
+                name: 'Bachelor of Science and Arts',
+              },
+            },
+          },
+          W3cCredential
+        )
+
+        const verifiableCredential = await w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential,
+          proofType: 'Ed25519Signature2018',
+          verificationMethod,
+        })
+
+        const presentation = JsonTransformer.fromJSON(
+          {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiablePresentation'],
+            holder: issuerDidKey.did,
+            verifiableCredential: [verifiableCredential.toJson()],
+          },
+          W3cPresentation
+        )
+
+        return w3cJsonLdCredentialService.signPresentation(agentContext, {
+          format: ClaimFormat.LdpVp,
+          presentation,
+          proofType: 'Ed25519Signature2018',
+          proofPurpose: new AuthenticationProofPurpose({ challenge: 'challenge-holder-binding' }),
+          challenge: 'challenge-holder-binding',
+          verificationMethod,
+        })
+      }
+
+      it('should fail when the presentation signer (holder) is not the credentialSubject', async () => {
+        const verifiablePresentation = await signPresentationForSubject(
+          'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV'
+        )
+
+        const result = await w3cJsonLdCredentialService.verifyPresentation(agentContext, {
+          presentation: verifiablePresentation as W3cJsonLdVerifiablePresentation,
+          challenge: 'challenge-holder-binding',
+        })
+
+        expect(result.isValid).toBe(false)
+        // The library-level verification (signatures, issuer proofs) still passes; only the
+        // credentialSubject authentication check that Credo adds on top rejects this presentation.
+        expect(result.validations.vcJs?.isValid).toBe(true)
+        expect(result.validations.credentials?.[0]).toEqual({
+          isValid: false,
+          validations: {
+            credentialSubjectAuthentication: {
+              isValid: false,
+              error: expect.any(Error),
+            },
+          },
+        })
+        expect(result.error?.message).toContain('does not authenticate the credentialSubject')
+      })
+
+      it('should verify a presentation when the signer (holder) is the credentialSubject', async () => {
+        const verifiablePresentation = await signPresentationForSubject(issuerDidKey.did)
+
+        const result = await w3cJsonLdCredentialService.verifyPresentation(agentContext, {
+          presentation: verifiablePresentation as W3cJsonLdVerifiablePresentation,
+          challenge: 'challenge-holder-binding',
+        })
+
+        expect(result.isValid).toBe(true)
+        expect(result.validations.credentials?.[0]).toEqual({
+          isValid: true,
+          validations: { credentialSubjectAuthentication: { isValid: true } },
         })
       })
     })
