@@ -550,9 +550,15 @@ export class OpenId4VpVerifierService {
         ? undefined
         : authorizationRequest.response_uri
 
-      // NOTE: apu is needed for mDOC over OID4VP without DC API up to draft 24
+      // The mdoc-generated nonce is conveyed in the JARM `apu` header. Per RFC 7518 §4.6.1.2 `apu` is an
+      // arbitrary octet string that is not required to be valid UTF-8 (e.g. the A-SIT Valera wallet sends
+      // a raw 16-byte binary apu). It is only consumed by the ISO 18013-7 / OpenID4VP draft 18 mdoc
+      // session transcript (used by the pre-v1 draft 21/24 flows without the Digital Credentials API),
+      // where it is a CBOR `tstr`. We therefore keep it as raw bytes here and defer interpreting it as a
+      // UTF-8 string to the session transcript calculation, so flows that don't use it (v1 / HAIP, DC API)
+      // never fail on a binary apu.
       const mdocGeneratedNonce = result.jarm?.jarmHeader.apu
-        ? TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(result.jarm?.jarmHeader.apu))
+        ? TypedArrayEncoder.fromBase64Url(result.jarm.jarmHeader.apu)
         : undefined
 
       if (result.type === 'dcql') {
@@ -1157,7 +1163,9 @@ export class OpenId4VpVerifierService {
       audience: string
       clientId: string
       responseUri?: string
-      mdocGeneratedNonce?: string
+      // May be a raw octet string (the JARM `apu` header) that is only interpreted as a UTF-8 `tstr`
+      // when building the ISO 18013-7 / OpenID4VP draft 18 mdoc session transcript.
+      mdocGeneratedNonce?: string | Uint8Array
       origin?: string
       verificationSession: OpenId4VcVerificationSessionRecord
       presentation: string | Record<string, unknown>
