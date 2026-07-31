@@ -138,8 +138,9 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             // First session config, fall back to global config
             required: issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired,
 
-            // NOTE: we might want to enforce this? Not sure
-            // ensureConfirmationKeyMatchesDpopKey: true
+            // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
+            // with an `OAuth-Client-Attestation-PoP` header has its DPoP proof verified per RFC 9449
+            // independently. The library enforces key equality itself for DPoP combined mode (§7.3).
           },
           dpop: {
             ...dpop,
@@ -182,8 +183,9 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             // set required to true previously if client attestations were provided or required.
             required: issuanceSession.walletAttestation?.required,
 
-            // NOTE: we might want to enforce this? Not sure
-            // ensureConfirmationKeyMatchesDpopKey: true
+            // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
+            // with an `OAuth-Client-Attestation-PoP` header has its DPoP proof verified per RFC 9449
+            // independently. The library enforces key equality itself for DPoP combined mode (§7.3).
           },
           dpop: {
             ...dpop,
@@ -219,8 +221,9 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             // First session config, fall back to global config
             required: issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired,
 
-            // NOTE: we might want to enforce this? Not sure
-            // ensureConfirmationKeyMatchesDpopKey: true
+            // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
+            // with an `OAuth-Client-Attestation-PoP` header has its DPoP proof verified per RFC 9449
+            // independently. The library enforces key equality itself for DPoP combined mode (§7.3).
           },
           dpop: {
             ...dpop,

@@ -94,10 +94,8 @@ export async function handlePushedAuthorizationRequest(
       ...parsedAuthorizationRequest.clientAttestation,
       // First session config, fall back to global config
       required: issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired,
-      // draft 09 §5.2: bind the interaction to the client instance key. When a client attestation is
-      // presented alongside DPoP, the DPoP key must be the attestation's confirmation key, so the
-      // DPoP-bound method can be used consistently at the token endpoint.
-      ensureConfirmationKeyMatchesDpopKey: true,
+      // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not set. Per draft §7.2/§7.3 the DPoP key
+      // only has to match the attestation `cnf.jwk` in DPoP combined mode, which this endpoint doesn't support.
     },
     dpop: {
       ...parsedAuthorizationRequest.dpop,
