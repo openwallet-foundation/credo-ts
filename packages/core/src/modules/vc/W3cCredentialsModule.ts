@@ -5,7 +5,7 @@ import {
 } from '../dids'
 import { Ed25519PublicJwk } from '../kms'
 import { W3cJwtCredentialService } from './jwt-vc'
-import { SignatureSuiteRegistry, type SuiteInfo } from './linked-data-proofs/SignatureSuiteRegistry'
+import { SignatureSuiteRegistry, SignatureSuiteToken, type SuiteInfo } from './linked-data-proofs/SignatureSuiteRegistry'
 import { Ed25519Signature2018, Ed25519Signature2020 } from './linked-data-proofs/signature-suites'
 import { W3cJsonLdCredentialService } from './linked-data-proofs/W3cJsonLdCredentialService'
 import { W3cCredentialRepository } from './repository/W3cCredentialRepository'
@@ -30,7 +30,6 @@ export class W3cCredentialsModule implements Module {
     dependencyManager.registerSingleton(W3cJwtCredentialService)
     dependencyManager.registerSingleton(W3cJsonLdCredentialService)
     dependencyManager.registerSingleton(W3cCredentialRepository)
-
     dependencyManager.registerSingleton(SignatureSuiteRegistry)
 
     // Register the config
@@ -39,6 +38,12 @@ export class W3cCredentialsModule implements Module {
     // Always register ed25519 signature suite
     const signatureSuiteRegistry = dependencyManager.resolve(SignatureSuiteRegistry)
     signatureSuiteRegistry.registerSuites([
+      // Collect any suites registered via the deprecated SignatureSuiteToken for backward compatibility.
+      // External consumers that used registerInstance(SignatureSuiteToken, suite) will still work until
+      // SignatureSuiteToken is removed in 0.8.
+      ...(dependencyManager.isRegistered(SignatureSuiteToken)
+        ? (dependencyManager.container.resolveAll<SuiteInfo>(SignatureSuiteToken) as SuiteInfo[])
+        : []),
       {
         suiteClass: Ed25519Signature2018,
         proofType: 'Ed25519Signature2018',

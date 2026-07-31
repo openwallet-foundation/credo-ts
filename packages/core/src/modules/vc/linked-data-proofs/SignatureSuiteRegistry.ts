@@ -6,6 +6,12 @@ import { suites } from './adapters/jsonld-signatures-adapter'
 
 const LinkedDataSignature = suites.LinkedDataSignature
 
+/**
+ * @deprecated Register suites directly via `SignatureSuiteRegistry.registerSuites()` instead.
+ * Will be removed in 0.8.
+ */
+export const SignatureSuiteToken = Symbol('SignatureSuiteToken')
+
 export interface SuiteInfo {
   suiteClass: typeof LinkedDataSignature
   proofType: string

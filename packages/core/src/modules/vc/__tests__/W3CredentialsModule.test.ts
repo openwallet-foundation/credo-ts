@@ -2,7 +2,7 @@ import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { Ed25519PublicJwk } from '../../kms'
 import { W3cJwtCredentialService } from '../jwt-vc'
-import { SignatureSuiteRegistry, type SuiteInfo } from '../linked-data-proofs/SignatureSuiteRegistry'
+import { SignatureSuiteRegistry, SignatureSuiteToken, type SuiteInfo } from '../linked-data-proofs/SignatureSuiteRegistry'
 import { Ed25519Signature2018, Ed25519Signature2020 } from '../linked-data-proofs/signature-suites'
 import { W3cJsonLdCredentialService } from '../linked-data-proofs/W3cJsonLdCredentialService'
 import { W3cCredentialRepository } from '../repository'
@@ -20,6 +20,7 @@ describe('W3cCredentialsModule', () => {
     const module = new W3cCredentialsModule()
     const signatureSuiteRegistry = { registerSuites: vi.fn() }
     vi.mocked(dependencyManager.resolve).mockReturnValue(signatureSuiteRegistry as never)
+    vi.mocked(dependencyManager.isRegistered).mockReturnValue(false)
 
     module.register(dependencyManager)
 
@@ -32,6 +33,7 @@ describe('W3cCredentialsModule', () => {
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(W3cCredentialsModuleConfig, module.config)
+    expect(dependencyManager.isRegistered).toHaveBeenCalledWith(SignatureSuiteToken)
     expect(dependencyManager.resolve).toHaveBeenCalledWith(SignatureSuiteRegistry)
     expect(signatureSuiteRegistry.registerSuites).toHaveBeenCalledTimes(1)
     expect(signatureSuiteRegistry.registerSuites).toHaveBeenCalledWith([
