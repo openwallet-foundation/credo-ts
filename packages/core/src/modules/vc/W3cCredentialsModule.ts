@@ -5,7 +5,11 @@ import {
 } from '../dids'
 import { Ed25519PublicJwk } from '../kms'
 import { W3cJwtCredentialService } from './jwt-vc'
-import { SignatureSuiteRegistry, SignatureSuiteToken, type SuiteInfo } from './linked-data-proofs/SignatureSuiteRegistry'
+import {
+  SignatureSuiteRegistry,
+  SignatureSuiteToken,
+  type SuiteInfo,
+} from './linked-data-proofs/SignatureSuiteRegistry'
 import { Ed25519Signature2018, Ed25519Signature2020 } from './linked-data-proofs/signature-suites'
 import { W3cJsonLdCredentialService } from './linked-data-proofs/W3cJsonLdCredentialService'
 import { W3cCredentialRepository } from './repository/W3cCredentialRepository'
