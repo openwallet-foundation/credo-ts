@@ -100,6 +100,25 @@ import {
 } from './repository'
 
 /**
+ * COSE signature algorithms advertised for the `mso_mdoc` format in `vp_formats_supported`.
+ *
+ * We advertise both the RFC 9053 "fully-specified" algorithms (ESP256/ESP384) and their
+ * deprecated/legacy polymorphic equivalents (ES256/ES384/EdDSA). During the COSE registry
+ * transition most deployed mdoc issuers and wallets still announce/use only the legacy
+ * identifiers (e.g. ES256 -7), and reject an authorization request when the legacy value is
+ * absent from the advertised set. Advertising both maximizes interoperability, and Credo can
+ * verify signatures made with either identifier (see `knownJwaFromCoseSignatureAlgorithm`).
+ */
+const mdocSupportedCoseSignatureAlgorithms: NonEmptyArray<Kms.KnownCoseSignatureAlgorithm> = [
+  Kms.KnownCoseSignatureAlgorithms.ESP256, // -9
+  Kms.KnownCoseSignatureAlgorithms.ES256, // -7 (legacy)
+  Kms.KnownCoseSignatureAlgorithms.ESP384, // -51
+  Kms.KnownCoseSignatureAlgorithms.ES384, // -35 (legacy)
+  Kms.KnownCoseSignatureAlgorithms.Ed25519, // -19
+  Kms.KnownCoseSignatureAlgorithms.EdDSA, // -8 (legacy)
+]
+
+/**
  * @internal
  */
 @injectable()
@@ -1031,16 +1050,8 @@ export class OpenId4VpVerifierService {
               ...(dcqlQueryFormats.has('mso_mdoc')
                 ? {
                     mso_mdoc: {
-                      deviceauth_alg_values: [
-                        Kms.KnownCoseSignatureAlgorithms.ESP256,
-                        Kms.KnownCoseSignatureAlgorithms.ESP384,
-                        Kms.KnownCoseSignatureAlgorithms.Ed25519,
-                      ],
-                      issuerauth_alg_values: [
-                        Kms.KnownCoseSignatureAlgorithms.ESP256,
-                        Kms.KnownCoseSignatureAlgorithms.ESP384,
-                        Kms.KnownCoseSignatureAlgorithms.Ed25519,
-                      ],
+                      deviceauth_alg_values: mdocSupportedCoseSignatureAlgorithms,
+                      issuerauth_alg_values: mdocSupportedCoseSignatureAlgorithms,
                     },
                   }
                 : {}),
