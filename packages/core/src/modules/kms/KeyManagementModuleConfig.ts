@@ -45,10 +45,18 @@ export class KeyManagementModuleConfig {
     this.backends.push(backend)
   }
 
+  /**
+   * The default backend, used for operations where no explicit `backend` is provided.
+   *
+   * Returns the backend matching the `defaultBackend` identifier from the config options,
+   * or the first registered backend if no `defaultBackend` was configured.
+   */
   public get defaultBackend() {
     const backend = this.backends.find((kms) => !this.#defaultBackend || this.#defaultBackend === kms.backend)
     if (!backend) {
-      throw new KeyManagementError('Unable to determine default backend. ')
+      throw new KeyManagementError(
+        'Unable to determine default key management service backend. Make sure at least one backend is registered.'
+      )
     }
 
     return backend

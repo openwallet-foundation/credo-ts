@@ -15,7 +15,9 @@ import {
   equalsIgnoreOrder,
   JsonTransformer,
   JwsService,
+  Jwt,
   JwtPayload,
+  Kms,
   RecordNotFoundError,
   SdJwtVcApi,
   TypedArrayEncoder,
@@ -634,7 +636,7 @@ describe('OpenId4VcIssuer', () => {
           credentialConfigurationId: openBadgeCredentialSdJwtVc.id,
           credentials: [
             {
-              alg: 'ES256',
+              alg: 'EdDSA',
               verificationMethod: issuerVerificationMethod.id,
               credential: new W3cV2Credential({
                 type: openBadgeCredentialSdJwtVc.credential_definition.type,
@@ -1130,5 +1132,93 @@ describe('OpenId4VcIssuer', () => {
     await expect(issuer.openid4vc.issuer.deleteIssuanceSessionById('non-existent-id')).rejects.toThrow(
       RecordNotFoundError
     )
+  })
+
+  it('configures, keeps in sync and removes the signed metadata signer', async () => {
+    const metadataSigner = { method: 'did', didUrl: issuerVerificationMethod.id } as const
+    const credentialConfigurationsSupported = { openBadgeCredential }
+
+    // Metadata is not signed by default
+    expect(openId4VcIssuer.signedMetadata).toBeUndefined()
+
+    // A signer can be configured on an already existing issuer
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationsSupported,
+      display: [{ name: 'Initial issuer' }],
+      metadataSigner,
+    })
+
+    const enabled = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+    expect(enabled.signedMetadata?.signer).toEqual(metadataSigner)
+    expect(Jwt.fromSerializedJwt(enabled.signedMetadata?.jwt as string).payload.additionalClaims.display).toMatchObject(
+      [{ name: 'Initial issuer' }]
+    )
+
+    // Omitting the signer keeps it configured, and the metadata is re-signed so the signed
+    // metadata stays in sync with the updated issuer metadata
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationsSupported,
+      display: [{ name: 'Updated issuer' }],
+    })
+
+    const kept = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+    expect(kept.signedMetadata?.signer).toEqual(metadataSigner)
+    expect(Jwt.fromSerializedJwt(kept.signedMetadata?.jwt as string).payload.additionalClaims.display).toMatchObject([
+      { name: 'Updated issuer' },
+    ])
+
+    // Passing null removes the signer, so the metadata is no longer signed
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationsSupported,
+      display: [{ name: 'Updated issuer' }],
+      metadataSigner: null,
+    })
+
+    const removed = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+    expect(removed.signedMetadata).toBeUndefined()
+    expect(
+      (await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)).signedMetadataJwt
+    ).toBeUndefined()
+  })
+
+  it('re-signs the metadata with a stored x5c signer', async () => {
+    const credentialConfigurationsSupported = { openBadgeCredential }
+
+    const key = await issuer.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })
+    const certificate = await issuer.x509.createCertificate({
+      authorityKey: Kms.PublicJwk.fromPublicJwk(key.publicJwk),
+      issuer: 'C=NL',
+    })
+    // The leaf needs a key id so the signing key can be resolved from the KMS.
+    certificate.keyId = key.keyId
+
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationsSupported,
+      display: [{ name: 'Initial issuer' }],
+      metadataSigner: { method: 'x5c', x5c: [certificate] },
+    })
+
+    const enabled = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+    expect(enabled.signedMetadata?.signer).toMatchObject({ method: 'x5c', leafCertificateKeyId: key.keyId })
+
+    // Updating without a signer re-signs using the stored one. Unlike a did signer, an x5c signer
+    // has to survive a full encode/decode round trip (certificates rebuilt from base64, and the
+    // leaf key id restored), so this would fail to sign if that round trip lost the key id.
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationsSupported,
+      display: [{ name: 'Updated issuer' }],
+    })
+
+    const kept = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+    expect(kept.signedMetadata?.signer).toMatchObject({ method: 'x5c', leafCertificateKeyId: key.keyId })
+
+    const jwt = Jwt.fromSerializedJwt(kept.signedMetadata?.jwt as string)
+    expect(jwt.header.x5c).toEqual([certificate.toString('base64')])
+    expect(jwt.payload.additionalClaims.display).toMatchObject([{ name: 'Updated issuer' }])
   })
 })

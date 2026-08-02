@@ -330,15 +330,17 @@ export class DidDocument {
 
 /**
  * Extracting the verification method for signature type
- * @param type Signature type
+ * @param keyType Signature key type
  * @param didDocument DidDocument
+ * @param allowedPurposes Optional array of purposes to search in order. Defaults to all purposes.
  * @returns verification method
  */
 export async function findVerificationMethodByKeyType(
   keyType: string,
-  didDocument: DidDocument
+  didDocument: DidDocument,
+  allowedPurposes?: DidVerificationMethods[]
 ): Promise<VerificationMethod | null> {
-  const didVerificationMethods: DidVerificationMethods[] = [
+  const allPurposes: DidVerificationMethods[] = [
     'verificationMethod',
     'authentication',
     'keyAgreement',
@@ -346,7 +348,8 @@ export async function findVerificationMethodByKeyType(
     'capabilityInvocation',
     'capabilityDelegation',
   ]
-  for (const purpose of didVerificationMethods) {
+  const purposes = allowedPurposes ?? allPurposes
+  for (const purpose of purposes) {
     const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
     if (Array.isArray(key)) {
       for (const method of key) {

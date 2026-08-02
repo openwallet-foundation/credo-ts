@@ -90,13 +90,17 @@ export function validateCriticalExtensionsForChain(
  * cannot be processed) MUST NOT be used, as it may change the CRL's meaning (e.g. its scope).
  */
 export function validateCriticalCrlExtensions(crl: x509.X509Crl): CriticalExtensionValidationResult {
-  const unknownCriticalExtensions: string[] = []
+  return validateCriticalCrlExtensionIds(crl.extensions.filter((e) => e.critical).map((e) => e.type))
+}
 
-  for (const extension of crl.extensions) {
-    if (extension.critical && !knownCriticalCrlExtensions.includes(extension.type as X509CrlExtensionIdentifier)) {
-      unknownCriticalExtensions.push(extension.type)
-    }
-  }
+/**
+ * Validates a list of critical CRL extension ids against the extensions Credo understands.
+ * See {@link validateCriticalCrlExtensions}.
+ */
+export function validateCriticalCrlExtensionIds(criticalExtensionIds: string[]): CriticalExtensionValidationResult {
+  const unknownCriticalExtensions = criticalExtensionIds.filter(
+    (id) => !knownCriticalCrlExtensions.includes(id as X509CrlExtensionIdentifier)
+  )
 
   if (unknownCriticalExtensions.length > 0) {
     return {
