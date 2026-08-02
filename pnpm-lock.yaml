@@ -601,8 +601,8 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       ec-compression:
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: ^2.0.0
+        version: 2.0.0
       json-canonicalize:
         specifier: ^2.0.0
         version: 2.0.0

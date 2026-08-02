@@ -4,7 +4,7 @@ import type { AgentContext } from '../../../agent/context'
 import { CredoError } from '../../../error'
 import { MultiBaseEncoder, TypedArrayEncoder } from '../../../utils'
 import { DidsApi } from '../../dids'
-import { KeyManagementApi } from '../../kms'
+import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../kms'
 import { EddsaJcs2022Cryptosuite } from '../cryptosuites/eddsa-jcs-2022/EddsaJcs2022Cryptosuite'
 import { W3cDataIntegrityProcessingError, W3cDataIntegrityProcessingErrorCode } from '../W3cDataIntegrityError'
 import type {
@@ -872,6 +872,66 @@ describe('EddsaJcs2022Cryptosuite', () => {
       const verified = await cryptosuite.proofVerification(new Uint8Array([1]), new Uint8Array(64), mockProofOptions)
 
       expect(verified).toBe(false)
+    })
+  })
+
+  describe('Appendix B.3 Representation: eddsa-jcs-2022', () => {
+    let specKms: KeyManagementApi
+    let specKeyId: string
+
+    // W3C VC DI EdDSA v1.0 Appendix B.3 Example 29 — spec key material
+    const specPublicJwk = PublicJwk.fromFingerprint(
+      'z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2'
+    ) as PublicJwk<Ed25519PublicJwk>
+    // secretKeyMultibase z3u2en7t5... → strip z + base58-decode + strip 2-byte multicodec [0x80, 0x26]
+    const specPrivateKeyBytes = TypedArrayEncoder.fromBase58('3u2en7t5LR2WtQH5PfFqMqwVHBeXouLzo6haApm8XHqvjxq').slice(2)
+
+    // Appendix B.3 Example 37 — known signature bytes (hex)
+    const specSignatureHex =
+      '407cd12654b33d718ecbb99179a1506daaa849450bf3fc523cce3e1c96f8b803' +
+      '51da3f253d725c6f00b07c9e5448d50b3ef78012b9ab54255116d069c6dd2808'
+
+    // Appendix B.3 Example 39 — proofValue on the final signed credential
+    const specProofValue = 'z2HnFSSPPBzR36zdDgK8PbEHeXbR56YF24jwMpt3R1eHXQzJDMWS93FCzpvJpwTWd3GAVFuUfjoJdcnTMuVor51aX'
+
+    beforeAll(async () => {
+      const specAgentContext = getAgentContext({ agentConfig: getAgentConfig('SpecVectorKms') })
+      specKms = specAgentContext.dependencyManager.resolve(KeyManagementApi)
+
+      const { keyId } = await specKms.importKey({
+        privateJwk: {
+          kty: 'OKP',
+          crv: 'Ed25519',
+          x: specPublicJwk.toJson().x,
+          d: TypedArrayEncoder.toBase64Url(specPrivateKeyBytes),
+        },
+      })
+      specKeyId = keyId
+    })
+
+    // Appendix B.3 Example 36 — combined hash (shared by both tests)
+    const specHashDataHex =
+      '66ab154f5c2890a140cb8388a22a160454f80575f6eae09e5a097cabe539a1db' +
+      '59b7cb6251b8991add1ce0bc83107e3db9dbbab5bd2c28f687db1a03abc92f19'
+
+    // Spec: VC DI EdDSA v1.0 Appendix B.3 Example 37 — Ed25519 is deterministic; the spec private key over hashData must produce the exact known signature.
+    it('signing spec hashData with spec private key produces Example 37 signature bytes', async () => {
+      const hashData = TypedArrayEncoder.fromHex(specHashDataHex)
+      const { signature } = await specKms.sign({ keyId: specKeyId, algorithm: 'EdDSA', data: hashData })
+      expect(TypedArrayEncoder.toHex(signature)).toBe(specSignatureHex)
+    })
+
+    // Spec: VC DI EdDSA v1.0 Appendix B.3 Example 39 — the proofValue from the signed credential must verify against hashData with the spec public key.
+    it('Example 39 proofValue verifies against spec hashData with spec public key', async () => {
+      const hashData = TypedArrayEncoder.fromHex(specHashDataHex)
+      const proofBytes = MultiBaseEncoder.decode(specProofValue).data
+      const { verified } = await specKms.verify({
+        key: { publicJwk: specPublicJwk.toJson() },
+        algorithm: 'EdDSA',
+        signature: proofBytes,
+        data: hashData,
+      })
+      expect(verified).toBe(true)
     })
   })
 })
