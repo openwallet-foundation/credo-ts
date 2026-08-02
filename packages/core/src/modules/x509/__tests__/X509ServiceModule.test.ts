@@ -1,6 +1,12 @@
 import type { DependencyManager } from '../../../plugins'
 
-import { X509Module, X509ModuleConfig, type X509ModuleConfigOptions, X509Service } from './../index'
+import {
+  X509Module,
+  X509ModuleConfig,
+  type X509ModuleConfigOptions,
+  X509RevocationService,
+  X509Service,
+} from './../index'
 
 const dependencyManager = {
   registerInstance: vi.fn(),
@@ -36,8 +42,9 @@ q8mKCA9J8k/+zh//yKbN1bLAtdqPx7dnrDqV3Lg+
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(X509ModuleConfig, new X509ModuleConfig(options))
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(1)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(X509Service)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(X509RevocationService)
 
     expect(x509Module.config.trustedCertificates).toBeDefined()
     expect(x509Module.config.trustedCertificates).toHaveLength(1)

@@ -8,11 +8,16 @@ export class AgentConfig {
   private initConfig: InitConfig
   public logger: Logger
   public readonly agentDependencies: AgentDependencies
+  #getTrustedIssuersForVerification?: InitConfig['getTrustedIssuersForVerification']
 
   public constructor(initConfig: InitConfig, agentDependencies: AgentDependencies) {
     this.initConfig = initConfig
     this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.Off)
     this.agentDependencies = agentDependencies
+
+    if (initConfig?.getTrustedIssuersForVerification) {
+      this.setTrustedIssuersForVerification(initConfig.getTrustedIssuersForVerification)
+    }
   }
 
   public get allowInsecureHttpUrls() {
@@ -25,6 +30,14 @@ export class AgentConfig {
 
   public get validitySkewSeconds() {
     return this.initConfig.validitySkewSeconds ?? DEFAULT_SKEW_TIME
+  }
+
+  public get getTrustedIssuersForVerification() {
+    return this.#getTrustedIssuersForVerification
+  }
+
+  public setTrustedIssuersForVerification(fn: InitConfig['getTrustedIssuersForVerification']) {
+    this.#getTrustedIssuersForVerification = fn
   }
 
   public extend(config: Partial<InitConfig>): AgentConfig {

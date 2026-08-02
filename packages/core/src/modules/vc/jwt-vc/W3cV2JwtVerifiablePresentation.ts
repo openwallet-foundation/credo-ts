@@ -1,7 +1,7 @@
 import { Jwt } from '../../../crypto/jose/jwt/Jwt'
 import { CredoError } from '../../../error'
 import { JsonTransformer, MessageValidator } from '../../../utils'
-import { ClaimFormat } from '../models'
+import { ClaimFormat } from '../models/ClaimFormat'
 import { W3cV2Presentation } from '../models/presentation/W3cV2Presentation'
 
 export interface W3cV2JwtVerifiablePresentationOptions {

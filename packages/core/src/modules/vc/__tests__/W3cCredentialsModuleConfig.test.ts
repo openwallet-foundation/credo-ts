@@ -1,4 +1,4 @@
-import { defaultDocumentLoader } from '../data-integrity/libraries/documentLoader'
+import { defaultDocumentLoader } from '../jsonld'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 
 describe('W3cCredentialsModuleConfig', () => {

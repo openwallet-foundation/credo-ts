@@ -12,6 +12,7 @@ import type { AskarPostgresStorageConfig } from '../src'
 import { AskarModule } from '../src/AskarModule'
 
 registerAskar({ askar })
+
 export { askar }
 
 export const genesisPath = process.env.GENESIS_TXN_PATH

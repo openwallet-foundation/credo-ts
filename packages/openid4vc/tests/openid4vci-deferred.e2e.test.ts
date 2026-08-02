@@ -12,10 +12,12 @@ import {
 } from '@credo-ts/core'
 import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import {
+  authorizationCodeGrantIdentifier,
   calculateJwkThumbprint,
   HashAlgorithm,
   Oauth2AuthorizationServer,
   preAuthorizedCodeGrantIdentifier,
+  refreshTokenGrantIdentifier,
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow, type CredentialRequest } from '@openid4vc/openid4vci'
 import { randomUUID } from 'crypto'
@@ -269,6 +271,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         issuer: 'http://localhost:4747',
         token_endpoint: 'http://localhost:4747/token',
         authorization_endpoint: 'http://localhost:4747/authorize',
+        grant_types_supported: [
+          authorizationCodeGrantIdentifier,
+          preAuthorizedCodeGrantIdentifier,
+          refreshTokenGrantIdentifier,
+        ],
       } satisfies AuthorizationServerMetadata)
     )
     app.get('/jwks.json', (_req, res) =>

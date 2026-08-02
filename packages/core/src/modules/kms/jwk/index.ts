@@ -9,6 +9,7 @@ export type {
   KnownJwaSignatureAlgorithm,
 } from './jwa'
 export {
+  isKnownJwaSignatureAlgorithm,
   KnownJwaContentEncryptionAlgorithms,
   KnownJwaKeyAgreementAlgorithms,
   KnownJwaKeyEncryptionAlgorithms,

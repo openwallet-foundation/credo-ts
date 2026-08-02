@@ -1,0 +1,2 @@
+ALTER TABLE "Openid4vcIssuer" ADD COLUMN "client_attestation_signing_alg_values_supported" jsonb;--> statement-breakpoint
+ALTER TABLE "Openid4vcIssuer" ADD COLUMN "client_attestation_pop_signing_alg_values_supported" jsonb;

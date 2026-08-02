@@ -9,6 +9,8 @@ export type { AgentApi, DefaultAgentModules, EmptyModuleMap, ModulesMap } from '
 export { BaseAgent } from './agent/BaseAgent'
 export { EventEmitter } from './agent/EventEmitter'
 export * from './agent/Events'
+export { TrustedIssuerContext } from './agent/TrustedIssuerContext'
+export * from './agent/TrustedIssuersForVerification'
 export { InjectionSymbols } from './constants'
 export * from './crypto'
 export * from './error'
@@ -31,14 +33,13 @@ export { didDocumentToNumAlgo4Did } from './modules/dids/methods/peer/peerDidNum
 export { DidRecordMetadataKeys } from './modules/dids/repository/didRecordMetadataTypes'
 export * from './modules/dif-presentation-exchange'
 export * from './modules/generic-records'
-
 /**
  * @deprecated import from `@credo-ts/core/kms` instead
  */
 export * as Kms from './modules/kms'
-
 export * from './modules/mdoc'
 export * from './modules/sd-jwt-vc'
+export * from './modules/token-status-list'
 export * from './modules/vc'
 export * from './modules/x509'
 export * from './plugins'

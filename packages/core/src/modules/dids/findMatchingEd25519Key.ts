@@ -1,5 +1,5 @@
 import { asymmetricPublicJwkMatches, Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../kms'
-import { DidDocument } from './domain/DidDocument'
+import type { DidDocument } from './domain/DidDocument'
 import { getPublicJwkFromVerificationMethod } from './domain/key-type/keyDidMapping'
 import { VerificationMethod } from './domain/verificationMethod'
 

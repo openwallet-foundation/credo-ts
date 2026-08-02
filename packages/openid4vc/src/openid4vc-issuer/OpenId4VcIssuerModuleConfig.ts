@@ -3,6 +3,7 @@ import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciDeferredCredentialRequestToCredentialMapper,
   OpenId4VciGetChainedAuthorizationRequestParameters,
+  OpenId4VciGetDynamicIssuanceSession,
   OpenId4VciGetVerificationSession,
 } from './OpenId4VcIssuerServiceOptions'
 
@@ -99,14 +100,30 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   walletAttestationsRequired?: boolean
 
   /**
-   * Whether to allow dynamic issuance sessions based on a credential request.
+   * Whether a Client Attestation PoP `challenge` is required when a client authenticates using a client
+   * attestation, as defined in draft 09 of OAuth 2.0 Attestation-Based Client Authentication.
    *
-   * This requires an external authorization server which issues access tokens without
-   * a `pre-authorized_code` or `issuer_state` parameter.
-   *
-   * Credo only support stateful credential offer sessions (pre-auth or presentation during issuance)
+   * When enabled, the authorization server metadata advertises a `challenge_endpoint`, and client
+   * attestation pop JWTs must include a valid `challenge` obtained from that endpoint (per §6.1, offering
+   * a challenge endpoint makes the challenge mandatory). When disabled the challenge endpoint is not
+   * advertised and no challenge is enforced.
    *
    * @default false
+   */
+  clientAttestationPopChallengeRequired?: boolean
+
+  /**
+   * Whether to allow dynamic issuance sessions based on a credential request.
+   *
+   * This only works with **external authorization servers** which issue access tokens without
+   * a `pre-authorized_code` or `issuer_state` parameter.
+   *
+   * For full control including support for presentation during issuance and chained authorization
+   * it is recommended to use the `getDynamicIssuanceSession` callback instead.
+   *
+   * @default false
+   *
+   * @deprecated
    */
   allowDynamicIssuanceSessions?: boolean
 
@@ -150,6 +167,24 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   getChainedAuthorizationRequestParameters?: OpenId4VciGetChainedAuthorizationRequestParameters
 
   /**
+   * Callback to get the issuance session options for a dynamic (wallet-initiated) issuance request
+   * that is not bound to a credential offer. This will be called when:
+   *
+   * - a Pushed Authorization Request or Authorization Challenge request is received by the internal
+   *   authorization server without an `issuer_state` (the `chained` and `presentation` flows), or
+   * - the credential endpoint receives an access token issued by an external authorization server
+   *   that is not bound to a credential offer (the `external` flow).
+   *
+   * This callback is the single decision point for dynamic issuance and acts as the
+   * application-level abuse-prevention gate: returning session options allows the issuance, while
+   * throwing an `Oauth2ServerErrorResponseError` or returning `undefined`/`null` denies it.
+   *
+   * Required to support dynamic issuance for the chained authorization server, presentation during
+   * issuance, or external authorization server flow.
+   */
+  getDynamicIssuanceSession?: OpenId4VciGetDynamicIssuanceSession
+
+  /**
    * Custom the paths used for endpoints
    */
   endpoints?: {
@@ -162,6 +197,11 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
      * @default /challenge
      */
     authorizationChallenge?: string
+
+    /**
+     * @default /client-attestation-challenge
+     */
+    clientAttestationChallenge?: string
 
     /**
      * @default /offers
@@ -227,11 +267,21 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public getChainedAuthorizationRequestParameters?: OpenId4VciGetChainedAuthorizationRequestParameters
 
+  /**
+   * Callback to get the issuance session options for a dynamic (wallet-initiated) issuance request.
+   * This is the single decision point and abuse-prevention gate for dynamic issuance.
+   *
+   * Required to support dynamic issuance for the chained authorization server, presentation during
+   * issuance, or external authorization server flow.
+   */
+  public getDynamicIssuanceSession?: OpenId4VciGetDynamicIssuanceSession
+
   public constructor(options: InternalOpenId4VcIssuerModuleConfigOptions) {
     this.options = options
     this.getVerificationSession =
       options.getVerificationSession ?? options.getVerificationSessionForIssuanceSessionAuthorization
     this.getChainedAuthorizationRequestParameters = options.getChainedAuthorizationRequestParameters
+    this.getDynamicIssuanceSession = options.getDynamicIssuanceSession
   }
 
   public get app() {
@@ -347,6 +397,16 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
+   * Whether a Client Attestation PoP `challenge` is required when a client authenticates using a client
+   * attestation (draft 09 of OAuth 2.0 Attestation-Based Client Authentication).
+   *
+   * @default false
+   */
+  public get clientAttestationPopChallengeRequired(): boolean {
+    return this.options.clientAttestationPopChallengeRequired ?? false
+  }
+
+  /**
    * Whether to allow dynamic issuance sessions based on a credential request.
    *
    * This requires an external authorization server which issues access tokens without
@@ -355,6 +415,8 @@ export class OpenId4VcIssuerModuleConfig {
    * Credo only supports stateful credential offer sessions (pre-auth or presentation during issuance)
    *
    * @default false
+   *
+   * @deprecated
    */
   public get allowDynamicIssuanceSessions(): boolean {
     return this.options.allowDynamicIssuanceSessions ?? false
@@ -393,6 +455,13 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get authorizationChallengeEndpointPath(): string {
     return this.options.endpoints?.authorizationChallenge ?? '/challenge'
+  }
+
+  /**
+   * @default /client-attestation-challenge
+   */
+  public get clientAttestationChallengeEndpointPath(): string {
+    return this.options.endpoints?.clientAttestationChallenge ?? '/client-attestation-challenge'
   }
 
   /**

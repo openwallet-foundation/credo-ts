@@ -2,7 +2,7 @@ import { type ValidityInfoOptions } from '@owf/mdoc'
 import type { DcqlQuery } from 'dcql'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import { PublicJwk } from '../kms'
-import type { EncodedX509Certificate, X509Certificate } from '../x509'
+import type { EncodedX509Certificate, X509Certificate, X509VerificationTrustedCertificates } from '../x509'
 import { Mdoc } from './Mdoc'
 import { MdocRecord } from './repository'
 
@@ -15,7 +15,7 @@ export interface MdocStoreOptions {
 }
 
 export type MdocVerifyOptions = {
-  trustedCertificates?: EncodedX509Certificate[]
+  trustedCertificates?: EncodedX509Certificate[] | Array<X509VerificationTrustedCertificates>
   now?: Date
 }
 
@@ -36,7 +36,7 @@ export type MdocOpenId4VpDraft18SessionTranscriptOptions = {
 }
 
 export type MdocSessionTranscriptByteOptions = {
-  type: 'sesionTranscriptBytes'
+  type: 'sessionTranscriptBytes'
   sessionTranscriptBytes: Uint8Array
 }
 
@@ -88,7 +88,7 @@ export type MdocDeviceResponseDcqlQueryOptions = {
 }
 
 export type MdocDeviceResponseVerifyOptions = {
-  trustedCertificates?: EncodedX509Certificate[]
+  trustedCertificates?: EncodedX509Certificate[] | X509VerificationTrustedCertificates[]
   sessionTranscriptOptions: MdocSessionTranscriptOptions
   /**
    * The base64Url-encoded device response string.
@@ -104,10 +104,15 @@ export type MdocSignOptions = {
   namespaces: MdocNameSpaces
 
   /**
+   * The X509 certificate (or certificate chain) to use for signing the mDOC.
+   * When an array of certificates is provided, the first certificate is
+   * used for signing, and the entire chain is included in the mDOC.
    *
-   * The X509 certificate to use for signing the mDOC. The certificate MUST have a
-   * publicJwk with key id configured, enabling signing with the KMS
+   * The signing certificate MUST have a publicJwk with key id configured,
+   * enabling signing with the KMS.
    */
-  issuerCertificate: X509Certificate
+  issuerCertificate: X509Certificate | X509Certificate[]
   holderKey: PublicJwk
+
+  statusInfo?: { index: number; uri: string; certificate?: X509Certificate }
 }

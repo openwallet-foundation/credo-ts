@@ -19,7 +19,7 @@ import { JsonTransformer } from '../../../../utils'
 import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
 import { DidJwk, DidKey, DidRepository, DidsApi, DidsModuleConfig } from '../../../dids'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
-import { X509ModuleConfig } from '../../../x509'
+import { X509ModuleConfig } from '../../../x509/X509ModuleConfig'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
 import { ClaimFormat, W3cCredential, W3cPresentation } from '../../models'
 import { W3cJwtCredentialService } from '../W3cJwtCredentialService'
@@ -331,6 +331,38 @@ describe('W3cJwtCredentialService', () => {
       })
 
       expect(result.validations.signature?.error?.message).toContain('Invalid JWS signature')
+    })
+  })
+
+  describe('verifyCredential with getTrustedIssuersForVerification', () => {
+    afterEach(() => {
+      agentContext.config.setTrustedIssuersForVerification(undefined)
+    })
+
+    test('accepts a credential whose issuer did is trusted', async () => {
+      const credential = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)
+      agentContext.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'did', issuance: credential.issuerId }],
+      }))
+
+      const result = await w3cJwtCredentialService.verifyCredential(agentContext, { credential })
+
+      expect(result.isValid).toBe(true)
+    })
+
+    test('rejects a credential whose issuer did is not trusted', async () => {
+      agentContext.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [
+          { method: 'did', issuance: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y' },
+        ],
+      }))
+
+      const result = await w3cJwtCredentialService.verifyCredential(agentContext, {
+        credential: CredoEs256DidJwkJwtVc,
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain('is not trusted')
     })
   })
 

@@ -57,4 +57,5 @@ export type OpenId4VpAuthorizationResponsePayload = Openid4vpAuthorizationRespon
 export * from './CredentialHolderBinding'
 export * from './OpenId4VciAuthorizationServerConfig'
 export * from './OpenId4VciCredentialFormatProfile'
+export * from './OpenId4VciKeyAttestationLevel'
 export * from './OpenId4VcJwtIssuer'

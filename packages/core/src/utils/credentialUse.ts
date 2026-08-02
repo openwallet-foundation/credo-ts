@@ -27,7 +27,7 @@ import {
   CredentialMultiInstanceUseUpdateMode,
 } from './credentialUseTypes'
 
-export { CredentialMultiInstanceUseMode, CredentialMultiInstanceUseUpdateMode, CredentialMultiInstanceState }
+export { CredentialMultiInstanceState, CredentialMultiInstanceUseMode, CredentialMultiInstanceUseUpdateMode }
 
 type CredentialRecord = W3cCredentialRecord | SdJwtVcRecord | MdocRecord | W3cV2CredentialRecord
 

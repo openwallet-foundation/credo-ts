@@ -1,3 +1,4 @@
+import type { TrustedIssuerDid } from '../../agent/TrustedIssuersForVerification'
 import type { HashName } from '../../crypto'
 import type { KnownJwaSignatureAlgorithm } from '../kms'
 import type { IDisclosureFrame, IPresentationFrame, SdJwtVcHolderBinding } from '../sd-jwt-vc'
@@ -98,6 +99,11 @@ export interface W3cV2SdJwtSignCredentialOptions extends W3cV2SignCredentialOpti
 
 interface W3cV2VerifyCredentialOptionsBase {
   credential: unknown
+
+  /**
+   * Trusted issuers for the verification.
+   */
+  trustedIssuers?: TrustedIssuerDid[]
 }
 
 export interface W3cV2JwtVerifyCredentialOptions extends W3cV2VerifyCredentialOptionsBase {
@@ -168,6 +174,11 @@ interface W3cV2VerifyPresentationOptionsBase {
    * The domain / aud to be used in the proof to assert the intended recipient.
    */
   domain?: string
+
+  /**
+   * Trusted issuers for the verification.
+   */
+  trustedIssuers?: TrustedIssuerDid[]
 }
 
 export interface W3cV2JwtVerifyPresentationOptions extends W3cV2VerifyPresentationOptionsBase {

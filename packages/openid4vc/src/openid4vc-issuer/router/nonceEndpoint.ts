@@ -16,11 +16,10 @@ export function configureNonceEndpoint(router: Router, config: OpenId4VcIssuerMo
         const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
         const vcIssuer = openId4VcIssuerService.getIssuer(agentContext)
 
-        const { cNonce, cNonceExpiresInSeconds } = await openId4VcIssuerService.createNonce(agentContext, issuer)
+        const { cNonce } = await openId4VcIssuerService.createNonce(agentContext, issuer)
 
         const nonceResponse = vcIssuer.createNonceResponse({
           cNonce,
-          cNonceExpiresIn: cNonceExpiresInSeconds,
         })
 
         return sendJsonResponse(response, next, nonceResponse)

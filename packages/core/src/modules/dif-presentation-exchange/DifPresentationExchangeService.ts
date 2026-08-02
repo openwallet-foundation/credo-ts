@@ -28,12 +28,12 @@ import {
   W3cCredentialService,
   W3cPresentation,
 } from '../vc'
-import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
-import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
+import { purposes } from '../vc/linked-data-proofs/adapters/jsonld-signatures-adapter'
+import type { IAnonCredsDataIntegrityService } from '../vc/linked-data-proofs/models/IAnonCredsDataIntegrityService'
 import {
   ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
   AnonCredsDataIntegrityServiceSymbol,
-} from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
+} from '../vc/linked-data-proofs/models/IAnonCredsDataIntegrityService'
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import type {
   DifPexCredentialsForRequest,

@@ -32,6 +32,7 @@ import {
   type VpToken,
 } from '@openid4vc/openid4vp'
 import type { OpenId4VpVersion } from '../openid4vc-verifier'
+import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
@@ -127,7 +128,12 @@ export class OpenId4VpHolderService {
 
     const verifiedAuthorizationRequest = await openid4vpClient.resolveOpenId4vpAuthorizationRequest({
       authorizationRequestPayload: params,
-      origin: options?.origin,
+      responseMode: options?.origin
+        ? {
+            type: 'dc_api',
+            expectedOrigin: options.origin,
+          }
+        : { type: 'direct_post' },
     })
 
     const { client, pex, transactionData, dcql } = verifiedAuthorizationRequest
@@ -144,7 +150,8 @@ export class OpenId4VpHolderService {
     }
 
     const returnValue = {
-      authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
+      authorizationRequestPayload:
+        verifiedAuthorizationRequest.authorizationRequestPayload as OpenId4VpAuthorizationRequestPayload,
       origin: options?.origin,
       signedAuthorizationRequest: verifiedAuthorizationRequest.jar
         ? {

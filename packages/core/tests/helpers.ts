@@ -255,6 +255,7 @@ export function getAgentContext({
   registerInstances = [],
   kmsBackends = [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())],
   isRootAgentContext = true,
+  isInitialized = true,
 }: {
   dependencyManager?: DependencyManager
   agentConfig?: AgentConfig
@@ -264,8 +265,12 @@ export function getAgentContext({
   // as keys (it must be number, string or symbol)
   registerInstances?: Array<[InjectionToken, unknown]>
   isRootAgentContext?: boolean
+  isInitialized?: boolean
 } = {}) {
-  if (agentConfig) dependencyManager.registerInstance(AgentConfig, agentConfig)
+  const config = agentConfig ?? new AgentConfig({}, agentDependencies)
+  if (!dependencyManager.isRegistered(AgentConfig)) {
+    dependencyManager.registerInstance(AgentConfig, config)
+  }
 
   // Register custom instances on the dependency manager
   for (const [token, instance] of registerInstances.values()) {
@@ -273,6 +278,7 @@ export function getAgentContext({
   }
 
   const agentContext = new AgentContext({ dependencyManager, contextCorrelationId, isRootAgentContext })
+  agentContext.isInitialized = isInitialized
   agentContext.dependencyManager.registerInstance(
     Kms.KeyManagementModuleConfig,
     new Kms.KeyManagementModuleConfig({

@@ -69,13 +69,19 @@ describe('WebVhDidRegistrar Integration Tests', () => {
       ])
       expect(result.didState.didDocument?.id).toMatch(/^did:webvh:.+/)
       expect(result.didState.didDocument?.controller).toMatch(/^did:webvh:.+/)
-      expect(result.didState.didDocument?.authentication?.[0]).toMatch(/^did:webvh:.+/)
-
       const authentication = result.didState.didDocument?.authentication?.[0]
       const verification = result.didState.didDocument?.verificationMethod?.[0]
       expect(verification?.id).toMatch(/^did:webvh:.+/)
       expect(verification?.controller).toMatch(/^did:webvh:.+/)
       expect(authentication).toEqual(verification?.id)
+    })
+
+    it('should percent-encode host:port in resulting did id', async () => {
+      const result = await registrar.create(agentContext, { domain: 'alice:8443' })
+      expect(result.didState.state).toBe('finished')
+      expect(result.didState.did).toContain('alice%3A8443')
+      expect(result.didState.didDocument?.id).toContain('alice%3A8443')
+      expect(result.didState.didDocument?.controller).toContain('alice%3A8443')
     })
 
     it('should correctly create two dids, each one with differents path and port', async () => {
@@ -109,7 +115,6 @@ describe('WebVhDidRegistrar Integration Tests', () => {
       ])
       expect(result.didState.didDocument?.id).toMatch(/%3A80:credo:01$/)
       expect(result.didState.didDocument?.controller).toMatch(/%3A80:credo:01$/)
-
       const authentication = result.didState.didDocument?.authentication?.[0]
       const verification = result.didState.didDocument?.verificationMethod?.[0]
       expect(authentication).toEqual(verification?.id)

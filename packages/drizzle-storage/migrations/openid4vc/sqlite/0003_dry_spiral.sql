@@ -1,0 +1,2 @@
+ALTER TABLE `Openid4vcIssuer` ADD `client_attestation_signing_alg_values_supported` text;--> statement-breakpoint
+ALTER TABLE `Openid4vcIssuer` ADD `client_attestation_pop_signing_alg_values_supported` text;

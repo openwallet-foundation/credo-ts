@@ -2,7 +2,7 @@ import type { MockedClassConstructor } from '../../../../../../../../tests/types
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import { W3cCredentialRecord, W3cJsonLdVerifiableCredential } from '../../../../../modules/vc'
-import { Ed25519Signature2018Fixtures } from '../../../../../modules/vc/data-integrity/__tests__/fixtures'
+import { Ed25519Signature2018Fixtures } from '../../../../../modules/vc/linked-data-proofs/__tests__/fixtures'
 import { JsonTransformer } from '../../../../../utils'
 import * as testModule from '../w3cCredentialRecord'
 

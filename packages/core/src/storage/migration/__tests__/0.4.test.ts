@@ -7,7 +7,7 @@ import { agentDependencies } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { W3cCredentialsModule } from '../../../modules/vc'
-import { customDocumentLoader } from '../../../modules/vc/data-integrity/__tests__/documentLoader'
+import { customDocumentLoader } from '../../../modules/vc/linked-data-proofs/__tests__/documentLoader'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 

@@ -31,4 +31,4 @@ const zBase64Url = z.string().regex(/[a-zA-Z0-9_-]+/, 'Must be a base64url strin
 
 const zAnyUint8Array = z.instanceof<{ new (): Uint8Array }>(Uint8Array)
 
-export { zUniqueArray, zOptionalToUndefined, zBase64Url, zAnyUint8Array }
+export { zAnyUint8Array, zBase64Url, zOptionalToUndefined, zUniqueArray }

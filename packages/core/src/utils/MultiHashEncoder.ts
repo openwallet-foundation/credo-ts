@@ -1,5 +1,5 @@
 import type { HashName } from '../crypto/hashes'
-import { Hasher } from '../crypto/hashes'
+import { Hasher } from '../crypto/hashes/Hasher'
 import { TypedArrayEncoder } from './TypedArrayEncoder'
 import { VarintEncoder } from './VarintEncoder'
 

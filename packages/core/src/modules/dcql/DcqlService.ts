@@ -43,7 +43,7 @@ import {
   W3cV2EnvelopedVerifiableCredential,
   W3cV2Presentation,
 } from '../vc'
-import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
+import { purposes } from '../vc/linked-data-proofs/adapters/jsonld-signatures-adapter'
 import { W3cV2SdJwtCredentialService, W3cV2SdJwtVerifiableCredential } from '../vc/sd-jwt-vc'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
@@ -465,11 +465,12 @@ export class DcqlService {
                               record.firstCredential instanceof W3cV2SdJwtVerifiableCredential
                             ? {
                                 output: agentContext.dependencyManager
-                                  .resolve(SdJwtVcService)
+                                  .resolve(W3cV2SdJwtCredentialService)
                                   .applyDisclosuresForPayload(
                                     record.firstCredential.encoded,
                                     claimSet.output as JsonObject
-                                  ).prettyClaims as { [key: string]: JsonValue },
+                                  )
+                                  .resolvedCredential.toJSON() as { [key: string]: JsonValue },
                               }
                             : {}),
                       })),
@@ -519,9 +520,9 @@ export class DcqlService {
                           record.firstCredential instanceof W3cV2SdJwtVerifiableCredential
                         ? {
                             output: agentContext.dependencyManager
-                              .resolve(SdJwtVcService)
+                              .resolve(W3cV2SdJwtCredentialService)
                               .applyDisclosuresForPayload(record.firstCredential.encoded, claimSet.output as JsonObject)
-                              .prettyClaims as { [key: string]: JsonValue },
+                              .resolvedCredential.toJSON() as { [key: string]: JsonValue },
                           }
                         : {}),
                   })),

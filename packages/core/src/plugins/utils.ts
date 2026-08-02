@@ -28,7 +28,7 @@ export function getApiForModuleByName<M extends ApiModule>(
   constructorName: string
 ): InstanceType<M['api']> | undefined {
   const module = getRegisteredModuleByName(agentContext, constructorName)
-  if (!module || !module.api) return undefined
+  if (!module?.api) return undefined
 
   return agentContext.dependencyManager.resolve(module.api) as InstanceType<M['api']>
 }

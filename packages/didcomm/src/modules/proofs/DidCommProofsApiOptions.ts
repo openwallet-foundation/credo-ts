@@ -8,7 +8,7 @@ import type {
 } from './protocol/DidCommProofProtocolOptions'
 
 // re-export GetFormatDataReturn type from protocol, as it is also used in the api
-export type { GetProofFormatDataReturn, DeleteProofOptions }
+export type { DeleteProofOptions, GetProofFormatDataReturn }
 
 export type FindProofProposalMessageReturn<PPs extends DidCommProofProtocol[]> = ReturnType<
   PPs[number]['findProposalMessage']
