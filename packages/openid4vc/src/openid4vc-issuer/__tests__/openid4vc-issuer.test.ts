@@ -1221,4 +1221,46 @@ describe('OpenId4VcIssuer', () => {
     expect(jwt.header.x5c).toEqual([certificate.toString('base64')])
     expect(jwt.payload.additionalClaims.display).toMatchObject([{ name: 'Updated issuer' }])
   })
+
+  it('keeps omitted issuer metadata, replaces provided metadata and removes metadata set to null', async () => {
+    const credentialConfigurationsSupported = { openBadgeCredential }
+    const authorizationServerConfigs = [{ type: 'direct' as const, issuer: 'https://authorization-server.example.com' }]
+
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationsSupported,
+      display: [{ name: 'Initial issuer' }],
+      dpopSigningAlgValuesSupported: ['ES256'],
+      batchCredentialIssuance: { batchSize: 2 },
+      authorizationServerConfigs,
+    })
+
+    // Omitting metadata keeps the current value
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationsSupported,
+    })
+
+    const kept = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+    expect(kept.display).toEqual([{ name: 'Initial issuer' }])
+    expect(kept.dpopSigningAlgValuesSupported).toEqual(['ES256'])
+    expect(kept.batchCredentialIssuance).toEqual({ batchSize: 2 })
+    expect(kept.authorizationServerConfigs).toEqual(authorizationServerConfigs)
+
+    // Provided metadata is replaced, and metadata set to null is removed
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationsSupported,
+      display: [{ name: 'Updated issuer' }],
+      dpopSigningAlgValuesSupported: null,
+      batchCredentialIssuance: null,
+      authorizationServerConfigs: null,
+    })
+
+    const updated = await issuer.openid4vc.issuer.getIssuerByIssuerId(openId4VcIssuer.issuerId)
+    expect(updated.display).toEqual([{ name: 'Updated issuer' }])
+    expect(updated.dpopSigningAlgValuesSupported).toBeUndefined()
+    expect(updated.batchCredentialIssuance).toBeUndefined()
+    expect(updated.authorizationServerConfigs).toBeUndefined()
+  })
 })

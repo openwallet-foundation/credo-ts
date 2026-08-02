@@ -53,9 +53,7 @@ export class OpenId4VcIssuerApi {
   /**
    * Updates issuer metadata.
    *
-   * Optional fields are only changed when they are included in `options`.
-   * If a field is omitted, the current value is kept.
-   * If a field is included with `undefined`, the value is cleared.
+   * Only the metadata that is provided is updated, see {@link OpenId4VcUpdateIssuerRecordOptions}.
    */
   public async updateIssuerMetadata(options: OpenId4VcUpdateIssuerRecordOptions) {
     const {
@@ -73,12 +71,25 @@ export class OpenId4VcIssuerApi {
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
 
     issuer.credentialConfigurationsSupported = credentialConfigurationsSupported
-    issuer.display = display
-    issuer.dpopSigningAlgValuesSupported = dpopSigningAlgValuesSupported
-    issuer.clientAttestationSigningAlgValuesSupported = clientAttestationSigningAlgValuesSupported
-    issuer.clientAttestationPopSigningAlgValuesSupported = clientAttestationPopSigningAlgValuesSupported
-    issuer.batchCredentialIssuance = batchCredentialIssuance
-    issuer.authorizationServerConfigs = authorizationServerConfigs
+
+    if (display !== undefined) {
+      issuer.display = display ?? undefined
+    }
+    if (dpopSigningAlgValuesSupported !== undefined) {
+      issuer.dpopSigningAlgValuesSupported = dpopSigningAlgValuesSupported ?? undefined
+    }
+    if (clientAttestationSigningAlgValuesSupported !== undefined) {
+      issuer.clientAttestationSigningAlgValuesSupported = clientAttestationSigningAlgValuesSupported ?? undefined
+    }
+    if (clientAttestationPopSigningAlgValuesSupported !== undefined) {
+      issuer.clientAttestationPopSigningAlgValuesSupported = clientAttestationPopSigningAlgValuesSupported ?? undefined
+    }
+    if (batchCredentialIssuance !== undefined) {
+      issuer.batchCredentialIssuance = batchCredentialIssuance ?? undefined
+    }
+    if (authorizationServerConfigs !== undefined) {
+      issuer.authorizationServerConfigs = authorizationServerConfigs ?? undefined
+    }
 
     return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer, { metadataSigner })
   }

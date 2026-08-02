@@ -2,6 +2,4 @@
 "@credo-ts/openid4vc": patch
 ---
 
-fix(openid4vc): preserve omitted optional issuer metadata fields while allowing explicit clearing
-
-`updateIssuerMetadata` now applies optional metadata fields based on key presence instead of value checks. Omitting a key keeps the existing value, while explicitly providing `undefined` clears that value.
+Only update the issuer metadata that is provided to `updateIssuerMetadata`. Optional metadata can now be omitted to keep the current value, set to a value to replace it, or set to `null` to remove it. Previously omitting metadata removed it from the issuer record.
