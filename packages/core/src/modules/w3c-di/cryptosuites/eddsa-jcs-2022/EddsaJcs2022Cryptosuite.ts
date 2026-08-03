@@ -7,7 +7,7 @@ import { isObject } from '../../../../utils/object'
 import { KeyManagementApi } from '../../../kms'
 import { isXsdDateTimeStamp } from '../../proof-processing/iso8601Datetime'
 import { publicJwkFromVerificationMethodId, publicKeyIdFromVerificationMethodId } from '../../proof-processing/keyUtils'
-import { omitUndefinedFields } from '../../proof-processing/normalisation'
+import { omitUndefinedFields } from '../../proof-processing/normalization'
 import { W3cDataIntegrityProcessingError, W3cDataIntegrityProcessingErrorCode } from '../../W3cDataIntegrityError'
 import type {
   W3cDataIntegrityCryptosuiteProof,
@@ -31,9 +31,9 @@ export class EddsaJcs2022Cryptosuite implements W3cDataIntegrityCryptosuite {
   }
 
   private canonicalizeJcsStrict(value: unknown) {
-    const normalised = omitUndefinedFields(value)
-    assertJcsInput(normalised)
-    return canonicalizeEx(normalised, {
+    const normalized = omitUndefinedFields(value)
+    assertJcsInput(normalized)
+    return canonicalizeEx(normalized, {
       allowCircular: false,
       filterUndefined: true,
       undefinedInArrayToNull: false,

@@ -1,6 +1,6 @@
 /**
  * Returns true when the value is a plain record-like object that can be safely
- * traversed and rebuilt during Data Integrity boundary normalisation.
+ * traversed and rebuilt during Data Integrity boundary normalization.
  */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== 'object') {
@@ -16,9 +16,9 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * is not part of the JSON data model used by Data Integrity processing.
  *
  * Recursively removes properties whose value is `undefined` from plain-object
- * inputs before canonicalisation.
+ * inputs before canonicalization.
  *
- * Arrays are preserved and normalised element-by-element so that only object
+ * Arrays are preserved and normalized element-by-element so that only object
  * fields are omitted at the service boundary before cryptosuite processing.
  */
 export function omitUndefinedFields<T>(value: T): T {
@@ -30,7 +30,7 @@ export function omitUndefinedFields<T>(value: T): T {
     return value
   }
 
-  const normalisedEntries = Object.entries(value).flatMap(([key, nestedValue]) => {
+  const normalizedEntries = Object.entries(value).flatMap(([key, nestedValue]) => {
     if (nestedValue === undefined) {
       return []
     }
@@ -38,5 +38,5 @@ export function omitUndefinedFields<T>(value: T): T {
     return [[key, omitUndefinedFields(nestedValue)] as const]
   })
 
-  return Object.fromEntries(normalisedEntries) as T
+  return Object.fromEntries(normalizedEntries) as T
 }

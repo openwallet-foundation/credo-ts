@@ -648,13 +648,13 @@ describe('W3cDataIntegrityProofService', () => {
     expect(mockCreateByCryptosuite).not.toHaveBeenCalled()
   })
 
-  test('verifyProof rejects verification methods not authorised for proof purpose', async () => {
+  test('verifyProof rejects verification methods not authorized for proof purpose', async () => {
     const didDocumentRelationships = new Map<string, string[]>([['did:example:123#key-1', ['authentication']]])
     const dereferenceKey = vi.fn().mockImplementation((keyId: string, allowedPurposes?: string[]) => {
       const relationships = didDocumentRelationships.get(keyId) ?? []
-      const isAuthorised = (allowedPurposes ?? []).some((purpose) => relationships.includes(purpose))
+      const isAuthorized = (allowedPurposes ?? []).some((purpose) => relationships.includes(purpose))
 
-      if (!isAuthorised) {
+      if (!isAuthorized) {
         throw new Error(`Key '${keyId}' does not satisfy one of the required verification relationships`)
       }
 
@@ -692,13 +692,13 @@ describe('W3cDataIntegrityProofService', () => {
     expect(mockCreateByCryptosuite).not.toHaveBeenCalled()
   })
 
-  test('verifyProof accepts verification methods authorised for proof purpose and continues with cryptosuite verification', async () => {
+  test('verifyProof accepts verification methods authorized for proof purpose and continues with cryptosuite verification', async () => {
     const didDocumentRelationships = new Map<string, string[]>([['did:example:123#key-1', ['assertionMethod']]])
     const dereferenceKey = vi.fn().mockImplementation((keyId: string, allowedPurposes?: string[]) => {
       const relationships = didDocumentRelationships.get(keyId) ?? []
-      const isAuthorised = (allowedPurposes ?? []).some((purpose) => relationships.includes(purpose))
+      const isAuthorized = (allowedPurposes ?? []).some((purpose) => relationships.includes(purpose))
 
-      if (!isAuthorised) {
+      if (!isAuthorized) {
         throw new Error(`Key '${keyId}' does not satisfy one of the required verification relationships`)
       }
 

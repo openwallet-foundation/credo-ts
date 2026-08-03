@@ -20,7 +20,7 @@ function asDidPurpose(proofPurpose: string): DidPurpose | undefined {
 }
 
 /**
- * Validates that the verificationMethod used in a proof is authorised for
+ * Validates that the verificationMethod used in a proof is authorized for
  * the proofPurpose verification relationship in the controller document.
  */
 export async function validateProofPurposeVerificationRelationship(
@@ -55,10 +55,10 @@ export async function validateProofPurposeVerificationRelationship(
   } catch (error) {
     return createInvalidResult(
       createProofVerificationIssue(
-        'Verification method is not authorised for proof purpose',
+        'Verification method is not authorized for proof purpose',
         error instanceof Error
           ? error.message
-          : `Verification method '${proof.verificationMethod}' is not authorised for proof purpose '${proof.proofPurpose}'`
+          : `Verification method '${proof.verificationMethod}' is not authorized for proof purpose '${proof.proofPurpose}'`
       )
     )
   }

@@ -9,7 +9,7 @@ import type {
 } from '../W3cDataIntegrityProofService'
 
 export interface ParsedW3cDataIntegrityProofDocument {
-  normalisedMediaType: string
+  normalizedMediaType: string
   securedDocument: W3cDataIntegritySecuredDocument
   verifyOptions: W3cDataIntegrityVerifyProofOptions
 }
@@ -28,8 +28,8 @@ export function parseW3cDataIntegrityProofDocument(
   options: W3cDataIntegrityVerifyProofDocumentOptions,
   supportedMediaTypes: string[]
 ): ParseW3cDataIntegrityProofDocumentResult {
-  const normalisedMediaType = options.mediaType.split(';')[0]?.trim().toLowerCase()
-  if (!normalisedMediaType || !supportedMediaTypes.includes(normalisedMediaType)) {
+  const normalizedMediaType = options.mediaType.split(';')[0]?.trim().toLowerCase()
+  if (!normalizedMediaType || !supportedMediaTypes.includes(normalizedMediaType)) {
     return {
       ok: false,
       result: createInvalidResult(
@@ -83,7 +83,7 @@ export function parseW3cDataIntegrityProofDocument(
   return {
     ok: true,
     value: {
-      normalisedMediaType,
+      normalizedMediaType,
       securedDocument,
       verifyOptions: {
         expectedProofPurpose: options.expectedProofPurpose,

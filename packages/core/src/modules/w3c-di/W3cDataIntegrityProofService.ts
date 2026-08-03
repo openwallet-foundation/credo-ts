@@ -2,7 +2,7 @@ import type { AgentContext } from '../../agent/context'
 import { injectable } from '../../plugins'
 import { asArray, equalsIgnoreOrder } from '../../utils'
 import type { W3cDataIntegrityCryptosuite, W3cDataIntegrityProofVerificationInput } from './cryptosuites/types'
-import { omitUndefinedFields } from './proof-processing/normalisation'
+import { omitUndefinedFields } from './proof-processing/normalization'
 import { parseW3cDataIntegrityProofDocument } from './proof-processing/parsing'
 import { validateProofPurposeVerificationRelationship } from './proof-processing/proofPurposeValidation'
 import { validateProofChainStructure } from './proof-processing/proofSetValidation'
@@ -84,7 +84,7 @@ export class W3cDataIntegrityProofService {
     agentContext: AgentContext,
     options: W3cDataIntegrityCreateProofOptions
   ): Promise<W3cDataIntegrityCreateSuccess | W3cDataIntegrityCreateFailure> {
-    const normalisedUnsecuredDocument = omitUndefinedFields(options.unsecuredDocument)
+    const normalizedUnsecuredDocument = omitUndefinedFields(options.unsecuredDocument)
 
     let cryptosuite: W3cDataIntegrityCryptosuite
     try {
@@ -124,7 +124,7 @@ export class W3cDataIntegrityProofService {
     )
 
     try {
-      const proof = await cryptosuite.createProof(normalisedUnsecuredDocument, proofOptions)
+      const proof = await cryptosuite.createProof(normalizedUnsecuredDocument, proofOptions)
       assertCreatedProofPostconditions(
         proof,
         { ...proofOptions, verificationMethod: options.verificationMethod },
@@ -166,10 +166,10 @@ export class W3cDataIntegrityProofService {
     options: W3cDataIntegrityVerifyProofOptions = {}
   ): Promise<W3cDataIntegrityVerifySuccess | W3cDataIntegrityVerifyFailure> {
     try {
-      const normalisedSecuredDocument = omitUndefinedFields(securedDocument)
-      assertSingleProofDocument(normalisedSecuredDocument)
+      const normalizedSecuredDocument = omitUndefinedFields(securedDocument)
+      assertSingleProofDocument(normalizedSecuredDocument)
 
-      return await this.verifySingleProofCore(agentContext, normalisedSecuredDocument, options)
+      return await this.verifySingleProofCore(agentContext, normalizedSecuredDocument, options)
     } catch (error) {
       if (!(error instanceof Error)) {
         throw error
@@ -200,10 +200,10 @@ export class W3cDataIntegrityProofService {
     options: W3cDataIntegrityVerifyProofOptions = {}
   ): Promise<W3cDataIntegrityVerifySuccess | W3cDataIntegrityVerifyFailure> {
     try {
-      const normalisedSecuredDocument = omitUndefinedFields(securedDocument)
-      assertMultiProofDocument(normalisedSecuredDocument)
+      const normalizedSecuredDocument = omitUndefinedFields(securedDocument)
+      assertMultiProofDocument(normalizedSecuredDocument)
 
-      const proofs = normalisedSecuredDocument.proof
+      const proofs = normalizedSecuredDocument.proof
       const requiredMemberIssues = proofs
         .map((proof, index) => {
           const requiredMemberValidationError = validateProofRequiredMembers(proof)
@@ -262,7 +262,7 @@ export class W3cDataIntegrityProofService {
 
       const proofIdToIndex = this.createProofIdToIndexMap(proofs)
 
-      const { proof: _, ...unsecuredDocument } = normalisedSecuredDocument
+      const { proof: _, ...unsecuredDocument } = normalizedSecuredDocument
       for (const [_index, proof] of proofs.entries()) {
         const matchingProofIndices = this.getMatchingProofIndices(proof, proofIdToIndex)
         const matchingProofs = matchingProofIndices.map((matchingProofIndex) => proofs[matchingProofIndex])
@@ -320,7 +320,7 @@ export class W3cDataIntegrityProofService {
       return parseResult.result
     }
 
-    const { normalisedMediaType, securedDocument, verifyOptions } = parseResult.value
+    const { normalizedMediaType, securedDocument, verifyOptions } = parseResult.value
 
     const verificationResult = Array.isArray(securedDocument.proof)
       ? await this.verifyProofSetAndChain(
@@ -340,7 +340,7 @@ export class W3cDataIntegrityProofService {
 
     return {
       ...verificationResult,
-      mediaType: normalisedMediaType,
+      mediaType: normalizedMediaType,
     }
   }
 
