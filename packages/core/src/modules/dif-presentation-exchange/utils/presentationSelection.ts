@@ -41,7 +41,7 @@ export function extractPresentationsWithDescriptorsFromSubmission(
     }
 
     if (presentation instanceof MdocDeviceResponse) {
-      const document = presentation.documents.find((document) => document.docType === descriptor.id)
+      const document = presentation.deviceResponse.documents?.find((document) => document.docType === descriptor.id)
       if (!document) {
         throw new Error(
           `Unable to extract mdoc document with doctype '${descriptor.id}' from mdoc device response for submission '${submission.id}'.`

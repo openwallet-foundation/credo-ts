@@ -1,10 +1,14 @@
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { Ed25519PublicJwk } from '../../kms'
-import { SignatureSuiteRegistry, SignatureSuiteToken, type SuiteInfo } from '../data-integrity/SignatureSuiteRegistry'
-import { Ed25519Signature2018, Ed25519Signature2020 } from '../data-integrity/signature-suites'
-import { W3cJsonLdCredentialService } from '../data-integrity/W3cJsonLdCredentialService'
 import { W3cJwtCredentialService } from '../jwt-vc'
+import {
+  SignatureSuiteRegistry,
+  SignatureSuiteToken,
+  type SuiteInfo,
+} from '../linked-data-proofs/SignatureSuiteRegistry'
+import { Ed25519Signature2018, Ed25519Signature2020 } from '../linked-data-proofs/signature-suites'
+import { W3cJsonLdCredentialService } from '../linked-data-proofs/W3cJsonLdCredentialService'
 import { W3cCredentialRepository } from '../repository'
 import { W3cCredentialService } from '../W3cCredentialService'
 import { W3cCredentialsModule } from '../W3cCredentialsModule'

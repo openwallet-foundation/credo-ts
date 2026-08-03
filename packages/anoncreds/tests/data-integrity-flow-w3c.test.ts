@@ -15,6 +15,7 @@ import {
   W3cCredentialService,
   W3cCredentialSubject,
   W3cCredentialsModuleConfig,
+  X509ModuleConfig,
 } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -86,6 +87,7 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [X509ModuleConfig, new X509ModuleConfig()],
     [
       SignatureSuiteToken,
       {

@@ -1,6 +1,13 @@
-import { AgentContext, type FileSystem, InjectionSymbols, JsonTransformer, StorageVersionRecord } from '@credo-ts/core'
+import {
+  AgentContext,
+  type FileSystem,
+  InjectionSymbols,
+  inject,
+  injectable,
+  JsonTransformer,
+  StorageVersionRecord,
+} from '@credo-ts/core'
 import { KdfMethod, Session, Store, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
-import { inject, injectable } from 'tsyringe'
 
 import type { AskarStoreExportOptions, AskarStoreImportOptions, AskarStoreRotateKeyOptions } from './AskarApiOptions'
 import {
@@ -536,7 +543,8 @@ export class AskarStoreManager {
       try {
         store = await this.openStore(agentContext)
       } catch (error) {
-        if (error instanceof AskarStoreNotFoundError) {
+        // Only auto-provision a store when the agent context is initialized
+        if (error instanceof AskarStoreNotFoundError && agentContext.isInitialized) {
           store = await this.provisionStore(agentContext)
         } else {
           throw error

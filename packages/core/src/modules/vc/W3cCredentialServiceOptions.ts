@@ -1,9 +1,9 @@
+import type { TrustedIssuerDid } from '../../agent/TrustedIssuersForVerification'
 import type { SingleOrArray } from '../../types'
 import type { KnownJwaSignatureAlgorithm } from '../kms'
-import type { ProofPurpose, W3cJsonLdVerifiablePresentation } from './data-integrity'
-import type { W3cJsonLdVerifiableCredential } from './data-integrity/models/W3cJsonLdVerifiableCredential'
 import type { W3cJwtVerifiableCredential } from './jwt-vc/W3cJwtVerifiableCredential'
 import type { W3cJwtVerifiablePresentation } from './jwt-vc/W3cJwtVerifiablePresentation'
+import type { ProofPurpose, W3cJsonLdVerifiableCredential, W3cJsonLdVerifiablePresentation } from './linked-data-proofs'
 import type { ClaimFormat, W3cVerifiableCredential } from './models'
 import type { W3cCredential } from './models/credential/W3cCredential'
 import type { W3cPresentation } from './models/presentation/W3cPresentation'
@@ -83,9 +83,14 @@ interface W3cVerifyCredentialOptionsBase {
   credential: unknown
 
   /**
-   * Whether to verify the credentialStatus, if present.
+   * whether to verify the credentialStatus, if present.
    */
   verifyCredentialStatus?: boolean
+
+  /**
+   * Trusted issuers for the verification.
+   */
+  trustedIssuers?: TrustedIssuerDid[]
 }
 
 export interface W3cJwtVerifyCredentialOptions extends W3cVerifyCredentialOptionsBase {
@@ -178,6 +183,11 @@ interface W3cVerifyPresentationOptionsBase {
    * Whether to verify the credentialStatus, if present.
    */
   verifyCredentialStatus?: boolean
+
+  /**
+   * Trusted issuers for the verification.
+   */
+  trustedIssuers?: TrustedIssuerDid[]
 }
 
 export interface W3cJwtVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {

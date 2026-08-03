@@ -108,9 +108,12 @@ export const getW3cAnonCredsCredentialMetadata = (w3cJsonLdVerifiableCredential:
     w3cJsonLdVerifiableCredentialJson
   )
 
+  if (!schemaId) throw new CredoError('Missing schemaId in W3C AnonCreds credential')
+  if (!credentialDefinitionId) throw new CredoError('Missing credentialDefinitionId in W3C AnonCreds credential')
+
   return {
     schemaId,
     credentialDefinitionId,
-    revocationRegistryId,
+    revocationRegistryId: revocationRegistryId ?? undefined,
   }
 }

@@ -37,7 +37,7 @@ const socketServer = new WebSocketServer({ noServer: true })
 
 const endpoints = process.env.AGENT_ENDPOINTS?.split(',') ?? [`http://localhost:${port}`, `ws://localhost:${port}`]
 
-const logger = new TestLogger(LogLevel.info)
+const logger = new TestLogger(LogLevel.Info)
 
 const agentConfig: InitConfig = {
   logger,

@@ -49,7 +49,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
 
       const key = await faberAgent.kms.importKey({
         privateJwk: transformPrivateKeyToPrivateJwk({
-          privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+          privateKey: TypedArrayEncoder.fromUtf8String('testseed000000000000000000000001'),
           type: {
             crv: 'Ed25519',
             kty: 'OKP',
@@ -164,7 +164,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
 
       const key = await faberAgent.kms.importKey({
         privateJwk: transformPrivateKeyToPrivateJwk({
-          privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+          privateKey: TypedArrayEncoder.fromUtf8String('testseed000000000000000000000001'),
           type: {
             crv: 'Ed25519',
             kty: 'OKP',

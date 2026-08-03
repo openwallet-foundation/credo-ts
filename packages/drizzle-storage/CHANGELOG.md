@@ -1,5 +1,55 @@
 # @credo-ts/drizzle-storage
 
+## 0.7.0
+
+### Patch Changes
+
+- Updated dependencies [5056b97]
+- Updated dependencies [b75f0bf]
+- Updated dependencies [e0c829e]
+- Updated dependencies [120cee8]
+- Updated dependencies [a5d1dae]
+- Updated dependencies [944358e]
+- Updated dependencies [c1ab9be]
+- Updated dependencies [10a3ce5]
+- Updated dependencies [10a3ce5]
+- Updated dependencies [0bd4bd0]
+- Updated dependencies [cc65c27]
+- Updated dependencies [1a652e3]
+- Updated dependencies [b7aec4e]
+- Updated dependencies [366e9b7]
+  - @credo-ts/core@0.7.0
+  - @credo-ts/anoncreds@0.7.0
+  - @credo-ts/action-menu@0.7.0
+  - @credo-ts/openid4vc@0.7.0
+  - @credo-ts/didcomm@0.7.0
+  - @credo-ts/tenants@0.7.0
+  - @credo-ts/drpc@0.7.0
+  - @credo-ts/question-answer@0.7.0
+
+## 0.6.3
+
+### Patch Changes
+
+- 73d2d59: Introduced cursor-based pagination for Drizzle-backed storage with support for before and after cursors. This ensures stable ordering using (createdAt, id) and enables efficient bidirectional pagination for large number of records.
+- Updated dependencies [d7c08a1]
+- Updated dependencies [8f1b343]
+- Updated dependencies [e2cbb15]
+- Updated dependencies [73d2d59]
+- Updated dependencies [7a79b99]
+- Updated dependencies [55389c4]
+- Updated dependencies [7f24d03]
+- Updated dependencies [5358453]
+- Updated dependencies [020c864]
+  - @credo-ts/openid4vc@0.6.3
+  - @credo-ts/core@0.6.3
+  - @credo-ts/action-menu@0.6.3
+  - @credo-ts/anoncreds@0.6.3
+  - @credo-ts/didcomm@0.6.3
+  - @credo-ts/drpc@0.6.3
+  - @credo-ts/question-answer@0.6.3
+  - @credo-ts/tenants@0.6.3
+
 ## 0.6.2
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
 import { W3cJsonLdVerifiableCredential } from '../../../../modules/vc'
-import { W3cJsonLdCredentialService } from '../../../../modules/vc/data-integrity/W3cJsonLdCredentialService'
+import { W3cJsonLdCredentialService } from '../../../../modules/vc/linked-data-proofs/W3cJsonLdCredentialService'
 import type { W3cCredentialRecord } from '../../../../modules/vc/repository'
 import { W3cCredentialRepository } from '../../../../modules/vc/repository'
 

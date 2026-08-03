@@ -1,3 +1,4 @@
+import type { GetTrustedIssuersForVerification, VerificationSigner } from './agent/TrustedIssuersForVerification'
 import type { Logger } from './logger'
 import { Ed25519PublicJwk, PublicJwk } from './modules/kms'
 
@@ -35,6 +36,29 @@ export interface InitConfig {
    * @default 30
    */
   validitySkewSeconds?: number
+
+  /**
+   * Optional callback to dynamically resolve trusted issuers for a verification context.
+   *
+   * This is the primary trust anchor resolution hook. It is called before the X.509-module-level
+   * `getTrustedCertificatesForVerification` callback and before the global `trustedCertificates` list.
+   *
+   * Return `{ trustedIssuers: [] }` to hard-reject (trust nothing, skip remaining fallbacks).
+   * Return `undefined` to fall through to the next resolution layer.
+   *
+   * Extension packages (e.g. `@credo-ts/openid4vc`) export additional verification types that can
+   * be composed into the `AdditionalVerificationTypes` generic parameter to get full type coverage
+   * on `verification`, e.g.:
+   *
+   * ```ts
+   * getTrustedIssuersForVerification: async (
+   *   agentContext,
+   *   context: TrustedIssuersForVerificationContext<VerificationSigner, OpenId4VcVerificationTypes>
+   * ) => { ... }
+   * ```
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: the additional verification types are open for extension by other packages
+  getTrustedIssuersForVerification?: GetTrustedIssuersForVerification<VerificationSigner, any>
 }
 
 export type JsonValue = string | number | boolean | null | JsonObject | JsonArray
@@ -42,19 +66,6 @@ export type JsonArray = Array<JsonValue>
 export interface JsonObject {
   [property: string]: JsonValue
 }
-
-/**
- * Typescript 5.7/5.9 made the Uint8Array generic. This causes a lot of type errors
- * and is also not backwards compatible with older TypeScript versions.
- *
- * This type util infers the return type, so that in older versions the non generic
- * Uint8Array is used, and in newer version the generic Uint8Array is used.
- *
- * See https://github.com/microsoft/typescript/issues/62240
- */
-export type Uint8ArrayBuffer = ReturnType<typeof Uint8Array.from>
-
-export type AnyUint8Array = Uint8Array
 
 /**
  * Flatten an array of arrays

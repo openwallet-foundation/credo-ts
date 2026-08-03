@@ -34,7 +34,7 @@ export class DrpcApi {
   public async sendRequest(
     connectionId: string,
     request: DrpcRequest
-  ): Promise<() => Promise<DrpcResponse | undefined>> {
+  ): Promise<(timeout?: number) => Promise<DrpcResponse | undefined>> {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
     const { requestMessage: drpcMessage, record: drpcMessageRecord } =
       await this.drpcMessageService.createRequestMessage(this.agentContext, request, connection.id)

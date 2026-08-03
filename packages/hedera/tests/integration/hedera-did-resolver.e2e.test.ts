@@ -3,7 +3,7 @@ import type { HederaDidCreateOptions } from '../../src'
 import { getHederaAgent } from './utils'
 
 describe('Hedera DID resolver', () => {
-  const logger = new ConsoleLogger(LogLevel.error)
+  const logger = new ConsoleLogger(LogLevel.Error)
 
   let agent: Agent
   let did: string

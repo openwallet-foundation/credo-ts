@@ -6,7 +6,7 @@ import type { KmsJwkPrivateAsymmetric, KmsJwkPublicAsymmetric } from './knownJwk
  * Checks if two JWK public keys have matching key types
  * Supports EC, OKP, and RSA key types
  */
-export function assymetricJwkKeyTypeMatches(
+export function asymmetricJwkKeyTypeMatches(
   first: KmsJwkPublicAsymmetric | KmsJwkPrivateAsymmetric,
   second: KmsJwkPublicAsymmetric | KmsJwkPrivateAsymmetric
 ): boolean {
@@ -37,7 +37,7 @@ export function assertAsymmetricJwkKeyTypeMatches(
   first: KmsJwkPublicAsymmetric | KmsJwkPrivateAsymmetric,
   second: KmsJwkPublicAsymmetric | KmsJwkPrivateAsymmetric
 ): asserts first is typeof second {
-  if (!assymetricJwkKeyTypeMatches(first, second)) {
+  if (!asymmetricJwkKeyTypeMatches(first, second)) {
     throw new KeyManagementError(
       `Expected jwk types to match, but found ${getJwkHumanDescription(first)} and ${getJwkHumanDescription(second)}`
     )
@@ -50,7 +50,7 @@ export function assertAsymmetricJwkKeyTypeMatches(
  */
 export function asymmetricPublicJwkMatches(first: KmsJwkPublicAsymmetric, second: KmsJwkPublicAsymmetric): boolean {
   // First check that types match
-  if (!assymetricJwkKeyTypeMatches(first, second)) {
+  if (!asymmetricJwkKeyTypeMatches(first, second)) {
     return false
   }
 

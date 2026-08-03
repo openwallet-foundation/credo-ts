@@ -26,7 +26,7 @@ export async function createAgentFromModules<MM extends ModulesMap>(
   const agent = new Agent<MM>({
     config: {
       allowInsecureHttpUrls: true,
-      logger: new TestLogger(LogLevel.off),
+      logger: new TestLogger(LogLevel.Off),
     },
     dependencies: {
       ...agentDependencies,

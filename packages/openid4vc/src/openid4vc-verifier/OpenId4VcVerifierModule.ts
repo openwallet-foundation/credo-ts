@@ -64,9 +64,9 @@ export class OpenId4VcVerifierModule implements Module {
     const verifierContextRouter = Router()
 
     // parse application/x-www-form-urlencoded
-    verifierContextRouter.use(urlencoded({ extended: false }))
+    verifierContextRouter.use(urlencoded({ extended: false, limit: '5mb' }))
     // parse application/json
-    verifierContextRouter.use(json())
+    verifierContextRouter.use(json({ limit: '5mb' }))
 
     verifierContextRouter.param('verifierId', this.getVerifierIdParamHandler(rootAgentContext))
     verifierContextRouter.use('/:verifierId', verifierEndpointRouter)
@@ -84,12 +84,21 @@ export class OpenId4VcVerifierModule implements Module {
 
     // This one will be called for all errors that are thrown
     verifierContextRouter.use(
-      async (_error: unknown, req: OpenId4VcVerificationRequest, res: Response, next: NextFunction) => {
+      async (error: unknown, req: OpenId4VcVerificationRequest, res: Response, next: NextFunction) => {
         const { agentContext } = getRequestContext(req)
+
+        // Check if the error is specifically a payload limit issue
+        if (error instanceof Error && error.name === 'PayloadTooLargeError') {
+          return res.status(413).json({
+            error: 'invalid_request',
+            message: `The request body exceeds the maximum allowed limit.`,
+          })
+        }
 
         if (!res.headersSent) {
           agentContext.config.logger.warn(
-            'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.'
+            'Error was thrown but openid4vp endpoint did not send a response. Sending generic server_error.',
+            { error }
           )
 
           res.status(500).json({

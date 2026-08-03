@@ -1,8 +1,7 @@
 import { Buffer } from 'node:buffer'
 import type { CipherGCM } from 'node:crypto'
 import { createCipheriv, createSecretKey, randomBytes } from 'node:crypto'
-import { type AnyUint8Array, Kms, type Uint8ArrayBuffer } from '@credo-ts/core'
-
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { performSign } from './sign'
 
 export const nodeSupportedEncryptionAlgorithms = [
@@ -20,9 +19,9 @@ export const nodeSupportedEncryptionAlgorithms = [
 export async function performEncrypt(
   key: Kms.KmsJwkPrivateOct,
   dataEncryption: Kms.KmsEncryptDataEncryption,
-  data: AnyUint8Array
-): Promise<{ encrypted: Uint8ArrayBuffer; tag?: Uint8ArrayBuffer; iv: AnyUint8Array }> {
-  const secretKeyBytes = Buffer.from(key.k, 'base64url')
+  data: Uint8Array
+): Promise<{ encrypted: Uint8Array; tag?: Uint8Array; iv: Uint8Array }> {
+  const secretKeyBytes = TypedArrayEncoder.fromBase64Url(key.k)
   const nodeKey = createSecretKey(secretKeyBytes)
 
   // Create cipher with key and IV
@@ -77,8 +76,12 @@ export async function performEncrypt(
       al, // Associated Length (AL)
     ])
 
-    const hmac = await performSign({ kty: 'oct', k: macKey.toString('base64url') }, algSettings.hmacAlg, macData)
-    const tag = Buffer.from(hmac).subarray(0, algSettings.keySize) // Truncate to appropriate size
+    const hmac = await performSign(
+      { kty: 'oct', k: TypedArrayEncoder.toBase64Url(macKey) },
+      algSettings.hmacAlg,
+      macData
+    )
+    const tag = hmac.subarray(0, algSettings.keySize) // Truncate to appropriate size
 
     return { encrypted, tag, iv }
   }
@@ -108,7 +111,7 @@ export async function performEncrypt(
     const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
 
     // Get auth tag - must be saved to verify decryption
-    const tag = cipher.getAuthTag() as Uint8ArrayBuffer
+    const tag = cipher.getAuthTag() as Uint8Array
 
     return {
       encrypted,
@@ -133,7 +136,7 @@ export async function performEncrypt(
     const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
 
     // Get auth tag - must be saved to verify decryption
-    const tag = cipher.getAuthTag() as Uint8ArrayBuffer
+    const tag = cipher.getAuthTag() as Uint8Array
 
     return {
       encrypted,

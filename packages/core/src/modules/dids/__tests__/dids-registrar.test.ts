@@ -22,7 +22,7 @@ describe('dids', () => {
 
   it('should create a did:key did', async () => {
     const privateJwk = transformPrivateKeyToPrivateJwk({
-      privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
+      privateKey: TypedArrayEncoder.fromUtf8String('96213c3d7fc8d4d6754c7a0fd969598e'),
       type: {
         kty: 'OKP',
         crv: 'Ed25519',
@@ -92,7 +92,7 @@ describe('dids', () => {
 
   it('should create a did:peer did', async () => {
     const privateJwk = transformPrivateKeyToPrivateJwk({
-      privateKey: TypedArrayEncoder.fromString('e008ef10b7c163114b3857542b3736eb'),
+      privateKey: TypedArrayEncoder.fromUtf8String('e008ef10b7c163114b3857542b3736eb'),
       type: {
         kty: 'OKP',
         crv: 'Ed25519',

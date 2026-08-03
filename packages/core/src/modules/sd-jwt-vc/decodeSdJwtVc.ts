@@ -1,10 +1,10 @@
-import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
+import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/core'
 import { Hasher } from '../../crypto'
 import { ClaimFormat } from '../vc/index'
 import type { SdJwtVcHeader, SdJwtVcPayload } from './SdJwtVcOptions'
 import type { SdJwtVc } from './SdJwtVcService'
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
-import { parseHolderBindingFromCredential } from './utils'
+import { parseHolderBindingFromCredential, parseIssuerFromCredential } from './utils'
 
 export function sdJwtVcHasher(data: string | ArrayBufferLike, alg: string) {
   return Hasher.hash(typeof data === 'string' ? data : new Uint8Array(data), alg)
@@ -22,6 +22,7 @@ export function decodeSdJwtVc<
     compact: compactSdJwtVc,
     header: jwt.header as Header,
     payload: jwt.payload as Payload,
+    issuer: parseIssuerFromCredential(jwt.header, jwt.payload),
     holder: parseHolderBindingFromCredential(jwt.payload) ?? undefined,
     prettyClaims: prettyClaims as Payload,
     claimFormat: ClaimFormat.SdJwtDc,

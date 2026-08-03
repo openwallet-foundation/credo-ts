@@ -47,7 +47,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
 
   test('signData signs json object and returns SignatureDecorator', async () => {
     const privateJwk = transformPrivateKeyToPrivateJwk({
-      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000My1'),
+      privateKey: TypedArrayEncoder.fromUtf8String('00000000000000000000000000000My1'),
       type: {
         crv: 'Ed25519',
         kty: 'OKP',

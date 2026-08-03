@@ -12,10 +12,12 @@ import {
 } from '@credo-ts/core'
 import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import {
+  authorizationCodeGrantIdentifier,
   calculateJwkThumbprint,
   HashAlgorithm,
   Oauth2AuthorizationServer,
   preAuthorizedCodeGrantIdentifier,
+  refreshTokenGrantIdentifier,
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow, type CredentialRequest } from '@openid4vc/openid4vci'
 import { randomUUID } from 'crypto'
@@ -28,7 +30,6 @@ import {
   type OpenId4VcIssuerModuleConfigOptions,
   type OpenId4VciSignMdocCredentials,
   OpenId4VcModule,
-  type VerifiedOpenId4VcCredentialHolderBinding,
 } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
@@ -42,6 +43,16 @@ import {
 const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
+
+const getNextMonth = () => {
+  const now = new Date()
+  let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  if (now.getMonth() === 11) {
+    nextMonth = new Date(now.getFullYear() + 1, 0, 1)
+  }
+
+  return nextMonth
+}
 
 describe('OpenId4Vci (Deferred)', () => {
   let expressApp: Express
@@ -66,7 +77,6 @@ describe('OpenId4Vci (Deferred)', () => {
     string,
     {
       credentialRequest: CredentialRequest
-      holderBinding: VerifiedOpenId4VcCredentialHolderBinding
     }
   > = {}
 
@@ -87,21 +97,28 @@ describe('OpenId4Vci (Deferred)', () => {
 
               storage[uuid] = {
                 credentialRequest,
-                holderBinding,
               }
 
               return {
                 type: 'deferral',
                 transactionId: uuid,
-                interval: 2000,
+                interval: 1,
               }
             },
 
-            deferredCredentialRequestToCredentialMapper: async ({ agentContext, deferredCredentialRequest }) => {
+            deferredCredentialRequestToCredentialMapper: async ({
+              agentContext,
+              transaction,
+              deferredCredentialRequest,
+            }) => {
               if (!storage[deferredCredentialRequest.transaction_id]) {
                 throw new Error('No credential request found for transaction id')
               }
-              const { credentialRequest, holderBinding } = storage[deferredCredentialRequest.transaction_id]
+              const { credentialRequest } = storage[deferredCredentialRequest.transaction_id]
+
+              if (!transaction.holderBinding) {
+                throw new Error('No holder binding found for transaction')
+              }
 
               // We sign the request with the first did:key did we have
               const didsApi = agentContext.dependencyManager.resolve(DidsApi)
@@ -116,7 +133,7 @@ describe('OpenId4Vci (Deferred)', () => {
                 return {
                   type: 'credentials',
                   format: 'dc+sd-jwt',
-                  credentials: holderBinding.keys.map((holderBinding) => ({
+                  credentials: transaction.holderBinding.keys.map((holderBinding) => ({
                     payload: { vct: credentialRequest.vct as string, university: 'innsbruck', degree: 'bachelor' },
                     holder: holderBinding,
                     issuer: {
@@ -131,8 +148,9 @@ describe('OpenId4Vci (Deferred)', () => {
                 return {
                   type: 'credentials',
                   format: ClaimFormat.MsoMdoc,
-                  credentials: holderBinding.keys.map((holderBinding) => ({
+                  credentials: transaction.holderBinding.keys.map((holderBinding) => ({
                     docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
+                    validityInfo: { validUntil: getNextMonth() },
                     issuerCertificate: credentialIssuerCertificate,
                     holderKey: holderBinding.jwk,
                     namespaces: {
@@ -253,6 +271,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         issuer: 'http://localhost:4747',
         token_endpoint: 'http://localhost:4747/token',
         authorization_endpoint: 'http://localhost:4747/authorize',
+        grant_types_supported: [
+          authorizationCodeGrantIdentifier,
+          preAuthorizedCodeGrantIdentifier,
+          refreshTokenGrantIdentifier,
+        ],
       } satisfies AuthorizationServerMetadata)
     )
     app.get('/jwks.json', (_req, res) =>
@@ -347,7 +370,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     expect(credentialResponse.deferredCredentials).toHaveLength(1)
     expect(credentialResponse.credentials).toHaveLength(0)
-    expect(credentialResponse.deferredCredentials[0].interval).toEqual(2000)
+    expect(credentialResponse.deferredCredentials[0].interval).toEqual(1)
 
     const refreshTokenTenant = await holderTenant.openid4vc.holder.refreshToken({
       issuerMetadata: resolvedCredentialOffer.metadata,
@@ -356,6 +379,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       dpop: tokenResponseTenant.dpop,
       clientId: 'foo',
     })
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     const deferredCredentialResponse = await holderTenant.openid4vc.holder.requestDeferredCredentials({
       ...refreshTokenTenant,
@@ -543,7 +568,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     expect(credentialsTenant1.deferredCredentials).toHaveLength(1)
     expect(credentialsTenant1.credentials).toHaveLength(0)
-    expect(credentialsTenant1.deferredCredentials[0].interval).toEqual(2000)
+    expect(credentialsTenant1.deferredCredentials[0].interval).toEqual(1)
 
     const refreshTokenTenant = await holderTenant.openid4vc.holder.refreshToken({
       issuerMetadata: resolvedCredentialOffer.metadata,
@@ -552,6 +577,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       dpop: tokenResponseTenant.dpop,
       clientId: 'foo',
     })
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     const deferredCredentialResponse = await holderTenant.openid4vc.holder.requestDeferredCredentials({
       ...refreshTokenTenant,

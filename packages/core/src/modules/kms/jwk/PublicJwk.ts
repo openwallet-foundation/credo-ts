@@ -10,7 +10,6 @@ import { getJwkHumanDescription } from './humanDescription'
 import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
 import { calculateJwkThumbprint } from './jwkThumbprint'
 import { assertJwkAsymmetric, type KmsJwkPublicAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
-
 import {
   Ed25519PublicJwk,
   P256PublicJwk,
@@ -119,7 +118,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
    * Get the signature algorithms supported for this jwk.
    *
    * If the jwk has an `alg` field defined it will only return that alg
-   * and otherwise return all known supported signature algorithm.
+   * and otherwise return all known supported signature algorithms.
    */
   public get supportedSignatureAlgorithms(): KnownJwaSignatureAlgorithm[] {
     const supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = this.jwk.supportedSignatureAlgorithms ?? []
@@ -208,6 +207,33 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     }
 
     return alg as this['supportedSignatureAlgorithms'][number]
+  }
+
+  /**
+   * The `alg` field of the jwk, indicating the algorithm the key is intended to be used with.
+   */
+  public get alg(): string | undefined {
+    return this.jwk.jwk.alg
+  }
+
+  /**
+   * Set the `alg` field of the jwk, indicating the algorithm the key is intended to be used
+   * with. This restricts the jwk to that algorithm (e.g. {@link signatureAlgorithm} will
+   * return the `alg` when defined).
+   *
+   * If the algorithm is not supported by this jwk an error will be thrown.
+   */
+  public set alg(alg: KnownJwaSignatureAlgorithm | KnownJwaKeyAgreementAlgorithm) {
+    const supportedAlgorithms: Array<KnownJwaSignatureAlgorithm | KnownJwaKeyAgreementAlgorithm> = [
+      ...(this.jwk.supportedSignatureAlgorithms ?? []),
+      ...(this.jwk.supportedEncryptionKeyAgreementAlgorithms ?? []),
+    ]
+
+    if (!supportedAlgorithms.includes(alg)) {
+      throw new KeyManagementError(`${this.jwkTypeHumanDescription} does not support alg '${alg}'.`)
+    }
+
+    this.jwk.jwk.alg = alg
   }
 
   public assertSignatureAlgorithmSupported(

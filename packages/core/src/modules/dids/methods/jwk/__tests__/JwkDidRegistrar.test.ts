@@ -28,7 +28,7 @@ describe('DidRegistrar', () => {
 
   describe('JwkDidRegistrar', () => {
     it('should correctly create a did:jwk document using P256 key type', async () => {
-      const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
+      const privateKey = TypedArrayEncoder.fromUtf8String('96213c3d7fc8d4d6754c712fd969598e')
       const { privateJwk } = transformPrivateKeyToPrivateJwk({
         type: {
           kty: 'EC',
@@ -109,7 +109,7 @@ describe('DidRegistrar', () => {
     })
 
     it('should store the did document', async () => {
-      const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
+      const privateKey = TypedArrayEncoder.fromUtf8String('96213c3d7fc8d4d6754c712fd969598e')
       const { privateJwk } = transformPrivateKeyToPrivateJwk({
         type: {
           crv: 'P-256',

@@ -16,6 +16,8 @@ import { askarQueryFromSearchQuery, recordToInstance, transformFromRecordTagValu
 
 @injectable()
 export class AskarStorageService<T extends BaseRecord> implements StorageService<T> {
+  public readonly supportsCursorPagination = false
+
   public constructor(private askarStoreManager: AskarStoreManager) {}
 
   private withSession<Return>(agentContext: AgentContext, callback: (session: Session) => Return) {

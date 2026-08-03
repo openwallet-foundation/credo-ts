@@ -37,7 +37,7 @@ describe('OpenId4VcHolder', () => {
 
     const key = await holder.kms.importKey({
       privateJwk: transformPrivateKeyToPrivateJwk({
-        privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
+        privateKey: TypedArrayEncoder.fromUtf8String('96213c3d7fc8d4d6754c7a0fd969598e'),
         type: {
           kty: 'OKP',
           crv: 'Ed25519',
@@ -259,6 +259,11 @@ describe('OpenId4VcHolder', () => {
           alg: 'EdDSA',
           kid: '#z6Mkh5HNPCCJWZn6WRLjRPttyvYZBskZUdSJfTiZwcUSieqx',
           typ: 'vc+sd-jwt',
+        },
+        issuer: {
+          method: 'did',
+          didUrl:
+            'did:key:z6Mkh5HNPCCJWZn6WRLjRPttyvYZBskZUdSJfTiZwcUSieqx#z6Mkh5HNPCCJWZn6WRLjRPttyvYZBskZUdSJfTiZwcUSieqx',
         },
         holder: {
           jwk: {

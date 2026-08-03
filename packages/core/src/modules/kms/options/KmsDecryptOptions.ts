@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import type { Uint8ArrayBuffer } from '../../../types'
 import { zAnyUint8Array } from '../../../utils/zod'
 import { KnownJwaContentEncryptionAlgorithms } from '../jwk/jwa'
 import { zKmsJwkPrivateOct } from '../jwk/kty/oct/octJwk'
@@ -120,5 +119,5 @@ export interface KmsDecryptReturn {
   /**
    * The decrypted data
    */
-  data: Uint8ArrayBuffer
+  data: Uint8Array
 }

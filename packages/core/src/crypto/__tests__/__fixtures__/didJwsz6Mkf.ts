@@ -25,5 +25,5 @@ export const JWS_JSON = {
   protected:
     'eyJhbGciOiJFZERTQSIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6IkN6cmtiNjQ1MzdrVUVGRkN5SXI4STgxUWJJRGk2MnNrbU41Rm41LU1zVkUifX0',
   signature: 'OsDP4FM8792J9JlessA9IXv4YUYjIGcIAnPPrEJmgxYomMwDoH-h2DMAF5YF2VtsHHyhGN_0HryDjWSEAZdYBQ',
-  payload: JsonEncoder.toBase64URL(DATA_JSON),
+  payload: JsonEncoder.toBase64Url(DATA_JSON),
 }

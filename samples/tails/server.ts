@@ -17,7 +17,7 @@ const tailsIndex = (
   fs.existsSync(indexFilePath) ? JSON.parse(fs.readFileSync(indexFilePath, { encoding: 'utf-8' })) : {}
 ) as Record<string, string>
 
-const logger = new ConsoleLogger(LogLevel.debug)
+const logger = new ConsoleLogger(LogLevel.Debug)
 
 function fileHash(filePath: string, algorithm = 'sha256') {
   return new Promise<string>((resolve, reject) => {

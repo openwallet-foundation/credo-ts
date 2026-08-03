@@ -159,7 +159,7 @@ export class AnonCredsDataIntegrityService implements IAnonCredsDataIntegritySer
     const credentialDefinitionIds = new Set<string>()
     const credentialsWithMetadata: CredentialWithRevocationMetadata[] = []
 
-    const hash = Hasher.hash(TypedArrayEncoder.fromString(challenge), 'sha-256')
+    const hash = Hasher.hash(TypedArrayEncoder.fromUtf8String(challenge), 'sha-256')
     const nonce = bytesToBigint(hash).toString().slice(0, 20)
 
     const anonCredsProofRequest: AnonCredsProofRequest = {

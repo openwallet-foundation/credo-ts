@@ -30,7 +30,7 @@ async function getIndyNamespace(
   const sovCacheKey = `IndySdkPoolService:${legacyIssuerId}`
 
   const cachedNymResponse: Record<string, string> | null =
-    (await cache.get(agentContext, indyCacheKey)) ?? (await cache.get(agentContext, sovCacheKey))
+    (await cache.get(agentContext, indyCacheKey, { scope: 'global' })) ?? (await cache.get(agentContext, sovCacheKey))
 
   if (!cachedNymResponse?.indyNamespace || typeof cachedNymResponse?.indyNamespace !== 'string') {
     const credentialDefinitionReturn = await fetchCredentialDefinition(agentContext, legacyCredentialDefinitionId)

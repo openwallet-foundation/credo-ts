@@ -69,7 +69,7 @@ export function supportedSigningAlgsForKey(
   }
 
   if (jwk.kty === 'RSA') {
-    const keyBits = TypedArrayEncoder.fromBase64(jwk.n).length * 8
+    const keyBits = TypedArrayEncoder.fromBase64Url(jwk.n).length * 8
 
     // RSA needs minimum bit lengths for each algorithm
     const minBits2048: KnownJwaSignatureAlgorithm[] = ['PS256', 'RS256']
@@ -81,7 +81,7 @@ export function supportedSigningAlgsForKey(
 
   // On other layers we need to filter for alg types, as you don't want any `oct` key with enough length to used for hmac purposes
   if (jwk.kty === 'oct') {
-    const keyBits = TypedArrayEncoder.fromBase64(jwk.k).length * 8
+    const keyBits = TypedArrayEncoder.fromBase64Url(jwk.k).length * 8
 
     // hmac needs minimum bit lengths for each algorithm
     const minBits256: KnownJwaSignatureAlgorithm[] = ['HS256']

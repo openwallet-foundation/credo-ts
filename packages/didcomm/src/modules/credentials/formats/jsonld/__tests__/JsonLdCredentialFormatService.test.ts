@@ -8,8 +8,8 @@ import {
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
 } from '../../../../../../../core/src/modules/vc'
-import { Ed25519Signature2018Fixtures } from '../../../../../../../core/src/modules/vc/data-integrity/__tests__/fixtures'
-import { W3cJsonLdCredentialService } from '../../../../../../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService'
+import { Ed25519Signature2018Fixtures } from '../../../../../../../core/src/modules/vc/linked-data-proofs/__tests__/fixtures'
+import { W3cJsonLdCredentialService } from '../../../../../../../core/src/modules/vc/linked-data-proofs/W3cJsonLdCredentialService'
 import { JsonTransformer } from '../../../../../../../core/src/utils'
 import { JsonEncoder } from '../../../../../../../core/src/utils/JsonEncoder'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../../core/tests/helpers'
@@ -28,7 +28,7 @@ import type {
 import { DidCommJsonLdCredentialFormatService } from '../DidCommJsonLdCredentialFormatService'
 
 vi.mock('../../../../../../../core/src/modules/vc/W3cCredentialService')
-vi.mock('../../../../../../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService')
+vi.mock('../../../../../../../core/src/modules/vc/linked-data-proofs/W3cJsonLdCredentialService')
 vi.mock('../../../../../../../core/src/modules/dids/services/DidResolverService')
 
 const W3cCredentialServiceMock = W3cCredentialService as MockedClassConstructor<typeof W3cCredentialService>
@@ -90,7 +90,7 @@ const offerAttachment = new DidCommAttachment({
   mimeType: 'application/json',
   data: new DidCommAttachmentData({
     base64:
-      'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
+      'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0=',
   }),
 })
 
@@ -574,6 +574,17 @@ describe('JsonLd CredentialFormatService', () => {
         offerAttachment: message2,
       })
       expect(areCredentialsEqual).toBe(false)
+    })
+  })
+
+  describe('Delete Credential', () => {
+    test('routes deletion to W3cCredentialService using credential record id', async () => {
+      const credentialRecordId = 'w3c-record-id'
+
+      await jsonLdFormatService.deleteCredentialById(agentContext, credentialRecordId)
+
+      expect(w3cCredentialService.removeCredentialRecord).toHaveBeenCalledTimes(1)
+      expect(w3cCredentialService.removeCredentialRecord).toHaveBeenCalledWith(agentContext, credentialRecordId)
     })
   })
 })

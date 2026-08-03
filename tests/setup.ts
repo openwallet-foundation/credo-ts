@@ -18,7 +18,7 @@ const logPath = logFileName ? path.join(logDir, logFileName) : undefined
 
 const logEntries: Array<object> = []
 if (logPath && process.env.COLLECT_FAILED_TEST_LOGS === 'true') {
-  testLogger.logLevel = LogLevel.trace
+  testLogger.logLevel = LogLevel.Trace
   testLogger.logger.attachTransport((logEntry) => logEntries.push(logEntry))
   testLogger.logger.settings.minLevel = 0
   testLogger.logger.settings.type = 'hidden'

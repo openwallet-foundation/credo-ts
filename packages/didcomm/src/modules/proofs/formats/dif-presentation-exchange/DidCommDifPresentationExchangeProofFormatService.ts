@@ -2,11 +2,13 @@ import type {
   AgentContext,
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeSubmission,
+  EncodedX509Certificate,
   IAnonCredsDataIntegrityService,
   JsonValue,
   W3cJsonPresentation,
   W3cVerifiablePresentation,
   W3cVerifyPresentationResult,
+  X509VerificationTrustedCertificates,
 } from '@credo-ts/core'
 import {
   ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
@@ -19,7 +21,6 @@ import {
   extractX509CertificatesFromJwt,
   JsonTransformer,
   Kms,
-  MdocDeviceResponse,
   TypedArrayEncoder,
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
@@ -130,7 +131,7 @@ export class DidCommDifPresentationExchangeProofFormatService
           // NOTE: we always want to include a challenge to prevent replay attacks
           challenge:
             presentationExchangeFormat?.options?.challenge ??
-            TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
+            TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
           domain: presentationExchangeFormat?.options?.domain,
         },
       } satisfies DifPresentationExchangeRequest,
@@ -166,7 +167,7 @@ export class DidCommDifPresentationExchangeProofFormatService
         presentation_definition: presentationDefinition,
         options: {
           // NOTE: we always want to include a challenge to prevent replay attacks
-          challenge: options?.challenge ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
+          challenge: options?.challenge ?? TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
           domain: options?.domain,
         },
       } satisfies DifPresentationExchangeRequest,
@@ -216,7 +217,7 @@ export class DidCommDifPresentationExchangeProofFormatService
     const presentation = await ps.createPresentation(agentContext, {
       presentationDefinition,
       credentialsForInputDescriptor: credentials,
-      challenge: options?.challenge ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
+      challenge: options?.challenge ?? TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
       domain: options?.domain,
     })
 
@@ -234,14 +235,7 @@ export class DidCommDifPresentationExchangeProofFormatService
 
     const firstPresentation = presentation.verifiablePresentations[0]
 
-    // TODO: they should all have `encoded` property so it's easy to use the resulting VP
-    const encodedFirstPresentation =
-      firstPresentation instanceof W3cJwtVerifiablePresentation ||
-      firstPresentation instanceof W3cJsonLdVerifiablePresentation
-        ? firstPresentation.encoded
-        : firstPresentation instanceof MdocDeviceResponse
-          ? firstPresentation.base64Url
-          : firstPresentation?.compact
+    const encodedFirstPresentation = firstPresentation.encoded
     const attachment = this.getFormatData(encodedFirstPresentation, format.attachmentId)
 
     return { attachment, format }
@@ -316,8 +310,7 @@ export class DidCommDifPresentationExchangeProofFormatService
         const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
 
         const certificateChain = extractX509CertificatesFromJwt(parsedPresentation.jwt)
-        let trustedCertificates: string[] | undefined
-
+        let trustedCertificates: EncodedX509Certificate[] | X509VerificationTrustedCertificates[] | undefined
         if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
           trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
             certificateChain,

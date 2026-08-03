@@ -21,9 +21,6 @@ export class MdocApi {
 
   /**
    * Create a new Mdoc, with a spcific doctype, namespace, and validity info.
-   *
-   * @param options {MdocSignOptions}
-   * @returns {Promise<Mdoc>}
    */
   public async sign(options: MdocSignOptions) {
     return await this.mdocService.signMdoc(this.agentContext, options)

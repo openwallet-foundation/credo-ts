@@ -8,16 +8,16 @@ type LogData = Record<string, any>
 export class ConsoleLogger extends BaseLogger {
   // Map our log levels to console levels
   private consoleLogMap = {
-    [LogLevel.test]: 'log',
-    [LogLevel.trace]: 'log',
-    [LogLevel.debug]: 'debug',
-    [LogLevel.info]: 'info',
-    [LogLevel.warn]: 'warn',
-    [LogLevel.error]: 'error',
-    [LogLevel.fatal]: 'error',
+    [LogLevel.Test]: 'log',
+    [LogLevel.Trace]: 'log',
+    [LogLevel.Debug]: 'debug',
+    [LogLevel.Info]: 'info',
+    [LogLevel.Warn]: 'warn',
+    [LogLevel.Error]: 'error',
+    [LogLevel.Fatal]: 'error',
   } as const
 
-  private log(level: Exclude<LogLevel, LogLevel.off>, message: string, data?: LogData): void {
+  private log(level: Exclude<LogLevel, LogLevel.Off>, message: string, data?: LogData): void {
     // Get console method from mapping
     const consoleLevel = this.consoleLogMap[level]
 
@@ -38,30 +38,30 @@ export class ConsoleLogger extends BaseLogger {
   }
 
   public test(message: string, data?: LogData): void {
-    this.log(LogLevel.test, message, data)
+    this.log(LogLevel.Test, message, data)
   }
 
   public trace(message: string, data?: LogData): void {
-    this.log(LogLevel.trace, message, data)
+    this.log(LogLevel.Trace, message, data)
   }
 
   public debug(message: string, data?: LogData): void {
-    this.log(LogLevel.debug, message, data)
+    this.log(LogLevel.Debug, message, data)
   }
 
   public info(message: string, data?: LogData): void {
-    this.log(LogLevel.info, message, data)
+    this.log(LogLevel.Info, message, data)
   }
 
   public warn(message: string, data?: LogData): void {
-    this.log(LogLevel.warn, message, data)
+    this.log(LogLevel.Warn, message, data)
   }
 
   public error(message: string, data?: LogData): void {
-    this.log(LogLevel.error, message, data)
+    this.log(LogLevel.Error, message, data)
   }
 
   public fatal(message: string, data?: LogData): void {
-    this.log(LogLevel.fatal, message, data)
+    this.log(LogLevel.Fatal, message, data)
   }
 }

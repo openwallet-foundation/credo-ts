@@ -1,4 +1,4 @@
-import { type AgentContext, Buffer, Kms } from '@credo-ts/core'
+import { type AgentContext, Kms } from '@credo-ts/core'
 import {
   MultibaseEncoding,
   multibaseEncode,
@@ -51,7 +51,7 @@ export class WebVhDidCryptoSigner implements Signer {
       const { signature } = await kms.sign({
         keyId: this.keyId,
         algorithm: 'EdDSA',
-        data: Buffer.from(data),
+        data,
       })
       return {
         proofValue: multibaseEncode(signature, MultibaseEncoding.BASE58_BTC),

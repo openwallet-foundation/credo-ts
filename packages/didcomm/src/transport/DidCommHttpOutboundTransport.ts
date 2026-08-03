@@ -113,7 +113,7 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
         }
 
         try {
-          const encryptedMessage = JsonEncoder.fromString(responseMessage)
+          const encryptedMessage = JsonEncoder.fromUtf8String(responseMessage)
           if (!isValidJweStructure(encryptedMessage)) {
             this.logger.error(
               `Received a response from the other agent but the structure of the incoming message is not a DIDComm message: ${responseMessage}`

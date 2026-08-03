@@ -11,7 +11,6 @@ import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2/index.js'
 import {
   AgentContext,
-  type AnyUint8Array,
   DID_V1_CONTEXT_URL,
   type DidCreateOptions,
   type DidCreateResult,
@@ -30,7 +29,6 @@ import {
   Kms,
   SECURITY_JWS_CONTEXT_URL,
   TypedArrayEncoder,
-  type Uint8ArrayBuffer,
   utils,
   VerificationMethod,
   type XOR,
@@ -588,11 +586,11 @@ export class CheqdDidRegistrar implements DidRegistrar {
     }
 
     try {
-      let data: Uint8ArrayBuffer
+      let data: Uint8Array
       if (typeof resource.data === 'string') {
         data = TypedArrayEncoder.fromBase64(resource.data)
       } else if (typeof resource.data === 'object') {
-        data = TypedArrayEncoder.fromString(JSON.stringify(resource.data))
+        data = TypedArrayEncoder.fromUtf8String(JSON.stringify(resource.data))
       } else {
         data = resource.data
       }
@@ -649,7 +647,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
   private async signPayload(
     agentContext: AgentContext,
-    payload: AnyUint8Array,
+    payload: Uint8Array,
     verificationMethod: VerificationMethod[] = [],
     keys?: DidDocumentKey[]
   ) {

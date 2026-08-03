@@ -185,7 +185,7 @@ async function getVerificationSession(
         return { success: false }
       }
 
-      const nonce = TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64(header.apv))
+      const nonce = TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(header.apv))
       const verificationSession = await openId4VcVerificationSessionRepository.findSingleByQuery(agentContext, {
         nonce,
         verifierId: verifier.verifierId,

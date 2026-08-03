@@ -58,7 +58,7 @@ describe('Present Proof', () => {
 
     const issuerKey = await issuerAgent.kms.importKey({
       privateJwk: transformPrivateKeyToPrivateJwk({
-        privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+        privateKey: TypedArrayEncoder.fromUtf8String('testseed000000000000000000000001'),
         type: { kty: 'OKP', crv: 'Ed25519' },
       }).privateJwk,
     })
@@ -75,7 +75,7 @@ describe('Present Proof', () => {
 
     const proverKey = await proverAgent.kms.importKey({
       privateJwk: transformPrivateKeyToPrivateJwk({
-        privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+        privateKey: TypedArrayEncoder.fromUtf8String('testseed000000000000000000000001'),
         type: { kty: 'OKP', crv: 'Ed25519' },
       }).privateJwk,
     })

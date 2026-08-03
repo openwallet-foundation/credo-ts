@@ -1,5 +1,4 @@
 import type { DependencyManager, Module } from '../../plugins'
-
 import { MdocApi } from './MdocApi'
 import { MdocService } from './MdocService'
 import { MdocRepository } from './repository'

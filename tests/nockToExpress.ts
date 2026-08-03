@@ -1,4 +1,4 @@
-import { Buffer } from '@credo-ts/core'
+import { TypedArrayEncoder } from '@credo-ts/core'
 import type { Express } from 'express'
 import type { Body, ReplyFnContext } from 'nock'
 import nock, { cleanAll } from 'nock'
@@ -32,12 +32,12 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
 
     // Disable automatic JSON parsing, there's something weird if a string is returned
     testRequest = testRequest.buffer(true).parse((res, cb) => {
-      let data = Buffer.from('')
+      let data: Uint8Array = Uint8Array.from([])
       res.on('data', (chunk) => {
-        data = Buffer.concat([data, chunk])
+        data = TypedArrayEncoder.concat([data, chunk])
       })
       res.on('end', () => {
-        cb(null, data.toString())
+        cb(null, TypedArrayEncoder.toUtf8String(data))
       })
     })
 

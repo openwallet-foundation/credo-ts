@@ -10,7 +10,7 @@ import {
 } from '../../kms'
 import { PublicJwk } from '../../kms/jwk/PublicJwk'
 import { SECURITY_JWS_CONTEXT_URL, SECURITY_X25519_CONTEXT_URL } from '../../vc/constants'
-import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../vc/data-integrity/signature-suites/ed25519/constants'
+import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../vc/linked-data-proofs/signature-suites/ed25519/constants'
 import { DidDocumentBuilder } from './DidDocumentBuilder'
 import { convertPublicKeyToX25519 } from './key-type/ed25519'
 import { getEd25519VerificationKey2018, getJsonWebKey2020, getX25519KeyAgreementKey2019 } from './verificationMethod'

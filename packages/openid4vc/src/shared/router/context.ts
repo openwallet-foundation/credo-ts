@@ -24,16 +24,16 @@ export function sendUnauthorizedError(
     error,
   })
 
-  const unauhorizedError =
+  const unauthorizedError =
     error instanceof Oauth2ResourceUnauthorizedError
       ? error
-      : new Oauth2ResourceUnauthorizedError('Unknown error occured', [
+      : new Oauth2ResourceUnauthorizedError('Unknown error occurred', [
           { scheme: SupportedAuthenticationScheme.DPoP },
           { scheme: SupportedAuthenticationScheme.Bearer },
         ])
 
   response
-    .setHeader('WWW-Authenticate', unauhorizedError.toHeaderValue())
+    .setHeader('WWW-Authenticate', unauthorizedError.toHeaderValue())
     .status(status ?? 403)
     .send()
   next(error)

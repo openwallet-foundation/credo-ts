@@ -7,7 +7,7 @@ import { zKmsKeyId } from './common'
 
 export const zKmsVerifyOptions = z.object({
   /**
-   * The key to verify with. Either a string referring to a keyId, or a `KmsJwkPublicAssymetric` for verifying with a
+   * The key to verify with. Either a string referring to a keyId, or a `KmsJwkPublicAsymmetric` for verifying with a
    * public asymmetric JWK.
    *
    * It is currently not possible to verify a signature for a symmetric key

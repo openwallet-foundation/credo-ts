@@ -1,6 +1,5 @@
-import { injectable } from 'tsyringe'
-
 import { AgentContext } from '../../agent'
+import { injectable } from '../../plugins'
 import { zParseWithErrorHandling } from '../../utils/zod'
 import { KeyManagementError } from './error/KeyManagementError'
 import { KeyManagementKeyNotFoundError } from './error/KeyManagementKeyNotFoundError'
@@ -22,7 +21,7 @@ import {
   type KmsCreateKeyOptions,
   type KmsCreateKeyReturn,
   type KmsCreateKeyType,
-  type KmsCreateKeyTypeAssymetric,
+  type KmsCreateKeyTypeAsymmetric,
   zKmsCreateKeyForSignatureAlgorithmOptions,
   zKmsCreateKeyOptions,
 } from './options/KmsCreateKeyOptions'
@@ -93,7 +92,7 @@ export class KeyManagementApi {
    */
   public async createKeyForSignatureAlgorithm(
     options: WithBackend<KmsCreateKeyForSignatureAlgorithmOptions>
-  ): Promise<KmsCreateKeyReturn<KmsCreateKeyTypeAssymetric>> {
+  ): Promise<KmsCreateKeyReturn<KmsCreateKeyTypeAsymmetric>> {
     const { backend, algorithm, ...kmsOptions } = zParseWithErrorHandling(
       zWithBackend(zKmsCreateKeyForSignatureAlgorithmOptions),
       options,
@@ -304,8 +303,7 @@ export class KeyManagementApi {
    */
   private async getKmsForOperationAndKeyId(agentContext: AgentContext, keyId: string, operation?: KmsOperation) {
     for (const kms of this.keyManagementConfig.backends) {
-      const isOperationSupported = operation ? kms.isOperationSupported(agentContext, operation) : true
-      if (!isOperationSupported) continue
+      if (operation && !kms.isOperationSupported(agentContext, operation)) continue
 
       const publicKey = await kms.getPublicKey(this.agentContext, keyId)
       if (publicKey)
@@ -315,17 +313,12 @@ export class KeyManagementApi {
         }
     }
 
-    if (operation) {
-      throw new KeyManagementKeyNotFoundError(
-        keyId,
-        this.keyManagementConfig.backends.map((b) => b.backend),
-        `The key may exist in one of the key management services in which case the key management service does not support the ${getKmsOperationHumanDescription(operation)}`
-      )
-    }
-
     throw new KeyManagementKeyNotFoundError(
       keyId,
-      this.keyManagementConfig.backends.map((b) => b.backend)
+      this.keyManagementConfig.backends.map((b) => b.backend),
+      operation
+        ? `The key may exist in one of the key management services in which case the key management service does not support the ${getKmsOperationHumanDescription(operation)}`
+        : undefined
     )
   }
 
@@ -333,14 +326,19 @@ export class KeyManagementApi {
    * Get the kms backend for a specific operation.
    *
    * If a backend is provided, it will be checked if the backend supports
-   * the operation. Otherwise the first backend that supports the operation
-   * will be used.
+   * the operation. Otherwise the default backend (the `defaultBackend` from
+   * the `KeyManagementModuleConfig`, or the first registered backend if no
+   * `defaultBackend` was configured) will be used if it supports the operation.
+   * If the default backend does not support the operation, the first other
+   * backend that supports the operation will be used and a warning will be logged.
    */
   private getKms(agentContext: AgentContext, backend?: string, operation?: KmsOperation) {
+    const backends = this.keyManagementConfig.backends
+
     if (backend) {
-      const kms = this.keyManagementConfig.backends.find((kms) => kms.backend === backend)
+      const kms = backends.find((kms) => kms.backend === backend)
       if (!kms) {
-        const availableBackends = this.keyManagementConfig.backends.map((kms) => `'${kms.backend}'`)
+        const availableBackends = backends.map((kms) => `'${kms.backend}'`)
         throw new KeyManagementError(
           `No key management service is configured for backend '${backend}'. Available backends are ${availableBackends.join(
             ', '
@@ -348,8 +346,7 @@ export class KeyManagementApi {
         )
       }
 
-      const isOperationSupported = operation ? kms.isOperationSupported(agentContext, operation) : true
-      if (!isOperationSupported && operation) {
+      if (operation && !kms.isOperationSupported(agentContext, operation)) {
         throw new KeyManagementError(
           `Key management service backend '${backend}' does not support ${getKmsOperationHumanDescription(operation)}`
         )
@@ -358,17 +355,23 @@ export class KeyManagementApi {
       return kms
     }
 
-    for (const kms of this.keyManagementConfig.backends) {
-      const isOperationSupported = operation ? kms.isOperationSupported(agentContext, operation) : true
-      if (isOperationSupported) return kms
-    }
+    if (backends.length > 0) {
+      const defaultKms = this.keyManagementConfig.defaultBackend
+      if (!operation || defaultKms.isOperationSupported(agentContext, operation)) return defaultKms
 
-    if (operation) {
-      throw new KeyManagementError(
-        `No key management service backend found that supports ${getKmsOperationHumanDescription(operation)}`
+      const fallbackKms = backends.find(
+        (kms) => kms !== defaultKms && kms.isOperationSupported(agentContext, operation)
       )
+
+      if (fallbackKms) {
+        return fallbackKms
+      }
     }
 
-    throw new KeyManagementError('No key management service backend found.')
+    throw new KeyManagementError(
+      operation
+        ? `No key management service backend found that supports ${getKmsOperationHumanDescription(operation)}`
+        : 'No key management service backend found.'
+    )
   }
 }
