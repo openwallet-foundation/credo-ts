@@ -2,6 +2,7 @@ import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface DidCommStatusRequestMessageV2MessageOptions {
@@ -11,6 +12,7 @@ export interface DidCommStatusRequestMessageV2MessageOptions {
 
 export class DidCommStatusRequestV2Message extends DidCommMessage {
   public readonly allowQueueTransport = false
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   public constructor(options: DidCommStatusRequestMessageV2MessageOptions) {
     super()

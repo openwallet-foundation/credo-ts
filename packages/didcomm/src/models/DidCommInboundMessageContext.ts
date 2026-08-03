@@ -11,6 +11,8 @@ export interface MessageContextParams {
   sessionId?: string
   senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  /** Sender DID from envelope (DIDComm v2 plaintext). Preserved before transformation. */
+  senderDid?: string
   agentContext: AgentContext
   receivedAt?: Date
   encryptedMessage?: DidCommEncryptedMessage
@@ -21,6 +23,8 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
   public sessionId?: string
   public senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   public recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  /** Sender DID from envelope (DIDComm v2 plaintext). Use when message.from may be lost in transformation. */
+  public senderDid?: string
   public receivedAt: Date
 
   public readonly agentContext: AgentContext
@@ -36,6 +40,7 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
     this.senderKey = context.senderKey
     this.connection = context.connection
     this.sessionId = context.sessionId
+    this.senderDid = context.senderDid
     this.agentContext = context.agentContext
     this.receivedAt = context.receivedAt ?? new Date()
     this.encryptedMessage = context.encryptedMessage

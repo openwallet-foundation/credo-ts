@@ -252,7 +252,9 @@ describe('connections', () => {
 
   it('agent using mediator should be able to make multiple connections using a multi use invite', async () => {
     // Make Faber use a mediator
-    const { outOfBandInvitation: mediatorOutOfBandInvitation } = await mediatorAgent.didcomm.oob.createInvitation({})
+    const { outOfBandInvitation: mediatorOutOfBandInvitation } = await mediatorAgent.didcomm.oob.createInvitation({
+      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+    })
     let { connectionRecord } = await faberAgent.didcomm.oob.receiveInvitation(mediatorOutOfBandInvitation, {
       label: 'faber',
     })
