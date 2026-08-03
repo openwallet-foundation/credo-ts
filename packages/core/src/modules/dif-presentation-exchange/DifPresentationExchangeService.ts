@@ -248,6 +248,23 @@ export class DifPresentationExchangeService {
           getSphereonOriginalVerifiableCredential(c.credential)
         )
 
+        if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
+          if (!presentationToCreate.subjectIds) {
+            throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
+          }
+
+          const verificationMethod = await this.getVerificationMethodForSubjectId(
+            agentContext,
+            presentationToCreate.subjectIds[0]
+          )
+
+          presentationToCreate.proofType = this.getProofTypeForLdpVc(
+            agentContext,
+            presentationDefinitionForSubject,
+            verificationMethod
+          )
+        }
+
         const extraProofOptions = this.shouldSignUsingAnonCredsDataIntegrity(presentationToCreate)
           ? {
               typeSupportsSelectiveDisclosure: true,
@@ -570,12 +587,13 @@ export class DifPresentationExchangeService {
         const w3cPresentation = JsonTransformer.fromJSON(presentationInput, W3cPresentation)
         w3cPresentation.holder = verificationMethod.controller
 
+        if (!presentationToCreate.proofType) {
+          throw new DifPresentationExchangeError('Missing proofType for LdpVp presentation')
+        }
+
         const signedPresentation = await this.w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
-          // TODO: we should move the check for which proof to use for a presentation to earlier
-          // as then we know when determining which VPs to submit already if the proof types are supported
-          // by the verifier, and we can then just add this to the vpToCreate interface
-          proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
+          proofType: presentationToCreate.proofType,
           proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
           verificationMethod: verificationMethod.id,
           presentation: w3cPresentation,
