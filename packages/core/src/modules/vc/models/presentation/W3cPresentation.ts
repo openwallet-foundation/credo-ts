@@ -23,7 +23,8 @@ export interface W3cPresentationOptions {
 export class W3cPresentation {
   public constructor(options: W3cPresentationOptions) {
     if (options) {
-      this.id = options.id
+      // Assigning an undefined id would serialize an `id` key without a value, which is invalid JSON-LD
+      if (options.id !== undefined) this.id = options.id
       this.context = options.context ?? [CREDENTIALS_CONTEXT_V1_URL]
       this.type = options.type ?? [VERIFIABLE_PRESENTATION_TYPE]
       this.verifiableCredential = options.verifiableCredential

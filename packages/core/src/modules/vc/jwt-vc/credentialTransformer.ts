@@ -17,8 +17,14 @@ export function getJwtPayloadFromCredential(credential: W3cCredential) {
     },
   }
 
+  if (credential.dataModelVersion === '2.0') {
+    throw new CredoError(
+      'Verifiable Credentials Data Model 2.0 credentials cannot be secured using the JWT VC (data model 1.1) envelope. Use W3cV2Credential with the JWT or SD-JWT format instead.'
+    )
+  }
+
   // Extract `nbf` and remove issuance date from vc
-  const issuanceDate = Date.parse(credential.issuanceDate)
+  const issuanceDate = Date.parse(credential.issuanceDate as string)
   if (Number.isNaN(issuanceDate)) {
     throw new CredoError('JWT VCs must have a valid issuance date')
   }

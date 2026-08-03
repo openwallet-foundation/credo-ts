@@ -76,6 +76,26 @@ export class W3cJwtVerifiableCredential {
     return this.credential.expirationDate
   }
 
+  public get validFrom() {
+    return this.credential.validFrom
+  }
+
+  public get validUntil() {
+    return this.credential.validUntil
+  }
+
+  public get dataModelVersion() {
+    return this.credential.dataModelVersion
+  }
+
+  public get validFromDate() {
+    return this.credential.validFromDate
+  }
+
+  public get validUntilDate() {
+    return this.credential.validUntilDate
+  }
+
   public get credentialSubject() {
     return this.credential.credentialSubject
   }

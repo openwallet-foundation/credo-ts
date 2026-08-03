@@ -1,10 +1,11 @@
 import { Expose, Type } from 'class-transformer'
-import { IsInstance, IsOptional, IsRFC3339, ValidateNested } from 'class-validator'
+import { IsInstance, IsOptional, ValidateNested } from 'class-validator'
 import type { JsonObject, SingleOrArray } from '../../../../types'
 import { asArray, JsonTransformer, mapSingleOrArray } from '../../../../utils'
 import { IsInstanceOrArrayOfInstances, IsUri } from '../../../../utils/validators'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
-import { IsCredentialJsonLdContext, IsCredentialType } from '../../validators'
+import { getCredentialContextVersion, type W3cCredentialDataModelVersion } from '../../credentialContextVersion'
+import { IsCredentialJsonLdContext, IsCredentialType, IsW3cCredentialDate } from '../../validators'
 import { W3cCredentialSchema } from './W3cCredentialSchema'
 import { W3cCredentialStatus } from './W3cCredentialStatus'
 import type { W3cCredentialSubjectOptions } from './W3cCredentialSubject'
@@ -17,8 +18,27 @@ export interface W3cCredentialOptions {
   id?: string
   type: Array<string>
   issuer: string | W3cIssuerOptions
-  issuanceDate: string
+
+  /**
+   * Data model 1.1 only. Required when the credential uses the data model 1.1 context.
+   */
+  issuanceDate?: string
+
+  /**
+   * Data model 1.1 only.
+   */
   expirationDate?: string
+
+  /**
+   * Data model 2.0 only. Replaces {@link issuanceDate}.
+   */
+  validFrom?: string
+
+  /**
+   * Data model 2.0 only. Replaces {@link expirationDate}.
+   */
+  validUntil?: string
+
   credentialSubject: SingleOrArray<W3cCredentialSubjectOptions>
   credentialStatus?: W3cCredentialStatus
   credentialSchema?: SingleOrArray<W3cCredentialSchema>
@@ -28,14 +48,19 @@ export class W3cCredential {
   public constructor(options: W3cCredentialOptions) {
     if (options) {
       this.context = options.context ?? [CREDENTIALS_CONTEXT_V1_URL]
-      this.id = options.id
+      // Assigning an undefined id would serialize an `id` key without a value, which is invalid JSON-LD
+      if (options.id !== undefined) this.id = options.id
       this.type = options.type || ['VerifiableCredential']
       this.issuer =
         typeof options.issuer === 'string' || options.issuer instanceof W3cIssuer
           ? options.issuer
           : new W3cIssuer(options.issuer)
-      this.issuanceDate = options.issuanceDate
-      this.expirationDate = options.expirationDate
+      // Only assign the dates that apply to the data model version in use, so credentials do not
+      // serialize terms that are not defined by their context.
+      if (options.issuanceDate !== undefined) this.issuanceDate = options.issuanceDate
+      if (options.expirationDate !== undefined) this.expirationDate = options.expirationDate
+      if (options.validFrom !== undefined) this.validFrom = options.validFrom
+      if (options.validUntil !== undefined) this.validUntil = options.validUntil
       this.credentialSubject = mapSingleOrArray(options.credentialSubject, (subject) =>
         subject instanceof W3cCredentialSubject ? subject : new W3cCredentialSubject(subject)
       )
@@ -70,12 +95,17 @@ export class W3cCredential {
   @IsW3cIssuer()
   public issuer!: string | W3cIssuer
 
-  @IsRFC3339()
-  public issuanceDate!: string
+  @IsW3cCredentialDate({ dataModelVersion: '1.1', required: true })
+  public issuanceDate?: string
 
-  @IsRFC3339()
-  @IsOptional()
+  @IsW3cCredentialDate({ dataModelVersion: '1.1' })
   public expirationDate?: string
+
+  @IsW3cCredentialDate({ dataModelVersion: '2.0' })
+  public validFrom?: string
+
+  @IsW3cCredentialDate({ dataModelVersion: '2.0' })
+  public validUntil?: string
 
   @IsW3cCredentialSubject({ each: true })
   @W3cCredentialSubjectTransformer()
@@ -95,6 +125,30 @@ export class W3cCredential {
 
   public get issuerId(): string {
     return this.issuer instanceof W3cIssuer ? this.issuer.id : this.issuer
+  }
+
+  /**
+   * The Verifiable Credentials Data Model version this credential expresses, derived from the
+   * base JSON-LD context.
+   */
+  public get dataModelVersion(): W3cCredentialDataModelVersion | undefined {
+    return getCredentialContextVersion(this.context)
+  }
+
+  /**
+   * The date from which the credential is valid, regardless of the data model version.
+   * Maps to `issuanceDate` in data model 1.1 and to `validFrom` in data model 2.0.
+   */
+  public get validFromDate(): string | undefined {
+    return this.dataModelVersion === '2.0' ? this.validFrom : this.issuanceDate
+  }
+
+  /**
+   * The date after which the credential is no longer valid, regardless of the data model version.
+   * Maps to `expirationDate` in data model 1.1 and to `validUntil` in data model 2.0.
+   */
+  public get validUntilDate(): string | undefined {
+    return this.dataModelVersion === '2.0' ? this.validUntil : this.expirationDate
   }
 
   public get credentialSchemaIds(): string[] {

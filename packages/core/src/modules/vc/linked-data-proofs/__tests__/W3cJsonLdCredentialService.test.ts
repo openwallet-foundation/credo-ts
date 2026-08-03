@@ -18,6 +18,8 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../../dids'
 import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../../kms'
+import { CREDENTIALS_CONTEXT_V2_URL } from '../../constants'
+import { DEFAULT_CONTEXTS } from '../../jsonld/contexts'
 import { ClaimFormat, W3cCredential } from '../../models'
 import { W3cPresentation } from '../../models/presentation/W3cPresentation'
 import { W3cCredentialsModuleConfig } from '../../W3cCredentialsModuleConfig'
@@ -27,7 +29,7 @@ import { W3cJsonLdVerifiableCredential } from '../models/W3cJsonLdVerifiableCred
 import { W3cJsonLdVerifiablePresentation } from '../models/W3cJsonLdVerifiablePresentation'
 import { CredentialIssuancePurpose } from '../proof-purposes/CredentialIssuancePurpose'
 import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
-import { Ed25519Signature2018 } from '../signature-suites'
+import { Ed25519Signature2018, Ed25519Signature2020 } from '../signature-suites'
 import { W3cJsonLdCredentialService } from '../W3cJsonLdCredentialService'
 import { customDocumentLoader } from './documentLoader'
 import { Ed25519Signature2018Fixtures } from './fixtures'
@@ -578,6 +580,115 @@ describe('W3cJsonLdCredentialsService', () => {
           isValid: true,
           validations: { credentialSubjectAuthentication: { isValid: true } },
         })
+      })
+    })
+
+    describe('Verifiable Credentials Data Model 2.0', () => {
+      const createV2Credential = (extra: Record<string, unknown> = {}) =>
+        new W3cCredential({
+          context: [CREDENTIALS_CONTEXT_V2_URL],
+          id: 'urn:uuid:8f1f1e3a-4f52-4a5a-9d2b-8f2a0c1a1d11',
+          type: ['VerifiableCredential'],
+          issuer: issuerDidKey.did,
+          validFrom: '2010-01-01T19:23:24Z',
+          validUntil: '2030-01-01T19:23:24Z',
+          credentialSubject: { id: 'did:example:ebfeb1f712ebc6f1c276e12ec21' },
+          ...extra,
+        })
+
+      it('signs and verifies a credential using the data model 2.0 context', async () => {
+        const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential: createV2Credential(),
+          proofType: 'Ed25519Signature2018',
+          verificationMethod,
+        })
+
+        expect(vc).toBeInstanceOf(W3cJsonLdVerifiableCredential)
+        expect(vc.dataModelVersion).toBe('2.0')
+        expect(vc.validFrom).toBe('2010-01-01T19:23:24Z')
+        expect(vc.issuanceDate).toBeUndefined()
+        expect(vc.toJson()).not.toHaveProperty('issuanceDate')
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc })
+        expect(result.isValid).toBe(true)
+      })
+
+      it('signs and verifies a presentation using the data model 2.0 context', async () => {
+        const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential: createV2Credential({ credentialSubject: { id: issuerDidKey.did } }),
+          proofType: 'Ed25519Signature2018',
+          verificationMethod,
+        })
+
+        const presentation = new W3cPresentation({
+          context: [CREDENTIALS_CONTEXT_V2_URL],
+          holder: issuerDidKey.did,
+          verifiableCredential: [vc],
+        })
+
+        const vp = await w3cJsonLdCredentialService.signPresentation(agentContext, {
+          format: ClaimFormat.LdpVp,
+          presentation,
+          proofPurpose: new AuthenticationProofPurpose({ challenge: 'challenge-data-model-2' }),
+          proofType: 'Ed25519Signature2018',
+          challenge: 'challenge-data-model-2',
+          verificationMethod,
+        })
+
+        expect(vp).toBeInstanceOf(W3cJsonLdVerifiablePresentation)
+
+        const result = await w3cJsonLdCredentialService.verifyPresentation(agentContext, {
+          presentation: vp as W3cJsonLdVerifiablePresentation,
+          challenge: 'challenge-data-model-2',
+        })
+
+        expect(result.isValid).toBe(true)
+      })
+
+      // The data model 1.1 context defines the Ed25519Signature2020 terms, the data model 2.0 context does not.
+      // Signing therefore has to add the suite context, which must resolve through the default document loader.
+      it('adds the resolvable Ed25519Signature2020 suite context when signing', async () => {
+        const service = new W3cJsonLdCredentialService(
+          new SignatureSuiteRegistry([
+            {
+              suiteClass: Ed25519Signature2020,
+              proofType: 'Ed25519Signature2020',
+              verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
+              supportedPublicJwkTypes: [Ed25519PublicJwk],
+            },
+          ]),
+          new W3cCredentialsModuleConfig({ documentLoader: customDocumentLoader })
+        )
+
+        const vc = await service.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential: createV2Credential(),
+          proofType: 'Ed25519Signature2020',
+          verificationMethod,
+        })
+
+        expect(asArray(vc.proof)[0].type).toBe('Ed25519Signature2020')
+        expect(vc.context).toEqual([CREDENTIALS_CONTEXT_V2_URL, 'https://w3id.org/security/suites/ed25519-2020/v1'])
+        expect(DEFAULT_CONTEXTS).toHaveProperty('https://w3id.org/security/suites/ed25519-2020/v1')
+      })
+
+      it('detects a tampered credential using the data model 2.0 context', async () => {
+        const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential: createV2Credential(),
+          proofType: 'Ed25519Signature2018',
+          verificationMethod,
+        })
+
+        const tampered = JsonTransformer.fromJSON(
+          { ...vc.toJson(), validUntil: '2040-01-01T19:23:24Z' },
+          W3cJsonLdVerifiableCredential
+        )
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: tampered })
+        expect(result.isValid).toBe(false)
       })
     })
   })

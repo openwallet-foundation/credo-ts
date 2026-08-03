@@ -1,4 +1,5 @@
 import { CREDENTIALS_V1 } from './credentials_v1'
+import { CREDENTIALS_V2 } from './credentials_v2'
 import { DATA_INTEGRITY_V2 } from './dataIntegrity_v2'
 import { DID_V1 } from './did_v1'
 import { ED25519_2020_V1 } from './ed25519_2020_v1'
@@ -22,6 +23,7 @@ export const DEFAULT_CONTEXTS = {
   'https://w3id.org/security/suites/ed25519-2020/v1': ED25519_2020_V1,
   'https://w3id.org/security/suites/secp256k1-2019/v1': SECP256K1_V1,
   'https://www.w3.org/2018/credentials/v1': CREDENTIALS_V1,
+  'https://www.w3.org/ns/credentials/v2': CREDENTIALS_V2,
   'https://w3id.org/did/v1': DID_V1,
   'https://www.w3.org/ns/did/v1': DID_V1,
   'https://w3.org/ns/did/v1': DID_V1,

@@ -1,4 +1,5 @@
 export * from './constants'
+export * from './credentialContextVersion'
 export * from './jsonld'
 export * from './jwt-vc'
 export * from './linked-data-proofs'

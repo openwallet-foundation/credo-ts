@@ -168,7 +168,7 @@ describe('W3cJwtCredentialService', () => {
           format: ClaimFormat.JwtVc,
         })
       ).rejects.toThrow(
-        'property issuanceDate has failed the following constraints: issuanceDate must be RFC 3339 date'
+        'property issuanceDate has failed the following constraints: issuanceDate is only defined by the Verifiable Credentials Data Model 1.1 context'
       )
 
       // Throw when verificationMethod id does not exist in did document
