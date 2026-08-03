@@ -182,6 +182,7 @@ export class DifPresentationExchangeService {
 
     const presentationsToCreate = getPresentationsToCreate(options.credentialsForInputDescriptor)
     for (const presentationToCreate of presentationsToCreate) {
+      let ldpVpSigningOptions: { verificationMethod: VerificationMethod; proofType: string } | undefined
       // We create a presentation for each subject
       // Thus for each subject we need to filter all the related input descriptors and credentials
       const inputDescriptorIds = presentationToCreate.verifiableCredentials.map((c) => c.inputDescriptorId)
@@ -248,24 +249,35 @@ export class DifPresentationExchangeService {
           getSphereonOriginalVerifiableCredential(c.credential)
         )
 
-        if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
+        const signUsingAnonCredsDataIntegrity = this.shouldSignUsingAnonCredsDataIntegrity(presentationToCreate)
+
+        if (presentationToCreate.claimFormat === ClaimFormat.LdpVp && !signUsingAnonCredsDataIntegrity) {
+          // AnonCreds DI signing does not use LDP proofType and verificationMethod preselection.
           if (!presentationToCreate.subjectIds) {
             throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
           }
 
           const verificationMethod = await this.getVerificationMethodForSubjectId(
             agentContext,
-            presentationToCreate.subjectIds[0]
+            presentationToCreate.subjectIds[0],
+            presentationDefinitionForSubject
           )
 
-          presentationToCreate.proofType = this.getProofTypeForLdpVc(
+          const proofType = this.getProofTypeForLdpVc(
             agentContext,
             presentationDefinitionForSubject,
             verificationMethod
           )
+
+          ldpVpSigningOptions = {
+            verificationMethod,
+            proofType,
+          }
+
+          presentationToCreate.proofType = proofType
         }
 
-        const extraProofOptions = this.shouldSignUsingAnonCredsDataIntegrity(presentationToCreate)
+        const extraProofOptions = signUsingAnonCredsDataIntegrity
           ? {
               typeSupportsSelectiveDisclosure: true,
               type: `DataIntegrityProof.${ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE}`,
@@ -275,7 +287,7 @@ export class DifPresentationExchangeService {
         const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
           presentationDefinitionForSubject,
           credentialsForPresentation,
-          this.getPresentationSignCallback(agentContext, presentationToCreate),
+          this.getPresentationSignCallback(agentContext, presentationToCreate, ldpVpSigningOptions),
           {
             proofOptions: {
               challenge,
@@ -438,10 +450,10 @@ export class DifPresentationExchangeService {
     presentationDefinition: DifPresentationExchangeDefinitionV1 | DifPresentationExchangeDefinitionV2,
     verificationMethod: VerificationMethod
   ) {
-    const algorithmsSatisfyingDefinition = presentationDefinition.format?.ldp_vc?.proof_type ?? []
+    const algorithmsSatisfyingDefinition = presentationDefinition.format?.ldp_vp?.proof_type ?? []
 
     const inputDescriptorAlgorithms: Array<Array<string>> = presentationDefinition.input_descriptors
-      .map((descriptor) => (descriptor as InputDescriptorV2).format?.ldp_vc?.proof_type ?? [])
+      .map((descriptor) => (descriptor as InputDescriptorV2).format?.ldp_vp?.proof_type ?? [])
       .filter((alg) => alg.length > 0)
 
     const suitableSignatureSuites = this.getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
@@ -513,7 +525,11 @@ export class DifPresentationExchangeService {
     return validDescriptorFormat && credentialAreSignedUsingAnonCredsDataIntegrity
   }
 
-  private getPresentationSignCallback(agentContext: AgentContext, presentationToCreate: PresentationToCreate) {
+  private getPresentationSignCallback(
+    agentContext: AgentContext,
+    presentationToCreate: PresentationToCreate,
+    ldpVpSigningOptions?: { verificationMethod: VerificationMethod; proofType: string }
+  ) {
     return async (callBackParams: PresentationSignCallBackParams) => {
       // The created partial proof and presentation, as well as original supplied options
       const {
@@ -578,22 +594,21 @@ export class DifPresentationExchangeService {
         if (!presentationToCreate.subjectIds) {
           throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
         }
-        // Determine a suitable verification method for the presentation
-        const verificationMethod = await this.getVerificationMethodForSubjectId(
-          agentContext,
-          presentationToCreate.subjectIds[0]
-        )
+        const verificationMethod =
+          ldpVpSigningOptions?.verificationMethod ??
+          (await this.getVerificationMethodForSubjectId(agentContext, presentationToCreate.subjectIds[0]))
 
         const w3cPresentation = JsonTransformer.fromJSON(presentationInput, W3cPresentation)
         w3cPresentation.holder = verificationMethod.controller
 
-        if (!presentationToCreate.proofType) {
+        const proofType = ldpVpSigningOptions?.proofType ?? presentationToCreate.proofType
+        if (!proofType) {
           throw new DifPresentationExchangeError('Missing proofType for LdpVp presentation')
         }
 
         const signedPresentation = await this.w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
-          proofType: presentationToCreate.proofType,
+          proofType,
           proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
           verificationMethod: verificationMethod.id,
           presentation: w3cPresentation,
@@ -640,7 +655,11 @@ export class DifPresentationExchangeService {
     }
   }
 
-  private async getVerificationMethodForSubjectId(agentContext: AgentContext, subjectId: string) {
+  private async getVerificationMethodForSubjectId(
+    agentContext: AgentContext,
+    subjectId: string,
+    presentationDefinition?: DifPresentationExchangeDefinitionV1 | DifPresentationExchangeDefinitionV2
+  ) {
     const didsApi = agentContext.dependencyManager.resolve(DidsApi)
 
     if (!subjectId.startsWith('did:')) {
@@ -657,14 +676,38 @@ export class DifPresentationExchangeService {
       )
     }
 
-    // the signature suite to use for the presentation is dependant on the credentials we share.
-    // 1. Get the verification method for this given proof purpose in this DID document
-    let [verificationMethod] = didDocument.authentication
-    if (typeof verificationMethod === 'string') {
-      verificationMethod = didDocument.dereferenceKey(verificationMethod, ['authentication'])
+    const verificationMethods = didDocument.authentication.map((verificationMethod) =>
+      typeof verificationMethod === 'string'
+        ? didDocument.dereferenceKey(verificationMethod, ['authentication'])
+        : verificationMethod
+    )
+
+    if (!presentationDefinition) {
+      return verificationMethods[0]
     }
 
-    return verificationMethod
+    for (const verificationMethod of verificationMethods) {
+      try {
+        this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod)
+        return verificationMethod
+      } catch (error) {
+        if (!(error instanceof DifPresentationExchangeError)) throw error
+      }
+    }
+
+    const suitableProofTypes = this.getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
+      presentationDefinition.format?.ldp_vp?.proof_type ?? [],
+      presentationDefinition.input_descriptors
+        .map((descriptor) => (descriptor as InputDescriptorV2).format?.ldp_vp?.proof_type ?? [])
+        .filter((alg) => alg.length > 0)
+    )
+
+    throw new DifPresentationExchangeError(
+      [
+        'No possible verification method and signature suite found for ldp_vp presentation signing.',
+        `AllowedProofTypes: ${suitableProofTypes?.join(', ') ?? '[any]'}`,
+      ].join('\n')
+    )
   }
 
   /**
