@@ -281,6 +281,18 @@ export type OpenId4VciDynamicIssuanceAuthorizationFlow = 'chained' | 'presentati
 
 interface OpenId4VciDynamicIssuanceSessionOptionsBase {
   /**
+   * The id to create the issuance session record with. If not provided, a random id is generated.
+   *
+   * A dynamic issuance session is created by Credo *after* the `getDynamicIssuanceSession` callback
+   * returns, so the callback cannot otherwise know the id of the session it just authorized.
+   * Supplying the id here lets an external system reference the session before it exists, for
+   * example to record it in its own database as part of handling the same request.
+   *
+   * Must be unique. Reusing the id of an existing issuance session overwrites that session.
+   */
+  id?: string
+
+  /**
    * The ids of the credential configurations to bind to this issuance session. All ids must be
    * part of the `credentialConfigurationsSupported` of the issuer.
    */
@@ -749,6 +761,21 @@ export type OpenId4VciCreateIssuerOptions = {
   metadataSigner?: OpenId4VcJwtIssuer
 }
 
+export interface OpenId4VcUpdateIssuerOptions {
+  /**
+   * Configures signing of the issuer metadata, allowing wallets to fetch signed metadata.
+   *
+   * - When omitted, the previously configured signer (if any) is kept. The signed metadata is
+   *   always re-signed, so it stays in sync with the updated issuer metadata.
+   * - When `null`, a previously configured signer is removed and the metadata is no longer signed.
+   * - When a signer is provided, signed metadata is enabled, or the previously configured signer
+   *   is replaced.
+   *
+   * See {@link OpenId4VciCreateIssuerOptions.metadataSigner} for the signing behaviour.
+   */
+  metadataSigner?: OpenId4VcJwtIssuer | null
+}
+
 export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   OpenId4VcIssuerRecordProps,
   | 'issuerId'
@@ -759,4 +786,5 @@ export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   | 'credentialConfigurationsSupported'
   | 'batchCredentialIssuance'
   | 'authorizationServerConfigs'
->
+> &
+  OpenId4VcUpdateIssuerOptions
