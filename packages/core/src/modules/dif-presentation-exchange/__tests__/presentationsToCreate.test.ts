@@ -1,7 +1,7 @@
 import { MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat } from '../../vc'
-import type { DifPexInputDescriptorToCredentials } from '../models'
+import type { DifPexInputDescriptorToCredentials, DifPresentationExchangeDefinition } from '../models'
 import { getPresentationsToCreate } from '../utils/presentationsToCreate'
 
 const mdocRecord = () =>
@@ -21,6 +21,21 @@ const sdJwtRecord = () =>
       },
     ],
   })
+
+const minimalPresentationDefinition = (options?: {
+  pdFormat?: Record<string, unknown>
+  descriptorFormat?: Record<string, unknown>
+}) =>
+  ({
+    id: 'pd-id',
+    input_descriptors: [
+      {
+        id: 'inputDescriptor',
+        ...(options?.descriptorFormat ? { format: options.descriptorFormat } : {}),
+      },
+    ],
+    ...(options?.pdFormat ? { format: options.pdFormat } : {}),
+  }) as unknown as DifPresentationExchangeDefinition
 
 describe('getPresentationsToCreate failure paths', () => {
   test('throws when SdJwtDc claim format has non-SdJwtVcRecord', () => {
@@ -98,5 +113,104 @@ describe('getPresentationsToCreate failure paths', () => {
     expect(() => getPresentationsToCreate(credentialsForInputDescriptor)).toThrow(
       "Unsupported claim format for input descriptor 'inputDescriptor'"
     )
+  })
+})
+
+describe('getPresentationsToCreate format capability checks', () => {
+  test('allows presentation format declared on presentation definition', () => {
+    const credentialsForInputDescriptor = {
+      inputDescriptor: [
+        {
+          claimFormat: ClaimFormat.MsoMdoc,
+          credentialRecord: mdocRecord(),
+          disclosedPayload: {},
+        },
+      ],
+    } as unknown as DifPexInputDescriptorToCredentials
+
+    expect(() =>
+      getPresentationsToCreate(credentialsForInputDescriptor, {
+        presentationDefinition: minimalPresentationDefinition({ pdFormat: { mso_mdoc: { alg: ['EdDSA'] } } }),
+      })
+    ).not.toThrow()
+  })
+
+  test('throws when selected presentation format is not declared on presentation definition', () => {
+    const credentialsForInputDescriptor = {
+      inputDescriptor: [
+        {
+          claimFormat: ClaimFormat.MsoMdoc,
+          credentialRecord: mdocRecord(),
+          disclosedPayload: {},
+        },
+      ],
+    } as unknown as DifPexInputDescriptorToCredentials
+
+    expect(() =>
+      getPresentationsToCreate(credentialsForInputDescriptor, {
+        presentationDefinition: minimalPresentationDefinition({ pdFormat: { jwt_vp: { alg: ['EdDSA'] } } }),
+      })
+    ).toThrow("Presentation format 'mso_mdoc' is not supported by verifier constraints")
+  })
+
+  test('uses intersection of presentation definition and descriptor-level format constraints', () => {
+    const credentialsForInputDescriptor = {
+      inputDescriptor: [
+        {
+          claimFormat: ClaimFormat.MsoMdoc,
+          credentialRecord: mdocRecord(),
+          disclosedPayload: {},
+        },
+      ],
+    } as unknown as DifPexInputDescriptorToCredentials
+
+    expect(() =>
+      getPresentationsToCreate(credentialsForInputDescriptor, {
+        presentationDefinition: minimalPresentationDefinition({
+          pdFormat: { mso_mdoc: { alg: ['EdDSA'] }, jwt_vp: { alg: ['EdDSA'] } },
+          descriptorFormat: { jwt_vp: { alg: ['EdDSA'] } },
+        }),
+      })
+    ).toThrow("Presentation format 'mso_mdoc' is not supported by verifier constraints")
+  })
+
+  test('allows all formats when no format constraints are present', () => {
+    const credentialsForInputDescriptor = {
+      inputDescriptor: [
+        {
+          claimFormat: ClaimFormat.MsoMdoc,
+          credentialRecord: mdocRecord(),
+          disclosedPayload: {},
+        },
+      ],
+    } as unknown as DifPexInputDescriptorToCredentials
+
+    expect(() =>
+      getPresentationsToCreate(credentialsForInputDescriptor, {
+        presentationDefinition: minimalPresentationDefinition(),
+      })
+    ).not.toThrow()
+  })
+
+  test('formatOverride bypasses presentation definition and descriptor format constraints', () => {
+    const credentialsForInputDescriptor = {
+      inputDescriptor: [
+        {
+          claimFormat: ClaimFormat.MsoMdoc,
+          credentialRecord: mdocRecord(),
+          disclosedPayload: {},
+        },
+      ],
+    } as unknown as DifPexInputDescriptorToCredentials
+
+    expect(() =>
+      getPresentationsToCreate(credentialsForInputDescriptor, {
+        presentationDefinition: minimalPresentationDefinition({
+          pdFormat: { jwt_vp: { alg: ['EdDSA'] } },
+          descriptorFormat: { jwt_vp: { alg: ['EdDSA'] } },
+        }),
+        formatOverride: { mso_mdoc: { alg: ['EdDSA'] } },
+      })
+    ).not.toThrow()
   })
 })

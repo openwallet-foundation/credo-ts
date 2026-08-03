@@ -169,6 +169,11 @@ export class DifPresentationExchangeService {
        * Mdoc openid4vp specific options
        */
       mdocSessionTranscript?: MdocSessionTranscriptOptions
+
+      /**
+       * Optional override for supported formats when verifier constraints are defined outside the presentation definition.
+       */
+      formatOverride?: DifPresentationExchangeDefinition['format']
     }
   ) {
     const { presentationDefinition, domain, challenge, mdocSessionTranscript } = options
@@ -180,7 +185,10 @@ export class DifPresentationExchangeService {
       claimFormat: PresentationToCreate['claimFormat']
     }> = []
 
-    const presentationsToCreate = getPresentationsToCreate(options.credentialsForInputDescriptor)
+    const presentationsToCreate = getPresentationsToCreate(options.credentialsForInputDescriptor, {
+      presentationDefinition,
+      formatOverride: options.formatOverride,
+    })
     for (const presentationToCreate of presentationsToCreate) {
       let ldpVpSigningOptions: { verificationMethod: VerificationMethod; proofType: string } | undefined
       // We create a presentation for each subject

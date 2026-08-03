@@ -3,7 +3,12 @@ import type { JsonObject } from '../../../types'
 import { MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
-import type { DifPexInputDescriptorToCredentials } from '../models'
+import type {
+  DifPexInputDescriptorToCredentials,
+  DifPresentationExchangeDefinition,
+  DifPresentationExchangeDefinitionV1,
+  DifPresentationExchangeDefinitionV2,
+} from '../models'
 
 //  - the credentials included in the presentation
 export interface SdJwtVcPresentationToCreate {
@@ -60,11 +65,82 @@ export type PresentationToCreate =
   | LdpVpPresentationToCreate
   | MdocPresentationToCreate
 
-// FIXME: we should extract supported format form top-level presentation definition, and input_descriptor as well
-// to make sure the presentation we are going to create is a presentation format supported by the verifier.
-// In addition we should allow to pass an override 'format' object, as specification like OID4VP do not use the
-// PD formats, but define their own.
-export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexInputDescriptorToCredentials) {
+type PresentationFormatObject =
+  | DifPresentationExchangeDefinitionV1['format']
+  | DifPresentationExchangeDefinitionV2['format']
+
+const supportedPresentationFormats = new Set<ClaimFormat>([
+  ClaimFormat.JwtVp,
+  ClaimFormat.LdpVp,
+  ClaimFormat.SdJwtDc,
+  ClaimFormat.MsoMdoc,
+])
+
+function getSupportedPresentationFormats(format?: PresentationFormatObject) {
+  if (!format) return undefined
+
+  const declaredFormats = Object.keys(format).filter((formatKey): formatKey is ClaimFormat =>
+    supportedPresentationFormats.has(formatKey as ClaimFormat)
+  )
+
+  return new Set(declaredFormats)
+}
+
+function intersectFormats(
+  current: Set<ClaimFormat> | undefined,
+  next: Set<ClaimFormat> | undefined
+): Set<ClaimFormat> | undefined {
+  if (!next) return current
+  if (!current) return new Set(next)
+
+  return new Set(Array.from(current).filter((format) => next.has(format)))
+}
+
+function assertSupportedPresentationFormats(options: {
+  presentationsToCreate: Array<PresentationToCreate>
+  presentationDefinition?: DifPresentationExchangeDefinition
+  formatOverride?: PresentationFormatObject
+}) {
+  const { presentationsToCreate, presentationDefinition, formatOverride } = options
+  if (!presentationDefinition && !formatOverride) return
+
+  const inputDescriptors = (presentationDefinition?.input_descriptors ?? []) as Array<
+    | DifPresentationExchangeDefinitionV1['input_descriptors'][number]
+    | DifPresentationExchangeDefinitionV2['input_descriptors'][number]
+  >
+
+  for (const presentationToCreate of presentationsToCreate) {
+    let supportedFormats = getSupportedPresentationFormats(formatOverride ?? presentationDefinition?.format)
+
+    if (!formatOverride) {
+      for (const inputDescriptorId of presentationToCreate.verifiableCredentials.map((vc) => vc.inputDescriptorId)) {
+        const inputDescriptor = inputDescriptors.find((descriptor) => descriptor.id === inputDescriptorId)
+        supportedFormats = intersectFormats(
+          supportedFormats,
+          getSupportedPresentationFormats((inputDescriptor as { format?: PresentationFormatObject })?.format)
+        )
+      }
+    }
+
+    if (supportedFormats && !supportedFormats.has(presentationToCreate.claimFormat)) {
+      const supportedFormatsAsString = Array.from(supportedFormats).join(', ') || '[none]'
+      throw new CredoError(
+        [
+          `Presentation format '${presentationToCreate.claimFormat}' is not supported by verifier constraints.`,
+          `Supported presentation formats: ${supportedFormatsAsString}`,
+        ].join('\n')
+      )
+    }
+  }
+}
+
+export function getPresentationsToCreate(
+  credentialsForInputDescriptor: DifPexInputDescriptorToCredentials,
+  options?: {
+    presentationDefinition?: DifPresentationExchangeDefinition
+    formatOverride?: PresentationFormatObject
+  }
+) {
   const presentationsToCreate: Array<PresentationToCreate> = []
 
   // We map all credentials for a input descriptor to the different subject ids. Each subjectId will need
@@ -155,6 +231,12 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
       }
     }
   }
+
+  assertSupportedPresentationFormats({
+    presentationsToCreate,
+    presentationDefinition: options?.presentationDefinition,
+    formatOverride: options?.formatOverride,
+  })
 
   return presentationsToCreate
 }
