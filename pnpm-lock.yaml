@@ -214,16 +214,16 @@ importers:
         version: 5.9.3
       undici:
         specifier: ^6.20.1
-        version: 6.23.0
+        version: 6.27.0
       vite:
         specifier: ^8.0.16
-        version: 8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3)
+        version: 8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3)
       vite-node:
         specifier: ^5.3.0
-        version: 5.3.0(@types/node@20.19.31)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3)
+        version: 5.3.0(@types/node@20.19.31)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.7(@types/node@20.19.31)(@vitest/coverage-v8@4.1.7)(vite@8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.7(@types/node@20.19.31)(@vitest/coverage-v8@4.1.7)(vite@8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3))
       ws:
         specifier: 'catalog:'
         version: 8.20.0
@@ -241,7 +241,7 @@ importers:
         version: 0.6.0
       inquirer:
         specifier: ^8.2.7
-        version: 8.2.7(@types/node@26.0.1)
+        version: 8.2.7(@types/node@26.1.1)
     devDependencies:
       '@credo-ts/anoncreds':
         specifier: workspace:*
@@ -269,7 +269,7 @@ importers:
         version: link:../packages/node
       '@hiero-did-sdk/client':
         specifier: ^0.1.8
-        version: 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+        version: 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       '@types/figlet':
         specifier: ^1.7.0
         version: 1.7.0
@@ -302,7 +302,7 @@ importers:
         version: 5.2.1
       inquirer:
         specifier: ^8.2.7
-        version: 8.2.7(@types/node@26.0.1)
+        version: 8.2.7(@types/node@26.1.1)
       jose:
         specifier: ^6.1.3
         version: 6.1.3
@@ -601,8 +601,8 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       ec-compression:
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: ^2.0.0
+        version: 2.0.0
       lru_map:
         specifier: ^0.4.1
         version: 0.4.1
@@ -792,31 +792,31 @@ importers:
         version: link:../core
       '@hashgraph/sdk':
         specifier: ^2.80.0
-        version: 2.80.0(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+        version: 2.80.0(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       '@hiero-did-sdk/anoncreds':
         specifier: ^0.1.8
-        version: 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+        version: 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       '@hiero-did-sdk/cache':
         specifier: ^0.1.8
-        version: 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+        version: 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       '@hiero-did-sdk/client':
         specifier: ^0.1.8
-        version: 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+        version: 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       '@hiero-did-sdk/core':
         specifier: ^0.1.8
-        version: 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+        version: 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       '@hiero-did-sdk/hcs':
         specifier: ^0.1.8
-        version: 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+        version: 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       '@hiero-did-sdk/publisher-internal':
         specifier: ^0.1.8
-        version: 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+        version: 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       '@hiero-did-sdk/registrar':
         specifier: ^0.1.8
-        version: 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+        version: 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       '@hiero-did-sdk/resolver':
         specifier: ^0.1.8
-        version: 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+        version: 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
@@ -1110,8 +1110,8 @@ importers:
         specifier: 'catalog:'
         version: 8.18.1
       form-data:
-        specifier: ^4.0.5
-        version: 4.0.5
+        specifier: ^4.0.6
+        version: 4.0.6
       multer:
         specifier: ^2.2.0
         version: 2.2.0
@@ -2259,11 +2259,11 @@ packages:
 
   '@esbuild-kit/core-utils@3.3.2':
     resolution: {integrity: sha512-sPRAnw9CdSsRmEtnsl2WXWdyquogVpB3yZ3dgwJfe8zrOzTsV7cJvmwrKVa+0ma5BoiGJ+BoqkMvawbayKUsqQ==}
-    deprecated: 'Merged into tsx: https://tsx.is'
+    deprecated: 'Merged into tsx: https://tsx.hirok.io'
 
   '@esbuild-kit/esm-loader@2.6.5':
     resolution: {integrity: sha512-FxEMIkJKnodyA1OaCUoEvbYRkoZlLZ4d/eXFu9Fh8CbBBgP5EmZxrfTRyN0qpXZ4vOvqnE5YdRdcrmUUXuU+dA==}
-    deprecated: 'Merged into tsx: https://tsx.is'
+    deprecated: 'Merged into tsx: https://tsx.hirok.io'
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -3944,6 +3944,7 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
     resolution: {integrity: sha512-QXJ6R8ENiZV2rPMbn06cw5JKwqUYN1kzVRbYfONqE1PEXx1noQ4md7uxr2zSczi0ubKkNcbyYDNtIMTZIhGzmQ==}
+    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
@@ -4114,8 +4115,8 @@ packages:
   '@types/node@25.6.0':
     resolution: {integrity: sha512-+qIYRKdNYJwY3vRCZMdJbPLJAtGjQBudzZzdzwQYkEPQd+PJGixUL5QfvCLDaULoLv+RhT3LDkwEfKaAkgSmNQ==}
 
-  '@types/node@26.0.1':
-    resolution: {integrity: sha512-fc3KiUoBt6kie0N9bIW3E47vZsuaMf0PM2AaUpLCLT0s/LvX1nxAim6Fc049cNxODPpGm6qRAuUOB86SkRuPQw==}
+  '@types/node@26.1.1':
+    resolution: {integrity: sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw==}
 
   '@types/object-inspect@1.13.0':
     resolution: {integrity: sha512-lwGTVESDDV+XsQ1pH4UifpJ1f7OtXzQ6QBOX2Afq2bM/T3oOt8hF6exJMjjIjtEWeAN2YAo25J7HxWh97CCz9w==}
@@ -4602,8 +4603,8 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
-  baseline-browser-mapping@2.10.40:
-    resolution: {integrity: sha512-BSSLZ9/Cjjv7Gtj5B68ZzXcXUg8iOf3fme+FCuh8rC/Go+Kmh8cox7M3A8dolou16s64QjLPOSdngh7GxXvkSw==}
+  baseline-browser-mapping@2.11.3:
+    resolution: {integrity: sha512-sbT0Ui/CZwyAyy7icT1Gw5P1LKRlFaHwaF6tDCW5YHq2X5SeeZFphBuIagopSfwSSZq3sQcbmEL072yphxm7ew==}
     engines: {node: '>=6.0.0'}
     hasBin: true
 
@@ -4643,8 +4644,8 @@ packages:
   bn.js@5.2.2:
     resolution: {integrity: sha512-v2YAxEmKaBLahNwE1mjp4WON6huMNeuDvagFZW+ASCuA/ku0bXR9hSMw0XpiqMoA3+rmnyck/tPRSFQkoC9Cuw==}
 
-  bn.js@5.2.4:
-    resolution: {integrity: sha512-QL7sb18rJ1PbdsKsqPA0guxL563vIMwRHgzNrW/uzQuRGN1Cjqd/wonUBAVqHox9KwzHA6vCbM0lXx3k4iQMow==}
+  bn.js@5.2.5:
+    resolution: {integrity: sha512-Vq886eXykuP5E6HcKSSStP3bJgrE6In5WKxVUvJ8XGpWWYs2xZHWqUwzCtGgEtBcxyd57KBFDPFoUfNzdaHCNg==}
 
   body-parser@2.2.2:
     resolution: {integrity: sha512-oP5VkATKlNwcgvxi0vM0p/D3n2C3EReYVX+DNYs5TjZFn/oQt2j+4sVJtSMr18pdRr8wjTcBl6LoV+FUwzPmNA==}
@@ -4686,8 +4687,8 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
-  browserslist@4.28.4:
-    resolution: {integrity: sha512-MTc8i/x9jBQd1iMw2CFGS+rwMa07eYjLR0CCTLDACl9xhxy+nIs3KeML/biicXtk9JrZ6dnnTatmc7ErPXIxqw==}
+  browserslist@4.28.7:
+    resolution: {integrity: sha512-JxV13hNrFxqjOc8alRbq9dK1MM79NEXYpma2B2J4wAtpWS5zIEIKqWPGCl7N4o7Uc7B7itylh7SuDujATRyyTw==}
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
@@ -4778,8 +4779,8 @@ packages:
   caniuse-lite@1.0.30001781:
     resolution: {integrity: sha512-RdwNCyMsNBftLjW6w01z8bKEvT6e/5tpPVEgtn22TiLGlstHOVecsX2KHFkD5e/vRnIE4EGzpuIODb3mtswtkw==}
 
-  caniuse-lite@1.0.30001800:
-    resolution: {integrity: sha512-MMHtuAz9Ys840zAY5F4k6fV5GaivZ9sPk+nz0mY+GYVzRBnYkN0mpqkSR92oWRQ19yQWo4HvBV/FnC16AJX8MA==}
+  caniuse-lite@1.0.30001806:
+    resolution: {integrity: sha512-72Cuvd95zbSYPKq6Fhg8eDJRlzgWDf7/mtoZv6Qe/DYNCEBdNxoA3+rZAU2ZhGCpZlns3EssFavaZomckT5Uuw==}
 
   canonicalize@1.0.8:
     resolution: {integrity: sha512-0CNTVCLZggSh7bc5VkX5WWPWO+cyZbNd07IHIsSXLia/eAq+r836hgk+8BKoEh7949Mda87VUOitx5OddVj64A==}
@@ -5386,8 +5387,8 @@ packages:
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
 
-  ec-compression@1.0.0:
-    resolution: {integrity: sha512-3ukz0jtN4JfOYVTk0Jc0NfRtbHUny0ZQVR5VvMOXmor6b2Nk/5TuikkHHp2AakXp1/HEd9btyhyFCSN6S6c2eA==}
+  ec-compression@2.0.0:
+    resolution: {integrity: sha512-FxmFasfn5+aTZxwsODAYcuFQalrRkpphWSm56UW3XuT9wyo6z2mW8fjajHortO8xYxYzzoUHqfEf3JJb32zMgw==}
 
   ed25519-signature-2018-context@1.1.0:
     resolution: {integrity: sha512-ppDWYMNwwp9bploq0fS4l048vHIq41nWsAbPq6H4mNVx9G/GxW3fwg4Ln0mqctP13MoEpREK7Biz8TbVVdYXqA==}
@@ -5398,8 +5399,8 @@ packages:
   electron-to-chromium@1.5.325:
     resolution: {integrity: sha512-PwfIw7WQSt3xX7yOf5OE/unLzsK9CaN2f/FvV3WjPR1Knoc1T9vePRVV4W1EM301JzzysK51K7FNKcusCr0zYA==}
 
-  electron-to-chromium@1.5.383:
-    resolution: {integrity: sha512-I2484/KkAvl8lm9VyjH2JnbOIV0d/UCqT7gbzs6l+o6Vmn9wgB66uVcKX+Vk6HrXtY6fbWTOEXuv8waDTuFNCw==}
+  electron-to-chromium@1.5.396:
+    resolution: {integrity: sha512-yHiw2Y3C3H9U6TMbOfoWK/BPreiOPXRfTWPBwQBoZG6/8TB6eOPnsy5oaRYuatR7Fw2SJ4kKforgufeo7fq0EQ==}
 
   elliptic@6.6.1:
     resolution: {integrity: sha512-RaddvvMatK2LJHqFJ+YA4WysVN5Ita9E35botqIYspQ4TkRAlCicdzKOjlyv/1Za5RyTNn7di//eEV0uTAfe3g==}
@@ -5643,8 +5644,8 @@ packages:
   fast-uri@3.1.0:
     resolution: {integrity: sha512-iPeeDKJSWf4IEOasVVrknXpaBV0IApz/gp7S2bb7Z4Lljbl2MGJRqInZiUrQwV16cpzw/D3S5j5Julj/gT52AA==}
 
-  fast-xml-parser@4.5.6:
-    resolution: {integrity: sha512-Yd4vkROfJf8AuJrDIVMVmYfULKmIJszVsMv7Vo71aocsKgFxpdlpSHXSaInvyYfgw2PRuObQSW2GFpVMUjxu9A==}
+  fast-xml-parser@4.5.7:
+    resolution: {integrity: sha512-a6Qh1RMCNbSrU1+sAyAAZH3rTe+OaWJbNZIq0S+ifZciUUOQtlVxBJwoTUE2bYhysmG/RYyI5WJFIKdBahJdrQ==}
     hasBin: true
 
   fastq@1.20.1:
@@ -5757,8 +5758,8 @@ packages:
     resolution: {integrity: sha512-f0cRzm6dkyVYV3nPoooP8XlccPQukegwhAnpoLcXy+X+A8KfpGOoXwDr9FLZd3wzgLaBGQBE3lY93Zm/i1JvIQ==}
     engines: {node: '>= 6'}
 
-  form-data@4.0.5:
-    resolution: {integrity: sha512-8RipRLol37bNs2bhoV67fiTEvdTrbMUYcFTiy3+wuuOnUog2QBHCZWXDRijWQfAkhBj2Uf5UnVaiWwA5vdd82w==}
+  form-data@4.0.6:
+    resolution: {integrity: sha512-vKatAh4SlVfgbv+YtmhiRjhEMJsYpsG1Y2rMQtR+SVSbytsSD1YGzDIcrAJmdFec88u/+VoGmxnl+80gL1tRCQ==}
     engines: {node: '>= 6'}
 
   format-util@1.0.5:
@@ -5960,10 +5961,6 @@ packages:
 
   hash.js@1.1.7:
     resolution: {integrity: sha512-taOaskGt4z4SOANNseOviYDvjEJinIkRgmp7LbKP2YTTmVxWBl87s/uzK9r+44BclBSp2X7K1hqeNfz9JbBeXA==}
-
-  hasown@2.0.2:
-    resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
-    engines: {node: '>= 0.4'}
 
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
@@ -7224,12 +7221,12 @@ packages:
   node-releases@2.0.36:
     resolution: {integrity: sha512-TdC8FSgHz8Mwtw9g5L4gR/Sh9XhSP/0DEkQxfEFXOpiul5IiHgHan2VhYYb6agDSfp4KuvltmGApc8HMgUrIkA==}
 
-  node-releases@2.0.50:
-    resolution: {integrity: sha512-J6l92tKHX6w8Jy5nO1Vuc01NoIiRGi/d6qBKVxh+IQ8Cr3b6HbVNfKiF8ZpFKufTwpwxMmce2W3iQZ861ZRyTg==}
+  node-releases@2.0.51:
+    resolution: {integrity: sha512-wRNIrw4DmVLKQlbgOMdkMx27Wrpzes2hh5Jtbi2bjPd+4wJstWIqP5A+lscnqbm0xxmT5Bpg8Lec5ItEBwx6BQ==}
     engines: {node: '>=18'}
 
-  node-stream-zip@1.15.0:
-    resolution: {integrity: sha512-LN4fydt9TqhZhThkZIVQnF9cwjU3qmUH9h78Mx/K7d3VvfRqqwthLwJEUOEL0QPZ0XQmNN7be5Ggit5+4dq3Bw==}
+  node-stream-zip@1.16.0:
+    resolution: {integrity: sha512-ObaRrRoR8T68wF6suxHd7R4XQNamij6ZQHrwG7Dx1D2zeHcDNLsIOBcWrIwtDm7AsCXBguaPHgXhcjxDa2szrg==}
     engines: {node: '>=0.12.0'}
 
   normalize-path@3.0.0:
@@ -8120,12 +8117,12 @@ packages:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
 
-  shell-quote@1.8.3:
-    resolution: {integrity: sha512-ObmnIF4hXNg1BqhnHmgbDETF8dLPCggZWBjkQfhZpbszZnYur5DUljTcCHii5LC3J5E0yeO/1LIMyH+UvHQgyw==}
+  shell-quote@1.10.0:
+    resolution: {integrity: sha512-w1aiOKwKuRgtwAReIIj89puqg+I7GvX4IbLrvmhXbzQsj1+Zwi4VO3+fa6ZF91TWSjIxoEkKnMeHcLEODK5ZXA==}
     engines: {node: '>= 0.4'}
 
-  shell-quote@1.9.0:
-    resolution: {integrity: sha512-Iov+JwFv/2HcTpcwNMKd8+IWNb8tboQJNQTkAY/LLVK7gGH9jy+LGkVqPxfekHl+yMmiqXszdGWXgkfml7hjqA==}
+  shell-quote@1.8.3:
+    resolution: {integrity: sha512-ObmnIF4hXNg1BqhnHmgbDETF8dLPCggZWBjkQfhZpbszZnYur5DUljTcCHii5LC3J5E0yeO/1LIMyH+UvHQgyw==}
     engines: {node: '>= 0.4'}
 
   shell@0.12.0:
@@ -8460,8 +8457,8 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  terser@5.48.0:
-    resolution: {integrity: sha512-J/9An6vs9Us6wKRriSFXBWdRZapREHqFzdNUKk0pmu804EMR6dr6winwo7e5JDxN4xahxQsuysyYFwlwj4XN/Q==}
+  terser@5.49.0:
+    resolution: {integrity: sha512-SNiDnXyHSrxVcIOtVbULzcTmniUiwcV7Nwdyj1twVubeTmbjoa8p69KKDpfkdoOavuM4/GRm1+ykI8qqnavHoA==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -8720,8 +8717,12 @@ packages:
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
-  undici@6.23.0:
-    resolution: {integrity: sha512-VfQPToRA5FZs/qJxLIinmU59u0r7LXqoJkCzinq3ckNJp3vKEh7jTWN589YQ5+aoAC/TGRLyJLCPKcLQbM8r9g==}
+  undici@6.27.0:
+    resolution: {integrity: sha512-YmfV3YnEDzXRC5lZ2jWtWWHKGUm1zIt8AhesR1tens+HTNv+YZlN/dp6G727LOvMJ8xjP9Be7Y2Sdr96LDm+pg==}
+    engines: {node: '>=18.17'}
+
+  undici@6.28.0:
+    resolution: {integrity: sha512-LIY910g9TI13YS95lrMFrs8Rm/u/irgHeTWoKCoteeJ04CUJ92eEfj0rVn+7VKMPBpUPiUoBKfhNyLI23EE/KA==}
     engines: {node: '>=18.17'}
 
   unicode-canonical-property-names-ecmascript@2.0.1:
@@ -9094,8 +9095,8 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@7.5.11:
-    resolution: {integrity: sha512-zS54Oen9bITtp7kp2XM3AydrCIq1D+HwJOuH+c+e4LfpL/lotP5osijd+UoMnxwAam1GN8R4KtLAyIrIcBNpiA==}
+  ws@7.5.13:
+    resolution: {integrity: sha512-rsKI6xDBFVf4r/x8XyChGK04QR/XHroxs/jUcoWvtEZM8TPU/X/uIY9B1CsSzYws9ZJb/6bbBu7dPhFW00CAoA==}
     engines: {node: '>=8.3.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -9362,7 +9363,7 @@ snapshots:
     dependencies:
       '@babel/compat-data': 7.29.7
       '@babel/helper-validator-option': 7.29.7
-      browserslist: 4.28.4
+      browserslist: 4.28.7
       lru-cache: 5.1.1
       semver: 6.3.1
 
@@ -10684,7 +10685,7 @@ snapshots:
   '@digitalcredentials/http-client@5.0.4':
     dependencies:
       ky: 1.14.3
-      undici: 6.23.0
+      undici: 6.28.0
 
   '@digitalcredentials/jsonld-signatures@12.0.1':
     dependencies:
@@ -11080,7 +11081,7 @@ snapshots:
       '@ethersproject/bytes': 5.8.0
       '@ethersproject/logger': 5.8.0
       '@ethersproject/properties': 5.8.0
-      bn.js: 5.2.4
+      bn.js: 5.2.5
       elliptic: 6.6.1
       hash.js: 1.1.7
 
@@ -11435,7 +11436,7 @@ snapshots:
       protobufjs: 7.5.4
       strip-ansi: 7.1.2
 
-  '@hashgraph/sdk@2.80.0(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hashgraph/sdk@2.80.0(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
       '@ethersproject/abi': 5.8.0
       '@ethersproject/bignumber': 5.8.0
@@ -11447,7 +11448,7 @@ snapshots:
       ansi-regex: 6.2.2
       ansi-styles: 6.2.3
       bignumber.js: 9.1.1
-      bn.js: 5.2.4
+      bn.js: 5.2.5
       crypto-js: 4.2.0
       debug: 4.4.1
       js-base64: 3.7.4
@@ -11463,10 +11464,10 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/anoncreds@0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hiero-did-sdk/anoncreds@0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
-      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/hcs': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/hcs': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       '@hiero-did-sdk/zstd': 0.1.8
       buffer: 6.0.3
     transitivePeerDependencies:
@@ -11475,27 +11476,27 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/cache@0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hiero-did-sdk/cache@0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
-      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
     transitivePeerDependencies:
       - bn.js
       - expo-crypto
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/client@0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hiero-did-sdk/client@0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.80.0(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hashgraph/sdk': 2.80.0(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
     transitivePeerDependencies:
       - bn.js
       - expo-crypto
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/core@0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hiero-did-sdk/core@0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.80.0(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hashgraph/sdk': 2.80.0(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       '@scure/base': 1.2.6
       buffer: 6.0.3
       cbor-x: 1.6.0
@@ -11510,12 +11511,12 @@ snapshots:
     dependencies:
       buffer: 6.0.3
 
-  '@hiero-did-sdk/hcs@0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hiero-did-sdk/hcs@0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.80.0(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/cache': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/client': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hashgraph/sdk': 2.80.0(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/cache': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/client': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       '@hiero-did-sdk/crypto': 0.1.8
       '@hiero-did-sdk/zstd': 0.1.8
       buffer: 6.0.3
@@ -11525,9 +11526,9 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/lifecycle@0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hiero-did-sdk/lifecycle@0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
-      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -11535,12 +11536,12 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/messages@0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hiero-did-sdk/messages@0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.80.0(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/lifecycle': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/resolver': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hashgraph/sdk': 2.80.0(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/lifecycle': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/resolver': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -11548,10 +11549,10 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/publisher-internal@0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hiero-did-sdk/publisher-internal@0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.80.0(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hashgraph/sdk': 2.80.0(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -11559,16 +11560,16 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/registrar@0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hiero-did-sdk/registrar@0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.80.0(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/lifecycle': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/messages': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/publisher-internal': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/resolver': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/signer-internal': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/verifier-internal': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hashgraph/sdk': 2.80.0(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/lifecycle': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/messages': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/publisher-internal': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/resolver': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/signer-internal': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/verifier-internal': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -11576,13 +11577,13 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/resolver@0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hiero-did-sdk/resolver@0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.80.0(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/client': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/hcs': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/verifier-internal': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hashgraph/sdk': 2.80.0(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/client': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/hcs': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/verifier-internal': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -11590,10 +11591,10 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/signer-internal@0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hiero-did-sdk/signer-internal@0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.80.0(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hashgraph/sdk': 2.80.0(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -11601,10 +11602,10 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-did-sdk/verifier-internal@0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
+  '@hiero-did-sdk/verifier-internal@0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))':
     dependencies:
-      '@hashgraph/sdk': 2.80.0(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
-      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.4)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hashgraph/sdk': 2.80.0(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
+      '@hiero-did-sdk/core': 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(@react-native-community/cli@10.2.7(@babel/core@7.29.7))(react@18.3.1))
       buffer: 6.0.3
     transitivePeerDependencies:
       - bn.js
@@ -11639,12 +11640,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.19.31
 
-  '@inquirer/external-editor@1.0.3(@types/node@26.0.1)':
+  '@inquirer/external-editor@1.0.3(@types/node@26.1.1)':
     dependencies:
       chardet: 2.1.1
       iconv-lite: 0.7.2
     optionalDependencies:
-      '@types/node': 26.0.1
+      '@types/node': 26.1.1
 
   '@ioredis/commands@1.5.1': {}
 
@@ -11727,7 +11728,7 @@ snapshots:
     dependencies:
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 26.0.1
+      '@types/node': 26.1.1
       '@types/yargs': 15.0.20
       chalk: 4.1.2
     optional: true
@@ -11736,7 +11737,7 @@ snapshots:
     dependencies:
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 26.0.1
+      '@types/node': 26.1.1
       '@types/yargs': 16.0.11
       chalk: 4.1.2
     optional: true
@@ -12265,7 +12266,7 @@ snapshots:
       envinfo: 7.21.0
       execa: 1.0.0
       hermes-profile-transformer: 0.0.6
-      node-stream-zip: 1.15.0
+      node-stream-zip: 1.16.0
       ora: 5.4.1
       prompts: 2.4.2
       semver: 6.3.1
@@ -12302,7 +12303,7 @@ snapshots:
       '@react-native-community/cli-tools': 10.1.1
       chalk: 4.1.2
       execa: 1.0.0
-      fast-xml-parser: 4.5.6
+      fast-xml-parser: 4.5.7
       glob: 7.2.3
       ora: 5.4.1
     transitivePeerDependencies:
@@ -12340,7 +12341,7 @@ snapshots:
       nocache: 3.0.4
       pretty-format: 26.6.2
       serve-static: 1.16.3
-      ws: 7.5.11
+      ws: 7.5.13
     transitivePeerDependencies:
       - bufferutil
       - encoding
@@ -12358,7 +12359,7 @@ snapshots:
       open: 6.4.0
       ora: 5.4.1
       semver: 6.3.1
-      shell-quote: 1.9.0
+      shell-quote: 1.10.0
     transitivePeerDependencies:
       - encoding
     optional: true
@@ -13035,7 +13036,7 @@ snapshots:
 
   '@types/node-forge@1.3.14':
     dependencies:
-      '@types/node': 26.0.1
+      '@types/node': 26.1.1
 
   '@types/node@12.20.55': {}
 
@@ -13051,7 +13052,7 @@ snapshots:
     dependencies:
       undici-types: 7.19.2
 
-  '@types/node@26.0.1':
+  '@types/node@26.1.1':
     dependencies:
       undici-types: 8.3.0
 
@@ -13118,7 +13119,7 @@ snapshots:
       '@types/cookiejar': 2.1.5
       '@types/methods': 1.1.4
       '@types/node': 25.6.0
-      form-data: 4.0.5
+      form-data: 4.0.6
 
   '@types/supertest@7.2.0':
     dependencies:
@@ -13187,7 +13188,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.7(@types/node@20.19.31)(@vitest/coverage-v8@4.1.7)(vite@8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3))
+      vitest: 4.1.7(@types/node@20.19.31)(@vitest/coverage-v8@4.1.7)(vite@8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3))
 
   '@vitest/expect@4.1.7':
     dependencies:
@@ -13198,13 +13199,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.7(vite@8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3))':
+  '@vitest/mocker@4.1.7(vite@8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3))':
     dependencies:
       '@vitest/spy': 4.1.7
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3)
+      vite: 8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3)
 
   '@vitest/pretty-format@4.1.7':
     dependencies:
@@ -13649,7 +13650,7 @@ snapshots:
 
   baseline-browser-mapping@2.10.10: {}
 
-  baseline-browser-mapping@2.10.40: {}
+  baseline-browser-mapping@2.11.3: {}
 
   bcrypt-pbkdf@1.0.2:
     dependencies:
@@ -13683,7 +13684,7 @@ snapshots:
 
   bn.js@5.2.2: {}
 
-  bn.js@5.2.4: {}
+  bn.js@5.2.5: {}
 
   body-parser@2.2.2:
     dependencies:
@@ -13742,13 +13743,13 @@ snapshots:
       node-releases: 2.0.36
       update-browserslist-db: 1.2.3(browserslist@4.28.1)
 
-  browserslist@4.28.4:
+  browserslist@4.28.7:
     dependencies:
-      baseline-browser-mapping: 2.10.40
-      caniuse-lite: 1.0.30001800
-      electron-to-chromium: 1.5.383
-      node-releases: 2.0.50
-      update-browserslist-db: 1.2.3(browserslist@4.28.4)
+      baseline-browser-mapping: 2.11.3
+      caniuse-lite: 1.0.30001806
+      electron-to-chromium: 1.5.396
+      node-releases: 2.0.51
+      update-browserslist-db: 1.2.3(browserslist@4.28.7)
 
   bser@2.1.1:
     dependencies:
@@ -13843,7 +13844,7 @@ snapshots:
 
   caniuse-lite@1.0.30001781: {}
 
-  caniuse-lite@1.0.30001800: {}
+  caniuse-lite@1.0.30001806: {}
 
   canonicalize@1.0.8: {}
 
@@ -14090,7 +14091,7 @@ snapshots:
 
   core-js-compat@3.49.0:
     dependencies:
-      browserslist: 4.28.4
+      browserslist: 4.28.7
 
   core-util-is@1.0.3: {}
 
@@ -14371,7 +14372,7 @@ snapshots:
 
   eastasianwidth@0.2.0: {}
 
-  ec-compression@1.0.0: {}
+  ec-compression@2.0.0: {}
 
   ed25519-signature-2018-context@1.1.0: {}
 
@@ -14379,7 +14380,7 @@ snapshots:
 
   electron-to-chromium@1.5.325: {}
 
-  electron-to-chromium@1.5.383: {}
+  electron-to-chromium@1.5.396: {}
 
   elliptic@6.6.1:
     dependencies:
@@ -14502,7 +14503,7 @@ snapshots:
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
-      hasown: 2.0.2
+      hasown: 2.0.4
 
   es-to-primitive@1.3.0:
     dependencies:
@@ -14789,7 +14790,7 @@ snapshots:
 
   fast-uri@3.1.0: {}
 
-  fast-xml-parser@4.5.6:
+  fast-xml-parser@4.5.7:
     dependencies:
       strnum: 1.1.2
     optional: true
@@ -14930,12 +14931,12 @@ snapshots:
       hasown: 2.0.4
       mime-types: 2.1.35
 
-  form-data@4.0.5:
+  form-data@4.0.6:
     dependencies:
       asynckit: 0.4.0
       combined-stream: 1.0.8
       es-set-tostringtag: 2.1.0
-      hasown: 2.0.2
+      hasown: 2.0.4
       mime-types: 2.1.35
 
   format-util@1.0.5: {}
@@ -15028,7 +15029,7 @@ snapshots:
       get-proto: 1.0.1
       gopd: 1.2.0
       has-symbols: 1.1.0
-      hasown: 2.0.2
+      hasown: 2.0.4
       math-intrinsics: 1.1.0
 
   get-package-type@0.1.0: {}
@@ -15150,10 +15151,6 @@ snapshots:
     dependencies:
       inherits: 2.0.4
       minimalistic-assert: 1.0.1
-
-  hasown@2.0.2:
-    dependencies:
-      function-bind: 1.1.2
 
   hasown@2.0.4:
     dependencies:
@@ -15301,9 +15298,9 @@ snapshots:
 
   ini@1.3.8: {}
 
-  inquirer@8.2.7(@types/node@26.0.1):
+  inquirer@8.2.7(@types/node@26.1.1):
     dependencies:
-      '@inquirer/external-editor': 1.0.3(@types/node@26.0.1)
+      '@inquirer/external-editor': 1.0.3(@types/node@26.1.1)
       ansi-escapes: 4.3.2
       chalk: 4.1.2
       cli-cursor: 3.1.0
@@ -15620,14 +15617,14 @@ snapshots:
 
   jest-serializer@27.5.1:
     dependencies:
-      '@types/node': 26.0.1
+      '@types/node': 26.1.1
       graceful-fs: 4.2.11
     optional: true
 
   jest-util@27.5.1:
     dependencies:
       '@jest/types': 27.5.1
-      '@types/node': 26.0.1
+      '@types/node': 26.1.1
       chalk: 4.1.2
       ci-info: 3.9.0
       graceful-fs: 4.2.11
@@ -15664,7 +15661,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 26.0.1
+      '@types/node': 26.1.1
       merge-stream: 2.0.0
       supports-color: 8.1.1
     optional: true
@@ -16204,7 +16201,7 @@ snapshots:
     dependencies:
       connect: 3.7.0
       debug: 2.6.9
-      ws: 7.5.11
+      ws: 7.5.13
       yargs: 17.7.3
     transitivePeerDependencies:
       - bufferutil
@@ -16214,7 +16211,7 @@ snapshots:
 
   metro-minify-terser@0.73.10:
     dependencies:
-      terser: 5.48.0
+      terser: 5.49.0
     optional: true
 
   metro-minify-terser@0.83.5:
@@ -16470,7 +16467,7 @@ snapshots:
       strip-ansi: 6.0.1
       temp: 0.8.3
       throat: 5.0.0
-      ws: 7.5.11
+      ws: 7.5.13
       yargs: 17.7.3
     transitivePeerDependencies:
       - bufferutil
@@ -16717,9 +16714,9 @@ snapshots:
 
   node-releases@2.0.36: {}
 
-  node-releases@2.0.50: {}
+  node-releases@2.0.51: {}
 
-  node-stream-zip@1.15.0:
+  node-stream-zip@1.16.0:
     optional: true
 
   normalize-path@3.0.0: {}
@@ -17836,10 +17833,10 @@ snapshots:
 
   shebang-regex@3.0.0: {}
 
-  shell-quote@1.8.3: {}
-
-  shell-quote@1.9.0:
+  shell-quote@1.10.0:
     optional: true
+
+  shell-quote@1.8.3: {}
 
   shell@0.12.0:
     dependencies:
@@ -18099,7 +18096,7 @@ snapshots:
       cookiejar: 2.1.4
       debug: 4.4.3
       fast-safe-stringify: 2.1.1
-      form-data: 4.0.5
+      form-data: 4.0.6
       formidable: 3.5.4
       methods: 1.1.2
       mime: 2.6.0
@@ -18240,7 +18237,7 @@ snapshots:
       commander: 2.20.3
       source-map-support: 0.5.21
 
-  terser@5.48.0:
+  terser@5.49.0:
     dependencies:
       '@jridgewell/source-map': 0.3.11
       acorn: 8.17.0
@@ -18270,7 +18267,7 @@ snapshots:
       ssh-remote-port-forward: 1.0.4
       tar-fs: 3.1.2
       tmp: 0.2.7
-      undici: 6.23.0
+      undici: 6.27.0
     transitivePeerDependencies:
       - bare-abort-controller
       - bare-buffer
@@ -18527,7 +18524,9 @@ snapshots:
 
   undici-types@8.3.0: {}
 
-  undici@6.23.0: {}
+  undici@6.27.0: {}
+
+  undici@6.28.0: {}
 
   unicode-canonical-property-names-ecmascript@2.0.1: {}
 
@@ -18574,9 +18573,9 @@ snapshots:
       escalade: 3.2.0
       picocolors: 1.1.1
 
-  update-browserslist-db@1.2.3(browserslist@4.28.4):
+  update-browserslist-db@1.2.3(browserslist@4.28.7):
     dependencies:
-      browserslist: 4.28.4
+      browserslist: 4.28.7
       escalade: 3.2.0
       picocolors: 1.1.1
 
@@ -18612,13 +18611,13 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite-node@5.3.0(@types/node@20.19.31)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3):
+  vite-node@5.3.0(@types/node@20.19.31)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3):
     dependencies:
       cac: 6.7.14
       es-module-lexer: 2.0.0
       obug: 2.1.1
       pathe: 2.0.3
-      vite: 7.3.6(@types/node@20.19.31)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3)
+      vite: 7.3.6(@types/node@20.19.31)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -18632,7 +18631,7 @@ snapshots:
       - tsx
       - yaml
 
-  vite@7.3.6(@types/node@20.19.31)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3):
+  vite@7.3.6(@types/node@20.19.31)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3):
     dependencies:
       esbuild: 0.27.2
       fdir: 6.5.0(picomatch@4.0.4)
@@ -18645,11 +18644,11 @@ snapshots:
       fsevents: 2.3.3
       jiti: 2.6.1
       lightningcss: 1.32.0
-      terser: 5.48.0
+      terser: 5.49.0
       tsx: 4.21.0
       yaml: 2.8.3
 
-  vite@8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3):
+  vite@8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3):
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.4
@@ -18661,14 +18660,14 @@ snapshots:
       esbuild: 0.27.2
       fsevents: 2.3.3
       jiti: 2.6.1
-      terser: 5.48.0
+      terser: 5.49.0
       tsx: 4.21.0
       yaml: 2.8.3
 
-  vitest@4.1.7(@types/node@20.19.31)(@vitest/coverage-v8@4.1.7)(vite@8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3)):
+  vitest@4.1.7(@types/node@20.19.31)(@vitest/coverage-v8@4.1.7)(vite@8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3)):
     dependencies:
       '@vitest/expect': 4.1.7
-      '@vitest/mocker': 4.1.7(vite@8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3))
+      '@vitest/mocker': 4.1.7(vite@8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3))
       '@vitest/pretty-format': 4.1.7
       '@vitest/runner': 4.1.7
       '@vitest/snapshot': 4.1.7
@@ -18685,7 +18684,7 @@ snapshots:
       tinyexec: 1.0.2
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
-      vite: 8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.48.0)(tsx@4.21.0)(yaml@2.8.3)
+      vite: 8.0.16(@types/node@20.19.31)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.49.0)(tsx@4.21.0)(yaml@2.8.3)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.19.31
@@ -18835,7 +18834,7 @@ snapshots:
 
   ws@7.5.10: {}
 
-  ws@7.5.11:
+  ws@7.5.13:
     optional: true
 
   ws@8.20.0: {}

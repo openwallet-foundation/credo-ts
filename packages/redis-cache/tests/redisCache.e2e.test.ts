@@ -51,6 +51,26 @@ describe('RedisCache', () => {
     await expect(redisCache.get(agentContextTwo, '6')).resolves.toBeNull()
   })
 
+  it('should get key "9" with global scope set by other agent', async () => {
+    await expect(redisCache.set(agentContext, '9', 'a', undefined, { scope: 'global' })).resolves.toBeUndefined()
+
+    await expect(redisCache.get(agentContextTwo, '9', { scope: 'global' })).resolves.toEqual('a')
+    // Global and context scopes are disjoint
+    await expect(redisCache.get(agentContext, '9')).resolves.toBeNull()
+
+    await expect(redisCache.remove(agentContext, '9', { scope: 'global' })).resolves.toBeUndefined()
+    await expect(redisCache.get(agentContextTwo, '9', { scope: 'global' })).resolves.toBeNull()
+  })
+
+  it('should not remove global keys when agent is destroyed', async () => {
+    await expect(redisCache.set(agentContext, '10', 'a', undefined, { scope: 'global' })).resolves.toBeUndefined()
+
+    await redisCache.destroy(agentContext)
+
+    await expect(redisCache.get(agentContext, '10', { scope: 'global' })).resolves.toEqual('a')
+    await expect(redisCache.remove(agentContext, '10', { scope: 'global' })).resolves.toBeUndefined()
+  })
+
   it('should not remove all keys when agent is destoryed', async () => {
     await expect(redisCache.set(agentContext, '7', 'a')).resolves.toBeUndefined()
     await expect(redisCache.set(agentContext, '8', 'a')).resolves.toBeUndefined()

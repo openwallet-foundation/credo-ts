@@ -60,7 +60,7 @@ import type {
   OpenId4VcJwtIssuer,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
-import { OpenId4VciCredentialFormatProfile } from '../shared'
+import { keyAttestationLevelSatisfies, OpenId4VciCredentialFormatProfile } from '../shared'
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
 import { getCredentialConfigurationsSupportedForScopes, getOfferedCredentials } from '../shared/issuerMetadataUtils'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
@@ -92,6 +92,7 @@ import type {
   OpenId4VciPreAuthorizedCodeFlowConfig,
   OpenId4VciSignCredentials,
   OpenId4VciSignW3cCredentials,
+  OpenId4VcUpdateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import {
   OpenId4VcIssuanceSessionRecord,
@@ -520,6 +521,9 @@ export class OpenId4VcIssuerService {
         : sessionOptions
 
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
+      // Optional: allows the `getDynamicIssuanceSession` callback to bind the session to an id it
+      // generated itself, as it cannot otherwise know the id of the session it just authorized.
+      id: sessionOptions.id,
       createdAt,
       expiresAt,
       issuerId: issuer.issuerId,
@@ -967,7 +971,7 @@ export class OpenId4VcIssuerService {
 
         if (
           expectedKeyStorage &&
-          !expectedKeyStorage.some((keyStorage) => keyAttestation.payload.key_storage?.includes(keyStorage))
+          !keyAttestationLevelSatisfies(expectedKeyStorage, keyAttestation.payload.key_storage)
         ) {
           throw new Oauth2ServerErrorResponseError({
             error: Oauth2ErrorCodes.InvalidProof,
@@ -977,9 +981,7 @@ export class OpenId4VcIssuerService {
 
         if (
           expectedUserAuthentication &&
-          !expectedUserAuthentication.some((userAuthentication) =>
-            keyAttestation.payload.user_authentication?.includes(userAuthentication)
-          )
+          !keyAttestationLevelSatisfies(expectedUserAuthentication, keyAttestation.payload.user_authentication)
         ) {
           throw new Oauth2ServerErrorResponseError({
             error: Oauth2ErrorCodes.InvalidProof,
@@ -1082,7 +1084,7 @@ export class OpenId4VcIssuerService {
 
           if (
             expectedKeyStorage &&
-            !expectedKeyStorage.some((keyStorage) => keyAttestation.payload.key_storage?.includes(keyStorage))
+            !keyAttestationLevelSatisfies(expectedKeyStorage, keyAttestation.payload.key_storage)
           ) {
             throw new Oauth2ServerErrorResponseError({
               error: Oauth2ErrorCodes.InvalidProof,
@@ -1092,9 +1094,7 @@ export class OpenId4VcIssuerService {
 
           if (
             expectedUserAuthentication &&
-            !expectedUserAuthentication.some((userAuthentication) =>
-              keyAttestation.payload.user_authentication?.includes(userAuthentication)
-            )
+            !keyAttestationLevelSatisfies(expectedUserAuthentication, keyAttestation.payload.user_authentication)
           ) {
             throw new Oauth2ServerErrorResponseError({
               error: Oauth2ErrorCodes.InvalidProof,
@@ -1226,6 +1226,10 @@ export class OpenId4VcIssuerService {
     return this.openId4VcIssuanceSessionRepository.getById(agentContext, issuanceSessionId)
   }
 
+  public async deleteIssuanceSessionById(agentContext: AgentContext, issuanceSessionId: string) {
+    await this.openId4VcIssuanceSessionRepository.deleteById(agentContext, issuanceSessionId)
+  }
+
   public async getAllIssuers(agentContext: AgentContext) {
     return this.openId4VcIssuerRepository.getAll(agentContext)
   }
@@ -1234,14 +1238,30 @@ export class OpenId4VcIssuerService {
     return this.openId4VcIssuerRepository.getByIssuerId(agentContext, issuerId)
   }
 
-  public async updateIssuer(agentContext: AgentContext, issuer: OpenId4VcIssuerRecord) {
-    if (issuer.signedMetadata) {
+  public async updateIssuer(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    options?: OpenId4VcUpdateIssuerOptions
+  ) {
+    // An explicitly provided signer takes precedence (including `null` to remove it). Otherwise the
+    // previously configured signer is reused, so the signed metadata stays in sync with the updated
+    // issuer metadata.
+    const metadataSigner =
+      options?.metadataSigner !== undefined
+        ? options.metadataSigner
+        : issuer.signedMetadata
+          ? decodeJwtIssuer(issuer.signedMetadata.signer)
+          : undefined
+
+    if (metadataSigner) {
       const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer, false)
       issuer.signedMetadata = await this.createSignedMetadata(
         agentContext,
         issuerMetadata.credentialIssuer,
-        decodeJwtIssuer(issuer.signedMetadata.signer)
+        metadataSigner
       )
+    } else {
+      issuer.signedMetadata = undefined
     }
 
     await this.openId4VcIssuerRepository.update(agentContext, issuer)

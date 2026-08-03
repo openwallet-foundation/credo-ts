@@ -50,13 +50,9 @@ export class AnonCredsRegistryService {
 
     if (registry.allowsCaching && useCache) {
       const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
-
-      // FIXME: in multi-tenancy it can be that the same cache is used for different agent contexts
-      // This may become a problem when resolving schemas, as you can get back a cache hit for a different
-      // tenant. We should just recommend disabling caching where the results are tenant specific
-      // We could allow providing a custom cache prefix in the resolver options, so that the cache key
-      // can be recognized in the cache implementation
-      const cachedSchema = await cache.get<GetSchemaReturn>(agentContext, cacheKey)
+      // Anoncreds objects are publicly anchored (verifiers in any context must be able to
+      // resolve them), so cached objects are shared across all agent contexts
+      const cachedSchema = await cache.get<GetSchemaReturn>(agentContext, cacheKey, { scope: 'global' })
 
       if (cachedSchema) {
         return {
@@ -98,7 +94,8 @@ export class AnonCredsRegistryService {
           cacheKey,
           result,
           // Set cache duration
-          cacheDurationInSeconds
+          cacheDurationInSeconds,
+          { scope: 'global' }
         )
       }
 
@@ -142,13 +139,9 @@ export class AnonCredsRegistryService {
 
     if (registry.allowsCaching && useCache) {
       const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
-
-      // FIXME: in multi-tenancy it can be that the same cache is used for different agent contexts
-      // This may become a problem when resolving schemas, as you can get back a cache hit for a different
-      // tenant. We should just recommend disabling caching where the results are tenant specific
-      // We could allow providing a custom cache prefix in the resolver options, so that the cache key
-      // can be recognized in the cache implementation
-      const cachedCredentialDefinition = await cache.get<GetCredentialDefinitionReturn>(agentContext, cacheKey)
+      const cachedCredentialDefinition = await cache.get<GetCredentialDefinitionReturn>(agentContext, cacheKey, {
+        scope: 'global',
+      })
 
       if (cachedCredentialDefinition) {
         return {
@@ -193,7 +186,8 @@ export class AnonCredsRegistryService {
           cacheKey,
           result,
           // Set cache duration
-          cacheDurationInSeconds
+          cacheDurationInSeconds,
+          { scope: 'global' }
         )
       }
 
@@ -237,15 +231,10 @@ export class AnonCredsRegistryService {
 
     if (registry.allowsCaching && useCache) {
       const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
-
-      // FIXME: in multi-tenancy it can be that the same cache is used for different agent contexts
-      // This may become a problem when resolving schemas, as you can get back a cache hit for a different
-      // tenant. We should just recommend disabling caching where the results are tenant specific
-      // We could allow providing a custom cache prefix in the resolver options, so that the cache key
-      // can be recognized in the cache implementation
       const cachedRevocationRegistryDefinition = await cache.get<GetRevocationRegistryDefinitionReturn>(
         agentContext,
-        cacheKey
+        cacheKey,
+        { scope: 'global' }
       )
 
       if (cachedRevocationRegistryDefinition) {
@@ -294,7 +283,8 @@ export class AnonCredsRegistryService {
           cacheKey,
           result,
           // Set cache duration
-          cacheDurationInSeconds
+          cacheDurationInSeconds,
+          { scope: 'global' }
         )
       }
 
@@ -339,13 +329,9 @@ export class AnonCredsRegistryService {
 
     if (registry.allowsCaching && useCache) {
       const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
-
-      // FIXME: in multi-tenancy it can be that the same cache is used for different agent contexts
-      // This may become a problem when resolving schemas, as you can get back a cache hit for a different
-      // tenant. We should just recommend disabling caching where the results are tenant specific
-      // We could allow providing a custom cache prefix in the resolver options, so that the cache key
-      // can be recognized in the cache implementation
-      const cachedRevocationStatusList = await cache.get<GetRevocationStatusListReturn>(agentContext, cacheKey)
+      const cachedRevocationStatusList = await cache.get<GetRevocationStatusListReturn>(agentContext, cacheKey, {
+        scope: 'global',
+      })
 
       if (cachedRevocationStatusList) {
         return {
@@ -368,7 +354,8 @@ export class AnonCredsRegistryService {
           cacheKey,
           result,
           // Set cache duration
-          cacheDurationInSeconds
+          cacheDurationInSeconds,
+          { scope: 'global' }
         )
       }
 

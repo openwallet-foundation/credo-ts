@@ -25,18 +25,22 @@ describe('DidsModuleConfig', () => {
       expect.any(PeerDidResolver),
       expect.any(JwkDidResolver),
     ])
+    expect(config.publicDidMethods).toEqual(['web', 'indy', 'sov', 'cheqd', 'hedera', 'webvh'])
   })
 
   test('sets values', () => {
     const registrars = [new PeerDidRegistrar(), new KeyDidRegistrar(), {} as DidRegistrar]
     const resolvers = [new PeerDidResolver(), new KeyDidResolver(), {} as DidResolver]
+    const publicDidMethods = ['web', 'ethr']
     const config = new DidsModuleConfig({
       registrars,
       resolvers,
+      publicDidMethods,
     })
 
     expect(config.registrars).toEqual(registrars)
     expect(config.resolvers).toEqual(resolvers)
+    expect(config.publicDidMethods).toEqual(publicDidMethods)
   })
 
   test('adds peer and key did resolvers and registrars if not provided in config', () => {

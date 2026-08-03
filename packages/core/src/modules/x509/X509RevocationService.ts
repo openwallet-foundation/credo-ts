@@ -1,10 +1,18 @@
-import * as x509 from '@peculiar/x509'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto } from '../../crypto/webcrypto'
 import { injectable } from '../../plugins'
-import { validateCriticalCrlExtensions } from './utils/criticalExtensions'
-import { fetchCrl, getCachedCrl, setCachedCrl } from './utils/crlFetcher'
-import { X509Certificate } from './X509Certificate'
+import { validateCriticalCrlExtensionIds } from './utils/criticalExtensions'
+import { fetchCrl, getCachedCrlSummary, setCachedCrlSummary } from './utils/crlFetcher'
+import {
+  buildCrlSummary,
+  CrlSummaryVerifiedCrl,
+  computeCrlSha256,
+  computeIssuerNameSha256,
+  computeIssuerPublicJwkThumbprint,
+  type VerifiedCrl,
+  type X509CrlSummary,
+} from './utils/crlSummary'
+import { X509Certificate, X509KeyUsage } from './X509Certificate'
 import { X509CertificateRevocationList, type X509CertificateRevocationListEntry } from './X509CertificateRevocationList'
 import { ALL_REVOCATION_REASONS_MASK, X509RevocationReason } from './X509CrlDistributionPoint'
 import { X509CrlUnavailableError, X509Error } from './X509Error'
@@ -25,10 +33,18 @@ export interface X509RevocationCheckResult {
 }
 
 /**
- * Default maximum cache TTL for a verified CRL (1 hour). The actual TTL is capped by the CRL's
- * `nextUpdate`.
+ * Default freshness period for a cached verified CRL summary (1 hour): how long it is served
+ * without being revalidated against freshly fetched CRL bytes.
  */
 const DEFAULT_CRL_CACHE_EXPIRY_SECONDS = 3600
+
+interface FetchCrlOptions {
+  url: string
+  issuerCertificate: X509Certificate
+  verificationDate: Date
+  options: { timeoutMs?: number; maxCrlSizeBytes?: number; crlCacheExpirySeconds?: number }
+  useCache: boolean
+}
 
 @injectable()
 // biome-ignore lint/complexity/noStaticOnlyClass: Service class pattern used in Credo
@@ -177,7 +193,7 @@ export class X509RevocationService {
       : X509RevocationService.calculateAllReasonsInDPs(distributionPoints)
 
     let coveredReasons = 0 // Bitmask of covered reason codes
-    const coveredCrls: X509CertificateRevocationList[] = []
+    const coveredCrls: VerifiedCrl[] = []
     const fetchedDPs: string[] = []
     const fetchErrors: string[] = [] // Track errors for DPs we couldn't fetch
     const unsupportedDPs: Array<{ reasons: number; feature: string }> = [] // Track DPs we can't process
@@ -436,12 +452,12 @@ export class X509RevocationService {
    * CRL covering this certificate. Returns a human-readable reason when the CRL must be rejected.
    */
   private static checkCrlApplicability(
-    crl: X509CertificateRevocationList,
+    crl: VerifiedCrl,
     certificate: X509Certificate
   ): { usable: true } | { usable: false; reason: string } {
     // RFC 5280 §6.3.3: a CRL bearing a critical extension we do not recognize MUST NOT be used, as
     // that extension may change the CRL's meaning (e.g. its scope) in ways we cannot account for.
-    const criticalExtensions = validateCriticalCrlExtensions(new x509.X509Crl(crl.rawCertificateRevocationList))
+    const criticalExtensions = validateCriticalCrlExtensionIds(crl.criticalExtensionIds)
     if (!criticalExtensions.isValid) {
       return {
         usable: false,
@@ -502,8 +518,7 @@ export class X509RevocationService {
     verificationDate: Date,
     options: X509RevocationCheckOptions
   ): Promise<
-    | { success: true; crl: X509CertificateRevocationList; usedUrl: string }
-    | { success: false; error: string; reachable: boolean }
+    { success: true; crl: VerifiedCrl; usedUrl: string } | { success: false; error: string; reachable: boolean }
   > {
     let lastError: string | undefined
 
@@ -548,9 +563,72 @@ export class X509RevocationService {
   }
 
   /**
-   * Download a single CRL (optionally from the cache), parse it, and verify it against the issuer.
+   * Obtain a verified CRL for a URL, preferring the cached verified summary.
+   *
+   * A summary is only reused when the provided issuer certificate carries the same subject name and
+   * public key the summary was verified against, its key usage (when present) permits cRLSign, and
+   * the summary's validity window covers `verificationDate` — together these reproduce exactly the
+   * issuer-dependent checks of {@link X509CertificateRevocationList.verify}, so a renewed or
+   * cross-certified issuer certificate (same name and key) reuses the summary directly. A reusable
+   * summary that is still fresh (`staleAt` in the future) is then trusted from the
+   * (application-controlled) cache without any network I/O; a stale one is revalidated on the full
+   * path, which reuses it without re-parsing when the freshly fetched bytes are unchanged.
+   *
+   * Anything else — a different key or subject name, a key usage without cRLSign, an out-of-window,
+   * missing or malformed summary — falls through to the full fetch-parse-verify path, which
+   * produces all failure results (an unreachable host is then an availability failure like any
+   * other fetch, also when revalidating a stale summary). On success the full path overwrites the
+   * summary with the new issuer binding.
    */
   private static async fetchVerifyAndCacheCrl(
+    agentContext: AgentContext,
+    fetchOptions: FetchCrlOptions,
+    webCrypto: CredoWebCrypto
+  ): Promise<{ success: true; crl: VerifiedCrl } | { success: false; error: string; reachable: boolean }> {
+    const { url, issuerCertificate, verificationDate, useCache } = fetchOptions
+
+    if (useCache) {
+      const summary = await getCachedCrlSummary(agentContext, url)
+      const verificationTime = verificationDate.getTime()
+      const issuerKeyUsage = issuerCertificate.keyUsage
+      if (
+        summary &&
+        summary.issuerNameSha256 === computeIssuerNameSha256(issuerCertificate) &&
+        summary.issuerPublicJwkThumbprint === computeIssuerPublicJwkThumbprint(issuerCertificate) &&
+        // Mirror verify()'s cRLSign check: key usage, when present and non-empty, must include cRLSign
+        !(issuerKeyUsage && issuerKeyUsage.length > 0 && !issuerKeyUsage.includes(X509KeyUsage.CrlSign)) &&
+        // Mirror verify()'s validity window checks (isNotYetValid/isExpired use strict comparisons)
+        verificationTime >= summary.thisUpdate &&
+        (summary.nextUpdate === undefined || verificationTime <= summary.nextUpdate)
+      ) {
+        if (summary.staleAt > verificationTime) {
+          return { success: true, crl: new CrlSummaryVerifiedCrl(summary) }
+        }
+
+        // Stale but otherwise reusable: revalidate on the full path. Only a summary that passed
+        // every reuse gate may be revalidated by bytes hash — hash-based reuse must not resurrect
+        // a summary bound to a different issuer or an uncovered validity window.
+        return X509RevocationService.fetchParseVerifyAndCacheCrl(
+          agentContext,
+          { ...fetchOptions, staleSummary: summary },
+          webCrypto
+        )
+      }
+    }
+
+    return X509RevocationService.fetchParseVerifyAndCacheCrl(agentContext, fetchOptions, webCrypto)
+  }
+
+  /**
+   * Download a single CRL, parse it, and verify it against the issuer. When `useCache` is enabled,
+   * a successful verification also caches a derived summary so subsequent checks can skip the
+   * download and the (potentially very expensive) parse via {@link fetchVerifyAndCacheCrl}.
+   *
+   * `staleSummary` is a cached summary that passed all reuse gates but whose `staleAt` has passed:
+   * when the fetched bytes hash to its `crlSha256`, the parse and verification are skipped and the
+   * summary is re-cached with a refreshed `staleAt`.
+   */
+  private static async fetchParseVerifyAndCacheCrl(
     agentContext: AgentContext,
     {
       url,
@@ -558,28 +636,44 @@ export class X509RevocationService {
       verificationDate,
       options,
       useCache,
-    }: {
-      url: string
-      issuerCertificate: X509Certificate
-      verificationDate: Date
-      options: { timeoutMs?: number; maxCrlSizeBytes?: number; crlCacheExpirySeconds?: number }
-      useCache: boolean
-    },
+      staleSummary,
+    }: FetchCrlOptions & { staleSummary?: X509CrlSummary },
     webCrypto: CredoWebCrypto
-  ): Promise<
-    { success: true; crl: X509CertificateRevocationList } | { success: false; error: string; reachable: boolean }
-  > {
-    // Whether we obtained the CRL bytes (from cache or a successful download).
+  ): Promise<{ success: true; crl: VerifiedCrl } | { success: false; error: string; reachable: boolean }> {
+    // Whether the CRL bytes were downloaded successfully.
     let reachable = false
 
     try {
-      // Use a cached (previously verified) CRL if available, otherwise fetch it.
-      const cachedData = useCache ? await getCachedCrl(agentContext, url) : null
-      const crlData =
-        cachedData ??
-        (await fetchCrl({ url, timeoutMs: options.timeoutMs, maxSizeBytes: options.maxCrlSizeBytes, agentContext }))
+      const crlData = await fetchCrl({
+        url,
+        timeoutMs: options.timeoutMs,
+        maxSizeBytes: options.maxCrlSizeBytes,
+        agentContext,
+      })
 
       reachable = true
+
+      // The globally configured expiry applies even when per-call revocation options omit it; the
+      // hardcoded default only kicks in when neither is set.
+      const crlCacheExpirySeconds =
+        options.crlCacheExpirySeconds ??
+        agentContext.dependencyManager.resolve(X509ModuleConfig).revocationCheck?.crlCacheExpirySeconds ??
+        DEFAULT_CRL_CACHE_EXPIRY_SECONDS
+      const staleAt = verificationDate.getTime() + crlCacheExpirySeconds * 1000
+
+      if (staleSummary && computeCrlSha256(crlData) === staleSummary.crlSha256) {
+        // Unchanged bytes: the stale summary was verified against exactly these bytes, so only its
+        // freshness deadline needs refreshing.
+        const refreshed: X509CrlSummary = { ...staleSummary, staleAt }
+        await setCachedCrlSummary(
+          agentContext,
+          url,
+          refreshed,
+          X509RevocationService.computeCacheTtlSeconds(staleSummary.nextUpdate, verificationDate, crlCacheExpirySeconds)
+        )
+
+        return { success: true, crl: new CrlSummaryVerifiedCrl(refreshed) }
+      }
 
       const crl = X509CertificateRevocationList.fromRaw(crlData)
 
@@ -589,15 +683,24 @@ export class X509RevocationService {
         return { success: false, error: verifyResult.error?.message ?? 'CRL verification failed', reachable }
       }
 
-      // Cache only freshly-fetched, fully-verified CRLs, with a TTL bounded by nextUpdate so an
-      // expired CRL is never served from the cache.
-      if (useCache && !cachedData) {
+      if (useCache) {
+        // The entry lives until the CRL's own `nextUpdate` so an expired CRL is never served from
+        // the cache; freshness within that window is governed by the summary's `staleAt`.
         const ttlSeconds = X509RevocationService.computeCacheTtlSeconds(
-          crl,
+          crl.nextUpdate?.getTime(),
           verificationDate,
-          options.crlCacheExpirySeconds
+          crlCacheExpirySeconds
         )
-        await setCachedCrl(agentContext, url, crlData, ttlSeconds)
+
+        // Cache the derived summary of every successfully verified CRL (fresh fetch or
+        // re-verification against a different issuer certificate). Best-effort: a malformed CRL
+        // (e.g. duplicate extensions) throws while deriving the summary; skip caching it so such
+        // CRLs keep surfacing that error at applicability time.
+        try {
+          await setCachedCrlSummary(agentContext, url, buildCrlSummary(crl, issuerCertificate, staleAt), ttlSeconds)
+        } catch {
+          // the summary cache is an optimization only
+        }
       }
 
       return { success: true, crl }
@@ -607,19 +710,19 @@ export class X509RevocationService {
   }
 
   /**
-   * Compute the cache TTL (in seconds) for a verified CRL: the time until its `nextUpdate`, capped
-   * at `maxSeconds` (default 1 hour). Returns 0 when the CRL is already at/after `nextUpdate` so it
-   * is not cached.
+   * Compute the cache TTL (in seconds) for a verified CRL summary: the full time until its
+   * `nextUpdate` (freshness within that window is governed by the summary's `staleAt`). Returns 0
+   * when the CRL is already at/after `nextUpdate` so it is not cached. A CRL without `nextUpdate`
+   * gets the freshness period itself as TTL, so its entry expires instead of being revalidated.
    */
   private static computeCacheTtlSeconds(
-    crl: X509CertificateRevocationList,
+    nextUpdate: number | undefined,
     verificationDate: Date,
-    maxSeconds = DEFAULT_CRL_CACHE_EXPIRY_SECONDS
+    crlCacheExpirySeconds: number
   ): number {
-    if (!crl.nextUpdate) return maxSeconds
+    if (nextUpdate === undefined) return crlCacheExpirySeconds
 
-    const secondsUntilNextUpdate = Math.floor((crl.nextUpdate.getTime() - verificationDate.getTime()) / 1000)
-    return Math.max(0, Math.min(maxSeconds, secondsUntilNextUpdate))
+    return Math.max(0, Math.floor((nextUpdate - verificationDate.getTime()) / 1000))
   }
 
   /**
@@ -684,7 +787,7 @@ export class X509RevocationService {
         ? issuerCertificate
         : X509Certificate.fromEncodedCertificate(issuerCertificate)
 
-    const result = await X509RevocationService.fetchVerifyAndCacheCrl(
+    const result = await X509RevocationService.fetchParseVerifyAndCacheCrl(
       agentContext,
       {
         url,
@@ -705,6 +808,8 @@ export class X509RevocationService {
         : new X509CrlUnavailableError(result.error)
     }
 
-    return result.crl
+    // Without `staleSummary` (and with `useCache: false`) the full path always returns the freshly
+    // parsed CRL, never a cached-summary view.
+    return result.crl as X509CertificateRevocationList
   }
 }
