@@ -8,7 +8,7 @@ import {
   W3cDataIntegrityProcessingErrorCode,
 } from '../W3cDataIntegrityError'
 import type { W3cDataIntegrityCryptosuiteProof } from '../W3cDataIntegrityProof'
-import { isXsdDateTimeStamp } from './iso8601-datetime'
+import { isXsdDateTimeStamp } from './iso8601Datetime'
 
 // ─── Exported validators ──────────────────────────────────────────────────────
 

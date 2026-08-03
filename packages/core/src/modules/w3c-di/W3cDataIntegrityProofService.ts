@@ -4,13 +4,13 @@ import { asArray, equalsIgnoreOrder } from '../../utils'
 import type { W3cDataIntegrityCryptosuite, W3cDataIntegrityProofVerificationInput } from './cryptosuites/types'
 import { omitUndefinedFields } from './proof-processing/normalisation'
 import { parseW3cDataIntegrityProofDocument } from './proof-processing/parsing'
-import { validateProofPurposeVerificationRelationship } from './proof-processing/proof-purpose-validation'
-import { validateProofChainStructure } from './proof-processing/proof-set-validation'
+import { validateProofPurposeVerificationRelationship } from './proof-processing/proofPurposeValidation'
+import { validateProofChainStructure } from './proof-processing/proofSetValidation'
 import {
   assertCreatedProofPostconditions,
   validateProofFieldFormats,
   validateProofRequiredMembers,
-} from './proof-processing/proof-validation'
+} from './proof-processing/proofValidation'
 
 import { W3cDataIntegrityCryptosuiteRegistry } from './W3cDataIntegrityCryptosuiteRegistry'
 import type {

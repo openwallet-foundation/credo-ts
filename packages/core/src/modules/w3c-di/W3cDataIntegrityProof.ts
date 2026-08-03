@@ -1,5 +1,5 @@
 import { isObject } from '../../utils/object'
-import { validateProofRequiredMembers } from './proof-processing/proof-validation'
+import { validateProofRequiredMembers } from './proof-processing/proofValidation'
 
 export type W3cDataIntegrityDomain = string | string[]
 export type W3cDataIntegrityPreviousProofReference = string | string[]
