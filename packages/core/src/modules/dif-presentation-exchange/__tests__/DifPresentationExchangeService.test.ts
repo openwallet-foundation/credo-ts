@@ -9,7 +9,7 @@ import { MdocDeviceResponse, MdocRecord, MdocRepository } from '../../mdoc'
 import { sprindFunkeTestVectorBase64Url } from '../../mdoc/__tests__/mdoc.fixtures'
 import { SdJwtVcRecord, SdJwtVcRepository } from '../../sd-jwt-vc'
 import {
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   W3cCredentialService,
   W3cCredentialsModuleConfig,
   W3cJsonLdVerifiablePresentation,
@@ -22,7 +22,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.StorageService, new InMemoryStorageService()],
     [InjectionSymbols.AgentDependencies, agentDependencies],
     [InjectionSymbols.Stop$, new Subject<boolean>()],
-    [SignatureSuiteToken, 'default'],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
   ],
 })

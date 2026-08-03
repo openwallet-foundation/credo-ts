@@ -31,7 +31,7 @@ import {
   InMemoryLruCache,
   KeyDidRegistrar,
   KeyDidResolver,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
@@ -94,7 +94,7 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [SignatureSuiteToken, 'default'],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
       CacheModuleConfig,
       new CacheModuleConfig({

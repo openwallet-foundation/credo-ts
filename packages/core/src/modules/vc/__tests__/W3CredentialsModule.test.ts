@@ -22,6 +22,9 @@ const dependencyManager = new DependencyManagerMock()
 describe('W3cCredentialsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const module = new W3cCredentialsModule()
+    const signatureSuiteRegistry = { registerSuites: vi.fn() }
+    vi.mocked(dependencyManager.resolve).mockReturnValue(signatureSuiteRegistry as never)
+    vi.mocked(dependencyManager.isRegistered).mockReturnValue(false)
 
     module.register(dependencyManager)
 
@@ -32,20 +35,24 @@ describe('W3cCredentialsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(W3cCredentialRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(SignatureSuiteRegistry)
 
-    expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(3)
+    expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(W3cCredentialsModuleConfig, module.config)
-
-    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(SignatureSuiteToken, {
-      suiteClass: Ed25519Signature2018,
-      verificationMethodTypes: ['Ed25519VerificationKey2018', 'Ed25519VerificationKey2020'],
-      proofType: 'Ed25519Signature2018',
-      supportedPublicJwkTypes: [Ed25519PublicJwk],
-    } satisfies SuiteInfo)
-    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(SignatureSuiteToken, {
-      suiteClass: Ed25519Signature2020,
-      verificationMethodTypes: ['Ed25519VerificationKey2020'],
-      proofType: 'Ed25519Signature2020',
-      supportedPublicJwkTypes: [Ed25519PublicJwk],
-    } satisfies SuiteInfo)
+    expect(dependencyManager.isRegistered).toHaveBeenCalledWith(SignatureSuiteToken)
+    expect(dependencyManager.resolve).toHaveBeenCalledWith(SignatureSuiteRegistry)
+    expect(signatureSuiteRegistry.registerSuites).toHaveBeenCalledTimes(1)
+    expect(signatureSuiteRegistry.registerSuites).toHaveBeenCalledWith([
+      {
+        suiteClass: Ed25519Signature2018,
+        verificationMethodTypes: ['Ed25519VerificationKey2018', 'Ed25519VerificationKey2020'],
+        proofType: 'Ed25519Signature2018',
+        supportedPublicJwkTypes: [Ed25519PublicJwk],
+      } satisfies SuiteInfo,
+      {
+        suiteClass: Ed25519Signature2020,
+        verificationMethodTypes: ['Ed25519VerificationKey2020'],
+        proofType: 'Ed25519Signature2020',
+        supportedPublicJwkTypes: [Ed25519PublicJwk],
+      } satisfies SuiteInfo,
+    ])
   })
 })

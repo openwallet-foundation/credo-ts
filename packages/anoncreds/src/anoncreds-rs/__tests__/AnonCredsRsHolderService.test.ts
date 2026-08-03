@@ -16,7 +16,7 @@ import {
   DidResolverService,
   DidsModuleConfig,
   InjectionSymbols,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   W3cCredentialRecord,
   W3cCredentialRepository,
   W3cCredentialSubject,
@@ -94,7 +94,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.Logger, testLogger],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
-    [SignatureSuiteToken, 'default'],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
   ],
   agentConfig,
 })

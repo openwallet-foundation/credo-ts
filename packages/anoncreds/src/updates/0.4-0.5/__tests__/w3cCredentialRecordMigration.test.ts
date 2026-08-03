@@ -8,7 +8,7 @@ import {
   DidsModuleConfig,
   EventEmitter,
   InjectionSymbols,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   W3cCredentialRepository,
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
@@ -81,7 +81,7 @@ const agentContext = getAgentContext({
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [AnonCredsHolderServiceSymbol, new AnonCredsRsHolderService()],
-    [SignatureSuiteToken, 'default'],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
   ],
   agentConfig,
 })
