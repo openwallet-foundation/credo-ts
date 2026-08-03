@@ -38,7 +38,6 @@ export interface JwtVpPresentationToCreate {
 
 export interface LdpVpPresentationToCreate {
   claimFormat: ClaimFormat.LdpVp
-  proofType?: string
   // NOTE: we only support one subject id at the moment as we don't have proper
   // support yet for adding multiple proofs to an LDP-VP
   subjectIds: undefined | [string]

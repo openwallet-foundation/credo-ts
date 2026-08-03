@@ -7,6 +7,7 @@ import {
 } from '@animo-id/pex'
 import type {
   SubmissionRequirementMatchFrom,
+  SubmissionRequirementMatchFromNested,
   SubmissionRequirementMatchInputDescriptor,
 } from '@animo-id/pex/dist/main/lib/evaluation/core'
 import { SubmissionRequirementMatchType } from '@animo-id/pex/dist/main/lib/evaluation/core/index.js'
@@ -168,51 +169,29 @@ function getSubmissionRequirements(
 ): Array<DifPexCredentialsForRequestRequirement> {
   const submissionRequirements: Array<DifPexCredentialsForRequestRequirement> = []
 
-  const matches = selectResults.matches as SubmissionRequirementMatchFrom[]
-  if (!matches.every((match) => match.type === SubmissionRequirementMatchType.SubmissionRequirement && match.from)) {
+  const matches = selectResults.matches as Array<SubmissionRequirementMatchFrom | SubmissionRequirementMatchFromNested>
+  if (!matches.every((match) => match.type === SubmissionRequirementMatchType.SubmissionRequirement)) {
     throw new DifPresentationExchangeError(
-      `Expected all matches to be of type '${SubmissionRequirementMatchType.SubmissionRequirement}' with 'from' key.`
+      `Expected all matches to be of type '${SubmissionRequirementMatchType.SubmissionRequirement}'.`
     )
   }
 
   // There are submission requirements, so we need to select the input_descriptors
   // based on the submission requirements
   presentationDefinition.submission_requirements?.forEach((submissionRequirement, submissionRequirementIndex) => {
-    // Check: if the submissionRequirement uses `from_nested`, as we don't support this yet
-    if (submissionRequirement.from_nested) {
-      throw new DifPresentationExchangeError(
-        "Presentation definition contains requirement using 'from_nested', which is not supported yet."
-      )
-    }
-
-    // Check if there's a 'from'. If not the structure is not as we expect it
-    if (!submissionRequirement.from) {
-      throw new DifPresentationExchangeError("Missing 'from' in submission requirement match")
-    }
-
     const match = matches.find((match) => match.id === submissionRequirementIndex)
     if (!match) {
       throw new Error(`Unable to find a match for submission requirement with index '${submissionRequirementIndex}'`)
     }
 
-    if (submissionRequirement.rule === Rules.All) {
-      const selectedSubmission = getSubmissionRequirementRuleAll(
-        submissionRequirement,
-        presentationDefinition,
-        selectResults.verifiableCredential,
-        match
-      )
-      submissionRequirements.push(selectedSubmission)
-    } else {
-      const selectedSubmission = getSubmissionRequirementRulePick(
-        submissionRequirement,
-        presentationDefinition,
-        selectResults.verifiableCredential,
-        match
-      )
+    const selectedSubmission = getSubmissionRequirement(
+      submissionRequirement,
+      presentationDefinition,
+      selectResults.verifiableCredential,
+      match
+    )
 
-      submissionRequirements.push(selectedSubmission)
-    }
+    submissionRequirements.push(selectedSubmission)
   })
 
   // Submission may have requirement that doesn't require a credential to be submitted (e.g. min: 0)
@@ -220,6 +199,117 @@ function getSubmissionRequirements(
   const requirementsWithCredentials = submissionRequirements.filter((requirement) => requirement.needsCount > 0)
 
   return requirementsWithCredentials
+}
+
+function getSubmissionRequirement(
+  submissionRequirement: SubmissionRequirement,
+  presentationDefinition: IPresentationDefinition,
+  verifiableCredentials: SubmissionEntryCredential[],
+  match: SubmissionRequirementMatchFrom | SubmissionRequirementMatchFromNested
+): DifPexCredentialsForRequestRequirement {
+  const hasFrom = Boolean(submissionRequirement.from)
+  const hasFromNested = Boolean(submissionRequirement.from_nested)
+
+  if (hasFrom === hasFromNested) {
+    throw new DifPresentationExchangeError(
+      "Submission requirement must contain exactly one of 'from' or 'from_nested'."
+    )
+  }
+
+  if (hasFrom) {
+    if (!isSubmissionRequirementMatchFrom(match)) {
+      throw new DifPresentationExchangeError("Expected submission requirement match to contain 'from'.")
+    }
+
+    if (submissionRequirement.rule === Rules.All) {
+      return getSubmissionRequirementRuleAll(
+        submissionRequirement,
+        presentationDefinition,
+        verifiableCredentials,
+        match
+      )
+    }
+
+    return getSubmissionRequirementRulePick(submissionRequirement, presentationDefinition, verifiableCredentials, match)
+  }
+
+  if (!submissionRequirement.from_nested) {
+    throw new DifPresentationExchangeError("Missing 'from_nested' in submission requirement match.")
+  }
+
+  if (!isSubmissionRequirementMatchFromNested(match)) {
+    throw new DifPresentationExchangeError("Expected submission requirement match to contain 'from_nested'.")
+  }
+
+  const nestedRequirements = submissionRequirement.from_nested.map((nestedSubmissionRequirement, nestedIndex) => {
+    const nestedMatch = match.from_nested.find((nestedMatch) => nestedMatch.id === nestedIndex)
+
+    if (!nestedMatch) {
+      throw new DifPresentationExchangeError(
+        `Unable to find nested match for submission requirement index '${nestedIndex}'.`
+      )
+    }
+
+    return getSubmissionRequirement(
+      nestedSubmissionRequirement,
+      presentationDefinition,
+      verifiableCredentials,
+      nestedMatch
+    )
+  })
+
+  return getSubmissionRequirementForNested(
+    submissionRequirement,
+    nestedRequirements,
+    submissionRequirement.from_nested.length
+  )
+}
+
+function getSubmissionRequirementForNested(
+  submissionRequirement: SubmissionRequirement,
+  nestedRequirements: DifPexCredentialsForRequestRequirement[],
+  nestedRequirementCount: number
+): DifPexCredentialsForRequestRequirement {
+  if (submissionRequirement.rule === Rules.All) {
+    return {
+      rule: Rules.All,
+      needsCount: nestedRequirements.reduce((count, requirement) => count + requirement.needsCount, 0),
+      name: submissionRequirement.name,
+      purpose: submissionRequirement.purpose,
+      submissionEntry: nestedRequirements.flatMap((requirement) => requirement.submissionEntry),
+      isRequirementSatisfied: nestedRequirements.every((requirement) => requirement.isRequirementSatisfied),
+    }
+  }
+
+  const needsCount = submissionRequirement.count ?? submissionRequirement.min ?? 1
+  const satisfiedNestedRequirements = nestedRequirements.filter((requirement) => requirement.isRequirementSatisfied)
+  const unsatisfiedNestedRequirements = nestedRequirements.filter((requirement) => !requirement.isRequirementSatisfied)
+
+  return {
+    rule: Rules.Pick,
+    needsCount: Math.min(needsCount, nestedRequirementCount),
+    name: submissionRequirement.name,
+    purpose: submissionRequirement.purpose,
+    isRequirementSatisfied: satisfiedNestedRequirements.length >= needsCount,
+    submissionEntry:
+      satisfiedNestedRequirements.length >= needsCount
+        ? satisfiedNestedRequirements.flatMap((requirement) => requirement.submissionEntry)
+        : [...satisfiedNestedRequirements, ...unsatisfiedNestedRequirements].flatMap(
+            (requirement) => requirement.submissionEntry
+          ),
+  }
+}
+
+function isSubmissionRequirementMatchFrom(
+  match: SubmissionRequirementMatchFrom | SubmissionRequirementMatchFromNested
+): match is SubmissionRequirementMatchFrom {
+  return 'from' in match
+}
+
+function isSubmissionRequirementMatchFromNested(
+  match: SubmissionRequirementMatchFrom | SubmissionRequirementMatchFromNested
+): match is SubmissionRequirementMatchFromNested {
+  return 'from_nested' in match
 }
 
 function getSubmissionRequirementsForAllInputDescriptors(

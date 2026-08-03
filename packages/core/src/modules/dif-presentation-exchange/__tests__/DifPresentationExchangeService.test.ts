@@ -1043,3 +1043,149 @@ describe('DifPresentationExchangeService', () => {
     )
   })
 })
+
+describe('DifPresentationExchangeService A1 conformance scaffolding', () => {
+  test.todo('uses ldp_vp.proof_type from presentation definition level for LDP-VP signing')
+
+  test.todo('intersects ldp_vp.proof_type constraints from presentation definition and input descriptors')
+
+  test.todo('selects a non-first authentication key when the first key is incompatible with requested VP suite')
+
+  test.todo('deterministically picks a compatible key and suite when multiple options are available')
+
+  test.todo('throws actionable error when no compatible key and ldp_vp.proof_type tuple exists')
+
+  test.todo('falls back to key default signature suite when no ldp_vp format constraint is present')
+
+  test.todo('never uses ldp_vc.proof_type for VP signing when both ldp_vc and ldp_vp are present')
+})
+
+describe('DifPresentationExchangeService A2 from_nested submission requirements', () => {
+  test('supports from_nested with rule all', async () => {
+    const nestedDefinition = {
+      ...presentationDefinition,
+      submission_requirements: [
+        {
+          rule: 'all',
+          from_nested: [
+            {
+              rule: 'pick',
+              count: 1,
+              from: 'B',
+            },
+            {
+              rule: 'pick',
+              count: 1,
+              from: 'C',
+            },
+          ],
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, nestedDefinition)
+
+    expect(credentialsForRequest.areRequirementsSatisfied).toBe(true)
+    expect(credentialsForRequest.requirements).toHaveLength(1)
+    expect(credentialsForRequest.requirements[0].rule).toBe('all')
+    expect(credentialsForRequest.requirements[0].needsCount).toBe(2)
+    expect(credentialsForRequest.requirements[0].isRequirementSatisfied).toBe(true)
+    expect(
+      credentialsForRequest.requirements[0].submissionEntry.map((entry) => entry.inputDescriptorId).sort()
+    ).toEqual(['99fce09b-a0d3-415b-b8a7-3eab8829babc', 'eu.europa.ec.eudi.pid.1'].sort())
+  })
+
+  test('supports from_nested with rule pick and count', async () => {
+    const nestedDefinition = {
+      ...presentationDefinition,
+      submission_requirements: [
+        {
+          rule: 'pick',
+          count: 2,
+          from_nested: [
+            {
+              rule: 'pick',
+              count: 1,
+              from: 'B',
+            },
+            {
+              rule: 'all',
+              from: 'D',
+            },
+          ],
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, nestedDefinition)
+
+    expect(credentialsForRequest.areRequirementsSatisfied).toBe(false)
+    expect(credentialsForRequest.requirements).toHaveLength(1)
+    expect(credentialsForRequest.requirements[0].rule).toBe('pick')
+    expect(credentialsForRequest.requirements[0].needsCount).toBe(2)
+    expect(credentialsForRequest.requirements[0].isRequirementSatisfied).toBe(false)
+    expect(
+      credentialsForRequest.requirements[0].submissionEntry.map((entry) => entry.inputDescriptorId).sort()
+    ).toEqual(['99fce09b-a0d3-415b-b8a7-3eab8829babc', 'org.iso.18013.5.1.mDL'].sort())
+  })
+
+  test('throws when both from and from_nested are present on one submission requirement', async () => {
+    const invalidDefinition = {
+      ...presentationDefinition,
+      submission_requirements: [
+        {
+          rule: 'pick',
+          count: 1,
+          from: 'B',
+          from_nested: [
+            {
+              rule: 'pick',
+              count: 1,
+              from: 'C',
+            },
+          ],
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    await expect(pexService.getCredentialsForRequest(agentContext, invalidDefinition)).rejects.toThrow()
+  })
+
+  test('supports nested from_nested trees', async () => {
+    const nestedDefinition = {
+      ...presentationDefinition,
+      submission_requirements: [
+        {
+          rule: 'all',
+          from_nested: [
+            {
+              rule: 'pick',
+              count: 1,
+              from_nested: [
+                {
+                  rule: 'pick',
+                  count: 1,
+                  from: 'B',
+                },
+              ],
+            },
+            {
+              rule: 'pick',
+              count: 1,
+              from: 'C',
+            },
+          ],
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, nestedDefinition)
+
+    expect(credentialsForRequest.areRequirementsSatisfied).toBe(true)
+    expect(credentialsForRequest.requirements).toHaveLength(1)
+    expect(credentialsForRequest.requirements[0].isRequirementSatisfied).toBe(true)
+    expect(
+      credentialsForRequest.requirements[0].submissionEntry.map((entry) => entry.inputDescriptorId).sort()
+    ).toEqual(['99fce09b-a0d3-415b-b8a7-3eab8829babc', 'eu.europa.ec.eudi.pid.1'].sort())
+  })
+})
