@@ -189,6 +189,21 @@ export class DifPresentationExchangeService {
       presentationDefinition,
       formatOverride: options.formatOverride,
     })
+
+    // Guard against callers bypassing selectCredentialsForRequest: if the PD has submission_requirements,
+    // verify the full selection satisfies them now — SR is stripped from per-subject PD slices below.
+    if (presentationDefinition.submission_requirements) {
+      const allCredentials = Object.values(options.credentialsForInputDescriptor)
+        .flat()
+        .map((c) => getSphereonOriginalVerifiableCredential(c.credentialRecord))
+      const selectResult = this.pex.selectFrom(presentationDefinition, allCredentials)
+      if (selectResult.areRequiredCredentialsPresent === Status.ERROR) {
+        throw new DifPresentationExchangeError(
+          'Selected credentials do not satisfy the submission_requirements of the presentation definition. Use selectCredentialsForRequest to ensure a valid selection.'
+        )
+      }
+    }
+
     for (const presentationToCreate of presentationsToCreate) {
       let ldpVpSigningOptions: { verificationMethod: VerificationMethod; proofType: string } | undefined
       // We create a presentation for each subject
