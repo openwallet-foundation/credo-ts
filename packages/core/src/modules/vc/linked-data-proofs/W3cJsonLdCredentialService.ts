@@ -272,10 +272,9 @@ export class W3cJsonLdCredentialService {
       const credentials = asArray(options.presentation.verifiableCredential)
       assertOnlyW3cJsonLdVerifiableCredentials(credentials)
 
-      for (const credential of credentials) {
+      credentials.forEach((credential) => {
         this.assertNoAnonCredsW3cCredentialProof(credential.proof)
-        await this.ensureCredentialIssuerTrusted(agentContext, credential, options.trustedIssuers)
-      }
+      })
 
       const credentialSuites = credentials.map((credential) =>
         this.getSignatureSuitesForCredential(agentContext, credential)
