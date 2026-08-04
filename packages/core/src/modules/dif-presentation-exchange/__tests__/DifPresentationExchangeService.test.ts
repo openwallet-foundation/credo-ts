@@ -1199,3 +1199,89 @@ describe('DifPresentationExchangeService A2 from_nested submission requirements'
     ).toEqual(['99fce09b-a0d3-415b-b8a7-3eab8829babc', 'eu.europa.ec.eudi.pid.1'].sort())
   })
 })
+
+describe('DifPresentationExchangeService C2 relational constraints', () => {
+  // These tests confirm @animo-id/pex@6.1.1 evaluates relational constraints without crashing.
+  // NOTE: subject_is_issuer / is_holder / same_subject generate WARN (not ERROR) during selectFrom,
+  // so they do not exclude credentials at selection time — only evaluatePresentation enforces them.
+
+  test('subject_is_issuer: required is processed without error during credential selection', async () => {
+    const pd = {
+      id: 'subject-is-issuer-test',
+      input_descriptors: [
+        {
+          id: 'pid',
+          constraints: {
+            subject_is_issuer: 'required' as const,
+            limit_disclosure: 'required' as const,
+            fields: [
+              {
+                path: ['$.vct'],
+                filter: { type: 'string', const: 'https://example.bmi.bund.de/credential/pid/1.0' },
+              },
+            ],
+          },
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const result = await pexService.getCredentialsForRequest(agentContext, pd)
+
+    // PEX generates WARN (not ERROR) for subject_is_issuer during selectFrom — credential is still returned.
+    // Full enforcement requires evaluatePresentation with a signed VP.
+    expect(result.requirements[0].submissionEntry[0].verifiableCredentials).toHaveLength(1)
+  })
+
+  test('is_holder: required is processed without error during credential selection', async () => {
+    const pd = {
+      id: 'is-holder-test',
+      input_descriptors: [
+        {
+          id: 'pid',
+          constraints: {
+            is_holder: [{ field_id: ['vct-field'], directive: 'required' as const }],
+            limit_disclosure: 'required' as const,
+            fields: [
+              {
+                id: 'vct-field',
+                path: ['$.vct'],
+                filter: { type: 'string', const: 'https://example.bmi.bund.de/credential/pid/1.0' },
+              },
+            ],
+          },
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const result = await pexService.getCredentialsForRequest(agentContext, pd)
+
+    expect(result.requirements[0].submissionEntry[0].verifiableCredentials).toHaveLength(1)
+  })
+
+  test('same_subject: required is processed without error during credential selection', async () => {
+    const pd = {
+      id: 'same-subject-test',
+      input_descriptors: [
+        {
+          id: 'pid',
+          constraints: {
+            same_subject: [{ field_id: ['given-name-field', 'family-name-field'], directive: 'required' as const }],
+            limit_disclosure: 'required' as const,
+            fields: [
+              { id: 'given-name-field', path: ['$.given_name'] },
+              { id: 'family-name-field', path: ['$.family_name'] },
+              {
+                path: ['$.vct'],
+                filter: { type: 'string', const: 'https://example.bmi.bund.de/credential/pid/1.0' },
+              },
+            ],
+          },
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const result = await pexService.getCredentialsForRequest(agentContext, pd)
+
+    expect(result.requirements[0].submissionEntry[0].verifiableCredentials).toHaveLength(1)
+  })
+})

@@ -121,6 +121,8 @@ export class DifPresentationExchangeService {
     presentations: VerifiablePresentation | VerifiablePresentation[],
     presentationSubmission?: DifPresentationExchangeSubmission
   ) {
+    // FIXME: constraints.statuses (credential status) is schema-validated only;
+    // @animo-id/pex has no runtime handler for it — active/revoked/suspended directives are silently ignored.
     const result = this.pex.evaluatePresentation(
       presentationDefinition,
       Array.isArray(presentations)
@@ -347,7 +349,8 @@ export class DifPresentationExchangeService {
         const descriptor = { ...d }
 
         // when multiple presentations are submitted, path should be $[0], $[1]
-        // FIXME: this should be addressed in the PEX/OID4VP lib.
+        // FIXME: PEX does not set $[n] paths for EXTERNAL multi-VP submissions.
+        // PEX PR #153 added $.vp. rewriting but did not address this case.
         // See https://github.com/Sphereon-Opensource/SIOP-OID4VP/issues/62
         if (
           presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.EXTERNAL &&
