@@ -1,33 +1,29 @@
-/**
- * Temporary compatibility aliases for the AnonCreds W3C credential rename.
- *
- * Major-version cleanup checklist (separate from DataIntegrity namespace):
- * 1. Delete this file:
- *    - packages/core/src/modules/vc/anoncreds-w3c-credential/deprecated.ts
- * 2. Stop exporting this file from the credential barrel:
- *    - packages/core/src/modules/vc/anoncreds-w3c-credential/index.ts
- * 3. Remove @deprecated getters:
- *    - packages/core/src/modules/vc/linked-data-proofs/models/W3cJsonLdVerifiableCredential.ts
- *      (dataIntegrityCryptosuites)
- *    - packages/core/src/modules/vc/linked-data-proofs/models/W3cJsonLdVerifiablePresentation.ts
- *      (dataIntegrityCryptosuites)
- * 4. Remove class/path compatibility alias:
- *    - packages/anoncreds/src/anoncreds-rs/AnonCredsDataIntegrityService.ts
- *
- * Notes:
- * - DataIntegrityProof (string proof type) is protocol-level and must remain.
- * - This checklist targets compatibility aliases only.
- * - Internal consumers should use canonical W3C credential symbols only.
- */
-
-export {
-  AnonCredsW3cCredentialProof as DataIntegrityProof,
-  type AnonCredsW3cCredentialProofOptions as DataIntegrityProofOptions,
-} from './AnonCredsW3cCredentialProof'
-export {
-  ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE as ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
-  type AnonCredsW3cCredentialCreatePresentation as AnoncredsDataIntegrityCreatePresentation,
-  AnonCredsW3cCredentialServiceSymbol as AnonCredsDataIntegrityServiceSymbol,
-  type AnonCredsW3cCredentialVerifyPresentation as AnoncredsDataIntegrityVerifyPresentation,
-  type IAnonCredsW3cCredentialService as IAnonCredsDataIntegrityService,
+import { AnonCredsW3cCredentialProof, type AnonCredsW3cCredentialProofOptions } from './AnonCredsW3cCredentialProof'
+import {
+  ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE,
+  type AnonCredsW3cCredentialCreatePresentation,
+  AnonCredsW3cCredentialServiceSymbol,
+  type AnonCredsW3cCredentialVerifyPresentation,
+  type IAnonCredsW3cCredentialService,
 } from './IAnonCredsW3cCredentialService'
+
+/** @deprecated Use {@link AnonCredsW3cCredentialProof} instead */
+export const DataIntegrityProof = AnonCredsW3cCredentialProof
+
+/** @deprecated Use {@link AnonCredsW3cCredentialProofOptions} instead */
+export type DataIntegrityProofOptions = AnonCredsW3cCredentialProofOptions
+
+/** @deprecated Use {@link ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE} instead */
+export const ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE = ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE
+
+/** @deprecated Use {@link AnonCredsW3cCredentialCreatePresentation} instead */
+export type AnoncredsDataIntegrityCreatePresentation = AnonCredsW3cCredentialCreatePresentation
+
+/** @deprecated Use {@link AnonCredsW3cCredentialServiceSymbol} instead */
+export const AnonCredsDataIntegrityServiceSymbol = AnonCredsW3cCredentialServiceSymbol
+
+/** @deprecated Use {@link AnonCredsW3cCredentialVerifyPresentation} instead */
+export type AnoncredsDataIntegrityVerifyPresentation = AnonCredsW3cCredentialVerifyPresentation
+
+/** @deprecated Use {@link IAnonCredsW3cCredentialService} instead */
+export type IAnonCredsDataIntegrityService = IAnonCredsW3cCredentialService
