@@ -17,7 +17,7 @@ export interface AnonCredsW3cCredentialProofOptions {
 }
 
 /**
- * VC1 anoncreds compatibility proof model.
+ * AnonCreds W3C compatibility proof model.
  *
  * Represents a `DataIntegrityProof`-shaped wire payload used by the anoncreds W3C credential support,
  * while keeping the credential-specific model separate from true linked-data proof types.

@@ -135,8 +135,8 @@ describe('W3cJsonLdCredentialsService', () => {
         W3cJsonLdVerifiablePresentation
       )
 
-      expect(vc.anoncredsW3cCredentialCryptosuites).toEqual(['anoncreds-2023'])
-      expect(vp.anoncredsW3cCredentialCryptosuites).toEqual(['anoncreds-2023'])
+      expect(vc.anonCredsW3cCredentialCryptosuites).toEqual(['anoncreds-2023'])
+      expect(vp.anonCredsW3cCredentialCryptosuites).toEqual(['anoncreds-2023'])
     })
 
     it('rejects DataIntegrityProof with non-anoncreds cryptosuite for credential and presentation', () => {

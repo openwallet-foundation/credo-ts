@@ -251,7 +251,7 @@ export class DidCommDifPresentationExchangeProofFormatService
     const verifyWithAnonCredsW3c = descriptorMap.every((descriptor) => descriptor.format === ClaimFormat.DiVp)
     if (!verifyWithAnonCredsW3c) return false
 
-    return presentation.anoncredsW3cCredentialCryptosuites.includes(ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE)
+    return presentation.anonCredsW3cCredentialCryptosuites.includes(ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE)
   }
 
   public async processPresentation(

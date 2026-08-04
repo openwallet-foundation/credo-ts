@@ -248,7 +248,7 @@ export class DifPresentationExchangeService {
           getSphereonOriginalVerifiableCredential(c.credential)
         )
 
-        const extraProofOptions = this.shouldSignUsingAnonCredsW3cService(presentationToCreate)
+        const extraProofOptions = this.shouldSignWithAnonCredsW3cService(presentationToCreate)
           ? {
               typeSupportsSelectiveDisclosure: true,
               type: `DataIntegrityProof.${ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE}`,
@@ -471,7 +471,7 @@ export class DifPresentationExchangeService {
    * and all credentials have an anoncreds W3C credential proof we default to
    * signing the presentation using the ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE
    */
-  private shouldSignUsingAnonCredsW3cService(
+  private shouldSignWithAnonCredsW3cService(
     presentationToCreate: PresentationToCreate,
     presentationSubmission?: DifPresentationExchangeSubmission
   ) {
@@ -485,13 +485,13 @@ export class DifPresentationExchangeService {
         )
       )
 
-    const credentialsAreSignedUsingAnonCredsW3c = presentationToCreate.verifiableCredentials.every(({ credential }) => {
+    const credentialsAreSignedWithAnonCredsW3c = presentationToCreate.verifiableCredentials.every(({ credential }) => {
       const firstCredential = credential.firstCredential
       if (firstCredential.claimFormat !== ClaimFormat.LdpVc) return false
-      return firstCredential.anoncredsW3cCredentialCryptosuites.includes(ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE)
+      return firstCredential.anonCredsW3cCredentialCryptosuites.includes(ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE)
     })
 
-    return validDescriptorFormat && credentialsAreSignedUsingAnonCredsW3c
+    return validDescriptorFormat && credentialsAreSignedWithAnonCredsW3c
   }
 
   private getPresentationSignCallback(agentContext: AgentContext, presentationToCreate: PresentationToCreate) {
@@ -535,7 +535,7 @@ export class DifPresentationExchangeService {
         return signedPresentation.encoded as W3CVerifiablePresentation
       }
       if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
-        if (this.shouldSignUsingAnonCredsW3cService(presentationToCreate, presentationSubmission)) {
+        if (this.shouldSignWithAnonCredsW3cService(presentationToCreate, presentationSubmission)) {
           // make sure the descriptors format properties are set correctly
           presentationSubmission.descriptor_map = presentationSubmission.descriptor_map.map((descriptor) => ({
             ...descriptor,

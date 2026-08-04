@@ -558,21 +558,21 @@ describe('DifPresentationExchangeService', () => {
     expect(
       (
         pexService as unknown as {
-          shouldSignUsingAnonCredsW3cService: (
+          shouldSignWithAnonCredsW3cService: (
             presentationToCreate: typeof bridgeEligiblePresentationToCreate
           ) => boolean
         }
-      ).shouldSignUsingAnonCredsW3cService(bridgeEligiblePresentationToCreate)
+      ).shouldSignWithAnonCredsW3cService(bridgeEligiblePresentationToCreate)
     ).toBe(true)
 
     expect(
       (
         pexService as unknown as {
-          shouldSignUsingAnonCredsW3cService: (
+          shouldSignWithAnonCredsW3cService: (
             presentationToCreate: typeof bridgeEligiblePresentationToCreate
           ) => boolean
         }
-      ).shouldSignUsingAnonCredsW3cService({
+      ).shouldSignWithAnonCredsW3cService({
         ...bridgeEligiblePresentationToCreate,
         claimFormat: ClaimFormat.DiVp,
       })

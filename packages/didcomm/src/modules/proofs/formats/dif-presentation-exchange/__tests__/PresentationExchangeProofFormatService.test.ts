@@ -210,7 +210,7 @@ describe('Presentation Exchange ProofFormatService', () => {
   })
 
   describe('Process Presentation', () => {
-    test('routes anoncreds VC1 bridge presentations through the anoncreds bridge service', async () => {
+    test('routes anoncreds W3C credential presentations through the anoncreds W3C credential service', async () => {
       type ProcessPresentationOptions = Parameters<
         DidCommDifPresentationExchangeProofFormatService['processPresentation']
       >[1]

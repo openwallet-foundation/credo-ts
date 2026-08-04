@@ -48,7 +48,7 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
     return proofArray.map((proof) => proof.type)
   }
 
-  public get anoncredsW3cCredentialCryptosuites(): Array<string> {
+  public get anonCredsW3cCredentialCryptosuites(): Array<string> {
     const proofArray = asArray(this.proof) ?? []
     return proofArray
       .filter(
@@ -57,9 +57,9 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
       .map((proof) => proof.cryptosuite)
   }
 
-  /** @deprecated Use anoncredsW3cCredentialCryptosuites */
+  /** @deprecated Use anonCredsW3cCredentialCryptosuites */
   public get dataIntegrityCryptosuites(): Array<string> {
-    return this.anoncredsW3cCredentialCryptosuites
+    return this.anonCredsW3cCredentialCryptosuites
   }
 
   public toJson() {
