@@ -1044,6 +1044,16 @@ describe('DifPresentationExchangeService', () => {
   })
 })
 
+describe('DifPresentationExchangeService A4 non-DID subject IDs', () => {
+  test.todo('credential with no credentialSubject.id falls back to holder DID for signing')
+
+  test.todo('credential with non-DID URI credentialSubject.id logs warning and falls back to holder DID')
+
+  test.todo('credential with DID credentialSubject.id uses that DID unchanged')
+
+  test.todo('getHolderDid throws when agent wallet contains no created DIDs')
+})
+
 describe('DifPresentationExchangeService A1 conformance scaffolding', () => {
   test.todo('uses ldp_vp.proof_type from presentation definition level for LDP-VP signing')
 

@@ -257,38 +257,38 @@ export class DifPresentationExchangeService {
           getSphereonOriginalVerifiableCredential(c.credential)
         )
 
-        const signUsingAnonCredsDataIntegrity = this.shouldSignUsingAnonCredsDataIntegrity(presentationToCreate)
+        if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
+          const signUsingAnonCredsDataIntegrity = this.shouldSignUsingAnonCredsDataIntegrity(presentationToCreate)
 
-        if (presentationToCreate.claimFormat === ClaimFormat.LdpVp && !signUsingAnonCredsDataIntegrity) {
-          // AnonCreds DI signing does not use LDP proofType and verificationMethod preselection.
-          if (!presentationToCreate.subjectIds) {
-            throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
-          }
+          if (!signUsingAnonCredsDataIntegrity) {
+            // AnonCreds DI signing does not use LDP proofType and verificationMethod preselection.
+            const verificationMethod = await this.getVerificationMethodForLdpVp(
+              agentContext,
+              presentationToCreate.subjectIds?.[0],
+              presentationDefinitionForSubject
+            )
 
-          const verificationMethod = await this.getVerificationMethodForLdpVp(
-            agentContext,
-            presentationToCreate.subjectIds[0],
-            presentationDefinitionForSubject
-          )
+            const proofType = this.getProofTypeForLdpVc(
+              agentContext,
+              presentationDefinitionForSubject,
+              verificationMethod
+            )
 
-          const proofType = this.getProofTypeForLdpVc(
-            agentContext,
-            presentationDefinitionForSubject,
-            verificationMethod
-          )
-
-          ldpVpSigningOptions = {
-            verificationMethod,
-            proofType,
+            ldpVpSigningOptions = {
+              verificationMethod,
+              proofType,
+            }
           }
         }
 
-        const extraProofOptions = signUsingAnonCredsDataIntegrity
-          ? {
-              typeSupportsSelectiveDisclosure: true,
-              type: `DataIntegrityProof.${ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE}`,
-            }
-          : {}
+        const extraProofOptions =
+          presentationToCreate.claimFormat === ClaimFormat.LdpVp &&
+          this.shouldSignUsingAnonCredsDataIntegrity(presentationToCreate)
+            ? {
+                typeSupportsSelectiveDisclosure: true,
+                type: `DataIntegrityProof.${ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE}`,
+              }
+            : {}
 
         const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
           presentationDefinitionForSubject,
@@ -551,14 +551,10 @@ export class DifPresentationExchangeService {
       }
 
       if (presentationToCreate.claimFormat === ClaimFormat.JwtVp) {
-        if (!presentationToCreate.subjectIds) {
-          throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
-        }
-
         // Determine a suitable verification method for the presentation
         const verificationMethod = await this.getVerificationMethodForSubjectId(
           agentContext,
-          presentationToCreate.subjectIds[0]
+          presentationToCreate.subjectIds?.[0]
         )
 
         const w3cPresentation = JsonTransformer.fromJSON(presentationInput, W3cPresentation)
@@ -595,10 +591,6 @@ export class DifPresentationExchangeService {
             ...presentation.toJSON(),
             presentation_submission: presentationSubmission,
           } as unknown as SphereonW3cVerifiablePresentation
-        }
-
-        if (!presentationToCreate.subjectIds) {
-          throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
         }
 
         if (!ldpVpSigningOptions) {
@@ -659,7 +651,7 @@ export class DifPresentationExchangeService {
     }
   }
 
-  private async getVerificationMethodForSubjectId(agentContext: AgentContext, subjectId: string) {
+  private async getVerificationMethodForSubjectId(agentContext: AgentContext, subjectId: string | undefined) {
     const verificationMethods = await this.getAuthenticationVerificationMethodsForSubjectId(agentContext, subjectId)
 
     return verificationMethods[0]
@@ -667,7 +659,7 @@ export class DifPresentationExchangeService {
 
   private async getVerificationMethodForLdpVp(
     agentContext: AgentContext,
-    subjectId: string,
+    subjectId: string | undefined,
     presentationDefinition: DifPresentationExchangeDefinitionV1 | DifPresentationExchangeDefinitionV2
   ) {
     const verificationMethods = await this.getAuthenticationVerificationMethodsForSubjectId(agentContext, subjectId)
@@ -696,20 +688,24 @@ export class DifPresentationExchangeService {
     )
   }
 
-  private async getAuthenticationVerificationMethodsForSubjectId(agentContext: AgentContext, subjectId: string) {
+  private async getAuthenticationVerificationMethodsForSubjectId(
+    agentContext: AgentContext,
+    subjectId: string | undefined
+  ) {
     const didsApi = agentContext.dependencyManager.resolve(DidsApi)
 
-    if (!subjectId.startsWith('did:')) {
-      throw new DifPresentationExchangeError(
-        `Only dids are supported as credentialSubject id. ${subjectId} is not a valid did`
+    if (subjectId !== undefined && !subjectId.startsWith('did:')) {
+      agentContext.config.logger.warn(
+        `Non-DID subject id '${subjectId}' is not supported for signing; falling back to holder-controlled DID`
       )
     }
 
-    const didDocument = await didsApi.resolveDidDocument(subjectId)
+    const effectiveDid = subjectId?.startsWith('did:') ? subjectId : await this.getHolderDid(agentContext)
+    const didDocument = await didsApi.resolveDidDocument(effectiveDid)
 
     if (!didDocument.authentication || didDocument.authentication.length === 0) {
       throw new DifPresentationExchangeError(
-        `No authentication verificationMethods found for did ${subjectId} in did document`
+        `No authentication verificationMethods found for did ${effectiveDid} in did document`
       )
     }
 
@@ -718,6 +714,18 @@ export class DifPresentationExchangeService {
         ? didDocument.dereferenceKey(verificationMethod, ['authentication'])
         : verificationMethod
     )
+  }
+
+  private async getHolderDid(agentContext: AgentContext): Promise<string> {
+    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+    // Best-effort: picks the first created DID regardless of method; may not be resolvable by the verifier.
+    const [holderDidRecord] = await didsApi.getCreatedDids()
+    if (!holderDidRecord) {
+      throw new DifPresentationExchangeError(
+        'Cannot determine a signing DID: no created DIDs found in the agent wallet'
+      )
+    }
+    return holderDidRecord.did
   }
 
   /**
