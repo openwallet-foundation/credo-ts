@@ -11,6 +11,7 @@ import {
   JsonEncoder,
   Kms,
   type Logger,
+  StorageUpdateService,
   TypedArrayEncoder,
   UpdateAssistant,
   type UpdateAssistantUpdateOptions,
@@ -67,18 +68,25 @@ export class TenantAgentContextProvider implements AgentContextProvider {
 
     // TODO: maybe we can look at not having to retrieve the tenant record if there's already a context available.
     const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
-    const shouldUpdate = !isStorageUpToDate(tenantRecord.storageVersion)
+    const canUpdate = !isStorageUpToDate(tenantRecord.storageVersion)
+    const mustUpdate = !isStorageUpToDate(
+      tenantRecord.storageVersion,
+      StorageUpdateService.previousFrameworkStorageVersion
+    )
 
     // If the tenant storage is not up to date, and autoUpdate is disabled we throw an error
-    if (shouldUpdate && !this.rootAgentContext.config.autoUpdateStorageOnStartup) {
+    if (mustUpdate && !this.rootAgentContext.config.autoUpdateStorageOnStartup) {
       throw new CredoError(
-        `Current agent storage for tenant ${tenantRecord.id} is not up to date. To prevent the tenant state from getting corrupted the tenant initialization is aborted. Make sure to update the tenant storage (currently at ${tenantRecord.storageVersion}) to the latest version (${UpdateAssistant.frameworkStorageVersion}). You can also downgrade your version of Credo.`
+        `Current agent storage for tenant ${tenantRecord.id} is not up to date. To prevent the tenant state from getting corrupted the tenant initialization is aborted. Make sure to update the tenant storage (currently at ${tenantRecord.storageVersion}) to the latest or previous version (${UpdateAssistant.frameworkStorageVersion} or ${UpdateAssistant.frameworkStorageVersion}). You can also downgrade your version of Credo.`
       )
     }
 
     const agentContext = await this.tenantSessionCoordinator.getContextForSession(tenantRecord, {
       provisionContext,
-      runInMutex: shouldUpdate ? (agentContext) => this._updateTenantStorage(tenantRecord, agentContext) : undefined,
+      runInMutex:
+        canUpdate && this.rootAgentContext.config.autoUpdateStorageOnStartup
+          ? (agentContext) => this._updateTenantStorage(tenantRecord, agentContext)
+          : undefined,
     })
 
     this.logger.debug(`Created tenant agent context for context correlation id '${contextCorrelationId}'`)
