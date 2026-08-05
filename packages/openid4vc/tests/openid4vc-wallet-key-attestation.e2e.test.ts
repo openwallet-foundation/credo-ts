@@ -1,4 +1,5 @@
-import { CredoError, Kms, Mdoc, MdocRecord, SdJwtVcRecord, utils } from '@credo-ts/core'
+import type { KeyDidCreateOptions } from '@credo-ts/core'
+import { CredoError, DidKey, Kms, Mdoc, MdocRecord, SdJwtVcRecord, utils } from '@credo-ts/core'
 import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import { AuthorizationFlow, Openid4vciWalletProvider } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
@@ -82,6 +83,8 @@ let generateKeyAttestation: (
     userAuthentication: OpenId4VciKeyAttestationLevel[]
   }
 ) => Promise<string>
+let generateDidKeyAttestation: () => Promise<string>
+let walletProviderDid: string
 
 describe('OpenId4Vc Wallet and Key Attestations', () => {
   let expressApp: Express
@@ -277,6 +280,30 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         // 5 minutes
         expiresAt: utils.addSecondsToDate(new Date(), 300),
         nonce,
+      })
+
+    const walletProviderKey = await holder.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+    const walletProviderDidResult = await holder.agent.dids.create<KeyDidCreateOptions>({
+      method: 'key',
+      options: { keyId: walletProviderKey.keyId },
+    })
+    walletProviderDid = walletProviderDidResult.didState.did as string
+
+    generateDidKeyAttestation = () =>
+      walletProvider.createKeyAttestationJwt({
+        attestedKeys: attestedKeys.map((key) => key.toJson() as Jwk),
+        signer: {
+          method: 'did',
+          alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
+          didUrl: `${walletProviderDid}#${DidKey.fromDid(walletProviderDid).publicJwk.fingerprint}`,
+          // `kid` is the kms key id used for signing, the did document jwk itself carries no key id
+          kid: walletProviderKey.keyId,
+        },
+        use: 'proof_type.jwt',
+        keyStorage: highLevels,
+        userAuthentication: highLevels,
+        // 5 minutes
+        expiresAt: utils.addSecondsToDate(new Date(), 300),
       })
 
     // Trust wallet provider
@@ -485,6 +512,47 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         }),
       })
     ).rejects.toThrow('Insufficient key_storage for key attestation')
+  })
+
+  it('throws error when the key attestation is signed by an untrusted did', async () => {
+    issuer.agent.context.config.setTrustedIssuersForVerification(async (_agentContext, { signer }) =>
+      // Keep using the x509 config for the x5c signed wallet attestation
+      signer.method === 'did'
+        ? {
+            trustedIssuers: [
+              { method: 'did', issuance: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y' },
+            ],
+          }
+        : undefined
+    )
+
+    const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+      issuerId: issuerRecord.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      authorization: {
+        requireDpop: true,
+        requireWalletAttestation: true,
+      },
+    })
+
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
+      resolvedCredentialOffer,
+      walletAttestationJwt,
+      clientId: 'wallet',
+    })
+
+    await expect(
+      holder.agent.openid4vc.holder.requestCredentials({
+        resolvedCredentialOffer,
+        ...tokenResponse,
+        credentialBindingResolver: async () => ({
+          method: 'attestation',
+          keyAttestationJwt: await generateDidKeyAttestation(),
+        }),
+      })
+    ).rejects.toThrow('Error verifying key attestation jwt')
   })
 
   it('e2e flow issuing a batch of mdoc based on wallet and nonce-bound key attestation', async () => {
