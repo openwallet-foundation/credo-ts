@@ -21,6 +21,10 @@ import {
   W3cCredentialService,
   W3cCredentialSubject,
   W3cJsonLdVerifiableCredential,
+  W3cV2Credential,
+  W3cV2CredentialRecord,
+  W3cV2CredentialService,
+  W3cV2DataIntegrityVerifiableCredential,
 } from '@credo-ts/core'
 import type {
   AnonCredsLinkSecretBindingMethod,
@@ -172,7 +176,7 @@ export class DataIntegrityDidCommCredentialFormatService
     const isV2Credential = context.find((c) => c === 'https://www.w3.org/ns/credentials/v2')
 
     if (isV1Credential) return '1.1'
-    if (isV2Credential) throw new CredoError('Received w3c credential with unsupported version 2.0.')
+    if (isV2Credential) return '2.0'
     throw new CredoError('Cannot determine credential version from @context')
   }
 
@@ -200,7 +204,11 @@ export class DataIntegrityDidCommCredentialFormatService
         : { validFrom: new Date().toISOString() }),
     }
 
-    JsonTransformer.fromJSON(credentialToBeValidated, W3cCredential)
+    if (credentialVersion === '2.0') {
+      JsonTransformer.fromJSON(credentialToBeValidated, W3cV2Credential)
+    } else {
+      JsonTransformer.fromJSON(credentialToBeValidated, W3cCredential)
+    }
 
     const missingBindingMethod =
       dataIntegrityCredentialOffer.bindingRequired &&
@@ -547,13 +555,9 @@ export class DataIntegrityDidCommCredentialFormatService
     })
   }
 
-  private async getSignatureMetadata(
-    agentContext: AgentContext,
-    offeredCredential: W3cCredential,
-    issuerVerificationMethod?: string
-  ) {
+  private async getVerificationMethod(agentContext: AgentContext, issuerId: string, issuerVerificationMethod?: string) {
     const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-    const didDocument = await didsApi.resolveDidDocument(offeredCredential.issuerId)
+    const didDocument = await didsApi.resolveDidDocument(issuerId)
 
     let verificationMethod: VerificationMethod
     if (issuerVerificationMethod) {
@@ -571,6 +575,20 @@ export class DataIntegrityDidCommCredentialFormatService
       }
     }
 
+    return { verificationMethod }
+  }
+
+  private async getSignatureMetadata(
+    agentContext: AgentContext,
+    offeredCredential: W3cCredential,
+    issuerVerificationMethod?: string
+  ) {
+    const { verificationMethod } = await this.getVerificationMethod(
+      agentContext,
+      offeredCredential.issuerId,
+      issuerVerificationMethod
+    )
+
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
     const signatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
     if (!signatureSuite) {
@@ -580,7 +598,10 @@ export class DataIntegrityDidCommCredentialFormatService
     return { verificationMethod, signatureSuite, offeredCredential }
   }
 
-  private async assertAndSetCredentialSubjectId(credential: W3cCredential, credentialSubjectId: string | undefined) {
+  private async assertAndSetCredentialSubjectId<Credential extends W3cCredential | W3cV2Credential>(
+    credential: Credential,
+    credentialSubjectId: string | undefined
+  ) {
     if (!credentialSubjectId) return credential
 
     if (Array.isArray(credential.credentialSubject)) {
@@ -595,6 +616,38 @@ export class DataIntegrityDidCommCredentialFormatService
     if (!subjectId) credential.credentialSubject.id = credentialSubjectId
 
     return credential
+  }
+
+  /**
+   * Secures a data model 2.0 credential with a `DataIntegrityProof`.
+   *
+   * RFC 0809 leaves the choice of cryptosuite to the issuer, so it is not negotiated with the holder
+   * and has to be provided by the issuer.
+   */
+  private async signV2Credential(
+    agentContext: AgentContext,
+    credential: W3cV2Credential,
+    { cryptosuite, issuerVerificationMethod }: { cryptosuite?: string; issuerVerificationMethod?: string }
+  ) {
+    if (!cryptosuite) {
+      throw new CredoError(
+        'Missing cryptosuite. Issuing a VC Data Model 2.0 credential requires the issuer to pick a Data Integrity cryptosuite, which can be provided using the `cryptosuite` data integrity credential format option.'
+      )
+    }
+
+    const { verificationMethod } = await this.getVerificationMethod(
+      agentContext,
+      credential.issuerId,
+      issuerVerificationMethod
+    )
+
+    const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
+    return await w3cV2CredentialService.signCredential<ClaimFormat.DiVc>(agentContext, {
+      format: ClaimFormat.DiVc,
+      credential,
+      cryptosuite,
+      verificationMethod: verificationMethod.id,
+    })
   }
 
   private async signCredential(
@@ -649,13 +702,46 @@ export class DataIntegrityDidCommCredentialFormatService
 
     const credentialOffer = JsonTransformer.fromJSON(offerAttachment?.getDataAsJson(), DataIntegrityCredentialOffer)
 
+    const credentialRequest = requestAttachment.getDataAsJson<DataIntegrityCredentialRequest>()
+    if (!credentialRequest) throw new CredoError('Missing data integrity credential request in createCredential')
+
+    const format = new DidCommCredentialFormatSpec({
+      attachmentId,
+      format: W3C_DATA_INTEGRITY_CREDENTIAL,
+    })
+
+    // A data model 2.0 credential is secured with a DataIntegrityProof rather than a linked data
+    // signature suite, and is never bound using the anoncreds link secret binding method.
+    if (credentialRequest.data_model_version === '2.0') {
+      if (credentialRequest.binding_proof?.anoncreds_link_secret) {
+        throw new CredoError(
+          'The anoncreds link secret binding method is not supported for VC Data Model 2.0 credentials.'
+        )
+      }
+
+      const assertedV2Credential = await this.assertAndSetCredentialSubjectId(
+        JsonTransformer.fromJSON(credentialOffer.credential, W3cV2Credential),
+        dataIntegrityFormat?.credentialSubjectId
+      )
+
+      const signedV2Credential = await this.signV2Credential(agentContext, assertedV2Credential, {
+        cryptosuite: dataIntegrityFormat?.cryptosuite,
+        issuerVerificationMethod: dataIntegrityFormat?.issuerVerificationMethod,
+      })
+
+      return {
+        format,
+        attachment: this.getFormatData(
+          { credential: JsonTransformer.toJSON(signedV2Credential.securedCredential) },
+          format.attachmentId
+        ),
+      }
+    }
+
     const assertedCredential = await this.assertAndSetCredentialSubjectId(
       JsonTransformer.fromJSON(credentialOffer.credential, W3cCredential),
       dataIntegrityFormat?.credentialSubjectId
     )
-
-    const credentialRequest = requestAttachment.getDataAsJson<DataIntegrityCredentialRequest>()
-    if (!credentialRequest) throw new CredoError('Missing data integrity credential request in createCredential')
 
     let signedCredential: W3cJsonLdVerifiableCredential | undefined
     if (credentialRequest.binding_proof?.anoncreds_link_secret) {
@@ -704,11 +790,6 @@ export class DataIntegrityDidCommCredentialFormatService
     ) {
       signedCredential = await this.signCredential(agentContext, assertedCredential)
     }
-
-    const format = new DidCommCredentialFormatSpec({
-      attachmentId,
-      format: W3C_DATA_INTEGRITY_CREDENTIAL,
-    })
 
     const attachment = this.getFormatData({ credential: JsonTransformer.toJSON(signedCredential) }, format.attachmentId)
     return { format, attachment }
@@ -854,6 +935,31 @@ export class DataIntegrityDidCommCredentialFormatService
 
     if (!deepEquality(credentialJson, expectedReceivedCredential)) {
       throw new CredoError('Received invalid credential. Received credential does not match the offered credential')
+    }
+
+    // A data model 2.0 credential is secured with a DataIntegrityProof and is held in a
+    // W3cV2CredentialRecord, as W3cCredentialRecord only holds data model 1.1 credentials.
+    if (credentialVersion === '2.0') {
+      const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
+      const credential = W3cV2DataIntegrityVerifiableCredential.fromObject(
+        credentialJson as Parameters<typeof W3cV2DataIntegrityVerifiableCredential.fromObject>[0]
+      )
+
+      const result = await w3cV2CredentialService.verifyCredential(agentContext, { credential })
+      if (result && !result.isValid) {
+        throw new CredoError(`Failed to validate credential, error = ${result.error}`)
+      }
+
+      const w3cV2CredentialRecord = await w3cV2CredentialService.storeCredential(agentContext, {
+        record: W3cV2CredentialRecord.fromCredential(credential),
+      })
+
+      credentialExchangeRecord.credentials.push({
+        credentialRecordType: 'w3c-v2',
+        credentialRecordId: w3cV2CredentialRecord.id,
+      })
+
+      return
     }
 
     let w3cCredentialRecord: W3cCredentialRecord
@@ -1022,11 +1128,29 @@ export class DataIntegrityDidCommCredentialFormatService
       didCommSignedAttachmentBinding: didCommSignedAttachmentBindingMethodOptions,
     } = options
 
-    const dataModelVersionsSupported: W3C_VC_DATA_MODEL_VERSION[] = ['1.1']
+    const credentialJson =
+      credential instanceof W3cCredential || credential instanceof W3cV2Credential
+        ? JsonTransformer.toJSON(credential)
+        : credential
+
+    // The offered credential MUST conform to the first supported data model version, so the version
+    // of the credential we are offering is the version we advertise.
+    const dataModelVersion = this.getCredentialVersion(credentialJson)
+    const dataModelVersionsSupported: W3C_VC_DATA_MODEL_VERSION[] = [dataModelVersion]
+
+    // The anoncreds link secret binding method is defined in terms of the anoncredsvc-2023
+    // cryptosuite and data model 1.1 only.
+    if (dataModelVersion === '2.0' && anonCredsLinkSecretBindingMethodOptions) {
+      throw new CredoError(
+        'The anoncreds link secret binding method is not supported for VC Data Model 2.0 credentials.'
+      )
+    }
 
     // validate the credential and get the preview attributes
-    const credentialJson = credential instanceof W3cCredential ? JsonTransformer.toJSON(credential) : credential
-    const validW3cCredential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
+    const validW3cCredential =
+      dataModelVersion === '2.0'
+        ? JsonTransformer.fromJSON(credentialJson, W3cV2Credential)
+        : JsonTransformer.fromJSON(credentialJson, W3cCredential)
     const previewAttributes = this.previewAttributesFromCredential(validW3cCredential)
 
     let anonCredsLinkSecretBindingMethod: AnonCredsLinkSecretBindingMethod | undefined
@@ -1060,7 +1184,8 @@ export class DataIntegrityDidCommCredentialFormatService
 
       await this.assertCredentialAttributesMatchSchemaAttributes(
         agentContext,
-        validW3cCredential,
+        // safe: the link secret binding method is rejected for data model 2.0 above
+        validW3cCredential as W3cCredential,
         credentialDefinition.schemaId,
         false
       )
@@ -1117,14 +1242,20 @@ export class DataIntegrityDidCommCredentialFormatService
     return { dataIntegrityCredentialOffer, previewAttributes }
   }
 
-  private previewAttributesFromCredential(credential: W3cCredential): DidCommCredentialPreviewAttributeOptions[] {
-    if (Array.isArray(credential.credentialSubject)) {
+  private previewAttributesFromCredential(
+    credential: W3cCredential | W3cV2Credential
+  ): DidCommCredentialPreviewAttributeOptions[] {
+    const credentialSubject = credential.credentialSubject
+    if (Array.isArray(credentialSubject)) {
       throw new CredoError('Credential subject must be an object.')
     }
 
+    // Data model 1.1 nests the claims under `claims`, data model 2.0 holds them on the subject itself
     const claims = {
-      ...credential.credentialSubject.claims,
-      ...(credential.credentialSubject.id && { id: credential.credentialSubject.id }),
+      ...(credentialSubject instanceof W3cCredentialSubject
+        ? credentialSubject.claims
+        : Object.fromEntries(Object.entries(credentialSubject).filter(([key]) => key !== 'id'))),
+      ...(credentialSubject.id && { id: credentialSubject.id }),
     } as AnonCredsClaimRecord
     const attributes = Object.entries(claims).map(([key, value]): DidCommCredentialPreviewAttributeOptions => {
       return { name: key, value: value.toString() }
