@@ -90,5 +90,6 @@ rule of thumb:
 - Global no-progress limit ≈ `ceil(p95_stall_ms / poll_interval_ms) + 10`.
 - Max attempts ≥ 2× the global no-progress limit.
 
-Re-calibrate when the suite image (`TAG` in `oidf-setup.ts`) changes, the CI
-runner type changes, or the networking/container stack changes.
+Re-calibrate when the suite image (`CONFORMANCE_SERVER_IMAGE` /
+`CONFORMANCE_HTTPD_IMAGE` in `oidf-setup.ts`) changes, the CI runner type
+changes, or the networking/container stack changes.
