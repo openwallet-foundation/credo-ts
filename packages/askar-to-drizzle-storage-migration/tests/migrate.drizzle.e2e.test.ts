@@ -16,7 +16,9 @@ import {
   W3cCredentialsModule,
   W3cJsonLdVerifiableCredential,
   W3cV2CredentialRecord,
+  W3cV2DataIntegrityVerifiableCredential,
   W3cV2JwtVerifiableCredential,
+  W3cV2SdJwtVerifiableCredential,
 } from '@credo-ts/core'
 import { DrizzleStorageModule } from '@credo-ts/drizzle-storage'
 import { agentDependencies } from '@credo-ts/node'
@@ -24,9 +26,11 @@ import { askar, askarPostgresStorageConfig } from '../../askar/tests/helpers'
 import didKeyP256 from '../../core/src/modules/dids/__tests__/__fixtures__/didKeyP256.json'
 import { sprindFunkeTestVectorBase64Url } from '../../core/src/modules/mdoc/__tests__/mdoc.fixtures'
 import { sdJwtVcWithSingleDisclosure } from '../../core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.fixtures'
+import { CredoDidKeyDiVcEncoded } from '../../core/src/modules/vc/data-integrity-v1/__tests__/fixtures/credo-di-vc'
 import { CredoEs256DidJwkJwtVc } from '../../core/src/modules/vc/jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
 import { customDocumentLoader } from '../../core/src/modules/vc/linked-data-proofs/__tests__/documentLoader'
 import { Ed25519Signature2018Fixtures } from '../../core/src/modules/vc/linked-data-proofs/__tests__/fixtures'
+import { CredoEs256DidJwkJwtVc as CredoEs256DidJwkSdJwtVc } from '../../core/src/modules/vc/sd-jwt-vc/__tests__/fixtures/credo-sd-jwt-vc'
 import testLogger from '../../core/tests/logger'
 import { actionMenuBundle } from '../../drizzle-storage/src/action-menu/bundle'
 import { anoncredsBundle } from '../../drizzle-storage/src/anoncreds/bundle'
@@ -64,6 +68,14 @@ async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
   })
   await agent.w3cV2Credentials.store({
     record: W3cV2CredentialRecord.fromCredential(W3cV2JwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)),
+  })
+  await agent.w3cV2Credentials.store({
+    record: W3cV2CredentialRecord.fromCredential(W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkSdJwtVc)),
+  })
+  await agent.w3cV2Credentials.store({
+    record: W3cV2CredentialRecord.fromCredential(
+      W3cV2DataIntegrityVerifiableCredential.fromObject(JSON.parse(CredoDidKeyDiVcEncoded))
+    ),
   })
   await agent.dids.import({
     did: didKeyP256.id,
@@ -123,15 +135,33 @@ async function expectDatabaseWithRecords(agent: Agent | TenantAgent) {
     },
   ])
 
-  await expect(agent.w3cV2Credentials.getAll()).resolves.toMatchObject([
-    {
-      credentialInstances: [
-        {
-          credential: CredoEs256DidJwkJwtVc,
-        },
-      ],
-    },
-  ])
+  const w3cV2CredentialRecords = await agent.w3cV2Credentials.getAll()
+  expect(w3cV2CredentialRecords).toHaveLength(3)
+  expect(w3cV2CredentialRecords).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        credentialInstances: [
+          expect.objectContaining({
+            credential: CredoEs256DidJwkJwtVc,
+          }),
+        ],
+      }),
+      expect.objectContaining({
+        credentialInstances: [
+          expect.objectContaining({
+            credential: CredoEs256DidJwkSdJwtVc,
+          }),
+        ],
+      }),
+      expect.objectContaining({
+        credentialInstances: [
+          expect.objectContaining({
+            credential: CredoDidKeyDiVcEncoded,
+          }),
+        ],
+      }),
+    ])
+  )
 
   await expect(agent.dids.getCreatedDids()).resolves.toMatchObject([
     {
