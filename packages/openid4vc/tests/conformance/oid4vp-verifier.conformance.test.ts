@@ -140,11 +140,7 @@ describe('OIDF - oid4vp-1final-verifier-haip-test-plan', () => {
 
     // FIXME: will be addressed once merged and updated:
     // https://github.com/openwallet-foundation/sd-jwt-js/pull/378
-    if (
-      signal.includes('oid4vp-1final-verifier-kb-jwt-iat-in-past') ||
-      signal.includes('oid4vp-1final-verifier-kb-jwt-iat-in-future')
-    )
-      return ['PASSED', 'WARNING', 'SKIPPED', 'FAILED']
+    if (signal.includes('oid4vp-1final-verifier-kb-jwt-iat-in-past')) return ['PASSED', 'WARNING', 'SKIPPED', 'FAILED']
 
     return ['PASSED', 'WARNING', 'SKIPPED']
   }
