@@ -764,8 +764,6 @@ export class DifPresentationExchangeService {
       )
     }
 
-    // FIXME: in the query we should take into account the supported proof types of the verifier
-    // this could help enormously in the amount of credentials we have to retrieve from storage.
     if (presentationDefinitionVersion.version === PEVersion.v1) {
       const pd = presentationDefinition as DifPresentationExchangeDefinitionV1
 
@@ -784,9 +782,56 @@ export class DifPresentationExchangeService {
         }
       }
     } else if (presentationDefinitionVersion.version === PEVersion.v2) {
-      // FIXME: As PE version 2 does not have the `schema` anymore, we can't query by schema anymore.
-      // We probably need to find some way to do initial filtering,
-      // hopefully if there's a filter on the `type` field or something.
+      const pd = presentationDefinition as DifPresentationExchangeDefinitionV2
+      const fieldQueries: Array<Query<W3cCredentialRecord> | Query<SdJwtVcRecord>> = []
+
+      for (const inputDescriptor of pd.input_descriptors) {
+        for (const field of inputDescriptor.constraints?.fields ?? []) {
+          const values = this.getStringFilterValues(field.filter)
+          if (!values) continue
+
+          for (const path of field.path) {
+            const normalizedPath = path.replace(/\[['"]([^'"]+)['"]\]/g, '.$1').replace(/^\$\./, '')
+            if (normalizedPath === 'type') {
+              fieldQueries.push(...values.map((value) => ({ types: [value] })))
+            } else if (normalizedPath === '@context' || normalizedPath === 'context') {
+              fieldQueries.push(...values.map((value) => ({ contexts: [value] })))
+            } else if (normalizedPath === 'credentialSchema.id') {
+              fieldQueries.push(...values.map((value) => ({ schemaIds: [value] })))
+            } else if (normalizedPath === 'vct') {
+              fieldQueries.push(...values.map((value) => ({ vct: value })))
+            }
+          }
+        }
+      }
+
+      const proofTypes = this.getSingleLdpVcProofType(presentationDefinition)
+      const proofTypeQuery = proofTypes
+        ? {
+            claimFormat: ClaimFormat.LdpVc as ClaimFormat.LdpVc,
+            proofTypes: [proofTypes],
+          }
+        : undefined
+
+      const w3cFieldQueries = fieldQueries.filter((query): query is Query<W3cCredentialRecord> => !('vct' in query))
+      const sdJwtFieldQueries = fieldQueries.filter((query): query is Query<SdJwtVcRecord> => 'vct' in query)
+
+      if (w3cFieldQueries.length > 0) {
+        w3cQuery.push(...w3cFieldQueries)
+      }
+      if (sdJwtFieldQueries.length > 0) {
+        sdJwtVcQuery.push(...sdJwtFieldQueries)
+      }
+
+      if (proofTypeQuery) {
+        if (w3cQuery.length === 0) {
+          w3cQuery.push(proofTypeQuery)
+        } else {
+          w3cQuery.splice(0, w3cQuery.length, {
+            $and: [proofTypeQuery, { $or: w3cQuery }],
+          })
+        }
+      }
     } else {
       throw new DifPresentationExchangeError(
         `Unsupported presentation definition version ${presentationDefinitionVersion.version as unknown as string}`
@@ -813,6 +858,34 @@ export class DifPresentationExchangeService {
     allRecords.push(...mdocRecords)
 
     return allRecords
+  }
+
+  private getStringFilterValues(filter: unknown): string[] | undefined {
+    if (!filter || typeof filter !== 'object') return undefined
+
+    const filterObject = filter as { const?: unknown; enum?: unknown; contains?: unknown }
+    if (typeof filterObject.const === 'string') return [filterObject.const]
+    if (Array.isArray(filterObject.enum) && filterObject.enum.every((value) => typeof value === 'string')) {
+      return filterObject.enum
+    }
+    if (typeof filterObject.contains === 'string') return [filterObject.contains]
+    if (filterObject.contains && typeof filterObject.contains === 'object') {
+      return this.getStringFilterValues(filterObject.contains)
+    }
+
+    return undefined
+  }
+
+  private getSingleLdpVcProofType(presentationDefinition: DifPresentationExchangeDefinition): string | undefined {
+    const proofTypes = [
+      ...(presentationDefinition.format?.ldp_vc?.proof_type ?? []),
+      ...presentationDefinition.input_descriptors.flatMap(
+        (inputDescriptor) => (inputDescriptor as InputDescriptorV2).format?.ldp_vc?.proof_type ?? []
+      ),
+    ]
+    const uniqueProofTypes = [...new Set(proofTypes)]
+
+    return uniqueProofTypes.length === 1 ? uniqueProofTypes[0] : undefined
   }
 
   private getSdJwtVcApi(agentContext: AgentContext) {

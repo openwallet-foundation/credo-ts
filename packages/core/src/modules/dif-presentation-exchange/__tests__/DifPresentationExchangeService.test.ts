@@ -7,10 +7,11 @@ import { JsonTransformer } from '../../../utils'
 import { KeyManagementApi } from '../../kms'
 import { MdocDeviceResponse, MdocRecord, MdocRepository } from '../../mdoc'
 import { sprindFunkeTestVectorBase64Url } from '../../mdoc/__tests__/mdoc.fixtures'
-import { SdJwtVcRecord, SdJwtVcRepository } from '../../sd-jwt-vc'
+import { SdJwtVcApi, SdJwtVcRecord, SdJwtVcRepository } from '../../sd-jwt-vc'
 import {
   ClaimFormat,
   SignatureSuiteToken,
+  W3cCredentialRepository,
   W3cCredentialService,
   W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
@@ -39,6 +40,7 @@ const sdJwtVcRecord = new SdJwtVcRecord({
     },
   ],
 })
+
 const mdocRecord = new MdocRecord({
   credentialInstances: [
     {
@@ -1139,6 +1141,117 @@ describe('DifPresentationExchangeService', () => {
         W3cJsonLdVerifiablePresentation
       )
     )
+  })
+})
+
+describe('credential pre-querying for presentation definitions', () => {
+  const makeDefinition = (options: {
+    fields?: Array<{ path: string[]; filter?: Record<string, unknown> }>
+    format?: Record<string, unknown>
+  }): DifPresentationExchangeDefinitionV2 => ({
+    id: 'pre-query-test',
+    ...(options.format ? { format: options.format } : {}),
+    input_descriptors: [
+      {
+        id: 'descriptor',
+        constraints: { fields: options.fields ?? [] },
+      },
+    ],
+  })
+
+  const spyQueryMethods = () => ({
+    w3cFindByQuery: vi.spyOn(W3cCredentialRepository.prototype, 'findByQuery').mockResolvedValue([]),
+    w3cGetAll: vi.spyOn(W3cCredentialRepository.prototype, 'getAll').mockResolvedValue([]),
+    sdJwtFindAllByQuery: vi.spyOn(SdJwtVcApi.prototype, 'findAllByQuery').mockResolvedValue([]),
+    sdJwtGetAll: vi.spyOn(SdJwtVcApi.prototype, 'getAll').mockResolvedValue([]),
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  test('scopes W3C credential queries from a PEX v2 type filter', async () => {
+    const spies = spyQueryMethods()
+
+    await pexService.getCredentialsForRequest(
+      agentContext,
+      makeDefinition({
+        fields: [{ path: ['$.type'], filter: { type: 'string', const: 'EmployeeCredential' } }],
+      })
+    )
+
+    expect(spies.w3cFindByQuery).toHaveBeenCalledWith(agentContext, {
+      $or: [{ types: ['EmployeeCredential'] }],
+    })
+    expect(spies.w3cGetAll).not.toHaveBeenCalled()
+  })
+
+  test('scopes SD-JWT queries from a PEX v2 vct filter', async () => {
+    const spies = spyQueryMethods()
+
+    await pexService.getCredentialsForRequest(
+      agentContext,
+      makeDefinition({
+        fields: [
+          {
+            path: ['$.vct'],
+            filter: { type: 'string', enum: ['EmployeeCredential', 'EmployeeCredentialV2'] },
+          },
+        ],
+      })
+    )
+
+    expect(spies.sdJwtFindAllByQuery).toHaveBeenCalledWith({
+      $or: [{ vct: 'EmployeeCredential' }, { vct: 'EmployeeCredentialV2' }],
+    })
+    expect(spies.sdJwtGetAll).not.toHaveBeenCalled()
+  })
+
+  test('uses broad queries when a PEX v2 definition has no extractable hints', async () => {
+    const spies = spyQueryMethods()
+
+    await pexService.getCredentialsForRequest(
+      agentContext,
+      makeDefinition({ fields: [{ path: ['$.credentialSubject'] }] })
+    )
+
+    expect(spies.w3cGetAll).toHaveBeenCalled()
+    expect(spies.sdJwtGetAll).toHaveBeenCalled()
+  })
+
+  test('scopes LDP-VC queries by a supported proof type when safe', async () => {
+    const spies = spyQueryMethods()
+
+    await pexService.getCredentialsForRequest(
+      agentContext,
+      makeDefinition({
+        format: { ldp_vc: { proof_type: ['Ed25519Signature2018'] } },
+      })
+    )
+
+    expect(spies.w3cFindByQuery).toHaveBeenCalledWith(agentContext, {
+      $or: [
+        {
+          claimFormat: ClaimFormat.LdpVc,
+          proofTypes: ['Ed25519Signature2018'],
+        },
+      ],
+    })
+    expect(spies.w3cGetAll).not.toHaveBeenCalled()
+  })
+
+  test('uses a broad W3C query for ambiguous proof-type constraints', async () => {
+    const spies = spyQueryMethods()
+
+    await pexService.getCredentialsForRequest(
+      agentContext,
+      makeDefinition({
+        format: { ldp_vc: { proof_type: ['Ed25519Signature2018', 'BbsBlsSignature2020'] } },
+      })
+    )
+
+    expect(spies.w3cGetAll).toHaveBeenCalled()
+    expect(spies.w3cFindByQuery).not.toHaveBeenCalled()
   })
 })
 
