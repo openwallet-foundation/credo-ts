@@ -8,6 +8,7 @@ import type { SingleOrArray } from '../../../types'
 import { asArray, JsonTransformer } from '../../../utils'
 import { DidsApi, parseDid } from '../../dids'
 import { PublicJwk } from '../../kms'
+import { ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE } from '../anoncreds-w3c-credential'
 import jsonld from '../jsonld/jsonld'
 import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
@@ -105,6 +106,8 @@ export class W3cJsonLdCredentialService {
     options: W3cJsonLdVerifyCredentialOptions
   ): Promise<W3cVerifyCredentialResult> {
     try {
+      this.assertNoAnonCredsW3cCredentialProof(options.credential.proof)
+
       const verifyCredentialStatus = options.verifyCredentialStatus ?? true
 
       await this.ensureCredentialIssuerTrusted(agentContext, options.credential, options.trustedIssuers)
@@ -240,6 +243,8 @@ export class W3cJsonLdCredentialService {
     options: W3cJsonLdVerifyPresentationOptions
   ): Promise<W3cVerifyPresentationResult> {
     try {
+      this.assertNoAnonCredsW3cCredentialProof(options.presentation.proof)
+
       // create keyPair
       const WalletKeyPair = createKmsKeyPairClass(agentContext)
 
@@ -268,6 +273,7 @@ export class W3cJsonLdCredentialService {
       assertOnlyW3cJsonLdVerifiableCredentials(credentials)
 
       for (const credential of credentials) {
+        this.assertNoAnonCredsW3cCredentialProof(credential.proof)
         await this.ensureCredentialIssuerTrusted(agentContext, credential, options.trustedIssuers)
       }
 
@@ -446,5 +452,23 @@ export class W3cJsonLdCredentialService {
         useNativeCanonize: false,
       })
     })
+  }
+
+  private assertNoAnonCredsW3cCredentialProof(
+    proofsInput: W3cJsonLdVerifiableCredential['proof'] | W3cJsonLdVerifiablePresentation['proof']
+  ) {
+    const proofs = asArray(proofsInput)
+    const hasAnonCredsW3cCredentialProof = proofs.some(
+      (proof) =>
+        proof.type === 'DataIntegrityProof' &&
+        'cryptosuite' in proof &&
+        proof.cryptosuite === ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE
+    )
+
+    if (hasAnonCredsW3cCredentialProof) {
+      throw new CredoError(
+        'W3C credential proof with cryptosuite anoncreds-2023 must be verified through the anoncreds W3C credential path, not the generic linked-data verifier'
+      )
+    }
   }
 }

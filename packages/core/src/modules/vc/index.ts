@@ -1,3 +1,4 @@
+export * from './anoncreds-w3c-credential'
 export * from './constants'
 export * from './jsonld'
 export * from './jwt-vc'
