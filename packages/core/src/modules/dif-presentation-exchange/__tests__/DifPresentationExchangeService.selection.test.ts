@@ -100,6 +100,36 @@ describe('DifPresentationExchangeService credential selection', () => {
     })
   })
 
+  describe('credential status constraints', () => {
+    test('does not enforce schema-valid active status requirements during selection', async () => {
+      const definition = {
+        id: 'status-constraint-test',
+        input_descriptors: [
+          {
+            id: 'pid',
+            constraints: {
+              statuses: {
+                active: { directive: 'required' as const },
+              },
+              fields: [
+                {
+                  path: ['$.vct'],
+                  filter: { type: 'string', const: 'https://example.bmi.bund.de/credential/pid/1.0' },
+                },
+              ],
+            },
+          },
+        ],
+      } satisfies DifPresentationExchangeDefinitionV2
+
+      const result = await pexService.getCredentialsForRequest(agentContext, definition)
+
+      // @animo-id/pex schema-validates statuses but has no runtime status handler.
+      expect(result.requirements[0].submissionEntry[0].verifiableCredentials).toHaveLength(1)
+      expect(result.areRequirementsSatisfied).toBe(true)
+    })
+  })
+
   describe('credential selection and submission requirements', () => {
     test('reports unavailable credentials when no submission requirement is provided', async () => {
       const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
