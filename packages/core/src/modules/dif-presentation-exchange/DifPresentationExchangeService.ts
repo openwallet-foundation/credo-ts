@@ -785,7 +785,7 @@ export class DifPresentationExchangeService {
       }
     } else if (presentationDefinitionVersion.version === PEVersion.v2) {
       // FIXME: As PE version 2 does not have the `schema` anymore, we can't query by schema anymore.
-      // We probably need to find some way to do initial filtering, 
+      // We probably need to find some way to do initial filtering,
       // hopefully if there's a filter on the `type` field or something.
     } else {
       throw new DifPresentationExchangeError(

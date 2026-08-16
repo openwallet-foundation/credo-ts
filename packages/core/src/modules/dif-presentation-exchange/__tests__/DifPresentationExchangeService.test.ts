@@ -865,6 +865,45 @@ describe('DifPresentationExchangeService', () => {
     await mdocRepository.deleteById(agentContext, randomMdoc.id)
   })
 
+  test('preserves input descriptor order when creating multiple presentations', async () => {
+    await mdocRepository.save(agentContext, randomMdoc)
+
+    const mdocPresentationDefinition = {
+      ...presentationDefinition,
+      input_descriptors: presentationDefinition.input_descriptors.filter((inputDescriptor) =>
+        ['eu.europa.ec.eudi.pid.1', 'org.iso.18013.5.1.mDL'].includes(inputDescriptor.id)
+      ),
+    }
+
+    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, mdocPresentationDefinition)
+    const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
+    const reversedSelectedCredentials = Object.fromEntries(Object.entries(selectedCredentials).reverse())
+
+    vi.spyOn(kms, 'sign').mockResolvedValue({ signature: new Uint8Array([1]) })
+
+    const presentation = await pexService.createPresentation(agentContext, {
+      credentialsForInputDescriptor: reversedSelectedCredentials,
+      challenge: 'something',
+      presentationDefinition: mdocPresentationDefinition,
+      domain: 'hello',
+      presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
+      mdocSessionTranscript: {
+        type: 'openId4VpDraft18',
+        clientId: 'hello',
+        verifierGeneratedNonce: 'something',
+        mdocGeneratedNonce: 'something',
+        responseUri: 'https://response.com',
+      },
+    })
+
+    expect(presentation.presentationSubmission.descriptor_map.map((descriptor) => descriptor.id)).toEqual([
+      'eu.europa.ec.eudi.pid.1',
+      'org.iso.18013.5.1.mDL',
+    ])
+
+    await mdocRepository.deleteById(agentContext, randomMdoc.id)
+  })
+
   test('handles response with multiple mdocs in a single device response', async () => {
     pexService.validatePresentation(
       {
@@ -1103,7 +1142,7 @@ describe('DifPresentationExchangeService', () => {
   })
 })
 
-describe('DifPresentationExchangeService A4 non-DID subject IDs', () => {
+describe('presentation signing with non-DID subject identifiers', () => {
   test.todo('credential with no credentialSubject.id falls back to holder DID for signing')
 
   test.todo('credential with non-DID URI credentialSubject.id logs warning and falls back to holder DID')
@@ -1113,7 +1152,7 @@ describe('DifPresentationExchangeService A4 non-DID subject IDs', () => {
   test.todo('getHolderDid throws when agent wallet contains no created DIDs')
 })
 
-describe('DifPresentationExchangeService A1 conformance scaffolding', () => {
+describe('LDP-VP proof type and verification method selection', () => {
   test.todo('uses ldp_vp.proof_type from presentation definition level for LDP-VP signing')
 
   test.todo('intersects ldp_vp.proof_type constraints from presentation definition and input descriptors')
@@ -1129,7 +1168,7 @@ describe('DifPresentationExchangeService A1 conformance scaffolding', () => {
   test.todo('never uses ldp_vc.proof_type for VP signing when both ldp_vc and ldp_vp are present')
 })
 
-describe('DifPresentationExchangeService A2 from_nested submission requirements', () => {
+describe('nested submission requirements', () => {
   test('supports from_nested with rule all', async () => {
     const nestedDefinition = {
       ...presentationDefinition,
@@ -1259,7 +1298,7 @@ describe('DifPresentationExchangeService A2 from_nested submission requirements'
   })
 })
 
-describe('DifPresentationExchangeService C2 relational constraints', () => {
+describe('relational constraints during credential selection', () => {
   // These tests confirm @animo-id/pex@6.1.1 evaluates relational constraints without crashing.
   // NOTE: subject_is_issuer / is_holder / same_subject generate WARN (not ERROR) during selectFrom,
   // so they do not exclude credentials at selection time — only evaluatePresentation enforces them.

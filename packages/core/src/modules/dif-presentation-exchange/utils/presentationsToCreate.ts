@@ -141,11 +141,18 @@ export function getPresentationsToCreate(
   }
 ) {
   const presentationsToCreate: Array<PresentationToCreate> = []
+  const inputDescriptorOrder = new Map(
+    options?.presentationDefinition?.input_descriptors.map((inputDescriptor, index) => [inputDescriptor.id, index])
+  )
+  const credentialEntries = Object.entries(credentialsForInputDescriptor).sort(
+    ([firstInputDescriptorId], [secondInputDescriptorId]) =>
+      (inputDescriptorOrder.get(firstInputDescriptorId) ?? Number.MAX_SAFE_INTEGER) -
+      (inputDescriptorOrder.get(secondInputDescriptorId) ?? Number.MAX_SAFE_INTEGER)
+  )
 
-  // We map all credentials for a input descriptor to the different subject ids. Each subjectId will need
-  // to create a separate proof (either on the same presentation or if not allowed by proof format on separate)
-  // presentations
-  for (const [inputDescriptorId, credentials] of Object.entries(credentialsForInputDescriptor)) {
+  // Map credentials for each input descriptor to presentations grouped by subject.
+  // Process descriptor groups in presentation-definition order so submission ordering is stable.
+  for (const [inputDescriptorId, credentials] of credentialEntries) {
     for (const credential of credentials) {
       switch (credential.claimFormat) {
         case ClaimFormat.SdJwtDc: {
