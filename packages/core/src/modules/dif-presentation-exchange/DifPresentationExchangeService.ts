@@ -298,7 +298,7 @@ export class DifPresentationExchangeService {
           }
         }
 
-        const extraProofOptions =
+        const anonCredsW3cProofOptions =
           presentationToCreate.claimFormat === ClaimFormat.LdpVp &&
           this.shouldSignWithAnonCredsW3cService(presentationToCreate)
             ? {
@@ -316,7 +316,7 @@ export class DifPresentationExchangeService {
               challenge,
               domain,
 
-              ...extraProofOptions,
+              ...anonCredsW3cProofOptions,
             },
             presentationSubmissionLocation,
           }
@@ -350,8 +350,6 @@ export class DifPresentationExchangeService {
 
         // when multiple presentations are submitted, path should be $[0], $[1]
         // FIXME: PEX does not set $[n] paths for EXTERNAL multi-VP submissions.
-        // PEX PR #153 added $.vp. rewriting but did not address this case.
-        // See https://github.com/Sphereon-Opensource/SIOP-OID4VP/issues/62
         if (
           presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.EXTERNAL &&
           verifiablePresentationResultsWithFormat.length > 1
@@ -787,8 +785,8 @@ export class DifPresentationExchangeService {
       }
     } else if (presentationDefinitionVersion.version === PEVersion.v2) {
       // FIXME: As PE version 2 does not have the `schema` anymore, we can't query by schema anymore.
-      // We probably need
-      // to find some way to do initial filtering, hopefully if there's a filter on the `type` field or something.
+      // We probably need to find some way to do initial filtering, 
+      // hopefully if there's a filter on the `type` field or something.
     } else {
       throw new DifPresentationExchangeError(
         `Unsupported presentation definition version ${presentationDefinitionVersion.version as unknown as string}`
