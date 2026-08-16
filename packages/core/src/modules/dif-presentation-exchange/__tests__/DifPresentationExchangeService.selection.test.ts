@@ -100,8 +100,8 @@ describe('DifPresentationExchangeService credential selection', () => {
     })
   })
 
-  describe('nested submission requirements', () => {
-    test('handles request where two credentials are requested but only one available', async () => {
+  describe('credential selection and submission requirements', () => {
+    test('reports unavailable credentials when no submission requirement is provided', async () => {
       const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
       expect(credentialsForRequest).toEqual({
         requirements: [
@@ -197,7 +197,7 @@ describe('DifPresentationExchangeService credential selection', () => {
       })
     })
 
-    test('handles request with submission requirements where two credentials are requested but only one available', async () => {
+    test('reports unavailable credentials for unsatisfied submission requirements', async () => {
       const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, {
         ...presentationDefinition,
         submission_requirements: [
