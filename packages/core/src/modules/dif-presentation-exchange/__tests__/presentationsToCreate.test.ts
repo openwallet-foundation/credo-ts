@@ -177,6 +177,29 @@ describe('getPresentationsToCreate format capability checks', () => {
     ).toThrow("PEX format 'dc+sd-jwt' is not currently supported by the PEX integration.")
   })
 
+  test('maps draft 21 vc+sd-jwt descriptor formats to dc+sd-jwt', () => {
+    const credentialsForInputDescriptor = {
+      inputDescriptor: [
+        {
+          claimFormat: ClaimFormat.SdJwtDc,
+          credentialRecord: sdJwtRecord(),
+          disclosedPayload: {},
+        },
+      ],
+    } as unknown as DifPexInputDescriptorToCredentials
+
+    expect(() =>
+      getPresentationsToCreate(credentialsForInputDescriptor, {
+        presentationDefinition: minimalPresentationDefinition({
+          descriptorFormat: { 'vc+sd-jwt': { sd_jwt_alg_values: ['EdDSA'] } },
+        }),
+        sdJwtDraft21FormatOverridesByInputDescriptor: {
+          inputDescriptor: ClaimFormat.SdJwtDc,
+        },
+      })
+    ).not.toThrow()
+  })
+
   test('throws when selected presentation format is not declared on presentation definition', () => {
     const credentialsForInputDescriptor = {
       inputDescriptor: [
