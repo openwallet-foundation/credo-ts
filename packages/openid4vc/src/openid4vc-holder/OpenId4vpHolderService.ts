@@ -450,11 +450,26 @@ export class OpenId4VpHolderService {
         transactionData
       )
 
+      const presentationDefinition = authorizationRequestPayload.presentation_definition as unknown as
+        | DifPresentationExchangeDefinition
+        | undefined
+      // TODO: Remove this draft-21 compatibility mapping when PEX dependencies support dc+sd-jwt for draft 24.
+      const sdJwtDraft21FormatOverridesByInputDescriptor =
+        openid4vpVersion === 'v1.draft21' && presentationDefinition
+          ? Object.fromEntries(
+              presentationDefinition.input_descriptors
+                .filter((descriptor) =>
+                  Object.hasOwn((descriptor as { format?: Record<string, unknown> }).format ?? {}, 'vc+sd-jwt')
+                )
+                .map((descriptor) => [descriptor.id, ClaimFormat.SdJwtDc])
+            )
+          : undefined
+
       const { presentationSubmission: _presentationSubmission, encodedVerifiablePresentations } =
         await this.presentationExchangeService.createPresentation(agentContext, {
           credentialsForInputDescriptor: credentialsWithTransactionData,
-          presentationDefinition:
-            authorizationRequestPayload.presentation_definition as unknown as DifPresentationExchangeDefinition,
+          presentationDefinition: presentationDefinition as DifPresentationExchangeDefinition,
+          sdJwtDraft21FormatOverridesByInputDescriptor,
           challenge: nonce,
           domain: audience,
           presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,

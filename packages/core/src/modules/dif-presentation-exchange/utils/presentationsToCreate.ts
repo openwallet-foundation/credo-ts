@@ -75,32 +75,42 @@ const supportedPresentationFormats = new Set<ClaimFormat>([
   ClaimFormat.MsoMdoc,
 ])
 
-function getSupportedPresentationFormats(format?: PresentationFormatObject) {
+const supportedCredentialFormats = new Set<ClaimFormat>([
+  ClaimFormat.JwtVc,
+  ClaimFormat.LdpVc,
+  ClaimFormat.SdJwtDc,
+  ClaimFormat.SdJwtW3cVc,
+  ClaimFormat.MsoMdoc,
+])
+
+function getDeclaredFormats(format: PresentationFormatObject | undefined, supportedFormats: Set<ClaimFormat>) {
   if (!format) return undefined
 
+  if (Object.hasOwn(format, ClaimFormat.SdJwtDc)) {
+    throw new CredoError(`PEX format '${ClaimFormat.SdJwtDc}' is not currently supported by the PEX integration.`)
+  }
+
   const declaredFormats = Object.keys(format).filter((formatKey): formatKey is ClaimFormat =>
-    supportedPresentationFormats.has(formatKey as ClaimFormat)
+    supportedFormats.has(formatKey as ClaimFormat)
   )
 
   return new Set(declaredFormats)
 }
 
-function intersectFormats(
-  current: Set<ClaimFormat> | undefined,
-  next: Set<ClaimFormat> | undefined
-): Set<ClaimFormat> | undefined {
-  if (!next) return current
-  if (!current) return new Set(next)
-
-  return new Set(Array.from(current).filter((format) => next.has(format)))
-}
-
-function assertSupportedPresentationFormats(options: {
+function assertSupportedFormats(options: {
   presentationsToCreate: Array<PresentationToCreate>
+  credentialsForInputDescriptor: DifPexInputDescriptorToCredentials
   presentationDefinition?: DifPresentationExchangeDefinition
   formatOverride?: PresentationFormatObject
+  sdJwtDraft21FormatOverridesByInputDescriptor?: Record<string, ClaimFormat>
 }) {
-  const { presentationsToCreate, presentationDefinition, formatOverride } = options
+  const {
+    presentationsToCreate,
+    credentialsForInputDescriptor,
+    presentationDefinition,
+    formatOverride,
+    sdJwtDraft21FormatOverridesByInputDescriptor,
+  } = options
   if (!presentationDefinition && !formatOverride) return
 
   const inputDescriptors = (presentationDefinition?.input_descriptors ?? []) as Array<
@@ -109,26 +119,58 @@ function assertSupportedPresentationFormats(options: {
   >
 
   for (const presentationToCreate of presentationsToCreate) {
-    let supportedFormats = getSupportedPresentationFormats(formatOverride ?? presentationDefinition?.format)
+    const supportedPresentationFormatsForRequest = getDeclaredFormats(
+      formatOverride ?? presentationDefinition?.format,
+      supportedPresentationFormats
+    )
 
-    if (!formatOverride) {
-      for (const inputDescriptorId of presentationToCreate.verifiableCredentials.map((vc) => vc.inputDescriptorId)) {
-        const inputDescriptor = inputDescriptors.find((descriptor) => descriptor.id === inputDescriptorId)
-        supportedFormats = intersectFormats(
-          supportedFormats,
-          getSupportedPresentationFormats((inputDescriptor as { format?: PresentationFormatObject })?.format)
-        )
-      }
-    }
-
-    if (supportedFormats && !supportedFormats.has(presentationToCreate.claimFormat)) {
-      const supportedFormatsAsString = Array.from(supportedFormats).join(', ') || '[none]'
+    if (
+      supportedPresentationFormatsForRequest &&
+      !supportedPresentationFormatsForRequest.has(presentationToCreate.claimFormat)
+    ) {
+      const supportedFormatsAsString = Array.from(supportedPresentationFormatsForRequest).join(', ') || '[none]'
       throw new CredoError(
         [
           `Presentation format '${presentationToCreate.claimFormat}' is not supported by verifier constraints.`,
           `Supported presentation formats: ${supportedFormatsAsString}`,
         ].join('\n')
       )
+    }
+
+    for (const { inputDescriptorId } of presentationToCreate.verifiableCredentials) {
+      const inputDescriptor = inputDescriptors.find((descriptor) => descriptor.id === inputDescriptorId) as
+        | { format?: PresentationFormatObject }
+        | undefined
+      const declaredCredentialFormatsForDescriptor = getDeclaredFormats(
+        inputDescriptor?.format,
+        supportedCredentialFormats
+      )
+      const credentialFormatOverride = sdJwtDraft21FormatOverridesByInputDescriptor?.[inputDescriptorId]
+      const supportedCredentialFormatsForDescriptor =
+        declaredCredentialFormatsForDescriptor && credentialFormatOverride
+          ? new Set(
+              Array.from(declaredCredentialFormatsForDescriptor).map((format) =>
+                format === ClaimFormat.SdJwtW3cVc ? credentialFormatOverride : format
+              )
+            )
+          : declaredCredentialFormatsForDescriptor
+
+      if (!supportedCredentialFormatsForDescriptor) continue
+
+      for (const selectedCredential of credentialsForInputDescriptor[inputDescriptorId] ?? []) {
+        const selectedCredentialFormat = selectedCredential.claimFormat
+        const formatForValidation =
+          sdJwtDraft21FormatOverridesByInputDescriptor?.[inputDescriptorId] ?? selectedCredentialFormat
+        if (!supportedCredentialFormatsForDescriptor.has(formatForValidation)) {
+          const supportedFormatsAsString = Array.from(supportedCredentialFormatsForDescriptor).join(', ') || '[none]'
+          throw new CredoError(
+            [
+              `Credential format '${selectedCredentialFormat}' is not supported by input descriptor '${inputDescriptorId}'.`,
+              `Supported credential formats: ${supportedFormatsAsString}`,
+            ].join('\n')
+          )
+        }
+      }
     }
   }
 }
@@ -138,6 +180,7 @@ export function getPresentationsToCreate(
   options?: {
     presentationDefinition?: DifPresentationExchangeDefinition
     formatOverride?: PresentationFormatObject
+    sdJwtDraft21FormatOverridesByInputDescriptor?: Record<string, ClaimFormat>
   }
 ) {
   const presentationsToCreate: Array<PresentationToCreate> = []
@@ -238,10 +281,12 @@ export function getPresentationsToCreate(
     }
   }
 
-  assertSupportedPresentationFormats({
+  assertSupportedFormats({
     presentationsToCreate,
+    credentialsForInputDescriptor,
     presentationDefinition: options?.presentationDefinition,
     formatOverride: options?.formatOverride,
+    sdJwtDraft21FormatOverridesByInputDescriptor: options?.sdJwtDraft21FormatOverridesByInputDescriptor,
   })
 
   return presentationsToCreate

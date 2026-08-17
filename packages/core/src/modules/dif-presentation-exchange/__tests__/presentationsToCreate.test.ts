@@ -135,6 +135,48 @@ describe('getPresentationsToCreate format capability checks', () => {
     ).not.toThrow()
   })
 
+  test('allows descriptor credential format independently from presentation format', () => {
+    const credentialsForInputDescriptor = {
+      inputDescriptor: [
+        {
+          claimFormat: ClaimFormat.MsoMdoc,
+          credentialRecord: mdocRecord(),
+          disclosedPayload: {},
+        },
+      ],
+    } as unknown as DifPexInputDescriptorToCredentials
+
+    expect(() =>
+      getPresentationsToCreate(credentialsForInputDescriptor, {
+        presentationDefinition: minimalPresentationDefinition({
+          pdFormat: { mso_mdoc: { alg: ['EdDSA'] } },
+          descriptorFormat: { mso_mdoc: { alg: ['EdDSA'] } },
+        }),
+      })
+    ).not.toThrow()
+  })
+
+  test('hard fails when PEX declares dc+sd-jwt', () => {
+    const credentialsForInputDescriptor = {
+      inputDescriptor: [
+        {
+          claimFormat: ClaimFormat.SdJwtDc,
+          credentialRecord: sdJwtRecord(),
+          disclosedPayload: {},
+        },
+      ],
+    } as unknown as DifPexInputDescriptorToCredentials
+
+    expect(() =>
+      getPresentationsToCreate(credentialsForInputDescriptor, {
+        presentationDefinition: minimalPresentationDefinition({
+          pdFormat: { 'dc+sd-jwt': { sd_jwt_alg_values: ['EdDSA'] } },
+          descriptorFormat: { 'vc+sd-jwt': { sd_jwt_alg_values: ['EdDSA'] } },
+        }),
+      })
+    ).toThrow("PEX format 'dc+sd-jwt' is not currently supported by the PEX integration.")
+  })
+
   test('throws when selected presentation format is not declared on presentation definition', () => {
     const credentialsForInputDescriptor = {
       inputDescriptor: [
@@ -153,7 +195,7 @@ describe('getPresentationsToCreate format capability checks', () => {
     ).toThrow("Presentation format 'mso_mdoc' is not supported by verifier constraints")
   })
 
-  test('uses intersection of presentation definition and descriptor-level format constraints', () => {
+  test('validates descriptor format as a credential constraint', () => {
     const credentialsForInputDescriptor = {
       inputDescriptor: [
         {
@@ -171,7 +213,7 @@ describe('getPresentationsToCreate format capability checks', () => {
           descriptorFormat: { jwt_vp: { alg: ['EdDSA'] } },
         }),
       })
-    ).toThrow("Presentation format 'mso_mdoc' is not supported by verifier constraints")
+    ).toThrow("Credential format 'mso_mdoc' is not supported by input descriptor 'inputDescriptor'")
   })
 
   test('allows all formats when no format constraints are present', () => {
@@ -192,7 +234,7 @@ describe('getPresentationsToCreate format capability checks', () => {
     ).not.toThrow()
   })
 
-  test('formatOverride bypasses presentation definition and descriptor format constraints', () => {
+  test('formatOverride bypasses only presentation definition format constraints', () => {
     const credentialsForInputDescriptor = {
       inputDescriptor: [
         {
@@ -211,6 +253,6 @@ describe('getPresentationsToCreate format capability checks', () => {
         }),
         formatOverride: { mso_mdoc: { alg: ['EdDSA'] } },
       })
-    ).not.toThrow()
+    ).toThrow("Credential format 'mso_mdoc' is not supported by input descriptor 'inputDescriptor'")
   })
 })

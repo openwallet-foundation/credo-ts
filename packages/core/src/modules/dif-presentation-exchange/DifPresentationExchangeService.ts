@@ -176,6 +176,12 @@ export class DifPresentationExchangeService {
        * Optional override for supported formats when verifier constraints are defined outside the presentation definition.
        */
       formatOverride?: DifPresentationExchangeDefinition['format']
+
+      /**
+       * Temporary draft 21 SD-JWT format overrides keyed by input descriptor ID.
+       * Remove when PEX dependencies support `dc+sd-jwt` for draft 24.
+       */
+      sdJwtDraft21FormatOverridesByInputDescriptor?: Record<string, ClaimFormat>
     }
   ) {
     const { presentationDefinition, domain, challenge, mdocSessionTranscript } = options
@@ -190,6 +196,7 @@ export class DifPresentationExchangeService {
     const presentationsToCreate = getPresentationsToCreate(options.credentialsForInputDescriptor, {
       presentationDefinition,
       formatOverride: options.formatOverride,
+      sdJwtDraft21FormatOverridesByInputDescriptor: options.sdJwtDraft21FormatOverridesByInputDescriptor,
     })
 
     // Guard against callers bypassing selectCredentialsForRequest: if the PD has submission_requirements,
