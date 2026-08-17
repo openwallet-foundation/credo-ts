@@ -8,6 +8,7 @@ import { MdocModule } from '../../modules/mdoc'
 import { SdJwtVcModule } from '../../modules/sd-jwt-vc'
 import { TokenStatusListModule } from '../../modules/token-status-list/TokenStatusListModule'
 import { W3cCredentialsModule } from '../../modules/vc'
+import { W3cDataIntegrityModule } from '../../modules/w3c-di'
 import { X509Module } from '../../modules/x509'
 import type { Module } from '../../plugins'
 import { DependencyManager, injectable } from '../../plugins'
@@ -58,6 +59,7 @@ describe('AgentModules', () => {
         dids: expect.any(DidsModule),
         kms: expect.any(KeyManagementModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
+        w3cDataIntegrity: expect.any(W3cDataIntegrityModule),
         sdJwtVc: expect.any(SdJwtVcModule),
         mdoc: expect.any(MdocModule),
         x509: expect.any(X509Module),
@@ -79,6 +81,7 @@ describe('AgentModules', () => {
         dids: expect.any(DidsModule),
         kms: expect.any(KeyManagementModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
+        w3cDataIntegrity: expect.any(W3cDataIntegrityModule),
         cache: expect.any(CacheModule),
         sdJwtVc: expect.any(SdJwtVcModule),
         mdoc: expect.any(MdocModule),
@@ -103,6 +106,7 @@ describe('AgentModules', () => {
         dids: expect.any(DidsModule),
         kms: expect.any(KeyManagementModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
+        w3cDataIntegrity: expect.any(W3cDataIntegrityModule),
         cache: expect.any(CacheModule),
         sdJwtVc: expect.any(SdJwtVcModule),
         mdoc: expect.any(MdocModule),

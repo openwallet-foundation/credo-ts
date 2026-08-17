@@ -7,8 +7,10 @@ import type {
   OpenId4VciCreateDeferredCredentialResponseOptions,
   OpenId4VciCreateIssuerOptions,
   OpenId4VciCreateStatelessCredentialOfferOptions,
+  OpenId4VcUpdateIssuerOptions,
   OpenId4VcUpdateIssuerRecordOptions,
 } from './OpenId4VcIssuerServiceOptions'
+import { OpenId4VcIssuerRecord } from './repository'
 
 /**
  * @public
@@ -54,8 +56,11 @@ export class OpenId4VcIssuerApi {
       credentialConfigurationsSupported,
       display,
       dpopSigningAlgValuesSupported,
+      clientAttestationSigningAlgValuesSupported,
+      clientAttestationPopSigningAlgValuesSupported,
       batchCredentialIssuance,
       authorizationServerConfigs,
+      metadataSigner,
     } = options
 
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
@@ -63,10 +68,19 @@ export class OpenId4VcIssuerApi {
     issuer.credentialConfigurationsSupported = credentialConfigurationsSupported
     issuer.display = display
     issuer.dpopSigningAlgValuesSupported = dpopSigningAlgValuesSupported
+    issuer.clientAttestationSigningAlgValuesSupported = clientAttestationSigningAlgValuesSupported
+    issuer.clientAttestationPopSigningAlgValuesSupported = clientAttestationPopSigningAlgValuesSupported
     issuer.batchCredentialIssuance = batchCredentialIssuance
     issuer.authorizationServerConfigs = authorizationServerConfigs
 
-    return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer)
+    return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer, { metadataSigner })
+  }
+
+  /**
+   * Updates an issuer and stores the corresponding updated issuer metadata.
+   */
+  public async updateIssuer(issuer: OpenId4VcIssuerRecord, options?: OpenId4VcUpdateIssuerOptions) {
+    return this.openId4VcIssuerService.updateIssuer(this.agentContext, issuer, options)
   }
 
   /**
@@ -132,5 +146,12 @@ export class OpenId4VcIssuerApi {
 
   public async getIssuanceSessionById(issuanceSessionId: string) {
     return this.openId4VcIssuerService.getIssuanceSessionById(this.agentContext, issuanceSessionId)
+  }
+
+  /**
+   * Delete an issuance session record by id.
+   */
+  public async deleteIssuanceSessionById(issuanceSessionId: string) {
+    return this.openId4VcIssuerService.deleteIssuanceSessionById(this.agentContext, issuanceSessionId)
   }
 }

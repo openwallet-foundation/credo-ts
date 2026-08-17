@@ -129,6 +129,11 @@ describe('sd-jwt-vc end to end test', () => {
       compact: expect.any(String),
       encoded: expect.any(String),
       kbJwt: undefined,
+      issuer: {
+        method: 'did',
+        didUrl:
+          'did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+      },
       holder: {
         jwk: {
           jwk: {

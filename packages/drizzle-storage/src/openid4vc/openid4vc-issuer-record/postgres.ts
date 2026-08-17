@@ -27,6 +27,12 @@ export const openid4vcIssuer = pgTable(
     dpopSigningAlgValuesSupported: jsonb('dpop_signing_alg_values_supported').$type<
       [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
     >(),
+    clientAttestationSigningAlgValuesSupported: jsonb('client_attestation_signing_alg_values_supported').$type<
+      [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+    >(),
+    clientAttestationPopSigningAlgValuesSupported: jsonb('client_attestation_pop_signing_alg_values_supported').$type<
+      [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+    >(),
     batchCredentialIssuance: text('batch_credential_issuance').$type<OpenId4VciBatchCredentialIssuanceOptions>(),
   },
   (table) => postgresBaseRecordIndexes(table, 'openid4vcIssuer')

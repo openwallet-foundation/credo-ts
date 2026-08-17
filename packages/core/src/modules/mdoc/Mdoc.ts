@@ -1,15 +1,20 @@
 import { DeviceKey, DeviceKeyInfo, Holder, Issuer, IssuerSigned, SignatureAlgorithm } from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
+import { TrustedIssuerContext } from '../../agent/TrustedIssuerContext'
 import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate } from '../x509'
-import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import { X509ModuleConfig } from '../x509/X509ModuleConfig'
 import { MdocError } from './MdocError'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
+import {
+  assertMdocStatusListChainsMatchIssuanceChain,
+  convertMdocTrustedCertificates,
+  mdocTrustedCertificatesToRaw,
+} from './mdocUtil'
 
 /**
  * This class represents a IssuerSigned Mdoc Document,
@@ -171,16 +176,27 @@ export class Mdoc {
       X509Certificate.fromRawCertificate(certificate)
     )
 
-    const trustedCertificates =
-      options?.trustedCertificates ??
-      (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
-        verification: {
-          type: 'credential',
-          credential: this,
+    let trustedCertificates = options?.trustedCertificates
+    if (!trustedCertificates) {
+      const trustedIssuers = await TrustedIssuerContext.getTrustedIssuersForVerification(agentContext, {
+        verification: { type: 'credential', credential: this },
+        signer: {
+          certificateChain,
+          method: 'x509',
         },
-        certificateChain,
-      })) ??
-      x509ModuleConfig.trustedCertificates
+      })
+
+      trustedCertificates =
+        trustedIssuers?.trustedIssuers ??
+        (await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
+          verification: {
+            type: 'credential',
+            credential: this,
+          },
+          certificateChain,
+        })) ??
+        x509ModuleConfig.trustedCertificates
+    }
 
     if (!trustedCertificates) {
       throw new MdocError('No trusted certificates found. Cannot verify mdoc.')
@@ -191,26 +207,12 @@ export class Mdoc {
     })
 
     try {
-      // The underlying mdoc library requires `status` certificates to validate status/identifier lists.
-      // When the user has not configured a `status` field at all (undefined) for a trusted entry, fall
-      // back to that entry's `issuance` certs — chain equality between the status/identifier and issuance
-      // chains is then enforced below so the fallback can't widen the trust set unintentionally. An
-      // explicitly-empty `status: []` is treated as a deliberate user choice and passed through unchanged.
-      const convertedTrustedCertificates = convertLegacyTrustedCertificates(trustedCertificates).map(
-        ({ issuance, status }) => ({
-          issuance,
-          status: status ?? issuance,
-          hasDedicatedStatusCertificates: status !== undefined,
-        })
-      )
+      const convertedTrustedCertificates = convertMdocTrustedCertificates(trustedCertificates)
 
       const { trustedIssuanceChain, trustedStatusListChain, trustedIdentifierListChain } =
         await Holder.verifyIssuerSigned(
           {
-            trustedCertificates: convertedTrustedCertificates.map(({ issuance, status }) => ({
-              issuance: issuance.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
-              status: status.map((cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate),
-            })),
+            trustedCertificates: mdocTrustedCertificatesToRaw(convertedTrustedCertificates),
             issuerSigned: this.issuerSigned,
             disableCertificateChainValidation: false,
             disableStatusValidation: false,
@@ -218,9 +220,6 @@ export class Mdoc {
           },
           mdocContext
         )
-
-      const x509ChainsAreEqual = (a: X509Certificate[], b: X509Certificate[]) =>
-        a.length === b.length && a.every((cert, i) => cert.equal(b[i]))
 
       const issuanceChain = trustedIssuanceChain.map((c) => X509Certificate.fromRawCertificate(c))
 
@@ -233,37 +232,11 @@ export class Mdoc {
         throw new MdocError('Certificate chain does not match the trusted issuance chain')
       }
 
-      const issuanceTrustAnchor = issuanceChain[issuanceChain.length - 1]
-      const matchedTrustedCertificates = convertedTrustedCertificates.find(({ issuance }) =>
-        issuance.some((cert) => X509Certificate.fromEncodedCertificate(cert).equal(issuanceTrustAnchor))
-      )
-      const hasDedicatedStatusCertificates = matchedTrustedCertificates?.hasDedicatedStatusCertificates ?? false
-
-      if (!hasDedicatedStatusCertificates) {
-        if (
-          trustedIdentifierListChain &&
-          !x509ChainsAreEqual(
-            trustedIdentifierListChain.map((c) => X509Certificate.fromRawCertificate(c)),
-            issuanceChain
-          )
-        ) {
-          throw new MdocError(
-            'Trusted identifier list chain does not match the trusted issuance chain, and no trusted status certificates were provided for the trusted issuance certificate'
-          )
-        }
-
-        if (
-          trustedStatusListChain &&
-          !x509ChainsAreEqual(
-            trustedStatusListChain.map((c) => X509Certificate.fromRawCertificate(c)),
-            issuanceChain
-          )
-        ) {
-          throw new MdocError(
-            'Trusted status list chain does not match the trusted issuance chain, and no trusted status certificates were provided for the trusted issuance certificate'
-          )
-        }
-      }
+      assertMdocStatusListChainsMatchIssuanceChain(convertedTrustedCertificates, {
+        trustedIssuanceChain,
+        trustedStatusListChain,
+        trustedIdentifierListChain,
+      })
 
       return { isValid: true }
     } catch (error) {

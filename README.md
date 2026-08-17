@@ -218,3 +218,7 @@ We welcome you to join our mailing list and Discord channel. See the [Wiki](http
 ## License
 
 OpenWallet Foundation Credo is licensed under the [Apache License Version 2.0 (Apache-2.0)](/LICENSE).
+
+## Governance
+
+The Project Charter for Credo can be found here: [https://github.com/openwallet-foundation/technical-project-charters/blob/main/Credo%20Technical%20Charter%20Draft%20(final%2008.19.24).pdf](https://github.com/openwallet-foundation/technical-project-charters/blob/main/Credo%20Technical%20Charter%20Draft%20(final%2008.19.24).pdf)

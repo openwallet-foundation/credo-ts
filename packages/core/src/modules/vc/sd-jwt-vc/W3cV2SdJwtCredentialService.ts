@@ -1,17 +1,20 @@
-import { SDJwtInstance } from '@sd-jwt/core'
-import type { DisclosureFrame, PresentationFrame, SDJWTConfig } from '@sd-jwt/types'
+import { type DisclosureFrame, type PresentationFrame, type SDJWTConfig, SDJwtInstance } from '@sd-jwt/core'
 import type { AgentContext } from '../../../agent/context'
+import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
 import { JwtPayload } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
+import type { JsonObject } from '../../../types'
 import { asArray, JsonTransformer, MessageValidator, nowInSeconds, TypedArrayEncoder } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi } from '../../kms'
+import { applyDisclosuresForPayload } from '../../sd-jwt-vc/disclosureFrame'
 import {
   extractKeyFromHolderBinding,
   getSdJwtSigner,
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
+  setJwkAlgFromJwtHeader,
 } from '../../sd-jwt-vc/utils'
 import type {
   W3cV2JsonCredential,
@@ -78,6 +81,8 @@ export class W3cV2SdJwtCredentialService {
     // Validate the disclosure frame
     const disclosureFrame = options.disclosureFrame as DisclosureFrame<W3cV2JsonCredential> | undefined
     this.validateDisclosureFrame(disclosureFrame)
+
+    publicJwk.alg = options.alg
 
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
@@ -151,8 +156,25 @@ export class W3cV2SdJwtCredentialService {
       const issuerVerificationMethod = await getVerificationMethodForJwt(agentContext, credential, ['assertionMethod'])
       const issuerPublicKey = getPublicJwkFromVerificationMethod(issuerVerificationMethod)
 
+      // Ensure the issuer is trusted according to the (optional) `getTrustedIssuersForVerification`
+      // callback. For did-based issuers this is a no-op when no trusted issuers are configured,
+      // preserving the previous "trust any valid signature" behavior. Throws when the issuer is not trusted.
+      await TrustedIssuerContext.ensureTrustedSigner(
+        agentContext,
+        {
+          signer: { method: 'did', didUrl: issuerVerificationMethod.id },
+          verification: { type: 'credential', credential },
+        },
+        options.trustedIssuers
+      )
+
       const holderBinding = parseHolderBindingFromCredential(credential.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
+
+      setJwkAlgFromJwtHeader(issuerPublicKey, credential.sdJwt.header.alg)
+      if (holder && credential.sdJwt.kbJwt) {
+        setJwkAlgFromJwtHeader(holder.publicJwk, credential.sdJwt.kbJwt.header?.alg)
+      }
 
       sdJwt.config({
         verifier: getSdJwtVerifier(agentContext, issuerPublicKey),
@@ -218,6 +240,8 @@ export class W3cV2SdJwtCredentialService {
     payload.aud = options.domain
 
     const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
+
+    holder.publicJwk.alg = holder.alg
 
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
@@ -296,6 +320,11 @@ export class W3cV2SdJwtCredentialService {
       const holderBinding = parseHolderBindingFromCredential(presentation.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
+      setJwkAlgFromJwtHeader(proverPublicKey, presentation.sdJwt.header.alg)
+      if (holder && presentation.sdJwt.kbJwt) {
+        setJwkAlgFromJwtHeader(holder.publicJwk, presentation.sdJwt.kbJwt.header?.alg)
+      }
+
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, proverPublicKey),
         kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
@@ -354,6 +383,7 @@ export class W3cV2SdJwtCredentialService {
 
           const credentialResult = await this.verifyCredential(agentContext, {
             credential: credential.envelopedCredential,
+            trustedIssuers: options.trustedIssuers,
           })
 
           const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(
@@ -397,6 +427,14 @@ export class W3cV2SdJwtCredentialService {
     const disclosedCompact = await sdjwt.present(originalCompact, presentationFrame)
 
     return W3cV2SdJwtVerifiableCredential.fromCompact(disclosedCompact)
+  }
+
+  public applyDisclosuresForPayload(
+    compactSdJwtVc: string,
+    requestedPayload: JsonObject
+  ): W3cV2SdJwtVerifiableCredential {
+    const sdJwt = applyDisclosuresForPayload(compactSdJwtVc, requestedPayload)
+    return W3cV2SdJwtVerifiableCredential.fromCompact(sdJwt)
   }
 
   private validateDisclosureFrame(disclosureFrame?: DisclosureFrame<W3cV2JsonCredential | W3cV2JsonPresentation>) {

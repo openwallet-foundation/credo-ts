@@ -8,7 +8,7 @@ import type {
   W3cCredential,
   W3cV2SignCredentialOptions,
 } from '@credo-ts/core'
-import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
+import type { AccessTokenProfileJwtPayload, RequestLike, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 import type {
   OpenId4VcVerificationSessionRecord,
   OpenId4VpCreateAuthorizationRequestReturn,
@@ -34,6 +34,7 @@ import type {
 import {
   OpenId4VcIssuanceSessionRecord,
   type OpenId4VcIssuanceSessionRecordTransaction,
+  type OpenId4VcIssuerRecord,
   type OpenId4VcIssuerRecordProps,
 } from './repository'
 
@@ -262,6 +263,270 @@ export type OpenId4VciGetVerificationSession = (options: {
   }
 >
 
+/**
+ * The authorization flow that should be used to authorize a dynamic (wallet-initiated) issuance
+ * session.
+ *
+ * - `chained` - authorization is delegated to a chained (internal) authorization server. The
+ *   wallet does not interact with the external authorization server directly; Credo bridges the
+ *   request. Used at the pushed authorization request and authorization challenge endpoints.
+ * - `presentation` - authorization is completed using an OpenID4VP presentation during issuance.
+ *   Requires the `getVerificationSession` callback to be configured on the issuer module. Used at
+ *   the authorization challenge endpoint.
+ * - `external` - authorization has already been completed at an external authorization server, and
+ *   the wallet directly calls the credential endpoint with an access token that is not bound to a
+ *   credential offer. Used at the credential endpoint.
+ */
+export type OpenId4VciDynamicIssuanceAuthorizationFlow = 'chained' | 'presentation' | 'external'
+
+interface OpenId4VciDynamicIssuanceSessionOptionsBase {
+  /**
+   * The id to create the issuance session record with. If not provided, a random id is generated.
+   *
+   * A dynamic issuance session is created by Credo *after* the `getDynamicIssuanceSession` callback
+   * returns, so the callback cannot otherwise know the id of the session it just authorized.
+   * Supplying the id here lets an external system reference the session before it exists, for
+   * example to record it in its own database as part of handling the same request.
+   *
+   * Must be unique. Reusing the id of an existing issuance session overwrites that session.
+   */
+  id?: string
+
+  /**
+   * The ids of the credential configurations to bind to this issuance session. All ids must be
+   * part of the `credentialConfigurationsSupported` of the issuer.
+   */
+  credentialConfigurationIds: string[]
+
+  /**
+   * The client id of the wallet making the request, if available.
+   */
+  clientId?: string
+
+  /**
+   * Metadata about the issuance, that will be stored in the issuance session record and passed to
+   * the credential request to credential mapper.
+   */
+  issuanceMetadata?: Record<string, unknown>
+
+  /**
+   * Expiration time in seconds for the issuance session. If not provided, the
+   * `statefulCredentialOfferExpirationInSeconds` value from the issuer config will be used.
+   */
+  expirationInSeconds?: number
+
+  /**
+   * The version of OpenID4VCI used for this issuance session.
+   * @default 'v1'
+   */
+  version?: OpenId4VciVersion
+}
+
+/**
+ * Options shared by the dynamic issuance flows where Credo's internal authorization server is used
+ * (`chained` and `presentation`). For these flows Credo issues the access token, so DPoP/wallet
+ * attestation requirements and refresh tokens can be configured.
+ */
+interface OpenId4VciInternalDynamicIssuanceSessionOptionsBase extends OpenId4VciDynamicIssuanceSessionOptionsBase {
+  /**
+   * Whether DPoP is required for this issuance session. If not provided, the global config value
+   * is used.
+   */
+  requireDpop?: boolean
+
+  /**
+   * Whether wallet attestations are required for this issuance session. If not provided, the
+   * global config value is used.
+   */
+  requireWalletAttestation?: boolean
+
+  /**
+   * Whether this issuance session allows to generate refresh tokens.
+   */
+  generateRefreshTokens?: boolean
+}
+
+/**
+ * Options for creating a dynamic (wallet-initiated) issuance session. The available options are
+ * typed based on the `authorizationFlow`:
+ *
+ * - `chained` - authorization is delegated to a chained (internal) authorization server. The
+ *   `authorizationServerUrl` selects which chained authorization server to use.
+ * - `presentation` - authorization is completed using an OpenID4VP presentation during issuance.
+ *   Requires the `getVerificationSession` callback to be configured on the issuer module.
+ * - `external` - authorization has already been completed at an external authorization server, so
+ *   DPoP/wallet attestation requirements and refresh token generation cannot be configured here
+ *   (they are handled by the external authorization server). The session is bound to the access
+ *   token by Credo.
+ */
+export type OpenId4VciDynamicIssuanceSessionOptions =
+  | (OpenId4VciInternalDynamicIssuanceSessionOptionsBase & {
+      authorizationFlow: 'chained'
+
+      /**
+       * The `issuer` url of the chained authorization server to use. Must match the `issuer` of a
+       * chained authorization server configured on the issuer.
+       */
+      authorizationServerUrl: string
+    })
+  | (OpenId4VciInternalDynamicIssuanceSessionOptionsBase & {
+      authorizationFlow: 'presentation'
+    })
+  | (OpenId4VciDynamicIssuanceSessionOptionsBase & {
+      authorizationFlow: 'external'
+    })
+
+/**
+ * Parsed wallet (client) attestation as available when a dynamic issuance request is received by the
+ * internal authorization server.
+ *
+ * NOTE: at this point the attestation has only been **parsed**, not yet verified. Verification
+ * happens after the issuance session has been created.
+ */
+export interface OpenId4VciDynamicIssuanceWalletAttestation {
+  clientAttestationJwt: string
+  clientAttestationPopJwt?: string
+}
+
+/**
+ * Parsed DPoP information as available when a dynamic issuance request is received by the internal
+ * authorization server.
+ *
+ * NOTE: at this point the DPoP proof has only been **parsed**, not yet verified. Verification
+ * happens after the issuance session has been created.
+ */
+export interface OpenId4VciDynamicIssuanceDpop {
+  jwt?: string
+  jwkThumbprint?: string
+}
+
+interface OpenId4VciGetDynamicIssuanceSessionOptionsBase {
+  agentContext: AgentContext
+
+  /**
+   * The issuer record for which the dynamic issuance is requested.
+   */
+  issuer: OpenId4VcIssuerRecord
+
+  /**
+   * The client id of the wallet making the request, if available.
+   */
+  clientId?: string
+
+  /**
+   * The scopes which were requested and are also present in the credential configurations
+   * supported by the issuer. It matches with the scope values in the
+   * `requestedCredentialConfigurations` parameter.
+   */
+  requestedScopes: string[]
+
+  /**
+   * The credential configurations for which issuance has been requested based on the **scope**
+   * values. It doesn't mean the wallet will request all credentials to be issued.
+   */
+  requestedCredentialConfigurations: OpenId4VciCredentialConfigurationsSupportedWithFormats
+}
+
+/**
+ * Callback input for a dynamic issuance request received by the **internal authorization server**
+ * (a Pushed Authorization Request or Authorization Challenge request without an `issuer_state`).
+ *
+ * The `origin` indicates which endpoint received the request:
+ *
+ * - `pushedAuthorizationRequest` - the pushed authorization request endpoint, which only supports
+ *   the `chained` flow.
+ * - `authorizationChallengeRequest` - the authorization challenge endpoint, which supports both the
+ *   `chained` and `presentation` flows.
+ */
+export interface OpenId4VciGetDynamicIssuanceSessionAuthorizationOptions
+  extends OpenId4VciGetDynamicIssuanceSessionOptionsBase {
+  origin: 'pushedAuthorizationRequest' | 'authorizationChallengeRequest'
+
+  /**
+   * The authorization flows that are supported at the endpoint that received the request. The
+   * returned `authorizationFlow` **must** be one of these, otherwise the request will be rejected.
+   */
+  supportedAuthorizationFlows: Array<Extract<OpenId4VciDynamicIssuanceAuthorizationFlow, 'chained' | 'presentation'>>
+
+  /**
+   * The parsed wallet (client) attestation, if provided in the request. Not yet verified.
+   */
+  walletAttestation?: OpenId4VciDynamicIssuanceWalletAttestation
+
+  /**
+   * The parsed DPoP information, if provided in the request. Not yet verified.
+   */
+  dpop?: OpenId4VciDynamicIssuanceDpop
+
+  /**
+   * The raw request that was received, so the application can extract any additional details it
+   * needs (e.g. headers).
+   */
+  request: RequestLike
+
+  accessTokenPayload?: never
+}
+
+/**
+ * Callback input for a dynamic issuance request received by the **credential endpoint**, where an
+ * access token issued by an external authorization server is present that is not bound to a
+ * credential offer.
+ *
+ * The only supported authorization flow is `external`.
+ */
+export interface OpenId4VciGetDynamicIssuanceSessionCredentialOptions
+  extends OpenId4VciGetDynamicIssuanceSessionOptionsBase {
+  origin: 'credentialRequest'
+
+  /**
+   * The authorization flows that are supported at the endpoint that received the request. The
+   * returned `authorizationFlow` **must** be one of these, otherwise the request will be rejected.
+   */
+  supportedAuthorizationFlows: Array<Extract<OpenId4VciDynamicIssuanceAuthorizationFlow, 'external'>>
+
+  /**
+   * The verified access token payload.
+   */
+  accessTokenPayload: AccessTokenProfileJwtPayload | TokenIntrospectionResponse
+
+  walletAttestation?: never
+  dpop?: never
+  request?: never
+}
+
+export type OpenId4VciGetDynamicIssuanceSessionOptions =
+  | OpenId4VciGetDynamicIssuanceSessionAuthorizationOptions
+  | OpenId4VciGetDynamicIssuanceSessionCredentialOptions
+
+/**
+ * Callback that is called when a dynamic (wallet-initiated) issuance request is received that is not
+ * bound to a credential offer. This happens when:
+ *
+ * - a Pushed Authorization Request or Authorization Challenge request is received by the internal
+ *   authorization server without an `issuer_state` (the `chained` and `presentation` flows), or
+ * - the credential endpoint receives an access token that is not bound to a credential offer (no
+ *   `issuer_state` or `pre-authorized_code`), issued by an external authorization server (the
+ *   `external` flow).
+ *
+ * This callback is the single decision point for dynamic issuance: returning session options allows
+ * the issuance, while throwing an {@link Oauth2ServerErrorResponseError} or returning
+ * `undefined`/`null` denies it. A credential configuration can therefore only be issued through a
+ * dynamic flow if this callback returns options for it.
+ *
+ * The input is typed based on the endpoint that received the request (discriminated by `origin`):
+ *
+ * - `pushedAuthorizationRequest` / `authorizationChallengeRequest` - the internal authorization
+ *   server. The parsed (not yet verified) wallet attestation, DPoP and raw request are available.
+ * - `credentialRequest` - the credential endpoint. The verified access token payload is available.
+ *
+ * The returned `authorizationFlow` **must** be one of the `supportedAuthorizationFlows` for the
+ * endpoint that received the request, otherwise the request will be rejected. The available return
+ * options are typed based on the chosen `authorizationFlow`.
+ */
+export type OpenId4VciGetDynamicIssuanceSession = (
+  options: OpenId4VciGetDynamicIssuanceSessionOptions
+) => CanBePromise<OpenId4VciDynamicIssuanceSessionOptions | undefined>
+
 export type OpenId4VciGetChainedAuthorizationRequestParameters = (options: {
   agentContext: AgentContext
   issuanceSession: OpenId4VcIssuanceSessionRecord
@@ -476,6 +741,8 @@ export type OpenId4VciCreateIssuerOptions = {
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+  clientAttestationSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+  clientAttestationPopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
 
@@ -494,12 +761,30 @@ export type OpenId4VciCreateIssuerOptions = {
   metadataSigner?: OpenId4VcJwtIssuer
 }
 
+export interface OpenId4VcUpdateIssuerOptions {
+  /**
+   * Configures signing of the issuer metadata, allowing wallets to fetch signed metadata.
+   *
+   * - When omitted, the previously configured signer (if any) is kept. The signed metadata is
+   *   always re-signed, so it stays in sync with the updated issuer metadata.
+   * - When `null`, a previously configured signer is removed and the metadata is no longer signed.
+   * - When a signer is provided, signed metadata is enabled, or the previously configured signer
+   *   is replaced.
+   *
+   * See {@link OpenId4VciCreateIssuerOptions.metadataSigner} for the signing behaviour.
+   */
+  metadataSigner?: OpenId4VcJwtIssuer | null
+}
+
 export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   OpenId4VcIssuerRecordProps,
   | 'issuerId'
   | 'display'
   | 'dpopSigningAlgValuesSupported'
+  | 'clientAttestationSigningAlgValuesSupported'
+  | 'clientAttestationPopSigningAlgValuesSupported'
   | 'credentialConfigurationsSupported'
   | 'batchCredentialIssuance'
   | 'authorizationServerConfigs'
->
+> &
+  OpenId4VcUpdateIssuerOptions
