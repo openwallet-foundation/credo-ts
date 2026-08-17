@@ -13,7 +13,7 @@ type SigningService = {
     subjectId: string | undefined
   ) => Promise<unknown[]>
   getHolderDid: (agentContext: unknown) => Promise<string>
-  getProofTypeForLdpVc: (...args: unknown[]) => string
+  getProofTypeForLdpVp: (...args: unknown[]) => string
   getVerificationMethodForLdpVp: (...args: unknown[]) => Promise<unknown>
   getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors: (
     definitionAlgorithms: string[],
@@ -146,7 +146,7 @@ describe('DifPresentationExchangeService presentation signing', () => {
           .mockReturnValue([{ proofType: 'Ed25519Signature2018' }, { proofType: 'JsonWebSignature2020' }]),
       })
 
-      return service.getProofTypeForLdpVc(agentContext, definition(format), verificationMethod)
+      return service.getProofTypeForLdpVp(agentContext, definition(format), verificationMethod)
     }
 
     test('uses ldp_vp.proof_type from presentation definition level for LDP-VP signing', () => {
@@ -161,7 +161,7 @@ describe('DifPresentationExchangeService presentation signing', () => {
       const pd = definition({ ldp_vp: { proof_type: ['Ed25519Signature2018', 'JsonWebSignature2020'] } })
       pd.input_descriptors[0].format = { ldp_vp: { proof_type: ['JsonWebSignature2020'] } }
 
-      expect(service.getProofTypeForLdpVc(agentContext, pd, verificationMethod)).toBe('JsonWebSignature2020')
+      expect(service.getProofTypeForLdpVp(agentContext, pd, verificationMethod)).toBe('JsonWebSignature2020')
     })
 
     test('selects a non-first authentication key when the first key is incompatible with requested VP suite', async () => {
@@ -169,7 +169,7 @@ describe('DifPresentationExchangeService presentation signing', () => {
       const firstKey = key('first-key')
       const secondKey = key('second-key')
       vi.spyOn(service, 'getAuthenticationVerificationMethodsForSubjectId').mockResolvedValue([firstKey, secondKey])
-      vi.spyOn(service, 'getProofTypeForLdpVc')
+      vi.spyOn(service, 'getProofTypeForLdpVp')
         .mockImplementationOnce(() => {
           throw new DifPresentationExchangeError('incompatible')
         })
@@ -185,7 +185,7 @@ describe('DifPresentationExchangeService presentation signing', () => {
       const firstKey = key('first-key')
       const secondKey = key('second-key')
       vi.spyOn(service, 'getAuthenticationVerificationMethodsForSubjectId').mockResolvedValue([firstKey, secondKey])
-      vi.spyOn(service, 'getProofTypeForLdpVc').mockReturnValue('Ed25519Signature2018')
+      vi.spyOn(service, 'getProofTypeForLdpVp').mockReturnValue('Ed25519Signature2018')
 
       await expect(
         service.getVerificationMethodForLdpVp(agentContext, 'did:example:holder', definition())
@@ -195,7 +195,7 @@ describe('DifPresentationExchangeService presentation signing', () => {
     test('throws actionable error when no compatible key and ldp_vp.proof_type tuple exists', async () => {
       const { agentContext, service } = getSigningService()
       vi.spyOn(service, 'getAuthenticationVerificationMethodsForSubjectId').mockResolvedValue([key('first-key')])
-      vi.spyOn(service, 'getProofTypeForLdpVc').mockImplementation(() => {
+      vi.spyOn(service, 'getProofTypeForLdpVp').mockImplementation(() => {
         throw new DifPresentationExchangeError('incompatible')
       })
 

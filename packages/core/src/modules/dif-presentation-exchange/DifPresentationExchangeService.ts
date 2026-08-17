@@ -285,7 +285,7 @@ export class DifPresentationExchangeService {
               presentationDefinitionForSubject
             )
 
-            const proofType = this.getProofTypeForLdpVc(
+            const proofType = this.getProofTypeForLdpVp(
               agentContext,
               presentationDefinitionForSubject,
               verificationMethod
@@ -467,7 +467,7 @@ export class DifPresentationExchangeService {
     return this.getSigningAlgorithmFromVerificationMethod(verificationMethod, suitableAlgorithms)
   }
 
-  private getProofTypeForLdpVc(
+  private getProofTypeForLdpVp(
     agentContext: AgentContext,
     presentationDefinition: DifPresentationExchangeDefinitionV1 | DifPresentationExchangeDefinitionV2,
     verificationMethod: VerificationMethod
@@ -680,7 +680,7 @@ export class DifPresentationExchangeService {
 
     for (const verificationMethod of verificationMethods) {
       try {
-        this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod)
+        this.getProofTypeForLdpVp(agentContext, presentationDefinition, verificationMethod)
         return verificationMethod
       } catch (error) {
         if (!(error instanceof DifPresentationExchangeError)) throw error
