@@ -215,7 +215,6 @@ export async function handlePushedAuthorizationRequest(
       throw new Oauth2ServerErrorResponseError(
         {
           error: Oauth2ErrorCodes.ServerError,
-          error_description: 'Invalid chained authorization server scope mapping.',
         },
         {
           internalMessage: `Invalid scope mapping for chained authorization server '${authorizationServerConfig.issuer}'.`,

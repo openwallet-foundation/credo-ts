@@ -1091,7 +1091,6 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     expect(response.status).toBe(400)
     expect(responseBody).toMatchObject({
       error: 'server_error',
-      error_description: 'Invalid chained authorization server scope mapping.',
     })
 
     clearIdpNock()
