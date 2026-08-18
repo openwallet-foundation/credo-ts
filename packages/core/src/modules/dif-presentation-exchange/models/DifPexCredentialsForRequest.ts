@@ -104,6 +104,15 @@ export interface DifPexCredentialsForRequestSubmissionEntry {
   purpose?: string
 
   /**
+   * Predicate requested by the input descriptor. Predicate support is currently
+   * limited to W3C AnonCreds credentials.
+   */
+  predicate?: {
+    type: 'required' | 'preferred'
+    supported: boolean
+  }
+
+  /**
    * The verifiable credentials that satisfy the input descriptor.
    *
    * If the value is an empty list, it means the input descriptor could

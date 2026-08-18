@@ -128,6 +128,44 @@ describe('DifPresentationExchangeService credential selection', () => {
       expect(result.requirements[0].submissionEntry[0].verifiableCredentials).toHaveLength(1)
       expect(result.areRequirementsSatisfied).toBe(true)
     })
+
+    test('rejects predicates for credential formats without AnonCreds W3C proof support', async () => {
+      const definition = {
+        id: 'unsupported-predicate-test',
+        input_descriptors: [
+          {
+            id: 'pid',
+            format: { mso_mdoc: { alg: ['ES256'] } },
+            constraints: {
+              fields: [
+                {
+                  path: ["$['eu.europa.ec.eudi.pid.1']['birth_date']"],
+                  predicate: 'required' as const,
+                  filter: { type: 'string', const: '1984-01-26' },
+                },
+              ],
+            },
+          },
+        ],
+      } satisfies DifPresentationExchangeDefinitionV2
+
+      const result = await pexService.getCredentialsForRequest(agentContext, definition)
+
+      expect(result).toMatchObject({
+        areRequirementsSatisfied: false,
+        requirements: [
+          {
+            isRequirementSatisfied: false,
+            submissionEntry: [
+              {
+                predicate: { type: 'required', supported: false },
+                verifiableCredentials: [],
+              },
+            ],
+          },
+        ],
+      })
+    })
   })
 
   describe('credential selection and submission requirements', () => {

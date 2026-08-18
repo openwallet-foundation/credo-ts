@@ -23,6 +23,7 @@ import { MdocRecord } from '../../mdoc'
 import { MdocDeviceResponse } from '../../mdoc/MdocDeviceResponse'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
+import { ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE } from '../../vc/anoncreds-w3c-credential'
 import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
 import type {
   DifPexCredentialsForRequest,
@@ -443,19 +444,44 @@ function getSubmissionForInputDescriptor(
 ): DifPexCredentialsForRequestSubmissionEntry {
   const matchesForInputDescriptor = matches.filter((m) => m.id === inputDescriptor.id)
 
+  const matchedCredentials = matchesForInputDescriptor.flatMap((matchForInputDescriptor) =>
+    extractCredentialsFromInputDescriptorMatch(matchForInputDescriptor, verifiableCredentials)
+  )
+  const predicateType = getPredicateType(inputDescriptor)
+  const predicateCredentials = predicateType ? matchedCredentials.filter(supportsPredicate) : matchedCredentials
+  const predicateSupported = predicateType ? predicateCredentials.length > 0 : false
+
   const submissionEntry: DifPexCredentialsForRequestSubmissionEntry = {
     inputDescriptorId: inputDescriptor.id,
     name: inputDescriptor.name,
     purpose: inputDescriptor.purpose,
-    verifiableCredentials: matchesForInputDescriptor.flatMap((matchForInputDescriptor) =>
-      extractCredentialsFromInputDescriptorMatch(matchForInputDescriptor, verifiableCredentials)
-    ),
+    ...(predicateType ? { predicate: { type: predicateType, supported: predicateSupported } } : {}),
+    verifiableCredentials: predicateCredentials,
   }
 
   // return early if no matches.
   if (!matchesForInputDescriptor?.length) return submissionEntry
 
   return submissionEntry
+}
+
+function getPredicateType(inputDescriptor: InputDescriptorV1 | InputDescriptorV2) {
+  const predicates = inputDescriptor.constraints?.fields
+    ?.map((field) => field.predicate)
+    .filter((predicate): predicate is 'required' | 'preferred' => predicate === 'required' || predicate === 'preferred')
+
+  if (!predicates || predicates.length === 0) return undefined
+  return predicates.includes('required') ? 'required' : 'preferred'
+}
+
+function supportsPredicate(credential: SubmissionEntryCredential) {
+  if (credential.claimFormat !== ClaimFormat.LdpVc) return false
+
+  const firstCredential = credential.credentialRecord.firstCredential
+  return (
+    'anonCredsW3cCredentialCryptosuites' in firstCredential &&
+    firstCredential.anonCredsW3cCredentialCryptosuites.includes(ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE)
+  )
 }
 
 function extractCredentialsFromInputDescriptorMatch(
