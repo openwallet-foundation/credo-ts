@@ -47,7 +47,7 @@ describe('DifPresentationExchangeService presentation creation', () => {
           },
         },
         {
-          name: 'Driving licence Mdoc date of birth and photo',
+          name: 'Driving license Mdoc date of birth and photo',
           id: 'org.iso.18013.5.1.mDL',
           group: ['validAgeCheckInputDescriptor'],
           format: { mso_mdoc: { alg: ['EdDSA', 'ES256'] } },
@@ -91,7 +91,7 @@ describe('DifPresentationExchangeService presentation creation', () => {
             },
             {
               inputDescriptorId: 'org.iso.18013.5.1.mDL',
-              name: 'Driving licence Mdoc date of birth and photo',
+              name: 'Driving license Mdoc date of birth and photo',
               purpose: undefined,
               verifiableCredentials: [
                 {
@@ -173,7 +173,7 @@ describe('DifPresentationExchangeService presentation creation', () => {
           },
         },
         {
-          name: 'Driving licence Mdoc date of birth and photo',
+          name: 'Driving license Mdoc date of birth and photo',
           id: 'org.iso.18013.5.1.mDL',
           group: ['validAgeCheckInputDescriptor'],
           format: { mso_mdoc: { alg: ['EdDSA', 'ES256'] } },
@@ -223,7 +223,7 @@ describe('DifPresentationExchangeService presentation creation', () => {
             },
             {
               inputDescriptorId: 'org.iso.18013.5.1.mDL',
-              name: 'Driving licence Mdoc date of birth and photo',
+              name: 'Driving license Mdoc date of birth and photo',
               purpose: undefined,
               verifiableCredentials: [
                 {
@@ -311,7 +311,7 @@ describe('DifPresentationExchangeService presentation creation', () => {
           },
         },
         {
-          name: 'Driving licence Mdoc date of birth and photo',
+          name: 'Driving license Mdoc date of birth and photo',
           id: 'org.iso.18013.5.1.mDL',
           group: ['validAgeCheckInputDescriptor2'],
           format: { mso_mdoc: { alg: ['EdDSA', 'ES256'] } },
@@ -364,7 +364,7 @@ describe('DifPresentationExchangeService presentation creation', () => {
           submissionEntry: [
             {
               inputDescriptorId: 'org.iso.18013.5.1.mDL',
-              name: 'Driving licence Mdoc date of birth and photo',
+              name: 'Driving license Mdoc date of birth and photo',
               purpose: undefined,
               verifiableCredentials: [
                 {
