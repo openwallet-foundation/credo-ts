@@ -117,7 +117,11 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
       issuerState: authorizationChallengeRequest.issuer_state,
     })
 
-    const allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
+    const allowedStates = [
+      OpenId4VcIssuanceSessionState.OfferCreated,
+      OpenId4VcIssuanceSessionState.OfferUriRetrieved,
+      OpenId4VcIssuanceSessionState.AuthorizationRetryable,
+    ]
     if (!issuanceSession || !allowedStates.includes(issuanceSession.state)) {
       throw new Oauth2ServerErrorResponseError(
         {

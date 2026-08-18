@@ -233,17 +233,42 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
 
         return response.redirect(redirectUri.toString())
       } catch (error) {
+        const redirectUri = issuanceSession?.chainedIdentity?.redirectUri
+        const walletState = issuanceSession?.chainedIdentity?.state
+        const errorCode = error instanceof Oauth2ServerErrorResponseError ? error.errorResponse.error : undefined
+        const chainedSession = issuanceSession
+        if (
+          chainedSession &&
+          chainedSession.state === OpenId4VcIssuanceSessionState.AuthorizationInitiated &&
+          chainedSession.chainedIdentity?.externalAuthorizationServerUrl &&
+          issuer.chainedAuthorizationServerConfigs?.some(
+            (config) => config.issuer === chainedSession.chainedIdentity?.externalAuthorizationServerUrl
+          )
+        ) {
+          if (errorCode === Oauth2ErrorCodes.AccessDenied) {
+            chainedSession.errorMessage = 'Authorization was denied by the upstream identity provider.'
+            await openId4VcIssuerService.updateState(agentContext, chainedSession, OpenId4VcIssuanceSessionState.Error)
+          } else {
+            chainedSession.resetChainedAuthorizationAttempt()
+            await openId4VcIssuerService.updateState(
+              agentContext,
+              chainedSession,
+              OpenId4VcIssuanceSessionState.AuthorizationRetryable
+            )
+          }
+        }
+
         if (error instanceof Oauth2ServerErrorResponseError) {
           // Redirect to the redirect URI if available.
-          if (issuanceSession?.chainedIdentity?.redirectUri) {
-            const redirectUri = new URL(issuanceSession.chainedIdentity.redirectUri)
-            redirectUri.searchParams.set('error', error.errorResponse.error)
-            redirectUri.searchParams.set('iss', authorizationServerIssuer)
+          if (redirectUri) {
+            const errorRedirectUri = new URL(redirectUri)
+            errorRedirectUri.searchParams.set('error', error.errorResponse.error)
+            errorRedirectUri.searchParams.set('iss', authorizationServerIssuer)
             if (error.errorResponse.error_description) {
-              redirectUri.searchParams.set('error_description', error.errorResponse.error_description)
+              errorRedirectUri.searchParams.set('error_description', error.errorResponse.error_description)
             }
-            if (issuanceSession.chainedIdentity.state) {
-              redirectUri.searchParams.set('state', issuanceSession.chainedIdentity.state)
+            if (walletState) {
+              errorRedirectUri.searchParams.set('state', walletState)
             }
 
             agentContext.config.logger.warn(
@@ -253,7 +278,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
               }
             )
 
-            return response.redirect(redirectUri.toString())
+            return response.redirect(errorRedirectUri.toString())
           }
 
           return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)

@@ -460,6 +460,28 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   })
   public chainedIdentity?: OpenId4VcIssuanceSessionChainedIdentity
 
+  public resetChainedAuthorizationAttempt() {
+    if (!this.chainedIdentity) return
+
+    this.authorization = {
+      ...this.authorization,
+      code: undefined,
+      codeExpiresAt: undefined,
+      subject: undefined,
+    }
+    this.chainedIdentity = {
+      ...this.chainedIdentity,
+      externalAccessTokenResponse: undefined,
+    }
+
+    if (this.dpop) {
+      this.dpop = {
+        ...this.dpop,
+        dpopJkt: undefined,
+      }
+    }
+  }
+
   /**
    * User-defined metadata that will be provided to the credential request to credential mapper
    * to allow to retrieve the needed credential input data. Can be the credential data itself,
