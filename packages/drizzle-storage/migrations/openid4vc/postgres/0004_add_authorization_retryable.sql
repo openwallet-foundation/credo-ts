@@ -1,0 +1,1 @@
+ALTER TYPE "public"."OpenId4VcIssuanceSessionState" ADD VALUE 'AuthorizationRetryable' BEFORE 'AuthorizationGranted';
