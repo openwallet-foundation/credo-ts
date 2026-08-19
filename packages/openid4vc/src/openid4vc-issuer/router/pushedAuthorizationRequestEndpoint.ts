@@ -214,30 +214,21 @@ export async function handlePushedAuthorizationRequest(
     additionalRequestPayload = dynamicConfiguration.additionalPayload
     redirectUris = dynamicConfiguration.redirectUris
   } else {
-    for (const scope of requestedScopes) {
-      if (!authorizationServerConfig.scopesMapping) {
-        throw new Oauth2ServerErrorResponseError(
-          {
-            error: Oauth2ErrorCodes.ServerError,
-          },
-          {
-            internalMessage: `Issuer '${issuer.issuerId}' does not have a scope mapping for scope '${scope}' for external authorization server '${authorizationServerConfig.issuer}'`,
-          }
-        )
-      }
-
-      if (scope in authorizationServerConfig.scopesMapping) {
-        scopes.push(...authorizationServerConfig.scopesMapping[scope])
-      } else {
-        throw new Oauth2ServerErrorResponseError(
-          {
-            error: Oauth2ErrorCodes.ServerError,
-          },
-          {
-            internalMessage: `Issuer '${issuer.issuerId}' does not have a scope mapping for scope '${scope}' for external authorization server '${authorizationServerConfig.issuer}'`,
-          }
-        )
-      }
+    try {
+      scopes = openId4VcIssuerService.getStaticChainedAuthorizationScopes({
+        authorizationServerConfig,
+        requestedScopes,
+      })
+    } catch (error) {
+      throw new Oauth2ServerErrorResponseError(
+        {
+          error: Oauth2ErrorCodes.ServerError,
+        },
+        {
+          internalMessage: `Invalid scope mapping for chained authorization server '${authorizationServerConfig.issuer}'.`,
+          cause: error,
+        }
+      )
     }
   }
 
