@@ -2,10 +2,12 @@ import type { SdJwtVcRecord } from '@credo-ts/core'
 import { CredoError, DidsApi, JwsService, JwtPayload, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { AuthorizationServerMetadata, Jwk, JwtSigner, SignJwtCallback } from '@openid4vc/oauth2'
 import {
+  clientAuthenticationDynamic,
   createDpopHeadersForRequest,
   decodeJwt,
   jwtHeaderFromJwtSigner,
   Oauth2AuthorizationServer,
+  Oauth2Client,
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import { randomUUID } from 'crypto'
@@ -201,6 +203,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         issuer: 'http://localhost:4747',
         token_endpoint: 'http://localhost:4747/token',
         authorization_endpoint: 'http://localhost:4747/authorize',
+        dpop_signing_alg_values_supported: [Kms.KnownJwaSignatureAlgorithms.ES256],
       } satisfies AuthorizationServerMetadata)
     )
     idpApp.get('/jwks.json', (_req, res) =>
@@ -227,6 +230,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
       return res.redirect(redirect.toString())
     })
+    const usedDpopJtis = new Set<string>()
     idpApp.post('/token', async (req, res) => {
       const authorizationHeader = req.headers.authorization?.split(' ')
       if (!authorizationHeader || authorizationHeader[0] !== 'Basic' || authorizationHeader.length !== 2) {
@@ -243,6 +247,39 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         return res.status(401).json({
           error: 'invalid_client',
           error_description: 'Unauthorized user',
+        })
+      }
+
+      const dpopJwt = req.header('DPoP')
+      if (!dpopJwt) {
+        return res.status(400).json({
+          error: 'invalid_dpop_proof',
+          error_description: 'Missing DPoP proof',
+        })
+      }
+
+      let dpopVerification: Awaited<ReturnType<typeof idpServer.verifyDpopJwt>>
+      try {
+        dpopVerification = await idpServer.verifyDpopJwt({
+          dpopJwt,
+          request: {
+            headers: new Headers(),
+            method: 'POST',
+            url: 'http://localhost:4747/token',
+          },
+          allowedSigningAlgs: [Kms.KnownJwaSignatureAlgorithms.ES256],
+        })
+        if (usedDpopJtis.has(dpopVerification.payload.jti)) {
+          return res.status(400).json({
+            error: 'invalid_dpop_proof',
+            error_description: 'DPoP proof replayed',
+          })
+        }
+        usedDpopJtis.add(dpopVerification.payload.jti)
+      } catch (error) {
+        return res.status(400).json({
+          error: 'invalid_dpop_proof',
+          error_description: error instanceof Error ? error.message : 'Invalid DPoP proof',
         })
       }
 
@@ -275,24 +312,34 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         payload,
       })
 
-      return res.json(
-        await idpServer.createAccessTokenResponse({
-          authorizationServer: 'http://localhost:4747',
-          clientId: idpClientId,
-          audience: idpClientId,
-          expiresInSeconds: 5000,
-          subject: 'externalIdpSubject',
-          scope: 'MappedUniversityDegreeCredential openid',
-          signer: {
-            method: 'jwk',
-            publicJwk: idpServerJwk.toJson() as Jwk,
+      const accessToken = await issuer.agent.dependencyManager
+        .resolve(JwsService)
+        .createJwsCompact(issuer.agent.context, {
+          keyId: idpServerKey.keyId,
+          payload: JwtPayload.fromJson({
+            iss: 'http://localhost:4747',
+            aud: idpClientId,
+            exp: Math.floor(Date.now() / 1000) + 3600,
+            iat: Math.floor(Date.now() / 1000),
+            jti: randomUUID(),
+            sub: 'externalIdpSubject',
+            scope: 'MappedUniversityDegreeCredential openid',
+            cnf: { jkt: dpopVerification.jwkThumbprint },
+          }),
+          protectedHeaderOptions: {
+            typ: 'at+jwt',
             alg: 'ES256',
-          },
-          additionalAccessTokenResponsePayload: {
-            id_token: jwt,
+            kid: 'first',
           },
         })
-      )
+
+      return res.json({
+        access_token: accessToken,
+        token_type: 'DPoP',
+        expires_in: 5000,
+        scope: 'MappedUniversityDegreeCredential openid',
+        id_token: jwt,
+      })
     })
     const clearIdpNock = setupNockToExpress('http://localhost:4747', idpApp)
 
@@ -303,6 +350,8 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       // will see this page, and therefore should be provided with some HTML.
       res.json({
         code: req.query.code,
+        error: req.query.error,
+        error_description: req.query.error_description,
       })
     })
     const clearHolderNock = setupNockToExpress('http://localhost:5757', holderApp)
@@ -320,6 +369,9 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         {
           type: 'chained',
           issuer: 'http://localhost:4747',
+          dpop: {
+            required: true,
+          },
           clientAuthentication: {
             type: 'clientSecret',
             clientId: idpClientId,
@@ -364,9 +416,12 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       redirect: 'follow',
     })
     expect(authorizationResponse.ok).toBe(true)
-    const code = ((await authorizationResponse.json()) as Record<string, string>)?.code
+    const authorizationResponseBody = (await authorizationResponse.json()) as Record<string, string>
+    const code = authorizationResponseBody.code
 
-    expect(code).toBeDefined()
+    if (!code) {
+      throw new Error(`Authorization failed: ${JSON.stringify(authorizationResponseBody)}`)
+    }
 
     const tokenResponseTenant = await holderTenant.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
@@ -1136,7 +1191,8 @@ describe('OpenId4Vc (Chained Authorization)', () => {
             },
           }),
         },
-        '96213c3d7fc8d4d6754c7a0fd969598e'
+        '96213c3d7fc8d4d6754c7a0fd969598e',
+        global.fetch
       )) as typeof dpopAgent
       issuerService = dpopAgent.agent.dependencyManager.resolve(OpenId4VcIssuerService)
     })
@@ -1245,6 +1301,129 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       })
 
       expect(result.dpop?.nonce).toBe('upstream-nonce')
+    })
+
+    it('retries a nonce challenge with a fresh nonce-bound proof', async () => {
+      const nonce = 'upstream-retry-nonce'
+      const seenJtis = new Set<string>()
+      const proofs: string[] = []
+      let requestCount = 0
+      const upstreamApp = express()
+      const upstreamServer = new Oauth2AuthorizationServer({
+        callbacks: getOid4vcCallbacks(dpopAgent.agent.context),
+      })
+
+      upstreamApp.post('/token', async (req, res) => {
+        requestCount += 1
+        const proof = req.header('DPoP')
+        if (!proof) return res.status(400).json({ error: 'invalid_dpop_proof' })
+        proofs.push(proof)
+
+        try {
+          const verification = await upstreamServer.verifyDpopJwt({
+            dpopJwt: proof,
+            request: {
+              headers: new Headers(),
+              method: 'POST',
+              url: 'http://localhost:4748/token',
+            },
+            expectedNonce: requestCount === 1 ? undefined : nonce,
+          })
+
+          if (seenJtis.has(verification.payload.jti)) {
+            return res.status(400).json({
+              error: 'invalid_dpop_proof',
+              error_description: 'DPoP proof replayed',
+            })
+          }
+          seenJtis.add(verification.payload.jti)
+
+          if (requestCount === 1) {
+            return res.status(400).set('DPoP-Nonce', nonce).json({ error: 'use_dpop_nonce' })
+          }
+
+          return res.json({
+            access_token: `token-${verification.jwkThumbprint}`,
+            token_type: 'DPoP',
+            expires_in: 300,
+          })
+        } catch (error) {
+          return res.status(400).json({
+            error: 'invalid_dpop_proof',
+            error_description: error instanceof Error ? error.message : 'Invalid DPoP proof',
+          })
+        }
+      })
+      const clearUpstreamNock = setupNockToExpress('http://localhost:4748', upstreamApp)
+
+      try {
+        const result = await issuerService.getChainedUpstreamDpopRequestOptions(dpopAgent.agent.context, {
+          issuanceSession: createDpopIssuanceSession(),
+          chainedAuthorizationServerConfig: createDpopConfig(),
+          authorizationServerMetadata: {
+            ...upstreamAuthorizationServerMetadata,
+            issuer: 'http://localhost:4748',
+            token_endpoint: 'http://localhost:4748/token',
+          },
+        })
+        const tokenResponse = await new Oauth2Client({
+          callbacks: {
+            ...getOid4vcCallbacks(dpopAgent.agent.context),
+            clientAuthentication: clientAuthenticationDynamic({
+              clientId: 'client',
+              clientSecret: 'secret',
+            }),
+          },
+        }).retrieveAuthorizationCodeAccessToken({
+          authorizationCode: 'authorization-code',
+          authorizationServerMetadata: {
+            ...upstreamAuthorizationServerMetadata,
+            issuer: 'http://localhost:4748',
+            token_endpoint: 'http://localhost:4748/token',
+          },
+          dpop: result.dpop,
+        })
+
+        expect(tokenResponse.accessTokenResponse.token_type).toBe('DPoP')
+        expect(requestCount).toBe(2)
+        expect(proofs).toHaveLength(2)
+        expect(proofs[0]).not.toBe(proofs[1])
+      } finally {
+        clearUpstreamNock()
+      }
+    })
+
+    it('rejects a replayed DPoP proof at the upstream verifier', async () => {
+      const result = await issuerService.getChainedUpstreamDpopRequestOptions(dpopAgent.agent.context, {
+        issuanceSession: createDpopIssuanceSession(),
+        chainedAuthorizationServerConfig: createDpopConfig(),
+        authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+      })
+      if (!result.dpop) throw new Error('Expected DPoP options')
+
+      const proof = (
+        await createDpopHeadersForRequest({
+          request: tokenRequest,
+          signer: result.dpop.signer,
+          callbacks: getOid4vcCallbacks(dpopAgent.agent.context),
+        })
+      ).DPoP
+      const seenJtis = new Set<string>()
+      const upstreamServer = new Oauth2AuthorizationServer({
+        callbacks: getOid4vcCallbacks(dpopAgent.agent.context),
+      })
+      const verify = async () => {
+        const verification = await upstreamServer.verifyDpopJwt({
+          dpopJwt: proof,
+          request: tokenRequest,
+        })
+        if (seenJtis.has(verification.payload.jti)) throw new Error('DPoP proof replayed')
+        seenJtis.add(verification.payload.jti)
+        return verification
+      }
+
+      await verify()
+      await expect(verify()).rejects.toThrow('DPoP proof replayed')
     })
   })
 })
