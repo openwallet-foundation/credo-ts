@@ -905,16 +905,16 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: 0.5.5
+        specifier: ^0.5.5
         version: 0.5.5
       '@openid4vc/openid4vci':
-        specifier: 0.5.5
+        specifier: ^0.5.5
         version: 0.5.5
       '@openid4vc/openid4vp':
-        specifier: 0.5.5
+        specifier: ^0.5.5
         version: 0.5.5
       '@openid4vc/utils':
-        specifier: 0.5.5
+        specifier: ^0.5.5
         version: 0.5.5
       '@types/express':
         specifier: 'catalog:'
