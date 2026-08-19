@@ -1,4 +1,4 @@
-import { joinUriParts, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { Jwt, joinUriParts, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import {
   Oauth2ClientErrorResponseError,
   Oauth2ErrorCodes,
@@ -126,14 +126,20 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           )
         }
 
+        const upstreamDpop = await openId4VcIssuerService.getChainedUpstreamDpopRequestOptions(agentContext, {
+          issuanceSession,
+          chainedAuthorizationServerConfig: authorizationServerConfig,
+          authorizationServerMetadata,
+        })
+
         // Retrieve access token
-        // TODO: add support for DPoP
-        const { accessTokenResponse } = await oauth2Client
+        const { accessTokenResponse, dpop } = await oauth2Client
           .retrieveAuthorizationCodeAccessToken({
             authorizationCode: authorizationResponse.code,
             authorizationServerMetadata,
             pkceCodeVerifier: issuanceSession.chainedIdentity.pkceCodeVerifier,
             redirectUri: joinUriParts(config.baseUrl, [issuer.issuerId, 'redirect']),
+            dpop: upstreamDpop.dpop,
           })
           .catch((error) => {
             if (error instanceof Oauth2ClientErrorResponseError) {
@@ -172,6 +178,57 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
               }
             )
           })
+
+        if (upstreamDpop.session) upstreamDpop.session.nonce = dpop?.nonce
+
+        if (upstreamDpop.required) {
+          if (!upstreamDpop.jwkThumbprint) {
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.ServerError,
+                error_description: 'Unable to verify upstream DPoP binding.',
+              },
+              {
+                internalMessage: `No expected upstream DPoP key thumbprint available for strict DPoP mode on '${authorizationServerMetadata.issuer}'.`,
+              }
+            )
+          }
+
+          let cnfJkt: string | undefined
+          try {
+            const cnf = (Jwt.fromSerializedJwt(accessTokenResponse.access_token).payload as { cnf?: unknown }).cnf
+            cnfJkt =
+              typeof cnf === 'object' && cnf !== null && 'jkt' in cnf && typeof cnf.jkt === 'string'
+                ? cnf.jkt
+                : undefined
+          } catch {
+            cnfJkt = undefined
+          }
+
+          if (!cnfJkt) {
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.ServerError,
+                error_description: 'Missing required upstream DPoP token binding (cnf.jkt).',
+              },
+              {
+                internalMessage: `Strict upstream DPoP mode is enabled for '${authorizationServerMetadata.issuer}', but access token binding claim 'cnf.jkt' could not be verified.`,
+              }
+            )
+          }
+
+          if (cnfJkt !== upstreamDpop.jwkThumbprint) {
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.ServerError,
+                error_description: 'Upstream DPoP token binding mismatch.',
+              },
+              {
+                internalMessage: `Strict upstream DPoP mode is enabled for '${authorizationServerMetadata.issuer}', but received 'cnf.jkt' value '${cnfJkt}' does not match expected key thumbprint '${upstreamDpop.jwkThumbprint}'.`,
+              }
+            )
+          }
+        }
 
         // Verify the ID Token if 'openid' scope was requested
         if (accessTokenResponse.scope?.split(' ').includes('openid')) {
@@ -222,6 +279,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
         issuanceSession.chainedIdentity = {
           ...issuanceSession.chainedIdentity,
           externalAccessTokenResponse: accessTokenResponse,
+          upstreamDpop: upstreamDpop.session,
         }
 
         // TODO: we need to start using locks so we can't get corrupted state
