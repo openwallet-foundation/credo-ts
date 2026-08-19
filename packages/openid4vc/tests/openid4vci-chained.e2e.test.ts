@@ -1,7 +1,12 @@
 import type { SdJwtVcRecord } from '@credo-ts/core'
 import { CredoError, DidsApi, JwsService, JwtPayload, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { AuthorizationServerMetadata, Jwk, JwtSigner, SignJwtCallback } from '@openid4vc/oauth2'
-import { decodeJwt, jwtHeaderFromJwtSigner, Oauth2AuthorizationServer } from '@openid4vc/oauth2'
+import {
+  createDpopHeadersForRequest,
+  decodeJwt,
+  jwtHeaderFromJwtSigner,
+  Oauth2AuthorizationServer,
+} from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import { randomUUID } from 'crypto'
 import express, { type Express } from 'express'
@@ -11,7 +16,11 @@ import { TenantsModule } from '../../tenants/src'
 import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciCredentialRequestToCredentialMapper } from '../src'
 import { OpenId4VcIssuanceSessionState, OpenId4VcModule } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import { OpenId4VcIssuerService } from '../src/openid4vc-issuer/OpenId4VcIssuerService'
+import type { OpenId4VcIssuanceSessionChainedIdentity } from '../src/openid4vc-issuer/repository'
+import { OpenId4VcIssuanceSessionRecord } from '../src/openid4vc-issuer/repository'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
+import type { OpenId4VciChainedAuthorizationServerConfig } from '../src/shared/models/OpenId4VciAuthorizationServerConfig'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupported } from './utilsVci'
@@ -1097,4 +1106,181 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     await issuerTenant.endSession()
   })
+
+  describe('upstream DPoP', () => {
+    const upstreamAuthorizationServerMetadata = {
+      issuer: 'https://upstream.example.com',
+      token_endpoint: 'https://upstream.example.com/token',
+      dpop_signing_alg_values_supported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+    } satisfies AuthorizationServerMetadata
+
+    const tokenRequest = {
+      headers: new Headers(),
+      method: 'POST',
+      url: 'https://upstream.example.com/token',
+    } as const
+
+    let dpopAgent: AgentType<{
+      openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions, undefined>
+    }>
+    let issuerService: OpenId4VcIssuerService
+
+    beforeEach(async () => {
+      dpopAgent = (await createAgentFromModules(
+        {
+          inMemory: new InMemoryWalletModule(),
+          openid4vc: new OpenId4VcModule({
+            issuer: {
+              baseUrl: 'http://localhost:3000/oid4vci',
+              credentialRequestToCredentialMapper,
+            },
+          }),
+        },
+        '96213c3d7fc8d4d6754c7a0fd969598e'
+      )) as typeof dpopAgent
+      issuerService = dpopAgent.agent.dependencyManager.resolve(OpenId4VcIssuerService)
+    })
+
+    afterEach(async () => {
+      await dpopAgent.agent.shutdown()
+    })
+
+    it('creates a DPoP proof that an upstream authorization server can verify', async () => {
+      const result = await issuerService.getChainedUpstreamDpopRequestOptions(dpopAgent.agent.context, {
+        issuanceSession: createDpopIssuanceSession(),
+        chainedAuthorizationServerConfig: createDpopConfig(),
+        authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+      })
+
+      expect(result.dpop).toBeDefined()
+      expect(result.session?.jwkThumbprint).toBe(result.jwkThumbprint)
+      if (!result.dpop) throw new Error('Expected DPoP options')
+
+      const headers = await createDpopHeadersForRequest({
+        request: tokenRequest,
+        signer: result.dpop.signer,
+        callbacks: getOid4vcCallbacks(dpopAgent.agent.context),
+        nonce: result.dpop.nonce,
+      })
+      const verified = await new Oauth2AuthorizationServer({
+        callbacks: getOid4vcCallbacks(dpopAgent.agent.context),
+      }).verifyDpopJwt({
+        dpopJwt: headers.DPoP,
+        request: tokenRequest,
+        allowedSigningAlgs: [Kms.KnownJwaSignatureAlgorithms.ES256],
+      })
+
+      expect(verified.jwkThumbprint).toBe(result.jwkThumbprint)
+      expect(verified.payload.htm).toBe('POST')
+      expect(verified.payload.htu).toBe('https://upstream.example.com/token')
+    })
+
+    it('reuses the configured DPoP key across chained requests', async () => {
+      const key = await dpopAgent.agent.kms.createKeyForSignatureAlgorithm({
+        algorithm: Kms.KnownJwaSignatureAlgorithms.ES256,
+      })
+      const result = await issuerService.getChainedUpstreamDpopRequestOptions(dpopAgent.agent.context, {
+        issuanceSession: createDpopIssuanceSession(),
+        chainedAuthorizationServerConfig: createDpopConfig({
+          dpop: { required: false, keyId: key.keyId },
+        }),
+        authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+      })
+
+      expect(result.keyId).toBe(key.keyId)
+      expect(result.session?.keyId).toBe(key.keyId)
+    })
+
+    it('fails closed when required DPoP has no compatible upstream algorithm', async () => {
+      await expect(
+        issuerService.getChainedUpstreamDpopRequestOptions(dpopAgent.agent.context, {
+          issuanceSession: createDpopIssuanceSession(),
+          chainedAuthorizationServerConfig: createDpopConfig({
+            dpop: {
+              required: true,
+              // Upstream only advertises ES256
+              allowedAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
+            },
+          }),
+          authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+        })
+      ).rejects.toThrow('No supported dpop signature algorithms')
+    })
+
+    it('allows optional DPoP downgrade when the upstream does not advertise support', async () => {
+      const result = await issuerService.getChainedUpstreamDpopRequestOptions(dpopAgent.agent.context, {
+        issuanceSession: createDpopIssuanceSession(),
+        chainedAuthorizationServerConfig: createDpopConfig(),
+        authorizationServerMetadata: {
+          issuer: upstreamAuthorizationServerMetadata.issuer,
+          token_endpoint: upstreamAuthorizationServerMetadata.token_endpoint,
+        } as AuthorizationServerMetadata,
+      })
+
+      expect(result.required).toBe(false)
+      expect(result.dpop).toBeUndefined()
+      expect(result.session).toBeUndefined()
+    })
+
+    it('carries the persisted nonce into the next upstream DPoP request', async () => {
+      const session = createDpopIssuanceSession({
+        upstreamDpop: {
+          keyId: 'persisted-key',
+          alg: Kms.KnownJwaSignatureAlgorithms.ES256,
+          jwkThumbprint: 'persisted-thumbprint',
+          nonce: 'upstream-nonce',
+        },
+      })
+      const key = await dpopAgent.agent.kms.createKeyForSignatureAlgorithm({
+        algorithm: Kms.KnownJwaSignatureAlgorithms.ES256,
+      })
+      const upstreamDpop = session.chainedIdentity?.upstreamDpop
+      if (!upstreamDpop) throw new Error('Expected persisted upstream DPoP metadata')
+      upstreamDpop.keyId = key.keyId
+
+      const result = await issuerService.getChainedUpstreamDpopRequestOptions(dpopAgent.agent.context, {
+        issuanceSession: session,
+        chainedAuthorizationServerConfig: createDpopConfig(),
+        authorizationServerMetadata: upstreamAuthorizationServerMetadata,
+      })
+
+      expect(result.dpop?.nonce).toBe('upstream-nonce')
+    })
+  })
 })
+
+function createDpopConfig(
+  overrides: Partial<OpenId4VciChainedAuthorizationServerConfig> = {}
+): OpenId4VciChainedAuthorizationServerConfig {
+  return {
+    type: 'chained',
+    issuer: 'https://upstream.example.com',
+    clientAuthentication: {
+      type: 'clientSecret',
+      clientId: 'client',
+      clientSecret: 'secret',
+    },
+    ...overrides,
+  }
+}
+
+function createDpopIssuanceSession(
+  chainedIdentity: Partial<OpenId4VcIssuanceSessionChainedIdentity> = {}
+): OpenId4VcIssuanceSessionRecord {
+  return new OpenId4VcIssuanceSessionRecord({
+    createdAt: new Date(),
+    expiresAt: new Date(Date.now() + 60_000),
+    issuerId: 'issuer',
+    state: OpenId4VcIssuanceSessionState.AuthorizationInitiated,
+    credentialOfferId: 'offer',
+    credentialOfferPayload: {
+      credential_issuer: 'https://issuer.example.com',
+      credential_configuration_ids: [],
+    },
+    openId4VciVersion: 'v1',
+    chainedIdentity: {
+      externalAuthorizationServerUrl: 'https://upstream.example.com',
+      ...chainedIdentity,
+    },
+  })
+}
