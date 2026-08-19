@@ -20,6 +20,7 @@ const openId4VcIssuanceSessionStates = exhaustiveArray(
     'OfferCreated',
     'OfferUriRetrieved',
     'AuthorizationInitiated',
+    'AuthorizationRetryable',
     'AuthorizationGranted',
     'AccessTokenRequested',
     'AccessTokenCreated',

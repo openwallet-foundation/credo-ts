@@ -2,8 +2,9 @@ export enum OpenId4VcIssuanceSessionState {
   OfferCreated = 'OfferCreated',
   OfferUriRetrieved = 'OfferUriRetrieved',
 
-  // Used with authorization code flow where Credo is the auth server
+  // Used with Credo authorization-server flows, including chained authorization
   AuthorizationInitiated = 'AuthorizationInitiated',
+  AuthorizationRetryable = 'AuthorizationRetryable',
   AuthorizationGranted = 'AuthorizationGranted',
 
   // Used with pre-auth and auth code flow where Credo is the auth server

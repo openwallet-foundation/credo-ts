@@ -56,7 +56,11 @@ export async function handlePushedAuthorizationRequest(
     })
   }
 
-  const allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
+  const allowedStates = [
+    OpenId4VcIssuanceSessionState.OfferCreated,
+    OpenId4VcIssuanceSessionState.OfferUriRetrieved,
+    OpenId4VcIssuanceSessionState.AuthorizationRetryable,
+  ]
   if (!allowedStates.includes(issuanceSession.state)) {
     throw new Oauth2ServerErrorResponseError(
       {
@@ -81,6 +85,10 @@ export async function handlePushedAuthorizationRequest(
         internalMessage: `Issuance session '${issuanceSession.id}' is not configured to use chained identity for authorization.`,
       }
     )
+  }
+
+  if (issuanceSession.state === OpenId4VcIssuanceSessionState.AuthorizationRetryable) {
+    issuanceSession.resetChainedAuthorizationAttempt()
   }
 
   const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })

@@ -151,6 +151,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     const walletClientId = 'wallet'
     const idpClientId = 'foo'
     const idpClientSecret = 'bar'
+    let tokenEndpointAvailable = true
 
     // Setup External IDP Authorization Server
     const idpServerKey = await issuer.agent.kms.createKey({
@@ -219,6 +220,10 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       return res.redirect(redirect.toString())
     })
     idpApp.post('/token', async (req, res) => {
+      if (!tokenEndpointAvailable) {
+        return res.status(503).json({ error: 'temporarily_unavailable' })
+      }
+
       const authorizationHeader = req.headers.authorization?.split(' ')
       if (!authorizationHeader || authorizationHeader[0] !== 'Basic' || authorizationHeader.length !== 2) {
         return res.status(401).json({
@@ -338,7 +343,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     await issuerTenant.endSession()
 
     const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
-    const resolvedAuthorization = await holderTenant.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
+    const initialResolvedAuthorization = await holderTenant.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
       resolvedCredentialOffer,
       {
         clientId: walletClientId,
@@ -347,11 +352,44 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       }
     )
 
-    if (resolvedAuthorization.authorizationFlow !== AuthorizationFlow.Oauth2Redirect) {
-      throw new Error(`Expected Oauth2Redirect flow, got ${resolvedAuthorization.authorizationFlow}`)
+    if (initialResolvedAuthorization.authorizationFlow !== AuthorizationFlow.Oauth2Redirect) {
+      throw new Error(`Expected Oauth2Redirect flow, got ${initialResolvedAuthorization.authorizationFlow}`)
     }
 
-    const authorizationResponse = await fetch(resolvedAuthorization.authorizationRequestUrl, {
+    tokenEndpointAvailable = false
+    const failedAuthorizationResponse = await fetch(initialResolvedAuthorization.authorizationRequestUrl, {
+      redirect: 'follow',
+    })
+    expect(failedAuthorizationResponse.ok).toBe(true)
+    expect((await failedAuthorizationResponse.json()) as Record<string, string>).not.toHaveProperty('code')
+
+    const issuerTenantAfterFailure = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const failedIssuanceSession =
+      await issuerTenantAfterFailure.openid4vc.issuer.getIssuanceSessionById(issuanceSessionId)
+    expect(failedIssuanceSession.state).toBe(OpenId4VcIssuanceSessionState.AuthorizationRetryable)
+    expect(failedIssuanceSession.chainedIdentity?.externalAccessTokenResponse).toBeUndefined()
+    expect(failedIssuanceSession.authorization?.code).toBeUndefined()
+    await issuerTenantAfterFailure.endSession()
+
+    tokenEndpointAvailable = true
+    const retryResolvedAuthorization = await holderTenant.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
+      resolvedCredentialOffer,
+      {
+        clientId: walletClientId,
+        redirectUri: 'http://localhost:5757/redirect',
+        scope: ['UniversityDegreeCredential'],
+      }
+    )
+
+    if (retryResolvedAuthorization.authorizationFlow !== AuthorizationFlow.Oauth2Redirect) {
+      throw new Error(`Expected Oauth2Redirect flow, got ${retryResolvedAuthorization.authorizationFlow}`)
+    }
+    expect(retryResolvedAuthorization.authorizationRequestUrl).not.toBe(
+      initialResolvedAuthorization.authorizationRequestUrl
+    )
+    expect(retryResolvedAuthorization.codeVerifier).not.toBe(initialResolvedAuthorization.codeVerifier)
+
+    const authorizationResponse = await fetch(retryResolvedAuthorization.authorizationRequestUrl, {
       redirect: 'follow',
     })
     expect(authorizationResponse.ok).toBe(true)
@@ -362,7 +400,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     const tokenResponseTenant = await holderTenant.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       clientId: walletClientId,
-      codeVerifier: resolvedAuthorization.codeVerifier,
+      codeVerifier: retryResolvedAuthorization.codeVerifier,
       code,
       redirectUri: 'http://localhost:5757/redirect',
     })
