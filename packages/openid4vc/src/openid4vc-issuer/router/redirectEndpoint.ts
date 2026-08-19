@@ -196,7 +196,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
 
           let cnfJkt: string | undefined
           try {
-            const cnf = (Jwt.fromSerializedJwt(accessTokenResponse.access_token).payload as { cnf?: unknown }).cnf
+            const cnf = Jwt.fromSerializedJwt(accessTokenResponse.access_token).payload.additionalClaims.cnf
             cnfJkt =
               typeof cnf === 'object' && cnf !== null && 'jkt' in cnf && typeof cnf.jkt === 'string'
                 ? cnf.jkt
