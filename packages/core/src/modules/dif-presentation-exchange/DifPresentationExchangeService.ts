@@ -121,6 +121,8 @@ export class DifPresentationExchangeService {
     presentations: VerifiablePresentation | VerifiablePresentation[],
     presentationSubmission?: DifPresentationExchangeSubmission
   ) {
+    // FIXME: constraints.statuses (credential status) is schema-validated only;
+    // @animo-id/pex has no runtime handler for it — active/revoked/suspended directives are silently ignored.
     const result = this.pex.evaluatePresentation(
       presentationDefinition,
       Array.isArray(presentations)
@@ -169,6 +171,17 @@ export class DifPresentationExchangeService {
        * Mdoc openid4vp specific options
        */
       mdocSessionTranscript?: MdocSessionTranscriptOptions
+
+      /**
+       * Optional override for supported formats when verifier constraints are defined outside the presentation definition.
+       */
+      formatOverride?: DifPresentationExchangeDefinition['format']
+
+      /**
+       * Temporary draft 21 SD-JWT format overrides keyed by input descriptor ID.
+       * Remove when PEX dependencies support `dc+sd-jwt` for draft 24.
+       */
+      sdJwtDraft21FormatOverridesByInputDescriptor?: Record<string, ClaimFormat>
     }
   ) {
     const { presentationDefinition, domain, challenge, mdocSessionTranscript } = options
@@ -180,8 +193,28 @@ export class DifPresentationExchangeService {
       claimFormat: PresentationToCreate['claimFormat']
     }> = []
 
-    const presentationsToCreate = getPresentationsToCreate(options.credentialsForInputDescriptor)
+    const presentationsToCreate = getPresentationsToCreate(options.credentialsForInputDescriptor, {
+      presentationDefinition,
+      formatOverride: options.formatOverride,
+      sdJwtDraft21FormatOverridesByInputDescriptor: options.sdJwtDraft21FormatOverridesByInputDescriptor,
+    })
+
+    // Guard against callers bypassing selectCredentialsForRequest: if the PD has submission_requirements,
+    // verify the full selection satisfies them now — SR is stripped from per-subject PD slices below.
+    if (presentationDefinition.submission_requirements) {
+      const allCredentials = Object.values(options.credentialsForInputDescriptor)
+        .flat()
+        .map((c) => getSphereonOriginalVerifiableCredential(c.credentialRecord))
+      const selectResult = this.pex.selectFrom(presentationDefinition, allCredentials)
+      if (selectResult.areRequiredCredentialsPresent === Status.ERROR) {
+        throw new DifPresentationExchangeError(
+          'Selected credentials do not satisfy the submission_requirements of the presentation definition. Use selectCredentialsForRequest to ensure a valid selection.'
+        )
+      }
+    }
+
     for (const presentationToCreate of presentationsToCreate) {
+      let ldpVpSigningOptions: { verificationMethod: VerificationMethod; proofType: string } | undefined
       // We create a presentation for each subject
       // Thus for each subject we need to filter all the related input descriptors and credentials
       const inputDescriptorIds = presentationToCreate.verifiableCredentials.map((c) => c.inputDescriptorId)
@@ -248,23 +281,49 @@ export class DifPresentationExchangeService {
           getSphereonOriginalVerifiableCredential(c.credential)
         )
 
-        const extraProofOptions = this.shouldSignWithAnonCredsW3cService(presentationToCreate)
-          ? {
-              typeSupportsSelectiveDisclosure: true,
-              type: `DataIntegrityProof.${ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE}`,
+        if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
+          const signUsingAnonCredsW3c = this.shouldSignWithAnonCredsW3cService(presentationToCreate)
+
+          if (!signUsingAnonCredsW3c) {
+            // AnonCreds DI signing does not use LDP proofType and verificationMethod preselection.
+            const verificationMethod = await this.getVerificationMethodForLdpVp(
+              agentContext,
+              presentationToCreate.subjectIds?.[0],
+              presentationDefinitionForSubject
+            )
+
+            const proofType = this.getProofTypeForLdpVp(
+              agentContext,
+              presentationDefinitionForSubject,
+              verificationMethod
+            )
+
+            ldpVpSigningOptions = {
+              verificationMethod,
+              proofType,
             }
-          : {}
+          }
+        }
+
+        const anonCredsW3cProofOptions =
+          presentationToCreate.claimFormat === ClaimFormat.LdpVp &&
+          this.shouldSignWithAnonCredsW3cService(presentationToCreate)
+            ? {
+                typeSupportsSelectiveDisclosure: true,
+                type: `DataIntegrityProof.${ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE}`,
+              }
+            : {}
 
         const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
           presentationDefinitionForSubject,
           credentialsForPresentation,
-          this.getPresentationSignCallback(agentContext, presentationToCreate),
+          this.getPresentationSignCallback(agentContext, presentationToCreate, ldpVpSigningOptions),
           {
             proofOptions: {
               challenge,
               domain,
 
-              ...extraProofOptions,
+              ...anonCredsW3cProofOptions,
             },
             presentationSubmissionLocation,
           }
@@ -297,8 +356,7 @@ export class DifPresentationExchangeService {
         const descriptor = { ...d }
 
         // when multiple presentations are submitted, path should be $[0], $[1]
-        // FIXME: this should be addressed in the PEX/OID4VP lib.
-        // See https://github.com/Sphereon-Opensource/SIOP-OID4VP/issues/62
+        // FIXME: PEX does not set $[n] paths for EXTERNAL multi-VP submissions.
         if (
           presentationSubmissionLocation === DifPresentationExchangeSubmissionLocation.EXTERNAL &&
           verifiablePresentationResultsWithFormat.length > 1
@@ -416,15 +474,15 @@ export class DifPresentationExchangeService {
     return this.getSigningAlgorithmFromVerificationMethod(verificationMethod, suitableAlgorithms)
   }
 
-  private getProofTypeForLdpVc(
+  private getProofTypeForLdpVp(
     agentContext: AgentContext,
     presentationDefinition: DifPresentationExchangeDefinitionV1 | DifPresentationExchangeDefinitionV2,
     verificationMethod: VerificationMethod
   ) {
-    const algorithmsSatisfyingDefinition = presentationDefinition.format?.ldp_vc?.proof_type ?? []
+    const algorithmsSatisfyingDefinition = presentationDefinition.format?.ldp_vp?.proof_type ?? []
 
     const inputDescriptorAlgorithms: Array<Array<string>> = presentationDefinition.input_descriptors
-      .map((descriptor) => (descriptor as InputDescriptorV2).format?.ldp_vc?.proof_type ?? [])
+      .map((descriptor) => (descriptor as InputDescriptorV2).format?.ldp_vp?.proof_type ?? [])
       .filter((alg) => alg.length > 0)
 
     const suitableSignatureSuites = this.getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
@@ -494,7 +552,11 @@ export class DifPresentationExchangeService {
     return validDescriptorFormat && credentialsAreSignedWithAnonCredsW3c
   }
 
-  private getPresentationSignCallback(agentContext: AgentContext, presentationToCreate: PresentationToCreate) {
+  private getPresentationSignCallback(
+    agentContext: AgentContext,
+    presentationToCreate: PresentationToCreate,
+    ldpVpSigningOptions?: { verificationMethod: VerificationMethod; proofType: string }
+  ) {
     return async (callBackParams: PresentationSignCallBackParams) => {
       // The created partial proof and presentation, as well as original supplied options
       const {
@@ -510,14 +572,10 @@ export class DifPresentationExchangeService {
       }
 
       if (presentationToCreate.claimFormat === ClaimFormat.JwtVp) {
-        if (!presentationToCreate.subjectIds) {
-          throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
-        }
-
         // Determine a suitable verification method for the presentation
         const verificationMethod = await this.getVerificationMethodForSubjectId(
           agentContext,
-          presentationToCreate.subjectIds[0]
+          presentationToCreate.subjectIds?.[0]
         )
 
         const w3cPresentation = JsonTransformer.fromJSON(presentationInput, W3cPresentation)
@@ -556,24 +614,18 @@ export class DifPresentationExchangeService {
           } as unknown as SphereonW3cVerifiablePresentation
         }
 
-        if (!presentationToCreate.subjectIds) {
-          throw new DifPresentationExchangeError('Cannot create presentation for credentials without subject id')
+        if (!ldpVpSigningOptions) {
+          throw new DifPresentationExchangeError('Missing ldp_vp signing options for non-anoncreds LDP presentation')
         }
-        // Determine a suitable verification method for the presentation
-        const verificationMethod = await this.getVerificationMethodForSubjectId(
-          agentContext,
-          presentationToCreate.subjectIds[0]
-        )
+
+        const { verificationMethod, proofType } = ldpVpSigningOptions
 
         const w3cPresentation = JsonTransformer.fromJSON(presentationInput, W3cPresentation)
         w3cPresentation.holder = verificationMethod.controller
 
         const signedPresentation = await this.w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
-          // TODO: we should move the check for which proof to use for a presentation to earlier
-          // as then we know when determining which VPs to submit already if the proof types are supported
-          // by the verifier, and we can then just add this to the vpToCreate interface
-          proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
+          proofType,
           proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
           verificationMethod: verificationMethod.id,
           presentation: w3cPresentation,
@@ -620,31 +672,81 @@ export class DifPresentationExchangeService {
     }
   }
 
-  private async getVerificationMethodForSubjectId(agentContext: AgentContext, subjectId: string) {
+  private async getVerificationMethodForSubjectId(agentContext: AgentContext, subjectId: string | undefined) {
+    const verificationMethods = await this.getAuthenticationVerificationMethodsForSubjectId(agentContext, subjectId)
+
+    return verificationMethods[0]
+  }
+
+  private async getVerificationMethodForLdpVp(
+    agentContext: AgentContext,
+    subjectId: string | undefined,
+    presentationDefinition: DifPresentationExchangeDefinitionV1 | DifPresentationExchangeDefinitionV2
+  ) {
+    const verificationMethods = await this.getAuthenticationVerificationMethodsForSubjectId(agentContext, subjectId)
+
+    for (const verificationMethod of verificationMethods) {
+      try {
+        this.getProofTypeForLdpVp(agentContext, presentationDefinition, verificationMethod)
+        return verificationMethod
+      } catch (error) {
+        if (!(error instanceof DifPresentationExchangeError)) throw error
+      }
+    }
+
+    const suitableProofTypes = this.getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
+      presentationDefinition.format?.ldp_vp?.proof_type ?? [],
+      presentationDefinition.input_descriptors
+        .map((descriptor) => (descriptor as InputDescriptorV2).format?.ldp_vp?.proof_type ?? [])
+        .filter((alg) => alg.length > 0)
+    )
+
+    throw new DifPresentationExchangeError(
+      [
+        'No possible verification method and signature suite found for ldp_vp presentation signing.',
+        `AllowedProofTypes: ${suitableProofTypes?.join(', ') ?? '[any]'}`,
+      ].join('\n')
+    )
+  }
+
+  private async getAuthenticationVerificationMethodsForSubjectId(
+    agentContext: AgentContext,
+    subjectId: string | undefined
+  ) {
     const didsApi = agentContext.dependencyManager.resolve(DidsApi)
 
-    if (!subjectId.startsWith('did:')) {
-      throw new DifPresentationExchangeError(
-        `Only dids are supported as credentialSubject id. ${subjectId} is not a valid did`
+    if (subjectId !== undefined && !subjectId.startsWith('did:')) {
+      agentContext.config.logger.warn(
+        `Non-DID subject id '${subjectId}' is not supported for signing; falling back to holder-controlled DID`
       )
     }
 
-    const didDocument = await didsApi.resolveDidDocument(subjectId)
+    const effectiveDid = subjectId?.startsWith('did:') ? subjectId : await this.getHolderDid(agentContext)
+    const didDocument = await didsApi.resolveDidDocument(effectiveDid)
 
     if (!didDocument.authentication || didDocument.authentication.length === 0) {
       throw new DifPresentationExchangeError(
-        `No authentication verificationMethods found for did ${subjectId} in did document`
+        `No authentication verificationMethods found for did ${effectiveDid} in did document`
       )
     }
 
-    // the signature suite to use for the presentation is dependant on the credentials we share.
-    // 1. Get the verification method for this given proof purpose in this DID document
-    let [verificationMethod] = didDocument.authentication
-    if (typeof verificationMethod === 'string') {
-      verificationMethod = didDocument.dereferenceKey(verificationMethod, ['authentication'])
-    }
+    return didDocument.authentication.map((verificationMethod) =>
+      typeof verificationMethod === 'string'
+        ? didDocument.dereferenceKey(verificationMethod, ['authentication'])
+        : verificationMethod
+    )
+  }
 
-    return verificationMethod
+  private async getHolderDid(agentContext: AgentContext): Promise<string> {
+    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+    // Best-effort: picks the first created DID regardless of method; may not be resolvable by the verifier.
+    const [holderDidRecord] = await didsApi.getCreatedDids()
+    if (!holderDidRecord) {
+      throw new DifPresentationExchangeError(
+        'Cannot determine a signing DID: no created DIDs found in the agent wallet'
+      )
+    }
+    return holderDidRecord.did
   }
 
   /**
@@ -669,8 +771,6 @@ export class DifPresentationExchangeService {
       )
     }
 
-    // FIXME: in the query we should take into account the supported proof types of the verifier
-    // this could help enormously in the amount of credentials we have to retrieve from storage.
     if (presentationDefinitionVersion.version === PEVersion.v1) {
       const pd = presentationDefinition as DifPresentationExchangeDefinitionV1
 
@@ -689,9 +789,56 @@ export class DifPresentationExchangeService {
         }
       }
     } else if (presentationDefinitionVersion.version === PEVersion.v2) {
-      // FIXME: As PE version 2 does not have the `schema` anymore, we can't query by schema anymore.
-      // We probably need
-      // to find some way to do initial filtering, hopefully if there's a filter on the `type` field or something.
+      const pd = presentationDefinition as DifPresentationExchangeDefinitionV2
+      const fieldQueries: Array<Query<W3cCredentialRecord> | Query<SdJwtVcRecord>> = []
+
+      for (const inputDescriptor of pd.input_descriptors) {
+        for (const field of inputDescriptor.constraints?.fields ?? []) {
+          const values = this.getStringFilterValues(field.filter)
+          if (!values) continue
+
+          for (const path of field.path) {
+            const normalizedPath = path.replace(/\[['"]([^'"]+)['"]\]/g, '.$1').replace(/^\$\./, '')
+            if (normalizedPath === 'type') {
+              fieldQueries.push(...values.map((value) => ({ types: [value] })))
+            } else if (normalizedPath === '@context' || normalizedPath === 'context') {
+              fieldQueries.push(...values.map((value) => ({ contexts: [value] })))
+            } else if (normalizedPath === 'credentialSchema.id') {
+              fieldQueries.push(...values.map((value) => ({ schemaIds: [value] })))
+            } else if (normalizedPath === 'vct') {
+              fieldQueries.push(...values.map((value) => ({ vct: value })))
+            }
+          }
+        }
+      }
+
+      const proofTypes = this.getSingleLdpVcProofType(presentationDefinition)
+      const proofTypeQuery = proofTypes
+        ? {
+            claimFormat: ClaimFormat.LdpVc as ClaimFormat.LdpVc,
+            proofTypes: [proofTypes],
+          }
+        : undefined
+
+      const w3cFieldQueries = fieldQueries.filter((query): query is Query<W3cCredentialRecord> => !('vct' in query))
+      const sdJwtFieldQueries = fieldQueries.filter((query): query is Query<SdJwtVcRecord> => 'vct' in query)
+
+      if (w3cFieldQueries.length > 0) {
+        w3cQuery.push(...w3cFieldQueries)
+      }
+      if (sdJwtFieldQueries.length > 0) {
+        sdJwtVcQuery.push(...sdJwtFieldQueries)
+      }
+
+      if (proofTypeQuery) {
+        if (w3cQuery.length === 0) {
+          w3cQuery.push(proofTypeQuery)
+        } else {
+          w3cQuery.splice(0, w3cQuery.length, {
+            $and: [proofTypeQuery, { $or: w3cQuery }],
+          })
+        }
+      }
     } else {
       throw new DifPresentationExchangeError(
         `Unsupported presentation definition version ${presentationDefinitionVersion.version as unknown as string}`
@@ -718,6 +865,34 @@ export class DifPresentationExchangeService {
     allRecords.push(...mdocRecords)
 
     return allRecords
+  }
+
+  private getStringFilterValues(filter: unknown): string[] | undefined {
+    if (!filter || typeof filter !== 'object') return undefined
+
+    const filterObject = filter as { const?: unknown; enum?: unknown; contains?: unknown }
+    if (typeof filterObject.const === 'string') return [filterObject.const]
+    if (Array.isArray(filterObject.enum) && filterObject.enum.every((value) => typeof value === 'string')) {
+      return filterObject.enum
+    }
+    if (typeof filterObject.contains === 'string') return [filterObject.contains]
+    if (filterObject.contains && typeof filterObject.contains === 'object') {
+      return this.getStringFilterValues(filterObject.contains)
+    }
+
+    return undefined
+  }
+
+  private getSingleLdpVcProofType(presentationDefinition: DifPresentationExchangeDefinition): string | undefined {
+    const proofTypes = [
+      ...(presentationDefinition.format?.ldp_vc?.proof_type ?? []),
+      ...presentationDefinition.input_descriptors.flatMap(
+        (inputDescriptor) => (inputDescriptor as InputDescriptorV2).format?.ldp_vc?.proof_type ?? []
+      ),
+    ]
+    const uniqueProofTypes = [...new Set(proofTypes)]
+
+    return uniqueProofTypes.length === 1 ? uniqueProofTypes[0] : undefined
   }
 
   private getSdJwtVcApi(agentContext: AgentContext) {

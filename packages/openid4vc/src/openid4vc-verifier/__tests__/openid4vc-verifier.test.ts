@@ -25,6 +25,44 @@ describe('OpenId4VcVerifier', () => {
   })
 
   describe('Verification', () => {
+    it('rejects Presentation Exchange for OpenID4VP 1.0', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+      await expect(
+        verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+          requestSigner: {
+            method: 'did',
+            didUrl: verifier.kid,
+          },
+          verifierId: openIdVerifier.verifierId,
+          presentationExchange: {
+            definition: universityDegreePresentationDefinition,
+          },
+          version: 'v1',
+        })
+      ).rejects.toThrow(
+        "OpenID4VP version 'v1' does not support presentationExchange because OpenID4VP 1.0 uses DCQL. Use dcql, or select version 'v1.draft24' for Presentation Exchange 2.1.1."
+      )
+    })
+
+    it('creates an OpenID4VP 1.0 request with DCQL', async () => {
+      const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+      const { verificationSession } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier.kid,
+        },
+        verifierId: openIdVerifier.verifierId,
+        dcql: {
+          query: openBadgeDcqlQuery,
+        },
+        version: 'v1',
+      })
+
+      const jwt = Jwt.fromSerializedJwt(verificationSession.authorizationRequestJwt as string)
+      expect(jwt.payload.additionalClaims.dcql_query).toEqual(openBadgeDcqlQuery)
+    })
+
     it('check openid proof request format (vp token)', async () => {
       const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
       const { authorizationRequest, verificationSession } =
@@ -64,6 +102,7 @@ describe('OpenId4VcVerifier', () => {
       expect(jwt.payload.additionalClaims.nonce).toBeDefined()
       expect(jwt.payload.additionalClaims.state).toBeDefined()
       expect(jwt.payload.additionalClaims.response_type).toEqual('vp_token')
+      expect(jwt.payload.additionalClaims.presentation_definition).toEqual(universityDegreePresentationDefinition)
     })
 
     it('custom expiration is correctly applied', async () => {

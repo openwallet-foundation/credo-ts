@@ -94,6 +94,7 @@ export function extractPresentationsWithDescriptorsFromSubmission(
         `Presentation format '${presentation.claimFormat}' is not supported with DIF Presentation Exchange`
       )
     }
+    // SD-JWT is the presentation itself; path_nested is structurally inapplicable and must be ignored.
     return {
       claimFormat: ClaimFormat.SdJwtDc,
       descriptor,

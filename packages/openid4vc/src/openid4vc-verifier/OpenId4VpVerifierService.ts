@@ -152,7 +152,7 @@ export class OpenId4VpVerifierService {
     }
     if (version === 'v1' && options.presentationExchange) {
       throw new CredoError(
-        `OpenID4VP version '${version}' cannot be used with presentationExchange. Use dcql instead (recommended), or use older versions 'v1.draft24' and 'v1.draft21'.`
+        `OpenID4VP version '${version}' does not support presentationExchange because OpenID4VP 1.0 uses DCQL. Use dcql, or select version 'v1.draft24' for Presentation Exchange 2.1.1.`
       )
     }
 
