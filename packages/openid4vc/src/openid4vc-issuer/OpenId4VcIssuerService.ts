@@ -67,6 +67,7 @@ import {
   getOfferedCredentials,
   getScopesFromCredentialConfigurationsSupported,
 } from '../shared/issuerMetadataUtils'
+import { getLocalAccessTokenJwks, getOid4vcLocalJwksCallback } from '../shared/localJwks'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
@@ -1829,10 +1830,32 @@ export class OpenId4VcIssuerService {
     })
   }
 
-  public getResourceServer(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
+  public getResourceServer(
+    agentContext: AgentContext,
+    issuerRecord: OpenId4VcIssuerRecord,
+    issuerMetadata: Awaited<ReturnType<OpenId4VcIssuerService['getIssuerMetadata']>>
+  ) {
+    // Access tokens issued by this agent are signed with the issuer record's access token key, and
+    // the JWKs endpoint of our built-in authorization server publishes that exact key. Resolve it
+    // locally so verifying an access token we issued ourselves does not require an HTTP request to
+    // our own JWKs endpoint.
+    //
+    // NOTE: the jwks uri is taken from the same issuer metadata that is used to verify the access
+    // token, so the url we register here always matches the url that will be resolved.
+    const issuerAuthorizationServer = issuerMetadata.authorizationServers.find(
+      ({ issuer }) => issuer === issuerMetadata.credentialIssuer.credential_issuer
+    )
+    const localJwks = issuerAuthorizationServer?.jwks_uri
+      ? getLocalAccessTokenJwks(
+          issuerAuthorizationServer.jwks_uri,
+          issuerRecord.resolvedAccessTokenPublicJwk.toJson({ includeKid: false }) as Jwk
+        )
+      : {}
+
     return new Oauth2ResourceServer({
       callbacks: {
         ...getOid4vcCallbacks(agentContext),
+        ...getOid4vcLocalJwksCallback(agentContext, localJwks),
         clientAuthentication: dynamicOid4vciClientAuthentication(agentContext, issuerRecord),
       },
     })
