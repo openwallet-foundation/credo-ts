@@ -35,7 +35,8 @@ import { Ed25519Signature2018Fixtures } from './fixtures'
 
 const AuthenticationProofPurpose = purposes.AuthenticationProofPurpose
 
-const signatureSuiteRegistry = new SignatureSuiteRegistry([
+const signatureSuiteRegistry = new SignatureSuiteRegistry()
+signatureSuiteRegistry.registerSuites([
   {
     suiteClass: Ed25519Signature2018,
     proofType: 'Ed25519Signature2018',

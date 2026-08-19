@@ -44,15 +44,17 @@ describe('W3cCredentialsService', () => {
   let agentContext: AgentContext
   let w3cCredentialService: W3cCredentialService
   let w3cCredentialsRepository: W3cCredentialRepository
+  let signatureSuiteRegistry: SignatureSuiteRegistry
 
   beforeAll(async () => {
     agentContext = getAgentContext({
       agentConfig,
     })
+    signatureSuiteRegistry = new SignatureSuiteRegistry()
     w3cCredentialsRepository = new W3cCredentialsRepositoryMock()
     w3cCredentialService = new W3cCredentialService(
       w3cCredentialsRepository,
-      new W3cJsonLdCredentialService(new SignatureSuiteRegistry([]), credentialsModuleConfig),
+      new W3cJsonLdCredentialService(signatureSuiteRegistry, credentialsModuleConfig),
       new W3cJwtCredentialService(new JwsService())
     )
   })
