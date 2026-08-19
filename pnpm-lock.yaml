@@ -905,17 +905,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: 0.5.5-alpha-20260817163238
-        version: 0.5.5-alpha-20260817163238
+        specifier: 0.5.5
+        version: 0.5.5
       '@openid4vc/openid4vci':
-        specifier: 0.5.5-alpha-20260817163238
-        version: 0.5.5-alpha-20260817163238
+        specifier: 0.5.5
+        version: 0.5.5
       '@openid4vc/openid4vp':
-        specifier: 0.5.5-alpha-20260817163238
-        version: 0.5.5-alpha-20260817163238
+        specifier: 0.5.5
+        version: 0.5.5
       '@openid4vc/utils':
-        specifier: 0.5.5-alpha-20260817163238
-        version: 0.5.5-alpha-20260817163238
+        specifier: 0.5.5
+        version: 0.5.5
       '@types/express':
         specifier: 'catalog:'
         version: 5.0.6
@@ -3222,17 +3222,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.5.5-alpha-20260817163238':
-    resolution: {integrity: sha512-kxH5g72uYvNsmIyEXwpwgVE9+bTfGfQmZd6w9Q/pZZlWVXnM0znGF8kIZzm8XLpl9HvPX2oMxPWy2MJVNpe0PQ==}
+  '@openid4vc/oauth2@0.5.5':
+    resolution: {integrity: sha512-2EtJznMPk4M1sJD9nBIvIi2Rl5GC+T7YOrpizMEwB5Q592agAGXfQWwv5KapkuTG8mlbWk3z8VLBtwlAwMvhUg==}
 
-  '@openid4vc/openid4vci@0.5.5-alpha-20260817163238':
-    resolution: {integrity: sha512-pVmOx3anuPKwNCPKQqpyWyl20Pf/VTKCh+FifzXpCrs+iPtoAxYTqZIKLghog5QScM8Urki4+RAmZCaE1BOwOQ==}
+  '@openid4vc/openid4vci@0.5.5':
+    resolution: {integrity: sha512-h+Ylxf+B/7+lXPP2CA7dxYl9oG/HX+n8QGGzrPRbJCE1Cx/mRTguavkX8GBRhltZ2zQVQr+F0JSjupgMow181g==}
 
-  '@openid4vc/openid4vp@0.5.5-alpha-20260817163238':
-    resolution: {integrity: sha512-oLBhyTNm95S2BybpfZXokXwFI60N1CQ2WSz70TGJn8Z67fAUJ4aCbc0DczNbLH21D+LK5WwQ+uDsqh1Qh1QpMg==}
+  '@openid4vc/openid4vp@0.5.5':
+    resolution: {integrity: sha512-JHJWFwNnmfhWI/tl2JBOvCC1OmVXKvXiqmX+9LmYYV3BDcX41udijoluh2LV0sMsj0Ag4P+XATwPZNe9im3XBA==}
 
-  '@openid4vc/utils@0.5.5-alpha-20260817163238':
-    resolution: {integrity: sha512-sVVCESVgoS5bUcZSKxMpBXEQEVhSFQwIFnX/B81WKXAgfrY950k9pR1/+HJjHq8tXaKNmmXVI92j5YtNvPOhSQ==}
+  '@openid4vc/utils@0.5.5':
+    resolution: {integrity: sha512-3vao4GiufkbFM4V7jL6GBvsdjo2434VXj9uXCUmwstifq64PclVgIj7rVqzgF0WxliNcaJ1aVGAEuBNEQVqIpQ==}
 
   '@openwallet-foundation/askar-nodejs@0.6.0':
     resolution: {integrity: sha512-PNIftXrE64oxjPaq4c8QEZCuhf21jpeMqjwPwDPZsfUnx1DlVIWYQQIJI2ZPAaXl2EUs6ldNqrwHMjVUC4xW+Q==}
@@ -11968,24 +11968,24 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.5.5-alpha-20260817163238':
+  '@openid4vc/oauth2@0.5.5':
     dependencies:
-      '@openid4vc/utils': 0.5.5-alpha-20260817163238
+      '@openid4vc/utils': 0.5.5
       zod: 4.4.3
 
-  '@openid4vc/openid4vci@0.5.5-alpha-20260817163238':
+  '@openid4vc/openid4vci@0.5.5':
     dependencies:
-      '@openid4vc/oauth2': 0.5.5-alpha-20260817163238
-      '@openid4vc/utils': 0.5.5-alpha-20260817163238
+      '@openid4vc/oauth2': 0.5.5
+      '@openid4vc/utils': 0.5.5
       zod: 4.4.3
 
-  '@openid4vc/openid4vp@0.5.5-alpha-20260817163238':
+  '@openid4vc/openid4vp@0.5.5':
     dependencies:
-      '@openid4vc/oauth2': 0.5.5-alpha-20260817163238
-      '@openid4vc/utils': 0.5.5-alpha-20260817163238
+      '@openid4vc/oauth2': 0.5.5
+      '@openid4vc/utils': 0.5.5
       zod: 4.4.3
 
-  '@openid4vc/utils@0.5.5-alpha-20260817163238':
+  '@openid4vc/utils@0.5.5':
     dependencies:
       buffer: 6.0.3
       zod: 4.4.3
