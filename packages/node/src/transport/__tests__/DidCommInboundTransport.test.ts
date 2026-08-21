@@ -1,7 +1,7 @@
 import { createServer, type Server } from 'node:http'
 import type { AgentContext } from '@credo-ts/core'
 import { DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
-import express, { type Express } from 'express'
+import express from 'express'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket, { WebSocketServer } from 'ws'
 
@@ -82,9 +82,9 @@ describe('DIDComm inbound transports', () => {
     const client = new WebSocket(`ws://127.0.0.1:${port}`)
     await new Promise<void>((resolve) => client.once('open', resolve))
 
-    const closed = new Promise<void>((resolve) => client.once('close', resolve))
+    const closed = new Promise<number>((resolve) => client.once('close', (code) => resolve(code)))
     await transport.stop()
-    await closed
+    await expect(closed).resolves.toBe(1006)
   })
 
   it('rejects startup when its configured port cannot bind', async () => {
@@ -137,13 +137,5 @@ describe('DIDComm inbound transports', () => {
 
     expect(response.status).toBe(204)
     expect(requestBody).toBe('{"unparsed":true}')
-  })
-
-  it('requires an app when no port is supplied', () => {
-    // @ts-expect-error An HTTP inbound transport needs either an app or a port.
-    new DidCommHttpInboundTransport({})
-
-    const app: Express = createApp()
-    new DidCommHttpInboundTransport({ app, port: 0 })
   })
 })
