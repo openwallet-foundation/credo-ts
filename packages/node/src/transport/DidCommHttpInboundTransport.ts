@@ -17,7 +17,7 @@ const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 
 export class DidCommHttpInboundTransport implements DidCommInboundTransport {
   public readonly app: Express
-  private port: number
+  private port?: number
   private path: string
   private _server?: Server
   private processedMessageListenerTimeoutMs: number
@@ -31,20 +31,15 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
     path,
     port,
     processedMessageListenerTimeoutMs,
-  }: {
-    app?: Express
-    path?: string
-    port: number
-    processedMessageListenerTimeoutMs?: number
-  }) {
+  }:
+    | { app: Express; port?: undefined; path?: string; processedMessageListenerTimeoutMs?: number }
+    | { app?: Express; port: number; path?: string; processedMessageListenerTimeoutMs?: number }) {
     this.port = port
     this.processedMessageListenerTimeoutMs = processedMessageListenerTimeoutMs ?? 10000 // timeout after 10 seconds
 
-    // Create Express App
+    // Use the caller-provided Express app, or create one
     this.app = app ?? express()
     this.path = path ?? '/'
-
-    this.app.use(text({ type: supportedContentTypes, limit: '5mb' }))
   }
 
   public async start(agentContext: AgentContext) {
@@ -54,7 +49,40 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
       port: this.port,
     })
 
-    this.app.post(this.path, async (req, res) => {
+    this.registerRoute(agentContext, transportService)
+
+    if (this.port === undefined) {
+      return
+    }
+
+    const server = this.app.listen(this.port)
+    this._server = server
+
+    await new Promise<void>((resolve, reject) => {
+      const onError = (error: Error) => {
+        server.off('listening', onListening)
+        reject(error)
+      }
+      const onListening = () => {
+        server.off('error', onError)
+        resolve()
+      }
+
+      server.once('error', onError)
+      server.once('listening', onListening)
+    })
+  }
+
+  public async stop(): Promise<void> {
+    if (!this._server) {
+      return
+    }
+
+    return new Promise((resolve, reject) => this._server?.close((err) => (err ? reject(err) : resolve())))
+  }
+
+  private registerRoute(agentContext: AgentContext, transportService: DidCommTransportService) {
+    this.app.post(this.path, text({ type: supportedContentTypes, limit: '5mb' }), async (req, res) => {
       const contentType = req.headers['content-type']
 
       if (!contentType || !supportedContentTypes.includes(contentType)) {
@@ -69,7 +97,7 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
       req.once('close', () => transportService.removeSession(session))
 
       try {
-        const message = req.body
+        const message = req.body as string
         const encryptedMessage = JSON.parse(message) as DidCommEncryptedMessage
 
         const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
@@ -115,12 +143,6 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
         transportService.removeSession(session)
       }
     })
-
-    this._server = this.app.listen(this.port)
-  }
-
-  public async stop(): Promise<void> {
-    return new Promise((resolve, reject) => this._server?.close((err) => (err ? reject(err) : resolve())))
   }
 }
 
