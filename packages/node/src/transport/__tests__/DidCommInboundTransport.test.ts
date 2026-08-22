@@ -83,8 +83,9 @@ describe('DIDComm inbound transports', () => {
     await new Promise<void>((resolve) => client.once('open', resolve))
 
     const closed = new Promise<number>((resolve) => client.once('close', (code) => resolve(code)))
+    const abnormalClosureCode = 1006
     await transport.stop()
-    await expect(closed).resolves.toBe(1006)
+    await expect(closed).resolves.toBe(abnormalClosureCode)
   })
 
   it('rejects startup when its configured port cannot bind', async () => {
