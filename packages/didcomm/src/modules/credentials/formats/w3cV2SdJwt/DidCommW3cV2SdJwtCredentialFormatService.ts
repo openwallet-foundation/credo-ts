@@ -1,4 +1,4 @@
-import type { AgentContext } from "@credo-ts/core";
+import type { AgentContext, IDisclosureFrame } from "@credo-ts/core";
 import {
   ClaimFormat,
   CredoError,
@@ -41,6 +41,7 @@ import {
   createDidCommSignedAttachment,
   verifyDidCommSignedAttachment,
 } from "../shared/didCommSignedAttachment";
+import { claimPathsFromDisclosureFrame } from "./claimPathsFromDisclosureFrame";
 import type { DidCommW3cV2SdJwtCredentialFormat } from "./DidCommW3cV2SdJwtCredentialFormat";
 import {
   W3cV2SdJwtBindingMethod,
@@ -50,9 +51,9 @@ import {
   type W3cV2SdJwtCredentialRequest,
 } from "./w3cV2SdJwtExchange";
 
-const W3C_V2_SD_JWT_OFFER = "didcomm/vc+sd-jwt-offer@v1.0";
-const W3C_V2_SD_JWT_REQUEST = "didcomm/vc+sd-jwt-request@v1.0";
-const W3C_V2_SD_JWT_CREDENTIAL = "didcomm/vc+sd-jwt@v1.0";
+const W3C_V2_SD_JWT_OFFER = "didcomm/w3c-vc-sd-jwt-offer@v1.0";
+const W3C_V2_SD_JWT_REQUEST = "didcomm/w3c-vc-sd-jwt-request@v1.0";
+const W3C_V2_SD_JWT_CREDENTIAL = "didcomm/w3c-vc-sd-jwt@v1.0";
 
 export class DidCommW3cV2SdJwtCredentialFormatService implements DidCommCredentialFormatService<DidCommW3cV2SdJwtCredentialFormat> {
   public readonly formatKey = "w3cV2SdJwt" as const;
@@ -96,8 +97,12 @@ export class DidCommW3cV2SdJwtCredentialFormatService implements DidCommCredenti
     if (!w3cV2SdJwtFormat)
       throw new CredoError("Missing w3cV2SdJwt credential format data");
 
-    const { credential, bindingRequired, didCommSignedAttachmentBinding } =
-      w3cV2SdJwtFormat;
+    const {
+      credential,
+      bindingRequired,
+      disclosureFrame,
+      didCommSignedAttachmentBinding,
+    } = w3cV2SdJwtFormat;
 
     const credentialJson =
       credential instanceof W3cV2Credential
@@ -156,6 +161,9 @@ export class DidCommW3cV2SdJwtCredentialFormatService implements DidCommCredenti
     const credentialOffer = new W3cV2SdJwtCredentialOffer({
       bindingRequired,
       bindingMethod,
+      selectivelyDisclosableClaims: disclosureFrame
+        ? claimPathsFromDisclosureFrame(disclosureFrame)
+        : undefined,
       credential: credentialJson,
     });
 
@@ -390,7 +398,9 @@ export class DidCommW3cV2SdJwtCredentialFormatService implements DidCommCredenti
         verificationMethod,
         alg,
         holder: holderBinding,
-        disclosureFrame: w3cV2SdJwtFormat?.disclosureFrame,
+        disclosureFrame:
+          w3cV2SdJwtFormat?.disclosureFrame ??
+          this.buildDisclosureFrameFromClaims(credentialOffer.selectivelyDisclosableClaims),
       },
     );
 
@@ -576,6 +586,46 @@ export class DidCommW3cV2SdJwtCredentialFormatService implements DidCommCredenti
     _options: DidCommCredentialFormatAutoRespondCredentialOptions,
   ): Promise<boolean> {
     return true;
+  }
+
+  /**
+   * Converts an array of JSONPath expressions (e.g. `$.credentialSubject.degree.name`)
+   * into an IDisclosureFrame for SD-JWT signing.
+   */
+  private buildDisclosureFrameFromClaims(
+    claims?: string[],
+  ): IDisclosureFrame | undefined {
+    if (!claims || claims.length === 0) return undefined
+
+    const frame: IDisclosureFrame = {}
+
+    for (const path of claims) {
+      // Strip leading "$." prefix
+      const stripped = path.startsWith('$.') ? path.slice(2) : path
+      // Split on '.' and '[', normalizing "arr[0]" into ["arr", "0"]
+      const segments = stripped.split(/\.|\[|\]/).filter(Boolean)
+      if (segments.length === 0) continue
+
+      // Walk/create nested frame objects for intermediate segments
+      let current: IDisclosureFrame = frame
+      for (let i = 0; i < segments.length - 1; i++) {
+        const seg = segments[i]
+        if (!current[seg] || typeof current[seg] !== 'object' || Array.isArray(current[seg])) {
+          current[seg] = {} as IDisclosureFrame
+        }
+        current = current[seg] as IDisclosureFrame
+      }
+
+      // Add the last segment to _sd. Numeric indices must be numbers for array item disclosure.
+      if (!current._sd) current._sd = []
+      const claim = segments[segments.length - 1]
+      const sdValue = /^\d+$/.test(claim) ? Number(claim) : claim
+      if (!current._sd.includes(sdValue as string)) {
+        current._sd.push(sdValue as string)
+      }
+    }
+
+    return frame
   }
 
   private getFormatData(data: unknown, id: string): DidCommAttachment {

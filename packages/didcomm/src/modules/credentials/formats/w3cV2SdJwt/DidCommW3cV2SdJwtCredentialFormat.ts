@@ -21,6 +21,7 @@ export interface DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions {
 export interface DidCommW3cV2SdJwtOfferCredentialFormat {
   credential: W3cV2Credential | JsonObject;
   bindingRequired?: boolean;
+  disclosureFrame?: IDisclosureFrame;
   didCommSignedAttachmentBinding?: DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions;
 }
 

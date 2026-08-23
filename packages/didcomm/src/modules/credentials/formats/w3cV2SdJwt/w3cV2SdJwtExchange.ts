@@ -57,6 +57,7 @@ export class W3cV2SdJwtBindingMethod {
 export interface W3cV2SdJwtCredentialOfferOptions {
   bindingRequired?: boolean;
   bindingMethod?: W3cV2SdJwtBindingMethod;
+  selectivelyDisclosableClaims?: string[];
   credential: JsonObject;
 }
 
@@ -65,6 +66,7 @@ export class W3cV2SdJwtCredentialOffer {
     if (options) {
       this.bindingRequired = options.bindingRequired;
       this.bindingMethod = options.bindingMethod;
+      this.selectivelyDisclosableClaims = options.selectivelyDisclosableClaims;
       this.credential = options.credential;
     }
   }
@@ -79,6 +81,11 @@ export class W3cV2SdJwtCredentialOffer {
   @Type(() => W3cV2SdJwtBindingMethod)
   @Expose({ name: "binding_method" })
   public bindingMethod?: W3cV2SdJwtBindingMethod;
+
+  @IsOptional()
+  @IsString({ each: true })
+  @Expose({ name: "selectively_disclosable_claims" })
+  public selectivelyDisclosableClaims?: string[];
 
   @Expose({ name: "credential" })
   public credential!: JsonObject;
