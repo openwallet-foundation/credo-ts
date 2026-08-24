@@ -24,7 +24,6 @@ function collectPaths(frame: IDisclosureFrame, prefix: string, paths: string[]):
         }
       }
     } else if (key === '_sd_decoy') {
-      continue
     } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       collectPaths(value as IDisclosureFrame, `${prefix}.${key}`, paths)
     }

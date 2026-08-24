@@ -47,14 +47,13 @@ import type {
   W3C_VC_DATA_MODEL_VERSION,
 } from '@credo-ts/didcomm'
 import {
+  createDidCommSignedAttachment,
   DataIntegrityCredentialOffer,
   DidCommAttachment,
-  DidCommAttachmentData,
   DidCommCredentialFormatSpec,
   DidCommCredentialPreviewAttribute,
   DidCommCredentialProblemReportReason,
   DidCommProblemReportError,
-  createDidCommSignedAttachment,
   verifyDidCommSignedAttachment,
 } from '@credo-ts/didcomm'
 import type { AnonCredsRevocationStatusList } from '../models'

@@ -1,1 +1,1 @@
-export * from "./didCommSignedAttachment";
+export * from './didCommSignedAttachment'
