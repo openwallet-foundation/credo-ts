@@ -11,7 +11,6 @@ import type {
   W3cV2SdJwtCredentialOffer,
   W3cV2SdJwtCredentialRequest,
 } from "./w3cV2SdJwtExchange";
-import type { DidCommSignedAttachmentCredentialRequestOptions as DidCommSignedAttachmentAcceptOfferOptions } from "../dataIntegrity/dataIntegrityExchange";
 
 export interface DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions {
   didMethodsSupported?: string[];
@@ -26,7 +25,7 @@ export interface DidCommW3cV2SdJwtOfferCredentialFormat {
 }
 
 export interface DidCommW3cV2SdJwtAcceptOfferFormat {
-  didCommSignedAttachment?: DidCommSignedAttachmentAcceptOfferOptions;
+  didCommSignedAttachment?: DidCommSignedAttachmentCredentialOfferOptions;
 }
 
 export interface DidCommW3cV2SdJwtAcceptRequestFormat {
@@ -36,7 +35,8 @@ export interface DidCommW3cV2SdJwtAcceptRequestFormat {
   holderBinding?: SdJwtVcHolderBinding;
 }
 
-export interface DidCommW3cV2SdJwtCredentialFormat extends DidCommCredentialFormat {
+export interface DidCommW3cV2SdJwtCredentialFormat
+  extends DidCommCredentialFormat {
   formatKey: "w3cV2SdJwt";
   credentialRecordType: "w3c-v2";
   credentialFormats: {
@@ -53,4 +53,9 @@ export interface DidCommW3cV2SdJwtCredentialFormat extends DidCommCredentialForm
     request: W3cV2SdJwtCredentialRequest;
     credential: W3cV2SdJwtCredentialIssue;
   };
+}
+
+export interface DidCommSignedAttachmentCredentialOfferOptions {
+  kid: string;
+  alg?: string;
 }
