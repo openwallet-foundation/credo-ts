@@ -45,6 +45,7 @@ export async function createDidCommSignedAttachment(
   );
   const verificationMethod = didDocument.dereferenceKey(kid);
 
+  // TODO: we need an util 'getPublicJwkWithSigningKeyIdFromVerificationMethodId'
   const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod);
   const keyId =
     keys?.find(

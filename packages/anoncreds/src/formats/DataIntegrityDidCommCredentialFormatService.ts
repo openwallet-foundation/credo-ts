@@ -4,15 +4,10 @@ import {
   CredoError,
   DidsApi,
   deepEquality,
-  getPublicJwkFromVerificationMethod,
   JsonEncoder,
   type JsonObject,
   JsonTransformer,
-  type JwsDetachedFormat,
-  JwsService,
-  JwtPayload,
   Kms,
-  parseDid,
   SignatureSuiteRegistry,
   TypedArrayEncoder,
   type VerificationMethod,
@@ -59,6 +54,8 @@ import {
   DidCommCredentialPreviewAttribute,
   DidCommCredentialProblemReportReason,
   DidCommProblemReportError,
+  createDidCommSignedAttachment,
+  verifyDidCommSignedAttachment,
 } from '@credo-ts/didcomm'
 import type { AnonCredsRevocationStatusList } from '../models'
 import {
@@ -214,108 +211,6 @@ export class DataIntegrityDidCommCredentialFormatService
     }
   }
 
-  private async createSignedAttachment(
-    agentContext: AgentContext,
-    data: { nonce: string },
-    options: { alg?: string; kid: string },
-    issuerSupportedAlgs: string[]
-  ) {
-    const { alg, kid } = options
-
-    if (!kid.startsWith('did:')) {
-      throw new CredoError(`kid '${kid}' is not a DID. Only dids are supported for kid`)
-    }
-    if (!kid.includes('#')) {
-      throw new CredoError(
-        `kid '${kid}' does not contain a fragment. kid MUST point to a specific key in the did document.`
-      )
-    }
-
-    const parsedDid = parseDid(kid)
-
-    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-    const { didDocument, keys } = await didsApi.resolveCreatedDidDocumentWithKeys(parsedDid.did)
-    const verificationMethod = didDocument.dereferenceKey(kid)
-
-    // TODO: we need an util 'getPublicJwkWithSigningKeyIdFromVerificationMethodId'
-    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-    const keyId =
-      keys?.find(({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${parsedDid.fragment}`)?.kmsKeyId ??
-      publicJwk.legacyKeyId
-
-    if (alg && !publicJwk.supportedSignatureAlgorithms.includes(alg as Kms.KnownJwaSignatureAlgorithm)) {
-      throw new CredoError(`jwk ${publicJwk.jwkTypeHumanDescription}, does not support the JWS signature alg '${alg}'`)
-    }
-
-    const signingAlg = issuerSupportedAlgs.find(
-      (supportedAlg) =>
-        publicJwk.supportedSignatureAlgorithms.includes(supportedAlg as Kms.KnownJwaSignatureAlgorithm) &&
-        (alg === undefined || alg === supportedAlg)
-    )
-    if (!signingAlg) throw new CredoError('No signing algorithm supported by the issuer found')
-
-    const jwsService = agentContext.dependencyManager.resolve(JwsService)
-    const jws = await jwsService.createJws(agentContext, {
-      keyId,
-      header: {},
-      payload: new JwtPayload({ additionalClaims: { nonce: data.nonce } }),
-      protectedHeaderOptions: { alg: signingAlg as Kms.KnownJwaSignatureAlgorithm, kid },
-    })
-
-    const signedAttach = new DidCommAttachment({
-      mimeType: 'application/json',
-      data: new DidCommAttachmentData({
-        base64: TypedArrayEncoder.toBase64(TypedArrayEncoder.fromBase64Url(jws.payload)),
-      }),
-    })
-
-    signedAttach.addJws(jws)
-
-    return signedAttach
-  }
-
-  private async getSignedAttachmentPayload(agentContext: AgentContext, signedAttachment: DidCommAttachment) {
-    const jws = signedAttachment.data.jws as JwsDetachedFormat
-    if (!jws) throw new CredoError('Missing jws in signed attachment')
-    if (!jws.protected) throw new CredoError('Missing protected header in signed attachment')
-    if (!signedAttachment.data.base64) throw new CredoError('Missing payload in signed attachment')
-
-    const jwsService = agentContext.dependencyManager.resolve(JwsService)
-    const { isValid } = await jwsService.verifyJws(agentContext, {
-      jws: {
-        header: jws.header,
-        protected: jws.protected,
-        signature: jws.signature,
-        payload: TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromBase64(signedAttachment.data.base64)),
-      },
-      allowedJwsSignerMethods: ['did'],
-      resolveJwsSigner: async ({ protectedHeader: { kid, alg } }) => {
-        if (!kid || typeof kid !== 'string') throw new CredoError('Missing kid in protected header.')
-        if (!kid.startsWith('did:')) throw new CredoError('Only did is supported for kid identifier')
-
-        const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-        const didDocument = await didsApi.resolveDidDocument(kid)
-        const verificationMethod = didDocument.dereferenceKey(kid)
-        const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-
-        return {
-          alg,
-          method: 'did',
-          didUrl: kid,
-          jwk: publicJwk,
-        }
-      },
-    })
-
-    if (!isValid) throw new CredoError('Failed to validate signature of signed attachment')
-    const payload = JsonEncoder.fromBase64(signedAttachment.data.base64) as { nonce: string }
-    if (!payload.nonce || typeof payload.nonce !== 'string') {
-      throw new CredoError('Invalid payload in signed attachment')
-    }
-
-    return payload
-  }
-
   public async acceptOffer(
     agentContext: AgentContext,
     {
@@ -381,7 +276,7 @@ export class DataIntegrityDidCommCredentialFormatService
         throw new CredoError('Cannot request credential with a binding method that was not offered.')
       }
 
-      didCommSignedAttachment = await this.createSignedAttachment(
+      didCommSignedAttachment = await createDidCommSignedAttachment(
         agentContext,
         { nonce: credentialOffer.bindingMethod.didcommSignedAttachment.nonce },
         dataIntegrityFormat.didCommSignedAttachment,
@@ -686,7 +581,7 @@ export class DataIntegrityDidCommCredentialFormatService
       )
       if (!bindingProofAttachment) throw new CredoError('Missing binding proof attachment')
 
-      const { nonce } = await this.getSignedAttachmentPayload(agentContext, bindingProofAttachment)
+      const { nonce } = await verifyDidCommSignedAttachment(agentContext, bindingProofAttachment)
       if (nonce !== credentialOffer.bindingMethod.didcommSignedAttachment.nonce) {
         throw new CredoError('Invalid nonce in signed attachment')
       }
