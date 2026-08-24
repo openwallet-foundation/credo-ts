@@ -42,6 +42,7 @@ import {
   type W3cV2SdJwtCredentialIssue,
   W3cV2SdJwtCredentialOffer,
   type W3cV2SdJwtCredentialRequest,
+  type W3cV2SdJwtCredentialRequestBindingProof,
   W3cV2SdJwtDidCommSignedAttachmentBindingMethod,
 } from './w3cV2SdJwtExchange'
 
@@ -95,7 +96,7 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     JsonTransformer.fromJSON(credentialToValidate, W3cV2Credential)
 
     // Build binding method if required
-    let bindingMethod: W3cV2SdJwtCredentialOffer['bindingMethod']
+    let bindingMethod: W3cV2SdJwtBindingMethod | undefined
     if (bindingRequired) {
       if (!didCommSignedAttachmentBinding) {
         throw new CredoError('Missing didCommSignedAttachmentBinding when bindingRequired is true')
@@ -167,7 +168,7 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     const credentialOffer = JsonTransformer.fromJSON(offerAttachment.getDataAsJson(), W3cV2SdJwtCredentialOffer)
 
     let signedAttachment: DidCommAttachment | undefined
-    let bindingProof: W3cV2SdJwtCredentialRequest['binding_proof']
+    let bindingProof: W3cV2SdJwtCredentialRequestBindingProof | undefined
 
     if (credentialOffer.bindingRequired) {
       const didCommSignedAttachmentOptions = credentialFormats?.w3cV2SdJwt?.didCommSignedAttachment
@@ -269,9 +270,15 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       throw new CredoError('Binding is required but no binding proof was provided')
     }
 
-    // Sign the credential
+    // Tranform the credential
     const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
     const credential = JsonTransformer.fromJSON(credentialOffer.credential, W3cV2Credential)
+
+    // Set credentialSubject.id from the holder binding DID
+    if (holderBinding?.method === 'did') {
+      const holderDid = parseDid(holderBinding.didUrl).did
+      this.assertAndSetCredentialSubjectId(credential, holderDid)
+    }
 
     // Determine verification method and signing algorithm
     let verificationMethod = w3cV2SdJwtFormat?.verificationMethod
@@ -441,6 +448,25 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     _options: DidCommCredentialFormatAutoRespondCredentialOptions
   ): Promise<boolean> {
     return true
+  }
+
+  /**
+   * Sets the credentialSubject.id to the given holder DID if not already set.
+   * Throws if the credential has multiple subjects or if the existing id conflicts.
+   */
+  private assertAndSetCredentialSubjectId(credential: W3cV2Credential, credentialSubjectId: string): void {
+    if (Array.isArray(credential.credentialSubject)) {
+      throw new CredoError('Invalid credential subject. Cannot determine the subject to set holder id on.')
+    }
+
+    const existingId = credential.credentialSubject.id
+    if (existingId && existingId !== credentialSubjectId) {
+      throw new CredoError(`Credential subject id '${existingId}' does not match holder DID '${credentialSubjectId}'.`)
+    }
+
+    if (!existingId) {
+      credential.credentialSubject.id = credentialSubjectId
+    }
   }
 
   /**
