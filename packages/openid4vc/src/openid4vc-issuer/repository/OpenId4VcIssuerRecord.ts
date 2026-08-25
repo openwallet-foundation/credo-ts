@@ -39,7 +39,7 @@ export type OpenId4VcIssuerRecordProps = {
   /**
    * KMS backend that owns the access token signing key. If not provided, the default KMS backend is used.
    */
-  accessTokenSignerBackend?: string
+  accessTokenSignerKmsBackend?: string
 
   /**
    * The DPoP signing algorithms supported by this issuer.
@@ -89,7 +89,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
    */
   public accessTokenPublicKeyFingerprint?: string
   public accessTokenPublicJwk?: Kms.KmsJwkPublicAsymmetric
-  public accessTokenSignerBackend?: string
+  public accessTokenSignerKmsBackend?: string
 
   /**
    * Only here for class transformation. If credentialsSupported is set we transform
@@ -196,7 +196,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
 
       this.issuerId = props.issuerId
       this.accessTokenPublicJwk = props.accessTokenPublicJwk
-      this.accessTokenSignerBackend = props.accessTokenSignerBackend
+      this.accessTokenSignerKmsBackend = props.accessTokenSignerKmsBackend
       this.credentialConfigurationsSupported = props.credentialConfigurationsSupported
       this.dpopSigningAlgValuesSupported = props.dpopSigningAlgValuesSupported
       this.clientAttestationSigningAlgValuesSupported = props.clientAttestationSigningAlgValuesSupported

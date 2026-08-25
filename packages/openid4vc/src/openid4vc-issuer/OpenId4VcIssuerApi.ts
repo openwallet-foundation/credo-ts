@@ -47,7 +47,7 @@ export class OpenId4VcIssuerApi {
    */
   public async rotateAccessTokenSigningKey(
     issuerId: string,
-    options?: Pick<OpenId4VciCreateIssuerOptions, 'accessTokenSignerKeyType' | 'accessTokenSignerBackend'>
+    options?: Pick<OpenId4VciCreateIssuerOptions, 'accessTokenSignerKeyType' | 'accessTokenSignerKmsBackend'>
   ) {
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
     return this.openId4VcIssuerService.rotateAccessTokenSigningKey(this.agentContext, issuer, options)

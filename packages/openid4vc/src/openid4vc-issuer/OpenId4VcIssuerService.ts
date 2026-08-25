@@ -1300,7 +1300,7 @@ export class OpenId4VcIssuerService {
     // - purpose
     const accessTokenSignerKey = await kms.createKey({
       type: options.accessTokenSignerKeyType ?? { kty: 'OKP', crv: 'Ed25519' },
-      backend: options.accessTokenSignerBackend,
+      backend: options.accessTokenSignerKmsBackend,
     })
 
     const openId4VcIssuer = new OpenId4VcIssuerRecord({
@@ -1310,7 +1310,7 @@ export class OpenId4VcIssuerService {
       clientAttestationSigningAlgValuesSupported: options.clientAttestationSigningAlgValuesSupported,
       clientAttestationPopSigningAlgValuesSupported: options.clientAttestationPopSigningAlgValuesSupported,
       accessTokenPublicJwk: accessTokenSignerKey.publicJwk,
-      accessTokenSignerBackend: options.accessTokenSignerBackend,
+      accessTokenSignerKmsBackend: options.accessTokenSignerKmsBackend,
       authorizationServerConfigs: options.authorizationServerConfigs,
       credentialConfigurationsSupported: options.credentialConfigurationsSupported,
       batchCredentialIssuance: options.batchCredentialIssuance,
@@ -1350,20 +1350,20 @@ export class OpenId4VcIssuerService {
   public async rotateAccessTokenSigningKey(
     agentContext: AgentContext,
     issuer: OpenId4VcIssuerRecord,
-    options?: Pick<OpenId4VciCreateIssuerOptions, 'accessTokenSignerKeyType' | 'accessTokenSignerBackend'>
+    options?: Pick<OpenId4VciCreateIssuerOptions, 'accessTokenSignerKeyType' | 'accessTokenSignerKmsBackend'>
   ) {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
 
     const previousKey = issuer.resolvedAccessTokenPublicJwk
-    const previousBackend = issuer.accessTokenSignerBackend
-    const accessTokenSignerBackend = options?.accessTokenSignerBackend ?? previousBackend
+    const previousBackend = issuer.accessTokenSignerKmsBackend
+    const accessTokenSignerKmsBackend = options?.accessTokenSignerKmsBackend ?? previousBackend
     const accessTokenSignerKey = await kms.createKey({
       type: options?.accessTokenSignerKeyType ?? { kty: 'OKP', crv: 'Ed25519' },
-      backend: accessTokenSignerBackend,
+      backend: accessTokenSignerKmsBackend,
     })
 
     issuer.accessTokenPublicJwk = accessTokenSignerKey.publicJwk
-    issuer.accessTokenSignerBackend = accessTokenSignerBackend
+    issuer.accessTokenSignerKmsBackend = accessTokenSignerKmsBackend
     await this.openId4VcIssuerRepository.update(agentContext, issuer)
 
     // Remove previous key

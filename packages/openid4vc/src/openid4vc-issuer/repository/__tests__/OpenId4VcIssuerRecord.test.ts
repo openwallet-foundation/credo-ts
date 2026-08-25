@@ -6,7 +6,7 @@ describe('OpenId4VcIssuerRecord', () => {
     const instance = JsonTransformer.fromJSON(
       {
         issuerId: 'issuer-id',
-        accessTokenSignerBackend: 'remote-kms',
+        accessTokenSignerKmsBackend: 'remote-kms',
         accessTokenPublicJwk: {
           kty: 'OKP',
           crv: 'Ed25519',
@@ -18,7 +18,7 @@ describe('OpenId4VcIssuerRecord', () => {
       OpenId4VcIssuerRecord
     )
 
-    expect(instance.accessTokenSignerBackend).toBe('remote-kms')
+    expect(instance.accessTokenSignerKmsBackend).toBe('remote-kms')
   })
 
   test('should correctly transform credentials supported to credential configurations supported', () => {

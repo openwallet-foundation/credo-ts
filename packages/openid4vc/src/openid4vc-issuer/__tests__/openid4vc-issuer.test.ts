@@ -263,18 +263,18 @@ describe('OpenId4VcIssuer', () => {
 
     const createdIssuer = await issuer.openid4vc.issuer.createIssuer({
       credentialConfigurationsSupported: { openBadgeCredential },
-      accessTokenSignerBackend: 'remote-kms-a',
+      accessTokenSignerKmsBackend: 'remote-kms-a',
     })
 
     expect(createKeySpy).toHaveBeenLastCalledWith({
       type: { kty: 'OKP', crv: 'Ed25519' },
       backend: 'remote-kms-a',
     })
-    expect(createdIssuer.accessTokenSignerBackend).toBe('remote-kms-a')
+    expect(createdIssuer.accessTokenSignerKmsBackend).toBe('remote-kms-a')
 
     const previousKeyId = createdIssuer.resolvedAccessTokenPublicJwk.keyId
     await issuer.openid4vc.issuer.rotateAccessTokenSigningKey(createdIssuer.issuerId, {
-      accessTokenSignerBackend: 'remote-kms-b',
+      accessTokenSignerKmsBackend: 'remote-kms-b',
     })
 
     expect(createKeySpy).toHaveBeenLastCalledWith({
@@ -282,9 +282,9 @@ describe('OpenId4VcIssuer', () => {
       backend: 'remote-kms-b',
     })
     expect(deleteKeySpy).toHaveBeenLastCalledWith({ keyId: previousKeyId, backend: 'remote-kms-a' })
-    expect((await issuer.openid4vc.issuer.getIssuerByIssuerId(createdIssuer.issuerId)).accessTokenSignerBackend).toBe(
-      'remote-kms-b'
-    )
+    expect(
+      (await issuer.openid4vc.issuer.getIssuerByIssuerId(createdIssuer.issuerId)).accessTokenSignerKmsBackend
+    ).toBe('remote-kms-b')
   })
 
   // This method is available on the holder service,

@@ -741,7 +741,7 @@ export type OpenId4VciCreateIssuerOptions = {
   /**
    * KMS backend to use for the access token signing key. If not provided, the default KMS backend is used.
    */
-  accessTokenSignerBackend?: string
+  accessTokenSignerKmsBackend?: string
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
