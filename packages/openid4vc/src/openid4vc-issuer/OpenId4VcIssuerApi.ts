@@ -45,9 +45,12 @@ export class OpenId4VcIssuerApi {
   /**
    * Rotate the key used for signing access tokens for the issuer with the given issuerId.
    */
-  public async rotateAccessTokenSigningKey(issuerId: string) {
+  public async rotateAccessTokenSigningKey(
+    issuerId: string,
+    options?: Pick<OpenId4VciCreateIssuerOptions, 'accessTokenSignerKeyType' | 'accessTokenSignerBackend'>
+  ) {
     const issuer = await this.openId4VcIssuerService.getIssuerByIssuerId(this.agentContext, issuerId)
-    return this.openId4VcIssuerService.rotateAccessTokenSigningKey(this.agentContext, issuer)
+    return this.openId4VcIssuerService.rotateAccessTokenSigningKey(this.agentContext, issuer, options)
   }
 
   public async updateIssuerMetadata(options: OpenId4VcUpdateIssuerRecordOptions) {

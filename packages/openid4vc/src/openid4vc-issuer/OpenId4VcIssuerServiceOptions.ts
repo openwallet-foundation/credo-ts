@@ -738,6 +738,11 @@ export type OpenId4VciCreateIssuerOptions = {
    */
   accessTokenSignerKeyType?: Kms.KmsCreateKeyTypeAsymmetric
 
+  /**
+   * KMS backend to use for the access token signing key. If not provided, the default KMS backend is used.
+   */
+  accessTokenSignerBackend?: string
+
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
