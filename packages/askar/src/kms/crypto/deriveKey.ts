@@ -1,5 +1,5 @@
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { askar, Key } from '@openwallet-foundation/askar-shared'
+import { Key, NativeAskar } from '@openwallet-foundation/askar-shared'
 import { jwkEncToAskarAlg } from '../../utils'
 
 export const askarSupportedKeyAgreementAlgorithms = [
@@ -47,7 +47,7 @@ export function deriveEncryptionKey(options: {
       : undefined
 
   const derivedKey = new Key(
-    askar.keyDeriveEcdhEs({
+    NativeAskar.instance.keyDeriveEcdhEs({
       algId: TypedArrayEncoder.fromUtf8String(
         keyAgreement.algorithm === 'ECDH-ES' ? encryption.algorithm : keyAgreement.algorithm
       ),
@@ -130,7 +130,7 @@ export function deriveDecryptionKey(options: {
       : undefined
 
   const derivedKey = new Key(
-    askar.keyDeriveEcdhEs({
+    NativeAskar.instance.keyDeriveEcdhEs({
       algId: TypedArrayEncoder.fromUtf8String(
         keyAgreement.algorithm === 'ECDH-ES' ? decryption.algorithm : keyAgreement.algorithm
       ),
