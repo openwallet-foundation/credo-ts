@@ -12,11 +12,11 @@ import {
 } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
-import { getResolvedDidcommServiceWithSigningKeyId } from './modules/connections/services/helpers'
+import { getResolvedDidcommServiceWithSigningKeyId, toX25519 } from './modules/connections/services/helpers'
 import { DidCommOutOfBandRole } from './modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRepository } from './modules/oob/repository/DidCommOutOfBandRepository'
 import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
-import { DidCommForwardMessage } from './modules/routing/messages/DidCommForwardMessage'
+import { DidCommForwardMessage } from './modules/routing/protocol/v1/messages/DidCommForwardMessage'
 import { DidCommMediatorRoutingRepository } from './modules/routing/repository/DidCommMediatorRoutingRepository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
@@ -25,6 +25,8 @@ export interface EnvelopeKeys {
   recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   senderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> | null
+  /** DID URL of the sender key; used as skid in DIDComm v2 so recipient can resolve it */
+  senderKeySkid?: string
 }
 
 @injectable()
@@ -64,13 +66,15 @@ export class DidCommEnvelopeService {
       let encryptedSender: string | undefined
 
       if (senderKey) {
+        // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys.
+        const recipientX25519Jwk = toX25519(recipientKey).toJson()
+
         // Encrypt the sender
         const { encrypted } = await kms.encrypt({
           key: {
             keyAgreement: {
               algorithm: 'ECDH-HSALSA20',
-              // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys
-              externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
+              externalPublicJwk: recipientX25519Jwk,
             },
           },
           encryption: {
@@ -83,11 +87,13 @@ export class DidCommEnvelopeService {
       }
 
       // Encrypt the key
+      const recipientX25519JwkForKey = toX25519(recipientKey).toJson()
+
       const { encrypted, iv } = await kms.encrypt({
         key: {
           keyAgreement: {
             algorithm: 'ECDH-HSALSA20',
-            externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
+            externalPublicJwk: recipientX25519JwkForKey,
 
             // Sender key only needed for Authcrypt
             keyId: senderKey?.keyId,

@@ -225,7 +225,7 @@ describe('DidsApi', () => {
         {
           id: 'didcomm',
           recipientKeys: [routing.recipientKey],
-          routingKeys: routing.routingKeys,
+          routingKeys: routing.routingKeys ?? [],
           serviceEndpoint: routing.endpoints[0],
         },
       ],

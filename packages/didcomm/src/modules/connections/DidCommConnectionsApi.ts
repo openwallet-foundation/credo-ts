@@ -2,19 +2,21 @@ import type { Query, QueryOptions } from '@credo-ts/core'
 import { AgentContext, CredoError, DidResolverService, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { DidCommEmptyMessage } from '../../messages'
 import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
 import type { DidCommOutOfBandRecord } from '../oob/repository'
-import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
+import { DidCommRoutingService, type RemoveRoutingOptions } from '../routing/services/DidCommRoutingService'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
 import { DidCommConnectionRequestMessage, DidCommDidExchangeRequestMessage } from './messages'
 import type { DidCommConnectionType } from './models'
-import { DidCommHandshakeProtocol } from './models'
+import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
 import type { DidCommConnectionRecord } from './repository'
-import { DidCommConnectionService, DidCommDidRotateService } from './services'
+import { DidCommConnectionService, DidCommDidRotateService, DidCommDidRotateV2Service } from './services'
+import { createPeerDidForV2OOB } from './services/helpers'
 
 export interface SendPingOptions {
   responseRequested?: boolean
@@ -112,6 +114,50 @@ export class DidCommConnectionsApi {
         routing,
         autoAcceptConnection,
       })
+    } else if (protocol === DidCommHandshakeProtocol.None) {
+      // V2 OOB: create connection without handshake (no ConnectionRequest/Response sent)
+      if (ourDid) {
+        const connectionRecord = await this.connectionService.createConnection(
+          this.agentContext,
+          {
+            protocol: DidCommHandshakeProtocol.None,
+            role: DidCommDidExchangeRole.Responder,
+            state: DidCommDidExchangeState.Completed,
+            theirDid: outOfBandRecord.outOfBandInvitation.v2Invitation?.from,
+            did: ourDid,
+            outOfBandId: outOfBandRecord.id,
+            invitationDid: outOfBandRecord.outOfBandInvitation.v2Invitation?.from,
+            alias: config.alias,
+            theirLabel: outOfBandRecord.outOfBandInvitation.v2Invitation?.body?.goal,
+            didcommVersion: 'v2',
+          },
+          true
+        )
+        return connectionRecord
+      }
+      if (!routing) {
+        throw new CredoError('Routing is required for v2 OOB accept to create did:peer:2')
+      }
+      const { did } = await createPeerDidForV2OOB(this.agentContext, routing)
+      await this.routingService.registerRecipientDidForV2Routing(this.agentContext, routing, did)
+      const connectionRecord = await this.connectionService.createConnection(
+        this.agentContext,
+        {
+          protocol: DidCommHandshakeProtocol.None,
+          role: DidCommDidExchangeRole.Responder,
+          state: DidCommDidExchangeState.Completed,
+          theirDid: outOfBandRecord.outOfBandInvitation.v2Invitation?.from,
+          did,
+          outOfBandId: outOfBandRecord.id,
+          invitationDid: outOfBandRecord.outOfBandInvitation.v2Invitation?.from,
+          alias: config.alias,
+          theirLabel: outOfBandRecord.outOfBandInvitation.v2Invitation?.body?.goal,
+          didcommVersion: 'v2',
+          mediatorId: routing.mediatorId,
+        },
+        true
+      )
+      return connectionRecord
     } else {
       throw new CredoError(`Unsupported handshake protocol ${protocol}.`)
     }
@@ -289,12 +335,43 @@ export class DidCommConnectionsApi {
    * @param options connectionId and optional target did and routing configuration
    * @returns object containing the new did
    */
-  public async rotate(options: { connectionId: string; toDid?: string; routing?: DidCommRouting }) {
+  public async rotate(options: {
+    connectionId: string
+    toDid?: string
+    routing?: DidCommRouting
+  }): Promise<{ newDid: string }> {
     const { connectionId, toDid } = options
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
     if (toDid && options.routing) {
       throw new CredoError(`'routing' is disallowed when defining 'toDid'`)
+    }
+
+    if (connection.didcommVersion === 'v2') {
+      const didRotateV2Service = this.agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
+      const routing =
+        !toDid && !options.routing
+          ? await this.routingService.getRouting(this.agentContext, { mediatorId: connection.mediatorId })
+          : options.routing
+
+      const { newDid } = await didRotateV2Service.rotateOurDid(this.agentContext, connection, { toDid, routing })
+
+      // from_prior re-attaches to the next outbound, so a failed notification must not fail the rotation
+      try {
+        await this.messageSender.sendMessage(
+          new DidCommOutboundMessageContext(new DidCommEmptyMessage({}), {
+            agentContext: this.agentContext,
+            connection,
+          })
+        )
+      } catch (error) {
+        this.agentContext.config.logger.warn(
+          'Failed to deliver v2 rotation notification; from_prior will ride the next outbound message',
+          { connectionId: connection.id, error: error instanceof Error ? error.message : String(error) }
+        )
+      }
+
+      return { newDid }
     }
 
     let routing = options.routing
@@ -332,12 +409,24 @@ export class DidCommConnectionsApi {
     // Create Hangup message and update did in connection record
     const message = await this.didRotateService.createHangup(this.agentContext, { connection })
 
-    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection: connectionBeforeHangup,
-    })
+    if (connection.didcommVersion === 'v2') {
+      try {
+        const didRotateV2Service = this.agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
+        await didRotateV2Service.sendRotateToNothing(this.agentContext, connectionBeforeHangup)
+      } catch (error) {
+        this.agentContext.config.logger.warn('Failed to send v2 termination signal', {
+          connectionId: connection.id,
+          error: error.message,
+        })
+      }
+    } else {
+      const outboundMessageContext = new DidCommOutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionBeforeHangup,
+      })
 
-    await this.messageSender.sendMessage(outboundMessageContext)
+      await this.messageSender.sendMessage(outboundMessageContext)
+    }
 
     // After hang-up message submission, delete connection if required
     if (options.deleteAfterHangup) {
@@ -459,14 +548,17 @@ export class DidCommConnectionsApi {
   }
 
   private async removeRouting(connection: DidCommConnectionRecord) {
-    if (connection.mediatorId && connection.did) {
-      const { didDocument } = await this.didResolverService.resolve(this.agentContext, connection.did)
+    const did = connection.did ?? connection.previousDids.at(-1)
+
+    if (connection.mediatorId && did) {
+      const { didDocument } = await this.didResolverService.resolve(this.agentContext, did)
 
       if (didDocument) {
+        const recipientKeys = didDocument
+          .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+          .map(({ publicJwk }) => publicJwk) as RemoveRoutingOptions['recipientKeys']
         await this.routingService.removeRouting(this.agentContext, {
-          recipientKeys: didDocument
-            .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
-            .map(({ publicJwk }) => publicJwk),
+          recipientKeys,
           mediatorId: connection.mediatorId,
         })
       }
@@ -493,10 +585,11 @@ export class DidCommConnectionsApi {
       const mediatorRecord = await getMediationRecordForDidDocument(this.agentContext, did.didDocument)
 
       if (mediatorRecord) {
+        const recipientKeys = did.didDocument
+          .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
+          .map(({ publicJwk }) => publicJwk) as RemoveRoutingOptions['recipientKeys']
         await this.routingService.removeRouting(this.agentContext, {
-          recipientKeys: did.didDocument
-            .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
-            .map(({ publicJwk }) => publicJwk),
+          recipientKeys,
           mediatorId: mediatorRecord.id,
         })
       }

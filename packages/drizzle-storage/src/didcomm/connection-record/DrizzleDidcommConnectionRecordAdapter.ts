@@ -30,6 +30,7 @@ export class DrizzleDidcommConnectionRecordAdapter extends BaseDrizzleRecordAdap
       connectionTypes,
       previousDids,
       previousTheirDids,
+      didcommVersion: _didcommVersionTag,
       ...customTags
     } = record.getTags()
 
@@ -51,6 +52,7 @@ export class DrizzleDidcommConnectionRecordAdapter extends BaseDrizzleRecordAdap
       imageUrl: record.imageUrl,
       theirLabel: record.theirLabel,
       protocol: record.protocol,
+      didcommVersion: record.didcommVersion,
       // TOOD: Fix types
       // biome-ignore lint/suspicious/noExplicitAny: no explanation
       customTags: customTags as any,
