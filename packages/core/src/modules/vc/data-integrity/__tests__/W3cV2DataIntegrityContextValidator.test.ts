@@ -250,7 +250,9 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
         knownContext: DI_PINNED_CONTEXTS,
       })
 
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network unavailable'))
+      const fetchSpy = vi
+        .spyOn(agentContext.config.agentDependencies, 'fetch')
+        .mockRejectedValue(new Error('network unavailable'))
 
       const result = await diOnlyValidator.validate(agentContext, {
         '@context': DI_PINNED_CONTEXTS,
@@ -267,7 +269,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
         knownContext: VC_V2_KNOWN_CONTEXT,
       })
 
-      const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      const fetchSpy = vi.spyOn(agentContext.config.agentDependencies, 'fetch')
 
       const result = await vcOnlyValidator.validate(agentContext, {
         '@context': 'https://www.w3.org/ns/credentials/v2',

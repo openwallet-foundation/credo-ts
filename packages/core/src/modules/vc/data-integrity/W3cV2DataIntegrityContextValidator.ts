@@ -3,6 +3,7 @@ import { Hasher } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { TypedArrayEncoder } from '../../../utils'
+import { fetchWithTimeout } from '../../../utils/fetch'
 import {
   createProofVerificationIssue,
   type W3cDataIntegrityProcessingIssue as DataIntegrityProcessingIssue,
@@ -56,7 +57,7 @@ export class W3cV2DataIntegrityContextValidator {
   }
 
   public async validate(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     inputDocument: DataIntegrityUnsecuredDocument
   ): Promise<W3cV2DataIntegrityContextValidationResult> {
     const normalisedInputDocument = omitUndefinedFields(inputDocument)
@@ -118,7 +119,7 @@ export class W3cV2DataIntegrityContextValidator {
       // Skip URIs that are in the known baseline context - they don't require hash verification
       if (this.knownContext.includes(contextEntry)) continue
 
-      const hashIssue = await verifyContextUriHash(contextEntry)
+      const hashIssue = await verifyContextUriHash(agentContext, contextEntry)
       if (hashIssue) {
         triggerErrors.push(hashIssue)
         break
@@ -210,7 +211,10 @@ function collectAllNestedContextPaths(value: unknown, path: string[] = []): stri
   return paths
 }
 
-async function verifyContextUriHash(contextUri: string): Promise<DataIntegrityProcessingIssue | undefined> {
+async function verifyContextUriHash(
+  agentContext: AgentContext,
+  contextUri: string
+): Promise<DataIntegrityProcessingIssue | undefined> {
   const expectedHash = DI_SPEC_CONTEXT_HASHES[contextUri]
   if (!expectedHash) {
     // Unknown URI does not match a known good value per §4.6 step 3c
@@ -229,7 +233,7 @@ async function verifyContextUriHash(contextUri: string): Promise<DataIntegrityPr
   // Fetch remote and verify against spec hash
   let contextBytes: Uint8Array
   try {
-    contextBytes = await getContextBytes(contextUri)
+    contextBytes = await getContextBytes(agentContext, contextUri)
   } catch (error) {
     return createProofVerificationIssue(
       'Unable to retrieve context for hash verification',
@@ -248,8 +252,8 @@ async function verifyContextUriHash(contextUri: string): Promise<DataIntegrityPr
   return undefined
 }
 
-async function getContextBytes(contextUrl: string): Promise<Uint8Array> {
-  const response = await fetch(contextUrl, {
+async function getContextBytes(agentContext: AgentContext, contextUrl: string): Promise<Uint8Array> {
+  const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, contextUrl, {
     headers: {
       Accept: 'application/ld+json',
     },
