@@ -1,6 +1,6 @@
 export * from './anoncreds-w3c-credential'
 export * from './constants'
-export * from './data-integrity-v1'
+export * from './data-integrity'
 export * from './jsonld'
 export * from './jwt-vc'
 export * from './linked-data-proofs'

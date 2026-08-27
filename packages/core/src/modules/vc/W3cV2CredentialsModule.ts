@@ -1,7 +1,7 @@
 import type { DependencyManager, Module } from '../../plugins'
 import { injectable } from '../../plugins'
 import { CREDENTIALS_CONTEXT_V2_URL } from './constants'
-import { W3cV2DataIntegrityContextValidator, W3cV2DataIntegrityCredentialService } from './data-integrity-v1'
+import { W3cV2DataIntegrityContextValidator, W3cV2DataIntegrityCredentialService } from './data-integrity'
 import { W3cV2JwtCredentialService } from './jwt-vc'
 import { SignatureSuiteRegistry } from './linked-data-proofs/SignatureSuiteRegistry'
 import { W3cV2CredentialRepository } from './repository/W3cV2CredentialRepository'

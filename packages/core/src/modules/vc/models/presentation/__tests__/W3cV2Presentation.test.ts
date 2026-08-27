@@ -1,5 +1,5 @@
 import { JsonTransformer } from '../../../../../utils'
-import { W3cV2DataIntegrityVerifiableCredential } from '../../../data-integrity-v1'
+import { W3cV2DataIntegrityVerifiableCredential } from '../../../data-integrity'
 import { CredoEs256DidKeyJwtVp } from '../../../jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
 import { W3cV2Presentation } from '../W3cV2Presentation'
 

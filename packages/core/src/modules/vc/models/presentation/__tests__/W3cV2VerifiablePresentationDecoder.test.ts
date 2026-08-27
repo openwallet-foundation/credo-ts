@@ -1,7 +1,7 @@
 import { CredoError } from '../../../../../error'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { TypedArrayEncoder } from '../../../../../utils/TypedArrayEncoder'
-import { W3cV2DataIntegrityVerifiablePresentation } from '../../../data-integrity-v1'
+import { W3cV2DataIntegrityVerifiablePresentation } from '../../../data-integrity'
 import { W3cV2JwtVerifiablePresentation } from '../../../jwt-vc'
 import { CredoEs256DidKeyJwtVp } from '../../../jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
 import { W3cV2SdJwtVerifiablePresentation } from '../../../sd-jwt-vc'

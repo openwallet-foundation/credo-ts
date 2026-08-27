@@ -6,7 +6,7 @@ import type { SingleOrArray } from '../../../../types'
 import {
   W3cV2DataIntegrityVerifiableCredential,
   type W3cV2DataIntegrityVerifiableCredentialOptions,
-} from '../../data-integrity-v1'
+} from '../../data-integrity'
 import { W3cV2JwtVerifiableCredential, type W3cV2JwtVerifiableCredentialOptions } from '../../jwt-vc'
 import { W3cV2SdJwtVerifiableCredential, type W3cV2SdJwtVerifiableCredentialOptions } from '../../sd-jwt-vc'
 import { ClaimFormat } from '../ClaimFormat'

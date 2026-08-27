@@ -7,7 +7,7 @@ import { JsonTransformer } from '../../../../utils'
 import {
   W3cV2DataIntegrityVerifiablePresentation,
   type W3cV2DataIntegrityVerifiablePresentationOptions,
-} from '../../data-integrity-v1'
+} from '../../data-integrity'
 import {
   W3cV2JwtVerifiablePresentation,
   type W3cV2JwtVerifiablePresentationOptions,

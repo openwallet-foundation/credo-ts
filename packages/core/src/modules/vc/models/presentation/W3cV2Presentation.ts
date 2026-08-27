@@ -8,11 +8,11 @@ import { CREDENTIALS_CONTEXT_V2_URL, VERIFIABLE_PRESENTATION_TYPE } from '../../
 import {
   type W3cV2DataIntegritySecuredCredential,
   W3cV2DataIntegrityVerifiableCredential,
-} from '../../data-integrity-v1/W3cV2DataIntegrityVerifiableCredential'
+} from '../../data-integrity/W3cV2DataIntegrityVerifiableCredential'
 import {
   type W3cV2DataIntegritySecuredPresentation,
   W3cV2DataIntegrityVerifiablePresentation,
-} from '../../data-integrity-v1/W3cV2DataIntegrityVerifiablePresentation'
+} from '../../data-integrity/W3cV2DataIntegrityVerifiablePresentation'
 import { IsCredentialJsonLdContext, IsVerifiablePresentationType } from '../../validators'
 import {
   isEnvelopedVerifiableCredentialEntry,

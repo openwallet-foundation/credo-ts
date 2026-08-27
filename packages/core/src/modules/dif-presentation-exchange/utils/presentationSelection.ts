@@ -10,7 +10,7 @@ import {
   W3cJwtVerifiablePresentation,
   W3cV2JwtVerifiablePresentation,
 } from '../../vc'
-import { W3cV2DataIntegrityVerifiablePresentation } from '../../vc/data-integrity-v1'
+import { W3cV2DataIntegrityVerifiablePresentation } from '../../vc/data-integrity'
 import { W3cV2SdJwtVerifiablePresentation } from '../../vc/sd-jwt-vc'
 import type {
   DifPresentationExchangeDefinition,

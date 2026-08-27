@@ -1,5 +1,5 @@
-import { W3cV2DataIntegrityVerifiableCredential, W3cV2DataIntegrityVerifiablePresentation } from '../data-integrity-v1'
-import { CredoDidKeyDiVc, CredoDidKeyDiVp } from '../data-integrity-v1/__tests__/fixtures/credo-di-vc'
+import { W3cV2DataIntegrityVerifiableCredential, W3cV2DataIntegrityVerifiablePresentation } from '../data-integrity'
+import { CredoDidKeyDiVc, CredoDidKeyDiVp } from '../data-integrity/__tests__/fixtures/credo-di-vc'
 import { W3cV2JwtVerifiablePresentation } from '../jwt-vc'
 import { CredoEs256DidJwkJwtVc, CredoEs256DidKeyJwtVp } from '../jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
 import { W3cV2EnvelopedVerifiableCredential } from '../models/credential/W3cV2EnvelopedVerifiableCredential'

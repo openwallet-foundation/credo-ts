@@ -8,7 +8,7 @@ import {
   type W3cV2DataIntegrityResolvedPresentation,
   W3cV2DataIntegrityVerifiableCredential,
   W3cV2DataIntegrityVerifiablePresentation,
-} from './data-integrity-v1'
+} from './data-integrity'
 import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
 import { W3cV2JwtCredentialService } from './jwt-vc/W3cV2JwtCredentialService'
 import type {

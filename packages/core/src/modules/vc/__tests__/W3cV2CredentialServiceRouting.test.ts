@@ -3,7 +3,7 @@ import {
   W3cV2DataIntegrityCredentialService,
   W3cV2DataIntegrityVerifiableCredential,
   W3cV2DataIntegrityVerifiablePresentation,
-} from '../data-integrity-v1'
+} from '../data-integrity'
 import { W3cV2JwtVerifiablePresentation } from '../jwt-vc'
 import { CredoEs256DidJwkJwtVc, CredoEs256DidKeyJwtVp } from '../jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
 import { W3cV2JwtVerifiableCredential } from '../jwt-vc/W3cV2JwtVerifiableCredential'

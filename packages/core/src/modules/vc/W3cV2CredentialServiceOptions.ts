@@ -2,10 +2,7 @@ import type { TrustedIssuerDid } from '../../agent/TrustedIssuersForVerification
 import type { HashName } from '../../crypto'
 import type { KnownJwaSignatureAlgorithm } from '../kms'
 import type { IDisclosureFrame, IPresentationFrame, SdJwtVcHolderBinding } from '../sd-jwt-vc'
-import type {
-  W3cV2DataIntegrityVerifiableCredential,
-  W3cV2DataIntegrityVerifiablePresentation,
-} from './data-integrity-v1'
+import type { W3cV2DataIntegrityVerifiableCredential, W3cV2DataIntegrityVerifiablePresentation } from './data-integrity'
 import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
 import type { ClaimFormat, W3cV2Credential, W3cV2Presentation } from './models'
 import type { W3cV2CredentialRecord } from './repository'
