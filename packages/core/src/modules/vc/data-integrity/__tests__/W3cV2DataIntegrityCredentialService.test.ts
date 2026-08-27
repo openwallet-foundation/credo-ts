@@ -713,9 +713,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
       ])
 
       diProofService = new DataIntegrityProofService(cryptosuiteRegistry)
-      diContextValidator = new W3cV2DataIntegrityContextValidator().configure({
-        knownContext: ['https://www.w3.org/ns/credentials/v2'],
-      })
+      diContextValidator = new W3cV2DataIntegrityContextValidator()
       diCredentialService = new W3cV2DataIntegrityCredentialService(diProofService, diContextValidator)
     })
 

@@ -1,6 +1,5 @@
 import type { DependencyManager, Module } from '../../plugins'
 import { injectable } from '../../plugins'
-import { CREDENTIALS_CONTEXT_V2_URL } from './constants'
 import { W3cV2DataIntegrityContextValidator, W3cV2DataIntegrityCredentialService } from './data-integrity'
 import { W3cV2JwtCredentialService } from './jwt-vc'
 import { SignatureSuiteRegistry } from './linked-data-proofs/SignatureSuiteRegistry'
@@ -8,13 +7,8 @@ import { W3cV2CredentialRepository } from './repository/W3cV2CredentialRepositor
 import { W3cV2SdJwtCredentialService } from './sd-jwt-vc'
 import { W3cV2CredentialService } from './W3cV2CredentialService'
 import { W3cV2CredentialsApi } from './W3cV2CredentialsApi'
-
-export interface W3cV2CredentialsModuleConfigOptions {
-  dataIntegrity?: {
-    knownContexts?: unknown[]
-    recompactInvalidContexts?: boolean
-  }
-}
+import type { W3cV2CredentialsModuleConfigOptions } from './W3cV2CredentialsModuleConfig'
+import { W3cV2CredentialsModuleConfig } from './W3cV2CredentialsModuleConfig'
 
 /**
  * @public
@@ -22,10 +16,10 @@ export interface W3cV2CredentialsModuleConfigOptions {
 @injectable()
 export class W3cV2CredentialsModule implements Module {
   public readonly api = W3cV2CredentialsApi
-  private options: W3cV2CredentialsModuleConfigOptions
+  public readonly config: W3cV2CredentialsModuleConfig
 
   public constructor(options?: W3cV2CredentialsModuleConfigOptions) {
-    this.options = options ?? {}
+    this.config = new W3cV2CredentialsModuleConfig(options)
   }
 
   public register(dependencyManager: DependencyManager) {
@@ -35,11 +29,11 @@ export class W3cV2CredentialsModule implements Module {
     // VC DI context validator (owned at VC layer, not core DI layer)
     dependencyManager.registerInstance(
       W3cV2DataIntegrityContextValidator,
-      new W3cV2DataIntegrityContextValidator().configure({
-        knownContext: this.options.dataIntegrity?.knownContexts ?? [CREDENTIALS_CONTEXT_V2_URL],
-        recompactInvalidContexts: this.options.dataIntegrity?.recompactInvalidContexts ?? true,
+      new W3cV2DataIntegrityContextValidator({
+        recompactInvalidContexts: this.config.recompactInvalidContexts,
       })
     )
+    dependencyManager.registerInstance(W3cV2CredentialsModuleConfig, this.config)
     // VC services
     dependencyManager.registerSingleton(W3cV2CredentialService)
     dependencyManager.registerSingleton(W3cV2DataIntegrityCredentialService)

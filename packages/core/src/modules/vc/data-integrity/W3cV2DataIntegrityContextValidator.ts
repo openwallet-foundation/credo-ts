@@ -27,7 +27,6 @@ export interface W3cV2DataIntegrityContextValidationResult {
 }
 
 export interface W3cV2DataIntegrityContextValidatorOptions {
-  knownContext?: unknown[]
   recompactInvalidContexts?: boolean
 }
 
@@ -36,24 +35,14 @@ export interface W3cV2DataIntegrityContextValidatorOptions {
  *
  * Algorithm inputs:
  *   - inputDocument: the secured document (after proof verification)
- *   - knownContext: pre-approved ordered list of JSON-LD context values (constructor parameter)
  *   - recompactInvalidContexts: whether to run JSON-LD compaction when §4.6 step 3 trigger conditions are detected
  */
 @injectable()
 export class W3cV2DataIntegrityContextValidator {
-  private knownContext: unknown[]
-  private recompactInvalidContexts: boolean
+  private readonly recompactInvalidContexts: boolean
 
-  public constructor() {
-    this.knownContext = [CREDENTIALS_CONTEXT_V2_URL]
-    this.recompactInvalidContexts = true
-  }
-
-  public configure(options: W3cV2DataIntegrityContextValidatorOptions) {
-    this.knownContext = options.knownContext ?? this.knownContext
-    this.recompactInvalidContexts = options.recompactInvalidContexts ?? this.recompactInvalidContexts
-
-    return this
+  public constructor(options?: W3cV2DataIntegrityContextValidatorOptions) {
+    this.recompactInvalidContexts = options?.recompactInvalidContexts ?? true
   }
 
   public async validate(
@@ -91,12 +80,12 @@ export class W3cV2DataIntegrityContextValidator {
     // §4.6, step 3: detect trigger conditions
     const triggerErrors: DataIntegrityProcessingIssue[] = []
 
-    // 3a: contextValue does not deeply equal knownContext
-    if (!deepEquals(contextValue, this.knownContext)) {
+    // 3a: the mandatory VC 2.0 context must be first; additional contexts are permitted.
+    if (contextValue[0] !== CREDENTIALS_CONTEXT_V2_URL) {
       triggerErrors.push(
         createProofVerificationIssue(
-          '@context does not match the expected known context',
-          `Document @context ${JSON.stringify(contextValue)} does not deeply equal knownContext ${JSON.stringify(this.knownContext)}`
+          '@context does not start with the required VC 2.0 context',
+          `Document @context must start with '${CREDENTIALS_CONTEXT_V2_URL}'`
         )
       )
     }
@@ -116,8 +105,8 @@ export class W3cV2DataIntegrityContextValidator {
     for (const contextEntry of contextValue) {
       if (typeof contextEntry !== 'string') continue
 
-      // Skip URIs that are in the known baseline context - they don't require hash verification
-      if (this.knownContext.includes(contextEntry)) continue
+      if (contextEntry === CREDENTIALS_CONTEXT_V2_URL) continue
+      if (!(contextEntry in DI_SPEC_CONTEXT_HASHES)) continue
 
       const hashIssue = await verifyContextUriHash(agentContext, contextEntry)
       if (hashIssue) {
@@ -129,7 +118,7 @@ export class W3cV2DataIntegrityContextValidator {
     if (triggerErrors.length > 0) {
       if (this.recompactInvalidContexts) {
         try {
-          result.validatedDocument = (await jsonld.compact(normalisedInputDocument, this.knownContext, {
+          result.validatedDocument = (await jsonld.compact(normalisedInputDocument, [CREDENTIALS_CONTEXT_V2_URL], {
             documentLoader: await getContextValidationDocumentLoader(),
             compactToRelative: false,
           })) as DataIntegrityUnsecuredDocument
@@ -165,26 +154,6 @@ export class W3cV2DataIntegrityContextValidator {
 function normaliseContext(context: unknown): unknown[] {
   if (context === undefined || context === null) return []
   return Array.isArray(context) ? context : [context]
-}
-
-function deepEquals(a: unknown, b: unknown): boolean {
-  if (a === b) return true
-  if (a === null || b === null) return a === b
-  if (typeof a !== typeof b) return false
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false
-    return a.every((item, index) => deepEquals(item, (b as unknown[])[index]))
-  }
-  if (Array.isArray(a) !== Array.isArray(b)) return false
-  if (typeof a === 'object' && typeof b === 'object') {
-    const objA = a as Record<string, unknown>
-    const objB = b as Record<string, unknown>
-    const keysA = Object.keys(objA).sort()
-    const keysB = Object.keys(objB).sort()
-    if (!deepEquals(keysA, keysB)) return false
-    return keysA.every((key) => deepEquals(objA[key], objB[key]))
-  }
-  return false
 }
 
 function collectAllNestedContextPaths(value: unknown, path: string[] = []): string[] {

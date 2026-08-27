@@ -23,17 +23,13 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
       agentConfig: getAgentConfig('W3cV2DataIntegrityContextValidatorTest'),
     })
 
-    // VC processing baseline: credentials/v2 knownContext (configured by caller/module)
-    validator = new W3cV2DataIntegrityContextValidator().configure({
-      knownContext: VC_V2_KNOWN_CONTEXT,
-      recompactInvalidContexts: false,
-    })
+    validator = new W3cV2DataIntegrityContextValidator({ recompactInvalidContexts: false })
   })
 
   // ── §4.6 step 3a ──────────────────────────────────────────────────────────
 
-  describe('step 3a: contextValue does not deeply equal knownContext', () => {
-    test('passes when document @context deeply equals configured knownContext', async () => {
+  describe('step 3a: mandatory VC 2.0 context', () => {
+    test('passes when document starts with the mandatory VC 2.0 context', async () => {
       const result = await validator.validate(agentContext, {
         '@context': 'https://www.w3.org/ns/credentials/v2',
         id: 'urn:example:test',
@@ -44,7 +40,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
       expect(result.validatedDocument).toBeDefined()
     })
 
-    test('triggers when document @context is missing (empty vs non-empty knownContext)', async () => {
+    test('triggers when document @context is missing', async () => {
       const result = await validator.validate(agentContext, {
         id: 'urn:example:test',
         // No @context
@@ -56,40 +52,25 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
       expect(result.validatedDocument).toBeNull()
     })
 
-    test('triggers when document has extra context URL beyond knownContext', async () => {
+    test('permits additional context entries', async () => {
       const result = await validator.validate(agentContext, {
-        '@context': ['https://www.w3.org/ns/credentials/v2', 'https://schema.org/'],
+        '@context': ['https://www.w3.org/ns/credentials/v2', 'https://example.org/context/v1'],
         id: 'urn:example:test',
       })
 
-      expect(result.validated).toBe(false)
-      expect(result.errors[0]?.type).toBe(DataIntegrityProcessingErrorCode.ProofVerificationError)
-      expect(result.errors[0]?.title).toBe('@context does not match the expected known context')
+      expect(result.validated).toBe(true)
+      expect(result.errors).toHaveLength(0)
     })
 
-    test('triggers when document @context does not match configured knownContext', async () => {
+    test('triggers when the mandatory VC 2.0 context is not first', async () => {
       const result = await validator.validate(agentContext, {
         '@context': 'https://w3id.org/security/data-integrity/v2',
         id: 'urn:example:test',
       })
 
       expect(result.validated).toBe(false)
-      expect(result.errors[0]?.title).toBe('@context does not match the expected known context')
-    })
-
-    test('triggers when order differs for a multi-element configured knownContext', async () => {
-      const orderedValidator = new W3cV2DataIntegrityContextValidator().configure({
-        knownContext: ['https://www.w3.org/ns/credentials/v2', 'https://example.org/custom/v1'],
-        recompactInvalidContexts: false,
-      })
-
-      const result = await orderedValidator.validate(agentContext, {
-        '@context': ['https://example.org/custom/v1', 'https://www.w3.org/ns/credentials/v2'],
-        id: 'urn:example:test',
-      })
-
       expect(result.validated).toBe(false)
-      expect(result.errors[0]?.title).toBe('@context does not match the expected known context')
+      expect(result.errors[0]?.title).toBe('@context does not start with the required VC 2.0 context')
     })
   })
 
@@ -145,8 +126,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
 
   describe('step 3.1: recompaction', () => {
     test('configured validator with recompact=true must not silently accept missing @context', async () => {
-      const recompactingValidator = new W3cV2DataIntegrityContextValidator().configure({
-        knownContext: VC_V2_KNOWN_CONTEXT,
+      const recompactingValidator = new W3cV2DataIntegrityContextValidator({
         recompactInvalidContexts: true,
       })
 
@@ -159,9 +139,8 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
       expect(result.validatedDocument).toBeNull()
     })
 
-    test('configured validator with recompact=true rejects extra URIs that cannot be resolved', async () => {
-      const recompactingValidator = new W3cV2DataIntegrityContextValidator().configure({
-        knownContext: VC_V2_KNOWN_CONTEXT,
+    test('configured validator with recompact=true permits additional context URIs', async () => {
+      const recompactingValidator = new W3cV2DataIntegrityContextValidator({
         recompactInvalidContexts: true,
       })
 
@@ -170,17 +149,12 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
         id: 'urn:example:test',
       })
 
-      // Step 3a triggers (not deeply equal), step 3c triggers (unknown URI does not match known good value).
-      // Step 3.1 recompaction is attempted but fails because injection.attack.org cannot be resolved.
-      expect(result.validated).toBe(false)
-      expect(result.errors.length).toBeGreaterThanOrEqual(1)
-      expect(result.validatedDocument).toBeNull()
+      expect(result.validated).toBe(true)
+      expect(result.errors).toHaveLength(0)
     })
 
-    test('recompaction can validate by removing nested proof context content not in knownContext', async () => {
-      const recompactingValidator = new W3cV2DataIntegrityContextValidator().configure({
-        knownContext: VC_V2_KNOWN_CONTEXT,
-      })
+    test('recompaction can validate by removing nested proof context content', async () => {
+      const recompactingValidator = new W3cV2DataIntegrityContextValidator()
 
       const result = await recompactingValidator.validate(agentContext, {
         '@context': 'https://www.w3.org/ns/credentials/v2',
@@ -200,9 +174,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
     })
 
     test('recompaction tolerates id set to undefined on DI documents and does not raise JSON-LD @id errors', async () => {
-      const recompactingValidator = new W3cV2DataIntegrityContextValidator().configure({
-        knownContext: VC_V2_KNOWN_CONTEXT,
-      })
+      const recompactingValidator = new W3cV2DataIntegrityContextValidator()
 
       const result = await recompactingValidator.validate(agentContext, {
         '@context': 'https://www.w3.org/ns/credentials/v2',
@@ -221,10 +193,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
     })
 
     test('with recompact=false, trigger conditions are errors and warnings remain empty', async () => {
-      const strictValidator = new W3cV2DataIntegrityContextValidator().configure({
-        knownContext: VC_V2_KNOWN_CONTEXT,
-        recompactInvalidContexts: false,
-      })
+      const strictValidator = new W3cV2DataIntegrityContextValidator({ recompactInvalidContexts: false })
 
       const result = await strictValidator.validate(agentContext, {
         '@context': 'https://www.w3.org/ns/credentials/v2',
@@ -246,16 +215,14 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
 
   describe('step 3c: URI hash verification (§2.4 normative hashes)', () => {
     test('passes for each encountered spec-pinned DI URI with bundled local context (no fetch required)', async () => {
-      const diOnlyValidator = new W3cV2DataIntegrityContextValidator().configure({
-        knownContext: DI_PINNED_CONTEXTS,
-      })
+      const diOnlyValidator = new W3cV2DataIntegrityContextValidator()
 
       const fetchSpy = vi
         .spyOn(agentContext.config.agentDependencies, 'fetch')
         .mockRejectedValue(new Error('network unavailable'))
 
       const result = await diOnlyValidator.validate(agentContext, {
-        '@context': DI_PINNED_CONTEXTS,
+        '@context': [VC_V2_KNOWN_CONTEXT[0], ...DI_PINNED_CONTEXTS],
         id: 'urn:example:test',
       })
 
@@ -265,9 +232,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
     })
 
     test('does not perform DI hash verification when only credentials/v2 is encountered', async () => {
-      const vcOnlyValidator = new W3cV2DataIntegrityContextValidator().configure({
-        knownContext: VC_V2_KNOWN_CONTEXT,
-      })
+      const vcOnlyValidator = new W3cV2DataIntegrityContextValidator()
 
       const fetchSpy = vi.spyOn(agentContext.config.agentDependencies, 'fetch')
 
@@ -282,37 +247,28 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
       expect(fetchSpy).not.toHaveBeenCalled()
     })
 
-    test('passes with custom knownContext URI not in DI_SPEC_CONTEXT_HASHES (no hash verification required)', async () => {
-      const customContext = ['https://example.org/custom/context/v1']
-      const customValidator = new W3cV2DataIntegrityContextValidator().configure({
-        knownContext: customContext,
-      })
+    test('passes with an additional JSON-LD context object', async () => {
+      const customValidator = new W3cV2DataIntegrityContextValidator({ recompactInvalidContexts: false })
 
       const result = await customValidator.validate(agentContext, {
-        '@context': 'https://example.org/custom/context/v1',
+        '@context': [VC_V2_KNOWN_CONTEXT[0], { Example: 'https://example.org/' }],
         id: 'urn:example:test',
       })
 
-      // URI is in knownContext, so it passes without requiring hash verification or network fetch
       expect(result.validated).toBe(true)
       expect(result.errors).toHaveLength(0)
     })
 
-    test('DI hash-pinned context checks are independent from VC baseline knownContext', async () => {
-      const vcOnlyValidator = new W3cV2DataIntegrityContextValidator().configure({
-        knownContext: VC_V2_KNOWN_CONTEXT,
-        recompactInvalidContexts: false,
-      })
+    test('accepts the VC 2.0 context followed by a bundled DI context', async () => {
+      const vcOnlyValidator = new W3cV2DataIntegrityContextValidator({ recompactInvalidContexts: false })
 
       const result = await vcOnlyValidator.validate(agentContext, {
         '@context': ['https://www.w3.org/ns/credentials/v2', 'https://w3id.org/security/data-integrity/v2'],
         id: 'urn:example:test',
       })
 
-      // Fails due to 3a knownContext mismatch, not hash pinning issues.
-      expect(result.validated).toBe(false)
-      expect(result.errors.some((e) => e.title === '@context does not match the expected known context')).toBe(true)
-      expect(result.errors.some((e) => e.title === 'Context hash verification failed (§2.4)')).toBe(false)
+      expect(result.validated).toBe(true)
+      expect(result.errors).toHaveLength(0)
     })
   })
 
