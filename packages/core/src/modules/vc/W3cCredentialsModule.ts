@@ -4,6 +4,7 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../dids'
 import { Ed25519PublicJwk } from '../kms'
+import { JsonLdModuleConfig } from './jsonld'
 import { W3cJwtCredentialService } from './jwt-vc'
 import {
   SignatureSuiteRegistry,
@@ -38,6 +39,7 @@ export class W3cCredentialsModule implements Module {
     dependencyManager.registerSingleton(SignatureSuiteRegistry)
 
     // Register the config
+    dependencyManager.registerInstance(JsonLdModuleConfig, this.config)
     dependencyManager.registerInstance(W3cCredentialsModuleConfig, this.config)
 
     // Always register ed25519 signature suite
