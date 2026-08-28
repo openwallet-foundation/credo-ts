@@ -38,4 +38,47 @@ describe('JsonLdModule', () => {
 
     expect(dependencyManager.resolve(JsonLdModuleConfig)).toBe(dependencyManager.resolve(W3cCredentialsModuleConfig))
   })
+
+  // TODO: remove once W3cCredentialsModuleConfig's documentLoader fallback is removed.
+  describe('legacy W3cCredentialsModule documentLoader precedence (temporary, to be removed)', () => {
+    test('prefers the standalone JsonLdModule document loader over W3cCredentialsModule when both are configured', () => {
+      const dependencyManager = new DependencyManager()
+      const jsonLdDocumentLoader = vi.fn()
+      const w3cDocumentLoader = vi.fn()
+
+      dependencyManager.registerModules({
+        jsonLd: new JsonLdModule({ documentLoader: jsonLdDocumentLoader }),
+        w3cCredentials: new W3cCredentialsModule({ documentLoader: w3cDocumentLoader }),
+      })
+
+      expect(dependencyManager.resolve(JsonLdModuleConfig).documentLoader).toBe(jsonLdDocumentLoader)
+      expect(dependencyManager.resolve(W3cCredentialsModuleConfig).documentLoader).toBe(w3cDocumentLoader)
+    })
+
+    test('prefers the standalone JsonLdModule document loader even when W3cCredentialsModule is registered first', () => {
+      const dependencyManager = new DependencyManager()
+      const jsonLdDocumentLoader = vi.fn()
+      const w3cDocumentLoader = vi.fn()
+
+      // Reversed registration order
+      dependencyManager.registerModules({
+        w3cCredentials: new W3cCredentialsModule({ documentLoader: w3cDocumentLoader }),
+        jsonLd: new JsonLdModule({ documentLoader: jsonLdDocumentLoader }),
+      })
+
+      expect(dependencyManager.resolve(JsonLdModuleConfig).documentLoader).toBe(jsonLdDocumentLoader)
+      expect(dependencyManager.resolve(W3cCredentialsModuleConfig).documentLoader).toBe(w3cDocumentLoader)
+    })
+
+    test('falls back to W3cCredentialsModule document loader when no standalone JsonLdModule is configured', () => {
+      const dependencyManager = new DependencyManager()
+      const w3cDocumentLoader = vi.fn()
+
+      dependencyManager.registerModules({
+        w3cCredentials: new W3cCredentialsModule({ documentLoader: w3cDocumentLoader }),
+      })
+
+      expect(dependencyManager.resolve(JsonLdModuleConfig).documentLoader).toBe(w3cDocumentLoader)
+    })
+  })
 })

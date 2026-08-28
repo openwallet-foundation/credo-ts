@@ -39,8 +39,13 @@ export class W3cCredentialsModule implements Module {
     dependencyManager.registerSingleton(SignatureSuiteRegistry)
 
     // Register the config
-    dependencyManager.registerInstance(JsonLdModuleConfig, this.config)
     dependencyManager.registerInstance(W3cCredentialsModuleConfig, this.config)
+
+    // Guard for shared JsonLdModuleConfig token if no standalone JsonLdModule
+    // registered, would otherwise be silently overwritten
+    if (!dependencyManager.isRegistered(JsonLdModuleConfig)) {
+      dependencyManager.registerInstance(JsonLdModuleConfig, this.config)
+    }
 
     // Always register ed25519 signature suite
     dependencyManager.registerInstance(SignatureSuiteToken, {
