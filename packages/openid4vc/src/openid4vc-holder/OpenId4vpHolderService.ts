@@ -169,7 +169,7 @@ export class OpenId4VpHolderService {
     const dcqlResult = dcql?.query ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData) : undefined
 
     agentContext.config.logger.debug('verified Authorization Request')
-    agentContext.config.logger.debug(`request '${authorizationRequest}'`)
+    agentContext.config.logger.debug(`request '${JSON.stringify(authorizationRequest)}'`)
 
     return {
       ...returnValue,

@@ -182,6 +182,7 @@ describe('credentialUse', () => {
           agentContext,
           credentialRecord: record,
           useMode: CredentialMultiInstanceUseMode.First,
+          updateMode: CredentialMultiInstanceUseUpdateMode.None,
         })
 
         expect(result.isReused).toBe(false)
@@ -273,6 +274,7 @@ describe('credentialUse', () => {
           agentContext,
           credentialRecord: record,
           useMode: CredentialMultiInstanceUseMode.NewOrFirst,
+          updateMode: CredentialMultiInstanceUseUpdateMode.None,
         })
 
         expect(result.isReused).toBe(false)
@@ -434,6 +436,7 @@ describe('credentialUse', () => {
           agentContext,
           credentialRecord: record,
           useMode: CredentialMultiInstanceUseMode.New,
+          updateMode: CredentialMultiInstanceUseUpdateMode.None,
         })
 
         expect(result.isReused).toBe(false)
@@ -629,6 +632,40 @@ describe('credentialUse', () => {
 
           // Should use the fresh record's last instance (third compact)
           expect(result.credentialInstance.compact).toBe(thirdCompact)
+          expect(sdJwtVcRepository.updateByIdWithLock).toHaveBeenCalledWith(
+            agentContext,
+            'test-id',
+            expect.any(Function)
+          )
+          expect(sdJwtVcRepository.update).not.toHaveBeenCalled()
+        })
+
+        test('defaults to RefetchAndUpdateWithLock mode when no updateMode is provided', async () => {
+          const firstCompact =
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1'
+          const secondCompact =
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature2'
+
+          vi.mocked(sdJwtVcRepository.updateByIdWithLock).mockImplementationOnce(async (ctx, id, callback) => {
+            const freshRecord = new SdJwtVcRecord({
+              id,
+              credentialInstances: [{ compactSdJwtVc: firstCompact }, { compactSdJwtVc: secondCompact }],
+            })
+            return callback(freshRecord)
+          })
+
+          const record = new SdJwtVcRecord({
+            id: 'test-id',
+            credentialInstances: [{ compactSdJwtVc: firstCompact }, { compactSdJwtVc: secondCompact }],
+          })
+
+          const result = await useInstanceFromCredentialRecord({
+            agentContext,
+            credentialRecord: record,
+            useMode: CredentialMultiInstanceUseMode.New,
+          })
+
+          expect(result.credentialInstance.compact).toBe(secondCompact)
           expect(sdJwtVcRepository.updateByIdWithLock).toHaveBeenCalledWith(
             agentContext,
             'test-id',
