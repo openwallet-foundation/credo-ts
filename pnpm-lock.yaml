@@ -616,8 +616,8 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       json-canonicalize:
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^3.0.0
+        version: 3.0.0
       lru_map:
         specifier: ^0.4.1
         version: 0.4.1
@@ -1069,8 +1069,8 @@ importers:
         specifier: ^2.8.0
         version: 2.8.0
       json-canonicalize:
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^3.0.0
+        version: 3.0.0
       tsyringe:
         specifier: 'catalog:'
         version: 4.10.0
@@ -6529,6 +6529,10 @@ packages:
 
   json-canonicalize@2.0.0:
     resolution: {integrity: sha512-yyrnK/mEm6Na3ChbJUWueXdapueW0p380RUyTW87XGb1ww8l8hU0pRrGC3vSWHe9CxrbPHX2fGUOZpNiHR0IIg==}
+
+  json-canonicalize@3.0.0:
+    resolution: {integrity: sha512-PW21BtLiKRV7gJcT8jf2X4UNN2AF4c1TYEVug1wAWRQSGBJj7fL+v4NgOkIo54SCBPFDyqzMcOJNhjwywCIBuw==}
+    engines: {node: '>=8.5'}
 
   json-parse-better-errors@1.0.2:
     resolution: {integrity: sha512-mrqyZKfX5EhL7hvqcV6WG1yYjnjeuYDzDhhcAAUrq8Po85NBQBJP+ZDUT75qZQ98IkUoBqdkExkukOU7Ts2wrw==}
@@ -15817,6 +15821,8 @@ snapshots:
   jsesc@3.1.0: {}
 
   json-canonicalize@2.0.0: {}
+
+  json-canonicalize@3.0.0: {}
 
   json-parse-better-errors@1.0.2:
     optional: true
