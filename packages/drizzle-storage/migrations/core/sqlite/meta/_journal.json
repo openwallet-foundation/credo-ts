@@ -29,6 +29,13 @@
       "when": 1768773762601,
       "tag": "0003_add_sd_jwt_type_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1787933907094,
+      "tag": "0004_add_mdoc_verification_session",
+      "breakpoints": true
     }
   ]
 }

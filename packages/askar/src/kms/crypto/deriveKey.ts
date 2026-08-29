@@ -21,7 +21,7 @@ export function deriveEncryptionKey(options: {
   keyAgreement: AskarSupportedKeyAgreementEncryptOptions
   senderKey: Key
   recipientKey: Key
-  encryption: Kms.KmsEncryptDataEncryption
+  encryption: Kms.KmsEncryptDataContentEncryption
 }) {
   const { keyAgreement, encryption, senderKey, recipientKey } = options
 
@@ -104,7 +104,7 @@ export function deriveDecryptionKey(options: {
   keyAgreement: AskarSupportedKeyAgreementDecryptOptions
   senderKey: Key
   recipientKey: Key
-  decryption: Kms.KmsDecryptDataDecryption
+  decryption: Kms.KmsDecryptDataContentDecryption
 }) {
   const { keyAgreement, decryption, senderKey, recipientKey } = options
 
