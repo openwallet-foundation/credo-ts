@@ -493,6 +493,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         }
 
         const { contentEncryptionKey, encryptedContentEncryptionKey } = deriveEncryptionKey({
+          askar: this.getAskar(agentContext),
           encryption,
           keyAgreement: key.keyAgreement,
           recipientKey,
@@ -681,6 +682,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         }
 
         const { contentEncryptionKey } = deriveDecryptionKey({
+          askar: this.getAskar(agentContext),
           decryption,
           keyAgreement: key.keyAgreement,
           recipientKey: privateKey,
