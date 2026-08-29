@@ -62,7 +62,12 @@ import type {
 } from '../shared'
 import { keyAttestationLevelSatisfies, OpenId4VciCredentialFormatProfile } from '../shared'
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
-import { getCredentialConfigurationsSupportedForScopes, getOfferedCredentials } from '../shared/issuerMetadataUtils'
+import {
+  getCredentialConfigurationsSupportedForScopes,
+  getOfferedCredentials,
+  getScopesFromCredentialConfigurationsSupported,
+} from '../shared/issuerMetadataUtils'
+import { getLocalAccessTokenJwks, getOid4vcLocalJwksCallback } from '../shared/localJwks'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
@@ -213,11 +218,31 @@ export class OpenId4VcIssuerService {
     // Check if all the offered credential configuration ids have a scope value. If not, it won't be possible to actually request
     // issuance of the credential later on. For pre-auth it's not needed to add a scope.
     if (options.authorizationCodeFlowConfig) {
+      const authorizationCodeConfig = options.authorizationCodeFlowConfig
       extractScopesForCredentialConfigurationIds({
         credentialConfigurationIds: options.credentialConfigurationIds,
         issuerMetadata,
         throwOnConfigurationWithoutScope: true,
       })
+
+      // Chained authorization adds a second, structural check: every offered internal
+      // scope must have a static mapping to upstream authorization-server scopes.
+      const chainedAuthorizationServerConfig = issuer.chainedAuthorizationServerConfigs?.find(
+        (config) => config.issuer === authorizationCodeConfig.authorizationServerUrl
+      )
+      if (
+        chainedAuthorizationServerConfig?.type === 'chained' &&
+        !this.openId4VcIssuerConfig.getChainedAuthorizationRequestParameters
+      ) {
+        const offeredCredentialConfigurations = getOfferedCredentials(
+          options.credentialConfigurationIds,
+          issuerMetadata.credentialIssuer.credential_configurations_supported
+        )
+        this.getStaticChainedAuthorizationScopes({
+          authorizationServerConfig: chainedAuthorizationServerConfig,
+          requestedScopes: getScopesFromCredentialConfigurationsSupported(offeredCredentialConfigurations),
+        })
+      }
     }
 
     const grants = await this.getGrantsFromConfig(agentContext, {
@@ -1805,10 +1830,32 @@ export class OpenId4VcIssuerService {
     })
   }
 
-  public getResourceServer(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {
+  public getResourceServer(
+    agentContext: AgentContext,
+    issuerRecord: OpenId4VcIssuerRecord,
+    issuerMetadata: Awaited<ReturnType<OpenId4VcIssuerService['getIssuerMetadata']>>
+  ) {
+    // Access tokens issued by this agent are signed with the issuer record's access token key, and
+    // the JWKs endpoint of our built-in authorization server publishes that exact key. Resolve it
+    // locally so verifying an access token we issued ourselves does not require an HTTP request to
+    // our own JWKs endpoint.
+    //
+    // NOTE: the jwks uri is taken from the same issuer metadata that is used to verify the access
+    // token, so the url we register here always matches the url that will be resolved.
+    const issuerAuthorizationServer = issuerMetadata.authorizationServers.find(
+      ({ issuer }) => issuer === issuerMetadata.credentialIssuer.credential_issuer
+    )
+    const localJwks = issuerAuthorizationServer?.jwks_uri
+      ? getLocalAccessTokenJwks(
+          issuerAuthorizationServer.jwks_uri,
+          issuerRecord.resolvedAccessTokenPublicJwk.toJson({ includeKid: false }) as Jwk
+        )
+      : {}
+
     return new Oauth2ResourceServer({
       callbacks: {
         ...getOid4vcCallbacks(agentContext),
+        ...getOid4vcLocalJwksCallback(agentContext, localJwks),
         clientAuthentication: dynamicOid4vciClientAuthentication(agentContext, issuerRecord),
       },
     })
@@ -1949,6 +1996,31 @@ export class OpenId4VcIssuerService {
     }
 
     return grants
+  }
+
+  public getStaticChainedAuthorizationScopes(options: {
+    authorizationServerConfig: {
+      issuer: string
+      scopesMapping?: Record<string, string[]>
+    }
+    requestedScopes: string[]
+  }): string[] {
+    const { authorizationServerConfig, requestedScopes } = options
+    const scopesMapping = authorizationServerConfig.scopesMapping
+    if (!scopesMapping) {
+      throw new CredoError(
+        `Issuer does not have a static scope mapping for chained authorization server '${authorizationServerConfig.issuer}'.`
+      )
+    }
+
+    const missingScope = requestedScopes.find((scope) => !(scope in scopesMapping))
+    if (missingScope) {
+      throw new CredoError(
+        `Issuer does not have a scope mapping for '${missingScope}' for chained authorization server '${authorizationServerConfig.issuer}'.`
+      )
+    }
+
+    return requestedScopes.flatMap((scope) => scopesMapping[scope])
   }
 
   private getCredentialConfigurationsForRequest(options: {

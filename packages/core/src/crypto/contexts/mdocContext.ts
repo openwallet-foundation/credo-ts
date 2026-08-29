@@ -1,9 +1,6 @@
-import { p256 } from '@noble/curves/nist.js'
-import { hkdf } from '@noble/hashes/hkdf.js'
-import { sha256 } from '@noble/hashes/sha2.js'
 import { CoseKey, type HpkeSuiteId, type MdocContext } from '@owf/mdoc'
 import { AgentContext } from '../../agent'
-import { CredoWebCrypto, Hasher } from '../../crypto'
+import { CredoWebCrypto } from '../../crypto'
 import { CredoError } from '../../error'
 import { KeyManagementApi, type KmsJwkPublicEcdh, type KnownJwaHpkeAlgorithm, PublicJwk } from '../../modules/kms'
 import { X509Certificate } from '../../modules/x509/X509Certificate'
@@ -50,11 +47,18 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
       random: (length) => {
         return crypto.getRandomValues(new Uint8Array(length))
       },
-      hdkf: async (input) => {
-        const { publicKey, privateKey, salt, info, digestAlgorithm } = input
-        const ikm = p256.getSharedSecret(privateKey, publicKey, true).slice(1)
-        const hashedSalt = Hasher.hash(salt, digestAlgorithm ?? 'sha-256')
-        return hkdf(sha256, ikm, hashedSalt, info, 32)
+      hdkf: async () => {
+        // Only invoked for mdoc device MAC authentication (ISO/IEC 18013-5), which Credo does not
+        // implement (device signature authentication only). Guarded because the callback contract
+        // takes the raw device private key, which is incompatible with a non-exportable, KMS-held key.
+        //
+        // TODO: implement via a KMS key-agreement operation (ECDH-ES derive-to-secret or KMS-native
+        // EMacKey/HMAC) so the key never leaves the KMS — see `keyDeriveEcdhEs` in the askar backend.
+        // No new transport needed: the reader ephemeral key is already in the SessionTranscript; the
+        // outstanding work is that KMS primitive plus a device-auth mode option on MdocDeviceResponseOptions.
+        throw new CredoError(
+          'mdoc device MAC authentication is not supported. Only device signature authentication is currently implemented.'
+        )
       },
       hpke: {
         suites: Object.keys(hpkeSuiteToJwaAlgorithm) as HpkeSuiteId[],

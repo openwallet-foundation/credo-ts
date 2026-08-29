@@ -96,7 +96,6 @@ catalogs:
 
 overrides:
   undici: ^6.20.1
-  '@owf/mdoc': file:/tmp/owf-mdoc-0.7.0.tgz
 
 importers:
 
@@ -554,14 +553,14 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       '@owf/cose':
-        specifier: ^0.3.1
-        version: 0.3.1
+        specifier: ^0.3.2
+        version: 0.3.2
       '@owf/mdoc':
-        specifier: file:/tmp/owf-mdoc-0.7.0.tgz
-        version: file:../../../../../tmp/owf-mdoc-0.7.0.tgz
+        specifier: ^0.8.0-alpha-20260829141538
+        version: 0.8.0-alpha-20260829141538
       '@owf/token-status-list':
-        specifier: ^0.3.1
-        version: 0.3.1
+        specifier: ^0.3.2
+        version: 0.3.2
       '@peculiar/asn1-ecc':
         specifier: ^2.6.0
         version: 2.6.1
@@ -921,17 +920,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: ^0.5.4
-        version: 0.5.4
+        specifier: ^0.5.5
+        version: 0.5.5
       '@openid4vc/openid4vci':
-        specifier: ^0.5.4
-        version: 0.5.4
+        specifier: ^0.5.5
+        version: 0.5.5
       '@openid4vc/openid4vp':
-        specifier: ^0.5.4
-        version: 0.5.4
+        specifier: ^0.5.5
+        version: 0.5.5
       '@openid4vc/utils':
-        specifier: ^0.5.4
-        version: 0.5.4
+        specifier: ^0.5.5
+        version: 0.5.5
       '@types/express':
         specifier: 'catalog:'
         version: 5.0.6
@@ -3254,17 +3253,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.5.4':
-    resolution: {integrity: sha512-wEK7fDk/n+c0d2AbCTBIR8Tstf/+Yr4ckmOa0nlTv0V9cOd1WMiR3+OY5vXG9FVsV275q1DgLZr20EPqlWhtVg==}
+  '@openid4vc/oauth2@0.5.5':
+    resolution: {integrity: sha512-2EtJznMPk4M1sJD9nBIvIi2Rl5GC+T7YOrpizMEwB5Q592agAGXfQWwv5KapkuTG8mlbWk3z8VLBtwlAwMvhUg==}
 
-  '@openid4vc/openid4vci@0.5.4':
-    resolution: {integrity: sha512-QN+Q3JLpsogIR6PlXePiLBsgkBCxhdfZ6cXtNWH39/TO/190FTBYHwzC5sJQh8HHoYyrZU/whdvpnC2324Gdkw==}
+  '@openid4vc/openid4vci@0.5.5':
+    resolution: {integrity: sha512-h+Ylxf+B/7+lXPP2CA7dxYl9oG/HX+n8QGGzrPRbJCE1Cx/mRTguavkX8GBRhltZ2zQVQr+F0JSjupgMow181g==}
 
-  '@openid4vc/openid4vp@0.5.4':
-    resolution: {integrity: sha512-09bhaG7fI3zSdnx6pO5UKXWm4oH1RvotVWRfZ1rUnAgFCxF/QV6014oVwhgwRQcPHe/rHNXrlKjp2fGgrrO64A==}
+  '@openid4vc/openid4vp@0.5.5':
+    resolution: {integrity: sha512-JHJWFwNnmfhWI/tl2JBOvCC1OmVXKvXiqmX+9LmYYV3BDcX41udijoluh2LV0sMsj0Ag4P+XATwPZNe9im3XBA==}
 
-  '@openid4vc/utils@0.5.4':
-    resolution: {integrity: sha512-Cxc/vWxvoS1F7jREgAm0oVaC3Qna/P0wJvvwtcdLDxGeDHjqNHrqjt4RiGY5b9k+I0vjIUBb1iivVuu3H9XtMA==}
+  '@openid4vc/utils@0.5.5':
+    resolution: {integrity: sha512-3vao4GiufkbFM4V7jL6GBvsdjo2434VXj9uXCUmwstifq64PclVgIj7rVqzgF0WxliNcaJ1aVGAEuBNEQVqIpQ==}
 
   '@openwallet-foundation/askar-nodejs@0.6.0':
     resolution: {integrity: sha512-PNIftXrE64oxjPaq4c8QEZCuhf21jpeMqjwPwDPZsfUnx1DlVIWYQQIJI2ZPAaXl2EUs6ldNqrwHMjVUC4xW+Q==}
@@ -3273,8 +3272,8 @@ packages:
   '@openwallet-foundation/askar-shared@0.6.0':
     resolution: {integrity: sha512-O9aaQCZ2BkQ5Z8jqshhqhxbS/rT2nTfN90iW32WKQEh9YUwWERFQcnqKR+XszGhV95jqwZagcwhDb72hFH3VaQ==}
 
-  '@owf/cose@0.3.1':
-    resolution: {integrity: sha512-uWGLOMUDEsJfo8rIEoPE3rr6AXF4OBZqjkKlruIa7tfVaqy6leVEi/UmT0PY/JPN8RYXQu8F8qWDi3R9NlS9HQ==}
+  '@owf/cose@0.3.2':
+    resolution: {integrity: sha512-g1l55f31iqx5SEUv7MSAjLoCFZZAmwiXXkouRdiVltrwHLrnVAAStYUZozh3mN3RibpDftB2+4W4QTIRjl2nXw==}
 
   '@owf/identity-common@0.1.0-alpha-20260422101556':
     resolution: {integrity: sha512-0CJhMHXWf+Dn0MpZCeachjFjMjBI2uCJl56Po3dnGiJDis5wVkfWPeCdPJZ2h4fBWwXV0+Owa8nJRxXeruRwrA==}
@@ -3282,16 +3281,18 @@ packages:
   '@owf/identity-common@0.3.1':
     resolution: {integrity: sha512-DLDZtZYMDiV58zpTYVoDc0uFPdZBkmNL31Az5X7sMEttmnU5JvArw3dqPwSMMlT2VfeB0SiPHsuM5dcnqaeNnw==}
 
-  '@owf/mdoc@file:../../../../../tmp/owf-mdoc-0.7.0.tgz':
-    resolution: {integrity: sha512-AQ+JsWuE+l/uR8KpWxFvof3JkUkBQz2WR6ylJrI4YUBN3UnqI6iQL/yGDDtKYmwd5WQrqyBwd3w4crLa0Wozrw==, tarball: file:../../../../../tmp/owf-mdoc-0.7.0.tgz}
-    version: 0.7.0
+  '@owf/identity-common@0.3.2':
+    resolution: {integrity: sha512-XH5Bg6zuXc9SeimTe2ZD/+54GnhSyenFSy2Qe/z2HY1ul5j+6/lDNIhI83xct5aOkCD0uZ7zHbMhTI4Nq8YJOQ==}
+
+  '@owf/mdoc@0.8.0-alpha-20260829141538':
+    resolution: {integrity: sha512-BhY0FGKoqnTD3RaSoyyUfvfNwB8M4iVdnVXYm/wJvfnurFSH/Skgnvj7x09CCxcjcKm/bWMaeolNNA3mNE24rg==}
     engines: {node: '>=20.19'}
 
   '@owf/token-status-list@0.1.0-alpha-20260422101556':
     resolution: {integrity: sha512-cwZHQPqBaXt3pTbllI6GLafE+Ws8HfEYoOgmpiQiK1sFElkF07mFZt1FTt1YElbMWtEV6YLTh+MjEWdJdRNklA==}
 
-  '@owf/token-status-list@0.3.1':
-    resolution: {integrity: sha512-EaudhPEhCDr7oy7iK0iA+8f2ZXg2NtdVQBmhJvz38gGBGmUWnAFNJer583bSx2aT67id8EADaUWO/MMQqn3uVg==}
+  '@owf/token-status-list@0.3.2':
+    resolution: {integrity: sha512-12UDEVJaXp4DX0U+rNwkznWYD8dPRJ4GdOEkUSHbnWRm0D6iWXVXtePtbXtsOgYsT3J120+WaqzJc05sVu2Uhg==}
 
   '@oxc-project/types@0.112.0':
     resolution: {integrity: sha512-m6RebKHIRsax2iCwVpYW2ErQwa4ywHJrE4sCK3/8JK8ZZAWOKXaRJFl/uP51gaVyyXlaS4+chU1nSCdzYf6QqQ==}
@@ -7446,8 +7447,8 @@ packages:
   pako@2.1.0:
     resolution: {integrity: sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug==}
 
-  pako@3.0.0:
-    resolution: {integrity: sha512-TGPtlCI1pSUSbkOIxOUUHNrBa0muz4mAp32cYUF3RoSa5c73jiQTKOKo22gaa4DxLggQrda/DAdax5QkcHPvYA==}
+  pako@3.0.1:
+    resolution: {integrity: sha512-GupotUUI0mlhugKjUs4bjOwLt3nrehy9Ys2dxC0GtgVef5cnKggkDMmf2bq2poCCuVXopWPmqsc9VDT2iJUy+w==}
 
   parse-json@4.0.0:
     resolution: {integrity: sha512-aOIos8bujGN93/8Ox/jPLh7RwVnPEysynVFE+fQZyg6jKELEHwzgKdLRFHUgXJL6kylijVSBC4BvN9OmsB48Rw==}
@@ -12020,24 +12021,24 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.5.4':
+  '@openid4vc/oauth2@0.5.5':
     dependencies:
-      '@openid4vc/utils': 0.5.4
+      '@openid4vc/utils': 0.5.5
       zod: 4.4.3
 
-  '@openid4vc/openid4vci@0.5.4':
+  '@openid4vc/openid4vci@0.5.5':
     dependencies:
-      '@openid4vc/oauth2': 0.5.4
-      '@openid4vc/utils': 0.5.4
+      '@openid4vc/oauth2': 0.5.5
+      '@openid4vc/utils': 0.5.5
       zod: 4.4.3
 
-  '@openid4vc/openid4vp@0.5.4':
+  '@openid4vc/openid4vp@0.5.5':
     dependencies:
-      '@openid4vc/oauth2': 0.5.4
-      '@openid4vc/utils': 0.5.4
+      '@openid4vc/oauth2': 0.5.5
+      '@openid4vc/utils': 0.5.5
       zod: 4.4.3
 
-  '@openid4vc/utils@0.5.4':
+  '@openid4vc/utils@0.5.5':
     dependencies:
       buffer: 6.0.3
       zod: 4.4.3
@@ -12053,9 +12054,9 @@ snapshots:
       buffer: 6.0.3
       tar: 7.5.7
 
-  '@owf/cose@0.3.1':
+  '@owf/cose@0.3.2':
     dependencies:
-      '@owf/identity-common': 0.3.1
+      '@owf/identity-common': 0.3.2
       cbor-x: 1.6.4
       zod: 4.4.3
       zod-validation-error: 5.0.0(zod@4.4.3)
@@ -12064,11 +12065,13 @@ snapshots:
 
   '@owf/identity-common@0.3.1': {}
 
-  '@owf/mdoc@file:../../../../../tmp/owf-mdoc-0.7.0.tgz':
+  '@owf/identity-common@0.3.2': {}
+
+  '@owf/mdoc@0.8.0-alpha-20260829141538':
     dependencies:
-      '@owf/cose': 0.3.1
+      '@owf/cose': 0.3.2
       '@owf/identity-common': 0.3.1
-      '@owf/token-status-list': 0.3.1
+      '@owf/token-status-list': 0.3.2
       zod: 4.4.3
 
   '@owf/token-status-list@0.1.0-alpha-20260422101556':
@@ -12077,12 +12080,12 @@ snapshots:
       cbor-x: 1.6.4
       pako: 2.1.0
 
-  '@owf/token-status-list@0.3.1':
+  '@owf/token-status-list@0.3.2':
     dependencies:
-      '@owf/cose': 0.3.1
-      '@owf/identity-common': 0.3.1
+      '@owf/cose': 0.3.2
+      '@owf/identity-common': 0.3.2
       cbor-x: 1.6.4
-      pako: 3.0.0
+      pako: 3.0.1
       zod: 4.4.3
 
   '@oxc-project/types@0.112.0': {}
@@ -17007,7 +17010,7 @@ snapshots:
 
   pako@2.1.0: {}
 
-  pako@3.0.0: {}
+  pako@3.0.1: {}
 
   parse-json@4.0.0:
     dependencies:
