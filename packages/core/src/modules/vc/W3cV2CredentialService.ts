@@ -3,6 +3,7 @@ import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import { asArray } from '../../utils/array'
+import { DidsApi } from '../dids'
 import {
   W3cV2DataIntegrityCredentialService,
   type W3cV2DataIntegrityResolvedPresentation,
@@ -276,8 +277,33 @@ export class W3cV2CredentialService {
 
       signerId = presentation.resolvedPresentation.holderId
       if (!signerId) {
-        validationResults.isValid = false
-        return validationResults
+        try {
+          // The holder is optional in VCDM 2.0, so fall back to the identity that secured the
+          // presentation, mirroring how the JWT and SD-JWT branches above derive their signer.
+          const proof = asArray(presentation.securedPresentation.proof)[0]
+          if (!proof || typeof proof !== 'object' || !('verificationMethod' in proof)) {
+            throw new CredoError('Data Integrity presentation proof does not contain a verification method')
+          }
+
+          const verificationMethodId = proof.verificationMethod
+          if (typeof verificationMethodId !== 'string') {
+            throw new CredoError('Data Integrity presentation proof verification method must be a string')
+          }
+
+          const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+          const didDocument = await didsApi.resolveDidDocument(verificationMethodId)
+          const verificationMethod = didDocument.dereferenceKey(verificationMethodId, ['authentication'])
+          signerId = verificationMethod.controller
+
+          if (!signerId) {
+            throw new CredoError(
+              `Verification method '${verificationMethodId}' does not have a controller to use as the presentation signer`
+            )
+          }
+        } catch {
+          validationResults.isValid = false
+          return validationResults
+        }
       }
 
       entries = this.extractCredentialEntriesFromPresentation(presentation)

@@ -36,6 +36,28 @@ const baseVpMetadata = {
   holder: 'did:key:z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv',
 } as const
 
+const { holder: _, ...CredoDidKeyDiVpWithoutHolder } = CredoDidKeyDiVp
+
+/**
+ * Verification method and controller of the Data Integrity VP proof. Derived from the
+ * fixture rather than hard-coded so the two cannot drift apart.
+ */
+export const diProofVerificationMethod = CredoDidKeyDiVp.proof.verificationMethod
+export const diProofSigner = diProofVerificationMethod.split('#')[0]
+
+const jwtVpWithoutHolder = W3cV2JwtVerifiablePresentation.fromCompact(CredoEs256DidKeyJwtVp)
+const sdJwtVpWithoutHolder = W3cV2SdJwtVerifiablePresentation.fromCompact(CredoEs256DidKeySdJwtVp)
+
+/**
+ * Verification methods and controllers of the JWT and SD-JWT VP signing keys. The holder-less
+ * fixtures carry no `iss`, so the signer is resolved from the JWT `kid`. Derived from the fixture
+ * headers rather than hard-coded so the two cannot drift apart.
+ */
+export const jwtProofVerificationMethod = jwtVpWithoutHolder.jwt.header.kid as string
+export const jwtProofSigner = jwtProofVerificationMethod.split('#')[0]
+export const sdJwtProofVerificationMethod = sdJwtVpWithoutHolder.sdJwt.header.kid as string
+export const sdJwtProofSigner = sdJwtProofVerificationMethod.split('#')[0]
+
 const mutableMetadataTemplate: MutableVpMetadata = {
   id: 'urn:vp:replace-id',
   nonce: 'replace-nonce',
@@ -99,6 +121,17 @@ function buildResolvedPresentation(entries: ReadonlyArray<unknown>, mutable: Mut
   })
 }
 
+function buildResolvedPresentationWithoutHolder(entries: ReadonlyArray<unknown>, mutable: MutableVpMetadata) {
+  const { holder: _holder, ...baseVpMetadataWithoutHolder } = baseVpMetadata
+
+  return withPresentationPrototype({
+    ...baseVpMetadataWithoutHolder,
+    id: mutable.id,
+    nonce: mutable.nonce,
+    verifiableCredential: entries,
+  })
+}
+
 function buildOuterJwtVp(entries: ReadonlyArray<unknown>, mutable: MutableVpMetadata) {
   return {
     __proto__: W3cV2JwtVerifiablePresentation.prototype,
@@ -118,6 +151,22 @@ function buildOuterDiVp(entries: ReadonlyArray<unknown>, mutable: MutableVpMetad
     __proto__: W3cV2DataIntegrityVerifiablePresentation.prototype,
     securedPresentation: CredoDidKeyDiVp,
     resolvedPresentation: buildResolvedPresentation(entries, mutable),
+  } as const
+}
+
+function buildOuterJwtVpWithoutHolder(mutable: MutableVpMetadata) {
+  return {
+    __proto__: W3cV2JwtVerifiablePresentation.prototype,
+    jwt: jwtVpWithoutHolder.jwt,
+    resolvedPresentation: buildResolvedPresentationWithoutHolder([], mutable),
+  } as const
+}
+
+function buildOuterSdJwtVpWithoutHolder(mutable: MutableVpMetadata) {
+  return {
+    __proto__: W3cV2SdJwtVerifiablePresentation.prototype,
+    sdJwt: sdJwtVpWithoutHolder.sdJwt,
+    resolvedPresentation: buildResolvedPresentationWithoutHolder([], mutable),
   } as const
 }
 
@@ -149,6 +198,20 @@ export const validVcOnlyOuterPresentationsByName = {
     [staticDiCredential],
     mutableVpMetadata('urn:fixture:outer-di-with-di-vc-only', 'nonce-outer-di-with-di-vc-only')
   ),
+  outerJwt_withoutHolder: buildOuterJwtVpWithoutHolder(
+    mutableVpMetadata('urn:fixture:outer-jwt-without-holder', 'nonce-outer-jwt-without-holder')
+  ),
+  outerSdJwt_withoutHolder: buildOuterSdJwtVpWithoutHolder(
+    mutableVpMetadata('urn:fixture:outer-sd-jwt-without-holder', 'nonce-outer-sd-jwt-without-holder')
+  ),
+  outerDi_withoutHolder: {
+    __proto__: W3cV2DataIntegrityVerifiablePresentation.prototype,
+    securedPresentation: CredoDidKeyDiVpWithoutHolder,
+    resolvedPresentation: buildResolvedPresentationWithoutHolder(
+      [],
+      mutableVpMetadata('urn:fixture:outer-di-without-holder', 'nonce-outer-di-without-holder')
+    ),
+  } as const,
 } as const
 
 const nestedJwtVpEntry = {
