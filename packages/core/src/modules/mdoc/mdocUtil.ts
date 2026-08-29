@@ -1,7 +1,41 @@
+import type { PublicJwk } from '../kms'
 import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import { X509Certificate } from '../x509/X509Certificate'
 import type { X509VerificationTrustedCertificates } from '../x509/X509ModuleConfig'
 import { MdocError } from './MdocError'
+import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
+
+/**
+ * mdoc COSE structures require an explicit `alg`, but credo public JWKs generally don't carry one.
+ */
+export function getMdocSignatureAlgForJwk(publicJwk: PublicJwk) {
+  const signatureAlgorithm = publicJwk.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
+  if (!signatureAlgorithm) {
+    throw new MdocError(
+      `No supported signature algorithm found for jwk ${
+        publicJwk.jwkTypeHumanDescription
+      }. Key supports algs ${publicJwk.supportedSignatureAlgorithms.join(
+        ', '
+      )}. mdoc supports algs ${mdocSupportedSignatureAlgorithms.join(', ')}`
+    )
+  }
+
+  return signatureAlgorithm
+}
+
+/**
+ * The JSON representation of a public JWK, with `alg` filled in as the mdoc COSE structures require
+ * it. The `kid` (needed to resolve the key for signing) is taken from the jwk as-is; it's up to the
+ * caller to make sure the key id is set.
+ */
+export function mdocSigningJwk(publicJwk: PublicJwk) {
+  const jwk = publicJwk.toJson()
+
+  return {
+    ...jwk,
+    alg: jwk.alg ?? getMdocSignatureAlgForJwk(publicJwk),
+  }
+}
 
 export interface MdocTrustedCertificate {
   issuance: string[]

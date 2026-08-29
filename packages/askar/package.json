@@ -30,8 +30,10 @@
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
+    "@panva/hpke-noble": "catalog:",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
+    "hpke": "catalog:",
     "rxjs": "catalog:",
     "tsyringe": "catalog:"
   },

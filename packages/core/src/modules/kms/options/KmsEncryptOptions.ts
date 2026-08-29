@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { zAnyUint8Array } from '../../../utils/zod'
-import { KnownJwaContentEncryptionAlgorithms } from '../jwk/jwa'
+import { isJwaHpkeAlgorithm, KnownJwaContentEncryptionAlgorithms } from '../jwk/jwa'
 import { zKmsJwkPrivateOct } from '../jwk/kty/oct/octJwk'
 import { zKmsKeyId } from './common'
 import { zKmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
@@ -57,59 +57,101 @@ const zKmsEncryptDataEncryptionC20p = z.object({
 
 export type KmsEncryptDataEncryptionX20c = z.output<typeof zKmsEncryptDataEncryptionC20p>
 
+/**
+ * Integrated-encryption HPKE. The HPKE suite (see the `HPKE-*` key agreement algorithms) fixes the
+ * AEAD, and both the content encryption key and the nonce are derived from the HPKE key schedule.
+ * The only content encryption parameter left to the caller is the aad.
+ */
+const zKmsEncryptDataEncryptionHpke = z.object({
+  algorithm: z.literal('HPKE'),
+  aad: z.optional(zAnyUint8Array),
+})
+export type KmsEncryptDataEncryptionHpke = z.output<typeof zKmsEncryptDataEncryptionHpke>
+
 export const zKmsEncryptDataEncryption = z.discriminatedUnion('algorithm', [
   zKmsEncryptDataEncryptionAesCbc,
   zKmsEncryptDataEncryptionAesCbcHmac,
   zKmsEncryptDataEncryptionAesGcm,
   zKmsEncryptDataEncryptionC20p,
   zKmsDecryptDataEncryptionSalsa,
+  zKmsEncryptDataEncryptionHpke,
 ])
 export type KmsEncryptDataEncryption = z.output<typeof zKmsEncryptDataEncryption>
 
-export const zKmsEncryptOptions = z.object({
-  /**
-   * The key to use for encrypting. There are three possible formats:
-   * - a key id, pointing to a symmetric (oct) jwk that can be used directly for encryption
-   * - a private symmetric (oct) jwk object that can be used directly for encryption
-   * - an object configuring key agreement, based on an existing asymmetric key
-   */
-  key: z.union([
-    z.object({
-      keyId: zKmsKeyId,
+/**
+ * Content encryption excluding the integrated-encryption HPKE marker, so the AEAD parameters a
+ * backend performs the actual content encryption with.
+ */
+export type KmsEncryptDataContentEncryption = Exclude<KmsEncryptDataEncryption, { algorithm: 'HPKE' }>
 
-      // never helps with type narrowing
-      privateJwk: z.never().optional(),
-      keyAgreement: z.never().optional(),
-    }),
-    z.object({
-      privateJwk: zKmsJwkPrivateOct.describe('A private oct (symmetric) jwk'),
+export const zKmsEncryptOptions = z
+  .object({
+    /**
+     * The key to use for encrypting. There are three possible formats:
+     * - a key id, pointing to a symmetric (oct) jwk that can be used directly for encryption
+     * - a private symmetric (oct) jwk object that can be used directly for encryption
+     * - an object configuring key agreement, based on an existing asymmetric key
+     */
+    key: z.union([
+      z.object({
+        keyId: zKmsKeyId,
 
-      // never helps with type narrowing
-      keyId: z.never().optional(),
-      keyAgreement: z.never().optional(),
-    }),
-    z.object({
-      keyAgreement: zKmsKeyAgreementEncryptOptions,
+        // never helps with type narrowing
+        privateJwk: z.never().optional(),
+        keyAgreement: z.never().optional(),
+      }),
+      z.object({
+        privateJwk: zKmsJwkPrivateOct.describe('A private oct (symmetric) jwk'),
 
-      // never helps with type narrowing
-      keyId: z.never().optional(),
-      privateJwk: z.never().optional(),
-    }),
-  ]),
+        // never helps with type narrowing
+        keyId: z.never().optional(),
+        keyAgreement: z.never().optional(),
+      }),
+      z.object({
+        keyAgreement: zKmsKeyAgreementEncryptOptions,
 
-  /**
-   * The encryption algorithm used to encrypt the data/content.
-   * In JWE this parameter is referred to as "enc".
-   */
-  encryption: zKmsEncryptDataEncryption.describe(
-    'Options related to the encryption algorithm to use for encrypting the data'
-  ),
+        // never helps with type narrowing
+        keyId: z.never().optional(),
+        privateJwk: z.never().optional(),
+      }),
+    ]),
 
-  /**
-   * The data to encrypt
-   */
-  data: zAnyUint8Array.describe('The data to encrypt'),
-})
+    /**
+     * The encryption algorithm used to encrypt the data/content.
+     * In JWE this parameter is referred to as "enc".
+     *
+     * Must be 'HPKE' for the integrated-encryption HPKE algorithms, where the suite fixes the AEAD
+     * and only the aad is left to the caller.
+     */
+    encryption: zKmsEncryptDataEncryption.describe(
+      'Options related to the encryption algorithm to use for encrypting the data'
+    ),
+
+    /**
+     * The data to encrypt
+     */
+    data: zAnyUint8Array.describe('The data to encrypt'),
+  })
+  .check(({ value, issues }) => {
+    const usesIntegratedEncryption = value.key.keyAgreement && isJwaHpkeAlgorithm(value.key.keyAgreement.algorithm)
+    const usesHpkeContentEncryption = value.encryption.algorithm === 'HPKE'
+
+    if (usesIntegratedEncryption && !usesHpkeContentEncryption) {
+      issues.push({
+        code: 'custom',
+        input: value.encryption,
+        path: ['encryption', 'algorithm'],
+        message: `'encryption.algorithm' must be 'HPKE' for key agreement algorithm '${value.key.keyAgreement?.algorithm}', as the HPKE suite defines the content encryption algorithm`,
+      })
+    } else if (!usesIntegratedEncryption && usesHpkeContentEncryption) {
+      issues.push({
+        code: 'custom',
+        input: value.encryption,
+        path: ['encryption', 'algorithm'],
+        message: `'encryption.algorithm' 'HPKE' can only be used with an integrated-encryption HPKE key agreement algorithm`,
+      })
+    }
+  })
 
 export type KmsEncryptOptions = z.output<typeof zKmsEncryptOptions>
 export interface KmsEncryptReturn {
@@ -133,6 +175,13 @@ export interface KmsEncryptReturn {
    * The encrypted content encryption key, if key wrapping was used
    */
   encryptedKey?: KmsEncryptedKey
+
+  /**
+   * The raw serialized HPKE encapsulated key (`enc`), if an integrated-encryption HPKE algorithm
+   * was used. Unlike `encryptedKey` this is not an encrypted CEK but the sender's ephemeral public
+   * key, and it is not encrypted.
+   */
+  encapsulatedKey?: Uint8Array
 }
 
 export const zKmsEncryptedKey = z.object({

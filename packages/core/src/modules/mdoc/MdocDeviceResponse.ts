@@ -256,26 +256,33 @@ export class MdocDeviceResponse {
       const deviceResponse = await DeviceResponse.createWithDeviceRequest(
         {
           deviceRequest: deviceRequestForDocument,
-          issuerSigned: [document.issuerSigned],
           sessionTranscript: await MdocDeviceResponse.calculateSessionTranscriptBytes(
             mdocContext,
             options.sessionTranscriptOptions
           ),
-          deviceNamespaces: options.deviceNameSpaces
-            ? DeviceNamespaces.create({
-                deviceNamespaces: new Map(
-                  Object.entries(options.deviceNameSpaces).map(([namespace, namespaceValue]) => [
-                    namespace,
-                    DeviceSignedItems.create({
-                      deviceSignedItems: new Map(Object.entries(namespaceValue)),
-                    }),
-                  ])
-                ),
-              })
-            : undefined,
-          signature: {
-            signingKey: CoseKey.fromJwk(deviceKeyJwk.toJson()),
-          },
+          documents: [
+            {
+              issuerSigned: document.issuerSigned,
+              // `deviceRequestForDocument` only holds doc requests for this document's doc type, and
+              // only the first disclosed document is kept below, so answer the first one.
+              docRequestIndex: 0,
+              deviceNamespaces: options.deviceNameSpaces
+                ? DeviceNamespaces.create({
+                    deviceNamespaces: new Map(
+                      Object.entries(options.deviceNameSpaces).map(([namespace, namespaceValue]) => [
+                        namespace,
+                        DeviceSignedItems.create({
+                          deviceSignedItems: new Map(Object.entries(namespaceValue)),
+                        }),
+                      ])
+                    ),
+                  })
+                : undefined,
+              signature: {
+                signingKey: CoseKey.fromJwk(deviceKeyJwk.toJson()),
+              },
+            },
+          ],
         },
         mdocContext
       )

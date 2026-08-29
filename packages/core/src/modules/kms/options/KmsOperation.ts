@@ -32,12 +32,18 @@ export type KmsOperationVerify = {
 
 export type KmsOperationEncrypt = {
   operation: 'encrypt'
+  /**
+   * `HPKE` for the integrated-encryption HPKE algorithms, where the suite fixes the AEAD.
+   */
   encryption: KmsEncryptDataEncryption
   keyAgreement?: KmsKeyAgreementEncryptOptions
 }
 
 export type KmsOperationDecrypt = {
   operation: 'decrypt'
+  /**
+   * `HPKE` for the integrated-encryption HPKE algorithms, where the suite fixes the AEAD.
+   */
   decryption: KmsDecryptDataDecryption
   keyAgreement?: KmsKeyAgreementDecryptOptions
 }
@@ -87,18 +93,12 @@ export function getKmsOperationHumanDescription(operation: KmsOperation) {
     return `'${operation.operation}' operation with algorithm '${operation.algorithm}'`
   }
 
-  if (operation.operation === 'encrypt') {
-    let message = `'encrypt' operation with encryption algorithm '${operation.encryption.algorithm}'`
-    if (operation.keyAgreement) {
-      message += `and key agreement algorithm '${operation.keyAgreement.algorithm}'`
-    }
-    return message
-  }
+  if (operation.operation === 'encrypt' || operation.operation === 'decrypt') {
+    const encryption = operation.operation === 'encrypt' ? operation.encryption : operation.decryption
 
-  if (operation.operation === 'decrypt') {
-    let message = `'decrypt' operation with encryption algorithm '${operation.decryption.algorithm}'`
+    let message = `'${operation.operation}' operation with encryption algorithm '${encryption.algorithm}'`
     if (operation.keyAgreement) {
-      message += `and key agreement algorithm '${operation.keyAgreement.algorithm}'`
+      message += ` and key agreement algorithm '${operation.keyAgreement.algorithm}'`
     }
     return message
   }

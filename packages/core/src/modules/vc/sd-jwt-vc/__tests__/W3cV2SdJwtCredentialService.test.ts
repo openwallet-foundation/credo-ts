@@ -34,6 +34,10 @@ import {
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 const storageService = new InMemoryStorageService<any>()
 const config = getAgentConfig('W3cV2SdJwtCredentialService')
+const askarModuleConfig = new AskarModuleConfig({
+  askar,
+  store: getAskarStoreConfig('W3cV2SdJwtCredentialService'),
+})
 const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.Logger, testLogger],
@@ -41,16 +45,8 @@ const agentContext = getAgentContext({
     [DidRepository, new DidRepository(storageService, new EventEmitter(agentDependencies, new Subject()))],
     [InjectionSymbols.StorageService, storageService],
     [X509ModuleConfig, new X509ModuleConfig()],
-    [
-      AskarStoreManager,
-      new AskarStoreManager(
-        new NodeFileSystem(),
-        new AskarModuleConfig({
-          askar,
-          store: getAskarStoreConfig('W3cV2SdJwtCredentialService'),
-        })
-      ),
-    ],
+    [AskarModuleConfig, askarModuleConfig],
+    [AskarStoreManager, new AskarStoreManager(new NodeFileSystem(), askarModuleConfig)],
     [
       CacheModuleConfig,
       new CacheModuleConfig({
