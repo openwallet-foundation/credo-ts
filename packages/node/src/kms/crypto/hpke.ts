@@ -124,8 +124,12 @@ export async function hpkeOpen(options: {
 }): Promise<Uint8Array> {
   const { suite, cipherSuite } = getHpkeCipherSuite(options.algorithm)
 
+  // The key is imported as extractable, as not all runtimes can derive the public key from a
+  // non-extractable private key (`SubtleCrypto.getPublicKey` is only available in newer runtimes).
+  // The private key material is already available to us here, so this does not expose anything new.
   const recipientPrivateKey = await cipherSuite.DeserializePrivateKey(
-    serializePrivateKey(options.recipientPrivateJwk, suite)
+    serializePrivateKey(options.recipientPrivateJwk, suite),
+    true
   )
 
   return await cipherSuite.Open(recipientPrivateKey, options.encapsulatedKey, options.encrypted, {
