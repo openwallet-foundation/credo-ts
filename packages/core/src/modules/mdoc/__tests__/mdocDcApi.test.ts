@@ -261,9 +261,9 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
     const { request } = await createSession()
 
     // `origin` is required by the type; the runtime abort still has to hold for JS callers.
-    await expect(
-      agent.mdoc.resolveDcApiRequest({ request, origin: undefined as unknown as string })
-    ).rejects.toThrow('No origin')
+    await expect(agent.mdoc.resolveDcApiRequest({ request, origin: undefined as unknown as string })).rejects.toThrow(
+      'No origin'
+    )
   })
 
   test('a reader-authenticated request is verified against the reader certificate', async () => {

@@ -1,7 +1,6 @@
 import { type AgentContext, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { JwkProps, KeyEntryObject, Session } from '@openwallet-foundation/askar-shared'
 import {
-  askar,
   CryptoBox,
   Jwk,
   Key,
@@ -9,7 +8,7 @@ import {
   KeyEntryList,
   SignatureAlgorithm,
 } from '@openwallet-foundation/askar-shared'
-
+import { AskarModuleConfig } from '../AskarModuleConfig'
 import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarErrorCode, isAskarError, jwkCrvToAskarAlg, jwkEncToAskarAlg } from '../utils'
 import { aeadDecrypt } from './crypto/decrypt'
@@ -17,7 +16,6 @@ import { askarSupportedKeyAgreementAlgorithms, deriveDecryptionKey, deriveEncryp
 import { type AskarSupportedEncryptionOptions, aeadEncrypt } from './crypto/encrypt'
 import { askarSupportedHpkeAlgorithms, hpkeOpen, hpkeSeal } from './crypto/hpke'
 import { randomBytes } from './crypto/randomBytes'
-import { AskarModuleConfig } from '../AskarModuleConfig'
 
 const askarSymmetricKeyAlgorithms: KeyAlgorithm[] = Object.values(jwkEncToAskarAlg)
 
@@ -750,7 +748,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
   private keyFromJwk(agentContext: AgentContext, jwk: Kms.KmsJwkPrivate | Kms.KmsJwkPublic) {
     const key = new Key(
-     this.getAskar(agentContext).keyFromJwk({
+      this.getAskar(agentContext).keyFromJwk({
         // TODO: the JWK class in JS Askar wrapper is too limiting
         // so we use this method directly. should update it
         jwk: new Uint8Array(JsonEncoder.toUint8Array(jwk)) as unknown as Jwk,
@@ -786,7 +784,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     // so we use this method directly. should update it
     // We extract alg, as Askar doesn't always use the same algs
     const { alg, ...jwkPublic } = JSON.parse(
-     this.getAskar(agentContext).keyGetJwkPublic({
+      this.getAskar(agentContext).keyGetJwkPublic({
         localKeyHandle: key.handle,
         algorithm: key.algorithm,
       })
@@ -795,14 +793,14 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     return Kms.publicJwkFromPrivateJwk({ ...partialJwkPublic, ...jwkPublic } as Kms.KmsJwkPublic)
   }
 
-  private privateJwkFromKey(agentContext :AgentContext, key: Key, partialJwkPrivate?: Partial<Kms.KmsJwkPrivate>) {
+  private privateJwkFromKey(agentContext: AgentContext, key: Key, partialJwkPrivate?: Partial<Kms.KmsJwkPrivate>) {
     // TODO: once we support additional params we should add these here
 
     // TODO: the JWK class in JS Askar wrapper is too limiting
     // so we use this method directly. should update it
     // We extract alg, as Askar doesn't always use the same algs
     const { alg, ...jwkSecret } = JsonEncoder.fromUint8Array(
-     this.getAskar(agentContext).keyGetJwkSecret({
+      this.getAskar(agentContext).keyGetJwkSecret({
         localKeyHandle: key.handle,
       })
     )
@@ -818,7 +816,11 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       if (!session.handle) throw Error('Cannot fetch a key with a closed session')
 
       // Fetch the key from the session
-      const handle = await this.getAskar(agentContext).sessionFetchKey({ forUpdate: false, name: keyId, sessionHandle: session.handle })
+      const handle = await this.getAskar(agentContext).sessionFetchKey({
+        forUpdate: false,
+        name: keyId,
+        sessionHandle: session.handle,
+      })
       if (!handle) return null
 
       // Get the key entry
