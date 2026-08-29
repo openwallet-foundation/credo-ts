@@ -33,6 +33,9 @@ catalogs:
     '@openwallet-foundation/askar-shared':
       specifier: 0.6.0
       version: 0.6.0
+    '@panva/hpke-noble':
+      specifier: ^1.1.4
+      version: 1.1.4
     '@peculiar/x509':
       specifier: ^2.0.0
       version: 2.0.0
@@ -63,6 +66,9 @@ catalogs:
     express:
       specifier: ^5.2.1
       version: 5.2.1
+    hpke:
+      specifier: ^1.1.4
+      version: 1.1.4
     nock:
       specifier: ^14.0.11
       version: 14.0.11
@@ -90,6 +96,7 @@ catalogs:
 
 overrides:
   undici: ^6.20.1
+  '@owf/mdoc': file:/tmp/owf-mdoc-0.7.0.tgz
 
 importers:
 
@@ -411,12 +418,18 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
+      '@panva/hpke-noble':
+        specifier: 'catalog:'
+        version: 1.1.4(hpke@1.1.4)
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1
       class-validator:
         specifier: 'catalog:'
         version: 0.14.3
+      hpke:
+        specifier: 'catalog:'
+        version: 1.1.4
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -544,8 +557,8 @@ importers:
         specifier: ^0.3.1
         version: 0.3.1
       '@owf/mdoc':
-        specifier: ^0.7.0
-        version: 0.7.0
+        specifier: file:/tmp/owf-mdoc-0.7.0.tgz
+        version: file:../../../../../tmp/owf-mdoc-0.7.0.tgz
       '@owf/token-status-list':
         specifier: ^0.3.1
         version: 0.3.1
@@ -879,6 +892,9 @@ importers:
       express:
         specifier: 'catalog:'
         version: 5.2.1
+      hpke:
+        specifier: 'catalog:'
+        version: 1.1.4
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -3165,6 +3181,10 @@ packages:
     resolution: {integrity: sha512-2I0gnIVPtfnMw9ee9h1dJG7tp81+8Ob3OJb3Mv37rx5L40/b0i7djjCVvGOVqc9AEIQyvyu1i6ypKdFw8R8gQw==}
     engines: {node: ^14.21.3 || >=16}
 
+  '@noble/ciphers@2.3.0':
+    resolution: {integrity: sha512-Clu/xdfgVTf9o7ngLOURaxePwR0j8sjclKEtVij10/jGulwFsPWCvvRgG/XjUVf8Nei+jLG6uwyXzUTGY1DQrw==}
+    engines: {node: '>= 20.19.0'}
+
   '@noble/curves@1.8.1':
     resolution: {integrity: sha512-warwspo+UYUPep0Q+vtdVB4Ugn8GGQj8iyB3gnRWsztmUHTI3S1nhdiWNsPUGL0vud7JlRRk1XEu7Lq1KGTnMQ==}
     engines: {node: ^14.21.3 || >=16}
@@ -3175,6 +3195,10 @@ packages:
 
   '@noble/curves@2.0.1':
     resolution: {integrity: sha512-vs1Az2OOTBiP4q0pwjW5aF0xp9n4MxVrmkFBxc6EKZc6ddYx5gaZiAsZoq0uRRXWbi3AT/sBqn05eRPtn1JCPw==}
+    engines: {node: '>= 20.19.0'}
+
+  '@noble/curves@2.3.0':
+    resolution: {integrity: sha512-v7cY+4oWYPQszRj6ZFGzTVL7uP2TaLo1xMhWHzYC5wj0ZhOXQ5x+sBre8rF3hi8cAoi0bh1qXoovoOkdFtvqEg==}
     engines: {node: '>= 20.19.0'}
 
   '@noble/hashes@1.6.1':
@@ -3195,6 +3219,14 @@ packages:
 
   '@noble/hashes@2.2.0':
     resolution: {integrity: sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg==}
+    engines: {node: '>= 20.19.0'}
+
+  '@noble/hashes@2.3.0':
+    resolution: {integrity: sha512-oN+QwyX7VSHotibwubG3kpzbwKrfnyR6OOO+3Nk/53ADL7FmgHHz4TgrbaYKvvOw09u6QTx0oiH1cNCIOuN0CQ==}
+    engines: {node: '>= 20.19.0'}
+
+  '@noble/post-quantum@0.7.0':
+    resolution: {integrity: sha512-IH2tpuGV4vBMdpCCua2BN7EuUICtmGp6DlBMNBYAYcL6QQ7eHt85GjLyD7ZT6Qx/xgIPIMqsSLDGvYqOm8Vqag==}
     engines: {node: '>= 20.19.0'}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -3247,14 +3279,12 @@ packages:
   '@owf/identity-common@0.1.0-alpha-20260422101556':
     resolution: {integrity: sha512-0CJhMHXWf+Dn0MpZCeachjFjMjBI2uCJl56Po3dnGiJDis5wVkfWPeCdPJZ2h4fBWwXV0+Owa8nJRxXeruRwrA==}
 
-  '@owf/identity-common@0.3.0':
-    resolution: {integrity: sha512-Ot+T8zHqb9cPqPdHL2edRXjWtRLng95N+auhb9TZq+Jy4HxjRzBUMVnB0wzeV5GCgoIkINcHAeLXFMsHs77hVQ==}
-
   '@owf/identity-common@0.3.1':
     resolution: {integrity: sha512-DLDZtZYMDiV58zpTYVoDc0uFPdZBkmNL31Az5X7sMEttmnU5JvArw3dqPwSMMlT2VfeB0SiPHsuM5dcnqaeNnw==}
 
-  '@owf/mdoc@0.7.0':
-    resolution: {integrity: sha512-WgYwmpxawDgkMmej719DwlgZ/6gmzCWyyFYf4Z/9eA50Xq/rAi5nQ4oQTu1/79A0IZwwWJdrcJp53yiOQHbUtg==}
+  '@owf/mdoc@file:../../../../../tmp/owf-mdoc-0.7.0.tgz':
+    resolution: {integrity: sha512-AQ+JsWuE+l/uR8KpWxFvof3JkUkBQz2WR6ylJrI4YUBN3UnqI6iQL/yGDDtKYmwd5WQrqyBwd3w4crLa0Wozrw==, tarball: file:../../../../../tmp/owf-mdoc-0.7.0.tgz}
+    version: 0.7.0
     engines: {node: '>=20.19'}
 
   '@owf/token-status-list@0.1.0-alpha-20260422101556':
@@ -3363,6 +3393,11 @@ packages:
     resolution: {integrity: sha512-gE3QJvhh0Yj9cSAkkHjRLKPmC7BTJeiaB5YyhVKVUwbnWQgTszV92lZ9pvZtNPEghP7jPbhEs4c6983A0ojQwA==}
     cpu: [x64]
     os: [win32]
+
+  '@panva/hpke-noble@1.1.4':
+    resolution: {integrity: sha512-+bOeaH/9XP8FlRqSHOy2zDEAG/SMnDfvxGlBh0bIYtEvt6vP3fkInpwV/pdtde7dF1Ujw3pUVMzYfCDPQ3nZZw==}
+    peerDependencies:
+      hpke: ^1.0.0
 
   '@paralleldrive/cuid2@2.3.1':
     resolution: {integrity: sha512-XO7cAxhnTZl0Yggq6jOgjiOHhbgcO4NqFqwSmQpjK3b6TEE6Uj/jfSk6wzYyemh3+I0sHirKSetjQwn5cZktFw==}
@@ -6016,6 +6051,9 @@ packages:
   hosted-git-info@7.0.2:
     resolution: {integrity: sha512-puUZAUKT5m8Zzvs72XWy3HtvVbTWljRE66cP60bxJzAqf2DgICo7lYTY2IHUmLnNpjYvw5bvmoHvPc0QO2a62w==}
     engines: {node: ^16.14.0 || >=18.0.0}
+
+  hpke@1.1.4:
+    resolution: {integrity: sha512-cPzmFEsiyNnD7281X5WeZ461mbH+3P+rjWMSNrLO5rks7dAJvFXAyMwCmorB61pxt+jBnd0GQ6CY43TqOxmhCQ==}
 
   html-escaper@2.0.2:
     resolution: {integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==}
@@ -11921,6 +11959,8 @@ snapshots:
 
   '@noble/ciphers@1.3.0': {}
 
+  '@noble/ciphers@2.3.0': {}
+
   '@noble/curves@1.8.1':
     dependencies:
       '@noble/hashes': 1.7.1
@@ -11933,6 +11973,10 @@ snapshots:
     dependencies:
       '@noble/hashes': 2.0.1
 
+  '@noble/curves@2.3.0':
+    dependencies:
+      '@noble/hashes': 2.3.0
+
   '@noble/hashes@1.6.1': {}
 
   '@noble/hashes@1.7.1': {}
@@ -11942,6 +11986,14 @@ snapshots:
   '@noble/hashes@2.0.1': {}
 
   '@noble/hashes@2.2.0': {}
+
+  '@noble/hashes@2.3.0': {}
+
+  '@noble/post-quantum@0.7.0':
+    dependencies:
+      '@noble/ciphers': 2.3.0
+      '@noble/curves': 2.3.0
+      '@noble/hashes': 2.3.0
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -12010,14 +12062,12 @@ snapshots:
 
   '@owf/identity-common@0.1.0-alpha-20260422101556': {}
 
-  '@owf/identity-common@0.3.0': {}
-
   '@owf/identity-common@0.3.1': {}
 
-  '@owf/mdoc@0.7.0':
+  '@owf/mdoc@file:../../../../../tmp/owf-mdoc-0.7.0.tgz':
     dependencies:
       '@owf/cose': 0.3.1
-      '@owf/identity-common': 0.3.0
+      '@owf/identity-common': 0.3.1
       '@owf/token-status-list': 0.3.1
       zod: 4.4.3
 
@@ -12100,6 +12150,14 @@ snapshots:
 
   '@oxc-resolver/binding-win32-x64-msvc@11.9.0':
     optional: true
+
+  '@panva/hpke-noble@1.1.4(hpke@1.1.4)':
+    dependencies:
+      '@noble/ciphers': 2.3.0
+      '@noble/curves': 2.3.0
+      '@noble/hashes': 2.3.0
+      '@noble/post-quantum': 0.7.0
+      hpke: 1.1.4
 
   '@paralleldrive/cuid2@2.3.1':
     dependencies:
@@ -15209,6 +15267,8 @@ snapshots:
   hosted-git-info@7.0.2:
     dependencies:
       lru-cache: 10.4.3
+
+  hpke@1.1.4: {}
 
   html-escaper@2.0.2: {}
 

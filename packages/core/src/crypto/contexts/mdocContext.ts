@@ -1,16 +1,36 @@
 import { p256 } from '@noble/curves/nist.js'
 import { hkdf } from '@noble/hashes/hkdf.js'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { CoseKey, type MdocContext } from '@owf/mdoc'
+import { CoseKey, type HpkeSuiteId, type MdocContext } from '@owf/mdoc'
 import { AgentContext } from '../../agent'
 import { CredoWebCrypto, Hasher } from '../../crypto'
+import { CredoError } from '../../error'
+import { KeyManagementApi, type KmsJwkPublicEcdh, type KnownJwaHpkeAlgorithm, PublicJwk } from '../../modules/kms'
 import { X509Certificate } from '../../modules/x509/X509Certificate'
 import { X509Service } from '../../modules/x509/X509Service'
 import { getMac0Context } from './mac0Context'
 import { getSign1Context } from './sign1Context'
 
+/**
+ * HPKE suites the mdoc library can request, mapped to the JOSE-HPKE style algorithm identifiers the
+ * KMS uses. ISO 18013-7 Annex C only uses the first entry.
+ */
+const hpkeSuiteToJwaAlgorithm = {
+  'dhkem-p256-hkdf-sha256/hkdf-sha256/aes-128-gcm': 'HPKE-0',
+  'dhkem-p256-hkdf-sha256/hkdf-sha256/aes-256-gcm': 'HPKE-7',
+  'dhkem-x25519-hkdf-sha256/hkdf-sha256/aes-128-gcm': 'HPKE-3',
+} as const satisfies Record<HpkeSuiteId, KnownJwaHpkeAlgorithm>
+
+function jwaAlgorithmForHpkeSuite(suite: HpkeSuiteId) {
+  const algorithm = hpkeSuiteToJwaAlgorithm[suite]
+  if (!algorithm) throw new CredoError(`Unsupported HPKE suite '${suite}'`)
+
+  return algorithm
+}
+
 export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date } = {}): MdocContext => {
   const crypto = new CredoWebCrypto(agentContext)
+  const kms = agentContext.resolve(KeyManagementApi)
 
   return {
     fetch: agentContext.config.agentDependencies.fetch,
@@ -35,6 +55,49 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
         const ikm = p256.getSharedSecret(privateKey, publicKey, true).slice(1)
         const hashedSalt = Hasher.hash(salt, digestAlgorithm ?? 'sha-256')
         return hkdf(sha256, ikm, hashedSalt, info, 32)
+      },
+      hpke: {
+        suites: Object.keys(hpkeSuiteToJwaAlgorithm) as HpkeSuiteId[],
+        seal: async (input) => {
+          const { encrypted, encapsulatedKey } = await kms.encrypt({
+            key: {
+              keyAgreement: {
+                algorithm: jwaAlgorithmForHpkeSuite(input.suite),
+                externalPublicJwk: PublicJwk.fromUnknown(input.recipientPublicKey.jwk).toJson() as KmsJwkPublicEcdh,
+                info: input.info,
+              },
+            },
+            encryption: { algorithm: 'HPKE', aad: input.aad },
+            data: input.plaintext,
+          })
+
+          if (!encapsulatedKey) {
+            throw new CredoError('Key management service did not return an encapsulated key for HPKE seal')
+          }
+
+          return { enc: encapsulatedKey, ciphertext: encrypted }
+        },
+        open: async (input) => {
+          const { keyId } = input.recipientKey
+          if (!keyId) {
+            throw new CredoError('Missing required keyId on the recipient key for HPKE open')
+          }
+
+          const { data } = await kms.decrypt({
+            key: {
+              keyAgreement: {
+                algorithm: jwaAlgorithmForHpkeSuite(input.suite),
+                keyId,
+                encapsulatedKey: input.enc,
+                info: input.info,
+              },
+            },
+            decryption: { algorithm: 'HPKE', aad: input.aad },
+            encrypted: input.ciphertext,
+          })
+
+          return data
+        },
       },
     },
 

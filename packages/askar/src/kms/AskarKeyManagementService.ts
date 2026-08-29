@@ -15,7 +15,11 @@ import { AskarErrorCode, isAskarError, jwkCrvToAskarAlg, jwkEncToAskarAlg } from
 import { aeadDecrypt } from './crypto/decrypt'
 import { askarSupportedKeyAgreementAlgorithms, deriveDecryptionKey, deriveEncryptionKey } from './crypto/deriveKey'
 import { type AskarSupportedEncryptionOptions, aeadEncrypt } from './crypto/encrypt'
+import { askarSupportedHpkeAlgorithms, hpkeOpen, hpkeSeal } from './crypto/hpke'
 import { randomBytes } from './crypto/randomBytes'
+import { AskarModuleConfig } from '../AskarModuleConfig'
+
+const askarSymmetricKeyAlgorithms: KeyAlgorithm[] = Object.values(jwkEncToAskarAlg)
 
 const askarSupportedEncryptionAlgorithms = [
   ...(Object.keys(jwkEncToAskarAlg) as Array<keyof typeof jwkEncToAskarAlg>),
@@ -72,23 +76,26 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       return AskarKeyManagementService.algToSigType[operation.algorithm] !== undefined
     }
 
-    if (operation.operation === 'encrypt') {
-      const isSupportedEncryptionAlgorithm = askarSupportedEncryptionAlgorithms.includes(
-        operation.encryption.algorithm as (typeof askarSupportedEncryptionAlgorithms)[number]
-      )
-      if (!isSupportedEncryptionAlgorithm) return false
-      if (!operation.keyAgreement) return true
+    if (operation.operation === 'encrypt' || operation.operation === 'decrypt') {
+      const encryption = operation.operation === 'encrypt' ? operation.encryption : operation.decryption
 
-      return askarSupportedKeyAgreementAlgorithms.includes(
-        operation.keyAgreement.algorithm as (typeof askarSupportedKeyAgreementAlgorithms)[number]
-      )
-    }
+      // HPKE is an integrated encryption mode: the suite fixes the AEAD, so the HPKE key agreement
+      // algorithm is all there is to check.
+      if (encryption.algorithm === 'HPKE') {
+        if (!operation.keyAgreement || !Kms.isJwaHpkeAlgorithm(operation.keyAgreement.algorithm)) return false
 
-    if (operation.operation === 'decrypt') {
-      const isSupportedEncryptionAlgorithm = askarSupportedEncryptionAlgorithms.includes(
-        operation.decryption.algorithm as (typeof askarSupportedEncryptionAlgorithms)[number]
-      )
-      if (!isSupportedEncryptionAlgorithm) return false
+        return askarSupportedHpkeAlgorithms.includes(
+          operation.keyAgreement.algorithm as (typeof askarSupportedHpkeAlgorithms)[number]
+        )
+      }
+
+      if (
+        !askarSupportedEncryptionAlgorithms.includes(
+          encryption.algorithm as (typeof askarSupportedEncryptionAlgorithms)[number]
+        )
+      ) {
+        return false
+      }
       if (!operation.keyAgreement) return true
 
       return askarSupportedKeyAgreementAlgorithms.includes(
@@ -107,7 +114,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     const key = await this.fetchAskarKey(agentContext, keyId)
     if (!key) return null
 
-    return this.publicJwkFromKey(key.key, { kid: keyId })
+    return this.publicJwkFromKey(agentContext, key.key, { kid: keyId })
   }
 
   public async importKey<Jwk extends Kms.KmsJwkPrivate>(
@@ -232,7 +239,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${type.kty}'`, this.backend)
       }
 
-      const publicJwk = this.publicJwkFromKey(_key, { kid }) as Kms.KmsCreateKeyReturn<Type>['publicJwk']
+      const publicJwk = this.publicJwkFromKey(agentContext, _key, { kid }) as Kms.KmsCreateKeyReturn<Type>['publicJwk']
       await this.withSession(agentContext, (session) => session.insertKey({ name: kid, key: _key }))
 
       return {
@@ -267,8 +274,8 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       }
 
       // TODO: we should extend this with metadata properties (e.g. use, key_ops)
-      const publicJwk = this.publicJwkFromKey(key.key, { kid: keyId })
-      const privateJwk = this.privateJwkFromKey(key.key, { kid: keyId })
+      const publicJwk = this.publicJwkFromKey(agentContext, key.key, { kid: keyId })
+      const privateJwk = this.privateJwkFromKey(agentContext, key.key, { kid: keyId })
 
       // 2. Validate alg and use for key
       Kms.assertAllowedSigningAlgForKey(privateJwk, algorithm)
@@ -319,11 +326,11 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       }
 
       const keyId = keyInput.keyId ?? keyInput.publicJwk?.kid
-      const publicJwk = this.publicJwkFromKey(askarKey, { kid: keyId })
+      const publicJwk = this.publicJwkFromKey(agentContext, askarKey, { kid: keyId })
 
       // For symmetric verificdation we need the private key
       if (publicJwk.kty === 'oct') {
-        const privateJwk = this.privateJwkFromKey(askarKey, { kid: keyId })
+        const privateJwk = this.privateJwkFromKey(agentContext, askarKey, { kid: keyId })
 
         // 2. Validate alg and use for key
         Kms.assertAllowedSigningAlgForKey(privateJwk, algorithm)
@@ -344,7 +351,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         return {
           verified: true,
           publicJwk: keyInput.keyId
-            ? this.publicJwkFromKey(askarKey, { kid: keyId })
+            ? this.publicJwkFromKey(agentContext, askarKey, { kid: keyId })
             : (keyInput.publicJwk as Kms.KmsJwkPublic),
         }
       }
@@ -362,6 +369,31 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
   public async encrypt(agentContext: AgentContext, options: Kms.KmsEncryptOptions): Promise<Kms.KmsEncryptReturn> {
     const { data, encryption, key } = options
+
+    if (encryption.algorithm === 'HPKE') {
+      if (!key.keyAgreement || !Kms.isKmsKeyAgreementEncryptHpke(key.keyAgreement)) {
+        throw new Kms.KeyManagementError(
+          `Encryption algorithm 'HPKE' can only be used with an integrated-encryption HPKE key agreement algorithm`
+        )
+      }
+
+      const { keyAgreement } = key
+      Kms.assertAllowedKeyDerivationAlgForKey(keyAgreement.externalPublicJwk, keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(keyAgreement.externalPublicJwk)
+
+      try {
+        return await hpkeSeal({
+          algorithm: keyAgreement.algorithm,
+          recipientPublicJwk: keyAgreement.externalPublicJwk,
+          data,
+          info: keyAgreement.info,
+          aad: encryption.aad,
+        })
+      } catch (error) {
+        if (error instanceof Kms.KeyManagementError) throw error
+        throw new Kms.KeyManagementError('Error encrypting with key', { cause: error })
+      }
+    }
 
     Kms.assertSupportedEncryptionAlgorithm(encryption, askarSupportedEncryptionAlgorithms, this.backend)
 
@@ -397,7 +429,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           : undefined
         if (privateKey) keysToFree.push(privateKey)
 
-        const privateJwk = privateKey ? this.privateJwkFromKey(privateKey) : undefined
+        const privateJwk = privateKey ? this.privateJwkFromKey(agentContext, privateKey) : undefined
         if (privateJwk) {
           Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
           Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
@@ -410,7 +442,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           }
         }
 
-        const recipientKey = this.keyFromJwk(key.keyAgreement.externalPublicJwk)
+        const recipientKey = this.keyFromJwk(agentContext, key.keyAgreement.externalPublicJwk)
         keysToFree.push(recipientKey)
 
         // Special case to support DIDComm v1
@@ -483,7 +515,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         )
       }
 
-      const privateJwk = this.privateJwkFromKey(encryptionKey)
+      const privateJwk = this.privateJwkFromKey(agentContext, encryptionKey)
       Kms.assertKeyAllowsDerive(privateJwk)
       Kms.assertAllowedEncryptionAlgForKey(privateJwk, encryption.algorithm)
       Kms.assertKeyAllowsEncrypt(privateJwk)
@@ -512,6 +544,41 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
   public async decrypt(agentContext: AgentContext, options: Kms.KmsDecryptOptions): Promise<Kms.KmsDecryptReturn> {
     const { encrypted, decryption, key } = options
 
+    if (decryption.algorithm === 'HPKE') {
+      if (!key.keyAgreement || !Kms.isKmsKeyAgreementDecryptHpke(key.keyAgreement)) {
+        throw new Kms.KeyManagementError(
+          `Decryption algorithm 'HPKE' can only be used with an integrated-encryption HPKE key agreement algorithm`
+        )
+      }
+
+      const { keyAgreement } = key
+      const recipientKey = (await this.getKeyAsserted(agentContext, keyAgreement.keyId)).key
+
+      try {
+        const recipientPublicJwk = this.publicJwkFromKey(agentContext, recipientKey)
+        Kms.assertJwkAsymmetric(recipientPublicJwk, keyAgreement.keyId)
+        Kms.assertAllowedKeyDerivationAlgForKey(recipientPublicJwk, keyAgreement.algorithm)
+        Kms.assertKeyAllowsDerive(recipientPublicJwk)
+
+        return {
+          data: await hpkeOpen({
+            algorithm: keyAgreement.algorithm,
+            recipientKey,
+            recipientPublicJwk,
+            encapsulatedKey: keyAgreement.encapsulatedKey,
+            encrypted,
+            info: keyAgreement.info,
+            aad: decryption.aad,
+          }),
+        }
+      } catch (error) {
+        if (error instanceof Kms.KeyManagementError) throw error
+        throw new Kms.KeyManagementError('Error decrypting with key', { cause: error })
+      } finally {
+        recipientKey.handle.free()
+      }
+    }
+
     Kms.assertSupportedEncryptionAlgorithm(decryption, askarSupportedEncryptionAlgorithms, this.backend)
 
     const keysToFree: Key[] = []
@@ -535,16 +602,18 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         )
         keysToFree.push(decryptionKey)
       } else if (key.keyAgreement) {
+        // Narrows away the integrated-encryption HPKE algorithms, which are handled above
+        Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, askarSupportedKeyAgreementAlgorithms, this.backend)
+
         if (key.keyAgreement.externalPublicJwk) {
           Kms.assertAllowedKeyDerivationAlgForKey(key.keyAgreement.externalPublicJwk, key.keyAgreement.algorithm)
           Kms.assertKeyAllowsDerive(key.keyAgreement.externalPublicJwk)
         }
-        Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, askarSupportedKeyAgreementAlgorithms, this.backend)
 
         let privateKey = (await this.getKeyAsserted(agentContext, key.keyAgreement.keyId)).key
         keysToFree.push(privateKey)
 
-        const privateJwk = this.privateJwkFromKey(privateKey)
+        const privateJwk = this.privateJwkFromKey(agentContext, privateKey)
 
         Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
         Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
@@ -556,7 +625,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         }
 
         const senderKey = key.keyAgreement.externalPublicJwk
-          ? this.keyFromJwk(key.keyAgreement.externalPublicJwk)
+          ? this.keyFromJwk(agentContext, key.keyAgreement.externalPublicJwk)
           : undefined
         if (senderKey) keysToFree.push(senderKey)
 
@@ -633,7 +702,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         )
       }
 
-      const privateJwk = this.privateJwkFromKey(decryptionKey)
+      const privateJwk = this.privateJwkFromKey(agentContext, decryptionKey)
       Kms.assertKeyAllowsDerive(privateJwk)
       Kms.assertAllowedEncryptionAlgForKey(privateJwk, decryption.algorithm)
       Kms.assertKeyAllowsEncrypt(privateJwk)
@@ -679,9 +748,9 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     return keyAlg
   }
 
-  private keyFromJwk(jwk: Kms.KmsJwkPrivate | Kms.KmsJwkPublic) {
+  private keyFromJwk(agentContext: AgentContext, jwk: Kms.KmsJwkPrivate | Kms.KmsJwkPublic) {
     const key = new Key(
-      askar.keyFromJwk({
+     this.getAskar(agentContext).keyFromJwk({
         // TODO: the JWK class in JS Askar wrapper is too limiting
         // so we use this method directly. should update it
         jwk: new Uint8Array(JsonEncoder.toUint8Array(jwk)) as unknown as Jwk,
@@ -706,18 +775,34 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     })
   }
 
-  private publicJwkFromKey(key: Key, partialJwkPublic?: Partial<Kms.KmsJwkPublic>) {
-    return Kms.publicJwkFromPrivateJwk(this.privateJwkFromKey(key, partialJwkPublic))
+  private publicJwkFromKey(agentContext: AgentContext, key: Key, partialJwkPublic?: Partial<Kms.KmsJwkPublic>) {
+    // Askar has no public jwk representation for symmetric keys, and there's nothing
+    // public about them besides the key type
+    if (askarSymmetricKeyAlgorithms.includes(key.algorithm)) {
+      return Kms.publicJwkFromPrivateJwk({ ...partialJwkPublic, kty: 'oct' } as Kms.KmsJwkPublic)
+    }
+
+    // TODO: the JWK class in JS Askar wrapper is too limiting
+    // so we use this method directly. should update it
+    // We extract alg, as Askar doesn't always use the same algs
+    const { alg, ...jwkPublic } = JSON.parse(
+     this.getAskar(agentContext).keyGetJwkPublic({
+        localKeyHandle: key.handle,
+        algorithm: key.algorithm,
+      })
+    )
+
+    return Kms.publicJwkFromPrivateJwk({ ...partialJwkPublic, ...jwkPublic } as Kms.KmsJwkPublic)
   }
 
-  private privateJwkFromKey(key: Key, partialJwkPrivate?: Partial<Kms.KmsJwkPrivate>) {
+  private privateJwkFromKey(agentContext :AgentContext, key: Key, partialJwkPrivate?: Partial<Kms.KmsJwkPrivate>) {
     // TODO: once we support additional params we should add these here
 
     // TODO: the JWK class in JS Askar wrapper is too limiting
     // so we use this method directly. should update it
     // We extract alg, as Askar doesn't always use the same algs
     const { alg, ...jwkSecret } = JsonEncoder.fromUint8Array(
-      askar.keyGetJwkSecret({
+     this.getAskar(agentContext).keyGetJwkSecret({
         localKeyHandle: key.handle,
       })
     )
@@ -733,7 +818,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       if (!session.handle) throw Error('Cannot fetch a key with a closed session')
 
       // Fetch the key from the session
-      const handle = await askar.sessionFetchKey({ forUpdate: false, name: keyId, sessionHandle: session.handle })
+      const handle = await this.getAskar(agentContext).sessionFetchKey({ forUpdate: false, name: keyId, sessionHandle: session.handle })
       if (!handle) return null
 
       // Get the key entry
@@ -754,5 +839,9 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     }
 
     return storageKey
+  }
+
+  private getAskar(agentContext: AgentContext) {
+    return agentContext.resolve(AskarModuleConfig).askar
   }
 }
