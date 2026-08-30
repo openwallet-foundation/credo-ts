@@ -3,13 +3,13 @@ import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import { asArray } from '../../utils/array'
-import { DidsApi } from '../dids'
 import {
   W3cV2DataIntegrityCredentialService,
   type W3cV2DataIntegrityResolvedPresentation,
   W3cV2DataIntegrityVerifiableCredential,
   W3cV2DataIntegrityVerifiablePresentation,
 } from './data-integrity'
+import { getSignerForDataIntegrityProof } from './data-integrity/v2-di-utils'
 import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
 import { W3cV2JwtCredentialService } from './jwt-vc/W3cV2JwtCredentialService'
 import type {
@@ -278,28 +278,15 @@ export class W3cV2CredentialService {
       signerId = presentation.resolvedPresentation.holderId
       if (!signerId) {
         try {
-          // The holder is optional in VCDM 2.0, so fall back to the identity that secured the
+          // The holder is optional in VCDM 2.0, so fall back to the identity that authenticated the
           // presentation, mirroring how the JWT and SD-JWT branches above derive their signer.
-          const proof = asArray(presentation.securedPresentation.proof)[0]
-          if (!proof || typeof proof !== 'object' || !('verificationMethod' in proof)) {
-            throw new CredoError('Data Integrity presentation proof does not contain a verification method')
-          }
-
-          const verificationMethodId = proof.verificationMethod
-          if (typeof verificationMethodId !== 'string') {
-            throw new CredoError('Data Integrity presentation proof verification method must be a string')
-          }
-
-          const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-          const didDocument = await didsApi.resolveDidDocument(verificationMethodId)
-          const verificationMethod = didDocument.dereferenceKey(verificationMethodId, ['authentication'])
-          signerId = verificationMethod.controller
-
-          if (!signerId) {
-            throw new CredoError(
-              `Verification method '${verificationMethodId}' does not have a controller to use as the presentation signer`
-            )
-          }
+          // No expected controller is passed: with no declared holder there is nothing to
+          // disambiguate against, so an ambiguous proof set is rejected rather than guessed at.
+          signerId = await getSignerForDataIntegrityProof(
+            agentContext,
+            presentation.securedPresentation,
+            'authentication'
+          )
         } catch {
           validationResults.isValid = false
           return validationResults

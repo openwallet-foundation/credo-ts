@@ -371,10 +371,15 @@ describe('W3cV2CredentialService routing', () => {
     jwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
     sdJwtService.verifyCredential.mockResolvedValue({ isValid: true, validations: {}, error: undefined })
 
-    const result = await serviceWithRealDi.verifyPresentation(agentContext, {
-      presentation: mixedDiOuterVp,
-      challenge: 'challenge-123',
-    } as never)
+    const { agentContext: resolvingAgentContext } = createSignerResolvingAgentContext(diProofSigner)
+
+    const result = await serviceWithRealDi.verifyPresentation(
+      resolvingAgentContext as never,
+      {
+        presentation: mixedDiOuterVp,
+        challenge: 'challenge-123',
+      } as never
+    )
 
     expect(result.isValid).toBe(true)
     expect(result.presentation.isValid).toBe(true)
