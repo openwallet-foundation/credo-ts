@@ -232,8 +232,9 @@ export class W3cV2CredentialService {
         try {
           const verificationMethod = await getVerificationMethodForJwt(agentContext, presentation, ['authentication'])
           signerId = verificationMethod.controller
-        } catch {
+        } catch (error) {
           validationResults.isValid = false
+          validationResults.error = error
           return validationResults
         }
       }
@@ -257,8 +258,9 @@ export class W3cV2CredentialService {
         try {
           const verificationMethod = await getVerificationMethodForJwt(agentContext, presentation, ['authentication'])
           signerId = verificationMethod.controller
-        } catch {
+        } catch (error) {
           validationResults.isValid = false
+          validationResults.error = error
           return validationResults
         }
       }
@@ -287,8 +289,9 @@ export class W3cV2CredentialService {
             presentation.securedPresentation,
             'authentication'
           )
-        } catch {
+        } catch (error) {
           validationResults.isValid = false
+          validationResults.error = error
           return validationResults
         }
       }

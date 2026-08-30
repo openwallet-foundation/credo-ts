@@ -942,11 +942,12 @@ describe('W3cV2CredentialService routing', () => {
     expect(result.isValid).toBe(false)
   })
 
-  test('verifyPresentation fails a holder-less DI VP when the proof signer cannot be resolved', async () => {
+  test('verifyPresentation surfaces DI signer-resolution failures for a holder-less presentation', async () => {
+    const resolutionError = new Error('unresolvable did')
     const mockAgentContext = {
       dependencyManager: {
         resolve: vi.fn().mockReturnValue({
-          resolveDidDocument: vi.fn().mockRejectedValue(new Error('unresolvable did')),
+          resolveDidDocument: vi.fn().mockRejectedValue(resolutionError),
         }),
       },
     }
@@ -967,6 +968,61 @@ describe('W3cV2CredentialService routing', () => {
 
     expect(diService.verifyCredential).not.toHaveBeenCalled()
     expect(result.isValid).toBe(false)
+    expect(result.error).toBe(resolutionError)
+  })
+
+  test('verifyPresentation surfaces JWT signer-resolution failures for a holder-less presentation', async () => {
+    const resolutionError = new Error('unresolvable did')
+    const mockAgentContext = {
+      dependencyManager: {
+        resolve: vi.fn().mockReturnValue({
+          resolveDidDocument: vi.fn().mockRejectedValue(resolutionError),
+        }),
+      },
+    }
+    jwtService.verifyPresentation.mockResolvedValue({
+      isValid: true,
+      presentation: { isValid: true, validations: {} },
+      credentialEntries: [],
+    })
+
+    const result = await service.verifyPresentation(
+      mockAgentContext as never,
+      {
+        presentation: validVcOnlyOuterPresentationsByName.outerJwt_withoutHolder,
+        challenge: 'challenge-123',
+      } as never
+    )
+
+    expect(result.isValid).toBe(false)
+    expect(result.error).toBe(resolutionError)
+  })
+
+  test('verifyPresentation surfaces SD-JWT signer-resolution failures for a holder-less presentation', async () => {
+    const resolutionError = new Error('unresolvable did')
+    const mockAgentContext = {
+      dependencyManager: {
+        resolve: vi.fn().mockReturnValue({
+          resolveDidDocument: vi.fn().mockRejectedValue(resolutionError),
+        }),
+      },
+    }
+    sdJwtService.verifyPresentation.mockResolvedValue({
+      isValid: true,
+      presentation: { isValid: true, validations: {} },
+      credentialEntries: [],
+    })
+
+    const result = await service.verifyPresentation(
+      mockAgentContext as never,
+      {
+        presentation: validVcOnlyOuterPresentationsByName.outerSdJwt_withoutHolder,
+        challenge: 'challenge-123',
+      } as never
+    )
+
+    expect(result.isValid).toBe(false)
+    expect(result.error).toBe(resolutionError)
   })
 
   test('verifyPresentation uses the DI proof signer for credential-subject authentication when holder is absent', async () => {
