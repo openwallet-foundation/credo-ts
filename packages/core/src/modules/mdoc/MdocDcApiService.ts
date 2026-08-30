@@ -24,6 +24,7 @@ import {
 } from '../../utils/credentialUse'
 import { KeyManagementApi } from '../kms'
 import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig, X509Service } from '../x509'
+import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import { Mdoc } from './Mdoc'
 import { MdocDeviceResponse } from './MdocDeviceResponse'
 import { MdocError, MdocVerificationSessionExpiredError } from './MdocError'
@@ -253,8 +254,9 @@ export class MdocDcApiService {
    *
    * Same resolution order as the issuer trust in {@link MdocDcApiService.getTrustedCertificatesForMdoc}:
    * the certificates passed to `resolveRequest` first, then the global
-   * `getTrustedIssuersForVerification` callback, and only if neither returns anything the
-   * statically configured trusted certificates.
+   * `getTrustedIssuersForVerification` callback, then the deprecated
+   * `getTrustedCertificatesForVerification` callback, and only if none of these return anything
+   * the statically configured trusted certificates.
    *
    * As everywhere else x509 signers are verified, resolving nothing is not a reason to continue
    * without establishing trust: the reader certificate chain is signed by the reader itself, so
@@ -286,8 +288,19 @@ export class MdocDcApiService {
         verification: options.verification,
       })
 
+      const legacyTrustedCertificates = trustedIssuers
+        ? undefined
+        : await x509ModuleConfig.getTrustedCertificatesForVerification?.(agentContext, {
+            certificateChain: options.certificateChain,
+            verification: options.verification,
+          })
+
       trustedCertificates =
-        trustedIssuers?.trustedIssuers.flatMap(({ issuance }) => issuance) ?? x509ModuleConfig.trustedCertificates
+        trustedIssuers?.trustedIssuers.flatMap(({ issuance }) => issuance) ??
+        (legacyTrustedCertificates
+          ? convertLegacyTrustedCertificates(legacyTrustedCertificates).flatMap(({ issuance }) => issuance)
+          : undefined) ??
+        x509ModuleConfig.trustedCertificates
     }
 
     if (!trustedCertificates) {

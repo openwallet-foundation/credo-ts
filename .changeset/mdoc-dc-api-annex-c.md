@@ -18,6 +18,7 @@ Add support for the ISO/IEC TS 18013-7:2025 Annex C (`org-iso-mdoc`) Digital Cre
 - Reader authentication on an incoming request is resolved through the same trust layers as
   credential verification: the certificates passed to `resolveDcApiRequest`, then the global
   `getTrustedIssuersForVerification` callback (with the new `mdocReaderAuth` verification type,
-  called per doc request), then the statically configured trusted certificates. Resolving a
-  reader authenticated request throws when none of these are configured. Return the leaf
-  certificate from the callback to trust a reader on the certificate it presented itself.
+  called per doc request), then the deprecated `getTrustedCertificatesForVerification` callback,
+  then the statically configured trusted certificates. Resolving a reader authenticated request
+  throws when none of these are configured. Return the leaf certificate from the callback to trust
+  a reader on the certificate it presented itself.
