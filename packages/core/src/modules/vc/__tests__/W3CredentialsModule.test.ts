@@ -1,6 +1,7 @@
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { Ed25519PublicJwk } from '../../kms'
+import { JsonLdModuleConfig } from '../jsonld'
 import { W3cJwtCredentialService } from '../jwt-vc'
 import {
   SignatureSuiteRegistry,
@@ -32,7 +33,8 @@ describe('W3cCredentialsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(W3cCredentialRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(SignatureSuiteRegistry)
 
-    expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(3)
+    expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(4)
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(JsonLdModuleConfig, module.config)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(W3cCredentialsModuleConfig, module.config)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(SignatureSuiteToken, {

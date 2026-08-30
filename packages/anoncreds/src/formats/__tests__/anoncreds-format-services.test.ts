@@ -6,10 +6,10 @@ import {
   EventEmitter,
   InjectionSymbols,
   InMemoryLruCache,
+  JsonLdModuleConfig,
   Kms,
   SignatureSuiteToken,
   TypedArrayEncoder,
-  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -97,7 +97,7 @@ const agentContext = getAgentContext({
     [AnonCredsCredentialDefinitionPrivateRepository, anonCredsCredentialDefinitionPrivateRepository],
     [AnonCredsCredentialRepository, anonCredsCredentialRepository],
     [AnonCredsKeyCorrectnessProofRepository, anonCredsKeyCorrectnessProofRepository],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig()],
     [InjectionSymbols.StorageService, storageService],
     [SignatureSuiteToken, 'default'],
     [
