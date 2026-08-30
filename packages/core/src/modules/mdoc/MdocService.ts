@@ -1,9 +1,11 @@
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
+import { KeyManagementApi } from '../kms'
 import { Mdoc } from './Mdoc'
 import { MdocDeviceResponse } from './MdocDeviceResponse'
 import type {
+  MdocDeleteVerificationSessionOptions,
   MdocDeviceResponseDcqlQueryOptions,
   MdocDeviceResponseOptions,
   MdocDeviceResponsePresentationDefinitionOptions,
@@ -12,7 +14,12 @@ import type {
   MdocStoreOptions,
   MdocVerifyOptions,
 } from './MdocOptions'
-import { MdocRecord, MdocRepository } from './repository'
+import {
+  MdocRecord,
+  MdocRepository,
+  type MdocVerificationSessionRecord,
+  MdocVerificationSessionRepository,
+} from './repository'
 
 /**
  * @internal
@@ -20,9 +27,14 @@ import { MdocRecord, MdocRepository } from './repository'
 @injectable()
 export class MdocService {
   private mdocRepository: MdocRepository
+  private mdocVerificationSessionRepository: MdocVerificationSessionRepository
 
-  public constructor(mdocRepository: MdocRepository) {
+  public constructor(
+    mdocRepository: MdocRepository,
+    mdocVerificationSessionRepository: MdocVerificationSessionRepository
+  ) {
     this.mdocRepository = mdocRepository
+    this.mdocVerificationSessionRepository = mdocVerificationSessionRepository
   }
 
   public mdocFromBase64Url(hexEncodedMdoc: string) {
@@ -85,5 +97,45 @@ export class MdocService {
 
   public async update(agentContext: AgentContext, mdocRecord: MdocRecord) {
     await this.mdocRepository.update(agentContext, mdocRecord)
+  }
+
+  public async getVerificationSessionById(
+    agentContext: AgentContext,
+    verificationSessionId: string
+  ): Promise<MdocVerificationSessionRecord> {
+    return await this.mdocVerificationSessionRepository.getById(agentContext, verificationSessionId)
+  }
+
+  public async findVerificationSessionsByQuery(
+    agentContext: AgentContext,
+    query: Query<MdocVerificationSessionRecord>,
+    queryOptions?: QueryOptions
+  ): Promise<Array<MdocVerificationSessionRecord>> {
+    return await this.mdocVerificationSessionRepository.findByQuery(agentContext, query, queryOptions)
+  }
+
+  /**
+   * Delete a verification session, and by default the ephemeral session key it holds. The key is
+   * not deleted at any other point in the session lifecycle.
+   */
+  public async deleteVerificationSessionById(
+    agentContext: AgentContext,
+    verificationSessionId: string,
+    options?: MdocDeleteVerificationSessionOptions
+  ) {
+    const verificationSession = await this.mdocVerificationSessionRepository.getById(
+      agentContext,
+      verificationSessionId
+    )
+
+    await this.mdocVerificationSessionRepository.delete(agentContext, verificationSession)
+
+    const deleteAssociatedKey = options?.deleteAssociatedKey ?? true
+    if (deleteAssociatedKey) {
+      const kms = agentContext.resolve(KeyManagementApi)
+
+      // Returns false if the key was already gone, which is the state we want it in
+      await kms.deleteKey({ keyId: verificationSession.sessionKeyId })
+    }
   }
 }
