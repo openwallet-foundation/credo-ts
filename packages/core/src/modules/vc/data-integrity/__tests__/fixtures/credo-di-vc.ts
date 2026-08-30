@@ -22,6 +22,11 @@ export const CredoDidKeyDiVc = {
 // Mirror compact JWT fixture style with a canonical encoded DI VC payload.
 export const CredoDidKeyDiVcEncoded = JSON.stringify(CredoDidKeyDiVc)
 
+// A holder presenting a credential issued to them. Two DIDs fill three roles, which must stay
+// consistent because holderIsSigner and credentialSubjectAuthentication both compare them:
+//   - z6Mkha… is the issuer, and signs the credential with an assertionMethod proof
+//   - z6Mkqgk… is both the credential subject and the holder, and signs the presentation with an
+//     authentication proof
 export const CredoDidKeyDiVp = {
   '@context': ['https://www.w3.org/ns/credentials/v2'],
   type: ['VerifiablePresentation'],
@@ -52,8 +57,10 @@ export const CredoDidKeyDiVp = {
   proof: {
     type: 'DataIntegrityProof',
     cryptosuite: 'eddsa-jcs-2022',
+    // The presentation is authenticated by its holder, not by the credential issuer. The
+    // credential's own assertionMethod proof above remains the issuer's.
     verificationMethod:
-      'did:key:z6MkhaXgBZDvotDkL5257faWxcERCqyLmqwK8PrMUA34yPv1#z6MkhaXgBZDvotDkL5257faWxcERCqyLmqwK8PrMUA34yPv1',
+      'did:key:z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv#z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv',
     proofPurpose: 'authentication',
     challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
     domain: 'example.com',
@@ -65,7 +72,7 @@ export const CredoDidKeyDiVp = {
 export const CredoDidKeyDiExampleCredentialToSign = {
   '@context': ['https://www.w3.org/ns/credentials/v2'],
   type: ['VerifiableCredential', 'ExampleCredential'],
-  issuer: 'https://example.org/issuer',
+  issuer: 'did:key:z6MkhaXgBZDvotDkL5257faWxcERCqyLmqwK8PrMUA34yPv1',
   credentialSubject: {
     id: 'did:example:subject',
     name: 'Jane Doe',

@@ -30,10 +30,15 @@ type MutableVpMetadata = {
   nonce: string
 }
 
+const diProofVerificationMethodId = CredoDidKeyDiVp.proof.verificationMethod
+
 const baseVpMetadata = {
   '@context': ['https://www.w3.org/ns/credentials/v2'],
   type: ['VerifiablePresentation'],
-  holder: 'did:key:z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv',
+  // Derived from the DI proof rather than hard-coded, so that the DI fixtures satisfy the
+  // holderIsSigner check. The JWT and SD-JWT outer VPs reuse this metadata, but their services are
+  // mocked in the routing tests, so only the DI value has to be real.
+  holder: diProofVerificationMethodId.split('#')[0],
 } as const
 
 const { holder: _, ...CredoDidKeyDiVpWithoutHolder } = CredoDidKeyDiVp
@@ -42,7 +47,7 @@ const { holder: _, ...CredoDidKeyDiVpWithoutHolder } = CredoDidKeyDiVp
  * Verification method and controller of the Data Integrity VP proof. Derived from the
  * fixture rather than hard-coded so the two cannot drift apart.
  */
-export const diProofVerificationMethod = CredoDidKeyDiVp.proof.verificationMethod
+export const diProofVerificationMethod = diProofVerificationMethodId
 export const diProofSigner = diProofVerificationMethod.split('#')[0]
 
 const jwtVpWithoutHolder = W3cV2JwtVerifiablePresentation.fromCompact(CredoEs256DidKeyJwtVp)

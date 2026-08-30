@@ -36,16 +36,23 @@ function getProofs(securedDocument: DataIntegritySecuredDocument): DataIntegrity
  *
  * A `proof` value may be a proof set, which per VC-DATA-INTEGRITY has no order. Its proof purposes
  * have already been validated by w3c-di before this helper is called. Where several proofs name
- * different verification methods, position therefore carries no meaning. With no declared party
- * to distinguish signers, an ambiguous proof set is rejected rather than resolved arbitrarily.
+ * different verification methods, position therefore carries no meaning. `expectedController` is
+ * used to disambiguate: the proof whose verification method is controlled by that identity is
+ * selected. This is the co-signature case — several parties sign, and only the one identified as
+ * the issuer or holder is relevant here.
+ *
+ * @param expectedController the identity the signer is expected to be, where known — the
+ * credential's `issuer` or the presentation's `holder`. Omit when unknown, in which case an
+ * ambiguous proof set is rejected rather than resolved arbitrarily.
  *
  * @throws {CredoError} if there is no proof with a verification method, if several verification
- * methods name different verification methods, or if a verification method cannot be resolved.
+ * methods cannot be disambiguated, or if a verification method cannot be resolved.
  */
 export async function getVerificationMethodForDataIntegrityProof(
   agentContext: AgentContext,
   securedDocument: DataIntegritySecuredDocument,
-  purpose: DidPurpose
+  purpose: DidPurpose,
+  expectedController?: string
 ): Promise<VerificationMethod> {
   const proofs = getProofs(securedDocument)
 
@@ -66,25 +73,41 @@ export async function getVerificationMethodForDataIntegrityProof(
     return resolveVerificationMethod(proofs[0].verificationMethod)
   }
 
-  throw new CredoError(
-    `Data Integrity secured document contains multiple proofs with different verification methods (${[...verificationMethodIds].join(', ')}). Unable to determine the signer.`
-  )
+  if (!expectedController) {
+    throw new CredoError(
+      `Data Integrity secured document contains multiple proofs with different verification methods (${[...verificationMethodIds].join(', ')}). Unable to determine the signer.`
+    )
+  }
+
+  const resolved = await Promise.all([...verificationMethodIds].map(resolveVerificationMethod))
+  const matching = resolved.filter((verificationMethod) => verificationMethod.controller === expectedController)
+
+  if (matching.length === 0) {
+    throw new CredoError(
+      `Data Integrity secured document contains multiple proofs, none of which is controlled by '${expectedController}'`
+    )
+  }
+
+  return matching[0]
 }
 
 /**
  * Resolves the identity that secured a Data Integrity credential or presentation for the given
  * proof purpose.
  *
+ * @param expectedController see `getVerificationMethodForDataIntegrityProof`.
  */
 export async function getSignerForDataIntegrityProof(
   agentContext: AgentContext,
   securedDocument: DataIntegritySecuredDocument,
-  purpose: DidPurpose
+  purpose: DidPurpose,
+  expectedController?: string
 ): Promise<string> {
   const verificationMethod = await getVerificationMethodForDataIntegrityProof(
     agentContext,
     securedDocument,
-    purpose
+    purpose,
+    expectedController
   )
 
   if (!verificationMethod.controller) {

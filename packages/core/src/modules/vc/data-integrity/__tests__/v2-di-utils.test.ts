@@ -59,6 +59,22 @@ describe('v2-di-utils', () => {
     )
   })
 
+  test('getSignerForDataIntegrityProof disambiguates a proof set using the expected controller', async () => {
+    const presentation = createPresentation([createProof(), createProof(otherVerificationMethodId)])
+
+    await expect(
+      getSignerForDataIntegrityProof(agentContext, presentation, 'authentication', otherSignerDid)
+    ).resolves.toBe(otherSignerDid)
+  })
+
+  test('getSignerForDataIntegrityProof rejects a proof set when no proof is controlled by the expected controller', async () => {
+    const presentation = createPresentation([createProof(), createProof(otherVerificationMethodId)])
+
+    await expect(
+      getSignerForDataIntegrityProof(agentContext, presentation, 'authentication', 'did:key:zUnrelated')
+    ).rejects.toThrow('none of which is controlled by')
+  })
+
   test('getSignerForDataIntegrityProof accepts a proof set that names the same verification method', async () => {
     const presentation = createPresentation([createProof(), createProof()])
 

@@ -14,6 +14,7 @@ import type { W3cV2VerifiableCredential } from '../models/credential/W3cV2Verifi
 import { W3cV2Presentation } from '../models/presentation/W3cV2Presentation'
 import type { W3cV2VerifiablePresentation } from '../models/presentation/W3cV2VerifiablePresentation'
 import type { W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models/W3cV2VerifyResult'
+import type { SingleValidationResult } from '../models/W3cVerifyResult'
 import { validateVc2ContextBaseline, validateVc2CredentialStatus } from '../validators'
 import type {
   W3cV2DiSignCredentialOptions,
@@ -21,6 +22,7 @@ import type {
   W3cV2DiVerifyCredentialOptions,
   W3cV2DiVerifyPresentationOptions,
 } from '../W3cV2CredentialServiceOptions'
+import { getVerificationMethodForDataIntegrityProof } from './v2-di-utils'
 import { W3cV2DataIntegrityContextValidator } from './W3cV2DataIntegrityContextValidator'
 import { W3cV2DataIntegrityVerifiableCredential } from './W3cV2DataIntegrityVerifiableCredential'
 import { W3cV2DataIntegrityVerifiablePresentation } from './W3cV2DataIntegrityVerifiablePresentation'
@@ -101,7 +103,16 @@ export class W3cV2DataIntegrityCredentialService {
       verifyCredentialStatus: options.verifyCredentialStatus,
     })
 
-    const isValid = credentialStatus.isValid
+    const issuerIsSigner = await this.verifySignerIsExpectedParty(
+      agentContext,
+      securedCredential,
+      'assertionMethod',
+      options.credential.resolvedCredential.issuerId,
+      (verificationMethodId, issuerId) =>
+        `Credential is signed using verification method ${verificationMethodId}, while the issuer of the credential is '${issuerId}'`
+    )
+
+    const isValid = credentialStatus.isValid && issuerIsSigner.isValid
 
     return {
       isValid,
@@ -109,7 +120,7 @@ export class W3cV2DataIntegrityCredentialService {
         dataModel: { isValid: true },
         signature: { isValid: true },
         credentialStatus,
-        issuerIsSigner: { isValid: true },
+        issuerIsSigner,
       },
     }
   }
@@ -183,17 +194,79 @@ export class W3cV2DataIntegrityCredentialService {
       return this.invalidResult(presentationContextResult.errors as DataIntegrityIssueList, 'presentation')
     }
 
+    const holderIsSigner = await this.verifySignerIsExpectedParty(
+      agentContext,
+      options.presentation.securedPresentation,
+      'authentication',
+      options.presentation.resolvedPresentation.holderId,
+      (verificationMethodId, holderId) =>
+        `Presentation is signed using verification method ${verificationMethodId}, while the holder of the presentation is '${holderId}'`
+    )
+
     return {
-      isValid: true,
+      isValid: holderIsSigner.isValid,
       presentation: {
-        isValid: true,
+        isValid: holderIsSigner.isValid,
         validations: {
           dataModel: { isValid: true },
-          holderIsSigner: { isValid: true },
+          holderIsSigner,
           presentationSignature: { isValid: true },
         },
       },
       credentialEntries: [],
+    }
+  }
+
+  /**
+   * Checks that a secured document was signed by the identity it names as responsible for it —
+   * the `issuer` of a credential, or the `holder` of a presentation.
+   *
+   * Mirrors the equivalent checks in the JWT and SD-JWT services — though those compare key
+   * fingerprints for the issuer, whereas Data Integrity proofs name a verification method, so the
+   * comparison here is by controller for both roles. It implements the association described in
+   * VC-DATA-INTEGRITY §"Relationship to Verifiable Credentials": that the `controller` of the
+   * proof's verification method matches the identifier used for the `issuer` or `holder`, and that
+   * the verification method is expressed under a verification relationship acceptable for the
+   * proof's purpose. The latter is enforced by dereferencing the key with `purpose`.
+   *
+   * Verifying the proof only establishes that *someone* signed; without this comparison a document
+   * could name one party and be signed by an unrelated one.
+   *
+   * @param expectedSigner the `issuer` or `holder`. `Holder` is optional in
+   * VCDM 2.0 so when undefined there is no claim to contradict, so the validation passes.
+   */
+  private async verifySignerIsExpectedParty(
+    agentContext: AgentContext,
+    securedDocument: { proof: unknown },
+    purpose: 'assertionMethod' | 'authentication',
+    expectedSigner: string | undefined,
+    describeMismatch: (verificationMethodId: string, expectedSigner: string) => string
+  ): Promise<SingleValidationResult> {
+    if (!expectedSigner) {
+      return { isValid: true }
+    }
+
+    try {
+      const verificationMethod = await getVerificationMethodForDataIntegrityProof(
+        agentContext,
+        securedDocument,
+        purpose,
+        expectedSigner
+      )
+
+      // NOTE: as in the JWT service's holder check, this compares verificationMethod.controller
+      // rather than verificationMethod.id, since issuer and holder identify an entity rather than
+      // a specific key.
+      if (verificationMethod.controller !== expectedSigner) {
+        return {
+          isValid: false,
+          error: new CredoError(describeMismatch(verificationMethod.id, expectedSigner)),
+        }
+      }
+
+      return { isValid: true }
+    } catch (error) {
+      return { isValid: false, error }
     }
   }
 

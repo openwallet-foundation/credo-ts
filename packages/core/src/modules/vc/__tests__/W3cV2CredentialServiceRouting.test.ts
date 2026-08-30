@@ -880,7 +880,11 @@ describe('W3cV2CredentialService routing', () => {
     expect(result.isValid).toBe(true)
   })
 
-  test('verifyPresentation prefers an explicit DI holder over the proof signer', async () => {
+  // The fixture's holder and proof signer are deliberately the same identity, since a presentation
+  // signed by anyone other than its declared holder now fails the holderIsSigner check. This test
+  // therefore asserts that the holder is used *without resolving the proof* — the observable
+  // difference between the two paths — rather than comparing the resulting signer values.
+  test('verifyPresentation uses an explicit DI holder without resolving the proof signer', async () => {
     const credential = W3cV2DataIntegrityVerifiableCredential.fromObject(CredoDidKeyDiVc)
     const presentation = composePresentationWithEntries(validVcOnlyOuterPresentationsByName.outerDi_withDiVcOnly, [
       credential,
