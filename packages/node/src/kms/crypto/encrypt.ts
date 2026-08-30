@@ -18,7 +18,7 @@ export const nodeSupportedEncryptionAlgorithms = [
 
 export async function performEncrypt(
   key: Kms.KmsJwkPrivateOct,
-  dataEncryption: Kms.KmsEncryptDataEncryption,
+  dataEncryption: Kms.KmsEncryptDataContentEncryption,
   data: Uint8Array
 ): Promise<{ encrypted: Uint8Array; tag?: Uint8Array; iv: Uint8Array }> {
   const secretKeyBytes = TypedArrayEncoder.fromBase64Url(key.k)
