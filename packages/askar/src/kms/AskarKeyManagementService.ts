@@ -77,6 +77,17 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     if (operation.operation === 'encrypt' || operation.operation === 'decrypt') {
       const encryption = operation.operation === 'encrypt' ? operation.encryption : operation.decryption
 
+      // Askar can only perform key agreement with curves it supports. We also can't create the
+      // ephemeral key for e.g. ECDH-ES if the curve is not supported.
+      if (
+        operation.keyAgreement &&
+        'externalPublicJwk' in operation.keyAgreement &&
+        operation.keyAgreement.externalPublicJwk &&
+        jwkCrvToAskarAlg[operation.keyAgreement.externalPublicJwk.crv] === undefined
+      ) {
+        return false
+      }
+
       // HPKE is an integrated encryption mode: the suite fixes the AEAD, so the HPKE key agreement
       // algorithm is all there is to check.
       if (encryption.algorithm === 'HPKE') {

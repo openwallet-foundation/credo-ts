@@ -34,6 +34,7 @@ import {
 import type { OpenId4VpVersion } from '../openid4vc-verifier'
 import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
+import { getSupportedResponseEncryptionJwks } from '../shared/utils'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
   OpenId4VpResolvedAuthorizationRequest,
@@ -365,7 +366,18 @@ export class OpenId4VpHolderService {
         )
       }
 
-      encryptionJwk = extractEncryptionJwkFromJwks(clientMetadata.jwks, {
+      // The verifier can include multiple keys (e.g. P-256, P-384 and P-521). We first filter the
+      // keys to the ones we can actually perform the key agreement with, so we don't pick a key
+      // that is not supported by the key management backends of this agent.
+      const supportedJwks = getSupportedResponseEncryptionJwks(agentContext, clientMetadata.jwks)
+
+      if (supportedJwks.keys.length === 0) {
+        throw new CredoError(
+          `Unable to extract encryption JWK from 'client_metadata' for supported alg 'ECDH-ES'. None of the ${clientMetadata.jwks.keys.length} JWK(s) in 'client_metadata.jwks' can be used for response encryption by this agent.`
+        )
+      }
+
+      encryptionJwk = extractEncryptionJwkFromJwks(supportedJwks, {
         supportedAlgValues: ['ECDH-ES'],
       })
 

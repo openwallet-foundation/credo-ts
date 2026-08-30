@@ -86,6 +86,22 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
     if (operation.operation === 'encrypt' || operation.operation === 'decrypt') {
       const encryption = operation.operation === 'encrypt' ? operation.encryption : operation.decryption
 
+      // We can only perform key agreement with curves we support. We also can't create the
+      // ephemeral key for e.g. ECDH-ES if the curve is not supported.
+      if (
+        operation.keyAgreement &&
+        'externalPublicJwk' in operation.keyAgreement &&
+        operation.keyAgreement.externalPublicJwk
+      ) {
+        const externalPublicJwk = operation.keyAgreement.externalPublicJwk
+        try {
+          if (externalPublicJwk.kty === 'EC') assertNodeSupportedEcCrv(externalPublicJwk)
+          else assertNodeSupportedOkpCrv(externalPublicJwk)
+        } catch {
+          return false
+        }
+      }
+
       // HPKE is an integrated encryption mode: the suite fixes the AEAD, so the HPKE key agreement
       // algorithm is all there is to check.
       if (encryption.algorithm === 'HPKE') {

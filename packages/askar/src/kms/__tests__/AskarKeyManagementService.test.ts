@@ -971,6 +971,32 @@ describe('AskarKeyManagementService', () => {
     })
   })
 
+  describe('isOperationSupported', () => {
+    it('returns false for key agreement with a curve that is not supported by askar', () => {
+      expect(
+        service.isOperationSupported(agentContext, {
+          operation: 'encrypt',
+          encryption: { algorithm: 'A256GCM' },
+          keyAgreement: {
+            algorithm: 'ECDH-ES',
+            externalPublicJwk: { kty: 'EC', crv: 'P-521', x: '', y: '' },
+          },
+        })
+      ).toBe(false)
+
+      expect(
+        service.isOperationSupported(agentContext, {
+          operation: 'encrypt',
+          encryption: { algorithm: 'A256GCM' },
+          keyAgreement: {
+            algorithm: 'ECDH-ES',
+            externalPublicJwk: { kty: 'EC', crv: 'P-256', x: '', y: '' },
+          },
+        })
+      ).toBe(true)
+    })
+  })
+
   describe('encrypt', () => {
     it('throws error if key is not found', async () => {
       await expect(
