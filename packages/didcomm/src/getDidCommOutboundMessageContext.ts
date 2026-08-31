@@ -180,8 +180,8 @@ async function getServicesForMessage(
     outOfBandRecord?: DidCommOutOfBandRecord
   }
 ) {
-  // Key off sendsV2 config; invitationType is @Exclude()-decorated and lost after the OOB record's storage round-trip.
-  const preferDidcommV2 = agentContext.dependencyManager.resolve(DidCommModuleConfig).sendsV2
+  // Key off the didcommVersions config; invitationType is @Exclude()-decorated and lost after the OOB record's storage round-trip.
+  const preferDidcommV2 = agentContext.dependencyManager.resolve(DidCommModuleConfig).isSupported('v2')
 
   // v1 ~service holds raw base58 keys with no DID URL keyId; for v2 OOB Receiver, re-resolve via the OOB record to get a keyAgreement vm.
   const skipLastReceivedServiceForV2 = preferDidcommV2 && outOfBandRecord?.role === DidCommOutOfBandRole.Receiver

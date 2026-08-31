@@ -355,11 +355,13 @@ export class DidCommMediatorService {
     // match, alternative DID forms, and sender key → DidRecord → connection. Use senderDid from
     // context (plaintext before transform) since message.from may be lost in JsonTransformer.
     const from = messageContext.senderDid ?? messageContext.message.from
-    if (!connection && (from || messageContext.senderKey)) {
+    // DID records index their recipient key as Ed25519, so a v2 key-agreement key cannot match.
+    const senderKey = messageContext.senderKey?.is(Kms.Ed25519PublicJwk) ? messageContext.senderKey : undefined
+    if (!connection && (from || senderKey)) {
       connection =
         (await this.connectionService.findByTheirDidOrSender(messageContext.agentContext, {
           theirDid: from,
-          senderKey: messageContext.senderKey,
+          senderKey,
         })) ?? undefined
     }
 

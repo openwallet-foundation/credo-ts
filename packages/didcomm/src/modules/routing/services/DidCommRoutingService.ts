@@ -39,7 +39,7 @@ export class DidCommRoutingService {
     // birational map, so no separate key is needed. Curve selected via
     // DidCommModuleConfig.v2KeyAgreementCurve (X25519 default; P-256 and P-384 supported).
     let keyAgreementKey: DidCommV2KeyAgreementJwk | undefined
-    if (didcommConfig.acceptsV2) {
+    if (didcommConfig.isSupported('v2')) {
       const createdKeyAgreementKey = await kms.createKey({
         type: keyTypeForCurve(didcommConfig.v2KeyAgreementCurve),
       })
