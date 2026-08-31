@@ -29,6 +29,7 @@ export class DrizzleOpenid4vcIssuerRecordAdapter extends BaseDrizzleRecordAdapte
       issuerId,
       accessTokenPublicJwk: record.accessTokenPublicJwk,
       accessTokenPublicKeyFingerprint: record.accessTokenPublicKeyFingerprint,
+      accessTokenSignerKmsBackend: record.accessTokenSignerKmsBackend,
       credentialConfigurationsSupported: record.credentialConfigurationsSupported,
       dpopSigningAlgValuesSupported: record.dpopSigningAlgValuesSupported,
       clientAttestationSigningAlgValuesSupported: record.clientAttestationSigningAlgValuesSupported,
