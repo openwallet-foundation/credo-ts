@@ -1,6 +1,7 @@
 import type { DependencyManager, Module } from '../../plugins'
 import { injectable } from '../../plugins'
 import { W3cV2DataIntegrityContextValidator, W3cV2DataIntegrityCredentialService } from './data-integrity'
+import { JsonLdModuleConfig } from './jsonld'
 import { W3cV2JwtCredentialService } from './jwt-vc'
 import { SignatureSuiteRegistry } from './linked-data-proofs/SignatureSuiteRegistry'
 import { W3cV2CredentialRepository } from './repository/W3cV2CredentialRepository'
@@ -26,10 +27,17 @@ export class W3cV2CredentialsModule implements Module {
     // Linked-data-proofs infrastructure
     dependencyManager.registerSingleton(SignatureSuiteRegistry)
 
+    // Guard for shared JsonLdModuleConfig token if no standalone JsonLdModule
+    // registered, would otherwise be silently overwritten
+    if (!dependencyManager.isRegistered(JsonLdModuleConfig)) {
+      dependencyManager.registerInstance(JsonLdModuleConfig, new JsonLdModuleConfig())
+    }
+    const jsonLdModuleConfig = dependencyManager.resolve(JsonLdModuleConfig)
+
     // VC DI context validator (owned at VC layer, not core DI layer)
     dependencyManager.registerInstance(
       W3cV2DataIntegrityContextValidator,
-      new W3cV2DataIntegrityContextValidator({
+      new W3cV2DataIntegrityContextValidator(jsonLdModuleConfig, {
         recompactInvalidContexts: this.config.recompactInvalidContexts,
       })
     )

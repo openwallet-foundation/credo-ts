@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
 import type { AgentContext } from '../../../../agent/context'
 import { W3cDataIntegrityProcessingErrorCode as DataIntegrityProcessingErrorCode } from '../../../w3c-di/internal'
+import { JsonLdModuleConfig } from '../../jsonld/JsonLdModuleConfig'
+import type { W3cV2DataIntegrityContextValidatorOptions } from '../W3cV2DataIntegrityContextValidator'
 import { W3cV2DataIntegrityContextValidator } from '../W3cV2DataIntegrityContextValidator'
 
 const VC_V2_KNOWN_CONTEXT = ['https://www.w3.org/ns/credentials/v2']
@@ -11,6 +13,13 @@ const DI_PINNED_CONTEXTS = [
   'https://w3id.org/security/multikey/v1',
   'https://w3id.org/security/jwk/v1',
 ]
+
+function createValidator(
+  options?: W3cV2DataIntegrityContextValidatorOptions,
+  jsonLdModuleConfig: JsonLdModuleConfig = new JsonLdModuleConfig()
+) {
+  return new W3cV2DataIntegrityContextValidator(jsonLdModuleConfig, options)
+}
 
 describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => {
   let agentContext: AgentContext
@@ -23,7 +32,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
       agentConfig: getAgentConfig('W3cV2DataIntegrityContextValidatorTest'),
     })
 
-    validator = new W3cV2DataIntegrityContextValidator({ recompactInvalidContexts: false })
+    validator = createValidator({ recompactInvalidContexts: false })
   })
 
   // ── §4.6 step 3a ──────────────────────────────────────────────────────────
@@ -126,7 +135,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
 
   describe('step 3.1: recompaction', () => {
     test('configured validator with recompact=true must not silently accept missing @context', async () => {
-      const recompactingValidator = new W3cV2DataIntegrityContextValidator({
+      const recompactingValidator = createValidator({
         recompactInvalidContexts: true,
       })
 
@@ -140,7 +149,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
     })
 
     test('configured validator with recompact=true permits additional context URIs', async () => {
-      const recompactingValidator = new W3cV2DataIntegrityContextValidator({
+      const recompactingValidator = createValidator({
         recompactInvalidContexts: true,
       })
 
@@ -154,7 +163,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
     })
 
     test('recompaction can validate by removing nested proof context content', async () => {
-      const recompactingValidator = new W3cV2DataIntegrityContextValidator()
+      const recompactingValidator = createValidator()
 
       const result = await recompactingValidator.validate(agentContext, {
         '@context': 'https://www.w3.org/ns/credentials/v2',
@@ -174,7 +183,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
     })
 
     test('recompaction tolerates id set to undefined on DI documents and does not raise JSON-LD @id errors', async () => {
-      const recompactingValidator = new W3cV2DataIntegrityContextValidator()
+      const recompactingValidator = createValidator()
 
       const result = await recompactingValidator.validate(agentContext, {
         '@context': 'https://www.w3.org/ns/credentials/v2',
@@ -193,7 +202,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
     })
 
     test('with recompact=false, trigger conditions are errors and warnings remain empty', async () => {
-      const strictValidator = new W3cV2DataIntegrityContextValidator({ recompactInvalidContexts: false })
+      const strictValidator = createValidator({ recompactInvalidContexts: false })
 
       const result = await strictValidator.validate(agentContext, {
         '@context': 'https://www.w3.org/ns/credentials/v2',
@@ -215,7 +224,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
 
   describe('step 3c: URI hash verification (§2.4 normative hashes)', () => {
     test('passes for each encountered spec-pinned DI URI with bundled local context (no fetch required)', async () => {
-      const diOnlyValidator = new W3cV2DataIntegrityContextValidator()
+      const diOnlyValidator = createValidator()
 
       const fetchSpy = vi
         .spyOn(agentContext.config.agentDependencies, 'fetch')
@@ -232,7 +241,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
     })
 
     test('does not perform DI hash verification when only credentials/v2 is encountered', async () => {
-      const vcOnlyValidator = new W3cV2DataIntegrityContextValidator()
+      const vcOnlyValidator = createValidator()
 
       const fetchSpy = vi.spyOn(agentContext.config.agentDependencies, 'fetch')
 
@@ -247,8 +256,25 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
       expect(fetchSpy).not.toHaveBeenCalled()
     })
 
+    test('regression: custom context URI not present in DI_SPEC_CONTEXT_HASHES never triggers hash verification', async () => {
+      const customValidator = createValidator({ recompactInvalidContexts: false })
+
+      const fetchSpy = vi.spyOn(agentContext.config.agentDependencies, 'fetch')
+
+      const result = await customValidator.validate(agentContext, {
+        '@context': [VC_V2_KNOWN_CONTEXT[0], 'https://example.org/not-pinned/v1'],
+        id: 'urn:example:test',
+      })
+
+      // Any string context entry absent from DI_SPEC_CONTEXT_HASHES is skipped via the
+      // `continue` guard, so it never triggers hash/network verification.
+      expect(result.validated).toBe(true)
+      expect(result.errors).toHaveLength(0)
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
     test('passes with an additional JSON-LD context object', async () => {
-      const customValidator = new W3cV2DataIntegrityContextValidator({ recompactInvalidContexts: false })
+      const customValidator = createValidator({ recompactInvalidContexts: false })
 
       const result = await customValidator.validate(agentContext, {
         '@context': [VC_V2_KNOWN_CONTEXT[0], { Example: 'https://example.org/' }],
@@ -260,7 +286,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
     })
 
     test('accepts the VC 2.0 context followed by a bundled DI context', async () => {
-      const vcOnlyValidator = new W3cV2DataIntegrityContextValidator({ recompactInvalidContexts: false })
+      const vcOnlyValidator = createValidator({ recompactInvalidContexts: false })
 
       const result = await vcOnlyValidator.validate(agentContext, {
         '@context': ['https://www.w3.org/ns/credentials/v2', 'https://w3id.org/security/data-integrity/v2'],
@@ -269,6 +295,109 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
 
       expect(result.validated).toBe(true)
       expect(result.errors).toHaveLength(0)
+    })
+  })
+
+  describe('shared JsonLdModuleConfig integration', () => {
+    const CUSTOM_CONTEXT_URI = 'https://example.org/custom/v1'
+    const CUSTOM_CONTEXT_DOCUMENT = {
+      '@context': { ex: 'https://example.org/#', exampleProp: 'ex:exampleProp' },
+    }
+
+    test('recompaction resolves an additional (non-bundled) context via the configured documentLoader', async () => {
+      const calls: string[] = []
+      const config = new JsonLdModuleConfig({
+        documentLoader: () => async (url: string) => {
+          calls.push(url)
+          if (url === CUSTOM_CONTEXT_URI) {
+            return { contextUrl: null, documentUrl: url, document: CUSTOM_CONTEXT_DOCUMENT }
+          }
+          throw new Error(`unexpected document loader call for '${url}'`)
+        },
+      })
+      const customValidator = createValidator({ recompactInvalidContexts: true }, config)
+
+      const result = await customValidator.validate(agentContext, {
+        '@context': [CUSTOM_CONTEXT_URI, 'https://www.w3.org/ns/credentials/v2'],
+        id: 'urn:example:test',
+        exampleProp: 'value',
+      })
+
+      expect(calls).toContain(CUSTOM_CONTEXT_URI)
+      expect(result.validated).toBe(true)
+      expect(result.errors).toHaveLength(0)
+    })
+
+    test('configured documentLoader receives the active AgentContext', async () => {
+      let receivedAgentContext: AgentContext | undefined
+      const config = new JsonLdModuleConfig({
+        documentLoader: (ctx) => {
+          receivedAgentContext = ctx
+          return async (url: string) => {
+            if (url === CUSTOM_CONTEXT_URI) {
+              return { contextUrl: null, documentUrl: url, document: CUSTOM_CONTEXT_DOCUMENT }
+            }
+            throw new Error(`unexpected document loader call for '${url}'`)
+          }
+        },
+      })
+      const customValidator = createValidator({ recompactInvalidContexts: true }, config)
+
+      await customValidator.validate(agentContext, {
+        '@context': [CUSTOM_CONTEXT_URI, 'https://www.w3.org/ns/credentials/v2'],
+        id: 'urn:example:test',
+        exampleProp: 'value',
+      })
+
+      expect(receivedAgentContext).toBe(agentContext)
+    })
+
+    test('bundled VC/DI contexts never reach the configured documentLoader', async () => {
+      const documentLoaderSpy = vi.fn(() => async (_url: string) => {
+        throw new Error('documentLoader should not be called for bundled contexts')
+      })
+      const config = new JsonLdModuleConfig({ documentLoader: documentLoaderSpy })
+      const customValidator = createValidator({ recompactInvalidContexts: true }, config)
+
+      const result = await customValidator.validate(agentContext, {
+        '@context': ['https://w3id.org/security/data-integrity/v2', ...VC_V2_KNOWN_CONTEXT],
+        id: 'urn:example:test',
+      })
+
+      expect(result.validated).toBe(true)
+      expect(documentLoaderSpy).not.toHaveBeenCalled()
+    })
+
+    test('separate validator instances do not share any document loader state', async () => {
+      const callsA: string[] = []
+      const callsB: string[] = []
+      const configA = new JsonLdModuleConfig({
+        documentLoader: () => async (url: string) => {
+          callsA.push(url)
+          return { contextUrl: null, documentUrl: url, document: CUSTOM_CONTEXT_DOCUMENT }
+        },
+      })
+      const configB = new JsonLdModuleConfig({
+        documentLoader: () => async (url: string) => {
+          callsB.push(url)
+          return { contextUrl: null, documentUrl: url, document: CUSTOM_CONTEXT_DOCUMENT }
+        },
+      })
+
+      const validatorA = createValidator({ recompactInvalidContexts: true }, configA)
+      const validatorB = createValidator({ recompactInvalidContexts: true }, configB)
+
+      const document = {
+        '@context': [CUSTOM_CONTEXT_URI, 'https://www.w3.org/ns/credentials/v2'],
+        id: 'urn:example:test',
+        exampleProp: 'value',
+      }
+
+      await validatorA.validate(agentContext, document)
+      await validatorB.validate(agentContext, document)
+
+      expect(callsA).toEqual([CUSTOM_CONTEXT_URI])
+      expect(callsB).toEqual([CUSTOM_CONTEXT_URI])
     })
   })
 

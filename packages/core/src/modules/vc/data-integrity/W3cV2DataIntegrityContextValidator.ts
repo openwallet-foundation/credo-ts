@@ -1,9 +1,5 @@
 import type { AgentContext } from '../../../agent/context'
-import { Hasher } from '../../../crypto'
-import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
-import { TypedArrayEncoder } from '../../../utils'
-import { fetchWithTimeout } from '../../../utils/fetch'
 import {
   createProofVerificationIssue,
   type W3cDataIntegrityProcessingIssue as DataIntegrityProcessingIssue,
@@ -12,9 +8,8 @@ import {
 import { omitUndefinedFields } from '../../w3c-di/proof-processing/normalization'
 import { CREDENTIALS_CONTEXT_V2_URL } from '../constants'
 import { DEFAULT_CONTEXTS, DI_SPEC_CONTEXT_HASHES } from '../jsonld/contexts'
-import type { DocumentLoader } from '../jsonld/jsonld'
+import { JsonLdModuleConfig } from '../jsonld/JsonLdModuleConfig'
 import jsonld from '../jsonld/jsonld'
-import { getNativeDocumentLoader } from '../jsonld/nativeDocumentLoader'
 
 /**
  * Output of the VC Data Integrity §4.6 Context Validation algorithm.
@@ -36,12 +31,20 @@ export interface W3cV2DataIntegrityContextValidatorOptions {
  * Algorithm inputs:
  *   - inputDocument: the secured document (after proof verification)
  *   - recompactInvalidContexts: whether to run JSON-LD compaction when §4.6 step 3 trigger conditions are detected
+ *
+ * Recompaction delegates resolution of non-bundled contexts to the shared
+ * {@link JsonLdModuleConfig}, so a custom `documentLoader` configured on
+ * `JsonLdModule`/`W3cCredentialsModule` is honoured consistently with VC 1.1
+ * JSON-LD processing. Context hash verification (§2.4) only trusts Credo's
+ * bundled context copies; it does not fetch remote content over the network.
  */
 @injectable()
 export class W3cV2DataIntegrityContextValidator {
   private readonly recompactInvalidContexts: boolean
+  private readonly jsonLdModuleConfig: JsonLdModuleConfig
 
-  public constructor(options?: W3cV2DataIntegrityContextValidatorOptions) {
+  public constructor(jsonLdModuleConfig: JsonLdModuleConfig, options?: W3cV2DataIntegrityContextValidatorOptions) {
+    this.jsonLdModuleConfig = jsonLdModuleConfig
     this.recompactInvalidContexts = options?.recompactInvalidContexts ?? true
   }
 
@@ -108,9 +111,9 @@ export class W3cV2DataIntegrityContextValidator {
       if (contextEntry === CREDENTIALS_CONTEXT_V2_URL) continue
       if (!(contextEntry in DI_SPEC_CONTEXT_HASHES)) continue
 
-      const hashIssue = await verifyContextUriHash(agentContext, contextEntry)
-      if (hashIssue) {
-        triggerErrors.push(hashIssue)
+      const bundledContextIssue = this.verifyContextIsBundled(contextEntry)
+      if (bundledContextIssue) {
+        triggerErrors.push(bundledContextIssue)
         break
       }
     }
@@ -119,7 +122,7 @@ export class W3cV2DataIntegrityContextValidator {
       if (this.recompactInvalidContexts) {
         try {
           result.validatedDocument = (await jsonld.compact(normalisedInputDocument, [CREDENTIALS_CONTEXT_V2_URL], {
-            documentLoader: await getContextValidationDocumentLoader(),
+            documentLoader: getContextValidationDocumentLoader(this.jsonLdModuleConfig, agentContext),
             compactToRelative: false,
           })) as DataIntegrityUnsecuredDocument
 
@@ -148,6 +151,23 @@ export class W3cV2DataIntegrityContextValidator {
 
     // §4.6, step 5: return
     return result
+  }
+
+  /**
+   * Verifies a spec-pinned context URI (§2.4). The §2.4 hash-pinning mechanism exists for
+   * processors that don't vendor the canonical contexts and must instead fetch and hash-verify
+   * them over the network; Credo vendors all spec-required contexts, so a bundled copy is
+   * trusted as canonical and no network fetch or hash comparison is performed.
+   */
+  private verifyContextIsBundled(contextUri: string): DataIntegrityProcessingIssue | undefined {
+    if (hasBundledContext(contextUri)) {
+      return undefined
+    }
+
+    return createProofVerificationIssue(
+      'Unable to verify context hash (§2.4)',
+      `Context '${contextUri}' is not available as a bundled context and cannot be hash-verified`
+    )
   }
 }
 
@@ -180,86 +200,27 @@ function collectAllNestedContextPaths(value: unknown, path: string[] = []): stri
   return paths
 }
 
-async function verifyContextUriHash(
-  agentContext: AgentContext,
-  contextUri: string
-): Promise<DataIntegrityProcessingIssue | undefined> {
-  const expectedHash = DI_SPEC_CONTEXT_HASHES[contextUri]
-  if (!expectedHash) {
-    // Unknown URI does not match a known good value per §4.6 step 3c
-    return createProofVerificationIssue(
-      'Context URI does not match known good value (§4.6 step 3c)',
-      `No known good value or cryptographic hash for context URI '${contextUri}'`
-    )
-  }
-
-  // Use bundled local copy for spec-standard contexts (§2.4)
-  if (hasBundledContext(contextUri)) {
-    // Bundled copy is trusted as the canonical context for spec-pinned URIs
-    return undefined
-  }
-
-  // Fetch remote and verify against spec hash
-  let contextBytes: Uint8Array
-  try {
-    contextBytes = await getContextBytes(agentContext, contextUri)
-  } catch (error) {
-    return createProofVerificationIssue(
-      'Unable to retrieve context for hash verification',
-      error instanceof Error ? error.message : `Failed to resolve '${contextUri}'`
-    )
-  }
-
-  const actualHash = computeContextHash(contextBytes)
-  if (actualHash.toLowerCase() !== expectedHash.toLowerCase()) {
-    return createProofVerificationIssue(
-      'Context hash verification failed (§2.4)',
-      `Context '${contextUri}' hash '${actualHash}' did not match expected '${expectedHash}'`
-    )
-  }
-
-  return undefined
-}
-
-async function getContextBytes(agentContext: AgentContext, contextUrl: string): Promise<Uint8Array> {
-  const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, contextUrl, {
-    headers: {
-      Accept: 'application/ld+json',
-    },
-  })
-
-  if (!response.ok) {
-    throw new CredoError(`Unable to fetch context '${contextUrl}': HTTP ${response.status}`)
-  }
-
-  const responseBytes = new Uint8Array(await response.arrayBuffer())
-  if (responseBytes.length === 0) {
-    throw new CredoError(`Unable to fetch context '${contextUrl}': empty response body`)
-  }
-
-  return responseBytes
-}
-
-function computeContextHash(contextBytes: Uint8Array): string {
-  const hash = Hasher.hash(contextBytes, 'sha-256')
-  return TypedArrayEncoder.toHex(hash)
-}
-
 function hasBundledContext(contextUrl: string): boolean {
   if (contextUrl in DEFAULT_CONTEXTS) return true
   const withoutFragment = contextUrl.split('#')[0]
   return withoutFragment in DEFAULT_CONTEXTS
 }
 
-let cachedContextValidationDocumentLoader: DocumentLoader | undefined
+/**
+ * Document loader used for §4.6 context recompaction. Resolves bundled VC/Data Integrity
+ * contexts locally without network access, and delegates everything else to the shared
+ * {@link JsonLdModuleConfig} document loader so custom-context configuration is honoured
+ * consistently with other JSON-LD consumers. Not cached across calls or validator
+ * instances: the loader is cheap to construct and must always reflect the current
+ * `AgentContext`.
+ */
+function getContextValidationDocumentLoader(jsonLdModuleConfig: JsonLdModuleConfig, agentContext: AgentContext) {
+  // Constructed lazily (only when a non-bundled URL is actually encountered) so that
+  // recompactions which only touch bundled contexts never need to resolve the
+  // configured loader's own dependencies (e.g. DID resolution).
+  let configuredLoader: ReturnType<JsonLdModuleConfig['documentLoader']> | undefined
 
-async function getContextValidationDocumentLoader(): Promise<DocumentLoader> {
-  if (cachedContextValidationDocumentLoader) return cachedContextValidationDocumentLoader
-
-  const nativeLoaderFactory = await getNativeDocumentLoader()
-  const nativeLoader = nativeLoaderFactory.apply(jsonld, [])
-
-  cachedContextValidationDocumentLoader = async (url: string) => {
+  return async (url: string) => {
     if (url in DEFAULT_CONTEXTS) {
       return {
         contextUrl: null,
@@ -277,8 +238,10 @@ async function getContextValidationDocumentLoader(): Promise<DocumentLoader> {
       }
     }
 
-    return nativeLoader(url)
-  }
+    if (!configuredLoader) {
+      configuredLoader = jsonLdModuleConfig.documentLoader(agentContext)
+    }
 
-  return cachedContextValidationDocumentLoader
+    return configuredLoader(url)
+  }
 }
