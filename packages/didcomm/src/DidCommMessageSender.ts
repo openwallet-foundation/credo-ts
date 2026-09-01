@@ -34,6 +34,7 @@ import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
+import type { DidCommVersion } from './util/didcommVersion'
 import type { DidCommV2KeyAgreementJwk } from './v2'
 
 export interface TransportPriorityOptions {
@@ -101,13 +102,15 @@ export class DidCommMessageSender {
       message,
       keys,
       connection,
+      didcommVersion,
     }: {
       message: DidCommMessage
       keys: EnvelopeKeys
       connection?: DidCommConnectionRecord
+      didcommVersion?: DidCommVersion
     }
   ): Promise<DidCommEncryptedMessage> {
-    const protocol = this.envelopeProtocolRegistry.getProtocolForOutbound({ message, connection, keys })
+    const protocol = this.envelopeProtocolRegistry.getProtocolForOutbound({ message, connection, keys, didcommVersion })
 
     try {
       return await protocol.pack(agentContext, message, keys, { connection })
@@ -134,7 +137,14 @@ export class DidCommMessageSender {
       throw new CredoError(`There are no keys for the given ${session.type} transport session.`)
     }
     const { keys } = session
-    const encryptedMessage = await this.encryptMessage(agentContext, { message, keys, connection })
+    // Reply with the envelope version the inbound message arrived with. The peer may have fallen
+    // back to a version other than the one stored on the connection record.
+    const encryptedMessage = await this.encryptMessage(agentContext, {
+      message,
+      keys,
+      connection,
+      didcommVersion: session.didcommVersion,
+    })
 
     agentContext.config.logger.debug('Sending message')
     await session.send(agentContext, encryptedMessage)

@@ -27,11 +27,7 @@ export * from './services'
 export * from './transport'
 export * from './types'
 export type { DidCommVersion } from './util/didcommVersion'
-export {
-  assertDidCommV1Connection,
-  isDidCommV1EncryptedMessage,
-  isDidCommV2EncryptedMessage,
-} from './util/didcommVersion'
+export { assertDidCommV1Connection, isDidCommV2EncryptedMessage } from './util/didcommVersion'
 export { isValidJweStructure } from './util/JWE'
 export {
   IsValidMessageType,

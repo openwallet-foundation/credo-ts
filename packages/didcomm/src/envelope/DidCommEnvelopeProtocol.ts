@@ -43,8 +43,8 @@ export interface DidCommEnvelopeProtocol<Version extends DidCommVersion = DidCom
   supportsPacking(keys: EnvelopeKeys): boolean
 
   /**
-   * Whether the received bytes are in this protocol's wire format. This replaces the
-   * `isDidCommV1EncryptedMessage` / `isDidCommV2EncryptedMessage` tests at the call sites.
+   * Whether the received bytes are an encrypted envelope in this protocol's wire format. Signed
+   * envelopes are not part of this contract: they exist only in v2 and have their own receive path.
    */
   supportsUnpacking(message: unknown): boolean
 

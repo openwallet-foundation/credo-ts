@@ -7,7 +7,6 @@ import {
   inject,
   injectable,
   JsonTransformer,
-  Kms,
   type Logger,
   RecordDuplicateError,
 } from '@credo-ts/core'
@@ -18,6 +17,7 @@ import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from './DidCommMessageSender'
 import type { DidCommTransportSession } from './DidCommTransportService'
 import { DidCommTransportService } from './DidCommTransportService'
+import type { DidCommEnvelopeProtocol } from './envelope'
 import { DidCommEnvelopeProtocolRegistry } from './envelope'
 import { DidCommProblemReportError } from './errors'
 import { DidCommProblemReportMessage } from './messages'
@@ -150,7 +150,8 @@ export class DidCommMessageReceiver {
     session?: DidCommTransportSession,
     receivedAt?: Date
   ) {
-    const decryptedMessage = await this.decryptMessage(agentContext, encryptedMessage)
+    const protocol = this.envelopeProtocolRegistry.getProtocolForInbound(encryptedMessage)
+    const decryptedMessage = await this.decryptMessage(agentContext, protocol, encryptedMessage)
     const { plaintextMessage, senderKey, recipientKey } = decryptedMessage
 
     this.logger.info(
@@ -199,13 +200,13 @@ export class DidCommMessageReceiver {
     if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
       this.logger.debug(`Storing session for inbound message '${message.id}'`)
 
-      const protocol = this.envelopeProtocolRegistry.getProtocolForInbound(encryptedMessage)
       session.keys = await protocol.buildReturnRouteKeys(agentContext, {
         senderKey,
         recipientKey,
         plaintextMessage,
         connection: connection ?? undefined,
       })
+      session.didcommVersion = protocol.version
       session.inboundMessage = message
       // We allow unready connections to be attached to the session as we want to be able to
       // use return routing to make connections. This is especially useful for creating connections
@@ -222,16 +223,16 @@ export class DidCommMessageReceiver {
   }
 
   /**
-   * Decrypt a message using the envelope service. Supports DIDComm v1 and v2 (when enabled).
+   * Decrypt a message with the protocol resolved for its wire format.
    *
    * @param message the received inbound message to decrypt
    */
   private async decryptMessage(
     agentContext: AgentContext,
+    protocol: DidCommEnvelopeProtocol,
     message: DidCommEncryptedMessage
   ): Promise<DecryptedDidCommMessageContext> {
     try {
-      const protocol = this.envelopeProtocolRegistry.getProtocolForInbound(message)
       return await protocol.unpack(agentContext, message)
     } catch (error) {
       this.logger.error('Error while decrypting message', {
@@ -312,9 +313,9 @@ export class DidCommMessageReceiver {
       if (connection) return connection
 
       // Fallback: try findByKeys. With v1 connections + v2 envelope, findByTheirDid can fail in edge cases.
-      // With v2 OOB, findByKeys may work if DidRecords exist for the keys.
-      // DID records index their recipient key as Ed25519, so a v2 key-agreement key cannot match.
-      if (recipientKey?.is(Kms.Ed25519PublicJwk) && senderKey?.is(Kms.Ed25519PublicJwk)) {
+      // With v2 OOB, findByKeys may work if DidRecords exist for the keys. DID record tags index
+      // X25519 and P-256/P-384 fingerprints too, so v2 key-agreement keys can match.
+      if (recipientKey && senderKey) {
         connection = await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
         if (connection) return connection
       }
@@ -391,7 +392,7 @@ export class DidCommMessageReceiver {
     }
 
     // v1: use sender/recipient keys
-    if (!recipientKey?.is(Kms.Ed25519PublicJwk) || !senderKey?.is(Kms.Ed25519PublicJwk)) return null
+    if (!recipientKey || !senderKey) return null
     return this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
   }
 

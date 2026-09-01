@@ -84,8 +84,8 @@ describe('DidCommMessageSender', () => {
   const enveloperService = new DidCommEnvelopeServiceMock()
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
 
-  // The registry is real, so these tests cover the version selection too. Only the v2 protocol is
-  // stubbed: it never accepts packing, so every message here takes the v1 path.
+  // The registry is real, but the config never enables v2 and the mock connections are v1, so
+  // every message here takes the v1 path. The stubbed v2 protocol only satisfies the constructor.
   const v2EnvelopeProtocol = {
     version: 'v2',
     supportsPacking: () => false,

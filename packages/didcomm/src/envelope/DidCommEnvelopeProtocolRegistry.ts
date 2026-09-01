@@ -43,31 +43,39 @@ export class DidCommEnvelopeProtocolRegistry {
    * Get the protocol that builds the outbound envelope.
    *
    * The rules, in order:
-   * 1. A message that declares `supportedDidCommVersions` restricts the choice. The connection
-   *    handshake messages use this to stay on v1, because no peer DID is resolvable yet.
-   * 2. The connection's own version decides. Connectionless exchanges default to v1.
-   * 3. The chosen protocol must be enabled in `didcommVersions` and must accept the key material.
+   * 1. `didcommVersion` overrides the connection version. The sender passes the envelope version
+   *    of the inbound message when it replies over a return-route transport session, because the
+   *    peer may have fallen back to a version other than the one stored on the connection.
+   * 2. Otherwise the connection's own version decides. Connectionless exchanges default to v1.
+   * 3. A message that declares `supportedDidCommVersions` must support the decided version. The
+   *    connection handshake messages use this to stay on v1, because no peer DID is resolvable yet.
+   * 4. Sending v2 requires v2 to be enabled in `didcommVersions`, and the key material must allow
+   *    a v2 envelope (authcrypt needs a sender key).
    */
   public getProtocolForOutbound({
     message,
     connection,
     keys,
+    didcommVersion,
   }: {
     message: DidCommMessage
     connection?: DidCommConnectionRecord
     keys: EnvelopeKeys
+    didcommVersion?: DidCommVersion
   }): DidCommEnvelopeProtocol {
-    this.assertMessageSupportsConnection(message, connection)
+    const version = didcommVersion ?? (connection ? (connection.didcommVersion ?? 'v1') : 'v1')
 
-    const supported = message.supportedDidCommVersions
-    const connectionVersion = connection ? (connection.didcommVersion ?? 'v1') : 'v1'
+    this.assertMessageSupportsVersion(message, version)
 
-    const wantsV2 =
-      connectionVersion === 'v2' &&
-      this.config.isSupported('v2') &&
-      (!supported || supported.length === 0 || supported.includes('v2'))
+    if (version === 'v2') {
+      if (!this.config.isSupported('v2')) {
+        throw new CredoError(
+          `Cannot send message ${message.type} over DIDComm v2: v2 is not enabled. Add "v2" to didcommVersions in DidCommModuleConfig, or use a v1 connection.`
+        )
+      }
+      if (this.v2EnvelopeProtocol.supportsPacking(keys)) return this.v2EnvelopeProtocol
+    }
 
-    if (wantsV2 && this.v2EnvelopeProtocol.supportsPacking(keys)) return this.v2EnvelopeProtocol
     return this.v1EnvelopeProtocol
   }
 
@@ -100,22 +108,19 @@ export class DidCommEnvelopeProtocolRegistry {
   }
 
   /**
-   * Throw when a message declares the versions it supports and the connection cannot satisfy them.
+   * Throw when a message declares the versions it supports and the outbound envelope version is
+   * not one of them.
    *
    * Both the direct send path and the session send path resolve their protocol through
    * {@link getProtocolForOutbound}, so both get this check.
    */
-  private assertMessageSupportsConnection(message: DidCommMessage, connection?: DidCommConnectionRecord): void {
-    if (!connection) return
-
+  private assertMessageSupportsVersion(message: DidCommMessage, didcommVersion: DidCommVersion): void {
     const supported = message.supportedDidCommVersions
     if (!supported || supported.length === 0) return
-
-    const connectionVersion = connection.didcommVersion ?? 'v1'
-    if (supported.includes(connectionVersion)) return
+    if (supported.includes(didcommVersion)) return
 
     throw new CredoError(
-      `Message type ${message.type} only supports DIDComm ${supported.join(', ')} but connection uses ${connectionVersion}`
+      `Message type ${message.type} only supports DIDComm ${supported.join(', ')} but the outbound envelope uses ${didcommVersion}`
     )
   }
 }

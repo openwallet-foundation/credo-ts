@@ -70,8 +70,9 @@ export class DidCommV2EnvelopeProtocol implements DidCommEnvelopeProtocol<'v2'> 
     return keys.recipientKeys.length >= 1 && keys.senderKey !== null && keys.senderKey !== undefined
   }
 
+  // Encrypted envelopes only: signed envelopes have their own receive path through unpackSigned.
   public supportsUnpacking(message: unknown): boolean {
-    return isDidCommV2EncryptedMessage(message) || isDidCommV2SignedMessage(message)
+    return isDidCommV2EncryptedMessage(message)
   }
 
   // ── Packing ───────────────────────────────────────────────────────────
@@ -345,13 +346,17 @@ export class DidCommV2EnvelopeProtocol implements DidCommEnvelopeProtocol<'v2'> 
       plaintextMessage,
       connection,
     }: Pick<DidCommReturnRouteOptions, 'recipientKey' | 'plaintextMessage' | 'connection'>
-  ): Promise<string> {
+  ): Promise<string | undefined> {
     // Connectionless: did:key lets the peer resolve the key through tryParseKidAsPublicJwk.
     if (!connection) return new DidKey(recipientKey).did
 
+    // The outbound plaintext sets `from: connection.did`, and the spec requires the encryption
+    // layer skid to match `from`. The inbound `to` can still hold our prior DID mid-rotation, so
+    // it is only a fallback.
     const to = Array.isArray(plaintextMessage.to) ? (plaintextMessage.to as string[]) : undefined
-    const ourDid = to?.[0] ?? connection.did
-    if (!ourDid) return new DidKey(recipientKey).did
+    const ourDid = connection.did ?? to?.[0]
+    // No DID yet: leave the skid unset so the pack falls back to the sender key's own kid.
+    if (!ourDid) return undefined
 
     try {
       const dids = agentContext.resolve(DidsApi)
