@@ -269,14 +269,9 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
     return this.options.didcommVersions ?? ['v1']
   }
 
-  /** Whether the agent accepts inbound DIDComm v2 encrypted messages. */
-  public get acceptsV2() {
-    return this.didcommVersions.includes('v2')
-  }
-
-  /** Whether the agent sends outbound messages using DIDComm v2 envelope when supported. */
-  public get sendsV2() {
-    return this.didcommVersions.includes('v2')
+  /** Whether the given DIDComm version is enabled in `didcommVersions`. */
+  public isSupported(didcommVersion: DidCommVersion) {
+    return this.didcommVersions.includes(didcommVersion)
   }
 
   /** Peer DID numAlgo for V2 OOB. Defaults to did:peer:4. */

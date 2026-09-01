@@ -14,6 +14,7 @@ import { DidCommMessageSender } from './DidCommMessageSender'
 import type { DidCommModuleConfigOptions } from './DidCommModuleConfig'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { DidCommTransportService } from './DidCommTransportService'
+import { DidCommEnvelopeProtocolRegistry, DidCommV1EnvelopeProtocol, DidCommV2EnvelopeProtocol } from './envelope'
 import {
   type DefaultDidCommMessagePickupProtocols,
   type DefaultDidCommProofProtocols,
@@ -151,6 +152,11 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
     dependencyManager.registerSingleton(DidCommEnvelopeService)
     dependencyManager.registerSingleton(DidCommV2EnvelopeService)
     dependencyManager.registerSingleton(DidCommV2KeyResolver)
+
+    // Envelope protocols: one per DIDComm version, selected by the registry
+    dependencyManager.registerSingleton(DidCommV1EnvelopeProtocol)
+    dependencyManager.registerSingleton(DidCommV2EnvelopeProtocol)
+    dependencyManager.registerSingleton(DidCommEnvelopeProtocolRegistry)
 
     // Repositories
     dependencyManager.registerSingleton(DidCommMessageRepository)

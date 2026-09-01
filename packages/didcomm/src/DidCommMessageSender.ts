@@ -7,7 +7,6 @@ import {
   didToNumAlgo2DidDocument,
   didToNumAlgo4DidDocument,
   EventEmitter,
-  getDidPeer4ShortFormForEquivalence,
   getPublicJwkFromVerificationMethod,
   injectable,
   Kms,
@@ -27,22 +26,16 @@ import { DidCommModuleConfig } from './DidCommModuleConfig'
 import type { DidCommTransportSession } from './DidCommTransportService'
 import { DidCommTransportService } from './DidCommTransportService'
 import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
+import { DidCommEnvelopeProtocolRegistry } from './envelope'
 import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
-import { DidCommConnectionMetadataKeys } from './modules/connections/repository/DidCommConnectionMetadataTypes'
-import { toKeyAgreement } from './modules/connections/services/helpers'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommOutOfBandRepository } from './modules/oob/repository'
-import { DidCommForwardV2Message } from './modules/routing/protocol/v2/messages'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
-import {
-  buildV2PlaintextFromMessage,
-  DidCommV2EnvelopeService,
-  type DidCommV2KeyAgreementJwk,
-  type DidCommV2PlaintextMessage,
-} from './v2'
+import type { DidCommVersion } from './util/didcommVersion'
+import type { DidCommV2KeyAgreementJwk } from './v2'
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -52,7 +45,7 @@ export interface TransportPriorityOptions {
 @injectable()
 export class DidCommMessageSender {
   private envelopeService: DidCommEnvelopeService
-  private v2EnvelopeService: DidCommV2EnvelopeService
+  private envelopeProtocolRegistry: DidCommEnvelopeProtocolRegistry
   private transportService: DidCommTransportService
   private didCommModuleConfig: DidCommModuleConfig
   private didCommDocumentService: DidCommDocumentService
@@ -60,14 +53,14 @@ export class DidCommMessageSender {
 
   public constructor(
     envelopeService: DidCommEnvelopeService,
-    v2EnvelopeService: DidCommV2EnvelopeService,
+    envelopeProtocolRegistry: DidCommEnvelopeProtocolRegistry,
     transportService: DidCommTransportService,
     didCommModuleConfig: DidCommModuleConfig,
     didCommDocumentService: DidCommDocumentService,
     eventEmitter: EventEmitter
   ) {
     this.envelopeService = envelopeService
-    this.v2EnvelopeService = v2EnvelopeService
+    this.envelopeProtocolRegistry = envelopeProtocolRegistry
     this.transportService = transportService
     this.didCommModuleConfig = didCommModuleConfig
     this.didCommDocumentService = didCommDocumentService
@@ -88,83 +81,7 @@ export class DidCommMessageSender {
       connection?: DidCommConnectionRecord
     }
   ): Promise<DidCommOutboundPackage> {
-    let encryptedMessage: DidCommEncryptedMessage
-    // Connection request/response: use v1 so recipient can decrypt (v1 authcrypt embeds sender key; v2 requires skid resolution which fails for did:peer:1 before connection).
-    // Throw when sending v2-only message over v1 connection (skip check for connectionless)
-    if (connection) {
-      const connVersion = connection.didcommVersion ?? 'v1'
-      const supported = message.supportedDidCommVersions
-      if (supported && supported.length > 0 && !supported.includes(connVersion)) {
-        throw new CredoError(
-          `Message type ${message.type} only supports DIDComm ${supported.join(', ')} but connection uses ${connVersion}`
-        )
-      }
-    }
-
-    const isConnectionRequest = typeof message.type === 'string' && message.type.endsWith('connections/1.0/request')
-    const isConnectionResponse = typeof message.type === 'string' && message.type.endsWith('connections/1.0/response')
-    const useV1ForConnection = isConnectionRequest || isConnectionResponse
-
-    const useV2ForPacking = connection ? (connection.didcommVersion ?? 'v1') === 'v2' : false
-
-    if (
-      !useV1ForConnection &&
-      useV2ForPacking &&
-      keys.recipientKeys.length >= 1 &&
-      keys.routingKeys.length > 0 &&
-      keys.senderKey
-    ) {
-      try {
-        encryptedMessage = await this.packV2WithForward(agentContext, message, keys, connection)
-      } catch (error) {
-        agentContext.config.logger.debug('DIDComm v2 Forward pack failed, falling back to v1', { error })
-        encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
-      }
-    } else if (
-      !useV1ForConnection &&
-      useV2ForPacking &&
-      keys.recipientKeys.length >= 1 &&
-      keys.routingKeys.length === 0 &&
-      keys.senderKey
-    ) {
-      try {
-        const recipientKeyAgreement = toKeyAgreement(keys.recipientKeys[0])
-        // Use did:key as kid when no explicit keyId — includes multicodec prefix so receiver
-        // can unambiguously determine the key type.
-        recipientKeyAgreement.keyId = keys.recipientKeys[0].hasKeyId
-          ? keys.recipientKeys[0].keyId
-          : new DidKey(keys.recipientKeys[0]).did
-        const senderKeyAgreementJwk = toKeyAgreement(keys.senderKey)
-        senderKeyAgreementJwk.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
-        const plaintext = buildV2PlaintextFromMessage(message, {
-          useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,
-          ...(connection?.did && connection?.theirDid
-            ? { from: connection.did, to: [connection.theirDid] }
-            : undefined),
-          fromPrior: connection?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.fromPriorJwt,
-        })
-        agentContext.config.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before encrypt)', {
-          id: plaintext.id,
-          type: plaintext.type,
-          from: plaintext.from,
-          to: plaintext.to,
-          thid: plaintext.thid,
-          bodyKeys: plaintext.body ? Object.keys(plaintext.body) : undefined,
-          hasFromPrior: plaintext.from_prior !== undefined,
-        })
-        encryptedMessage = await this.v2EnvelopeService.pack(agentContext, plaintext, {
-          recipientKey: recipientKeyAgreement,
-          senderKey: senderKeyAgreementJwk,
-          senderKeySkid: keys.senderKeySkid,
-          contentEncryptionAlgorithm: this.didCommModuleConfig.v2DefaultAuthcryptContentEncryption,
-        })
-      } catch (error) {
-        agentContext.config.logger.debug('DIDComm v2 authcrypt pack failed, falling back to v1', { error })
-        encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
-      }
-    } else {
-      encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
-    }
+    const encryptedMessage = await this.encryptMessage(agentContext, { message, keys, connection })
 
     return {
       payload: encryptedMessage,
@@ -174,85 +91,39 @@ export class DidCommMessageSender {
   }
 
   /**
-   * Value for Forward `next` / mediator keylist lookup.
+   * Build the outbound envelope with the protocol the registry resolves for the message.
    *
-   * routing/2.0 describes `next` as the identifier of the next hop (typically a DID) that
-   * the mediator matches against what the recipient pre-registered (CM 2.0 keylist-update).
-   * Credo's mediator compares by string equality, so this must emit the same canonical
-   * form the recipient registers.
+   * A v2 pack failure falls back to a v1 envelope so that an agent in the v2 preview keeps
+   * delivering messages. That fallback can hide v2 defects, so it logs at warn level.
    */
-  private resolveRecipientNextForMediationForward(
-    connection: DidCommConnectionRecord | undefined,
-    _plaintext: DidCommV2PlaintextMessage,
-    keys: EnvelopeKeys
-  ): string {
-    // CM 2.0 recipients register their connection did:peer with the mediator, so prefer
-    // that DID (short-form canonicalized like the mediator's keylist store and lookup).
-    const theirDid = connection?.theirDid
-    if (theirDid) return getDidPeer4ShortFormForEquivalence(theirDid) ?? theirDid
-
-    // No recipient DID known: routing/2.0 allows a key for the last hop.
-    const keyAgreement = toKeyAgreement(keys.recipientKeys[0])
-    return new DidKey(keyAgreement).did
-  }
-
-  private async packV2WithForward(
+  private async encryptMessage(
     agentContext: AgentContext,
-    message: DidCommMessage,
-    keys: EnvelopeKeys,
-    connection?: DidCommConnectionRecord
+    {
+      message,
+      keys,
+      connection,
+      didcommVersion,
+    }: {
+      message: DidCommMessage
+      keys: EnvelopeKeys
+      connection?: DidCommConnectionRecord
+      didcommVersion?: DidCommVersion
+    }
   ): Promise<DidCommEncryptedMessage> {
-    const recipientKeyAgreement = toKeyAgreement(keys.recipientKeys[0])
-    recipientKeyAgreement.keyId = keys.recipientKeys[0].hasKeyId
-      ? keys.recipientKeys[0].keyId
-      : new DidKey(keys.recipientKeys[0]).did
-    if (!keys.senderKey) {
-      throw new CredoError('DIDComm v2 pack requires a sender key')
+    const protocol = this.envelopeProtocolRegistry.getProtocolForOutbound({ message, connection, keys, didcommVersion })
+
+    try {
+      return await protocol.pack(agentContext, message, keys, { connection })
+    } catch (error) {
+      if (protocol.version === 'v1') throw error
+
+      agentContext.config.logger.warn(
+        `DIDComm v2 pack failed for message ${message.type}. Falling back to a v1 envelope.`,
+        { error }
+      )
+      const v1Protocol = this.envelopeProtocolRegistry.getProtocolForDidCommVersion('v1')
+      return v1Protocol.pack(agentContext, message, keys, { connection })
     }
-    const senderKeyAgreementJwk = toKeyAgreement(keys.senderKey)
-    senderKeyAgreementJwk.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
-
-    const tagsTheirDid = connection?.getTags().theirDid
-    const theirDidForEnvelope =
-      (connection?.theirDid && connection.theirDid.length > 0 ? connection.theirDid : undefined) ??
-      (typeof tagsTheirDid === 'string' && tagsTheirDid.length > 0 ? tagsTheirDid : undefined)
-    const plaintext = buildV2PlaintextFromMessage(message, {
-      useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,
-      ...(connection?.did && theirDidForEnvelope ? { from: connection.did, to: [theirDidForEnvelope] } : undefined),
-      fromPrior: connection?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.fromPriorJwt,
-    })
-
-    let payload = await this.v2EnvelopeService.pack(agentContext, plaintext, {
-      recipientKey: recipientKeyAgreement,
-      senderKey: senderKeyAgreementJwk,
-      senderKeySkid: keys.senderKeySkid,
-      contentEncryptionAlgorithm: this.didCommModuleConfig.v2DefaultAuthcryptContentEncryption,
-    })
-
-    const recipientNext = this.resolveRecipientNextForMediationForward(connection, plaintext, keys)
-    const routingKeysReversed = [...keys.routingKeys].reverse()
-    for (let i = 0; i < routingKeysReversed.length; i++) {
-      const routingKey = routingKeysReversed[i]
-      // next points at the enclosed hop (recipient at i === 0); single-routing-key tests cannot detect an inverted chain
-      const next = i === 0 ? recipientNext : new DidKey(routingKeysReversed[i - 1]).did
-      const routingKeyAgreement = toKeyAgreement(routingKey)
-      routingKeyAgreement.keyId = new DidKey(routingKey).did
-      const attachment = {
-        id: utils.uuid(),
-        media_type: 'application/didcomm-encrypted+json',
-        data: { json: payload },
-      }
-      const forwardPlaintext = DidCommForwardV2Message.createV2PlaintextMessage({
-        to: [new DidKey(routingKey).did],
-        next,
-        attachments: [attachment],
-      })
-      payload = await this.v2EnvelopeService.packAnoncrypt(agentContext, forwardPlaintext, {
-        recipientKey: routingKeyAgreement,
-        contentEncryptionAlgorithm: this.didCommModuleConfig.v2DefaultAnoncryptContentEncryption,
-      })
-    }
-    return payload
   }
 
   private async sendMessageToSession(
@@ -266,73 +137,15 @@ export class DidCommMessageSender {
       throw new CredoError(`There are no keys for the given ${session.type} transport session.`)
     }
     const { keys } = session
-    let encryptedMessage: DidCommEncryptedMessage
-    const isConnectionRequestSession =
-      typeof message.type === 'string' && message.type.endsWith('connections/1.0/request')
-    const isConnectionResponseSession =
-      typeof message.type === 'string' && message.type.endsWith('connections/1.0/response')
-    const useV1ForConnectionSession = isConnectionRequestSession || isConnectionResponseSession
+    // Reply with the envelope version the inbound message arrived with. The peer may have fallen
+    // back to a version other than the one stored on the connection record.
+    const encryptedMessage = await this.encryptMessage(agentContext, {
+      message,
+      keys,
+      connection,
+      didcommVersion: session.didcommVersion,
+    })
 
-    const useV2ForSessionPacking = connection ? (connection.didcommVersion ?? 'v1') === 'v2' : false
-
-    if (
-      !useV1ForConnectionSession &&
-      useV2ForSessionPacking &&
-      keys.recipientKeys.length >= 1 &&
-      keys.routingKeys.length > 0 &&
-      keys.senderKey
-    ) {
-      try {
-        encryptedMessage = await this.packV2WithForward(agentContext, message, session.keys, connection)
-      } catch (error) {
-        agentContext.config.logger.debug('DIDComm v2 Forward pack failed, falling back to v1', { error })
-        encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
-      }
-    } else if (
-      !useV1ForConnectionSession &&
-      useV2ForSessionPacking &&
-      keys.recipientKeys.length >= 1 &&
-      keys.routingKeys.length === 0 &&
-      keys.senderKey
-    ) {
-      try {
-        const recipientKeyAgreement = toKeyAgreement(keys.recipientKeys[0])
-        // Use existing keyId (DID URL pointing to keyAgreement VM) when available,
-        // otherwise fall back to did:key for connectionless return route
-        recipientKeyAgreement.keyId = keys.recipientKeys[0].hasKeyId
-          ? keys.recipientKeys[0].keyId
-          : new DidKey(keys.recipientKeys[0]).did
-        const senderKeyAgreementJwk = toKeyAgreement(keys.senderKey)
-        senderKeyAgreementJwk.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
-        const plaintext = buildV2PlaintextFromMessage(message, {
-          useDidSovPrefixWhereAllowed: this.didCommModuleConfig.useDidSovPrefixWhereAllowed,
-          ...(connection?.did && connection?.theirDid
-            ? { from: connection.did, to: [connection.theirDid] }
-            : undefined),
-          fromPrior: connection?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.fromPriorJwt,
-        })
-        agentContext.config.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before encrypt)', {
-          id: plaintext.id,
-          type: plaintext.type,
-          from: plaintext.from,
-          to: plaintext.to,
-          thid: plaintext.thid,
-          bodyKeys: plaintext.body ? Object.keys(plaintext.body) : undefined,
-          hasFromPrior: plaintext.from_prior !== undefined,
-        })
-        encryptedMessage = await this.v2EnvelopeService.pack(agentContext, plaintext, {
-          recipientKey: recipientKeyAgreement,
-          senderKey: senderKeyAgreementJwk,
-          senderKeySkid: keys.senderKeySkid,
-          contentEncryptionAlgorithm: this.didCommModuleConfig.v2DefaultAuthcryptContentEncryption,
-        })
-      } catch (error) {
-        agentContext.config.logger.debug('DIDComm v2 authcrypt pack failed, falling back to v1', { error })
-        encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
-      }
-    } else {
-      encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
-    }
     agentContext.config.logger.debug('Sending message')
     await session.send(agentContext, encryptedMessage)
   }
@@ -750,7 +563,7 @@ export class DidCommMessageSender {
 
     // v2 spec: kid must be a DID URL into a keyAgreement vm. Preserve any attached keyId; only fall back to did:key for raw base58 from v1 ~service.
     const recipientKeys =
-      !connection && this.didCommModuleConfig.sendsV2
+      !connection && this.didCommModuleConfig.isSupported('v2')
         ? service.recipientKeys.map((k) => {
             if (k.hasKeyId) return k
             const copy = Kms.PublicJwk.fromPublicJwk(k.toJson())

@@ -219,7 +219,7 @@ export class DidCommOutOfBandApi {
       config.didCommVersion ??
       (hasAttachments || hasExplicitHandshakeProtocols || hasRouting
         ? 'v1'
-        : this.didCommModuleConfig.sendsV2
+        : this.didCommModuleConfig.isSupported('v2')
           ? 'v2'
           : 'v1')
     this.assertAgentSupportsDidCommVersion(didCommVersion)

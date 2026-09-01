@@ -23,12 +23,12 @@ import { DidCommMessageSender } from '../DidCommMessageSender'
 import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { DidCommTransportService } from '../DidCommTransportService'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
+import { DidCommEnvelopeProtocolRegistry, DidCommV1EnvelopeProtocol, type DidCommV2EnvelopeProtocol } from '../envelope'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../models'
 import type { DidCommConnectionRecord } from '../modules'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 import { type DidCommOutboundTransport, InMemoryQueueTransportRepository } from '../transport'
 import type { DidCommEncryptedMessage } from '../types'
-import { DidCommV2EnvelopeService } from '../v2'
 import { DummyTransportSession } from './stubs'
 
 vi.mock('../DidCommTransportService')
@@ -83,7 +83,17 @@ describe('DidCommMessageSender', () => {
 
   const enveloperService = new DidCommEnvelopeServiceMock()
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
-  const v2EnvelopeService = { pack: vi.fn() } as unknown as DidCommV2EnvelopeService
+
+  // The registry is real, but the config never enables v2 and the mock connections are v1, so
+  // every message here takes the v1 path. The stubbed v2 protocol only satisfies the constructor.
+  const v2EnvelopeProtocol = {
+    version: 'v2',
+    supportsPacking: () => false,
+    supportsUnpacking: () => false,
+  } as unknown as DidCommV2EnvelopeProtocol
+
+  const buildEnvelopeProtocolRegistry = (config: DidCommModuleConfig) =>
+    new DidCommEnvelopeProtocolRegistry(new DidCommV1EnvelopeProtocol(enveloperService), v2EnvelopeProtocol, config)
 
   const didsApi = new DidsApiMock()
   const didCommDocumentService = new DidCommDocumentServiceMock()
@@ -161,7 +171,7 @@ describe('DidCommMessageSender', () => {
       outboundTransport = new DummyHttpOutboundTransport()
       messageSender = new DidCommMessageSender(
         enveloperService,
-        v2EnvelopeService,
+        buildEnvelopeProtocolRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,
         didCommDocumentService,
@@ -563,7 +573,7 @@ describe('DidCommMessageSender', () => {
       didCommModuleConfig.outboundTransports = [outboundTransport]
       messageSender = new DidCommMessageSender(
         enveloperService,
-        v2EnvelopeService,
+        buildEnvelopeProtocolRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,
         didCommDocumentService,
@@ -707,7 +717,7 @@ describe('DidCommMessageSender', () => {
       didCommModuleConfig.outboundTransports = [outboundTransport]
       messageSender = new DidCommMessageSender(
         enveloperService,
-        v2EnvelopeService,
+        buildEnvelopeProtocolRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,
         didCommDocumentService,

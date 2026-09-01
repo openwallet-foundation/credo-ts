@@ -1,12 +1,6 @@
 import { CredoError, JsonEncoder } from '@credo-ts/core'
 import { DidCommConnectionRecord } from '../../modules/connections/repository'
-import {
-  assertDidCommV1Connection,
-  isDidCommV1EncryptedMessage,
-  isDidCommV2AuthcryptMessage,
-  isDidCommV2EncryptedMessage,
-  isDidCommV2SignedMessage,
-} from '../didcommVersion'
+import { assertDidCommV1Connection, isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../didcommVersion'
 
 describe('didcommVersion', () => {
   const v1Protected = JsonEncoder.toBase64Url({
@@ -76,61 +70,6 @@ describe('didcommVersion', () => {
         tag: 'base64tag',
       }
       expect(isDidCommV2EncryptedMessage(message)).toBe(false)
-    })
-  })
-
-  describe('isDidCommV1EncryptedMessage', () => {
-    it('returns false for non-JWE input', () => {
-      expect(isDidCommV1EncryptedMessage('invalid')).toBe(false)
-    })
-
-    it('returns true for v1 encrypted message', () => {
-      const message = {
-        protected: v1Protected,
-        iv: 'base64iv',
-        ciphertext: 'base64ciphertext',
-        tag: 'base64tag',
-      }
-      expect(isDidCommV1EncryptedMessage(message)).toBe(true)
-    })
-
-    it('returns false for v2 encrypted message', () => {
-      const message = {
-        protected: v2AuthcryptProtected,
-        recipients: [],
-        iv: 'base64iv',
-        ciphertext: 'base64ciphertext',
-        tag: 'base64tag',
-      }
-      expect(isDidCommV1EncryptedMessage(message)).toBe(false)
-    })
-  })
-
-  describe('isDidCommV2AuthcryptMessage', () => {
-    it('returns true for v2 authcrypt message', () => {
-      const message = {
-        protected: v2AuthcryptProtected,
-        recipients: [],
-        iv: 'base64iv',
-        ciphertext: 'base64ciphertext',
-        tag: 'base64tag',
-      }
-      expect(isDidCommV2AuthcryptMessage(message)).toBe(true)
-    })
-
-    it('returns false for v2 anoncrypt message', () => {
-      const message = {
-        protected: v2AnoncryptProtected,
-        recipients: [],
-        iv: 'base64iv',
-        ciphertext: 'base64ciphertext',
-        tag: 'base64tag',
-      }
-      expect(isDidCommV2AuthcryptMessage(message)).toBe(false)
-    })
-
-    it('returns false for non-JWE input', () => {
-      expect(isDidCommV2AuthcryptMessage('invalid')).toBe(false)
     })
   })
 

@@ -820,7 +820,7 @@ export class DidCommConnectionService {
    */
   public async findByTheirDidOrSender(
     agentContext: AgentContext,
-    opts: { theirDid?: string; senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk> }
+    opts: { theirDid?: string; senderKey?: Kms.PublicJwk }
   ): Promise<DidCommConnectionRecord | null> {
     const { theirDid, senderKey } = opts
     if (theirDid) {
@@ -863,10 +863,9 @@ export class DidCommConnectionService {
 
   public async findByKeys(
     agentContext: AgentContext,
-    {
-      senderKey,
-      recipientKey,
-    }: { senderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>; recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> }
+    // DID record tags index the fingerprints of every recipient key type (Ed25519 for v1,
+    // X25519/P-256/P-384 for v2), so any public JWK can match here.
+    { senderKey, recipientKey }: { senderKey: Kms.PublicJwk; recipientKey: Kms.PublicJwk }
   ) {
     const theirDidRecord = await this.didRepository.findReceivedDidByRecipientKey(agentContext, senderKey)
     if (theirDidRecord) {

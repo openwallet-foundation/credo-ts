@@ -5,7 +5,6 @@ import { isValidJweStructure } from './JWE'
 
 const DIDCOMM_V2_TYP = 'application/didcomm-encrypted+json'
 const DIDCOMM_V2_SIGNED_TYP = 'application/didcomm-signed+json'
-const DIDCOMM_V1_TYP = 'JWM/1.0'
 
 /**
  * Canonical DIDComm protocol version identifier.
@@ -42,28 +41,6 @@ export function isDidCommV2EncryptedMessage(message: unknown): message is DidCom
 }
 
 /**
- * Detect whether an encrypted message is DIDComm v2 authcrypt format.
- * Authcrypt uses ECDH-1PU+A256KW with skid present; sender is identifiable.
- *
- * @param message - The message to check (typically a JWE object with protected, iv, ciphertext, tag)
- * @returns true if the message is DIDComm v2 authcrypt format
- */
-export function isDidCommV2AuthcryptMessage(message: unknown): boolean {
-  if (!isValidJweStructure(message)) {
-    return false
-  }
-  if (!Array.isArray((message as { recipients?: unknown }).recipients)) {
-    return false
-  }
-  try {
-    const protectedJson = JsonEncoder.fromBase64Url((message as { protected: string }).protected)
-    return protectedJson?.typ === DIDCOMM_V2_TYP && typeof protectedJson?.skid === 'string'
-  } catch {
-    return false
-  }
-}
-
-/**
  * Detect whether a message is a DIDComm v2 signed message (JWS general serialization).
  * v2 signed messages use typ: 'application/didcomm-signed+json' in each signature's protected header,
  * with `payload` (base64url JWM bytes) and `signatures` (array with per-signature kid in unprotected header) at the top level.
@@ -89,25 +66,6 @@ export function isDidCommV2SignedMessage(message: unknown): message is DidCommV2
     }
   }
   return true
-}
-
-/**
- * Detect whether an encrypted message is DIDComm v1 format.
- * v1 uses typ: 'JWM/1.0' in the JWE protected header.
- *
- * @param message - The message to check (typically a JWE object with protected, iv, ciphertext, tag)
- * @returns true if the message is DIDComm v1 encrypted format
- */
-export function isDidCommV1EncryptedMessage(message: unknown): boolean {
-  if (!isValidJweStructure(message)) {
-    return false
-  }
-  try {
-    const protectedJson = JsonEncoder.fromBase64Url((message as { protected: string }).protected)
-    return protectedJson?.typ === DIDCOMM_V1_TYP
-  } catch {
-    return false
-  }
 }
 
 /**

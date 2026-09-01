@@ -444,8 +444,19 @@ export class DidCommEnvelopeService {
   }
 }
 
+/**
+ * A key that can appear on a DIDComm envelope.
+ *
+ * V1 uses Ed25519 keys throughout. V2 uses the key-agreement curves that the DIDComm Messaging
+ * v2.1 specification requires. Both versions produce a decrypted context, so the context carries
+ * the union rather than the v1 type with a cast over it.
+ */
+export type DidCommEnvelopeKey = Kms.PublicJwk<
+  Kms.Ed25519PublicJwk | Kms.X25519PublicJwk | Kms.P256PublicJwk | Kms.P384PublicJwk
+>
+
 export interface DecryptedDidCommMessageContext {
   plaintextMessage: DidCommPlaintextMessage
-  senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
-  recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  senderKey?: DidCommEnvelopeKey
+  recipientKey: DidCommEnvelopeKey
 }
