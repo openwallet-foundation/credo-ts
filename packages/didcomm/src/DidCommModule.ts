@@ -14,6 +14,7 @@ import { DidCommMessageSender } from './DidCommMessageSender'
 import type { DidCommModuleConfigOptions } from './DidCommModuleConfig'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { DidCommTransportService } from './DidCommTransportService'
+import { DidCommEnvelopeProtocolRegistry, DidCommV1EnvelopeProtocol, DidCommV2EnvelopeProtocol } from './envelope'
 import {
   type DefaultDidCommMessagePickupProtocols,
   type DefaultDidCommProofProtocols,
@@ -40,6 +41,7 @@ import { DidCommMessageRepository } from './repository'
 import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
 import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
+import { DidCommV2EnvelopeService, DidCommV2KeyResolver } from './v2'
 
 // biome-ignore lint/complexity/noBannedTypes: no explanation
 type ModuleOrEmpty<Config, Module> = Config extends false ? {} : Module
@@ -112,7 +114,10 @@ function getDidcommModules<Options extends DidCommModuleConfigOptions>(options: 
           ? new DidCommMessagePickupModule(options.messagePickup === true ? {} : options.messagePickup)
           : undefined,
 
-      basicMessages: options.basicMessages !== false ? new DidCommBasicMessagesModule() : undefined,
+      basicMessages:
+        options.basicMessages !== false
+          ? new DidCommBasicMessagesModule(options.basicMessages === true ? undefined : options.basicMessages)
+          : undefined,
     }).filter(([, moduleValue]) => moduleValue !== undefined)
   ) as unknown as DidCommModules<Options>
 }
@@ -145,6 +150,13 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
     dependencyManager.registerSingleton(DidCommTransportService)
     dependencyManager.registerSingleton(DidCommDispatcher)
     dependencyManager.registerSingleton(DidCommEnvelopeService)
+    dependencyManager.registerSingleton(DidCommV2EnvelopeService)
+    dependencyManager.registerSingleton(DidCommV2KeyResolver)
+
+    // Envelope protocols: one per DIDComm version, selected by the registry
+    dependencyManager.registerSingleton(DidCommV1EnvelopeProtocol)
+    dependencyManager.registerSingleton(DidCommV2EnvelopeProtocol)
+    dependencyManager.registerSingleton(DidCommEnvelopeProtocolRegistry)
 
     // Repositories
     dependencyManager.registerSingleton(DidCommMessageRepository)

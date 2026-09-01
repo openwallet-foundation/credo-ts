@@ -31,6 +31,7 @@ export class DrizzleDidcommBasicMessageRecordAdapter extends BaseDrizzleRecordAd
     return {
       content: record.content,
       sentTime: record.sentTime,
+      protocolVersion: record.protocolVersion,
 
       connectionId,
       role,
