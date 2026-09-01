@@ -5,42 +5,38 @@ import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import type { DidCommConnectionRecord } from '../modules/connections/repository'
 import type { DidCommVersion } from '../util/didcommVersion'
 import { isDidCommV2SignedMessage } from '../util/didcommVersion'
-import type { DidCommEnvelopeProtocol } from './DidCommEnvelopeProtocol'
-import { DidCommV1EnvelopeProtocol } from './DidCommV1EnvelopeProtocol'
-import { DidCommV2EnvelopeProtocol } from './DidCommV2EnvelopeProtocol'
+import type { DidCommEnvelope } from './DidCommEnvelope'
+import { DidCommV1Envelope } from './DidCommV1Envelope'
+import { DidCommV2Envelope } from './DidCommV2Envelope'
 
 /**
- * Resolves the {@link DidCommEnvelopeProtocol} that applies to a message, holding the selection
+ * Resolves the {@link DidCommEnvelope} that applies to a message, holding the selection
  * rules that used to sit inline in the message sender and the message receiver.
  *
- * A caller resolves a protocol once and then calls `pack`/`unpack` on it, in the same way the
- * proofs and credentials APIs resolve their version protocol before acting on it.
+ * A caller resolves an envelope implementation once and then calls `pack`/`unpack` on it, in the
+ * same way the proofs and credentials APIs resolve their version protocol before acting on it.
  */
 @injectable()
-export class DidCommEnvelopeProtocolRegistry {
-  private v1EnvelopeProtocol: DidCommV1EnvelopeProtocol
-  private v2EnvelopeProtocol: DidCommV2EnvelopeProtocol
+export class DidCommEnvelopeRegistry {
+  private v1Envelope: DidCommV1Envelope
+  private v2Envelope: DidCommV2Envelope
   private config: DidCommModuleConfig
 
-  public constructor(
-    v1EnvelopeProtocol: DidCommV1EnvelopeProtocol,
-    v2EnvelopeProtocol: DidCommV2EnvelopeProtocol,
-    config: DidCommModuleConfig
-  ) {
-    this.v1EnvelopeProtocol = v1EnvelopeProtocol
-    this.v2EnvelopeProtocol = v2EnvelopeProtocol
+  public constructor(v1Envelope: DidCommV1Envelope, v2Envelope: DidCommV2Envelope, config: DidCommModuleConfig) {
+    this.v1Envelope = v1Envelope
+    this.v2Envelope = v2Envelope
     this.config = config
   }
 
-  public getProtocolForDidCommVersion(didcommVersion: 'v1'): DidCommV1EnvelopeProtocol
-  public getProtocolForDidCommVersion(didcommVersion: 'v2'): DidCommV2EnvelopeProtocol
-  public getProtocolForDidCommVersion(didcommVersion: DidCommVersion): DidCommEnvelopeProtocol
-  public getProtocolForDidCommVersion(didcommVersion: DidCommVersion): DidCommEnvelopeProtocol {
-    return didcommVersion === 'v2' ? this.v2EnvelopeProtocol : this.v1EnvelopeProtocol
+  public getEnvelopeForDidCommVersion(didcommVersion: 'v1'): DidCommV1Envelope
+  public getEnvelopeForDidCommVersion(didcommVersion: 'v2'): DidCommV2Envelope
+  public getEnvelopeForDidCommVersion(didcommVersion: DidCommVersion): DidCommEnvelope
+  public getEnvelopeForDidCommVersion(didcommVersion: DidCommVersion): DidCommEnvelope {
+    return didcommVersion === 'v2' ? this.v2Envelope : this.v1Envelope
   }
 
   /**
-   * Get the protocol that builds the outbound envelope.
+   * Get the envelope implementation that builds the outbound envelope.
    *
    * The rules, in order:
    * 1. `didcommVersion` overrides the connection version. The sender passes the envelope version
@@ -52,7 +48,7 @@ export class DidCommEnvelopeProtocolRegistry {
    * 4. Sending v2 requires v2 to be enabled in `didcommVersions`, and the key material must allow
    *    a v2 envelope (authcrypt needs a sender key).
    */
-  public getProtocolForOutbound({
+  public getEnvelopeForOutbound({
     message,
     connection,
     keys,
@@ -62,7 +58,7 @@ export class DidCommEnvelopeProtocolRegistry {
     connection?: DidCommConnectionRecord
     keys: EnvelopeKeys
     didcommVersion?: DidCommVersion
-  }): DidCommEnvelopeProtocol {
+  }): DidCommEnvelope {
     const version = didcommVersion ?? (connection ? (connection.didcommVersion ?? 'v1') : 'v1')
 
     this.assertMessageSupportsVersion(message, version)
@@ -73,24 +69,24 @@ export class DidCommEnvelopeProtocolRegistry {
           `Cannot send message ${message.type} over DIDComm v2: v2 is not enabled. Add "v2" to didcommVersions in DidCommModuleConfig, or use a v1 connection.`
         )
       }
-      if (this.v2EnvelopeProtocol.supportsPacking(keys)) return this.v2EnvelopeProtocol
+      if (this.v2Envelope.supportsPacking(keys)) return this.v2Envelope
     }
 
-    return this.v1EnvelopeProtocol
+    return this.v1Envelope
   }
 
   /**
-   * Get the protocol that opens an inbound envelope, from the wire format alone.
+   * Get the envelope implementation that opens an inbound envelope, from the wire format alone.
    *
    * The v2 test runs first, because a v2 envelope is also a structurally valid JWE.
    */
-  public getProtocolForInbound(message: unknown): DidCommEnvelopeProtocol {
-    if (this.v2EnvelopeProtocol.supportsUnpacking(message)) {
+  public getEnvelopeForInbound(message: unknown): DidCommEnvelope {
+    if (this.v2Envelope.supportsUnpacking(message)) {
       this.assertVersionEnabled(message)
-      return this.v2EnvelopeProtocol
+      return this.v2Envelope
     }
 
-    if (this.v1EnvelopeProtocol.supportsUnpacking(message)) return this.v1EnvelopeProtocol
+    if (this.v1Envelope.supportsUnpacking(message)) return this.v1Envelope
 
     throw new CredoError('Unable to parse incoming message: unrecognized envelope format')
   }
@@ -111,8 +107,8 @@ export class DidCommEnvelopeProtocolRegistry {
    * Throw when a message declares the versions it supports and the outbound envelope version is
    * not one of them.
    *
-   * Both the direct send path and the session send path resolve their protocol through
-   * {@link getProtocolForOutbound}, so both get this check.
+   * Both the direct send path and the session send path resolve their envelope through
+   * {@link getEnvelopeForOutbound}, so both get this check.
    */
   private assertMessageSupportsVersion(message: DidCommMessage, didcommVersion: DidCommVersion): void {
     const supported = message.supportedDidCommVersions

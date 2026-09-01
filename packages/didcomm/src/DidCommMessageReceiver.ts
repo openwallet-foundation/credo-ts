@@ -17,8 +17,8 @@ import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from './DidCommMessageSender'
 import type { DidCommTransportSession } from './DidCommTransportService'
 import { DidCommTransportService } from './DidCommTransportService'
-import type { DidCommEnvelopeProtocol } from './envelope'
-import { DidCommEnvelopeProtocolRegistry } from './envelope'
+import type { DidCommEnvelope } from './envelope'
+import { DidCommEnvelopeRegistry } from './envelope'
 import { DidCommProblemReportError } from './errors'
 import { DidCommProblemReportMessage } from './messages'
 import { DidCommInboundMessageContext, DidCommOutboundMessageContext, DidCommProblemReportReason } from './models'
@@ -41,7 +41,7 @@ import type { DidCommV2SignedMessage } from './v2'
 
 @injectable()
 export class DidCommMessageReceiver {
-  private envelopeProtocolRegistry: DidCommEnvelopeProtocolRegistry
+  private envelopeRegistry: DidCommEnvelopeRegistry
   private transportService: DidCommTransportService
   private messageSender: DidCommMessageSender
   private dispatcher: DidCommDispatcher
@@ -53,7 +53,7 @@ export class DidCommMessageReceiver {
   private agentContextProvider: AgentContextProvider
 
   public constructor(
-    envelopeProtocolRegistry: DidCommEnvelopeProtocolRegistry,
+    envelopeRegistry: DidCommEnvelopeRegistry,
     transportService: DidCommTransportService,
     messageSender: DidCommMessageSender,
     connectionService: DidCommConnectionService,
@@ -64,7 +64,7 @@ export class DidCommMessageReceiver {
     @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
-    this.envelopeProtocolRegistry = envelopeProtocolRegistry
+    this.envelopeRegistry = envelopeRegistry
     this.transportService = transportService
     this.messageSender = messageSender
     this.connectionService = connectionService
@@ -136,10 +136,10 @@ export class DidCommMessageReceiver {
     connection?: DidCommConnectionRecord,
     receivedAt?: Date
   ) {
-    this.envelopeProtocolRegistry.assertVersionEnabled(signedMessage)
+    this.envelopeRegistry.assertVersionEnabled(signedMessage)
 
-    const protocol = this.envelopeProtocolRegistry.getProtocolForDidCommVersion('v2')
-    const plaintextMessage = await protocol.unpackSigned(agentContext, signedMessage)
+    const envelope = this.envelopeRegistry.getEnvelopeForDidCommVersion('v2')
+    const plaintextMessage = await envelope.unpackSigned(agentContext, signedMessage)
 
     await this.receivePlaintextMessage(agentContext, plaintextMessage, connection, receivedAt)
   }
@@ -150,8 +150,8 @@ export class DidCommMessageReceiver {
     session?: DidCommTransportSession,
     receivedAt?: Date
   ) {
-    const protocol = this.envelopeProtocolRegistry.getProtocolForInbound(encryptedMessage)
-    const decryptedMessage = await this.decryptMessage(agentContext, protocol, encryptedMessage)
+    const envelope = this.envelopeRegistry.getEnvelopeForInbound(encryptedMessage)
+    const decryptedMessage = await this.decryptMessage(agentContext, envelope, encryptedMessage)
     const { plaintextMessage, senderKey, recipientKey } = decryptedMessage
 
     this.logger.info(
@@ -200,13 +200,13 @@ export class DidCommMessageReceiver {
     if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
       this.logger.debug(`Storing session for inbound message '${message.id}'`)
 
-      session.keys = await protocol.buildReturnRouteKeys(agentContext, {
+      session.keys = await envelope.buildReturnRouteKeys(agentContext, {
         senderKey,
         recipientKey,
         plaintextMessage,
         connection: connection ?? undefined,
       })
-      session.didcommVersion = protocol.version
+      session.didcommVersion = envelope.version
       session.inboundMessage = message
       // We allow unready connections to be attached to the session as we want to be able to
       // use return routing to make connections. This is especially useful for creating connections
@@ -223,17 +223,17 @@ export class DidCommMessageReceiver {
   }
 
   /**
-   * Decrypt a message with the protocol resolved for its wire format.
+   * Decrypt a message with the envelope implementation resolved for its wire format.
    *
    * @param message the received inbound message to decrypt
    */
   private async decryptMessage(
     agentContext: AgentContext,
-    protocol: DidCommEnvelopeProtocol,
+    envelope: DidCommEnvelope,
     message: DidCommEncryptedMessage
   ): Promise<DecryptedDidCommMessageContext> {
     try {
-      return await protocol.unpack(agentContext, message)
+      return await envelope.unpack(agentContext, message)
     } catch (error) {
       this.logger.error('Error while decrypting message', {
         error,

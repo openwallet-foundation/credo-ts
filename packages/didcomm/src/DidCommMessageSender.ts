@@ -26,7 +26,7 @@ import { DidCommModuleConfig } from './DidCommModuleConfig'
 import type { DidCommTransportSession } from './DidCommTransportService'
 import { DidCommTransportService } from './DidCommTransportService'
 import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
-import { DidCommEnvelopeProtocolRegistry } from './envelope'
+import { DidCommEnvelopeRegistry } from './envelope'
 import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
@@ -45,7 +45,7 @@ export interface TransportPriorityOptions {
 @injectable()
 export class DidCommMessageSender {
   private envelopeService: DidCommEnvelopeService
-  private envelopeProtocolRegistry: DidCommEnvelopeProtocolRegistry
+  private envelopeRegistry: DidCommEnvelopeRegistry
   private transportService: DidCommTransportService
   private didCommModuleConfig: DidCommModuleConfig
   private didCommDocumentService: DidCommDocumentService
@@ -53,14 +53,14 @@ export class DidCommMessageSender {
 
   public constructor(
     envelopeService: DidCommEnvelopeService,
-    envelopeProtocolRegistry: DidCommEnvelopeProtocolRegistry,
+    envelopeRegistry: DidCommEnvelopeRegistry,
     transportService: DidCommTransportService,
     didCommModuleConfig: DidCommModuleConfig,
     didCommDocumentService: DidCommDocumentService,
     eventEmitter: EventEmitter
   ) {
     this.envelopeService = envelopeService
-    this.envelopeProtocolRegistry = envelopeProtocolRegistry
+    this.envelopeRegistry = envelopeRegistry
     this.transportService = transportService
     this.didCommModuleConfig = didCommModuleConfig
     this.didCommDocumentService = didCommDocumentService
@@ -91,7 +91,7 @@ export class DidCommMessageSender {
   }
 
   /**
-   * Build the outbound envelope with the protocol the registry resolves for the message.
+   * Build the outbound envelope with the implementation the registry resolves for the message.
    *
    * A v2 pack failure falls back to a v1 envelope so that an agent in the v2 preview keeps
    * delivering messages. That fallback can hide v2 defects, so it logs at warn level.
@@ -110,19 +110,19 @@ export class DidCommMessageSender {
       didcommVersion?: DidCommVersion
     }
   ): Promise<DidCommEncryptedMessage> {
-    const protocol = this.envelopeProtocolRegistry.getProtocolForOutbound({ message, connection, keys, didcommVersion })
+    const envelope = this.envelopeRegistry.getEnvelopeForOutbound({ message, connection, keys, didcommVersion })
 
     try {
-      return await protocol.pack(agentContext, message, keys, { connection })
+      return await envelope.pack(agentContext, message, keys, { connection })
     } catch (error) {
-      if (protocol.version === 'v1') throw error
+      if (envelope.version === 'v1') throw error
 
       agentContext.config.logger.warn(
         `DIDComm v2 pack failed for message ${message.type}. Falling back to a v1 envelope.`,
         { error }
       )
-      const v1Protocol = this.envelopeProtocolRegistry.getProtocolForDidCommVersion('v1')
-      return v1Protocol.pack(agentContext, message, keys, { connection })
+      const v1Envelope = this.envelopeRegistry.getEnvelopeForDidCommVersion('v1')
+      return v1Envelope.pack(agentContext, message, keys, { connection })
     }
   }
 

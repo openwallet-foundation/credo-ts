@@ -6,16 +6,16 @@ import type { DidCommMessage } from '../DidCommMessage'
 import type { DidCommEncryptedMessage } from '../types'
 import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
 import { isValidJweStructure } from '../util/JWE'
-import type { DidCommEnvelopeProtocol, DidCommPackOptions, DidCommReturnRouteOptions } from './DidCommEnvelopeProtocol'
+import type { DidCommEnvelope, DidCommPackOptions, DidCommReturnRouteOptions } from './DidCommEnvelope'
 
 /**
- * DIDComm v1 envelope protocol.
+ * DIDComm v1 envelope.
  *
  * All of the cryptography stays in {@link DidCommEnvelopeService}, which is unchanged and still
- * exported. This class only adapts it to the shared {@link DidCommEnvelopeProtocol} contract.
+ * exported. This class only adapts it to the shared {@link DidCommEnvelope} contract.
  */
 @injectable()
-export class DidCommV1EnvelopeProtocol implements DidCommEnvelopeProtocol<'v1'> {
+export class DidCommV1Envelope implements DidCommEnvelope<'v1'> {
   public readonly version = 'v1' as const
 
   private envelopeService: DidCommEnvelopeService

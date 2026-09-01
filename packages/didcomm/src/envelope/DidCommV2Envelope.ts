@@ -24,14 +24,14 @@ import {
   DidCommV2KeyResolver,
   normalizeV2PlaintextToV1,
 } from '../v2'
-import type { DidCommEnvelopeProtocol, DidCommPackOptions, DidCommReturnRouteOptions } from './DidCommEnvelopeProtocol'
+import type { DidCommEnvelope, DidCommPackOptions, DidCommReturnRouteOptions } from './DidCommEnvelope'
 
 /**
  * Key material for one DIDComm v2 envelope, in the curves the v2 specification allows.
  *
  * The framework carries {@link EnvelopeKeys} between the transport session, the service
  * parameters and the sender, because that type is part of the public transport interface. This
- * protocol converts that carrier into the honest v2 shape at the last moment, in one place.
+ * class converts that carrier into the honest v2 shape at the last moment, in one place.
  */
 interface DidCommV2PackKeys {
   recipientKey: DidCommV2KeyAgreementJwk
@@ -41,14 +41,14 @@ interface DidCommV2PackKeys {
 }
 
 /**
- * DIDComm v2 envelope protocol.
+ * DIDComm v2 envelope.
  *
  * All of the cryptography stays in {@link DidCommV2EnvelopeService}, which is unchanged. This class
  * owns everything around it that is specific to v2: the plaintext shape, the key-agreement curves,
  * the Forward wrapping for mediated routes, and the signed-message handling.
  */
 @injectable()
-export class DidCommV2EnvelopeProtocol implements DidCommEnvelopeProtocol<'v2'> {
+export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
   public readonly version = 'v2' as const
 
   private envelopeService: DidCommV2EnvelopeService
@@ -65,7 +65,7 @@ export class DidCommV2EnvelopeProtocol implements DidCommEnvelopeProtocol<'v2'> 
     this.config = config
   }
 
-  /** Authcrypt needs a sender key. Without one, only the v1 protocol can build an envelope. */
+  /** Authcrypt needs a sender key. Without one, only the v1 envelope can be built. */
   public supportsPacking(keys: EnvelopeKeys): boolean {
     return keys.recipientKeys.length >= 1 && keys.senderKey !== null && keys.senderKey !== undefined
   }
@@ -275,7 +275,7 @@ export class DidCommV2EnvelopeProtocol implements DidCommEnvelopeProtocol<'v2'> 
   /**
    * Verify a standalone DIDComm v2 signed message and return the payload in v1 shape.
    *
-   * Signed envelopes exist only in v2, so this is not part of the shared protocol contract. The
+   * Signed envelopes exist only in v2, so this is not part of the shared envelope contract. The
    * message receiver resolves this class directly for that path.
    */
   public async unpackSigned(

@@ -17,7 +17,7 @@ export interface DidCommReturnRouteOptions {
 
 export interface DidCommPackOptions {
   /**
-   * The connection the message goes to, when there is one. A protocol uses it to fill the
+   * The connection the message goes to, when there is one. An implementation uses it to fill the
    * envelope headers that identify both parties (`from`, `to`, `from_prior` in v2).
    */
   connection?: DidCommConnectionRecord
@@ -31,25 +31,27 @@ export interface DidCommPackOptions {
  * selects an implementation once and then sends and receives without knowledge of the version.
  *
  * This mirrors {@link DidCommMessagePickupProtocol} and {@link DidCommCredentialProtocol}, which
- * give the same treatment to their own multi-version capabilities.
+ * give the same treatment to their own multi-version capabilities. It is deliberately not named
+ * `*Protocol` — enveloping is the encryption layer, not a DIDComm protocol — and not `*Service`,
+ * because {@link DidCommEnvelopeService} keeps that exported name for the v1 crypto layer.
  */
-export interface DidCommEnvelopeProtocol<Version extends DidCommVersion = DidCommVersion> {
+export interface DidCommEnvelope<Version extends DidCommVersion = DidCommVersion> {
   readonly version: Version
 
   /**
-   * Whether this protocol can build an envelope from the given key material. The v2 protocol needs
-   * a sender key and at least one recipient key; the v1 protocol accepts anonymous packing.
+   * Whether this implementation can build an envelope from the given key material. V2 needs a
+   * sender key and at least one recipient key; v1 accepts anonymous packing.
    */
   supportsPacking(keys: EnvelopeKeys): boolean
 
   /**
-   * Whether the received bytes are an encrypted envelope in this protocol's wire format. Signed
+   * Whether the received bytes are an encrypted envelope in this version's wire format. Signed
    * envelopes are not part of this contract: they exist only in v2 and have their own receive path.
    */
   supportsUnpacking(message: unknown): boolean
 
   /**
-   * Build an encrypted envelope. The protocol wraps its own Forward messages for every routing key
+   * Build an encrypted envelope. The implementation wraps its own Forward messages for every routing key
    * in `keys`, so a caller never handles mediation itself.
    */
   pack(
