@@ -26,8 +26,8 @@ import {
   DidsModuleConfig,
   InjectionSymbols,
   InMemoryLruCache,
+  JsonLdModuleConfig,
   SignatureSuiteToken,
-  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
@@ -71,7 +71,7 @@ const agentContext = getAgentContext({
 
     [InjectionSymbols.Logger, testLogger],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig()],
     [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
