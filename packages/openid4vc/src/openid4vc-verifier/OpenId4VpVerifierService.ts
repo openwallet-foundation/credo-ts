@@ -100,6 +100,25 @@ import {
 } from './repository'
 
 /**
+ * COSE signature algorithms advertised for the `mso_mdoc` format in `vp_formats_supported`.
+ *
+ * We advertise both the RFC 9053 "fully-specified" algorithms (ESP256/ESP384) and their
+ * deprecated/legacy polymorphic equivalents (ES256/ES384/EdDSA). During the COSE registry
+ * transition most deployed mdoc issuers and wallets still announce/use only the legacy
+ * identifiers (e.g. ES256 -7), and reject an authorization request when the legacy value is
+ * absent from the advertised set. Advertising both maximizes interoperability, and Credo can
+ * verify signatures made with either identifier (see `knownJwaFromCoseSignatureAlgorithm`).
+ */
+const mdocSupportedCoseSignatureAlgorithms: NonEmptyArray<Kms.KnownCoseSignatureAlgorithm> = [
+  Kms.KnownCoseSignatureAlgorithms.ESP256, // -9
+  Kms.KnownCoseSignatureAlgorithms.ES256, // -7 (legacy)
+  Kms.KnownCoseSignatureAlgorithms.ESP384, // -51
+  Kms.KnownCoseSignatureAlgorithms.ES384, // -35 (legacy)
+  Kms.KnownCoseSignatureAlgorithms.Ed25519, // -19
+  Kms.KnownCoseSignatureAlgorithms.EdDSA, // -8 (legacy)
+]
+
+/**
  * @internal
  */
 @injectable()
@@ -531,9 +550,15 @@ export class OpenId4VpVerifierService {
         ? undefined
         : authorizationRequest.response_uri
 
-      // NOTE: apu is needed for mDOC over OID4VP without DC API up to draft 24
+      // The mdoc-generated nonce is conveyed in the JARM `apu` header. Per RFC 7518 §4.6.1.2 `apu` is an
+      // arbitrary octet string that is not required to be valid UTF-8 (e.g. the A-SIT Valera wallet sends
+      // a raw 16-byte binary apu). It is only consumed by the ISO 18013-7 / OpenID4VP draft 18 mdoc
+      // session transcript (used by the pre-v1 draft 21/24 flows without the Digital Credentials API),
+      // where it is a CBOR `tstr`. We therefore keep it as raw bytes here and defer interpreting it as a
+      // UTF-8 string to the session transcript calculation, so flows that don't use it (v1 / HAIP, DC API)
+      // never fail on a binary apu.
       const mdocGeneratedNonce = result.jarm?.jarmHeader.apu
-        ? TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(result.jarm?.jarmHeader.apu))
+        ? TypedArrayEncoder.fromBase64Url(result.jarm.jarmHeader.apu)
         : undefined
 
       if (result.type === 'dcql') {
@@ -1031,16 +1056,8 @@ export class OpenId4VpVerifierService {
               ...(dcqlQueryFormats.has('mso_mdoc')
                 ? {
                     mso_mdoc: {
-                      deviceauth_alg_values: [
-                        Kms.KnownCoseSignatureAlgorithms.ESP256,
-                        Kms.KnownCoseSignatureAlgorithms.ESP384,
-                        Kms.KnownCoseSignatureAlgorithms.Ed25519,
-                      ],
-                      issuerauth_alg_values: [
-                        Kms.KnownCoseSignatureAlgorithms.ESP256,
-                        Kms.KnownCoseSignatureAlgorithms.ESP384,
-                        Kms.KnownCoseSignatureAlgorithms.Ed25519,
-                      ],
+                      deviceauth_alg_values: mdocSupportedCoseSignatureAlgorithms,
+                      issuerauth_alg_values: mdocSupportedCoseSignatureAlgorithms,
                     },
                   }
                 : {}),
@@ -1146,7 +1163,9 @@ export class OpenId4VpVerifierService {
       audience: string
       clientId: string
       responseUri?: string
-      mdocGeneratedNonce?: string
+      // May be a raw octet string (the JARM `apu` header) that is only interpreted as a UTF-8 `tstr`
+      // when building the ISO 18013-7 / OpenID4VP draft 18 mdoc session transcript.
+      mdocGeneratedNonce?: string | Uint8Array
       origin?: string
       verificationSession: OpenId4VcVerificationSessionRecord
       presentation: string | Record<string, unknown>

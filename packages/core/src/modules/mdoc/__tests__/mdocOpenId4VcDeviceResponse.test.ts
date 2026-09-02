@@ -2,6 +2,7 @@ import { DeviceResponse } from '@owf/mdoc'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
+import { TypedArrayEncoder } from '../../../utils'
 import type { DifPresentationExchangeDefinition } from '../../dif-presentation-exchange'
 import { assertMdocInputDescriptor, inputDescriptorToDocumentRequest } from '../../dif-presentation-exchange/utils/mdoc'
 import { PublicJwk } from '../../kms'
@@ -229,6 +230,26 @@ describe('mdoc device-response openid4vp test', () => {
             responseUri,
             verifierGeneratedNonce,
             mdocGeneratedNonce,
+          },
+        })
+      ).resolves.toBeUndefined()
+    })
+
+    // In OpenID4VP the mdoc-generated nonce is derived from the JARM `apu` header, which per RFC 7518
+    // §4.6.1.2 is an octet string. The verifier therefore may pass it as raw bytes rather than a string.
+    // Passing the utf-8 bytes of the nonce must produce the same session transcript (the draft 18
+    // handover encodes it as a CBOR `tstr`), and thus verify identically to the string form.
+    it('should be verifiable with the mdoc-generated nonce provided as raw utf-8 bytes', async () => {
+      const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponse)
+      await expect(
+        mdocDeviceResponse.verify(agent.context, {
+          trustedCertificates: [ISSUER_CERTIFICATE_P256],
+          sessionTranscriptOptions: {
+            type: 'openId4VpDraft18',
+            clientId,
+            responseUri,
+            verifierGeneratedNonce,
+            mdocGeneratedNonce: TypedArrayEncoder.fromUtf8String(mdocGeneratedNonce),
           },
         })
       ).resolves.toBeUndefined()
