@@ -4,6 +4,7 @@ import { contextDrizzleRecord } from './context-record'
 import { didDrizzleRecord } from './did-record'
 import { genericRecordDrizzleRecord } from './generic-record'
 import { mdocDrizzleRecord } from './mdoc-record'
+import { mdocVerificationSessionDrizzleRecord } from './mdoc-verification-session-record'
 import { sdJwtVcDrizzleRecord } from './sd-jwt-vc-record'
 import { singleContextLruCacheDrizzleRecord } from './single-context-lru-cache-record'
 import { storageVersionDrizzleRecord } from './storage-version-record'
@@ -16,6 +17,7 @@ export const coreBundle = {
     contextDrizzleRecord,
     sdJwtVcDrizzleRecord,
     mdocDrizzleRecord,
+    mdocVerificationSessionDrizzleRecord,
     storageVersionDrizzleRecord,
     genericRecordDrizzleRecord,
     didDrizzleRecord,

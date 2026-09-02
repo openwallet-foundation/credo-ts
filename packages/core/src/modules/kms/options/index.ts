@@ -10,18 +10,22 @@ export type {
   KmsCreateKeyTypeRsa,
 } from './KmsCreateKeyOptions'
 export type {
+  KmsDecryptDataContentDecryption,
   KmsDecryptDataDecryption,
   KmsDecryptDataDecryptionAesCbc,
   KmsDecryptDataDecryptionAesGcm,
   KmsDecryptDataDecryptionC20p,
+  KmsDecryptDataDecryptionHpke,
   KmsDecryptOptions,
   KmsDecryptReturn,
 } from './KmsDecryptOptions'
 export type { KmsDeleteKeyOptions } from './KmsDeleteKeyOptions'
 export type {
+  KmsEncryptDataContentEncryption,
   KmsEncryptDataEncryption,
   KmsEncryptDataEncryptionAesCbc,
   KmsEncryptDataEncryptionAesGcm,
+  KmsEncryptDataEncryptionHpke,
   KmsEncryptDataEncryptionX20c,
   KmsEncryptedKey,
   KmsEncryptOptions,
@@ -32,15 +36,19 @@ export type { KmsImportKeyOptions, KmsImportKeyReturn } from './KmsImportKeyOpti
 export type {
   KmsKeyAgreementDecryptEcdhEsKw,
   KmsKeyAgreementDecryptEcdhHsalsa20,
+  KmsKeyAgreementDecryptHpke,
   KmsKeyAgreementDecryptOptions,
 } from './KmsKeyAgreementDecryptOptions'
+export { isKmsKeyAgreementDecryptHpke } from './KmsKeyAgreementDecryptOptions'
 export type {
   KmsJwkPublicEcdh,
   KmsKeyAgreementEcdhEs,
   KmsKeyAgreementEncryptEcdhEsKw,
   KmsKeyAgreementEncryptEcdhHsalsa20,
+  KmsKeyAgreementEncryptHpke,
   KmsKeyAgreementEncryptOptions,
 } from './KmsKeyAgreementEncryptOptions'
+export { isKmsKeyAgreementEncryptHpke } from './KmsKeyAgreementEncryptOptions'
 export {
   getKmsOperationHumanDescription,
   type KmsOperation,

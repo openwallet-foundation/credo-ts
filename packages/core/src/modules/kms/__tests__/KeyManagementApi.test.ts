@@ -141,4 +141,66 @@ describe('KeyManagementApi', () => {
       })
     ).rejects.toThrow(ZodValidationError)
   })
+
+  describe('hpke', () => {
+    test('encrypt and decrypt with HPKE-0', async () => {
+      const { keyId, publicJwk } = await agent.kms.createKey({
+        keyId: 'hpke-api',
+        type: { kty: 'EC', crv: 'P-256' },
+      })
+
+      const info = new Uint8Array([1, 2, 3])
+      const data = new Uint8Array([4, 5, 6])
+
+      const { encrypted, encapsulatedKey } = await agent.kms.encrypt({
+        key: { keyAgreement: { algorithm: 'HPKE-0', externalPublicJwk: publicJwk, info } },
+        encryption: { algorithm: 'HPKE' },
+        data,
+      })
+      expect(encapsulatedKey).toBeDefined()
+
+      const decrypted = await agent.kms.decrypt({
+        key: { keyAgreement: { algorithm: 'HPKE-0', keyId, encapsulatedKey: encapsulatedKey as Uint8Array, info } },
+        decryption: { algorithm: 'HPKE' },
+        encrypted,
+      })
+      expect(decrypted.data).toEqual(data)
+    })
+
+    test('throws when a content encryption algorithm is provided for an integrated HPKE algorithm', async () => {
+      const { publicJwk } = await agent.kms.createKey({
+        keyId: 'hpke-api-encryption',
+        type: { kty: 'EC', crv: 'P-256' },
+      })
+
+      await expect(
+        agent.kms.encrypt({
+          key: { keyAgreement: { algorithm: 'HPKE-0', externalPublicJwk: publicJwk } },
+          encryption: { algorithm: 'A128GCM' },
+          data: new Uint8Array([1]),
+        })
+      ).rejects.toThrow(ZodValidationError)
+    })
+
+    test(`throws when encryption algorithm 'HPKE' is used without an HPKE key agreement algorithm`, async () => {
+      await expect(
+        agent.kms.encrypt({
+          key: { keyId: 'hpke-api-encryption' },
+          encryption: { algorithm: 'HPKE' },
+          data: new Uint8Array([1]),
+        })
+      ).rejects.toThrow(ZodValidationError)
+    })
+
+    test('throws when encryption is missing', async () => {
+      await expect(
+        agent.kms.encrypt({
+          key: { keyId: 'hpke-api-encryption' },
+          // @ts-expect-error encryption is required
+          encryption: undefined,
+          data: new Uint8Array([1]),
+        })
+      ).rejects.toThrow(ZodValidationError)
+    })
+  })
 })
