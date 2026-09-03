@@ -32,7 +32,7 @@ export interface W3cV2DataIntegrityContextValidatorOptions {
  *   - inputDocument: the secured document (after proof verification)
  *   - recompactInvalidContexts: whether to run JSON-LD compaction when §4.6 step 3 trigger conditions are detected
  *
- * Recompaction delegates resolution of non-bundled contexts to the shared
+ * Recompaction delegates context resolution to the shared
  * {@link JsonLdModuleConfig}, so a custom `documentLoader` configured on
  * `JsonLdModule`/`W3cCredentialsModule` is honoured consistently with VC 1.1
  * JSON-LD processing. Context hash verification (§2.4) only trusts Credo's
@@ -104,7 +104,7 @@ export class W3cV2DataIntegrityContextValidator {
       )
     }
 
-    // 3c: URI dereferences to content not matching known hash (§2.4 normative hashes)
+    // 3c: flag spec-pinned contexts that are not available as bundled, trusted contexts (§2.4)
     for (const contextEntry of contextValue) {
       if (typeof contextEntry !== 'string') continue
 
@@ -122,7 +122,7 @@ export class W3cV2DataIntegrityContextValidator {
       if (this.recompactInvalidContexts) {
         try {
           result.validatedDocument = (await jsonld.compact(normalisedInputDocument, [CREDENTIALS_CONTEXT_V2_URL], {
-            documentLoader: getContextValidationDocumentLoader(this.jsonLdModuleConfig, agentContext),
+            documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
             compactToRelative: false,
           })) as DataIntegrityUnsecuredDocument
 
@@ -204,44 +204,4 @@ function hasBundledContext(contextUrl: string): boolean {
   if (contextUrl in DEFAULT_CONTEXTS) return true
   const withoutFragment = contextUrl.split('#')[0]
   return withoutFragment in DEFAULT_CONTEXTS
-}
-
-/**
- * Document loader used for §4.6 context recompaction. Resolves bundled VC/Data Integrity
- * contexts locally without network access, and delegates everything else to the shared
- * {@link JsonLdModuleConfig} document loader so custom-context configuration is honoured
- * consistently with other JSON-LD consumers. Not cached across calls or validator
- * instances: the loader is cheap to construct and must always reflect the current
- * `AgentContext`.
- */
-function getContextValidationDocumentLoader(jsonLdModuleConfig: JsonLdModuleConfig, agentContext: AgentContext) {
-  // Constructed lazily (only when a non-bundled URL is actually encountered) so that
-  // recompactions which only touch bundled contexts never need to resolve the
-  // configured loader's own dependencies (e.g. DID resolution).
-  let configuredLoader: ReturnType<JsonLdModuleConfig['documentLoader']> | undefined
-
-  return async (url: string) => {
-    if (url in DEFAULT_CONTEXTS) {
-      return {
-        contextUrl: null,
-        documentUrl: url,
-        document: DEFAULT_CONTEXTS[url as keyof typeof DEFAULT_CONTEXTS],
-      }
-    }
-
-    const withoutFragment = url.split('#')[0]
-    if (withoutFragment in DEFAULT_CONTEXTS) {
-      return {
-        contextUrl: null,
-        documentUrl: url,
-        document: DEFAULT_CONTEXTS[withoutFragment as keyof typeof DEFAULT_CONTEXTS],
-      }
-    }
-
-    if (!configuredLoader) {
-      configuredLoader = jsonLdModuleConfig.documentLoader(agentContext)
-    }
-
-    return configuredLoader(url)
-  }
 }

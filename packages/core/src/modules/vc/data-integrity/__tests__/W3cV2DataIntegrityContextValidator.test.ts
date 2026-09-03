@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
 import type { AgentContext } from '../../../../agent/context'
+import { DidResolverService } from '../../../dids'
 import { W3cDataIntegrityProcessingErrorCode as DataIntegrityProcessingErrorCode } from '../../../w3c-di/internal'
+import { DEFAULT_CONTEXTS } from '../../jsonld/contexts'
 import { JsonLdModuleConfig } from '../../jsonld/JsonLdModuleConfig'
 import type { W3cV2DataIntegrityContextValidatorOptions } from '../W3cV2DataIntegrityContextValidator'
 import { W3cV2DataIntegrityContextValidator } from '../W3cV2DataIntegrityContextValidator'
@@ -30,6 +32,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
 
     agentContext = getAgentContext({
       agentConfig: getAgentConfig('W3cV2DataIntegrityContextValidatorTest'),
+      registerInstances: [[DidResolverService, {}]],
     })
 
     validator = createValidator({ recompactInvalidContexts: false })
@@ -312,6 +315,9 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
           if (url === CUSTOM_CONTEXT_URI) {
             return { contextUrl: null, documentUrl: url, document: CUSTOM_CONTEXT_DOCUMENT }
           }
+          const contextUrl = url.split('#')[0]
+          const document = DEFAULT_CONTEXTS[contextUrl as keyof typeof DEFAULT_CONTEXTS]
+          if (document) return { contextUrl: null, documentUrl: url, document }
           throw new Error(`unexpected document loader call for '${url}'`)
         },
       })
@@ -337,6 +343,9 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
             if (url === CUSTOM_CONTEXT_URI) {
               return { contextUrl: null, documentUrl: url, document: CUSTOM_CONTEXT_DOCUMENT }
             }
+            const contextUrl = url.split('#')[0]
+            const document = DEFAULT_CONTEXTS[contextUrl as keyof typeof DEFAULT_CONTEXTS]
+            if (document) return { contextUrl: null, documentUrl: url, document }
             throw new Error(`unexpected document loader call for '${url}'`)
           }
         },
@@ -352,9 +361,12 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
       expect(receivedAgentContext).toBe(agentContext)
     })
 
-    test('bundled VC/DI contexts never reach the configured documentLoader', async () => {
-      const documentLoaderSpy = vi.fn(() => async (_url: string) => {
-        throw new Error('documentLoader should not be called for bundled contexts')
+    test('configured documentLoader handles bundled VC/DI contexts', async () => {
+      const documentLoaderSpy = vi.fn(() => async (url: string) => {
+        const contextUrl = url.split('#')[0]
+        const document = DEFAULT_CONTEXTS[contextUrl as keyof typeof DEFAULT_CONTEXTS]
+        if (!document) throw new Error(`unexpected document loader call for '${url}'`)
+        return { contextUrl: null, documentUrl: url, document }
       })
       const config = new JsonLdModuleConfig({ documentLoader: documentLoaderSpy })
       const customValidator = createValidator({ recompactInvalidContexts: true }, config)
@@ -365,7 +377,7 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
       })
 
       expect(result.validated).toBe(true)
-      expect(documentLoaderSpy).not.toHaveBeenCalled()
+      expect(documentLoaderSpy).toHaveBeenCalledWith(agentContext)
     })
 
     test('separate validator instances do not share any document loader state', async () => {
@@ -396,8 +408,8 @@ describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => 
       await validatorA.validate(agentContext, document)
       await validatorB.validate(agentContext, document)
 
-      expect(callsA).toEqual([CUSTOM_CONTEXT_URI])
-      expect(callsB).toEqual([CUSTOM_CONTEXT_URI])
+      expect(callsA).toEqual([CUSTOM_CONTEXT_URI, 'https://www.w3.org/ns/credentials/v2'])
+      expect(callsB).toEqual([CUSTOM_CONTEXT_URI, 'https://www.w3.org/ns/credentials/v2'])
     })
   })
 
