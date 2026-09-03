@@ -10,6 +10,7 @@ import { CREDENTIALS_CONTEXT_V2_URL } from '../constants'
 import { DEFAULT_CONTEXTS, DI_SPEC_CONTEXT_HASHES } from '../jsonld/contexts'
 import { JsonLdModuleConfig } from '../jsonld/JsonLdModuleConfig'
 import jsonld from '../jsonld/jsonld'
+import { W3cV2CredentialsModuleConfig } from '../W3cV2CredentialsModuleConfig'
 
 /**
  * Output of the VC Data Integrity §4.6 Context Validation algorithm.
@@ -19,10 +20,6 @@ export interface W3cV2DataIntegrityContextValidationResult {
   validatedDocument: DataIntegrityUnsecuredDocument | null
   warnings: DataIntegrityProcessingIssue[]
   errors: DataIntegrityProcessingIssue[]
-}
-
-export interface W3cV2DataIntegrityContextValidatorOptions {
-  recompactInvalidContexts?: boolean
 }
 
 /**
@@ -40,13 +37,10 @@ export interface W3cV2DataIntegrityContextValidatorOptions {
  */
 @injectable()
 export class W3cV2DataIntegrityContextValidator {
-  private readonly recompactInvalidContexts: boolean
-  private readonly jsonLdModuleConfig: JsonLdModuleConfig
-
-  public constructor(jsonLdModuleConfig: JsonLdModuleConfig, options?: W3cV2DataIntegrityContextValidatorOptions) {
-    this.jsonLdModuleConfig = jsonLdModuleConfig
-    this.recompactInvalidContexts = options?.recompactInvalidContexts ?? true
-  }
+  public constructor(
+    private readonly jsonLdModuleConfig: JsonLdModuleConfig,
+    private readonly w3cV2CredentialsModuleConfig: W3cV2CredentialsModuleConfig
+  ) {}
 
   public async validate(
     agentContext: AgentContext,
@@ -119,7 +113,7 @@ export class W3cV2DataIntegrityContextValidator {
     }
 
     if (triggerErrors.length > 0) {
-      if (this.recompactInvalidContexts) {
+      if (this.w3cV2CredentialsModuleConfig.recompactInvalidContexts) {
         try {
           result.validatedDocument = (await jsonld.compact(normalisedInputDocument, [CREDENTIALS_CONTEXT_V2_URL], {
             documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),

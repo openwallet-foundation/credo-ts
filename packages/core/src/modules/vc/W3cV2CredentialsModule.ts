@@ -32,16 +32,10 @@ export class W3cV2CredentialsModule implements Module {
     if (!dependencyManager.isRegistered(JsonLdModuleConfig)) {
       dependencyManager.registerInstance(JsonLdModuleConfig, new JsonLdModuleConfig())
     }
-    const jsonLdModuleConfig = dependencyManager.resolve(JsonLdModuleConfig)
 
-    // VC DI context validator (owned at VC layer, not core DI layer)
-    dependencyManager.registerInstance(
-      W3cV2DataIntegrityContextValidator,
-      new W3cV2DataIntegrityContextValidator(jsonLdModuleConfig, {
-        recompactInvalidContexts: this.config.recompactInvalidContexts,
-      })
-    )
     dependencyManager.registerInstance(W3cV2CredentialsModuleConfig, this.config)
+    // VC DI context validator (owned at VC layer, not core DI layer)
+    dependencyManager.registerSingleton(W3cV2DataIntegrityContextValidator)
     // VC services
     dependencyManager.registerSingleton(W3cV2CredentialService)
     dependencyManager.registerSingleton(W3cV2DataIntegrityCredentialService)

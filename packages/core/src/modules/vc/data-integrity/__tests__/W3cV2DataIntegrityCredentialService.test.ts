@@ -1,7 +1,7 @@
 import { getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
 import type { AgentContext } from '../../../../agent/context'
 import { CredoError } from '../../../../error'
-import { DidsApi } from '../../../dids'
+import { DidResolverService, DidsApi } from '../../../dids'
 import { KeyManagementApi } from '../../../kms'
 import { Ed25519PublicJwk } from '../../../kms/jwk'
 import {
@@ -17,6 +17,7 @@ import type {
   W3cV2DiVerifyCredentialOptions,
   W3cV2DiVerifyPresentationOptions,
 } from '../../W3cV2CredentialServiceOptions'
+import { W3cV2CredentialsModuleConfig } from '../../W3cV2CredentialsModuleConfig'
 import type { W3cV2DataIntegrityContextValidationResult } from '../W3cV2DataIntegrityContextValidator'
 import { W3cV2DataIntegrityContextValidator } from '../W3cV2DataIntegrityContextValidator'
 import { W3cV2DataIntegrityCredentialService } from '../W3cV2DataIntegrityCredentialService'
@@ -820,6 +821,7 @@ describe('W3cV2DataIntegrityCredentialService', () => {
       const agentConfig = getAgentConfig('W3cV2DataIntegrityCredentialServiceIntegration')
       agentContext = getAgentContext({
         agentConfig,
+        registerInstances: [[DidResolverService, {}]],
       })
 
       const mockDidsApi = {
@@ -865,7 +867,10 @@ describe('W3cV2DataIntegrityCredentialService', () => {
       ])
 
       diProofService = new DataIntegrityProofService(cryptosuiteRegistry)
-      diContextValidator = new W3cV2DataIntegrityContextValidator(new JsonLdModuleConfig())
+      diContextValidator = new W3cV2DataIntegrityContextValidator(
+        new JsonLdModuleConfig(),
+        new W3cV2CredentialsModuleConfig()
+      )
       diCredentialService = new W3cV2DataIntegrityCredentialService(diProofService, diContextValidator)
     })
 

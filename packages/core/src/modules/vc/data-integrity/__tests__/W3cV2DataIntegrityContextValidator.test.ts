@@ -6,7 +6,7 @@ import { DidResolverService } from '../../../dids'
 import { W3cDataIntegrityProcessingErrorCode as DataIntegrityProcessingErrorCode } from '../../../w3c-di/internal'
 import { DEFAULT_CONTEXTS } from '../../jsonld/contexts'
 import { JsonLdModuleConfig } from '../../jsonld/JsonLdModuleConfig'
-import type { W3cV2DataIntegrityContextValidatorOptions } from '../W3cV2DataIntegrityContextValidator'
+import { W3cV2CredentialsModuleConfig } from '../../W3cV2CredentialsModuleConfig'
 import { W3cV2DataIntegrityContextValidator } from '../W3cV2DataIntegrityContextValidator'
 
 const VC_V2_KNOWN_CONTEXT = ['https://www.w3.org/ns/credentials/v2']
@@ -17,10 +17,13 @@ const DI_PINNED_CONTEXTS = [
 ]
 
 function createValidator(
-  options?: W3cV2DataIntegrityContextValidatorOptions,
+  options: { recompactInvalidContexts?: boolean } = {},
   jsonLdModuleConfig: JsonLdModuleConfig = new JsonLdModuleConfig()
 ) {
-  return new W3cV2DataIntegrityContextValidator(jsonLdModuleConfig, options)
+  return new W3cV2DataIntegrityContextValidator(
+    jsonLdModuleConfig,
+    new W3cV2CredentialsModuleConfig({ dataIntegrity: options })
+  )
 }
 
 describe('W3cV2DataIntegrityContextValidator (§4.6 Context Validation)', () => {
