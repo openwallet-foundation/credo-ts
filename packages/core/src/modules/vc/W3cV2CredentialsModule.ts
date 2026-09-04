@@ -1,5 +1,4 @@
 import type { DependencyManager, Module } from '../../plugins'
-import { injectable } from '../../plugins'
 import { W3cV2DataIntegrityContextValidator, W3cV2DataIntegrityCredentialService } from './data-integrity'
 import { JsonLdModuleConfig } from './jsonld'
 import { W3cV2JwtCredentialService } from './jwt-vc'
