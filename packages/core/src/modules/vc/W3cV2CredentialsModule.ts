@@ -14,7 +14,6 @@ import { W3cV2CredentialsModuleConfig } from './W3cV2CredentialsModuleConfig'
 /**
  * @public
  */
-@injectable()
 export class W3cV2CredentialsModule implements Module {
   public readonly api = W3cV2CredentialsApi
   public readonly config: W3cV2CredentialsModuleConfig
