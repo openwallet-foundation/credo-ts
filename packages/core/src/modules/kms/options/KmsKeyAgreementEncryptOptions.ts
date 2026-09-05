@@ -63,11 +63,29 @@ const zKmsKeyAgreementEncryptEcdhHsalsa20 = z.object({
 })
 export type KmsKeyAgreementEncryptEcdhHsalsa20 = z.output<typeof zKmsKeyAgreementEncryptEcdhHsalsa20>
 
+const zKmsKeyAgreementEncryptEcdh1Pu = z.object({
+  keyId: zKmsKeyId,
+  algorithm: z.literal('ECDH-1PU+A256KW'),
+  externalPublicJwk: zKmsJwkPublicEcdh,
+
+  /**
+   * Optional id of a caller-provided ephemeral key. When set, the KMS uses this key for the
+   * ECDH-1PU agreement instead of generating one internally; the caller can then read its
+   * public component to embed in the JWE protected header before computing AAD.
+   */
+  ephemeralKeyId: zKmsKeyId.optional(),
+
+  apu: z.optional(zAnyUint8Array),
+  apv: z.optional(zAnyUint8Array),
+})
+export type KmsKeyAgreementEncryptEcdh1Pu = z.output<typeof zKmsKeyAgreementEncryptEcdh1Pu>
+
 export const zKmsKeyAgreementEncryptOptions = z
   .discriminatedUnion('algorithm', [
     zKmsKeyAgreementEcdhEs,
     zKmsKeyAgreementEncryptEcdhEsKw,
     zKmsKeyAgreementEncryptEcdhHsalsa20,
+    zKmsKeyAgreementEncryptEcdh1Pu,
   ])
   .describe('Options for key agreement based on an asymmetric key.')
 export type KmsKeyAgreementEncryptOptions = z.output<typeof zKmsKeyAgreementEncryptOptions>

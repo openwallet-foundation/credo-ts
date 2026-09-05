@@ -5,6 +5,7 @@ import { IsArray, IsInstance, IsObject, Matches, ValidateNested } from 'class-va
 import { MessageIdRegExp } from '../../../../../BaseDidCommMessage'
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import type { DidCommEncryptedMessage } from '../../../../../types'
+import type { DidCommVersion } from '../../../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export class DidCommBatchMessageMessage {
@@ -35,6 +36,7 @@ export interface DidCommBatchMessageOptions {
  */
 export class DidCommBatchMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   public constructor(options: DidCommBatchMessageOptions) {
     super()
