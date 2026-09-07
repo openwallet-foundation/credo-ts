@@ -32,7 +32,7 @@ jobs:
     name: Conformance Tests
 
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
 
       # The OIDF conformance suite runs in testcontainers and reaches the
       # credo-ts verifier on the host via this alias.
