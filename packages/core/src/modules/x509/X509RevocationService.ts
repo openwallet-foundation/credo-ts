@@ -20,6 +20,7 @@ import { X509ModuleConfig } from './X509ModuleConfig'
 import type {
   X509CheckCertificateRevocationOptions,
   X509FetchCertificateRevocationListOptions,
+  X509ParseOptions,
 } from './X509ServiceOptions'
 import { X509RevocationCheckMode, type X509RevocationCheckOptions } from './X509ValidationOptions'
 import type { X509CertificateSingleValidationResult } from './X509ValidationResult'
@@ -44,6 +45,7 @@ interface FetchCrlOptions {
   verificationDate: Date
   options: { timeoutMs?: number; maxCrlSizeBytes?: number; crlCacheExpirySeconds?: number }
   useCache: boolean
+  parseOptions?: X509ParseOptions
 }
 
 @injectable()
@@ -54,17 +56,22 @@ export class X509RevocationService {
    */
   public static async checkCertificateRevocation(
     agentContext: AgentContext,
-    { certificate, issuerCertificate, revocationCheckOptions }: X509CheckCertificateRevocationOptions
+    { certificate, issuerCertificate, revocationCheckOptions, parseOptions }: X509CheckCertificateRevocationOptions
   ): Promise<X509RevocationCheckResult> {
+    const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+    const effectiveParseOptions = parseOptions ?? config.parseOptions
+
     const parsedCertificate =
-      certificate instanceof X509Certificate ? certificate : X509Certificate.fromEncodedCertificate(certificate)
+      certificate instanceof X509Certificate
+        ? certificate
+        : X509Certificate.fromEncodedCertificate(certificate, effectiveParseOptions)
     const parsedIssuerCertificate =
       issuerCertificate instanceof X509Certificate
         ? issuerCertificate
-        : X509Certificate.fromEncodedCertificate(issuerCertificate)
+        : X509Certificate.fromEncodedCertificate(issuerCertificate, effectiveParseOptions)
 
     const options = revocationCheckOptions ??
-      agentContext.dependencyManager.resolve(X509ModuleConfig).revocationCheck ?? {
+      config.revocationCheck ?? {
         mode: X509RevocationCheckMode.SoftFail,
       }
 
@@ -74,7 +81,13 @@ export class X509RevocationService {
     }
 
     try {
-      return await X509RevocationService.checkCrl(agentContext, parsedCertificate, parsedIssuerCertificate, options)
+      return await X509RevocationService.checkCrl(
+        agentContext,
+        parsedCertificate,
+        parsedIssuerCertificate,
+        options,
+        effectiveParseOptions
+      )
     } catch (error) {
       return X509RevocationService.handleRevocationError(error, mode)
     }
@@ -96,7 +109,8 @@ export class X509RevocationService {
     agentContext: AgentContext,
     certificateChain: X509Certificate[],
     config: X509ModuleConfig,
-    verificationDate: Date
+    verificationDate: Date,
+    parseOptions?: X509ParseOptions
   ): Promise<X509CertificateSingleValidationResult> {
     const configuredRevocationCheck = config.revocationCheck
     if (!configuredRevocationCheck || configuredRevocationCheck.mode === X509RevocationCheckMode.Disabled) {
@@ -129,6 +143,7 @@ export class X509RevocationService {
         certificate,
         issuerCertificate,
         revocationCheckOptions: revocationConfig,
+        parseOptions,
       })
 
       if (!result.isValid) {
@@ -151,7 +166,8 @@ export class X509RevocationService {
     agentContext: AgentContext,
     certificate: X509Certificate,
     issuerCertificate: X509Certificate,
-    options: X509RevocationCheckOptions
+    options: X509RevocationCheckOptions,
+    parseOptions?: X509ParseOptions
   ): Promise<X509RevocationCheckResult> {
     // Get CRL distribution points from certificate
     const distributionPoints = certificate.crlDistributionPoints
@@ -180,7 +196,8 @@ export class X509RevocationService {
         issuerCertificate,
         fullDistributionPoint,
         verificationDate,
-        options
+        options,
+        parseOptions
       )
     }
 
@@ -227,7 +244,8 @@ export class X509RevocationService {
         dp.urls,
         issuerCertificate,
         verificationDate,
-        options
+        options,
+        parseOptions
       )
 
       if (!result.success) {
@@ -400,7 +418,8 @@ export class X509RevocationService {
     issuerCertificate: X509Certificate,
     distributionPoint: { urls: string[]; reasons?: number[] },
     verificationDate: Date,
-    options: X509RevocationCheckOptions
+    options: X509RevocationCheckOptions,
+    parseOptions?: X509ParseOptions
   ): Promise<X509RevocationCheckResult> {
     const result = await X509RevocationService.fetchAndVerifyCrl(
       agentContext,
@@ -408,7 +427,8 @@ export class X509RevocationService {
       distributionPoint.urls,
       issuerCertificate,
       verificationDate,
-      options
+      options,
+      parseOptions
     )
 
     if (!result.success) {
@@ -516,7 +536,8 @@ export class X509RevocationService {
     urls: string[],
     issuerCertificate: X509Certificate,
     verificationDate: Date,
-    options: X509RevocationCheckOptions
+    options: X509RevocationCheckOptions,
+    parseOptions?: X509ParseOptions
   ): Promise<
     { success: true; crl: VerifiedCrl; usedUrl: string } | { success: false; error: string; reachable: boolean }
   > {
@@ -531,7 +552,7 @@ export class X509RevocationService {
     for (const url of urls) {
       const result = await X509RevocationService.fetchVerifyAndCacheCrl(
         agentContext,
-        { url, issuerCertificate, verificationDate, options, useCache: true },
+        { url, issuerCertificate, verificationDate, options, useCache: true, parseOptions },
         webCrypto
       )
 
@@ -637,6 +658,7 @@ export class X509RevocationService {
       options,
       useCache,
       staleSummary,
+      parseOptions,
     }: FetchCrlOptions & { staleSummary?: X509CrlSummary },
     webCrypto: CredoWebCrypto
   ): Promise<{ success: true; crl: VerifiedCrl } | { success: false; error: string; reachable: boolean }> {
@@ -675,7 +697,7 @@ export class X509RevocationService {
         return { success: true, crl: new CrlSummaryVerifiedCrl(refreshed) }
       }
 
-      const crl = X509CertificateRevocationList.fromRaw(crlData)
+      const crl = X509CertificateRevocationList.fromRaw(crlData, parseOptions)
 
       // Verify the CRL signature, issuer-name binding, and validity window against the issuer.
       const verifyResult = await crl.verify({ issuerCertificate, verificationDate }, webCrypto)
@@ -774,18 +796,22 @@ export class X509RevocationService {
       timeoutMs,
       maxCrlSizeBytes,
       verificationDate = new Date(),
+      parseOptions,
     }: X509FetchCertificateRevocationListOptions
   ): Promise<X509CertificateRevocationList> {
+    const config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+    const effectiveParseOptions = parseOptions ?? config.parseOptions
+
     // Without an issuer certificate we cannot verify the CRL; just fetch and parse it.
     if (!issuerCertificate) {
       const crlData = await fetchCrl({ url, timeoutMs, maxSizeBytes: maxCrlSizeBytes, agentContext })
-      return X509CertificateRevocationList.fromRaw(crlData)
+      return X509CertificateRevocationList.fromRaw(crlData, effectiveParseOptions)
     }
 
     const parsedIssuerCertificate =
       issuerCertificate instanceof X509Certificate
         ? issuerCertificate
-        : X509Certificate.fromEncodedCertificate(issuerCertificate)
+        : X509Certificate.fromEncodedCertificate(issuerCertificate, effectiveParseOptions)
 
     const result = await X509RevocationService.fetchParseVerifyAndCacheCrl(
       agentContext,
@@ -796,6 +822,7 @@ export class X509RevocationService {
         options: { timeoutMs, maxCrlSizeBytes },
         // This is an explicit, one-off fetch; don't read from or populate the revocation cache.
         useCache: false,
+        parseOptions: effectiveParseOptions,
       },
       new CredoWebCrypto(agentContext)
     )
