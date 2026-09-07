@@ -32,7 +32,12 @@ export type MdocOpenId4VpDraft18SessionTranscriptOptions = {
   responseUri: string
   clientId: string
   verifierGeneratedNonce: string
-  mdocGeneratedNonce: string
+  /**
+   * The mdoc-generated nonce. In the ISO 18013-7 / OpenID4VP draft 18 handover this is a CBOR `tstr`
+   * (text string). It may be provided as raw bytes (e.g. the JARM `apu` header, which per RFC 7518
+   * §4.6.1.2 is an arbitrary octet string), in which case those bytes are interpreted as UTF-8 text.
+   */
+  mdocGeneratedNonce: string | Uint8Array
 }
 
 export type MdocSessionTranscriptByteOptions = {
