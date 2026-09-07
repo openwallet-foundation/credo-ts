@@ -3,12 +3,14 @@ import {
   Name as AsnName,
   BaseCRLNumber,
   CertificateIssuer,
+  CRLDistributionPoints,
   CRLNumber,
   DistributionPoint,
   DistributionPointName,
   GeneralName,
   IssuingDistributionPoint,
   id_ce_certificateIssuer,
+  id_ce_cRLDistributionPoints,
   id_ce_cRLNumber,
   id_ce_deltaCRLIndicator,
   id_ce_issuingDistributionPoint,
@@ -17,7 +19,6 @@ import {
 import {
   AuthorityKeyIdentifierExtension,
   BasicConstraintsExtension,
-  CRLDistributionPointsExtension,
   ExtendedKeyUsageExtension,
   Extension,
   IssuerAlternativeNameExtension,
@@ -173,7 +174,17 @@ export const createCrlDistributionPointsExtension = (
     distributionPoint.cRLIssuer = [new GeneralName({ uniformResourceIdentifier: options.crlIssuer })]
   }
 
-  return new CRLDistributionPointsExtension([distributionPoint], options.markAsCritical)
+  // The extension is built from its DER rather than through `@peculiar/x509`'s
+  // `CRLDistributionPointsExtension`, because that class resolves the ASN.1 schema of the values it
+  // is given through its own copy of `@peculiar/asn1-x509`. `@peculiar/asn1-x509` declares an
+  // `exports` map that resolves to its ESM build, while `@peculiar/x509` declares none and so
+  // resolves to its CommonJS `main` even when imported from ESM, pulling in the CommonJS build of
+  // `@peculiar/asn1-x509` instead. Each build keeps its own schema registry, so a value created
+  // here has no schema over there. Serializing keeps the values and their schema within a single
+  // instance, as the other extensions below do.
+  const value = AsnConvert.serialize(new CRLDistributionPoints([distributionPoint]))
+
+  return new Extension(id_ce_cRLDistributionPoints, options.markAsCritical ?? false, value)
 }
 
 export const createCrlNumberExtension = (options: X509CertificateRevocationListExtensionsOptions['crlNumber']) => {
