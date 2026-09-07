@@ -7,7 +7,9 @@ import {
   KeyDidRegistrar,
   KeyDidResolver,
   Kms,
+  W3cDataIntegrityModule,
   W3cV2CredentialService,
+  W3cV2CredentialsModule,
   W3cV2SdJwtVerifiableCredential,
   X509ModuleConfig,
 } from '@credo-ts/core'
@@ -47,6 +49,10 @@ const agentContext = getAgentContext({
 })
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
+agentContext.dependencyManager.registerModules({
+  w3cDataIntegrity: new W3cDataIntegrityModule(),
+  w3cV2Credentials: new W3cV2CredentialsModule(),
+})
 
 const formatService = new DidCommW3cV2SdJwtCredentialFormatService()
 
