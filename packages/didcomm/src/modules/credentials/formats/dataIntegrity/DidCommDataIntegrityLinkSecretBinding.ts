@@ -1,4 +1,4 @@
-import type { AgentContext, JsonObject } from '@credo-ts/core'
+import type { AgentContext, JsonObject, W3cCredentialRecord } from '@credo-ts/core'
 import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCredentialExchangeRecord'
 import type {
   AnonCredsLinkSecretBindingMethod,
@@ -85,11 +85,11 @@ export interface DidCommDataIntegrityLinkSecretBindingProvider {
 
   /**
    * Holder: whether the credential record was stored by {@link storeBoundCredential}, and therefore
-   * has to be deleted through {@link deleteCredentialById} rather than as a plain w3c credential
+   * has to be deleted through {@link deleteCredentialRecord} rather than as a plain w3c credential
    * record, so that its anoncreds state is cleaned up as well.
    */
-  ownsCredentialRecord(agentContext: AgentContext, credentialRecordId: string): Promise<boolean>
+  isBoundCredentialRecord(credentialRecord: W3cCredentialRecord): boolean
 
-  /** Holder: delete a credential that was stored by {@link storeBoundCredential} */
-  deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void>
+  /** Holder: delete a credential record that was stored by {@link storeBoundCredential} */
+  deleteCredentialRecord(agentContext: AgentContext, credentialRecord: W3cCredentialRecord): Promise<void>
 }

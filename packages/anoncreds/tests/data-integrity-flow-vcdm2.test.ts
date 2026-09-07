@@ -10,6 +10,7 @@ import {
   KeyDidRegistrar,
   KeyDidResolver,
   Kms,
+  RecordNotFoundError,
   SignatureSuiteToken,
   W3cV2CredentialRecord,
   W3cV2CredentialService,
@@ -72,6 +73,46 @@ const agentContext = getAgentContext({
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 
 const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
+
+/** Runs the offer and request steps for an unbound data model 2.0 credential issued by `issuerDid` */
+async function offerAndRequest(issuerDid: string) {
+  const credentialExchangeRecord = new DidCommCredentialExchangeRecord({
+    protocolVersion: 'v2',
+    role: DidCommCredentialRole.Issuer,
+    state: DidCommCredentialState.ProposalReceived,
+    threadId: 'c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f',
+  })
+
+  const { attachment: offerAttachment, previewAttributes } = await dataIntegrityCredentialFormatService.createOffer(
+    agentContext,
+    {
+      credentialExchangeRecord,
+      credentialFormats: {
+        dataIntegrity: {
+          credential: {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuerDid,
+            validFrom: '2024-01-01T00:00:00Z',
+            credentialSubject: { name: 'John', age: '25' },
+          },
+          bindingRequired: false,
+        },
+      },
+    }
+  )
+  credentialExchangeRecord.credentialAttributes = previewAttributes?.map(
+    (attribute) => new DidCommCredentialPreviewAttribute(attribute)
+  )
+
+  const { attachment: requestAttachment } = await dataIntegrityCredentialFormatService.acceptOffer(agentContext, {
+    credentialExchangeRecord,
+    offerAttachment,
+    credentialFormats: { dataIntegrity: {} },
+  })
+
+  return { credentialExchangeRecord, offerAttachment, requestAttachment }
+}
 
 describe('data integrity format service (vcdm 2.0)', () => {
   afterEach(async () => {
@@ -153,16 +194,109 @@ describe('data integrity format service (vcdm 2.0)', () => {
       offerAttachment,
     })
 
+    // The binding uses the format's record type, which is what the credential protocol uses to
+    // route deletion back to this format service
     expect(credentialExchangeRecord.credentials).toEqual([
-      { credentialRecordType: 'w3c-v2', credentialRecordId: expect.any(String) },
+      {
+        credentialRecordType: dataIntegrityCredentialFormatService.credentialRecordType,
+        credentialRecordId: expect.any(String),
+      },
     ])
 
+    const credentialRecordId = credentialExchangeRecord.credentials[0].credentialRecordId
     const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
-    const storedRecord = await w3cV2CredentialService.getCredentialRecordById(
-      agentContext,
-      credentialExchangeRecord.credentials[0].credentialRecordId
-    )
+    const storedRecord = await w3cV2CredentialService.getCredentialRecordById(agentContext, credentialRecordId)
     expect(storedRecord).toBeInstanceOf(W3cV2CredentialRecord)
+
+    // Delete: the record is found in the data model 2.0 store and removed from there
+    await dataIntegrityCredentialFormatService.deleteCredentialById(agentContext, credentialRecordId)
+    await expect(w3cV2CredentialService.getCredentialRecordById(agentContext, credentialRecordId)).rejects.toThrow(
+      RecordNotFoundError
+    )
+    await expect(
+      dataIntegrityCredentialFormatService.deleteCredentialById(agentContext, credentialRecordId)
+    ).rejects.toThrow(RecordNotFoundError)
+  })
+
+  test('selects a cryptosuite supporting the issuer key when none is provided', async () => {
+    const { did, verificationMethod } = await createDidKidVerificationMethod(agentContext)
+    const { offerAttachment, requestAttachment, credentialExchangeRecord } = await offerAndRequest(did)
+
+    const { attachment: credentialAttachment } = await dataIntegrityCredentialFormatService.acceptRequest(
+      agentContext,
+      {
+        credentialExchangeRecord,
+        offerAttachment,
+        requestAttachment,
+        credentialFormats: { dataIntegrity: { issuerVerificationMethod: verificationMethod.id } },
+      }
+    )
+
+    const { credential: issuedCredential } = credentialAttachment.getDataAsJson<DataIntegrityCredential>()
+    expect(issuedCredential).toMatchObject({
+      proof: { type: 'DataIntegrityProof', cryptosuite: 'eddsa-jcs-2022' },
+    })
+  })
+
+  test('rejects the anoncreds cryptosuite for a data model 2.0 credential', async () => {
+    const { did } = await createDidKidVerificationMethod(agentContext)
+    const { offerAttachment, requestAttachment, credentialExchangeRecord } = await offerAndRequest(did)
+
+    await expect(
+      dataIntegrityCredentialFormatService.acceptRequest(agentContext, {
+        credentialExchangeRecord,
+        offerAttachment,
+        requestAttachment,
+        credentialFormats: { dataIntegrity: { cryptosuite: 'anoncreds-2023' } },
+      })
+    ).rejects.toThrow("The 'anoncreds-2023' cryptosuite cannot be used to secure a VC Data Model 2.0 credential")
+  })
+
+  test('determines the data model version from the base context only', async () => {
+    const { did } = await createDidKidVerificationMethod(agentContext)
+
+    const credentialExchangeRecord = new DidCommCredentialExchangeRecord({
+      protocolVersion: 'v2',
+      role: DidCommCredentialRole.Issuer,
+      state: DidCommCredentialState.ProposalReceived,
+      threadId: '2b1f6e7c-8d9a-4b3c-9e1f-0a2b3c4d5e6f',
+    })
+
+    // A credential listing both base contexts is classified by the first one
+    const { attachment: offerAttachment } = await dataIntegrityCredentialFormatService.createOffer(agentContext, {
+      credentialExchangeRecord,
+      credentialFormats: {
+        dataIntegrity: {
+          credential: {
+            '@context': ['https://www.w3.org/ns/credentials/v2', 'https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential'],
+            issuer: did,
+            validFrom: '2024-01-01T00:00:00Z',
+            credentialSubject: { name: 'John' },
+          },
+          bindingRequired: false,
+        },
+      },
+    })
+    expect(offerAttachment.getDataAsJson()).toMatchObject({ data_model_versions_supported: ['2.0'] })
+
+    await expect(
+      dataIntegrityCredentialFormatService.createOffer(agentContext, {
+        credentialExchangeRecord,
+        credentialFormats: {
+          dataIntegrity: {
+            credential: {
+              '@context': ['https://www.w3.org/ns/credentials/examples/v2', 'https://www.w3.org/ns/credentials/v2'],
+              type: ['VerifiableCredential'],
+              issuer: did,
+              validFrom: '2024-01-01T00:00:00Z',
+              credentialSubject: { name: 'John' },
+            },
+            bindingRequired: false,
+          },
+        },
+      })
+    ).rejects.toThrow('Cannot determine credential version from @context')
   })
 
   test('rejects the anoncreds link secret binding method for a data model 2.0 credential', async () => {

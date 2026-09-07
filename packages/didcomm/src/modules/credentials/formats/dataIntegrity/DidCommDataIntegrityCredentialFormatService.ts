@@ -1,5 +1,6 @@
 import {
   type AgentContext,
+  ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE,
   ClaimFormat,
   CredoError,
   DidsApi,
@@ -13,16 +14,20 @@ import {
   JwtPayload,
   Kms,
   parseDid,
+  RecordNotFoundError,
   SignatureSuiteRegistry,
   TypedArrayEncoder,
   type VerificationMethod,
   W3cCredential,
   W3cCredentialRecord,
+  W3cCredentialRepository,
   W3cCredentialService,
   W3cCredentialSubject,
+  W3cDataIntegrityApi,
   W3cJsonLdVerifiableCredential,
   W3cV2Credential,
   W3cV2CredentialRecord,
+  W3cV2CredentialRepository,
   W3cV2CredentialService,
   W3cV2DataIntegrityVerifiableCredential,
 } from '@credo-ts/core'
@@ -175,16 +180,18 @@ export class DidCommDataIntegrityCredentialFormatService
     return provider
   }
 
+  /**
+   * Both data model versions require the base context to be the first entry of `@context`, so only
+   * the first entry decides the version.
+   */
   private getCredentialVersion(credentialJson: JsonObject): W3C_VC_DATA_MODEL_VERSION {
     const context = credentialJson['@context']
     if (!context || !Array.isArray(context)) throw new CredoError('Invalid @context in credential offer')
 
-    const isV1Credential = context.find((c) => c === 'https://www.w3.org/2018/credentials/v1')
-    const isV2Credential = context.find((c) => c === 'https://www.w3.org/ns/credentials/v2')
-
-    if (isV1Credential) return '1.1'
-    if (isV2Credential) return '2.0'
-    throw new CredoError('Cannot determine credential version from @context')
+    const baseContext = context[0]
+    if (baseContext === 'https://www.w3.org/2018/credentials/v1') return '1.1'
+    if (baseContext === 'https://www.w3.org/ns/credentials/v2') return '2.0'
+    throw new CredoError('Cannot determine credential version from @context. The first entry must be the base context.')
   }
 
   public async processOffer(
@@ -493,17 +500,20 @@ export class DidCommDataIntegrityCredentialFormatService
   /**
    * Secures a data model 2.0 credential with a `DataIntegrityProof`.
    *
-   * RFC 0809 leaves the choice of cryptosuite to the issuer, so it is not negotiated with the holder
-   * and has to be provided by the issuer.
+   * RFC 0809 leaves the choice of cryptosuite to the issuer, so it is not negotiated with the holder.
+   * When the issuer does not name one, the first registered cryptosuite supporting the key type of
+   * the issuer verification method is used.
    */
   private async signV2Credential(
     agentContext: AgentContext,
     credential: W3cV2Credential,
     { cryptosuite, issuerVerificationMethod }: { cryptosuite?: string; issuerVerificationMethod?: string }
   ) {
-    if (!cryptosuite) {
+    // The anoncreds cryptosuite is not a registered Data Integrity cryptosuite. It is only produced
+    // through the anoncreds link secret binding method, which is limited to data model 1.1.
+    if (cryptosuite === ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE) {
       throw new CredoError(
-        'Missing cryptosuite. Issuing a VC Data Model 2.0 credential requires the issuer to pick a Data Integrity cryptosuite, which can be provided using the `cryptosuite` data integrity credential format option.'
+        `The '${ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE}' cryptosuite cannot be used to secure a VC Data Model 2.0 credential. It is only available through the anoncreds link secret binding method for data model 1.1 credentials.`
       )
     }
 
@@ -512,6 +522,20 @@ export class DidCommDataIntegrityCredentialFormatService
       credential.issuerId,
       issuerVerificationMethod
     )
+
+    if (!cryptosuite) {
+      const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      const w3cDataIntegrityApi = agentContext.dependencyManager.resolve(W3cDataIntegrityApi)
+      const [firstSupportedCryptosuite] = w3cDataIntegrityApi.getSupportedCryptosuites(publicJwk)
+
+      if (!firstSupportedCryptosuite) {
+        throw new CredoError(
+          `No Data Integrity cryptosuite is registered for the ${publicJwk.jwkTypeHumanDescription} key of issuer verification method '${verificationMethod.id}'. Register one, or pick another key using the 'issuerVerificationMethod' data integrity credential format option.`
+        )
+      }
+
+      cryptosuite = firstSupportedCryptosuite
+    }
 
     const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
     return await w3cV2CredentialService.signCredential<ClaimFormat.DiVc>(agentContext, {
@@ -733,7 +757,9 @@ export class DidCommDataIntegrityCredentialFormatService
     }
 
     // A data model 2.0 credential is secured with a DataIntegrityProof and is held in a
-    // W3cV2CredentialRecord, as W3cCredentialRecord only holds data model 1.1 credentials.
+    // W3cV2CredentialRecord, as W3cCredentialRecord only holds data model 1.1 credentials. The
+    // binding on the exchange record still uses this format's single record type, as that is what
+    // the credential protocol uses to route deletion back to this format service.
     if (credentialVersion === '2.0') {
       const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
       const credential = W3cV2DataIntegrityVerifiableCredential.fromObject(
@@ -750,7 +776,7 @@ export class DidCommDataIntegrityCredentialFormatService
       })
 
       credentialExchangeRecord.credentials.push({
-        credentialRecordType: 'w3c-v2',
+        credentialRecordType: this.credentialRecordType,
         credentialRecordId: w3cV2CredentialRecord.id,
       })
 
@@ -807,29 +833,38 @@ export class DidCommDataIntegrityCredentialFormatService
     return supportedAttachment
   }
 
+  /**
+   * Deletes a credential received over this format. The record type on the exchange record is the
+   * same for every credential of this format, so the store holding the record decides how it is
+   * deleted: a data model 1.1 credential is a `W3cCredentialRecord`, which is deleted through the
+   * anoncreds link secret binding provider when it was bound to a link secret so that its anoncreds
+   * state is cleaned up as well, and a data model 2.0 credential is a `W3cV2CredentialRecord`.
+   */
   public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
-    // A credential bound using the anoncreds link secret is stored through the anoncreds holder
-    // service and has to be deleted through it as well, so that its anoncreds state is cleaned up.
-    // Credentials bound using any other method, or not bound at all, are plain w3c credential records.
-    const linkSecretBindingProvider = this.findLinkSecretBindingProvider(agentContext)
+    const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
+    const w3cCredentialRecord = await w3cCredentialRepository.findById(agentContext, credentialRecordId)
+    if (w3cCredentialRecord) {
+      const linkSecretBindingProvider = this.findLinkSecretBindingProvider(agentContext)
 
-    if (await linkSecretBindingProvider?.ownsCredentialRecord(agentContext, credentialRecordId)) {
-      await linkSecretBindingProvider?.deleteCredentialById(agentContext, credentialRecordId)
+      if (linkSecretBindingProvider?.isBoundCredentialRecord(w3cCredentialRecord)) {
+        await linkSecretBindingProvider.deleteCredentialRecord(agentContext, w3cCredentialRecord)
+      } else {
+        await w3cCredentialRepository.delete(agentContext, w3cCredentialRecord)
+      }
+
       return
     }
 
-    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-    const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
-
-    try {
-      await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
-    } catch {
-      // A data model 2.0 credential is held in a W3cV2CredentialRecord instead
-      await w3cV2CredentialService.removeCredentialRecord(agentContext, credentialRecordId)
+    const w3cV2CredentialRepository = agentContext.dependencyManager.resolve(W3cV2CredentialRepository)
+    const w3cV2CredentialRecord = await w3cV2CredentialRepository.findById(agentContext, credentialRecordId)
+    if (w3cV2CredentialRecord) {
+      await w3cV2CredentialRepository.delete(agentContext, w3cV2CredentialRecord)
       return
     }
 
-    await w3cCredentialService.removeCredentialRecord(agentContext, credentialRecordId)
+    throw new RecordNotFoundError(`Credential record with id ${credentialRecordId} not found`, {
+      recordType: `${W3cCredentialRecord.type} | ${W3cV2CredentialRecord.type}`,
+    })
   }
 
   public async shouldAutoRespondToProposal(

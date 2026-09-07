@@ -1,4 +1,4 @@
-import type { AgentContext, JsonObject } from '@credo-ts/core'
+import type { AgentContext, JsonObject, W3cCredentialRecord } from '@credo-ts/core'
 import {
   CredoError,
   injectable,
@@ -38,7 +38,11 @@ import {
   convertAttributesToCredentialValues,
 } from '../utils/credential'
 import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
-import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
+import {
+  AnonCredsCredentialMetadataKey,
+  AnonCredsCredentialRequestMetadataKey,
+  W3cAnonCredsCredentialMetadataKey,
+} from '../utils/metadata'
 import { getAnonCredsTagsFromRecord } from '../utils/w3cAnonCredsUtils'
 
 /**
@@ -351,22 +355,22 @@ export class AnonCredsLinkSecretBindingProvider implements DidCommDataIntegrityL
     return w3cCredentialRecord.id
   }
 
-  public async ownsCredentialRecord(agentContext: AgentContext, credentialRecordId: string): Promise<boolean> {
-    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-
-    try {
-      const w3cCredentialRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
-      return getAnonCredsTagsFromRecord(w3cCredentialRecord) !== undefined
-    } catch {
-      return false
-    }
+  /**
+   * The anoncreds holder service marks every credential it stores with the anoncreds metadata, so
+   * its presence is what tells a link secret bound credential apart from a plain w3c credential.
+   */
+  public isBoundCredentialRecord(credentialRecord: W3cCredentialRecord): boolean {
+    return credentialRecord.metadata.get(W3cAnonCredsCredentialMetadataKey) !== undefined
   }
 
-  public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
+  public async deleteCredentialRecord(
+    agentContext: AgentContext,
+    credentialRecord: W3cCredentialRecord
+  ): Promise<void> {
     const anonCredsHolderService =
       agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
-    await anonCredsHolderService.deleteCredential(agentContext, credentialRecordId)
+    await anonCredsHolderService.deleteCredential(agentContext, credentialRecord.id)
   }
 
   private previewAttributesFromCredential(credential: W3cCredential): DidCommCredentialPreviewAttributeOptions[] {
