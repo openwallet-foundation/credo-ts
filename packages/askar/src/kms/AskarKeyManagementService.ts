@@ -1,12 +1,12 @@
 import { type AgentContext, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { JwkProps, KeyEntryObject, Session } from '@openwallet-foundation/askar-shared'
 import {
-  askar,
   CryptoBox,
   Jwk,
   Key,
   KeyAlgorithm,
   KeyEntryList,
+  NativeAskar,
   SignatureAlgorithm,
 } from '@openwallet-foundation/askar-shared'
 
@@ -681,7 +681,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
   private keyFromJwk(jwk: Kms.KmsJwkPrivate | Kms.KmsJwkPublic) {
     const key = new Key(
-      askar.keyFromJwk({
+      NativeAskar.instance.keyFromJwk({
         // TODO: the JWK class in JS Askar wrapper is too limiting
         // so we use this method directly. should update it
         jwk: new Uint8Array(JsonEncoder.toUint8Array(jwk)) as unknown as Jwk,
@@ -717,7 +717,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     // so we use this method directly. should update it
     // We extract alg, as Askar doesn't always use the same algs
     const { alg, ...jwkSecret } = JsonEncoder.fromUint8Array(
-      askar.keyGetJwkSecret({
+      NativeAskar.instance.keyGetJwkSecret({
         localKeyHandle: key.handle,
       })
     )
@@ -733,7 +733,11 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       if (!session.handle) throw Error('Cannot fetch a key with a closed session')
 
       // Fetch the key from the session
-      const handle = await askar.sessionFetchKey({ forUpdate: false, name: keyId, sessionHandle: session.handle })
+      const handle = await NativeAskar.instance.sessionFetchKey({
+        forUpdate: false,
+        name: keyId,
+        sessionHandle: session.handle,
+      })
       if (!handle) return null
 
       // Get the key entry
