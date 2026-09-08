@@ -102,8 +102,8 @@ const agentContext = getAgentContext({
     [AnonCredsCredentialRepository, anonCredsCredentialRepository],
     [AnonCredsKeyCorrectnessProofRepository, anonCredsKeyCorrectnessProofRepository],
     [JsonLdModuleConfig, new JsonLdModuleConfig()],
-    [InjectionSymbols.StorageService, storageService],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
+    [InjectionSymbols.StorageService, storageService],
     [
       CacheModuleConfig,
       new CacheModuleConfig({

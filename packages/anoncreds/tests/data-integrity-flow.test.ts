@@ -66,8 +66,7 @@ const didsModuleConfig = new DidsModuleConfig({
   resolvers: [new KeyDidResolver()],
 })
 const fileSystem = new agentDependencies.FileSystem()
-const signatureSuiteRegistry = new SignatureSuiteRegistry()
-signatureSuiteRegistry.registerSuites([
+const signatureSuiteRegistry = new SignatureSuiteRegistry([
   {
     suiteClass: Ed25519Signature2018,
     proofType: 'Ed25519Signature2018',
