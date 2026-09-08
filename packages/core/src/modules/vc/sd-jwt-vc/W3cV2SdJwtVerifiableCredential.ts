@@ -63,37 +63,26 @@ export class W3cV2SdJwtVerifiableCredential {
     // Validate the resolved credential according to the data model
     MessageValidator.validateSync(this.resolvedCredential)
 
-    // Basic JWT validations to ensure compliance to the specification
+    // JWT validations to ensure compliance to the specification
     const sdJwt = this.sdJwt
     const header = sdJwt.header
     const payload = sdJwt.prettyClaims
+
+    if (header.alg === 'none') {
+      throw new CredoError(`The provided W3C VC SD-JWT uses 'alg'='none', which is not allowed.`)
+    }
 
     if ('typ' in header && header.typ !== 'vc+sd-jwt') {
       throw new CredoError(`The provided W3C VC SD-JWT does not have the correct 'typ' header.`)
     }
 
-    if ('cyt' in header && header.cyt !== 'vc') {
-      throw new CredoError(`The provided W3C VC SD-JWT does not have the correct 'cyt' header.`)
+    if ('cty' in header && header.cty !== 'vc') {
+      throw new CredoError(`The provided W3C VC SD-JWT does not have the correct 'cty' header.`)
     }
 
-    const iss = header.iss ?? payload.iss
-    if (iss) {
-      if (this.resolvedCredential.issuerId !== iss) {
+    if (payload.iss) {
+      if (this.resolvedCredential.issuerId !== payload.iss) {
         throw new CredoError(`The provided W3C VC SD-JWT has both 'iss' and 'issuer' claims, but they differ.`)
-      }
-    }
-
-    if (payload.jti) {
-      if (this.resolvedCredential.id && this.resolvedCredential.id !== payload.jti) {
-        throw new CredoError(`The provided W3C VC JWT has both 'jti' and 'id' claims, but they differ.`)
-      }
-    }
-
-    if (payload.sub) {
-      if (!this.resolvedCredential.credentialSubjectIds.includes(payload.sub as string)) {
-        throw new CredoError(
-          `The provided W3C VC SD-JWT has a 'sub' claim, but it does not match any credentialSubject.`
-        )
       }
     }
   }

@@ -4,6 +4,7 @@ import m0000 from './0000_initial.sql'
 import m0001 from './0001_gigantic_skrulls.sql'
 import m0002 from './0002_add_batch_credential_record_with_kms_key_id.sql'
 import m0003 from './0003_add_sd_jwt_type_metadata.sql'
+import m0004 from './0004_add_w3c_v2_cryptosuites_tag.sql'
 import journal from './meta/_journal.json'
 
 export default {
@@ -13,5 +14,6 @@ export default {
     m0001,
     m0002,
     m0003,
+    m0004,
   },
 }

@@ -18,6 +18,10 @@ const validCredential = {
     id: 'https://example.org/examples/degree.json',
     type: 'JsonSchema',
   },
+  credentialStatus: {
+    id: 'https://example.org/status/1',
+    type: 'StatusList2021Entry',
+  },
 }
 
 describe('W3cV2Credential', () => {
@@ -231,5 +235,19 @@ describe('W3cV2Credential', () => {
 
     const transformedJson = JsonTransformer.toJSON(credential)
     expect(transformedJson).toEqual(validCredential)
+  })
+
+  test('transforms credentialStatus from JSON', () => {
+    const credential = JsonTransformer.fromJSON(validCredential, W3cV2Credential)
+
+    expect(credential.credentialStatus).toEqual(validCredential.credentialStatus)
+  })
+
+  test('serializes credentialStatus to JSON', () => {
+    const credential = JsonTransformer.fromJSON(validCredential, W3cV2Credential)
+    const transformedJson = JsonTransformer.toJSON(credential)
+
+    expect(transformedJson).toHaveProperty('credentialStatus')
+    expect(transformedJson).not.toHaveProperty('status')
   })
 })

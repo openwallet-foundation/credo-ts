@@ -27,6 +27,7 @@ import {
 } from '../../../../didcomm/src/modules/routing'
 import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
+import { JsonLdModule, JsonLdModuleConfig } from '../../modules/vc/jsonld'
 import type { Module } from '../../plugins'
 import { injectable } from '../../plugins'
 import { Agent } from '../Agent'
@@ -108,6 +109,19 @@ describe('Agent', () => {
   })
 
   describe('Dependency Injection', () => {
+    it('resolves JSON-LD configuration from the standalone module', () => {
+      const documentLoader = vi.fn()
+      const agent = new Agent({
+        ...agentOptions,
+        modules: {
+          jsonld: new JsonLdModule({ documentLoader }),
+          inMemory: new InMemoryWalletModule(),
+        },
+      })
+
+      expect(agent.dependencyManager.resolve(JsonLdModuleConfig).documentLoader).toBe(documentLoader)
+    })
+
     it('should be able to resolve registered instances', () => {
       const agent = new Agent(agentOptions)
       const container = agent.dependencyManager

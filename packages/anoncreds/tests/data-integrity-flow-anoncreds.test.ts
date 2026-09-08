@@ -31,6 +31,7 @@ import {
   InMemoryLruCache,
   KeyDidRegistrar,
   KeyDidResolver,
+  JsonLdModuleConfig,
   SignatureSuiteRegistry,
   W3cCredential,
   W3cCredentialService,
@@ -94,6 +95,7 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig()],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
       CacheModuleConfig,

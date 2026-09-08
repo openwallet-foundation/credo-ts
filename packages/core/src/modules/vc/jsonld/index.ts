@@ -3,6 +3,8 @@ import * as vc from '../linked-data-proofs/adapters/vc-adapter'
 import * as jsonld from './jsonld'
 
 export { defaultDocumentLoader } from './documentLoader'
+export * from './JsonLdModule'
+export * from './JsonLdModuleConfig'
 
 // Temporary re-export of vc libraries. As the libraries don't
 // have types, it's inconvenient to import them from non-core packages

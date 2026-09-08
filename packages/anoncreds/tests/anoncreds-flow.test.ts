@@ -29,6 +29,7 @@ import {
   DidsModuleConfig,
   InjectionSymbols,
   InMemoryLruCache,
+  JsonLdModuleConfig,
   SignatureSuiteRegistry,
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
@@ -80,6 +81,7 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig()],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
       CacheModuleConfig,

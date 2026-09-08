@@ -9,6 +9,7 @@ import { asArray, JsonTransformer } from '../../../utils'
 import { DidsApi, parseDid } from '../../dids'
 import { PublicJwk } from '../../kms'
 import { ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE } from '../anoncreds-w3c-credential'
+import { JsonLdModuleConfig } from '../jsonld'
 import jsonld from '../jsonld/jsonld'
 import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
@@ -19,7 +20,6 @@ import type {
   W3cJsonLdVerifyCredentialOptions,
   W3cJsonLdVerifyPresentationOptions,
 } from '../W3cCredentialServiceOptions'
-import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 import vc from './adapters/vc-adapter'
 import { W3cJsonLdVerifiableCredential } from './models/W3cJsonLdVerifiableCredential'
 import { W3cJsonLdVerifiablePresentation } from './models/W3cJsonLdVerifiablePresentation'
@@ -33,14 +33,11 @@ import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
 @injectable()
 export class W3cJsonLdCredentialService {
   private signatureSuiteRegistry: SignatureSuiteRegistry
-  private w3cCredentialsModuleConfig: W3cCredentialsModuleConfig
+  private jsonLdModuleConfig: JsonLdModuleConfig
 
-  public constructor(
-    signatureSuiteRegistry: SignatureSuiteRegistry,
-    w3cCredentialsModuleConfig: W3cCredentialsModuleConfig
-  ) {
+  public constructor(signatureSuiteRegistry: SignatureSuiteRegistry, jsonLdModuleConfig: JsonLdModuleConfig) {
     this.signatureSuiteRegistry = signatureSuiteRegistry
-    this.w3cCredentialsModuleConfig = w3cCredentialsModuleConfig
+    this.jsonLdModuleConfig = jsonLdModuleConfig
   }
 
   /**
@@ -84,7 +81,7 @@ export class W3cJsonLdCredentialService {
         credential: JsonTransformer.toJSON(options.credential),
         suite: suite,
         purpose: options.proofPurpose,
-        documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
+        documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
       })
 
       return JsonTransformer.fromJSON(result, W3cJsonLdVerifiableCredential)
@@ -117,7 +114,7 @@ export class W3cJsonLdCredentialService {
       const verifyOptions: Record<string, unknown> = {
         credential: JsonTransformer.toJSON(options.credential),
         suite: suites,
-        documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
+        documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
         checkStatus: ({ credential }: { credential: W3cJsonCredential }) => {
           // Only throw error if credentialStatus is present
           if (verifyCredentialStatus && 'credentialStatus' in credential) {
@@ -192,7 +189,7 @@ export class W3cJsonLdCredentialService {
       throw new CredoError('The key type of the verification method does not match the suite')
     }
 
-    const documentLoader = this.w3cCredentialsModuleConfig.documentLoader(agentContext)
+    const documentLoader = this.jsonLdModuleConfig.documentLoader(agentContext)
     const verificationMethodObject = (await documentLoader(options.verificationMethod)).document as Record<
       string,
       unknown
@@ -219,7 +216,7 @@ export class W3cJsonLdCredentialService {
       suite: suite,
       challenge: options.challenge,
       domain: options.domain,
-      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
+      documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
     }
 
     // this is a hack because vcjs throws if purpose is passed as undefined or null
@@ -287,7 +284,7 @@ export class W3cJsonLdCredentialService {
         suite: allSuites,
         challenge: options.challenge,
         domain: options.domain,
-        documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
+        documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
       }
 
       // this is a hack because vcjs throws if purpose is passed as undefined or null
@@ -381,7 +378,7 @@ export class W3cJsonLdCredentialService {
     // Get the expanded types
     const expandedTypes: SingleOrArray<string> = (
       await jsonld.expand(JsonTransformer.toJSON(credential), {
-        documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
+        documentLoader: this.jsonLdModuleConfig.documentLoader(agentContext),
       })
     )[0]['@type']
 
