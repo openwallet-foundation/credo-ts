@@ -1,4 +1,4 @@
-import type { DidRepository } from '@credo-ts/core'
+import type { DidRepository, JsonObject } from '@credo-ts/core'
 import {
   AgentContext,
   CacheModuleConfig,
@@ -74,8 +74,8 @@ agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 
 const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
 
-/** Runs the offer and request steps for an unbound data model 2.0 credential issued by `issuerDid` */
-async function offerAndRequest(issuerDid: string) {
+/** Runs the offer and request steps for an unbound data model 2.0 credential issued by `issuerDid` with the given claims */
+async function offerAndRequest(issuerDid: string, credentialSubject: JsonObject = { name: 'John', age: '25' }) {
   const credentialExchangeRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v2',
     role: DidCommCredentialRole.Issuer,
@@ -94,7 +94,7 @@ async function offerAndRequest(issuerDid: string) {
             type: ['VerifiableCredential'],
             issuer: issuerDid,
             validFrom: '2024-01-01T00:00:00Z',
-            credentialSubject: { name: 'John', age: '25' },
+            credentialSubject,
           },
           bindingRequired: false,
         },
@@ -216,6 +216,40 @@ describe('data integrity format service (vcdm 2.0)', () => {
     await expect(
       dataIntegrityCredentialFormatService.deleteCredentialById(agentContext, credentialRecordId)
     ).rejects.toThrow(RecordNotFoundError)
+  })
+
+  test('accepts a received credential whose claims include zero, false and an empty string', async () => {
+    const { did, verificationMethod } = await createDidKidVerificationMethod(agentContext)
+    const { offerAttachment, requestAttachment, credentialExchangeRecord } = await offerAndRequest(did, {
+      name: 'John',
+      minimumAge: 0,
+      verified: false,
+      nickname: '',
+    })
+
+    const { attachment: credentialAttachment } = await dataIntegrityCredentialFormatService.acceptRequest(
+      agentContext,
+      {
+        credentialExchangeRecord,
+        offerAttachment,
+        requestAttachment,
+        credentialFormats: {
+          dataIntegrity: { cryptosuite: 'eddsa-jcs-2022', issuerVerificationMethod: verificationMethod.id },
+        },
+      }
+    )
+
+    const { credential: issuedCredential } = credentialAttachment.getDataAsJson<DataIntegrityCredential>()
+    expect(issuedCredential.credentialSubject).toEqual({ name: 'John', minimumAge: 0, verified: false, nickname: '' })
+
+    // The offered and the received subject are compared claim by claim; a falsy value is still a value
+    await dataIntegrityCredentialFormatService.processCredential(agentContext, {
+      credentialExchangeRecord,
+      attachment: credentialAttachment,
+      requestAttachment,
+      offerAttachment,
+    })
+    expect(credentialExchangeRecord.credentials).toHaveLength(1)
   })
 
   test('selects a cryptosuite supporting the issuer key when none is provided', async () => {

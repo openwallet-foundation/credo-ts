@@ -724,7 +724,9 @@ export class DidCommDataIntegrityCredentialFormatService
     const credentialSubjectMatches = Object.entries(offeredCredentialJson.credentialSubject as JsonObject).every(
       ([key, offeredValue]) => {
         const receivedValue = (credentialJson.credentialSubject as JsonObject)[key]
-        if (!offeredValue || !receivedValue) return false
+        // Compared by presence: 0, false and '' are legitimate claim values
+        if (offeredValue === undefined || receivedValue === undefined) return false
+        if (offeredValue === null || receivedValue === null) return offeredValue === receivedValue
 
         if (typeof offeredValue === 'number' || typeof receivedValue === 'number') {
           return offeredValue.toString() === receivedValue.toString()
@@ -836,9 +838,16 @@ export class DidCommDataIntegrityCredentialFormatService
   /**
    * Deletes a credential received over this format. The record type on the exchange record is the
    * same for every credential of this format, so the store holding the record decides how it is
-   * deleted: a data model 1.1 credential is a `W3cCredentialRecord`, which is deleted through the
-   * anoncreds link secret binding provider when it was bound to a link secret so that its anoncreds
-   * state is cleaned up as well, and a data model 2.0 credential is a `W3cV2CredentialRecord`.
+   * deleted:
+   *
+   * - A data model 1.1 credential bound to an anoncreds link secret is a `W3cCredentialRecord`
+   *   stored by the anoncreds holder service. It is deleted through the link secret binding
+   *   provider, so that its anoncreds state is cleaned up as well.
+   * - Any other data model 1.1 credential, secured with a linked data proof and either bound using
+   *   a DIDComm signed attachment or not bound at all, is a plain `W3cCredentialRecord` and is
+   *   deleted from the 1.1 repository directly.
+   * - A data model 2.0 credential, secured with a `DataIntegrityProof`, is a `W3cV2CredentialRecord`
+   *   and is deleted from the 2.0 repository directly.
    */
   public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
     const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
