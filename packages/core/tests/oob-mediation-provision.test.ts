@@ -44,6 +44,7 @@ describe('out of band with mediation set up with provision method', () => {
     goalCode: 'p2p-messaging',
     label: 'Faber College',
     handshake: true,
+    handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     multiUseInvitation: false,
   }
 

@@ -3,6 +3,7 @@ import { IsInstance, ValidateNested } from 'class-validator'
 
 import { DidCommMessage } from '../../../DidCommMessage'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface DidCommConnectionResponseMessageOptions {
@@ -18,6 +19,12 @@ export interface DidCommConnectionResponseMessageOptions {
  */
 export class DidCommConnectionResponseMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
+
+  /**
+   * See {@link DidCommConnectionRequestMessage.supportedDidCommVersions}. The response completes
+   * the same handshake and has the same resolution constraint.
+   */
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   /**
    * Create new ConnectionResponseMessage instance.

@@ -365,14 +365,19 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       decryptionKey = key.privateJwk
     } else if (key.keyAgreement) {
       Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, nodeSupportedKeyAgreementAlgorithms, this.backend)
-      Kms.assertAllowedKeyDerivationAlgForKey(key.keyAgreement.externalPublicJwk, key.keyAgreement.algorithm)
-      Kms.assertKeyAllowsDerive(key.keyAgreement.externalPublicJwk)
+
+      const publicJwkForAssert =
+        key.keyAgreement.algorithm === 'ECDH-1PU+A256KW'
+          ? key.keyAgreement.ephemeralPublicJwk
+          : key.keyAgreement.externalPublicJwk
+      Kms.assertAllowedKeyDerivationAlgForKey(publicJwkForAssert, key.keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(publicJwkForAssert)
 
       const privateJwk = await this.getKeyAsserted(agentContext, key.keyAgreement.keyId)
       Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
       Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
       Kms.assertKeyAllowsDerive(privateJwk)
-      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
+      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, publicJwkForAssert)
 
       const { contentEncryptionKey } = await deriveDecryptionKey({
         keyAgreement: key.keyAgreement,

@@ -1,21 +1,35 @@
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
 import { EventEmitter, injectable } from '@credo-ts/core'
+import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type { DidCommInboundMessageContext } from '../../../models'
-import { DidCommConnectionRecord } from '../../connections'
+import { DidCommProtocol } from '../../../models'
+import type { DidCommConnectionRecord } from '../../connections'
 import type { DidCommBasicMessageStateChangedEvent } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageEventTypes } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
-import { DidCommBasicMessage } from '../messages'
+import { DidCommBasicMessage } from '../protocol/v1'
+import { DidCommBasicMessageHandler } from '../protocol/v1/handlers'
 import { DidCommBasicMessageRecord, DidCommBasicMessageRepository } from '../repository'
+import { DidCommBaseBasicMessageService } from './DidCommBaseBasicMessageService'
 
 @injectable()
-export class DidCommBasicMessageService {
-  private basicMessageRepository: DidCommBasicMessageRepository
-  private eventEmitter: EventEmitter
+export class DidCommBasicMessageService extends DidCommBaseBasicMessageService {
+  public readonly version = 'v1'
 
+  // biome-ignore lint/complexity/noUselessConstructor: tsyringe needs an own constructor for design:paramtypes
   public constructor(basicMessageRepository: DidCommBasicMessageRepository, eventEmitter: EventEmitter) {
-    this.basicMessageRepository = basicMessageRepository
-    this.eventEmitter = eventEmitter
+    super(basicMessageRepository, eventEmitter)
+  }
+
+  public register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry) {
+    messageHandlerRegistry.registerMessageHandler(new DidCommBasicMessageHandler(this))
+    featureRegistry.register(
+      new DidCommProtocol({
+        id: 'https://didcomm.org/basicmessage/1.0',
+        roles: [DidCommBasicMessageRole.Sender, DidCommBasicMessageRole.Receiver],
+      })
+    )
   }
 
   public async createMessage(
@@ -38,6 +52,7 @@ export class DidCommBasicMessageService {
       role: DidCommBasicMessageRole.Sender,
       threadId: basicMessage.threadId,
       parentThreadId,
+      protocolVersion: 'v1',
     })
 
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)
@@ -60,6 +75,7 @@ export class DidCommBasicMessageService {
       role: DidCommBasicMessageRole.Receiver,
       threadId: message.threadId,
       parentThreadId: message.thread?.parentThreadId,
+      protocolVersion: 'v1',
     })
 
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)
@@ -75,30 +91,5 @@ export class DidCommBasicMessageService {
       type: DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
       payload: { message: basicMessage, basicMessageRecord: basicMessageRecord.clone() },
     })
-  }
-
-  public async findAllByQuery(
-    agentContext: AgentContext,
-    query: Query<DidCommBasicMessageRecord>,
-    queryOptions?: QueryOptions
-  ) {
-    return this.basicMessageRepository.findByQuery(agentContext, query, queryOptions)
-  }
-
-  public async getById(agentContext: AgentContext, basicMessageRecordId: string) {
-    return this.basicMessageRepository.getById(agentContext, basicMessageRecordId)
-  }
-
-  public async getByThreadId(agentContext: AgentContext, threadId: string) {
-    return this.basicMessageRepository.getSingleByQuery(agentContext, { threadId })
-  }
-
-  public async findAllByParentThreadId(agentContext: AgentContext, parentThreadId: string) {
-    return this.basicMessageRepository.findByQuery(agentContext, { parentThreadId })
-  }
-
-  public async deleteById(agentContext: AgentContext, basicMessageRecordId: string) {
-    const basicMessageRecord = await this.getById(agentContext, basicMessageRecordId)
-    return this.basicMessageRepository.delete(agentContext, basicMessageRecord)
   }
 }

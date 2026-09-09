@@ -3,6 +3,7 @@ import type { DidCommMessageProcessedEvent } from '../../didcomm/src'
 
 import {
   DidCommEventTypes,
+  DidCommHandshakeProtocol,
   DidCommMessage,
   DidCommMessageSender,
   DidCommOutboundMessageContext,
@@ -54,7 +55,9 @@ describe('multi version protocols', () => {
     await aliceAgent.initialize()
     await bobAgent.initialize()
 
-    const { outOfBandInvitation, id } = await aliceAgent.didcomm.oob.createInvitation()
+    const { outOfBandInvitation, id } = await aliceAgent.didcomm.oob.createInvitation({
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+    })
     let { connectionRecord: bobConnection } = await bobAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, {
       label: 'bob',
       autoAcceptConnection: true,

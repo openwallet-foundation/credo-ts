@@ -19,6 +19,14 @@ export class BaseDidCommMessage {
   public readonly type!: string
   public static readonly type: ParsedMessageType
 
+  /** Sender DID (DIDComm v2 plaintext). Set when normalized from v2 envelope. */
+  @Expose()
+  public from?: string
+
+  /** Recipient DID(s) (DIDComm v2 plaintext). Set when normalized from v2 envelope. */
+  @Expose()
+  public to?: string | string[]
+
   public generateId() {
     return utils.uuid()
   }
