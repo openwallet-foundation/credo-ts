@@ -7,7 +7,8 @@ import type {
 import { PublicJwk } from '../../kms'
 import { type X509Certificate, X509Service, type X509VerificationContext } from '../../x509'
 import { Mdoc } from '../Mdoc'
-import { MdocVerificationSessionExpiredError } from '../MdocError'
+import { MdocDeviceRequestNotSatisfiedError, MdocVerificationSessionExpiredError } from '../MdocError'
+import type { MdocDcApiCreateVerificationSessionOptions } from '../MdocOptions'
 import { MdocVerificationSessionState } from '../MdocVerificationSessionState'
 import { MdocRecord } from '../repository'
 
@@ -129,6 +130,120 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
     expect(result.verificationSession.getSessionTranscript('isoMdocDcApi').origin).toBe(origin)
     expect(result.deviceResponse.issuerClaims).toEqual({
       [docType]: { [nameSpace]: { family_name: 'Doe', given_name: 'John' } },
+    })
+    expect(result.deviceRequestMatch).toMatchObject({
+      success: true,
+      unrequestedDocuments: [],
+      docRequests: [
+        {
+          docRequestIndex: 0,
+          docType,
+          success: true,
+          documents: [
+            {
+              documentIndex: 0,
+              success: true,
+              unrequestedClaims: [],
+              claims: [
+                { namespace: nameSpace, elementIdentifier: 'family_name', success: true, source: 'issuerSigned' },
+                { namespace: nameSpace, elementIdentifier: 'given_name', success: true, source: 'issuerSigned' },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+  })
+
+  describe('device request matching', () => {
+    // Without reader auth the device request is not bound to the session transcript, so a response
+    // to another device request than the one the verifier sent still decrypts and verifies. Only
+    // matching it against the device request of the session catches that.
+    const createResponseToOtherDeviceRequest = async (options: MdocDcApiCreateVerificationSessionOptions) => {
+      const { verificationSession, request } = await agent.mdoc.createDcApiVerificationSession(options)
+      const { request: otherRequest } = await agent.mdoc.createDcApiVerificationSession({
+        docRequests: [{ docType, nameSpaces: { [nameSpace]: { family_name: true } } }],
+      })
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({
+        request: { ...request, deviceRequest: otherRequest.deviceRequest },
+        origin,
+      })
+      const response = await agent.mdoc.createDcApiResponse({
+        resolvedRequest: resolved,
+        credentials: [{ docRequestIndex: 0, record: mdocRecord }],
+      })
+
+      return { verificationSessionId: verificationSession.id, response }
+    }
+
+    test('a response that leaves out a requested element does not verify', async () => {
+      const { verificationSessionId, response } = await createResponseToOtherDeviceRequest({
+        docRequests: [{ docType, nameSpaces: { [nameSpace]: { family_name: true, birth_date: false } } }],
+      })
+
+      const verification = agent.mdoc.verifyDcApiResponse({
+        verificationSessionId,
+        response,
+        origin,
+        trustedCertificates: [issuerCertificatePem],
+      })
+
+      await expect(verification).rejects.toThrow(MdocDeviceRequestNotSatisfiedError)
+      await expect(verification).rejects.toThrow(
+        `Document 0: Element 'birth_date' in namespace '${nameSpace}' was not disclosed`
+      )
+
+      const session = await agent.mdoc.getVerificationSessionById(verificationSessionId)
+      expect(session.state).toBe(MdocVerificationSessionState.Error)
+    })
+
+    test('a requested element marked optional may be left out', async () => {
+      const { verificationSessionId, response } = await createResponseToOtherDeviceRequest({
+        docRequests: [{ docType, nameSpaces: { [nameSpace]: { family_name: true, birth_date: false } } }],
+        deviceRequestElements: { [docType]: { [nameSpace]: { birth_date: { optional: true } } } },
+      })
+
+      const result = await agent.mdoc.verifyDcApiResponse({
+        verificationSessionId,
+        response,
+        origin,
+        trustedCertificates: [issuerCertificatePem],
+      })
+
+      expect(result.verificationSession.state).toBe(MdocVerificationSessionState.ResponseVerified)
+      expect(result.deviceRequestMatch.success).toBe(true)
+      expect(result.deviceRequestMatch.docRequests[0].documents[0].claims).toMatchObject([
+        { elementIdentifier: 'family_name', success: true },
+        { elementIdentifier: 'birth_date', success: false, optional: true, failure: 'notDisclosed' },
+      ])
+    })
+
+    test('a response that does not answer every doc request does not verify', async () => {
+      const { verificationSession, request } = await agent.mdoc.createDcApiVerificationSession({
+        docRequests: [
+          { docType, nameSpaces: { [nameSpace]: { family_name: true } } },
+          { docType: otherDocType, nameSpaces: { [otherNameSpace]: { given_name: true } } },
+        ],
+      })
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+      const response = await agent.mdoc.createDcApiResponse({
+        resolvedRequest: resolved,
+        credentials: [{ docRequestIndex: 0, record: mdocRecord }],
+      })
+
+      const verification = agent.mdoc.verifyDcApiResponse({
+        verificationSessionId: verificationSession.id,
+        response,
+        origin,
+        trustedCertificates: [issuerCertificatePem],
+      })
+
+      await expect(verification).rejects.toThrow(MdocDeviceRequestNotSatisfiedError)
+      await expect(verification).rejects.toThrow(
+        `Device response does not contain a document with docType '${otherDocType}'`
+      )
     })
   })
 

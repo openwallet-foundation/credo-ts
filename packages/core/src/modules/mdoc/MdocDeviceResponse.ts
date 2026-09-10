@@ -312,7 +312,7 @@ export class MdocDeviceResponse {
 
     const trustedCertificates = convertMdocTrustedCertificates(options.trustedCertificates ?? [])
 
-    const verificationResults = await this.deviceResponse
+    const { documents: verificationResults } = await this.deviceResponse
       .verify(
         {
           trustedCertificates: mdocTrustedCertificatesToRaw(trustedCertificates),

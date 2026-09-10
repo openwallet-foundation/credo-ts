@@ -1,6 +1,21 @@
 import { CredoError } from '../../error'
+import type { MdocDeviceRequestMatch } from './MdocOptions'
 
 export class MdocError extends CredoError {}
+
+/**
+ * Thrown when a device response is valid, but does not disclose what the device request asked for.
+ *
+ * Carries the full match, so callers can see per doc request and per element what is missing.
+ */
+export class MdocDeviceRequestNotSatisfiedError extends MdocError {
+  public constructor(
+    public readonly deviceRequestMatch: MdocDeviceRequestMatch,
+    message = 'Device response does not satisfy the device request.'
+  ) {
+    super(message)
+  }
+}
 
 /**
  * Thrown when a response is received for an mdoc verification session that has expired.

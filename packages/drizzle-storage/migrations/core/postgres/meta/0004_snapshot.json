@@ -1,5 +1,5 @@
 {
-  "id": "3eca0d43-b6fb-4111-8ce5-38d6815014da",
+  "id": "30a3a549-2137-47c7-8914-afe8950f37bb",
   "prevId": "2ff5cd1d-679c-41cb-8d5d-cf9b2277ea35",
   "version": "7",
   "dialect": "postgresql",
@@ -354,6 +354,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "device_request_elements": {
+          "name": "device_request_elements",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
         },
         "session_transcript": {
           "name": "session_transcript",

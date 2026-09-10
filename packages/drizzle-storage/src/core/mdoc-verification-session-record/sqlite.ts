@@ -1,4 +1,8 @@
-import type { MdocVerificationSessionState, MdocVerificationSessionTranscript } from '@credo-ts/core'
+import type {
+  MdocDeviceRequestElements,
+  MdocVerificationSessionState,
+  MdocVerificationSessionTranscript,
+} from '@credo-ts/core'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
@@ -11,6 +15,7 @@ export const mdocVerificationSession = sqliteTable(
     errorMessage: text('error_message'),
 
     deviceRequestBase64Url: text('device_request_base64_url').notNull(),
+    deviceRequestElements: text('device_request_elements', { mode: 'json' }).$type<MdocDeviceRequestElements>(),
     sessionTranscript: text('session_transcript', { mode: 'json' })
       .$type<MdocVerificationSessionTranscript>()
       .notNull(),

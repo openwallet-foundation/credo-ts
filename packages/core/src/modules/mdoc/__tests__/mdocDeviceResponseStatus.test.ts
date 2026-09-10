@@ -98,6 +98,8 @@ describe('mdoc device-response status list verification', () => {
       alg: KnownJwaSignatureAlgorithms.ES256,
       statusList: { statusListLength: 10, bitsPerStatus: 1 },
       statusListUri,
+      // ISO 18013-5 12.3.6.3 requires the status list token to have an expiration time
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     })
 
     nock('https://example.org')

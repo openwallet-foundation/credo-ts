@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9cb2329f-f7f2-446f-89f0-fb80aa15fb8f",
+  "id": "65616c96-d7be-41ed-8cab-45d3ea22399f",
   "prevId": "f4ea04af-de04-4889-8571-c9162b4209d3",
   "tables": {
     "Context": {
@@ -378,6 +378,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "device_request_elements": {
+          "name": "device_request_elements",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "session_transcript": {

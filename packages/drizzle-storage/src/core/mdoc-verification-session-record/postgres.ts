@@ -1,4 +1,8 @@
-import type { MdocVerificationSessionState, MdocVerificationSessionTranscript } from '@credo-ts/core'
+import type {
+  MdocDeviceRequestElements,
+  MdocVerificationSessionState,
+  MdocVerificationSessionTranscript,
+} from '@credo-ts/core'
 import { jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
@@ -27,6 +31,7 @@ export const mdocVerificationSession = pgTable(
     errorMessage: text('error_message'),
 
     deviceRequestBase64Url: text('device_request_base64_url').notNull(),
+    deviceRequestElements: jsonb('device_request_elements').$type<MdocDeviceRequestElements>(),
     sessionTranscript: jsonb('session_transcript').$type<MdocVerificationSessionTranscript>().notNull(),
     sessionTranscriptType: mdocVerificationSessionTranscriptTypeEnum('session_transcript_type').notNull(),
     nonce: text(),
