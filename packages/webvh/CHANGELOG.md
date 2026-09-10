@@ -1,5 +1,55 @@
 # @credo-ts/webvh
 
+## 0.7.1
+
+### Patch Changes
+
+- 5840d28: fix(webvh): use a verification method URL in DID log proofs
+- eb4aa3c: fix(webvh): bump didwebvh-ts version to 2.8.0. This solves a hash calculation bug that makes previous DIDs created with this library incompatible with the spec. As a result, DIDs created with previous versions of Credo will fail to resolve. See https://github.com/decentralized-identity/didwebvh-ts/issues/93.
+- cfe86fa: X509 trusted certificates now can be provided in a new format. Previously it was a list of base64/pem/der encoded certificates, but now you can _also_ provide a list of objects in the format `[{issuance: string[], status? :string[]}]`. This is used for the new status indicator on mdoc. First, it looks for the used `issuance` trusted certificates and then validates the `status`, if available, with the `status` trusted certificates associated with the `issuance` property.
+- 2424a0b: Sign did:webvh attested resources with a verification method authorized for the proof purpose
+
+  Attested resource proofs use the `assertionMethod` proof purpose, but the signing key was selected as
+  `verificationMethod[0]` without checking that it is referenced from `assertionMethod`. Resources were
+  written successfully and then failed to resolve with `Resolved resource proof is invalid.`
+
+  - Resource registration now selects a verification method authorized for `assertionMethod`, and
+    validates an explicitly passed `options.verificationMethod` against that purpose.
+  - Newly created did:webvh dids reference their verification method from `assertionMethod`, and updating
+    a did no longer drops it.
+  - `verifyProof` asserts the expected proof purpose and logs the issues returned by the verifier.
+
+  Existing dids need an `agent.dids.update` adding that reference, and the updated log republished, before
+  resources they sign will verify.
+
+- 182c8f7: Migrate `WebVhAnonCredsRegistry` proof creation/verification to use the core `W3cDataIntegrityApi` instead of a vendored `eddsa-jcs-2022` cryptosuite. This removes the duplicated cryptosuite implementation from `@credo-ts/webvh` in favor of `@credo-ts/core`'s W3C VC Data Integrity module.
+- cfe86fa: TokenStatusList is a new standard module on the agent. It allows you to create/update/fetch token status lists. It is up to the user to host this, this can be easily done with the `statusList` you receive from the `agent.tokenStatusList.createTokenStatusList(...)` function. Updating the statuslist allows you to change the status list credential state from valid to invalid, but also update the expiry time, rotate certificates, change signing algorithm, etc. Signatures are the default and mac should only be used if the user is aware of the security implications and has good reason to do so.
+- Updated dependencies [f127ff5]
+- Updated dependencies [5cfcadb]
+- Updated dependencies [84dfcf4]
+- Updated dependencies [fd5016d]
+- Updated dependencies [d45aec0]
+- Updated dependencies [5cfcadb]
+- Updated dependencies [097c831]
+- Updated dependencies [20d6ab1]
+- Updated dependencies [907f12f]
+- Updated dependencies [96dc69b]
+- Updated dependencies [7dfafeb]
+- Updated dependencies [3a3eb03]
+- Updated dependencies [23c354e]
+- Updated dependencies [907cc54]
+- Updated dependencies [339f4cc]
+- Updated dependencies [5cfcadb]
+- Updated dependencies [f127ff5]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [e97c18b]
+- Updated dependencies [121dd14]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [0a58888]
+- Updated dependencies [1e2088f]
+  - @credo-ts/core@0.7.1
+  - @credo-ts/anoncreds@0.7.1
+
 ## 0.7.0
 
 ### Minor Changes
