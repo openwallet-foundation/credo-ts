@@ -32,10 +32,11 @@ import {
   JsonLdModuleConfig,
   KeyDidRegistrar,
   KeyDidResolver,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
+  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import type { DataIntegrityCredentialRequest } from '@credo-ts/didcomm'
 import {
@@ -93,8 +94,9 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [JsonLdModuleConfig, new JsonLdModuleConfig()],
-    [SignatureSuiteToken, 'default'],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
       CacheModuleConfig,
       new CacheModuleConfig({

@@ -30,7 +30,8 @@ import {
   InjectionSymbols,
   InMemoryLruCache,
   JsonLdModuleConfig,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
+  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -79,8 +80,9 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [JsonLdModuleConfig, new JsonLdModuleConfig()],
-    [SignatureSuiteToken, 'default'],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
       CacheModuleConfig,
       new CacheModuleConfig({
