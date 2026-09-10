@@ -156,6 +156,8 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
               throw new Error('Unsupported scope values')
             },
             credentialRequestToCredentialMapper: async ({ holderBinding, credentialConfiguration }) => {
+              if (!holderBinding) throw new Error('Expected holder binding in credential request mapper')
+
               if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
                 if (holderBinding.bindingMethod !== 'jwk') {
                   throw new CredoError('Expected jwk binding method')
