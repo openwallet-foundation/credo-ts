@@ -154,6 +154,7 @@ describe('mdoc device-response openid4vp test', () => {
           validUntil: new Date('2050-10-24'),
         },
         holderKey: deviceKeyPublicJwk,
+        keyAuthorizations: { namespaces: ['com.foobar-device'] },
         issuerCertificate,
         namespaces: {
           'org.iso.18013.5.1': {
@@ -320,6 +321,7 @@ describe('mdoc device-response openid4vp test', () => {
           validUntil: new Date('2050-10-24'),
         },
         holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+        keyAuthorizations: { namespaces: ['com.foobar-device'] },
         issuerCertificate,
         namespaces: {
           'org.iso.18013.5.1': {

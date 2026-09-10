@@ -4,13 +4,16 @@ export { assertAsymmetricJwkKeyTypeMatches, asymmetricJwkKeyTypeMatches, asymmet
 export { getJwkHumanDescription } from './humanDescription'
 export type {
   KnownJwaContentEncryptionAlgorithm,
+  KnownJwaHpkeAlgorithm,
   KnownJwaKeyAgreementAlgorithm,
   KnownJwaKeyEncryptionAlgorithm,
   KnownJwaSignatureAlgorithm,
 } from './jwa'
 export {
+  isJwaHpkeAlgorithm,
   isKnownJwaSignatureAlgorithm,
   KnownJwaContentEncryptionAlgorithms,
+  KnownJwaHpkeAlgorithms,
   KnownJwaKeyAgreementAlgorithms,
   KnownJwaKeyEncryptionAlgorithms,
   KnownJwaSignatureAlgorithms,
