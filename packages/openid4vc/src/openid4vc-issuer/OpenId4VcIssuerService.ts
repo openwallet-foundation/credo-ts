@@ -56,6 +56,7 @@ import {
 import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
 import type {
   OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadata,
   OpenId4VciCredentialOfferPayload,
   OpenId4VciMetadata,
@@ -771,7 +772,7 @@ export class OpenId4VcIssuerService {
       // Save transaction data for deferred issuance
       issuanceSession.transactions.push({
         transactionId: signOptionsOrDeferral.transactionId,
-        numberOfCredentials: verifiedCredentialRequestProofs.keys.length,
+        numberOfCredentials: verifiedCredentialRequestProofs?.keys.length ?? 1,
         deferredUntil: utils.addSecondsToDate(new Date(), signOptionsOrDeferral.interval),
         credentialConfigurationId,
         holderBinding: verifiedCredentialRequestProofs,
@@ -792,18 +793,20 @@ export class OpenId4VcIssuerService {
       const credentials = await this.getSignedCredentials(agentContext, signOptionsOrDeferral, {
         issuanceSession,
         credentialConfiguration,
-        expectedLength: verifiedCredentialRequestProofs.keys.length,
+        expectedLength: verifiedCredentialRequestProofs?.keys.length ?? 1,
+        isBoundToHolder: verifiedCredentialRequestProofs !== undefined,
       })
 
       const openId4VciVersion = getOpenId4VciVersion(issuanceSession, parsedCredentialRequest)
 
       const immediateResult = await vcIssuer.createCredentialResponse({
         credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
-        credentials: credentialRequest.proofs
-          ? openId4VciVersion === 'v1' || openId4VciVersion === 'v1.draft15'
-            ? credentials.credentials.map((c) => ({ credential: c }))
-            : credentials.credentials
-          : undefined,
+        credentials:
+          credentialRequest.proofs || !verifiedCredentialRequestProofs
+            ? openId4VciVersion === 'v1' || openId4VciVersion === 'v1.draft15'
+              ? credentials.credentials.map((c) => ({ credential: c }))
+              : credentials.credentials
+            : undefined,
         cNonce,
         cNonceExpiresInSeconds,
         credentialRequest: parsedCredentialRequest,
@@ -937,6 +940,9 @@ export class OpenId4VcIssuerService {
         issuanceSession,
         credentialConfiguration,
         expectedLength: transaction.numberOfCredentials,
+        // Transactions stored before 0.6.3 have no holder binding either
+        isBoundToHolder:
+          transaction.holderBinding !== undefined || this.openId4VcIssuerConfig.requireCryptographicHolderBinding,
       })
 
       const immediateResult = await vcIssuer.createDeferredCredentialResponse({
@@ -979,10 +985,10 @@ export class OpenId4VcIssuerService {
       credentialConfigurationId: string
       credentialConfiguration: CredentialConfigurationSupportedWithFormats
     }
-  ): Promise<VerifiedOpenId4VcCredentialHolderBinding> {
+  ): Promise<VerifiedOpenId4VcCredentialHolderBinding | undefined> {
     const { parsedCredentialRequest, issuer, issuanceSession, credentialConfiguration, credentialConfigurationId } =
       options
-    const { proofs } = parsedCredentialRequest
+    const { proofs, credentialRequest } = parsedCredentialRequest
 
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
@@ -997,16 +1003,35 @@ export class OpenId4VcIssuerService {
       return { c_nonce: cNonce, c_nonce_expires_in: cNonceExpiresInSeconds }
     }
 
-    const allowedProofTypes = credentialConfiguration.proof_types_supported ?? {
-      jwt: {
-        proof_signing_alg_values_supported: agentContext
-          .resolve(Kms.KeyManagementApi)
-          .supportedJwaSignatureAlgorithms({ operation: 'verify' }),
-      },
-    }
+    const isIssuedWithoutHolderBinding =
+      !this.openId4VcIssuerConfig.requireCryptographicHolderBinding &&
+      !isLegacyVersion &&
+      !requiresKeyProof(credentialConfiguration)
+
+    const allowedProofTypes =
+      credentialConfiguration.proof_types_supported ??
+      (isIssuedWithoutHolderBinding
+        ? {}
+        : {
+            jwt: {
+              proof_signing_alg_values_supported: agentContext
+                .resolve(Kms.KeyManagementApi)
+                .supportedJwaSignatureAlgorithms({ operation: 'verify' }),
+            },
+          })
 
     const [proofType, proofValue] = (Object.entries(proofs ?? {})[0] as [string, string[]] | undefined) ?? []
     if (!proofType || !proofValue || proofValue.length === 0) {
+      // `proofs` is also undefined for a proof type the library does not know, so the raw request is checked
+      if (
+        isIssuedWithoutHolderBinding &&
+        credentialRequest.proof === undefined &&
+        credentialRequest.proofs === undefined
+      ) {
+        await this.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.CredentialRequestReceived)
+        return undefined
+      }
+
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidProof,
         error_description: 'Missing required proof(s) in credential request',
@@ -1386,6 +1411,7 @@ export class OpenId4VcIssuerService {
     options?: OpenId4VcUpdateIssuerOptions
   ) {
     assertCredentialEncryptionConfiguration(issuer)
+    this.assertMdocConfigurationsDeclareProofTypes(issuer.credentialConfigurationsSupported)
     warnMissingIssuerKmsBackends(agentContext, issuer, options?.metadataSigner)
 
     // An explicitly provided signer takes precedence (including `null` to remove it). Otherwise the
@@ -1415,6 +1441,7 @@ export class OpenId4VcIssuerService {
   public async createIssuer(agentContext: AgentContext, options: OpenId4VciCreateIssuerOptions) {
     const credentialRequestEncryption = toCredentialRequestEncryptionRecord(options.credentialRequestEncryption)
     assertCredentialEncryptionConfiguration({ ...options, credentialRequestEncryption })
+    this.assertMdocConfigurationsDeclareProofTypes(options.credentialConfigurationsSupported)
     warnMissingIssuerKmsBackends(agentContext, options, options.metadataSigner)
 
     // TODO: ideally we can store additional data with a key, such as:
@@ -2381,17 +2408,24 @@ export class OpenId4VcIssuerService {
       issuanceSession: OpenId4VcIssuanceSessionRecord
       credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
       expectedLength: number
+      isBoundToHolder: boolean
     }
   ): Promise<{
     credentials: string[] | Record<string, unknown>[]
     format: `${OpenId4VciCredentialFormatProfile}`
   }> {
-    const { credentialConfiguration, expectedLength } = options
+    const { credentialConfiguration, expectedLength, isBoundToHolder } = options
 
     // NOTE: we may want to allow a mismatch between this (as there is a match batch length), but for now it needs to match
     if (signOptions.credentials.length !== expectedLength) {
       throw new CredoError(
-        `Credential request to credential mapper returned '${signOptions.credentials.length}' to be signed, while '${expectedLength}' holder binding entries were provided. Make sure to return one credential for each holder binding entry`
+        `Credential request to credential mapper returned '${signOptions.credentials.length}' credential(s) to be signed, while '${expectedLength}' were expected. Make sure to return one credential for each holder binding entry, or a single credential when there is no holder binding.`
+      )
+    }
+
+    if (!isBoundToHolder && signOptions.credentials.some(hasHolderKey)) {
+      throw new CredoError(
+        'Credential request to credential mapper returned a credential bound to a holder key, while the credential request contained no proofs. Return a credential without holder binding when no holder binding is provided.'
       )
     }
 
@@ -2515,6 +2549,23 @@ export class OpenId4VcIssuerService {
     })
   }
 
+  private assertMdocConfigurationsDeclareProofTypes(
+    credentialConfigurations: OpenId4VciCredentialConfigurationsSupportedWithFormats
+  ) {
+    if (this.openId4VcIssuerConfig.requireCryptographicHolderBinding) return
+
+    const mdocConfigurationId = Object.keys(credentialConfigurations).find(
+      (id) =>
+        credentialConfigurations[id].format === OpenId4VciCredentialFormatProfile.MsoMdoc &&
+        credentialConfigurations[id].proof_types_supported === undefined
+    )
+    if (mdocConfigurationId) {
+      throw new CredoError(
+        `Credential configuration '${mdocConfigurationId}' has format '${OpenId4VciCredentialFormatProfile.MsoMdoc}' and no 'proof_types_supported'. An mdoc is always bound to a holder key, so with 'requireCryptographicHolderBinding' disabled the configuration must declare its proof types.`
+      )
+    }
+  }
+
   // Refresh tokens are only issued bound to a DPoP key, as a wallet is a public client (RFC 9700 §2.2.2)
   private assertRefreshTokensRequireDpop(options: { generateRefreshTokens?: boolean; requireDpop?: boolean }) {
     const generateRefreshTokens = options.generateRefreshTokens ?? this.openId4VcIssuerConfig.generateRefreshTokens
@@ -2526,6 +2577,18 @@ export class OpenId4VcIssuerService {
       )
     }
   }
+}
+
+function requiresKeyProof(credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats) {
+  return (
+    credentialConfiguration.proof_types_supported !== undefined ||
+    credentialConfiguration.cryptographic_binding_methods_supported !== undefined ||
+    credentialConfiguration.format === OpenId4VciCredentialFormatProfile.MsoMdoc
+  )
+}
+
+function hasHolderKey(credential: OpenId4VciSignCredentials['credentials'][number]) {
+  return ('holder' in credential && credential.holder !== undefined) || 'holderKey' in credential
 }
 
 function getCredentialResponseEncryptionMetadata(agentContext: AgentContext, issuerRecord: OpenId4VcIssuerRecord) {

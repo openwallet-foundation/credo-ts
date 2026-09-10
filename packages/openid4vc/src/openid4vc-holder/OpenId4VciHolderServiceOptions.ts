@@ -366,8 +366,17 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
    * and binding methods (did methods, jwk), the resolver must return an object
    * conformant to the `CredentialHolderBinding` interface, which will be used
    * for the proof of possession signature.
+   *
+   * Can be omitted when none of the requested credentials need a proof.
    */
-  credentialBindingResolver: OpenId4VciCredentialBindingResolver
+  credentialBindingResolver?: OpenId4VciCredentialBindingResolver
+
+  /**
+   * When false, credentials the issuer requires no proof for are requested without one and are not bound to a key.
+   *
+   * @default true
+   */
+  requireCryptographicHolderBinding?: boolean
 
   /**
    * Whether to request an encrypted credential response. With `required` the request fails when the

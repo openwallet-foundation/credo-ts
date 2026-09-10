@@ -143,6 +143,12 @@ function getCredentialRequestToCredentialMapper({
     authorization,
     issuanceSession,
   }) => {
+    if (!holderBinding) {
+      throw new CredoError(
+        `Credential configuration '${credentialConfigurationId}' can only be issued bound to a holder key`
+      )
+    }
+
     // Example of how to use the the access token information from the chained identity server.
     let authorizedUser = authorization.accessToken.payload.sub
 
