@@ -10,9 +10,9 @@ import { sprindFunkeTestVectorBase64Url } from '../../mdoc/__tests__/mdoc.fixtur
 import { SdJwtVcRecord, SdJwtVcRepository } from '../../sd-jwt-vc'
 import {
   ClaimFormat,
+  JsonLdModuleConfig,
   SignatureSuiteToken,
   W3cCredentialService,
-  W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
   W3cJsonLdVerifiablePresentation,
 } from '../../vc'
@@ -25,7 +25,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.AgentDependencies, agentDependencies],
     [InjectionSymbols.Stop$, new Subject<boolean>()],
     [SignatureSuiteToken, 'default'],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig()],
   ],
 })
 

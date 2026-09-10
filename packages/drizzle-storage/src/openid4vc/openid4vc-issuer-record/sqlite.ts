@@ -24,6 +24,7 @@ export const openid4vcIssuer = sqliteTable(
       mode: 'json',
     }),
     accessTokenPublicJwk: text('access_token_public_jwk', { mode: 'json' }).$type<Kms.KmsJwkPublicAsymmetric>(),
+    accessTokenSignerKmsBackend: text('access_token_signer_kms_backend'),
 
     signedMetadata: text('signed_metadata', { mode: 'json' }).$type<OpenId4VcIssuerRecordSignedMetadata>(),
 

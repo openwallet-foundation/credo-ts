@@ -5,6 +5,7 @@ import {
   DidsModuleConfig,
   Ed25519Signature2018,
   InjectionSymbols,
+  JsonLdModuleConfig,
   KeyDidRegistrar,
   KeyDidResolver,
   Kms,
@@ -14,7 +15,6 @@ import {
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
-  W3cCredentialsModuleConfig,
   X509ModuleConfig,
 } from '@credo-ts/core'
 import {
@@ -86,7 +86,7 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig()],
     [X509ModuleConfig, new X509ModuleConfig()],
     [
       SignatureSuiteToken,

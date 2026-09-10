@@ -19,9 +19,9 @@ import {
 } from '../../../dids'
 import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../../kms'
 import { AnonCredsW3cCredentialProof } from '../../anoncreds-w3c-credential'
+import { JsonLdModuleConfig } from '../../jsonld'
 import { ClaimFormat, W3cCredential } from '../../models'
 import { W3cPresentation } from '../../models/presentation/W3cPresentation'
-import { W3cCredentialsModuleConfig } from '../../W3cCredentialsModuleConfig'
 import { purposes } from '../adapters/jsonld-signatures-adapter'
 import { LinkedDataProof } from '../models/LinkedDataProof'
 import { W3cJsonLdVerifiableCredential } from '../models/W3cJsonLdVerifiableCredential'
@@ -62,7 +62,7 @@ const agentContext = getAgentContext({
 
 const w3cJsonLdCredentialService = new W3cJsonLdCredentialService(
   signatureSuiteRegistry,
-  new W3cCredentialsModuleConfig({
+  new JsonLdModuleConfig({
     documentLoader: customDocumentLoader,
   })
 )
@@ -306,7 +306,7 @@ describe('W3cJsonLdCredentialsService', () => {
 
         const serviceWithTrackingLoader = new W3cJsonLdCredentialService(
           signatureSuiteRegistry,
-          new W3cCredentialsModuleConfig({ documentLoader: trackingDocumentLoader })
+          new JsonLdModuleConfig({ documentLoader: trackingDocumentLoader })
         )
 
         const credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
