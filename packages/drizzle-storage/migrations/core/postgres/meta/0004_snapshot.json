@@ -1,5 +1,5 @@
 {
-  "id": "30a3a549-2137-47c7-8914-afe8950f37bb",
+  "id": "269bc1d9-444f-46a5-9074-598bcf6e31aa",
   "prevId": "2ff5cd1d-679c-41cb-8d5d-cf9b2277ea35",
   "version": "7",
   "dialect": "postgresql",
@@ -288,126 +288,6 @@
       "compositePrimaryKeys": {
         "mdoc_pk": {
           "name": "mdoc_pk",
-          "columns": ["context_correlation_id", "id"]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.MdocVerificationSession": {
-      "name": "MdocVerificationSession",
-      "schema": "",
-      "columns": {
-        "context_correlation_id": {
-          "name": "context_correlation_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp (3) with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp (3) with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "metadata": {
-          "name": "metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "custom_tags": {
-          "name": "custom_tags",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "state": {
-          "name": "state",
-          "type": "MdocVerificationSessionState",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "error_message": {
-          "name": "error_message",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "device_request_base64_url": {
-          "name": "device_request_base64_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "device_request_elements": {
-          "name": "device_request_elements",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "session_transcript": {
-          "name": "session_transcript",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "session_transcript_type": {
-          "name": "session_transcript_type",
-          "type": "MdocVerificationSessionTranscriptType",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "nonce": {
-          "name": "nonce",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "session_key_id": {
-          "name": "session_key_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp (3) with time zone",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "mdocVerificationSession_fk_context": {
-          "name": "mdocVerificationSession_fk_context",
-          "tableFrom": "MdocVerificationSession",
-          "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "mdocVerificationSession_pk": {
-          "name": "mdocVerificationSession_pk",
           "columns": ["context_correlation_id", "id"]
         }
       },
@@ -904,6 +784,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "cryptosuites": {
+          "name": "cryptosuites",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
         "algs": {
           "name": "algs",
           "type": "text[]",
@@ -949,16 +835,6 @@
       "schema": "public",
       "values": ["created", "received"]
     },
-    "public.MdocVerificationSessionState": {
-      "name": "MdocVerificationSessionState",
-      "schema": "public",
-      "values": ["Error", "RequestCreated", "ResponseVerified"]
-    },
-    "public.MdocVerificationSessionTranscriptType": {
-      "name": "MdocVerificationSessionTranscriptType",
-      "schema": "public",
-      "values": ["isoMdocDcApi"]
-    },
     "public.CredentialMultiInstanceState": {
       "name": "CredentialMultiInstanceState",
       "schema": "public",
@@ -972,7 +848,7 @@
     "public.W3cV2ClaimFormat": {
       "name": "W3cV2ClaimFormat",
       "schema": "public",
-      "values": ["vc+sd-jwt", "vc+jwt"]
+      "values": ["vc+sd-jwt", "vc+jwt", "di_vc"]
     }
   },
   "schemas": {},

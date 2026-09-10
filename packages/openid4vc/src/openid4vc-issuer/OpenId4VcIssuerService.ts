@@ -1300,6 +1300,7 @@ export class OpenId4VcIssuerService {
     // - purpose
     const accessTokenSignerKey = await kms.createKey({
       type: options.accessTokenSignerKeyType ?? { kty: 'OKP', crv: 'Ed25519' },
+      backend: options.accessTokenSignerKmsBackend,
     })
 
     const openId4VcIssuer = new OpenId4VcIssuerRecord({
@@ -1309,6 +1310,7 @@ export class OpenId4VcIssuerService {
       clientAttestationSigningAlgValuesSupported: options.clientAttestationSigningAlgValuesSupported,
       clientAttestationPopSigningAlgValuesSupported: options.clientAttestationPopSigningAlgValuesSupported,
       accessTokenPublicJwk: accessTokenSignerKey.publicJwk,
+      accessTokenSignerKmsBackend: options.accessTokenSignerKmsBackend,
       authorizationServerConfigs: options.authorizationServerConfigs,
       credentialConfigurationsSupported: options.credentialConfigurationsSupported,
       batchCredentialIssuance: options.batchCredentialIssuance,
@@ -1348,21 +1350,26 @@ export class OpenId4VcIssuerService {
   public async rotateAccessTokenSigningKey(
     agentContext: AgentContext,
     issuer: OpenId4VcIssuerRecord,
-    options?: Pick<OpenId4VciCreateIssuerOptions, 'accessTokenSignerKeyType'>
+    options?: Pick<OpenId4VciCreateIssuerOptions, 'accessTokenSignerKeyType' | 'accessTokenSignerKmsBackend'>
   ) {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
 
     const previousKey = issuer.resolvedAccessTokenPublicJwk
+    const previousBackend = issuer.accessTokenSignerKmsBackend
+    const accessTokenSignerKmsBackend = options?.accessTokenSignerKmsBackend ?? previousBackend
     const accessTokenSignerKey = await kms.createKey({
       type: options?.accessTokenSignerKeyType ?? { kty: 'OKP', crv: 'Ed25519' },
+      backend: accessTokenSignerKmsBackend,
     })
 
     issuer.accessTokenPublicJwk = accessTokenSignerKey.publicJwk
+    issuer.accessTokenSignerKmsBackend = accessTokenSignerKmsBackend
     await this.openId4VcIssuerRepository.update(agentContext, issuer)
 
     // Remove previous key
     await kms.deleteKey({
       keyId: previousKey.keyId,
+      backend: previousBackend,
     })
   }
 

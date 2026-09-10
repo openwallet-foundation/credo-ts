@@ -45,6 +45,7 @@ import {
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
   W3cV2CredentialService,
+  W3cV2EnvelopedVerifiableCredential,
   W3cV2SdJwtVerifiablePresentation,
   X509Certificate,
   X509ModuleConfig,
@@ -1362,8 +1363,8 @@ export class OpenId4VpVerifierService {
           agentContext,
           options.verificationSession,
           asArray(sdJwtW3cVp.resolvedPresentation.verifiableCredential).map((enveloped) => ({
-            credential: enveloped.envelopedCredential,
-            issuerId: enveloped.resolvedCredential.issuerId,
+            credential: (enveloped as W3cV2EnvelopedVerifiableCredential).envelopedCredential,
+            issuerId: (enveloped as W3cV2EnvelopedVerifiableCredential).resolvedCredential.issuerId,
           }))
         )
         const verificationResult = await this.w3cV2CredentialService.verifyPresentation(agentContext, {
