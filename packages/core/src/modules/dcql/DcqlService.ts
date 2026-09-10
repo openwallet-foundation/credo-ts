@@ -61,7 +61,7 @@ export interface DcqlSelectCredentialsForRequestOptions {
   /**
    * The usage mode to apply to the credentials when selecting credentials.
    *
-   * If and usage mode is selected that require a new instance to be used, and there's no
+   * If an usage mode is selected that require a new instance to be used, and there's no
    * new instances available, an error will be thrown.
    *
    * It does not actually select the credential from the record yet, it just filters

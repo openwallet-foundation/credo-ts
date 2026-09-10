@@ -1,4 +1,12 @@
-import { DeviceKey, DeviceKeyInfo, Holder, Issuer, IssuerSigned, SignatureAlgorithm } from '@owf/mdoc'
+import {
+  DeviceKey,
+  DeviceKeyInfo,
+  Holder,
+  Issuer,
+  IssuerSigned,
+  KeyAuthorizations,
+  SignatureAlgorithm,
+} from '@owf/mdoc'
 import type { AgentContext } from '../../agent'
 import { TrustedIssuerContext } from '../../agent/TrustedIssuerContext'
 import { getMdocContext } from '../../crypto/contexts/mdocContext'
@@ -118,7 +126,7 @@ export class Mdoc {
   }
 
   public static async sign(agentContext: AgentContext, options: MdocSignOptions) {
-    const { docType, validityInfo, namespaces, holderKey, issuerCertificate } = options
+    const { docType, validityInfo, namespaces, holderKey, issuerCertificate, keyAuthorizations } = options
     const mdocContext = getMdocContext(agentContext)
 
     const issuer = new Issuer(docType, mdocContext)
@@ -151,7 +159,17 @@ export class Mdoc {
       certificates: Array.isArray(issuerCertificate)
         ? issuerCertificate.map((c) => c.rawCertificate)
         : [issuerCertificate.rawCertificate],
-      deviceKeyInfo: DeviceKeyInfo.create({ deviceKey: DeviceKey.fromJwk(holderKey.toJson()) }),
+      deviceKeyInfo: DeviceKeyInfo.create({
+        deviceKey: DeviceKey.fromJwk(holderKey.toJson()),
+        keyAuthorizations: keyAuthorizations
+          ? KeyAuthorizations.create({
+              namespaces: keyAuthorizations.namespaces,
+              dataElements: keyAuthorizations.dataElements
+                ? new Map(Object.entries(keyAuthorizations.dataElements))
+                : undefined,
+            })
+          : undefined,
+      }),
       signingKey: issuerKey.toJson(),
       status: options.statusInfo
         ? {

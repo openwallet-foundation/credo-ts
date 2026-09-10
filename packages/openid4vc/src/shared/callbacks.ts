@@ -29,7 +29,7 @@ import { clientAuthenticationDynamic, decodeJwtHeader } from '@openid4vc/oauth2'
 import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 import type { OpenId4VcVerificationTypes } from './OpenId4VcTrustedIssuersVerificationTypes'
 
-import { getPublicJwkFromDid } from './utils'
+import { getPublicJwkFromDid, supportedJarmContentEncryptionAlgorithms } from './utils'
 
 /**
  * Maps the `typ` header of a jwt verified by oid4vc-ts to the trust verification context.
@@ -233,11 +233,16 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
       throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
     }
 
-    if (jweEncryptor.enc !== 'A256GCM' && jweEncryptor.enc !== 'A128GCM' && jweEncryptor.enc !== 'A128CBC-HS256') {
+    if (
+      !supportedJarmContentEncryptionAlgorithms.includes(
+        jweEncryptor.enc as (typeof supportedJarmContentEncryptionAlgorithms)[number]
+      )
+    ) {
       throw new CredoError(
-        "Only 'A256GCM', 'A128GCM', and 'A128CBC-HS256' is supported as 'enc' value for JARM response encryption"
+        `Only ${supportedJarmContentEncryptionAlgorithms.map((alg) => `'${alg}'`).join(', ')} are supported as 'enc' value for JARM response encryption`
       )
     }
+    const enc = jweEncryptor.enc as (typeof supportedJarmContentEncryptionAlgorithms)[number]
 
     const jwkJson = jwk.toJson()
     if (jwkJson.kty !== 'EC' && jwkJson.kty !== 'OKP') {
@@ -258,7 +263,7 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
         kid: jweEncryptor.publicJwk.kid,
         apu: jweEncryptor.apu,
         apv: jweEncryptor.apv,
-        enc: jweEncryptor.enc,
+        enc,
         alg: 'ECDH-ES',
         epk: ephmeralKey.publicJwk,
       }
@@ -278,7 +283,7 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
         },
         data: TypedArrayEncoder.fromUtf8String(compact),
         encryption: {
-          algorithm: jweEncryptor.enc,
+          algorithm: enc,
           aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
         },
       })

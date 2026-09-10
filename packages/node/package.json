@@ -36,6 +36,7 @@
     "@credo-ts/didcomm": "workspace:*",
     "@types/express": "catalog:",
     "express": "catalog:",
+    "hpke": "catalog:",
     "rxjs": "catalog:",
     "ws": "catalog:"
   },
