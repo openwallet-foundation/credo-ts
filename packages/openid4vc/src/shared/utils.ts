@@ -10,8 +10,60 @@ import {
   SignatureSuiteRegistry,
   X509Certificate,
 } from '@credo-ts/core'
-import type { Jwk, JwtSigner } from '@openid4vc/oauth2'
+import type { Jwk, JwkSet, JwtSigner } from '@openid4vc/oauth2'
 import type { OpenId4VcJwtIssuer, OpenId4VcJwtIssuerEncoded } from './models'
+
+/**
+ * The `enc` values supported for JARM response encryption. Keep in sync with the
+ * encrypt/decrypt jwe callbacks.
+ */
+export const supportedJarmContentEncryptionAlgorithms = [
+  'A128GCM',
+  'A256GCM',
+  'A128CBC-HS256',
+] satisfies Kms.KnownJwaContentEncryptionAlgorithm[]
+
+/**
+ * Filters a verifier JWK Set to the keys that can actually be used for `ECDH-ES` response
+ * encryption by the key management backends of this agent.
+ *
+ * A verifier can include multiple encryption keys (e.g. `P-256`, `P-384` and `P-521`), and we
+ * should only pick a key for which we can perform the key agreement.
+ */
+export function getSupportedResponseEncryptionJwks(agentContext: AgentContext, jwks: JwkSet): JwkSet {
+  const kms = agentContext.resolve(Kms.KeyManagementApi)
+
+  return {
+    ...jwks,
+    keys: jwks.keys.filter((jwk) => {
+      let publicJwk: Kms.PublicJwk
+      try {
+        publicJwk = Kms.PublicJwk.fromUnknown(jwk)
+      } catch {
+        return false
+      }
+
+      // Only EC and X25519 keys can be used for ECDH (Ed25519 is a signing curve)
+      const externalPublicJwk =
+        publicJwk.kty === 'EC' || publicJwk.is(Kms.X25519PublicJwk)
+          ? (publicJwk.toJson() as Kms.KmsJwkPublicEc | (Kms.KmsJwkPublicOkp & { crv: 'X25519' }))
+          : undefined
+      if (!externalPublicJwk) return false
+
+      return supportedJarmContentEncryptionAlgorithms.some(
+        (algorithm) =>
+          kms.supportedBackendsForOperation({
+            operation: 'encrypt',
+            encryption: { algorithm },
+            keyAgreement: {
+              algorithm: 'ECDH-ES',
+              externalPublicJwk,
+            },
+          }).length > 0
+      )
+    }),
+  }
+}
 
 /**
  * Returns the JWA Signature Algorithms that are supported by the wallet.

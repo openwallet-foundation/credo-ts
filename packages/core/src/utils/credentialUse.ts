@@ -136,7 +136,7 @@ export async function useInstanceFromCredentialRecord<Record extends CredentialR
   credentialRecord,
   useMode,
   agentContext,
-  updateMode,
+  updateMode = CredentialMultiInstanceUseUpdateMode.RefetchAndUpdateWithLock,
 }: UseInstanceFromCredentialRecordOptions<Record>): Promise<UseInstanceFromCredentialRecordReturn<Record>> {
   let extractResult = extractInstanceAndUpdateRecord({
     credentialRecord,
