@@ -33,7 +33,7 @@ catalog:
   typescript: ~5.9.3
   vitest: ^4.1.7
   ws: ^8.19.0
-  zod: ^4.3.6
+  zod: ^4.6.1
 
 ignoredBuiltDependencies:
   - es5-ext

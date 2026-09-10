@@ -15,6 +15,11 @@ Add support for the ISO/IEC TS 18013-7:2025 Annex C (`org-iso-mdoc`) Digital Cre
 - Mdoc module: `createDcApiVerificationSession` / `verifyDcApiResponse` for verifiers and
   `resolveDcApiRequest` / `createDcApiResponse` for wallets, backed by a new
   `MdocVerificationSessionRecord`.
+- `verifyDcApiResponse` matches the response against the device request of the session and throws
+  a `MdocDeviceRequestNotSatisfiedError` when a doc request is not satisfied. By default every
+  requested element must be disclosed and issuer signed; pass `deviceRequestElements` to
+  `createDcApiVerificationSession` to mark elements as optional or as device signed. The match is
+  returned as `deviceRequestMatch`.
 - Reader authentication on an incoming request is resolved through the same trust layers as
   credential verification: the certificates passed to `resolveDcApiRequest`, then the global
   `getTrustedIssuersForVerification` callback (with the new `mdocReaderAuth` verification type,

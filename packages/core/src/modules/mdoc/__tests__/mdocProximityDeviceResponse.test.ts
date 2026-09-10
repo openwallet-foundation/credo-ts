@@ -100,6 +100,7 @@ describe('mdoc device-response proximity test', () => {
         validUntil: new Date('2050-10-24'),
       },
       holderKey: PublicJwk.fromPublicJwk(importedDeviceKey.publicJwk),
+      keyAuthorizations: { namespaces: ['com.foobar-device'] },
       issuerCertificate,
       namespaces: {
         'org.iso.18013.5.1': {

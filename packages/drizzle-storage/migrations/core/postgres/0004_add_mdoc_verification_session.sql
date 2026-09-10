@@ -10,6 +10,7 @@ CREATE TABLE "MdocVerificationSession" (
 	"state" "MdocVerificationSessionState" NOT NULL,
 	"error_message" text,
 	"device_request_base64_url" text NOT NULL,
+	"device_request_elements" jsonb,
 	"session_transcript" jsonb NOT NULL,
 	"session_transcript_type" "MdocVerificationSessionTranscriptType" NOT NULL,
 	"nonce" text,

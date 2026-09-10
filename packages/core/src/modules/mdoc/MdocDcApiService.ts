@@ -9,6 +9,8 @@ import {
   type IsoMdocDcApiRequest,
   type IsoMdocDcApiResponse,
   onCategoryCheck,
+  reportDeviceRequestMatch,
+  Verifier,
 } from '@owf/mdoc'
 import { AgentContext } from '../../agent'
 import { EventEmitter } from '../../agent/EventEmitter'
@@ -27,7 +29,7 @@ import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig, X509Ser
 import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import { Mdoc } from './Mdoc'
 import { MdocDeviceResponse } from './MdocDeviceResponse'
-import { MdocError, MdocVerificationSessionExpiredError } from './MdocError'
+import { MdocDeviceRequestNotSatisfiedError, MdocError, MdocVerificationSessionExpiredError } from './MdocError'
 import { MdocEventTypes, type MdocVerificationSessionStateChangedEvent } from './MdocEvents'
 import type {
   MdocDcApiCreateResponseOptions,
@@ -106,6 +108,7 @@ export class MdocDcApiService {
       const verificationSession = new MdocVerificationSessionRecord({
         state: MdocVerificationSessionState.RequestCreated,
         deviceRequestBase64Url: request.deviceRequest,
+        deviceRequestElements: options.deviceRequestElements,
         sessionTranscript: {
           type: 'isoMdocDcApi',
           encryptionInfoBase64Url: request.encryptionInfo,
@@ -197,10 +200,31 @@ export class MdocDcApiService {
         }
       }
 
+      // Annex C has no query language such as DCQL, so the device request we sent is what the
+      // response has to satisfy. Matched on the full response, as a doc request can be answered by
+      // any of the documents in it.
+      const deviceRequestMatch = Verifier.matchDeviceRequest({
+        deviceRequest: TypedArrayEncoder.fromBase64Url(verificationSession.deviceRequestBase64Url),
+        deviceResponse: decrypted.deviceResponse,
+        elements: verificationSession.deviceRequestElements,
+      })
+
+      if (!deviceRequestMatch.success) {
+        const reasons: string[] = []
+        reportDeviceRequestMatch(deviceRequestMatch, ({ status, reason, check }) => {
+          if (status === 'FAILED') reasons.push(reason ?? check)
+        })
+
+        throw new MdocDeviceRequestNotSatisfiedError(
+          deviceRequestMatch,
+          `Device response does not satisfy the device request. ${reasons.join('. ')}`
+        )
+      }
+
       verificationSession.sessionTranscript = { ...sessionTranscript, origin: options.origin }
       await this.updateState(agentContext, verificationSession, MdocVerificationSessionState.ResponseVerified)
 
-      return { verificationSession, deviceResponse, origin: options.origin }
+      return { verificationSession, deviceResponse, deviceRequestMatch, origin: options.origin }
     } catch (error) {
       verificationSession.errorMessage = error instanceof Error ? error.message : 'Unknown error'
       await this.updateState(agentContext, verificationSession, MdocVerificationSessionState.Error)

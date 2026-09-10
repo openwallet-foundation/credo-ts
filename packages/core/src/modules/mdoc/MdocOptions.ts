@@ -1,4 +1,10 @@
-import type { IsoMdocDcApiRequest, IsoMdocDcApiResponse, ValidityInfoOptions } from '@owf/mdoc'
+import type {
+  DeviceRequestElementOptions,
+  DeviceRequestMatchResult,
+  IsoMdocDcApiRequest,
+  IsoMdocDcApiResponse,
+  ValidityInfoOptions,
+} from '@owf/mdoc'
 import type { DcqlQuery } from 'dcql'
 import type { CredentialMultiInstanceUseMode } from '../../utils/credentialUseTypes'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
@@ -119,8 +125,38 @@ export type MdocDcApiRequest = IsoMdocDcApiRequest
  */
 export type MdocDcApiResponse = IsoMdocDcApiResponse
 
+/**
+ * Per-element options for matching a device response against the device request, keyed by docType,
+ * namespace and element identifier. The element identifier `'*'` applies to every element in the
+ * namespace that is not named explicitly.
+ *
+ * ```ts
+ * {
+ *   'org.iso.18013.5.1.mDL': {
+ *     'org.iso.18013.5.1': { portrait: { optional: true } },
+ *     'com.example.device': { '*': { source: 'deviceSigned' } },
+ *   },
+ * }
+ * ```
+ */
+export type MdocDeviceRequestElements = DeviceRequestElementOptions
+
+/**
+ * How a device response matches the device request, per doc request and per requested element.
+ */
+export type MdocDeviceRequestMatch = DeviceRequestMatchResult
+
 export type MdocDcApiCreateVerificationSessionOptions = {
   docRequests: MdocDocumentRequest[]
+
+  /**
+   * The response has to satisfy every doc request, which means that each requested element must be
+   * disclosed and issuer signed. Use this to mark elements that may be left out, or that may (or
+   * must) be device signed instead.
+   *
+   * Stored on the verification session, and applied when the response is verified.
+   */
+  deviceRequestElements?: MdocDeviceRequestElements
 
   /**
    * Sign each doc request with reader authentication. The certificate (or chain) must have a
@@ -304,6 +340,19 @@ export type MdocSignOptions = {
    */
   issuerCertificate: X509Certificate | X509Certificate[]
   holderKey: PublicJwk
+
+  /**
+   * The namespaces and data elements the holder key is authorized to authenticate in the
+   * `deviceSigned` part of a device response (ISO/IEC 18013-5 9.1.3.4). Every device signed element
+   * disclosed in a device response must be authorized here, either through its whole namespace in
+   * `namespaces` or individually in `dataElements`.
+   *
+   * When omitted, the holder key is not authorized to authenticate any device signed element.
+   */
+  keyAuthorizations?: {
+    namespaces?: string[]
+    dataElements?: Record<string, string[]>
+  }
 
   statusInfo?: { index: number; uri: string; certificate?: X509Certificate }
 }

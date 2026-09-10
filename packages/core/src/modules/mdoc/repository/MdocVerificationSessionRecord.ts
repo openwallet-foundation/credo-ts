@@ -3,6 +3,7 @@ import { BaseRecord, type TagsBase } from '../../../storage/BaseRecord'
 import { DateTransformer, JsonTransformer } from '../../../utils'
 import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
+import type { MdocDeviceRequestElements } from '../MdocOptions'
 import type { MdocVerificationSessionState } from '../MdocVerificationSessionState'
 
 /**
@@ -68,6 +69,7 @@ export interface MdocVerificationSessionRecordProps {
   errorMessage?: string
 
   deviceRequestBase64Url: string
+  deviceRequestElements?: MdocDeviceRequestElements
   sessionTranscript: MdocVerificationSessionTranscript
 
   sessionKeyId: string
@@ -103,6 +105,13 @@ export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerific
   public deviceRequestBase64Url!: string
 
   /**
+   * Per-element options for matching the device response against the device request, for elements
+   * that are optional or that may be device signed. Every requested element not named here is
+   * required and must be issuer signed.
+   */
+  public deviceRequestElements?: MdocDeviceRequestElements
+
+  /**
    * The protocol-specific state needed to reconstruct the session transcript, and the protocol the
    * session uses.
    */
@@ -131,6 +140,7 @@ export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerific
       this.state = props.state
       this.errorMessage = props.errorMessage
       this.deviceRequestBase64Url = props.deviceRequestBase64Url
+      this.deviceRequestElements = props.deviceRequestElements
       this.sessionTranscript = props.sessionTranscript
       this.sessionKeyId = props.sessionKeyId
       this.expiresAt = props.expiresAt

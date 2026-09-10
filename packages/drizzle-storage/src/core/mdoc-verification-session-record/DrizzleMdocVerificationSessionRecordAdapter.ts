@@ -38,6 +38,7 @@ export class DrizzleMdocVerificationSessionRecordAdapter extends BaseDrizzleReco
       sessionTranscriptType,
       errorMessage: record.errorMessage,
       deviceRequestBase64Url: record.deviceRequestBase64Url,
+      deviceRequestElements: record.deviceRequestElements,
       sessionTranscript: record.sessionTranscript,
       sessionKeyId: record.sessionKeyId,
       expiresAt: record.expiresAt,
