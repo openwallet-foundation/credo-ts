@@ -199,10 +199,9 @@ export async function getVerificationMethodForJwt(
     const supportedVerificationMethodTypes = getSupportedVerificationMethodTypesForPublicJwk(jwkClass)
 
     const didDocument = await didResolver.resolveDidDocument(agentContext, iss)
-    const verificationMethods =
-      didDocument.assertionMethod
-        ?.map((v) => (typeof v === 'string' ? didDocument.dereferenceVerificationMethod(v) : v))
-        .filter((v) => supportedVerificationMethodTypes.includes(v.type)) ?? []
+    const verificationMethods = didDocument.findVerificationMethodsByTypeAndPurpose(supportedVerificationMethodTypes, [
+      'assertionMethod',
+    ])
 
     if (verificationMethods.length === 0) {
       throw new CredoError(
