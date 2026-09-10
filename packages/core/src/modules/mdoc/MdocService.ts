@@ -128,8 +128,6 @@ export class MdocService {
       verificationSessionId
     )
 
-    await this.mdocVerificationSessionRepository.delete(agentContext, verificationSession)
-
     const deleteAssociatedKey = options?.deleteAssociatedKey ?? true
     if (deleteAssociatedKey) {
       const kms = agentContext.resolve(KeyManagementApi)
@@ -137,5 +135,7 @@ export class MdocService {
       // Returns false if the key was already gone, which is the state we want it in
       await kms.deleteKey({ keyId: verificationSession.sessionKeyId })
     }
+
+    await this.mdocVerificationSessionRepository.delete(agentContext, verificationSession)
   }
 }

@@ -123,7 +123,13 @@ export class MdocDcApiService {
 
       return { verificationSession, request }
     } catch (error) {
-      await kms.deleteKey({ keyId })
+      await kms.deleteKey({ keyId }).catch((deleteError) => {
+        agentContext.config.logger.error(`Failed to delete session key ${keyId} after failed request creation`, {
+          deleteError,
+          requestCreationError: error,
+        })
+      })
+
       throw error
     }
   }
