@@ -60,10 +60,7 @@ export async function extractHolderFromPresentationCredentials(
     const dids = agentContext.resolve(DidsApi)
     const { didDocument, keys } = await dids.resolveCreatedDidDocumentWithKeys(holderDid)
 
-    const authenticationMethods =
-      didDocument.authentication
-        ?.map((entry) => (typeof entry === 'string' ? didDocument.dereferenceVerificationMethod(entry) : entry))
-        .filter((entry): entry is VerificationMethod => !!entry) ?? []
+    const authenticationMethods = didDocument.findVerificationMethodsByPurpose(['authentication'])
 
     const candidateMethods = authenticationMethods.filter((method) =>
       keys?.some(({ didDocumentRelativeKeyId }) => method.id.endsWith(didDocumentRelativeKeyId))

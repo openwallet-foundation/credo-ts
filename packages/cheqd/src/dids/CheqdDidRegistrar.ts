@@ -227,9 +227,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
       const didDocumentJson = didDocument.toJSON() as DIDDocument
       const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocumentJson, versionId)
 
-      const authentication = didDocument.authentication?.map((authentication) =>
-        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
-      )
+      const authentication = didDocument.findVerificationMethodsByPurpose(['authentication'])
       if (!authentication || authentication.length === 0) {
         return {
           didDocumentMetadata: {},
@@ -440,9 +438,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
       const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocument.toJSON() as DIDDocument, versionId)
 
-      const authentication = didDocument.authentication?.map((authentication) =>
-        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
-      )
+      const authentication = didDocument.findVerificationMethodsByPurpose(['authentication'])
       if (!authentication || authentication.length === 0) {
         return {
           didDocumentMetadata: {},
@@ -523,11 +519,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
       const payloadToSign = createMsgDeactivateDidDocPayloadToSign(didDocument, versionId)
       const didDocumentInstance = DidDocument.fromJSON(didDocument)
 
-      const authentication = didDocumentInstance.authentication?.map((authentication) =>
-        typeof authentication === 'string'
-          ? didDocumentInstance.dereferenceVerificationMethod(authentication)
-          : authentication
-      )
+      const authentication = didDocumentInstance.findVerificationMethodsByPurpose(['authentication'])
       if (!authentication || authentication.length === 0) {
         return {
           didDocumentMetadata: {},

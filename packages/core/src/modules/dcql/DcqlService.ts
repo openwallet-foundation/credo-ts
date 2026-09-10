@@ -993,11 +993,7 @@ export class DcqlService {
 
     // the signature suite to use for the presentation is dependant on the credentials we share.
     // 1. Get the verification method for this given proof purpose in this DID document
-    let [verificationMethod] = didDocument.authentication
-    if (typeof verificationMethod === 'string') {
-      verificationMethod = didDocument.dereferenceKey(verificationMethod, ['authentication'])
-    }
-
+    const [verificationMethod] = didDocument.findVerificationMethodsByPurpose(['authentication'])
     return verificationMethod
   }
 
