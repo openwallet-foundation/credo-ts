@@ -14,6 +14,7 @@ import { DidCommConnectionRole, DidCommDidExchangeRole, DidCommDidRotateRole } f
 import { DidCommConnectionRepository } from '../repository'
 import { DidCommConnectionService, DidCommTrustPingService } from '../services'
 import { DidCommDidRotateService } from '../services/DidCommDidRotateService'
+import { DidCommDidRotateV2Service } from '../services/DidCommDidRotateV2Service'
 
 describe('DidCommConnectionsModule', () => {
   test('registers dependencies on the dependency manager', () => {
@@ -32,11 +33,12 @@ describe('DidCommConnectionsModule', () => {
       connectionsModule.config
     )
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(5)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(6)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommConnectionService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidExchangeProtocol)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommTrustPingService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommDidRotateService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommDidRotateV2Service)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommConnectionRepository)
   })
 
@@ -54,6 +56,7 @@ describe('DidCommConnectionsModule', () => {
         [DidCommTrustPingService, {} as unknown as DidCommTrustPingService],
         [DidExchangeProtocol, {} as unknown as DidExchangeProtocol],
         [DidCommDidRotateService, {} as unknown as DidCommDidRotateService],
+        [DidCommDidRotateV2Service, {} as unknown as DidCommDidRotateV2Service],
       ],
     })
     await new DidCommConnectionsModule().initialize(agentContext)
@@ -70,6 +73,10 @@ describe('DidCommConnectionsModule', () => {
       new DidCommProtocol({
         id: 'https://didcomm.org/did-rotate/1.0',
         roles: [DidCommDidRotateRole.RotatingParty, DidCommDidRotateRole.ObservingParty],
+      }),
+      new DidCommProtocol({
+        id: 'https://didcomm.org/empty/1.0',
+        roles: [],
       }),
     ])
   })

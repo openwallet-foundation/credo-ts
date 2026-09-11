@@ -2,7 +2,13 @@ import { OutOfBandDidCommService } from '../../../../../../../didcomm/src/module
 import { outOfBandServiceToNumAlgo4Did } from '../../../../../../../didcomm/src/modules/oob/converters'
 import { JsonTransformer } from '../../../../../utils'
 import { DidDocument } from '../../../domain'
-import { didDocumentToNumAlgo4Did, didToNumAlgo4DidDocument } from '../peerDidNumAlgo4'
+import { verkeyToDidKey } from '../../../helpers'
+import {
+  areEquivalentDidPeer4Forms,
+  didDocumentToNumAlgo4Did,
+  didToNumAlgo4DidDocument,
+  getEd25519DidKeysFromLongFormDidPeer4,
+} from '../peerDidNumAlgo4'
 import didPeer4zQmd8Cp from './__fixtures__/didPeer4zQmd8Cp.json'
 import didPeer4zQmUJdJ from './__fixtures__/didPeer4zQmUJdJ.json'
 
@@ -21,6 +27,33 @@ describe('peerDidNumAlgo4', () => {
       const didDocument = JsonTransformer.fromJSON(didPeer4zQmUJdJ, DidDocument)
 
       expect(didDocumentToNumAlgo4Did(didDocument)).toEqual({ longFormDid, shortFormDid })
+    })
+  })
+
+  describe('getEd25519DidKeysFromLongFormDidPeer4', () => {
+    test('maps long-form did:peer:4 auth keys to did:key for keylist / forward matching', () => {
+      const longFormDid = didPeer4zQmUJdJ.id
+      const expectedDidKey = verkeyToDidKey('7H8ScGrunfcGBwMhhRakDMYguLAWiNWhQ2maYH84J8fE')
+      expect(getEd25519DidKeysFromLongFormDidPeer4(longFormDid)).toContain(expectedDidKey)
+    })
+
+    test('returns empty for short-form did:peer:4', () => {
+      const shortForm = didPeer4zQmUJdJ.alsoKnownAs[0]
+      expect(getEd25519DidKeysFromLongFormDidPeer4(shortForm)).toEqual([])
+    })
+  })
+
+  describe('areEquivalentDidPeer4Forms', () => {
+    test('treats short and long did:peer:4 encodings of the same document as equivalent', () => {
+      const longFormDid = didPeer4zQmUJdJ.id
+      const shortFormDid = didPeer4zQmUJdJ.alsoKnownAs[0]
+      expect(areEquivalentDidPeer4Forms(longFormDid, shortFormDid)).toBe(true)
+      expect(areEquivalentDidPeer4Forms(shortFormDid, longFormDid)).toBe(true)
+    })
+
+    test('returns false for unrelated DIDs', () => {
+      expect(areEquivalentDidPeer4Forms(didPeer4zQmd8Cp.id, didPeer4zQmUJdJ.id)).toBe(false)
+      expect(areEquivalentDidPeer4Forms('did:web:example.com', didPeer4zQmUJdJ.id)).toBe(false)
     })
   })
 

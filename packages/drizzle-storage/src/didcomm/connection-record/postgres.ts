@@ -1,4 +1,9 @@
-import type { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from '@credo-ts/didcomm'
+import type {
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+  DidCommHandshakeProtocol,
+  DidCommVersion,
+} from '@credo-ts/didcomm'
 import { boolean, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
@@ -24,12 +29,15 @@ export const didcommConnectionRoleEnum = pgEnum('DidcommConnectionRole', didcomm
 
 export const didcommConnectionHandshakeProtocols = exhaustiveArray(
   {} as DidCommHandshakeProtocol,
-  ['https://didcomm.org/didexchange/1.x', 'https://didcomm.org/connections/1.x'] as const
+  ['https://didcomm.org/didexchange/1.x', 'https://didcomm.org/connections/1.x', 'None'] as const
 )
 export const didcommConnectionHandshakeProtocolEnum = pgEnum(
   'DidcommConnectionHandshakeProtocol',
   didcommConnectionHandshakeProtocols
 )
+
+export const didcommConnectionVersions = exhaustiveArray({} as DidCommVersion, ['v1', 'v2'] as const)
+export const didcommConnectionVersionEnum = pgEnum('DidcommConnectionVersion', didcommConnectionVersions)
 
 export const didcommConnection = pgTable(
   'DidcommConnection',
@@ -54,6 +62,7 @@ export const didcommConnection = pgTable(
 
     errorMessage: text('error_message'),
     protocol: didcommConnectionHandshakeProtocolEnum(),
+    didcommVersion: didcommConnectionVersionEnum('didcomm_version'),
     connectionTypes: text('connection_types').array(),
 
     previousDids: text('previous_dids').array(),
