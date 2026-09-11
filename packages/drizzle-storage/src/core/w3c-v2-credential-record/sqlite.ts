@@ -18,7 +18,10 @@ export const w3cV2Credential = sqliteTable(
     contexts: text({ mode: 'json' }).$type<string[]>().notNull(),
     types: text({ mode: 'json' }).$type<string[]>().notNull(),
     givenId: text('given_id'),
-    claimFormat: text('claim_format').$type<ClaimFormat.SdJwtW3cVc | ClaimFormat.JwtW3cVc>().notNull(),
+    claimFormat: text('claim_format')
+      .$type<ClaimFormat.SdJwtW3cVc | ClaimFormat.JwtW3cVc | ClaimFormat.DiVc>()
+      .notNull(),
+    cryptosuites: text({ mode: 'json' }).$type<string[]>(),
     algs: text({ mode: 'json' }).$type<string[]>(),
 
     multiInstanceState: text('multi_instance_state')

@@ -29,6 +29,13 @@
       "when": 1783082532530,
       "tag": "0003_whole_nick_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787652194269,
+      "tag": "0004_add_access_token_signer_kms_backend",
+      "breakpoints": true
     }
   ]
 }

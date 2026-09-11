@@ -246,8 +246,45 @@ describe('OpenId4VcIssuer', () => {
   })
 
   afterEach(async () => {
+    vi.restoreAllMocks()
     await issuer.shutdown()
     await holder.shutdown()
+  })
+
+  it('uses and persists the configured KMS backend for access token signing keys', async () => {
+    const createKey = issuer.kms.createKey.bind(issuer.kms)
+    const deleteKey = issuer.kms.deleteKey.bind(issuer.kms)
+    const createKeySpy = vi
+      .spyOn(issuer.kms, 'createKey')
+      .mockImplementation(({ backend: _backend, ...options }) => createKey(options))
+    const deleteKeySpy = vi
+      .spyOn(issuer.kms, 'deleteKey')
+      .mockImplementation(({ backend: _backend, ...options }) => deleteKey(options))
+
+    const createdIssuer = await issuer.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: { openBadgeCredential },
+      accessTokenSignerKmsBackend: 'remote-kms-a',
+    })
+
+    expect(createKeySpy).toHaveBeenLastCalledWith({
+      type: { kty: 'OKP', crv: 'Ed25519' },
+      backend: 'remote-kms-a',
+    })
+    expect(createdIssuer.accessTokenSignerKmsBackend).toBe('remote-kms-a')
+
+    const previousKeyId = createdIssuer.resolvedAccessTokenPublicJwk.keyId
+    await issuer.openid4vc.issuer.rotateAccessTokenSigningKey(createdIssuer.issuerId, {
+      accessTokenSignerKmsBackend: 'remote-kms-b',
+    })
+
+    expect(createKeySpy).toHaveBeenLastCalledWith({
+      type: { kty: 'OKP', crv: 'Ed25519' },
+      backend: 'remote-kms-b',
+    })
+    expect(deleteKeySpy).toHaveBeenLastCalledWith({ keyId: previousKeyId, backend: 'remote-kms-a' })
+    expect(
+      (await issuer.openid4vc.issuer.getIssuerByIssuerId(createdIssuer.issuerId)).accessTokenSignerKmsBackend
+    ).toBe('remote-kms-b')
   })
 
   // This method is available on the holder service,

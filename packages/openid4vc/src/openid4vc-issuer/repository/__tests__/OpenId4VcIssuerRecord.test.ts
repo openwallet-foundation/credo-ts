@@ -2,6 +2,25 @@ import { JsonTransformer, Kms } from '@credo-ts/core'
 import { OpenId4VcIssuerRecord } from '../OpenId4VcIssuerRecord'
 
 describe('OpenId4VcIssuerRecord', () => {
+  test('preserves the optional access token signer backend', () => {
+    const instance = JsonTransformer.fromJSON(
+      {
+        issuerId: 'issuer-id',
+        accessTokenSignerKmsBackend: 'remote-kms',
+        accessTokenPublicJwk: {
+          kty: 'OKP',
+          crv: 'Ed25519',
+          x: '11qYAYdk9Jtz7bQHmbT5D_Iy_fqpI6bD7Z2p1l9tUoQ',
+          kid: 'remote-key-id',
+        },
+        credentialConfigurationsSupported: {},
+      },
+      OpenId4VcIssuerRecord
+    )
+
+    expect(instance.accessTokenSignerKmsBackend).toBe('remote-kms')
+  })
+
   test('should correctly transform credentials supported to credential configurations supported', () => {
     const instance = JsonTransformer.fromJSON(
       {
