@@ -14,7 +14,7 @@ export class DidCommWsInboundTransport implements DidCommInboundTransport {
   private logger!: Logger
 
   // We're using a `socketId` just for the prevention of calling the connection handler twice.
-  private socketIds: Record<string, unknown> = {}
+  private socketIds: Record<string, WebSocket> = {}
 
   public constructor({
     server,
@@ -45,6 +45,7 @@ export class DidCommWsInboundTransport implements DidCommInboundTransport {
         this.listenOnWebSocketMessages(agentContext, socket, session)
         socket.on('close', () => {
           this.logger.debug('Socket closed.')
+          delete this.socketIds[socketId]
           transportService.removeSession(session)
         })
       } else {
@@ -55,6 +56,10 @@ export class DidCommWsInboundTransport implements DidCommInboundTransport {
 
   public async stop() {
     this.logger.debug('Closing WebSocket Server')
+
+    for (const socket of Object.values(this.socketIds)) {
+      socket.terminate()
+    }
 
     return new Promise<void>((resolve, reject) => {
       this.socketServer.close((error) => {
