@@ -1,5 +1,6 @@
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
+import type { PublicJwk, SupportedPublicJwkClass } from '../kms/jwk/PublicJwk'
 import { W3cDataIntegrityCryptosuiteRegistry } from './W3cDataIntegrityCryptosuiteRegistry'
 import { assertCreated, assertVerified } from './W3cDataIntegrityError'
 import type {
@@ -95,7 +96,17 @@ export class W3cDataIntegrityApi {
 
   // ─── Metadata ─────────────────────────────────────────────────────────────
 
-  public getSupportedCryptosuites() {
-    return this.dataIntegrityCryptosuiteRegistry.supportedCryptosuites
+  /**
+   * The identifiers of the registered Data Integrity cryptosuites, in registration order.
+   *
+   * @param publicJwkType when provided, only the cryptosuites that can create and verify proofs
+   * with this key type are returned.
+   */
+  public getSupportedCryptosuites(publicJwkType?: SupportedPublicJwkClass | PublicJwk): string[] {
+    if (!publicJwkType) return this.dataIntegrityCryptosuiteRegistry.supportedCryptosuites
+
+    return this.dataIntegrityCryptosuiteRegistry
+      .getAllByPublicJwkType(publicJwkType)
+      .map((cryptosuiteInfo) => cryptosuiteInfo.cryptosuite)
   }
 }

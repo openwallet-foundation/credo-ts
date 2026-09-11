@@ -124,6 +124,21 @@ describe('W3cDataIntegrityApi', () => {
     expect(api.getSupportedCryptosuites()).toEqual(['eddsa-jcs-2022'])
   })
 
+  test('getSupportedCryptosuites filters by public jwk type when one is provided', () => {
+    const proofService = {} as unknown as W3cDataIntegrityProofService
+    const cryptosuiteRegistry = {
+      supportedCryptosuites: ['eddsa-jcs-2022', 'ecdsa-jcs-2019'],
+      getAllByPublicJwkType: vi.fn().mockReturnValue([{ cryptosuite: 'ecdsa-jcs-2019' }]),
+    } as unknown as W3cDataIntegrityCryptosuiteRegistry
+
+    const api = new W3cDataIntegrityApi(agentContext, proofService, cryptosuiteRegistry)
+    const publicJwkType = {} as never
+
+    expect(api.getSupportedCryptosuites()).toEqual(['eddsa-jcs-2022', 'ecdsa-jcs-2019'])
+    expect(api.getSupportedCryptosuites(publicJwkType)).toEqual(['ecdsa-jcs-2019'])
+    expect(cryptosuiteRegistry.getAllByPublicJwkType).toHaveBeenCalledWith(publicJwkType)
+  })
+
   test('createProofOrThrow returns success and throws on failure', async () => {
     const proofService = {
       createProof: vi
