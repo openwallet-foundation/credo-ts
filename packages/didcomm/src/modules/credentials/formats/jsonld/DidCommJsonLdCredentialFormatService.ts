@@ -3,7 +3,6 @@ import {
   ClaimFormat,
   CredoError,
   DidResolverService,
-  findVerificationMethodByKeyType,
   JsonEncoder,
   JsonTransformer,
   utils,
@@ -300,10 +299,10 @@ export class DidCommJsonLdCredentialFormatService
       throw new CredoError(`No Key Type found for proofType ${proofType}`)
     }
 
-    const verificationMethod = await findVerificationMethodByKeyType(keyType[0], issuerDidDocument, [
+    const verificationMethod = issuerDidDocument.findVerificationMethodsByTypeAndPurpose(keyType, [
       'assertionMethod',
       'verificationMethod',
-    ])
+    ])[0]
 
     if (!verificationMethod) {
       throw new CredoError(`Missing verification method for key type ${keyType}`)

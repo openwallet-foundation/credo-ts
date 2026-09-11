@@ -833,15 +833,8 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
-    const authorizedIds: string[] = []
-    for (const entry of didDocument.assertionMethod ?? []) {
-      const entryId = typeof entry === 'string' ? entry : entry.id
-      try {
-        authorizedIds.push(toAbsoluteId(didDocument.dereferenceKey(entryId, [ATTESTED_RESOURCE_PROOF_PURPOSE]).id))
-      } catch {
-        // Skip entries that cannot be dereferenced within this did document
-      }
-    }
+    const authorizedMethods = didDocument.findVerificationMethodsByTypeAndPurpose('Multikey', ['assertionMethod'])
+    const authorizedIds = authorizedMethods.map((method) => toAbsoluteId(method.id))
 
     if (authorizedIds.length === 0) {
       throw new CredoError(
