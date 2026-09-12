@@ -17,11 +17,12 @@ import {
   X509CrlExtensionIdentifier,
   x509SignatureAlgorithmToJwa,
 } from './utils'
+import { defaultX509ParseOptions } from './utils/parseOptions'
 import { normalizeSerialNumber } from './utils/serialNumber'
 import { X509Certificate, X509KeyUsage } from './X509Certificate'
 import type { X509RevocationReason } from './X509CrlDistributionPoint'
 import { X509Error } from './X509Error'
-import type { X509CreateCertificateRevocationListOptions } from './X509ServiceOptions'
+import type { X509CreateCertificateRevocationListOptions, X509ParseOptions } from './X509ServiceOptions'
 
 /**
  * Reason a certificate was revoked, as carried in a CRL entry's `reasonCode` extension
@@ -81,18 +82,23 @@ function uint8ArraysEqual(a: Uint8Array, b: Uint8Array): boolean {
  */
 export class X509CertificateRevocationList {
   private crl: x509.X509Crl
+  private parseOptions?: X509ParseOptions
 
-  private constructor(crl: x509.X509Crl) {
+  private constructor(crl: x509.X509Crl, parseOptions?: X509ParseOptions) {
     this.crl = crl
+    this.parseOptions = parseOptions
   }
 
   /**
    * Parse a CRL from raw bytes
    */
-  public static fromRaw(rawCrl: Uint8Array): X509CertificateRevocationList {
+  public static fromRaw(
+    rawCrl: Uint8Array,
+    parseOptions: X509ParseOptions = defaultX509ParseOptions
+  ): X509CertificateRevocationList {
     try {
-      const crl = new x509.X509Crl(rawCrl)
-      return new X509CertificateRevocationList(crl)
+      const crl = new x509.X509Crl(rawCrl, { berOptions: parseOptions })
+      return new X509CertificateRevocationList(crl, parseOptions)
     } catch (error) {
       throw new X509Error('Failed to parse CRL', { cause: error instanceof Error ? error : undefined })
     }
@@ -101,10 +107,13 @@ export class X509CertificateRevocationList {
   /**
    * Parse a CRL from PEM or base64 encoded string
    */
-  public static fromEncoded(encodedCrl: string): X509CertificateRevocationList {
+  public static fromEncoded(
+    encodedCrl: string,
+    parseOptions: X509ParseOptions = defaultX509ParseOptions
+  ): X509CertificateRevocationList {
     try {
-      const crl = new x509.X509Crl(encodedCrl)
-      return new X509CertificateRevocationList(crl)
+      const crl = new x509.X509Crl(encodedCrl, { berOptions: parseOptions })
+      return new X509CertificateRevocationList(crl, parseOptions)
     } catch (error) {
       throw new X509Error('Failed to parse encoded CRL', { cause: error instanceof Error ? error : undefined })
     }
@@ -232,7 +241,7 @@ export class X509CertificateRevocationList {
     const extension = extensions[0]
     if (!extension) return undefined
 
-    return AsnParser.parse(extension.value, CRLNumber).value
+    return AsnParser.parse(extension.value, CRLNumber, { berOptions: this.parseOptions }).value
   }
 
   /**
@@ -249,7 +258,7 @@ export class X509CertificateRevocationList {
     const extension = extensions[0]
     if (!extension) return undefined
 
-    return AsnParser.parse(extension.value, BaseCRLNumber).value
+    return AsnParser.parse(extension.value, BaseCRLNumber, { berOptions: this.parseOptions }).value
   }
 
   /**
@@ -268,7 +277,7 @@ export class X509CertificateRevocationList {
     const extension = extensions[0]
     if (!extension) return undefined
 
-    const idp = AsnParser.parse(extension.value, AsnIssuingDistributionPoint)
+    const idp = AsnParser.parse(extension.value, AsnIssuingDistributionPoint, { berOptions: this.parseOptions })
 
     const fullName: string[] = []
     if (idp.distributionPoint?.fullName) {
@@ -405,10 +414,11 @@ export class X509CertificateRevocationList {
   /**
    * Check if a certificate is revoked in this CRL.
    *
-   * We compare serial numbers ourselves (normalizing case and leading zeros) instead of
-   * delegating to `@peculiar/x509`'s `X509Crl.findRevoked`. The latter eagerly resolves the
-   * global crypto provider (even though it isn't needed for a serial number comparison), which
-   * throws when no provider has been registered globally.
+   * `@peculiar/x509`'s `X509Crl.findRevoked` normalizes serial numbers itself and would give the
+   * same answers as the comparison below. We still do it here so that this and the cached-summary
+   * lookup in `CrlSummaryVerifiedCrl.findRevoked` share a single normalization: the summary only
+   * holds serial numbers as strings and so cannot delegate, and the two paths must agree on
+   * whether a certificate is revoked.
    */
   public findRevoked(certificate: X509Certificate): X509CertificateRevocationListEntry | null {
     const target = normalizeSerialNumber(certificate.data.serialNumber)
@@ -458,8 +468,6 @@ export class X509CertificateRevocationList {
   }
 
   public equal(crl: X509CertificateRevocationList) {
-    const parsedOther = new x509.X509Crl(crl.rawCertificateRevocationList)
-
-    return this.crl.equal(parsedOther)
+    return this.crl.equal(crl.crl)
   }
 }
