@@ -68,6 +68,8 @@ const DEVICE_REQUEST_1 = DeviceRequest.create({
               ['un_distinguishing_sign', false],
             ]),
           ],
+          // Device signed values are only disclosed when requested
+          ['com.foobar-device', new Map([['test', false]])],
         ]),
       }),
     }),

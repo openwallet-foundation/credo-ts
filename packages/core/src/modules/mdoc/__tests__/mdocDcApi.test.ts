@@ -379,7 +379,18 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
         ],
       })
 
-      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+      // The element is not issuer signed, so without its value no stored mdoc can answer it
+      const unresolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+      expect(unresolved.success).toBe(false)
+      expect(unresolved.docRequests[0].failedCredentials[0].claims.failedClaims).toMatchObject([
+        { namespace: deviceNameSpace, elementIdentifier: 'session_id', failure: 'notDisclosed' },
+      ])
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({
+        request,
+        origin,
+        deviceNameSpaces: { [deviceNameSpace]: { session_id: 'abc' } },
+      })
 
       // The element is not issuer signed, but the device key is authorized for it
       if (!resolved.success) throw new Error('Expected the stored mdocs to satisfy the request')
@@ -389,7 +400,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
         {
           namespace: deviceNameSpace,
           elementIdentifier: 'session_id',
-          elementValue: undefined,
+          elementValue: 'abc',
           source: 'deviceSigned',
         },
       ])

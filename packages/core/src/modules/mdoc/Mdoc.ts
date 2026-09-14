@@ -239,6 +239,11 @@ export class Mdoc {
           mdocContext
         )
 
+      // Only undefined without chain validation, which is never disabled here.
+      if (!trustedIssuanceChain) {
+        throw new MdocError('Unable to determine a trusted issuance chain')
+      }
+
       const issuanceChain = trustedIssuanceChain.map((c) => X509Certificate.fromRawCertificate(c))
 
       // The mdoc x5chain is leaf-first and does not include the trust anchor. The validated chain returned by

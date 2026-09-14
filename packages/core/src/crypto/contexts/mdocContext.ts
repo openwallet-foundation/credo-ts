@@ -111,9 +111,9 @@ export const getMdocContext = (agentContext: AgentContext, { now }: { now?: Date
     },
 
     x509: {
-      getIssuerNameField: (input) => {
+      getSubjectNameField: (input) => {
         const x509Certificate = X509Certificate.fromRawCertificate(input.certificate)
-        return x509Certificate.getIssuerNameField(input.field)
+        return x509Certificate.getSubjectNameField(input.field)
       },
       getPublicKey: async (input) => {
         const certificate = X509Certificate.fromRawCertificate(input.certificate)

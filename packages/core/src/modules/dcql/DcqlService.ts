@@ -264,7 +264,9 @@ export class DcqlService {
         authority: this.getAuthorityForCredential(new Mdoc(presentation.deviceResponse.documents[0].issuerSigned)),
         doctype: presentation.deviceResponse.documents[0].docType,
         namespaces: Object.entries(
-          Object.fromEntries(presentation.deviceResponse.documents[0].issuerSigned.issuerNamespaces.issuerNamespaces)
+          Object.fromEntries(
+            presentation.deviceResponse.documents[0].issuerSigned.issuerNamespaces?.issuerNamespaces ?? []
+          )
         ).reduce(
           (prev, [key, value]) => ({
             // biome-ignore lint/performance/noAccumulatingSpread: time complexity not relevant here

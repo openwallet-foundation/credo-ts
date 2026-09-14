@@ -100,6 +100,9 @@ export type MdocDeviceResponsePresentationDefinitionOptions = {
   sessionTranscriptOptions: MdocSessionTranscriptOptions
 }
 
+/**
+ * @deprecated only used by the deprecated `MdocDeviceResponse.createDeviceResponseWithDcqlQuery`.
+ */
 export type MdocDeviceResponseDcqlQueryOptions = {
   mdocs: [Mdoc, ...Mdoc[]]
   dcqlQuery: DcqlQuery
@@ -280,6 +283,14 @@ export type MdocDcApiResolveRequestOptions = {
   trustedReaderCertificates?: Array<EncodedX509Certificate | X509Certificate>
 
   /**
+   * Values the wallet can disclose device signed. A requested element that is not issuer signed in
+   * a stored mdoc only matches when its value is provided here and the device key is authorized for
+   * it in the MSO. Pass the same values in the `deviceNameSpaces` of the credential to
+   * `createDcApiResponse`.
+   */
+  deviceNameSpaces?: MdocNameSpaces
+
+  /**
    * Which mode to use for usage of the credential instances. Credential records that cannot
    * provide an instance for this mode are not returned as a match, as they cannot be used to
    * create a response.
@@ -304,8 +315,9 @@ export type MdocClaimMatch = ClaimMatch
  * as the match of a verifier.
  *
  * A valid claim with `source: 'deviceSigned'` is not issuer signed in the mdoc, but the device key is
- * authorized for it: its value has to be provided in the `deviceNameSpaces` of the credential when
- * creating the response.
+ * authorized for it and its value was provided in the `deviceNameSpaces` passed to
+ * `resolveDcApiRequest`: the same value has to be provided in the `deviceNameSpaces` of the
+ * credential when creating the response.
  */
 export type MdocDcApiValidCredential = Omit<CredentialMatchSuccess, 'credentialIndex'> & {
   record: MdocRecord
@@ -427,7 +439,8 @@ export type MdocDcApiCreateResponseOptions = {
     /**
      * Values to disclose device signed. Every requested element the mdoc does not contain issuer
      * signed, but that the device key is authorized for in the MSO, has to be provided here: the
-     * valid claims with `source: 'deviceSigned'` in the resolved request.
+     * valid claims with `source: 'deviceSigned'` in the resolved request. Values that are not
+     * requested, or that the device key is not authorized for, are left out.
      */
     deviceNameSpaces?: MdocNameSpaces
   }>

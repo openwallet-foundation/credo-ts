@@ -1,8 +1,10 @@
+import { DeviceNamespaces, DeviceSignedItems } from '@owf/mdoc'
 import type { PublicJwk } from '../kms'
 import { convertLegacyTrustedCertificates } from '../x509/utils/convertLegacyTrustedCertificates'
 import { X509Certificate } from '../x509/X509Certificate'
 import type { X509VerificationTrustedCertificates } from '../x509/X509ModuleConfig'
 import { MdocError } from './MdocError'
+import type { MdocNameSpaces } from './MdocOptions'
 import { isMdocSupportedSignatureAlgorithm, mdocSupportedSignatureAlgorithms } from './mdocSupportedAlgs'
 
 /**
@@ -115,6 +117,17 @@ export function nameSpacesRecordToMap<
   NameSpaces extends Record<string, Record<string, NamespaceValue>>,
 >(nameSpaces: NameSpaces): Map<string, Map<string, NamespaceValue>> {
   return new Map(Object.entries(nameSpaces).map(([key, value]) => [key, new Map(Object.entries(value))] as const))
+}
+
+export function nameSpacesRecordToDeviceNamespaces(nameSpaces: MdocNameSpaces) {
+  return DeviceNamespaces.create({
+    deviceNamespaces: new Map(
+      Array.from(nameSpacesRecordToMap(nameSpaces), ([nameSpace, items]) => [
+        nameSpace,
+        DeviceSignedItems.create({ deviceSignedItems: items }),
+      ])
+    ),
+  })
 }
 
 export function namespacesMapToRecord<NamespaceValue, NameSpaces extends Map<string, Map<string, NamespaceValue>>>(

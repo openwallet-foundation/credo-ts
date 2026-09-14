@@ -2,8 +2,6 @@ import {
   CoseKey,
   type CredentialMatchFailure,
   type CredentialMatchSuccess,
-  DeviceNamespaces,
-  DeviceSignedItems,
   defaultVerificationCallback,
   EncryptionInfo,
   Holder,
@@ -47,7 +45,7 @@ import type {
   MdocDcApiVerifyResponseOptions,
 } from './MdocOptions'
 import { MdocVerificationSessionState } from './MdocVerificationSessionState'
-import { mdocSigningJwk } from './mdocUtil'
+import { mdocSigningJwk, nameSpacesRecordToDeviceNamespaces } from './mdocUtil'
 import {
   MdocRecord,
   MdocRepository,
@@ -396,10 +394,12 @@ export class MdocDcApiService {
     // Reader trust is not resolved here, but per doc request below. `parseRequest` takes a single
     // list of trust anchors for the whole request, while every doc request carries its own reader
     // certificate chain and the trust callbacks are scoped to the chain they are asked about.
+    // `parseRequest` therefore only verifies the reader auth signatures.
     const parsedRequest = await IsoMdocDcApi.parseRequest(
       {
         request: options.request,
         origin: options.origin,
+        disableReaderCertificateChainValidation: true,
         now: options.now,
       },
       mdocContext
@@ -413,9 +413,12 @@ export class MdocDcApiService {
 
     // The same rules the verifier matches the response with, so a credential that matches in full
     // results in a response that satisfies the doc request.
+    const deviceNamespaces = options.deviceNameSpaces
+      ? nameSpacesRecordToDeviceNamespaces(options.deviceNameSpaces)
+      : undefined
     const holderMatch = Holder.matchDeviceRequest({
       deviceRequest: parsedRequest.deviceRequest,
-      credentials: candidates.map(({ mdoc }) => mdoc.issuerSigned),
+      credentials: candidates.map(({ mdoc }) => ({ issuerSigned: mdoc.issuerSigned, deviceNamespaces })),
     })
 
     const toValidCredential = ({
@@ -442,7 +445,7 @@ export class MdocDcApiService {
         ])
       )
 
-      const readerAuth = docRequest.readerAuthenticated
+      const readerAuth = docRequest.hasReaderAuth
         ? {
             certificateChain: (docRequest.readerCertificateChain ?? []).map((certificate) =>
               X509Certificate.fromRawCertificate(certificate)
@@ -547,16 +550,7 @@ export class MdocDcApiService {
           issuerSigned: mdoc.issuerSigned,
           deviceKey: CoseKey.fromJwk(deviceKeyJwk),
           elements,
-          deviceNamespaces: deviceNameSpaces
-            ? DeviceNamespaces.create({
-                deviceNamespaces: new Map(
-                  Object.entries(deviceNameSpaces).map(([nameSpace, values]) => [
-                    nameSpace,
-                    DeviceSignedItems.create({ deviceSignedItems: new Map(Object.entries(values)) }),
-                  ])
-                ),
-              })
-            : undefined,
+          deviceNamespaces: deviceNameSpaces ? nameSpacesRecordToDeviceNamespaces(deviceNameSpaces) : undefined,
         }
       })
     )
