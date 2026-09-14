@@ -31,17 +31,18 @@ import {
 import { afterAll, beforeAll } from 'vitest'
 
 /**
- * Conformance suite images pinned for reproducible runs. Bump together with a
+ * Conformance suite release pinned for reproducible runs. Bump together with a
  * re-calibration of the wait thresholds (see README.md) and a refresh of any
  * module snapshots.
  *
- * TODO: switch back to a `release-vX.Y.Z` tag once the OIDF cuts a release that
- * contains the regenerated mdoc document-signer certificate.
+ * Pin a release tag rather than a digest off `latest`: the registry garbage
+ * collects those digests once the tag moves, which breaks every run with a
+ * `manifest unknown` 404.
  */
-const CONFORMANCE_SERVER_IMAGE =
-  'registry.gitlab.com/openid/conformance-suite@sha256:0c86e0ae080ce17b06b71660a52a0d1cc40dba31ee0fb4325ceec535c32bfeb3'
-const CONFORMANCE_HTTPD_IMAGE =
-  'registry.gitlab.com/openid/conformance-suite/nginx@sha256:d6ca2d91b7f81c05f62e511f81f9c6df128846d75b03652c667123bd39529733'
+const TAG = 'release-v5.2.2'
+
+const CONFORMANCE_SERVER_IMAGE = `registry.gitlab.com/openid/conformance-suite:${TAG}`
+const CONFORMANCE_HTTPD_IMAGE = `registry.gitlab.com/openid/conformance-suite/nginx:${TAG}`
 
 /**
  * Port the credo-ts verifier under test listens on. It is exposed to the
