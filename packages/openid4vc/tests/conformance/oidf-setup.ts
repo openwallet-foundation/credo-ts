@@ -59,6 +59,12 @@ export const HOST_VERIFIER_PORT = 9382
 const CONFORMANCE_HTTPD_PORT = 8443
 
 /**
+ * Host port the suite httpd is published on. Defaults to the container port, but
+ * can be moved with `OIDF_HTTPD_HOST_PORT` when 8443 is already taken on the host.
+ */
+const CONFORMANCE_HTTPD_HOST_PORT = Number(process.env.OIDF_HTTPD_HOST_PORT) || CONFORMANCE_HTTPD_PORT
+
+/**
  * Path inside the conformance nginx image where the self-signed server
  * certificate lives. Pinned to the upstream nginx image
  * (registry.gitlab.com/openid/conformance-suite/nginx) which terminates TLS for
@@ -86,7 +92,7 @@ let containerHttp: StartedTestContainer | undefined
 async function setupOidfContainers(): Promise<void> {
   try {
     await TestContainers.exposeHostPorts(HOST_VERIFIER_PORT)
-    await TestContainers.exposeHostPorts(CONFORMANCE_HTTPD_PORT)
+    await TestContainers.exposeHostPorts(CONFORMANCE_HTTPD_HOST_PORT)
 
     network = await new Network().start()
 
@@ -114,7 +120,7 @@ async function setupOidfContainers(): Promise<void> {
         '-jar',
         '/server/fapi-test-suite.jar',
         '-Djdk.tls.maxHandshakeMessageSize=65536',
-        `--fintechlabs.base_url=https://host.testcontainers.internal:${CONFORMANCE_HTTPD_PORT}`,
+        `--fintechlabs.base_url=https://host.testcontainers.internal:${CONFORMANCE_HTTPD_HOST_PORT}`,
         '--fintechlabs.devmode=true',
       ])
       .withWaitStrategy(Wait.forLogMessage(/.*Started Application in.*/))
@@ -132,7 +138,7 @@ async function setupOidfContainers(): Promise<void> {
       })
       .withExposedPorts({
         container: CONFORMANCE_HTTPD_PORT,
-        host: CONFORMANCE_HTTPD_PORT,
+        host: CONFORMANCE_HTTPD_HOST_PORT,
       })
       .withWaitStrategy(Wait.forListeningPorts())
       .start()
