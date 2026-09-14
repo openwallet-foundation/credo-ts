@@ -59,6 +59,11 @@ export const CURRENT_FRAMEWORK_STORAGE_VERSION = supportedUpdates[supportedUpdat
   typeof supportedUpdates
 >['toVersion']
 
+// Previous version is second-last toVersion from the supported updates
+export const PREVIOUS_FRAMEWORK_STORAGE_VERSION = supportedUpdates[supportedUpdates.length - 2].toVersion as LastItem<
+  typeof supportedUpdates
+>['toVersion']
+
 export const STORAGE_VERSION_RECORD_ID = 'STORAGE_VERSION_RECORD_ID'
 
 type LastItem<T extends readonly unknown[]> = T extends readonly [...infer _, infer U] ? U : T[0] | undefined
