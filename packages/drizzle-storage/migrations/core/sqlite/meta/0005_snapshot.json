@@ -380,11 +380,11 @@
           "notNull": true,
           "autoincrement": false
         },
-        "device_request_elements": {
-          "name": "device_request_elements",
+        "device_request_definition": {
+          "name": "device_request_definition",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "session_transcript": {

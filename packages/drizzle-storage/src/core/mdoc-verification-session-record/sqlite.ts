@@ -1,5 +1,5 @@
 import type {
-  MdocDeviceRequestElements,
+  MdocDeviceRequestDefinition,
   MdocVerificationSessionState,
   MdocVerificationSessionTranscript,
 } from '@credo-ts/core'
@@ -15,7 +15,9 @@ export const mdocVerificationSession = sqliteTable(
     errorMessage: text('error_message'),
 
     deviceRequestBase64Url: text('device_request_base64_url').notNull(),
-    deviceRequestElements: text('device_request_elements', { mode: 'json' }).$type<MdocDeviceRequestElements>(),
+    deviceRequestDefinition: text('device_request_definition', { mode: 'json' })
+      .$type<MdocDeviceRequestDefinition>()
+      .notNull(),
     sessionTranscript: text('session_transcript', { mode: 'json' })
       .$type<MdocVerificationSessionTranscript>()
       .notNull(),

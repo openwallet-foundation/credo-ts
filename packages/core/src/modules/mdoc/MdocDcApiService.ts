@@ -1,9 +1,12 @@
 import {
   CoseKey,
+  type CredentialMatchFailure,
+  type CredentialMatchSuccess,
   DeviceNamespaces,
   DeviceSignedItems,
   defaultVerificationCallback,
   EncryptionInfo,
+  Holder,
   IsoMdocDcApi,
   type IsoMdocDcApiParsedRequest,
   type IsoMdocDcApiRequest,
@@ -18,6 +21,7 @@ import { TrustedIssuerContext } from '../../agent/TrustedIssuerContext'
 import type { VerificationTypeMdocReaderAuth } from '../../agent/TrustedIssuersForVerification'
 import { getMdocContext } from '../../crypto/contexts/mdocContext'
 import { injectable } from '../../plugins'
+import { mapNonEmptyArray } from '../../types'
 import { TypedArrayEncoder } from '../../utils'
 import {
   CredentialMultiInstanceUseMode,
@@ -34,12 +38,13 @@ import { MdocEventTypes, type MdocVerificationSessionStateChangedEvent } from '.
 import type {
   MdocDcApiCreateResponseOptions,
   MdocDcApiCreateVerificationSessionOptions,
-  MdocDcApiCredentialMatch,
+  MdocDcApiFailedCredential,
   MdocDcApiResolvedDocRequest,
+  MdocDcApiResolvedDocRequestSuccess,
   MdocDcApiResolvedRequest,
   MdocDcApiResolveRequestOptions,
+  MdocDcApiValidCredential,
   MdocDcApiVerifyResponseOptions,
-  MdocNameSpaces,
 } from './MdocOptions'
 import { MdocVerificationSessionState } from './MdocVerificationSessionState'
 import { mdocSigningJwk } from './mdocUtil'
@@ -49,6 +54,7 @@ import {
   MdocVerificationSessionRecord,
   MdocVerificationSessionRepository,
 } from './repository'
+import { createDeviceRequestDefinition, getDeviceRequestMatchOptions } from './utils/deviceRequestDefinition'
 
 const defaultExpiresInSeconds = 5 * 60
 
@@ -80,6 +86,8 @@ export class MdocDcApiService {
     const kms = agentContext.resolve(KeyManagementApi)
     const mdocContext = getMdocContext(agentContext)
 
+    const deviceRequestDefinition = createDeviceRequestDefinition(options.docRequests)
+
     const { keyId, publicJwk } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
 
     try {
@@ -91,7 +99,20 @@ export class MdocDcApiService {
 
       const { request, encryptionInfo } = await IsoMdocDcApi.createRequest(
         {
-          docRequests: options.docRequests.map(({ docType, nameSpaces }) => ({ docType, namespaces: nameSpaces })),
+          docRequests: deviceRequestDefinition.docRequests.map(({ docType, nameSpaces }) => ({
+            docType,
+            namespaces: Object.fromEntries(
+              Object.entries(nameSpaces).map(([nameSpace, elements]) => [
+                nameSpace,
+                Object.fromEntries(
+                  Object.entries(elements).map(([elementIdentifier, { intentToRetain }]) => [
+                    elementIdentifier,
+                    intentToRetain,
+                  ])
+                ),
+              ])
+            ),
+          })),
           recipientPublicKey: CoseKey.fromJwk({ ...publicJwk, kid: keyId }),
           readerAuth:
             readerCertificateChain && options.readerAuth
@@ -108,7 +129,7 @@ export class MdocDcApiService {
       const verificationSession = new MdocVerificationSessionRecord({
         state: MdocVerificationSessionState.RequestCreated,
         deviceRequestBase64Url: request.deviceRequest,
-        deviceRequestElements: options.deviceRequestElements,
+        deviceRequestDefinition,
         sessionTranscript: {
           type: 'isoMdocDcApi',
           encryptionInfoBase64Url: request.encryptionInfo,
@@ -208,11 +229,11 @@ export class MdocDcApiService {
 
       // Annex C has no query language such as DCQL, so the device request we sent is what the
       // response has to satisfy. Matched on the full response, as a doc request can be answered by
-      // any of the documents in it.
+      // any of the documents in it. The wallet selected its credentials with the same rules.
       const deviceRequestMatch = Verifier.matchDeviceRequest({
         deviceRequest: TypedArrayEncoder.fromBase64Url(verificationSession.deviceRequestBase64Url),
         deviceResponse: decrypted.deviceResponse,
-        elements: verificationSession.deviceRequestElements,
+        matchOptions: getDeviceRequestMatchOptions(verificationSession.deviceRequestDefinition),
       })
 
       if (!deviceRequestMatch.success) {
@@ -384,11 +405,33 @@ export class MdocDcApiService {
       mdocContext
     )
 
-    const candidatesByDocType = await this.getCandidatesByDocType(
+    const candidates = await this.getCandidates(
       agentContext,
       parsedRequest.docRequests.map((docRequest) => docRequest.docType),
       options.useMode ?? CredentialMultiInstanceUseMode.NewOrFirst
     )
+
+    // The same rules the verifier matches the response with, so a credential that matches in full
+    // results in a response that satisfies the doc request.
+    const holderMatch = Holder.matchDeviceRequest({
+      deviceRequest: parsedRequest.deviceRequest,
+      credentials: candidates.map(({ mdoc }) => mdoc.issuerSigned),
+    })
+
+    const toValidCredential = ({
+      credentialIndex,
+      ...credentialMatch
+    }: CredentialMatchSuccess): MdocDcApiValidCredential => ({
+      ...credentialMatch,
+      record: candidates[credentialIndex].record,
+    })
+    const toFailedCredential = ({
+      credentialIndex,
+      ...credentialMatch
+    }: CredentialMatchFailure): MdocDcApiFailedCredential => ({
+      ...credentialMatch,
+      record: candidates[credentialIndex].record,
+    })
 
     const docRequests: MdocDcApiResolvedDocRequest[] = []
     for (const [docRequestIndex, docRequest] of parsedRequest.docRequests.entries()) {
@@ -421,78 +464,56 @@ export class MdocDcApiService {
         })
       }
 
-      const matches: MdocDcApiCredentialMatch[] = (candidatesByDocType.get(docRequest.docType) ?? []).map(
-        ({ record, mdoc }) => {
-          const available = mdoc.issuerSignedNamespaces
-          const disclosedClaims: MdocNameSpaces = {}
-          const missingClaims: Record<string, string[]> = {}
-
-          for (const [nameSpace, elements] of Object.entries(nameSpaces)) {
-            for (const elementIdentifier of Object.keys(elements)) {
-              if (available[nameSpace] && elementIdentifier in available[nameSpace]) {
-                disclosedClaims[nameSpace] = {
-                  ...disclosedClaims[nameSpace],
-                  [elementIdentifier]: available[nameSpace][elementIdentifier],
-                }
-              } else {
-                missingClaims[nameSpace] = [...(missingClaims[nameSpace] ?? []), elementIdentifier]
-              }
-            }
-          }
-
-          return Object.keys(missingClaims).length === 0
-            ? { record, disclosedClaims, isFullMatch: true }
-            : { record, disclosedClaims, isFullMatch: false, missingClaims }
-        }
-      )
-
-      docRequests.push({
+      const docRequestMatch = holderMatch.docRequests[docRequestIndex]
+      const resolvedDocRequest = {
         docRequestIndex,
         docType: docRequest.docType,
         nameSpaces,
         readerAuth,
-        matches,
-      })
+        failedCredentials: docRequestMatch.failedCredentials.map(toFailedCredential),
+      }
+
+      docRequests.push(
+        docRequestMatch.success
+          ? {
+              ...resolvedDocRequest,
+              success: true,
+              validCredentials: mapNonEmptyArray(docRequestMatch.validCredentials, toValidCredential),
+            }
+          : { ...resolvedDocRequest, success: false, validCredentials: [] }
+      )
     }
 
-    return { origin: parsedRequest.origin, docRequests, parsedRequest }
+    const satisfiedDocRequests = docRequests.filter(
+      (docRequest): docRequest is MdocDcApiResolvedDocRequestSuccess => docRequest.success
+    )
+
+    return satisfiedDocRequests.length === docRequests.length
+      ? { origin: parsedRequest.origin, success: true, docRequests: satisfiedDocRequests, parsedRequest }
+      : { origin: parsedRequest.origin, success: false, docRequests, parsedRequest }
   }
 
   /**
-   * Fetch the stored mdocs for the requested doctypes, grouped by doctype.
+   * Fetch the stored mdocs for the requested doctypes.
    *
    * Only the requested doctypes are fetched, as a wallet can hold many more mdocs than a request
-   * covers. The grouping decodes the issuer-signed CBOR of each record exactly once, where matching
-   * on the records directly would decode it again for every doc request and every claim lookup.
+   * covers. The issuer-signed CBOR of each record is decoded once, and matched against every doc
+   * request from there.
    *
    * Records that cannot provide an instance for `useMode` are left out, as creating a response with
    * them would throw.
    */
-  private async getCandidatesByDocType(
-    agentContext: AgentContext,
-    docTypes: string[],
-    useMode: CredentialMultiInstanceUseMode
-  ) {
-    const candidatesByDocType = new Map<string, Array<{ record: MdocRecord; mdoc: Mdoc }>>()
-
+  private async getCandidates(agentContext: AgentContext, docTypes: string[], useMode: CredentialMultiInstanceUseMode) {
     const uniqueDocTypes = Array.from(new Set(docTypes))
-    if (uniqueDocTypes.length === 0) return candidatesByDocType
+    if (uniqueDocTypes.length === 0) return []
 
     const records = await this.mdocRepository.findByQuery(agentContext, {
       $or: uniqueDocTypes.map((docType) => ({ docType })),
     })
 
-    for (const record of records) {
-      if (!canUseInstanceFromCredentialRecord({ credentialRecord: record, useMode })) continue
-
-      const mdoc = record.firstCredential
-
-      const candidates = candidatesByDocType.get(mdoc.docType)
-      if (candidates) candidates.push({ record, mdoc })
-      else candidatesByDocType.set(mdoc.docType, [{ record, mdoc }])
-    }
-
-    return candidatesByDocType
+    return records
+      .filter((record) => canUseInstanceFromCredentialRecord({ credentialRecord: record, useMode }))
+      .map((record) => ({ record, mdoc: record.firstCredential }))
   }
 
   /**
@@ -506,7 +527,7 @@ export class MdocDcApiService {
     const parsedRequest = options.resolvedRequest.parsedRequest as IsoMdocDcApiParsedRequest
 
     const documents = await Promise.all(
-      options.credentials.map(async ({ docRequestIndex, record, useMode }) => {
+      options.credentials.map(async ({ docRequestIndex, record, useMode, elements, deviceNameSpaces }) => {
         const mdocRecord =
           record instanceof MdocRecord ? record : await this.mdocRepository.getById(agentContext, record)
 
@@ -525,10 +546,11 @@ export class MdocDcApiService {
           docRequestIndex,
           issuerSigned: mdoc.issuerSigned,
           deviceKey: CoseKey.fromJwk(deviceKeyJwk),
-          deviceNamespaces: options.deviceNameSpaces
+          elements,
+          deviceNamespaces: deviceNameSpaces
             ? DeviceNamespaces.create({
                 deviceNamespaces: new Map(
-                  Object.entries(options.deviceNameSpaces).map(([nameSpace, values]) => [
+                  Object.entries(deviceNameSpaces).map(([nameSpace, values]) => [
                     nameSpace,
                     DeviceSignedItems.create({ deviceSignedItems: new Map(Object.entries(values)) }),
                   ])

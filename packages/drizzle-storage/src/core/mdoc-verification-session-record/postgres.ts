@@ -1,5 +1,5 @@
 import type {
-  MdocDeviceRequestElements,
+  MdocDeviceRequestDefinition,
   MdocVerificationSessionState,
   MdocVerificationSessionTranscript,
 } from '@credo-ts/core'
@@ -31,7 +31,7 @@ export const mdocVerificationSession = pgTable(
     errorMessage: text('error_message'),
 
     deviceRequestBase64Url: text('device_request_base64_url').notNull(),
-    deviceRequestElements: jsonb('device_request_elements').$type<MdocDeviceRequestElements>(),
+    deviceRequestDefinition: jsonb('device_request_definition').$type<MdocDeviceRequestDefinition>().notNull(),
     sessionTranscript: jsonb('session_transcript').$type<MdocVerificationSessionTranscript>().notNull(),
     sessionTranscriptType: mdocVerificationSessionTranscriptTypeEnum('session_transcript_type').notNull(),
     nonce: text(),

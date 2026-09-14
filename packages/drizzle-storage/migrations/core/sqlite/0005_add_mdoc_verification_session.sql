@@ -8,7 +8,7 @@ CREATE TABLE `MdocVerificationSession` (
 	`state` text NOT NULL,
 	`error_message` text,
 	`device_request_base64_url` text NOT NULL,
-	`device_request_elements` text,
+	`device_request_definition` text NOT NULL,
 	`session_transcript` text NOT NULL,
 	`session_transcript_type` text NOT NULL,
 	`nonce` text,

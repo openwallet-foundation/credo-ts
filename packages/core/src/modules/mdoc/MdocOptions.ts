@@ -1,11 +1,14 @@
 import type {
-  DeviceRequestElementOptions,
+  ClaimMatch,
+  CredentialMatchFailure,
+  CredentialMatchSuccess,
   DeviceRequestMatchResult,
   IsoMdocDcApiRequest,
   IsoMdocDcApiResponse,
   ValidityInfoOptions,
 } from '@owf/mdoc'
 import type { DcqlQuery } from 'dcql'
+import type { NonEmptyArray } from '../../types'
 import type { CredentialMultiInstanceUseMode } from '../../utils/credentialUseTypes'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import { PublicJwk } from '../kms'
@@ -126,37 +129,87 @@ export type MdocDcApiRequest = IsoMdocDcApiRequest
 export type MdocDcApiResponse = IsoMdocDcApiResponse
 
 /**
- * Per-element options for matching a device response against the device request, keyed by docType,
- * namespace and element identifier. The element identifier `'*'` applies to every element in the
- * namespace that is not named explicitly.
- *
- * ```ts
- * {
- *   'org.iso.18013.5.1.mDL': {
- *     'org.iso.18013.5.1': { portrait: { optional: true } },
- *     'com.example.device': { '*': { source: 'deviceSigned' } },
- *   },
- * }
- * ```
+ * Where a requested element may be disclosed from. Device signed elements are asserted by the mdoc
+ * itself rather than by the issuer, and can only be disclosed when the key authorizations in the MSO
+ * authorize the device key for them.
  */
-export type MdocDeviceRequestElements = DeviceRequestElementOptions
+export type MdocElementSource = 'issuerSigned' | 'deviceSigned' | 'any'
 
 /**
- * How a device response matches the device request, per doc request and per requested element.
+ * A requested element as the verifier defined it. Only `intentToRetain` is sent to the wallet; the
+ * other members are not part of the device request and only apply when matching the response.
+ */
+export type MdocRequestedElement = {
+  intentToRetain: boolean
+
+  /**
+   * Whether the response may leave this element out without failing the match.
+   *
+   * @default false
+   */
+  optional?: boolean
+
+  /**
+   * Where the element must be disclosed from.
+   *
+   * @default 'issuerSigned'
+   */
+  source?: MdocElementSource
+}
+
+/**
+ * A doc request as the verifier defined it.
+ */
+export type MdocDocRequestDefinition = {
+  docType: string
+
+  /**
+   * Requested elements per namespace.
+   */
+  nameSpaces: Record<string, Record<string, MdocRequestedElement>>
+}
+
+/**
+ * The device request as the verifier defined it, including the options that only apply when matching
+ * the response.
+ *
+ * Follows the structure of the `DeviceRequest`, so the request info of the second edition of ISO/IEC
+ * 18013-5 (`DeviceRequestInfo` with its use cases, `DocRequestInfo` per doc request) can be added as
+ * optional members without changing what is stored for existing verification sessions.
+ */
+export type MdocDeviceRequestDefinition = {
+  /**
+   * The doc requests in request order, so the index of a doc request here is its index in the
+   * device request.
+   */
+  docRequests: MdocDocRequestDefinition[]
+}
+
+/**
+ * How a device response matches the device request, per doc request, per document and per check.
  */
 export type MdocDeviceRequestMatch = DeviceRequestMatchResult
 
-export type MdocDcApiCreateVerificationSessionOptions = {
-  docRequests: MdocDocumentRequest[]
+export type MdocDcApiDocRequest = {
+  docType: string
 
   /**
-   * The response has to satisfy every doc request, which means that each requested element must be
-   * disclosed and issuer signed. Use this to mark elements that may be left out, or that may (or
-   * must) be device signed instead.
+   * Requested elements per namespace, mapped to their `intentToRetain` value. Pass an
+   * {@link MdocRequestedElement} instead to also set how the element is matched in the response.
+   */
+  nameSpaces: Record<string, Record<string, boolean | MdocRequestedElement>>
+}
+
+export type MdocDcApiCreateVerificationSessionOptions = {
+  /**
+   * The documents to request. The response has to satisfy every doc request, which by default means
+   * that each requested element must be disclosed and issuer signed. Pass an
+   * {@link MdocRequestedElement} for elements that may be left out, or that may (or must) be device
+   * signed instead.
    *
    * Stored on the verification session, and applied when the response is verified.
    */
-  deviceRequestElements?: MdocDeviceRequestElements
+  docRequests: MdocDcApiDocRequest[]
 
   /**
    * Sign each doc request with reader authentication. The certificate (or chain) must have a
@@ -241,31 +294,35 @@ export type MdocDcApiResolveRequestOptions = {
   now?: Date
 }
 
-type MdocDcApiCredentialMatchBase = {
-  record: MdocRecord
+/**
+ * How a single requested element is matched, the same on the wallet and the verifier side.
+ */
+export type MdocClaimMatch = ClaimMatch
 
-  /**
-   * The claims that would be disclosed if this credential is selected.
-   */
-  disclosedClaims: MdocNameSpaces
+/**
+ * A stored mdoc that satisfies a doc request: every check passed. Uses the same rules and structure
+ * as the match of a verifier.
+ *
+ * A valid claim with `source: 'deviceSigned'` is not issuer signed in the mdoc, but the device key is
+ * authorized for it: its value has to be provided in the `deviceNameSpaces` of the credential when
+ * creating the response.
+ */
+export type MdocDcApiValidCredential = Omit<CredentialMatchSuccess, 'credentialIndex'> & {
+  record: MdocRecord
 }
 
-export type MdocDcApiCredentialMatch =
-  | (MdocDcApiCredentialMatchBase & {
-      isFullMatch: true
-      missingClaims?: undefined
-    })
-  | (MdocDcApiCredentialMatchBase & {
-      isFullMatch: false
+/**
+ * A stored mdoc that does not satisfy a doc request, with per check what failed. An mdoc of the
+ * requested docType that is missing requested claims has a successful `docType` check and its
+ * `claims.failedClaims`.
+ */
+export type MdocDcApiFailedCredential = Omit<CredentialMatchFailure, 'credentialIndex'> & {
+  record: MdocRecord
+}
 
-      /**
-       * Requested elements the credential does not contain, per namespace. Never empty, as a
-       * credential without missing elements is a full match.
-       */
-      missingClaims: Record<string, string[]>
-    })
+export type MdocDcApiCredentialMatch = MdocDcApiValidCredential | MdocDcApiFailedCredential
 
-export type MdocDcApiResolvedDocRequest = {
+type MdocDcApiResolvedDocRequestBase = {
   docRequestIndex: number
   docType: string
 
@@ -286,18 +343,59 @@ export type MdocDcApiResolvedDocRequest = {
     certificateChain: X509Certificate[]
   }
 
-  matches: MdocDcApiCredentialMatch[]
+  /**
+   * The stored mdocs that do not satisfy this doc request. Only mdocs of a doctype the request asks
+   * for are matched, so an mdoc of another doc request's docType is here with a failed `docType`
+   * check.
+   */
+  failedCredentials: MdocDcApiFailedCredential[]
 }
 
-export type MdocDcApiResolvedRequest = {
+/**
+ * At least one stored mdoc satisfies the doc request.
+ */
+export type MdocDcApiResolvedDocRequestSuccess = MdocDcApiResolvedDocRequestBase & {
+  success: true
+  validCredentials: NonEmptyArray<MdocDcApiValidCredential>
+}
+
+/**
+ * No stored mdoc satisfies the doc request.
+ */
+export type MdocDcApiResolvedDocRequestFailure = MdocDcApiResolvedDocRequestBase & {
+  success: false
+  validCredentials: []
+}
+
+export type MdocDcApiResolvedDocRequest = MdocDcApiResolvedDocRequestSuccess | MdocDcApiResolvedDocRequestFailure
+
+type MdocDcApiResolvedRequestBase = {
   origin: string
-  docRequests: MdocDcApiResolvedDocRequest[]
 
   /**
    * The parsed request, needed to create a response. Treat as opaque.
    */
   parsedRequest: unknown
 }
+
+/**
+ * Checking `success` narrows the doc requests: when it is `true`, every doc request has at least one
+ * valid credential.
+ */
+export type MdocDcApiResolvedRequest = MdocDcApiResolvedRequestBase &
+  (
+    | {
+        /**
+         * The stored mdocs can satisfy every doc request.
+         */
+        success: true
+        docRequests: MdocDcApiResolvedDocRequestSuccess[]
+      }
+    | {
+        success: false
+        docRequests: MdocDcApiResolvedDocRequest[]
+      }
+  )
 
 export type MdocDcApiCreateResponseOptions = {
   resolvedRequest: MdocDcApiResolvedRequest
@@ -319,9 +417,20 @@ export type MdocDcApiCreateResponseOptions = {
      * @default {@link CredentialMultiInstanceUseMode.NewOrFirst}
      */
     useMode?: CredentialMultiInstanceUseMode
-  }>
 
-  deviceNameSpaces?: MdocNameSpaces
+    /**
+     * The requested elements to disclose, per namespace. Defaults to every element the doc request
+     * asks for. Pass a subset to leave out elements, for instance the ones the user declined to share.
+     */
+    elements?: Record<string, string[]>
+
+    /**
+     * Values to disclose device signed. Every requested element the mdoc does not contain issuer
+     * signed, but that the device key is authorized for in the MSO, has to be provided here: the
+     * valid claims with `source: 'deviceSigned'` in the resolved request.
+     */
+    deviceNameSpaces?: MdocNameSpaces
+  }>
 }
 
 export type MdocSignOptions = {

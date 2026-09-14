@@ -355,11 +355,11 @@
           "primaryKey": false,
           "notNull": true
         },
-        "device_request_elements": {
-          "name": "device_request_elements",
+        "device_request_definition": {
+          "name": "device_request_definition",
           "type": "jsonb",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "session_transcript": {
           "name": "session_transcript",
