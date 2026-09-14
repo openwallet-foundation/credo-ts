@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
@@ -41,7 +41,7 @@ jobs:
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
           title: 'chore(release): new version'
           commit: 'chore(release): new version'
@@ -78,7 +78,7 @@ jobs:
             echo "run=true" >> $GITHUB_OUTPUT
           fi
 
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         if: steps.should-run.outputs.run == 'true'
       - uses: pnpm/action-setup@v6
         if: steps.should-run.outputs.run == 'true'
