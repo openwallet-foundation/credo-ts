@@ -71,4 +71,36 @@ q8mKCA9J8k/+zh//yKbN1bLAtdqPx7dnrDqV3Lg+
     x509Module.config.setTrustedCertificates(undefined)
     expect(x509Module.config.trustedCertificates).toBeUndefined()
   })
+
+  test('applies the configured parse options to the trusted certificates it parses', () => {
+    const trustedCertificates = [
+      `-----BEGIN CERTIFICATE-----
+MIICKjCCAdCgAwIBAgIUV8bM0wi95D7KN0TyqHE42ru4hOgwCgYIKoZIzj0EAwIw
+UzELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE5ldyBZb3JrMQ8wDQYDVQQHDAZBbGJh
+bnkxDzANBgNVBAoMBk5ZIERNVjEPMA0GA1UECwwGTlkgRE1WMB4XDTIzMDkxNDE0
+NTUxOFoXDTMzMDkxMTE0NTUxOFowUzELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE5l
+dyBZb3JrMQ8wDQYDVQQHDAZBbGJhbnkxDzANBgNVBAoMBk5ZIERNVjEPMA0GA1UE
+CwwGTlkgRE1WMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEiTwtg0eQbcbNabf2
+Nq9L/VM/lhhPCq2s0Qgw2kRx29tgrBcNHPxTT64tnc1Ij3dH/fl42SXqMenpCDw4
+K6ntU6OBgTB/MB0GA1UdDgQWBBSrbS4DuR1JIkAzj7zK3v2TM+r2xzAfBgNVHSME
+GDAWgBSrbS4DuR1JIkAzj7zK3v2TM+r2xzAPBgNVHRMBAf8EBTADAQH/MCwGCWCG
+SAGG+EIBDQQfFh1PcGVuU1NMIEdlbmVyYXRlZCBDZXJ0aWZpY2F0ZTAKBggqhkjO
+PQQDAgNIADBFAiAJ/Qyrl7A+ePZOdNfc7ohmjEdqCvxaos6//gfTvncuqQIhANo4
+q8mKCA9J8k/+zh//yKbN1bLAtdqPx7dnrDqV3Lg+
+-----END CERTIFICATE-----`,
+    ]
+
+    expect(() => new X509ModuleConfig({ trustedCertificates })).not.toThrow()
+
+    // The parse options have to be applied to the trusted certificates the constructor parses, not
+    // only to the ones added later.
+    expect(() => new X509ModuleConfig({ trustedCertificates, parseOptions: { maxDepth: 1 } })).toThrow()
+
+    const config = new X509ModuleConfig({ parseOptions: { maxDepth: 1 } })
+    expect(() => config.setTrustedCertificates(trustedCertificates)).toThrow()
+    expect(() => config.addTrustedCertificate(trustedCertificates[0])).toThrow()
+
+    config.setParseOptions(undefined)
+    expect(() => config.setTrustedCertificates(trustedCertificates)).not.toThrow()
+  })
 })
