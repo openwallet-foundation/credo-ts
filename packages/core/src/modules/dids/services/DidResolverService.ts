@@ -69,19 +69,14 @@ export class DidResolverService {
       persistInCache = true,
       useLocalCreatedDidRecord = true,
     } = options
-    const cacheKey = this.getCacheKey(parsed.did)
+    const { cacheKey, cacheScope } = this.getCacheKeyAndScope(parsed)
 
     if (resolver.allowsCaching && useCache) {
       const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
-      // FIXME: in multi-tenancy it can be that the same cache is used for different agent contexts
-      // This may become a problem when resolving dids, as you can get back a cache hit for a different
-      // tenant. did:peer has disabled caching, and I think we should just recommend disabling caching
-      // for these private dids
-      // We could allow providing a custom cache prefix in the resolver options, so that the cache key
-      // can be recognized in the cache implementation
       const cachedDidDocument = await cache.get<DidResolutionResult & { didDocument: Record<string, unknown> }>(
         agentContext,
-        cacheKey
+        cacheKey,
+        { scope: cacheScope }
       )
 
       if (cachedDidDocument) {
@@ -138,7 +133,8 @@ export class DidResolverService {
           didDocument: resolutionResult.didDocument.toJSON(),
         },
         // Set cache duration
-        cacheDurationInSeconds
+        cacheDurationInSeconds,
+        { scope: cacheScope }
       )
     }
 
@@ -163,11 +159,24 @@ export class DidResolverService {
 
   public async invalidateCacheForDid(agentContext: AgentContext, did: string) {
     const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
-    await cache.remove(agentContext, this.getCacheKey(did))
+
+    let parsed: ParsedDid
+    try {
+      parsed = parseDid(did)
+    } catch (_error) {
+      // If the did is invalid, there is no cache to invalidate, so we can just return
+      return
+    }
+
+    const { cacheKey, cacheScope } = this.getCacheKeyAndScope(parsed)
+    await cache.remove(agentContext, cacheKey, { scope: cacheScope })
   }
 
-  private getCacheKey(did: string) {
-    return `did:resolver:${did}`
+  private getCacheKeyAndScope(parsed: ParsedDid): { cacheKey: string; cacheScope: 'context' | 'global' } {
+    return {
+      cacheKey: `did:resolver:${parsed.did}`,
+      cacheScope: this.didsModuleConfig.publicDidMethods.includes(parsed.method) ? 'global' : 'context',
+    }
   }
 
   private findResolver(parsed: ParsedDid): DidResolver | null {

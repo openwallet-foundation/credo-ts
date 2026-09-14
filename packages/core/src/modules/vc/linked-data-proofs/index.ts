@@ -1,6 +1,4 @@
 export * from './adapters/jsonld-signatures-adapter'
-export * from './models/DataIntegrityProof'
-export * from './models/IAnonCredsDataIntegrityService'
 export * from './models/LdKeyPair'
 export * from './models/LinkedDataProof'
 export * from './models/W3cJsonLdVerifiableCredential'

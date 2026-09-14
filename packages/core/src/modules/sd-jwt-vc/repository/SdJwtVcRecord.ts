@@ -1,4 +1,4 @@
-import { decodeSdJwtSync } from '@sd-jwt/decode'
+import { decodeSdJwtSync } from '@sd-jwt/core'
 import { Hasher } from '../../../crypto'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'

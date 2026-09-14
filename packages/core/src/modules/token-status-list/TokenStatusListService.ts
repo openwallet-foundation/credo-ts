@@ -262,7 +262,7 @@ export class TokenStatusListService {
         const { header, payload } = createHeaderAndPayload(
           statusList,
           updatedPayload as { sub: string; iat: number },
-          { ...jwt.header, alg: jwk.alg, typ: 'statuslist+jwt' } as {
+          { ...jwt.header, alg: options.alg, typ: 'statuslist+jwt' } as {
             alg: string
             typ: 'statuslist+jwt'
           }

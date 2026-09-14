@@ -30,11 +30,11 @@ export class WebVhDidCryptoSigner implements Signer {
   }
 
   /**
-   * Gets the verification method identifier in DID:key format.
-   * @returns The DID:key identifier as a string.
+   * Gets the verification method identifier as a did:key URL.
+   * @returns The verification method URL as a string.
    */
   getVerificationMethodId(): string {
-    return `did:key:${this.publicKeyMultibase}`
+    return `did:key:${this.publicKeyMultibase}#${this.publicKeyMultibase}`
   }
 
   /**

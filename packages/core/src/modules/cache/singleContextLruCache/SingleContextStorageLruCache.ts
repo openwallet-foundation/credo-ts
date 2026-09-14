@@ -1,7 +1,7 @@
 import LRUMap from 'lru_map'
 import type { AgentContext } from '../../../agent/context'
 import { CredoError, RecordDuplicateError } from '../../../error'
-import type { Cache } from '../Cache'
+import type { Cache, CacheOptions } from '../Cache'
 import type { SingleContextLruCacheItem } from './SingleContextLruCacheRecord'
 
 import { SingleContextLruCacheRecord } from './SingleContextLruCacheRecord'
@@ -17,12 +17,15 @@ export interface SingleContextStorageLruCacheOptions {
 /**
  * Cache that leverages the storage associated with the agent context to store cache records.
  * It will keep an in-memory cache of the records to avoid hitting the storage on every read request.
- * Therefor this cache is meant to be used with a single instance of the agent.
+ * Therefore this cache is meant to be used with a single instance of the agent.
  *
  * Due to keeping an in-memory copy of the cache, it is also not meant to be used with multiple
  * agent context instances (meaning multi-tenancy), as they will overwrite the in-memory cache.
  *
  * However, this means the cache is not meant for usage with multiple instances.
+ *
+ * This cache does not honor {@link CacheOptions.scope}: as it must only ever be used with a single
+ * agent context (enforced at runtime), the context and global scopes are equivalent within it.
  */
 export class SingleContextStorageLruCache implements Cache {
   private limit: number
@@ -33,7 +36,7 @@ export class SingleContextStorageLruCache implements Cache {
     this.limit = limit
   }
 
-  public async get<CacheValue>(agentContext: AgentContext, key: string) {
+  public async get<CacheValue>(agentContext: AgentContext, key: string, _options?: CacheOptions) {
     this.assertContextCorrelationId(agentContext)
 
     const cache = await this.getCache(agentContext)
@@ -58,7 +61,8 @@ export class SingleContextStorageLruCache implements Cache {
     agentContext: AgentContext,
     key: string,
     value: CacheValue,
-    expiresInSeconds?: number
+    expiresInSeconds?: number,
+    _options?: CacheOptions
   ): Promise<void> {
     this.assertContextCorrelationId(agentContext)
 
@@ -79,7 +83,7 @@ export class SingleContextStorageLruCache implements Cache {
     await this.persistCache(agentContext)
   }
 
-  public async remove(agentContext: AgentContext, key: string): Promise<void> {
+  public async remove(agentContext: AgentContext, key: string, _options?: CacheOptions): Promise<void> {
     this.assertContextCorrelationId(agentContext)
 
     const cache = await this.getCache(agentContext)

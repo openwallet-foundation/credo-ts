@@ -1,4 +1,4 @@
-import type { JsonObject, SingleOrArray, W3cIssuerOptions } from '@credo-ts/core'
+import type { DidPurpose, JsonObject, SingleOrArray, W3cIssuerOptions } from '@credo-ts/core'
 import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
 
 export interface JsonCredential {
@@ -87,7 +87,7 @@ export interface JsonLdFormatDataCredentialDetail {
  * format data interfaces.
  */
 export interface JsonLdFormatDataCredentialDetailOptions {
-  proofPurpose: string
+  proofPurpose?: DidPurpose
   proofType: string
   created?: string
   domain?: string

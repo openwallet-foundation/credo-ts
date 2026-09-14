@@ -24,6 +24,7 @@ export const openid4vcIssuer = sqliteTable(
       mode: 'json',
     }),
     accessTokenPublicJwk: text('access_token_public_jwk', { mode: 'json' }).$type<Kms.KmsJwkPublicAsymmetric>(),
+    accessTokenSignerKmsBackend: text('access_token_signer_kms_backend'),
 
     signedMetadata: text('signed_metadata', { mode: 'json' }).$type<OpenId4VcIssuerRecordSignedMetadata>(),
 
@@ -37,6 +38,12 @@ export const openid4vcIssuer = sqliteTable(
     dpopSigningAlgValuesSupported: text('dpop_signing_alg_values_supported', { mode: 'json' }).$type<
       [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
     >(),
+    clientAttestationSigningAlgValuesSupported: text('client_attestation_signing_alg_values_supported', {
+      mode: 'json',
+    }).$type<[Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]>(),
+    clientAttestationPopSigningAlgValuesSupported: text('client_attestation_pop_signing_alg_values_supported', {
+      mode: 'json',
+    }).$type<[Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]>(),
     batchCredentialIssuance: text('batch_credential_issuance').$type<OpenId4VciBatchCredentialIssuanceOptions>(),
   },
   (table) => sqliteBaseRecordIndexes(table, 'openid4vcIssuer')

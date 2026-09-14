@@ -27,7 +27,7 @@ export function ecPublicJwkToPublicKey(
   const xAsBytes = TypedArrayEncoder.fromBase64Url(publicJwk.x)
   const yAsBytes = TypedArrayEncoder.fromBase64Url(publicJwk.y)
 
-  const affinePoint = new AffinePoint(xAsBytes, yAsBytes)
+  const affinePoint = new AffinePoint(xAsBytes, yAsBytes, publicJwk.crv)
 
   return compressed ? affinePoint.compressedForm : affinePoint.decompressedForm
 }

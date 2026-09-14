@@ -260,6 +260,11 @@ describe('OpenId4VcHolder', () => {
           kid: '#z6Mkh5HNPCCJWZn6WRLjRPttyvYZBskZUdSJfTiZwcUSieqx',
           typ: 'vc+sd-jwt',
         },
+        issuer: {
+          method: 'did',
+          didUrl:
+            'did:key:z6Mkh5HNPCCJWZn6WRLjRPttyvYZBskZUdSJfTiZwcUSieqx#z6Mkh5HNPCCJWZn6WRLjRPttyvYZBskZUdSJfTiZwcUSieqx',
+        },
         holder: {
           jwk: {
             jwk: {

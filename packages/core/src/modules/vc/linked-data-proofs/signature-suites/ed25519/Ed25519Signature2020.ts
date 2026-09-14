@@ -1,6 +1,5 @@
 import { MultiBaseEncoder, TypedArrayEncoder } from '../../../../../utils'
 import { Ed25519PublicJwk, PublicJwk } from '../../../../kms'
-import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../constants'
 import jsonld from '../../../jsonld/jsonld'
 import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../proof-ops/jsonldUtil'
 import { _includesContext } from '../../proof-ops/jsonldUtil'
@@ -220,16 +219,15 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
 }
 
 function _includesCompatibleContext(options: { document: JsonLdDoc }) {
-  // Handle the unfortunate Ed25519Signature2018 / credentials/v1 collision
+  // Only Ed25519Signature2020 context defines the terms for this suite.
+  // The 2018 credentials context and generic security context do not include
+  // Ed25519Signature2020 type definitions, so we must not treat them as compatible.
   const hasEd2020 = _includesContext({
     document: options.document,
     contextUrl: ED25519_SUITE_CONTEXT_URL_2020,
   })
-  const hasCred = _includesContext({ document: options.document, contextUrl: CREDENTIALS_CONTEXT_V1_URL })
-  const hasSecV2 = _includesContext({ document: options.document, contextUrl: SECURITY_CONTEXT_URL })
 
-  // Either one by itself is fine, for this suite
-  return hasEd2020 || hasCred || hasSecV2
+  return hasEd2020
 }
 
 function _isEd2020Key(verificationMethod: JsonLdDoc) {

@@ -65,6 +65,13 @@ export class OpenId4VcVerifierApi {
   }
 
   /**
+   * Delete a verification session record by id.
+   */
+  public async deleteVerificationSessionById(verificationSessionId: string) {
+    return this.openId4VpVerifierService.deleteVerificationSessionById(this.agentContext, verificationSessionId)
+  }
+
+  /**
    * Create an OpenID4VP authorization request, acting as a Relying Party (RP).
    *
    * See {@link OpenId4VpCreateAuthorizationRequestOptions} for detailed documentation on the options.

@@ -7,6 +7,7 @@ import { SdJwtVcApi } from '../modules/sd-jwt-vc'
 import { TokenStatusListApi } from '../modules/token-status-list'
 import { W3cV2CredentialsApi } from '../modules/vc'
 import { W3cCredentialsApi } from '../modules/vc/W3cCredentialsApi'
+import { W3cDataIntegrityApi } from '../modules/w3c-di'
 import { X509Api } from '../modules/x509'
 import type { DependencyManager, Module } from '../plugins'
 import type { AgentConfig } from './AgentConfig'
@@ -25,6 +26,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly mdoc: MdocApi
   public readonly genericRecords: GenericRecordsApi
   public readonly dids: DidsApi
+  public readonly w3cDataIntegrity: W3cDataIntegrityApi
   public readonly w3cCredentials: W3cCredentialsApi
   public readonly w3cV2Credentials: W3cV2CredentialsApi
   public readonly sdJwtVc: SdJwtVcApi
@@ -64,6 +66,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
 
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
     this.dids = this.dependencyManager.resolve(DidsApi)
+    this.w3cDataIntegrity = this.dependencyManager.resolve(W3cDataIntegrityApi)
     this.w3cCredentials = this.dependencyManager.resolve(W3cCredentialsApi)
     this.w3cV2Credentials = this.dependencyManager.resolve(W3cV2CredentialsApi)
     this.sdJwtVc = this.dependencyManager.resolve(SdJwtVcApi)
@@ -75,6 +78,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     const defaultApis = [
       this.genericRecords,
       this.dids,
+      this.w3cDataIntegrity,
       this.w3cCredentials,
       this.w3cV2Credentials,
       this.sdJwtVc,

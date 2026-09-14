@@ -16,3 +16,4 @@ cli-build
 *.db
 test-logs
 testlogs
+tmp

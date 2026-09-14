@@ -1,8 +1,15 @@
-import { AgentContext, type Cache, CacheModuleConfig } from '@credo-ts/core'
+import { AgentContext, type Cache, CacheModuleConfig, type CacheOptions } from '@credo-ts/core'
 import Redis, { type RedisOptions } from 'ioredis'
 
 export type RedisCacheOptions = RedisOptions
 
+/**
+ * Redis Cache implementation of the {@link Cache} interface.
+ *
+ * Keys are namespaced by the `contextCorrelationId` of the agent context by default, and by
+ * `global:` for entries using the `'global'` scope, making the cache safe to use across multiple
+ * agent context instances. This means `global` is effectively a reserved context correlation id.
+ */
 export class RedisCache implements Cache {
   private readonly _client: Redis
 
@@ -20,7 +27,11 @@ export class RedisCache implements Cache {
     }
   }
 
-  private getNamespacedKey(agentContext: AgentContext, key: string): string {
+  private getNamespacedKey(agentContext: AgentContext, key: string, options?: CacheOptions): string {
+    if (options?.scope === 'global') {
+      return `global:${key}`
+    }
+
     return `${agentContext.contextCorrelationId}:${key}`
   }
 
@@ -40,9 +51,13 @@ export class RedisCache implements Cache {
     }
   }
 
-  public async get<CacheValue>(agentContext: AgentContext, key: string): Promise<CacheValue | null> {
+  public async get<CacheValue>(
+    agentContext: AgentContext,
+    key: string,
+    options?: CacheOptions
+  ): Promise<CacheValue | null> {
     const client = await this.client()
-    const namespacedKey = this.getNamespacedKey(agentContext, key)
+    const namespacedKey = this.getNamespacedKey(agentContext, key, options)
     const value = await client.get(namespacedKey)
     return this.deserialize<CacheValue>(value)
   }
@@ -51,10 +66,11 @@ export class RedisCache implements Cache {
     agentContext: AgentContext,
     key: string,
     value: CacheValue,
-    expiresInSeconds: number | undefined = this.getDefaultExpiryInSeconds(agentContext)
+    expiresInSeconds: number | undefined = this.getDefaultExpiryInSeconds(agentContext),
+    options?: CacheOptions
   ): Promise<void> {
     const client = await this.client()
-    const namespacedKey = this.getNamespacedKey(agentContext, key)
+    const namespacedKey = this.getNamespacedKey(agentContext, key, options)
     const serializedValue = this.serialize(value)
 
     if (expiresInSeconds) {
@@ -64,12 +80,17 @@ export class RedisCache implements Cache {
     }
   }
 
-  public async remove(agentContext: AgentContext, key: string): Promise<void> {
+  public async remove(agentContext: AgentContext, key: string, options?: CacheOptions): Promise<void> {
     const client = await this.client()
-    const namespacedKey = this.getNamespacedKey(agentContext, key)
+    const namespacedKey = this.getNamespacedKey(agentContext, key, options)
     await client.del(namespacedKey)
   }
 
+  /**
+   * Removes all entries scoped to the context of the provided agent context. Entries in the
+   * global scope are never removed by this method and are only reclaimed through their TTL or
+   * an explicit `remove`.
+   */
   public async destroy(agentContext: AgentContext) {
     const client = await this.client()
     let cursor = '0'

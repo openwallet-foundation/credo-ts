@@ -11,7 +11,7 @@ import type {
 } from '@animo-id/pex/dist/main/lib/evaluation/core'
 import { SubmissionRequirementMatchType } from '@animo-id/pex/dist/main/lib/evaluation/core/index.js'
 import { JSONPath } from '@astronautlabs/jsonpath'
-import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
+import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/core'
 import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 import { Rules } from '@sphereon/pex-models'
 import type { AgentContext } from 'packages/core/src/agent'

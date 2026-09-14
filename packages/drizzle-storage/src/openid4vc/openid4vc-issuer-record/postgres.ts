@@ -17,6 +17,7 @@ export const openid4vcIssuer = pgTable(
     issuerId: text('issuer_id').unique().notNull(),
     accessTokenPublicKeyFingerprint: jsonb('access_token_public_key_fingerprint'),
     accessTokenPublicJwk: jsonb('access_token_public_jwk').$type<Kms.KmsJwkPublicAsymmetric>(),
+    accessTokenSignerKmsBackend: text('access_token_signer_kms_backend'),
     signedMetadata: jsonb('signed_metadata').$type<OpenId4VcIssuerRecordSignedMetadata>(),
 
     credentialConfigurationsSupported: jsonb('credential_configurations_supported')
@@ -25,6 +26,12 @@ export const openid4vcIssuer = pgTable(
     display: jsonb().$type<OpenId4VciCredentialIssuerMetadataDisplay[]>(),
     authorizationServerConfigs: jsonb('authorization_server_configs').$type<OpenId4VciAuthorizationServerConfig[]>(),
     dpopSigningAlgValuesSupported: jsonb('dpop_signing_alg_values_supported').$type<
+      [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+    >(),
+    clientAttestationSigningAlgValuesSupported: jsonb('client_attestation_signing_alg_values_supported').$type<
+      [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+    >(),
+    clientAttestationPopSigningAlgValuesSupported: jsonb('client_attestation_pop_signing_alg_values_supported').$type<
       [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
     >(),
     batchCredentialIssuance: text('batch_credential_issuance').$type<OpenId4VciBatchCredentialIssuanceOptions>(),

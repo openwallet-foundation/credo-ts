@@ -37,10 +37,23 @@ export type OpenId4VcIssuerRecordProps = {
   accessTokenPublicJwk: Kms.KmsJwkPublicAsymmetric
 
   /**
+   * KMS backend that owns the access token signing key. If not provided, the default KMS backend is used.
+   */
+  accessTokenSignerKmsBackend?: string
+
+  /**
    * The DPoP signing algorithms supported by this issuer.
    * If not provided, dPoP is considered unsupported.
    */
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+
+  /**
+   * The signing algorithms supported by this issuer for the Client Attestation JWT and the Client
+   * Attestation PoP JWT (draft 09 of OAuth 2.0 Attestation-Based Client Authentication). Advertised as
+   * `client_attestation_signing_alg_values_supported` / `client_attestation_pop_signing_alg_values_supported`.
+   */
+  clientAttestationSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+  clientAttestationPopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
@@ -76,6 +89,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
    */
   public accessTokenPublicKeyFingerprint?: string
   public accessTokenPublicJwk?: Kms.KmsJwkPublicAsymmetric
+  public accessTokenSignerKmsBackend?: string
 
   /**
    * Only here for class transformation. If credentialsSupported is set we transform
@@ -135,6 +149,14 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 
   public dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+  public clientAttestationSigningAlgValuesSupported?: [
+    Kms.KnownJwaSignatureAlgorithm,
+    ...Kms.KnownJwaSignatureAlgorithm[],
+  ]
+  public clientAttestationPopSigningAlgValuesSupported?: [
+    Kms.KnownJwaSignatureAlgorithm,
+    ...Kms.KnownJwaSignatureAlgorithm[],
+  ]
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
   public signedMetadata?: OpenId4VcIssuerRecordSignedMetadata
@@ -174,8 +196,11 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
 
       this.issuerId = props.issuerId
       this.accessTokenPublicJwk = props.accessTokenPublicJwk
+      this.accessTokenSignerKmsBackend = props.accessTokenSignerKmsBackend
       this.credentialConfigurationsSupported = props.credentialConfigurationsSupported
       this.dpopSigningAlgValuesSupported = props.dpopSigningAlgValuesSupported
+      this.clientAttestationSigningAlgValuesSupported = props.clientAttestationSigningAlgValuesSupported
+      this.clientAttestationPopSigningAlgValuesSupported = props.clientAttestationPopSigningAlgValuesSupported
       this.display = props.display
       this.authorizationServerConfigs = props.authorizationServerConfigs
       this.batchCredentialIssuance = props.batchCredentialIssuance

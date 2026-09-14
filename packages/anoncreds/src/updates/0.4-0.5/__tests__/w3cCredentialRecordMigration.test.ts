@@ -8,9 +8,9 @@ import {
   DidsModuleConfig,
   EventEmitter,
   InjectionSymbols,
+  JsonLdModuleConfig,
   SignatureSuiteToken,
   W3cCredentialRepository,
-  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -78,7 +78,7 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [InjectionSymbols.Logger, testLogger],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [JsonLdModuleConfig, new JsonLdModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [AnonCredsHolderServiceSymbol, new AnonCredsRsHolderService()],
     [SignatureSuiteToken, 'default'],
@@ -377,12 +377,13 @@ async function testMigration(
     expect(inMemoryLruCache.get).toHaveBeenCalledTimes(
       options.shouldBeInCache === 'sov' || !options.shouldBeInCache ? 2 : 1
     )
-    expect(inMemoryLruCache.get).toHaveBeenCalledWith(
-      agent.context,
-      options.shouldBeInCache === 'sov' || !options.shouldBeInCache
-        ? `IndySdkPoolService:${issuerId}`
-        : `IndyVdrPoolService:${issuerId}`
-    )
+    if (options.shouldBeInCache === 'sov' || !options.shouldBeInCache) {
+      expect(inMemoryLruCache.get).toHaveBeenCalledWith(agent.context, `IndySdkPoolService:${issuerId}`)
+    } else {
+      expect(inMemoryLruCache.get).toHaveBeenCalledWith(agent.context, `IndyVdrPoolService:${issuerId}`, {
+        scope: 'global',
+      })
+    }
   } else {
     expect(inMemoryLruCache.get).toHaveBeenCalledTimes(0)
   }

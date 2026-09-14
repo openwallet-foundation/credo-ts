@@ -31,7 +31,6 @@ import {
   CredoEs256DidKeyJwtVp,
   Ed256DidJwkJwtVcUnsigned,
 } from './fixtures/credo-jwt-vc'
-import { didIonJwtVcPresentationProfileJwtVc } from './fixtures/jwt-vc-presentation-profile'
 import { didKeyTransmuteJwtVc, didKeyTransmuteJwtVp } from './fixtures/transmute-verifiable-data'
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
@@ -186,15 +185,25 @@ describe('W3cJwtCredentialService', () => {
   })
 
   describe('verifyCredential', () => {
-    // Fails because the `jti` is not an uri (and the `vc.id` MUST be an uri according to vc data model)
-    test.skip('verifies a vc from the vc-jwt-presentation-profile', async () => {
+    test('bypasses status validation when verifyCredentialStatus is false', async () => {
       const result = await w3cJwtCredentialService.verifyCredential(agentContext, {
-        credential: didIonJwtVcPresentationProfileJwtVc,
+        credential: CredoEs256DidJwkJwtVc,
         verifyCredentialStatus: false,
       })
 
-      expect(result).toMatchObject({
-        verified: true,
+      expect(result).toEqual({
+        isValid: true,
+        validations: {
+          dataModel: {
+            isValid: true,
+          },
+          signature: {
+            isValid: true,
+          },
+          issuerIsSigner: {
+            isValid: true,
+          },
+        },
       })
     })
 
@@ -331,6 +340,38 @@ describe('W3cJwtCredentialService', () => {
       })
 
       expect(result.validations.signature?.error?.message).toContain('Invalid JWS signature')
+    })
+  })
+
+  describe('verifyCredential with getTrustedIssuersForVerification', () => {
+    afterEach(() => {
+      agentContext.config.setTrustedIssuersForVerification(undefined)
+    })
+
+    test('accepts a credential whose issuer did is trusted', async () => {
+      const credential = W3cJwtVerifiableCredential.fromSerializedJwt(CredoEs256DidJwkJwtVc)
+      agentContext.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [{ method: 'did', issuance: credential.issuerId }],
+      }))
+
+      const result = await w3cJwtCredentialService.verifyCredential(agentContext, { credential })
+
+      expect(result.isValid).toBe(true)
+    })
+
+    test('rejects a credential whose issuer did is not trusted', async () => {
+      agentContext.config.setTrustedIssuersForVerification(async () => ({
+        trustedIssuers: [
+          { method: 'did', issuance: 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y' },
+        ],
+      }))
+
+      const result = await w3cJwtCredentialService.verifyCredential(agentContext, {
+        credential: CredoEs256DidJwkJwtVc,
+      })
+
+      expect(result.isValid).toBe(false)
+      expect(result.error?.message).toContain('is not trusted')
     })
   })
 

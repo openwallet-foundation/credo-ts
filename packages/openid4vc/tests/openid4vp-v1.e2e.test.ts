@@ -623,12 +623,15 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     })
 
-    expect(
-      asArray(
-        (dcql?.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
-          .verifiableCredential
-      )[0].resolvedCredential
-    ).toMatchObject({
+    const openBadgeEntry = asArray(
+      (dcql?.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+        .verifiableCredential
+    )[0]
+    if (!openBadgeEntry || !('resolvedCredential' in openBadgeEntry)) {
+      throw new Error('Expected EnvelopedVerifiableCredential entry in OpenBadgeCredentialDescriptor presentation')
+    }
+
+    expect(openBadgeEntry.resolvedCredential).toMatchObject({
       type: ['VerifiableCredential', 'OpenBadgeCredential'],
       credentialSubject: {
         id: holder1.did,
@@ -689,12 +692,15 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         ],
       },
     })
-    expect(
-      asArray(
-        (dcql2?.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
-          .verifiableCredential
-      )[0].resolvedCredential
-    ).toMatchObject({
+    const universityDegreeEntry = asArray(
+      (dcql2?.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+        .verifiableCredential
+    )[0]
+    if (!universityDegreeEntry || !('resolvedCredential' in universityDegreeEntry)) {
+      throw new Error('Expected EnvelopedVerifiableCredential entry in UniversityDegree presentation')
+    }
+
+    expect(universityDegreeEntry.resolvedCredential).toMatchObject({
       type: ['VerifiableCredential', 'UniversityDegreeCredential'],
       credentialSubject: {
         id: holder1.did,
@@ -968,6 +974,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               alg: 'EdDSA',
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'dc+sd-jwt',
+            },
+            issuer: {
+              method: 'did',
+              didUrl:
+                'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
             },
             holder: {
               didUrl:
@@ -1314,6 +1325,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'vc+sd-jwt',
             },
+            issuer: {
+              method: 'did',
+              didUrl:
+                'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
+            },
             holder: {
               didUrl:
                 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -1630,6 +1646,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'vc+sd-jwt',
             },
+            issuer: {
+              method: 'did',
+              didUrl:
+                'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
+            },
             holder: {
               didUrl:
                 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -1680,6 +1701,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               alg: 'EdDSA',
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'vc+sd-jwt',
+            },
+            issuer: {
+              method: 'did',
+              didUrl:
+                'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
             },
             holder: {
               didUrl:
@@ -2066,6 +2092,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'dc+sd-jwt',
             },
+            issuer: {
+              method: 'did',
+              didUrl:
+                'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
+            },
             holder: {
               didUrl:
                 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
@@ -2118,6 +2149,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               alg: 'EdDSA',
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'dc+sd-jwt',
+            },
+            issuer: {
+              method: 'did',
+              didUrl:
+                'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
             },
             holder: {
               didUrl:
@@ -2603,6 +2639,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               alg: 'EdDSA',
               kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
               typ: 'dc+sd-jwt',
+            },
+            issuer: {
+              method: 'did',
+              didUrl:
+                'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
             },
             kbJwt: {
               header: {

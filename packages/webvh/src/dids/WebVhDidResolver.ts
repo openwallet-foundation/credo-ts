@@ -118,7 +118,19 @@ export class WebVhDidResolver implements DidResolver {
 
   private async resolveDidDoc(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const crypto = new WebVhDidCrypto(agentContext)
-    const { doc } = await resolveDID(did, { verifier: crypto })
+    const { doc, meta } = await resolveDID(did, { verifier: crypto })
+
+    if (!doc) {
+      return {
+        didDocument: null,
+        didDocumentMetadata: {},
+        didResolutionMetadata: {
+          error: meta.error && /not_?found/i.test(meta.error) ? 'notFound' : 'invalidDid',
+          message: `resolver_error: Unable to resolve did '${did}': ${meta.problemDetails?.detail ?? meta.error ?? 'no did document returned'}`,
+        },
+      }
+    }
+
     return {
       didDocument: DidDocument.fromJSON(doc),
       didDocumentMetadata: {},

@@ -12,9 +12,8 @@ export class WebDidResolver implements DidResolver {
   public readonly allowsCaching = true
   public readonly allowsLocalDidRecord = true
 
-  // FIXME: Would be nice if we don't have to provide a did resolver instance
-  private _resolverInstance = new Resolver()
   private resolver = didWeb.getResolver()
+  private didResolver = new Resolver(this.resolver)
 
   public constructor() {
     this.supportedMethods = Object.keys(this.resolver)
@@ -23,10 +22,10 @@ export class WebDidResolver implements DidResolver {
   public async resolve(
     _agentContext: AgentContext,
     did: string,
-    parsed: ParsedDid,
+    _parsed: ParsedDid,
     didResolutionOptions: DidResolutionOptions
   ): Promise<DidResolutionResult> {
-    const result = await this.resolver[parsed.method](did, parsed, this._resolverInstance, didResolutionOptions)
+    const result = await this.didResolver.resolve(did, didResolutionOptions)
 
     let didDocument = null
 

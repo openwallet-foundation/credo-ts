@@ -31,7 +31,8 @@ export interface AnonCredsRegistry {
 
   /**
    * Whether this registry allows caching of resolved objects (as well as caching
-   * just created objects).
+   * just created objects). Since anoncreds objects are publicly anchored, cached
+   * objects are shared across all agent contexts.
    */
   readonly allowsCaching?: boolean
 

@@ -1,0 +1,1 @@
+ALTER TABLE "Openid4vcIssuer" ADD COLUMN "access_token_signer_kms_backend" text;

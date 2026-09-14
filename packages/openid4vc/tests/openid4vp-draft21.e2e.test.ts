@@ -290,6 +290,11 @@ describe('OpenID4VP Draft 21', () => {
             kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
             typ: 'dc+sd-jwt',
           },
+          issuer: {
+            method: 'did',
+            didUrl:
+              'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
+          },
           kbJwt: {
             header: {
               alg: 'EdDSA',
@@ -651,6 +656,11 @@ describe('OpenID4VP Draft 21', () => {
             alg: 'EdDSA',
             kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
             typ: 'dc+sd-jwt',
+          },
+          issuer: {
+            method: 'did',
+            didUrl:
+              'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
           },
           kbJwt: {
             header: {

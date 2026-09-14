@@ -4,6 +4,7 @@
 
 import { CredoError } from '../../../../error'
 import { JsonEncoder, TypedArrayEncoder } from '../../../../utils'
+import { isKnownJwaSignatureAlgorithm, PublicJwk } from '../../../kms'
 import { suites } from '../adapters/jsonld-signatures-adapter'
 import type { LdKeyPair } from '../models/LdKeyPair'
 import type { DocumentLoader, Proof, VerificationMethod } from '../proof-ops/jsonldUtil'
@@ -76,6 +77,15 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     if (!(this.signer && typeof this.signer.sign === 'function')) {
       throw new Error('A signer API has not been specified.')
     }
+
+    // Ensure the key signs with the same algorithm as declared in the JWS header
+    if (this.key?.publicJwk instanceof PublicJwk) {
+      if (!isKnownJwaSignatureAlgorithm(this.alg)) {
+        throw new CredoError(`Unsupported JWA signature algorithm '${this.alg}' for signature suite ${this.type}`)
+      }
+      this.key.publicJwk.alg = this.alg
+    }
+
     // JWS header
     const header = {
       alg: this.alg,
@@ -145,9 +155,9 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
         header.b64 === false &&
         Array.isArray(header.crit) &&
         header.crit.length === 1 &&
-        header.crit[0] === 'b64'
-      ) &&
-      Object.keys(header).length === 3
+        header.crit[0] === 'b64' &&
+        Object.keys(header).length === 3
+      )
     ) {
       throw new Error(`Invalid JWS header parameters for ${this.type}.`)
     }
@@ -160,6 +170,15 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     let { verifier } = this
     if (!verifier) {
       const key = await this.LDKeyClass.from(options.verificationMethod)
+
+      // Ensure verification uses the alg of the JWS header (checked above to match the suite algorithm)
+      if (key.publicJwk instanceof PublicJwk) {
+        if (!isKnownJwaSignatureAlgorithm(header.alg)) {
+          throw new CredoError(`Unsupported JWA signature algorithm '${header.alg}' for signature suite ${this.type}`)
+        }
+        key.publicJwk.alg = header.alg
+      }
+
       verifier = key.verifier()
     }
     return verifier.verify({ data, signature })

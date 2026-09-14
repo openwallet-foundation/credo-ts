@@ -65,7 +65,7 @@ const sdJwtVcRecord = new SdJwtVcRecord({
   credentialInstances: [
     {
       compactSdJwtVc:
-        'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature',
+        'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature',
     },
   ],
 })
@@ -74,11 +74,11 @@ const multiInstanceSdJwtVcRecord = new SdJwtVcRecord({
   credentialInstances: [
     {
       compactSdJwtVc:
-        'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature1',
+        'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1',
     },
     {
       compactSdJwtVc:
-        'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature2',
+        'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature2',
     },
   ],
 })
@@ -87,7 +87,7 @@ const multiInstanceSdJwtVcRecordSingleInstance = new SdJwtVcRecord({
   credentialInstances: [
     {
       compactSdJwtVc:
-        'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature1',
+        'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1',
     },
   ],
 })
@@ -168,7 +168,7 @@ describe('credentialUse', () => {
     describe('SdJwtVcRecord', () => {
       test('uses first instance with First mode', async () => {
         const compactSdJwtVc =
-          'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature'
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature'
         const record = new SdJwtVcRecord({
           credentialInstances: [
             {
@@ -201,9 +201,9 @@ describe('credentialUse', () => {
 
       test('uses and removes new instance with New mode', async () => {
         const firstCompact =
-          'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature1'
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1'
         const secondCompact =
-          'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature2'
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature2'
         const record = new SdJwtVcRecord({
           credentialInstances: [
             {
@@ -238,7 +238,7 @@ describe('credentialUse', () => {
           credentialInstances: [
             {
               compactSdJwtVc:
-                'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature',
+                'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature',
             },
           ],
         })
@@ -255,9 +255,9 @@ describe('credentialUse', () => {
 
       test('uses new instance with NewOrFirst mode when available', async () => {
         const firstCompact =
-          'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature1'
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1'
         const secondCompact =
-          'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature2'
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature2'
         const record = new SdJwtVcRecord({
           credentialInstances: [
             {
@@ -284,7 +284,7 @@ describe('credentialUse', () => {
 
       test('uses first instance with NewOrFirst mode when no new available', async () => {
         const compactSdJwtVc =
-          'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature'
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature'
         const record = new SdJwtVcRecord({
           credentialInstances: [
             {
@@ -311,11 +311,11 @@ describe('credentialUse', () => {
           credentialInstances: [
             {
               compactSdJwtVc:
-                'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature1',
+                'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1',
             },
             {
               compactSdJwtVc:
-                'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature2',
+                'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature2',
             },
           ],
         })
@@ -333,7 +333,7 @@ describe('credentialUse', () => {
 
       test('uses first instance with NewIfReceivedInBatch mode for single instance record', async () => {
         const compactSdJwtVc =
-          'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature'
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature'
         const record = new SdJwtVcRecord({
           credentialInstances: [
             {
@@ -359,9 +359,9 @@ describe('credentialUse', () => {
 
       test('uses new instance with NewIfReceivedInBatch mode for multi instance record', async () => {
         const firstCompact =
-          'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature1'
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1'
         const secondCompact =
-          'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature2'
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature2'
         const record = new SdJwtVcRecord({
           credentialInstances: [
             {
@@ -394,7 +394,7 @@ describe('credentialUse', () => {
           credentialInstances: [
             {
               compactSdJwtVc:
-                'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature1',
+                'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1',
             },
           ],
         })
@@ -411,11 +411,11 @@ describe('credentialUse', () => {
 
       test('correctly sets isLastNewInstance to false when multiple new instances remain', async () => {
         const firstCompact =
-          'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature1'
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1'
         const secondCompact =
-          'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature2'
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature2'
         const thirdCompact =
-          'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature3'
+          'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature3'
         const record = new SdJwtVcRecord({
           credentialInstances: [
             {
@@ -448,7 +448,7 @@ describe('credentialUse', () => {
       describe('State Management', () => {
         test('updates state from SingleInstanceUnused to SingleInstanceUsed when using first instance', async () => {
           const compactSdJwtVc =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature'
           const record = new SdJwtVcRecord({
             credentialInstances: [
               {
@@ -475,9 +475,9 @@ describe('credentialUse', () => {
 
         test('updates state from MultiInstanceFirstUnused to MultiInstanceFirstUsed when using first instance', async () => {
           const firstCompact =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature1'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1'
           const secondCompact =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature2'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature2'
           const record = new SdJwtVcRecord({
             credentialInstances: [
               {
@@ -510,7 +510,7 @@ describe('credentialUse', () => {
 
         test('does not change state when reusing already used instance', async () => {
           const compactSdJwtVc =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature'
           const record = new SdJwtVcRecord({
             credentialInstances: [
               {
@@ -539,9 +539,9 @@ describe('credentialUse', () => {
       describe('Update Modes', () => {
         test('updates record with Update mode when new instance is used', async () => {
           const firstCompact =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature1'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1'
           const secondCompact =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature2'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature2'
           const record = new SdJwtVcRecord({
             credentialInstances: [
               {
@@ -566,7 +566,7 @@ describe('credentialUse', () => {
 
         test('does not update record with Update mode when first instance is used and was already used', async () => {
           const compactSdJwtVc =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature'
           const record = new SdJwtVcRecord({
             credentialInstances: [
               {
@@ -589,11 +589,11 @@ describe('credentialUse', () => {
 
         test('refetches and updates record with RefetchAndUpdateWithLock mode', async () => {
           const firstCompact =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature1'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1'
           const secondCompact =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature2'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature2'
           const thirdCompact =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature3'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature3'
 
           // Mock updateByIdWithLock to return a fresh record with all instances
           vi.mocked(sdJwtVcRepository.updateByIdWithLock).mockImplementationOnce(async (ctx, id, callback) => {
@@ -639,7 +639,7 @@ describe('credentialUse', () => {
 
         test('does not refetch with RefetchAndUpdateWithLock mode when first instance is used', async () => {
           const compactSdJwtVc =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature'
           const record = new SdJwtVcRecord({
             credentialInstances: [
               {
@@ -662,9 +662,9 @@ describe('credentialUse', () => {
 
         test('handles race condition with RefetchAndUpdateWithLock using NewOrFirst mode', async () => {
           const firstCompact =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature1'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature1'
           const secondCompact =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature2'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature2'
 
           // Mock updateByIdWithLock to return a fresh record with only first instance (second was used by another process)
           vi.mocked(sdJwtVcRepository.updateByIdWithLock).mockImplementationOnce(async (ctx, id, callback) => {
@@ -702,7 +702,7 @@ describe('credentialUse', () => {
 
         test('throws error with RefetchAndUpdateWithLock and New mode when instance was already used', async () => {
           const firstCompact =
-            'eyJhbGciOiJFUzI1NiIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJleHAiOjE3MzY3OTYwMDB9.signature2'
+            'eyJ0eXAiOiJ2YytzZC1qd3QiLCJhbGciOiJFUzI1NiIsImtpZCI6IiNmb28ifQ.eyJ2Y3QiOiJodHRwczovL2V4YW1wbGUuY29tL2NyZWRlbnRpYWwiLCJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIiwiZXhwIjoxNzM2Nzk2MDAwfQ.signature2'
 
           // Mock updateByIdWithLock to return a fresh record with only first instance (second was used by another process)
           vi.mocked(sdJwtVcRepository.updateByIdWithLock).mockImplementationOnce(async (ctx, id, callback) => {

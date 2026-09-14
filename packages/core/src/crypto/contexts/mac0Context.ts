@@ -6,7 +6,6 @@ import {
   type KmsJwkPublicAsymmetric,
   type KnownCoseSignatureAlgorithm,
   knownJwaFromCoseSignatureAlgorithm,
-  PublicJwk,
 } from '../../modules/kms'
 
 export const getMac0Context = (agentContext: AgentContext): Mac0Context => {
@@ -21,14 +20,16 @@ export const getMac0Context = (agentContext: AgentContext): Mac0Context => {
         throw new CredoError('Missing required keyId on CoseKey for signing mdoc')
       }
 
-      const algorithm = input.key.algorithm
-      const jwaAlgorithm = input.key.algorithm
-        ? knownJwaFromCoseSignatureAlgorithm(algorithm as KnownCoseSignatureAlgorithm)
-        : PublicJwk.fromUnknown(input.key.jwk).signatureAlgorithm
+      const algorithm = input.algorithm ?? input.key.algorithm
+      if (algorithm === undefined) {
+        throw new CredoError(
+          'Unable to authenticate COSE Mac0 structure. No algorithm provided or defined on the COSE key.'
+        )
+      }
 
       const { signature } = await kms.sign({
         data: input.toBeAuthenticated,
-        algorithm: jwaAlgorithm,
+        algorithm: knownJwaFromCoseSignatureAlgorithm(algorithm as unknown as KnownCoseSignatureAlgorithm),
         keyId: input.key.keyId,
       })
 
@@ -41,16 +42,18 @@ export const getMac0Context = (agentContext: AgentContext): Mac0Context => {
       }
 
       const algorithm = input.algorithm ?? key.algorithm
-      const jwaAlgorithm = algorithm
-        ? knownJwaFromCoseSignatureAlgorithm(algorithm as KnownCoseSignatureAlgorithm)
-        : PublicJwk.fromUnknown(key.jwk).signatureAlgorithm
+      if (algorithm === undefined) {
+        throw new CredoError(
+          'Unable to verify COSE Mac0 structure. No algorithm defined in the protected header or on the COSE key.'
+        )
+      }
 
       const { verified } = await kms.verify({
         key: {
           publicJwk: key.jwk as KmsJwkPublicAsymmetric,
         },
         data: toBeAuthenticated,
-        algorithm: jwaAlgorithm,
+        algorithm: knownJwaFromCoseSignatureAlgorithm(algorithm as unknown as KnownCoseSignatureAlgorithm),
         signature: tag,
       })
 

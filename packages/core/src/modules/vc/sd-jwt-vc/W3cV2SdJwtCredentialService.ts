@@ -1,17 +1,20 @@
-import { SDJwtInstance } from '@sd-jwt/core'
-import type { DisclosureFrame, PresentationFrame, SDJWTConfig } from '@sd-jwt/types'
+import { type DisclosureFrame, type PresentationFrame, type SDJWTConfig, SDJwtInstance } from '@sd-jwt/core'
 import type { AgentContext } from '../../../agent/context'
+import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
 import { JwtPayload } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
+import type { JsonObject } from '../../../types'
 import { asArray, JsonTransformer, MessageValidator, nowInSeconds, TypedArrayEncoder } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi } from '../../kms'
+import { applyDisclosuresForPayload } from '../../sd-jwt-vc/disclosureFrame'
 import {
   extractKeyFromHolderBinding,
   getSdJwtSigner,
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
+  setJwkAlgFromJwtHeader,
 } from '../../sd-jwt-vc/utils'
 import type {
   W3cV2JsonCredential,
@@ -19,12 +22,16 @@ import type {
   W3cV2VerifyCredentialResult,
   W3cV2VerifyPresentationResult,
 } from '../models'
-import { validateCredentialSubjectAuthentication } from '../util'
 import {
   extractHolderFromPresentationCredentials,
   getVerificationMethodForJwt,
   validateAndResolveVerificationMethod,
 } from '../v2-jwt-utils'
+import {
+  validateVc2ContextBaseline,
+  validateVc2CredentialStatus,
+  validateVc2CredentialValidityPeriod,
+} from '../validators'
 import type {
   W3cV2SdJwtSignCredentialOptions,
   W3cV2SdJwtSignPresentationOptions,
@@ -78,6 +85,8 @@ export class W3cV2SdJwtCredentialService {
     // Validate the disclosure frame
     const disclosureFrame = options.disclosureFrame as DisclosureFrame<W3cV2JsonCredential> | undefined
     this.validateDisclosureFrame(disclosureFrame)
+
+    publicJwk.alg = options.alg
 
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
@@ -136,9 +145,28 @@ export class W3cV2SdJwtCredentialService {
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
+        this.logCredentialShouldWarnings(agentContext, credential)
+
+        validationResults.validations.dataModel = validateVc2ContextBaseline(credential.resolvedCredential.context)
+        if (!validationResults.validations.dataModel.isValid) {
+          return validationResults
+        }
+
         validationResults.validations.dataModel = {
           isValid: true,
         }
+
+        validationResults.validations.validityPeriod = validateVc2CredentialValidityPeriod({
+          validFrom: credential.resolvedCredential.validFrom,
+          validUntil: credential.resolvedCredential.validUntil,
+          skewSeconds: agentContext.config.validitySkewSeconds,
+        })
+
+        validationResults.validations.credentialStatus = validateVc2CredentialStatus({
+          credentialStatus: credential.resolvedCredential.credentialStatus,
+          credentialFormat: 'SD-JWT',
+          verifyCredentialStatus: options.verifyCredentialStatus,
+        })
       } catch (error) {
         validationResults.validations.dataModel = {
           isValid: false,
@@ -151,8 +179,25 @@ export class W3cV2SdJwtCredentialService {
       const issuerVerificationMethod = await getVerificationMethodForJwt(agentContext, credential, ['assertionMethod'])
       const issuerPublicKey = getPublicJwkFromVerificationMethod(issuerVerificationMethod)
 
+      // Ensure the issuer is trusted according to the (optional) `getTrustedIssuersForVerification`
+      // callback. For did-based issuers this is a no-op when no trusted issuers are configured,
+      // preserving the previous "trust any valid signature" behavior. Throws when the issuer is not trusted.
+      await TrustedIssuerContext.ensureTrustedSigner(
+        agentContext,
+        {
+          signer: { method: 'did', didUrl: issuerVerificationMethod.id },
+          verification: { type: 'credential', credential },
+        },
+        options.trustedIssuers
+      )
+
       const holderBinding = parseHolderBindingFromCredential(credential.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
+
+      setJwkAlgFromJwtHeader(issuerPublicKey, credential.sdJwt.header.alg)
+      if (holder && credential.sdJwt.kbJwt) {
+        setJwkAlgFromJwtHeader(holder.publicJwk, credential.sdJwt.kbJwt.header?.alg)
+      }
 
       sdJwt.config({
         verifier: getSdJwtVerifier(agentContext, issuerPublicKey),
@@ -189,7 +234,9 @@ export class W3cV2SdJwtCredentialService {
         }
       }
 
-      validationResults.isValid = Object.values(validationResults.validations).every((v) => v.isValid)
+      validationResults.isValid = Object.values(validationResults.validations).every(
+        (validation) => validation?.isValid === true
+      )
       return validationResults
     } catch (error) {
       validationResults.error = error
@@ -218,6 +265,8 @@ export class W3cV2SdJwtCredentialService {
     payload.aud = options.domain
 
     const holder = await extractHolderFromPresentationCredentials(agentContext, options.presentation)
+
+    holder.publicJwk.alg = holder.alg
 
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
@@ -254,7 +303,11 @@ export class W3cV2SdJwtCredentialService {
   ): Promise<W3cV2VerifyPresentationResult> {
     const validationResults: W3cV2VerifyPresentationResult = {
       isValid: false,
-      validations: {},
+      presentation: {
+        isValid: false,
+        validations: {},
+      },
+      credentialEntries: [],
     }
 
     const sdjwt = new SDJwtInstance({
@@ -266,7 +319,7 @@ export class W3cV2SdJwtCredentialService {
       try {
         // If instance is provided as input, we want to validate the presentation
         if (options.presentation instanceof W3cV2SdJwtVerifiablePresentation) {
-          MessageValidator.validateSync(options.presentation.resolvedPresentation)
+          options.presentation.validate()
         }
 
         presentation =
@@ -279,11 +332,29 @@ export class W3cV2SdJwtCredentialService {
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
-        validationResults.validations.dataModel = {
+        this.logPresentationShouldWarnings(agentContext, presentation)
+
+        // VC-JOSE-COSE: understood claims MUST be evaluated per verifier policy
+        // https://www.w3.org/TR/vc-jose-cose/#validation-algorithm
+        if (options.challenge !== presentation.sdJwt.prettyClaims.nonce) {
+          throw new CredoError(`JWT payload 'nonce' does not match challenge '${options.challenge}'`)
+        }
+
+        const audArray = asArray(presentation.sdJwt.prettyClaims.aud)
+        if (options.domain && !audArray.includes(options.domain)) {
+          throw new CredoError(`JWT payload 'aud' does not include domain '${options.domain}'`)
+        }
+
+        const contextValidationResult = validateVc2ContextBaseline(presentation.resolvedPresentation.context)
+        if (!contextValidationResult.isValid) {
+          throw contextValidationResult.error
+        }
+
+        validationResults.presentation.validations.dataModel = {
           isValid: true,
         }
       } catch (error) {
-        validationResults.validations.dataModel = {
+        validationResults.presentation.validations.dataModel = {
           isValid: false,
           error,
         }
@@ -296,6 +367,11 @@ export class W3cV2SdJwtCredentialService {
       const holderBinding = parseHolderBindingFromCredential(presentation.sdJwt.prettyClaims)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
+      setJwkAlgFromJwtHeader(proverPublicKey, presentation.sdJwt.header.alg)
+      if (holder && presentation.sdJwt.kbJwt) {
+        setJwkAlgFromJwtHeader(holder.publicJwk, presentation.sdJwt.kbJwt.header?.alg)
+      }
+
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, proverPublicKey),
         kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
@@ -306,11 +382,11 @@ export class W3cV2SdJwtCredentialService {
           skewSeconds: agentContext.config.validitySkewSeconds,
         })
 
-        validationResults.validations.presentationSignature = {
+        validationResults.presentation.validations.presentationSignature = {
           isValid: true,
         }
       } catch (error) {
-        validationResults.validations.presentationSignature = {
+        validationResults.presentation.validations.presentationSignature = {
           isValid: false,
           error,
         }
@@ -322,7 +398,7 @@ export class W3cV2SdJwtCredentialService {
         presentation.resolvedPresentation.holderId &&
         proverVerificationMethod.controller !== presentation.resolvedPresentation.holderId
       ) {
-        validationResults.validations.holderIsSigner = {
+        validationResults.presentation.validations.holderIsSigner = {
           isValid: false,
           error: new CredoError(
             `Presentation is signed using verification method ${proverVerificationMethod.id}, while the holder of the presentation is '${presentation.resolvedPresentation.holderId}'`
@@ -331,51 +407,18 @@ export class W3cV2SdJwtCredentialService {
       } else {
         // If no holderId is present, this validation passes by default as there can't be
         // a mismatch between the 'holder' property and the signer of the presentation.
-        validationResults.validations.holderIsSigner = {
+        validationResults.presentation.validations.holderIsSigner = {
           isValid: true,
         }
       }
 
-      // To keep things simple, we only support JWT VCs in JWT VPs for now
-      const credentials = asArray(presentation.resolvedPresentation.verifiableCredential)
-
-      // Verify all credentials in parallel, and await the result
-      validationResults.validations.credentials = await Promise.all(
-        credentials.map(async (credential) => {
-          if (!(credential.envelopedCredential instanceof W3cV2SdJwtVerifiableCredential)) {
-            return {
-              isValid: false,
-              error: new CredoError(
-                'Credential is not of format SD-JWT. Presentations in SD-JWT format can only contain credentials in SD-JWT format.'
-              ),
-              validations: {},
-            }
-          }
-
-          const credentialResult = await this.verifyCredential(agentContext, {
-            credential: credential.envelopedCredential,
-          })
-
-          const credentialSubjectAuthentication = validateCredentialSubjectAuthentication(
-            credential.resolvedCredential.credentialSubjectIds,
-            proverVerificationMethod.controller
-          )
-
-          return {
-            ...credentialResult,
-            isValid: credentialResult.isValid && credentialSubjectAuthentication.isValid,
-            validations: {
-              ...credentialResult.validations,
-              credentialSubjectAuthentication,
-            },
-          }
-        })
+      validationResults.presentation.isValid = Object.values(validationResults.presentation.validations).every(
+        (validation) => validation.isValid
       )
 
-      // Deeply nested check whether all validations have passed
-      validationResults.isValid = Object.values(validationResults.validations).every((v) =>
-        Array.isArray(v) ? v.every((vv) => vv.isValid) : v.isValid
-      )
+      // Credential-entry dispatch is orchestrated by W3cV2CredentialService.
+      // This service verifies VP container integrity only.
+      validationResults.isValid = validationResults.presentation.isValid
 
       return validationResults
     } catch (error) {
@@ -399,6 +442,14 @@ export class W3cV2SdJwtCredentialService {
     return W3cV2SdJwtVerifiableCredential.fromCompact(disclosedCompact)
   }
 
+  public applyDisclosuresForPayload(
+    compactSdJwtVc: string,
+    requestedPayload: JsonObject
+  ): W3cV2SdJwtVerifiableCredential {
+    const sdJwt = applyDisclosuresForPayload(compactSdJwtVc, requestedPayload)
+    return W3cV2SdJwtVerifiableCredential.fromCompact(sdJwt)
+  }
+
   private validateDisclosureFrame(disclosureFrame?: DisclosureFrame<W3cV2JsonCredential | W3cV2JsonPresentation>) {
     if (!disclosureFrame) return
 
@@ -419,6 +470,67 @@ export class W3cV2SdJwtCredentialService {
     return {
       hasher: sdJwtVcHasher,
       saltGenerator: (length) => TypedArrayEncoder.toBase64Url(kms.randomBytes({ length })).slice(0, length),
+    }
+  }
+
+  private logCredentialShouldWarnings(agentContext: AgentContext, credential: W3cV2SdJwtVerifiableCredential) {
+    const payload = credential.sdJwt.prettyClaims
+    const headerIss = credential.sdJwt.header.iss
+
+    if (typeof headerIss === 'string' && typeof payload.iss === 'string' && headerIss !== payload.iss) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: JOSE header iss conflicts with payload iss', {
+        format: 'vc+sd-jwt',
+        headerIss,
+        payloadIss: payload.iss,
+      })
+    }
+
+    if (
+      typeof payload.jti === 'string' &&
+      credential.resolvedCredential.id &&
+      credential.resolvedCredential.id !== payload.jti
+    ) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: jti claim conflicts with credential id', {
+        format: 'vc+sd-jwt',
+        jti: payload.jti,
+        credentialId: credential.resolvedCredential.id,
+      })
+    }
+
+    if (typeof payload.sub === 'string' && !credential.resolvedCredential.credentialSubjectIds.includes(payload.sub)) {
+      agentContext.config.logger.warn(
+        'VC-JOSE-COSE SHOULD warning: sub claim does not match any credentialSubject.id',
+        {
+          format: 'vc+sd-jwt',
+          sub: payload.sub,
+          credentialSubjectIds: credential.resolvedCredential.credentialSubjectIds,
+        }
+      )
+    }
+  }
+
+  private logPresentationShouldWarnings(agentContext: AgentContext, presentation: W3cV2SdJwtVerifiablePresentation) {
+    const payload = presentation.sdJwt.prettyClaims
+    const headerIss = presentation.sdJwt.header.iss
+
+    if (typeof headerIss === 'string' && typeof payload.iss === 'string' && headerIss !== payload.iss) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: JOSE header iss conflicts with payload iss', {
+        format: 'vp+sd-jwt',
+        headerIss,
+        payloadIss: payload.iss,
+      })
+    }
+
+    if (
+      typeof payload.jti === 'string' &&
+      presentation.resolvedPresentation.id &&
+      presentation.resolvedPresentation.id !== payload.jti
+    ) {
+      agentContext.config.logger.warn('VC-JOSE-COSE SHOULD warning: jti claim conflicts with presentation id', {
+        format: 'vp+sd-jwt',
+        jti: payload.jti,
+        presentationId: presentation.resolvedPresentation.id,
+      })
     }
   }
 }
