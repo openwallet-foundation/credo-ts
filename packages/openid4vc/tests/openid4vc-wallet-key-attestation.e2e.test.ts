@@ -7,6 +7,7 @@ import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
   OpenId4VcIssuanceSessionState,
+  OpenId4VcIssuerModuleConfig,
   type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerRecord,
   OpenId4VcIssuerService,
@@ -1132,5 +1133,35 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         clientId: 'wallet',
       })
     ).rejects.toThrow()
+  })
+
+  it('only ignores an invalid wallet attestation that is not required when ignoreWalletAttestationsWhenNotRequired is enabled', async () => {
+    const [header, payload, signature] = walletAttestationJwt.split('.')
+    const invalidWalletAttestationJwt = `${header}.${payload}.${signature.slice(0, -4)}${signature.endsWith('AAAA') ? 'BBBB' : 'AAAA'}`
+
+    const requestToken = async (requireWalletAttestation: boolean) => {
+      const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+        issuerId: issuerRecord.issuerId,
+        credentialConfigurationIds: ['universityDegree'],
+        preAuthorizedCodeFlowConfig: {},
+        authorization: { requireWalletAttestation, requireDpop: false },
+      })
+      const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+      return holder.agent.openid4vc.holder.requestToken({
+        resolvedCredentialOffer,
+        walletAttestationJwt: invalidWalletAttestationJwt,
+        clientId: 'wallet',
+      })
+    }
+
+    // By default a provided wallet attestation is always verified
+    await expect(requestToken(false)).rejects.toThrow('Error verifying client attestation')
+
+    const issuerConfig = issuer.agent.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+    vi.spyOn(issuerConfig, 'ignoreWalletAttestationsWhenNotRequired', 'get').mockReturnValue(true)
+
+    await expect(requestToken(false)).resolves.toMatchObject({ accessToken: expect.any(String) })
+    await expect(requestToken(true)).rejects.toThrow('Error verifying client attestation')
   })
 })
