@@ -8,7 +8,7 @@ import {
   InMemoryLruCache,
   JsonLdModuleConfig,
   Kms,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import {
@@ -102,8 +102,8 @@ const agentContext = getAgentContext({
     [AnonCredsCredentialRepository, anonCredsCredentialRepository],
     [AnonCredsKeyCorrectnessProofRepository, anonCredsKeyCorrectnessProofRepository],
     [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [InjectionSymbols.StorageService, storageService],
-    [SignatureSuiteToken, 'default'],
     [
       CacheModuleConfig,
       new CacheModuleConfig({
