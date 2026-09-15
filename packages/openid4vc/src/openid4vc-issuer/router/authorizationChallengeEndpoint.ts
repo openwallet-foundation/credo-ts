@@ -26,6 +26,7 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../repository'
+import { getClientAttestationToVerify } from '../util/walletAttestation'
 import { handlePushedAuthorizationRequest } from './pushedAuthorizationRequestEndpoint'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
@@ -240,14 +241,17 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
   }
 
   const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })
+
+  // First session config, fall back to global config
+  const walletAttestationRequired = issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired
+
   const { clientAttestation, dpop } = await authorizationServer.verifyAuthorizationChallengeRequest({
     authorizationChallengeRequest,
     authorizationServerMetadata: issuerMetadata.authorizationServers[0],
     request,
     clientAttestation: {
-      ...parseResult.clientAttestation,
-      // First session config, fall back to global config
-      required: issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired,
+      ...getClientAttestationToVerify(config, parseResult.clientAttestation, walletAttestationRequired),
+      required: walletAttestationRequired,
       // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not set. Per draft §7.2/§7.3 the DPoP key
       // only has to match the attestation `cnf.jwk` in DPoP combined mode, which this endpoint doesn't support.
     },
@@ -400,7 +404,11 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
     authorizationServerMetadata: issuerMetadata.authorizationServers[0],
     request,
     clientAttestation: {
-      ...parseResult.clientAttestation,
+      ...getClientAttestationToVerify(
+        config,
+        parseResult.clientAttestation,
+        issuanceSession.walletAttestation?.required
+      ),
       // We only look at the issuance session here. If it is required
       // it will be defined on the issuance session now.
       required: issuanceSession.walletAttestation?.required,
