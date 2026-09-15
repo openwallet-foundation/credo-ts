@@ -1,5 +1,77 @@
 # Changelog
 
+## 0.7.1
+
+### Patch Changes
+
+- 9f4278b: Add `DidDocument.findVerificationMethodsByPurpose` and
+  `DidDocument.findVerificationMethodsByTypeAndPurpose`.
+  
+  The relationship-aware methods resolve inline and referenced methods and
+  return them in requested relationship order while preserving entry order
+  within each relationship. The type-filtered method accepts one or more
+  verification-method representations and delegates relationship traversal to
+  the purpose-only method. DIDComm JSON-LD, JWT credentials, presentation
+  selection, DIDComm messaging, AnonCreds data integrity, Cheqd signing, peer
+  DID conversion, and did:webvh signing now use the appropriate shared lookup.
+  AnonCreds credential signing prefers verification methods authorized for
+  `assertionMethod`, with declared `verificationMethod` entries as a fallback.
+- f127ff5: Mdoc revocation for issuance and verification
+- 5cfcadb: Fail COSE Sign1 and Mac0 signing, and Mac0 verification, when no algorithm is declared instead of falling back to the first supported signature algorithm of the key. The Mac0 authenticate operation now also uses the algorithm provided by the caller. COSE Sign1 verification still falls back to the signature algorithm of the key, as @owf/mdoc does not forward the alg of the deviceAuth Sign1 structure yet.
+- 84dfcf4: sd-jwt vc does not require IAT to be required anymore
+- fd5016d: feat: the `Cache` interface `get`, `set` and `remove` methods now accept a `CacheOptions` parameter with a `scope` that is either `'context'` (default) or `'global'`, allowing globally reusable data to be shared across agent contexts. The X.509 CRL summary cache, the Indy VDR pool lookup cache and the AnonCreds registry cache use the global scope, as they only hold publicly anchored data. The DID resolver caches documents of public did methods in the global scope, and documents of other did methods per agent context; the list of public did methods can be configured with the new `publicDidMethods` option of the dids module (default `['web', 'indy', 'sov', 'cheqd', 'hedera', 'webvh']`).
+  
+  Behavior changes to be aware of:
+  
+  - `InMemoryLruCache` now namespaces keys by `contextCorrelationId` by default. This fixes potential cross-context sharing of context-scoped entries (e.g. records cached by `CachedStorageService`) in multi-tenant setups. Single-context agents are not affected.
+  - `RedisCache` stores global-scope entries under a `global:` key prefix. Existing context-scoped Redis entries for the caches that moved to the global scope become cache misses after upgrading and expire through their TTL, causing a one-time refetch.
+- d45aec0: fix(kms): respect the configured `defaultBackend` when no explicit `backend` is provided for a key management operation. Previously the first registered backend that supported the operation was always used and the `defaultBackend` option was silently ignored, which could result in keys being created in a different (e.g. software instead of hardware-backed) backend than configured. If the default backend does not support the requested operation, the first other backend that supports the operation is used and a warning is logged.
+- 5cfcadb: Use the `alg` from the JWS header when verifying linked data proofs, and bind signing to the algorithm declared in the JWS header, instead of using the first supported signature algorithm of the key. Also fixes the JWS header validation for linked data proofs, which could previously be bypassed by adding an extra header parameter.
+- 097c831: fix(vc): bind the holder to the credentialSubject when verifying JSON-LD (ldp_vp) presentations
+  
+  `W3cJsonLdCredentialService.verifyPresentation` verified the presentation proof and each embedded
+  credential's issuer proof, but never checked that the presentation signer (holder) controls the
+  `credentialSubject.id` of the embedded credentials. The underlying `@digitalcredentials/vc` /
+  `jsonld-signatures` libraries do not perform this check either. As a result an `ldp_vp` could be used
+  to present someone else's credential (a data object, not a secret) wrapped in a presentation signed
+  with the attacker's own key. This check is already enforced for `jwt_vp` and SD-JWT presentations;
+  the JSON-LD path now enforces it too, surfacing the result per credential under
+  `credentials[].credentialSubjectAuthentication` to match the `jwt_vp` result shape.
+- 20d6ab1: fix: correctly encode kid in the header of cose signatures, and do not include the kid in oid4vci request to the issuer
+- 907f12f: fix(mdoc): guard unsupported device MAC authentication in the mdoc context
+  
+  The `hdkf` callback in the mdoc context previously derived an ECDH shared secret using raw curve math over the raw device private key bytes passed to it as a callback argument. This code path is only reached for mdoc device MAC authentication (ISO/IEC 18013-5), which Credo does not currently implement (only device signature authentication is supported), so it was never exercised. It is now replaced with an explicit error. A future device MAC implementation must derive the shared secret from the wallet-managed key inside the KMS, since the previous callback contract is incompatible with a non-exportable, KMS-held device key.
+- 96dc69b: fix(mdoc): accept status lists signed by the credential's issuance chain during presentation (device response) verification
+  
+  The mdoc presentation verification path (`MdocDeviceResponse.verify`, used by OpenID4VP) did not fall back to the issuance certificates when a trusted issuer was configured without dedicated `status` certificates (`status: undefined`). As a result, an mdoc carrying a token status list signed by the same certificate as the credential failed presentation verification, while the equivalent SD-JWT VC and standalone `Mdoc.verify` cases succeeded. The fallback (and the chain-equality safeguard that prevents it from widening the trust set) is now shared between `Mdoc.verify` and `MdocDeviceResponse.verify`.
+- 7dfafeb: Support certificate chain in mdoc signing.
+- 3a3eb03: Use the JWT header `alg` for SD-JWT VC signing and verification instead of always falling back to the first supported signature algorithm of the key. The `alg` can now be set on a `PublicJwk` instance, restricting the key to that algorithm.
+- 23c354e: Add a new W3C Data Integrity module to core with proof models, validation helpers, processing utilities, and structured create/verify result handling.
+  
+  The module introduces a cryptosuite registry and Data Integrity proof service/API for proof creation, single-proof verification, and proof-set/chain verification flows, plus an initial `eddsa-jcs-2022` cryptosuite implementation.
+  
+  It also adds public/internal Data Integrity exports and registers the Data Integrity module in the default agent module set, making Data Integrity APIs available by default.
+- 907cc54: refactor(vc): rename anoncreds Data Integrity bridge APIs to W3C credential namespace. Replaces Data Integrity-specific symbols and types (`IAnonCredsDataIntegrityService`, `AnonCredsDataIntegrityServiceSymbol`, `ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE`, `DataIntegrityProof`, `dataIntegrityCryptosuites`) with W3C credential equivalents. Generic JSON-LD verification now rejects anoncreds-2023 proofs and requires anoncreds W3C credential path. Introduces `shouldSignWithAnonCredsW3cService()` and `shouldVerifyWithAnonCredsW3cService()` to clarify service responsibilities.
+- 339f4cc: Add a standalone `JsonLdModule` and shared `JsonLdModuleConfig` for configuring document loaders across JSON-LD consumers. `W3cCredentialsModule` continues to support its existing `documentLoader` configuration API.
+- 5cfcadb: Use the `alg` from the provided options when updating a JWT token status list, instead of the `alg` of the signing key jwk (which is usually not defined).
+- f127ff5: Added token-status-list module which allows you to fetch/update/create token-status-list instances for sd-jwt and mdoc
+- cfe86fa: X509 trusted certificates now can be provided in a new format. Previously it was a list of base64/pem/der encoded certificates, but now you can _also_ provide a list of objects in the format `[{issuance: string[], status? :string[]}]`. This is used for the new status indicator on mdoc. First, it looks for the used `issuance` trusted certificates and then validates the `status`, if available, with the `status` trusted certificates associated with the `issuance` property.
+- e97c18b: Add a global `getTrustedIssuersForVerification` agent callback for resolving trusted issuers during verification. Unlike the now-deprecated X.509-module `getTrustedCertificatesForVerification` callback (which it takes precedence over), it supports both X.509 certificate chains and DIDs and is extensible to other trust mechanisms. It is wired into SD-JWT VC, mdoc, W3C V1 JWT and LD-JSON, W3C V2 JWT and SD-JWT, and OpenID4VP verification.
+- 121dd14: feat(vc2): implement W3C Verifiable Credentials 2.0 support including JWT, SD-JWT, and Data Integrity proof formats
+- b75467c: Support issuing Verifiable Credentials Data Model 2.0 credentials over the W3C Data Integrity credential attachment format (Aries RFC 0809). The format previously advertised `data_model_versions_supported: ['1.1']` and rejected a data model 2.0 credential, even though the agent was already able to secure one with a `DataIntegrityProof`.
+  
+  The data model version is negotiated on the wire as the RFC describes: the offer advertises the version of the credential it carries, and the holder echoes its choice as `data_model_version` on the request. Which cryptosuite secures the credential is not negotiated, as RFC 0809 leaves that choice to the issuer.
+  
+  - The base JSON-LD context of the offered credential now determines the advertised `data_model_versions_supported`, so offering a credential in the `https://www.w3.org/ns/credentials/v2` context works without further configuration. Offers for data model 1.1 credentials are unaffected.
+  - Added the `cryptosuite` data integrity credential format option, naming the Data Integrity cryptosuite used to secure a data model 2.0 credential, for example `eddsa-jcs-2022`. When omitted, the first registered cryptosuite supporting the key type of the issuer verification method is used. It is ignored for data model 1.1, which is secured with a linked data signature suite instead. The `anoncreds-2023` cryptosuite is rejected, as it is only produced through the anoncreds link secret binding method.
+  - `W3cDataIntegrityApi.getSupportedCryptosuites` accepts an optional public JWK type, returning only the cryptosuites that support that key type.
+  - A received data model 2.0 credential is verified and stored as a `W3cV2CredentialRecord`. Deleting a credential of this format looks the record up in both the data model 1.1 and 2.0 stores, so the record type on the credential exchange record stays `'w3c'` for both versions.
+  - The anoncreds link secret binding method is rejected for data model 2.0 credentials, both when creating an offer and when issuing, as that binding method is defined for data model 1.1 and the `anoncredsvc-2023` cryptosuite only.
+  - Fixed the comparison of the offered and the received credential subject, which rejected any claim with a falsy value: a credential carrying a claim such as `0`, `false` or `''` was refused by the holder as not matching the offer. Claims are now compared by presence.
+- cfe86fa: TokenStatusList is a new standard module on the agent. It allows you to create/update/fetch token status lists. It is up to the user to host this, this can be easily done with the `statusList` you receive from the `agent.tokenStatusList.createTokenStatusList(...)` function. Updating the statuslist allows you to change the status list credential state from valid to invalid, but also update the expiry time, rotate certificates, change signing algorithm, etc. Signatures are the default and mac should only be used if the user is aware of the security implications and has good reason to do so.
+- 0a58888: Normalize DID identifiers when authenticating the credential subject of a verifiable presentation. A credential subject id that references a specific verification method (e.g. `did:example:123#0`) now matches the bare DID controller (`did:example:123`), as both refer to the same DID subject. Non-DID identifiers are still compared as-is.
+- 1e2088f: Add X.509 CRL (Certificate Revocation List) verification. Certificate chain validation can now check certificate revocation status against the CRLs referenced in each certificate's CRL Distribution Points extension, with configurable `SoftFail`/`Require`/`Disabled` modes, reason partitioning (RFC 5280 §5.2.5), optional caching (verified CRLs are cached until their `nextUpdate` and, after a configurable freshness period, revalidated against the freshly fetched bytes so unchanged CRLs skip re-parsing and re-verification) and full-chain checking. Revocation checking now also honours the CRL's own extensions: delta CRLs, indirect CRLs, CRLs whose Issuing Distribution Point scope does not cover the certificate being checked, and CRLs bearing an unrecognized critical extension are rejected rather than treated as authoritative proof that the certificate is unrevoked. Key usage is now enforced where RFC 5280 requires it: issuing CA certificates must assert `keyCertSign` and CRL issuers must assert `cRLSign` when they carry a Key Usage extension. The certificate creation API also gained support for revocation reasons on CRL distribution points, and a new `createCertificateRevocationList` API (`X509Api`/`X509Service`) for creating and signing CRLs, including the CRL Number, Delta CRL Indicator, Authority Key Identifier and Issuing Distribution Point extensions.
+
 ## 0.7.0
 
 ### Minor Changes
