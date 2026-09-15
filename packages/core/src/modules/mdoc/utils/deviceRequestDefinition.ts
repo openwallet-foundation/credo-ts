@@ -5,7 +5,11 @@ import type { MdocDcApiDocRequest, MdocDeviceRequestDefinition } from '../MdocOp
  * Create the device request definition stored on a verification session from the doc requests a
  * verifier passed, with every requested element in its object form.
  */
-export const createDeviceRequestDefinition = (docRequests: MdocDcApiDocRequest[]): MdocDeviceRequestDefinition => ({
+export const createDeviceRequestDefinition = (
+  docRequests: MdocDcApiDocRequest[],
+  treatAmbiguousMultipleDocRequestsAsAlternatives?: boolean
+): MdocDeviceRequestDefinition => ({
+  treatAmbiguousMultipleDocRequestsAsAlternatives,
   docRequests: docRequests.map(({ docType, nameSpaces }) => ({
     docType,
     nameSpaces: Object.fromEntries(
@@ -27,6 +31,7 @@ export const createDeviceRequestDefinition = (docRequests: MdocDcApiDocRequest[]
  * device request definition of a verification session.
  */
 export const getDeviceRequestMatchOptions = (definition: MdocDeviceRequestDefinition): DeviceRequestMatchOptions => ({
+  treatAmbiguousMultipleDocRequestsAsAlternatives: definition.treatAmbiguousMultipleDocRequestsAsAlternatives,
   docRequests: definition.docRequests.map(({ nameSpaces }, docRequestIndex) => ({
     docRequestIndex,
     elements: Object.fromEntries(

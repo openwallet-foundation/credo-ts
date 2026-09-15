@@ -84,7 +84,10 @@ export class MdocDcApiService {
     const kms = agentContext.resolve(KeyManagementApi)
     const mdocContext = getMdocContext(agentContext)
 
-    const deviceRequestDefinition = createDeviceRequestDefinition(options.docRequests)
+    const deviceRequestDefinition = createDeviceRequestDefinition(
+      options.docRequests,
+      options.treatAmbiguousMultipleDocRequestsAsAlternatives
+    )
 
     const { keyId, publicJwk } = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
 
@@ -227,7 +230,9 @@ export class MdocDcApiService {
 
       // Annex C has no query language such as DCQL, so the device request we sent is what the
       // response has to satisfy. Matched on the full response, as a doc request can be answered by
-      // any of the documents in it. The wallet selected its credentials with the same rules.
+      // any of the documents in it. The wallet selected its credentials with the same rules. The
+      // session's definition also carries whether the doc requests were meant as alternatives, of
+      // which the response only has to satisfy one.
       const deviceRequestMatch = Verifier.matchDeviceRequest({
         deviceRequest: TypedArrayEncoder.fromBase64Url(verificationSession.deviceRequestBase64Url),
         deviceResponse: decrypted.deviceResponse,
@@ -419,6 +424,7 @@ export class MdocDcApiService {
     const holderMatch = Holder.matchDeviceRequest({
       deviceRequest: parsedRequest.deviceRequest,
       credentials: candidates.map(({ mdoc }) => ({ issuerSigned: mdoc.issuerSigned, deviceNamespaces })),
+      treatAmbiguousMultipleDocRequestsAsAlternatives: options.treatAmbiguousMultipleDocRequestsAsAlternatives,
     })
 
     const toValidCredential = ({
@@ -487,13 +493,37 @@ export class MdocDcApiService {
       )
     }
 
-    const satisfiedDocRequests = docRequests.filter(
-      (docRequest): docRequest is MdocDcApiResolvedDocRequestSuccess => docRequest.success
-    )
+    // `holderMatch.success` already applies the alternatives rule, so it is the single source of
+    // truth for whether the request can be answered. The doc requests are only narrowed to the
+    // successful ones when all of them succeeded, as with alternatives the failed ones are kept so
+    // the wallet can see which alternative it can answer.
+    if (holderMatch.docRequestsAsAlternatives) {
+      return {
+        origin: parsedRequest.origin,
+        success: holderMatch.success,
+        docRequestsAsAlternatives: true,
+        docRequests,
+        parsedRequest,
+      }
+    }
 
-    return satisfiedDocRequests.length === docRequests.length
-      ? { origin: parsedRequest.origin, success: true, docRequests: satisfiedDocRequests, parsedRequest }
-      : { origin: parsedRequest.origin, success: false, docRequests, parsedRequest }
+    return holderMatch.success
+      ? {
+          origin: parsedRequest.origin,
+          success: true,
+          docRequestsAsAlternatives: false,
+          docRequests: docRequests.filter(
+            (docRequest): docRequest is MdocDcApiResolvedDocRequestSuccess => docRequest.success
+          ),
+          parsedRequest,
+        }
+      : {
+          origin: parsedRequest.origin,
+          success: false,
+          docRequestsAsAlternatives: false,
+          docRequests,
+          parsedRequest,
+        }
   }
 
   /**

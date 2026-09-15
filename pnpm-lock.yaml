@@ -556,8 +556,8 @@ importers:
         specifier: ^0.4.0-alpha-20260910093038
         version: 0.4.0-alpha-20260910093038
       '@owf/mdoc':
-        specifier: ^0.8.0-alpha-20260914140157
-        version: 0.8.0-alpha-20260914140157
+        specifier: ^0.8.0-alpha-20260915061504
+        version: 0.8.0-alpha-20260915061504
       '@owf/token-status-list':
         specifier: ^0.4.0-alpha-20260910093038
         version: 0.4.0-alpha-20260910093038
@@ -3281,8 +3281,8 @@ packages:
   '@owf/identity-common@0.4.0-alpha-20260910093038':
     resolution: {integrity: sha512-TXZbeg0TngZ0eVkUlO7RBylYTc9tcp66ot7+BIDXQvApv455VYhNmaRMEk1W/roKSS+6v3nBsw6kC6u4avp1ew==}
 
-  '@owf/mdoc@0.8.0-alpha-20260914140157':
-    resolution: {integrity: sha512-utLCW0sk/YFlhRh6HWl40z1dxwABBpqZxQKnTdhUrj2S9cQXgj3j096exJqR2nwkOMSliunOqS64kktJrPth9w==}
+  '@owf/mdoc@0.8.0-alpha-20260915061504':
+    resolution: {integrity: sha512-uTopVsGrq4E+pNcLoM9iScoBWZxzR2PiqY7bW9W0+ehI5y42M1it9Fx4tB1nkqfUd7Q211J1KyWoAGv5l4kjbg==}
     engines: {node: '>=20.19'}
 
   '@owf/token-status-list@0.1.0-alpha-20260422101556':
@@ -12057,7 +12057,7 @@ snapshots:
 
   '@owf/identity-common@0.4.0-alpha-20260910093038': {}
 
-  '@owf/mdoc@0.8.0-alpha-20260914140157':
+  '@owf/mdoc@0.8.0-alpha-20260915061504':
     dependencies:
       '@owf/cose': 0.4.0-alpha-20260910093038
       '@owf/identity-common': 0.4.0-alpha-20260910093038

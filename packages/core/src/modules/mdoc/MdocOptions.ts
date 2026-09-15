@@ -186,6 +186,14 @@ export type MdocDeviceRequestDefinition = {
    * device request.
    */
   docRequests: MdocDocRequestDefinition[]
+
+  /**
+   * Whether the doc requests are alternatives, of which the response only has to satisfy one. Not
+   * part of the device request itself, and only applied when matching the response.
+   *
+   * @default false
+   */
+  treatAmbiguousMultipleDocRequestsAsAlternatives?: boolean
 }
 
 /**
@@ -213,6 +221,23 @@ export type MdocDcApiCreateVerificationSessionOptions = {
    * Stored on the verification session, and applied when the response is verified.
    */
   docRequests: MdocDcApiDocRequest[]
+
+  /**
+   * A device request with more than one doc request does not say whether it asks for all of them, or
+   * for any one of them. By default the response has to satisfy every doc request. Set this to
+   * request the doc requests as alternatives instead, of which the response only has to satisfy one,
+   * which is a common interpretation. The second edition of ISO/IEC 18013-5 resolves the ambiguity
+   * with use cases in `DeviceRequestInfo`, which are not supported yet.
+   *
+   * As the ambiguity is not resolved in the request itself, a wallet may still answer every doc
+   * request. Nothing is added to the request; this only changes how the response is matched, and is
+   * stored on the verification session along with the doc requests.
+   *
+   * Does not apply when only a single document is requested.
+   *
+   * @default false
+   */
+  treatAmbiguousMultipleDocRequestsAsAlternatives?: boolean
 
   /**
    * Sign each doc request with reader authentication. The certificate (or chain) must have a
@@ -301,6 +326,24 @@ export type MdocDcApiResolveRequestOptions = {
    * @default {@link CredentialMultiInstanceUseMode.NewOrFirst}
    */
   useMode?: CredentialMultiInstanceUseMode
+
+  /**
+   * A device request with more than one doc request does not say whether the verifier asks for all
+   * of them, or for any one of them. By default the resolved request only succeeds when the stored
+   * mdocs can satisfy every doc request. Set this to treat them as alternatives instead, of which
+   * at least one has to be satisfiable, which is a common interpretation. The second edition of
+   * ISO/IEC 18013-5 resolves the ambiguity with use cases in `DeviceRequestInfo`, which are not
+   * supported yet.
+   *
+   * The per doc request matching does not change, so a resolved request that succeeds this way can
+   * still have failed doc requests. Check `docRequestsAsAlternatives` on the resolved request, and
+   * only create a response for the doc requests that succeeded.
+   *
+   * Does not apply to a request with a single doc request.
+   *
+   * @default false
+   */
+  treatAmbiguousMultipleDocRequestsAsAlternatives?: boolean
 
   now?: Date
 }
@@ -391,7 +434,8 @@ type MdocDcApiResolvedRequestBase = {
 }
 
 /**
- * Checking `success` narrows the doc requests: when it is `true`, every doc request has at least one
+ * Checking `success` narrows the doc requests, unless they were matched as alternatives: when
+ * `success` is `true` and `docRequestsAsAlternatives` is `false`, every doc request has at least one
  * valid credential.
  */
 export type MdocDcApiResolvedRequest = MdocDcApiResolvedRequestBase &
@@ -401,10 +445,26 @@ export type MdocDcApiResolvedRequest = MdocDcApiResolvedRequestBase &
          * The stored mdocs can satisfy every doc request.
          */
         success: true
+        docRequestsAsAlternatives: false
         docRequests: MdocDcApiResolvedDocRequestSuccess[]
       }
     | {
+        /**
+         * The doc requests were matched as alternatives and the stored mdocs can satisfy at least
+         * one of them. The ones that failed are still in `docRequests`; only create a response for
+         * the doc requests that succeeded.
+         */
+        success: true
+        docRequestsAsAlternatives: true
+        docRequests: MdocDcApiResolvedDocRequest[]
+      }
+    | {
         success: false
+        /**
+         * Whether the doc requests were matched as alternatives, in which case none of them could
+         * be satisfied rather than not all of them.
+         */
+        docRequestsAsAlternatives: boolean
         docRequests: MdocDcApiResolvedDocRequest[]
       }
   )
