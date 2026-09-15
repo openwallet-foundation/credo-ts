@@ -557,15 +557,12 @@ export class DataIntegrityDidCommCredentialFormatService
 
     let verificationMethod: VerificationMethod
     if (issuerVerificationMethod) {
-      verificationMethod = didDocument.dereferenceKey(issuerVerificationMethod, [
-        'assertionMethod',
-        'verificationMethod',
-      ])
+      verificationMethod = didDocument.dereferenceKey(issuerVerificationMethod, ['authentication', 'assertionMethod'])
     } else {
-      const vms = didDocument.findVerificationMethodsByPurpose(['assertionMethod', 'verificationMethod'])
+      const vms = didDocument.findVerificationMethodsByPurpose(['authentication', 'assertionMethod', 'verificationMethod'])
 
       if (!vms || vms.length === 0) {
-        throw new CredoError('Missing assertionMethod or verificationMethod in did document')
+        throw new CredoError('Missing authenticationMethod, assertionMethod, and verificationMethods in did document')
       }
 
       verificationMethod = vms[0]
