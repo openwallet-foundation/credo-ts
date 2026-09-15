@@ -9,7 +9,7 @@
     "./anoncreds": "./src/anoncreds/index.ts",
     "./resources": "./src/resources/index.ts"
   },
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Credo WebVH DID method implementation",
   "files": [
     "build"

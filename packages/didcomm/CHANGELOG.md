@@ -1,5 +1,65 @@
 # @credo-ts/didcomm
 
+## 0.7.1
+
+### Patch Changes
+
+- 9f4278b: Add `DidDocument.findVerificationMethodsByPurpose` and
+  `DidDocument.findVerificationMethodsByTypeAndPurpose`.
+  
+  The relationship-aware methods resolve inline and referenced methods and
+  return them in requested relationship order while preserving entry order
+  within each relationship. The type-filtered method accepts one or more
+  verification-method representations and delegates relationship traversal to
+  the purpose-only method. DIDComm JSON-LD, JWT credentials, presentation
+  selection, DIDComm messaging, AnonCreds data integrity, Cheqd signing, peer
+  DID conversion, and did:webvh signing now use the appropriate shared lookup.
+  AnonCreds credential signing prefers verification methods authorized for
+  `assertionMethod`, with declared `verificationMethod` entries as a fallback.
+- b75467c: Move the W3C Data Integrity credential attachment format (Aries RFC 0809) out of `@credo-ts/anoncreds` and into `@credo-ts/didcomm`, where the rest of the format already lived. The format is not anoncreds specific: binding a credential to an anoncreds link secret is one of its binding methods, next to the didcomm signed attachment method and to not binding the credential at all. Issuing a plain W3C credential over this format no longer requires depending on `@credo-ts/anoncreds`.
+  
+  - Added `DidCommDataIntegrityCredentialFormatService` to `@credo-ts/didcomm`. `DataIntegrityDidCommCredentialFormatService` in `@credo-ts/anoncreds` is now a deprecated alias for it and will be removed in the next major version.
+  - Added the `DidCommDataIntegrityLinkSecretBindingProvider` interface and its injection token, implementing the `anoncreds_link_secret` binding method. `@credo-ts/anoncreds` provides `AnonCredsLinkSecretBindingProvider` and the `AnonCredsModule` registers it, so agents using anoncreds keep the binding method with no changes. Using the binding method without the `AnonCredsModule` registered now fails with an explanatory error rather than an unresolved dependency.
+  - Fixed `deleteCredentialById` deleting every credential of this format through the anoncreds holder service. Credentials that were not bound to a link secret are now removed as the plain `W3cCredentialRecord` or `W3cV2CredentialRecord` they are stored as.
+- cfe86fa: X509 trusted certificates now can be provided in a new format. Previously it was a list of base64/pem/der encoded certificates, but now you can _also_ provide a list of objects in the format `[{issuance: string[], status? :string[]}]`. This is used for the new status indicator on mdoc. First, it looks for the used `issuance` trusted certificates and then validates the `status`, if available, with the `status` trusted certificates associated with the `issuance` property.
+- b75467c: Support issuing Verifiable Credentials Data Model 2.0 credentials over the W3C Data Integrity credential attachment format (Aries RFC 0809). The format previously advertised `data_model_versions_supported: ['1.1']` and rejected a data model 2.0 credential, even though the agent was already able to secure one with a `DataIntegrityProof`.
+  
+  The data model version is negotiated on the wire as the RFC describes: the offer advertises the version of the credential it carries, and the holder echoes its choice as `data_model_version` on the request. Which cryptosuite secures the credential is not negotiated, as RFC 0809 leaves that choice to the issuer.
+  
+  - The base JSON-LD context of the offered credential now determines the advertised `data_model_versions_supported`, so offering a credential in the `https://www.w3.org/ns/credentials/v2` context works without further configuration. Offers for data model 1.1 credentials are unaffected.
+  - Added the `cryptosuite` data integrity credential format option, naming the Data Integrity cryptosuite used to secure a data model 2.0 credential, for example `eddsa-jcs-2022`. When omitted, the first registered cryptosuite supporting the key type of the issuer verification method is used. It is ignored for data model 1.1, which is secured with a linked data signature suite instead. The `anoncreds-2023` cryptosuite is rejected, as it is only produced through the anoncreds link secret binding method.
+  - `W3cDataIntegrityApi.getSupportedCryptosuites` accepts an optional public JWK type, returning only the cryptosuites that support that key type.
+  - A received data model 2.0 credential is verified and stored as a `W3cV2CredentialRecord`. Deleting a credential of this format looks the record up in both the data model 1.1 and 2.0 stores, so the record type on the credential exchange record stays `'w3c'` for both versions.
+  - The anoncreds link secret binding method is rejected for data model 2.0 credentials, both when creating an offer and when issuing, as that binding method is defined for data model 1.1 and the `anoncredsvc-2023` cryptosuite only.
+  - Fixed the comparison of the offered and the received credential subject, which rejected any claim with a falsy value: a credential carrying a claim such as `0`, `false` or `''` was refused by the holder as not matching the offer. Claims are now compared by presence.
+- cfe86fa: TokenStatusList is a new standard module on the agent. It allows you to create/update/fetch token status lists. It is up to the user to host this, this can be easily done with the `statusList` you receive from the `agent.tokenStatusList.createTokenStatusList(...)` function. Updating the statuslist allows you to change the status list credential state from valid to invalid, but also update the expiry time, rotate certificates, change signing algorithm, etc. Signatures are the default and mac should only be used if the user is aware of the security implications and has good reason to do so.
+- Updated dependencies [9f4278b]
+- Updated dependencies [f127ff5]
+- Updated dependencies [5cfcadb]
+- Updated dependencies [84dfcf4]
+- Updated dependencies [fd5016d]
+- Updated dependencies [d45aec0]
+- Updated dependencies [5cfcadb]
+- Updated dependencies [097c831]
+- Updated dependencies [20d6ab1]
+- Updated dependencies [907f12f]
+- Updated dependencies [96dc69b]
+- Updated dependencies [7dfafeb]
+- Updated dependencies [3a3eb03]
+- Updated dependencies [23c354e]
+- Updated dependencies [907cc54]
+- Updated dependencies [339f4cc]
+- Updated dependencies [5cfcadb]
+- Updated dependencies [f127ff5]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [e97c18b]
+- Updated dependencies [121dd14]
+- Updated dependencies [b75467c]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [0a58888]
+- Updated dependencies [1e2088f]
+  - @credo-ts/core@0.7.1
+
 ## 0.7.0
 
 ### Minor Changes
