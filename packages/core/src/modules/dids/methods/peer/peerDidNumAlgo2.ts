@@ -2,7 +2,7 @@ import { CredoError } from '../../../../error'
 import type { JsonObject } from '../../../../types'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
 import { PublicJwk } from '../../../kms'
-import type { DidDocument, VerificationMethod } from '../../domain'
+import type { DidDocument, DidPurpose, VerificationMethod } from '../../domain'
 import { DidDocumentService } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import {
@@ -90,32 +90,26 @@ export function didToNumAlgo2DidDocument(did: string) {
 }
 
 export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
-  const purposeMapping = {
-    [DidPeerPurpose.Assertion]: didDocument.assertionMethod,
-    [DidPeerPurpose.Encryption]: didDocument.keyAgreement,
+  const purposeMapping: Array<[DidPeerPurpose, DidPurpose]> = [
+    [DidPeerPurpose.Assertion, 'assertionMethod'],
+    [DidPeerPurpose.Encryption, 'keyAgreement'],
     // FIXME: should verification be authentication or verificationMethod
     // verificationMethod is general so it doesn't make a lot of sense to add
     // it to the verificationMethod list
-    [DidPeerPurpose.Verification]: didDocument.authentication,
-    [DidPeerPurpose.CapabilityInvocation]: didDocument.capabilityInvocation,
-    [DidPeerPurpose.CapabilityDelegation]: didDocument.capabilityDelegation,
-  }
+    [DidPeerPurpose.Verification, 'authentication'],
+    [DidPeerPurpose.CapabilityInvocation, 'capabilityInvocation'],
+    [DidPeerPurpose.CapabilityDelegation, 'capabilityDelegation'],
+  ]
 
   let did = 'did:peer:2'
 
   const keys: { id: string; encoded: string }[] = []
 
-  for (const [purpose, entries] of Object.entries(purposeMapping)) {
+  for (const [purpose, entries] of purposeMapping) {
     // Not all entries are required to be defined
-    if (entries === undefined) continue
-
     // Dereference all entries to full verification methods
-    const dereferenced = entries.map((entry) =>
-      typeof entry === 'string' ? didDocument.dereferenceVerificationMethod(entry) : entry
-    )
-
     // Transform all verification methods into a fingerprint (multibase, multicodec)
-    for (const entry of dereferenced) {
+    for (const entry of didDocument.findVerificationMethodsByPurpose([entries])) {
       const key = getPublicJwkFromVerificationMethod(entry)
 
       // Encode as '.PurposeFingerprint'
