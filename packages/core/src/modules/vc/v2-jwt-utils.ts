@@ -60,10 +60,7 @@ export async function extractHolderFromPresentationCredentials(
     const dids = agentContext.resolve(DidsApi)
     const { didDocument, keys } = await dids.resolveCreatedDidDocumentWithKeys(holderDid)
 
-    const authenticationMethods =
-      didDocument.authentication
-        ?.map((entry) => (typeof entry === 'string' ? didDocument.dereferenceVerificationMethod(entry) : entry))
-        .filter((entry): entry is VerificationMethod => !!entry) ?? []
+    const authenticationMethods = didDocument.findVerificationMethodsByPurpose(['authentication'])
 
     const candidateMethods = authenticationMethods.filter((method) =>
       keys?.some(({ didDocumentRelativeKeyId }) => method.id.endsWith(didDocumentRelativeKeyId))
@@ -202,10 +199,9 @@ export async function getVerificationMethodForJwt(
     const supportedVerificationMethodTypes = getSupportedVerificationMethodTypesForPublicJwk(jwkClass)
 
     const didDocument = await didResolver.resolveDidDocument(agentContext, iss)
-    const verificationMethods =
-      didDocument.assertionMethod
-        ?.map((v) => (typeof v === 'string' ? didDocument.dereferenceVerificationMethod(v) : v))
-        .filter((v) => supportedVerificationMethodTypes.includes(v.type)) ?? []
+    const verificationMethods = didDocument.findVerificationMethodsByTypeAndPurpose(supportedVerificationMethodTypes, [
+      'assertionMethod',
+    ])
 
     if (verificationMethods.length === 0) {
       throw new CredoError(

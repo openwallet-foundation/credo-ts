@@ -148,6 +148,29 @@ export class DidDocument {
     throw new CredoError(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
   }
 
+  public findVerificationMethodsByPurpose(allowedPurposes: readonly DidVerificationMethods[]): VerificationMethod[] {
+    const methods: VerificationMethod[] = []
+
+    for (const purpose of allowedPurposes) {
+      for (const entry of this[purpose] ?? []) {
+        methods.push(typeof entry === 'string' ? this.dereferenceVerificationMethod(entry) : entry)
+      }
+    }
+
+    return methods
+  }
+
+  public findVerificationMethodsByTypeAndPurpose(
+    verificationMethodTypes: string | readonly string[],
+    allowedPurposes: readonly DidVerificationMethods[]
+  ): VerificationMethod[] {
+    const acceptedTypes = new Set(
+      typeof verificationMethodTypes === 'string' ? [verificationMethodTypes] : verificationMethodTypes
+    )
+
+    return this.findVerificationMethodsByPurpose(allowedPurposes).filter((method) => acceptedTypes.has(method.type))
+  }
+
   private matchKeyId(externalKeyId: string, didDocumentKeyId: string) {
     // Compact is did removed from start but only if it matches the id of this document.
     const compactExternalKeyId = externalKeyId.startsWith(this.id) ? externalKeyId.slice(this.id.length) : externalKeyId
@@ -326,41 +349,4 @@ export class DidDocument {
   public static fromJSON(didDocument: unknown) {
     return JsonTransformer.fromJSON(didDocument, DidDocument)
   }
-}
-
-/**
- * Extracting the verification method for signature type
- * @param keyType Signature key type
- * @param didDocument DidDocument
- * @param allowedPurposes Optional array of purposes to search in order. Defaults to all purposes.
- * @returns verification method
- */
-export async function findVerificationMethodByKeyType(
-  keyType: string,
-  didDocument: DidDocument,
-  allowedPurposes?: DidVerificationMethods[]
-): Promise<VerificationMethod | null> {
-  const allPurposes: DidVerificationMethods[] = [
-    'verificationMethod',
-    'authentication',
-    'keyAgreement',
-    'assertionMethod',
-    'capabilityInvocation',
-    'capabilityDelegation',
-  ]
-  const purposes = allowedPurposes ?? allPurposes
-  for (const purpose of purposes) {
-    const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
-    if (Array.isArray(key)) {
-      for (const method of key) {
-        if (typeof method !== 'string') {
-          if (method.type === keyType) {
-            return method
-          }
-        }
-      }
-    }
-  }
-
-  return null
 }

@@ -2,7 +2,7 @@ import { ClassValidationError } from '../../../../error/ClassValidationError'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import didExample123Fixture from '../../__tests__/__fixtures__/didExample123.json'
 import didExample456Invalid from '../../__tests__/__fixtures__/didExample456Invalid.json'
-import { DidDocument, findVerificationMethodByKeyType } from '../DidDocument'
+import { DidDocument } from '../DidDocument'
 import { DidCommV1Service, DidDocumentService, IndyAgentService } from '../service'
 import { VerificationMethod } from '../verificationMethod'
 
@@ -244,11 +244,100 @@ describe('Did | DidDocument', () => {
     })
   })
 
-  describe('findVerificationMethodByKeyType', () => {
-    it('return first verification method that match key type', async () => {
-      expect(await findVerificationMethodByKeyType('Ed25519VerificationKey2018', didDocumentInstance)).toBeInstanceOf(
-        VerificationMethod
+  describe('findVerificationMethodsByTypeAndPurpose', () => {
+    it('matches an inline method by type and relationship', () => {
+      const inlineMethod = new VerificationMethod({
+        id: 'did:example:123#inline-1',
+        type: 'RsaVerificationKey2018',
+        controller: 'did:example:123',
+        publicKeyPem: '-----BEGIN PUBLIC INLINE...',
+      })
+      const didDocument = new DidDocument({
+        id: 'did:example:123',
+        verificationMethod: [inlineMethod],
+        assertionMethod: [inlineMethod],
+      })
+      const method = didDocument.findVerificationMethodsByTypeAndPurpose('RsaVerificationKey2018', ['assertionMethod'])
+
+      expect(method[0]?.id).toBe('did:example:123#inline-1')
+    })
+
+    it('resolves referenced methods and preserves relationship entry order', () => {
+      const method = didDocumentInstance.findVerificationMethodsByTypeAndPurpose('RsaVerificationKey2018', [
+        'authentication',
+      ])
+
+      expect(method[0]?.id).toBe('did:example:123#key-1')
+    })
+
+    it('matches any accepted type without using input type order as preference', () => {
+      const method = didDocumentInstance.findVerificationMethodsByTypeAndPurpose(
+        ['RsaVerificationKey2018', 'Ed25519VerificationKey2018'],
+        ['verificationMethod']
       )
+
+      expect(method[0]?.id).toBe('did:example:123#key-1')
+    })
+
+    it('selects matching types from a mixed assertionMethod relationship', () => {
+      const ed25519Method = new VerificationMethod({
+        id: 'did:example:123#ed25519-2018',
+        type: 'Ed25519VerificationKey2018',
+        controller: 'did:example:123',
+        publicKeyBase58: 'ed25519-public-key',
+      })
+      const multikeyMethod = new VerificationMethod({
+        id: 'did:example:123#multikey',
+        type: 'Multikey',
+        controller: 'did:example:123',
+        publicKeyMultibase: 'z6Mk-multikey-public-key',
+      })
+      const authenticationMethod = new VerificationMethod({
+        id: 'did:example:123#multikey-authentication',
+        type: 'Multikey',
+        controller: 'did:example:123',
+        publicKeyMultibase: 'z6Mk-authentication-public-key',
+      })
+      const didDocument = new DidDocument({
+        id: 'did:example:123',
+        verificationMethod: [ed25519Method, multikeyMethod, authenticationMethod],
+        assertionMethod: [ed25519Method.id, multikeyMethod.id],
+        authentication: [authenticationMethod.id],
+      })
+
+      expect(
+        didDocument
+          .findVerificationMethodsByTypeAndPurpose('Ed25519VerificationKey2018', ['assertionMethod'])
+          .map((method) => method.id)
+      ).toEqual([ed25519Method.id])
+      expect(
+        didDocument.findVerificationMethodsByTypeAndPurpose('Multikey', ['authentication']).map((method) => method.id)
+      ).toEqual([authenticationMethod.id])
+      expect(
+        didDocument.findVerificationMethodsByTypeAndPurpose('Multikey', ['assertionMethod']).map((method) => method.id)
+      ).toEqual([multikeyMethod.id])
+      expect(
+        didDocument
+          .findVerificationMethodsByTypeAndPurpose(['Multikey', 'Ed25519VerificationKey2018'], ['assertionMethod'])
+          .map((method) => method.id)
+      ).toEqual([ed25519Method.id, multikeyMethod.id])
+      expect(didDocument.findVerificationMethodsByTypeAndPurpose('JsonWebKey2020', ['assertionMethod'])).toEqual([])
+    })
+
+    it('matches every type when no type filter is provided', () => {
+      const methods = didDocumentInstance.findVerificationMethodsByPurpose(['verificationMethod'])
+
+      expect(methods.map((method) => method.id)).toEqual([
+        'did:example:123#key-1',
+        'did:example:123#key-2',
+        'did:example:123#key-3',
+      ])
+    })
+
+    it('returns an empty array when no method matches the type and relationship', () => {
+      expect(
+        didDocumentInstance.findVerificationMethodsByTypeAndPurpose('Ed25519VerificationKey2018', ['authentication'])
+      ).toEqual([])
     })
   })
 })

@@ -695,16 +695,11 @@ export class DidExchangeProtocol {
     const json = didDocumentAttachment.getDataAsJson()
     const didDocument = JsonTransformer.fromJSON(json, DidDocument)
     const didDocumentKeys = didDocument.authentication
-      ?.map((authentication) => {
-        const verificationMethod =
-          typeof authentication === 'string'
-            ? didDocument.dereferenceVerificationMethod(authentication)
-            : authentication
-
-        const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-        return publicJwk
-      })
-      .concat(invitationKeys)
+      ? didDocument
+          .findVerificationMethodsByPurpose(['authentication'])
+          .map((verificationMethod) => getPublicJwkFromVerificationMethod(verificationMethod))
+          .concat(invitationKeys)
+      : undefined
 
     this.logger.trace('JWS verification result', { isValid, jwsSigners })
 

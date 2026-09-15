@@ -8,6 +8,7 @@ export {
 } from './AskarModuleConfig'
 export type {
   AskarPostgresConfig,
+  AskarPostgresConnectionParameters,
   AskarPostgresCredentials,
   AskarPostgresStorageConfig,
   AskarSqliteConfig,
