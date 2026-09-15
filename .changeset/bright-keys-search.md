@@ -1,5 +1,5 @@
 ---
-"@credo-ts/core": minor
+"@credo-ts/core": patch
 "@credo-ts/anoncreds": patch
 "@credo-ts/cheqd": patch
 "@credo-ts/didcomm": patch
