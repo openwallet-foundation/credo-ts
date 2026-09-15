@@ -28,7 +28,7 @@ import { W3cJsonLdVerifiableCredential } from '../models/W3cJsonLdVerifiableCred
 import { W3cJsonLdVerifiablePresentation } from '../models/W3cJsonLdVerifiablePresentation'
 import { CredentialIssuancePurpose } from '../proof-purposes/CredentialIssuancePurpose'
 import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
-import { Ed25519Signature2018 } from '../signature-suites'
+import { Ed25519Signature2018, Ed25519Signature2020 } from '../signature-suites'
 import { W3cJsonLdCredentialService } from '../W3cJsonLdCredentialService'
 import { customDocumentLoader } from './documentLoader'
 import { Ed25519Signature2018Fixtures } from './fixtures'
@@ -39,11 +39,13 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
   {
     suiteClass: Ed25519Signature2018,
     proofType: 'Ed25519Signature2018',
-
-    verificationMethodTypes: [
-      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-    ],
+    verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
+    supportedPublicJwkTypes: [Ed25519PublicJwk],
+  },
+  {
+    suiteClass: Ed25519Signature2020,
+    proofType: 'Ed25519Signature2020',
+    verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
     supportedPublicJwkTypes: [Ed25519PublicJwk],
   },
 ])
@@ -207,10 +209,13 @@ describe('W3cJsonLdCredentialsService', () => {
       it('should return the correct key types for Ed25519Signature2018 proof type', async () => {
         const verificationMethodTypes =
           w3cJsonLdCredentialService.getVerificationMethodTypesByProofType('Ed25519Signature2018')
-        expect(verificationMethodTypes).toEqual([
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-        ])
+        expect(verificationMethodTypes).toEqual([VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018])
+      })
+
+      it('should return the correct key types for Ed25519Signature2020 proof type', async () => {
+        const verificationMethodTypes =
+          w3cJsonLdCredentialService.getVerificationMethodTypesByProofType('Ed25519Signature2020')
+        expect(verificationMethodTypes).toEqual([VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020])
       })
     })
   })
@@ -299,7 +304,7 @@ describe('W3cJsonLdCredentialsService', () => {
         spy.mockRestore()
       })
 
-      it('does not call document loader with issuer VM DID URL for key lookup', async () => {
+      it('calls document loader with issuer VM DID URL for framing context validation', async () => {
         const innerLoader = vi.fn(async (url: string) => customDocumentLoader()(url))
 
         const trackingDocumentLoader = (_agentContext?: unknown) => innerLoader
@@ -319,7 +324,8 @@ describe('W3cJsonLdCredentialsService', () => {
         })
 
         const didUrlCalls = innerLoader.mock.calls.filter(([url]) => url.startsWith('did:'))
-        expect(didUrlCalls).toHaveLength(0)
+        expect(didUrlCalls).toHaveLength(1)
+        expect(didUrlCalls[0][0]).toEqual(verificationMethod)
 
         expect(result).toBeInstanceOf(W3cJsonLdVerifiableCredential)
         expect(asArray(result.proof)[0].verificationMethod).toEqual(verificationMethod)
@@ -364,6 +370,21 @@ describe('W3cJsonLdCredentialsService', () => {
             verificationMethod: authOnlyVmId,
           })
         ).rejects.toThrow(`Unable to locate verification method with id '${authOnlyVmId}' in purposes assertionMethod`)
+      })
+
+      it('should fail to sign credential when proofType is Ed25519Signature2020 but verificationMethod is Ed25519VerificationKey2018', async () => {
+        const credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
+
+        await expect(
+          w3cJsonLdCredentialService.signCredential(agentContext, {
+            format: ClaimFormat.LdpVc,
+            credential,
+            proofType: 'Ed25519Signature2020',
+            verificationMethod,
+          })
+        ).rejects.toThrow(
+          `Unsupported verification method type 'Ed25519VerificationKey2018' for proof type 'Ed25519Signature2020'. Supported types are: Ed25519VerificationKey2020`
+        )
       })
     })
 
@@ -554,6 +575,25 @@ describe('W3cJsonLdCredentialsService', () => {
         })
 
         expect(verifiablePresentation).toBeInstanceOf(W3cJsonLdVerifiablePresentation)
+      })
+
+      it('should fail to sign presentation when proofType is Ed25519Signature2020 but verificationMethod is Ed25519VerificationKey2018', async () => {
+        const presentation = new W3cPresentation({
+          verifiableCredential: [],
+        })
+
+        await expect(
+          w3cJsonLdCredentialService.signPresentation(agentContext, {
+            format: ClaimFormat.LdpVp,
+            presentation,
+            proofType: 'Ed25519Signature2020',
+            proofPurpose: new AuthenticationProofPurpose({ challenge: 'challenge-holder-binding' }),
+            challenge: 'challenge-holder-binding',
+            verificationMethod,
+          })
+        ).rejects.toThrow(
+          `Unsupported verification method type 'Ed25519VerificationKey2018' for proof type 'Ed25519Signature2020'. Supported types are: Ed25519VerificationKey2020`
+        )
       })
     })
 
@@ -759,6 +799,68 @@ describe('W3cJsonLdCredentialsService', () => {
           isValid: true,
           validations: { credentialSubjectAuthentication: { isValid: true } },
         })
+      })
+    })
+  })
+
+  describe('Signature Suites', () => {
+    describe('Ed25519Signature2018', () => {
+      it('should only accept Ed25519VerificationKey2018 and not mutate verification method', async () => {
+        const suite = new Ed25519Signature2018()
+
+        const valid2018Vm = {
+          '@context': 'https://w3id.org/security/suites/ed25519-2018/v1',
+          id: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH#z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+          type: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+          controller: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+          publicKeyBase58: 'B12NYF8RrR3h41TDCTtxGYBmBDBeLma6szGusngYz6vA',
+        }
+
+        const vmCopy = { ...valid2018Vm }
+        await expect(suite.assertVerificationMethod(valid2018Vm)).resolves.not.toThrow()
+        expect(valid2018Vm).toEqual(vmCopy)
+
+        const invalid2020Vm = {
+          '@context': 'https://w3id.org/security/suites/ed25519-2018/v1',
+          id: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH#z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+          type: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+          controller: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+          publicKeyMultibase: 'z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+        }
+
+        await expect(suite.assertVerificationMethod(invalid2020Vm)).rejects.toThrow(
+          "Unsupported verification method type 'Ed25519VerificationKey2020' for proof type 'Ed25519Signature2018'. Verification method type MUST be 'Ed25519VerificationKey2018'."
+        )
+      })
+    })
+
+    describe('Ed25519Signature2020', () => {
+      it('should only accept Ed25519VerificationKey2020 and not mutate verification method', async () => {
+        const suite = new Ed25519Signature2020()
+
+        const valid2020Vm = {
+          '@context': 'https://w3id.org/security/suites/ed25519-2020/v1',
+          id: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH#z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+          type: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+          controller: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+          publicKeyMultibase: 'z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+        }
+
+        const vmCopy = { ...valid2020Vm }
+        await expect(suite.assertVerificationMethod(valid2020Vm)).resolves.not.toThrow()
+        expect(valid2020Vm).toEqual(vmCopy)
+
+        const invalid2018Vm = {
+          '@context': 'https://w3id.org/security/suites/ed25519-2020/v1',
+          id: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH#z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+          type: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+          controller: 'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+          publicKeyBase58: 'B12NYF8RrR3h41TDCTtxGYBmBDBeLma6szGusngYz6vA',
+        }
+
+        await expect(suite.assertVerificationMethod(invalid2018Vm)).rejects.toThrow(
+          "Unsupported verification method type 'Ed25519VerificationKey2018' for proof type 'Ed25519Signature2020'. Verification method type MUST be 'Ed25519VerificationKey2020'."
+        )
       })
     })
   })
