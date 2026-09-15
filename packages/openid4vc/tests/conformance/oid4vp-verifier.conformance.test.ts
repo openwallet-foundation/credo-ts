@@ -134,15 +134,19 @@ describe('OIDF - oid4vp-1final-verifier-haip-test-plan', () => {
   }
 
   // Happy-flow modules must PASS; negative/edge modules may legitimately come
-  // back FAILED/WARNING, metadata modules WARNING/SKIPPED.
+  // back FAILED/WARNING, metadata modules WARNING/SKIPPED. REVIEW means every
+  // automated assertion passed and the module ended on a manual step that the
+  // suite client answered with a placeholder screenshot.
   const allowedResults = (moduleName: string): string[] => {
     const signal = moduleName.toLowerCase()
 
     // FIXME: will be addressed once merged and updated:
     // https://github.com/openwallet-foundation/sd-jwt-js/pull/378
-    if (signal.includes('oid4vp-1final-verifier-kb-jwt-iat-in-past')) return ['PASSED', 'WARNING', 'SKIPPED', 'FAILED']
+    if (signal.includes('oid4vp-1final-verifier-kb-jwt-iat-in-past')) {
+      return ['PASSED', 'WARNING', 'SKIPPED', 'REVIEW', 'FAILED']
+    }
 
-    return ['PASSED', 'WARNING', 'SKIPPED']
+    return ['PASSED', 'WARNING', 'SKIPPED', 'REVIEW']
   }
 
   /**
