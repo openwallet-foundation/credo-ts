@@ -1,6 +1,8 @@
 import { DependencyManager } from '../../../../plugins/DependencyManager'
+import { W3cV2DataIntegrityContextValidator } from '../../data-integrity'
 import { W3cCredentialsModule } from '../../W3cCredentialsModule'
 import { W3cCredentialsModuleConfig } from '../../W3cCredentialsModuleConfig'
+import { W3cV2CredentialsModule } from '../../W3cV2CredentialsModule'
 import { JsonLdModule } from '../JsonLdModule'
 import { JsonLdModuleConfig } from '../JsonLdModuleConfig'
 
@@ -21,6 +23,18 @@ describe('JsonLdModule', () => {
     expect(module.config.documentLoader).toBe(documentLoader)
   })
 
+  test('registering W3cV2CredentialsModule alongside a standalone JsonLdModule shares one configuration instance', () => {
+    const dependencyManager = new DependencyManager()
+    const documentLoader = vi.fn()
+
+    dependencyManager.registerModules({
+      jsonLd: new JsonLdModule({ documentLoader }),
+      w3cV2Credentials: new W3cV2CredentialsModule(),
+    })
+
+    expect(dependencyManager.resolve(JsonLdModuleConfig).documentLoader).toBe(documentLoader)
+  })
+
   test('does not mutate the supplied options', () => {
     const documentLoader = vi.fn()
     const options = { documentLoader }
@@ -37,6 +51,31 @@ describe('JsonLdModule', () => {
     module.register(dependencyManager)
 
     expect(dependencyManager.resolve(JsonLdModuleConfig)).toBe(dependencyManager.resolve(W3cCredentialsModuleConfig))
+  })
+
+  test('registering W3cV2CredentialsModule alongside W3cCredentialsModule shares one JsonLdModuleConfig instance', () => {
+    const dependencyManager = new DependencyManager()
+
+    dependencyManager.registerModules({
+      w3cCredentials: new W3cCredentialsModule(),
+      w3cV2Credentials: new W3cV2CredentialsModule(),
+    })
+
+    const config = dependencyManager.resolve(JsonLdModuleConfig)
+    const validator = dependencyManager.resolve(W3cV2DataIntegrityContextValidator)
+
+    // The validator must have been constructed with the same JsonLdModuleConfig instance
+    // that W3cCredentialsModule registered, not a second, independently-created one.
+    expect((validator as unknown as { jsonLdModuleConfig: JsonLdModuleConfig }).jsonLdModuleConfig).toBe(config)
+  })
+
+  test('W3cV2CredentialsModule registers its own JsonLdModuleConfig when registered standalone', () => {
+    const dependencyManager = new DependencyManager()
+
+    new W3cV2CredentialsModule().register(dependencyManager)
+
+    expect(dependencyManager.isRegistered(JsonLdModuleConfig)).toBe(true)
+    expect(() => dependencyManager.resolve(W3cV2DataIntegrityContextValidator)).not.toThrow()
   })
 
   // TODO: remove once W3cCredentialsModuleConfig's documentLoader fallback is removed.

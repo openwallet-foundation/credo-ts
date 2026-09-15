@@ -7,7 +7,7 @@ import { KeyManagementModule } from '../modules/kms'
 import { MdocModule } from '../modules/mdoc/MdocModule'
 import { SdJwtVcModule } from '../modules/sd-jwt-vc'
 import { TokenStatusListModule } from '../modules/token-status-list/TokenStatusListModule'
-import { W3cCredentialsModule } from '../modules/vc'
+import { W3cCredentialsModule, W3cV2CredentialsModule } from '../modules/vc'
 import { W3cDataIntegrityModule } from '../modules/w3c-di'
 import { X509Module } from '../modules/x509'
 import type { ApiModule, DependencyManager, Module } from '../plugins'
@@ -109,6 +109,7 @@ function getDefaultAgentModules() {
     genericRecords: () => new GenericRecordsModule(),
     dids: () => new DidsModule(),
     w3cCredentials: () => new W3cCredentialsModule(),
+    w3cV2Credentials: () => new W3cV2CredentialsModule(),
     w3cDataIntegrity: () => new W3cDataIntegrityModule(),
     cache: () => new CacheModule({ cache: new SingleContextStorageLruCache({ limit: 500 }) }),
     pex: () => new DifPresentationExchangeModule(),

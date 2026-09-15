@@ -16,10 +16,12 @@
 
 import {
   CacheModuleConfig,
+  DidDocument,
   DidDocumentService,
   DidRepository,
   InjectionSymbols,
   InMemoryLruCache,
+  VerificationMethod,
 } from '@credo-ts/core'
 import { resolveDIDFromLog } from 'didwebvh-ts'
 import { Subject } from 'rxjs'
@@ -185,6 +187,77 @@ describe('WebVhDidRegistrar boundary contracts', () => {
       expect(resolved.did).toBe(did)
       expect(resolved.meta.error).toBeUndefined()
       expect(resolved.doc.service).toBeDefined()
+    })
+  })
+
+  describe('assertionMethod conformance', () => {
+    it('references the created key from assertionMethod, and the log still resolves upstream', async () => {
+      const result = await registrar.create(agentContext, { domain: 'id.boundary-test.app', path: 'credo/01' })
+      const { did, didDocument } = result.didState
+      if (!did || !didDocument) throw new Error('create failed')
+
+      // Without an explicit assertionMethod, didwebvh-ts emits an empty array here, which makes
+      // every attested resource signed by this did unverifiable.
+      expect(didDocument.assertionMethod).toHaveLength(1)
+      const verificationMethod = didDocument.dereferenceKey(didDocument.assertionMethod?.[0] as string, [
+        'assertionMethod',
+      ])
+      expect(verificationMethod.publicKeyMultibase).toBe(didDocument.verificationMethod?.[0].publicKeyMultibase)
+
+      // The relative reference must not disturb the {SCID} substitution the initial entry is hashed over
+      const record = await repository.findSingleByQuery(agentContext, { did })
+      const log = record?.metadata.get(WebVhDidRecordMetadataKeys.DidLog) as WebVhDidLog
+      const resolved = await resolveDIDFromLog(log, { verifier: new WebVhDidCrypto(agentContext) })
+
+      expect(resolved.meta.error).toBeUndefined()
+      expect(resolved.doc.assertionMethod).toEqual(didDocument.assertionMethod)
+    })
+
+    it('preserves assertionMethod across an update that does not set it', async () => {
+      const createResult = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
+      const { did, didDocument } = createResult.didState
+      if (!did || !didDocument) throw new Error('create failed')
+      const assertionMethod = didDocument.assertionMethod
+
+      // didwebvh-ts resets the verification relationships whenever verification methods are
+      // supplied, so an update that only changes the services must not drop assertionMethod.
+      didDocument.assertionMethod = undefined
+      didDocument.service = [
+        new DidDocumentService({ id: '#test', type: 'TestService', serviceEndpoint: 'https://example.com' }),
+      ]
+      const updateResult = await registrar.update(agentContext, { did, didDocument })
+
+      expect(updateResult.didState.state).toBe('finished')
+      expect(updateResult.didState.didDocument?.assertionMethod).toEqual(assertionMethod)
+    })
+
+    it('drops assertionMethod references to verification methods an update removes', async () => {
+      const createResult = await registrar.create(agentContext, { domain: 'id.boundary-test.app' })
+      const { did, didDocument } = createResult.didState
+      if (!did || !didDocument) throw new Error('create failed')
+
+      // The update key must stay first, as the registrar signs the log entry with it
+      const updateKeyVerificationMethod = didDocument.verificationMethod?.[0] as VerificationMethod
+      const extraVerificationMethod = new VerificationMethod({
+        id: `${did}#extrakey1`,
+        type: 'Multikey',
+        controller: did,
+        publicKeyMultibase: 'z6MkukEa8GPVCEPy7EzRSbeHPXD1vsuPy3eD13CkDKQsoCGS',
+      })
+
+      didDocument.verificationMethod = [updateKeyVerificationMethod, extraVerificationMethod]
+      didDocument.assertionMethod = [updateKeyVerificationMethod.id, extraVerificationMethod.id]
+      const withExtraKey = await registrar.update(agentContext, { did, didDocument })
+      expect(withExtraKey.didState.didDocument?.assertionMethod).toHaveLength(2)
+
+      // Removing the extra key without restating assertionMethod must not carry its reference over
+      const rotated = withExtraKey.didState.didDocument as DidDocument
+      rotated.verificationMethod = [updateKeyVerificationMethod]
+      rotated.assertionMethod = undefined
+      const updateResult = await registrar.update(agentContext, { did, didDocument: rotated })
+
+      expect(updateResult.didState.state).toBe('finished')
+      expect(updateResult.didState.didDocument?.assertionMethod).toEqual([updateKeyVerificationMethod.id])
     })
   })
 

@@ -25,6 +25,7 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../repository'
+import { getClientAttestationToVerify } from '../util/walletAttestation'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 export async function handlePushedAuthorizationRequest(
@@ -85,15 +86,17 @@ export async function handlePushedAuthorizationRequest(
 
   const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })
 
+  // First session config, fall back to global config
+  const walletAttestationRequired = issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired
+
   const { clientAttestation, dpop } = await authorizationServer.verifyPushedAuthorizationRequest({
     authorizationRequest: parsedAuthorizationRequest.authorizationRequest,
     // First authorization server is the internal authorization server
     authorizationServerMetadata: issuerMetadata.authorizationServers[0],
     request,
     clientAttestation: {
-      ...parsedAuthorizationRequest.clientAttestation,
-      // First session config, fall back to global config
-      required: issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired,
+      ...getClientAttestationToVerify(config, parsedAuthorizationRequest.clientAttestation, walletAttestationRequired),
+      required: walletAttestationRequired,
       // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not set. Per draft §7.2/§7.3 the DPoP key
       // only has to match the attestation `cnf.jwk` in DPoP combined mode, which this endpoint doesn't support.
     },

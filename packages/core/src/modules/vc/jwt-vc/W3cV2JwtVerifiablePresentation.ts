@@ -65,22 +65,25 @@ export class W3cV2JwtVerifiablePresentation {
     // Validate the resolved credential according to the data model
     MessageValidator.validateSync(this.resolvedPresentation)
 
-    // Basic JWT validations to ensure compliance to the specification
+    // JWT validations to ensure compliance to the specification
     const jwt = this.jwt
     const header = jwt.header
     const payload = jwt.payload
+
+    if (header.alg === 'none') {
+      throw new CredoError(`The provided W3C VP JWT uses 'alg'='none', which is not allowed.`)
+    }
 
     if ('typ' in header && header.typ !== 'vp+jwt') {
       throw new CredoError(`The provided W3C VP JWT does not have the correct 'typ' header.`)
     }
 
-    if ('cyt' in header && header.cyt !== 'vp') {
-      throw new CredoError(`The provided W3C VP JWT does not have the correct 'cyt' header.`)
+    if ('cty' in header && header.cty !== 'vp') {
+      throw new CredoError(`The provided W3C VP JWT does not have the correct 'cty' header.`)
     }
 
-    const iss = header.iss ?? payload.iss
-    if (iss && this.resolvedPresentation.holderId) {
-      if (this.resolvedPresentation.holderId !== iss) {
+    if (payload.iss && this.resolvedPresentation.holderId) {
+      if (this.resolvedPresentation.holderId !== payload.iss) {
         throw new CredoError(`The provided W3C VP JWT has both 'iss' and 'holder' claims, but they differ.`)
       }
     }

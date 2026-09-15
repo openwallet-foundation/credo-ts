@@ -74,6 +74,18 @@ export class W3cV2EnvelopedVerifiableCredential {
   }
 }
 
+// Pre-construction shape detector
+export function isEnvelopedVerifiableCredentialEntry(
+  value: unknown
+): value is W3cV2EnvelopedVerifiableCredentialOptions {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+
+  const type = (value as { type?: unknown }).type
+  const values = Array.isArray(type) ? type : [type]
+
+  return values.some((entry) => entry === ENVELOPED_VERIFIABLE_CREDENTIAL_TYPE)
+}
+
 const jsonToClass = (v: unknown) => {
   if (!v || typeof v !== 'object') {
     throw new CredoError('Invalid plain W3cV2EnvelopedVerifiableCredential')
