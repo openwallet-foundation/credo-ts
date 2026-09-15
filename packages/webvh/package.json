@@ -54,7 +54,7 @@
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
     "didwebvh-ts": "^2.8.0",
-    "json-canonicalize": "^2.0.0",
+    "json-canonicalize": "^3.0.0",
     "tsyringe": "catalog:"
   },
   "devDependencies": {
