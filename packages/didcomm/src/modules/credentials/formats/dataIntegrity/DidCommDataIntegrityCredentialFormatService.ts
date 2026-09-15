@@ -50,6 +50,7 @@ import type {
   DidCommCredentialFormatProcessCredentialOptions,
   DidCommCredentialFormatProcessOptions,
 } from '../DidCommCredentialFormatServiceOptions'
+import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../shared/didCommSignedAttachment'
 import type {
   DidCommDataIntegrityCredentialFormat,
   DidCommDataIntegrityOfferCredentialFormat,
@@ -67,7 +68,6 @@ import type {
   W3C_VC_DATA_MODEL_VERSION,
 } from './dataIntegrityExchange'
 import { DataIntegrityCredentialOffer } from './dataIntegrityExchange'
-import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../shared/didCommSignedAttachment'
 
 const W3C_DATA_INTEGRITY_CREDENTIAL_OFFER = 'didcomm/w3c-di-vc-offer@v0.1'
 const W3C_DATA_INTEGRITY_CREDENTIAL_REQUEST = 'didcomm/w3c-di-vc-request@v0.1'
