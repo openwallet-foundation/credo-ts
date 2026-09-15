@@ -44,6 +44,7 @@ import {
   DidCommCredentialPreviewAttribute,
   DidCommCredentialRole,
   DidCommCredentialState,
+  DidCommDataIntegrityLinkSecretBindingProviderToken,
   DidCommProofExchangeRecord,
   DidCommProofRole,
   DidCommProofState,
@@ -55,6 +56,7 @@ import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
+import { AnonCredsLinkSecretBindingProvider } from '../src/formats/AnonCredsLinkSecretBindingProvider'
 import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { anoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
@@ -95,6 +97,7 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [DidCommDataIntegrityLinkSecretBindingProviderToken, new AnonCredsLinkSecretBindingProvider()],
     [JsonLdModuleConfig, new JsonLdModuleConfig()],
     [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
