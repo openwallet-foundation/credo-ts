@@ -43,6 +43,8 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     holderBinding,
     authorization,
   }) => {
+    if (!holderBinding) throw new Error('Expected holder binding in credential request mapper')
+
     // We sign the request with the first did:key did we have
     const didsApi = agentContext.dependencyManager.resolve(DidsApi)
     const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
