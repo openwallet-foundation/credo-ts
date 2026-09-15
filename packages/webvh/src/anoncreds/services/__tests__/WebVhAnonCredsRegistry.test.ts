@@ -21,6 +21,7 @@ import {
   mockResolvedDidRecord,
   mockRevRegDefResource,
   mockSchemaResource,
+  verificationMethodId,
 } from './mock-resources'
 
 // Mock the WebVhDidResolver
@@ -358,6 +359,11 @@ describe('WebVhAnonCredsRegistry', () => {
         },
       })
 
+      // The resource must be signed with a verification method authorized for assertionMethod
+      expect(mockDataIntegrityCreateProofOrThrow).toHaveBeenCalledWith(
+        expect.objectContaining({ verificationMethod: verificationMethodId, proofPurpose: 'assertionMethod' })
+      )
+
       const schemaResponse = await registry.getSchema(agentContext, schemaId)
 
       expect(mockResolveResource).toHaveBeenCalledWith(agentContext, schemaId)
@@ -644,7 +650,9 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, mockSchemaResource)
 
       expect(result).toBe(true)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(mockSchemaResource)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(mockSchemaResource, {
+        expectedProofPurpose: 'assertionMethod',
+      })
     })
 
     it('should return false for null proof', async () => {
@@ -659,7 +667,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
     it('should return false for undefined proof', async () => {
@@ -674,7 +682,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
     it('should return false for non-object proof', async () => {
@@ -689,7 +697,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
     it('should return false for wrong proof type', async () => {
@@ -705,7 +713,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
     it('should return false for wrong cryptosuite', async () => {
@@ -721,7 +729,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
     it('should return false for missing verificationMethod', async () => {
@@ -738,7 +746,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
     it('should return false for invalid verificationMethod type', async () => {
@@ -755,7 +763,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
     it('should return false for missing proofValue', async () => {
@@ -772,7 +780,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
     it('should return false for invalid proofValue type', async () => {
@@ -789,7 +797,7 @@ describe('WebVhAnonCredsRegistry', () => {
       })
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
     it('should return false when core Data Integrity verification reports failure', async () => {
@@ -809,7 +817,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
     it('should return false when core Data Integrity verification throws', async () => {
@@ -819,7 +827,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
     it('should return false when proof verification fails for invalid proof value', async () => {
@@ -842,7 +850,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
 
     it('should handle proof without optional fields', async () => {
@@ -850,7 +858,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
 
       expect(result).toBe(true)
-      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput)
+      expect(mockDataIntegrityVerifyProof).toHaveBeenCalledWith(testInput, { expectedProofPurpose: 'assertionMethod' })
     })
   })
 })
