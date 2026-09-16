@@ -19,6 +19,7 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
+import { getClientAttestationToVerify } from '../util/walletAttestation'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 // draft 09 §6.1 response header carrying a fresh client attestation challenge. The oid4vc-ts library
@@ -113,6 +114,9 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })
       let verificationResult: VerifyAccessTokenRequestReturn
 
+      // First session config, fall back to global config
+      const walletAttestationRequired = issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired
+
       if (grant.grantType === preAuthorizedCodeGrantIdentifier) {
         if (!issuanceSession.preAuthorizedCode) {
           throw new Oauth2ServerErrorResponseError(
@@ -134,9 +138,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           request: requestLike,
           authorizationServerMetadata: issuerMetadata.authorizationServers[0],
           clientAttestation: {
-            ...clientAttestation,
-            // First session config, fall back to global config
-            required: issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired,
+            ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
+            required: walletAttestationRequired,
 
             // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
             // with an `OAuth-Client-Attestation-PoP` header has its DPoP proof verified per RFC 9449
@@ -173,7 +176,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           authorizationServerMetadata: issuerMetadata.authorizationServers[0],
           request: requestLike,
           clientAttestation: {
-            ...clientAttestation,
+            ...getClientAttestationToVerify(config, clientAttestation, issuanceSession.walletAttestation?.required),
 
             // Ensure it matches the previously provided client id
             // FIXME: we don't verify that the attestation is issued by the same party
@@ -217,9 +220,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           request: requestLike,
           authorizationServerMetadata: issuerMetadata.authorizationServers[0],
           clientAttestation: {
-            ...clientAttestation,
-            // First session config, fall back to global config
-            required: issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired,
+            ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
+            required: walletAttestationRequired,
 
             // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
             // with an `OAuth-Client-Attestation-PoP` header has its DPoP proof verified per RFC 9449

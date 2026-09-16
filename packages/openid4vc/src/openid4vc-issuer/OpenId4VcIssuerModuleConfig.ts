@@ -100,6 +100,16 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   walletAttestationsRequired?: boolean
 
   /**
+   * Whether to ignore wallet attestations that a client provides when they are not required for the issuance
+   * session. By default a provided wallet attestation is always verified, and the request is rejected if it
+   * is invalid. When enabled, a wallet attestation that is not required is not verified, and it won't
+   * become required for the rest of the issuance session.
+   *
+   * @default false
+   */
+  ignoreWalletAttestationsWhenNotRequired?: boolean
+
+  /**
    * Whether a Client Attestation PoP `challenge` is required when a client authenticates using a client
    * attestation, as defined in draft 09 of OAuth 2.0 Attestation-Based Client Authentication.
    *
@@ -394,6 +404,16 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get walletAttestationsRequired(): boolean {
     return this.options.walletAttestationsRequired ?? false
+  }
+
+  /**
+   * Whether to ignore wallet attestations that a client provides when they are not required for the issuance
+   * session.
+   *
+   * @default false
+   */
+  public get ignoreWalletAttestationsWhenNotRequired(): boolean {
+    return this.options.ignoreWalletAttestationsWhenNotRequired ?? false
   }
 
   /**

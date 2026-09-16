@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
-    "@changesets/cli": "^2.29.8",
+    "@changesets/cli": "^3.0.2",
     "@credo-ts/action-menu": "workspace:*",
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/askar": "workspace:*",

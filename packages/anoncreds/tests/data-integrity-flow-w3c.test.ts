@@ -9,7 +9,7 @@ import {
   KeyDidRegistrar,
   KeyDidResolver,
   Kms,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredential,
@@ -71,6 +71,17 @@ const didsModuleConfig = new DidsModuleConfig({
   resolvers: [new KeyDidResolver()],
 })
 const fileSystem = new agentDependencies.FileSystem()
+const signatureSuiteRegistry = new SignatureSuiteRegistry([
+  {
+    suiteClass: Ed25519Signature2018,
+    proofType: 'Ed25519Signature2018',
+    verificationMethodTypes: [
+      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+    ],
+    supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
+  } satisfies SuiteInfo,
+])
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -88,18 +99,7 @@ const agentContext = getAgentContext({
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [JsonLdModuleConfig, new JsonLdModuleConfig()],
     [X509ModuleConfig, new X509ModuleConfig()],
-    [
-      SignatureSuiteToken,
-      {
-        suiteClass: Ed25519Signature2018,
-        proofType: 'Ed25519Signature2018',
-        verificationMethodTypes: [
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-        ],
-        supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
-      } satisfies SuiteInfo,
-    ],
+    [SignatureSuiteRegistry, signatureSuiteRegistry],
     [
       AskarModuleConfig,
       new AskarModuleConfig({
