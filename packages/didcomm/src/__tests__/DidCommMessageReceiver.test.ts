@@ -1,8 +1,11 @@
-import { JsonEncoder } from '@credo-ts/core'
+import { JsonEncoder, Kms } from '@credo-ts/core'
+import { vi } from 'vitest'
 import { Agent } from '../../../core/src/agent/Agent'
 import { getAgentOptions } from '../../../core/tests/helpers'
 import { setupSubjectTransports } from '../../../core/tests/transport'
+import type { DecryptedDidCommMessageContext } from '../DidCommEnvelopeService'
 import { DidCommMessageReceiver } from '../DidCommMessageReceiver'
+import { DidCommConnectionService } from '../modules/connections'
 import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
 
 describe('DidCommMessageReceiver', () => {
@@ -63,6 +66,51 @@ describe('DidCommMessageReceiver', () => {
       await expect(receiver.receiveMessage(signedMessage, { contextCorrelationId: 'default' })).rejects.toThrow(
         /v2 is not enabled/
       )
+
+      await agent.shutdown()
+    })
+
+    it('does not use anoncrypt plaintext from for connection lookup', async () => {
+      const agent = new Agent(
+        getAgentOptions(
+          'ReceiverAnoncryptTrustBoundaryTest',
+          { didcommVersions: ['v1', 'v2'] },
+          { connections: { autoCreateConnectionOnFirstMessage: true } },
+          undefined,
+          { requireDidcomm: true }
+        )
+      )
+      setupSubjectTransports([agent])
+      await agent.initialize()
+
+      const receiver = agent.dependencyManager.resolve(DidCommMessageReceiver)
+      const connectionService = agent.dependencyManager.resolve(DidCommConnectionService)
+      const findByDids = vi.spyOn(connectionService, 'findByDids')
+      const createConnection = vi.spyOn(connectionService, 'createConnection')
+      const decryptedMessage = {
+        plaintextMessage: {
+          id: 'anoncrypt-message',
+          type: 'https://example.com/didcomm-test/1.0/message',
+          from: 'did:example:eve',
+          to: ['did:example:alice'],
+        },
+        recipientKey: {} as Kms.PublicJwk<Kms.X25519PublicJwk>,
+      } satisfies DecryptedDidCommMessageContext
+
+      // Exercise connection selection with an unauthenticated plaintext sender.
+      await (
+        receiver as unknown as {
+          findConnection: (
+            agentContext: typeof agent.context,
+            decryptedMessage: DecryptedDidCommMessageContext
+          ) => Promise<unknown>
+        }
+      ).findConnection(agent.context, decryptedMessage)
+
+      // Unauthenticated plaintext from did not authorize connection lookup.
+      expect(findByDids).not.toHaveBeenCalled()
+      // Unauthenticated plaintext from did not trigger connection creation.
+      expect(createConnection).not.toHaveBeenCalled()
 
       await agent.shutdown()
     })
