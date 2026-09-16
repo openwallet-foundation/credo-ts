@@ -92,7 +92,10 @@ export async function verifyDidCommSignedAttachment(
   if (!signedAttachment.data.base64) throw new CredoError('Missing payload in signed attachment')
 
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
-  const { isValid, jwsSigners: [jwsSigner] } = await jwsService.verifyJws(agentContext, {
+  const {
+    isValid,
+    jwsSigners: [jwsSigner],
+  } = await jwsService.verifyJws(agentContext, {
     jws: {
       header: jws.header,
       protected: jws.protected,
