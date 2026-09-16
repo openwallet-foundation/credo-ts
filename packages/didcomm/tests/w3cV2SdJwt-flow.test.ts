@@ -23,8 +23,12 @@ import {
   getAgentContext,
   testLogger,
 } from '../../core/tests'
-import { DidCommCredentialExchangeRecord, DidCommCredentialRole, DidCommCredentialState } from '../src'
-import { DidCommW3cV2SdJwtCredentialFormatService } from '../src/modules/credentials/formats/w3cV2SdJwt/DidCommW3cV2SdJwtCredentialFormatService'
+import {
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+  DidCommW3cV2SdJwtCredentialFormatService,
+} from '../src'
 
 const agentConfig = getAgentConfig('W3cV2SdJwt format service test')
 const inMemoryStorageService = new InMemoryStorageService()
