@@ -233,7 +233,8 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
 
     const protectedJson = JsonEncoder.fromBase64Url(encryptedMessage.protected) as { skid?: string; alg?: string }
     const isAnoncrypt = protectedJson.alg === 'ECDH-ES+A256KW'
-    if (!isAnoncrypt && !protectedJson.skid) {
+    const authenticatedSkid = isAnoncrypt ? undefined : protectedJson.skid
+    if (!isAnoncrypt && !authenticatedSkid) {
       throw new CredoError('DIDComm v2 authcrypt requires skid in protected header')
     }
 
@@ -247,12 +248,26 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
 
     // Sign-then-encrypt: the decrypted bytes are a JWS. Verify it and use the inner plaintext.
     let unwrapped: DidCommV2PlaintextMessage = plaintext
+    let signerKid: string | undefined
     if (isDidCommV2SignedMessage(plaintext as unknown)) {
-      unwrapped = await this.verifySignedPlaintext(agentContext, plaintext as unknown as DidCommV2SignedMessage)
+      const verified = await this.verifySignedPlaintext(agentContext, plaintext as unknown as DidCommV2SignedMessage)
+      unwrapped = verified.plaintext
+      signerKid = verified.signerKid
       agentContext.config.logger.debug('Verified nested DIDComm v2 signed message', {
         type: unwrapped.type,
         from: unwrapped.from,
       })
+    }
+
+    if (authenticatedSkid) {
+      // The plaintext is trusted for sender addressing only after this check binds `from`
+      // to the authenticated encryption-layer `skid`. Anoncrypt has no authenticated sender.
+      const authenticatedSenderDid = this.validateAuthcryptAddressing(unwrapped, authenticatedSkid, matchedKid)
+      if (signerKid && !this.areEquivalentDids(this.didFromDidUrl(signerKid), authenticatedSenderDid)) {
+        throw new CredoError(
+          `Nested signer DID (${this.didFromDidUrl(signerKid)}) does not match authenticated sender DID (${authenticatedSenderDid})`
+        )
+      }
     }
 
     agentContext.config.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before normalization)', {
@@ -282,7 +297,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     agentContext: AgentContext,
     signedMessage: DidCommV2SignedMessage
   ): Promise<DidCommPlaintextMessage> {
-    const plaintext = await this.verifySignedPlaintext(agentContext, signedMessage)
+    const { plaintext } = await this.verifySignedPlaintext(agentContext, signedMessage)
     agentContext.config.logger.info(
       `Verified DIDComm v2 signed message of type '${plaintext.type}' from '${plaintext.from}'`
     )
@@ -298,10 +313,10 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
   private async verifySignedPlaintext(
     agentContext: AgentContext,
     signedMessage: DidCommV2SignedMessage
-  ): Promise<DidCommV2PlaintextMessage> {
+  ): Promise<{ plaintext: DidCommV2PlaintextMessage; signerKid: string }> {
     const dids = agentContext.dependencyManager.resolve(DidsApi)
 
-    const { plaintext } = await this.envelopeService.verifySignedMessage(agentContext, signedMessage, {
+    const { plaintext, signers } = await this.envelopeService.verifySignedMessage(agentContext, signedMessage, {
       resolveSignerJwk: async (kid) => {
         const signerDid = kid.split('#')[0]
         const didDocument = await dids.resolveDidDocument(signerDid)
@@ -310,7 +325,36 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       },
     })
 
-    return plaintext
+    return { plaintext, signerKid: signers[0].kid }
+  }
+
+  private validateAuthcryptAddressing(plaintext: DidCommV2PlaintextMessage, skid: string, matchedKid: string): string {
+    const authenticatedSenderDid = this.didFromDidUrl(skid)
+    if (!plaintext.from) {
+      throw new CredoError('DIDComm v2 authcrypt plaintext requires from')
+    }
+    if (!this.areEquivalentDids(plaintext.from, authenticatedSenderDid)) {
+      throw new CredoError(
+        `Plaintext from (${plaintext.from}) does not match authenticated sender DID (${authenticatedSenderDid})`
+      )
+    }
+
+    const recipientDid = this.didFromDidUrl(matchedKid)
+    if (!plaintext.to?.some((to) => to === matchedKid || this.areEquivalentDids(to, recipientDid))) {
+      throw new CredoError(`Plaintext to does not contain authenticated recipient (${matchedKid})`)
+    }
+
+    return authenticatedSenderDid
+  }
+
+  private didFromDidUrl(value: string): string {
+    return value.split('#', 1)[0]
+  }
+
+  private areEquivalentDids(left: string, right: string): boolean {
+    const shortLeft = getDidPeer4ShortFormForEquivalence(left)
+    const shortRight = getDidPeer4ShortFormForEquivalence(right)
+    return left === right || (shortLeft !== undefined && shortLeft === shortRight)
   }
 
   // ── Return routing ────────────────────────────────────────────────────

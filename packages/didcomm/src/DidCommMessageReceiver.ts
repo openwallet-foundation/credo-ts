@@ -279,7 +279,9 @@ export class DidCommMessageReceiver {
     const { plaintextMessage, recipientKey, senderKey } = decryptedMessage
 
     // DIDComm v2: plaintext has from/to (normalized from v2 shape). Try findByTheirDid first.
-    const from = plaintextMessage.from as string | undefined
+    // For both v1 and v2, senderKey is present only when the envelope authenticated a sender.
+    // In anoncrypt, plaintext `from` is untrusted metadata and cannot authorize lookup or creation.
+    const from = senderKey ? (plaintextMessage.from as string | undefined) : undefined
     const to = Array.isArray(plaintextMessage.to) ? plaintextMessage.to : undefined
     const fromPriorJws = plaintextMessage.from_prior as string | undefined
 
@@ -322,7 +324,7 @@ export class DidCommMessageReceiver {
     }
 
     // Connection lookup is by (ourDid, priorDid) pair per V2.
-    if (fromPriorJws && to?.length) {
+    if (fromPriorJws && to?.length && senderKey) {
       try {
         const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
         const payload = await didRotateV2Service.verifyFromPrior(agentContext, fromPriorJws)
