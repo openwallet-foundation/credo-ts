@@ -1,4 +1,4 @@
-import type { AgentContext, IDisclosureFrame } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
 import {
   ClaimFormat,
   CredoError,
@@ -8,6 +8,7 @@ import {
   Kms,
   parseDid,
   TypedArrayEncoder,
+  validateW3cV2SdJwtDisclosureFrame,
   W3cV2Credential,
   W3cV2CredentialRecord,
   W3cV2CredentialService,
@@ -38,8 +39,8 @@ import type {
   DidCommCredentialFormatProcessOptions,
 } from '../DidCommCredentialFormatServiceOptions'
 import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../shared/didCommSignedAttachment'
-import { claimPathsFromDisclosureFrame } from './claimPathsFromDisclosureFrame'
 import type { DidCommW3cV2SdJwtCredentialFormat } from './DidCommW3cV2SdJwtCredentialFormat'
+import { claimPathsFromDisclosureFrame, disclosureFrameFromClaimPaths } from './disclosureFrame'
 import {
   W3cV2SdJwtBindingMethods,
   type W3cV2SdJwtCredential,
@@ -85,6 +86,9 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     if (!w3cV2SdJwtFormat) throw new CredoError('Missing w3cV2SdJwt credential format data')
 
     const { credential, bindingRequired, disclosureFrame, didCommSignedAttachmentBinding } = w3cV2SdJwtFormat
+
+    // Reject a frame core would refuse to sign, rather than sending an offer that cannot be fulfilled
+    validateW3cV2SdJwtDisclosureFrame(disclosureFrame)
 
     // Build binding method if required
     let bindingMethod: W3cV2SdJwtBindingMethods | undefined
@@ -157,6 +161,9 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     if (credentialOffer.bindingRequired && !credentialOffer.bindingMethod?.didcommSignedAttachment) {
       throw new CredoError('Invalid credential offer. Missing binding method when binding_required is true.')
     }
+
+    // An offer naming a non-discloseable field can never be fulfilled by the issuer
+    validateW3cV2SdJwtDisclosureFrame(disclosureFrameFromClaimPaths(credentialOffer.selectivelyDisclosableClaims))
   }
 
   public async acceptOffer(
@@ -304,7 +311,7 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       holder,
       disclosureFrame:
         w3cV2SdJwtFormat?.disclosureFrame ??
-        this.buildDisclosureFrameFromClaims(credentialOffer.selectivelyDisclosableClaims),
+        disclosureFrameFromClaimPaths(credentialOffer.selectivelyDisclosableClaims),
     })
 
     const credentialIssue: W3cV2SdJwtCredential = {
@@ -435,43 +442,5 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     _options: DidCommCredentialFormatAutoRespondCredentialOptions
   ): Promise<boolean> {
     return true
-  }
-
-  /**
-   * Converts an array of JSONPath expressions (e.g. `$.credentialSubject.degree.name`)
-   * into an IDisclosureFrame for SD-JWT signing.
-   */
-  private buildDisclosureFrameFromClaims(claims?: string[]): IDisclosureFrame | undefined {
-    if (!claims || claims.length === 0) return undefined
-
-    const frame: IDisclosureFrame = {}
-
-    for (const path of claims) {
-      // Strip leading "$." prefix
-      const stripped = path.startsWith('$.') ? path.slice(2) : path
-      // Split on '.' and '[', normalizing "arr[0]" into ["arr", "0"]
-      const segments = stripped.split(/\.|\[|\]/).filter(Boolean)
-      if (segments.length === 0) continue
-
-      // Walk/create nested frame objects for intermediate segments
-      let current: IDisclosureFrame = frame
-      for (let i = 0; i < segments.length - 1; i++) {
-        const seg = segments[i]
-        if (!current[seg] || typeof current[seg] !== 'object' || Array.isArray(current[seg])) {
-          current[seg] = {} as IDisclosureFrame
-        }
-        current = current[seg] as IDisclosureFrame
-      }
-
-      // Add the last segment to _sd. Numeric indices must be numbers for array item disclosure.
-      if (!current._sd) current._sd = []
-      const claim = segments[segments.length - 1]
-      const sdValue = /^\d+$/.test(claim) ? Number(claim) : claim
-      if (!current._sd.includes(sdValue as string)) {
-        current._sd.push(sdValue as string)
-      }
-    }
-
-    return frame
   }
 }

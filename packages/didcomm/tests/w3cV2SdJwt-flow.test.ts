@@ -24,6 +24,8 @@ import {
   testLogger,
 } from '../../core/tests'
 import {
+  DidCommAttachment,
+  DidCommAttachmentData,
   DidCommCredentialExchangeRecord,
   DidCommCredentialRole,
   DidCommCredentialState,
@@ -108,6 +110,90 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
         credentialFormats: { w3cV2SdJwt: { credentialSubjectId: 'did:key:zSomeoneElse' } },
       })
     ).rejects.toThrow(/does not match expected id/)
+  })
+
+  test('createOffer rejects a disclosure frame naming a non-discloseable field', async () => {
+    await expect(
+      formatService.createOffer(agentContext, {
+        credentialExchangeRecord: new DidCommCredentialExchangeRecord({
+          protocolVersion: 'v2',
+          state: DidCommCredentialState.OfferSent,
+          threadId: '5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d',
+          role: DidCommCredentialRole.Issuer,
+        }),
+        credentialFormats: {
+          w3cV2SdJwt: {
+            credential: {
+              '@context': ['https://www.w3.org/ns/credentials/v2'],
+              type: ['VerifiableCredential'],
+              issuer: issuerKdv.did,
+              validFrom: new Date().toISOString(),
+              credentialSubject: { name: 'John' },
+            },
+            disclosureFrame: { _sd: ['type'] },
+          },
+        },
+      })
+    ).rejects.toThrow("'type' property cannot be selectively disclosed")
+  })
+
+  test('createOffer accepts a nested claim sharing a name with a non-discloseable field', async () => {
+    const { attachment } = await formatService.createOffer(agentContext, {
+      credentialExchangeRecord: new DidCommCredentialExchangeRecord({
+        protocolVersion: 'v2',
+        state: DidCommCredentialState.OfferSent,
+        threadId: '6b7c8d9e-0f1a-4b2c-8d3e-4f5a6b7c8d9e',
+        role: DidCommCredentialRole.Issuer,
+      }),
+      credentialFormats: {
+        w3cV2SdJwt: {
+          credential: {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuerKdv.did,
+            validFrom: new Date().toISOString(),
+            credentialSubject: { type: 'Person', name: 'John' },
+          },
+          disclosureFrame: { credentialSubject: { _sd: ['type'] } },
+        },
+      },
+    })
+
+    expect(attachment.getDataAsJson()).toMatchObject({
+      selectively_disclosable_claims: ['$.credentialSubject.type'],
+    })
+  })
+
+  test('processOffer rejects an offer naming a non-discloseable field', async () => {
+    // An offer a conformant issuer would not send, but a remote one might
+    const offerAttachment = new DidCommAttachment({
+      id: 'offer-attachment-id',
+      mimeType: 'application/json',
+      data: new DidCommAttachmentData({
+        json: {
+          selectively_disclosable_claims: ['$.type'],
+          credential: {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuerKdv.did,
+            validFrom: new Date().toISOString(),
+            credentialSubject: { name: 'John' },
+          },
+        },
+      }),
+    })
+
+    await expect(
+      formatService.processOffer(agentContext, {
+        credentialExchangeRecord: new DidCommCredentialExchangeRecord({
+          protocolVersion: 'v2',
+          state: DidCommCredentialState.OfferReceived,
+          threadId: '7c8d9e0f-1a2b-4c3d-8e4f-5a6b7c8d9e0f',
+          role: DidCommCredentialRole.Holder,
+        }),
+        attachment: offerAttachment,
+      })
+    ).rejects.toThrow("'type' property cannot be selectively disclosed")
   })
 })
 
