@@ -41,8 +41,8 @@ import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '..
 import { claimPathsFromDisclosureFrame } from './claimPathsFromDisclosureFrame'
 import type { DidCommW3cV2SdJwtCredentialFormat } from './DidCommW3cV2SdJwtCredentialFormat'
 import {
-  W3cV2SdJwtBindingMethod,
-  type W3cV2SdJwtCredentialIssue,
+  W3cV2SdJwtBindingMethods,
+  type W3cV2SdJwtCredential,
   W3cV2SdJwtCredentialOffer,
   type W3cV2SdJwtCredentialRequest,
   type W3cV2SdJwtCredentialRequestBindingProof,
@@ -86,20 +86,8 @@ export class DidCommW3cV2SdJwtCredentialFormatService
 
     const { credential, bindingRequired, disclosureFrame, didCommSignedAttachmentBinding } = w3cV2SdJwtFormat
 
-    const credentialJson = credential instanceof W3cV2Credential ? JsonTransformer.toJSON(credential) : credential
-
-    if ('proof' in credentialJson) throw new CredoError('The offered credential MUST NOT contain any proofs.')
-
-    // Validate credential as VCDM 2.0 (with offer exceptions: issuer/validFrom can be missing)
-    const credentialToValidate = {
-      ...credentialJson,
-      issuer: credentialJson.issuer ?? 'https://placeholder.com',
-      validFrom: credentialJson.validFrom ?? new Date().toISOString(),
-    }
-    JsonTransformer.fromJSON(credentialToValidate, W3cV2Credential)
-
     // Build binding method if required
-    let bindingMethod: W3cV2SdJwtBindingMethod | undefined
+    let bindingMethod: W3cV2SdJwtBindingMethods | undefined
     if (bindingRequired) {
       if (!didCommSignedAttachmentBinding) {
         throw new CredoError('Missing didCommSignedAttachmentBinding when bindingRequired is true')
@@ -115,7 +103,7 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       if (algsSupported.length === 0) throw new CredoError('No supported JWA signature algorithms found.')
       if (didMethodsSupported.length === 0) throw new CredoError('No supported DID methods found.')
 
-      bindingMethod = new W3cV2SdJwtBindingMethod({
+      bindingMethod = new W3cV2SdJwtBindingMethods({
         didcommSignedAttachment: new W3cV2SdJwtDidCommSignedAttachmentBindingMethod({
           algsSupported,
           didMethodsSupported,
@@ -128,8 +116,19 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       bindingRequired,
       bindingMethod,
       selectivelyDisclosableClaims: disclosureFrame ? claimPathsFromDisclosureFrame(disclosureFrame) : undefined,
-      credential: credentialJson,
+      credential,
     })
+
+    const credentialJson = credentialOffer.credential
+    if ('proof' in credentialJson) throw new CredoError('The offered credential MUST NOT contain any proofs.')
+
+    // Validate credential as VCDM 2.0 (with offer exceptions: issuer/validFrom can be missing)
+    const credentialToValidate = {
+      ...credentialJson,
+      issuer: credentialJson.issuer ?? 'https://placeholder.com',
+      validFrom: credentialJson.validFrom ?? new Date().toISOString(),
+    }
+    JsonTransformer.fromJSON(credentialToValidate, W3cV2Credential)
 
     const format = new DidCommCredentialFormatSpec({
       attachmentId,
@@ -243,7 +242,7 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     const credentialRequest = requestAttachment.getDataAsJson<W3cV2SdJwtCredentialRequest>()
 
     // Resolve holder binding from signed attachment
-    let holderBinding = w3cV2SdJwtFormat?.holderBinding
+    let holder = w3cV2SdJwtFormat?.holder
     if (credentialRequest.binding_proof?.didcomm_signed_attachment) {
       if (!credentialOffer.bindingMethod?.didcommSignedAttachment) {
         throw new CredoError('Cannot issue credential with a binding method that was not offered')
@@ -266,8 +265,8 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       }
 
       // Derive holder binding from kid if not explicitly provided
-      if (!holderBinding) {
-        holderBinding = { method: 'did', didUrl: kid }
+      if (!holder) {
+        holder = { method: 'did', didUrl: kid }
       }
     } else if (credentialOffer.bindingRequired) {
       throw new CredoError('Binding is required but no binding proof was provided')
@@ -277,17 +276,18 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
     const credential = JsonTransformer.fromJSON(credentialOffer.credential, W3cV2Credential)
 
-    // Set credentialSubject.id from the holder binding DID
-    if (holderBinding?.method === 'did') {
-      const holderDid = parseDid(holderBinding.didUrl).did
-      assertAndSetCredentialSubjectId(credential, holderDid)
+    // Set credentialSubject.id from the caller supplied id and/or the holder binding DID. Applying both
+    // in turn means a conflict between them is rejected rather than silently resolved.
+    assertAndSetCredentialSubjectId(credential, w3cV2SdJwtFormat?.credentialSubjectId)
+    if (holder?.method === 'did') {
+      assertAndSetCredentialSubjectId(credential, parseDid(holder.didUrl).did)
     }
 
     // Determine the verification method and signing algorithm. Only `assertionMethod` is allowed, as
     // that is the purpose core requires when signing a W3C VCDM 2.0 SD-JWT credential.
     const { verificationMethod } = await getIssuerVerificationMethod(agentContext, {
       issuerId: credential.issuerId,
-      verificationMethodId: w3cV2SdJwtFormat?.verificationMethod,
+      verificationMethodId: w3cV2SdJwtFormat?.issuerVerificationMethod,
       allowedPurposes: ['assertionMethod'],
     })
 
@@ -301,13 +301,13 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       credential,
       verificationMethod: verificationMethod.id,
       alg,
-      holder: holderBinding,
+      holder,
       disclosureFrame:
         w3cV2SdJwtFormat?.disclosureFrame ??
         this.buildDisclosureFrameFromClaims(credentialOffer.selectivelyDisclosableClaims),
     })
 
-    const credentialIssue: W3cV2SdJwtCredentialIssue = {
+    const credentialIssue: W3cV2SdJwtCredential = {
       credential: verifiableCredential.encoded as string,
     }
 
@@ -327,7 +327,7 @@ export class DidCommW3cV2SdJwtCredentialFormatService
   ): Promise<void> {
     const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
 
-    const { credential: compactSdJwt } = attachment.getDataAsJson<W3cV2SdJwtCredentialIssue>()
+    const { credential: compactSdJwt } = attachment.getDataAsJson<W3cV2SdJwtCredential>()
     if (!compactSdJwt) throw new CredoError('Missing credential in credential attachment')
 
     // Parse and validate

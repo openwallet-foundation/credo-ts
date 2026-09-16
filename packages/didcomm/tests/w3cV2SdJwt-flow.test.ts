@@ -76,7 +76,80 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
   test('issuance flow with didcomm_signed_attachment binding', async () => {
     await issuanceFlowTest({ issuerKdv, holderKdv, bindingRequired: true })
   })
+
+  test('sets the credential subject id from the credentialSubjectId option for a bearer credential', async () => {
+    const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv)
+
+    const { attachment: credentialAttachment } = await formatService.acceptRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      requestAttachment,
+      offerAttachment,
+      credentialFormats: { w3cV2SdJwt: { credentialSubjectId: holderKdv.did } },
+    })
+
+    const { credential } = credentialAttachment.getDataAsJson<{ credential: string }>()
+    const verifiableCredential = W3cV2SdJwtVerifiableCredential.fromCompact(credential)
+
+    expect(verifiableCredential.resolvedCredential.credentialSubject).toMatchObject({ id: holderKdv.did })
+    // A bearer credential is not bound to a holder key
+    expect(verifiableCredential.sdJwt.prettyClaims.cnf).toBeUndefined()
+  })
+
+  test('rejects a credentialSubjectId conflicting with the subject id of the offered credential', async () => {
+    const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv, {
+      credentialSubjectId: holderKdv.did,
+    })
+
+    await expect(
+      formatService.acceptRequest(agentContext, {
+        credentialExchangeRecord: issuerCredentialRecord,
+        requestAttachment,
+        offerAttachment,
+        credentialFormats: { w3cV2SdJwt: { credentialSubjectId: 'did:key:zSomeoneElse' } },
+      })
+    ).rejects.toThrow(/does not match expected id/)
+  })
 })
+
+/**
+ * Runs the offer and request steps for an unbound credential issued by `issuer`, optionally with a
+ * subject id already set on the offered credential.
+ */
+async function offerAndRequest(
+  issuer: CreateDidKidVerificationMethodReturn,
+  { credentialSubjectId }: { credentialSubjectId?: string } = {}
+) {
+  const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
+    protocolVersion: 'v2',
+    state: DidCommCredentialState.OfferSent,
+    threadId: '0b6f6a05-9d3e-4f0a-8a3f-2c1d4e5b6a7c',
+    role: DidCommCredentialRole.Issuer,
+  })
+
+  const { attachment: offerAttachment } = await formatService.createOffer(agentContext, {
+    credentialExchangeRecord: issuerCredentialRecord,
+    credentialFormats: {
+      w3cV2SdJwt: {
+        credential: {
+          '@context': ['https://www.w3.org/ns/credentials/v2'],
+          type: ['VerifiableCredential'],
+          issuer: issuer.did,
+          validFrom: new Date().toISOString(),
+          credentialSubject: { ...(credentialSubjectId ? { id: credentialSubjectId } : {}), name: 'John' },
+        },
+        bindingRequired: false,
+      },
+    },
+  })
+
+  const { attachment: requestAttachment } = await formatService.acceptOffer(agentContext, {
+    credentialExchangeRecord: issuerCredentialRecord,
+    offerAttachment,
+    credentialFormats: { w3cV2SdJwt: {} },
+  })
+
+  return { issuerCredentialRecord, offerAttachment, requestAttachment }
+}
 
 async function issuanceFlowTest(options: {
   issuerKdv: CreateDidKidVerificationMethodReturn

@@ -1,14 +1,18 @@
 import type { IDisclosureFrame, JsonObject, Kms, SdJwtVcHolderBinding, W3cV2Credential } from '@credo-ts/core'
 import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
-import type {
-  W3cV2SdJwtCredentialIssue,
-  W3cV2SdJwtCredentialOffer,
-  W3cV2SdJwtCredentialRequest,
-} from './w3cV2SdJwtExchange'
+import type { W3cV2SdJwtCredential, W3cV2SdJwtCredentialOffer, W3cV2SdJwtCredentialRequest } from './w3cV2SdJwtExchange'
 
 export interface DidCommW3cV2SdJwtSignedAttachmentCreateOfferOptions {
   didMethodsSupported?: string[]
   algsSupported?: string[]
+}
+
+/**
+ * Options for the holder to create a `didcomm_signed_attachment` binding proof, sent in the request.
+ */
+export interface DidCommW3cV2SdJwtSignedAttachmentCredentialRequestOptions {
+  kid: string
+  alg?: string
 }
 
 export interface DidCommW3cV2SdJwtOfferCredentialFormat {
@@ -19,14 +23,41 @@ export interface DidCommW3cV2SdJwtOfferCredentialFormat {
 }
 
 export interface DidCommW3cV2SdJwtAcceptOfferFormat {
-  didCommSignedAttachment?: DidCommSignedAttachmentCredentialOfferOptions
+  didCommSignedAttachment?: DidCommW3cV2SdJwtSignedAttachmentCredentialRequestOptions
 }
 
 export interface DidCommW3cV2SdJwtAcceptRequestFormat {
-  verificationMethod?: string
+  /**
+   * The verification method of the credential issuer to sign the credential with. MUST belong to the
+   * issuer of the credential and be listed under the `assertionMethod` purpose. When omitted, the first
+   * `assertionMethod` verification method of the issuer is used.
+   */
+  issuerVerificationMethod?: string
+
+  /**
+   * The JWA signature algorithm to sign the credential with. When omitted, the first algorithm
+   * supported by both the issuer key and the agent is used.
+   */
   alg?: Kms.KnownJwaSignatureAlgorithm
+
+  /**
+   * The disclosure frame determining which claims are selectively disclosable. When omitted, it is
+   * derived from the `selectively_disclosable_claims` of the offer.
+   */
   disclosureFrame?: IDisclosureFrame
-  holderBinding?: SdJwtVcHolderBinding
+
+  /**
+   * The holder to bind the credential to, adding a `cnf` claim to the issued credential. When omitted,
+   * it is derived from the binding proof in the request.
+   */
+  holder?: SdJwtVcHolderBinding
+
+  /**
+   * The id to set on the credential subject. Useful for a bearer credential, where there is no binding
+   * proof to derive the subject id from. Conflicts with a subject id already present on the offered
+   * credential, or derived from the binding proof, are rejected.
+   */
+  credentialSubjectId?: string
 }
 
 export interface DidCommW3cV2SdJwtCredentialFormat extends DidCommCredentialFormat {
@@ -44,11 +75,6 @@ export interface DidCommW3cV2SdJwtCredentialFormat extends DidCommCredentialForm
     proposal: never
     offer: W3cV2SdJwtCredentialOffer
     request: W3cV2SdJwtCredentialRequest
-    credential: W3cV2SdJwtCredentialIssue
+    credential: W3cV2SdJwtCredential
   }
-}
-
-export interface DidCommSignedAttachmentCredentialOfferOptions {
-  kid: string
-  alg?: string
 }
