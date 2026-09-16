@@ -78,6 +78,9 @@ export const KnownJwaKeyAgreementAlgorithms = {
   ECDH_ES_A256KW: 'ECDH-ES+A256KW',
 
   ECDH_HSALSA20: 'ECDH-HSALSA20',
+
+  /** DIDComm v2 authcrypt; draft-madden-jose-ecdh-1pu */
+  ECDH_1PU_A256KW: 'ECDH-1PU+A256KW',
 } as const
 const zKnownJwaKeyAgreementAlgorithm = z.enum(recordToUnion(KnownJwaKeyAgreementAlgorithms))
 export type KnownJwaKeyAgreementAlgorithm = z.output<typeof zKnownJwaKeyAgreementAlgorithm>

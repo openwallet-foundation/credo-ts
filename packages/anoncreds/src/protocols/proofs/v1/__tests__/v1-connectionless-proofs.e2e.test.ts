@@ -360,6 +360,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       `Connectionless proofs with mediator Mediator-${unique}`,
       {
         endpoints: ['rxjs:mediator'],
+        didcommVersions: ['v1'],
         mediator: {
           autoAcceptMediationRequests: true,
         },
