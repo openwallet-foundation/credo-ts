@@ -4,7 +4,6 @@ import {
   CredoError,
   DidsApi,
   getPublicJwkFromVerificationMethod,
-  JsonEncoder,
   JsonTransformer,
   Kms,
   parseDid,
@@ -14,8 +13,12 @@ import {
   W3cV2CredentialService,
   W3cV2SdJwtVerifiableCredential,
 } from '@credo-ts/core'
-import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
+import type { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
 import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialFormatSpec'
+import { assertAndSetCredentialSubjectId } from '../../util/credentialSubject'
+import { getFormatDataAttachment } from '../../util/formatData'
+import { getSupportedJwaSignatureAlgorithms, selectJwaSignatureAlgorithm } from '../../util/signatureAlgorithm'
+import { getIssuerVerificationMethod } from '../../util/verificationMethod'
 import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
 import type {
   DidCommCredentialFormatAcceptOfferOptions,
@@ -106,7 +109,7 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       const didsApi = agentContext.dependencyManager.resolve(DidsApi)
 
       const algsSupported =
-        didCommSignedAttachmentBinding.algsSupported ?? this.getSupportedJwaSignatureAlgorithms(agentContext)
+        didCommSignedAttachmentBinding.algsSupported ?? getSupportedJwaSignatureAlgorithms(agentContext)
       const didMethodsSupported = didCommSignedAttachmentBinding.didMethodsSupported ?? didsApi.supportedResolverMethods
 
       if (algsSupported.length === 0) throw new CredoError('No supported JWA signature algorithms found.')
@@ -133,7 +136,7 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       format: W3C_V2_SD_JWT_OFFER,
     })
 
-    const attachment = this.getFormatData(JsonTransformer.toJSON(credentialOffer), format.attachmentId)
+    const attachment = getFormatDataAttachment(JsonTransformer.toJSON(credentialOffer), format.attachmentId)
     return { format, attachment }
   }
 
@@ -201,7 +204,7 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       format: W3C_V2_SD_JWT_REQUEST,
     })
 
-    const attachment = this.getFormatData(credentialRequest, format.attachmentId)
+    const attachment = getFormatDataAttachment(credentialRequest, format.attachmentId)
     return {
       format,
       attachment,
@@ -277,36 +280,26 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     // Set credentialSubject.id from the holder binding DID
     if (holderBinding?.method === 'did') {
       const holderDid = parseDid(holderBinding.didUrl).did
-      this.assertAndSetCredentialSubjectId(credential, holderDid)
+      assertAndSetCredentialSubjectId(credential, holderDid)
     }
 
-    // Determine verification method and signing algorithm
-    let verificationMethod = w3cV2SdJwtFormat?.verificationMethod
-    let alg = w3cV2SdJwtFormat?.alg
+    // Determine the verification method and signing algorithm. Only `assertionMethod` is allowed, as
+    // that is the purpose core requires when signing a W3C VCDM 2.0 SD-JWT credential.
+    const { verificationMethod } = await getIssuerVerificationMethod(agentContext, {
+      issuerId: credential.issuerId,
+      verificationMethodId: w3cV2SdJwtFormat?.verificationMethod,
+      allowedPurposes: ['assertionMethod'],
+    })
 
-    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-    const issuerDid = typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id
-    const didDocument = await didsApi.resolveDidDocument(issuerDid)
-
-    if (!verificationMethod) {
-      const vms = didDocument.assertionMethod ?? didDocument.authentication ?? didDocument.verificationMethod
-      if (!vms || vms.length === 0) {
-        throw new CredoError('No verification method found for issuer DID')
-      }
-      verificationMethod = typeof vms[0] === 'string' ? vms[0] : vms[0].id
-    }
-
-    if (!alg) {
-      const vm = didDocument.dereferenceKey(verificationMethod)
-      const vmJwk = getPublicJwkFromVerificationMethod(vm)
-      alg = vmJwk.supportedSignatureAlgorithms[0] as Kms.KnownJwaSignatureAlgorithm
-    }
-    if (!alg) throw new CredoError('No supported signing algorithm found')
+    const alg = selectJwaSignatureAlgorithm(agentContext, {
+      publicJwk: getPublicJwkFromVerificationMethod(verificationMethod),
+      requestedAlg: w3cV2SdJwtFormat?.alg,
+    })
 
     const verifiableCredential = await w3cV2CredentialService.signCredential(agentContext, {
       format: ClaimFormat.SdJwtW3cVc,
       credential,
-      verificationMethod,
+      verificationMethod: verificationMethod.id,
       alg,
       holder: holderBinding,
       disclosureFrame:
@@ -323,13 +316,7 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       format: W3C_V2_SD_JWT_CREDENTIAL,
     })
 
-    const attachment = new DidCommAttachment({
-      id: format.attachmentId,
-      mimeType: 'application/json',
-      data: new DidCommAttachmentData({
-        base64: JsonEncoder.toBase64(credentialIssue),
-      }),
-    })
+    const attachment = getFormatDataAttachment(credentialIssue, format.attachmentId)
 
     return { format, attachment }
   }
@@ -451,25 +438,6 @@ export class DidCommW3cV2SdJwtCredentialFormatService
   }
 
   /**
-   * Sets the credentialSubject.id to the given holder DID if not already set.
-   * Throws if the credential has multiple subjects or if the existing id conflicts.
-   */
-  private assertAndSetCredentialSubjectId(credential: W3cV2Credential, credentialSubjectId: string): void {
-    if (Array.isArray(credential.credentialSubject)) {
-      throw new CredoError('Invalid credential subject. Cannot determine the subject to set holder id on.')
-    }
-
-    const existingId = credential.credentialSubject.id
-    if (existingId && existingId !== credentialSubjectId) {
-      throw new CredoError(`Credential subject id '${existingId}' does not match holder DID '${credentialSubjectId}'.`)
-    }
-
-    if (!existingId) {
-      credential.credentialSubject.id = credentialSubjectId
-    }
-  }
-
-  /**
    * Converts an array of JSONPath expressions (e.g. `$.credentialSubject.degree.name`)
    * into an IDisclosureFrame for SD-JWT signing.
    */
@@ -505,26 +473,5 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     }
 
     return frame
-  }
-
-  private getFormatData(data: unknown, id: string): DidCommAttachment {
-    return new DidCommAttachment({
-      id,
-      mimeType: 'application/json',
-      data: new DidCommAttachmentData({
-        base64: JsonEncoder.toBase64(data),
-      }),
-    })
-  }
-
-  private getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): Kms.KnownJwaSignatureAlgorithm[] {
-    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    return Object.values(Kms.KnownJwaSignatureAlgorithms).filter(
-      (algorithm) =>
-        kms.supportedBackendsForOperation({
-          operation: 'sign',
-          algorithm,
-        }).length > 0
-    )
   }
 }

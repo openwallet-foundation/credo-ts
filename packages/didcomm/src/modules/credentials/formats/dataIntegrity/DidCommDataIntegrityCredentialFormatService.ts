@@ -6,14 +6,12 @@ import {
   DidsApi,
   deepEquality,
   getPublicJwkFromVerificationMethod,
-  JsonEncoder,
   type JsonObject,
   JsonTransformer,
   Kms,
   RecordNotFoundError,
   SignatureSuiteRegistry,
   TypedArrayEncoder,
-  type VerificationMethod,
   W3cCredential,
   W3cCredentialRecord,
   W3cCredentialRepository,
@@ -33,6 +31,10 @@ import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialForma
 import type { DidCommCredentialPreviewAttributeOptions } from '../../models/DidCommCredentialPreviewAttribute'
 import { DidCommCredentialProblemReportReason } from '../../models/DidCommCredentialProblemReportReason'
 import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCredentialExchangeRecord'
+import { assertAndSetCredentialSubjectId } from '../../util/credentialSubject'
+import { getFormatDataAttachment } from '../../util/formatData'
+import { getSupportedJwaSignatureAlgorithms } from '../../util/signatureAlgorithm'
+import { getIssuerVerificationMethod } from '../../util/verificationMethod'
 import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
 import type {
   DidCommCredentialFormatAcceptOfferOptions,
@@ -145,7 +147,10 @@ export class DidCommDataIntegrityCredentialFormatService
       dataIntegrityFormat
     )
 
-    const attachment = this.getFormatData(JsonTransformer.toJSON(dataIntegrityCredentialOffer), format.attachmentId)
+    const attachment = getFormatDataAttachment(
+      JsonTransformer.toJSON(dataIntegrityCredentialOffer),
+      format.attachmentId
+    )
     return { format, attachment, previewAttributes }
   }
 
@@ -308,7 +313,7 @@ export class DidCommDataIntegrityCredentialFormatService
       format: W3C_DATA_INTEGRITY_CREDENTIAL_REQUEST,
     })
 
-    const attachment = this.getFormatData(credentialRequest, format.attachmentId)
+    const attachment = getFormatDataAttachment(credentialRequest, format.attachmentId)
     return { format, attachment, appendAttachments: didCommSignedAttachment ? [didCommSignedAttachment] : undefined }
   }
 
@@ -330,27 +335,12 @@ export class DidCommDataIntegrityCredentialFormatService
   }
 
   private async getVerificationMethod(agentContext: AgentContext, issuerId: string, issuerVerificationMethod?: string) {
-    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-    const didDocument = await didsApi.resolveDidDocument(issuerId)
-
-    let verificationMethod: VerificationMethod
-    if (issuerVerificationMethod) {
-      verificationMethod = didDocument.dereferenceKey(issuerVerificationMethod, ['authentication', 'assertionMethod'])
-    } else {
-      const vms = didDocument.findVerificationMethodsByPurpose([
-        'authentication',
-        'assertionMethod',
-        'verificationMethod',
-      ])
-
-      if (!vms || vms.length === 0) {
-        throw new CredoError('Missing authenticationMethod, assertionMethod, and verificationMethods in did document')
-      }
-
-      verificationMethod = vms[0]
-    }
-
-    return { verificationMethod }
+    return await getIssuerVerificationMethod(agentContext, {
+      issuerId,
+      verificationMethodId: issuerVerificationMethod,
+      allowedPurposes: ['authentication', 'assertionMethod'],
+      discoveryPurposes: ['authentication', 'assertionMethod', 'verificationMethod'],
+    })
   }
 
   private async getSignatureMetadata(
@@ -371,26 +361,6 @@ export class DidCommDataIntegrityCredentialFormatService
     }
 
     return { verificationMethod, signatureSuite, offeredCredential }
-  }
-
-  private async assertAndSetCredentialSubjectId<Credential extends W3cCredential | W3cV2Credential>(
-    credential: Credential,
-    credentialSubjectId: string | undefined
-  ) {
-    if (!credentialSubjectId) return credential
-
-    if (Array.isArray(credential.credentialSubject)) {
-      throw new CredoError('Invalid credential subject relation. Cannot determine the subject to be updated.')
-    }
-
-    const subjectId = credential.credentialSubject.id
-    if (subjectId && credentialSubjectId !== subjectId) {
-      throw new CredoError('Invalid credential subject id.')
-    }
-
-    if (!subjectId) credential.credentialSubject.id = credentialSubjectId
-
-    return credential
   }
 
   /**
@@ -511,7 +481,7 @@ export class DidCommDataIntegrityCredentialFormatService
         )
       }
 
-      const assertedV2Credential = await this.assertAndSetCredentialSubjectId(
+      const assertedV2Credential = assertAndSetCredentialSubjectId(
         JsonTransformer.fromJSON(credentialOffer.credential, W3cV2Credential),
         dataIntegrityFormat?.credentialSubjectId
       )
@@ -523,14 +493,14 @@ export class DidCommDataIntegrityCredentialFormatService
 
       return {
         format,
-        attachment: this.getFormatData(
+        attachment: getFormatDataAttachment(
           { credential: JsonTransformer.toJSON(signedV2Credential.securedCredential) },
           format.attachmentId
         ),
       }
     }
 
-    const assertedCredential = await this.assertAndSetCredentialSubjectId(
+    const assertedCredential = assertAndSetCredentialSubjectId(
       JsonTransformer.fromJSON(credentialOffer.credential, W3cCredential),
       dataIntegrityFormat?.credentialSubjectId
     )
@@ -583,7 +553,10 @@ export class DidCommDataIntegrityCredentialFormatService
       signedCredential = await this.signCredential(agentContext, assertedCredential)
     }
 
-    const attachment = this.getFormatData({ credential: JsonTransformer.toJSON(signedCredential) }, format.attachmentId)
+    const attachment = getFormatDataAttachment(
+      { credential: JsonTransformer.toJSON(signedCredential) },
+      format.attachmentId
+    )
     return { format, attachment }
   }
 
@@ -901,7 +874,7 @@ export class DidCommDataIntegrityCredentialFormatService
       didCommSignedAttachmentBindingMethod = {
         didMethodsSupported:
           didMethodsSupported ?? agentContext.dependencyManager.resolve(DidsApi).supportedResolverMethods,
-        algsSupported: algsSupported ?? this.getSupportedJwaSignatureAlgorithms(agentContext),
+        algsSupported: algsSupported ?? getSupportedJwaSignatureAlgorithms(agentContext),
         nonce: TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
       }
 
@@ -953,38 +926,10 @@ export class DidCommDataIntegrityCredentialFormatService
   }
 
   /**
-   * Returns an object of type {@link DidCommAttachment} for use in credential exchange messages.
-   * It looks up the correct format identifier and encodes the data as a base64 attachment.
-   *
-   * @param data The data to include in the attach object
-   * @param id the attach id from the formats component of the message
+   * @deprecated This helper leaked into the public API of this class. Every other format service keeps
+   * it private. Use {@link getFormatDataAttachment} instead. Will be removed in the next major version.
    */
   public getFormatData(data: unknown, id: string): DidCommAttachment {
-    const attachment = new DidCommAttachment({
-      id,
-      mimeType: 'application/json',
-      data: {
-        base64: JsonEncoder.toBase64(data),
-      },
-    })
-
-    return attachment
-  }
-
-  /**
-   * Returns the JWA Signature Algorithms that are supported by the agent.
-   */
-  private getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): Kms.KnownJwaSignatureAlgorithm[] {
-    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-
-    const supportedSignatureAlgorithms = Object.values(Kms.KnownJwaSignatureAlgorithms).filter(
-      (algorithm) =>
-        kms.supportedBackendsForOperation({
-          operation: 'sign',
-          algorithm,
-        }).length > 0
-    )
-
-    return supportedSignatureAlgorithms
+    return getFormatDataAttachment(data, id)
   }
 }
