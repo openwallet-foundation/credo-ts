@@ -9,12 +9,13 @@ import {
   KeyDidRegistrar,
   KeyDidResolver,
   Kms,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
+  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -65,6 +66,17 @@ const didsModuleConfig = new DidsModuleConfig({
   resolvers: [new KeyDidResolver()],
 })
 const fileSystem = new agentDependencies.FileSystem()
+const signatureSuiteRegistry = new SignatureSuiteRegistry([
+  {
+    suiteClass: Ed25519Signature2018,
+    proofType: 'Ed25519Signature2018',
+    verificationMethodTypes: [
+      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+    ],
+    supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
+  } satisfies SuiteInfo,
+])
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -80,19 +92,9 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [JsonLdModuleConfig, new JsonLdModuleConfig()],
-    [
-      SignatureSuiteToken,
-      {
-        suiteClass: Ed25519Signature2018,
-        proofType: 'Ed25519Signature2018',
-        verificationMethodTypes: [
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-        ],
-        supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
-      } satisfies SuiteInfo,
-    ],
+    [SignatureSuiteRegistry, signatureSuiteRegistry],
   ],
   agentConfig,
 })
