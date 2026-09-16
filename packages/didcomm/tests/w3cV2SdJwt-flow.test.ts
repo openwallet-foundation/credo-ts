@@ -27,8 +27,10 @@ import {
   DidCommAttachment,
   DidCommAttachmentData,
   DidCommCredentialExchangeRecord,
+  DidCommCredentialProblemReportReason,
   DidCommCredentialRole,
   DidCommCredentialState,
+  DidCommProblemReportError,
   DidCommW3cV2SdJwtCredentialFormatService,
 } from '../src'
 
@@ -161,6 +163,41 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
 
     expect(attachment.getDataAsJson()).toMatchObject({
       selectively_disclosable_claims: ['$.credentialSubject.type'],
+    })
+  })
+
+  test('processOffer abandons issuance when a required binding method is missing', async () => {
+    const offerAttachment = new DidCommAttachment({
+      id: 'offer-attachment-id',
+      mimeType: 'application/json',
+      data: new DidCommAttachmentData({
+        json: {
+          binding_required: true,
+          credential: {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuerKdv.did,
+            validFrom: new Date().toISOString(),
+            credentialSubject: { name: 'John' },
+          },
+        },
+      }),
+    })
+
+    const processOffer = formatService.processOffer(agentContext, {
+      credentialExchangeRecord: new DidCommCredentialExchangeRecord({
+        protocolVersion: 'v2',
+        state: DidCommCredentialState.OfferReceived,
+        threadId: '8d9e0f1a-2b3c-4d4e-8f5a-6b7c8d9e0f1a',
+        role: DidCommCredentialRole.Holder,
+      }),
+      attachment: offerAttachment,
+    })
+
+    // A problem report is sent to the issuer, rather than only failing locally on the holder
+    await expect(processOffer).rejects.toThrow(DidCommProblemReportError)
+    await expect(processOffer).rejects.toMatchObject({
+      problemReport: { description: { code: DidCommCredentialProblemReportReason.IssuanceAbandoned } },
     })
   })
 

@@ -15,7 +15,9 @@ import {
   W3cV2SdJwtVerifiableCredential,
 } from '@credo-ts/core'
 import type { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
+import { DidCommProblemReportError } from '../../../../errors/problem-reports/DidCommProblemReportError'
 import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialFormatSpec'
+import { DidCommCredentialProblemReportReason } from '../../models/DidCommCredentialProblemReportReason'
 import { assertAndSetCredentialSubjectId } from '../../util/credentialSubject'
 import { getFormatDataAttachment } from '../../util/formatData'
 import { getSupportedJwaSignatureAlgorithms, selectJwaSignatureAlgorithm } from '../../util/signatureAlgorithm'
@@ -159,7 +161,9 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     JsonTransformer.fromJSON(credentialToValidate, W3cV2Credential)
 
     if (credentialOffer.bindingRequired && !credentialOffer.bindingMethod?.didcommSignedAttachment) {
-      throw new CredoError('Invalid credential offer. Missing binding method when binding_required is true.')
+      throw new DidCommProblemReportError('Invalid credential offer. Missing binding method.', {
+        problemCode: DidCommCredentialProblemReportReason.IssuanceAbandoned,
+      })
     }
 
     // An offer naming a non-discloseable field can never be fulfilled by the issuer
