@@ -91,10 +91,8 @@ export async function verifyDidCommSignedAttachment(
   if (!jws.protected) throw new CredoError('Missing protected header in signed attachment')
   if (!signedAttachment.data.base64) throw new CredoError('Missing payload in signed attachment')
 
-  let resolvedKid: string | undefined
-
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
-  const { isValid } = await jwsService.verifyJws(agentContext, {
+  const { isValid, jwsSigners: [jwsSigner] } = await jwsService.verifyJws(agentContext, {
     jws: {
       header: jws.header,
       protected: jws.protected,
@@ -105,8 +103,6 @@ export async function verifyDidCommSignedAttachment(
     resolveJwsSigner: async ({ protectedHeader: { kid, alg } }) => {
       if (!kid || typeof kid !== 'string') throw new CredoError('Missing kid in protected header.')
       if (!kid.startsWith('did:')) throw new CredoError('Only did is supported for kid identifier')
-
-      resolvedKid = kid
 
       const didsApi = agentContext.dependencyManager.resolve(DidsApi)
       const didDocument = await didsApi.resolveDidDocument(kid)
@@ -129,7 +125,7 @@ export async function verifyDidCommSignedAttachment(
     throw new CredoError('Invalid payload in signed attachment')
   }
 
-  if (!resolvedKid) throw new CredoError('Could not resolve kid from signed attachment')
+  if (!jwsSigner || jwsSigner.method !== 'did') throw new CredoError('Could not resolve kid from signed attachment')
 
-  return { nonce: payload.nonce, kid: resolvedKid }
+  return { nonce: payload.nonce, kid: jwsSigner.didUrl }
 }
