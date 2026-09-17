@@ -247,7 +247,11 @@ export class OpenId4VpHolderService {
       credentialsToTransactionData[credentialId].push(transactionDataEntry)
     })
 
-    const updatedCredentials = {
+    // Widened so entries can be updated without knowing whether T is PEX or DCQL
+    const updatedCredentials: Record<
+      string,
+      Array<DifPexInputDescriptorToCredentials[string][number] | DcqlCredentialsForRequest[string][number]>
+    > = {
       ...selectedCredentials,
     }
     for (const [credentialId, entries] of Object.entries(credentialsToTransactionData)) {
@@ -280,7 +284,6 @@ export class OpenId4VpHolderService {
         TypedArrayEncoder.toBase64Url(Hasher.hash(entry.encoded, transactionDataHahsesAlg))
       )
 
-      // Only adds to the additional payload, so each credential keeps the type it has in T
       updatedCredentials[credentialId] = updatedCredentials[credentialId].map((credential) => {
         if (credential.claimFormat !== ClaimFormat.SdJwtDc) {
           // We already verified this above
@@ -297,10 +300,11 @@ export class OpenId4VpHolderService {
             transaction_data_hashes_alg: transactionDataHahsesAlg,
           },
         }
-      }) as unknown as T[string]
+      })
     }
 
-    return updatedCredentials
+    // Only the additional payload was extended, so each credential keeps the type it has in T
+    return updatedCredentials as T
   }
 
   public async acceptAuthorizationRequest(

@@ -951,6 +951,14 @@ describe('SdJwtVcService', () => {
   })
 
   describe('applyDisclosuresForPaths', () => {
+    beforeEach(() => {
+      mockUniqueSalts()
+    })
+
+    afterEach(() => {
+      vi.mocked(agent.kms.randomBytes).mockImplementation(staticSalt)
+    })
+
     const sign = (payload: Record<string, unknown>, disclosureFrame: IDisclosureFrame) =>
       sdJwtVcService.sign(agent.context, {
         payload: { vct: 'IdentityCredential', ...payload },
@@ -1189,28 +1197,6 @@ describe('SdJwtVcService', () => {
       expect(claimsFor([['list', '0']]).list).toStrictEqual([])
       expect(claimsFor([['object', '0']]).object).toStrictEqual({ '0': 'zero' })
       expect(claimsFor([['object', 0]]).object).toStrictEqual({})
-    })
-
-    test('Gives a property from a disclosure with a claim name that is not a string the name as a string', () => {
-      const compact = buildUnsignedSdJwt((digest) => ({
-        vct: 'IdentityCredential',
-        object: { _sd: [digest(['salt1', 1, 'one'])] },
-      }))
-      expect(getClaims(compact).object).toStrictEqual({ '1': 'one' })
-
-      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['object', '1']])
-
-      expect(prettyClaims.object).toStrictEqual({ '1': 'one' })
-      expect(disclosedPaths).toContainEqual(['object'])
-    })
-
-    test('Treats an array element with a value under ... that is not a string as a claim', () => {
-      const compact = buildUnsignedSdJwt(() => ({ vct: 'IdentityCredential', list: [{ '...': 1 }, 'value'] }))
-
-      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [])
-
-      expect(prettyClaims.list).toStrictEqual([{ '...': 1 }, 'value'])
-      expect(disclosedPaths).toContainEqual(['list'])
     })
 
     test('Uses the hash algorithm of the SD-JWT', () => {

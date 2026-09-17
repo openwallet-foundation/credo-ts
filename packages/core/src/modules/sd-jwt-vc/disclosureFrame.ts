@@ -211,10 +211,10 @@ function getClaimsBelow(value: unknown, disclosuresByDigest: DisclosuresByDigest
 
     // `frameKey` counts every element, `key` (the length so far) only the claims
     value.forEach((item, frameKey) => {
-      // As in @sd-jwt/core, an element is only a digest when it is an object with a string under `...`
-      const digest = isObject(item) ? (item as Record<string, unknown>)[SD_LIST_KEY] : undefined
+      // An element is a digest when it is an object with `...`, which @sd-jwt/core checks is a string
+      const digest = isObject(item) ? (item as Record<string, string | undefined>)[SD_LIST_KEY] : undefined
       // A plain element is a claim that is always disclosed
-      if (typeof digest !== 'string') {
+      if (digest === undefined) {
         claims.push({ key: claims.length, frameKey, value: item })
         return
       }
@@ -238,9 +238,7 @@ function getClaimsBelow(value: unknown, disclosuresByDigest: DisclosuresByDigest
         const disclosure = disclosuresByDigest[digest]
         if (!disclosure?.key) return []
 
-        // A property name is a string, as in the claims, even in a disclosure that gives it as another value
-        const key = String(disclosure.key)
-        return [{ key, frameKey: key, value: disclosure.value, digest }]
+        return [{ key: disclosure.key, frameKey: disclosure.key, value: disclosure.value, digest }]
       }),
     ]
   }
