@@ -74,8 +74,11 @@ describe('DidCommMessageReceiver', () => {
       const agent = new Agent(
         getAgentOptions(
           'ReceiverAnoncryptTrustBoundaryTest',
-          { didcommVersions: ['v1', 'v2'] },
-          { connections: { autoCreateConnectionOnFirstMessage: true } },
+          {
+            didcommVersions: ['v1', 'v2'],
+            connections: { autoCreateConnectionOnFirstMessage: true },
+          },
+          undefined,
           undefined,
           { requireDidcomm: true }
         )
@@ -89,8 +92,8 @@ describe('DidCommMessageReceiver', () => {
       const createConnection = vi.spyOn(connectionService, 'createConnection')
       const decryptedMessage = {
         plaintextMessage: {
-          id: 'anoncrypt-message',
-          type: 'https://example.com/didcomm-test/1.0/message',
+          '@id': 'anoncrypt-message',
+          '@type': 'https://example.com/didcomm-test/1.0/message',
           from: 'did:example:eve',
           to: ['did:example:alice'],
         },
