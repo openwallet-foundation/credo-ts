@@ -1,13 +1,16 @@
-import type { DidRepository } from '@credo-ts/core'
+import type { DidRepository, IDisclosureFrame, JsonObject } from '@credo-ts/core'
 import {
   AgentContext,
+  ClaimFormat,
   DidResolverService,
   DidsModuleConfig,
   InjectionSymbols,
+  JsonTransformer,
   KeyDidRegistrar,
   KeyDidResolver,
   Kms,
   W3cDataIntegrityModule,
+  W3cV2Credential,
   W3cV2CredentialService,
   W3cV2CredentialsModule,
   W3cV2SdJwtVerifiableCredential,
@@ -232,15 +235,181 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
       })
     ).rejects.toThrow("'type' property cannot be selectively disclosed")
   })
+
+  test('processCredential rejects a credential whose subject claims differ from the offer', async () => {
+    await expect(
+      processTamperedCredential({
+        issuer: issuerKdv,
+        tamper: (credential) => ({
+          ...credential,
+          credentialSubject: { ...(credential.credentialSubject as object), name: 'Jane' },
+        }),
+      })
+    ).rejects.toThrow('Received credential subject does not match the offered credential subject')
+  })
+
+  test('processCredential rejects a credential with a type that was not offered', async () => {
+    await expect(
+      processTamperedCredential({
+        issuer: issuerKdv,
+        tamper: (credential) => ({ ...credential, type: ['VerifiableCredential', 'SurpriseCredential'] }),
+      })
+    ).rejects.toThrow('Received credential does not match the offered credential')
+  })
+
+  test('processCredential rejects a credential with a field that was not offered', async () => {
+    await expect(
+      processTamperedCredential({
+        issuer: issuerKdv,
+        tamper: (credential) => ({ ...credential, validUntil: '2030-01-01T00:00:00Z' }),
+      })
+    ).rejects.toThrow('Received credential does not match the offered credential')
+  })
+
+  test('processCredential accepts a validFrom that the offer omitted', async () => {
+    const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv, {
+      omitValidFrom: true,
+    })
+
+    const { attachment: credentialAttachment } = await formatService.acceptRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      requestAttachment,
+      offerAttachment,
+      credentialFormats: { w3cV2SdJwt: {} },
+    })
+
+    const holderCredentialRecord = new DidCommCredentialExchangeRecord({
+      protocolVersion: 'v2',
+      state: DidCommCredentialState.CredentialReceived,
+      threadId: '9e0f1a2b-3c4d-4e5f-8a6b-7c8d9e0f1a2b',
+      role: DidCommCredentialRole.Holder,
+    })
+
+    await expect(
+      formatService.processCredential(agentContext, {
+        credentialExchangeRecord: holderCredentialRecord,
+        attachment: credentialAttachment,
+        requestAttachment,
+        offerAttachment,
+      })
+    ).resolves.toBeUndefined()
+  })
+
+  test('processCredential rejects a credential that did not make an offered claim selectively disclosable', async () => {
+    const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv, {
+      disclosureFrame: { credentialSubject: { _sd: ['name'] } },
+    })
+
+    // The issuer advertised `$.credentialSubject.name` as selectively disclosable, then hard baked it
+    const { attachment: credentialAttachment } = await formatService.acceptRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      requestAttachment,
+      offerAttachment,
+      credentialFormats: { w3cV2SdJwt: { disclosureFrame: {} } },
+    })
+
+    await expect(
+      formatService.processCredential(agentContext, {
+        credentialExchangeRecord: new DidCommCredentialExchangeRecord({
+          protocolVersion: 'v2',
+          state: DidCommCredentialState.CredentialReceived,
+          threadId: '0f1a2b3c-4d5e-4f6a-8b7c-8d9e0f1a2b3c',
+          role: DidCommCredentialRole.Holder,
+        }),
+        attachment: credentialAttachment,
+        requestAttachment,
+        offerAttachment,
+      })
+    ).rejects.toThrow("Claim '$.credentialSubject.name' was offered as selectively disclosable")
+  })
+
+  test('processCredential accepts falsy claim values', async () => {
+    const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv, {
+      credentialSubject: { name: 'John', minimumAge: 0, verified: false, nickname: '' },
+    })
+
+    const { attachment: credentialAttachment } = await formatService.acceptRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      requestAttachment,
+      offerAttachment,
+      credentialFormats: { w3cV2SdJwt: {} },
+    })
+
+    await expect(
+      formatService.processCredential(agentContext, {
+        credentialExchangeRecord: new DidCommCredentialExchangeRecord({
+          protocolVersion: 'v2',
+          state: DidCommCredentialState.CredentialReceived,
+          threadId: '1a2b3c4d-5e6f-4a7b-8c8d-9e0f1a2b3c4d',
+          role: DidCommCredentialRole.Holder,
+        }),
+        attachment: credentialAttachment,
+        requestAttachment,
+        offerAttachment,
+      })
+    ).resolves.toBeUndefined()
+  })
 })
 
 /**
- * Runs the offer and request steps for an unbound credential issued by `issuer`, optionally with a
- * subject id already set on the offered credential.
+ * Issues a credential for an unbound offer, rewrites the issued credential with `tamper`, re-signs it as
+ * the issuer, and hands the result to `processCredential`. Re-signing keeps the signature valid so that
+ * the offer comparison is what rejects the credential, rather than the signature check.
+ */
+async function processTamperedCredential({
+  issuer,
+  tamper,
+}: {
+  issuer: CreateDidKidVerificationMethodReturn
+  tamper: (credential: JsonObject) => JsonObject
+}) {
+  const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuer)
+
+  const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
+  const offeredCredential = offerAttachment.getDataAsJson<{ credential: JsonObject }>().credential
+
+  const tamperedCredential = await w3cV2CredentialService.signCredential(agentContext, {
+    format: ClaimFormat.SdJwtW3cVc,
+    credential: JsonTransformer.fromJSON(tamper(offeredCredential), W3cV2Credential),
+    verificationMethod: issuer.verificationMethod.id,
+    alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
+  })
+
+  const credentialAttachment = new DidCommAttachment({
+    id: 'credential-attachment-id',
+    mimeType: 'application/json',
+    data: new DidCommAttachmentData({ json: { credential: tamperedCredential.encoded } }),
+  })
+
+  return formatService.processCredential(agentContext, {
+    credentialExchangeRecord: new DidCommCredentialExchangeRecord({
+      protocolVersion: 'v2',
+      state: DidCommCredentialState.CredentialReceived,
+      threadId: issuerCredentialRecord.threadId,
+      role: DidCommCredentialRole.Holder,
+    }),
+    attachment: credentialAttachment,
+    requestAttachment,
+    offerAttachment,
+  })
+}
+
+/**
+ * Runs the offer and request steps for an unbound credential issued by `issuer`.
  */
 async function offerAndRequest(
   issuer: CreateDidKidVerificationMethodReturn,
-  { credentialSubjectId }: { credentialSubjectId?: string } = {}
+  {
+    credentialSubjectId,
+    credentialSubject = { name: 'John' },
+    disclosureFrame,
+    omitValidFrom,
+  }: {
+    credentialSubjectId?: string
+    credentialSubject?: JsonObject
+    disclosureFrame?: IDisclosureFrame
+    omitValidFrom?: boolean
+  } = {}
 ) {
   const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v2',
@@ -257,10 +426,11 @@ async function offerAndRequest(
           '@context': ['https://www.w3.org/ns/credentials/v2'],
           type: ['VerifiableCredential'],
           issuer: issuer.did,
-          validFrom: new Date().toISOString(),
-          credentialSubject: { ...(credentialSubjectId ? { id: credentialSubjectId } : {}), name: 'John' },
+          ...(omitValidFrom ? {} : { validFrom: new Date().toISOString() }),
+          credentialSubject: { ...(credentialSubjectId ? { id: credentialSubjectId } : {}), ...credentialSubject },
         },
         bindingRequired: false,
+        disclosureFrame,
       },
     },
   })

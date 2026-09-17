@@ -1,8 +1,9 @@
-import type { AgentContext } from '@credo-ts/core'
+import type { AgentContext, JsonObject, SingleOrArray } from '@credo-ts/core'
 import {
   ClaimFormat,
   CredoError,
   DidsApi,
+  deepEquality,
   getPublicJwkFromVerificationMethod,
   JsonTransformer,
   Kms,
@@ -18,7 +19,7 @@ import type { DidCommAttachment } from '../../../../decorators/attachment/DidCom
 import { DidCommProblemReportError } from '../../../../errors/problem-reports/DidCommProblemReportError'
 import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialFormatSpec'
 import { DidCommCredentialProblemReportReason } from '../../models/DidCommCredentialProblemReportReason'
-import { assertAndSetCredentialSubjectId } from '../../util/credentialSubject'
+import { assertAndSetCredentialSubjectId, assertCredentialSubjectMatchesOffer } from '../../util/credentialSubject'
 import { getFormatDataAttachment } from '../../util/formatData'
 import { getSupportedJwaSignatureAlgorithms, selectJwaSignatureAlgorithm } from '../../util/signatureAlgorithm'
 import { getIssuerVerificationMethod } from '../../util/verificationMethod'
@@ -42,7 +43,7 @@ import type {
 } from '../DidCommCredentialFormatServiceOptions'
 import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../shared/didCommSignedAttachment'
 import type { DidCommW3cV2SdJwtCredentialFormat } from './DidCommW3cV2SdJwtCredentialFormat'
-import { claimPathsFromDisclosureFrame, disclosureFrameFromClaimPaths } from './disclosureFrame'
+import { claimPathsFromDisclosureFrame, disclosureFrameFromClaimPaths, resolveClaimPath } from './disclosureFrame'
 import {
   W3cV2SdJwtBindingMethods,
   type W3cV2SdJwtCredential,
@@ -51,6 +52,13 @@ import {
   type W3cV2SdJwtCredentialRequestBindingProof,
   W3cV2SdJwtDidCommSignedAttachmentBindingMethod,
 } from './w3cV2SdJwtExchange'
+
+/**
+ * JWT and SD-JWT registered claims that live alongside the credential in the SD-JWT payload, but are not
+ * properties of a VC Data Model 2.0 credential. They are ignored when comparing a received credential
+ * against the offered one.
+ */
+const NON_CREDENTIAL_CLAIMS = ['iss', 'sub', 'aud', 'exp', 'nbf', 'iat', 'jti', 'cnf', '_sd', '_sd_alg']
 
 const W3C_V2_SD_JWT_OFFER = 'didcomm/w3c-vc-sd-jwt-offer@v1.0'
 const W3C_V2_SD_JWT_REQUEST = 'didcomm/w3c-vc-sd-jwt-request@v1.0'
@@ -371,27 +379,47 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     credential: W3cV2SdJwtVerifiableCredential,
     offer: W3cV2SdJwtCredentialOffer
   ): void {
-    const resolvedCredential = credential.resolvedCredential
-    const offeredTypes = offer.credential.type as string[] | undefined
+    const offeredCredentialJson = offer.credential
+    const receivedCredentialJson = Object.fromEntries(
+      Object.entries(JsonTransformer.toJSON(credential.resolvedCredential) as JsonObject).filter(
+        ([claim]) => !NON_CREDENTIAL_CLAIMS.includes(claim)
+      )
+    )
 
-    // Verify types match
-    if (offeredTypes && offeredTypes.length > 0) {
-      const credentialTypes = Array.isArray(resolvedCredential.type)
-        ? resolvedCredential.type
-        : [resolvedCredential.type]
-      for (const offeredType of offeredTypes) {
-        if (!credentialTypes.includes(offeredType)) {
-          throw new CredoError(`Received credential is missing type '${offeredType}' from offer`)
-        }
+    assertCredentialSubjectMatchesOffer(
+      offeredCredentialJson.credentialSubject as SingleOrArray<JsonObject>,
+      receivedCredentialJson.credentialSubject as SingleOrArray<JsonObject>
+    )
+
+    // Substitute only what the RFC allows an issuer to supply at time of issuance. Everything else, such
+    // as `type`, `validUntil` and `credentialSchema`, must be exactly what was offered.
+    const expectedReceivedCredential = {
+      ...offeredCredentialJson,
+      issuer: offeredCredentialJson.issuer ?? receivedCredentialJson.issuer,
+      validFrom: offeredCredentialJson.validFrom ?? receivedCredentialJson.validFrom,
+      credentialSubject: receivedCredentialJson.credentialSubject,
+      ...(offeredCredentialJson.credentialStatus && { credentialStatus: receivedCredentialJson.credentialStatus }),
+    }
+
+    if (!deepEquality(receivedCredentialJson, expectedReceivedCredential)) {
+      throw new CredoError('Received invalid credential. Received credential does not match the offered credential.')
+    }
+
+    // Claims the issuer said would be selectively disclosable are absent from the signed payload, where
+    // they are replaced by an `_sd` digest, but present once the disclosures are applied.
+    for (const claimPath of offer.selectivelyDisclosableClaims ?? []) {
+      if (!resolveClaimPath(credential.sdJwt.prettyClaims, claimPath).found) {
+        throw new CredoError(`Received credential is missing claim '${claimPath}' offered as selectively disclosable.`)
+      }
+
+      if (resolveClaimPath(credential.sdJwt.payload, claimPath).found) {
+        throw new CredoError(`Claim '${claimPath}' was offered as selectively disclosable, but is not disclosable.`)
       }
     }
 
     // Verify binding (cnf) if binding was required
-    if (offer.bindingRequired) {
-      const cnf = credential.sdJwt.prettyClaims.cnf
-      if (!cnf) {
-        throw new CredoError('Credential is missing cnf claim but binding was required')
-      }
+    if (offer.bindingRequired && !credential.sdJwt.prettyClaims.cnf) {
+      throw new CredoError('Credential is missing cnf claim but binding was required')
     }
   }
 

@@ -1,5 +1,5 @@
 import { CredoError, JsonTransformer, W3cCredential, W3cV2Credential } from '@credo-ts/core'
-import { assertAndSetCredentialSubjectId } from '../credentialSubject'
+import { assertAndSetCredentialSubjectId, assertCredentialSubjectMatchesOffer } from '../credentialSubject'
 
 const v1CredentialJson = {
   '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -74,5 +74,58 @@ describe('assertAndSetCredentialSubjectId', () => {
     assertAndSetCredentialSubjectId(credential, 'did:example:holder')
 
     expect((credential.credentialSubject as { id?: string }).id).toBe('did:example:holder')
+  })
+})
+
+describe('assertCredentialSubjectMatchesOffer', () => {
+  test('accepts a received subject equal to the offered one', () => {
+    expect(() =>
+      assertCredentialSubjectMatchesOffer({ name: 'John', age: '25' }, { name: 'John', age: '25' })
+    ).not.toThrow()
+  })
+
+  test('accepts additional claims on the received subject', () => {
+    // An issuer may add claims that were only available at time of issuance
+    expect(() =>
+      assertCredentialSubjectMatchesOffer({ name: 'John' }, { name: 'John', id: 'did:example:holder' })
+    ).not.toThrow()
+  })
+
+  test('accepts falsy claim values', () => {
+    const subject = { minimumAge: 0, verified: false, nickname: '' }
+
+    expect(() => assertCredentialSubjectMatchesOffer(subject, subject)).not.toThrow()
+  })
+
+  test('compares numbers by their string representation', () => {
+    expect(() => assertCredentialSubjectMatchesOffer({ age: 25 }, { age: '25' })).not.toThrow()
+  })
+
+  test('compares nested claims deeply', () => {
+    expect(() =>
+      assertCredentialSubjectMatchesOffer({ degree: { name: 'BSc' } }, { degree: { name: 'BSc' } })
+    ).not.toThrow()
+    expect(() => assertCredentialSubjectMatchesOffer({ degree: { name: 'BSc' } }, { degree: { name: 'BA' } })).toThrow(
+      CredoError
+    )
+  })
+
+  test('rejects a changed claim value', () => {
+    expect(() => assertCredentialSubjectMatchesOffer({ name: 'John' }, { name: 'Jane' })).toThrow(
+      /does not match the offered credential subject/
+    )
+  })
+
+  test('rejects a missing claim', () => {
+    expect(() => assertCredentialSubjectMatchesOffer({ name: 'John', age: '25' }, { name: 'John' })).toThrow(CredoError)
+  })
+
+  test('rejects multiple credential subjects', () => {
+    expect(() => assertCredentialSubjectMatchesOffer([{ name: 'John' }], { name: 'John' })).toThrow(
+      /Multiple credential subjects are not yet supported/
+    )
+    expect(() => assertCredentialSubjectMatchesOffer({ name: 'John' }, [{ name: 'John' }])).toThrow(
+      /Multiple credential subjects are not yet supported/
+    )
   })
 })

@@ -31,6 +31,41 @@ function collectPaths(frame: IDisclosureFrame, prefix: string, paths: string[]):
 }
 
 /**
+ * Splits a JSONPath claim path into its segments, normalizing array accessors.
+ *
+ * E.g. `$.credentialSubject.addresses[0].street` produces `['credentialSubject', 'addresses', '0', 'street']`
+ */
+function claimPathSegments(claimPath: string): string[] {
+  // Strip leading "$." prefix
+  const stripped = claimPath.startsWith('$.') ? claimPath.slice(2) : claimPath
+  // Split on '.' and '[', normalizing "arr[0]" into ["arr", "0"]
+  return stripped.split(/\.|\[|\]/).filter(Boolean)
+}
+
+/**
+ * Resolves a JSONPath claim path against an object, reporting whether the claim is present.
+ *
+ * Presence is reported rather than the value alone, so that a claim explicitly set to `null` or a falsy
+ * value is distinguished from a claim that is absent.
+ */
+export function resolveClaimPath(object: unknown, claimPath: string): { found: boolean; value?: unknown } {
+  const segments = claimPathSegments(claimPath)
+  if (segments.length === 0) return { found: false }
+
+  let current: unknown = object
+  for (const segment of segments) {
+    if (current === null || typeof current !== 'object') return { found: false }
+
+    const container = current as Record<string, unknown>
+    if (!(segment in container)) return { found: false }
+
+    current = container[segment]
+  }
+
+  return { found: true, value: current }
+}
+
+/**
  * Derives an IDisclosureFrame from an array of JSONPath claim paths, the inverse of
  * {@link claimPathsFromDisclosureFrame}.
  *
@@ -43,10 +78,7 @@ export function disclosureFrameFromClaimPaths(claimPaths?: string[]): IDisclosur
   const frame: IDisclosureFrame = {}
 
   for (const path of claimPaths) {
-    // Strip leading "$." prefix
-    const stripped = path.startsWith('$.') ? path.slice(2) : path
-    // Split on '.' and '[', normalizing "arr[0]" into ["arr", "0"]
-    const segments = stripped.split(/\.|\[|\]/).filter(Boolean)
+    const segments = claimPathSegments(path)
     if (segments.length === 0) continue
 
     // Walk/create nested frame objects for intermediate segments

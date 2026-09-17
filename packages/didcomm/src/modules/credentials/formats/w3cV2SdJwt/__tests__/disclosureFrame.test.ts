@@ -1,5 +1,5 @@
 import type { IDisclosureFrame } from '@credo-ts/core'
-import { claimPathsFromDisclosureFrame, disclosureFrameFromClaimPaths } from '../disclosureFrame'
+import { claimPathsFromDisclosureFrame, disclosureFrameFromClaimPaths, resolveClaimPath } from '../disclosureFrame'
 
 // `IDisclosureFrame` types `_sd` as `string[]`, while array item disclosure uses numeric indices, so
 // frames containing them need a cast. The implementation casts in the same way.
@@ -43,5 +43,39 @@ describe('disclosureFrameFromClaimPaths', () => {
     expect(disclosureFrameFromClaimPaths(claimPathsFromDisclosureFrame(frameWithArrayIndices))).toEqual(
       frameWithArrayIndices
     )
+  })
+})
+
+describe('resolveClaimPath', () => {
+  const credential = {
+    type: ['VerifiableCredential'],
+    credentialSubject: { name: 'John', minimumAge: 0, nickname: '', missing: null, addresses: [{ street: 'Main' }] },
+  }
+
+  test('resolves a top level claim', () => {
+    expect(resolveClaimPath(credential, '$.type')).toEqual({ found: true, value: ['VerifiableCredential'] })
+  })
+
+  test('resolves a nested claim', () => {
+    expect(resolveClaimPath(credential, '$.credentialSubject.name')).toEqual({ found: true, value: 'John' })
+  })
+
+  test('resolves a claim through an array index', () => {
+    expect(resolveClaimPath(credential, '$.credentialSubject.addresses[0].street')).toEqual({
+      found: true,
+      value: 'Main',
+    })
+  })
+
+  test('reports falsy and null claims as found', () => {
+    expect(resolveClaimPath(credential, '$.credentialSubject.minimumAge')).toEqual({ found: true, value: 0 })
+    expect(resolveClaimPath(credential, '$.credentialSubject.nickname')).toEqual({ found: true, value: '' })
+    expect(resolveClaimPath(credential, '$.credentialSubject.missing')).toEqual({ found: true, value: null })
+  })
+
+  test('reports an absent claim as not found', () => {
+    expect(resolveClaimPath(credential, '$.credentialSubject.unknown')).toEqual({ found: false })
+    expect(resolveClaimPath(credential, '$.credentialSubject.addresses[1].street')).toEqual({ found: false })
+    expect(resolveClaimPath(credential, '$.credentialSubject.name.deeper')).toEqual({ found: false })
   })
 })

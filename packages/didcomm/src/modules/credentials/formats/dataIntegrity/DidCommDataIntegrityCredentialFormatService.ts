@@ -11,6 +11,7 @@ import {
   Kms,
   RecordNotFoundError,
   SignatureSuiteRegistry,
+  type SingleOrArray,
   TypedArrayEncoder,
   W3cCredential,
   W3cCredentialRecord,
@@ -31,7 +32,7 @@ import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialForma
 import type { DidCommCredentialPreviewAttributeOptions } from '../../models/DidCommCredentialPreviewAttribute'
 import { DidCommCredentialProblemReportReason } from '../../models/DidCommCredentialProblemReportReason'
 import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCredentialExchangeRecord'
-import { assertAndSetCredentialSubjectId } from '../../util/credentialSubject'
+import { assertAndSetCredentialSubjectId, assertCredentialSubjectMatchesOffer } from '../../util/credentialSubject'
 import { getFormatDataAttachment } from '../../util/formatData'
 import { getSupportedJwaSignatureAlgorithms } from '../../util/signatureAlgorithm'
 import { getIssuerVerificationMethod } from '../../util/verificationMethod'
@@ -586,30 +587,10 @@ export class DidCommDataIntegrityCredentialFormatService
 
     const { credential: credentialJson } = attachment.getDataAsJson<DataIntegrityCredential>()
 
-    if (Array.isArray(offeredCredentialJson.credentialSubject)) {
-      throw new CredoError('Invalid credential subject. Multiple credential subjects are not yet supported.')
-    }
-
-    const credentialSubjectMatches = Object.entries(offeredCredentialJson.credentialSubject as JsonObject).every(
-      ([key, offeredValue]) => {
-        const receivedValue = (credentialJson.credentialSubject as JsonObject)[key]
-        // Compared by presence: 0, false and '' are legitimate claim values
-        if (offeredValue === undefined || receivedValue === undefined) return false
-        if (offeredValue === null || receivedValue === null) return offeredValue === receivedValue
-
-        if (typeof offeredValue === 'number' || typeof receivedValue === 'number') {
-          return offeredValue.toString() === receivedValue.toString()
-        }
-
-        return deepEquality(offeredValue, receivedValue)
-      }
+    assertCredentialSubjectMatchesOffer(
+      offeredCredentialJson.credentialSubject as SingleOrArray<JsonObject>,
+      credentialJson.credentialSubject as SingleOrArray<JsonObject>
     )
-
-    if (!credentialSubjectMatches) {
-      throw new CredoError(
-        'Received invalid credential. Received credential subject does not match the offered credential subject.'
-      )
-    }
 
     const credentialVersion = this.getCredentialVersion(credentialJson)
     const expectedReceivedCredential = {
