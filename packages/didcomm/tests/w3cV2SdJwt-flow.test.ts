@@ -329,6 +329,144 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
     expect(W3cV2SdJwtVerifiableCredential.fromCompact(credential).resolvedCredential.issuerId).toBe(issuerKdv.did)
   })
 
+  test('issuance flow with an optional binding the holder chooses to use', async () => {
+    // The issuer offers a binding method without requiring it
+    const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
+      protocolVersion: 'v2',
+      state: DidCommCredentialState.OfferSent,
+      threadId: '2b3c4d5e-6f7a-4b8c-8d9e-0f1a2b3c4d5e',
+      role: DidCommCredentialRole.Issuer,
+    })
+
+    const { attachment: offerAttachment } = await formatService.createOffer(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      credentialFormats: {
+        w3cV2SdJwt: {
+          credential: {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuerKdv.did,
+            validFrom: new Date().toISOString(),
+            credentialSubject: { name: 'John' },
+          },
+          bindingRequired: false,
+          didCommSignedAttachmentBinding: { algsSupported: ['EdDSA'], didMethodsSupported: ['key'] },
+        },
+      },
+    })
+
+    expect(offerAttachment.getDataAsJson()).toMatchObject({
+      binding_required: false,
+      binding_method: { didcomm_signed_attachment: { algs_supported: ['EdDSA'] } },
+    })
+
+    // The holder opts in, even though the issuer did not require it
+    const { attachment: requestAttachment, appendAttachments: requestAppendAttachments } =
+      await formatService.acceptOffer(agentContext, {
+        credentialExchangeRecord: issuerCredentialRecord,
+        offerAttachment,
+        credentialFormats: { w3cV2SdJwt: { didCommSignedAttachment: { kid: holderKdv.kid } } },
+      })
+
+    expect(requestAttachment.getDataAsJson()).toMatchObject({
+      binding_proof: { didcomm_signed_attachment: { attachment_id: expect.any(String) } },
+    })
+
+    const { attachment: credentialAttachment } = await formatService.acceptRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      requestAttachment,
+      offerAttachment,
+      requestAppendAttachments,
+      credentialFormats: { w3cV2SdJwt: {} },
+    })
+
+    const { credential } = credentialAttachment.getDataAsJson<{ credential: string }>()
+    const verifiableCredential = W3cV2SdJwtVerifiableCredential.fromCompact(credential)
+
+    // The credential is bound to the holder key despite the binding being optional
+    expect(verifiableCredential.sdJwt.prettyClaims.cnf).toBeDefined()
+    expect(verifiableCredential.resolvedCredential.credentialSubject).toMatchObject({ id: holderKdv.did })
+  })
+
+  test('acceptOffer ignores an optional binding the holder does not use', async () => {
+    const { requestAttachment } = await offerAndRequest(issuerKdv, {
+      didCommSignedAttachmentBinding: { algsSupported: ['EdDSA'], didMethodsSupported: ['key'] },
+    })
+
+    expect(requestAttachment.getDataAsJson()).toEqual({})
+  })
+
+  test('createOffer requires binding options when binding is required', async () => {
+    await expect(
+      formatService.createOffer(agentContext, {
+        credentialExchangeRecord: new DidCommCredentialExchangeRecord({
+          protocolVersion: 'v2',
+          state: DidCommCredentialState.OfferSent,
+          threadId: '3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f',
+          role: DidCommCredentialRole.Issuer,
+        }),
+        credentialFormats: {
+          w3cV2SdJwt: {
+            credential: {
+              '@context': ['https://www.w3.org/ns/credentials/v2'],
+              type: ['VerifiableCredential'],
+              issuer: issuerKdv.did,
+              validFrom: new Date().toISOString(),
+              credentialSubject: { name: 'John' },
+            },
+            bindingRequired: true,
+          },
+        },
+      })
+    ).rejects.toThrow('Missing required binding method.')
+  })
+
+  test('acceptOffer rejects a binding method that was not offered', async () => {
+    const { offerAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv)
+
+    await expect(
+      formatService.acceptOffer(agentContext, {
+        credentialExchangeRecord: issuerCredentialRecord,
+        offerAttachment,
+        credentialFormats: { w3cV2SdJwt: { didCommSignedAttachment: { kid: holderKdv.kid } } },
+      })
+    ).rejects.toThrow('Cannot request credential with a binding method that was not offered.')
+  })
+
+  test('acceptOffer requires a binding proof when binding is required', async () => {
+    const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
+      protocolVersion: 'v2',
+      state: DidCommCredentialState.OfferSent,
+      threadId: '4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f7a',
+      role: DidCommCredentialRole.Issuer,
+    })
+
+    const { attachment: offerAttachment } = await formatService.createOffer(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      credentialFormats: {
+        w3cV2SdJwt: {
+          credential: {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuerKdv.did,
+            validFrom: new Date().toISOString(),
+            credentialSubject: { name: 'John' },
+          },
+          bindingRequired: true,
+          didCommSignedAttachmentBinding: { algsSupported: ['EdDSA'], didMethodsSupported: ['key'] },
+        },
+      },
+    })
+
+    await expect(
+      formatService.acceptOffer(agentContext, {
+        credentialExchangeRecord: issuerCredentialRecord,
+        offerAttachment,
+        credentialFormats: { w3cV2SdJwt: {} },
+      })
+    ).rejects.toThrow('Missing required binding proof')
+  })
+
   test('processCredential rejects a credential that did not make an offered claim selectively disclosable', async () => {
     const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv, {
       disclosureFrame: { credentialSubject: { _sd: ['name'] } },
@@ -439,12 +577,14 @@ async function offerAndRequest(
     disclosureFrame,
     omitValidFrom,
     omitIssuer,
+    didCommSignedAttachmentBinding,
   }: {
     credentialSubjectId?: string
     credentialSubject?: JsonObject
     disclosureFrame?: IDisclosureFrame
     omitValidFrom?: boolean
     omitIssuer?: boolean
+    didCommSignedAttachmentBinding?: { algsSupported?: string[]; didMethodsSupported?: string[] }
   } = {}
 ) {
   const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
@@ -467,6 +607,7 @@ async function offerAndRequest(
         },
         bindingRequired: false,
         disclosureFrame,
+        didCommSignedAttachmentBinding,
       },
     },
   })

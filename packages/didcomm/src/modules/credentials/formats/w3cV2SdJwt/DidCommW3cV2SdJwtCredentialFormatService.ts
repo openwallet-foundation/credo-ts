@@ -100,13 +100,10 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     // Reject a frame core would refuse to sign, rather than sending an offer that cannot be fulfilled
     validateW3cV2SdJwtDisclosureFrame(disclosureFrame)
 
-    // Build binding method if required
+    // Build the binding method whenever binding options are given, so that a binding can be offered
+    // without being required. The holder then decides whether to bind the credential.
     let bindingMethod: W3cV2SdJwtBindingMethods | undefined
-    if (bindingRequired) {
-      if (!didCommSignedAttachmentBinding) {
-        throw new CredoError('Missing didCommSignedAttachmentBinding when bindingRequired is true')
-      }
-
+    if (didCommSignedAttachmentBinding) {
       const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
       const didsApi = agentContext.dependencyManager.resolve(DidsApi)
 
@@ -125,6 +122,8 @@ export class DidCommW3cV2SdJwtCredentialFormatService
         }),
       })
     }
+
+    if (bindingRequired && !bindingMethod) throw new CredoError('Missing required binding method.')
 
     const credentialOffer = new W3cV2SdJwtCredentialOffer({
       bindingRequired,
@@ -189,12 +188,9 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     let signedAttachment: DidCommAttachment | undefined
     let bindingProof: W3cV2SdJwtCredentialRequestBindingProof | undefined
 
-    if (credentialOffer.bindingRequired) {
-      const didCommSignedAttachmentOptions = credentialFormats?.w3cV2SdJwt?.didCommSignedAttachment
-      if (!didCommSignedAttachmentOptions) {
-        throw new CredoError('Missing didCommSignedAttachment options when accepting offer with binding_required')
-      }
-
+    // Bind the credential whenever the holder asks for it, even if the issuer did not require it
+    const didCommSignedAttachmentOptions = credentialFormats?.w3cV2SdJwt?.didCommSignedAttachment
+    if (didCommSignedAttachmentOptions) {
       if (!credentialOffer.bindingMethod?.didcommSignedAttachment) {
         throw new CredoError('Cannot request credential with a binding method that was not offered.')
       }
@@ -210,6 +206,8 @@ export class DidCommW3cV2SdJwtCredentialFormatService
         didcomm_signed_attachment: { attachment_id: signedAttachment.id },
       }
     }
+
+    if (credentialOffer.bindingRequired && !bindingProof) throw new CredoError('Missing required binding proof')
 
     const credentialRequest: W3cV2SdJwtCredentialRequest = {
       binding_proof: bindingProof,
