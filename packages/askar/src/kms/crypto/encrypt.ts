@@ -2,7 +2,7 @@ import { Kms } from '@credo-ts/core'
 import { Key } from '@openwallet-foundation/askar-shared'
 import { jwkEncToAskarAlg } from '../../utils'
 
-export type AskarSupportedEncryptionOptions = Kms.KmsEncryptDataEncryption & {
+export type AskarSupportedEncryptionOptions = Kms.KmsEncryptDataContentEncryption & {
   algorithm: keyof typeof jwkEncToAskarAlg
 }
 
