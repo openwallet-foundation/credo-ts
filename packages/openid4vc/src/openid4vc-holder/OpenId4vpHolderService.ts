@@ -280,6 +280,7 @@ export class OpenId4VpHolderService {
         TypedArrayEncoder.toBase64Url(Hasher.hash(entry.encoded, transactionDataHahsesAlg))
       )
 
+      // Only adds to the additional payload, so each credential keeps the type it has in T
       updatedCredentials[credentialId] = updatedCredentials[credentialId].map((credential) => {
         if (credential.claimFormat !== ClaimFormat.SdJwtDc) {
           // We already verified this above
@@ -296,7 +297,7 @@ export class OpenId4VpHolderService {
             transaction_data_hashes_alg: transactionDataHahsesAlg,
           },
         }
-      })
+      }) as unknown as T[string]
     }
 
     return updatedCredentials
