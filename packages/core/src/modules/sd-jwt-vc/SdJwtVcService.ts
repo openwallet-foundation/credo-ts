@@ -18,7 +18,7 @@ import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
-import { applyDisclosuresForPayload } from './disclosureFrame'
+import { applyDisclosuresForPaths, applyDisclosuresForPayload, type ClaimPath } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcError } from './SdJwtVcError'
 import { SdJwtVcModuleConfig } from './SdJwtVcModuleConfig'
@@ -186,9 +186,18 @@ export class SdJwtVcService {
     return decodeSdJwtVc(compactSdJwtVc, typeMetadata)
   }
 
+  /**
+   * @deprecated use `applyDisclosuresForPaths` instead
+   */
   public applyDisclosuresForPayload(compactSdJwtVc: string, requestedPayload: JsonObject): SdJwtVc {
     const sdJwt = applyDisclosuresForPayload(compactSdJwtVc, requestedPayload)
     const disclosedDecoded = decodeSdJwtVc(sdJwt)
+    return disclosedDecoded
+  }
+
+  public applyDisclosuresForPaths(compactSdJwtVc: string, disclosedPaths: ClaimPath[]): SdJwtVc {
+    const { compact } = applyDisclosuresForPaths(compactSdJwtVc, disclosedPaths)
+    const disclosedDecoded = decodeSdJwtVc(compact)
     return disclosedDecoded
   }
 

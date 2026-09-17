@@ -663,6 +663,22 @@ describe('W3cV2SdJwtCredentialService', () => {
     })
   })
 
+  describe('applyDisclosuresForPaths', () => {
+    test('discloses only the claims at the paths', () => {
+      const withAchievement = w3cV2JwtCredentialService.applyDisclosuresForPaths(CredoEs256DidJwkJwtVc, [
+        ['credentialSubject', 'achievement'],
+      ])
+      expect(
+        (withAchievement.resolvedCredential.credentialSubject as Record<string, unknown>).achievement
+      ).toStrictEqual(Ed256DidJwkJwtVcUnsigned.credentialSubject.achievement)
+
+      const withoutAchievement = w3cV2JwtCredentialService.applyDisclosuresForPaths(CredoEs256DidJwkJwtVc, [])
+      expect(withoutAchievement.resolvedCredential.credentialSubject).not.toHaveProperty('achievement')
+      // Only the issuer-signed JWT, without disclosures
+      expect(withoutAchievement.encoded.split('~').filter(Boolean)).toHaveLength(1)
+    })
+  })
+
   describe('verifyPresentation', () => {
     test('verifies an ES256 JWT vp signed by Credo', async () => {
       const result = await w3cV2JwtCredentialService.verifyPresentation(agentContext, {
