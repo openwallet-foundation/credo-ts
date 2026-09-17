@@ -14,9 +14,12 @@ export type { SdJwtVcPayload }
 export type SdJwtVcHeader = Record<string, unknown>
 
 export interface IDisclosureFrame {
-  _sd?: string[]
+  /**
+   * The claims that are selectively disclosable: property names in an object, element positions in an array.
+   */
+  _sd?: Array<string | number>
   _sd_decoy?: number
-  [x: string]: string[] | number | IDisclosureFrame | undefined
+  [x: string]: Array<string | number> | number | IDisclosureFrame | undefined
 }
 
 export interface IPresentationFrame {

@@ -3,6 +3,7 @@ import type { JsonObject } from '../../../types'
 import { CredentialMultiInstanceUseMode, canUseInstanceFromCredentialRecord } from '../../../utils/credentialUse'
 import { MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
+import type { ClaimPath } from '../../sd-jwt-vc/disclosureFrame'
 import { ClaimFormat, W3cCredentialRecord, W3cV2CredentialRecord } from '../../vc'
 import { DcqlError } from '../DcqlError'
 import type { DcqlCredentialsForRequest } from '../models'
@@ -11,7 +12,11 @@ import type { DcqlCredentialsForRequest } from '../models'
 export interface DcqlSdJwtVcPresentationToCreate {
   claimFormat: ClaimFormat.SdJwtDc
   credentialRecord: SdJwtVcRecord
-  disclosedPayload: DcqlSdJwtVcCredential.Claims
+  /**
+   * @deprecated Use `disclosedPaths` instead.
+   */
+  disclosedPayload?: DcqlSdJwtVcCredential.Claims
+  disclosedPaths?: ClaimPath[]
 
   /**
    * Additional payload to include in the Key Binding JWT
@@ -50,7 +55,11 @@ export interface DcqlJwtW3cVpPresentationToCreate {
 export interface DcqlSdJwtW3cVpPresentationToCreate {
   claimFormat: ClaimFormat.SdJwtW3cVp
   credentialRecord: W3cV2CredentialRecord
-  disclosedPayload: DcqlW3cVcCredential.Claims
+  /**
+   * @deprecated Use `disclosedPaths` instead.
+   */
+  disclosedPayload?: DcqlW3cVcCredential.Claims
+  disclosedPaths?: ClaimPath[]
 }
 
 type DcqlPresentationToCreate =
@@ -86,6 +95,7 @@ export function dcqlGetPresentationsToCreate(
             claimFormat: ClaimFormat.SdJwtDc,
             credentialRecord: match.credentialRecord,
             disclosedPayload: match.disclosedPayload as DcqlSdJwtVcCredential.Claims,
+            disclosedPaths: match.disclosedPaths,
             additionalPayload: match.additionalPayload,
             useMode,
           }
@@ -99,11 +109,18 @@ export function dcqlGetPresentationsToCreate(
           }
           break
         case ClaimFormat.JwtW3cVc:
-        case ClaimFormat.SdJwtW3cVc:
           presentationToCreate = {
-            claimFormat: match.claimFormat === ClaimFormat.JwtW3cVc ? ClaimFormat.JwtW3cVp : ClaimFormat.SdJwtW3cVp,
+            claimFormat: ClaimFormat.JwtW3cVp,
             credentialRecord: match.credentialRecord,
             disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
+          }
+          break
+        case ClaimFormat.SdJwtW3cVc:
+          presentationToCreate = {
+            claimFormat: ClaimFormat.SdJwtW3cVp,
+            credentialRecord: match.credentialRecord,
+            disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
+            disclosedPaths: match.disclosedPaths,
           }
           break
 

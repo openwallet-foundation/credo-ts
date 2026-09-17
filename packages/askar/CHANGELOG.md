@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.7.1
+
+### Patch Changes
+
+- 8b8690a: Add `connectionParameters` to the Askar postgres database config. The parameters are added to the postgres connection url and passed to the underlying driver, allowing e.g. ssl options (`sslmode`, `sslrootcert`, etc.) to be configured without setting environment variables. See https://docs.rs/sqlx/latest/sqlx/postgres/struct.PgConnectOptions.html#parameters for supported parameters.
+- bc4638e: Add support for the ISO/IEC TS 18013-7:2025 Annex C (`org-iso-mdoc`) Digital Credentials API.
+  
+  - KMS: HPKE (RFC 9180) key agreement algorithms `HPKE-0`, `HPKE-3` and `HPKE-7`, following the naming of draft-ietf-jose-hpke-encrypt. These are integrated-encryption algorithms, so `encryption`/`decryption` must be omitted and `encrypt` returns an `encapsulatedKey`. Implemented in the askar backend (the recipient private key stays inside askar; only the Diffie-Hellman output leaves it) and in the node backend.
+  - Mdoc module: `createDcApiVerificationSession` / `verifyDcApiResponse` for verifiers and `resolveDcApiRequest` / `createDcApiResponse` for wallets, backed by a new `MdocVerificationSessionRecord`.
+  - `verifyDcApiResponse` matches the response against the device request of the session and throws a `MdocDeviceRequestNotSatisfiedError` when a doc request is not satisfied. By default every requested element must be disclosed and issuer signed; in the `docRequests` passed to `createDcApiVerificationSession`, pass `{ intentToRetain, optional, source }` instead of the `intentToRetain` boolean to mark an element as optional or as device signed. The match is returned as `deviceRequestMatch`, with per doc request the valid and failed documents, and per document the result of the `docType` and `claims` checks.
+  - `resolveDcApiRequest` matches the stored mdocs with the same rules and returns the same structure (through `Holder.matchDeviceRequest` of `@owf/mdoc`): per doc request the `validCredentials` and `failedCredentials`, each with its `record` and the `docType` and `claims` checks, so a wallet can show an mdoc of the requested doctype together with the requested claims it is missing. An `age_over_NN` request is answered with the age attestation the mdoc has (18013-5 7.2.5). A requested element that is not issuer signed, but that the device key is authorized for in the MSO, is matched as device signed when its value is passed in `deviceNameSpaces` to `resolveDcApiRequest`: pass the same value in the `deviceNameSpaces` of the credential to `createDcApiResponse`. A credential can also pass `elements` to disclose only some of the requested elements.
+  - Reader authentication on an incoming request is resolved through the same trust layers as credential verification: the certificates passed to `resolveDcApiRequest`, then the global `getTrustedIssuersForVerification` callback (with the new `mdocReaderAuth` verification type, called per doc request), then the deprecated `getTrustedCertificatesForVerification` callback, then the statically configured trusted certificates. Resolving a reader authenticated request throws when none of these are configured. Return the leaf certificate from the callback to trust a reader on the certificate it presented itself.
+- bc4638e: Only pick a response encryption key from `client_metadata.jwks` that the key management backends of the agent can actually perform the `ECDH-ES` key agreement with. Previously the first recognized `enc` key was used, which failed later on if e.g. a verifier included a `P-521` key and the configured KMS backend (such as Askar) does not support that curve. The Askar and Node key management backends now also take the curve of the external public key into account in `isOperationSupported`.
+- cfe86fa: X509 trusted certificates now can be provided in a new format. Previously it was a list of base64/pem/der encoded certificates, but now you can _also_ provide a list of objects in the format `[{issuance: string[], status? :string[]}]`. This is used for the new status indicator on mdoc. First, it looks for the used `issuance` trusted certificates and then validates the `status`, if available, with the `status` trusted certificates associated with the `issuance` property.
+- cfe86fa: TokenStatusList is a new standard module on the agent. It allows you to create/update/fetch token status lists. It is up to the user to host this, this can be easily done with the `statusList` you receive from the `agent.tokenStatusList.createTokenStatusList(...)` function. Updating the statuslist allows you to change the status list credential state from valid to invalid, but also update the expiry time, rotate certificates, change signing algorithm, etc. Signatures are the default and mac should only be used if the user is aware of the security implications and has good reason to do so.
+- Updated dependencies [9f4278b]
+- Updated dependencies [f127ff5]
+- Updated dependencies [5cfcadb]
+- Updated dependencies [84dfcf4]
+- Updated dependencies [e80900a]
+- Updated dependencies [8ded8d2]
+- Updated dependencies [fd5016d]
+- Updated dependencies [d45aec0]
+- Updated dependencies [5cfcadb]
+- Updated dependencies [097c831]
+- Updated dependencies [20d6ab1]
+- Updated dependencies [bc4638e]
+- Updated dependencies [bc4638e]
+- Updated dependencies [bc4638e]
+- Updated dependencies [907f12f]
+- Updated dependencies [bc4638e]
+- Updated dependencies [96dc69b]
+- Updated dependencies [7dfafeb]
+- Updated dependencies [3a3eb03]
+- Updated dependencies [23c354e]
+- Updated dependencies [907cc54]
+- Updated dependencies [339f4cc]
+- Updated dependencies [bc4638e]
+- Updated dependencies [5cfcadb]
+- Updated dependencies [f127ff5]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [e97c18b]
+- Updated dependencies [121dd14]
+- Updated dependencies [b75467c]
+- Updated dependencies [cfe86fa]
+- Updated dependencies [0a58888]
+- Updated dependencies [1e2088f]
+  - @credo-ts/core@0.7.1
+
 ## 0.7.0
 
 ### Minor Changes
