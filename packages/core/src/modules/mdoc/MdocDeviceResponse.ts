@@ -1,15 +1,12 @@
 import {
   CoseKey,
-  DeviceNamespaces,
   DeviceRequest,
   DeviceResponse,
-  DeviceSignedItems,
   DocRequest,
   Document,
   defaultVerificationCallback,
-  IssuerNamespaces,
+  Holder,
   ItemsRequest,
-  limitDisclosureToDeviceRequestNameSpaces,
   type MdocContext,
   SessionTranscript,
 } from '@owf/mdoc'
@@ -39,6 +36,7 @@ import {
   assertMdocStatusListChainsMatchIssuanceChain,
   convertMdocTrustedCertificates,
   mdocTrustedCertificatesToRaw,
+  nameSpacesRecordToDeviceNamespaces,
   nameSpacesRecordToMap,
 } from './mdocUtil'
 import { convertDocumentRequest } from './utils/convertDocumentRequest'
@@ -111,6 +109,14 @@ export class MdocDeviceResponse {
     return MdocDeviceResponse.createDeviceResponse(agentContext, { ...options, documentRequests })
   }
 
+  /**
+   * @deprecated Credo does not use this method itself, and it only supports part of DCQL. Every claim
+   * of every `mso_mdoc` credential query is requested: `credential_sets`, `claim_sets` and `values`
+   * are ignored, credential queries with the same doctype are merged, nested claim paths are
+   * truncated, and a claim missing from the mdoc throws instead of being treated as optional. Use
+   * `DcqlService.createPresentation` to present mdocs for a DCQL query, or
+   * {@link MdocDeviceResponse.createDeviceResponse} with explicit `documentRequests`.
+   */
   public static async createDeviceResponseWithDcqlQuery(
     agentContext: AgentContext,
     options: MdocDeviceResponseDcqlQueryOptions
@@ -128,60 +134,58 @@ export class MdocDeviceResponse {
   ) {
     const inputDescriptor = MdocDeviceResponse.assertMdocInputDescriptor(options.inputDescriptor)
 
-    let issuerNamespaces: IssuerNamespaces | undefined
+    // First we try with all optional fields enabled, if the mdoc cannot satisfy that request, we try again, skipping all optional fields
+    const docRequestMatch =
+      MdocDeviceResponse.matchInputDescriptor(mdoc, inputDescriptor, { skipOptionalFields: false }) ??
+      MdocDeviceResponse.matchInputDescriptor(mdoc, inputDescriptor, { skipOptionalFields: true })
 
-    // First we try with all optional fields enabled, if that results in an error during the `limitDisclosureToDeviceRequestNameSpaces` call, we try again, skipping all optional fields
-    try {
-      // We take the first document request as we also only input a single input descriptor
-      const {
-        deviceRequest: {
-          docRequests: [convertedDocumentRequest],
-        },
-      } = convertPresentationDefinitionToDeviceRequest({
-        id: '<UNUSED_CREDO_ID>',
-        input_descriptors: [inputDescriptor],
-      })
-
-      const documentRequest = DocRequest.create({
-        itemsRequest: ItemsRequest.create({
-          docType: convertedDocumentRequest.itemsRequest.docType,
-          namespaces: convertedDocumentRequest.itemsRequest.nameSpaces,
-        }),
-      })
-
-      issuerNamespaces = limitDisclosureToDeviceRequestNameSpaces(mdoc.issuerSigned, documentRequest)
-    } catch (_error) {
-      // We take the first document request as we also only input a single input descriptor
-      const {
-        deviceRequest: {
-          docRequests: [convertedDocumentRequest],
-        },
-      } = convertPresentationDefinitionToDeviceRequest(
-        {
-          id: '<UNUSED_CREDO_ID>',
-          input_descriptors: [inputDescriptor],
-        },
-        { skipOptionalFields: true }
-      )
-
-      const documentRequest = DocRequest.create({
-        itemsRequest: ItemsRequest.create({
-          docType: convertedDocumentRequest.itemsRequest.docType,
-          namespaces: convertedDocumentRequest.itemsRequest.nameSpaces,
-        }),
-      })
-
-      issuerNamespaces = limitDisclosureToDeviceRequestNameSpaces(mdoc.issuerSigned, documentRequest)
+    if (!docRequestMatch) {
+      throw new MdocError(`Mdoc with doctype ${mdoc.docType} does not satisfy the input descriptor`)
     }
 
-    const disclosedPayloadAsRecord = Object.fromEntries(
-      Array.from(issuerNamespaces.issuerNamespaces.entries()).map(([namespace, issuerSignedItem]) => [
-        namespace,
-        Object.fromEntries(issuerSignedItem.map((isi) => [isi.elementIdentifier, isi.elementValue])),
-      ])
-    )
+    const disclosedPayloadAsRecord: Record<string, Record<string, unknown>> = {}
+    for (const claim of docRequestMatch.claims.validClaims) {
+      disclosedPayloadAsRecord[claim.namespace] ??= {}
+      disclosedPayloadAsRecord[claim.namespace][claim.disclosedElementIdentifier] = claim.elementValue
+    }
 
     return disclosedPayloadAsRecord
+  }
+
+  private static matchInputDescriptor(
+    mdoc: Mdoc,
+    inputDescriptor: PresentationDefinition['input_descriptors'][number],
+    { skipOptionalFields }: { skipOptionalFields: boolean }
+  ) {
+    // We take the first document request as we also only input a single input descriptor
+    const {
+      deviceRequest: {
+        docRequests: [convertedDocumentRequest],
+      },
+    } = convertPresentationDefinitionToDeviceRequest(
+      {
+        id: '<UNUSED_CREDO_ID>',
+        input_descriptors: [inputDescriptor],
+      },
+      { skipOptionalFields }
+    )
+
+    const { docRequests } = Holder.matchDeviceRequest({
+      deviceRequest: DeviceRequest.create({
+        version: '1.0',
+        docRequests: [
+          DocRequest.create({
+            itemsRequest: ItemsRequest.create({
+              docType: convertedDocumentRequest.itemsRequest.docType,
+              namespaces: convertedDocumentRequest.itemsRequest.nameSpaces,
+            }),
+          }),
+        ],
+      }),
+      credentials: [mdoc.issuerSigned],
+    })
+
+    return docRequests[0].success ? docRequests[0].validCredentials[0] : undefined
   }
 
   private static assertMdocInputDescriptor(inputDescriptor: InputDescriptorV2) {
@@ -256,26 +260,24 @@ export class MdocDeviceResponse {
       const deviceResponse = await DeviceResponse.createWithDeviceRequest(
         {
           deviceRequest: deviceRequestForDocument,
-          issuerSigned: [document.issuerSigned],
           sessionTranscript: await MdocDeviceResponse.calculateSessionTranscriptBytes(
             mdocContext,
             options.sessionTranscriptOptions
           ),
-          deviceNamespaces: options.deviceNameSpaces
-            ? DeviceNamespaces.create({
-                deviceNamespaces: new Map(
-                  Object.entries(options.deviceNameSpaces).map(([namespace, namespaceValue]) => [
-                    namespace,
-                    DeviceSignedItems.create({
-                      deviceSignedItems: new Map(Object.entries(namespaceValue)),
-                    }),
-                  ])
-                ),
-              })
-            : undefined,
-          signature: {
-            signingKey: CoseKey.fromJwk(deviceKeyJwk.toJson()),
-          },
+          documents: [
+            {
+              issuerSigned: document.issuerSigned,
+              // `deviceRequestForDocument` only holds doc requests for this document's doc type, and
+              // only the first disclosed document is kept below, so answer the first one.
+              docRequestIndex: 0,
+              deviceNamespaces: options.deviceNameSpaces
+                ? nameSpacesRecordToDeviceNamespaces(options.deviceNameSpaces)
+                : undefined,
+              signature: {
+                signingKey: CoseKey.fromJwk(deviceKeyJwk.toJson()),
+              },
+            },
+          ],
         },
         mdocContext
       )
@@ -305,7 +307,7 @@ export class MdocDeviceResponse {
 
     const trustedCertificates = convertMdocTrustedCertificates(options.trustedCertificates ?? [])
 
-    const verificationResults = await this.deviceResponse
+    const { documents: verificationResults } = await this.deviceResponse
       .verify(
         {
           trustedCertificates: mdocTrustedCertificatesToRaw(trustedCertificates),
@@ -410,10 +412,12 @@ export class MdocDeviceResponse {
         // biome-ignore lint/performance/noAccumulatingSpread: time complexity is not relevant here
         ...prev,
         [document.docType]: Object.fromEntries(
-          Array.from(document.issuerSigned.issuerNamespaces.issuerNamespaces.entries()).map(([namespace, claim]) => [
-            namespace,
-            Object.fromEntries(claim.map((c) => [c.elementIdentifier, c.elementValue])),
-          ])
+          Array.from(document.issuerSigned.issuerNamespaces?.issuerNamespaces.entries() ?? []).map(
+            ([namespace, claim]) => [
+              namespace,
+              Object.fromEntries(claim.map((c) => [c.elementIdentifier, c.elementValue])),
+            ]
+          )
         ),
       }),
       {}

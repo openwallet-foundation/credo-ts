@@ -6,7 +6,7 @@ import { performSign } from './sign'
 
 export async function performDecrypt(
   key: Kms.KmsJwkPrivateOct,
-  dataDecryption: Kms.KmsDecryptDataDecryption,
+  dataDecryption: Kms.KmsDecryptDataContentDecryption,
   encrypted: Uint8Array
 ): Promise<{ data: Uint8Array }> {
   const secretKeyBytes = TypedArrayEncoder.fromBase64Url(key.k)

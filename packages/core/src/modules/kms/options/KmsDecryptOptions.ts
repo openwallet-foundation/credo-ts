@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { zAnyUint8Array } from '../../../utils/zod'
-import { KnownJwaContentEncryptionAlgorithms } from '../jwk/jwa'
+import { isJwaHpkeAlgorithm, KnownJwaContentEncryptionAlgorithms } from '../jwk/jwa'
 import { zKmsJwkPrivateOct } from '../jwk/kty/oct/octJwk'
 import { zKmsKeyId } from './common'
 import { zKmsKeyAgreementDecryptOptions } from './KmsKeyAgreementDecryptOptions'
@@ -59,59 +59,101 @@ const zKmsDecryptDataDecryptionC20p = z.object({
 // )
 export type KmsDecryptDataDecryptionC20p = z.output<typeof zKmsDecryptDataDecryptionC20p>
 
+/**
+ * Integrated-encryption HPKE. The HPKE suite (see the `HPKE-*` key agreement algorithms) fixes the
+ * AEAD, and both the content encryption key and the nonce are derived from the HPKE key schedule.
+ * The tag is part of the HPKE ciphertext, so the only parameter left to the caller is the aad.
+ */
+const zKmsDecryptDataDecryptionHpke = z.object({
+  algorithm: z.literal('HPKE'),
+  aad: z.optional(zAnyUint8Array),
+})
+export type KmsDecryptDataDecryptionHpke = z.output<typeof zKmsDecryptDataDecryptionHpke>
+
 const zKmsDecryptDataDecryption = z.discriminatedUnion('algorithm', [
   zKmsDecryptDataDecryptionAesCbc,
   zKmsDecryptDataDecryptionAesCbcHmac,
   zKmsDecryptDataDecryptionAesGcm,
   zKmsDecryptDataDecryptionC20p,
   zKmsDecryptDataDecryptionSalsa,
+  zKmsDecryptDataDecryptionHpke,
 ])
 export type KmsDecryptDataDecryption = z.output<typeof zKmsDecryptDataDecryption>
 
-export const zKmsDecryptOptions = z.object({
-  /**
-   * The key to use for decrypting. There are three possible formats:
-   * - a key id, pointing to a symmetric (oct) jwk that can be used directly for decryption
-   * - a private symmetric (oct) jwk object that can be used directly for decryption
-   * - an object configuring key agreement, based on an existing asymmetric key
-   */
-  key: z.union([
-    z.object({
-      keyId: zKmsKeyId,
+/**
+ * Content decryption excluding the integrated-encryption HPKE marker, so the AEAD parameters a
+ * backend performs the actual content decryption with.
+ */
+export type KmsDecryptDataContentDecryption = Exclude<KmsDecryptDataDecryption, { algorithm: 'HPKE' }>
 
-      // never helps with type narrowing
-      privateJwk: z.never().optional(),
-      keyAgreement: z.never().optional(),
-    }),
-    z.object({
-      privateJwk: zKmsJwkPrivateOct.describe('A private oct (symmetric) jwk'),
+export const zKmsDecryptOptions = z
+  .object({
+    /**
+     * The key to use for decrypting. There are three possible formats:
+     * - a key id, pointing to a symmetric (oct) jwk that can be used directly for decryption
+     * - a private symmetric (oct) jwk object that can be used directly for decryption
+     * - an object configuring key agreement, based on an existing asymmetric key
+     */
+    key: z.union([
+      z.object({
+        keyId: zKmsKeyId,
 
-      // never helps with type narrowing
-      keyId: z.never().optional(),
-      keyAgreement: z.never().optional(),
-    }),
-    z.object({
-      keyAgreement: zKmsKeyAgreementDecryptOptions,
+        // never helps with type narrowing
+        privateJwk: z.never().optional(),
+        keyAgreement: z.never().optional(),
+      }),
+      z.object({
+        privateJwk: zKmsJwkPrivateOct.describe('A private oct (symmetric) jwk'),
 
-      // never helps with type narrowing
-      keyId: z.never().optional(),
-      privateJwk: z.never().optional(),
-    }),
-  ]),
+        // never helps with type narrowing
+        keyId: z.never().optional(),
+        keyAgreement: z.never().optional(),
+      }),
+      z.object({
+        keyAgreement: zKmsKeyAgreementDecryptOptions,
 
-  /**
-   * The decryption algorithm used to decrypt the data/content.
-   * In JWE this parameter is referred to as "enc".
-   */
-  decryption: zKmsDecryptDataDecryption.describe(
-    'Options related to the decryption algorithm to use for decrypting the data'
-  ),
+        // never helps with type narrowing
+        keyId: z.never().optional(),
+        privateJwk: z.never().optional(),
+      }),
+    ]),
 
-  /**
-   * The encrypted data to decrypt
-   */
-  encrypted: zAnyUint8Array.describe('The encrypted data to decrypt'),
-})
+    /**
+     * The decryption algorithm used to decrypt the data/content.
+     * In JWE this parameter is referred to as "enc".
+     *
+     * Must be 'HPKE' for the integrated-encryption HPKE algorithms, where the suite fixes the AEAD
+     * and only the aad is left to the caller.
+     */
+    decryption: zKmsDecryptDataDecryption.describe(
+      'Options related to the decryption algorithm to use for decrypting the data'
+    ),
+
+    /**
+     * The encrypted data to decrypt
+     */
+    encrypted: zAnyUint8Array.describe('The encrypted data to decrypt'),
+  })
+  .check(({ value, issues }) => {
+    const usesIntegratedEncryption = value.key.keyAgreement && isJwaHpkeAlgorithm(value.key.keyAgreement.algorithm)
+    const usesHpkeContentDecryption = value.decryption.algorithm === 'HPKE'
+
+    if (usesIntegratedEncryption && !usesHpkeContentDecryption) {
+      issues.push({
+        code: 'custom',
+        input: value.decryption,
+        path: ['decryption', 'algorithm'],
+        message: `'decryption.algorithm' must be 'HPKE' for key agreement algorithm '${value.key.keyAgreement?.algorithm}', as the HPKE suite defines the content encryption algorithm`,
+      })
+    } else if (!usesIntegratedEncryption && usesHpkeContentDecryption) {
+      issues.push({
+        code: 'custom',
+        input: value.decryption,
+        path: ['decryption', 'algorithm'],
+        message: `'decryption.algorithm' 'HPKE' can only be used with an integrated-encryption HPKE key agreement algorithm`,
+      })
+    }
+  })
 
 export type KmsDecryptOptions = z.output<typeof zKmsDecryptOptions>
 

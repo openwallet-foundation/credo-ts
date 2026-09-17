@@ -1,3 +1,4 @@
+export type { ClaimPath } from './disclosureFrame'
 export * from './repository'
 export * from './SdJwtVcApi'
 export * from './SdJwtVcError'
