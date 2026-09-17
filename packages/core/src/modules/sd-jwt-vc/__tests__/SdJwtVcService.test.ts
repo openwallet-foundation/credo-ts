@@ -16,16 +16,17 @@ import {
   X509Service,
 } from '@credo-ts/core'
 import { createHeaderAndPayload, StatusList } from '@owf/token-status-list'
-import { Jwt, SDJWTException, SDJwt } from '@sd-jwt/core'
+import { decodeSdJwtSync, getClaimsSync, Jwt, SDJWTException, SDJwt } from '@sd-jwt/core'
 import { randomUUID } from 'crypto'
 import nock from 'nock'
 import { vi } from 'vitest'
 import { transformSeedToPrivateJwk } from '../../../../../askar/src'
 import { getAgentOptions, mockProperty } from '../../../../tests'
 import { PublicJwk } from '../../kms'
+import { applyDisclosuresForPaths, buildPresentationFrameForPaths } from '../disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from '../repository'
 import { type CustomTypeMetadataResolver, SdJwtVcModuleConfig } from '../SdJwtVcModuleConfig'
-import type { SdJwtVcHeader, SdJwtVcPayload } from '../SdJwtVcOptions'
+import type { IDisclosureFrame, SdJwtVcHeader, SdJwtVcPayload } from '../SdJwtVcOptions'
 import { SdJwtVcService } from '../SdJwtVcService'
 import {
   complexSdJwtVc,
@@ -937,6 +938,290 @@ describe('SdJwtVcService', () => {
       })
 
       expect(presentation.compact).toEqual(simpleJwtVc)
+    })
+  })
+
+  describe('applyDisclosuresForPaths', () => {
+    const sign = (payload: Record<string, unknown>, disclosureFrame: IDisclosureFrame) =>
+      sdJwtVcService.sign(agent.context, {
+        payload: { vct: 'IdentityCredential', ...payload },
+        disclosureFrame,
+        holder: { method: 'jwk', jwk: holderKey },
+        issuer: { method: 'did', didUrl: issuerDidUrl },
+      })
+
+    test('Returns the SD-JWT VC with only the disclosures for the paths', async () => {
+      const { compact } = await sign(
+        { given_name: 'Erika', family_name: 'Mustermann' },
+        { _sd: ['given_name', 'family_name'] }
+      )
+
+      const sdJwtVc = sdJwtVcService.applyDisclosuresForPaths(compact, [['given_name']])
+
+      expect(sdJwtVc.prettyClaims.given_name).toBe('Erika')
+      expect(sdJwtVc.prettyClaims).not.toHaveProperty('family_name')
+    })
+
+    test('Discloses only the array elements at the given positions', async () => {
+      const { compact } = await sign({ nationalities: ['DE', 'NL', 'FR'] }, { nationalities: { _sd: [0, 1, 2] } })
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['nationalities', 1]])
+
+      expect(prettyClaims.nationalities).toStrictEqual(['NL'])
+      expect(disclosedPaths.filter((path) => path[0] === 'nationalities')).toStrictEqual([['nationalities', 1]])
+    })
+
+    test('Discloses all elements of an array whose elements are not selectively disclosable', async () => {
+      const { compact } = await sign({ nationalities: ['DE', 'NL', 'FR'] }, { _sd: ['nationalities'] })
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['nationalities', 1]])
+
+      expect(prettyClaims.nationalities).toStrictEqual(['DE', 'NL', 'FR'])
+      expect(disclosedPaths.filter((path) => path[0] === 'nationalities')).toStrictEqual([['nationalities']])
+    })
+
+    test('Discloses claims in selectively disclosable array elements', async () => {
+      const { compact } = await sign(
+        {
+          addresses: [
+            { street: 'Main St', city: 'Anytown' },
+            { street: 'Second St', city: 'Othertown' },
+          ],
+        },
+        { addresses: { _sd: [0, 1], 0: { _sd: ['street', 'city'] }, 1: { _sd: ['street', 'city'] } } }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['addresses', 1, 'city']])
+
+      expect(prettyClaims.addresses).toStrictEqual([{ city: 'Othertown' }])
+      expect(disclosedPaths.filter((path) => path[0] === 'addresses')).toStrictEqual([['addresses', 1, 'city']])
+    })
+
+    test('Discloses the selectively disclosable claims nested in a requested object', async () => {
+      const { compact } = await sign(
+        {
+          address: {
+            street: 'Main St',
+            city: 'Anytown',
+            country: { code: 'DE', name: 'Germany' },
+          },
+        },
+        { _sd: ['address'], address: { _sd: ['street', 'city', 'country'], country: { _sd: ['code', 'name'] } } }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['address']])
+
+      expect(prettyClaims.address).toStrictEqual({
+        street: 'Main St',
+        city: 'Anytown',
+        country: { code: 'DE', name: 'Germany' },
+      })
+      expect(disclosedPaths.filter((path) => path[0] === 'address')).toStrictEqual([['address']])
+    })
+
+    test('Discloses the selectively disclosable claims on the way to a requested claim', async () => {
+      const { compact } = await sign(
+        { address: { street: 'Main St', country: { code: 'DE', name: 'Germany' } } },
+        { _sd: ['address'], address: { _sd: ['street', 'country'], country: { _sd: ['code', 'name'] } } }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['address', 'country', 'code']])
+
+      expect(prettyClaims.address).toStrictEqual({ country: { code: 'DE' } })
+      expect(disclosedPaths.filter((path) => path[0] === 'address')).toStrictEqual([['address', 'country', 'code']])
+    })
+
+    test('Has a single path for a requested array with many nested selectively disclosable claims', async () => {
+      const drivingPrivileges = Array.from({ length: 1000 }, (_, index) => ({
+        vehicle_category_code: `C${index}`,
+        codes: [{ code: 'D', sign: '=', value: String(index) }],
+      }))
+
+      const { compact } = await sign(
+        { driving_privileges: drivingPrivileges },
+        {
+          _sd: ['driving_privileges'],
+          driving_privileges: {
+            _sd: drivingPrivileges.map((_, index) => index),
+            ...Object.fromEntries(
+              drivingPrivileges.map((_, index) => [index, { _sd: ['vehicle_category_code', 'codes'] }])
+            ),
+          },
+        }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['driving_privileges']])
+
+      expect(prettyClaims.driving_privileges).toStrictEqual(drivingPrivileges)
+      expect(disclosedPaths.filter((path) => path[0] === 'driving_privileges')).toStrictEqual([['driving_privileges']])
+    })
+
+    test('Builds a presentation frame that discloses everything below a path', async () => {
+      const { compact } = await sign(
+        { address: { street: 'Main St', country: { code: 'DE', name: 'Germany' } } },
+        { _sd: ['address'], address: { _sd: ['street', 'country'], country: { _sd: ['code', 'name'] } } }
+      )
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: compact,
+        presentationFrame: buildPresentationFrameForPaths(compact, [['address']]),
+      })
+
+      expect(sdJwtVcService.fromCompact(presentation).prettyClaims.address).toStrictEqual({
+        street: 'Main St',
+        country: { code: 'DE', name: 'Germany' },
+      })
+    })
+
+    test('Only discloses the requested claims nested in an object', async () => {
+      const { compact } = await sign(
+        { address: { street: 'Main St', city: 'Anytown' } },
+        { _sd: ['address'], address: { _sd: ['street', 'city'] } }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['address', 'city']])
+
+      expect(prettyClaims.address).toStrictEqual({ city: 'Anytown' })
+      expect(disclosedPaths.filter((path) => path[0] === 'address')).toStrictEqual([['address', 'city']])
+    })
+
+    test('Includes the path to a disclosed claim with a null value', async () => {
+      const { compact } = await sign({ middle_name: null, given_name: 'Erika' }, { _sd: ['given_name'] })
+
+      const { disclosedPaths } = applyDisclosuresForPaths(compact, [])
+
+      expect(disclosedPaths).toContainEqual(['middle_name'])
+      expect(disclosedPaths).not.toContainEqual(['given_name'])
+    })
+
+    // Builds an SD-JWT that is not signed, for payloads that sign() does not create
+    const buildUnsignedSdJwt = (
+      buildPayload: (digest: (disclosure: unknown[]) => string) => object,
+      alg = 'sha-256'
+    ) => {
+      const toBase64Url = (value: unknown) =>
+        TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromUtf8String(JSON.stringify(value)))
+
+      const disclosures: string[] = []
+      const payload = buildPayload((disclosure) => {
+        const encoded = toBase64Url(disclosure)
+        disclosures.push(encoded)
+        return TypedArrayEncoder.toBase64Url(Hasher.hash(encoded, alg))
+      })
+
+      return `${toBase64Url({ alg: 'ES256' })}.${toBase64Url(payload)}.signature~${disclosures.map((disclosure) => `${disclosure}~`).join('')}`
+    }
+
+    // The claims of an SD-JWT, which unlike fromCompact() does not need an issuer
+    const getClaims = (compact: string) => {
+      const { jwt, disclosures } = decodeSdJwtSync(compact, Hasher.hash)
+      return getClaimsSync(jwt.payload, disclosures, Hasher.hash) as Record<string, unknown>
+    }
+
+    test('Gives array elements after a decoy digest the position they have in the claims', async () => {
+      const compact = buildUnsignedSdJwt((digest) => ({
+        vct: 'IdentityCredential',
+        nationalities: [
+          { '...': digest(['salt1', 'DE']) },
+          { '...': TypedArrayEncoder.toBase64Url(Hasher.hash('decoy', 'sha-256')) },
+          { '...': digest(['salt2', 'FR']) },
+        ],
+      }))
+      expect(getClaims(compact).nationalities).toStrictEqual(['DE', 'FR'])
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['nationalities', 1]])
+      expect(prettyClaims.nationalities).toStrictEqual(['FR'])
+      expect(disclosedPaths.filter((path) => path[0] === 'nationalities')).toStrictEqual([['nationalities', 1]])
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: compact,
+        presentationFrame: buildPresentationFrameForPaths(compact, disclosedPaths),
+      })
+      expect(getClaims(presentation).nationalities).toStrictEqual(['FR'])
+    })
+
+    test('Does not disclose the claims on the way to a path without a claim', async () => {
+      const { compact } = await sign(
+        { address: { street: 'Main St', city: 'Anytown' } },
+        { _sd: ['address'], address: { _sd: ['street', 'city'] } }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['address', 'country']])
+
+      expect(prettyClaims.address).toBeUndefined()
+      expect(disclosedPaths.filter((path) => path[0] === 'address')).toStrictEqual([])
+      expect(buildPresentationFrameForPaths(compact, [['address', 'country']])).not.toHaveProperty('address')
+    })
+
+    test('Only has a single path for a nested claim when everything below it is disclosed', async () => {
+      const { compact } = await sign(
+        { address: { street: 'Main St', country: { code: 'DE', name: 'Germany' } } },
+        { _sd: ['address'], address: { _sd: ['street'], country: { _sd: ['name'] } } }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['address', 'street']])
+
+      expect(prettyClaims.address).toStrictEqual({ street: 'Main St', country: { code: 'DE' } })
+      expect(disclosedPaths.filter((path) => path[0] === 'address')).toStrictEqual([
+        ['address', 'country', 'code'],
+        ['address', 'street'],
+      ])
+    })
+
+    test('Selects an array element only by a number, and a property only by a string', async () => {
+      const { compact } = await sign(
+        { list: ['a', 'b'], object: { '0': 'zero', '1': 'one' } },
+        { list: { _sd: [0, 1] }, object: { _sd: ['0', '1'] } }
+      )
+
+      const claimsFor = (paths: Array<Array<string | number>>) => applyDisclosuresForPaths(compact, paths).prettyClaims
+
+      expect(claimsFor([['list', 0]]).list).toStrictEqual(['a'])
+      expect(claimsFor([['list', '0']]).list).toStrictEqual([])
+      expect(claimsFor([['object', '0']]).object).toStrictEqual({ '0': 'zero' })
+      expect(claimsFor([['object', 0]]).object).toStrictEqual({})
+    })
+
+    test('Gives a property from a disclosure with a claim name that is not a string the name as a string', () => {
+      const compact = buildUnsignedSdJwt((digest) => ({
+        vct: 'IdentityCredential',
+        object: { _sd: [digest(['salt1', 1, 'one'])] },
+      }))
+      expect(getClaims(compact).object).toStrictEqual({ '1': 'one' })
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['object', '1']])
+
+      expect(prettyClaims.object).toStrictEqual({ '1': 'one' })
+      expect(disclosedPaths).toContainEqual(['object'])
+    })
+
+    test('Treats an array element with a value under ... that is not a string as a claim', () => {
+      const compact = buildUnsignedSdJwt(() => ({ vct: 'IdentityCredential', list: [{ '...': 1 }, 'value'] }))
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [])
+
+      expect(prettyClaims.list).toStrictEqual([{ '...': 1 }, 'value'])
+      expect(disclosedPaths).toContainEqual(['list'])
+    })
+
+    test('Uses the hash algorithm of the SD-JWT', () => {
+      const compact = buildUnsignedSdJwt(
+        (digest) => ({
+          vct: 'IdentityCredential',
+          _sd_alg: 'sha-384',
+          _sd: [digest(['salt1', 'given_name', 'Erika']), digest(['salt2', 'family_name', 'Mustermann'])],
+        }),
+        'sha-384'
+      )
+
+      const { compact: disclosed, prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['given_name']])
+
+      expect(prettyClaims).toStrictEqual({ vct: 'IdentityCredential', given_name: 'Erika' })
+      expect(disclosedPaths).toStrictEqual([['vct'], ['given_name']])
+      expect(getClaims(disclosed)).toStrictEqual({
+        vct: 'IdentityCredential',
+        given_name: 'Erika',
+      })
     })
   })
 
