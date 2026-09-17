@@ -279,9 +279,9 @@ export class DidCommMessageSender {
       )
     })
 
-    const authentication = didDocument.authentication
-      ?.map((a) => {
-        const verificationMethod = typeof a === 'string' ? didDocument.dereferenceVerificationMethod(a) : a
+    const authentication = didDocument
+      .findVerificationMethodsByPurpose(['authentication'])
+      .map((verificationMethod) => {
         const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
         const kmsKeyId = keys?.find((key) => verificationMethod.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
 
