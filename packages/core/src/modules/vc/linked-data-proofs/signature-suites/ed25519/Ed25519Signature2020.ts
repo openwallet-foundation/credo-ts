@@ -1,5 +1,4 @@
-import { MultiBaseEncoder, TypedArrayEncoder } from '../../../../../utils'
-import { Ed25519PublicJwk, PublicJwk } from '../../../../kms'
+import { MultiBaseEncoder } from '../../../../../utils'
 import jsonld from '../../../jsonld/jsonld'
 import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../proof-ops/jsonldUtil'
 import { _includesContext } from '../../proof-ops/jsonldUtil'
@@ -48,7 +47,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
    * @param {boolean} [options.useNativeCanonize] - Whether to use a native
    *   canonize algorithm.
    */
-  public constructor(options: Ed25519Signature2020Options) {
+  public constructor(options: Ed25519Signature2020Options = {}) {
     super({
       type: 'Ed25519Signature2020',
       algorithm: 'EdDSA',
@@ -74,12 +73,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
     if (!_isEd2020Key(document)) {
       const verificationMethodType = jsonld.getValues(document, 'type')[0]
       throw new Error(
-        `Unsupported verification method type '${verificationMethodType}'. Verification method type MUST be 'Ed25519VerificationKey2020'.`
-      )
-    }
-    if (_isEd2020Key(document) && !_includesEd2020Context(document)) {
-      throw new Error(
-        `For verification method type 'Ed25519VerificationKey2020' the '@context' MUST contain the context url "${ED25519_SUITE_CONTEXT_URL_2020}".`
+        `Unsupported verification method type '${verificationMethodType}' for proof type '${this.type}'. Verification method type MUST be '${this.requiredKeyType}'.`
       )
     }
 
@@ -87,33 +81,6 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
     if (document.revoked !== undefined) {
       throw new Error('The verification method has been revoked.')
     }
-  }
-
-  public async getVerificationMethod(options: { proof: Proof; documentLoader?: DocumentLoader }) {
-    let verificationMethod = await super.getVerificationMethod({
-      proof: options.proof,
-      documentLoader: options.documentLoader,
-    })
-
-    // convert Ed25519VerificationKey2020 to Ed25519VerificationKey2018
-    if (_isEd2020Key(verificationMethod) && _includesEd2020Context(verificationMethod)) {
-      // -- convert multibase to base58 --
-      const publicJwk = PublicJwk.fromFingerprint(verificationMethod.publicKeyMultibase)
-      if (!publicJwk.is(Ed25519PublicJwk)) {
-        throw new Error('Expected multibase key to be of type Ed25519.')
-      }
-
-      // -- update type
-      verificationMethod.type = 'Ed25519VerificationKey2018'
-
-      verificationMethod = {
-        ...verificationMethod,
-        publicKeyMultibase: undefined,
-        publicKeyBase58: TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey),
-      }
-    }
-
-    return verificationMethod
   }
 
   /**
@@ -232,8 +199,4 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
 
 function _isEd2020Key(verificationMethod: JsonLdDoc) {
   return jsonldWithHasValue.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2020')
-}
-
-function _includesEd2020Context(document: JsonLdDoc) {
-  return _includesContext({ document, contextUrl: ED25519_SUITE_CONTEXT_URL_2020 })
 }

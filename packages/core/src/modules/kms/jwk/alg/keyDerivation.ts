@@ -32,6 +32,17 @@ export function supportedKeyDerivationAlgsForKey(
   if (jwk.kty === 'EC' && (jwk.crv === 'P-256' || jwk.crv === 'P-384')) {
     algs.push('ECDH-1PU+A256KW')
   }
+
+  // The HPKE suites bind a specific KEM, so each is only valid for its own curve.
+  if (isCrvJwk(jwk) && jwk.crv === 'P-256') {
+    algs.push('HPKE-0', 'HPKE-7')
+  }
+  if (isCrvJwk(jwk) && jwk.crv === 'X25519') {
+    algs.push('HPKE-3')
+  }
+
+  // Special case where we allow Ed25519 for X25519 based operation, since that is
+  // how DIDComm v1 works.
   if (jwk.kty === 'OKP' && (jwk.crv === 'X25519' || jwk.crv === 'Ed25519')) {
     algs.push('ECDH-HSALSA20')
   }

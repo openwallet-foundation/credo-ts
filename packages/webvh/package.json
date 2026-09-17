@@ -9,7 +9,7 @@
     "./anoncreds": "./src/anoncreds/index.ts",
     "./resources": "./src/resources/index.ts"
   },
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Credo WebVH DID method implementation",
   "files": [
     "build"
@@ -54,7 +54,7 @@
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
     "didwebvh-ts": "^2.8.0",
-    "json-canonicalize": "^2.0.0",
+    "json-canonicalize": "^3.0.0",
     "tsyringe": "catalog:"
   },
   "devDependencies": {

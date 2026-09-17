@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { zAnyUint8Array } from '../../../utils/zod'
+import { isJwaHpkeAlgorithm, zKnownJwaHpkeAlgorithm } from '../jwk/jwa'
 import { zKmsJwkPublicEc } from '../jwk/kty/ec/ecJwk'
 import { zKmsJwkPublicOkp } from '../jwk/kty/okp/okpJwk'
 import { zKmsKeyId } from './common'
@@ -80,12 +81,39 @@ const zKmsKeyAgreementEncryptEcdh1Pu = z.object({
 })
 export type KmsKeyAgreementEncryptEcdh1Pu = z.output<typeof zKmsKeyAgreementEncryptEcdh1Pu>
 
+export const zKmsKeyAgreementEncryptHpke = z.object({
+  /**
+   * HPKE (RFC 9180) in single-shot base mode. The suite fixes the AEAD, so `encryption` must not be
+   * provided on the top-level encrypt options.
+   */
+  algorithm: zKnownJwaHpkeAlgorithm,
+
+  /**
+   * The public key of the recipient (`pkR`). HPKE generates its own ephemeral sender key, so no
+   * `keyId` is used for sealing.
+   */
+  externalPublicJwk: zKmsJwkPublicEcdh,
+
+  /**
+   * Application supplied information, bound into the HPKE key schedule.
+   */
+  info: z.optional(zAnyUint8Array),
+})
+export type KmsKeyAgreementEncryptHpke = z.output<typeof zKmsKeyAgreementEncryptHpke>
+
 export const zKmsKeyAgreementEncryptOptions = z
   .discriminatedUnion('algorithm', [
     zKmsKeyAgreementEcdhEs,
     zKmsKeyAgreementEncryptEcdhEsKw,
     zKmsKeyAgreementEncryptEcdhHsalsa20,
     zKmsKeyAgreementEncryptEcdh1Pu,
+    zKmsKeyAgreementEncryptHpke,
   ])
   .describe('Options for key agreement based on an asymmetric key.')
 export type KmsKeyAgreementEncryptOptions = z.output<typeof zKmsKeyAgreementEncryptOptions>
+
+export function isKmsKeyAgreementEncryptHpke(
+  keyAgreement: KmsKeyAgreementEncryptOptions
+): keyAgreement is KmsKeyAgreementEncryptHpke {
+  return isJwaHpkeAlgorithm(keyAgreement.algorithm)
+}

@@ -81,6 +81,28 @@ export const KnownJwaKeyAgreementAlgorithms = {
 
   /** DIDComm v2 authcrypt; draft-madden-jose-ecdh-1pu */
   ECDH_1PU_A256KW: 'ECDH-1PU+A256KW',
+
+  // HPKE (RFC 9180) in integrated encryption mode, named after
+  // draft-ietf-jose-hpke-encrypt. The suite fixes the AEAD, so no separate content encryption
+  // algorithm is used:
+  // - HPKE-0: DHKEM(P-256, HKDF-SHA256) / HKDF-SHA256 / AES-128-GCM
+  // - HPKE-3: DHKEM(X25519, HKDF-SHA256) / HKDF-SHA256 / AES-128-GCM
+  // - HPKE-7: DHKEM(P-256, HKDF-SHA256) / HKDF-SHA256 / AES-256-GCM
+  HPKE_0: 'HPKE-0',
+  HPKE_3: 'HPKE-3',
+  HPKE_7: 'HPKE-7',
 } as const
 const zKnownJwaKeyAgreementAlgorithm = z.enum(recordToUnion(KnownJwaKeyAgreementAlgorithms))
 export type KnownJwaKeyAgreementAlgorithm = z.output<typeof zKnownJwaKeyAgreementAlgorithm>
+
+export const KnownJwaHpkeAlgorithms = [
+  KnownJwaKeyAgreementAlgorithms.HPKE_0,
+  KnownJwaKeyAgreementAlgorithms.HPKE_3,
+  KnownJwaKeyAgreementAlgorithms.HPKE_7,
+] as const
+export const zKnownJwaHpkeAlgorithm = z.enum(KnownJwaHpkeAlgorithms)
+export type KnownJwaHpkeAlgorithm = z.output<typeof zKnownJwaHpkeAlgorithm>
+
+export function isJwaHpkeAlgorithm(algorithm: string): algorithm is KnownJwaHpkeAlgorithm {
+  return (KnownJwaHpkeAlgorithms as readonly string[]).includes(algorithm)
+}
