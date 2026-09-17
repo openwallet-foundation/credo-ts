@@ -8,7 +8,7 @@ import type { JsonObject } from '../../../types'
 import { asArray, JsonTransformer, MessageValidator, nowInSeconds, TypedArrayEncoder } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi } from '../../kms'
-import { applyDisclosuresForPayload } from '../../sd-jwt-vc/disclosureFrame'
+import { applyDisclosuresForPaths, applyDisclosuresForPayload, type ClaimPath } from '../../sd-jwt-vc/disclosureFrame'
 import {
   extractKeyFromHolderBinding,
   getSdJwtSigner,
@@ -442,12 +442,20 @@ export class W3cV2SdJwtCredentialService {
     return W3cV2SdJwtVerifiableCredential.fromCompact(disclosedCompact)
   }
 
+  /**
+   * @deprecated use `applyDisclosuresForPaths` instead
+   */
   public applyDisclosuresForPayload(
     compactSdJwtVc: string,
     requestedPayload: JsonObject
   ): W3cV2SdJwtVerifiableCredential {
     const sdJwt = applyDisclosuresForPayload(compactSdJwtVc, requestedPayload)
     return W3cV2SdJwtVerifiableCredential.fromCompact(sdJwt)
+  }
+
+  public applyDisclosuresForPaths(compactSdJwtVc: string, disclosedPaths: ClaimPath[]): W3cV2SdJwtVerifiableCredential {
+    const { compact } = applyDisclosuresForPaths(compactSdJwtVc, disclosedPaths)
+    return W3cV2SdJwtVerifiableCredential.fromCompact(compact)
   }
 
   private validateDisclosureFrame(disclosureFrame?: DisclosureFrame<W3cV2JsonCredential | W3cV2JsonPresentation>) {
