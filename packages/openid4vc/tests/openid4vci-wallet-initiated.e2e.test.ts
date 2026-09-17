@@ -51,6 +51,8 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
     credentialConfiguration,
     holderBinding,
   }) => {
+    if (!holderBinding) throw new Error('Expected holder binding in credential request mapper')
+
     const didsApi = agentContext.dependencyManager.resolve(DidsApi)
     const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
     const didDocument = await didsApi.resolveDidDocument(firstDidKeyDid.did)

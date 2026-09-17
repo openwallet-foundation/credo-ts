@@ -30,6 +30,7 @@ import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import {
   universityDegreeCredentialConfigurationSupported,
+  universityDegreeCredentialConfigurationSupportedBearer,
   universityDegreeCredentialConfigurationSupportedJwkOnly,
   universityDegreeCredentialConfigurationSupportedMdoc,
 } from './utilsVci'
@@ -98,6 +99,20 @@ describe('OpenId4Vc', () => {
                   credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtDc) &&
                 credentialConfiguration.vct
               ) {
+                if (!holderBinding) {
+                  return {
+                    type: 'credentials',
+                    format: 'dc+sd-jwt',
+                    credentials: [
+                      {
+                        payload: { vct: credentialConfiguration.vct, university: 'innsbruck', degree: 'bachelor' },
+                        issuer: { method: 'did', didUrl: verificationMethod.id },
+                        disclosureFrame: { _sd: ['university', 'degree'] },
+                      },
+                    ],
+                  }
+                }
+
                 return {
                   type: 'credentials',
                   format: 'dc+sd-jwt',
@@ -112,6 +127,8 @@ describe('OpenId4Vc', () => {
                   })),
                 }
               }
+
+              if (!holderBinding) throw new Error('Expected holder binding in credential request mapper')
 
               if (credentialRequest.format === 'mso_mdoc') {
                 return {
@@ -535,5 +552,76 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(firstMdoc.docType).toEqual('UniversityDegreeCredential')
 
     await holderTenant1.endSession()
+  })
+
+  it('e2e flow issuing a bearer sd-jwt-vc, no proof and no holder binding', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedBearer,
+      },
+    })
+
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+    })
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Completed,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
+    })
+
+    expect(credentialResponse.credentials).toHaveLength(1)
+    const sdJwtVc = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+
+    expect(sdJwtVc.holder).toBeUndefined()
+    expect(sdJwtVc.kmsKeyId).toBeUndefined()
+    expect(sdJwtVc.payload).not.toHaveProperty('cnf')
+    expect(sdJwtVc.payload.vct).toEqual('UniversityDegreeCredential')
+
+    await holderTenant.endSession()
+    await issuerTenant.endSession()
+  })
+
+  it('throws when a configuration requires a proof but no credentialBindingResolver is provided', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    await expect(
+      holderTenant.modules.openid4vc.holder.requestCredentials({ resolvedCredentialOffer, ...tokenResponse })
+    ).rejects.toThrow('requires a proof, but no credentialBindingResolver was provided')
+
+    await holderTenant.endSession()
+    await issuerTenant.endSession()
   })
 })
