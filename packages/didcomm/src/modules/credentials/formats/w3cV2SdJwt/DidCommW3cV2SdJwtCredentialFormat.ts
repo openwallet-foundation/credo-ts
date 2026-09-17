@@ -1,4 +1,11 @@
-import type { IDisclosureFrame, JsonObject, Kms, SdJwtVcHolderBinding, W3cV2Credential } from '@credo-ts/core'
+import type {
+  IDisclosureFrame,
+  JsonObject,
+  Kms,
+  SdJwtVcHolderBinding,
+  W3cV2Credential,
+  W3cV2Issuer,
+} from '@credo-ts/core'
 import type { DidCommCredentialFormat } from '../DidCommCredentialFormat'
 import type { W3cV2SdJwtCredential, W3cV2SdJwtCredentialOffer, W3cV2SdJwtCredentialRequest } from './w3cV2SdJwtExchange'
 
@@ -27,6 +34,13 @@ export interface DidCommW3cV2SdJwtAcceptOfferFormat {
 }
 
 export interface DidCommW3cV2SdJwtAcceptRequestFormat {
+  /**
+   * The issuer of the credential. RFC 881 allows an offer to omit the issuer when it is only known at
+   * time of issuance, in which case it MUST be supplied here. Ignored when the offered credential
+   * already has an issuer.
+   */
+  issuer?: string | W3cV2Issuer
+
   /**
    * The verification method of the credential issuer to sign the credential with. MUST belong to the
    * issuer of the credential and be listed under the `assertionMethod` purpose. When omitted, the first

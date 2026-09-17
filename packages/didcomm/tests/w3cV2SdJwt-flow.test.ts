@@ -266,8 +266,9 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
     ).rejects.toThrow('Received credential does not match the offered credential')
   })
 
-  test('processCredential accepts a validFrom that the offer omitted', async () => {
+  test('processCredential accepts an issuer and validFrom that the offer omitted', async () => {
     const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv, {
+      omitIssuer: true,
       omitValidFrom: true,
     })
 
@@ -275,8 +276,12 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
       credentialExchangeRecord: issuerCredentialRecord,
       requestAttachment,
       offerAttachment,
-      credentialFormats: { w3cV2SdJwt: {} },
+      // The offer has no issuer, so it is supplied at time of issuance
+      credentialFormats: { w3cV2SdJwt: { issuer: issuerKdv.did } },
     })
+
+    const { credential } = credentialAttachment.getDataAsJson<{ credential: string }>()
+    expect(W3cV2SdJwtVerifiableCredential.fromCompact(credential).resolvedCredential.issuerId).toBe(issuerKdv.did)
 
     const holderCredentialRecord = new DidCommCredentialExchangeRecord({
       protocolVersion: 'v2',
@@ -293,6 +298,35 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
         offerAttachment,
       })
     ).resolves.toBeUndefined()
+  })
+
+  test('acceptRequest requires an issuer when the offer omitted one', async () => {
+    const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv, {
+      omitIssuer: true,
+    })
+
+    await expect(
+      formatService.acceptRequest(agentContext, {
+        credentialExchangeRecord: issuerCredentialRecord,
+        requestAttachment,
+        offerAttachment,
+        credentialFormats: { w3cV2SdJwt: {} },
+      })
+    ).rejects.toThrow('The offered credential has no issuer')
+  })
+
+  test('acceptRequest keeps the issuer of the offered credential over the supplied one', async () => {
+    const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv)
+
+    const { attachment: credentialAttachment } = await formatService.acceptRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      requestAttachment,
+      offerAttachment,
+      credentialFormats: { w3cV2SdJwt: { issuer: 'did:key:zSomeoneElse' } },
+    })
+
+    const { credential } = credentialAttachment.getDataAsJson<{ credential: string }>()
+    expect(W3cV2SdJwtVerifiableCredential.fromCompact(credential).resolvedCredential.issuerId).toBe(issuerKdv.did)
   })
 
   test('processCredential rejects a credential that did not make an offered claim selectively disclosable', async () => {
@@ -404,11 +438,13 @@ async function offerAndRequest(
     credentialSubject = { name: 'John' },
     disclosureFrame,
     omitValidFrom,
+    omitIssuer,
   }: {
     credentialSubjectId?: string
     credentialSubject?: JsonObject
     disclosureFrame?: IDisclosureFrame
     omitValidFrom?: boolean
+    omitIssuer?: boolean
   } = {}
 ) {
   const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
@@ -425,7 +461,7 @@ async function offerAndRequest(
         credential: {
           '@context': ['https://www.w3.org/ns/credentials/v2'],
           type: ['VerifiableCredential'],
-          issuer: issuer.did,
+          ...(omitIssuer ? {} : { issuer: issuer.did }),
           ...(omitValidFrom ? {} : { validFrom: new Date().toISOString() }),
           credentialSubject: { ...(credentialSubjectId ? { id: credentialSubjectId } : {}), ...credentialSubject },
         },

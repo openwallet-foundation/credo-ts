@@ -136,11 +136,10 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     const credentialJson = credentialOffer.credential
     if ('proof' in credentialJson) throw new CredoError('The offered credential MUST NOT contain any proofs.')
 
-    // Validate credential as VCDM 2.0 (with offer exceptions: issuer/validFrom can be missing)
+    // Validate credential as VCDM 2.0 (with offer exceptions: `issuer` can be missing)
     const credentialToValidate = {
       ...credentialJson,
       issuer: credentialJson.issuer ?? 'https://placeholder.com',
-      validFrom: credentialJson.validFrom ?? new Date().toISOString(),
     }
     JsonTransformer.fromJSON(credentialToValidate, W3cV2Credential)
 
@@ -164,7 +163,6 @@ export class DidCommW3cV2SdJwtCredentialFormatService
     const credentialToValidate = {
       ...credentialJson,
       issuer: credentialJson.issuer ?? 'https://placeholder.com',
-      validFrom: credentialJson.validFrom ?? new Date().toISOString(),
     }
     JsonTransformer.fromJSON(credentialToValidate, W3cV2Credential)
 
@@ -293,7 +291,17 @@ export class DidCommW3cV2SdJwtCredentialFormatService
 
     // Tranform the credential
     const w3cV2CredentialService = agentContext.dependencyManager.resolve(W3cV2CredentialService)
-    const credential = JsonTransformer.fromJSON(credentialOffer.credential, W3cV2Credential)
+
+    // RFC 881 allows the offer to omit the issuer when it is only known at time of issuance, while the
+    // data model requires one, so it may need to be supplied here.
+    const issuer = credentialOffer.credential.issuer ?? w3cV2SdJwtFormat?.issuer
+    if (!issuer) {
+      throw new CredoError(
+        'The offered credential has no issuer. Provide one using the `issuer` w3cV2SdJwt accept request option.'
+      )
+    }
+
+    const credential = JsonTransformer.fromJSON({ ...credentialOffer.credential, issuer }, W3cV2Credential)
 
     // Set credentialSubject.id from the caller supplied id and/or the holder binding DID. Applying both
     // in turn means a conflict between them is rejected rather than silently resolved.
