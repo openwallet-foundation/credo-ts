@@ -77,9 +77,14 @@ const agent = new Agent(
   )
 )
 
-agent.kms.randomBytes = vi.fn(function () {
-  return TypedArrayEncoder.fromUtf8String('salt')
-})
+const staticSalt = () => TypedArrayEncoder.fromUtf8String('salt')
+agent.kms.randomBytes = vi.fn(staticSalt)
+
+// Disclosure salts must be unique within a single sd-jwt, so tests issuing multiple disclosures need unique salts
+const mockUniqueSalts = () => {
+  let counter = 0
+  vi.mocked(agent.kms.randomBytes).mockImplementation(() => TypedArrayEncoder.fromUtf8String(`salt${counter++}`))
+}
 Date.prototype.getTime = vi.fn(function () {
   return 1698151532000
 })
@@ -106,7 +111,7 @@ const generateStatusList = async (
     statusList,
     {
       iss: did,
-      sub: 'https://example.com/status/1',
+      sub: 'https://example.com/status-list',
       iat: Date.now() / 1000,
     },
     {
@@ -144,7 +149,7 @@ const generateX509StatusList = async (
     statusList,
     {
       iss: 'https://example.com',
-      sub: 'https://example.com/status/1',
+      sub: 'https://example.com/status-list',
       iat: Date.now() / 1000,
     },
     {
@@ -248,6 +253,10 @@ describe('SdJwtVcService', () => {
   })
 
   describe('SdJwtVcService.sign', () => {
+    afterEach(() => {
+      vi.mocked(agent.kms.randomBytes).mockImplementation(staticSalt)
+    })
+
     test('Sign (x509) sd-jwt-vc with an invalid certificate issuer should fail', async () => {
       await expect(
         sdJwtVcService.sign(agent.context, {
@@ -549,7 +558,8 @@ describe('SdJwtVcService', () => {
     })
 
     test('Create sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const { compact, header, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
+      mockUniqueSalts()
+      const { header, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
         disclosureFrame: {
           _sd: ['is_over_65', 'is_over_21', 'is_over_18', 'birthdate', 'email', 'given_name'],
           address: {
@@ -585,8 +595,6 @@ describe('SdJwtVcService', () => {
         headerType: 'vc+sd-jwt',
       })
 
-      expect(compact).toStrictEqual(complexSdJwtVc)
-
       expect(header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
@@ -597,7 +605,7 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(Date.now() / 1000),
         address: {
-          _sd: ['8Kl-6KGl7JjFrlN0ZKDPKzeRfo0oJ5Tv0F6cXgpmOCY', 'cxH6g51BOh8vDiQXW88Kq896DEVLZZ4mbuLO6z__5ds'],
+          _sd: ['-5id9AETSlfSgueABbi7AxNO_jMnixiMAK0Y-RFSg1M', 'k1UUbHcbyjSI3lqKAIUXdqgVrVA8W_SlgPmL0DGSvcA'],
           locality: 'Anytown',
           street_address: '123 Main St',
         },
@@ -605,12 +613,12 @@ describe('SdJwtVcService', () => {
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         _sd: [
-          '1oLbHVhfmVs2oA3vhFNTXhMw4lGu7ql9dZ0T7p-vWqE',
-          '2xuzS3kUrT6VPJD-MySIkQ47HIB-gcyzF5NDY19cPBw',
-          'hn1gcrO_Q2HskW2Z_nzIrIl6KpgqldvScozutJdbhWM',
-          'jc73t3yBoDs_pDYb03lEYKYvCbtCq9NhuJ6_5A7QNSs',
-          'lKI_sY05pDIs9MDrjCO4v8XoDM963JXxrp9T2FNLyTY',
-          'sl0hkY5LeVwy3rIjNaCl4P4CJ3C3v8Ip-GH2lB9Sd_A',
+          'GRuP81jhLKxUXmVTvd_wNCdbIoc_mxx75PNavKn_XKI',
+          'OXrkrM39EeoiWKZMLCOJxzImLUseRo9kdUgQfeOSnEQ',
+          'YrwUmkjIZz4ZRW1vfPvMunqKaEn-bCpSFEJO-RFwVTs',
+          'gjCZSKGwu9bO3mqnBVfhakDSzFrKhfeWWrhZpcnZLzo',
+          'o1MzUdDNDx5gOAW2FaaVhGald8-3Jb4A6S_FBhzn5zk',
+          'ws7qipcgSSOKTtgPFd7u0fwpOLoK4rIKgGqQoM1ORi0',
         ],
         _sd_alg: 'sha-256',
         cnf: {
@@ -643,6 +651,7 @@ describe('SdJwtVcService', () => {
     })
 
     test('Create sd-jwt-vc from a basic payload with multiple (nested) disclosure where a disclosure contains other disclosures', async () => {
+      mockUniqueSalts()
       const { header, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
         disclosureFrame: {
           _sd: ['is_over_65', 'is_over_21', 'is_over_18', 'birthdate', 'email', 'given_name', 'address'],
@@ -691,13 +700,13 @@ describe('SdJwtVcService', () => {
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         _sd: [
-          '1oLbHVhfmVs2oA3vhFNTXhMw4lGu7ql9dZ0T7p-vWqE',
-          '2xuzS3kUrT6VPJD-MySIkQ47HIB-gcyzF5NDY19cPBw',
-          'RDQeb-TXvRaGsX5jV4W2-xAKutsaYZVm8qEvMtP71pc',
-          'hn1gcrO_Q2HskW2Z_nzIrIl6KpgqldvScozutJdbhWM',
-          'jc73t3yBoDs_pDYb03lEYKYvCbtCq9NhuJ6_5A7QNSs',
-          'lKI_sY05pDIs9MDrjCO4v8XoDM963JXxrp9T2FNLyTY',
-          'sl0hkY5LeVwy3rIjNaCl4P4CJ3C3v8Ip-GH2lB9Sd_A',
+          'LYk_sFxcqWbJvdoB_qrXkMRJwu3FafsVe_1RJwz3L-8',
+          'SUShCtoCQQ_YUfyfmhSKwqyQHjqH1X9ZiurnWNvfHI4',
+          'YrwUmkjIZz4ZRW1vfPvMunqKaEn-bCpSFEJO-RFwVTs',
+          'gjCZSKGwu9bO3mqnBVfhakDSzFrKhfeWWrhZpcnZLzo',
+          'hu-enwvnFozp9eH1NTcQnl_g3-gqlmHRBFD8lreDM4s',
+          'keoVRCHpUVfOQEma48MMA0sYCjox8yS2IPEc9MQgzGM',
+          'mvwvkBPwUX28Bm8dwhDHyXT9_SeLsPHPPUFMSTAyRK4',
         ],
         _sd_alg: 'sha-256',
         cnf: {
