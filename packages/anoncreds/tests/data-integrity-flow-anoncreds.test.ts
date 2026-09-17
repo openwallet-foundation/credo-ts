@@ -32,10 +32,11 @@ import {
   JsonLdModuleConfig,
   KeyDidRegistrar,
   KeyDidResolver,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
+  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import type { DataIntegrityCredentialRequest } from '@credo-ts/didcomm'
 import {
@@ -43,6 +44,7 @@ import {
   DidCommCredentialPreviewAttribute,
   DidCommCredentialRole,
   DidCommCredentialState,
+  DidCommDataIntegrityLinkSecretBindingProviderToken,
   DidCommProofExchangeRecord,
   DidCommProofRole,
   DidCommProofState,
@@ -54,6 +56,7 @@ import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
+import { AnonCredsLinkSecretBindingProvider } from '../src/formats/AnonCredsLinkSecretBindingProvider'
 import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { anoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
@@ -93,8 +96,10 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
+    [DidCommDataIntegrityLinkSecretBindingProviderToken, new AnonCredsLinkSecretBindingProvider()],
     [JsonLdModuleConfig, new JsonLdModuleConfig()],
-    [SignatureSuiteToken, 'default'],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
       CacheModuleConfig,
       new CacheModuleConfig({
