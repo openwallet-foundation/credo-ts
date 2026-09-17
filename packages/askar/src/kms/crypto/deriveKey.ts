@@ -27,6 +27,7 @@ type AskarSupportedKeyAgreementDecryptOptions = Kms.KmsKeyAgreementDecryptOption
  * cannot be derived before content encryption because it depends on the tag.
  */
 export function encryptEcdh1Pu(options: {
+  askar: Askar
   keyAgreement: AskarSupportedKeyAgreementEncryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
   encryption: AskarSupportedEncryptionOptions
   senderKey: Key
@@ -34,7 +35,7 @@ export function encryptEcdh1Pu(options: {
   data: Uint8Array
   ephemeralKey?: Key
 }) {
-  const { keyAgreement, encryption, senderKey, recipientKey, data, ephemeralKey: providedEphemeralKey } = options
+  const { askar, keyAgreement, encryption, senderKey, recipientKey, data, ephemeralKey: providedEphemeralKey } = options
 
   const supportedAlgorithms: KeyAlgorithm[] = [KeyAlgorithm.X25519, KeyAlgorithm.EcSecp256r1, KeyAlgorithm.EcSecp384r1]
   if (!supportedAlgorithms.includes(senderKey.algorithm) || !supportedAlgorithms.includes(recipientKey.algorithm)) {
@@ -232,6 +233,7 @@ export function deriveDecryptionKey(options: {
       throw new Kms.KeyManagementError('ECDH-1PU+A256KW decrypt requires ephemeralKey (ephemeral public key from JWE)')
     }
     return deriveDecryptionKeyEcdh1Pu({
+      askar,
       keyAgreement: keyAgreement as AskarSupportedKeyAgreementDecryptOptions & { algorithm: 'ECDH-1PU+A256KW' },
       decryption,
       ephemeralKey,
@@ -289,13 +291,14 @@ export function deriveDecryptionKey(options: {
 }
 
 function deriveDecryptionKeyEcdh1Pu(options: {
+  askar: Askar
   keyAgreement: AskarSupportedKeyAgreementDecryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
   decryption: Kms.KmsDecryptDataDecryption
   ephemeralKey: Key
   senderKey: Key
   recipientKey: Key
 }) {
-  const { keyAgreement, decryption, ephemeralKey, senderKey, recipientKey } = options
+  const { askar, keyAgreement, decryption, ephemeralKey, senderKey, recipientKey } = options
 
   const supportedAlgorithms: KeyAlgorithm[] = [KeyAlgorithm.X25519, KeyAlgorithm.EcSecp256r1, KeyAlgorithm.EcSecp384r1]
   if (!supportedAlgorithms.includes(recipientKey.algorithm)) {

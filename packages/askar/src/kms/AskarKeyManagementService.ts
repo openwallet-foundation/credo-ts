@@ -524,6 +524,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
             keysToFree.push(ephemeralKey)
           }
           return encryptEcdh1Pu({
+            askar: this.getAskar(agentContext),
             keyAgreement: key.keyAgreement,
             encryption: encryption as AskarSupportedEncryptionOptions,
             senderKey: privateKey,
@@ -644,7 +645,9 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       } else if (key.keyAgreement) {
         // ECDH-1PU+A256KW has ephemeralPublicJwk/senderPublicJwk instead of externalPublicJwk.
         const externalPublicJwk =
-          key.keyAgreement.algorithm === 'ECDH-1PU+A256KW' ? undefined : key.keyAgreement.externalPublicJwk
+          key.keyAgreement.algorithm === 'ECDH-1PU+A256KW' || !('externalPublicJwk' in key.keyAgreement)
+            ? undefined
+            : key.keyAgreement.externalPublicJwk
         Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, askarSupportedKeyAgreementAlgorithms, this.backend)
         if (externalPublicJwk) {
           Kms.assertAllowedKeyDerivationAlgForKey(externalPublicJwk, key.keyAgreement.algorithm)
