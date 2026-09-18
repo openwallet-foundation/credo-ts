@@ -1,5 +1,5 @@
 import type { DidResolverService } from '@credo-ts/core'
-import { CredoError } from '@credo-ts/core'
+import { CredoError, Kms } from '@credo-ts/core'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import { DidCommOutboundMessageContext } from '../../../models'
@@ -9,6 +9,7 @@ import type { DidCommConnectionsModuleConfig } from '../DidCommConnectionsModule
 import { DidCommConnectionResponseMessage } from '../messages'
 import { DidCommDidExchangeRole } from '../models'
 import type { DidCommConnectionService } from '../services'
+import { toX25519 } from '../services/helpers'
 
 export class DidCommConnectionResponseHandler implements DidCommMessageHandler {
   private connectionService: DidCommConnectionService
@@ -60,8 +61,18 @@ export class DidCommConnectionResponseHandler implements DidCommMessageHandler {
     }
 
     // Validate if recipient key is included in recipient keys of the did document resolved by
-    // connection record did
-    if (!ourDidDocument.recipientKeys.find((key) => key.fingerprint === recipientKey.fingerprint)) {
+    // connection record did. Anoncrypt yields X25519; did doc may have Ed25519 - check both forms.
+    // Extract recipientKey props to avoid TS2589 excessive-depth in the .some() callback.
+    const recipientKeyFingerprint = recipientKey.fingerprint
+    const recipientKeyIsX25519 = recipientKey.is(Kms.X25519PublicJwk)
+    const recipientKeyMatches = ourDidDocument.recipientKeys.some((key) => {
+      if (key.fingerprint === recipientKeyFingerprint) return true
+      if (key.is(Kms.Ed25519PublicJwk) && recipientKeyIsX25519) {
+        return toX25519(key).fingerprint === recipientKeyFingerprint
+      }
+      return false
+    })
+    if (!recipientKeyMatches) {
       throw new CredoError(`Recipient key ${recipientKey.fingerprint} not found in did document recipient keys.`)
     }
 

@@ -25,6 +25,7 @@ import {
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
   DidCommMediatorPickupStrategy,
+  type DidCommModuleConfigOptions,
   DidCommPresentationV2Message,
   DidCommProofEventTypes,
   DidCommProofState,
@@ -265,6 +266,11 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const unique = uuid().substring(0, 4)
 
+    // Mediation flow (requestAndAwaitGrant) with Subject transport times out with DIDComm v2.
+    // Use v1 for mediator, Faber, and Alice in this test until v2 mediation is fully supported.
+    const mediationV1Config: Pick<DidCommModuleConfigOptions, 'didcommVersions'> = {
+      didcommVersions: ['v1'],
+    }
     const mediatorOptions = getAgentOptions(
       `Connectionless proofs with mediator Mediator-${unique}`,
       {},
@@ -273,6 +279,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: DidCommAutoAcceptProof.Always,
           extraDidCommConfig: {
+            ...mediationV1Config,
             endpoints: ['rxjs:mediator'],
             mediator: { autoAcceptMediationRequests: true },
           },
@@ -308,6 +315,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: DidCommAutoAcceptProof.Always,
           extraDidCommConfig: {
+            ...mediationV1Config,
             mediationRecipient: {
               mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
                 domain: 'https://example.com',
@@ -328,6 +336,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: DidCommAutoAcceptProof.Always,
           extraDidCommConfig: {
+            ...mediationV1Config,
             mediationRecipient: {
               mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
                 domain: 'https://example.com',

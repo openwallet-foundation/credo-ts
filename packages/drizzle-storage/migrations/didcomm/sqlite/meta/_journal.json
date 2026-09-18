@@ -15,6 +15,13 @@
       "when": 1763065535740,
       "tag": "0001_remove_linked_attachments",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781282712528,
+      "tag": "0002_abnormal_gunslinger",
+      "breakpoints": true
     }
   ]
 }
