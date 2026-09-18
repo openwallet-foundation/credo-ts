@@ -32,7 +32,7 @@ export function supportedKeyDerivationAlgsForKey(
   if (jwk.kty === 'EC' && (jwk.crv === 'P-256' || jwk.crv === 'P-384')) {
     algs.push('ECDH-1PU+A256KW')
   }
-  
+
   // The HPKE suites bind a specific KEM, so each is only valid for its own curve.
   if (isCrvJwk(jwk) && jwk.crv === 'P-256') {
     algs.push('HPKE-0', 'HPKE-7')
