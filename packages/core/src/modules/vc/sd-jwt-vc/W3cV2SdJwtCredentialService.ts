@@ -8,6 +8,7 @@ import type { JsonObject } from '../../../types'
 import { asArray, JsonTransformer, MessageValidator, nowInSeconds, TypedArrayEncoder } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi } from '../../kms'
+import type { IDisclosureFrame } from '../../sd-jwt-vc'
 import { applyDisclosuresForPaths, applyDisclosuresForPayload, type ClaimPath } from '../../sd-jwt-vc/disclosureFrame'
 import {
   extractKeyFromHolderBinding,
@@ -43,7 +44,6 @@ import { validateW3cV2SdJwtDisclosureFrame } from './disclosureFrame'
 import { sdJwtVcHasher } from './W3cV2SdJwt'
 import { W3cV2SdJwtVerifiableCredential } from './W3cV2SdJwtVerifiableCredential'
 import { W3cV2SdJwtVerifiablePresentation } from './W3cV2SdJwtVerifiablePresentation'
-import type { IDisclosureFrame } from '../../sd-jwt-vc'
 
 /**
  * Supports signing and verifying W3C Verifiable Credentials and Presentations
