@@ -1,0 +1,57 @@
+{
+  "$description": "SICPA didcomm-python TEST_ENCRYPTED_DIDCOMM_MESSAGE_AUTH_X25519: authcrypt with ECDH-1PU+A256KW, A256CBC-HS512, X25519. Alice (sender) -> Bob (recipient, 4 X25519 keys).",
+  "$source": "https://github.com/sicpa-dlab/didcomm-python/blob/main/tests/test_vectors/didcomm_messages/spec/spec_test_vectors_auth_encrypted.py",
+  "$license": "Apache-2.0",
+  "encryptedMessage": {
+    "protected": "eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLWVuY3J5cHRlZCtqc29uIiwiYWxnIjoiRUNESC0xUFUrQTI1NktXIiwiZW5jIjoiQTI1NkNCQy1IUzUxMiIsImFwdSI6IlpHbGtPbVY0WVcxd2JHVTZZV3hwWTJVamEyVjVMWGd5TlRVeE9TMHgiLCJhcHYiOiJZMVl4d29Od1lORzRkSkZQSmp2bS05NGliYXVxQTlIcldLWVpobWNvZVNnIiwic2tpZCI6ImRpZDpleGFtcGxlOmFsaWNlI2tleS14MjU1MTktMSIsImVwayI6eyJjcnYiOiJYMjU1MTkiLCJ4Ijoib2dIbzBwSkRENDNTcVNXZUtPZHJCLXdpb1FIZlV3TGJPSHBJMmY1VU1pZyIsImt0eSI6Ik9LUCJ9fQ",
+    "recipients": [
+      {
+        "header": { "kid": "did:example:bob#key-x25519-1" },
+        "encrypted_key": "MmT3HsZZjZ_tn5Y8E1W5xY3kW0ay7PTuxYiPSFpTQmigeHyRA3xDPiFpFPDljmzgJQG-_KKa8llAsqcT-JBH4bKYzxAkZPV8"
+      },
+      {
+        "header": { "kid": "did:example:bob#key-x25519-2" },
+        "encrypted_key": "ahZ_wNMeygPtI_gkvCeEv71QlGC040iD5gFiAppu53WF1UglnUKF7Pe5jFcpTRSOZp-6PtJghXpmep9UDdqoD0SKriTiaMpQ"
+      },
+      {
+        "header": { "kid": "did:example:bob#key-x25519-3" },
+        "encrypted_key": "KRX2BLEhMZnWx7F44umOlRO6B2TLJFS5mBsaJCJW83NJuYYJNoM41TBg03kqkMbGm9Fs4UgunMNYjCAU3mDcjB8UY5oVZoC_"
+      },
+      {
+        "header": { "kid": "did:example:bob#key-x25519-4" },
+        "encrypted_key": "c0v4zw8JhCvOI5pkJo4mXRRsGl_liMyirGFdQkZWULIK_Urw5lm7KqeUXJsqvAPRBz6n9broQP75HCQ4QtDveYmVEVbVA3c3"
+      }
+    ],
+    "iv": "LqyZeQsKsQ_0CezRDIo4ng",
+    "ciphertext": "IvSZruHdIR0JGXRaXchiwAuwce6rqOmNQMBRaBgXn49PrlmroeBAQUa5yq1bek3HBljaNXXtCxWqBiW7i_EN5oJVVfUNQPUwDL_ozRfOncU3LmYnYFeVQ3C9mndFKITnxOxWqG3hhVlJw91IN9-sYXQCj0LbG3dbbiLuaN_CqJa-sIPZaNXpE5H11FQsw8owXzcEELO8zqSIlz_ZizLuRE-S24-_gzROKzpgL2qq-9fgkBVr28GQt0NHlGuSHUEq0tloIYLtILQ3UGoqyD2Ay5EJfEOL9pK4Vu-2_6pFxfvJowAk2EsLYO8fNvZJuM3Jw0HWe4MqtNxFa-_rSh3eNT7nyZecAgQ2vFtdAlIfcPMAbDqIE9UBIm2Ttie310j6F2IIRze1PMKNUH7Wf_PclQ",
+    "tag": "p8QNhwH3n0aFeh9qV6E3g6-iZzXe8hEMP1BbkU86PgY"
+  },
+  "expectedPlaintext": {
+    "id": "1234567890",
+    "thid": "1234567890",
+    "typ": "application/didcomm-plain+json",
+    "type": "http://example.com/protocols/lets_do_lunch/1.0/proposal",
+    "from": "did:example:alice",
+    "to": ["did:example:bob"],
+    "created_time": 1516269022,
+    "expires_time": 1516385931,
+    "body": { "messagespecificattribute": "and its value" }
+  },
+  "recipient": {
+    "kid": "did:example:bob#key-x25519-1",
+    "privateJwk": {
+      "kty": "OKP",
+      "crv": "X25519",
+      "d": "b9NnuOCB0hm7YGNvaE9DMhwH_wjZA1-gWD6dA0JWdL0",
+      "x": "GDTrI66K0pFfO54tlCSvfjjNapIs44dzpneBgyx0S3E"
+    }
+  },
+  "sender": {
+    "kid": "did:example:alice#key-x25519-1",
+    "publicJwk": {
+      "kty": "OKP",
+      "crv": "X25519",
+      "x": "avH0O2Y4tqLAq8y9zpianr8ajii5m4F_mICrzNlatXs"
+    }
+  }
+}
