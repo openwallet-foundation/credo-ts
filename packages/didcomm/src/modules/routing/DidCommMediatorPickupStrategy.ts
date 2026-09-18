@@ -9,6 +9,12 @@ export enum DidCommMediatorPickupStrategy {
   // to mediator
   PickUpV2LiveMode = 'PickUpV2LiveMode',
 
+  // Use PickUp v4 protocol to periodically retrieve messages (for Coordinate Mediation 2.0)
+  PickUpV4 = 'PickUpV4',
+
+  // Use PickUp v4 protocol in Live Mode (for Coordinate Mediation 2.0)
+  PickUpV4LiveMode = 'PickUpV4LiveMode',
+
   // Implicit pickup strategy means picking up messages only using return route
   // decorator. This is what ACA-Py currently uses
   Implicit = 'Implicit',

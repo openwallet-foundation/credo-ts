@@ -8,12 +8,18 @@ import { DidCommOutOfBandApi } from '../oob'
 import { DidCommMediationRecipientApi } from './DidCommMediationRecipientApi'
 import type { DidCommMediationRecipientModuleConfigOptions } from './DidCommMediationRecipientModuleConfig'
 import { DidCommMediationRecipientModuleConfig } from './DidCommMediationRecipientModuleConfig'
+import { DidCommMediationRole } from './models'
 import {
   DidCommKeylistUpdateResponseHandler,
   DidCommMediationDenyHandler,
   DidCommMediationGrantHandler,
-} from './handlers'
-import { DidCommMediationRole } from './models'
+} from './protocol/v1/handlers'
+import {
+  DidCommKeylistUpdateResponseV2Handler,
+  DidCommKeylistV2Handler,
+  DidCommMediationDenyV2Handler,
+  DidCommMediationGrantV2Handler,
+} from './protocol/v2/handlers'
 import { DidCommMediationRepository } from './repository'
 import { DidCommMediationRecipientService, DidCommRoutingService } from './services'
 
@@ -49,12 +55,29 @@ export class DidCommMediationRecipientModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantHandler(mediationRecipientService))
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyHandler(mediationRecipientService))
 
+    if (this.config.mediationProtocolVersions.includes('v2')) {
+      messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantV2Handler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyV2Handler(mediationRecipientService))
+      messageHandlerRegistry.registerMessageHandler(
+        new DidCommKeylistUpdateResponseV2Handler(mediationRecipientService)
+      )
+      messageHandlerRegistry.registerMessageHandler(new DidCommKeylistV2Handler(mediationRecipientService))
+    }
+
     featureRegistry.register(
       new DidCommProtocol({
         id: 'https://didcomm.org/coordinate-mediation/1.0',
         roles: [DidCommMediationRole.Recipient],
       })
     )
+    if (this.config.mediationProtocolVersions.includes('v2')) {
+      featureRegistry.register(
+        new DidCommProtocol({
+          id: 'https://didcomm.org/coordinate-mediation/2.0',
+          roles: [DidCommMediationRole.Recipient],
+        })
+      )
+    }
   }
 
   public async onCloseContext(agentContext: AgentContext): Promise<void> {
@@ -72,7 +95,8 @@ export class DidCommMediationRecipientModule implements Module {
     const mediationRecipientApi = agentContext.dependencyManager.resolve(DidCommMediationRecipientApi)
 
     // Connect to mediator through provided invitation if provided in config
-    // Also requests mediation ans sets as default mediator
+    // Also requests mediation and sets as default mediator.
+    // provision() delegates to provisionV2 when connection is v2.
     if (this.config.mediatorInvitationUrl) {
       agentContext.config.logger.debug('Provision mediation with invitation', {
         mediatorInvitationUrl: this.config.mediatorInvitationUrl,
