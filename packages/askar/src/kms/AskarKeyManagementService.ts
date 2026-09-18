@@ -681,7 +681,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           senderKey = this.keyFromJwk(agentContext, agreement.senderPublicJwk)
           keysToFree.push(ephemeralKey, senderKey)
         } else {
-          senderKey = externalPublicJwk ? this.keyFromJwk(externalPublicJwk) : undefined
+          senderKey = externalPublicJwk ? this.keyFromJwk(agentContext, externalPublicJwk) : undefined
           if (senderKey) keysToFree.push(senderKey)
         }
 
