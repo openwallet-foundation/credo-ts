@@ -1,5 +1,6 @@
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { askar, Key, KeyAlgorithm } from '@openwallet-foundation/askar-shared'
+import type { Askar } from '@openwallet-foundation/askar-shared'
+import { Key, KeyAlgorithm } from '@openwallet-foundation/askar-shared'
 import { jwkEncToAskarAlg } from '../../utils'
 import { type AskarSupportedEncryptionOptions, aeadEncrypt } from './encrypt'
 
@@ -26,6 +27,7 @@ type AskarSupportedKeyAgreementDecryptOptions = Kms.KmsKeyAgreementDecryptOption
  * cannot be derived before content encryption because it depends on the tag.
  */
 export function encryptEcdh1Pu(options: {
+  askar: Askar
   keyAgreement: AskarSupportedKeyAgreementEncryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
   encryption: AskarSupportedEncryptionOptions
   senderKey: Key
@@ -108,12 +110,13 @@ export function encryptEcdh1Pu(options: {
 }
 
 export function deriveEncryptionKey(options: {
+  askar: Askar
   keyAgreement: AskarSupportedKeyAgreementEncryptOptions
   senderKey: Key
   recipientKey: Key
-  encryption: Kms.KmsEncryptDataEncryption
+  encryption: Kms.KmsEncryptDataContentEncryption
 }) {
-  const { keyAgreement, encryption, senderKey, recipientKey } = options
+  const { askar, keyAgreement, encryption, senderKey, recipientKey } = options
 
   const askarEncryptionAlgorithm = jwkEncToAskarAlg[encryption.algorithm as keyof typeof jwkEncToAskarAlg]
   if (!askarEncryptionAlgorithm) {
@@ -198,6 +201,7 @@ export function deriveEncryptionKey(options: {
 }
 
 export function deriveDecryptionKey(options: {
+  askar: Askar
   keyAgreement: AskarSupportedKeyAgreementDecryptOptions
   senderKey: Key
   recipientKey: Key
@@ -205,7 +209,7 @@ export function deriveDecryptionKey(options: {
   /** For ECDH-1PU+A256KW: ephemeral public key from the JWE header */
   ephemeralKey?: Key
 }) {
-  const { keyAgreement, decryption, senderKey, recipientKey, ephemeralKey } = options
+  const { askar, keyAgreement, decryption, senderKey, recipientKey, ephemeralKey } = options
 
   const askarEncryptionAlgorithm = jwkEncToAskarAlg[decryption.algorithm as keyof typeof jwkEncToAskarAlg]
   if (!askarEncryptionAlgorithm) {
@@ -229,6 +233,7 @@ export function deriveDecryptionKey(options: {
       throw new Kms.KeyManagementError('ECDH-1PU+A256KW decrypt requires ephemeralKey (ephemeral public key from JWE)')
     }
     return deriveDecryptionKeyEcdh1Pu({
+      askar,
       keyAgreement: keyAgreement as AskarSupportedKeyAgreementDecryptOptions & { algorithm: 'ECDH-1PU+A256KW' },
       decryption,
       ephemeralKey,
@@ -286,6 +291,7 @@ export function deriveDecryptionKey(options: {
 }
 
 function deriveDecryptionKeyEcdh1Pu(options: {
+  askar: Askar
   keyAgreement: AskarSupportedKeyAgreementDecryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
   decryption: Kms.KmsDecryptDataDecryption
   ephemeralKey: Key
