@@ -35,7 +35,7 @@ export function encryptEcdh1Pu(options: {
   data: Uint8Array
   ephemeralKey?: Key
 }) {
-  const { keyAgreement, encryption, senderKey, recipientKey, data, ephemeralKey: providedEphemeralKey } = options
+  const { askar, keyAgreement, encryption, senderKey, recipientKey, data, ephemeralKey: providedEphemeralKey } = options
 
   const supportedAlgorithms: KeyAlgorithm[] = [KeyAlgorithm.X25519, KeyAlgorithm.EcSecp256r1, KeyAlgorithm.EcSecp384r1]
   if (!supportedAlgorithms.includes(senderKey.algorithm) || !supportedAlgorithms.includes(recipientKey.algorithm)) {
