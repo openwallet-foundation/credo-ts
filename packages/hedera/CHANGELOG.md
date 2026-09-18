@@ -1,5 +1,13 @@
 # @credo-ts/hedera
 
+## 0.7.2
+
+### Patch Changes
+
+- Updated dependencies [7ba15bc]
+  - @credo-ts/core@0.7.2
+  - @credo-ts/anoncreds@0.7.2
+
 ## 0.7.1
 
 ### Patch Changes
