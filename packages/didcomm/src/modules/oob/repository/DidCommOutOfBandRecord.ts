@@ -38,6 +38,12 @@ interface CustomDidCommOutOfBandRecordTags extends TagsBase {
    * This will always be a key from our recipient
    */
   recipientRoutingKeyFingerprint?: string
+
+  /**
+   * For v2 OOB (Sender role): the inviter's DID (invitation.from). Used to find OOB record
+   * when the inviter receives the first message (to=[this DID]).
+   */
+  recipientDid?: string
 }
 
 export interface DidCommOutOfBandRecordProps {
@@ -113,6 +119,7 @@ export class DidCommOutOfBandRecord extends BaseRecord<
       invitationRequestsThreadIds: this.outOfBandInvitation
         .getRequests()
         ?.map((r) => getThreadIdFromPlainTextMessage(r)),
+      recipientDid: this._tags?.recipientDid,
     }
   }
 

@@ -1,6 +1,7 @@
 export enum DidCommConnectionMetadataKeys {
   UseDidKeysForProtocol = '_internal/useDidKeysForProtocol',
   DidRotate = '_internal/didRotate',
+  DidRotateV2 = '_internal/didRotateV2',
 }
 
 export type DidCommConnectionMetadata = {
@@ -11,5 +12,10 @@ export type DidCommConnectionMetadata = {
     did: string
     threadId: string
     mediatorId?: string
+  }
+  [DidCommConnectionMetadataKeys.DidRotateV2]: {
+    fromPriorJwt: string
+    priorDid: string
+    newDid: string
   }
 }

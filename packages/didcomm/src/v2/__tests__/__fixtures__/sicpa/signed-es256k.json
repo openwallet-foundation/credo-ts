@@ -1,0 +1,35 @@
+{
+  "$description": "SICPA didcomm-rust SIGNED_MSG_ALICE_KEY_3: DIDComm v2 signed message with ES256K over secp256k1. Alice signs a lets_do_lunch proposal for Bob.",
+  "$source": "https://github.com/sicpa-dlab/didcomm-rust/blob/main/src/test_vectors/signed.rs",
+  "$license": "Apache-2.0",
+  "signedMessage": {
+    "payload": "eyJpZCI6IjEyMzQ1Njc4OTAiLCJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJ0eXBlIjoiaHR0cDovL2V4YW1wbGUuY29tL3Byb3RvY29scy9sZXRzX2RvX2x1bmNoLzEuMC9wcm9wb3NhbCIsImZyb20iOiJkaWQ6ZXhhbXBsZTphbGljZSIsInRvIjpbImRpZDpleGFtcGxlOmJvYiJdLCJjcmVhdGVkX3RpbWUiOjE1MTYyNjkwMjIsImV4cGlyZXNfdGltZSI6MTUxNjM4NTkzMSwiYm9keSI6eyJtZXNzYWdlc3BlY2lmaWNhdHRyaWJ1dGUiOiJhbmQgaXRzIHZhbHVlIn19",
+    "signatures": [
+      {
+        "protected": "eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXNpZ25lZCtqc29uIiwiYWxnIjoiRVMyNTZLIn0",
+        "signature": "EGjhIcts6tqiJgqtxaTiTY3EUvL-_rLjn9lxaZ4eRUwa1-CS1nknZoyJWbyY5NQnUafWh5nvCtQpdpMyzH3blw",
+        "header": { "kid": "did:example:alice#key-3" }
+      }
+    ]
+  },
+  "expectedPlaintext": {
+    "id": "1234567890",
+    "typ": "application/didcomm-plain+json",
+    "type": "http://example.com/protocols/lets_do_lunch/1.0/proposal",
+    "from": "did:example:alice",
+    "to": ["did:example:bob"],
+    "created_time": 1516269022,
+    "expires_time": 1516385931,
+    "body": { "messagespecificattribute": "and its value" }
+  },
+  "signer": {
+    "kid": "did:example:alice#key-3",
+    "alg": "ES256K",
+    "publicJwk": {
+      "kty": "EC",
+      "crv": "secp256k1",
+      "x": "aToW5EaTq5mlAf8C5ECYDSkqsJycrW-e1SQ6_GJcAOk",
+      "y": "JAGX94caA21WKreXwYUaOCYTBMrqaX4KWIlsQZTHWCk"
+    }
+  }
+}
