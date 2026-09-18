@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.2
+
+### Patch Changes
+
+- Updated dependencies [7ba15bc]
+  - @credo-ts/didcomm@0.7.2
+  - @credo-ts/core@0.7.2
+
 ## 0.7.1
 
 ### Patch Changes
