@@ -298,7 +298,7 @@ function deriveDecryptionKeyEcdh1Pu(options: {
   senderKey: Key
   recipientKey: Key
 }) {
-  const { keyAgreement, decryption, ephemeralKey, senderKey, recipientKey } = options
+  const { askar, keyAgreement, decryption, ephemeralKey, senderKey, recipientKey } = options
 
   const supportedAlgorithms: KeyAlgorithm[] = [KeyAlgorithm.X25519, KeyAlgorithm.EcSecp256r1, KeyAlgorithm.EcSecp384r1]
   if (!supportedAlgorithms.includes(recipientKey.algorithm)) {
