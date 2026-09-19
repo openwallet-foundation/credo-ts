@@ -31,6 +31,7 @@ import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciChainedAuthorizationServerConfig,
 } from '../shared/models/OpenId4VciAuthorizationServerConfig'
+import type { Nullable } from '../shared/types'
 import {
   OpenId4VcIssuanceSessionRecord,
   type OpenId4VcIssuanceSessionRecordTransaction,
@@ -781,15 +782,24 @@ export interface OpenId4VcUpdateIssuerOptions {
   metadataSigner?: OpenId4VcJwtIssuer | null
 }
 
+/**
+ * Updates issuer metadata
+ *
+ * - When omitted, the current value is kept.
+ * - When explicitly set to `null`, the current value is removed.
+ * - When a value is provided, the current value is replaced.
+ */
 export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   OpenId4VcIssuerRecordProps,
-  | 'issuerId'
-  | 'display'
-  | 'dpopSigningAlgValuesSupported'
-  | 'clientAttestationSigningAlgValuesSupported'
-  | 'clientAttestationPopSigningAlgValuesSupported'
-  | 'credentialConfigurationsSupported'
-  | 'batchCredentialIssuance'
-  | 'authorizationServerConfigs'
+  'issuerId' | 'credentialConfigurationsSupported'
 > &
+  Pick<
+    Nullable<OpenId4VcIssuerRecordProps>,
+    | 'display'
+    | 'dpopSigningAlgValuesSupported'
+    | 'clientAttestationSigningAlgValuesSupported'
+    | 'clientAttestationPopSigningAlgValuesSupported'
+    | 'batchCredentialIssuance'
+    | 'authorizationServerConfigs'
+  > &
   OpenId4VcUpdateIssuerOptions
