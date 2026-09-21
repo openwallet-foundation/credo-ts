@@ -34,6 +34,7 @@ import {
   Oauth2ServerErrorResponseError,
   PkceCodeChallengeMethod,
   preAuthorizedCodeGrantIdentifier,
+  type RequestDpopOptions,
   refreshTokenGrantIdentifier,
   SupportedClientAuthenticationMethod,
   type TokenIntrospectionResponse,
@@ -68,6 +69,7 @@ import {
   getScopesFromCredentialConfigurationsSupported,
 } from '../shared/issuerMetadataUtils'
 import { getLocalAccessTokenJwks, getOid4vcLocalJwksCallback } from '../shared/localJwks'
+import type { OpenId4VciChainedAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
@@ -102,6 +104,7 @@ import type {
 import {
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuanceSessionRepository,
+  type OpenId4VcIssuanceSessionUpstreamDpop,
   OpenId4VcIssuerRecord,
   OpenId4VcIssuerRepository,
 } from './repository'
@@ -1815,6 +1818,130 @@ export class OpenId4VcIssuerService {
     return new Openid4vciIssuer({
       callbacks: getOid4vcCallbacks(agentContext, options),
     })
+  }
+
+  public async getChainedUpstreamDpopRequestOptions(
+    agentContext: AgentContext,
+    options: {
+      issuanceSession: OpenId4VcIssuanceSessionRecord
+      chainedAuthorizationServerConfig: OpenId4VciChainedAuthorizationServerConfig
+      authorizationServerMetadata: AuthorizationServerMetadata
+    }
+  ): Promise<{
+    dpop?: RequestDpopOptions
+    required: boolean
+    jwkThumbprint?: string
+    keyId?: string
+    alg?: Kms.KnownJwaSignatureAlgorithm
+    session?: OpenId4VcIssuanceSessionUpstreamDpop
+  }> {
+    const required = options.chainedAuthorizationServerConfig.dpop?.required ?? false
+    const supportedByUpstream = options.authorizationServerMetadata.dpop_signing_alg_values_supported
+
+    if (!supportedByUpstream || supportedByUpstream.length === 0) {
+      if (required) {
+        throw new CredoError(`Authorization server does not support DPoP.`)
+      }
+
+      agentContext.config.logger.warn(`Authorization server does not support DPoP. Continuing without DPoP.`)
+      return { required }
+    }
+
+    const persisted = options.issuanceSession.chainedIdentity?.upstreamDpop
+    const keyId = persisted?.keyId ?? options.chainedAuthorizationServerConfig.dpop?.keyId
+    const allowedAlgorithms = options.chainedAuthorizationServerConfig.dpop?.allowedAlgorithms
+    try {
+      const dpop = await this.getChainedDpopOptions(agentContext, {
+        dpopSigningAlgValuesSupported: supportedByUpstream,
+        allowedAlgorithms,
+        keyId,
+        nonce: persisted?.nonce,
+      })
+      return {
+        dpop: dpop.options,
+        required,
+        jwkThumbprint: dpop.jwkThumbprint,
+        keyId: dpop.keyId,
+        alg: dpop.alg as Kms.KnownJwaSignatureAlgorithm,
+        session: {
+          keyId: dpop.keyId,
+          alg: dpop.alg as Kms.KnownJwaSignatureAlgorithm,
+          jwkThumbprint: dpop.jwkThumbprint,
+          nonce: dpop.options.nonce,
+        },
+      }
+    } catch (error) {
+      if (required) throw error
+
+      agentContext.config.logger.warn('Unable to use DPoP for chained authorization. Continuing without DPoP.', error)
+      return { required }
+    }
+  }
+
+  private async getChainedDpopOptions(
+    agentContext: AgentContext,
+    options: {
+      dpopSigningAlgValuesSupported: string[]
+      allowedAlgorithms?: Kms.KnownJwaSignatureAlgorithm[]
+      keyId?: string
+      nonce?: string
+    }
+  ) {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const publicJwk = options.keyId
+      ? await kms.getPublicKey({ keyId: options.keyId }).then((key) => {
+          if (!key || key.kty === 'oct') throw new CredoError(`Unable to resolve DPoP key '${options.keyId}'.`)
+          return Kms.PublicJwk.fromPublicJwk(key)
+        })
+      : undefined
+    const algorithms = options.dpopSigningAlgValuesSupported.filter(
+      (algorithm) => options.allowedAlgorithms?.includes(algorithm as Kms.KnownJwaSignatureAlgorithm) ?? true
+    )
+
+    const alg = publicJwk
+      ? algorithms.find((algorithm) =>
+          publicJwk.supportedSignatureAlgorithms.includes(algorithm as Kms.KnownJwaSignatureAlgorithm)
+        )
+      : algorithms.find((algorithm): algorithm is Kms.KnownJwaSignatureAlgorithm => {
+          try {
+            const knownAlgorithm = algorithm as Kms.KnownJwaSignatureAlgorithm
+            return (
+              Kms.PublicJwk.supportedPublicJwkClassForSignatureAlgorithm(knownAlgorithm) &&
+              kms.supportedBackendsForOperation({ operation: 'sign', algorithm: knownAlgorithm }).length > 0
+            )
+          } catch {
+            return false
+          }
+        })
+
+    if (!alg) {
+      throw new CredoError(
+        `No supported dpop signature algorithms found in dpop_signing_alg_values_supported '${options.dpopSigningAlgValuesSupported.join(
+          ', '
+        )}'`
+      )
+    }
+
+    const resolvedPublicJwk =
+      publicJwk ??
+      Kms.PublicJwk.fromPublicJwk(
+        (await kms.createKeyForSignatureAlgorithm({ algorithm: alg as Kms.KnownJwaSignatureAlgorithm })).publicJwk
+      )
+    const jwk = resolvedPublicJwk.toJson() as Jwk
+
+    return {
+      options: {
+        signer: { method: 'jwk', alg, publicJwk: jwk },
+        nonce: options.nonce,
+      } satisfies RequestDpopOptions,
+      jwkThumbprint: await calculateJwkThumbprint({
+        hashAlgorithm: HashAlgorithm.Sha256,
+        hashCallback: getOid4vcCallbacks(agentContext).hash,
+        jwk,
+      }),
+      keyId: resolvedPublicJwk.keyId,
+      alg: alg as Kms.KnownJwaSignatureAlgorithm,
+    }
   }
 
   public getOauth2Client(agentContext: AgentContext, issuerRecord?: OpenId4VcIssuerRecord) {
