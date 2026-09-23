@@ -35,6 +35,7 @@ import type {
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
   extractKeyFromHolderBinding,
+  getSdJwtHashingAlgorithm,
   getSdJwtSigner,
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
@@ -134,7 +135,7 @@ export class SdJwtVcService {
     const sdJwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       signer: getSdJwtSigner(agentContext, issuer.publicJwk),
-      hashAlg: hashingAlgorithm ?? 'sha-256',
+      hashAlg: getSdJwtHashingAlgorithm(hashingAlgorithm),
       signAlg: issuer.alg,
     })
 
