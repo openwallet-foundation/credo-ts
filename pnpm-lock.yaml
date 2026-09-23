@@ -297,15 +297,15 @@ importers:
       '@types/figlet':
         specifier: ^1.7.0
         version: 1.7.0
-      '@types/inquirer':
-        specifier: ^8.2.12
-        version: 8.2.12
       clear:
         specifier: ^0.1.0
         version: 0.1.0
       figlet:
         specifier: ^1.10.0
         version: 1.10.0
+      vite-node:
+        specifier: ^6.0.0
+        version: 6.0.0(@types/node@26.6.1)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)
 
   demo-openid:
     dependencies:
@@ -352,9 +352,6 @@ importers:
       '@types/figlet':
         specifier: ^1.7.0
         version: 1.7.0
-      '@types/inquirer':
-        specifier: ^8.2.12
-        version: 8.2.12
       '@types/oidc-provider':
         specifier: ^9.5.0
         version: 9.5.0
@@ -364,6 +361,9 @@ importers:
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
+      vite-node:
+        specifier: ^6.0.0
+        version: 6.0.0(@types/node@26.6.1)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)
 
   packages/action-menu:
     dependencies:
@@ -4301,9 +4301,6 @@ packages:
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
 
-  '@types/inquirer@8.2.12':
-    resolution: {integrity: sha512-YxURZF2ZsSjU5TAe06tW0M3sL4UI9AMPA6dd8I72uOtppzNafcY38xkYgCZ/vsVOAyNdzHmvtTpLWilOrbP0dQ==}
-
   '@types/istanbul-lib-coverage@2.0.6':
     resolution: {integrity: sha512-2QF/t/auWm0lsy8XtKVPG19v3sSOQlJe/YHZgfjb/KBBHOGSV+J2q/S671rcq9uTBrLAXmZpqJiaQbMT+zNU1w==}
 
@@ -4399,9 +4396,6 @@ packages:
 
   '@types/supertest@7.2.0':
     resolution: {integrity: sha512-uh2Lv57xvggst6lCqNdFAmDSvoMG7M/HDtX4iUCquxQ5EGPtaPM5PL5Hmi7LCvOG8db7YaCPNJEeoI8s/WzIQw==}
-
-  '@types/through@0.0.33':
-    resolution: {integrity: sha512-HsJ+z3QuETzP3cswwtzt2vEIiHBk/dCcHGhbmG5X3ecnwFD/lPrMpliGXxSCg03L9AhrdwA4Oz/qfspkDW+xGQ==}
 
   '@types/validator@13.15.10':
     resolution: {integrity: sha512-T8L6i7wCuyoK8A/ZeLYt1+q0ty3Zb9+qbSSvrIVitzT3YjZqkTZ40IbRsPanlB4h1QB3JVL1SYCdR6ngtFYcuA==}
@@ -9233,6 +9227,11 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
+  vite-node@6.0.0:
+    resolution: {integrity: sha512-oj4PVrT+pDh6GYf5wfUXkcZyekYS8kKPfLPXVl8qe324Ec6l4K2DUKNadRbZ3LQl0qGcDz+PyOo7ZAh00Y+JjQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+
   vite@7.3.1:
     resolution: {integrity: sha512-w+N7Hifpc3gRjZ63vYBXA56dvvRlNWRczTdmCBBa+CotUzAPf5b7YMdMR/8CQoeYE5LX3W4wj6RYTgonm1b9DA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -13467,11 +13466,6 @@ snapshots:
 
   '@types/http-errors@2.0.5': {}
 
-  '@types/inquirer@8.2.12':
-    dependencies:
-      '@types/through': 0.0.33
-      rxjs: 7.8.2
-
   '@types/istanbul-lib-coverage@2.0.6': {}
 
   '@types/istanbul-lib-report@3.0.3':
@@ -13601,10 +13595,6 @@ snapshots:
     dependencies:
       '@types/methods': 1.1.4
       '@types/superagent': 8.1.9
-
-  '@types/through@0.0.33':
-    dependencies:
-      '@types/node': 25.6.0
 
   '@types/validator@13.15.10': {}
 
@@ -19221,6 +19211,27 @@ snapshots:
       - tsx
       - yaml
 
+  vite-node@6.0.0(@types/node@26.6.1)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1):
+    dependencies:
+      cac: 7.0.0
+      es-module-lexer: 2.0.0
+      obug: 2.2.1
+      pathe: 2.0.3
+      vite: 8.2.0(@types/node@26.6.1)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)
+    transitivePeerDependencies:
+      - '@types/node'
+      - '@vitejs/devtools'
+      - esbuild
+      - jiti
+      - less
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - terser
+      - tsx
+      - yaml
+
   vite@7.3.1(@types/node@20.19.31)(jiti@2.6.1)(lightningcss@1.33.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1):
     dependencies:
       esbuild: 0.27.2
@@ -19247,6 +19258,22 @@ snapshots:
       tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 20.19.31
+      esbuild: 0.27.2
+      fsevents: 2.3.3
+      jiti: 2.6.1
+      terser: 5.51.2
+      tsx: 4.21.0
+      yaml: 2.9.1
+
+  vite@8.2.0(@types/node@26.6.1)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1):
+    dependencies:
+      lightningcss: 1.33.0
+      picomatch: 4.0.5
+      postcss: 8.5.25
+      rolldown: 1.2.2
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 26.6.1
       esbuild: 0.27.2
       fsevents: 2.3.3
       jiti: 2.6.1
