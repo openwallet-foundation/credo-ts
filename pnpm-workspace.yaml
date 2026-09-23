@@ -26,14 +26,14 @@ catalog:
   class-validator: ^0.14.3
   express: ^5.2.1
   hpke: ^1.1.4
-  nock: ^14.0.11
+  nock: ^14.0.17
   reflect-metadata: 0.2.2
   rxjs: ^7.8.2
   tsyringe: ^4.10.0
   typescript: ~5.9.3
   vitest: ^4.1.11
   ws: ^8.19.0
-  zod: ^4.6.1
+  zod: ^4.6.5
 
 ignoredBuiltDependencies:
   - es5-ext
