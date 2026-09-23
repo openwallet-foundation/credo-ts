@@ -558,6 +558,39 @@ describe('SdJwtVcService', () => {
       })
     })
 
+    test('Create sd-jwt-vc with a hashing algorithm other than sha-256', async () => {
+      const { compact, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
+        payload: { claim: 'some-claim', vct: 'IdentityCredential', iat: Math.floor(Date.now() / 1000) },
+        disclosureFrame: { _sd: ['claim'] },
+        holder: {
+          method: 'jwk',
+          jwk: holderKey,
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+        hashingAlgorithm: 'sha-512',
+      })
+
+      const [, encodedDisclosure] = compact.split('~')
+
+      expect(payload).toEqual({
+        vct: 'IdentityCredential',
+        iat: Math.floor(Date.now() / 1000),
+        iss: issuerDidUrl.split('#')[0],
+        _sd: [TypedArrayEncoder.toBase64Url(Hasher.hash(encodedDisclosure, 'sha-512'))],
+        _sd_alg: 'sha-512',
+        cnf: {
+          jwk: holderKey.toJson(),
+        },
+      })
+
+      // The digests must be resolvable using the algorithm from `_sd_alg`
+      expect(prettyClaims.claim).toStrictEqual('some-claim')
+      expect(sdJwtVcService.fromCompact(compact).prettyClaims.claim).toStrictEqual('some-claim')
+    })
+
     test('Create sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
       mockUniqueSalts()
       const { header, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {

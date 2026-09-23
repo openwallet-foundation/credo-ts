@@ -117,11 +117,6 @@ export class SdJwtVcService {
   ): Promise<SdJwtVc> {
     const { payload, disclosureFrame, hashingAlgorithm } = options
 
-    // default is sha-256
-    if (hashingAlgorithm && hashingAlgorithm !== 'sha-256') {
-      throw new SdJwtVcError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
-    }
-
     const issuer = await this.extractKeyFromIssuer(agentContext, options.issuer, true)
 
     // holer binding is optional
@@ -139,7 +134,7 @@ export class SdJwtVcService {
     const sdJwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       signer: getSdJwtSigner(agentContext, issuer.publicJwk),
-      hashAlg: 'sha-256',
+      hashAlg: hashingAlgorithm ?? 'sha-256',
       signAlg: issuer.alg,
     })
 
