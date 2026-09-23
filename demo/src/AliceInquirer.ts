@@ -2,7 +2,7 @@ import type { DidCommCredentialExchangeRecord, DidCommProofExchangeRecord } from
 
 import { clear } from 'console'
 import figlet from 'figlet'
-import { prompt } from 'inquirer'
+import inquirer from 'inquirer'
 
 import { Alice } from './Alice'
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
@@ -42,10 +42,10 @@ export class AliceInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    if (this.alice.connectionRecordFaberId) return prompt([this.inquireOptions(this.promptOptionsString)])
+    if (this.alice.connectionRecordFaberId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
 
     const reducedOption = [PromptOptions.ReceiveConnectionUrl, PromptOptions.Exit, PromptOptions.Restart]
-    return prompt([this.inquireOptions(reducedOption)])
+    return inquirer.prompt([this.inquireOptions(reducedOption)])
   }
 
   public async processAnswer() {
@@ -70,7 +70,7 @@ export class AliceInquirer extends BaseInquirer {
   }
 
   public async acceptCredentialOffer(credentialExchangeRecord: DidCommCredentialExchangeRecord) {
-    const confirm = await prompt([this.inquireConfirmation(Title.CredentialOfferTitle)])
+    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.CredentialOfferTitle)])
     if (confirm.options === ConfirmOptions.No) {
       await this.alice.agent.didcomm.credentials.declineOffer({
         credentialExchangeRecordId: credentialExchangeRecord.id,
@@ -81,7 +81,7 @@ export class AliceInquirer extends BaseInquirer {
   }
 
   public async acceptProofRequest(proofExchangeRecord: DidCommProofExchangeRecord) {
-    const confirm = await prompt([this.inquireConfirmation(Title.ProofRequestTitle)])
+    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ProofRequestTitle)])
     if (confirm.options === ConfirmOptions.No) {
       await this.alice.agent.didcomm.proofs.declineRequest({ proofExchangeRecordId: proofExchangeRecord.id })
     } else if (confirm.options === ConfirmOptions.Yes) {
@@ -91,7 +91,7 @@ export class AliceInquirer extends BaseInquirer {
 
   public async connection() {
     const title = Title.InvitationTitle
-    const getUrl = await prompt([this.inquireInput(title)])
+    const getUrl = await inquirer.prompt([this.inquireInput(title)])
     await this.alice.acceptConnection(getUrl.input)
     if (!this.alice.connected) return
 
@@ -107,7 +107,7 @@ export class AliceInquirer extends BaseInquirer {
   }
 
   public async exit() {
-    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
+    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       return
     }
@@ -117,7 +117,7 @@ export class AliceInquirer extends BaseInquirer {
   }
 
   public async restart() {
-    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
+    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       await this.processAnswer()
       return
