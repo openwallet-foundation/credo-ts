@@ -57,11 +57,6 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
       .map((proof) => proof.cryptosuite)
   }
 
-  /** @deprecated Use anonCredsW3cCredentialCryptosuites */
-  public get dataIntegrityCryptosuites(): Array<string> {
-    return this.anonCredsW3cCredentialCryptosuites
-  }
-
   public toJson() {
     return JsonTransformer.toJSON(this) as W3cJsonCredential
   }
