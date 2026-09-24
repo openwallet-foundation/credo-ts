@@ -19,4 +19,4 @@
 "@credo-ts/webvh": patch
 ---
 
-feat: support node 20
+feat: support node 26
