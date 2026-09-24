@@ -19,16 +19,16 @@ catalogs:
       specifier: npm:@cheqd/sdk-esm@5.5.1
       version: 5.5.1
     '@cheqd/ts-proto':
-      specifier: 4.2.1
+      specifier: ^4.2.0
       version: 4.2.1
     '@cosmjs/crypto':
-      specifier: 0.36.2
+      specifier: ^0.36.2
       version: 0.36.2
     '@cosmjs/proto-signing':
-      specifier: 0.36.2
+      specifier: ^0.36.2
       version: 0.36.2
     '@cosmjs/stargate':
-      specifier: 0.36.2
+      specifier: ^0.36.2
       version: 0.36.2
     '@hyperledger/anoncreds-nodejs':
       specifier: ^0.4.0
