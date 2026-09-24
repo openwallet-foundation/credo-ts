@@ -177,7 +177,8 @@ export interface OpenId4VcIssuanceSessionRecordTransaction {
 
   /**
    * The holder binding that should be used for the credentials in this
-   * transaction.
+   * transaction. Undefined if the credential request contained no proofs,
+   * in which case a single credential without holder binding is expected.
    *
    * @since 0.6.3
    */

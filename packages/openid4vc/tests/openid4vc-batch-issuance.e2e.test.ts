@@ -38,6 +38,8 @@ describe('OpenId4Vc Batch Issuance', () => {
           issuer: {
             baseUrl: issuerBaseUrl,
             credentialRequestToCredentialMapper: async ({ credentialRequestFormat, holderBinding }) => {
+              if (!holderBinding) throw new Error('Expected holder binding in credential request mapper')
+
               if (credentialRequestFormat?.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
                 if (holderBinding.bindingMethod !== 'jwk') {
                   throw new CredoError('Expected jwk binding method')
