@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
-    "@changesets/cli": "^2.29.8",
+    "@changesets/cli": "^3.0.3",
     "@credo-ts/action-menu": "workspace:*",
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/askar": "workspace:*",
@@ -56,12 +56,13 @@
     "cors": "^2.8.6",
     "drizzle-kit": "^0.31.10",
     "express": "catalog:",
+    "magic-string": "^0.30.21",
     "nock": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "supertest": "^7.2.2",
     "testcontainers": "^12.0.3",
-    "tsdown": "^0.20.3",
+    "tsdown": "^0.23.0",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
     "undici": "^6.28.0",
@@ -71,7 +72,7 @@
     "ws": "catalog:"
   },
   "resolutions": {
-    "undici": "^6.20.1"
+    "undici": "^6.28.0"
   },
   "engines": {
     "node": ">=20.19"

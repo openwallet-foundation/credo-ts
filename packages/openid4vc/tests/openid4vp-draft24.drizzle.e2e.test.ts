@@ -2663,6 +2663,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                       claim_set_index: undefined,
                       valid_claim_indexes: [0],
                       success: true,
+                      disclosed_paths: [['vct'], ['degree'], ['cnf'], ['iss'], ['iat'], ['university']],
                       output: {
                         cnf: {
                           kid: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc#z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',

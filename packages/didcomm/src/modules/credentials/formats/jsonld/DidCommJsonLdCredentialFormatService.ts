@@ -3,9 +3,9 @@ import {
   ClaimFormat,
   CredoError,
   DidResolverService,
-  findVerificationMethodByKeyType,
   JsonEncoder,
   JsonTransformer,
+  SignatureSuiteRegistry,
   utils,
   W3cCredential,
   W3cCredentialRecord,
@@ -300,10 +300,10 @@ export class DidCommJsonLdCredentialFormatService
       throw new CredoError(`No Key Type found for proofType ${proofType}`)
     }
 
-    const verificationMethod = await findVerificationMethodByKeyType(keyType[0], issuerDidDocument, [
+    const verificationMethod = issuerDidDocument.findVerificationMethodsByTypeAndPurpose(keyType, [
       'assertionMethod',
       'verificationMethod',
-    ])
+    ])[0]
 
     if (!verificationMethod) {
       throw new CredoError(`Missing verification method for key type ${keyType}`)
@@ -327,7 +327,7 @@ export class DidCommJsonLdCredentialFormatService
     const requestAsJson = requestAttachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     // Verify the credential request matches the credential
-    this.verifyReceivedCredentialMatchesRequest(credential, requestAsJson)
+    this.verifyReceivedCredentialMatchesRequest(agentContext, credential, requestAsJson)
 
     // verify signatures of the credential
     const result = await w3cCredentialService.verifyCredential(agentContext, { credential })
@@ -346,6 +346,7 @@ export class DidCommJsonLdCredentialFormatService
   }
 
   private verifyReceivedCredentialMatchesRequest(
+    agentContext: AgentContext,
     credential: W3cJsonLdVerifiableCredential,
     request: JsonLdFormatDataCredentialDetail
   ): void {
@@ -376,12 +377,35 @@ export class DidCommJsonLdCredentialFormatService
       throw new CredoError('Received credential proof purpose does not match proof purpose from credential request')
     }
 
-    // Check whether the received credential (minus the proof) matches the credential request
-    if (!utils.areObjectsEqual(jsonCredential, request.credential)) {
+    // Check whether the received credential (minus the proof) matches the credential request. A
+    // signature suite is required to add its own `@context` to the document it signs when the
+    // document does not already carry a compatible one, so the issuer adding exactly that context
+    // url is an expected difference rather than a mismatch.
+    if (
+      !utils.areObjectsEqual(jsonCredential, request.credential) &&
+      !utils.areObjectsEqual(jsonCredential, this.withSuiteContext(agentContext, request))
+    ) {
       throw new CredoError('Received credential does not match credential request')
     }
 
     // TODO: add check for the credentialStatus once this is supported in Credo
+  }
+
+  /**
+   * Returns the requested credential with the `@context` of the agreed proof type's signature suite
+   * appended, mirroring what the issuer's suite does when signing. Returns the requested credential
+   * unchanged if the context is already present or the suite declares no context url.
+   */
+  private withSuiteContext(agentContext: AgentContext, request: JsonLdFormatDataCredentialDetail): JsonCredential {
+    const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
+    const suiteContextUrl = signatureSuiteRegistry.findContextUrlByProofType(request.options.proofType)
+
+    const existingContext = request.credential['@context']
+    if (!suiteContextUrl || !Array.isArray(existingContext) || existingContext.includes(suiteContextUrl)) {
+      return request.credential
+    }
+
+    return { ...request.credential, '@context': [...existingContext, suiteContextUrl] }
   }
 
   public supportsFormat(format: string): boolean {
@@ -425,7 +449,7 @@ export class DidCommJsonLdCredentialFormatService
   }
 
   public async shouldAutoRespondToCredential(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { requestAttachment, credentialAttachment }: DidCommCredentialFormatAutoRespondCredentialOptions
   ) {
     const credentialJson = credentialAttachment.getDataAsJson<JsonLdFormatDataVerifiableCredential>()
@@ -435,7 +459,7 @@ export class DidCommJsonLdCredentialFormatService
     try {
       // This check is also done in the processCredential method, but we do it here as well
       // to be certain we don't skip the check
-      this.verifyReceivedCredentialMatchesRequest(w3cCredential, request)
+      this.verifyReceivedCredentialMatchesRequest(agentContext, w3cCredential, request)
 
       return true
     } catch (_error) {

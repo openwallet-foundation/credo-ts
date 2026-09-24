@@ -22,6 +22,8 @@ export enum Title {
   ProofRequestTitle = '\n\nProof request received, do you want to accept it?',
 }
 
+export const writeOutput = (output: string) => process.stdout.write(output)
+
 export const greenText = (text: string, reset?: boolean) => {
   if (reset) return Color.Green + text + Color.Reset
 

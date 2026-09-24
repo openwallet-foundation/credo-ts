@@ -18,7 +18,7 @@ import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
 import { legacyTrustedCertificatesToTrustedIssuers } from '../x509/utils/convertLegacyTrustedCertificates'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
-import { applyDisclosuresForPayload } from './disclosureFrame'
+import { applyDisclosuresForPaths, applyDisclosuresForPayload, type ClaimPath } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcError } from './SdJwtVcError'
 import { SdJwtVcModuleConfig } from './SdJwtVcModuleConfig'
@@ -35,6 +35,7 @@ import type {
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
   extractKeyFromHolderBinding,
+  getSdJwtHashingAlgorithm,
   getSdJwtSigner,
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
@@ -117,11 +118,6 @@ export class SdJwtVcService {
   ): Promise<SdJwtVc> {
     const { payload, disclosureFrame, hashingAlgorithm } = options
 
-    // default is sha-256
-    if (hashingAlgorithm && hashingAlgorithm !== 'sha-256') {
-      throw new SdJwtVcError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
-    }
-
     const issuer = await this.extractKeyFromIssuer(agentContext, options.issuer, true)
 
     // holer binding is optional
@@ -139,7 +135,7 @@ export class SdJwtVcService {
     const sdJwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       signer: getSdJwtSigner(agentContext, issuer.publicJwk),
-      hashAlg: 'sha-256',
+      hashAlg: getSdJwtHashingAlgorithm(hashingAlgorithm),
       signAlg: issuer.alg,
     })
 
@@ -186,9 +182,18 @@ export class SdJwtVcService {
     return decodeSdJwtVc(compactSdJwtVc, typeMetadata)
   }
 
+  /**
+   * @deprecated use `applyDisclosuresForPaths` instead
+   */
   public applyDisclosuresForPayload(compactSdJwtVc: string, requestedPayload: JsonObject): SdJwtVc {
     const sdJwt = applyDisclosuresForPayload(compactSdJwtVc, requestedPayload)
     const disclosedDecoded = decodeSdJwtVc(sdJwt)
+    return disclosedDecoded
+  }
+
+  public applyDisclosuresForPaths(compactSdJwtVc: string, disclosedPaths: ClaimPath[]): SdJwtVc {
+    const { compact } = applyDisclosuresForPaths(compactSdJwtVc, disclosedPaths)
+    const disclosedDecoded = decodeSdJwtVc(compact)
     return disclosedDecoded
   }
 
