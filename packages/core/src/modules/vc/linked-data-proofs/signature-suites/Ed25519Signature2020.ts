@@ -1,11 +1,11 @@
-import { MultiBaseEncoder } from '../../../../../utils'
-import jsonld from '../../../jsonld/jsonld'
-import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../proof-ops/jsonldUtil'
-import { _includesContext } from '../../proof-ops/jsonldUtil'
-import type { JwsLinkedDataSignatureOptions } from '../JwsLinkedDataSignature'
-import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
-import { ED25519_SUITE_CONTEXT_URL_2020 } from './constants'
-import { ed25519Signature2020Context } from './context2020'
+import { MultiBaseEncoder } from '../../../../utils'
+import { SECURITY_ED25519_2020_CONTEXT_URL } from '../../constants'
+import { DEFAULT_CONTEXTS } from '../../jsonld/contexts'
+import jsonld from '../../jsonld/jsonld'
+import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../proof-ops/jsonldUtil'
+import { _includesContext } from '../proof-ops/jsonldUtil'
+import type { JwsLinkedDataSignatureOptions } from './JwsLinkedDataSignature'
+import { JwsLinkedDataSignature } from './JwsLinkedDataSignature'
 
 const jsonldWithHasValue = jsonld as typeof jsonld & {
   hasValue(document: JsonLdDoc, key: string, value: string): boolean
@@ -17,8 +17,9 @@ type Ed25519Signature2020Options = Pick<
 >
 
 export class Ed25519Signature2020 extends JwsLinkedDataSignature {
-  public static CONTEXT_URL = ED25519_SUITE_CONTEXT_URL_2020
-  public static CONTEXT = ed25519Signature2020Context.get(ED25519_SUITE_CONTEXT_URL_2020)
+  // TODO: Centralise suite context metadata outside suite class statics.
+  public static CONTEXT_URL = SECURITY_ED25519_2020_CONTEXT_URL
+  public static CONTEXT = DEFAULT_CONTEXTS[SECURITY_ED25519_2020_CONTEXT_URL]
 
   /**
    * @param {object} options - Options hashmap.
@@ -52,7 +53,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
       type: 'Ed25519Signature2020',
       algorithm: 'EdDSA',
       LDKeyClass: options.LDKeyClass,
-      contextUrl: ED25519_SUITE_CONTEXT_URL_2020,
+      contextUrl: Ed25519Signature2020.CONTEXT_URL,
       key: options.key,
       proof: options.proof,
       date: options.date,
@@ -191,7 +192,7 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
   // Ed25519Signature2020 type definitions, so we must not treat them as compatible.
   const hasEd2020 = _includesContext({
     document: options.document,
-    contextUrl: ED25519_SUITE_CONTEXT_URL_2020,
+    contextUrl: Ed25519Signature2020.CONTEXT_URL,
   })
 
   return hasEd2020

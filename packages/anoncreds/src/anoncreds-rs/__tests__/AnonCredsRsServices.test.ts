@@ -30,7 +30,7 @@ import {
   SignatureSuiteRegistry,
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
-import { anoncreds } from '@hyperledger/anoncreds-nodejs'
+import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
@@ -60,7 +60,7 @@ const agentContext = getAgentContext({
       AnonCredsModuleConfig,
       new AnonCredsModuleConfig({
         registries: [registry],
-        anoncreds,
+        anoncreds: NativeAnoncreds,
       }),
     ],
     [
@@ -215,7 +215,7 @@ describe('AnonCredsRsServices', () => {
     })
 
     const proofRequest: AnonCredsProofRequest = {
-      nonce: anoncreds.generateNonce(),
+      nonce: NativeAnoncreds.instance.generateNonce(),
       name: 'pres_req_1',
       version: '0.1',
       requested_attributes: {
@@ -418,7 +418,7 @@ describe('AnonCredsRsServices', () => {
     })
 
     const proofRequest: AnonCredsProofRequest = {
-      nonce: anoncreds.generateNonce(),
+      nonce: NativeAnoncreds.instance.generateNonce(),
       name: 'pres_req_1',
       version: '0.1',
       requested_attributes: {

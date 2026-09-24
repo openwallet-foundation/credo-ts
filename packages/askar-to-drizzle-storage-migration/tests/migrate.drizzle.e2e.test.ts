@@ -22,7 +22,7 @@ import {
 } from '@credo-ts/core'
 import { DrizzleStorageModule } from '@credo-ts/drizzle-storage'
 import { agentDependencies } from '@credo-ts/node'
-import { askar, askarPostgresStorageConfig } from '../../askar/tests/helpers'
+import { askarPostgresStorageConfig, NativeAskar } from '../../askar/tests/helpers'
 import didKeyP256 from '../../core/src/modules/dids/__tests__/__fixtures__/didKeyP256.json'
 import { sprindFunkeTestVectorBase64Url } from '../../core/src/modules/mdoc/__tests__/mdoc.fixtures'
 import { sdJwtVcWithSingleDisclosure } from '../../core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.fixtures'
@@ -187,7 +187,7 @@ describe('Askar to Drizzle Migration', () => {
     })
 
     const askarModule = new AskarModule({
-      askar,
+      askar: NativeAskar,
       store: {
         id: storeId,
         key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
@@ -270,7 +270,7 @@ describe('Askar to Drizzle Migration', () => {
     })
 
     const askarModule = new AskarModule({
-      askar,
+      askar: NativeAskar,
       store: {
         id: storeId,
         key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',

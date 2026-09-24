@@ -20,7 +20,6 @@ import type {
   W3cCredentialEntry,
 } from '@hyperledger/anoncreds-shared'
 import {
-  anoncreds,
   Credential,
   CredentialRequest,
   CredentialRevocationState,
@@ -315,6 +314,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         throw new AnonCredsRsError('Link Secret value not stored')
       }
 
+      const { anoncreds } = agentContext.dependencyManager.resolve(AnonCredsModuleConfig)
       const isLegacyIdentifier = credentialOffer.cred_def_id.match(unqualifiedCredentialDefinitionIdRegex)
       if (!isLegacyIdentifier && useLegacyProverDid) {
         throw new CredoError('Cannot use legacy prover_did with non-legacy identifiers')
