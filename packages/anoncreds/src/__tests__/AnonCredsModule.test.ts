@@ -1,7 +1,7 @@
 import type { DependencyManager } from '@credo-ts/core'
 import { AnonCredsW3cCredentialServiceSymbol } from '@credo-ts/core'
 import { DidCommDataIntegrityLinkSecretBindingProviderToken } from '@credo-ts/didcomm'
-import { anoncreds } from '../../tests/helpers'
+import { NativeAnoncreds } from '../../tests/helpers'
 import { AnonCredsModule } from '../AnonCredsModule'
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../anoncreds-rs'
@@ -31,7 +31,7 @@ describe('AnonCredsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const anonCredsModule = new AnonCredsModule({
       registries: [registry],
-      anoncreds,
+      anoncreds: NativeAnoncreds,
     })
     anonCredsModule.register(dependencyManager)
 

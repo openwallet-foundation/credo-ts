@@ -31,7 +31,7 @@ export function defaultDocumentLoader(
       return {
         contextUrl: null,
         documentUrl: url,
-        document: contexts[url as keyof typeof contexts],
+        document: contexts[withoutFragment as keyof typeof contexts],
       }
     }
 

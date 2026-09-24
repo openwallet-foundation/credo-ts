@@ -3,8 +3,8 @@ import { AskarModule } from '@credo-ts/askar'
 import { Agent, type Cache, CacheModule, DidsModule, type Logger, type ModulesMap, utils } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import type { HederaNetwork } from '@hiero-did-sdk/client'
-import { anoncreds } from '@hyperledger/anoncreds-nodejs'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { InMemoryTailsFileService } from '../../../../anoncreds/tests/InMemoryTailsFileService'
 import {
   HederaAnonCredsRegistry,
@@ -45,9 +45,9 @@ export const getHederaAgent = (props: {
   const cache = props.cache
 
   let modules: ModulesMap = {
-    askar: new AskarModule({ askar, store: { id: label, key: label } }),
+    askar: new AskarModule({ askar: NativeAskar, store: { id: label, key: label } }),
     anoncreds: new AnonCredsModule({
-      anoncreds,
+      anoncreds: NativeAnoncreds,
       registries: [new HederaAnonCredsRegistry()],
       tailsFileService: new InMemoryTailsFileService(),
     }),

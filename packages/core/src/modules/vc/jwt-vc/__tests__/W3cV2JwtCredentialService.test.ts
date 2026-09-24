@@ -1,4 +1,4 @@
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
 import { AskarKeyManagementService, AskarModuleConfig, transformSeedToPrivateJwk } from '../../../../../../askar/src'
@@ -43,7 +43,7 @@ import {
 const storageService = new InMemoryStorageService<any>()
 const config = getAgentConfig('W3cV2JwtCredentialService')
 const askarModuleConfig = new AskarModuleConfig({
-  askar,
+  askar: NativeAskar,
   store: getAskarStoreConfig('W3cV2JwtCredentialService'),
 })
 const agentContext = getAgentContext({

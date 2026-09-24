@@ -5,6 +5,14 @@ import type { TailsFileService } from './services/tails'
 import { BasicTailsFileService } from './services/tails'
 
 /**
+ * The `NativeAnoncreds` class exported from `@hyperledger/anoncreds-shared` (and re-exported by the platform packages).
+ * It is typed structurally so versions of anoncreds-shared that don't export `NativeAnoncreds` remain supported.
+ */
+export interface NativeAnoncredsLike {
+  readonly instance: Anoncreds
+}
+
+/**
  * @public
  * AnonCredsModuleConfigOptions defines the interface for the options of the AnonCredsModuleConfig class.
  */
@@ -21,18 +29,23 @@ export interface AnonCredsModuleConfigOptions {
   tailsFileService?: TailsFileService
 
   /**
+   * The anoncreds instance to use. You can pass either the `NativeAnoncreds` class, which resolves the registered
+   * native binding lazily on each access, or an `Anoncreds` instance directly (e.g. the deprecated `anoncreds` export).
+   *
+   * Passing `NativeAnoncreds` is recommended, as the deprecated `anoncreds` export is only populated after the platform
+   * package has been imported, which can result in `undefined` depending on import order (e.g. with ESM or bundlers).
    *
    * ## Node.JS
    *
    * ```ts
-   * import { anoncreds } from '@hyperledger/anoncreds-nodejs'
+   * import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
    *
    * const agent = new Agent({
    *  config: {},
    *  dependencies: agentDependencies,
    *  modules: {
    *   anoncreds: new AnoncredsModule({
-   *      anoncreds,
+   *      anoncreds: NativeAnoncreds,
    *   })
    *  }
    * })
@@ -41,20 +54,20 @@ export interface AnonCredsModuleConfigOptions {
    * ## React Native
    *
    * ```ts
-   * import { anoncreds } from '@hyperledger/anoncreds-react-native'
+   * import { NativeAnoncreds } from '@hyperledger/anoncreds-react-native'
    *
    * const agent = new Agent({
    *  config: {},
    *  dependencies: agentDependencies,
    *  modules: {
    *   anoncreds: new AnoncredsModule({
-   *      anoncreds,
+   *      anoncreds: NativeAnoncreds,
    *   })
    *  }
    * })
    * ```
    */
-  anoncreds: Anoncreds
+  anoncreds: Anoncreds | NativeAnoncredsLike
 
   /**
    * Create a default link secret if there are no created link secrets.
@@ -83,8 +96,12 @@ export class AnonCredsModuleConfig {
     return this.options.tailsFileService ?? new BasicTailsFileService()
   }
 
-  public get anoncreds() {
-    return this.options.anoncreds
+  /** See {@link AnonCredsModuleConfigOptions.anoncreds} */
+  public get anoncreds(): Anoncreds {
+    const anoncreds = this.options.anoncreds
+
+    // NativeAnoncreds resolves the registered native binding on each access
+    return 'instance' in anoncreds ? anoncreds.instance : anoncreds
   }
 
   /** See {@link AnonCredsModuleConfigOptions.autoCreateLinkSecret} */

@@ -1,5 +1,5 @@
 import { InjectionSymbols, Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests'
 import { NodeInMemoryKeyManagementStorage } from '../../../../node/src/kms/NodeInMemoryKeyManagementStorage'
 import { NodeKeyManagementService } from '../../../../node/src/kms/NodeKeyManagementService'
@@ -16,7 +16,7 @@ const agentContext = getAgentContext({
       AskarModuleConfig,
       new AskarModuleConfig({
         multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,
-        askar,
+        askar: NativeAskar,
         store: {
           id: 'default',
           key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',

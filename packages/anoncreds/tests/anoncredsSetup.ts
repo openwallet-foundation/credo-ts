@@ -52,7 +52,7 @@ import type {
 import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService, AnonCredsModule } from '../src'
 import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
-import { anoncreds } from './helpers'
+import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { LocalDidResolver } from './LocalDidResolver'
 import { anoncredsDefinitionFourAttributesNoRevocation } from './preCreatedAnonCredsDefinition'
@@ -121,7 +121,7 @@ export const getAnonCredsModules = ({
     anoncreds: new AnonCredsModule({
       registries: registries ?? [inMemoryAnonCredsRegistry],
       tailsFileService: new InMemoryTailsFileService(),
-      anoncreds,
+      anoncreds: NativeAnoncreds,
     }),
     dids: new DidsModule({
       resolvers: cheqd ? [new CheqdDidResolver()] : [new LocalDidResolver()],
