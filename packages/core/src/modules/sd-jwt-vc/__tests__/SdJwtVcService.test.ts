@@ -561,8 +561,9 @@ describe('SdJwtVcService', () => {
     })
 
     test('Create sd-jwt-vc with a hashing algorithm other than sha-256', async () => {
+      const iat = 1698151532
       const { compact, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
-        payload: { claim: 'some-claim', vct: 'IdentityCredential', iat: Math.floor(Date.now() / 1000) },
+        payload: { claim: 'some-claim', vct: 'IdentityCredential', iat },
         disclosureFrame: { _sd: ['claim'] },
         holder: {
           method: 'jwk',
@@ -579,7 +580,7 @@ describe('SdJwtVcService', () => {
 
       expect(payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(Date.now() / 1000),
+        iat,
         iss: issuerDidUrl.split('#')[0],
         _sd: [TypedArrayEncoder.toBase64Url(Hasher.hash(encodedDisclosure, 'sha-512'))],
         _sd_alg: 'sha-512',
