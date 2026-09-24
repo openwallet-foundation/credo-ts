@@ -16,7 +16,7 @@
     "@hyperledger/anoncreds-nodejs": "catalog:",
     "@hyperledger/indy-vdr-nodejs": "catalog:",
     "@openwallet-foundation/askar-nodejs": "catalog:",
-    "inquirer": "^13.2.2"
+    "inquirer": "^14.2.2"
   },
   "devDependencies": {
     "@credo-ts/anoncreds": "workspace:*",
