@@ -78,6 +78,21 @@ describe('JsonLdModule', () => {
     expect(() => dependencyManager.resolve(W3cV2DataIntegrityContextValidator)).not.toThrow()
   })
 
+  test('defaultDocumentLoader resolves bundled context URLs with fragments', async () => {
+    const agentContext = getAgentContext({
+      agentConfig: getAgentConfig('JsonLdModuleTest'),
+      registerInstances: [[DidResolverService, {}]],
+    })
+    const documentLoader = defaultDocumentLoader(agentContext)
+    const contextUrlWithFragment = `${SECURITY_ED25519_2018_CONTEXT_URL}#foo`
+
+    await expect(documentLoader(contextUrlWithFragment)).resolves.toEqual({
+      contextUrl: null,
+      documentUrl: contextUrlWithFragment,
+      document: DEFAULT_CONTEXTS[SECURITY_ED25519_2018_CONTEXT_URL],
+    })
+  })
+
   // TODO: remove once W3cCredentialsModuleConfig's documentLoader fallback is removed.
   describe('legacy W3cCredentialsModule documentLoader precedence (temporary, to be removed)', () => {
     test('prefers the standalone JsonLdModule document loader over W3cCredentialsModule when both are configured', () => {
