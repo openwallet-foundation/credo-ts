@@ -43,13 +43,13 @@ import {
 } from '../src'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
 import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
-import { anoncreds } from './helpers'
+import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
-  anoncreds,
+  anoncreds: NativeAnoncreds,
   registries: [registry],
   tailsFileService,
 })

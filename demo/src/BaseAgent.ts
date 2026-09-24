@@ -31,7 +31,7 @@ import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { agentDependencies, DidCommHttpInboundTransport } from '@credo-ts/node'
 import type { HederaNetwork } from '@hiero-did-sdk/client'
-import { anoncreds } from '@hyperledger/anoncreds-nodejs'
+import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { greenText } from './OutputClass'
@@ -120,7 +120,7 @@ function getAskarAnonCredsIndyModules(
     }),
     anoncreds: new AnonCredsModule({
       registries: [new IndyVdrAnonCredsRegistry(), new CheqdAnonCredsRegistry(), new HederaAnonCredsRegistry()],
-      anoncreds,
+      anoncreds: NativeAnoncreds,
     }),
     indyVdr: new IndyVdrModule({
       indyVdr,
