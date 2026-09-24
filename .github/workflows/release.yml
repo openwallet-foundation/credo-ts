@@ -3,10 +3,10 @@ name: Release
 on:
   push:
     branches:
-      - main
+      - v0.7.x
   pull_request:
     branches:
-      - main
+      - v0.7.x
     types:
       - opened
       - synchronize
@@ -22,7 +22,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/v0.7.x'
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: pnpm/action-setup@v6
@@ -45,6 +45,19 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      # Release branches publish under the `latest` npm tag until a newer minor has been released
+      # (i.e. `latest` no longer points to a 0.7.x version), after which they publish under `0.7-latest`.
+      # NOTE: `v0.7` can't be used as npm rejects tags that are valid semver ranges.
+      - name: Determine npm tag
+        id: npm-tag
+        run: |
+          LATEST=$(npm view @credo-ts/core dist-tags.latest)
+          if [[ "$LATEST" == 0.7.* ]]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            echo "tag=0.7-latest" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v2
@@ -52,7 +65,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pr-title: 'chore(release): new version'
           commit-message: 'chore(release): new version'
-          publish-script: pnpm release
+          publish-script: pnpm release --tag ${{ steps.npm-tag.outputs.tag }}
           version-script: pnpm changeset-version
           push-with-git-cli: true
 
@@ -65,6 +78,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ env.CURRENT_PACKAGE_VERSION }}
+          make_latest: ${{ steps.npm-tag.outputs.tag == 'latest' }}
 
   release-unstable:
     name: Release Unstable
@@ -113,7 +127,9 @@ jobs:
       - name: Create unstable release
         if: steps.should-run.outputs.run == 'true'
         env:
-          TAG: ${{ github.event_name == 'push' && 'alpha' || format('pr-{0}', github.event.number) }}
+          SNAPSHOT: ${{ github.event_name == 'push' && 'alpha' || format('pr-{0}', github.event.number) }}
+          # Use a separate npm tag so 0.7.x snapshots don't take over the `alpha` tag from main
+          TAG: ${{ github.event_name == 'push' && '0.7-alpha' || format('pr-{0}', github.event.number) }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_PUBLISH }}
         run: |
@@ -126,7 +142,7 @@ jobs:
           snapshot release
           EOF
 
-          pnpm changeset version --snapshot ${{ env.TAG }}
+          pnpm changeset version --snapshot ${{ env.SNAPSHOT }}
           pnpm build
           pnpm changeset publish --tag ${{ env.TAG }}
 

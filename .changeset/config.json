@@ -5,7 +5,7 @@
   "privatePackages": false,
   "fixed": [["@credo-ts/*"]],
   "access": "public",
-  "baseBranch": "main",
+  "baseBranch": "v0.7.x",
   "updateInternalDependencies": "patch",
   "snapshot": {
     "useCalculatedVersion": true

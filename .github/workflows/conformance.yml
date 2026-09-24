@@ -7,13 +7,13 @@ name: Conformance Tests
 on:
   pull_request:
     branches:
-      - main
+      - v0.7.x
     paths:
       - 'packages/core/**'
       - 'packages/openid4vc/**'
   push:
     branches:
-      - main
+      - v0.7.x
     paths:
       - 'packages/core/**'
       - 'packages/openid4vc/**'
