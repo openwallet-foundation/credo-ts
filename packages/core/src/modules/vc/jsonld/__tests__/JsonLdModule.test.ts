@@ -1,8 +1,13 @@
+import { getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
 import { DependencyManager } from '../../../../plugins/DependencyManager'
+import { DidResolverService } from '../../../dids'
+import { SECURITY_ED25519_2018_CONTEXT_URL, SECURITY_ED25519_2020_CONTEXT_URL } from '../../constants'
 import { W3cV2DataIntegrityContextValidator } from '../../data-integrity'
 import { W3cCredentialsModule } from '../../W3cCredentialsModule'
 import { W3cCredentialsModuleConfig } from '../../W3cCredentialsModuleConfig'
 import { W3cV2CredentialsModule } from '../../W3cV2CredentialsModule'
+import { DEFAULT_CONTEXTS } from '../contexts'
+import { defaultDocumentLoader } from '../documentLoader'
 import { JsonLdModule } from '../JsonLdModule'
 import { JsonLdModuleConfig } from '../JsonLdModuleConfig'
 
@@ -76,6 +81,25 @@ describe('JsonLdModule', () => {
 
     expect(dependencyManager.isRegistered(JsonLdModuleConfig)).toBe(true)
     expect(() => dependencyManager.resolve(W3cV2DataIntegrityContextValidator)).not.toThrow()
+  })
+
+  test('defaultDocumentLoader resolves Ed25519 suite contexts from DEFAULT_CONTEXTS', async () => {
+    const agentContext = getAgentContext({
+      agentConfig: getAgentConfig('JsonLdModuleTest'),
+      registerInstances: [[DidResolverService, {}]],
+    })
+    const documentLoader = defaultDocumentLoader(agentContext)
+
+    await expect(documentLoader(SECURITY_ED25519_2018_CONTEXT_URL)).resolves.toEqual({
+      contextUrl: null,
+      documentUrl: SECURITY_ED25519_2018_CONTEXT_URL,
+      document: DEFAULT_CONTEXTS[SECURITY_ED25519_2018_CONTEXT_URL],
+    })
+    await expect(documentLoader(SECURITY_ED25519_2020_CONTEXT_URL)).resolves.toEqual({
+      contextUrl: null,
+      documentUrl: SECURITY_ED25519_2020_CONTEXT_URL,
+      document: DEFAULT_CONTEXTS[SECURITY_ED25519_2020_CONTEXT_URL],
+    })
   })
 
   test('defaultDocumentLoader resolves bundled context URLs with fragments', async () => {
