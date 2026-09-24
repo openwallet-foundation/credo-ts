@@ -24,7 +24,7 @@ import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction, testLogger } from '../../../../../core/tests'
-import { anoncreds } from './../../../../tests/helpers'
+import { NativeAnoncreds } from './../../../../tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
 import { AnonCredsRsHolderService } from '../../../anoncreds-rs'
@@ -36,7 +36,7 @@ import * as testModule from '../anonCredsCredentialRecord'
 const agentConfig = getAgentConfig('Migration AnonCreds Credential Records 0.4-0.5')
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
-  anoncreds,
+  anoncreds: NativeAnoncreds,
   registries: [registry],
 })
 

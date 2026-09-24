@@ -3,7 +3,11 @@ import 'reflect-metadata'
 export { AnonCredsApi } from './AnonCredsApi'
 export * from './AnonCredsApiOptions'
 export { AnonCredsModule } from './AnonCredsModule'
-export { AnonCredsModuleConfig, type AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
+export {
+  AnonCredsModuleConfig,
+  type AnonCredsModuleConfigOptions,
+  type NativeAnoncredsLike,
+} from './AnonCredsModuleConfig'
 export * from './error'
 export * from './formats'
 export * from './models'

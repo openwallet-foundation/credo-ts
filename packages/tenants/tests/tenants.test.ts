@@ -3,7 +3,7 @@ import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
 import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import { DidCommModule, DidCommOutOfBandRecord } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
@@ -51,7 +51,7 @@ const agent1 = new Agent({
     tenants: new TenantsModule<ReturnType<typeof getTenantsAgentModules>>(),
     askar: new AskarModule({
       enableStorage: false,
-      askar,
+      askar: NativeAskar,
       store: getAskarStoreConfig('tenants.test.ts', { inMemory: false }),
     }),
   },
@@ -65,7 +65,7 @@ const agent2 = new Agent({
     tenants: new TenantsModule<ReturnType<typeof getTenantsAgentModules>>(),
     askar: new AskarModule({
       enableStorage: false,
-      askar,
+      askar: NativeAskar,
       store: getAskarStoreConfig('tenants.test.ts', { inMemory: false }),
     }),
   },

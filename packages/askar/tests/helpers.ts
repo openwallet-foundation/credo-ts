@@ -1,7 +1,6 @@
 import type { Agent, InitConfig } from '@credo-ts/core'
 import { LogLevel, utils } from '@credo-ts/core'
-import { askar } from '@openwallet-foundation/askar-nodejs'
-import { registerAskar } from '@openwallet-foundation/askar-shared'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import path from 'path'
 import { waitForBasicMessage } from '../../core/tests/helpers'
 import { TestLogger } from '../../core/tests/logger'
@@ -11,9 +10,7 @@ import { agentDependencies } from '../../node/src'
 import type { AskarPostgresStorageConfig } from '../src'
 import { AskarModule } from '../src/AskarModule'
 
-registerAskar({ askar })
-
-export { askar }
+export { NativeAskar }
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -55,7 +52,7 @@ export function getAskarPostgresAgentOptions(
         ...didcommConfig,
       }),
       askar: new AskarModule({
-        askar,
+        askar: NativeAskar,
         store: {
           id: `PostgresWallet${name}${random}`,
           key: `Key${name}`,
@@ -89,7 +86,7 @@ export function getAskarSqliteAgentOptions(
         ...didcommConfig,
       }),
       askar: new AskarModule({
-        askar,
+        askar: NativeAskar,
         store: {
           id: `SQLiteWallet${name} - ${random}`,
           key: `Key${name}`,

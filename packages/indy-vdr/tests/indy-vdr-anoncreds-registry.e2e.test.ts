@@ -6,7 +6,7 @@ import {
 } from '@credo-ts/anoncreds'
 import { Agent, DidsModule, TypedArrayEncoder } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
-import { anoncreds } from '../../anoncreds/tests/helpers'
+import { NativeAnoncreds } from '../../anoncreds/tests/helpers'
 import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
 import { IndyVdrIndyDidResolver, IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
@@ -25,7 +25,7 @@ const endorser = new Agent(
     {},
     {
       anoncreds: new AnonCredsModule({
-        anoncreds,
+        anoncreds: NativeAnoncreds,
         registries: [indyVdrAnonCredsRegistry],
       }),
       indyVdr: new IndyVdrModule({
@@ -47,7 +47,7 @@ const agent = new Agent(
     {},
     {
       anoncreds: new AnonCredsModule({
-        anoncreds,
+        anoncreds: NativeAnoncreds,
         registries: [indyVdrAnonCredsRegistry],
       }),
       indyVdr: new IndyVdrModule({

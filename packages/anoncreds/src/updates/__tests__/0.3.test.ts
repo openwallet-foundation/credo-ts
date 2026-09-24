@@ -4,7 +4,7 @@ import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { agentDependencies } from '../../../../core/tests'
-import { anoncreds } from '../../../tests/helpers'
+import { NativeAnoncreds } from '../../../tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModule } from '../../AnonCredsModule'
 import {
@@ -43,7 +43,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
           // We need to include the AnonCredsModule to run the updates
           anoncreds: new AnonCredsModule({
             registries: [new InMemoryAnonCredsRegistry()],
-            anoncreds,
+            anoncreds: NativeAnoncreds,
           }),
         },
       },
@@ -112,7 +112,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
         modules: {
           // We need to include the AnonCredsModule to run the updates
           anoncreds: new AnonCredsModule({
-            anoncreds,
+            anoncreds: NativeAnoncreds,
             registries: [
               // We need to be able to resolve the credential definition so we can correctly
               new InMemoryAnonCredsRegistry({
