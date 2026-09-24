@@ -1,10 +1,12 @@
 import type { AgentContext, Constructable, SdJwtVc } from '@credo-ts/core'
 import {
   Agent,
+  CredoError,
   DidKey,
   DidsModule,
   getDomainFromUrl,
   Hasher,
+  JsonEncoder,
   JwsService,
   JwtPayload,
   KeyDidRegistrar,
@@ -556,6 +558,57 @@ describe('SdJwtVcService', () => {
           jwk: holderKey.toJson(),
         },
       })
+    })
+
+    test('Create sd-jwt-vc with a hashing algorithm other than sha-256', async () => {
+      const iat = 1698151532
+      const { compact, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
+        payload: { claim: 'some-claim', vct: 'IdentityCredential', iat },
+        disclosureFrame: { _sd: ['claim'] },
+        holder: {
+          method: 'jwk',
+          jwk: holderKey,
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+        hashingAlgorithm: 'sha-512',
+      })
+
+      const [, encodedDisclosure] = compact.split('~')
+
+      expect(payload).toEqual({
+        vct: 'IdentityCredential',
+        iat,
+        iss: issuerDidUrl.split('#')[0],
+        _sd: [TypedArrayEncoder.toBase64Url(Hasher.hash(encodedDisclosure, 'sha-512'))],
+        _sd_alg: 'sha-512',
+        cnf: {
+          jwk: holderKey.toJson(),
+        },
+      })
+
+      // The digests must be resolvable using the algorithm from `_sd_alg`
+      expect(prettyClaims.claim).toStrictEqual('some-claim')
+      expect(sdJwtVcService.fromCompact(compact).prettyClaims.claim).toStrictEqual('some-claim')
+    })
+
+    test('Create sd-jwt-vc with sha-1 as hashing algorithm and fails', async () => {
+      await expect(
+        sdJwtVcService.sign(agent.context, {
+          payload: { claim: 'some-claim', vct: 'IdentityCredential' },
+          disclosureFrame: { _sd: ['claim'] },
+          issuer: {
+            method: 'did',
+            didUrl: issuerDidUrl,
+          },
+          // `sha-1` is excluded on a type level, but JavaScript callers can still provide it
+          hashingAlgorithm: 'sha-1' as never,
+        })
+      ).rejects.toThrow(
+        "Unsupported hashing algorithm 'sha-1' for the disclosure digests of an SD-JWT. Supported hashing algorithms are sha-256, sha-384, sha-512"
+      )
     })
 
     test('Create sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
@@ -1667,6 +1720,29 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: false,
         error: new SDJWTException('Verify Error: Invalid JWT Signature'),
+        sdJwtVc: expect.any(Object),
+      })
+    })
+
+    test('verify sd-jwt-vc signed with a sha-1 based signature algorithm and fails', async () => {
+      // SHA-1 based signature algorithms (such as RS1) are not registered JWA signature algorithms,
+      // and thus can never be used to sign or verify an sd-jwt-vc
+      const [jwt, ...disclosures] = simpleJwtVc.split('~')
+      const [encodedHeader, encodedPayload, signature] = jwt.split('.')
+      const header = JsonEncoder.fromBase64Url(encodedHeader)
+
+      const sha1SignedSdJwtVc = [
+        [JsonEncoder.toBase64Url({ ...header, alg: 'RS1' }), encodedPayload, signature].join('.'),
+        ...disclosures,
+      ].join('~')
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: sha1SignedSdJwtVc,
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        error: new CredoError("Expected JWT header 'alg' to be a known JWA signature algorithm, found 'RS1'"),
         sdJwtVc: expect.any(Object),
       })
     })
