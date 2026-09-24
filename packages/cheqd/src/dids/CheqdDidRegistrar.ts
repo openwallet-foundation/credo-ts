@@ -27,6 +27,8 @@ import {
   getPublicJwkFromVerificationMethod,
   JsonTransformer,
   Kms,
+  SECURITY_ED25519_2018_CONTEXT_URL,
+  SECURITY_ED25519_2020_CONTEXT_URL,
   SECURITY_JWS_CONTEXT_URL,
   TypedArrayEncoder,
   utils,
@@ -34,11 +36,7 @@ import {
   type XOR,
 } from '@credo-ts/core'
 
-import {
-  ED25519_SUITE_CONTEXT_URL_2018,
-  ED25519_SUITE_CONTEXT_URL_2020,
-  parseCheqdDid,
-} from '../anoncreds/utils/identifiers'
+import { parseCheqdDid } from '../anoncreds/utils/identifiers'
 import { CheqdLedgerService } from '../ledger'
 
 import {
@@ -51,8 +49,8 @@ import {
 export class CheqdDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['cheqd']
   private contextMapping = {
-    Ed25519VerificationKey2018: ED25519_SUITE_CONTEXT_URL_2018,
-    Ed25519VerificationKey2020: ED25519_SUITE_CONTEXT_URL_2020,
+    Ed25519VerificationKey2018: SECURITY_ED25519_2018_CONTEXT_URL,
+    Ed25519VerificationKey2020: SECURITY_ED25519_2020_CONTEXT_URL,
     JsonWebKey2020: SECURITY_JWS_CONTEXT_URL,
   }
 
