@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { AskarError, NativeAskar } from '@openwallet-foundation/askar-shared'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
+import { AskarError } from '@openwallet-foundation/askar-shared'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../AskarModuleConfig'
@@ -17,7 +18,7 @@ const agentContext = getAgentContext({
       AskarModuleConfig,
       new AskarModuleConfig({
         multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,
-        askar: NativeAskar.instance,
+        askar: NativeAskar,
         store: {
           id: 'default',
           key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
@@ -967,6 +968,32 @@ describe('AskarKeyManagementService', () => {
       })
 
       expect(bytes.length).toEqual(32)
+    })
+  })
+
+  describe('isOperationSupported', () => {
+    it('returns false for key agreement with a curve that is not supported by askar', () => {
+      expect(
+        service.isOperationSupported(agentContext, {
+          operation: 'encrypt',
+          encryption: { algorithm: 'A256GCM' },
+          keyAgreement: {
+            algorithm: 'ECDH-ES',
+            externalPublicJwk: { kty: 'EC', crv: 'P-521', x: '', y: '' },
+          },
+        })
+      ).toBe(false)
+
+      expect(
+        service.isOperationSupported(agentContext, {
+          operation: 'encrypt',
+          encryption: { algorithm: 'A256GCM' },
+          keyAgreement: {
+            algorithm: 'ECDH-ES',
+            externalPublicJwk: { kty: 'EC', crv: 'P-256', x: '', y: '' },
+          },
+        })
+      ).toBe(true)
     })
   })
 

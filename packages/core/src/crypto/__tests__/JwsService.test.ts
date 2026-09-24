@@ -1,6 +1,6 @@
 import type { X509Certificate } from '@credo-ts/core'
 import { CredoError, X509ModuleConfig, X509Service } from '@credo-ts/core'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { AskarKeyManagementService, AskarModuleConfig, transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { AskarStoreManager } from '../../../../askar/src/AskarStoreManager'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
@@ -34,20 +34,16 @@ describe('JwsService', () => {
   let didJwszDnaeyKey: PublicJwk<P256PublicJwk>
 
   beforeAll(async () => {
+    const askarModuleConfig = new AskarModuleConfig({
+      askar: NativeAskar,
+      store: getAskarStoreConfig('JwsService'),
+    })
     agentContext = getAgentContext({
       registerInstances: [
         [X509ModuleConfig, new X509ModuleConfig()],
 
-        [
-          AskarStoreManager,
-          new AskarStoreManager(
-            new NodeFileSystem(),
-            new AskarModuleConfig({
-              askar,
-              store: getAskarStoreConfig('JwsService'),
-            })
-          ),
-        ],
+        [AskarModuleConfig, askarModuleConfig],
+        [AskarStoreManager, new AskarStoreManager(new NodeFileSystem(), askarModuleConfig)],
       ],
       kmsBackends: [new AskarKeyManagementService()],
       agentConfig: getAgentConfig('JwsService'),

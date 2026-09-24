@@ -1,4 +1,3 @@
-import { MultiBaseEncoder, TypedArrayEncoder } from '../../../../../utils'
 import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../constants'
 import jsonld from '../../../jsonld/jsonld'
 import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../proof-ops/jsonldUtil'
@@ -6,7 +5,7 @@ import { _includesContext } from '../../proof-ops/jsonldUtil'
 import type { JwsLinkedDataSignatureOptions } from '../JwsLinkedDataSignature'
 import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
 
-import { ED25519_SUITE_CONTEXT_URL_2018, ED25519_SUITE_CONTEXT_URL_2020 } from './constants'
+import { ED25519_SUITE_CONTEXT_URL_2018 } from './constants'
 import { ed25519Signature2018Context } from './context'
 
 const jsonldWithHasValue = jsonld as typeof jsonld & {
@@ -49,7 +48,7 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
    * @param {boolean} [options.useNativeCanonize] - Whether to use a native
    *   canonize algorithm.
    */
-  public constructor(options: Ed25519Signature2018Options) {
+  public constructor(options: Ed25519Signature2018Options = {}) {
     super({
       type: 'Ed25519Signature2018',
       algorithm: 'EdDSA',
@@ -72,20 +71,10 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
       )
     }
 
-    if (!_isEd2018Key(document) && !_isEd2020Key(document)) {
+    if (!_isEd2018Key(document)) {
       const verificationMethodType = jsonld.getValues(document, 'type')[0]
       throw new Error(
-        `Unsupported verification method type '${verificationMethodType}'. Verification method type MUST be 'Ed25519VerificationKey2018' or 'Ed25519VerificationKey2020'.`
-      )
-    }
-    if (_isEd2018Key(document) && !_includesEd2018Context(document)) {
-      throw new Error(
-        `For verification method type 'Ed25519VerificationKey2018' the '@context' MUST contain the context url "${ED25519_SUITE_CONTEXT_URL_2018}".`
-      )
-    }
-    if (_isEd2020Key(document) && !_includesEd2020Context(document)) {
-      throw new Error(
-        `For verification method type 'Ed25519VerificationKey2020' the '@context' MUST contain the context url "${ED25519_SUITE_CONTEXT_URL_2020}".`
+        `Unsupported verification method type '${verificationMethodType}' for proof type '${this.type}'. Verification method type MUST be '${this.requiredKeyType}'.`
       )
     }
 
@@ -93,38 +82,6 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
     if (document.revoked !== undefined) {
       throw new Error('The verification method has been revoked.')
     }
-  }
-
-  public async getVerificationMethod(options: { proof: Proof; documentLoader?: DocumentLoader }) {
-    let verificationMethod = await super.getVerificationMethod({
-      proof: options.proof,
-      documentLoader: options.documentLoader,
-    })
-
-    // convert Ed25519VerificationKey2020 to Ed25519VerificationKey2018
-    if (_isEd2020Key(verificationMethod) && _includesEd2020Context(verificationMethod)) {
-      // -- convert multibase to base58 --
-      const publicKeyBuffer = MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase)
-
-      // -- update context --
-      // remove 2020 context
-      const context2020Index = verificationMethod['@context'].indexOf(ED25519_SUITE_CONTEXT_URL_2020)
-      verificationMethod['@context'].splice(context2020Index, 1)
-
-      // add 2018 context
-      verificationMethod['@context'].push(ED25519_SUITE_CONTEXT_URL_2018)
-
-      // -- update type
-      verificationMethod.type = 'Ed25519VerificationKey2018'
-
-      verificationMethod = {
-        ...verificationMethod,
-        publicKeyMultibase: undefined,
-        publicKeyBase58: TypedArrayEncoder.toBase58(publicKeyBuffer.data),
-      }
-    }
-
-    return verificationMethod
   }
 
   /**
@@ -188,10 +145,6 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
     document: options.document,
     contextUrl: ED25519_SUITE_CONTEXT_URL_2018,
   })
-  const hasEd2020 = _includesContext({
-    document: options.document,
-    contextUrl: ED25519_SUITE_CONTEXT_URL_2020,
-  })
   const hasCred = _includesContext({ document: options.document, contextUrl: CREDENTIALS_CONTEXT_V1_URL })
   const hasSecV2 = _includesContext({ document: options.document, contextUrl: SECURITY_CONTEXT_URL })
 
@@ -211,21 +164,9 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
   }
 
   // Either one by itself is fine, for this suite
-  return hasEd2018 || hasEd2020 || hasCred || hasSecV2
+  return hasEd2018 || hasCred || hasSecV2
 }
 
 function _isEd2018Key(verificationMethod: JsonLdDoc) {
   return jsonldWithHasValue.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2018')
-}
-
-function _includesEd2018Context(document: JsonLdDoc) {
-  return _includesContext({ document, contextUrl: ED25519_SUITE_CONTEXT_URL_2018 })
-}
-
-function _isEd2020Key(verificationMethod: JsonLdDoc) {
-  return jsonldWithHasValue.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2020')
-}
-
-function _includesEd2020Context(document: JsonLdDoc) {
-  return _includesContext({ document, contextUrl: ED25519_SUITE_CONTEXT_URL_2020 })
 }

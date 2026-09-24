@@ -23,7 +23,7 @@ import {
   DidCommCredentialRole,
   DidCommCredentialState,
 } from '@credo-ts/didcomm'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
@@ -103,7 +103,7 @@ const agentContext = getAgentContext({
     [
       AskarModuleConfig,
       new AskarModuleConfig({
-        askar,
+        askar: NativeAskar,
         store: getAskarStoreConfig('data-integrity-flow-w3c'),
       }),
     ],

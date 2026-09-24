@@ -4,7 +4,7 @@
     "cli": "./build/index.mjs",
     "import": "./src/index.ts"
   },
-  "version": "0.7.0",
+  "version": "0.7.1",
   "files": [
     "build"
   ],
@@ -29,11 +29,11 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@cheqd/sdk": "npm:@cheqd/sdk-esm@~5.5.0",
-    "@cheqd/ts-proto": "^4.2.1",
-    "@cosmjs/crypto": "^0.38.1",
-    "@cosmjs/proto-signing": "^0.36.2",
-    "@cosmjs/stargate": "^0.36.2",
+    "@cheqd/sdk": "catalog:",
+    "@cheqd/ts-proto": "catalog:",
+    "@cosmjs/crypto": "catalog:",
+    "@cosmjs/proto-signing": "catalog:",
+    "@cosmjs/stargate": "catalog:",
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@stablelib/ed25519": "catalog:",

@@ -71,6 +71,19 @@ export class SignatureSuiteRegistry {
     return suiteInfo
   }
 
+  /**
+   * Returns the `@context` url that the signature suite for the given proof type adds to documents
+   * it signs (see `LinkedDataSignature.ensureSuiteContext`), or undefined if the proof type is not
+   * registered or its suite does not declare a context url.
+   */
+  public findContextUrlByProofType(proofType: string): string | undefined {
+    const suiteClass = this.suiteMapping.find((x) => x.proofType === proofType)?.suiteClass as
+      | { CONTEXT_URL?: unknown }
+      | undefined
+
+    return typeof suiteClass?.CONTEXT_URL === 'string' ? suiteClass.CONTEXT_URL : undefined
+  }
+
   public getVerificationMethodTypesByProofType(proofType: string): string[] {
     const suiteInfo = this.suiteMapping.find((suiteInfo) => suiteInfo.proofType === proofType)
 

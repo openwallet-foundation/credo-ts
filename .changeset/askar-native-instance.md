@@ -1,7 +1,16 @@
 ---
-'@credo-ts/askar': minor
+'@credo-ts/askar': patch
 ---
 
-Read the askar native binding via `NativeAskar.instance` instead of the deprecated mutable `askar` export in the KMS (key management and ECDH key derivation). The deprecated binding is populated only when the platform package's side-effect import runs, so an ESM consumer that loads the KMS first snapshots it as `undefined` and key operations fail with `Cannot read properties of undefined (reading 'keyGetJwkSecret')`. `NativeAskar.instance` resolves the binding on each access, so registration order no longer matters. See #2597, #2607.
+The `askar` option of the `AskarModule` now also accepts the `NativeAskar` class (available since `@openwallet-foundation/askar-shared` 0.6.0) in addition to an `Askar` instance. When `NativeAskar` is passed the registered native binding is resolved on each access, so it no longer matters whether the platform package (`askar-nodejs` / `askar-react-native`) was imported before Credo. This fixes errors like `Cannot read properties of undefined (reading 'keyGetJwkSecret')` in ESM, bundler and test-runner setups that load modules in a different order. See #2597, #2607.
 
-This raises the minimum required `@openwallet-foundation/askar-shared` to 0.6.0, where `NativeAskar` was introduced, so the peer dependency range is narrowed to `^0.6.0`.
+Passing the (deprecated) `askar` export keeps working, and askar-shared `^0.4.3 || ^0.5.0 || ^0.6.0` remains supported.
+
+```ts
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
+
+new AskarModule({
+  askar: NativeAskar,
+  store: { id: 'my-wallet', key: 'my-key' },
+})
+```

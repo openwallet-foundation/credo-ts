@@ -1,4 +1,8 @@
 import { DependencyManager } from '../../../plugins/DependencyManager'
+import {
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+} from '../../dids'
 import { Ed25519PublicJwk } from '../../kms'
 import { W3cJwtCredentialService } from '../jwt-vc'
 import {
@@ -29,7 +33,13 @@ describe('W3cCredentialsModule', () => {
 
     const signatureSuiteRegistry = dependencyManager.resolve(SignatureSuiteRegistry)
     expect(signatureSuiteRegistry.getByProofType('Ed25519Signature2018').suiteClass).toBe(Ed25519Signature2018)
+    expect(signatureSuiteRegistry.getByProofType('Ed25519Signature2018').verificationMethodTypes).toEqual([
+      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+    ])
     expect(signatureSuiteRegistry.getByProofType('Ed25519Signature2020').suiteClass).toBe(Ed25519Signature2020)
+    expect(signatureSuiteRegistry.getByProofType('Ed25519Signature2020').verificationMethodTypes).toEqual([
+      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+    ])
   })
 
   // Remove this compatibility test when SignatureSuiteToken is removed in 0.8.

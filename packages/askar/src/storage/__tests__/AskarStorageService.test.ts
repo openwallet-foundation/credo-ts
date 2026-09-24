@@ -27,7 +27,7 @@ describe('AskarStorageService', () => {
     storeManager = new AskarStoreManager(
       new NodeFileSystem(),
       new AskarModuleConfig({
-        askar: NativeAskar.instance,
+        askar: NativeAskar,
         store: getAskarStoreConfig('AskarStorageServiceTest', {
           inMemory: true,
         }),
