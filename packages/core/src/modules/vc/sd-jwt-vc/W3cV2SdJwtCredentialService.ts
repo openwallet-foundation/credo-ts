@@ -11,6 +11,7 @@ import { KeyManagementApi } from '../../kms'
 import { applyDisclosuresForPaths, applyDisclosuresForPayload, type ClaimPath } from '../../sd-jwt-vc/disclosureFrame'
 import {
   extractKeyFromHolderBinding,
+  getSdJwtHashingAlgorithm,
   getSdJwtSigner,
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
@@ -91,7 +92,7 @@ export class W3cV2SdJwtCredentialService {
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       signer: getSdJwtSigner(agentContext, publicJwk),
-      hashAlg: options.hashingAlgorithm ?? 'sha-256',
+      hashAlg: getSdJwtHashingAlgorithm(options.hashingAlgorithm),
       signAlg: options.alg,
     })
 
@@ -271,7 +272,7 @@ export class W3cV2SdJwtCredentialService {
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       signer: getSdJwtSigner(agentContext, holder.publicJwk),
-      hashAlg: options.hashingAlgorithm ?? 'sha-256',
+      hashAlg: getSdJwtHashingAlgorithm(options.hashingAlgorithm),
       signAlg: holder.alg,
     })
 
