@@ -1,5 +1,17 @@
 # @credo-ts/webvh
 
+## 0.7.2
+
+### Patch Changes
+
+- Updated dependencies [61d7d0f]
+- Updated dependencies [0b9531a]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [4fed115]
+- Updated dependencies [7ba15bc]
+  - @credo-ts/anoncreds@0.7.2
+  - @credo-ts/core@0.7.2
+
 ## 0.7.1
 
 ### Patch Changes

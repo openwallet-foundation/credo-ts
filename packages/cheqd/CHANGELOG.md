@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.2
+
+### Patch Changes
+
+- 5364f64: Pin CosmJS dependencies to the versions supported by `@cheqd/sdk-esm`.
+- 7a1a5c9: Consolidate Ed25519 linked data proof suite contexts to use the bundled JSON-LD context registry and shared VC context URL constants. This removes duplicate suite-local Ed25519 context documents/constants, flattens the Ed25519 signature suite files into the main signature suites folder, and fixes bundled context document loading for URLs with fragments.
+- Updated dependencies [61d7d0f]
+- Updated dependencies [0b9531a]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [4fed115]
+- Updated dependencies [7ba15bc]
+  - @credo-ts/anoncreds@0.7.2
+  - @credo-ts/core@0.7.2
+
 ## 0.7.1
 
 ### Patch Changes
