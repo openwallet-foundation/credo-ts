@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.2
+
+### Patch Changes
+
+- fbb6517: Allow HTTP DIDComm routes to be hosted on an externally managed Express application and make listener startup failures observable.
+- Updated dependencies [0b9531a]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [4fed115]
+- Updated dependencies [7ba15bc]
+  - @credo-ts/didcomm@0.7.2
+  - @credo-ts/core@0.7.2
+
 ## 0.7.1
 
 ### Patch Changes
