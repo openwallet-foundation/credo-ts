@@ -21,7 +21,8 @@ export function getJsonWebKey2020(options: GetJsonWebKey2020Options) {
     id: verificationMethodId,
     type: VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
     controller: options.did,
-    publicKeyJwk: options.publicJwk.toJson(),
+    // No need to include the `kid` in the JWK
+    publicKeyJwk: options.publicJwk.toJson({ includeKid: false }),
   }
 }
 
