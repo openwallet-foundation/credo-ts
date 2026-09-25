@@ -9,6 +9,7 @@ import { DidCommV1Service } from '../../../../../core/src/modules/dids/domain/se
 import { didDocumentJsonToNumAlgo1Did } from '../../../../../core/src/modules/dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../../../../../core/src/modules/dids/repository'
 import { indyDidFromPublicKeyBase58 } from '../../../../../core/src/utils/did'
+import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
 import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
 import { uuid } from '../../../../../core/src/utils/uuid'
 import {
@@ -158,6 +159,37 @@ describe('DidCommConnectionService', () => {
         })
       )
       expect(message.imageUrl).toBe(connectionImageUrl)
+    })
+
+    it('resolves a Coordinate Mediation 2.0 routing did to the mediator endpoint and routing keys', async () => {
+      expect.assertions(1)
+
+      const mediatorRoutingKey = Kms.PublicJwk.fromFingerprint(
+        'z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE'
+      ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+      const routingDid = `did:peer:2.V${mediatorRoutingKey.fingerprint}.S${JsonEncoder.toBase64Url({
+        t: 'dm',
+        s: 'https://mediator.example.com',
+        r: [],
+        a: ['didcomm/v2'],
+      })}`
+
+      const outOfBand = getMockOutOfBand({ state: DidCommOutOfBandState.PrepareResponse })
+      const config = {
+        label: 'alice',
+        routing: { recipientKey: myRouting.recipientKey, endpoints: myRouting.endpoints, routingDid },
+      }
+
+      const { message } = await connectionService.createRequest(agentContext, outOfBand, config)
+
+      expect(message.connection.didDoc?.service).toEqual([
+        new IndyAgentService({
+          id: 'XpwgBjsC2wh3eHcMW6ZRJT#IndyAgentService-1',
+          serviceEndpoint: 'https://mediator.example.com',
+          recipientKeys: ['HoVPnpfUjrDECoMZy8vu4U6dwEcLhbzjNwyS3gwLDCG8'],
+          routingKeys: [TypedArrayEncoder.toBase58(mediatorRoutingKey.publicKey.publicKey)],
+        }),
+      ])
     })
 
     it('returns a connection request message containing a custom label', async () => {
@@ -1035,18 +1067,21 @@ describe('DidCommConnectionService', () => {
     it('should throw an error when lastReceivedMessage and senderKey are present, but sender key is not present in recipientKeys of previously received message ~service decorator', async () => {
       expect.assertions(1)
 
-      const senderKey = 'senderKey'
+      // Valid 32-byte base58 Ed25519 keys — required so toX25519() conversion works correctly
+      const ourRecipientKeyBase58 = '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'
+      const senderKeyBase58 = '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'
+      const anotherKeyBase58 = '6fioC1zcDPyPEL19pXRS2E4iJ46zH7xP6uSgAaPdwDrx'
 
       const lastReceivedMessage = new DidCommMessage()
       lastReceivedMessage.setService({
-        recipientKeys: ['anotherKey'],
+        recipientKeys: [anotherKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
       const lastSentMessage = new DidCommMessage()
       lastSentMessage.setService({
-        recipientKeys: [senderKey],
+        recipientKeys: [ourRecipientKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
@@ -1057,12 +1092,12 @@ describe('DidCommConnectionService', () => {
         senderKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
-          publicKey: TypedArrayEncoder.fromBase58('randomKey'),
+          publicKey: TypedArrayEncoder.fromBase58(senderKeyBase58),
         }),
         recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
-          publicKey: TypedArrayEncoder.fromBase58(senderKey),
+          publicKey: TypedArrayEncoder.fromBase58(ourRecipientKeyBase58),
         }),
       })
 
@@ -1071,7 +1106,7 @@ describe('DidCommConnectionService', () => {
           lastReceivedMessage,
           lastSentMessage,
         })
-      ).rejects.toThrow('Sender key z41yMxWDBqGD2Z not found in their service.')
+      ).rejects.toThrow('Sender key z6MkkbTaLstV4fwr1rNf5CSxdS2rGbwxi3V5y6NnVFTZ2V1w not found in their service.')
     })
   })
 
