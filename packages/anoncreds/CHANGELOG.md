@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.7.2
+
+### Patch Changes
+
+- 61d7d0f: The `anoncreds` option of the `AnonCredsModule` now also accepts the `NativeAnoncreds` class exported by `@hyperledger/anoncreds-shared` (and the platform packages) in addition to an `Anoncreds` instance. When `NativeAnoncreds` is passed the registered native binding is resolved on each access, so it no longer matters whether the platform package (`anoncreds-nodejs` / `anoncreds-react-native`) was imported before Credo. The `AnonCredsRsHolderService` also no longer uses the deprecated global `anoncreds` export, and uses the instance configured on the module instead.
+  
+  Passing the (deprecated) `anoncreds` export keeps working.
+  
+  ```ts
+  import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
+  
+  new AnonCredsModule({
+    anoncreds: NativeAnoncreds,
+    registries: [/* ... */],
+  })
+  ```
+- Updated dependencies [0b9531a]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [4fed115]
+- Updated dependencies [7ba15bc]
+  - @credo-ts/didcomm@0.7.2
+  - @credo-ts/core@0.7.2
+
 ## 0.7.1
 
 ### Patch Changes
