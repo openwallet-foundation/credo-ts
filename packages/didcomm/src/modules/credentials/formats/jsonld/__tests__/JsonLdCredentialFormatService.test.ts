@@ -11,13 +11,13 @@ import {
   CREDENTIALS_CONTEXT_V1_URL,
   Ed25519Signature2018,
   Ed25519Signature2020,
+  SECURITY_ED25519_2020_CONTEXT_URL,
   SignatureSuiteRegistry,
   W3cCredentialRecord,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
 } from '../../../../../../../core/src/modules/vc'
 import { Ed25519Signature2018Fixtures } from '../../../../../../../core/src/modules/vc/linked-data-proofs/__tests__/fixtures'
-import { ED25519_SUITE_CONTEXT_URL_2020 } from '../../../../../../../core/src/modules/vc/linked-data-proofs/signature-suites/ed25519/constants'
 import { W3cJsonLdCredentialService } from '../../../../../../../core/src/modules/vc/linked-data-proofs/W3cJsonLdCredentialService'
 import { JsonTransformer } from '../../../../../../../core/src/utils'
 import { JsonEncoder } from '../../../../../../../core/src/utils/JsonEncoder'
@@ -191,7 +191,7 @@ const requestAttachment2020 = new DidCommAttachment({
 // credentials/v1 context does not define the 2020 proof terms.
 const vcJson2020 = {
   ...vcJson,
-  '@context': [...vcJson['@context'], ED25519_SUITE_CONTEXT_URL_2020],
+  '@context': [...vcJson['@context'], SECURITY_ED25519_2020_CONTEXT_URL],
   proof: {
     verificationMethod: vcJson.proof.verificationMethod,
     type: 'Ed25519Signature2020',

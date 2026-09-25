@@ -5,6 +5,7 @@ export {
   type AskarModuleConfigOptions,
   type AskarModuleConfigStoreOptions,
   AskarMultiWalletDatabaseScheme,
+  type NativeAskarLike,
 } from './AskarModuleConfig'
 export type {
   AskarPostgresConfig,

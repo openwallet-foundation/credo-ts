@@ -23,7 +23,7 @@ import {
   DidCommCredentialRole,
   DidCommCredentialState,
 } from '@credo-ts/didcomm'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
@@ -48,13 +48,13 @@ import {
 } from '../src'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
 import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
-import { anoncreds } from './helpers'
+import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
-  anoncreds,
+  anoncreds: NativeAnoncreds,
   registries: [registry],
   tailsFileService,
 })
@@ -103,7 +103,7 @@ const agentContext = getAgentContext({
     [
       AskarModuleConfig,
       new AskarModuleConfig({
-        askar,
+        askar: NativeAskar,
         store: getAskarStoreConfig('data-integrity-flow-w3c'),
       }),
     ],

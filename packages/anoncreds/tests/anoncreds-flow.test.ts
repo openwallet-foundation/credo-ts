@@ -49,7 +49,7 @@ import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
-import { anoncreds } from './helpers'
+import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
 const registry = new InMemoryAnonCredsRegistry()
@@ -57,7 +57,7 @@ const tailsFileService = new InMemoryTailsFileService()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
   tailsFileService,
-  anoncreds,
+  anoncreds: NativeAnoncreds,
 })
 
 const agentConfig = getAgentConfig('AnonCreds format services using anoncreds-rs')
