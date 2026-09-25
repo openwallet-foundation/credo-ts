@@ -1,11 +1,10 @@
 import type { IDisclosureFrame } from '@credo-ts/core'
 import { claimPathsFromDisclosureFrame, disclosureFrameFromClaimPaths, resolveClaimPath } from '../disclosureFrame'
 
-// `IDisclosureFrame` types `_sd` as `string[]`, while array item disclosure uses numeric indices, so
-// frames containing them need a cast. The implementation casts in the same way.
-const frameWithArrayIndices = {
+// Array elements are selectively disclosed by their position, hence the numeric entries
+const frameWithArrayIndices: IDisclosureFrame = {
   credentialSubject: { _sd: ['familyName'], result: { _sd: [0, 1] } },
-} as unknown as IDisclosureFrame
+}
 
 describe('claimPathsFromDisclosureFrame', () => {
   test('derives paths for nested claims and array indices', () => {

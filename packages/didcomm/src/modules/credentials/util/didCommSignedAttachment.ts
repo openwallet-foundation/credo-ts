@@ -9,7 +9,7 @@ import {
   parseDid,
   TypedArrayEncoder,
 } from '@credo-ts/core'
-import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
+import { DidCommAttachment, DidCommAttachmentData } from '../../../decorators/attachment/DidCommAttachment'
 
 /**
  * Creates a DIDComm signed attachment containing a JWS over the given data.

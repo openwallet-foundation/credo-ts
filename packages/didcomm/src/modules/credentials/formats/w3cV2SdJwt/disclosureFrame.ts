@@ -95,8 +95,8 @@ export function disclosureFrameFromClaimPaths(claimPaths?: string[]): IDisclosur
     if (!current._sd) current._sd = []
     const claim = segments[segments.length - 1]
     const sdValue = /^\d+$/.test(claim) ? Number(claim) : claim
-    if (!current._sd.includes(sdValue as string)) {
-      current._sd.push(sdValue as string)
+    if (!current._sd.includes(sdValue)) {
+      current._sd.push(sdValue)
     }
   }
 

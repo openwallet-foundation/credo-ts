@@ -20,6 +20,7 @@ import { DidCommProblemReportError } from '../../../../errors/problem-reports/Di
 import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialFormatSpec'
 import { DidCommCredentialProblemReportReason } from '../../models/DidCommCredentialProblemReportReason'
 import { assertAndSetCredentialSubjectId, assertCredentialSubjectMatchesOffer } from '../../util/credentialSubject'
+import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../../util/didCommSignedAttachment'
 import { getFormatDataAttachment } from '../../util/formatData'
 import { getSupportedJwaSignatureAlgorithms, selectJwaSignatureAlgorithm } from '../../util/signatureAlgorithm'
 import { getIssuerVerificationMethod } from '../../util/verificationMethod'
@@ -41,7 +42,6 @@ import type {
   DidCommCredentialFormatProcessCredentialOptions,
   DidCommCredentialFormatProcessOptions,
 } from '../DidCommCredentialFormatServiceOptions'
-import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../shared/didCommSignedAttachment'
 import type { DidCommW3cV2SdJwtCredentialFormat } from './DidCommW3cV2SdJwtCredentialFormat'
 import { claimPathsFromDisclosureFrame, disclosureFrameFromClaimPaths, resolveClaimPath } from './disclosureFrame'
 import {

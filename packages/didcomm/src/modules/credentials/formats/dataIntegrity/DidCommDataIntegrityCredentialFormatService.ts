@@ -33,6 +33,7 @@ import type { DidCommCredentialPreviewAttributeOptions } from '../../models/DidC
 import { DidCommCredentialProblemReportReason } from '../../models/DidCommCredentialProblemReportReason'
 import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCredentialExchangeRecord'
 import { assertAndSetCredentialSubjectId, assertCredentialSubjectMatchesOffer } from '../../util/credentialSubject'
+import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../../util/didCommSignedAttachment'
 import { getFormatDataAttachment } from '../../util/formatData'
 import { getSupportedJwaSignatureAlgorithms } from '../../util/signatureAlgorithm'
 import { getIssuerVerificationMethod } from '../../util/verificationMethod'
@@ -53,7 +54,6 @@ import type {
   DidCommCredentialFormatProcessCredentialOptions,
   DidCommCredentialFormatProcessOptions,
 } from '../DidCommCredentialFormatServiceOptions'
-import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../shared/didCommSignedAttachment'
 import type {
   DidCommDataIntegrityCredentialFormat,
   DidCommDataIntegrityOfferCredentialFormat,
