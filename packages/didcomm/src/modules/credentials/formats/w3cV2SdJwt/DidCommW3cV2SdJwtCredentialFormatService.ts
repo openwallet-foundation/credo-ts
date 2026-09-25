@@ -43,7 +43,12 @@ import type {
   DidCommCredentialFormatProcessOptions,
 } from '../DidCommCredentialFormatServiceOptions'
 import type { DidCommW3cV2SdJwtCredentialFormat } from './DidCommW3cV2SdJwtCredentialFormat'
-import { claimPathsFromDisclosureFrame, disclosureFrameFromClaimPaths, resolveClaimPath } from './disclosureFrame'
+import {
+  claimPathsFromDisclosureFrame,
+  disclosureFrameFromClaimPaths,
+  isArrayElementDisclosureDigest,
+  resolveClaimPath,
+} from './disclosureFrame'
 import {
   W3cV2SdJwtBindingMethods,
   type W3cV2SdJwtCredential,
@@ -411,14 +416,16 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       throw new CredoError('Received invalid credential. Received credential does not match the offered credential.')
     }
 
-    // Claims the issuer said would be selectively disclosable are absent from the signed payload, where
-    // they are replaced by an `_sd` digest, but present once the disclosures are applied.
+    // Claims the issuer said would be selectively disclosable resolve once the disclosures are applied,
+    // but not in the signed payload, where an object property is removed and an array element is
+    // replaced by a digest.
     for (const claimPath of offer.selectivelyDisclosableClaims ?? []) {
       if (!resolveClaimPath(credential.sdJwt.prettyClaims, claimPath).found) {
         throw new CredoError(`Received credential is missing claim '${claimPath}' offered as selectively disclosable.`)
       }
 
-      if (resolveClaimPath(credential.sdJwt.payload, claimPath).found) {
+      const inPayload = resolveClaimPath(credential.sdJwt.payload, claimPath)
+      if (inPayload.found && !isArrayElementDisclosureDigest(inPayload.value)) {
         throw new CredoError(`Claim '${claimPath}' was offered as selectively disclosable, but is not disclosable.`)
       }
     }

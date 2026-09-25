@@ -66,6 +66,23 @@ export function resolveClaimPath(object: unknown, claimPath: string): { found: b
 }
 
 /**
+ * Returns whether a value taken from an SD-JWT payload is a digest standing in for a selectively
+ * disclosable array element.
+ *
+ * A disclosable object property is removed from the payload entirely, with its digest collected in the
+ * `_sd` array of the containing object. A disclosable array element instead keeps its position, and is
+ * replaced by a `{ "...": "<digest>" }` object.
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc9901.html#name-array-elements
+ */
+export function isArrayElementDisclosureDigest(value: unknown): boolean {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+
+  const keys = Object.keys(value)
+  return keys.length === 1 && keys[0] === '...'
+}
+
+/**
  * Derives an IDisclosureFrame from an array of JSONPath claim paths, the inverse of
  * {@link claimPathsFromDisclosureFrame}.
  *

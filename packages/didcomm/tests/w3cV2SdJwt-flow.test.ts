@@ -467,6 +467,75 @@ describe('W3C VCDM 2.0 SD-JWT credential format service', () => {
     ).rejects.toThrow('Missing required binding proof')
   })
 
+  test('processCredential accepts a credential disclosing an array element', async () => {
+    const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv, {
+      credentialSubject: { name: 'John', result: ['a', 'b', 'c'] },
+      disclosureFrame: { credentialSubject: { result: { _sd: [0] } } },
+    })
+
+    expect(offerAttachment.getDataAsJson()).toMatchObject({
+      selectively_disclosable_claims: ['$.credentialSubject.result[0]'],
+    })
+
+    const { attachment: credentialAttachment } = await formatService.acceptRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      requestAttachment,
+      offerAttachment,
+      credentialFormats: { w3cV2SdJwt: {} },
+    })
+
+    // A disclosable array element keeps its position in the payload, replaced by a digest, unlike a
+    // disclosable object property which is removed entirely
+    const { credential } = credentialAttachment.getDataAsJson<{ credential: string }>()
+    const verifiableCredential = W3cV2SdJwtVerifiableCredential.fromCompact(credential)
+    const payloadSubject = verifiableCredential.sdJwt.payload.credentialSubject as { result: unknown[] }
+    expect(payloadSubject.result[0]).toEqual({ '...': expect.any(String) })
+    expect(verifiableCredential.sdJwt.prettyClaims.credentialSubject).toMatchObject({ result: ['a', 'b', 'c'] })
+
+    await expect(
+      formatService.processCredential(agentContext, {
+        credentialExchangeRecord: new DidCommCredentialExchangeRecord({
+          protocolVersion: 'v2',
+          state: DidCommCredentialState.CredentialReceived,
+          threadId: '5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b',
+          role: DidCommCredentialRole.Holder,
+        }),
+        attachment: credentialAttachment,
+        requestAttachment,
+        offerAttachment,
+      })
+    ).resolves.toBeUndefined()
+  })
+
+  test('processCredential rejects a credential that did not make an offered array element disclosable', async () => {
+    const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv, {
+      credentialSubject: { name: 'John', result: ['a', 'b', 'c'] },
+      disclosureFrame: { credentialSubject: { result: { _sd: [0] } } },
+    })
+
+    // The issuer advertised `$.credentialSubject.result[0]` as selectively disclosable, then hard baked it
+    const { attachment: credentialAttachment } = await formatService.acceptRequest(agentContext, {
+      credentialExchangeRecord: issuerCredentialRecord,
+      requestAttachment,
+      offerAttachment,
+      credentialFormats: { w3cV2SdJwt: { disclosureFrame: {} } },
+    })
+
+    await expect(
+      formatService.processCredential(agentContext, {
+        credentialExchangeRecord: new DidCommCredentialExchangeRecord({
+          protocolVersion: 'v2',
+          state: DidCommCredentialState.CredentialReceived,
+          threadId: '6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b9c',
+          role: DidCommCredentialRole.Holder,
+        }),
+        attachment: credentialAttachment,
+        requestAttachment,
+        offerAttachment,
+      })
+    ).rejects.toThrow("Claim '$.credentialSubject.result[0]' was offered as selectively disclosable")
+  })
+
   test('processCredential rejects a credential that did not make an offered claim selectively disclosable', async () => {
     const { offerAttachment, requestAttachment, issuerCredentialRecord } = await offerAndRequest(issuerKdv, {
       disclosureFrame: { credentialSubject: { _sd: ['name'] } },

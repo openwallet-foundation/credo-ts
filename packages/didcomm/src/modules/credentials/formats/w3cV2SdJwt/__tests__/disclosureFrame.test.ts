@@ -1,5 +1,10 @@
 import type { IDisclosureFrame } from '@credo-ts/core'
-import { claimPathsFromDisclosureFrame, disclosureFrameFromClaimPaths, resolveClaimPath } from '../disclosureFrame'
+import {
+  claimPathsFromDisclosureFrame,
+  disclosureFrameFromClaimPaths,
+  isArrayElementDisclosureDigest,
+  resolveClaimPath,
+} from '../disclosureFrame'
 
 // Array elements are selectively disclosed by their position, hence the numeric entries
 const frameWithArrayIndices: IDisclosureFrame = {
@@ -76,5 +81,25 @@ describe('resolveClaimPath', () => {
     expect(resolveClaimPath(credential, '$.credentialSubject.unknown')).toEqual({ found: false })
     expect(resolveClaimPath(credential, '$.credentialSubject.addresses[1].street')).toEqual({ found: false })
     expect(resolveClaimPath(credential, '$.credentialSubject.name.deeper')).toEqual({ found: false })
+  })
+})
+
+describe('isArrayElementDisclosureDigest', () => {
+  test('recognizes an array element digest', () => {
+    expect(isArrayElementDisclosureDigest({ '...': 'RQzFBKpXbEI4Wde5QvOfCaSpyQYr1qUyHXnJF7AJmrY' })).toBe(true)
+  })
+
+  test('rejects a regular claim value', () => {
+    expect(isArrayElementDisclosureDigest('a')).toBe(false)
+    expect(isArrayElementDisclosureDigest(0)).toBe(false)
+    expect(isArrayElementDisclosureDigest(null)).toBe(false)
+    expect(isArrayElementDisclosureDigest(undefined)).toBe(false)
+    expect(isArrayElementDisclosureDigest([{ '...': 'digest' }])).toBe(false)
+  })
+
+  test('rejects an object that only looks like a digest', () => {
+    expect(isArrayElementDisclosureDigest({})).toBe(false)
+    expect(isArrayElementDisclosureDigest({ '...': 'digest', extra: true })).toBe(false)
+    expect(isArrayElementDisclosureDigest({ name: 'John' })).toBe(false)
   })
 })
