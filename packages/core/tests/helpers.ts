@@ -1,4 +1,4 @@
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { readFileSync } from 'fs'
 import path from 'path'
 import type { Observable } from 'rxjs'
@@ -219,7 +219,7 @@ export function getAgentOptions<
     ...(kms === 'askar' || storage === 'askar'
       ? {
           askar: new AskarModule({
-            askar,
+            askar: NativeAskar,
             enableKms: kms === 'askar',
             enableStorage: storage === 'askar',
             store: getAskarStoreConfig(name, { inMemory }),

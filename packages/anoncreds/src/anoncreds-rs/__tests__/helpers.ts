@@ -13,12 +13,12 @@ import {
 } from '@credo-ts/core'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
 import {
-  anoncreds,
   CredentialDefinition,
   CredentialOffer,
   CredentialRequest,
   CredentialRevocationConfig,
   LinkSecret,
+  NativeAnoncreds,
   RevocationRegistryDefinition,
   RevocationRegistryDefinitionPrivate,
   RevocationStatusList,
@@ -198,7 +198,7 @@ export function createRevocationRegistryDefinition(options: {
 }) {
   const { credentialDefinitionId, credentialDefinition } = options
   const { revocationRegistryDefinition, revocationRegistryDefinitionPrivate } =
-    anoncreds.createRevocationRegistryDefinition({
+    NativeAnoncreds.instance.createRevocationRegistryDefinition({
       credentialDefinitionId,
       credentialDefinition: CredentialDefinition.fromJson(credentialDefinition).handle,
       issuerId: credentialDefinition.issuerId as string,
@@ -207,7 +207,7 @@ export function createRevocationRegistryDefinition(options: {
       maximumCredentialNumber: 10,
     })
 
-  const tailsPath = anoncreds.revocationRegistryDefinitionGetAttribute({
+  const tailsPath = NativeAnoncreds.instance.revocationRegistryDefinitionGetAttribute({
     objectHandle: revocationRegistryDefinition,
     name: 'tails_location',
   })

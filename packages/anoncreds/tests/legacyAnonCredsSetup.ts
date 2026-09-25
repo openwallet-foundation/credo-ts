@@ -68,7 +68,7 @@ import {
   parseIndyCredentialDefinitionId,
   parseIndySchemaId,
 } from '../src'
-import { anoncreds } from './helpers'
+import { NativeAnoncreds } from './helpers'
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import type { PreCreatedAnonCredsDefinition } from './preCreatedAnonCredsDefinition'
 import {
@@ -150,7 +150,7 @@ export const getAnonCredsIndyModules = <
 
     anoncreds: new AnonCredsModule({
       registries: [new IndyVdrAnonCredsRegistry(), inMemoryAnonCredsRegistry],
-      anoncreds,
+      anoncreds: NativeAnoncreds,
     }),
     indyVdr: new IndyVdrModule(indyVdrModuleConfig),
     dids: new DidsModule({

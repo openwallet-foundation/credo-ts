@@ -47,12 +47,12 @@ import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
-import { anoncreds } from './helpers'
+import { NativeAnoncreds } from './helpers'
 
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
-  anoncreds,
+  anoncreds: NativeAnoncreds,
 })
 
 const agentConfig = getAgentConfig('LegacyIndyDidCommCredentialFormatService using anoncreds-rs')

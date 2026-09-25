@@ -1,6 +1,6 @@
 import { CacheModuleConfig, InMemoryLruCache } from '@credo-ts/core'
 import { getAgentContext } from '../../../../../core/tests/helpers'
-import { anoncreds } from '../../../../tests/helpers'
+import { NativeAnoncreds } from '../../../../tests/helpers'
 import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
 import { AnonCredsError } from '../../../error'
 import type { AnonCredsRegistry } from '../AnonCredsRegistry'
@@ -20,7 +20,7 @@ const agentContext = getAgentContext({
       AnonCredsModuleConfig,
       new AnonCredsModuleConfig({
         registries: [registryOne, registryTwo],
-        anoncreds,
+        anoncreds: NativeAnoncreds,
       }),
     ],
   ],
@@ -47,7 +47,7 @@ describe('AnonCredsRegistryService', () => {
     }
 
     const getContextsSharingCache = (registry: AnonCredsRegistry) => {
-      const anonCredsModuleConfig = new AnonCredsModuleConfig({ registries: [registry], anoncreds })
+      const anonCredsModuleConfig = new AnonCredsModuleConfig({ registries: [registry], anoncreds: NativeAnoncreds })
       const cacheModuleConfig = new CacheModuleConfig({ cache: new InMemoryLruCache({ limit: 10 }) })
 
       return {

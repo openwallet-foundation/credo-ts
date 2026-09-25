@@ -4,6 +4,8 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../dids'
 import { Ed25519PublicJwk } from '../../kms'
+import { SECURITY_ED25519_2018_CONTEXT_URL, SECURITY_ED25519_2020_CONTEXT_URL } from '../constants'
+import { DEFAULT_CONTEXTS } from '../jsonld/contexts'
 import { W3cJwtCredentialService } from '../jwt-vc'
 import {
   SignatureSuiteRegistry,
@@ -40,6 +42,14 @@ describe('W3cCredentialsModule', () => {
     expect(signatureSuiteRegistry.getByProofType('Ed25519Signature2020').verificationMethodTypes).toEqual([
       VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
     ])
+  })
+
+  test('ed25519 signature suites expose centrally bundled context metadata', () => {
+    expect(Ed25519Signature2018.CONTEXT_URL).toBe(SECURITY_ED25519_2018_CONTEXT_URL)
+    expect(Ed25519Signature2018.CONTEXT).toBe(DEFAULT_CONTEXTS[SECURITY_ED25519_2018_CONTEXT_URL])
+
+    expect(Ed25519Signature2020.CONTEXT_URL).toBe(SECURITY_ED25519_2020_CONTEXT_URL)
+    expect(Ed25519Signature2020.CONTEXT).toBe(DEFAULT_CONTEXTS[SECURITY_ED25519_2020_CONTEXT_URL])
   })
 
   // Remove this compatibility test when SignatureSuiteToken is removed in 0.8.

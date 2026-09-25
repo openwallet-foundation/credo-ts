@@ -4,10 +4,8 @@ import { TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { DidCommConnectionRecord, DidCommConnectionStateChangedEvent } from '@credo-ts/didcomm'
 import { DidCommConnectionEventTypes } from '@credo-ts/didcomm'
 import type { IndyVdrRegisterCredentialDefinitionOptions, IndyVdrRegisterSchemaOptions } from '@credo-ts/indy-vdr'
-import { ui } from 'inquirer'
-import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 import { BaseAgent, indyNetworkConfig } from './BaseAgent'
-import { Color, greenText, Output, purpleText, redText } from './OutputClass'
+import { Color, greenText, Output, purpleText, redText, writeOutput } from './OutputClass'
 
 export enum RegistryOptions {
   indy = 'did:indy',
@@ -19,11 +17,9 @@ export class Faber extends BaseAgent {
   public outOfBandId?: string
   public credentialDefinition?: RegisterCredentialDefinitionReturnStateFinished
   public anonCredsIssuerId?: string
-  public ui: BottomBar
 
   public constructor(port: number, name: string) {
     super({ port, name })
-    this.ui = new ui.BottomBar()
   }
 
   public static async build(): Promise<Faber> {
@@ -176,7 +172,7 @@ export class Faber extends BaseAgent {
       issuerId: this.anonCredsIssuerId,
     }
     this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attrNames)
-    this.ui.updateBottomBar(greenText('\nRegistering schema...\n', false))
+    writeOutput(greenText('\nRegistering schema...\n', false))
 
     const { schemaState } = await this.agent.modules.anoncreds.registerSchema<IndyVdrRegisterSchemaOptions>({
       schema: schemaTemplate,
@@ -191,7 +187,7 @@ export class Faber extends BaseAgent {
         `Error registering schema: ${schemaState.state === 'failed' ? schemaState.reason : 'Not Finished'}`
       )
     }
-    this.ui.updateBottomBar('\nSchema registered!\n')
+    writeOutput('\nSchema registered!\n')
     return schemaState
   }
 
@@ -200,7 +196,7 @@ export class Faber extends BaseAgent {
       throw new Error(redText('Missing anoncreds issuerId'))
     }
 
-    this.ui.updateBottomBar('\nRegistering credential definition...\n')
+    writeOutput('\nRegistering credential definition...\n')
     const { credentialDefinitionState } =
       await this.agent.modules.anoncreds.registerCredentialDefinition<IndyVdrRegisterCredentialDefinitionOptions>({
         credentialDefinition: {
@@ -224,7 +220,7 @@ export class Faber extends BaseAgent {
     }
 
     this.credentialDefinition = credentialDefinitionState
-    this.ui.updateBottomBar('\nCredential definition registered!!\n')
+    writeOutput('\nCredential definition registered!!\n')
     return this.credentialDefinition
   }
 
@@ -233,7 +229,7 @@ export class Faber extends BaseAgent {
     const credentialDefinition = await this.registerCredentialDefinition(schema.schemaId)
     const connectionRecord = await this.getConnectionRecord()
 
-    this.ui.updateBottomBar('\nSending credential offer...\n')
+    writeOutput('\nSending credential offer...\n')
 
     await this.agent.didcomm.credentials.offerCredential({
       connectionId: connectionRecord.id,
@@ -258,13 +254,11 @@ export class Faber extends BaseAgent {
         },
       },
     })
-    this.ui.updateBottomBar(
-      `\nCredential offer sent!\n\nGo to the Alice agent to accept the credential offer\n\n${Color.Reset}`
-    )
+    writeOutput(`\nCredential offer sent!\n\nGo to the Alice agent to accept the credential offer\n\n${Color.Reset}`)
   }
 
   private async printProofFlow(print: string) {
-    this.ui.updateBottomBar(print)
+    writeOutput(print)
     await new Promise((f) => setTimeout(f, 2000))
   }
 
@@ -300,9 +294,7 @@ export class Faber extends BaseAgent {
         },
       },
     })
-    this.ui.updateBottomBar(
-      `\nProof request sent!\n\nGo to the Alice agent to accept the proof request\n\n${Color.Reset}`
-    )
+    writeOutput(`\nProof request sent!\n\nGo to the Alice agent to accept the proof request\n\n${Color.Reset}`)
   }
 
   public async sendMessage(message: string) {

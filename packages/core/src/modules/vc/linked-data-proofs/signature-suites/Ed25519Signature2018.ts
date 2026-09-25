@@ -1,12 +1,10 @@
-import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL } from '../../../constants'
-import jsonld from '../../../jsonld/jsonld'
-import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../../proof-ops/jsonldUtil'
-import { _includesContext } from '../../proof-ops/jsonldUtil'
-import type { JwsLinkedDataSignatureOptions } from '../JwsLinkedDataSignature'
-import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
-
-import { ED25519_SUITE_CONTEXT_URL_2018 } from './constants'
-import { ed25519Signature2018Context } from './context'
+import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_URL, SECURITY_ED25519_2018_CONTEXT_URL } from '../../constants'
+import { DEFAULT_CONTEXTS } from '../../jsonld/contexts'
+import jsonld from '../../jsonld/jsonld'
+import type { DocumentLoader, JsonLdDoc, Proof, VerificationMethod } from '../proof-ops/jsonldUtil'
+import { _includesContext } from '../proof-ops/jsonldUtil'
+import type { JwsLinkedDataSignatureOptions } from './JwsLinkedDataSignature'
+import { JwsLinkedDataSignature } from './JwsLinkedDataSignature'
 
 const jsonldWithHasValue = jsonld as typeof jsonld & {
   hasValue(document: JsonLdDoc, key: string, value: string): boolean
@@ -18,8 +16,9 @@ type Ed25519Signature2018Options = Pick<
 >
 
 export class Ed25519Signature2018 extends JwsLinkedDataSignature {
-  public static CONTEXT_URL = ED25519_SUITE_CONTEXT_URL_2018
-  public static CONTEXT = ed25519Signature2018Context.get(ED25519_SUITE_CONTEXT_URL_2018)
+  // TODO: Centralise suite context metadata outside suite class statics.
+  public static CONTEXT_URL = SECURITY_ED25519_2018_CONTEXT_URL
+  public static CONTEXT = DEFAULT_CONTEXTS[SECURITY_ED25519_2018_CONTEXT_URL]
 
   /**
    * @param {object} options - Options hashmap.
@@ -53,7 +52,7 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
       type: 'Ed25519Signature2018',
       algorithm: 'EdDSA',
       LDKeyClass: options.LDKeyClass,
-      contextUrl: ED25519_SUITE_CONTEXT_URL_2018,
+      contextUrl: Ed25519Signature2018.CONTEXT_URL,
       key: options.key,
       proof: options.proof,
       date: options.date,
@@ -143,7 +142,7 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
   // Handle the unfortunate Ed25519Signature2018 / credentials/v1 collision
   const hasEd2018 = _includesContext({
     document: options.document,
-    contextUrl: ED25519_SUITE_CONTEXT_URL_2018,
+    contextUrl: Ed25519Signature2018.CONTEXT_URL,
   })
   const hasCred = _includesContext({ document: options.document, contextUrl: CREDENTIALS_CONTEXT_V1_URL })
   const hasSecV2 = _includesContext({ document: options.document, contextUrl: SECURITY_CONTEXT_URL })
