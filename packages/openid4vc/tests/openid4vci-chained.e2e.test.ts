@@ -996,6 +996,90 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     await issuerTenant.endSession()
   })
 
+  it('responds with 201 Created to a successful pushed authorization request', async () => {
+    issuer = (await createAgentFromModules(
+      {
+        inMemory: new InMemoryWalletModule(),
+        openid4vc: new OpenId4VcModule({
+          app: expressApp,
+          issuer: {
+            baseUrl: issuanceBaseUrl,
+            credentialRequestToCredentialMapper,
+          },
+        }),
+        tenants: new TenantsModule(),
+      },
+      '96213c3d7fc8d4d6754c7a0fd969598g',
+      global.fetch
+    )) as unknown as typeof issuer
+    issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
+
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+      authorizationServerConfigs: [
+        {
+          type: 'chained',
+          issuer: 'http://localhost:4747',
+          clientAuthentication: {
+            type: 'clientSecret',
+            clientId: 'issuer-client',
+            clientSecret: 'issuer-secret',
+          },
+          scopesMapping: {
+            UniversityDegreeCredential: ['openid'],
+          },
+        },
+      ],
+    })
+
+    const { issuanceSession } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      authorizationCodeFlowConfig: {
+        authorizationServerUrl: 'http://localhost:4747',
+      },
+    })
+
+    const idpApp = express()
+    idpApp.get('/.well-known/oauth-authorization-server', (_req, res) =>
+      res.json({
+        issuer: 'http://localhost:4747',
+        authorization_endpoint: 'http://localhost:4747/authorize',
+        token_endpoint: 'http://localhost:4747/token',
+      } satisfies AuthorizationServerMetadata)
+    )
+    const clearIdpNock = setupNockToExpress('http://localhost:4747', idpApp)
+
+    const response = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/par`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: 'wallet',
+        response_type: 'code',
+        redirect_uri: 'http://localhost:5757/redirect',
+        scope: 'UniversityDegreeCredential',
+        state: 'wallet-state',
+        issuer_state: issuanceSession.authorization?.issuerState,
+        code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        code_challenge_method: 'S256',
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toMatchObject({
+      request_uri: expect.any(String),
+      expires_in: expect.any(Number),
+    })
+
+    clearIdpNock()
+
+    await issuerTenant.endSession()
+  })
+
   it('returns an OAuth error from PAR when a previously valid static scope mapping is removed', async () => {
     issuer = (await createAgentFromModules(
       {
