@@ -1451,6 +1451,7 @@ export class OpenId4VcIssuerService {
 
       authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
       authorization_endpoint: joinUriParts(issuerUrl, [config.authorizationEndpoint]),
+      response_types_supported: ['code'],
 
       // Client Attestation based client authentication (draft 09)
       token_endpoint_auth_methods_supported: clientAttestationAuthMethodsSupported,
