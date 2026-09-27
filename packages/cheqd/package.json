@@ -1,8 +1,11 @@
 {
   "name": "@credo-ts/cheqd",
   "exports": {
-    "cli": "./build/index.mjs",
-    "import": "./src/index.ts"
+    ".": {
+      "cli": "./build/index.mjs",
+      "import": "./src/index.ts"
+    },
+    "./anoncreds": "./src/anoncreds/index.ts"
   },
   "version": "0.7.1",
   "files": [
@@ -15,6 +18,11 @@
     "module": "./build/index.mjs",
     "exports": {
       ".": "./build/index.mjs",
+      "./anoncreds": {
+        "import": "./build/anoncreds/index.mjs",
+        "require": "./build/anoncreds/index.mjs",
+        "types": "./build/anoncreds/index.d.mts"
+      },
       "./package.json": "./package.json"
     }
   },
