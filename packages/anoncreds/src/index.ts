@@ -9,8 +9,14 @@ export {
   type NativeAnoncredsLike,
 } from './AnonCredsModuleConfig'
 export * from './error'
+/**
+ * @deprecated Import DIDComm formats and services from `@credo-ts/anoncreds/didcomm`.
+ */
 export * from './formats'
 export * from './models'
+/**
+ * @deprecated Import DIDComm protocols from `@credo-ts/anoncreds/didcomm`.
+ */
 export * from './protocols'
 export * from './repository'
 export * from './services'
