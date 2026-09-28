@@ -19,7 +19,12 @@ import { DidCommCredentialExchangeRepository } from '../../../../../../didcomm/s
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
 import { LegacyIndyDidCommCredentialFormatService } from '../../../../formats/LegacyIndyDidCommCredentialFormatService'
 import { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol'
-import { DidCommCredentialV1Preview, INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../messages'
+import {
+  DidCommCredentialV1Preview,
+  DidCommProposeCredentialV1Message,
+  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+  V1OfferCredentialMessage,
+} from '../messages'
 
 // Mock classes
 vi.mock('../../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository')
@@ -78,9 +83,10 @@ describe('V1CredentialProtocolProposeOffer', () => {
 
   let credentialRepository: DidCommCredentialExchangeRepository
   let indyCredentialFormatService: LegacyIndyDidCommCredentialFormatService
+  let didCommMessageRepository: DidCommMessageRepository
 
   beforeEach(async () => {
-    const didCommMessageRepository = new DidCommMessageRepositoryMock()
+    didCommMessageRepository = new DidCommMessageRepositoryMock()
     const connectionService = new ConnectionServiceMock()
     credentialRepository = new CredentialRepositoryMock()
     indyCredentialFormatService = new LegacyIndyCredentialFormatServiceMock()
@@ -415,6 +421,40 @@ describe('V1CredentialProtocolProposeOffer', () => {
           }),
         },
       })
+    })
+  })
+
+  describe('processProposal', () => {
+    // Handlers of the state changed event (auto accept, or a call to `acceptProposal`) look up the
+    // proposal message by the credential exchange record id. If the event is emitted before the
+    // message is stored they fail with `RecordNotFoundError: DidCommMessageRecord`.
+    test('stores the proposal message before emitting the state changed event', async () => {
+      const credentialProposalMessage = new DidCommProposeCredentialV1Message({
+        comment: 'some comment',
+        credentialPreview,
+        credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
+      })
+      const messageContext = new DidCommInboundMessageContext(credentialProposalMessage, {
+        agentContext,
+        connection: connectionRecord,
+      })
+
+      const callOrder: string[] = []
+      mockFunction(didCommMessageRepository.saveAgentMessage).mockImplementation(async () => {
+        callOrder.push('saveAgentMessage')
+      })
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        () => {
+          callOrder.push('stateChanged')
+        }
+      )
+
+      // when
+      await credentialProtocol.processProposal(messageContext)
+
+      // then
+      expect(callOrder).toEqual(['saveAgentMessage', 'stateChanged'])
     })
   })
 })

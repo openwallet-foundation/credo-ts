@@ -138,6 +138,14 @@ export class DidCommMessageReceiver {
       encryptedMessage,
     })
 
+    // A session can be reused for multiple messages. A WebSocket for example is a duplex connection
+    // that carries every message the other agent sends over it, and the other agent has no way of
+    // knowing we closed it. Only the message that opened the session therefore decides whether the
+    // session is closed: closing it for a later message would drop exchanges that the other agent
+    // already started over the same connection, and those responses end up queued instead of sent.
+    const isSessionOpeningMessage = session !== undefined && !session.hasReceivedMessage
+    if (session) session.hasReceivedMessage = true
+
     // We want to save a session if there is a chance of returning outbound message via inbound transport.
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
@@ -156,8 +164,11 @@ export class DidCommMessageReceiver {
       session.connectionId = connection?.id
       messageContext.sessionId = session.id
       this.transportService.saveSession(session)
-    } else if (session) {
-      // No need to wait for session to stay open if we're not actually going to respond to the message.
+    }
+    // No need to wait for session to stay open if we're not actually going to respond to the message.
+    // Session is only closed if this message opened the socket, otherwise we're just reusing an existing
+    // session that we should not close.
+    else if (session && isSessionOpeningMessage) {
       await session.close()
     }
 

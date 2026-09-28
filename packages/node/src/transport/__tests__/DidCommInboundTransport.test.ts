@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket, { WebSocketServer } from 'ws'
 
 import { DidCommHttpInboundTransport } from '../DidCommHttpInboundTransport'
-import { DidCommWsInboundTransport } from '../DidCommWsInboundTransport'
+import { DidCommWsInboundTransport, WebSocketTransportSession } from '../DidCommWsInboundTransport'
 
 const servers: Server[] = []
 
@@ -86,6 +86,33 @@ describe('DIDComm inbound transports', () => {
     const abnormalClosureCode = 1006
     await transport.stop()
     await expect(closed).resolves.toBe(abnormalClosureCode)
+  })
+
+  it('closes the WebSocket when the session is closed', async () => {
+    const socketServer = new WebSocketServer({ noServer: true })
+    const publicServer = createServer()
+    publicServer.on('upgrade', (request, socket, head) => {
+      socketServer.handleUpgrade(request, socket, head, (webSocket) => {
+        socketServer.emit('connection', webSocket, request)
+      })
+    })
+    const port = await listen(publicServer)
+
+    const serverSocketPromise = new Promise<WebSocket>((resolve) => socketServer.once('connection', resolve))
+    const client = new WebSocket(`ws://127.0.0.1:${port}`)
+    await new Promise<void>((resolve) => client.once('open', resolve))
+    const serverSocket = await serverSocketPromise
+
+    const logger = createAgentContext().config.logger
+    const session = new WebSocketTransportSession('session-id', serverSocket, logger)
+
+    const closed = new Promise<void>((resolve) => client.once('close', () => resolve()))
+    await session.close()
+    await closed
+
+    expect(serverSocket.readyState).not.toBe(WebSocket.OPEN)
+
+    socketServer.close()
   })
 
   it('rejects startup when its configured port cannot bind', async () => {

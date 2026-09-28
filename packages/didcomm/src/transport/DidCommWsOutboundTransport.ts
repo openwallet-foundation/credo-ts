@@ -89,7 +89,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
   }
 
   private hasOpenSocket(socketId: string) {
-    return this.transportTable.get(socketId) !== undefined
+    return this.transportTable.get(socketId)?.readyState === this.WebSocketClass.OPEN
   }
 
   private async resolveSocket({
@@ -101,10 +101,11 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     endpoint?: string
     connectionId?: string
   }) {
-    // If we already have a socket connection use it
+    // If we already have an open socket connection use it. A socket that is no longer open (e.g.
+    // because the other agent closed it) can't be reused, so we replace it with a new connection.
     let socket = this.transportTable.get(socketId)
 
-    if (!socket || socket.readyState === this.WebSocketClass.CLOSING) {
+    if (!socket || socket.readyState !== this.WebSocketClass.OPEN) {
       if (!endpoint) {
         throw new CredoError(`Missing endpoint. I don't know how and where to send the message.`)
       }
@@ -188,7 +189,13 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
       socket.onclose = async () => {
         this.logger.debug(`WebSocket closing to ${endpoint}`)
         socket.removeEventListener('message', this.handleMessageEvent)
-        this.transportTable.delete(socketId)
+
+        // Only remove the socket from the transport table if it's still the active socket for this
+        // id. A closing socket may already have been replaced by a new connection, and we don't
+        // want to remove that one from the table.
+        if (this.transportTable.get(socketId) === socket) {
+          this.transportTable.delete(socketId)
+        }
 
         eventEmitter.emit<DidCommOutboundWebSocketClosedEvent>(this.agentContext, {
           type: DidCommTransportEventTypes.DidCommOutboundWebSocketClosedEvent,

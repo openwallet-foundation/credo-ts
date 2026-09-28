@@ -101,6 +101,12 @@ export interface DidCommTransportSession {
   // A received message that will be used to check whether it has any return routing.
   inboundMessage?: DidCommMessage
 
+  // Whether a message has already been received over this session. A session can be reused for
+  // multiple messages (a WebSocket for example carries every message the other agent sends over
+  // that connection), in which case only the message that opened the session decides whether the
+  // session is closed. Set by the `DidCommMessageReceiver`.
+  hasReceivedMessage?: boolean
+
   // A stored connection id used to find this session via the `DidCommTransportService` for a specific connection
   connectionId?: string
 

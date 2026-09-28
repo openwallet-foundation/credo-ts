@@ -1,14 +1,17 @@
-import { Subject } from 'rxjs'
+import { filter, firstValueFrom, map, Subject, take, timeout, toArray } from 'rxjs'
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../../../../../core/src/agent/Agent'
+import { setupEventReplaySubjects } from '../../../../../core/tests'
 import {
   getAgentOptions,
-  waitForAgentMessageProcessedEvent,
+  waitForAgentMessageProcessedEventSubject,
   waitForBasicMessage,
 } from '../../../../../core/tests/helpers'
+import type { DidCommMessageProcessedEvent } from '../../../DidCommEvents'
+import { DidCommEventTypes } from '../../../DidCommEvents'
 import { DidCommHandshakeProtocol } from '../../connections'
 import { DidCommMessageForwardingStrategy } from '../../routing/DidCommMessageForwardingStrategy'
 import { DidCommMessagesReceivedV2Message, DidCommStatusV2Message } from '../protocol'
@@ -231,33 +234,49 @@ describe('E2E Pick Up protocol', () => {
 
     await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
 
+    // A single `pickupMessages` call triggers the whole exchange (status -> delivery-request ->
+    // delivery -> messages-received -> status), so all listeners must be set up before it is
+    // called. Attaching them in between the awaits means an event can be emitted before we're
+    // subscribed, which would make the test hang until it times out. The replay subjects buffer
+    // the events, so it doesn't matter when we get around to asserting on them.
+    const [recipientReplay, mediatorReplay] = setupEventReplaySubjects(
+      [recipientAgent, mediatorAgent],
+      [DidCommEventTypes.DidCommMessageProcessed]
+    )
+
+    // The recipient receives two status messages: one in response to the status request (still
+    // holding the queued message), and one after it acknowledged the delivery (empty queue).
+    const statusMessagesPromise = firstValueFrom(
+      recipientReplay.pipe(
+        map((event) => (event as DidCommMessageProcessedEvent).payload.message),
+        filter((agentMessage) => agentMessage.type === DidCommStatusV2Message.type.messageTypeUri),
+        take(2),
+        toArray(),
+        timeout(10000)
+      )
+    )
+    const messagesReceivedPromise = waitForAgentMessageProcessedEventSubject(mediatorReplay, {
+      messageType: DidCommMessagesReceivedV2Message.type.messageTypeUri,
+    })
     const basicMessagePromise = waitForBasicMessage(recipientAgent, {
       content: message,
     })
+
     await recipientAgent.didcomm.messagePickup.pickupMessages({
       connectionId: recipientMediatorConnection.id,
       protocolVersion: 'v2',
     })
-    const firstStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
-      messageType: DidCommStatusV2Message.type.messageTypeUri,
-    })
 
-    expect((firstStatusMessage as DidCommStatusV2Message).messageCount).toBe(1)
+    const [firstStatusMessage, secondStatusMessage] = (await statusMessagesPromise) as DidCommStatusV2Message[]
+    expect(firstStatusMessage.messageCount).toBe(1)
 
     const basicMessage = await basicMessagePromise
     expect(basicMessage.content).toBe(message)
 
-    const messagesReceived = await waitForAgentMessageProcessedEvent(mediatorAgent, {
-      messageType: DidCommMessagesReceivedV2Message.type.messageTypeUri,
-    })
-
+    const messagesReceived = await messagesReceivedPromise
     expect((messagesReceived as DidCommMessagesReceivedV2Message).messageIdList.length).toBe(1)
 
-    const secondStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
-      messageType: DidCommStatusV2Message.type.messageTypeUri,
-    })
-
-    expect((secondStatusMessage as DidCommStatusV2Message).messageCount).toBe(0)
+    expect(secondStatusMessage.messageCount).toBe(0)
   })
 
   test('E2E manual Pick Up V2 loop - waiting for completion', async () => {

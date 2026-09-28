@@ -234,17 +234,21 @@ export class DidCommCredentialV1Protocol
         }),
       })
 
+      // NOTE: the message must be stored before the state is updated. Updating the state emits the
+      // state changed event, and handlers of that event (e.g. auto accept, or a call to
+      // `acceptProposal`) look up the proposal message by the credential exchange record id.
+      await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
+        agentMessage: proposalMessage,
+        role: DidCommMessageRole.Receiver,
+        associatedRecordId: credentialExchangeRecord.id,
+      })
+
       // Update record
       await this.updateState(
         messageContext.agentContext,
         credentialExchangeRecord,
         DidCommCredentialState.ProposalReceived
       )
-      await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
-        agentMessage: proposalMessage,
-        role: DidCommMessageRole.Receiver,
-        associatedRecordId: credentialExchangeRecord.id,
-      })
     } else {
       agentContext.config.logger.debug('Credential record does not exists yet for incoming proposal')
       // Assert
@@ -261,13 +265,17 @@ export class DidCommCredentialV1Protocol
 
       // Save record
       await credentialRepository.save(messageContext.agentContext, credentialExchangeRecord)
-      this.emitStateChangedEvent(messageContext.agentContext, credentialExchangeRecord, null)
 
+      // NOTE: the message must be stored before the state changed event is emitted. Handlers of
+      // that event (e.g. auto accept, or a call to `acceptProposal`) look up the proposal message
+      // by the credential exchange record id, and would not find it yet.
       await didCommMessageRepository.saveAgentMessage(messageContext.agentContext, {
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialExchangeRecord.id,
       })
+
+      this.emitStateChangedEvent(messageContext.agentContext, credentialExchangeRecord, null)
     }
     return credentialExchangeRecord
   }
@@ -335,13 +343,17 @@ export class DidCommCredentialV1Protocol
     credentialExchangeRecord.credentialAttributes = message.credentialPreview.attributes
     credentialExchangeRecord.autoAcceptCredential =
       autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
-    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
+    // NOTE: the message must be stored before the state is updated, as updating the state emits
+    // the state changed event and handlers of that event look up the offer message by the
+    // credential exchange record id.
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
       associatedRecordId: credentialExchangeRecord.id,
     })
+
+    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
     return { credentialExchangeRecord, message }
   }
@@ -395,13 +407,17 @@ export class DidCommCredentialV1Protocol
     credentialExchangeRecord.credentialAttributes = message.credentialPreview.attributes
     credentialExchangeRecord.autoAcceptCredential =
       autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
-    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
+    // NOTE: the message must be stored before the state is updated, as updating the state emits
+    // the state changed event and handlers of that event look up the offer message by the
+    // credential exchange record id.
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
       associatedRecordId: credentialExchangeRecord.id,
     })
+
+    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
     return { credentialExchangeRecord, message }
   }

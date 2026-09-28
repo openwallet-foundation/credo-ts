@@ -148,8 +148,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The services were started in the background so they could boot while the dependencies
+      # were installing. The ledgers need several minutes to bootstrap, and starting the tests
+      # before they are ready makes entire suites (e.g. cheqd) fail within milliseconds.
+      - name: Wait for services
+        run: docker compose up -d --wait --wait-timeout 600
+
       - name: Run tests
         run: COLLECT_FAILED_TEST_LOGS=true pnpm test:e2e --coverage
+
+      - name: Service logs
+        if: failure()
+        run: docker compose logs --no-color --tail 200
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/e2e.json
@@ -212,8 +222,18 @@ jobs:
       - name: Build drizzle package
         run: pnpm --filter @credo-ts/drizzle-storage run build
 
+      # The services were started in the background so they could boot while the dependencies
+      # were installing. The ledgers need several minutes to bootstrap, and starting the tests
+      # before they are ready makes entire suites (e.g. cheqd) fail within milliseconds.
+      - name: Wait for services
+        run: docker compose up -d --wait --wait-timeout 600
+
       - name: Run tests
         run: COLLECT_FAILED_TEST_LOGS=true pnpm test:drizzle --coverage
+
+      - name: Service logs
+        if: failure()
+        run: docker compose logs --no-color --tail 200
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/drizzle.json
