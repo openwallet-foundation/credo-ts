@@ -49,9 +49,9 @@ import type {
   RegisterSchemaReturnStateFinished,
 } from '../src'
 import { AnonCredsModule } from '../src'
-import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import type { AnonCredsDidCommOfferCredentialFormat } from '../src/didcomm'
 import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService } from '../src/didcomm'
+import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
