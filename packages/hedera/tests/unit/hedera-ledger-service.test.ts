@@ -1,4 +1,5 @@
 import type {
+  GetSchemaReturn,
   RegisterCredentialDefinitionOptions,
   RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationStatusListOptions,
@@ -402,6 +403,52 @@ describe('HederaLedgerService', () => {
         data: deactivateDidRequest.signingRequest.serializedPayload,
         algorithm: 'EdDSA',
       })
+    })
+  })
+
+  describe('deprecated AnonCreds forwarding methods', () => {
+    it('uses the registered HederaAnonCredsService when available', async () => {
+      const schemaResult: GetSchemaReturn = {
+        schemaId: 'schemaId',
+        schemaMetadata: {},
+        resolutionMetadata: {},
+      }
+      const getSchema = vi.fn().mockResolvedValue(schemaResult)
+      const registeredService = { getSchema } as unknown as HederaAnonCredsService
+      const dependencyManager = {
+        isRegistered: vi.fn().mockReturnValue(true),
+        resolve: vi.fn().mockReturnValue(registeredService),
+      }
+      const agentContext = { dependencyManager } as unknown as AgentContext
+
+      const result = await service.getSchema(agentContext, 'schemaId')
+
+      expect(dependencyManager.isRegistered).toHaveBeenCalledWith(HederaAnonCredsService, true)
+      expect(dependencyManager.resolve).toHaveBeenCalledWith(HederaAnonCredsService)
+      expect(getSchema).toHaveBeenCalledWith(agentContext, 'schemaId')
+      expect(result).toBe(schemaResult)
+    })
+
+    it('uses a private fallback without requiring HederaAnonCredsService registration', async () => {
+      const schemaResult: GetSchemaReturn = {
+        schemaId: 'schemaId',
+        schemaMetadata: {},
+        resolutionMetadata: {},
+      }
+      const getSchema = vi.spyOn(HederaAnonCredsService.prototype, 'getSchema').mockResolvedValue(schemaResult)
+      const dependencyManager = {
+        isRegistered: vi.fn().mockReturnValue(false),
+        resolve: vi.fn(),
+      }
+      const agentContext = { dependencyManager } as unknown as AgentContext
+
+      const result = await service.getSchema(agentContext, 'schemaId')
+
+      expect(dependencyManager.isRegistered).toHaveBeenCalledWith(HederaAnonCredsService, true)
+      expect(dependencyManager.resolve).not.toHaveBeenCalled()
+      expect(getSchema).toHaveBeenCalledWith(agentContext, 'schemaId')
+      expect(result).toBe(schemaResult)
+      getSchema.mockRestore()
     })
   })
 

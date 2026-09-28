@@ -1,4 +1,18 @@
 import {
+  type GetCredentialDefinitionReturn,
+  type GetRevocationRegistryDefinitionReturn,
+  type GetRevocationStatusListReturn,
+  type GetSchemaReturn,
+  type RegisterCredentialDefinitionOptions,
+  type RegisterCredentialDefinitionReturn,
+  type RegisterRevocationRegistryDefinitionOptions,
+  type RegisterRevocationRegistryDefinitionReturn,
+  type RegisterRevocationStatusListOptions,
+  type RegisterRevocationStatusListReturn,
+  type RegisterSchemaOptions,
+  type RegisterSchemaReturn,
+} from '@credo-ts/anoncreds'
+import {
   type AgentContext,
   type DidCreateOptions,
   type DidDeactivateOptions,
@@ -32,6 +46,7 @@ import {
   type UpdateDIDResult,
 } from '@hiero-did-sdk/registrar'
 import { resolveDID, TopicReaderHederaHcs } from '@hiero-did-sdk/resolver'
+import { HederaAnonCredsService } from '../anoncreds/HederaAnonCredsService'
 import { HederaModuleConfig } from '../HederaModuleConfig'
 import { KmsPublisher } from './publisher/KmsPublisher'
 import { createOrGetKey, getMultibasePublicKey } from './utils'
@@ -67,6 +82,7 @@ export interface HederaDidDeactivateOptions extends DidDeactivateOptions {
 export class HederaLedgerService {
   private readonly clientService: HederaClientService
   private readonly cache: Cache
+  private anonCredsService?: HederaAnonCredsService
 
   public constructor(private readonly config: HederaModuleConfig) {
     this.clientService = new HederaClientService(config.options)
@@ -253,6 +269,101 @@ export class HederaLedgerService {
         }
       )
     })
+  }
+
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.getSchema()` instead.
+   */
+  public getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
+    return this.getAnonCredsService(agentContext).getSchema(agentContext, schemaId)
+  }
+
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.registerSchema()` instead.
+   */
+  public registerSchema(agentContext: AgentContext, options: RegisterSchemaOptions): Promise<RegisterSchemaReturn> {
+    return this.getAnonCredsService(agentContext).registerSchema(agentContext, options)
+  }
+
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.getCredentialDefinition()` instead.
+   */
+  public getCredentialDefinition(
+    agentContext: AgentContext,
+    credentialDefinitionId: string
+  ): Promise<GetCredentialDefinitionReturn> {
+    return this.getAnonCredsService(agentContext).getCredentialDefinition(agentContext, credentialDefinitionId)
+  }
+
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.registerCredentialDefinition()` instead.
+   */
+  public registerCredentialDefinition(
+    agentContext: AgentContext,
+    options: RegisterCredentialDefinitionOptions
+  ): Promise<RegisterCredentialDefinitionReturn> {
+    return this.getAnonCredsService(agentContext).registerCredentialDefinition(agentContext, options)
+  }
+
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.getRevocationRegistryDefinition()` instead.
+   */
+  public getRevocationRegistryDefinition(
+    agentContext: AgentContext,
+    revocationRegistryDefinitionId: string
+  ): Promise<GetRevocationRegistryDefinitionReturn> {
+    return this.getAnonCredsService(agentContext).getRevocationRegistryDefinition(
+      agentContext,
+      revocationRegistryDefinitionId
+    )
+  }
+
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.registerRevocationRegistryDefinition()` instead.
+   */
+  public registerRevocationRegistryDefinition(
+    agentContext: AgentContext,
+    options: RegisterRevocationRegistryDefinitionOptions
+  ): Promise<RegisterRevocationRegistryDefinitionReturn> {
+    return this.getAnonCredsService(agentContext).registerRevocationRegistryDefinition(agentContext, options)
+  }
+
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.getRevocationStatusList()` instead.
+   */
+  public getRevocationStatusList(
+    agentContext: AgentContext,
+    revocationRegistryId: string,
+    timestamp: number
+  ): Promise<GetRevocationStatusListReturn> {
+    return this.getAnonCredsService(agentContext).getRevocationStatusList(agentContext, revocationRegistryId, timestamp)
+  }
+
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.registerRevocationStatusList()` instead.
+   */
+  public registerRevocationStatusList(
+    agentContext: AgentContext,
+    options: RegisterRevocationStatusListOptions
+  ): Promise<RegisterRevocationStatusListReturn> {
+    return this.getAnonCredsService(agentContext).registerRevocationStatusList(agentContext, options)
+  }
+
+  private getAnonCredsService(agentContext: AgentContext): HederaAnonCredsService {
+    if (agentContext.dependencyManager.isRegistered(HederaAnonCredsService, true)) {
+      return agentContext.dependencyManager.resolve(HederaAnonCredsService)
+    }
+
+    this.anonCredsService ??= new HederaAnonCredsService(this.config)
+    return this.anonCredsService
   }
 
   private getHederaHcsTopicReader(_agentContext: AgentContext): TopicReaderHederaHcs {
