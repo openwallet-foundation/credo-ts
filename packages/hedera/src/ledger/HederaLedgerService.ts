@@ -18,13 +18,11 @@ import {
   type DidDeactivateOptions,
   type DidDocument,
   type DidDocumentKey,
-  DidRepository,
   type DidUpdateOptions,
   injectable,
   Kms,
 } from '@credo-ts/core'
 import { Client } from '@hashgraph/sdk'
-import { HederaAnoncredsRegistry } from '@hiero-did-sdk/anoncreds'
 import { LRUMemoryCache } from '@hiero-did-sdk/cache'
 import { HederaClientService, type HederaNetwork } from '@hiero-did-sdk/client'
 import {
@@ -48,9 +46,9 @@ import {
   type UpdateDIDResult,
 } from '@hiero-did-sdk/registrar'
 import { resolveDID, TopicReaderHederaHcs } from '@hiero-did-sdk/resolver'
+import { HederaAnonCredsService } from '../anoncreds/HederaAnonCredsService'
 import { HederaModuleConfig } from '../HederaModuleConfig'
 import { KmsPublisher } from './publisher/KmsPublisher'
-import { KmsSigner } from './signer/KmsSigner'
 import { createOrGetKey, getMultibasePublicKey } from './utils'
 
 export interface HederaDidCreateOptions extends DidCreateOptions {
@@ -84,6 +82,7 @@ export interface HederaDidDeactivateOptions extends DidDeactivateOptions {
 export class HederaLedgerService {
   private readonly clientService: HederaClientService
   private readonly cache: Cache
+  private anonCredsService?: HederaAnonCredsService
 
   public constructor(private readonly config: HederaModuleConfig) {
     this.clientService = new HederaClientService(config.options)
@@ -272,79 +271,99 @@ export class HederaLedgerService {
     })
   }
 
-  getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
-    const registry = this.getHederaAnonCredsRegistry(agentContext)
-    return registry.getSchema(schemaId)
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.getSchema()` instead.
+   */
+  public getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
+    return this.getAnonCredsService(agentContext).getSchema(agentContext, schemaId)
   }
 
-  async registerSchema(agentContext: AgentContext, options: RegisterSchemaOptions): Promise<RegisterSchemaReturn> {
-    const registry = this.getHederaAnonCredsRegistry(agentContext)
-    const issuerKeySigner = await this.getIssuerKeySigner(agentContext, options.schema.issuerId)
-    return registry.registerSchema({ ...options, issuerKeySigner })
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.registerSchema()` instead.
+   */
+  public registerSchema(agentContext: AgentContext, options: RegisterSchemaOptions): Promise<RegisterSchemaReturn> {
+    return this.getAnonCredsService(agentContext).registerSchema(agentContext, options)
   }
 
-  getCredentialDefinition(
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.getCredentialDefinition()` instead.
+   */
+  public getCredentialDefinition(
     agentContext: AgentContext,
     credentialDefinitionId: string
   ): Promise<GetCredentialDefinitionReturn> {
-    const registry = this.getHederaAnonCredsRegistry(agentContext)
-    return registry.getCredentialDefinition(credentialDefinitionId)
+    return this.getAnonCredsService(agentContext).getCredentialDefinition(agentContext, credentialDefinitionId)
   }
 
-  async registerCredentialDefinition(
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.registerCredentialDefinition()` instead.
+   */
+  public registerCredentialDefinition(
     agentContext: AgentContext,
     options: RegisterCredentialDefinitionOptions
   ): Promise<RegisterCredentialDefinitionReturn> {
-    const registry = this.getHederaAnonCredsRegistry(agentContext)
-    const issuerKeySigner = await this.getIssuerKeySigner(agentContext, options.credentialDefinition.issuerId)
-    return await registry.registerCredentialDefinition({
-      ...options,
-      issuerKeySigner,
-      options: {
-        supportRevocation: !!options.options?.supportRevocation,
-      },
-    })
+    return this.getAnonCredsService(agentContext).registerCredentialDefinition(agentContext, options)
   }
 
-  getRevocationRegistryDefinition(
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.getRevocationRegistryDefinition()` instead.
+   */
+  public getRevocationRegistryDefinition(
     agentContext: AgentContext,
     revocationRegistryDefinitionId: string
   ): Promise<GetRevocationRegistryDefinitionReturn> {
-    const registry = this.getHederaAnonCredsRegistry(agentContext)
-    return registry.getRevocationRegistryDefinition(revocationRegistryDefinitionId)
+    return this.getAnonCredsService(agentContext).getRevocationRegistryDefinition(
+      agentContext,
+      revocationRegistryDefinitionId
+    )
   }
 
-  async registerRevocationRegistryDefinition(
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.registerRevocationRegistryDefinition()` instead.
+   */
+  public registerRevocationRegistryDefinition(
     agentContext: AgentContext,
     options: RegisterRevocationRegistryDefinitionOptions
   ): Promise<RegisterRevocationRegistryDefinitionReturn> {
-    const registry = this.getHederaAnonCredsRegistry(agentContext)
-    const issuerKeySigner = await this.getIssuerKeySigner(agentContext, options.revocationRegistryDefinition.issuerId)
-    return await registry.registerRevocationRegistryDefinition({
-      ...options,
-      issuerKeySigner,
-    })
+    return this.getAnonCredsService(agentContext).registerRevocationRegistryDefinition(agentContext, options)
   }
 
-  getRevocationStatusList(
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.getRevocationStatusList()` instead.
+   */
+  public getRevocationStatusList(
     agentContext: AgentContext,
     revocationRegistryId: string,
     timestamp: number
   ): Promise<GetRevocationStatusListReturn> {
-    const registry = this.getHederaAnonCredsRegistry(agentContext)
-    return registry.getRevocationStatusList(revocationRegistryId, timestamp)
+    return this.getAnonCredsService(agentContext).getRevocationStatusList(agentContext, revocationRegistryId, timestamp)
   }
 
-  async registerRevocationStatusList(
+  /**
+   * @deprecated Configure `AnonCredsModule` with `HederaAnonCredsRegistry` and use
+   * `agent.modules.anoncreds.registerRevocationStatusList()` instead.
+   */
+  public registerRevocationStatusList(
     agentContext: AgentContext,
     options: RegisterRevocationStatusListOptions
   ): Promise<RegisterRevocationStatusListReturn> {
-    const registry = this.getHederaAnonCredsRegistry(agentContext)
-    const issuerKeySigner = await this.getIssuerKeySigner(agentContext, options.revocationStatusList.issuerId)
-    return await registry.registerRevocationStatusList({
-      ...options,
-      issuerKeySigner,
-    })
+    return this.getAnonCredsService(agentContext).registerRevocationStatusList(agentContext, options)
+  }
+
+  private getAnonCredsService(agentContext: AgentContext): HederaAnonCredsService {
+    if (agentContext.dependencyManager.isRegistered(HederaAnonCredsService, true)) {
+      return agentContext.dependencyManager.resolve(HederaAnonCredsService)
+    }
+
+    this.anonCredsService ??= new HederaAnonCredsService(this.config)
+    return this.anonCredsService
   }
 
   private getHederaHcsTopicReader(_agentContext: AgentContext): TopicReaderHederaHcs {
@@ -355,10 +374,6 @@ export class HederaLedgerService {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     const publicJwk = await createOrGetKey(kms, keyId)
     return new KmsPublisher(agentContext, client, publicJwk)
-  }
-
-  private getHederaAnonCredsRegistry(_agentContext: AgentContext): HederaAnoncredsRegistry {
-    return new HederaAnoncredsRegistry({ ...this.config.options, cache: this.cache })
   }
 
   private getDidDocumentEntryId(item: { id: string } | string): string {
@@ -526,20 +541,5 @@ export class HederaLedgerService {
     }
 
     return propertyMethods[action]
-  }
-
-  private async getIssuerKeySigner(agentContext: AgentContext, issuerId: string): Promise<KmsSigner> {
-    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
-    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-
-    const didRecord = await didRepository.findCreatedDid(agentContext, issuerId)
-    const rootKey = didRecord?.keys?.find((key) => key.didDocumentRelativeKeyId === DID_ROOT_KEY_ID)
-    if (!rootKey?.kmsKeyId) {
-      throw new Error('The root key not found in the KMS')
-    }
-
-    const issuerPublicJwk = await createOrGetKey(kms, rootKey.kmsKeyId)
-
-    return new KmsSigner(kms, issuerPublicJwk)
   }
 }

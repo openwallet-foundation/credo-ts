@@ -1,4 +1,5 @@
 import type {
+  GetSchemaReturn,
   RegisterCredentialDefinitionOptions,
   RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationStatusListOptions,
@@ -14,6 +15,7 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { Client, PrivateKey } from '@hashgraph/sdk'
+import { HederaAnonCredsService } from '../../src/anoncreds/HederaAnonCredsService'
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
 
 vi.mock('@hiero-did-sdk/registrar', () => ({
@@ -122,11 +124,11 @@ const mockHederaAnonCredsRegistry = {
 } as unknown as HederaAnonCredsRegistry
 
 describe('HederaLedgerService', () => {
-  const service = new HederaLedgerService({
+  const moduleConfig = {
     options: {
       networks: [
         {
-          network: 'testnet',
+          network: 'testnet' as const,
           operatorId: 'mock-operator-id',
           operatorKey: 'mock-operator-key',
         },
@@ -138,7 +140,9 @@ describe('HederaLedgerService', () => {
         clear: vi.fn(),
       },
     },
-  })
+  }
+  const service = new HederaLedgerService(moduleConfig)
+  const anonCredsService = new HederaAnonCredsService(moduleConfig)
   const builder: DIDUpdateBuilder = new DIDUpdateBuilder()
 
   // biome-ignore lint/suspicious/noExplicitAny: no explanation
@@ -149,7 +153,7 @@ describe('HederaLedgerService', () => {
   })
 
   // biome-ignore lint/suspicious/noExplicitAny: no explanation
-  vi.spyOn(service as any, 'getHederaAnonCredsRegistry').mockReturnValue(mockHederaAnonCredsRegistry)
+  vi.spyOn(anonCredsService as any, 'getRegistry').mockReturnValue(mockHederaAnonCredsRegistry)
 
   // biome-ignore lint/suspicious/noExplicitAny: no explanation
   vi.spyOn(service as any, 'getPublisher').mockResolvedValue({})
@@ -402,9 +406,55 @@ describe('HederaLedgerService', () => {
     })
   })
 
+  describe('deprecated AnonCreds forwarding methods', () => {
+    it('uses the registered HederaAnonCredsService when available', async () => {
+      const schemaResult: GetSchemaReturn = {
+        schemaId: 'schemaId',
+        schemaMetadata: {},
+        resolutionMetadata: {},
+      }
+      const getSchema = vi.fn().mockResolvedValue(schemaResult)
+      const registeredService = { getSchema } as unknown as HederaAnonCredsService
+      const dependencyManager = {
+        isRegistered: vi.fn().mockReturnValue(true),
+        resolve: vi.fn().mockReturnValue(registeredService),
+      }
+      const agentContext = { dependencyManager } as unknown as AgentContext
+
+      const result = await service.getSchema(agentContext, 'schemaId')
+
+      expect(dependencyManager.isRegistered).toHaveBeenCalledWith(HederaAnonCredsService, true)
+      expect(dependencyManager.resolve).toHaveBeenCalledWith(HederaAnonCredsService)
+      expect(getSchema).toHaveBeenCalledWith(agentContext, 'schemaId')
+      expect(result).toBe(schemaResult)
+    })
+
+    it('uses a private fallback without requiring HederaAnonCredsService registration', async () => {
+      const schemaResult: GetSchemaReturn = {
+        schemaId: 'schemaId',
+        schemaMetadata: {},
+        resolutionMetadata: {},
+      }
+      const getSchema = vi.spyOn(HederaAnonCredsService.prototype, 'getSchema').mockResolvedValue(schemaResult)
+      const dependencyManager = {
+        isRegistered: vi.fn().mockReturnValue(false),
+        resolve: vi.fn(),
+      }
+      const agentContext = { dependencyManager } as unknown as AgentContext
+
+      const result = await service.getSchema(agentContext, 'schemaId')
+
+      expect(dependencyManager.isRegistered).toHaveBeenCalledWith(HederaAnonCredsService, true)
+      expect(dependencyManager.resolve).not.toHaveBeenCalled()
+      expect(getSchema).toHaveBeenCalledWith(agentContext, 'schemaId')
+      expect(result).toBe(schemaResult)
+      getSchema.mockRestore()
+    })
+  })
+
   describe('anoncreds SDK methods', () => {
     it('getSchema', async () => {
-      const result = await service.getSchema(mockAgentContext, 'schemaId')
+      const result = await anonCredsService.getSchema(mockAgentContext, 'schemaId')
       expect(mockHederaAnonCredsRegistry.getSchema).toHaveBeenCalledWith('schemaId')
       expect(result).toBe('schema')
     })
@@ -419,7 +469,7 @@ describe('HederaLedgerService', () => {
         },
         options: {},
       }
-      const result = await service.registerSchema(mockAgentContext, options)
+      const result = await anonCredsService.registerSchema(mockAgentContext, options)
       expect(mockHederaAnonCredsRegistry.registerSchema).toHaveBeenCalledWith({
         ...options,
         issuerKeySigner: expect.anything(),
@@ -428,7 +478,7 @@ describe('HederaLedgerService', () => {
     })
 
     it('getCredentialDefinition', async () => {
-      const result = await service.getCredentialDefinition(mockAgentContext, 'credDefId')
+      const result = await anonCredsService.getCredentialDefinition(mockAgentContext, 'credDefId')
       expect(mockHederaAnonCredsRegistry.getCredentialDefinition).toHaveBeenCalledWith('credDefId')
       expect(result).toBe('credDef')
     })
@@ -449,7 +499,7 @@ describe('HederaLedgerService', () => {
           },
         },
       }
-      await service.registerCredentialDefinition(mockAgentContext, options)
+      await anonCredsService.registerCredentialDefinition(mockAgentContext, options)
       expect(mockHederaAnonCredsRegistry.registerCredentialDefinition).toHaveBeenCalledWith({
         ...options,
         issuerKeySigner: expect.anything(),
@@ -460,7 +510,7 @@ describe('HederaLedgerService', () => {
     })
 
     it('getRevocationRegistryDefinition', async () => {
-      const result = await service.getRevocationRegistryDefinition(mockAgentContext, 'revRegDefId')
+      const result = await anonCredsService.getRevocationRegistryDefinition(mockAgentContext, 'revRegDefId')
       expect(mockHederaAnonCredsRegistry.getRevocationRegistryDefinition).toHaveBeenCalledWith('revRegDefId')
       expect(result).toBe('revRegDef')
     })
@@ -485,7 +535,7 @@ describe('HederaLedgerService', () => {
         },
         options: {},
       }
-      const result = await service.registerRevocationRegistryDefinition(mockAgentContext, options)
+      const result = await anonCredsService.registerRevocationRegistryDefinition(mockAgentContext, options)
       expect(mockHederaAnonCredsRegistry.registerRevocationRegistryDefinition).toHaveBeenCalledWith({
         ...options,
         issuerKeySigner: expect.anything(),
@@ -494,7 +544,7 @@ describe('HederaLedgerService', () => {
     })
 
     it('getRevocationStatusList', async () => {
-      const result = await service.getRevocationStatusList(mockAgentContext, 'revRegId', 12345)
+      const result = await anonCredsService.getRevocationStatusList(mockAgentContext, 'revRegId', 12345)
       expect(mockHederaAnonCredsRegistry.getRevocationStatusList).toHaveBeenCalledWith('revRegId', 12345)
       expect(result).toBe('revStatusList')
     })
@@ -509,7 +559,7 @@ describe('HederaLedgerService', () => {
           currentAccumulator: '',
         },
       }
-      const result = await service.registerRevocationStatusList(mockAgentContext, options)
+      const result = await anonCredsService.registerRevocationStatusList(mockAgentContext, options)
       expect(mockHederaAnonCredsRegistry.registerRevocationStatusList).toHaveBeenCalledWith({
         ...options,
         issuerKeySigner: expect.anything(),
@@ -527,7 +577,7 @@ describe('HederaLedgerService', () => {
       mockFunction(mockDidRepository.findCreatedDid).mockResolvedValueOnce(didRecord)
 
       // biome-ignore lint/suspicious/noExplicitAny: no explanation
-      const result = await (service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')
+      const result = await (anonCredsService as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')
 
       expect(mockDidRepository.findCreatedDid).toHaveBeenCalledWith(mockAgentContext, 'issuer-id')
       expect(mockKms.getPublicKey).toHaveBeenCalledWith({ keyId: 'kms-key-id' })
@@ -541,7 +591,7 @@ describe('HederaLedgerService', () => {
       mockFunction(mockDidRepository.findCreatedDid).mockResolvedValueOnce(didRecord)
 
       // biome-ignore lint/suspicious/noExplicitAny: no explanation
-      await expect((service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')).rejects.toThrow(
+      await expect((anonCredsService as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')).rejects.toThrow(
         'The root key not found in the KMS'
       )
     })
@@ -550,7 +600,7 @@ describe('HederaLedgerService', () => {
       mockFunction(mockDidRepository.findCreatedDid).mockResolvedValueOnce(null)
 
       // biome-ignore lint/suspicious/noExplicitAny: no explanation
-      await expect((service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')).rejects.toThrow(
+      await expect((anonCredsService as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')).rejects.toThrow(
         'The root key not found in the KMS'
       )
     })
