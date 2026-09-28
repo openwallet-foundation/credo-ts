@@ -291,16 +291,18 @@ export class OpenId4VcIssuerService {
             required: true,
           }
         : undefined,
-      dpop: authorization?.requireDpop
-        ? {
-            required: true,
-          }
-        : undefined,
-      walletAttestation: authorization?.requireWalletAttestation
-        ? {
-            required: true,
-          }
-        : undefined,
+      dpop:
+        authorization?.requireDpop !== undefined
+          ? {
+              required: authorization.requireDpop,
+            }
+          : undefined,
+      walletAttestation:
+        authorization?.requireWalletAttestation !== undefined
+          ? {
+              required: authorization.requireWalletAttestation,
+            }
+          : undefined,
       pkce:
         authorization?.requirePkce !== undefined
           ? {
@@ -570,8 +572,11 @@ export class OpenId4VcIssuerService {
         credential_issuer: issuerMetadata.credentialIssuer.credential_issuer,
       },
       authorization: sessionAuthorization,
-      dpop: internalOptions.requireDpop ? { required: true } : undefined,
-      walletAttestation: internalOptions.requireWalletAttestation ? { required: true } : undefined,
+      dpop: internalOptions.requireDpop !== undefined ? { required: internalOptions.requireDpop } : undefined,
+      walletAttestation:
+        internalOptions.requireWalletAttestation !== undefined
+          ? { required: internalOptions.requireWalletAttestation }
+          : undefined,
       pkce: internalOptions.requirePkce !== undefined ? { required: internalOptions.requirePkce } : undefined,
       chainedIdentity,
       presentation,

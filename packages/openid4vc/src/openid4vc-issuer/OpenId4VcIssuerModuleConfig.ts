@@ -84,8 +84,8 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
    * Whether DPoP is required for all issuance sessions. If dpop is not required, but used by a client in the
    * first request to credo, DPoP will be required going forward.
    *
-   * When not required globally, DPoP can still be required per issuance session when creating a credential offer
-   * (`authorization.requireDpop`) or in the `getDynamicIssuanceSession` callback (`requireDpop`).
+   * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
+   * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
    *
    * @default false
    */
@@ -111,8 +111,8 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
    * Whether wallet attestations are required for all issuance sessions. If wallet attestations are not required
    * but used by a client in the first request to credo, wallet attestations will be required going forward.
    *
-   * When not required globally, wallet attestations can still be required per issuance session when creating a
-   * credential offer (`authorization.requireWalletAttestation`) or in the `getDynamicIssuanceSession` callback
+   * This value can be overridden per issuance session when creating a credential offer
+   * (`authorization.requireWalletAttestation`) or in the `getDynamicIssuanceSession` callback
    * (`requireWalletAttestation`).
    *
    * @default false
@@ -407,8 +407,8 @@ export class OpenId4VcIssuerModuleConfig {
    * Whether DPoP is required for all issuance sessions. If dpop is not required, but used by a client in the
    * first request to credo, DPoP will be required going forward.
    *
-   * When not required globally, DPoP can still be required per issuance session when creating a credential offer
-   * (`authorization.requireDpop`) or in the `getDynamicIssuanceSession` callback (`requireDpop`).
+   * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
+   * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
    *
    * @default false
    */
@@ -430,8 +430,8 @@ export class OpenId4VcIssuerModuleConfig {
    * Whether wallet attestations are required for all issuance sessions. If wallet attestations are not required
    * but used by a client in the first request to credo, wallet attestations will be required going forward.
    *
-   * When not required globally, wallet attestations can still be required per issuance session when creating a
-   * credential offer (`authorization.requireWalletAttestation`) or in the `getDynamicIssuanceSession` callback
+   * This value can be overridden per issuance session when creating a credential offer
+   * (`authorization.requireWalletAttestation`) or in the `getDynamicIssuanceSession` callback
    * (`requireWalletAttestation`).
    *
    * @default false

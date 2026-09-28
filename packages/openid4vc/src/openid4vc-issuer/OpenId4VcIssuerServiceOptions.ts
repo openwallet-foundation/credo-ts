@@ -154,7 +154,8 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
     /**
      * Whether wallet attestations are required at the PAR, Authorization Challenge and token endpoints.
      *
-     * If not provided or `false`, the value from the global agent config will be used.
+     * If not provided, the value from the global agent config will be used. If `false`, wallet attestations
+     * are not required for this issuance session, even if they are required in the global agent config.
      *
      * NOTE: this only has effect if the Credo authorization server is used. If an external authorization
      * server is used, it's up to the authorization server to require wallet attestations for client authentication.
@@ -164,7 +165,8 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
     /**
      * Whether DPoP is required.
      *
-     * If not provided or `false`, the value from the global agent config will be used.
+     * If not provided, the value from the global agent config will be used. If `false`, DPoP is not required
+     * for this issuance session, even if it is required in the global agent config.
      *
      * NOTE: it's up to the authorization server to enforce DPoP binding. So if an external authorization server
      * is used, and DPoP is required, you should ensure the authorization server enforces DPoP. If DPoP is required
@@ -342,14 +344,15 @@ interface OpenId4VciDynamicIssuanceSessionOptionsBase {
  */
 interface OpenId4VciInternalDynamicIssuanceSessionOptionsBase extends OpenId4VciDynamicIssuanceSessionOptionsBase {
   /**
-   * Whether DPoP is required for this issuance session. If not provided or `false`, the global config
-   * value is used.
+   * Whether DPoP is required for this issuance session. If not provided, the global config value is used.
+   * If `false`, DPoP is not required for this issuance session, even if it is required in the global config.
    */
   requireDpop?: boolean
 
   /**
-   * Whether wallet attestations are required for this issuance session. If not provided or `false`, the
-   * global config value is used.
+   * Whether wallet attestations are required for this issuance session. If not provided, the global config
+   * value is used. If `false`, wallet attestations are not required for this issuance session, even if they
+   * are required in the global config.
    */
   requireWalletAttestation?: boolean
 
