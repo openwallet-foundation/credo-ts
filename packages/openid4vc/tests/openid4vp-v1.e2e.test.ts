@@ -624,7 +624,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const openBadgeEntry = asArray(
-      (dcql?.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+      (dcql.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
         .verifiableCredential
     )[0]
     if (!openBadgeEntry || !('resolvedCredential' in openBadgeEntry)) {
@@ -693,7 +693,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     })
     const universityDegreeEntry = asArray(
-      (dcql2?.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+      (dcql2.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
         .verifiableCredential
     )[0]
     if (!universityDegreeEntry || !('resolvedCredential' in universityDegreeEntry)) {
@@ -1576,16 +1576,16 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               {
                 claimFormat: ClaimFormat.SdJwtDc,
                 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-                credentialRecord: (validCredentials?.[0] as any).record,
+                credentialRecord: (validCredentials[0] as any).record,
                 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-                disclosedPayload: (validCredentials?.[0] as any).claims.valid_claim_sets[0].output,
+                disclosedPayload: (validCredentials[0] as any).claims.valid_claim_sets[0].output,
               },
               {
                 claimFormat: ClaimFormat.SdJwtDc,
                 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-                credentialRecord: (validCredentials?.[1] as any).record,
+                credentialRecord: (validCredentials[1] as any).record,
                 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-                disclosedPayload: (validCredentials?.[1] as any).claims.valid_claim_sets[0].output,
+                disclosedPayload: (validCredentials[1] as any).claims.valid_claim_sets[0].output,
               },
             ],
           },

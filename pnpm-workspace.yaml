@@ -20,7 +20,7 @@ allowBuilds:
 catalog:
   '@animo-id/pex': ^6.1.1
   '@astronautlabs/jsonpath': ^1.1.2
-  '@biomejs/biome': 2.4.15
+  '@biomejs/biome': 2.5.14
   # Keep the cheqd dependencies aligned with the versions supported by @cheqd/sdk-esm.
   '@cheqd/sdk': npm:@cheqd/sdk-esm@5.5.1
   '@cheqd/ts-proto': ^4.2.0
@@ -52,5 +52,5 @@ catalog:
   tsyringe: ^4.10.0
   typescript: ~5.9.3
   vitest: ^4.1.11
-  ws: ^8.19.0
+  ws: ^8.22.0
   zod: ^4.6.5
