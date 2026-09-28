@@ -1,6 +1,9 @@
 // Dids
 
 // AnonCreds
+/**
+ * @deprecated Import from `@credo-ts/cheqd/anoncreds` instead.
+ */
 export { CheqdAnonCredsRegistry } from './anoncreds'
 export { CheqdModule } from './CheqdModule'
 export { CheqdModuleConfig, type CheqdModuleConfigOptions } from './CheqdModuleConfig'

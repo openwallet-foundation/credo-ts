@@ -1,5 +1,11 @@
 import 'reflect-metadata'
 
+export {
+  ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE,
+  AnonCredsW3cCredentialProof,
+  AnonCredsW3cCredentialServiceSymbol,
+  type IAnonCredsW3cCredentialService,
+} from '@credo-ts/core'
 export { AnonCredsApi } from './AnonCredsApi'
 export * from './AnonCredsApiOptions'
 export { AnonCredsModule } from './AnonCredsModule'
@@ -9,8 +15,14 @@ export {
   type NativeAnoncredsLike,
 } from './AnonCredsModuleConfig'
 export * from './error'
+/**
+ * @deprecated Import DIDComm formats and services from `@credo-ts/anoncreds/didcomm`.
+ */
 export * from './formats'
 export * from './models'
+/**
+ * @deprecated Import DIDComm protocols from `@credo-ts/anoncreds/didcomm`.
+ */
 export * from './protocols'
 export * from './repository'
 export * from './services'
