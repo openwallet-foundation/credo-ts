@@ -84,11 +84,12 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         next,
         agentContext.config.logger,
         new Oauth2ServerErrorResponseError({
+          // Credo never grants credential_identifiers in the token response, so any identifier is unknown
           error: parsedCredentialRequest.credentialIdentifier
-            ? Oauth2ErrorCodes.InvalidCredentialRequest
+            ? Oauth2ErrorCodes.UnknownCredentialIdentifier
             : Oauth2ErrorCodes.UnsupportedCredentialFormat,
           error_description: parsedCredentialRequest.credentialIdentifier
-            ? `Credential request containing 'credential_identifier' not supported`
+            ? `Credential identifier '${parsedCredentialRequest.credentialIdentifier}' is unknown`
             : parsedCredentialRequest.credentialConfigurationId
               ? `Credential configuration '${parsedCredentialRequest.credentialConfigurationId}' not supported`
               : `Credential format '${parsedCredentialRequest.credentialRequest.format}' not supported`,
