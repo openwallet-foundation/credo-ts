@@ -49,7 +49,6 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
@@ -58,6 +57,15 @@
     "tsyringe": "catalog:"
   },
   "devDependencies": {
+    "@credo-ts/anoncreds": "workspace:*",
     "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "@credo-ts/anoncreds": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@credo-ts/anoncreds": {
+      "optional": true
+    }
   }
 }

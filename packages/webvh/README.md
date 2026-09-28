@@ -39,8 +39,10 @@ In order for this module to work, we have to inject it into the agent to access 
 To use the WebVh module, register it with your agent instance. Below is an example of how to configure the agent with the WebVh AnonCreds registry, DID resolver, and DID registrar:
 
 ```typescript
-import { Agent, DidsModule, AnonCredsModule } from '@credo-ts/core'
-import { WebVhModule, WebVhAnonCredsRegistry, WebVhDidResolver, WebVhDidRegistrar } from '@credo-ts/webvh'
+import { Agent, DidsModule } from '@credo-ts/core'
+import { AnonCredsModule } from '@credo-ts/anoncreds'
+import { WebVhAnonCredsRegistry } from '@credo-ts/webvh/anoncreds'
+import { WebVhModule, WebVhDidResolver, WebVhDidRegistrar } from '@credo-ts/webvh'
 
 const agent = new Agent({
   config: options.config,
