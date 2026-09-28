@@ -6,11 +6,21 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - '5432:5432'
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   redis:
     image: valkey/valkey:9.1.2
     ports:
       - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   indy-pool:
     build:
@@ -18,13 +28,22 @@ services:
       dockerfile: network/indy-pool.dockerfile
     ports:
       - '9701-9708:9701-9708'
+    # Healthy once the ledger DIDs have been written
+    healthcheck:
+      test: ['CMD-SHELL', 'test -f /tmp/indy-pool-ready']
+      interval: 5s
+      timeout: 3s
+      retries: 36
+      start_period: 30s
     # Start supervisord in bg, run commands, bring supervisor to fg
     command: >
       /bin/bash -c "
+        rm -f /tmp/indy-pool-ready;
         /usr/bin/supervisord &
         indy-cli-setup &&
         add-did-from-seed 00000000000000000000000Endorser9 ENDORSER &&
         add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE &&
+        touch /tmp/indy-pool-ready &&
         /usr/bin/supervisord -n
       "
 
@@ -34,9 +53,17 @@ services:
     platform: linux/amd64
     ports:
       - '26657:26657'
+    # Healthy once the test accounts have been funded
+    healthcheck:
+      test: ['CMD-SHELL', 'test -f /tmp/cheqd-ledger-ready']
+      interval: 5s
+      timeout: 3s
+      retries: 36
+      start_period: 30s
     command: >
       /bin/bash -c '
       mock-price-feed &
+      rm -f /tmp/cheqd-ledger-ready;
       cheqd-noded init "validator-node" --chain-id "testnet" --home "/tmp/.single-node" &&
       (echo "12345678") | cheqd-noded keys add validator --keyring-backend test --home "/tmp/.single-node" &&
       cheqd-noded genesis add-genesis-account $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") 100000000000000000ncheq --home "/tmp/.single-node" &&
@@ -84,5 +111,6 @@ services:
       (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd10qh2vl0jrax6yh2mzes03cm6vt27vd47geu375 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
       sleep 2 &&
       (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd18kgq9rycwmdluyjtnkv3jn57ttspu639fug2s2 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
+      touch /tmp/cheqd-ledger-ready &&
       wait $$RUN_TESTNET_PID;
       ' 
