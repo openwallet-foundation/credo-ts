@@ -618,8 +618,11 @@ export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
    *
    * All keys and dids have a verified proof, or in the case a key attestation is provided
    * are attested by a key attestation. Ensure the issuer of the key attestation is trusted.
+   *
+   * Undefined if the credential request contained no proofs, in which case a single credential
+   * without holder binding should be returned.
    */
-  holderBinding: VerifiedOpenId4VcCredentialHolderBinding
+  holderBinding?: VerifiedOpenId4VcCredentialHolderBinding
 
   /**
    * The credential configurations supported entry from the issuer metadata

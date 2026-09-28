@@ -43,12 +43,13 @@ import type {
   OpenId4VciCredentialConfigurationSupportedWithFormats,
   OpenId4VciCredentialRequest,
   OpenId4VciMetadata,
+  VerifiedOpenId4VcCredentialHolderBinding,
 } from '../../shared'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
-import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
-import type { OpenId4VcIssuerRecord } from '../repository'
+import type { OpenId4VciCredentialRequestToCredentialMapper, OpenId4VciVersion } from '../OpenId4VcIssuerServiceOptions'
+import type { OpenId4VcIssuanceSessionRecordTransaction, OpenId4VcIssuerRecord } from '../repository'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
 const openBadgeCredential = {
@@ -88,6 +89,26 @@ const universityDegreeCredentialSdJwt = {
   id: 'universityDegreeCredentialSdJwt',
   format: OpenId4VciCredentialFormatProfile.SdJwtVc,
   vct: 'UniversityDegreeCredential',
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+
+const bearerCredentialSdJwtDc = {
+  id: 'bearerCredentialSdJwtDc',
+  format: OpenId4VciCredentialFormatProfile.SdJwtDc,
+  vct: 'BearerCredential',
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+
+const proofRequiredCredentialSdJwtDc = {
+  id: 'proofRequiredCredentialSdJwtDc',
+  format: OpenId4VciCredentialFormatProfile.SdJwtDc,
+  vct: 'ProofRequiredCredential',
+  proof_types_supported: { jwt: { proof_signing_alg_values_supported: ['EdDSA'] } },
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+
+const holderBindingRequiredCredentialSdJwtDc = {
+  id: 'holderBindingRequiredCredentialSdJwtDc',
+  format: OpenId4VciCredentialFormatProfile.SdJwtDc,
+  vct: 'HolderBindingRequiredCredential',
+  cryptographic_binding_methods_supported: ['jwk'],
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 const modules = {
@@ -1257,5 +1278,262 @@ describe('OpenId4VcIssuer', () => {
     const jwt = Jwt.fromSerializedJwt(kept.signedMetadata?.jwt as string)
     expect(jwt.header.x5c).toEqual([certificate.toString('base64')])
     expect(jwt.payload.additionalClaims.display).toMatchObject([{ name: 'Updated issuer' }])
+  })
+
+  describe('credential requests without proofs', () => {
+    const authorization = {
+      authorizationServer: 'https://authorization.com',
+      accessToken: {
+        payload: {
+          active: true,
+          sub: 'something',
+          'pre-authorized_code': 'some',
+        },
+        value: 'the-access-token',
+      },
+    } as const
+
+    let bearerIssuer: OpenId4VcIssuerRecord
+
+    beforeEach(async () => {
+      bearerIssuer = await issuer.openid4vc.issuer.createIssuer({
+        credentialConfigurationsSupported: {
+          bearerCredentialSdJwtDc,
+          proofRequiredCredentialSdJwtDc,
+          holderBindingRequiredCredentialSdJwtDc,
+        },
+      })
+    })
+
+    async function requestCredentialWithoutProof(
+      credentialConfiguration: { id: string; vct: string },
+      options: { version?: OpenId4VciVersion; numberOfCredentials?: number } = {}
+    ) {
+      const offer = await issuer.openid4vc.issuer.createCredentialOffer({
+        issuerId: bearerIssuer.issuerId,
+        credentialConfigurationIds: [credentialConfiguration.id],
+        preAuthorizedCodeFlowConfig: { preAuthorizedCode: '1234567890' },
+        version: options.version ?? 'v1',
+      })
+
+      const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+      offer.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+      await issuanceSessionRepository.update(issuer.context, offer.issuanceSession)
+
+      let holderBindingInMapper: VerifiedOpenId4VcCredentialHolderBinding | undefined
+      const { credentialResponse, issuanceSession } = await issuer.openid4vc.issuer.createCredentialResponse({
+        issuanceSessionId: offer.issuanceSession.id,
+        credentialRequest: { credential_configuration_id: credentialConfiguration.id },
+        authorization,
+        credentialRequestToCredentialMapper: ({ holderBinding }) => {
+          holderBindingInMapper = holderBinding
+          return {
+            type: 'credentials',
+            format: 'dc+sd-jwt',
+            credentials: new Array(options.numberOfCredentials ?? 1).fill(0).map(() => ({
+              payload: { vct: credentialConfiguration.vct, university: 'innsbruck', degree: 'bachelor' },
+              issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
+              disclosureFrame: { _sd: ['university', 'degree'] },
+            })),
+          }
+        },
+      })
+
+      return { credentialResponse, issuanceSession, holderBindingInMapper }
+    }
+
+    it('issues a bearer credential when the configuration declares no proof types or binding methods', async () => {
+      const { credentialResponse, issuanceSession, holderBindingInMapper } =
+        await requestCredentialWithoutProof(bearerCredentialSdJwtDc)
+
+      expect(holderBindingInMapper).toBeUndefined()
+      expect(issuanceSession.state).toEqual(OpenId4VcIssuanceSessionState.Completed)
+
+      expect(credentialResponse.credential).toBeUndefined()
+      expect(credentialResponse.credentials).toEqual([{ credential: expect.any(String) }])
+
+      const compactSdJwtVc = (credentialResponse.credentials as Array<{ credential: string }>)[0].credential
+      const { isValid, sdJwtVc } = await holder.context.dependencyManager.resolve(SdJwtVcApi).verify({ compactSdJwtVc })
+
+      expect(isValid).toBe(true)
+      expect(sdJwtVc?.payload).not.toHaveProperty('cnf')
+      expect(sdJwtVc?.payload.vct).toEqual('BearerCredential')
+    })
+
+    it('issues a bearer credential in the credentials array for a draft 15 session', async () => {
+      const { credentialResponse } = await requestCredentialWithoutProof(bearerCredentialSdJwtDc, {
+        version: 'v1.draft15',
+      })
+
+      expect(credentialResponse.credential).toBeUndefined()
+      expect(credentialResponse.credentials).toEqual([{ credential: expect.any(String) }])
+    })
+
+    it('still requires a proof on a draft 11-14 session, where an absent proof_types_supported says nothing', async () => {
+      await expect(
+        requestCredentialWithoutProof(bearerCredentialSdJwtDc, { version: 'v1.draft11-14' })
+      ).rejects.toThrow('Missing required proof(s) in credential request')
+    })
+
+    it('still binds the credential to the holder key if a proof is provided anyway', async () => {
+      const offer = await issuer.openid4vc.issuer.createCredentialOffer({
+        issuerId: bearerIssuer.issuerId,
+        credentialConfigurationIds: [bearerCredentialSdJwtDc.id],
+        preAuthorizedCodeFlowConfig: { preAuthorizedCode: '1234567890' },
+        version: 'v1',
+      })
+
+      const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+      const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
+      offer.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+      await issuanceSessionRepository.update(issuer.context, offer.issuanceSession)
+
+      const { cNonce } = await issuerService.createNonce(issuer.context, bearerIssuer)
+      const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(bearerIssuer.issuerId)
+      const { publicJwk } = await holder.context.dependencyManager
+        .resolve(DidsApi)
+        .resolveVerificationMethodFromCreatedDidRecord(holderKid)
+
+      const jws = await jwsService.createJwsCompact(holder.context, {
+        protectedHeaderOptions: { alg: publicJwk.signatureAlgorithm, kid: holderKid, typ: 'openid4vci-proof+jwt' },
+        payload: new JwtPayload({
+          iat: utils.dateToSeconds(new Date()),
+          aud: issuerMetadata.credentialIssuer.credential_issuer,
+          additionalClaims: { nonce: cNonce },
+        }),
+        keyId: publicJwk.keyId,
+      })
+
+      const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
+        issuanceSessionId: offer.issuanceSession.id,
+        credentialRequest: {
+          credential_configuration_id: bearerCredentialSdJwtDc.id,
+          proofs: { jwt: [jws] },
+        },
+        authorization,
+        credentialRequestToCredentialMapper: ({ holderBinding }) => {
+          if (!holderBinding) throw new Error('Expected holder binding in credential request mapper')
+
+          return {
+            type: 'credentials',
+            format: 'dc+sd-jwt',
+            credentials: holderBinding.keys.map((key) => ({
+              payload: { vct: bearerCredentialSdJwtDc.vct, university: 'innsbruck' },
+              issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
+              holder: key,
+              disclosureFrame: { _sd: ['university'] },
+            })),
+          }
+        },
+      })
+
+      expect(credentialResponse.credentials).toEqual([{ credential: expect.any(String) }])
+
+      const compactSdJwtVc = (credentialResponse.credentials as Array<{ credential: string }>)[0].credential
+      const { sdJwtVc } = await holder.context.dependencyManager.resolve(SdJwtVcApi).verify({ compactSdJwtVc })
+
+      expect(sdJwtVc?.payload).toHaveProperty('cnf')
+    })
+
+    it('rejects the request if the configuration declares proof_types_supported', async () => {
+      await expect(requestCredentialWithoutProof(proofRequiredCredentialSdJwtDc)).rejects.toThrow(
+        'Missing required proof(s) in credential request'
+      )
+    })
+
+    it('issues a bearer credential when only cryptographic_binding_methods_supported is declared', async () => {
+      const { credentialResponse, holderBindingInMapper } = await requestCredentialWithoutProof(
+        holderBindingRequiredCredentialSdJwtDc
+      )
+
+      expect(holderBindingInMapper).toBeUndefined()
+      expect(credentialResponse.credentials).toEqual([{ credential: expect.any(String) }])
+    })
+
+    it('rejects a mapper returning more than one credential when there is no holder binding', async () => {
+      await expect(requestCredentialWithoutProof(bearerCredentialSdJwtDc, { numberOfCredentials: 2 })).rejects.toThrow(
+        "returned '2' credential(s) to be signed, while '1' were expected"
+      )
+    })
+
+    it('rejects the request if it carries a proof of a type the library does not know', async () => {
+      const offer = await issuer.openid4vc.issuer.createCredentialOffer({
+        issuerId: bearerIssuer.issuerId,
+        credentialConfigurationIds: [bearerCredentialSdJwtDc.id],
+        preAuthorizedCodeFlowConfig: { preAuthorizedCode: '1234567890' },
+        version: 'v1',
+      })
+
+      const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+      offer.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+      await issuanceSessionRepository.update(issuer.context, offer.issuanceSession)
+
+      await expect(
+        issuer.openid4vc.issuer.createCredentialResponse({
+          issuanceSessionId: offer.issuanceSession.id,
+          credentialRequest: {
+            credential_configuration_id: bearerCredentialSdJwtDc.id,
+            proof: { proof_type: 'not-a-known-proof-type', jwt: 'ey.ey.ey' },
+          } as unknown as OpenId4VciCredentialRequest,
+          authorization,
+          credentialRequestToCredentialMapper: () => {
+            throw new Error('Mapper should not be called')
+          },
+        })
+      ).rejects.toThrow('Missing required proof(s) in credential request')
+    })
+
+    it('defers a bearer credential and issues it without holder binding', async () => {
+      const transactionId = 'the-transaction-id'
+      const offer = await issuer.openid4vc.issuer.createCredentialOffer({
+        issuerId: bearerIssuer.issuerId,
+        credentialConfigurationIds: [bearerCredentialSdJwtDc.id],
+        preAuthorizedCodeFlowConfig: { preAuthorizedCode: '1234567890' },
+        version: 'v1',
+      })
+
+      const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+      offer.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+      await issuanceSessionRepository.update(issuer.context, offer.issuanceSession)
+
+      const { credentialResponse, issuanceSession } = await issuer.openid4vc.issuer.createCredentialResponse({
+        issuanceSessionId: offer.issuanceSession.id,
+        credentialRequest: { credential_configuration_id: bearerCredentialSdJwtDc.id },
+        authorization,
+        credentialRequestToCredentialMapper: () => ({ type: 'deferral', transactionId, interval: 60 }),
+      })
+
+      expect(credentialResponse.transaction_id).toEqual(transactionId)
+      expect(issuanceSession.transactions).toHaveLength(1)
+      expect(issuanceSession.transactions[0]).toMatchObject({ transactionId, numberOfCredentials: 1 })
+      expect(issuanceSession.transactions[0].holderBinding).toBeUndefined()
+
+      issuanceSession.transactions[0].deferredUntil = new Date(Date.now() - 1000)
+      await issuanceSessionRepository.update(issuer.context, issuanceSession)
+
+      let transactionInMapper: OpenId4VcIssuanceSessionRecordTransaction | undefined
+      const { deferredCredentialResponse } = await issuer.openid4vc.issuer.createDeferredCredentialResponse({
+        issuanceSessionId: offer.issuanceSession.id,
+        deferredCredentialRequest: { transaction_id: transactionId },
+        authorization,
+        deferredCredentialRequestToCredentialMapper: ({ transaction }) => {
+          transactionInMapper = transaction
+          return {
+            type: 'credentials',
+            format: 'dc+sd-jwt',
+            credentials: [
+              {
+                payload: { vct: bearerCredentialSdJwtDc.vct, university: 'innsbruck' },
+                issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
+                disclosureFrame: { _sd: ['university'] },
+              },
+            ],
+          }
+        },
+      })
+
+      expect(transactionInMapper?.holderBinding).toBeUndefined()
+      expect(deferredCredentialResponse.credentials).toEqual([{ credential: expect.any(String) }])
+    })
   })
 })

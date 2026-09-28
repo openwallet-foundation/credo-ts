@@ -122,3 +122,9 @@ export const universityDegreeCredentialSdJwt2 = {
   // FIXME: should this be dynamically generated? I think static is fine for now
   cryptographic_binding_methods_supported: ['jwk'],
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
+
+export const universityDegreeCredentialConfigurationSupportedBearer = {
+  format: OpenId4VciCredentialFormatProfile.SdJwtDc,
+  scope: 'UniversityDegreeCredential',
+  vct: 'UniversityDegreeCredential',
+} satisfies OpenId4VciCredentialConfigurationSupportedWithFormats

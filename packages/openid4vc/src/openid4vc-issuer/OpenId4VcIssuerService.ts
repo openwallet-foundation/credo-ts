@@ -721,7 +721,7 @@ export class OpenId4VcIssuerService {
       // Save transaction data for deferred issuance
       issuanceSession.transactions.push({
         transactionId: signOptionsOrDeferral.transactionId,
-        numberOfCredentials: verifiedCredentialRequestProofs.keys.length,
+        numberOfCredentials: verifiedCredentialRequestProofs?.keys.length ?? 1,
         deferredUntil: utils.addSecondsToDate(new Date(), signOptionsOrDeferral.interval),
         credentialConfigurationId,
         holderBinding: verifiedCredentialRequestProofs,
@@ -742,18 +742,18 @@ export class OpenId4VcIssuerService {
       const credentials = await this.getSignedCredentials(agentContext, signOptionsOrDeferral, {
         issuanceSession,
         credentialConfiguration,
-        expectedLength: verifiedCredentialRequestProofs.keys.length,
+        expectedLength: verifiedCredentialRequestProofs?.keys.length ?? 1,
       })
 
       // TODO: support credential response encryption
       credentialResponse = (
         await vcIssuer.createCredentialResponse({
           credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
-          credentials: credentialRequest.proofs
-            ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
+          credentials: credentialRequest.proof
+            ? undefined
+            : issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
               ? credentials.credentials.map((c) => ({ credential: c }))
-              : credentials.credentials
-            : undefined,
+              : credentials.credentials,
           cNonce,
           cNonceExpiresInSeconds,
           credentialRequest: parsedCredentialRequest,
@@ -918,13 +918,20 @@ export class OpenId4VcIssuerService {
       credentialConfigurationId: string
       credentialConfiguration: CredentialConfigurationSupportedWithFormats
     }
-  ): Promise<VerifiedOpenId4VcCredentialHolderBinding> {
+  ): Promise<VerifiedOpenId4VcCredentialHolderBinding | undefined> {
     const { parsedCredentialRequest, issuer, issuanceSession, credentialConfiguration, credentialConfigurationId } =
       options
-    const { proofs } = parsedCredentialRequest
+    const { proofs, credentialRequest } = parsedCredentialRequest
 
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+
+    // `proof_types_supported` did not exist in draft 11, and neither a 'v1.draft11-14' session nor one
+    // stored before the version was recorded can rule draft 11 out, so both keep requiring a proof.
+    const proofRequired =
+      credentialConfiguration.proof_types_supported !== undefined ||
+      issuanceSession.openId4VciVersion === 'v1.draft11-14' ||
+      issuanceSession.openId4VciVersion === undefined
 
     const allowedProofTypes = credentialConfiguration.proof_types_supported ?? {
       jwt: { proof_signing_alg_values_supported: getSupportedJwaSignatureAlgorithms(agentContext) },
@@ -932,6 +939,13 @@ export class OpenId4VcIssuerService {
 
     const [proofType, proofValue] = (Object.entries(proofs ?? {})[0] as [string, string[]] | undefined) ?? []
     if (!proofType || !proofValue || proofValue.length === 0) {
+      // `proofs` is also undefined for a proof type this library does not know, so the raw request is
+      // checked too rather than downgrading an intentionally bound request to bearer.
+      if (!proofRequired && credentialRequest.proof === undefined && credentialRequest.proofs === undefined) {
+        await this.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.CredentialRequestReceived)
+        return undefined
+      }
+
       const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidProof,
@@ -2153,7 +2167,7 @@ export class OpenId4VcIssuerService {
     // NOTE: we may want to allow a mismatch between this (as there is a match batch length), but for now it needs to match
     if (signOptions.credentials.length !== expectedLength) {
       throw new CredoError(
-        `Credential request to credential mapper returned '${signOptions.credentials.length}' to be signed, while '${expectedLength}' holder binding entries were provided. Make sure to return one credential for each holder binding entry`
+        `Credential request to credential mapper returned '${signOptions.credentials.length}' credential(s) to be signed, while '${expectedLength}' were expected. Make sure to return one credential for each holder binding entry, or a single credential if the credential request contained no proofs.`
       )
     }
 

@@ -105,6 +105,8 @@ describe('OpenId4Vc (Wallet Initiated Presentation During Issuance)', () => {
             getVerificationSession,
             getDynamicIssuanceSession,
             credentialRequestToCredentialMapper: async ({ holderBinding, verification, credentialConfiguration }) => {
+              if (!holderBinding) throw new Error('Expected holder binding in credential request mapper')
+
               if (!verification?.presentationExchange) {
                 throw new Error('Expected presentation exchange verification in credential request mapper')
               }

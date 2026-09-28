@@ -138,6 +138,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
             baseUrl: issuerBaseUrl,
             getVerificationSession: getVerificationSession('presentationDefinition'),
             credentialRequestToCredentialMapper: async ({ holderBinding, verification, credentialConfiguration }) => {
+              if (!holderBinding) throw new Error('Expected holder binding in credential request mapper')
+
               if (!verification) {
                 throw new Error('Expected verification in credential request mapper')
               }
