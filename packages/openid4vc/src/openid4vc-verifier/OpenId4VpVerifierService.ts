@@ -73,11 +73,7 @@ import type {
 } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
-import {
-  credoJwtIssuerToOpenId4VcJwtIssuer,
-  dcqlCredentialQueryToPresentationFormat,
-  getSupportedJwaSignatureAlgorithms,
-} from '../shared/utils'
+import { credoJwtIssuerToOpenId4VcJwtIssuer, dcqlCredentialQueryToPresentationFormat } from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
 import { type OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
@@ -956,7 +952,7 @@ export class OpenId4VpVerifierService {
 
     const signatureSuiteRegistry = agentContext.resolve(SignatureSuiteRegistry)
     const kms = agentContext.resolve(Kms.KeyManagementApi)
-    const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext) as [
+    const supportedAlgs = kms.supportedJwaSignatureAlgorithms() as [
       Kms.KnownJwaSignatureAlgorithm,
       ...Kms.KnownJwaSignatureAlgorithm[],
     ]
