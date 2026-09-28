@@ -66,14 +66,28 @@ export function getSupportedResponseEncryptionJwks(agentContext: AgentContext, j
 }
 
 /**
+ * Symmetric (HMAC) signature algorithms. In OpenID4VC signatures are always verified by
+ * another party using a public key, so these can never be used.
+ */
+const symmetricJwaSignatureAlgorithms: Kms.KnownJwaSignatureAlgorithm[] = [
+  Kms.KnownJwaSignatureAlgorithms.HS256,
+  Kms.KnownJwaSignatureAlgorithms.HS384,
+  Kms.KnownJwaSignatureAlgorithms.HS512,
+]
+
+/**
  * Returns the JWA Signature Algorithms that are supported by the wallet.
+ *
+ * Symmetric algorithms are excluded, even if the KMS supports them.
  */
 export function getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): Kms.KnownJwaSignatureAlgorithm[] {
   const kms = agentContext.resolve(Kms.KeyManagementApi)
 
   // If we can sign with an algorithm we assume it's supported (also for verification)
   const supportedJwaSignatureAlgorithms = Object.values(Kms.KnownJwaSignatureAlgorithms).filter(
-    (algorithm) => kms.supportedBackendsForOperation({ operation: 'sign', algorithm }).length > 0
+    (algorithm) =>
+      !symmetricJwaSignatureAlgorithms.includes(algorithm) &&
+      kms.supportedBackendsForOperation({ operation: 'sign', algorithm }).length > 0
   )
 
   return supportedJwaSignatureAlgorithms

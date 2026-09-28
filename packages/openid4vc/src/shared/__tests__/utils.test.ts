@@ -1,7 +1,7 @@
 import { generateKeyPairSync } from 'node:crypto'
 import { Kms } from '@credo-ts/core'
 import { getAgentContext } from '../../../../core/tests'
-import { getSupportedResponseEncryptionJwks } from '../utils'
+import { getSupportedJwaSignatureAlgorithms, getSupportedResponseEncryptionJwks } from '../utils'
 
 const ecJwk = (namedCurve: string) =>
   generateKeyPairSync('ec', { namedCurve }).publicKey.export({ format: 'jwk' }) as Record<string, unknown>
@@ -50,5 +50,29 @@ describe('getSupportedResponseEncryptionJwks', () => {
     ).toEqual({
       keys: [x25519, p256, p521],
     })
+  })
+})
+
+describe('getSupportedJwaSignatureAlgorithms', () => {
+  test('does not return symmetric algorithms, even if the kms supports them', () => {
+    const agentContext = getAgentContext()
+
+    const supportedAlgorithms = getSupportedJwaSignatureAlgorithms(agentContext)
+
+    expect(supportedAlgorithms).toEqual(expect.arrayContaining(['ES256', 'EdDSA']))
+    expect(supportedAlgorithms).not.toContain('HS256')
+    expect(supportedAlgorithms).not.toContain('HS384')
+    expect(supportedAlgorithms).not.toContain('HS512')
+  })
+
+  test('returns no algorithms if the kms only supports symmetric algorithms', () => {
+    const hmacOnlyBackend = {
+      backend: 'hmac-only',
+      isOperationSupported: (_agentContext: unknown, operation: Kms.KmsOperation) =>
+        operation.operation === 'sign' && operation.algorithm.startsWith('HS'),
+    } as unknown as Kms.KeyManagementService
+    const agentContext = getAgentContext({ kmsBackends: [hmacOnlyBackend] })
+
+    expect(getSupportedJwaSignatureAlgorithms(agentContext)).toEqual([])
   })
 })
