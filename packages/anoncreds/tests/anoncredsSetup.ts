@@ -39,7 +39,6 @@ import {
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import type {
-  AnonCredsDidCommOfferCredentialFormat,
   AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRegisterRevocationRegistryDefinitionOptions,
   AnonCredsRegisterRevocationStatusListOptions,
@@ -52,7 +51,9 @@ import type {
   RegisterRevocationStatusListReturnStateFinished,
   RegisterSchemaReturnStateFinished,
 } from '../src'
-import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService, AnonCredsModule } from '../src'
+import { AnonCredsModule } from '../src'
+import type { AnonCredsDidCommOfferCredentialFormat } from '../src/didcomm'
+import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService } from '../src/didcomm'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'

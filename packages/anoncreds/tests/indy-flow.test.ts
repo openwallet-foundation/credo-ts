@@ -16,11 +16,13 @@ import {
   AnonCredsVerifierServiceSymbol,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
-  LegacyIndyDidCommCredentialFormatService,
-  LegacyIndyDidCommProofFormatService,
   parseIndyCredentialDefinitionId,
   parseIndySchemaId,
 } from '@credo-ts/anoncreds'
+import {
+  LegacyIndyDidCommCredentialFormatService,
+  LegacyIndyDidCommProofFormatService,
+} from '@credo-ts/anoncreds/didcomm'
 import type { DidRepository } from '@credo-ts/core'
 import {
   CacheModuleConfig,
