@@ -22,6 +22,7 @@ import {
   DidCommCredentialPreviewAttribute,
   DidCommCredentialRole,
   DidCommCredentialState,
+  DidCommDataIntegrityCredentialFormatService,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
@@ -42,7 +43,6 @@ import {
   AnonCredsVerifierServiceSymbol,
 } from '../src'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
-import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
@@ -101,7 +101,7 @@ const agentContext = getAgentContext({
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 
-const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
+const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService()
 
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
