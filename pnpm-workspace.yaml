@@ -4,6 +4,19 @@ packages:
   - demo-openid
   - samples/*
 
+allowBuilds:
+  '@hyperledger/anoncreds-nodejs': true
+  '@hyperledger/indy-vdr-nodejs': true
+  '@openwallet-foundation/askar-nodejs': true
+  cbor-extract: true
+  cpu-features: true
+  esbuild: true
+  koffi: true
+  protobufjs: true
+  secp256k1: true
+  ssh2: true
+  zstd-napi: true
+
 catalog:
   '@animo-id/pex': ^6.1.1
   '@astronautlabs/jsonpath': ^1.1.2
@@ -41,18 +54,3 @@ catalog:
   vitest: ^4.1.11
   ws: ^8.19.0
   zod: ^4.6.5
-
-ignoredBuiltDependencies:
-  - es5-ext
-  - esbuild
-  - protobufjs
-  - secp256k1
-
-onlyBuiltDependencies:
-  - '@biomejs/biome'
-  - '@hyperledger/anoncreds-nodejs'
-  - '@hyperledger/indy-vdr-nodejs'
-  - '@openwallet-foundation/askar-nodejs'
-  - cbor-extract
-  - koffi
-  - zstd-napi
