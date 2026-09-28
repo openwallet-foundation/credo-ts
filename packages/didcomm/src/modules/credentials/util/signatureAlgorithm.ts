@@ -1,22 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 import { CredoError, Kms } from '@credo-ts/core'
 
-/**
- * Returns the JWA signature algorithms the agent can sign with, based on the registered key
- * management backends.
- */
-export function getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): Kms.KnownJwaSignatureAlgorithm[] {
-  const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-
-  return Object.values(Kms.KnownJwaSignatureAlgorithms).filter(
-    (algorithm) =>
-      kms.supportedBackendsForOperation({
-        operation: 'sign',
-        algorithm,
-      }).length > 0
-  )
-}
-
 export interface SelectJwaSignatureAlgorithmOptions {
   /**
    * The key that will be used to sign.
@@ -41,7 +25,9 @@ export function selectJwaSignatureAlgorithm(
   agentContext: AgentContext,
   { publicJwk, requestedAlg }: SelectJwaSignatureAlgorithmOptions
 ): Kms.KnownJwaSignatureAlgorithm {
-  const agentSupportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext)
+  const agentSupportedAlgs = agentContext.dependencyManager
+    .resolve(Kms.KeyManagementApi)
+    .supportedJwaSignatureAlgorithms()
   const candidateAlgs = publicJwk.supportedSignatureAlgorithms.filter((algorithm) =>
     agentSupportedAlgs.includes(algorithm)
   )

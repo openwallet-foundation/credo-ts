@@ -4,7 +4,7 @@ import { agentDependencies } from '../../../../core/tests'
 import { DidCommConnectionInvitationMessage } from '../../modules/connections'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../../modules/oob'
 import { convertToNewInvitation } from '../../modules/oob/converters'
-import { oobInvitationFromShortUrl, parseInvitationShortUrl } from '../parseInvitation'
+import { oobInvitationFromShortUrl, parseInvitationShortUrl, parseInvitationUrl } from '../parseInvitation'
 
 const mockOobInvite = {
   '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band/1.0/invitation',
@@ -218,5 +218,44 @@ describe('shortened urls resolving to connection invitations', () => {
     )
     const short = await oobInvitationFromShortUrl(mockedResponseConnectionInOobUrl)
     expect(short).toEqual(expectedOobMessage)
+  })
+})
+
+describe('invitation url encoding', () => {
+  test('parses an oob invitation with padded base64url', () => {
+    const encoded = `${JsonEncoder.toBase64Url(mockOobInvite)}==`
+    expect(JsonEncoder.toBase64(mockOobInvite)).toMatch(/[^=]==$/)
+
+    expect(parseInvitationUrl(`https://example.com?oob=${encoded}`)).toEqual(outOfBandInvitationMock)
+  })
+
+  test('parses an oob invitation with url-encoded base64url padding', () => {
+    const encoded = `${JsonEncoder.toBase64Url(mockOobInvite)}%3D%3D`
+
+    expect(parseInvitationUrl(`https://example.com?oob=${encoded}`)).toEqual(outOfBandInvitationMock)
+  })
+
+  test('parses an oob invitation encoded as standard base64', () => {
+    const invite = { ...mockOobInvite, label: 'Alice & Bob >>' }
+    const encoded = JsonEncoder.toBase64(invite)
+    expect(encoded).toContain('+')
+
+    const parsed = parseInvitationUrl(`https://example.com?oob=${encodeURIComponent(encoded)}`)
+    expect(parsed.label).toEqual('Alice & Bob >>')
+  })
+
+  test('parses a legacy connectionless invitation with padded base64url d_m', async () => {
+    const message = { ...mockLegacyConnectionless, comment: 'abc' }
+    expect(JsonEncoder.toBase64(message)).toMatch(/==$/)
+
+    const parsed = await parseInvitationShortUrl(
+      `https://example.com?d_m=${JsonEncoder.toBase64Url(message)}==`,
+      agentDependencies
+    )
+    expect(parsed.getRequests()?.[0]).toMatchObject({ comment: 'abc' })
+  })
+
+  test('throws for an invitation that is not valid base64url or base64', () => {
+    expect(() => parseInvitationUrl('https://example.com?oob=not*valid*base64')).toThrow()
   })
 })
