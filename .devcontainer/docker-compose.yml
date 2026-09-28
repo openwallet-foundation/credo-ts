@@ -1,12 +1,10 @@
-version: '3'
-
 networks:
   local_credo_network:
     name: local_credo_network
 
 services:
   credo:
-    image: mcr.microsoft.com/devcontainers/javascript-node:4-24-bookworm
+    image: mcr.microsoft.com/devcontainers/javascript-node:4.0.13-24-bookworm
     working_dir: /work
     tty: true
     volumes:
@@ -20,7 +18,7 @@ services:
   postgres:
     networks:
       - local_credo_network
-    image: postgres:18-alpine
+    image: postgres:18.6-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -48,7 +46,7 @@ services:
   cheqd-ledger:
     networks:
       - local_credo_network
-    image: ghcr.io/cheqd/cheqd-node:production-latest
+    image: ghcr.io/cheqd/cheqd-node:4.2.1
     platform: linux/amd64
     ports:
       - '26657:26657'
@@ -83,5 +81,5 @@ services:
       (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd14y3xeqd2xmhl9sxn8cf974k6nntqrveufqpqrs 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
       sleep 2 &&
       (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd10qh2vl0jrax6yh2mzes03cm6vt27vd47geu375 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
-      wait $RUN_TESTNET_PID;
+      wait $$RUN_TESTNET_PID;
       ' 
