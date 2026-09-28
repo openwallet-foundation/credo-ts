@@ -29,3 +29,29 @@
 <br />
 
 Credo AnonCreds provides AnonCreds capabilities of Credo. See the [AnonCreds Setup](https://credo.js.org/guides/getting-started/set-up/anoncreds) for installation instructions.
+
+## Package entry points
+
+Import the AnonCreds module, services, repositories, models, and W3C proof APIs from the package root:
+
+```ts
+import {
+  AnonCredsModule,
+  AnonCredsW3cCredentialProof,
+  ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE,
+} from '@credo-ts/anoncreds'
+```
+
+Import the AnonCreds and legacy Indy DIDComm formats and protocols from the DIDComm integration entry point:
+
+```ts
+import {
+  AnonCredsDidCommCredentialFormatService,
+  AnonCredsDidCommProofFormatService,
+  DidCommCredentialV1Protocol,
+  DidCommProofV1Protocol,
+} from '@credo-ts/anoncreds/didcomm'
+```
+
+The DIDComm APIs are no longer exported from the `@credo-ts/anoncreds` package root. This change only affects
+their import paths; AnonCreds support for DIDComm credential and proof exchanges is unchanged.

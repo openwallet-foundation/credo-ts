@@ -1,8 +1,11 @@
 {
   "name": "@credo-ts/hedera",
   "exports": {
-    "cli": "./build/index.mjs",
-    "import": "./src/index.ts"
+    ".": {
+      "cli": "./build/index.mjs",
+      "import": "./src/index.ts"
+    },
+    "./anoncreds": "./src/anoncreds/index.ts"
   },
   "version": "0.7.1",
   "files": [
@@ -15,6 +18,11 @@
     "module": "./build/index.mjs",
     "exports": {
       ".": "./build/index.mjs",
+      "./anoncreds": {
+        "import": "./build/anoncreds/index.mjs",
+        "require": "./build/anoncreds/index.mjs",
+        "types": "./build/anoncreds/index.d.mts"
+      },
       "./package.json": "./package.json"
     }
   },
@@ -29,10 +37,8 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@hashgraph/sdk": "^2.80.0",
-    "@hiero-did-sdk/anoncreds": "^0.1.8",
     "@hiero-did-sdk/cache": "^0.1.8",
     "@hiero-did-sdk/client": "^0.1.8",
     "@hiero-did-sdk/core": "^0.1.8",
@@ -43,8 +49,22 @@
     "buffer": "^6.0.3"
   },
   "devDependencies": {
+    "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/node": "workspace:*",
+    "@hiero-did-sdk/anoncreds": "^0.1.8",
     "@hyperledger/anoncreds-nodejs": "catalog:",
     "zstd-napi": "^0.0.13"
+  },
+  "peerDependencies": {
+    "@credo-ts/anoncreds": "workspace:*",
+    "@hiero-did-sdk/anoncreds": "^0.1.8"
+  },
+  "peerDependenciesMeta": {
+    "@credo-ts/anoncreds": {
+      "optional": true
+    },
+    "@hiero-did-sdk/anoncreds": {
+      "optional": true
+    }
   }
 }

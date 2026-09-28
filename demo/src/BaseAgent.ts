@@ -1,21 +1,16 @@
+import { AnonCredsModule } from '@credo-ts/anoncreds'
 import {
   AnonCredsDidCommCredentialFormatService,
   AnonCredsDidCommProofFormatService,
-  AnonCredsModule,
   DidCommCredentialV1Protocol,
   DidCommProofV1Protocol,
   LegacyIndyDidCommCredentialFormatService,
   LegacyIndyDidCommProofFormatService,
-} from '@credo-ts/anoncreds'
+} from '@credo-ts/anoncreds/didcomm'
 import type { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
 import { AskarModule } from '@credo-ts/askar'
-import {
-  CheqdAnonCredsRegistry,
-  CheqdDidRegistrar,
-  CheqdDidResolver,
-  CheqdModule,
-  CheqdModuleConfig,
-} from '@credo-ts/cheqd'
+import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule, CheqdModuleConfig } from '@credo-ts/cheqd'
+import { CheqdAnonCredsRegistry } from '@credo-ts/cheqd/anoncreds'
 import { Agent, DidsModule } from '@credo-ts/core'
 import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import {
@@ -26,7 +21,8 @@ import {
   DidCommModule,
   DidCommProofV2Protocol,
 } from '@credo-ts/didcomm'
-import { HederaAnonCredsRegistry, HederaDidRegistrar, HederaDidResolver, HederaModule } from '@credo-ts/hedera'
+import { HederaDidRegistrar, HederaDidResolver, HederaModule } from '@credo-ts/hedera'
+import { HederaAnonCredsRegistry } from '@credo-ts/hedera/anoncreds'
 import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { agentDependencies, DidCommHttpInboundTransport } from '@credo-ts/node'
