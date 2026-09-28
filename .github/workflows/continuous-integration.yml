@@ -148,6 +148,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Services start early so they boot in parallel with install; block here until healthy
+      - name: Wait for services
+        run: docker compose up -d --wait --wait-timeout 300
+
       - name: Run tests
         run: COLLECT_FAILED_TEST_LOGS=true pnpm test:e2e --coverage
 
@@ -211,6 +215,10 @@ jobs:
       # For the Drizzle ORM integration we need to build the package
       - name: Build drizzle package
         run: pnpm --filter @credo-ts/drizzle-storage run build
+
+      # Services start early so they boot in parallel with install; block here until healthy
+      - name: Wait for services
+        run: docker compose up -d --wait --wait-timeout 300
 
       - name: Run tests
         run: COLLECT_FAILED_TEST_LOGS=true pnpm test:drizzle --coverage
