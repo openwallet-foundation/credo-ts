@@ -622,6 +622,9 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         ],
       },
     })
+    if (!dcql) {
+      throw new Error('DCQL not defined')
+    }
 
     const openBadgeEntry = asArray(
       (dcql.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
@@ -692,6 +695,9 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         ],
       },
     })
+    if (!dcql2) {
+      throw new Error('DCQL not defined')
+    }
     const universityDegreeEntry = asArray(
       (dcql2.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
         .verifiableCredential
@@ -1565,7 +1571,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     }
 
     const validCredentials =
-      resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor.valid_credentials
+      resolvedAuthorizationRequest.dcql.queryResult.credential_matches.OpenBadgeCredentialDescriptor.valid_credentials
+    if (!validCredentials || validCredentials.length < 2) {
+      throw new Error('Expected at least two valid OpenBadge credentials')
+    }
 
     const { serverResponse, authorizationResponsePayload } =
       await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({

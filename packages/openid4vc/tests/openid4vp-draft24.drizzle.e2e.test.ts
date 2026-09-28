@@ -1384,7 +1384,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     ])
 
-    const presentation = presentationExchange?.presentations[0] as SdJwtVc
+    if (!presentationExchange) {
+      throw new Error('Presentation exchange not defined')
+    }
+
+    const presentation = presentationExchange.presentations[0] as SdJwtVc
     // name SHOULD NOT be disclosed
     expect(presentation.prettyClaims).not.toHaveProperty('name')
 
