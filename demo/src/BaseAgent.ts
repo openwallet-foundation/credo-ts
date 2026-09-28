@@ -21,7 +21,8 @@ import {
   DidCommModule,
   DidCommProofV2Protocol,
 } from '@credo-ts/didcomm'
-import { HederaAnonCredsRegistry, HederaDidRegistrar, HederaDidResolver, HederaModule } from '@credo-ts/hedera'
+import { HederaDidRegistrar, HederaDidResolver, HederaModule } from '@credo-ts/hedera'
+import { HederaAnonCredsRegistry } from '@credo-ts/hedera/anoncreds'
 import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { agentDependencies, DidCommHttpInboundTransport } from '@credo-ts/node'
