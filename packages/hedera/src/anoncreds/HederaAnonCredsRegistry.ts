@@ -14,6 +14,7 @@ import type {
   RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
+import { HederaModuleConfig } from '../HederaModuleConfig'
 import { HederaAnonCredsService } from './HederaAnonCredsService'
 
 export class HederaAnonCredsRegistry implements AnonCredsRegistry {
@@ -23,13 +24,15 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
   public allowsCaching = true
   public allowsLocalRecord = true
 
+  private anonCredsService?: HederaAnonCredsService
+
   public async registerSchema(
     agentContext: AgentContext,
     options: RegisterSchemaOptions
   ): Promise<RegisterSchemaReturn> {
     try {
       agentContext.config.logger.trace('Registering schema on Hedera ledger')
-      const anonCredsService = agentContext.dependencyManager.resolve(HederaAnonCredsService)
+      const anonCredsService = this.getAnonCredsService(agentContext)
       return await anonCredsService.registerSchema(agentContext, options)
     } catch (error) {
       agentContext.config.logger.debug(`Error registering schema for did '${options.schema.issuerId}'`, {
@@ -52,7 +55,7 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
   public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     try {
       agentContext.config.logger.trace(`Resolving schema '${schemaId}' from Hedera ledger`)
-      const anonCredsService = agentContext.dependencyManager.resolve(HederaAnonCredsService)
+      const anonCredsService = this.getAnonCredsService(agentContext)
       return await anonCredsService.getSchema(agentContext, schemaId)
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving schema '${schemaId}'`, {
@@ -76,7 +79,7 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
   ): Promise<RegisterCredentialDefinitionReturn> {
     try {
       agentContext.config.logger.trace('Registering credential definition on Hedera ledger')
-      const anonCredsService = agentContext.dependencyManager.resolve(HederaAnonCredsService)
+      const anonCredsService = this.getAnonCredsService(agentContext)
       return await anonCredsService.registerCredentialDefinition(agentContext, options)
     } catch (error) {
       agentContext.config.logger.error(
@@ -105,7 +108,7 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
   ): Promise<GetCredentialDefinitionReturn> {
     try {
       agentContext.config.logger.trace(`Resolving credential definition '${credentialDefinitionId}' from Hedera ledger`)
-      const anonCredsService = agentContext.dependencyManager.resolve(HederaAnonCredsService)
+      const anonCredsService = this.getAnonCredsService(agentContext)
       return await anonCredsService.getCredentialDefinition(agentContext, credentialDefinitionId)
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving credential definition '${credentialDefinitionId}'`, {
@@ -131,7 +134,7 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Registering revocation registry definition for '${options.revocationRegistryDefinition.credDefId}' on Hedera ledger`
       )
-      const anonCredsService = agentContext.dependencyManager.resolve(HederaAnonCredsService)
+      const anonCredsService = this.getAnonCredsService(agentContext)
       return await anonCredsService.registerRevocationRegistryDefinition(agentContext, options)
     } catch (error) {
       agentContext.config.logger.error(
@@ -162,7 +165,7 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Resolving revocation registry definition for '${revocationRegistryDefinitionId}' from Hedera ledger`
       )
-      const anonCredsService = agentContext.dependencyManager.resolve(HederaAnonCredsService)
+      const anonCredsService = this.getAnonCredsService(agentContext)
       return await anonCredsService.getRevocationRegistryDefinition(agentContext, revocationRegistryDefinitionId)
     } catch (error) {
       agentContext.config.logger.error(
@@ -191,7 +194,7 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Registering revocation status list for '${options.revocationStatusList.revRegDefId}' on Hedera ledger`
       )
-      const anonCredsService = agentContext.dependencyManager.resolve(HederaAnonCredsService)
+      const anonCredsService = this.getAnonCredsService(agentContext)
       return await anonCredsService.registerRevocationStatusList(agentContext, options)
     } catch (error) {
       agentContext.config.logger.error(
@@ -223,7 +226,7 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Resolving revocation status for for '${revocationRegistryId}' from Hedera ledger`
       )
-      const anonCredsService = agentContext.dependencyManager.resolve(HederaAnonCredsService)
+      const anonCredsService = this.getAnonCredsService(agentContext)
       return await anonCredsService.getRevocationStatusList(agentContext, revocationRegistryId, timestamp * 1000)
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving revocation registry status list '${revocationRegistryId}'`, {
@@ -238,5 +241,20 @@ export class HederaAnonCredsRegistry implements AnonCredsRegistry {
         revocationStatusListMetadata: {},
       }
     }
+  }
+
+  private getAnonCredsService(agentContext: AgentContext): HederaAnonCredsService {
+    if (!this.anonCredsService) {
+      const dependencyManager = agentContext.dependencyManager
+      if (!dependencyManager.isRegistered(HederaModuleConfig, true)) {
+        throw new Error(
+          'HederaModuleConfig is not registered. Add HederaModule from @credo-ts/hedera to the agent modules.'
+        )
+      }
+
+      this.anonCredsService = new HederaAnonCredsService(dependencyManager.resolve(HederaModuleConfig))
+    }
+
+    return this.anonCredsService
   }
 }

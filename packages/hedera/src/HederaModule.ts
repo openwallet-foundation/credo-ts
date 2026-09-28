@@ -1,6 +1,5 @@
 import { AgentConfig, DependencyManager, type Module } from '@credo-ts/core'
 import { Buffer } from 'buffer'
-import { HederaAnonCredsService } from './anoncreds/HederaAnonCredsService'
 import { HederaModuleConfig, type HederaModuleConfigOptions } from './HederaModuleConfig'
 import { HederaLedgerService } from './ledger'
 
@@ -22,7 +21,6 @@ export class HederaModule implements Module {
     // Register config
     dependencyManager.registerInstance(HederaModuleConfig, this.config)
     dependencyManager.registerSingleton(HederaLedgerService)
-    dependencyManager.registerSingleton(HederaAnonCredsService)
 
     // Hedera module needs Buffer to be available globally
     // If it is not available yet, we overwrite it with the

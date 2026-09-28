@@ -817,18 +817,12 @@ importers:
 
   packages/hedera:
     dependencies:
-      '@credo-ts/anoncreds':
-        specifier: workspace:*
-        version: link:../anoncreds
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
       '@hashgraph/sdk':
         specifier: ^2.80.0
         version: 2.80.0(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(react@18.3.1))
-      '@hiero-did-sdk/anoncreds':
-        specifier: ^0.1.8
-        version: 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(react@18.3.1))
       '@hiero-did-sdk/cache':
         specifier: ^0.1.8
         version: 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(react@18.3.1))
@@ -854,9 +848,15 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
     devDependencies:
+      '@credo-ts/anoncreds':
+        specifier: workspace:*
+        version: link:../anoncreds
       '@credo-ts/node':
         specifier: workspace:*
         version: link:../node
+      '@hiero-did-sdk/anoncreds':
+        specifier: ^0.1.8
+        version: 0.1.8(bn.js@5.2.5)(react-native@0.84.1(@babel/core@7.29.7)(react@18.3.1))
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
         version: 0.4.1

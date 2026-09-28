@@ -12,12 +12,13 @@ import {
   type RegisterSchemaOptions,
   type RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
-import { AgentContext } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
 import { mockFunction } from '../../../core/tests/helpers'
-import { HederaAnonCredsRegistry } from '../../src/anoncreds/HederaAnonCredsRegistry'
+import { HederaAnonCredsRegistry } from '../../src/anoncreds'
 import { HederaAnonCredsService } from '../../src/anoncreds/HederaAnonCredsService'
+import { HederaModuleConfig } from '../../src/HederaModuleConfig'
 
-const mockAnonCredsService = {
+const mockAnonCredsService = vi.hoisted(() => ({
   registerSchema: vi.fn(),
   getSchema: vi.fn(),
   registerCredentialDefinition: vi.fn(),
@@ -26,12 +27,21 @@ const mockAnonCredsService = {
   getRevocationRegistryDefinition: vi.fn(),
   registerRevocationStatusList: vi.fn(),
   getRevocationStatusList: vi.fn(),
-} as unknown as HederaAnonCredsService
+}))
+
+vi.mock('../../src/anoncreds/HederaAnonCredsService', () => ({
+  HederaAnonCredsService: vi.fn(function () {
+    return mockAnonCredsService
+  }),
+}))
+
+const mockHederaModuleConfig = {} as HederaModuleConfig
 
 const mockAgentContext = {
   dependencyManager: {
+    isRegistered: vi.fn().mockReturnValue(true),
     resolve: vi.fn().mockImplementation((cls) => {
-      if (cls === HederaAnonCredsService) return mockAnonCredsService
+      if (cls === HederaModuleConfig) return mockHederaModuleConfig
     }),
   },
   config: {
@@ -45,6 +55,17 @@ const mockAgentContext = {
 
 describe('HederaAnonCredsRegistry', () => {
   const registry: HederaAnonCredsRegistry = new HederaAnonCredsRegistry()
+
+  it('creates the AnonCreds service once from HederaModuleConfig and reuses it', async () => {
+    const localRegistry = new HederaAnonCredsRegistry()
+    vi.mocked(HederaAnonCredsService).mockClear()
+
+    await localRegistry.getSchema(mockAgentContext, 'schema-1')
+    await localRegistry.getSchema(mockAgentContext, 'schema-2')
+
+    expect(HederaAnonCredsService).toHaveBeenCalledTimes(1)
+    expect(HederaAnonCredsService).toHaveBeenCalledWith(mockHederaModuleConfig)
+  })
 
   describe('registerSchema', () => {
     const options: RegisterSchemaOptions = {
@@ -72,7 +93,7 @@ describe('HederaAnonCredsRegistry', () => {
       const result = await registry.registerSchema(mockAgentContext, options)
 
       expect(mockAgentContext.config.logger.trace).toHaveBeenCalledWith('Registering schema on Hedera ledger')
-      expect(mockAgentContext.dependencyManager.resolve).toHaveBeenCalledWith(HederaAnonCredsService)
+      expect(mockAgentContext.dependencyManager.resolve).toHaveBeenCalledWith(HederaModuleConfig)
       expect(mockAnonCredsService.registerSchema).toHaveBeenCalledWith(mockAgentContext, options)
       expect(result).toEqual(expected)
     })
@@ -94,6 +115,22 @@ describe('HederaAnonCredsRegistry', () => {
 
   describe('getSchema', () => {
     const mockSchemaId = 'mock-schema-id'
+
+    it('reports when HederaModule is not registered', async () => {
+      const dependencyManager = {
+        isRegistered: vi.fn().mockReturnValue(false),
+        resolve: vi.fn(),
+      }
+      const agentContext = {
+        ...mockAgentContext,
+        dependencyManager,
+      } as unknown as AgentContext
+
+      const result = await new HederaAnonCredsRegistry().getSchema(agentContext, mockSchemaId)
+
+      expect(result.resolutionMetadata.message).toContain('Add HederaModule from @credo-ts/hedera to the agent modules')
+      expect(dependencyManager.resolve).not.toHaveBeenCalled()
+    })
 
     it('should call anonCredsService.getSchema and return result on success', async () => {
       const expected: GetSchemaReturn = {
