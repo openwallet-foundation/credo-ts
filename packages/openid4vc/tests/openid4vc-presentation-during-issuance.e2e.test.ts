@@ -311,10 +311,22 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
     })
 
+    // The pkce code challenge from the authorization challenge request is bound to the authorization code
+    expect(resolvedAuthorization.codeVerifier).toEqual(expect.any(String))
+    await expect(
+      holder.agent.openid4vc.holder.requestToken({
+        resolvedCredentialOffer,
+        code: authorizationCode,
+        clientId: 'foo',
+        redirectUri: 'http://localhost:1234/redirect',
+      })
+    ).rejects.toThrow('Received token error response with status 400')
+
     // Request access token
     const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       code: authorizationCode,
+      codeVerifier: resolvedAuthorization.codeVerifier,
       clientId: 'foo',
       redirectUri: 'http://localhost:1234/redirect',
     })
@@ -435,6 +447,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       code: authorizationCode,
+      codeVerifier: resolvedAuthorization.codeVerifier,
       clientId: 'foo',
       redirectUri: 'http://localhost:1234/redirect',
     })
