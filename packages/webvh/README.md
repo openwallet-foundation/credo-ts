@@ -38,6 +38,9 @@ In order for this module to work, we have to inject it into the agent to access 
 
 To use the WebVh module, register it with your agent instance. Below is an example of how to configure the agent with the WebVh AnonCreds registry, DID resolver, and DID registrar:
 
+`@credo-ts/anoncreds` is an optional peer dependency of `@credo-ts/webvh`. Install it explicitly when using
+`@credo-ts/webvh/anoncreds`; it is not required when using only WebVH DID and resource functionality.
+
 ```typescript
 import { Agent, DidsModule } from '@credo-ts/core'
 import { AnonCredsModule } from '@credo-ts/anoncreds'
