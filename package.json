@@ -54,7 +54,7 @@
     "@types/ws": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "cors": "^2.8.6",
-    "drizzle-kit": "^0.31.10",
+    "drizzle-kit": "^0.31.11",
     "express": "catalog:",
     "magic-string": "^0.30.21",
     "nock": "catalog:",
