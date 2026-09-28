@@ -3,15 +3,10 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../dids'
-import { Ed25519PublicJwk } from '../../kms'
 import { SECURITY_ED25519_2018_CONTEXT_URL, SECURITY_ED25519_2020_CONTEXT_URL } from '../constants'
 import { DEFAULT_CONTEXTS } from '../jsonld/contexts'
 import { W3cJwtCredentialService } from '../jwt-vc'
-import {
-  SignatureSuiteRegistry,
-  SignatureSuiteToken,
-  type SuiteInfo,
-} from '../linked-data-proofs/SignatureSuiteRegistry'
+import { SignatureSuiteRegistry } from '../linked-data-proofs/SignatureSuiteRegistry'
 import { Ed25519Signature2018, Ed25519Signature2020 } from '../linked-data-proofs/signature-suites'
 import { W3cJsonLdCredentialService } from '../linked-data-proofs/W3cJsonLdCredentialService'
 import { W3cCredentialRepository } from '../repository'
@@ -50,24 +45,5 @@ describe('W3cCredentialsModule', () => {
 
     expect(Ed25519Signature2020.CONTEXT_URL).toBe(SECURITY_ED25519_2020_CONTEXT_URL)
     expect(Ed25519Signature2020.CONTEXT).toBe(DEFAULT_CONTEXTS[SECURITY_ED25519_2020_CONTEXT_URL])
-  })
-
-  // Remove this compatibility test when SignatureSuiteToken is removed in 0.8.
-  test('registers legacy signature suites from the deprecated token', () => {
-    const module = new W3cCredentialsModule()
-    const dependencyManager = new DependencyManager()
-    const legacySuite: SuiteInfo = {
-      suiteClass: Ed25519Signature2018,
-      verificationMethodTypes: ['LegacyVerificationMethod'],
-      proofType: 'LegacySignatureSuite',
-      supportedPublicJwkTypes: [Ed25519PublicJwk],
-    }
-
-    dependencyManager.registerInstance(SignatureSuiteToken, legacySuite)
-
-    module.register(dependencyManager)
-
-    const signatureSuiteRegistry = dependencyManager.resolve(SignatureSuiteRegistry)
-    expect(signatureSuiteRegistry.getByProofType('LegacySignatureSuite')).toBe(legacySuite)
   })
 })
