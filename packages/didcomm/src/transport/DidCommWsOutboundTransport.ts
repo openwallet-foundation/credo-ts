@@ -75,7 +75,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     }
 
     const socketId = `${endpoint}-${connectionId}`
-    const isNewSocket = !this.hasOpenSocket(socketId)
+    const isOpenSocket = this.transportTable.get(socketId)?.readyState === this.WebSocketClass.OPEN
     const socket = await this.resolveSocket({ socketId, endpoint, connectionId })
 
     // If the socket was created for this message and we don't have return routing enabled
@@ -83,13 +83,9 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     // make sure to use the socket in a manner that is compliant with the https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
     // (React Native) and https://github.com/websockets/ws (NodeJs)
     socket.send(JsonEncoder.toUint8Array(payload))
-    if (isNewSocket && !outboundPackage.responseRequested) {
+    if (isOpenSocket && !outboundPackage.responseRequested) {
       socket.close()
     }
-  }
-
-  private hasOpenSocket(socketId: string) {
-    return this.transportTable.get(socketId)?.readyState === this.WebSocketClass.OPEN
   }
 
   private async resolveSocket({
