@@ -9,12 +9,12 @@ allowBuilds:
   '@hyperledger/indy-vdr-nodejs': true
   '@openwallet-foundation/askar-nodejs': true
   cbor-extract: true
-  cpu-features: true
-  esbuild: true
+  cpu-features: false
+  esbuild: false
   koffi: true
-  protobufjs: true
-  secp256k1: true
-  ssh2: true
+  protobufjs: false
+  secp256k1: false
+  ssh2: false
   zstd-napi: true
 
 catalog:
