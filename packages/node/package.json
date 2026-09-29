@@ -35,14 +35,14 @@
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
     "@types/express": "catalog:",
+    "@types/node": "catalog:",
+    "@types/ws": "catalog:",
     "express": "catalog:",
     "hpke": "catalog:",
     "rxjs": "catalog:",
     "ws": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "catalog:",
-    "@types/ws": "catalog:",
     "nock": "catalog:",
     "typescript": "catalog:"
   }
