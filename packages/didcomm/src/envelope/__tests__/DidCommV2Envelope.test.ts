@@ -1,11 +1,17 @@
-import { Kms } from '@credo-ts/core'
+import { Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import { Agent } from '../../../../core/src/agent/Agent'
 import { JsonEncoder } from '../../../../core/src/utils/JsonEncoder'
 import { getAgentOptions } from '../../../../core/tests/helpers'
 import { DidCommTrustPingMessage } from '../../modules/connections/messages'
 import { DidCommDidExchangeRole, DidCommDidExchangeState } from '../../modules/connections/models'
 import { DidCommConnectionRecord } from '../../modules/connections/repository'
-import { findOwnKeyAgreementKey, toKeyAgreementDidUrl } from '../../modules/connections/services/helpers'
+import {
+  findOwnKeyAgreementKey,
+  toAbsoluteDidUrl,
+  toKeyAgreementDidUrl,
+} from '../../modules/connections/services/helpers'
+import { type DidCommV2EncryptedMessage, DidCommV2EnvelopeService, type DidCommV2PlaintextMessage } from '../../v2'
+import { computeApu, computeApv } from '../../v2/apuApv'
 import { DidCommV2Envelope } from '../DidCommV2Envelope'
 
 describe('DidCommV2Envelope', () => {
@@ -111,5 +117,255 @@ describe('DidCommV2Envelope', () => {
     expect(skid).toBe(keys.senderKeySkid)
     expect(plaintextMessage.from).toBe(skid.split('#')[0])
     expect(plaintextMessage.to).toBeUndefined()
+  })
+
+  it('sets from to the skid DID on a return route reply over a connection without theirDid', async () => {
+    const current = await createKeyAgreementDid()
+    const peer = await createKeyAgreementDid()
+    peer.publicJwk.keyId = peer.didUrl
+
+    const connection = new DidCommConnectionRecord({
+      role: DidCommDidExchangeRole.Responder,
+      state: DidCommDidExchangeState.Completed,
+      did: current.did,
+      didcommVersion: 'v2',
+    })
+    const envelope = agent.dependencyManager.resolve(DidCommV2Envelope)
+
+    const keys = await envelope.buildReturnRouteKeys(agent.context, {
+      senderKey: peer.publicJwk,
+      recipientKey: current.publicJwk,
+      plaintextMessage: { '@type': DidCommTrustPingMessage.type.messageTypeUri, '@id': 'ping-4' },
+      connection,
+    })
+    const encrypted = await envelope.pack(agent.context, new DidCommTrustPingMessage({}), keys, { connection })
+    const { plaintextMessage, authenticatedSenderDid } = await envelope.unpack(agent.context, encrypted)
+
+    const skidDid = JsonEncoder.fromBase64Url(encrypted.protected).skid.split('#')[0]
+    expect(plaintextMessage.from).toBe(skidDid)
+    expect(authenticatedSenderDid).toBe(skidDid)
+  })
+
+  it('sets from to the skid DID when return route keys predate a rotation of our DID', async () => {
+    const previous = await createKeyAgreementDid()
+    const current = await createKeyAgreementDid()
+    const peer = await createKeyAgreementDid()
+    peer.publicJwk.keyId = peer.didUrl
+
+    const connection = new DidCommConnectionRecord({
+      role: DidCommDidExchangeRole.Requester,
+      state: DidCommDidExchangeState.Completed,
+      did: previous.did,
+      theirDid: peer.did,
+      didcommVersion: 'v2',
+    })
+    const envelope = agent.dependencyManager.resolve(DidCommV2Envelope)
+
+    const keys = await envelope.buildReturnRouteKeys(agent.context, {
+      senderKey: peer.publicJwk,
+      recipientKey: previous.publicJwk,
+      plaintextMessage: { '@type': DidCommTrustPingMessage.type.messageTypeUri, '@id': 'ping-6', to: [previous.did] },
+      connection,
+    })
+    connection.did = current.did
+
+    const encrypted = await envelope.pack(agent.context, new DidCommTrustPingMessage({}), keys, { connection })
+    const { plaintextMessage, authenticatedSenderDid } = await envelope.unpack(agent.context, encrypted)
+
+    expect(plaintextMessage.from).toBe(previous.did)
+    expect(authenticatedSenderDid).toBe(previous.did)
+  })
+
+  it('does not pack v2 without a sender skid', async () => {
+    const sender = await createKeyAgreementDid()
+    const recipient = await createKeyAgreementDid()
+    const envelope = agent.dependencyManager.resolve(DidCommV2Envelope)
+    const keys = await envelope.buildReturnRouteKeys(agent.context, {
+      senderKey: recipient.publicJwk,
+      recipientKey: sender.publicJwk,
+      plaintextMessage: { '@type': DidCommTrustPingMessage.type.messageTypeUri, '@id': 'ping-5' },
+    })
+
+    expect(envelope.supportsPacking(keys)).toBe(true)
+    expect(envelope.supportsPacking({ ...keys, senderKeySkid: undefined })).toBe(false)
+  })
+
+  describe('authcrypt sender binding', () => {
+    const packAuthcrypt = async (
+      plaintext: Omit<DidCommV2PlaintextMessage, 'id' | 'type'>,
+      sender: Awaited<ReturnType<typeof createKeyAgreementDid>>,
+      recipient: Awaited<ReturnType<typeof createKeyAgreementDid>>
+    ) =>
+      agent.dependencyManager.resolve(DidCommV2EnvelopeService).pack(
+        agent.context,
+        { id: utils.uuid(), type: DidCommTrustPingMessage.type.messageTypeUri, ...plaintext },
+        {
+          senderKey: sender.publicJwk,
+          senderKeySkid: sender.didUrl,
+          recipientKey: recipient.publicJwk,
+          recipientKid: recipient.didUrl,
+        }
+      )
+
+    // Mirrors DidCommV2EnvelopeService.pack so a test can set headers pack never emits
+    const packAuthcryptWithHeaders = async ({
+      sender,
+      recipient,
+      skid,
+      enc,
+    }: {
+      sender: Awaited<ReturnType<typeof createKeyAgreementDid>>
+      recipient: Awaited<ReturnType<typeof createKeyAgreementDid>>
+      skid?: string
+      enc: 'A256CBC-HS512' | 'A256GCM'
+    }): Promise<DidCommV2EncryptedMessage> => {
+      const apu = computeApu(sender.didUrl)
+      const apv = computeApv([recipient.didUrl])
+      const ephemeralKey = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      const protectedHeader = JsonEncoder.toBase64Url({
+        typ: 'application/didcomm-encrypted+json',
+        alg: 'ECDH-1PU+A256KW',
+        enc,
+        ...(skid ? { skid } : {}),
+        apu: TypedArrayEncoder.toBase64Url(apu),
+        apv: TypedArrayEncoder.toBase64Url(apv),
+        epk: { kty: 'OKP', crv: 'X25519', x: (ephemeralKey.publicJwk as Kms.KmsJwkPublicOkp).x },
+      })
+      const { encrypted, iv, tag, encryptedKey } = await agent.kms.encrypt({
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-1PU+A256KW',
+            keyId: sender.publicJwk.keyId,
+            ephemeralKeyId: ephemeralKey.keyId,
+            externalPublicJwk: recipient.publicJwk.toJson() as Kms.KmsJwkPublicEcdh,
+            apu,
+            apv,
+          },
+        },
+        encryption: { algorithm: enc, aad: TypedArrayEncoder.fromUtf8String(protectedHeader) },
+        data: JsonEncoder.toUint8Array({
+          id: utils.uuid(),
+          type: DidCommTrustPingMessage.type.messageTypeUri,
+          from: sender.did,
+          to: [recipient.did],
+        }),
+      })
+      if (!iv || !tag || !encryptedKey) throw new Error('Expected iv, tag and encrypted key from KMS encrypt')
+
+      return {
+        protected: protectedHeader,
+        recipients: [
+          { header: { kid: recipient.didUrl }, encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted) },
+        ],
+        iv: TypedArrayEncoder.toBase64Url(iv),
+        ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
+        tag: TypedArrayEncoder.toBase64Url(tag),
+      }
+    }
+
+    it('recovers the sender from apu when skid is absent', async () => {
+      const sender = await createKeyAgreementDid()
+      const recipient = await createKeyAgreementDid()
+      const encrypted = await packAuthcryptWithHeaders({ sender, recipient, enc: 'A256CBC-HS512' })
+
+      const { plaintextMessage, authenticatedSenderDid } = await agent.dependencyManager
+        .resolve(DidCommV2Envelope)
+        .unpack(agent.context, encrypted)
+
+      expect(plaintextMessage.from).toBe(sender.did)
+      expect(authenticatedSenderDid).toBe(sender.did)
+    })
+
+    it('rejects a skid that does not match apu', async () => {
+      const sender = await createKeyAgreementDid()
+      const recipient = await createKeyAgreementDid()
+      const victim = await createKeyAgreementDid()
+      const encrypted = await packAuthcryptWithHeaders({ sender, recipient, skid: victim.didUrl, enc: 'A256CBC-HS512' })
+
+      await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
+        'apu in protected header does not match skid'
+      )
+    })
+
+    it('rejects authcrypt with A256GCM content encryption', async () => {
+      const sender = await createKeyAgreementDid()
+      const recipient = await createKeyAgreementDid()
+      const encrypted = await packAuthcryptWithHeaders({ sender, recipient, skid: sender.didUrl, enc: 'A256GCM' })
+
+      await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
+        'requires A256CBC-HS512 content encryption, got A256GCM'
+      )
+    })
+
+    it('binds a message without from to the skid DID', async () => {
+      const sender = await createKeyAgreementDid()
+      const recipient = await createKeyAgreementDid()
+      const encrypted = await packAuthcrypt({ to: [recipient.did] }, sender, recipient)
+
+      const { authenticatedSenderDid } = await agent.dependencyManager
+        .resolve(DidCommV2Envelope)
+        .unpack(agent.context, encrypted)
+
+      expect(authenticatedSenderDid).toBe(sender.didUrl.split('#')[0])
+    })
+
+    it('rejects a from that does not match the skid DID', async () => {
+      const sender = await createKeyAgreementDid()
+      const recipient = await createKeyAgreementDid()
+      const victim = await createKeyAgreementDid()
+      const encrypted = await packAuthcrypt({ from: victim.did, to: [recipient.did] }, sender, recipient)
+
+      await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
+        /plaintext 'from' .* does not match the authcrypt sender/
+      )
+    })
+
+    it('rejects a nested signature by someone other than the authcrypt sender', async () => {
+      const sender = await createKeyAgreementDid()
+      const recipient = await createKeyAgreementDid()
+      const signer = await createKeyAgreementDid()
+      const { didDocument, keys } = await agent.dids.resolveCreatedDidDocumentWithKeys(signer.did)
+      const [authentication] = didDocument.findVerificationMethodsByPurpose(['authentication'])
+      const signingKeyId = keys?.find((key) => authentication.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
+      if (!signingKeyId) throw new Error(`No authentication key in ${signer.did}`)
+
+      const encrypted = await agent.dependencyManager.resolve(DidCommV2EnvelopeService).packSignedAndEncrypted(
+        agent.context,
+        { id: utils.uuid(), type: DidCommTrustPingMessage.type.messageTypeUri, to: [recipient.did] },
+        { keyId: signingKeyId, kid: toAbsoluteDidUrl(didDocument.id, authentication.id), alg: 'EdDSA' },
+        {
+          senderKey: sender.publicJwk,
+          senderKeySkid: sender.didUrl,
+          recipientKey: recipient.publicJwk,
+          recipientKid: recipient.didUrl,
+        }
+      )
+
+      await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
+        /nested signer .* does not match the authcrypt sender/
+      )
+    })
+
+    it.each([
+      { case: 'names the recipient DID', to: 'recipient', warns: false },
+      { case: 'is absent', to: undefined, warns: false },
+      { case: 'names only another DID', to: 'did:example:someone-else', warns: true },
+    ])('only warns about to when it $case', async ({ to, warns }) => {
+      const sender = await createKeyAgreementDid()
+      const recipient = await createKeyAgreementDid()
+      const encrypted = await packAuthcrypt(
+        { to: to === undefined ? undefined : [to === 'recipient' ? recipient.did : to] },
+        sender,
+        recipient
+      )
+      const warn = vi.spyOn(agent.config.logger, 'warn')
+
+      try {
+        await agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)
+        expect(warn).toHaveBeenCalledTimes(warns ? 1 : 0)
+      } finally {
+        warn.mockRestore()
+      }
+    })
   })
 })

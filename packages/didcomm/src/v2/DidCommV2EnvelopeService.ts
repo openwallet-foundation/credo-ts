@@ -1,5 +1,6 @@
 import {
   AgentContext,
+  areEquivalentDidPeer4Forms,
   CredoError,
   InjectionSymbols,
   inject,
@@ -281,7 +282,7 @@ export class DidCommV2EnvelopeService {
    * @param agentContext - The agent context (for KMS access)
    * @param encrypted - The v2 encrypted message
    * @param keys - Recipient key and sender key resolver; resolveSenderKey not used for anoncrypt
-   * @returns The plaintext message and sender key (null for anoncrypt)
+   * @returns The plaintext message, the sender key (null for anoncrypt) and the proven sender kid (authcrypt only)
    */
   public async unpack(
     agentContext: AgentContext,
@@ -295,6 +296,7 @@ export class DidCommV2EnvelopeService {
   ): Promise<{
     plaintext: DidCommV2PlaintextMessage
     senderKey: DidCommV2KeyAgreementJwk | null
+    senderKid?: string
   }> {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected)
@@ -326,15 +328,11 @@ export class DidCommV2EnvelopeService {
     if (protectedJson.alg !== 'ECDH-1PU+A256KW') {
       throw new CredoError(`Unsupported pack algorithm: ${protectedJson.alg}`)
     }
-    if (enc === 'XC20P') {
-      throw new CredoError('XC20P content encryption is only valid with anoncrypt (ECDH-ES+A256KW)')
+    if (enc !== 'A256CBC-HS512') {
+      throw new CredoError(`Authcrypt (ECDH-1PU+A256KW) requires A256CBC-HS512 content encryption, got ${enc}`)
     }
 
-    const skid = protectedJson.skid as string | undefined
-    if (!skid) {
-      throw new CredoError('Authcrypt requires skid in protected header')
-    }
-    const apu = this.parseAndValidateApu(protectedJson, skid)
+    const { skid, apu } = this.resolveSenderKidAndApu(protectedJson)
     const senderKey = await keys.resolveSenderKey(skid)
     if (!senderKey) {
       throw new CredoError('Could not resolve sender key for skid')
@@ -383,7 +381,7 @@ export class DidCommV2EnvelopeService {
     const plaintext = JsonEncoder.fromUint8Array(data) as DidCommV2PlaintextMessage
     this.logger.debug('Unpacked DIDComm v2 authcrypt message', { type: plaintext.type })
 
-    return { plaintext, senderKey: senderForKdf }
+    return { plaintext, senderKey: senderForKdf, senderKid: skid }
   }
 
   private async unpackAnoncrypt(
@@ -494,7 +492,7 @@ export class DidCommV2EnvelopeService {
 
     const plaintext = JsonEncoder.fromBase64Url(signedMessage.payload) as DidCommV2PlaintextMessage
     const signerDid = kid.split('#')[0]
-    if (plaintext.from && plaintext.from !== signerDid) {
+    if (plaintext.from && !areEquivalentDidPeer4Forms(plaintext.from, signerDid)) {
       throw new CredoError(`Plaintext 'from' (${plaintext.from}) does not match signer DID (${signerDid})`)
     }
 
@@ -503,17 +501,23 @@ export class DidCommV2EnvelopeService {
     return { plaintext, signers: [{ kid, alg, jwk: signerJwk }] }
   }
 
-  private parseAndValidateApu(protectedJson: Record<string, unknown>, skid: string): Uint8Array {
-    const expected = computeApu(skid)
+  private resolveSenderKidAndApu(protectedJson: Record<string, unknown>): { skid: string; apu: Uint8Array } {
     const apuField = protectedJson.apu
-    if (typeof apuField !== 'string') {
+    if (typeof apuField !== 'string' || apuField.length === 0) {
       throw new CredoError('Authcrypt requires apu in protected header')
     }
-    const received = TypedArrayEncoder.fromBase64Url(apuField)
-    if (!constantTimeEqual(received, expected)) {
-      throw new CredoError('apu in protected header does not match skid')
+    const apu = TypedArrayEncoder.fromBase64Url(apuField)
+
+    const skid = protectedJson.skid
+    if (typeof skid === 'string' && skid.length > 0) {
+      if (!constantTimeEqual(apu, computeApu(skid))) {
+        throw new CredoError('apu in protected header does not match skid')
+      }
+      return { skid, apu }
     }
-    return received
+
+    // DIDComm v2.1: when skid is absent the sender kid MUST be recovered from apu
+    return { skid: TypedArrayEncoder.toUtf8String(apu), apu }
   }
 
   private parseAndValidateApv(
