@@ -10,7 +10,7 @@ import type { DidCommVersion } from '../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 import { normalizeV2PlaintextToV1 } from '../../../v2/normalize'
 import { mapV1AttachmentToV2, mapV2AttachmentToV1 } from '../../../v2/plaintextBuilder'
-import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from '../../../v2/types'
+import { DIDCOMM_V2_PLAIN_MIME_TYPE, type DidCommV2Attachment, type DidCommV2PlaintextMessage } from '../../../v2/types'
 
 const LINK_PARAM = '_oob'
 
@@ -88,6 +88,7 @@ export class DidCommOutOfBandInvitationV2 extends DidCommMessage {
   public toJSON(): DidCommPlaintextMessage {
     const attachments = this.attachments
     const wire = {
+      typ: DIDCOMM_V2_PLAIN_MIME_TYPE,
       type: DidCommOutOfBandInvitationV2.type.messageTypeUri,
       id: this.id,
       from: this.from,
