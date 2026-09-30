@@ -729,7 +729,11 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     const aliceAfterRotate = await aliceAgent.didcomm.connections.findById(aliceBobConnection?.id!)
     expect(aliceAfterRotate?.did).toEqual(newDid)
     expect(aliceAfterRotate?.previousDids).toContain(oldAliceDid)
-    expect(aliceAfterRotate?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.priorDid).toEqual(oldAliceDid)
+    const rotation = aliceAfterRotate?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)
+    expect(rotation?.priorDid).toEqual(oldAliceDid)
+    expect(oldAliceDid.startsWith('did:peer:4')).toBe(true)
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    expect(JsonEncoder.fromBase64Url(rotation!.fromPriorJwt.split('.')[0]).kid).toMatch(`${oldAliceDid}#`)
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     await aliceAgent.didcomm.basicMessages.sendMessage(aliceBobConnection?.id!, 'hello rotated')
