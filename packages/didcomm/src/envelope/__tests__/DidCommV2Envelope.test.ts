@@ -18,9 +18,14 @@ import {
   toKeyAgreement,
   toKeyAgreementDidUrl,
 } from '../../modules/connections/services/helpers'
-import { type DidCommV2EncryptedMessage, DidCommV2EnvelopeService, type DidCommV2PlaintextMessage } from '../../v2'
+import {
+  type DidCommV2EncryptedMessage,
+  DidCommV2EnvelopeService,
+  type DidCommV2KeyAgreementJwk,
+  type DidCommV2PlaintextMessage,
+} from '../../v2'
 import { computeApu, computeApv } from '../../v2/apuApv'
-import { DidCommV2Envelope } from '../DidCommV2Envelope'
+import { DidCommV2Envelope, wrapInV2Forward } from '../DidCommV2Envelope'
 
 describe('DidCommV2Envelope', () => {
   const agent = new Agent(
@@ -247,6 +252,28 @@ describe('DidCommV2Envelope', () => {
 
     expect((encrypted as DidCommV2EncryptedMessage).recipients[0].header.kid).toBe(recipient.didUrl)
     expect(authenticatedSenderDid).toBe(sender.did)
+  })
+
+  it('addresses a forward to the DID of a keyAgreement routing key', async () => {
+    const created = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+    const routingKey: Kms.PublicJwk = Kms.PublicJwk.fromPublicJwk(created.publicJwk)
+    routingKey.keyId = 'did:example:mediator#kx'
+    const envelopeService = agent.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const recipient = await createKeyAgreementDid()
+
+    const forward = (await wrapInV2Forward(agent.context, envelopeService, {} as DidCommV2EncryptedMessage, {
+      routingKeys: [routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>],
+      recipientKey: recipient.publicJwk,
+      contentEncryptionAlgorithm: 'A256CBC-HS512',
+    })) as DidCommV2EncryptedMessage
+    const { plaintext } = await envelopeService.unpack(agent.context, forward, {
+      recipientKey: Kms.PublicJwk.fromPublicJwk(created.publicJwk) as DidCommV2KeyAgreementJwk & { keyId: string },
+      matchedKid: 'did:example:mediator#kx',
+      resolveSenderKey: async () => null,
+    })
+
+    expect(forward.recipients[0].header.kid).toBe('did:example:mediator#kx')
+    expect(plaintext.to).toEqual(['did:example:mediator'])
   })
 
   describe('authcrypt sender binding', () => {
