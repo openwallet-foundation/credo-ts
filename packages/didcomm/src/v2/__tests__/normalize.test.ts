@@ -1,6 +1,7 @@
 import { JsonTransformer } from '@credo-ts/core'
 
 import { DidCommTrustPingMessage } from '../../modules/connections/messages/DidCommTrustPingMessage'
+import { DidCommForwardV2Message } from '../../modules/routing/protocol/v2/messages/DidCommForwardV2Message'
 import { normalizeV2PlaintextToV1 } from '../normalize'
 import type { DidCommV2PlaintextMessage } from '../types'
 
@@ -264,6 +265,30 @@ describe('normalizeV2PlaintextToV1', () => {
       'mime-type': 'application/json',
       data: { base64: 'e30=' },
     })
+  })
+
+  it('adds the application/ prefix to an attachment media_type that has no slash', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'forward-msg-1',
+      type: 'https://didcomm.org/routing/2.0/forward',
+      to: ['did:example:mediator'],
+      body: { next: 'did:example:bob' },
+      attachments: [{ id: 'att-1', media_type: 'didcomm-encrypted+json', data: { json: { ciphertext: 'x' } } }],
+    })
+    const message = JsonTransformer.fromJSON(v1, DidCommForwardV2Message)
+    expect(message.appendedAttachments?.[0].mimeType).toBe('application/didcomm-encrypted+json')
+  })
+
+  it('keeps a null attachment media_type as is', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      id: 'forward-msg-1',
+      type: 'https://didcomm.org/routing/2.0/forward',
+      to: ['did:example:mediator'],
+      body: { next: 'did:example:bob' },
+      attachments: [{ id: 'att-1', media_type: null as unknown as string, data: { json: { ciphertext: 'x' } } }],
+    })
+    const message = JsonTransformer.fromJSON(v1, DidCommForwardV2Message)
+    expect(message.appendedAttachments?.[0].mimeType).toBeNull()
   })
 
   it('passes through created_time and expires_time', () => {

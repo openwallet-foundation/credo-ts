@@ -35,7 +35,11 @@ export function mapV2AttachmentToV1(v2: DidCommV2Attachment): Record<string, unk
   }
   if (v2.description !== undefined) v1.description = v2.description
   if (v2.filename !== undefined) v1.filename = v2.filename
-  if (v2.media_type !== undefined) v1['mime-type'] = v2.media_type
+  // Spec v2.1 IANA Media Types: a media type without a slash has an implied application/ prefix
+  if (v2.media_type !== undefined) {
+    v1['mime-type'] =
+      typeof v2.media_type === 'string' && !v2.media_type.includes('/') ? `application/${v2.media_type}` : v2.media_type
+  }
   if (v2.format !== undefined) v1.format = v2.format
   if (v2.lastmod_time !== undefined) v1.lastmod_time = v2.lastmod_time
   if (v2.byte_count !== undefined) v1.byte_count = v2.byte_count

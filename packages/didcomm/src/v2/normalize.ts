@@ -1,23 +1,6 @@
 import type { DidCommPlaintextMessage } from '../types'
-import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from './types'
-
-/**
- * Map a v2 attachment to v1 ~attach format.
- * v2: id, media_type, data; v1: @id, mime-type, data.
- */
-function mapV2AttachmentToV1(att: DidCommV2Attachment): Record<string, unknown> {
-  const v1: Record<string, unknown> = {
-    '@id': att.id,
-    data: att.data,
-  }
-  if (att.description !== undefined) v1.description = att.description
-  if (att.filename !== undefined) v1.filename = att.filename
-  if (att.media_type !== undefined) v1['mime-type'] = att.media_type
-  if (att.format !== undefined) v1.format = att.format
-  if (att.lastmod_time !== undefined) v1.lastmod_time = att.lastmod_time
-  if (att.byte_count !== undefined) v1.byte_count = att.byte_count
-  return v1
-}
+import { mapV2AttachmentToV1 } from './plaintextBuilder'
+import type { DidCommV2PlaintextMessage } from './types'
 
 const reservedBodyKeys = [
   '@id',
