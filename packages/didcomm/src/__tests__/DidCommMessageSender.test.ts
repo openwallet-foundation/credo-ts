@@ -180,7 +180,6 @@ describe('DidCommMessageSender', () => {
       })
       outboundTransport = new DummyHttpOutboundTransport()
       messageSender = new DidCommMessageSender(
-        enveloperService,
         buildEnvelopeRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,
@@ -582,7 +581,6 @@ describe('DidCommMessageSender', () => {
       outboundTransport = new DummyHttpOutboundTransport()
       didCommModuleConfig.outboundTransports = [outboundTransport]
       messageSender = new DidCommMessageSender(
-        enveloperService,
         buildEnvelopeRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,
@@ -726,7 +724,6 @@ describe('DidCommMessageSender', () => {
       outboundTransport = new DummyHttpOutboundTransport()
       didCommModuleConfig.outboundTransports = [outboundTransport]
       messageSender = new DidCommMessageSender(
-        enveloperService,
         buildEnvelopeRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,
@@ -785,7 +782,6 @@ describe('DidCommMessageSender', () => {
         queueTransportRepository: new InMemoryQueueTransportRepository(),
       })
       const messageSender = new DidCommMessageSender(
-        enveloperService,
         buildEnvelopeRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,

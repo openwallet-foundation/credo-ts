@@ -18,7 +18,6 @@ import {
 } from '@credo-ts/core'
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
-import { DidCommEnvelopeService } from './DidCommEnvelopeService'
 import type { DidCommMessageSentEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import type { DidCommMessage } from './DidCommMessage'
@@ -44,7 +43,6 @@ export interface TransportPriorityOptions {
 
 @injectable()
 export class DidCommMessageSender {
-  private envelopeService: DidCommEnvelopeService
   private envelopeRegistry: DidCommEnvelopeRegistry
   private transportService: DidCommTransportService
   private didCommModuleConfig: DidCommModuleConfig
@@ -52,14 +50,12 @@ export class DidCommMessageSender {
   private eventEmitter: EventEmitter
 
   public constructor(
-    envelopeService: DidCommEnvelopeService,
     envelopeRegistry: DidCommEnvelopeRegistry,
     transportService: DidCommTransportService,
     didCommModuleConfig: DidCommModuleConfig,
     didCommDocumentService: DidCommDocumentService,
     eventEmitter: EventEmitter
   ) {
-    this.envelopeService = envelopeService
     this.envelopeRegistry = envelopeRegistry
     this.transportService = transportService
     this.didCommModuleConfig = didCommModuleConfig
@@ -451,10 +447,11 @@ export class DidCommMessageSender {
       const keys = {
         recipientKeys: queueService.recipientKeys,
         routingKeys: queueService.routingKeys,
-        senderKey: senderVerificationMethod.publicJwk,
+        senderKey: effectiveSenderKey,
+        senderKeySkid: effectiveSenderKeySkid,
       }
 
-      const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
+      const encryptedMessage = await this.encryptMessage(agentContext, { message, keys, connection })
       await this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, {
         connectionId: connection.id,
         recipientDids: keys.recipientKeys.map((item) => new DidKey(item).did),

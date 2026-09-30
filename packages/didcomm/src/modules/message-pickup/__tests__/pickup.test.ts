@@ -396,6 +396,7 @@ describe('E2E Pick Up protocol', () => {
     }
     expect(await queuedCount()).toBe(11)
 
+    const basicMessagePromise = waitForBasicMessage(recipientAgent, { content: 'hello pickup V4 10' })
     await recipientAgent.didcomm.messagePickup.pickupMessages({
       connectionId: recipientMediatorConnection.id,
       protocolVersion: 'v4',
@@ -403,5 +404,6 @@ describe('E2E Pick Up protocol', () => {
     })
 
     expect(await queuedCount()).toBe(0)
+    expect((await basicMessagePromise).content).toBe('hello pickup V4 10')
   }, 60000)
 })
