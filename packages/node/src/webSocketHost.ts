@@ -4,7 +4,7 @@ import { WebSocketServer } from 'ws'
 /**
  * Accepts connections from {@link WebSocketHost}. Satisfied structurally by the DIDComm WebSocket inbound transport.
  */
-export interface WebSocketHostAcceptor {
+interface WebSocketHostAcceptor {
   accept(socket: WebSocket): void
 }
 
