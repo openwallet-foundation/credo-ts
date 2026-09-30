@@ -661,6 +661,7 @@ export class DidCommMessageSender {
                   ? svc.serviceEndpoint
                   : (svc.serviceEndpoint as { uri?: string })?.uri
             let routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
+            const isV2Connection = (connection.didcommVersion ?? 'v1') === 'v2'
             // When endpoint is a DID (e.g. routing DID), resolve to get transport URL and mediator's keys for Forward.
             // Dedupe by X25519 fingerprint: a mediator's Ed25519 authentication VM and X25519 keyAgreement VM
             // are the same physical key (birational map) and must count as ONE hop. Without dedup, the sender
@@ -699,7 +700,7 @@ export class DidCommMessageSender {
                     byX25519Fp.set(fingerprint, publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
                   }
                 }
-                routingKeys = Array.from(byX25519Fp.values())
+                routingKeys = Array.from(byX25519Fp.values()).slice(0, isV2Connection ? 1 : undefined)
                 const firstSvc = routingDoc.service?.[0]
                 if (firstSvc) {
                   const resolved =
@@ -719,7 +720,6 @@ export class DidCommMessageSender {
               // For v2 connections, use only keyAgreement VMs (X25519) — DIDComm v2 spec requires
               // the kid to be a keyAgreement VM DID URL. For v1, include both authentication and
               // keyAgreement for backwards compatibility.
-              const isV2Connection = (connection.didcommVersion ?? 'v1') === 'v2'
               const keyRefs = isV2Connection
                 ? [...(didDocument.keyAgreement ?? [])]
                 : [...(didDocument.authentication ?? []), ...(didDocument.keyAgreement ?? [])]

@@ -135,7 +135,8 @@ export class DidCommDocumentService {
    */
   private expandV2EndpointIfRoutingDid(
     endpoint: string,
-    routingKeysFromRefs: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+    routingKeysFromRefs: Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
+    singleHop = false
   ): { endpoint: string; routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] } {
     if (!endpoint.startsWith('did:')) {
       return { endpoint, routingKeys: routingKeysFromRefs }
@@ -179,7 +180,8 @@ export class DidCommDocumentService {
         addKey(getPublicJwkFromVerificationMethod(vm))
       }
 
-      const nestedRoutingKeys = Array.from(byX25519Fingerprint.values())
+      // A DID endpoint adds one hop: https://identity.foundation/didcomm-messaging/spec/v2.1/#using-a-did-as-an-endpoint
+      const nestedRoutingKeys = Array.from(byX25519Fingerprint.values()).slice(0, singleHop ? 1 : undefined)
 
       let resolvedEndpoint = endpoint
       const firstSvc = routingDoc.service?.[0]
@@ -332,7 +334,7 @@ export class DidCommDocumentService {
               : (didCommService.serviceEndpoint as { uri?: string })?.uri
         if (endpoint) {
           const routingKeys = await this.resolveRoutingKeyReferences(agentContext, routingKeyRefs)
-          const expanded = this.expandV2EndpointIfRoutingDid(endpoint, routingKeys)
+          const expanded = this.expandV2EndpointIfRoutingDid(endpoint, routingKeys, true)
           resolvedServices.push({
             id: didCommService.id,
             recipientKeys: recipientKeys as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
