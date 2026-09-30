@@ -93,4 +93,23 @@ describe('DidCommV2Envelope', () => {
     expect(keys.senderKey?.fingerprint).toBe(addressedKey.fingerprint)
     expect(keys.senderKeySkid).toBe(toKeyAgreementDidUrl(addressedKey))
   })
+
+  it('sets from to the skid DID on a connectionless authcrypt message', async () => {
+    const sender = await createKeyAgreementDid()
+    const recipient = await createKeyAgreementDid()
+    const envelope = agent.dependencyManager.resolve(DidCommV2Envelope)
+
+    const keys = await envelope.buildReturnRouteKeys(agent.context, {
+      senderKey: recipient.publicJwk,
+      recipientKey: sender.publicJwk,
+      plaintextMessage: { '@type': DidCommTrustPingMessage.type.messageTypeUri, '@id': 'ping-2' },
+    })
+    const encrypted = await envelope.pack(agent.context, new DidCommTrustPingMessage({}), keys)
+    const { plaintextMessage } = await envelope.unpack(agent.context, encrypted)
+
+    const skid = JsonEncoder.fromBase64Url(encrypted.protected).skid
+    expect(skid).toBe(keys.senderKeySkid)
+    expect(plaintextMessage.from).toBe(skid.split('#')[0])
+    expect(plaintextMessage.to).toBeUndefined()
+  })
 })
