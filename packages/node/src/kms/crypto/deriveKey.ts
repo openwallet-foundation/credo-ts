@@ -2,16 +2,15 @@ import { Buffer } from 'node:buffer'
 import {
   createCipheriv,
   createDecipheriv,
-  createECDH,
   createHash,
   createPrivateKey,
   createPublicKey,
   diffieHellman,
   getRandomValues,
-  subtle,
 } from 'node:crypto'
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
-import type { NodeKmsSupportedEcCrvs } from './createKey'
+import { createEcKey, createOkpKey, type NodeKmsSupportedEcCrvs } from './createKey'
+import { performEncrypt } from './encrypt'
 
 const nodeSupportedEcdhKeyDerivationEcCrv = [
   'P-256',
@@ -27,6 +26,13 @@ export const nodeSupportedKeyAgreementAlgorithms = [
   'ECDH-ES+A256KW',
   'ECDH-1PU+A256KW',
 ] satisfies Kms.KnownJwaKeyAgreementAlgorithm[]
+
+// draft-madden-jose-ecdh-1pu-04 section 2.1: key wrapping mode MUST reject content encryption other than AES_CBC_HMAC_SHA2
+export const nodeSupportedEcdh1PuContentEncryptionAlgorithms = [
+  'A128CBC-HS256',
+  'A192CBC-HS384',
+  'A256CBC-HS512',
+] as const satisfies Kms.KnownJwaContentEncryptionAlgorithm[]
 
 function assertNodeSupportedEcdhKeyDerivationCrv<Jwk extends Kms.KmsJwkPrivateAsymmetric | Kms.KmsJwkPublicAsymmetric>(
   jwk: Jwk
@@ -46,7 +52,20 @@ type NodeSupportedKeyAgreementDecryptOptions = Kms.KmsKeyAgreementDecryptOptions
   algorithm: (typeof nodeSupportedKeyAgreementAlgorithms)[number]
 }
 type NodeSupportedKeyAgreementEncryptOptions = Kms.KmsKeyAgreementEncryptOptions & {
-  algorithm: (typeof nodeSupportedKeyAgreementAlgorithms)[number]
+  algorithm: Exclude<(typeof nodeSupportedKeyAgreementAlgorithms)[number], 'ECDH-1PU+A256KW'>
+}
+
+function assertNodeSupportedEcdh1PuContentEncryptionAlgorithm<
+  Encryption extends Kms.KmsEncryptDataContentEncryption | Kms.KmsDecryptDataContentDecryption,
+>(
+  encryption: Encryption
+): asserts encryption is Encryption & { algorithm: (typeof nodeSupportedEcdh1PuContentEncryptionAlgorithms)[number] } {
+  if (!(nodeSupportedEcdh1PuContentEncryptionAlgorithms as readonly string[]).includes(encryption.algorithm)) {
+    throw new Kms.KeyManagementAlgorithmNotSupportedError(
+      `content encryption algorithm '${encryption.algorithm}' with key agreement algorithm 'ECDH-1PU+A256KW'`,
+      'node'
+    )
+  }
 }
 
 // Default IV from RFC 3394 section 2.2.3.1
@@ -58,13 +77,6 @@ export async function deriveEncryptionKey(options: {
   encryption: Kms.KmsEncryptDataContentEncryption
 }) {
   const { keyAgreement, encryption, privateJwk } = options
-
-  if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
-    return deriveEncryptionKeyEcdh1Pu({
-      keyAgreement,
-      privateJwk: privateJwk as Kms.KmsJwkPrivateOkp,
-    })
-  }
 
   assertNodeSupportedEcdhKeyDerivationCrv(keyAgreement.externalPublicJwk)
   assertNodeSupportedEcdhKeyDerivationCrv(privateJwk)
@@ -99,11 +111,10 @@ export async function deriveEncryptionKey(options: {
   const contentEncryptionKeyBytes = getRandomValues(
     new Uint8Array(mapContentEncryptionAlgorithmToKeyLength(encryption.algorithm) >> 3)
   )
-  const cipher = createCipheriv(`id-aes${keyLength}-wrap`, derivedKeyBytes, aesKeyWrapIv)
 
   return {
     encryptedContentEncryptionKey: {
-      encrypted: Buffer.concat([cipher.update(contentEncryptionKeyBytes), cipher.final()]),
+      encrypted: aesKeyWrap(derivedKeyBytes, contentEncryptionKeyBytes),
     } satisfies Kms.KmsEncryptedKey,
     contentEncryptionKey: {
       kty: 'oct',
@@ -112,58 +123,55 @@ export async function deriveEncryptionKey(options: {
   }
 }
 
-async function deriveEncryptionKeyEcdh1Pu(options: {
+/**
+ * ECDH-1PU key wrapping mode (draft-madden-jose-ecdh-1pu-04 section 2.1). The content is encrypted first
+ * because its authentication tag is an input to the key derivation.
+ */
+export async function encryptEcdh1Pu(options: {
   keyAgreement: Kms.KmsKeyAgreementEncryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
-  privateJwk: Kms.KmsJwkPrivateOkp
-}) {
-  const { keyAgreement, privateJwk } = options
-  if (privateJwk.crv !== 'X25519' || keyAgreement.externalPublicJwk.crv !== 'X25519') {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError('ECDH-1PU+A256KW requires X25519 keys', 'node')
-  }
+  encryption: Kms.KmsEncryptDataContentEncryption
+  senderPrivateJwk: Kms.KmsJwkPrivateAsymmetric
+  ephemeralPrivateJwk?: Kms.KmsJwkPrivateAsymmetric
+  data: Uint8Array
+}): Promise<Kms.KmsEncryptReturn> {
+  const { keyAgreement, encryption, senderPrivateJwk, data } = options
+  assertNodeSupportedEcdh1PuContentEncryptionAlgorithm(encryption)
 
-  const ecdh = createECDH('x25519')
-  const ephemeralPrivate = getRandomValues(new Uint8Array(32))
-  ecdh.setPrivateKey(Buffer.from(ephemeralPrivate))
-  const recipientPub = Kms.PublicJwk.fromPublicJwk(keyAgreement.externalPublicJwk).publicKey
-  if (recipientPub.kty !== 'OKP') throw new Kms.KeyManagementError('X25519 expected')
-  const z1 = ecdh.computeSecret(recipientPub.publicKey)
+  const recipientPublicJwk = keyAgreement.externalPublicJwk
+  const ephemeralPrivateJwk =
+    options.ephemeralPrivateJwk ??
+    (
+      await (recipientPublicJwk.kty === 'OKP'
+        ? createOkpKey({ kty: 'OKP', crv: 'X25519' })
+        : createEcKey({ kty: 'EC', crv: recipientPublicJwk.crv }))
+    ).privateJwk
+  Kms.assertAsymmetricJwkKeyTypeMatches(ephemeralPrivateJwk, recipientPublicJwk)
 
-  const senderEcdh = createECDH('x25519')
-  senderEcdh.setPrivateKey(TypedArrayEncoder.fromBase64(privateJwk.d))
-  const z2 = senderEcdh.computeSecret(recipientPub.publicKey)
+  const contentEncryptionKeyBytes = getRandomValues(
+    new Uint8Array(mapContentEncryptionAlgorithmToKeyLength(encryption.algorithm) >> 3)
+  )
+  const { encrypted, iv, tag } = await performEncrypt(
+    { kty: 'oct', k: TypedArrayEncoder.toBase64Url(contentEncryptionKeyBytes) },
+    encryption,
+    data
+  )
+  if (!tag) throw new Kms.KeyManagementError('Expected authentication tag from content encryption')
 
-  const Z = Buffer.concat([Buffer.from(z1), Buffer.from(z2)])
-  const algorithmId = Buffer.from('ECDH-1PU+A256KW')
-  const otherInfo = Buffer.concat([
-    numberTo4ByteUint8Array(algorithmId.length),
-    algorithmId,
-    numberTo4ByteUint8Array(0),
-    numberTo4ByteUint8Array(0),
-    numberTo4ByteUint8Array(256),
-    Buffer.alloc(0),
-  ])
-  const kek = concatKDF(Z, 256, otherInfo)
-
-  const derivedKey = await subtle.importKey('raw', kek, 'AES-KW', true, ['wrapKey'])
-  const cekBytes = Buffer.from(getRandomValues(new Uint8Array(32)))
-  const cek = await subtle.importKey('raw', cekBytes, 'AES-KW', true, ['wrapKey'])
-  const encryptedCek = await subtle.wrapKey('raw', cek, derivedKey, 'AES-KW')
-
-  const epkPub = ecdh.getPublicKey()
-  const epkJwk = {
-    kty: 'OKP' as const,
-    crv: 'X25519' as const,
-    x: TypedArrayEncoder.toBase64Url(epkPub),
-  }
+  const keyEncryptionKey = deriveKeyEcdh1Pu({
+    ephemeralSecret: ecdhSharedSecret(ephemeralPrivateJwk, recipientPublicJwk),
+    staticSecret: ecdhSharedSecret(senderPrivateJwk, recipientPublicJwk),
+    apu: keyAgreement.apu,
+    apv: keyAgreement.apv,
+    tag,
+  })
 
   return {
-    encryptedContentEncryptionKey: {
-      encrypted: Buffer.from(encryptedCek),
-      ephemeralPublicKey: epkJwk,
-    } satisfies Kms.KmsEncryptedKey,
-    contentEncryptionKey: {
-      kty: 'oct' as const,
-      k: TypedArrayEncoder.toBase64Url(cekBytes),
+    encrypted,
+    iv,
+    tag,
+    encryptedKey: {
+      encrypted: aesKeyWrap(keyEncryptionKey, contentEncryptionKeyBytes),
+      ephemeralPublicKey: Kms.publicJwkFromPrivateJwk(ephemeralPrivateJwk) as Kms.KmsJwkPublicEcdh,
     },
   }
 }
@@ -176,10 +184,7 @@ export async function deriveDecryptionKey(options: {
   const { keyAgreement, decryption, privateJwk } = options
 
   if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
-    return deriveDecryptionKeyEcdh1Pu({
-      keyAgreement,
-      privateJwk: privateJwk as Kms.KmsJwkPrivateOkp,
-    })
+    return deriveDecryptionKeyEcdh1Pu({ keyAgreement, decryption, privateJwk })
   }
 
   assertNodeSupportedEcdhKeyDerivationCrv(keyAgreement.externalPublicJwk)
@@ -214,11 +219,7 @@ export async function deriveDecryptionKey(options: {
   }
 
   // Key wrapping
-  const decipher = createDecipheriv(`id-aes${keyLength}-wrap`, derivedKeyBytes, aesKeyWrapIv)
-  const contentEncryptionKeyBytes = Buffer.concat([
-    decipher.update(keyAgreement.encryptedKey.encrypted),
-    decipher.final(),
-  ])
+  const contentEncryptionKeyBytes = aesKeyUnwrap(derivedKeyBytes, keyAgreement.encryptedKey.encrypted)
 
   return {
     contentEncryptionKey: {
@@ -228,51 +229,68 @@ export async function deriveDecryptionKey(options: {
   }
 }
 
-async function deriveDecryptionKeyEcdh1Pu(options: {
+function deriveDecryptionKeyEcdh1Pu(options: {
   keyAgreement: Kms.KmsKeyAgreementDecryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
-  privateJwk: Kms.KmsJwkPrivateOkp
-}) {
-  const { keyAgreement, privateJwk } = options
-  const { ephemeralPublicJwk, senderPublicJwk } = keyAgreement
-  if (privateJwk.crv !== 'X25519') {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError('ECDH-1PU+A256KW requires X25519', 'node')
-  }
+  decryption: Kms.KmsDecryptDataContentDecryption
+  privateJwk: Kms.KmsJwkPrivateAsymmetric
+}): { contentEncryptionKey: Kms.KmsJwkPrivateOct } {
+  const { keyAgreement, decryption, privateJwk } = options
+  assertNodeSupportedEcdh1PuContentEncryptionAlgorithm(decryption)
 
-  const recipientEcdh = createECDH('x25519')
-  recipientEcdh.setPrivateKey(TypedArrayEncoder.fromBase64(privateJwk.d))
-  const epk = Kms.PublicJwk.fromPublicJwk(ephemeralPublicJwk).publicKey
-  const senderPub = Kms.PublicJwk.fromPublicJwk(senderPublicJwk).publicKey
-  if (epk.kty !== 'OKP' || senderPub.kty !== 'OKP') {
-    throw new Kms.KeyManagementError('X25519 keys expected')
-  }
+  const keyEncryptionKey = deriveKeyEcdh1Pu({
+    ephemeralSecret: ecdhSharedSecret(privateJwk, keyAgreement.ephemeralPublicJwk),
+    staticSecret: ecdhSharedSecret(privateJwk, keyAgreement.senderPublicJwk),
+    apu: keyAgreement.apu,
+    apv: keyAgreement.apv,
+    tag: decryption.tag,
+  })
 
-  const z1 = recipientEcdh.computeSecret(epk.publicKey)
-  const z2 = recipientEcdh.computeSecret(senderPub.publicKey)
-  const Z = Buffer.concat([Buffer.from(z1), Buffer.from(z2)])
-
-  const algorithmId = Buffer.from('ECDH-1PU+A256KW')
-  const otherInfo = Buffer.concat([
-    numberTo4ByteUint8Array(algorithmId.length),
-    algorithmId,
-    numberTo4ByteUint8Array(0),
-    numberTo4ByteUint8Array(0),
-    numberTo4ByteUint8Array(256),
-    Buffer.alloc(0),
-  ])
-  const kek = concatKDF(Z, 256, otherInfo)
-  const derivedKey = await subtle.importKey('raw', kek, 'AES-KW', true, ['unwrapKey'])
-
-  const contentEncryptionKey = await subtle.unwrapKey(
-    'raw',
-    keyAgreement.encryptedKey.encrypted,
-    derivedKey,
-    'AES-KW',
-    { hash: 'SHA-256', name: 'HMAC' },
-    true,
-    ['decrypt']
-  )
   return {
-    contentEncryptionKey: (await subtle.exportKey('jwk', contentEncryptionKey)) as Kms.KmsJwkPrivate,
+    contentEncryptionKey: {
+      kty: 'oct',
+      k: TypedArrayEncoder.toBase64Url(aesKeyUnwrap(keyEncryptionKey, keyAgreement.encryptedKey.encrypted)),
+    },
+  }
+}
+
+function deriveKeyEcdh1Pu(options: {
+  ephemeralSecret: Buffer
+  staticSecret: Buffer
+  apu?: Uint8Array
+  apv?: Uint8Array
+  tag: Uint8Array
+}): Buffer {
+  return concatKDF(
+    Buffer.concat([options.ephemeralSecret, options.staticSecret]),
+    256,
+    concatKdfOtherInfo({
+      algorithm: 'ECDH-1PU+A256KW',
+      keyLength: 256,
+      apu: options.apu,
+      apv: options.apv,
+      ccTag: options.tag,
+    })
+  )
+}
+
+function ecdhSharedSecret(privateJwk: Kms.KmsJwkPrivateAsymmetric, publicJwk: Kms.KmsJwkPublicAsymmetric): Buffer {
+  return diffieHellman({
+    privateKey: createPrivateKey({ format: 'jwk', key: privateJwk }),
+    publicKey: createPublicKey({ format: 'jwk', key: publicJwk }),
+  })
+}
+
+function aesKeyWrap(keyEncryptionKey: Uint8Array, contentEncryptionKey: Uint8Array): Buffer {
+  const cipher = createCipheriv(`id-aes${keyEncryptionKey.length * 8}-wrap`, keyEncryptionKey, aesKeyWrapIv)
+  return Buffer.concat([cipher.update(contentEncryptionKey), cipher.final()])
+}
+
+function aesKeyUnwrap(keyEncryptionKey: Uint8Array, encryptedContentEncryptionKey: Uint8Array): Buffer {
+  try {
+    const decipher = createDecipheriv(`id-aes${keyEncryptionKey.length * 8}-wrap`, keyEncryptionKey, aesKeyWrapIv)
+    return Buffer.concat([decipher.update(encryptedContentEncryptionKey), decipher.final()])
+  } catch (error) {
+    throw new Kms.KeyManagementError('Error unwrapping content encryption key', { cause: error })
   }
 }
 
@@ -290,13 +308,27 @@ async function deriveKeyEcdhEs(options: {
   privateJwk: Kms.KmsJwkPrivateEc | Kms.KmsJwkPrivateOkp
   publicJwk: Kms.KmsJwkPublicEc | Kms.KmsJwkPublicOkp
 }): Promise<Buffer> {
-  const sharedSecret = diffieHellman({
-    privateKey: createPrivateKey({ format: 'jwk', key: options.privateJwk }),
-    publicKey: createPublicKey({ format: 'jwk', key: options.publicJwk }),
-  })
+  return concatKDF(
+    ecdhSharedSecret(options.privateJwk, options.publicJwk),
+    options.keyLength,
+    concatKdfOtherInfo({
+      algorithm: options.usageAlgorithm,
+      keyLength: options.keyLength,
+      apu: options.apu,
+      apv: options.apv,
+    })
+  )
+}
 
+function concatKdfOtherInfo(options: {
+  algorithm: string
+  keyLength: number
+  apu?: Uint8Array
+  apv?: Uint8Array
+  ccTag?: Uint8Array
+}): Buffer {
   // Prepare AlgorithmID for KDF (Datalen || Data)
-  const algorithmData = TypedArrayEncoder.fromUtf8String(options.usageAlgorithm) // ASCII representation of alg
+  const algorithmData = TypedArrayEncoder.fromUtf8String(options.algorithm) // ASCII representation of alg
   const algorithmID = TypedArrayEncoder.concat([
     numberTo4ByteUint8Array(algorithmData.length), // Datalen: 32-bit big-endian counter
     algorithmData, // Data: ASCII representation of algorithm
@@ -316,17 +348,17 @@ async function deriveKeyEcdhEs(options: {
     apv, // Data: PartyVInfo value
   ])
 
-  // Prepare otherInfo for KDF
-  const otherInfo = Buffer.concat([
+  // ECDH-1PU key wrapping appends Datalen || tag to SuppPubInfo (draft-madden-jose-ecdh-1pu-04 section 2.3)
+  const ccTag = options.ccTag ? [numberTo4ByteUint8Array(options.ccTag.length), options.ccTag] : []
+
+  return Buffer.concat([
     algorithmID, // AlgorithmID: Datalen || Data
     partyUInfo, // PartyUInfo: Datalen || Data
     partyVInfo, // PartyVInfo: Datalen || Data
     numberTo4ByteUint8Array(options.keyLength), // SuppPubInfo: 32-bit big-endian rep of keydatalen
+    ...ccTag,
     Buffer.alloc(0), // SuppPrivInfo (empty octet sequence)
   ])
-
-  // Derive final key using Concat KDF
-  return concatKDF(sharedSecret, options.keyLength, otherInfo)
 }
 
 function numberTo4ByteUint8Array(number: number) {
