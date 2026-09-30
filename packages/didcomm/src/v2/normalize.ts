@@ -19,9 +19,26 @@ function mapV2AttachmentToV1(att: DidCommV2Attachment): Record<string, unknown> 
   return v1
 }
 
+const reservedBodyKeys = [
+  'from',
+  'to',
+  'from_prior',
+  'lang',
+  'created_time',
+  'expires_time',
+  // class-transformer also binds a decorator from its property name, not only from its ~ key
+  'service',
+  'timing',
+  'thread',
+  'transport',
+  'pleaseAck',
+  'l10n',
+  'appendedAttachments',
+]
+
 /**
  * Normalize a DIDComm v2 plaintext message to v1 shape so existing handlers work.
- * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→~l10n, attachments→~attach.
+ * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, attachments→~attach.
  * This allows v2 plaintext to be processed by v1 message handlers without changes.
  *
  * @param v2 - The DIDComm v2 plaintext message
@@ -41,18 +58,24 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidComm
     created_time,
     expires_time,
     return_route,
-    ...rest
+    please_ack,
+    from_prior,
   } = v2
 
+  // Unknown headers are ignored (spec v2.1 Message Headers) and v2 has no ~ decorators
+  const bodyFields = Object.fromEntries(
+    Object.entries(body ?? {}).filter(([key]) => !key.startsWith('~') && !reservedBodyKeys.includes(key))
+  )
+
   const v1: DidCommPlaintextMessage = {
+    ...bodyFields,
     '@type': type,
     '@id': id,
-    ...(body ?? {}),
-    ...rest,
   }
 
   if (from !== undefined) v1.from = from
   if (to !== undefined) v1.to = to
+  if (from_prior !== undefined) v1.from_prior = from_prior
 
   if (thid !== undefined || pthid !== undefined) {
     const thread: { thid?: string; pthid?: string } = {}
@@ -62,7 +85,12 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidComm
   }
 
   if (lang !== undefined) {
+    v1.lang = lang
     v1['~l10n'] = { locale: lang }
+  }
+
+  if (Array.isArray(please_ack) && (please_ack.includes('') || please_ack.includes(id))) {
+    v1['~please_ack'] = { on: ['RECEIPT'] }
   }
 
   if (attachments !== undefined && Array.isArray(attachments) && attachments.length > 0) {
@@ -73,7 +101,6 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidComm
     v1['~transport'] = { return_route }
   }
 
-  // TODO: Do we need to convert created_time/expires_time from epoch seconds (v2) to Date/~timing (v1)?
   if (created_time !== undefined) v1.created_time = created_time
   if (expires_time !== undefined) v1.expires_time = expires_time
 
