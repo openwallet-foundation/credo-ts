@@ -97,6 +97,25 @@ describe('normalizeV2PlaintextToV1', () => {
     expect(v1.comment).toBe('hello')
   })
 
+  it('keeps the header id and type on the message when the body has @id, id, @type and type keys', () => {
+    const header = { id: 'ping-msg-1', type: 'https://didcomm.org/trust_ping/1.0/ping' }
+
+    const withBodyId = JsonTransformer.fromJSON(
+      normalizeV2PlaintextToV1({ ...header, body: { '@id': 'body-at-id-1', id: 'body-plain-id-1' } }),
+      DidCommTrustPingMessage
+    )
+    expect(withBodyId.id).toBe('ping-msg-1')
+
+    const withBodyType = JsonTransformer.fromJSON(
+      normalizeV2PlaintextToV1({
+        ...header,
+        body: { '@type': 'https://didcomm.org/other/1.0/message', type: 'https://didcomm.org/other/1.0/message' },
+      }),
+      DidCommTrustPingMessage
+    )
+    expect(withBodyType.type).toBe('https://didcomm.org/trust_ping/1.0/ping')
+  })
+
   it('drops body from and ~thread when there is no matching header', () => {
     const v2: DidCommV2PlaintextMessage = {
       id: 'msg-1',

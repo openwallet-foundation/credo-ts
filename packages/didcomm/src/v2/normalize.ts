@@ -20,6 +20,8 @@ function mapV2AttachmentToV1(att: DidCommV2Attachment): Record<string, unknown> 
 }
 
 const reservedBodyKeys = [
+  '@id',
+  '@type',
   'from',
   'to',
   'from_prior',
