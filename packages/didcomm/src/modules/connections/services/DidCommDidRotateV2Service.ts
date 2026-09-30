@@ -2,7 +2,6 @@ import {
   type AgentContext,
   CredoError,
   type DidDocument,
-  DidKey,
   DidRepository,
   DidResolverService,
   DidsApi,
@@ -22,12 +21,12 @@ import {
 } from '@credo-ts/core'
 import { DidCommEventTypes, type DidCommMessageSentEvent } from '../../../DidCommEvents'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
+import { wrapInV2Forward } from '../../../envelope/DidCommV2Envelope'
 import { DidCommEmptyMessage } from '../../../messages'
 import type { DidCommRouting } from '../../../models'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../../../models'
 import { DidCommDocumentService } from '../../../services/DidCommDocumentService'
 import { DidCommV2EnvelopeService, type DidCommV2PlaintextMessage } from '../../../v2'
-import { DidCommForwardV2Message } from '../../routing/protocol/v2/messages'
 import { DidCommRoutingService } from '../../routing/services/DidCommRoutingService'
 import { getMediationRecordForDidDocument } from '../../routing/services/helpers'
 import type { DidCommConnectionDidRotatedEvent } from '../DidCommConnectionEvents'
@@ -288,37 +287,20 @@ export class DidCommDidRotateV2Service {
       body: {},
     }
 
+    const didCommModuleConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
     const v2EnvelopeService = agentContext.dependencyManager.resolve(DidCommV2EnvelopeService)
-    let payload = await v2EnvelopeService.packAnoncrypt(agentContext, plaintext, {
+    const encryptedMessage = await v2EnvelopeService.packAnoncrypt(agentContext, plaintext, {
       recipientKey: toKeyAgreement(recipientEd25519),
       recipientKid: toKeyAgreementDidUrl(recipientEd25519),
+      contentEncryptionAlgorithm: didCommModuleConfig.v2DefaultAnoncryptContentEncryption,
+    })
+    const payload = await wrapInV2Forward(agentContext, v2EnvelopeService, encryptedMessage, {
+      routingKeys: service.routingKeys,
+      recipientKey: recipientEd25519,
+      connection,
+      contentEncryptionAlgorithm: didCommModuleConfig.v2DefaultAnoncryptContentEncryption,
     })
 
-    if (service.routingKeys.length > 0) {
-      const recipientNext = new DidKey(toKeyAgreement(recipientEd25519)).did
-      const reversed = [...service.routingKeys].reverse()
-      for (let i = 0; i < reversed.length; i++) {
-        const routingKey = reversed[i]
-        const next = i === reversed.length - 1 ? recipientNext : new DidKey(reversed[i + 1]).did
-        const forwardPlaintext = DidCommForwardV2Message.createV2PlaintextMessage({
-          to: [new DidKey(routingKey).did],
-          next,
-          attachments: [
-            {
-              id: utils.uuid(),
-              media_type: 'application/didcomm-encrypted+json',
-              data: { json: payload as unknown as Record<string, unknown> },
-            },
-          ],
-        })
-        payload = await v2EnvelopeService.packAnoncrypt(agentContext, forwardPlaintext, {
-          recipientKey: toKeyAgreement(routingKey),
-          recipientKid: toKeyAgreementDidUrl(routingKey),
-        })
-      }
-    }
-
-    const didCommModuleConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
     const scheme = utils.getProtocolScheme(service.serviceEndpoint)
     if (!scheme) {
       throw new CredoError(`No protocol scheme on service endpoint '${service.serviceEndpoint}'`)

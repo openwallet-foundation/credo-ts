@@ -1,3 +1,4 @@
+import { DidKey, getDidPeer4ShortFormForEquivalence, Kms } from '@credo-ts/core'
 import { first, ReplaySubject, timeout } from 'rxjs'
 
 import { Agent } from '../../../../../core/src/agent/Agent'
@@ -15,13 +16,18 @@ import {
 } from '../../../../../core/tests/helpers'
 import { DidCommEventTypes } from '../../../DidCommEvents'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { getOutboundDidCommMessageContext } from '../../../getDidCommOutboundMessageContext'
+import { DidCommDocumentService } from '../../../services/DidCommDocumentService'
+import { type DidCommV2EncryptedMessage, DidCommV2EnvelopeService, DidCommV2KeyResolver } from '../../../v2'
 import { DidCommBasicMessage, DidCommBasicMessageEventTypes } from '../../basic-messages'
+import { DidCommForwardV2Message } from '../../routing/protocol/v2/messages'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import { DidCommDidRotateAckMessage, DidCommDidRotateProblemReportMessage, DidCommHangupMessage } from '../messages'
 import { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 import { DidCommDidRotateV2Service } from '../services/DidCommDidRotateV2Service'
+import { toKeyAgreement, toKeyAgreementDidUrl } from '../services/helpers'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
@@ -592,6 +598,83 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     const bobAfter = await bobAgent.didcomm.connections.findById(bobAliceConnection?.id!)
     expect(bobAfter?.theirDid).toBeUndefined()
     expect(bobAfter?.previousTheirDids).toContain(aliceDidBeforeHangup)
+  })
+
+  test('rotate-to-nothing wraps one forward per routing key, each naming the hop it encloses', async () => {
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const connection = aliceBobConnection!
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const theirDid = connection.theirDid!
+    const agentContext = aliceAgent.context
+
+    const createRoutingKey = async () => {
+      const { keyId, publicJwk } = await aliceAgent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      return { keyId, publicJwk: Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk> }
+    }
+    const r1 = await createRoutingKey()
+    const r2 = await createRoutingKey()
+
+    const [service] = await aliceAgent.dependencyManager
+      .resolve(DidCommDocumentService)
+      .resolveServicesFromDid(agentContext, theirDid)
+    const resolveServices = vi
+      .spyOn(DidCommDocumentService.prototype, 'resolveServicesFromDid')
+      .mockResolvedValueOnce([{ ...service, routingKeys: [r1.publicJwk, r2.publicJwk] }])
+
+    const transport = aliceAgent.dependencyManager
+      .resolve(DidCommModuleConfig)
+      .outboundTransports.find((t) => t.supportedSchemes.includes('rxjs'))
+    const sentPayloads: unknown[] = []
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const sendMessage = vi.spyOn(transport!, 'sendMessage').mockImplementation(async ({ payload }) => {
+      sentPayloads.push(payload)
+    })
+
+    // The module config, and so this transport, is shared with later tests
+    try {
+      await aliceAgent.dependencyManager
+        .resolve(DidCommDidRotateV2Service)
+        .sendRotateToNothing(agentContext, connection)
+    } finally {
+      resolveServices.mockRestore()
+      sendMessage.mockRestore()
+    }
+
+    const envelopeService = aliceAgent.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const openForward = async (message: DidCommV2EncryptedMessage, routingKey: typeof r1) => {
+      const matchedKid = message.recipients[0].header.kid
+      expect(matchedKid).toEqual(toKeyAgreementDidUrl(routingKey.publicJwk))
+
+      const recipientKey = toKeyAgreement(routingKey.publicJwk)
+      recipientKey.keyId = routingKey.keyId
+      const { plaintext } = await envelopeService.unpack(agentContext, message, {
+        recipientKey: recipientKey as typeof recipientKey & { keyId: string },
+        matchedKid,
+        resolveSenderKey: async () => null,
+      })
+      expect(plaintext.type).toEqual(DidCommForwardV2Message.type.messageTypeUri)
+      return {
+        next: plaintext.body?.next,
+        enclosed: plaintext.attachments?.[0].data.json as unknown as DidCommV2EncryptedMessage,
+      }
+    }
+
+    expect(sentPayloads).toHaveLength(1)
+    const outer = await openForward(sentPayloads[0] as DidCommV2EncryptedMessage, r1)
+    expect(outer.next).toEqual(new DidKey(r2.publicJwk).did)
+
+    const inner = await openForward(outer.enclosed, r2)
+    expect(inner.next).toEqual(getDidPeer4ShortFormForEquivalence(theirDid) ?? theirDid)
+
+    const bobRecipient = await bobAgent.dependencyManager
+      .resolve(DidCommV2KeyResolver)
+      .resolveRecipientKey(bobAgent.context, inner.enclosed)
+    if (!bobRecipient) throw new Error('Bob has no key for the enclosed message')
+    const { plaintext } = await bobAgent.dependencyManager
+      .resolve(DidCommV2EnvelopeService)
+      .unpack(bobAgent.context, inner.enclosed, { ...bobRecipient, resolveSenderKey: async () => null })
+    expect(plaintext.to).toEqual([theirDid])
+    expect(plaintext.from_prior).toBeDefined()
   })
 
   test('alice rotates v2 DID; basic message carries from_prior and bob updates theirDid', async () => {
