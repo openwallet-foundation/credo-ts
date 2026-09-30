@@ -1,29 +1,26 @@
 import type { AgentContext } from '@credo-ts/core'
-import { CredoError, EventEmitter, utils } from '@credo-ts/core'
-import type {
-  DidCommEncryptedMessage,
-  DidCommInboundTransport,
-  DidCommMessageProcessedEvent,
-  DidCommMessageReceivedEvent,
-  DidCommTransportSession,
-} from '@credo-ts/didcomm'
-import { DidCommEventTypes, DidCommMimeType, DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
-import type { Express, Request, Response } from 'express'
-import express, { text } from 'express'
-import type { Server } from 'http'
-import { filter, firstValueFrom, ReplaySubject, take, timeout } from 'rxjs'
+import type { DidCommInboundTransport } from '@credo-ts/didcomm'
+import { DidCommHttpInboundTransport as DidCommHttpTransport } from '@credo-ts/didcomm'
+import type { Express } from 'express'
+import { ExpressHost } from '../express'
 
-const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
-
+/**
+ * HTTP inbound transport served by Express.
+ *
+ * Wraps the DIDComm HTTP inbound transport from `@credo-ts/didcomm` with an {@link ExpressHost}.
+ *
+ * @deprecated Use the `http` option of `DidCommModule` with `expressHost()` from `@credo-ts/node/express` instead.
+ */
 export class DidCommHttpInboundTransport implements DidCommInboundTransport {
-  public readonly app: Express
-  private port?: number
-  private path: string
-  private _server?: Server
-  private processedMessageListenerTimeoutMs: number
+  private host: ExpressHost
+  private transport: DidCommHttpTransport
+
+  public get app(): Express {
+    return this.host.app
+  }
 
   public get server() {
-    return this._server
+    return this.host.server
   }
 
   public constructor({
@@ -34,152 +31,15 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
   }:
     | { app: Express; port?: undefined; path?: string; processedMessageListenerTimeoutMs?: number }
     | { app?: Express; port: number; path?: string; processedMessageListenerTimeoutMs?: number }) {
-    this.port = port
-    this.processedMessageListenerTimeoutMs = processedMessageListenerTimeoutMs ?? 10000 // timeout after 10 seconds
-
-    // Use the caller-provided Express app, or create one
-    this.app = app ?? express()
-    this.path = path ?? '/'
+    this.host = port === undefined ? new ExpressHost({ app: app as Express }) : new ExpressHost({ app, port })
+    this.transport = new DidCommHttpTransport({ host: this.host, path, processedMessageListenerTimeoutMs })
   }
 
   public async start(agentContext: AgentContext) {
-    const transportService = agentContext.dependencyManager.resolve(DidCommTransportService)
-
-    agentContext.config.logger.debug('Starting HTTP inbound transport', {
-      port: this.port,
-    })
-
-    this.registerRoute(agentContext, transportService)
-
-    if (this.port === undefined) {
-      return
-    }
-
-    const server = this.app.listen(this.port)
-    this._server = server
-
-    await new Promise<void>((resolve, reject) => {
-      const onError = (error: Error) => {
-        server.off('listening', onListening)
-        reject(error)
-      }
-      const onListening = () => {
-        server.off('error', onError)
-        resolve()
-      }
-
-      server.once('error', onError)
-      server.once('listening', onListening)
-    })
+    await this.transport.start(agentContext)
   }
 
   public async stop(): Promise<void> {
-    if (!this._server) {
-      return
-    }
-
-    return new Promise((resolve, reject) => this._server?.close((err) => (err ? reject(err) : resolve())))
-  }
-
-  private registerRoute(agentContext: AgentContext, transportService: DidCommTransportService) {
-    this.app.post(this.path, text({ type: supportedContentTypes, limit: '5mb' }), async (req, res) => {
-      const contentType = req.headers['content-type']
-
-      if (!contentType || !supportedContentTypes.includes(contentType)) {
-        return res
-          .status(415)
-          .send(`Unsupported content-type. Supported content-types are: ${supportedContentTypes.join(', ')}`)
-      }
-
-      const session = new HttpTransportSession(utils.uuid(), req, res)
-      // We want to make sure the session is removed if the connection is closed, as it
-      // can't be used anymore then. This could happen if the client abruptly closes the connection.
-      req.once('close', () => transportService.removeSession(session))
-
-      try {
-        const message = req.body as string
-        const encryptedMessage = JSON.parse(message) as DidCommEncryptedMessage
-
-        const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
-        const observable = eventEmitter.observable<DidCommMessageProcessedEvent>(
-          DidCommEventTypes.DidCommMessageProcessed
-        )
-        const subject = new ReplaySubject(1)
-
-        observable
-          .pipe(
-            filter((e) => e.type === DidCommEventTypes.DidCommMessageProcessed),
-            filter((e) => e.payload.encryptedMessage === encryptedMessage),
-            timeout({
-              first: this.processedMessageListenerTimeoutMs,
-              meta: 'DidCommHttpInboundTransport.start',
-            }),
-            take(1) // automatically unsubscribe after the first matching event
-          )
-          .subscribe(subject)
-
-        eventEmitter.emit<DidCommMessageReceivedEvent>(agentContext, {
-          type: DidCommEventTypes.DidCommMessageReceived,
-          payload: {
-            message: encryptedMessage,
-            session: session,
-          },
-        })
-
-        // Wait for message to be processed
-        await firstValueFrom(subject)
-
-        // If agent did not use session when processing message we need to send response here.
-        if (!res.headersSent) {
-          res.status(200).end()
-        }
-      } catch (error) {
-        agentContext.config.logger.error(`Error processing inbound message: ${error.message}`, error)
-
-        if (!res.headersSent) {
-          res.status(500).send('Error processing message')
-        }
-      } finally {
-        transportService.removeSession(session)
-      }
-    })
-  }
-}
-
-export class HttpTransportSession implements DidCommTransportSession {
-  public id: string
-  public readonly type = 'http'
-  public req: Request
-  public res: Response
-
-  public constructor(id: string, req: Request, res: Response) {
-    this.id = id
-    this.req = req
-    this.res = res
-  }
-
-  public async close(): Promise<void> {
-    if (!this.res.headersSent) {
-      this.res.status(200).end()
-    }
-  }
-
-  public async send(agentContext: AgentContext, encryptedMessage: DidCommEncryptedMessage): Promise<void> {
-    if (this.res.headersSent) {
-      throw new CredoError(`${this.type} transport session has been closed.`)
-    }
-
-    // By default we take the agent config's default DIDComm content-type
-    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
-    let responseMimeType = didcommConfig.didCommMimeType as string
-
-    // However, if the request mime-type is a mime-type that is supported by us, we use that
-    // to minimize the chance of interoperability issues
-    const requestMimeType = this.req.headers['content-type']
-    if (requestMimeType && supportedContentTypes.includes(requestMimeType)) {
-      responseMimeType = requestMimeType
-    }
-
-    this.res.status(200).contentType(responseMimeType).json(encryptedMessage).end()
+    await this.transport.stop()
   }
 }
