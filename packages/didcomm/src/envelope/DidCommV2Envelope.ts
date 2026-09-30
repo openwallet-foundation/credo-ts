@@ -1,4 +1,4 @@
-import type { AgentContext, Kms } from '@credo-ts/core'
+import type { AgentContext, DidDocument, Kms } from '@credo-ts/core'
 import {
   areEquivalentDidPeer4Forms,
   CredoError,
@@ -20,6 +20,7 @@ import {
   toKeyAgreementDidUrl,
 } from '../modules/connections/services/helpers'
 import { DidCommForwardV2Message } from '../modules/routing/protocol/v2/messages'
+import { DidCommDocumentService } from '../services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from '../types'
 import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
 import type { DidCommV2KeyAgreementJwk, DidCommV2PlaintextMessage, DidCommV2SignedMessage } from '../v2'
@@ -322,26 +323,53 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     agentContext: AgentContext,
     { senderKey, recipientKey, plaintextMessage, connection }: DidCommReturnRouteOptions
   ): Promise<{ publicJwk: DidCommEnvelopeKey; skid: string }> {
-    const addressedKey = { publicJwk: recipientKey, skid: toKeyAgreementDidUrl(recipientKey) }
-    if (!connection) return addressedKey
+    const addressedKey = () => this.resolveAddressedKey(agentContext, recipientKey)
+    if (!connection) return addressedKey()
 
     // The inbound `to` can still hold our prior DID mid-rotation, so it is only a fallback.
     const to = Array.isArray(plaintextMessage.to) ? (plaintextMessage.to as string[]) : undefined
     const ourDid = connection.did ?? to?.[0]
-    if (!ourDid) return addressedKey
+    if (!ourDid) return addressedKey()
 
     const dids = agentContext.resolve(DidsApi)
     const created = await dids.resolveCreatedDidDocumentWithKeys(ourDid).catch(() => undefined)
-    if (!created) return addressedKey
+    if (!created) return addressedKey()
     const { didDocument, keys } = created
 
+    const addressedInOurDid = this.findAddressedKey(didDocument, recipientKey)
+    if (addressedInOurDid) return addressedInOurDid
+
+    const currentKey = connection.did ? findOwnKeyAgreementKey(didDocument, keys, senderKey) : undefined
+    return currentKey ? { publicJwk: currentKey.publicJwk, skid: currentKey.didUrl } : addressedKey()
+  }
+
+  private async resolveAddressedKey(
+    agentContext: AgentContext,
+    recipientKey: DidCommEnvelopeKey
+  ): Promise<{ publicJwk: DidCommEnvelopeKey; skid: string }> {
+    const created = await agentContext
+      .resolve(DidCommDocumentService)
+      .resolveCreatedDidDocumentWithKeysByRecipientKey(agentContext, recipientKey)
+      .catch(() => undefined)
+
+    return (
+      (created && this.findAddressedKey(created.didDocument, recipientKey)) ?? {
+        publicJwk: recipientKey,
+        skid: toKeyAgreementDidUrl(recipientKey),
+      }
+    )
+  }
+
+  private findAddressedKey(
+    didDocument: DidDocument,
+    recipientKey: DidCommEnvelopeKey
+  ): { publicJwk: DidCommEnvelopeKey; skid: string } | undefined {
     try {
       const { id } = didDocument.findVerificationMethodByPublicKey(recipientKey, ['keyAgreement'])
       return { publicJwk: recipientKey, skid: toAbsoluteDidUrl(didDocument.id, id) }
-    } catch {}
-
-    const currentKey = connection.did ? findOwnKeyAgreementKey(didDocument, keys, senderKey) : undefined
-    return currentKey ? { publicJwk: currentKey.publicJwk, skid: currentKey.didUrl } : addressedKey
+    } catch {
+      return undefined
+    }
   }
 }
 
