@@ -29,6 +29,7 @@ import {
   DidCommV2KeyResolver,
   normalizeV2PlaintextToV1,
 } from '../v2'
+import type { DidCommV2AnoncryptContentEncryptionAlgorithm } from '../v2/types'
 import type { DidCommEnvelope, DidCommPackOptions, DidCommReturnRouteOptions } from './DidCommEnvelope'
 
 /**
@@ -112,7 +113,12 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
 
     if (v2Keys.routingKeys.length === 0) return encryptedMessage
 
-    return this.wrapInForward(agentContext, encryptedMessage, keys, v2Keys, options?.connection)
+    return wrapInV2Forward(agentContext, this.envelopeService, encryptedMessage, {
+      routingKeys: v2Keys.routingKeys,
+      recipientKey: keys.recipientKeys[0],
+      connection: options?.connection,
+      contentEncryptionAlgorithm: this.config.v2DefaultAnoncryptContentEncryption,
+    })
   }
 
   /**
@@ -161,68 +167,6 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
           : undefined),
       fromPrior: connection?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.fromPriorJwt,
     })
-  }
-
-  /**
-   * Wrap the envelope in one anoncrypt Forward message for every routing key, outermost hop last.
-   */
-  private async wrapInForward(
-    agentContext: AgentContext,
-    encryptedMessage: DidCommEncryptedMessage,
-    keys: EnvelopeKeys,
-    v2Keys: DidCommV2PackKeys,
-    connection?: DidCommPackOptions['connection']
-  ): Promise<DidCommEncryptedMessage> {
-    let payload = encryptedMessage
-
-    const recipientNext = this.resolveRecipientNextForMediationForward(connection, keys)
-    const routingKeysReversed = [...v2Keys.routingKeys].reverse()
-
-    for (let i = 0; i < routingKeysReversed.length; i++) {
-      const routingKey = routingKeysReversed[i]
-      // next points at the enclosed hop (recipient at i === 0); single-routing-key tests cannot detect an inverted chain
-      const next = i === 0 ? recipientNext : new DidKey(routingKeysReversed[i - 1]).did
-
-      const attachment = {
-        id: utils.uuid(),
-        media_type: 'application/didcomm-encrypted+json',
-        data: { json: payload },
-      }
-      const forwardPlaintext = DidCommForwardV2Message.createV2PlaintextMessage({
-        to: [new DidKey(routingKey).did],
-        next,
-        attachments: [attachment],
-      })
-
-      payload = await this.envelopeService.packAnoncrypt(agentContext, forwardPlaintext, {
-        recipientKey: toKeyAgreement(routingKey),
-        recipientKid: toKeyAgreementDidUrl(routingKey),
-        contentEncryptionAlgorithm: this.config.v2DefaultAnoncryptContentEncryption,
-      })
-    }
-
-    return payload
-  }
-
-  /**
-   * Value for Forward `next` / mediator keylist lookup.
-   *
-   * routing/2.0 describes `next` as the identifier of the next hop (typically a DID) that
-   * the mediator matches against what the recipient pre-registered (CM 2.0 keylist-update).
-   * Credo's mediator compares by string equality, so this must emit the same canonical
-   * form the recipient registers.
-   */
-  private resolveRecipientNextForMediationForward(
-    connection: DidCommPackOptions['connection'],
-    keys: EnvelopeKeys
-  ): string {
-    // CM 2.0 recipients register their connection did:peer with the mediator, so prefer
-    // that DID (short-form canonicalized like the mediator's keylist store and lookup).
-    const theirDid = connection?.theirDid
-    if (theirDid) return getDidPeer4ShortFormForEquivalence(theirDid) ?? theirDid
-
-    // No recipient DID known: routing/2.0 allows a key for the last hop.
-    return new DidKey(toKeyAgreement(keys.recipientKeys[0])).did
   }
 
   // ── Unpacking ─────────────────────────────────────────────────────────
@@ -372,4 +316,69 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     const currentKey = connection.did ? findOwnKeyAgreementKey(didDocument, keys, senderKey) : undefined
     return currentKey ? { publicJwk: currentKey.publicJwk, skid: currentKey.didUrl } : addressedKey
   }
+}
+
+/**
+ * Wrap the envelope in one anoncrypt Forward message for every routing key, outermost hop last.
+ */
+export async function wrapInV2Forward(
+  agentContext: AgentContext,
+  envelopeService: DidCommV2EnvelopeService,
+  encryptedMessage: DidCommEncryptedMessage,
+  options: {
+    routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+    recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    connection?: DidCommPackOptions['connection']
+    contentEncryptionAlgorithm: DidCommV2AnoncryptContentEncryptionAlgorithm
+  }
+): Promise<DidCommEncryptedMessage> {
+  let payload = encryptedMessage
+
+  const recipientNext = resolveRecipientNextForMediationForward(options.connection, options.recipientKey)
+  const routingKeysReversed = [...options.routingKeys].reverse()
+
+  for (let i = 0; i < routingKeysReversed.length; i++) {
+    const routingKey = routingKeysReversed[i]
+    const next = i === 0 ? recipientNext : new DidKey(routingKeysReversed[i - 1]).did
+
+    const attachment = {
+      id: utils.uuid(),
+      media_type: 'application/didcomm-encrypted+json',
+      data: { json: payload },
+    }
+    const forwardPlaintext = DidCommForwardV2Message.createV2PlaintextMessage({
+      to: [new DidKey(routingKey).did],
+      next,
+      attachments: [attachment],
+    })
+
+    payload = await envelopeService.packAnoncrypt(agentContext, forwardPlaintext, {
+      recipientKey: toKeyAgreement(routingKey),
+      recipientKid: toKeyAgreementDidUrl(routingKey),
+      contentEncryptionAlgorithm: options.contentEncryptionAlgorithm,
+    })
+  }
+
+  return payload
+}
+
+/**
+ * Value for Forward `next` / mediator keylist lookup.
+ *
+ * routing/2.0 describes `next` as the identifier of the next hop (typically a DID) that
+ * the mediator matches against what the recipient pre-registered (CM 2.0 keylist-update).
+ * Credo's mediator compares by string equality, so this must emit the same canonical
+ * form the recipient registers.
+ */
+function resolveRecipientNextForMediationForward(
+  connection: DidCommPackOptions['connection'],
+  recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+): string {
+  // CM 2.0 recipients register their connection did:peer with the mediator, so prefer
+  // that DID (short-form canonicalized like the mediator's keylist store and lookup).
+  const theirDid = connection?.theirDid
+  if (theirDid) return getDidPeer4ShortFormForEquivalence(theirDid) ?? theirDid
+
+  // No recipient DID known: routing/2.0 allows a key for the last hop.
+  return new DidKey(toKeyAgreement(recipientKey)).did
 }
