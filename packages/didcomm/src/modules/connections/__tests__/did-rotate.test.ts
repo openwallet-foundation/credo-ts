@@ -1,4 +1,4 @@
-import { DidKey, getDidPeer4ShortFormForEquivalence, Kms } from '@credo-ts/core'
+import { DidKey, getDidPeer4ShortFormForEquivalence, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { first, ReplaySubject, timeout } from 'rxjs'
 
 import { Agent } from '../../../../../core/src/agent/Agent'
@@ -15,19 +15,27 @@ import {
   waitForDidRotateSubject,
 } from '../../../../../core/tests/helpers'
 import { DidCommEventTypes } from '../../../DidCommEvents'
+import { DidCommMessageReceiver } from '../../../DidCommMessageReceiver'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
+import { DidCommV2Envelope } from '../../../envelope'
 import { getOutboundDidCommMessageContext } from '../../../getDidCommOutboundMessageContext'
 import { DidCommDocumentService } from '../../../services/DidCommDocumentService'
 import { type DidCommV2EncryptedMessage, DidCommV2EnvelopeService, DidCommV2KeyResolver } from '../../../v2'
+import { computeApu, computeApv } from '../../../v2/apuApv'
 import { DidCommBasicMessage, DidCommBasicMessageEventTypes } from '../../basic-messages'
 import { DidCommForwardV2Message } from '../../routing/protocol/v2/messages'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
-import { DidCommDidRotateAckMessage, DidCommDidRotateProblemReportMessage, DidCommHangupMessage } from '../messages'
+import {
+  DidCommDidRotateAckMessage,
+  DidCommDidRotateMessage,
+  DidCommDidRotateProblemReportMessage,
+  DidCommHangupMessage,
+} from '../messages'
 import { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 import { DidCommDidRotateV2Service } from '../services/DidCommDidRotateV2Service'
-import { toKeyAgreement, toKeyAgreementDidUrl } from '../services/helpers'
+import { findOwnKeyAgreementKey, toKeyAgreement, toKeyAgreementDidUrl } from '../services/helpers'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
@@ -676,6 +684,81 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     expect(plaintext.to).toEqual([theirDid])
     expect(plaintext.from_prior).toBeDefined()
   })
+
+  test.each(['hangup', 'rotate'] as const)(
+    'an anoncrypt %s naming alice in from and skid leaves the connection alone',
+    async (kind) => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const bobDid = aliceBobConnection!.theirDid!
+      const { didDocument, keys } = await aliceAgent.dids.resolveCreatedDidDocumentWithKeys(aliceDid)
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceSkid = findOwnKeyAgreementKey(didDocument, keys)!.didUrl
+      const [bobService] = await aliceAgent.dependencyManager
+        .resolve(DidCommDocumentService)
+        .resolveServicesFromDid(aliceAgent.context, bobDid)
+      const recipientKid = toKeyAgreementDidUrl(bobService.recipientKeys[0])
+      const { outOfBandInvitation } = await aliceAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+
+      const plaintext = {
+        id: uuid(),
+        type:
+          kind === 'hangup' ? DidCommHangupMessage.type.messageTypeUri : DidCommDidRotateMessage.type.messageTypeUri,
+        from: aliceDid,
+        to: [bobDid],
+        body: kind === 'hangup' ? {} : { to_did: outOfBandInvitation.v2Invitation?.from },
+      }
+
+      const kms = aliceAgent.kms
+      const apv = computeApv([recipientKid])
+      const ephemeralKey = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      const protectedHeader = JsonEncoder.toBase64Url({
+        typ: 'application/didcomm-encrypted+json',
+        alg: 'ECDH-ES+A256KW',
+        enc: 'A256CBC-HS512',
+        skid: aliceSkid,
+        apu: TypedArrayEncoder.toBase64Url(computeApu(aliceSkid)),
+        apv: TypedArrayEncoder.toBase64Url(apv),
+        epk: { kty: 'OKP', crv: 'X25519', x: (ephemeralKey.publicJwk as Kms.KmsJwkPublicOkp).x },
+      })
+      const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-ES+A256KW',
+            keyId: ephemeralKey.keyId,
+            externalPublicJwk: toKeyAgreement(bobService.recipientKeys[0]).toJson() as Kms.KmsJwkPublicEcdh,
+            apv,
+          },
+        },
+        encryption: { algorithm: 'A256CBC-HS512', aad: TypedArrayEncoder.fromUtf8String(protectedHeader) },
+        data: JsonEncoder.toUint8Array(plaintext),
+      })
+      if (!iv || !tag || !encryptedKey) throw new Error('Expected iv, tag and encrypted key from KMS encrypt')
+      const message: DidCommV2EncryptedMessage = {
+        protected: protectedHeader,
+        recipients: [
+          { header: { kid: recipientKid }, encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted) },
+        ],
+        iv: TypedArrayEncoder.toBase64Url(iv),
+        ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
+        tag: TypedArrayEncoder.toBase64Url(tag),
+      }
+
+      const unpacked = await bobAgent.dependencyManager.resolve(DidCommV2Envelope).unpack(bobAgent.context, message)
+      expect(unpacked.plaintextMessage.from).toEqual(aliceDid)
+      expect(unpacked.authenticatedSenderDid).toBeUndefined()
+
+      await expect(bobAgent.dependencyManager.resolve(DidCommMessageReceiver).receiveMessage(message)).rejects.toThrow(
+        /connection/i
+      )
+
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const bobAfter = await bobAgent.didcomm.connections.getById(bobAliceConnection!.id)
+      expect(bobAfter.theirDid).toEqual(aliceDid)
+      expect(bobAfter.previousTheirDids).toEqual(bobAliceConnection?.previousTheirDids)
+    }
+  )
 
   test('alice rotates v2 DID; basic message carries from_prior and bob updates theirDid', async () => {
     // biome-ignore lint/style/noNonNullAssertion: no explanation

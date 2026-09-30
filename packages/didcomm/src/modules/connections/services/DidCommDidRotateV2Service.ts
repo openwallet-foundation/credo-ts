@@ -1,5 +1,6 @@
 import {
   type AgentContext,
+  areEquivalentDidPeer4Forms,
   CredoError,
   type DidDocument,
   DidRepository,
@@ -149,7 +150,10 @@ export class DidCommDidRotateV2Service {
     const pending = connection.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)
     if (!pending) return
     if (!inboundTo?.length || !connection.did) return
-    if (!inboundTo.includes(connection.did) && inboundTo.every((to) => !this.didsEqual(to, connection.did as string)))
+    if (
+      !inboundTo.includes(connection.did) &&
+      inboundTo.every((to) => !areEquivalentDidPeer4Forms(to, connection.did as string))
+    )
       return
 
     connection.metadata.delete(DidCommConnectionMetadataKeys.DidRotateV2)
@@ -457,17 +461,6 @@ export class DidCommDidRotateV2Service {
     } catch {
       return resolver.resolveDidDocument(agentContext, did)
     }
-  }
-
-  private didsEqual(a: string, b: string): boolean {
-    if (a === b) return true
-    if (isValidPeerDid(a) && isValidPeerDid(b)) {
-      const altA = getAlternativeDidsForPeerDid(a) ?? []
-      if (altA.includes(b)) return true
-      const altB = getAlternativeDidsForPeerDid(b) ?? []
-      if (altB.includes(a)) return true
-    }
-    return false
   }
 
   private emitDidRotatedEvent(

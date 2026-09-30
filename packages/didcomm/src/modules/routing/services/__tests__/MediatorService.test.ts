@@ -287,6 +287,25 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       expect(record.role).toBe(DidCommMediationRole.Mediator)
       expect(record.state).toBe(DidCommMediationState.Requested)
     })
+
+    test('looks up the connection by the authenticated sender DID, never by message.from', async () => {
+      const mediateRequest = new DidCommMediateRequestV2Message({})
+      mediateRequest.from = 'did:example:victim'
+      mockFunction(connectionService.findByTheirDidOrSender).mockResolvedValue(mockConnection)
+
+      await expect(
+        mediatorService.processMediationRequestV2(new DidCommInboundMessageContext(mediateRequest, { agentContext }))
+      ).rejects.toThrow('No connection associated')
+      expect(connectionService.findByTheirDidOrSender).not.toHaveBeenCalled()
+
+      await mediatorService.processMediationRequestV2(
+        new DidCommInboundMessageContext(mediateRequest, { agentContext, senderDid: 'did:example:sender' })
+      )
+      expect(connectionService.findByTheirDidOrSender).toHaveBeenCalledWith(agentContext, {
+        theirDid: 'did:example:sender',
+        senderKey: undefined,
+      })
+    })
   })
 
   describe('createGrantMediationMessageV2', () => {

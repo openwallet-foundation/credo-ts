@@ -1,12 +1,12 @@
 import type { AgentContext, Kms } from '@credo-ts/core'
 import {
+  areEquivalentDidPeer4Forms,
   CredoError,
   DidKey,
   DidsApi,
   getDidPeer4ShortFormForEquivalence,
   getPublicJwkFromVerificationMethod,
   injectable,
-  JsonEncoder,
   utils,
 } from '@credo-ts/core'
 import type { DecryptedDidCommMessageContext, DidCommEnvelopeKey, EnvelopeKeys } from '../DidCommEnvelopeService'
@@ -72,9 +72,14 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     this.config = config
   }
 
-  /** Authcrypt needs a sender key. Without one, only the v1 envelope can be built. */
+  /** Authcrypt needs a sender key and its skid. Without both, only the v1 envelope can be built. */
   public supportsPacking(keys: EnvelopeKeys): boolean {
-    return keys.recipientKeys.length >= 1 && keys.senderKey !== null && keys.senderKey !== undefined
+    return (
+      keys.recipientKeys.length >= 1 &&
+      keys.senderKey !== null &&
+      keys.senderKey !== undefined &&
+      Boolean(keys.senderKeySkid)
+    )
   }
 
   // Encrypted envelopes only: signed envelopes have their own receive path through unpackSigned.
@@ -156,15 +161,13 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     const theirDid =
       (connection?.theirDid && connection.theirDid.length > 0 ? connection.theirDid : undefined) ??
       (typeof tagsTheirDid === 'string' && tagsTheirDid.length > 0 ? tagsTheirDid : undefined)
-    const skidDid = !connection && keys.senderKeySkid.startsWith('did:') ? keys.senderKeySkid.split('#')[0] : undefined
+    const skidDid = keys.senderKeySkid.startsWith('did:') ? keys.senderKeySkid.split('#')[0] : undefined
 
     return buildV2PlaintextFromMessage(message, {
       useDidSovPrefixWhereAllowed: this.config.useDidSovPrefixWhereAllowed,
-      ...(connection?.did && theirDid
-        ? { from: connection.did, to: [theirDid] }
-        : skidDid
-          ? { from: skidDid }
-          : undefined),
+      from:
+        connection?.did && skidDid && areEquivalentDidPeer4Forms(connection.did, skidDid) ? connection.did : skidDid,
+      to: theirDid ? [theirDid] : undefined,
       fromPrior: connection?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.fromPriorJwt,
     })
   }
@@ -185,29 +188,35 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     }
     const { recipientKey, matchedKid } = resolved
 
-    const protectedJson = JsonEncoder.fromBase64Url(encryptedMessage.protected) as { skid?: string; alg?: string }
-    const isAnoncrypt = protectedJson.alg === 'ECDH-ES+A256KW'
-    if (!isAnoncrypt && !protectedJson.skid) {
-      throw new CredoError('DIDComm v2 authcrypt requires skid in protected header')
-    }
-
-    const { plaintext, senderKey } = await this.envelopeService.unpack(agentContext, encryptedMessage, {
+    const { plaintext, senderKey, senderKid } = await this.envelopeService.unpack(agentContext, encryptedMessage, {
       recipientKey,
       matchedKid,
-      resolveSenderKey: isAnoncrypt
-        ? async () => null
-        : (skid) => this.keyResolver.resolveSenderKey(agentContext, skid),
+      resolveSenderKey: (skid) => this.keyResolver.resolveSenderKey(agentContext, skid),
     })
+    const senderDid = senderKid?.split('#')[0]
 
     // Sign-then-encrypt: the decrypted bytes are a JWS. Verify it and use the inner plaintext.
     let unwrapped: DidCommV2PlaintextMessage = plaintext
     if (isDidCommV2SignedMessage(plaintext as unknown)) {
-      unwrapped = await this.verifySignedPlaintext(agentContext, plaintext as unknown as DidCommV2SignedMessage)
+      const verified = await this.verifySignedPlaintext(agentContext, plaintext as unknown as DidCommV2SignedMessage)
+      unwrapped = verified.plaintext
       agentContext.config.logger.debug('Verified nested DIDComm v2 signed message', {
         type: unwrapped.type,
         from: unwrapped.from,
       })
+      if (senderDid && !areEquivalentDidPeer4Forms(verified.signerDid, senderDid)) {
+        throw new CredoError(
+          `DIDComm v2 nested signer '${verified.signerDid}' does not match the authcrypt sender '${senderDid}'`
+        )
+      }
     }
+
+    const from = unwrapped.from
+    if (senderDid && from !== undefined && (typeof from !== 'string' || !areEquivalentDidPeer4Forms(from, senderDid))) {
+      throw new CredoError(`DIDComm v2 plaintext 'from' (${from}) does not match the authcrypt sender '${senderDid}'`)
+    }
+
+    this.warnIfNotAddressedToUs(agentContext, unwrapped.to, matchedKid)
 
     agentContext.config.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before normalization)', {
       id: unwrapped.id,
@@ -223,7 +232,25 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       plaintextMessage: normalizeV2PlaintextToV1(unwrapped),
       senderKey: senderKey ?? undefined,
       recipientKey,
+      authenticatedSenderDid: senderDid ? (from ?? senderDid) : undefined,
     }
+  }
+
+  private warnIfNotAddressedToUs(agentContext: AgentContext, to: unknown, matchedKid: string): void {
+    if (to === undefined) return
+
+    const ourDid = matchedKid.split('#')[0]
+    if (
+      Array.isArray(to) &&
+      to.some((entry) => typeof entry === 'string' && areEquivalentDidPeer4Forms(entry, ourDid))
+    ) {
+      return
+    }
+
+    agentContext.config.logger.warn("DIDComm v2 plaintext 'to' does not contain the DID the message was encrypted to", {
+      to,
+      ourDid,
+    })
   }
 
   /**
@@ -236,7 +263,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     agentContext: AgentContext,
     signedMessage: DidCommV2SignedMessage
   ): Promise<DidCommPlaintextMessage> {
-    const plaintext = await this.verifySignedPlaintext(agentContext, signedMessage)
+    const { plaintext } = await this.verifySignedPlaintext(agentContext, signedMessage)
     agentContext.config.logger.info(
       `Verified DIDComm v2 signed message of type '${plaintext.type}' from '${plaintext.from}'`
     )
@@ -252,10 +279,10 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
   private async verifySignedPlaintext(
     agentContext: AgentContext,
     signedMessage: DidCommV2SignedMessage
-  ): Promise<DidCommV2PlaintextMessage> {
+  ): Promise<{ plaintext: DidCommV2PlaintextMessage; signerDid: string }> {
     const dids = agentContext.dependencyManager.resolve(DidsApi)
 
-    const { plaintext } = await this.envelopeService.verifySignedMessage(agentContext, signedMessage, {
+    const { plaintext, signers } = await this.envelopeService.verifySignedMessage(agentContext, signedMessage, {
       resolveSignerJwk: async (kid) => {
         const signerDid = kid.split('#')[0]
         const didDocument = await dids.resolveDidDocument(signerDid)
@@ -264,7 +291,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       },
     })
 
-    return plaintext
+    return { plaintext, signerDid: signers[0].kid.split('#')[0] }
   }
 
   // ── Return routing ────────────────────────────────────────────────────

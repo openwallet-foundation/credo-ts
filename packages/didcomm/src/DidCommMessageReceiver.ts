@@ -163,7 +163,7 @@ export class DidCommMessageReceiver {
   ) {
     const envelope = this.envelopeRegistry.getEnvelopeForInbound(encryptedMessage)
     const decryptedMessage = await this.decryptMessage(agentContext, envelope, encryptedMessage)
-    const { plaintextMessage, senderKey, recipientKey } = decryptedMessage
+    const { plaintextMessage, senderKey, recipientKey, authenticatedSenderDid } = decryptedMessage
 
     this.logger.info(
       `Received message with type '${plaintextMessage['@type']}', recipient key ${recipientKey?.fingerprint} and sender key ${senderKey?.fingerprint}`,
@@ -176,12 +176,7 @@ export class DidCommMessageReceiver {
       const fromPriorJws = plaintextMessage.from_prior as string | undefined
       if (fromPriorJws) {
         const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
-        await didRotateV2Service.processFromPrior(
-          agentContext,
-          connection,
-          fromPriorJws,
-          plaintextMessage.from as string | undefined
-        )
+        await didRotateV2Service.processFromPrior(agentContext, connection, fromPriorJws, authenticatedSenderDid)
       }
       const inboundTo = Array.isArray(plaintextMessage.to) ? (plaintextMessage.to as string[]) : undefined
       if (inboundTo?.length) {
@@ -199,7 +194,7 @@ export class DidCommMessageReceiver {
       connection: connection?.isReady ? connection : undefined,
       senderKey,
       recipientKey,
-      senderDid: plaintextMessage.from as string | undefined,
+      senderDid: authenticatedSenderDid,
       agentContext,
       receivedAt,
       encryptedMessage,
@@ -290,10 +285,10 @@ export class DidCommMessageReceiver {
     agentContext: AgentContext,
     decryptedMessage: DecryptedDidCommMessageContext
   ): Promise<DidCommConnectionRecord | null> {
-    const { plaintextMessage, recipientKey, senderKey } = decryptedMessage
+    const { plaintextMessage, recipientKey, senderKey, authenticatedSenderDid } = decryptedMessage
 
-    // DIDComm v2: plaintext has from/to (normalized from v2 shape). Try findByTheirDid first.
-    const from = plaintextMessage.from as string | undefined
+    // DIDComm v2: an anoncrypt `from` is unauthenticated, so only the authcrypt sender selects a connection.
+    const from = authenticatedSenderDid
     const to = Array.isArray(plaintextMessage.to) ? plaintextMessage.to : undefined
     const fromPriorJws = plaintextMessage.from_prior as string | undefined
 

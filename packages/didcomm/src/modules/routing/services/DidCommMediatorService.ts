@@ -353,9 +353,9 @@ export class DidCommMediatorService {
 
     // Fallback: resolve by sender DID/sender key when connection wasn't attached (e.g. mediate-request
     // arrives before ack is processed, or findConnection failed). findByTheirDidOrSender tries exact
-    // match, alternative DID forms, and sender key → DidRecord → connection. Use senderDid from
-    // context (plaintext before transform) since message.from may be lost in JsonTransformer.
-    const from = messageContext.senderDid ?? messageContext.message.from
+    // match, alternative DID forms, and sender key → DidRecord → connection. Only the authenticated
+    // senderDid is used, message.from is whatever the sender wrote.
+    const from = messageContext.senderDid
     const senderKey = messageContext.senderKey
     if (!connection && (from || senderKey)) {
       connection =
