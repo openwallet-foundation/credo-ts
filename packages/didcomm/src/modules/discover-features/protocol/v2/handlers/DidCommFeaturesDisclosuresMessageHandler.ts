@@ -2,10 +2,11 @@ import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from 
 import type { DidCommDiscoverFeaturesV2Service } from '../DidCommDiscoverFeaturesV2Service'
 
 import { DidCommFeaturesDisclosuresMessage } from '../messages'
+import { DidCommFeaturesDiscloseV2Message } from '../messages/DidCommFeaturesDiscloseV2Message'
 
 export class DidCommFeaturesDisclosuresMessageHandler implements DidCommMessageHandler {
   private discoverFeaturesService: DidCommDiscoverFeaturesV2Service
-  public supportedMessages = [DidCommFeaturesDisclosuresMessage]
+  public supportedMessages = [DidCommFeaturesDisclosuresMessage, DidCommFeaturesDiscloseV2Message]
 
   public constructor(discoverFeaturesService: DidCommDiscoverFeaturesV2Service) {
     this.discoverFeaturesService = discoverFeaturesService
