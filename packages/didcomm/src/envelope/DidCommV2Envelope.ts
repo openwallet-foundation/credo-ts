@@ -90,7 +90,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     options?: DidCommPackOptions
   ): Promise<DidCommEncryptedMessage> {
     const v2Keys = this.toV2EnvelopeKeys(keys)
-    const plaintext = this.buildPlaintext(message, options?.connection)
+    const plaintext = this.buildPlaintext(message, v2Keys, options?.connection)
 
     agentContext.config.logger.debug('Raw DIDComm v2 plaintext (on-wire format, before encrypt)', {
       id: plaintext.id,
@@ -142,6 +142,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
 
   private buildPlaintext(
     message: DidCommMessage,
+    keys: DidCommV2PackKeys,
     connection?: DidCommPackOptions['connection']
   ): DidCommV2PlaintextMessage {
     // `theirDid` can be empty on the record but still present in the tags right after a rotation.
@@ -149,10 +150,15 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     const theirDid =
       (connection?.theirDid && connection.theirDid.length > 0 ? connection.theirDid : undefined) ??
       (typeof tagsTheirDid === 'string' && tagsTheirDid.length > 0 ? tagsTheirDid : undefined)
+    const skidDid = !connection && keys.senderKeySkid.startsWith('did:') ? keys.senderKeySkid.split('#')[0] : undefined
 
     return buildV2PlaintextFromMessage(message, {
       useDidSovPrefixWhereAllowed: this.config.useDidSovPrefixWhereAllowed,
-      ...(connection?.did && theirDid ? { from: connection.did, to: [theirDid] } : undefined),
+      ...(connection?.did && theirDid
+        ? { from: connection.did, to: [theirDid] }
+        : skidDid
+          ? { from: skidDid }
+          : undefined),
       fromPrior: connection?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.fromPriorJwt,
     })
   }
