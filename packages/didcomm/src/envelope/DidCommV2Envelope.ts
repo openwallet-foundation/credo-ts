@@ -236,6 +236,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       senderKey: senderKey ?? undefined,
       recipientKey,
       authenticatedSenderDid: senderDid ? (from ?? senderDid) : undefined,
+      recipientDid: matchedKid.split('#')[0],
     }
   }
 

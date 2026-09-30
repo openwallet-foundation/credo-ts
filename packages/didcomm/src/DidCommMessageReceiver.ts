@@ -373,8 +373,8 @@ export class DidCommMessageReceiver {
       if (byPair) return { connection: byPair, linkedByFromPrior: true }
     }
 
-    if (from !== undefined && to?.length && this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
-      const recipient = to[0]
+    const recipient = decryptedMessage.recipientDid
+    if (from !== undefined && recipient && this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
       const [recipientDidRecord] = await agentContext.resolve(DidsApi).getCreatedDids({ did: recipient })
       // Match every form of the DID (did:peer:4 short and long) so a sender cannot pick the untracked one.
       const recipientDids = recipientDidRecord

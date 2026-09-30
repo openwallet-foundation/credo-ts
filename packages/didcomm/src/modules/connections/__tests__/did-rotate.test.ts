@@ -44,7 +44,7 @@ import {
 } from '../../../v2'
 import { computeApu, computeApv } from '../../../v2/apuApv'
 import { DidCommBasicMessage, DidCommBasicMessageV2 } from '../../basic-messages'
-import { DidCommOutOfBandState } from '../../oob'
+import { type DidCommOutOfBandRecord, DidCommOutOfBandState } from '../../oob'
 import { DidCommForwardV2Message } from '../../routing/protocol/v2/messages'
 import {
   DidCommDidRotateAckMessage,
@@ -1527,6 +1527,36 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
 
     expect(await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)).toHaveLength(1)
     expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.Done)
+  })
+
+  async function sendFirstMessageWithTo(invitation: DidCommOutOfBandRecord, to: string[]): Promise<void> {
+    const { connectionRecord } = await accepter.didcomm.oob.receiveInvitation(invitation.outOfBandInvitation, {
+      label: '',
+    })
+    const envelopeService = accepter.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const pack = envelopeService.pack.bind(envelopeService)
+    const rewriteTo = vi
+      .spyOn(envelopeService, 'pack')
+      .mockImplementation((agentContext, payload, keys) =>
+        pack(agentContext, { ...(payload as DidCommV2PlaintextMessage), to }, keys)
+      )
+    try {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await waitUntilInviterReceives(() => accepter.didcomm.basicMessages.sendMessage(connectionRecord!.id, 'first'))
+    } finally {
+      rewriteTo.mockRestore()
+    }
+  }
+
+  test('a first message binds to the invitation it was encrypted to, not the one named in to', async () => {
+    const encryptedTo = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+    const namedInTo = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+
+    await sendFirstMessageWithTo(encryptedTo, [namedInTo.outOfBandInvitation.v2Invitation?.from as string])
+
+    expect(await inviter.didcomm.connections.findAllByOutOfBandId(encryptedTo.id)).toHaveLength(1)
+    expect(await inviter.didcomm.connections.findAllByOutOfBandId(namedInTo.id)).toHaveLength(0)
+    expect((await inviter.didcomm.oob.getById(namedInTo.id)).state).toEqual(DidCommOutOfBandState.AwaitResponse)
   })
 
   test('a message from an unknown sender to a pairwise DID creates no connection', async () => {
