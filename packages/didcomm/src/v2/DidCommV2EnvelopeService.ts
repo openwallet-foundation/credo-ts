@@ -350,9 +350,10 @@ export class DidCommV2EnvelopeService {
       }
       senderForKdf = senderKey
     } else {
-      senderForKdf = senderKey.is(Kms.X25519PublicJwk)
-        ? senderKey
-        : (senderKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
+      if (!senderKey.is(Kms.X25519PublicJwk)) {
+        throw new CredoError('Sender key must be X25519 when recipient is X25519')
+      }
+      senderForKdf = senderKey
     }
 
     const { data } = await kms.decrypt({

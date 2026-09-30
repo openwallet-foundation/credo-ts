@@ -1258,6 +1258,39 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     expect(accepterAfter?.theirDid).not.toEqual(accepterTwoAfter?.theirDid)
   })
 
+  test('an anoncrypt first message to a v2 invitation DID creates no connection', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+    const invitationDid = invitation.outOfBandInvitation.v2Invitation?.from as string
+    const { connectionRecord } = await accepter.didcomm.oob.receiveInvitation(invitation.outOfBandInvitation, {
+      label: '',
+    })
+    const [invitationService] = await accepter.dependencyManager
+      .resolve(DidCommDocumentService)
+      .resolveServicesFromDid(accepter.context, invitationDid)
+    const message = await accepter.dependencyManager.resolve(DidCommV2EnvelopeService).packAnoncrypt(
+      accepter.context,
+      {
+        id: uuid(),
+        type: DidCommEmptyMessage.type.messageTypeUri,
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        from: connectionRecord!.did!,
+        to: [invitationDid],
+        body: {},
+      },
+      {
+        recipientKey: toKeyAgreement(invitationService.recipientKeys[0]),
+        recipientKid: toKeyAgreementDidUrl(invitationService.recipientKeys[0]),
+        contentEncryptionAlgorithm:
+          accepter.dependencyManager.resolve(DidCommModuleConfig).v2DefaultAnoncryptContentEncryption,
+      }
+    )
+
+    await inviter.dependencyManager.resolve(DidCommMessageReceiver).receiveMessage(message)
+
+    expect(await inviter.didcomm.connections.getAll()).toHaveLength(0)
+    expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.AwaitResponse)
+  })
+
   test('a rotation from_prior replayed by another accepter over anoncrypt changes nothing', async () => {
     const invitation = await inviter.didcomm.oob.createInvitation({
       didCommVersion: 'v2',
