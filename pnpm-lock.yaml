@@ -612,6 +612,9 @@ importers:
       '@stablelib/ed25519':
         specifier: 'catalog:'
         version: 2.1.0
+      '@types/events':
+        specifier: ^3.0.3
+        version: 3.0.3
       '@types/ws':
         specifier: 'catalog:'
         version: 8.18.1
@@ -670,9 +673,6 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@types/events':
-        specifier: ^3.0.3
-        version: 3.0.3
       '@types/object-inspect':
         specifier: ^1.13.0
         version: 1.13.0
@@ -906,6 +906,12 @@ importers:
       '@types/express':
         specifier: 'catalog:'
         version: 5.0.6
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.4
+      '@types/ws':
+        specifier: 'catalog:'
+        version: 8.18.1
       express:
         specifier: 'catalog:'
         version: 5.2.1
@@ -919,12 +925,6 @@ importers:
         specifier: 'catalog:'
         version: 8.21.3
     devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 22.20.4
-      '@types/ws':
-        specifier: 'catalog:'
-        version: 8.18.1
       nock:
         specifier: 'catalog:'
         version: 14.0.17
