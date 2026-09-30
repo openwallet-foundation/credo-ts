@@ -1405,7 +1405,7 @@ describe('NodeKeyManagementService', () => {
 
     it.each([
       { algorithm: 'ECDH-ES+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'OKP', crv: 'X25519' } },
-      { algorithm: 'ECDH-ES+A128KW', encryption: 'A128GCM', type: { kty: 'EC', crv: 'P-256' } },
+      { algorithm: 'ECDH-ES+A192KW', encryption: 'A192GCM', type: { kty: 'EC', crv: 'P-256' } },
     ] as const)('decrypts with $algorithm and $encryption using $type.crv keys', async ({
       algorithm,
       encryption,
