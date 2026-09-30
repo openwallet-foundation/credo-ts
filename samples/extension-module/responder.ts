@@ -1,7 +1,8 @@
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
 import { DidCommModule } from '@credo-ts/didcomm'
-import { agentDependencies, DidCommHttpInboundTransport, DidCommWsInboundTransport } from '@credo-ts/node'
+import { agentDependencies, webSocketHost } from '@credo-ts/node'
+import { expressHost } from '@credo-ts/node/express'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
 import type { Socket } from 'net'
@@ -16,9 +17,7 @@ const run = async () => {
   const autoAcceptRequests = true
   const app = express()
   const socketServer = new WebSocketServer({ noServer: true })
-
-  const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
-  const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
+  const httpHost = expressHost({ app, port })
 
   // Setup the agent
   const agent = new Agent({
@@ -35,9 +34,8 @@ const run = async () => {
       }),
       didcomm: new DidCommModule({
         endpoints: [`http://localhost:${port}`],
-        transports: {
-          inbound: [httpInboundTransport, wsInboundTransport],
-        },
+        http: { host: httpHost },
+        webSocket: { host: webSocketHost({ server: socketServer }) },
         connections: { autoAcceptConnections: true },
       }),
       dummy: new DummyModule({ autoAcceptRequests }),
@@ -56,7 +54,7 @@ const run = async () => {
   //Initialize the agent
   await agent.initialize()
 
-  httpInboundTransport.server?.on('upgrade', (request, socket, head) => {
+  httpHost.server?.on('upgrade', (request, socket, head) => {
     socketServer.handleUpgrade(request, socket as Socket, head, (socket) => {
       socketServer.emit('connection', socket, request)
     })

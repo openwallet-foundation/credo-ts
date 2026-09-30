@@ -1,5 +1,5 @@
 import { Agent } from '@credo-ts/core'
-import { DidCommWsInboundTransport } from '@credo-ts/node'
+import { webSocketHost } from '@credo-ts/node'
 import { WebSocketServer } from 'ws'
 import { getAgentOptions, makeConnection } from '../packages/core/tests/helpers'
 import { DidCommMediationState, DidCommWsOutboundTransport } from '../packages/didcomm/src'
@@ -30,6 +30,7 @@ describe('E2E WS session tests', () => {
         'E2E WS Session Mediator',
         {
           endpoints: [`ws://localhost:${mediatorPort}`],
+          webSocket: { host: webSocketHost({ server: socketServer }) },
           mediator: { autoAcceptMediationRequests: true },
         },
         {},
@@ -39,7 +40,6 @@ describe('E2E WS session tests', () => {
     )
     recipientAgent = new Agent(getAgentOptions('E2E WS Session Recipient', {}, {}, {}, { requireDidcomm: true }))
 
-    mediatorAgent.didcomm.registerInboundTransport(new DidCommWsInboundTransport({ server: socketServer }))
     mediatorAgent.didcomm.registerOutboundTransport(new DidCommWsOutboundTransport())
     await mediatorAgent.initialize()
 
