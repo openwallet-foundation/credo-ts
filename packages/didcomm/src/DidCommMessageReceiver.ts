@@ -3,6 +3,7 @@ import {
   type AgentContextProvider,
   areEquivalentDidPeer4Forms,
   CredoError,
+  DidRepository,
   DidsApi,
   InjectionSymbols,
   inject,
@@ -172,11 +173,17 @@ export class DidCommMessageReceiver {
       plaintextMessage
     )
 
-    const { connection, linkedByFromPrior } = await this.findConnection(agentContext, decryptedMessage)
+    const { connection, linkedByFromPrior, linkedBySupersededKey } = await this.findConnection(
+      agentContext,
+      decryptedMessage
+    )
 
     if (connection) {
       // DIDComm v2.1 DID Rotation: messages sent before a rotation that arrive after it MUST be ignored
-      if (authenticatedSenderDid && this.isSupersededTheirDid(connection, authenticatedSenderDid)) {
+      if (
+        authenticatedSenderDid &&
+        (linkedBySupersededKey || this.isSupersededTheirDid(connection, authenticatedSenderDid))
+      ) {
         this.logger.debug('Ignoring v2 message from a superseded peer DID', {
           connectionId: connection.id,
           senderDid: authenticatedSenderDid,
@@ -188,14 +195,15 @@ export class DidCommMessageReceiver {
       const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
       const fromPriorJws = plaintextMessage.from_prior as string | undefined
       if (fromPriorJws) {
-        const accepted = await didRotateV2Service.processFromPrior(
+        const result = await didRotateV2Service.processFromPrior(
           agentContext,
           connection,
           fromPriorJws,
           authenticatedSenderDid
         )
-        if (!accepted && linkedByFromPrior) {
-          this.logger.warn('Dropping v2 message tied to a connection only by an ignored from_prior', {
+        // A from_prior applied before says nothing about who sent this copy of it
+        if (result !== 'applied' && linkedByFromPrior) {
+          this.logger.warn('Dropping v2 message tied to a connection only by a from_prior that changed nothing', {
             connectionId: connection.id,
           })
           await session?.close()
@@ -313,7 +321,11 @@ export class DidCommMessageReceiver {
   private async findConnection(
     agentContext: AgentContext,
     decryptedMessage: DecryptedDidCommMessageContext
-  ): Promise<{ connection: DidCommConnectionRecord | null; linkedByFromPrior?: boolean }> {
+  ): Promise<{
+    connection: DidCommConnectionRecord | null
+    linkedByFromPrior?: boolean
+    linkedBySupersededKey?: boolean
+  }> {
     const { plaintextMessage, recipientKey, senderKey, authenticatedSenderDid } = decryptedMessage
 
     // DIDComm v2: an anoncrypt `from` is unauthenticated, so only the authcrypt sender selects a connection.
@@ -355,7 +367,15 @@ export class DidCommMessageReceiver {
       // X25519 and P-256/P-384 fingerprints too, so v2 key-agreement keys can match.
       if (recipientKey && senderKey) {
         connection = await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
-        if (connection) return { connection }
+        if (connection) {
+          const keyOwner = await agentContext.dependencyManager
+            .resolve(DidRepository)
+            .findReceivedDidByRecipientKey(agentContext, senderKey)
+          return {
+            connection,
+            linkedBySupersededKey: keyOwner !== null && this.isSupersededTheirDid(connection, keyOwner.did),
+          }
+        }
       }
     }
 

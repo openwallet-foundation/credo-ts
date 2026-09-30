@@ -161,23 +161,23 @@ export class DidCommDidRotateV2Service {
   }
 
   /**
-   * Process an inbound from_prior JWT. Returns true when it was applied or repeats one already
-   * applied (the sender retransmits it until we address its new DID), and false when it was ignored.
-   * Throws when the JWT is invalid.
+   * Process an inbound from_prior JWT. Returns `applied` when it changed the connection now,
+   * `already-applied` when it repeats one applied before (the sender retransmits it until we address
+   * its new DID), and `ignored` otherwise. Throws when the JWT is invalid.
    */
   public async processFromPrior(
     agentContext: AgentContext,
     connection: DidCommConnectionRecord,
     jws: string,
     senderDid: string | undefined
-  ): Promise<boolean> {
-    if (this.isAppliedFromPrior(connection, this.decodeFromPrior(jws))) return true
+  ): Promise<'applied' | 'already-applied' | 'ignored'> {
+    if (this.isAppliedFromPrior(connection, this.decodeFromPrior(jws))) return 'already-applied'
 
     const payload = await this.verifyFromPrior(agentContext, jws)
 
     if (!connection.theirDid) {
       this.logger.warn('Ignoring from_prior on a connection the peer has terminated', { connectionId: connection.id })
-      return false
+      return 'ignored'
     }
 
     if (!areEquivalentDidPeer4Forms(payload.iss, connection.theirDid)) {
@@ -185,12 +185,12 @@ export class DidCommDidRotateV2Service {
         connectionId: connection.id,
         iss: payload.iss,
       })
-      return false
+      return 'ignored'
     }
 
     if (payload.sub === undefined) {
       await this.processRotateToNothing(agentContext, connection)
-      return true
+      return 'applied'
     }
 
     if (!senderDid || !areEquivalentDidPeer4Forms(payload.sub, senderDid)) {
@@ -199,11 +199,11 @@ export class DidCommDidRotateV2Service {
         sub: payload.sub,
         senderDid,
       })
-      return false
+      return 'ignored'
     }
 
     await this.processRotateFromPeer(agentContext, connection, payload.iss, payload.sub)
-    return true
+    return 'applied'
   }
 
   private isAppliedFromPrior(connection: DidCommConnectionRecord, { iss, sub }: FromPriorPayload): boolean {
