@@ -716,6 +716,10 @@ export class DidCommOutOfBandApi {
         DidCommOutOfBandRecordMetadataKeys.V2Invitation,
         outOfBandInvitation.v2Invitation.toJSON()
       )
+      if (config.isImplicit) {
+        // The invitation id of an implicit invitation was generated locally and never sent, so it must not become a pthid
+        outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.V2ImplicitInvitation, {})
+      }
     }
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)

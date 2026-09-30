@@ -51,6 +51,7 @@ import {
 } from '../models'
 import type { DidCommConnectionRecordProps } from '../repository'
 import { DidCommConnectionRecord, DidCommConnectionRepository } from '../repository'
+import type { DidCommConnectionMetadata } from '../repository/DidCommConnectionMetadataTypes'
 
 import {
   assertNoCreatedDidExistsForKeys,
@@ -897,9 +898,11 @@ export class DidCommConnectionService {
   public async createConnection(
     agentContext: AgentContext,
     options: DidCommConnectionRecordProps,
-    emitStateChanged = false
+    emitStateChanged = false,
+    metadata?: Partial<DidCommConnectionMetadata>
   ): Promise<DidCommConnectionRecord> {
     const connectionRecord = new DidCommConnectionRecord(options)
+    for (const [key, value] of Object.entries(metadata ?? {})) connectionRecord.metadata.set(key, value)
     await this.connectionRepository.save(agentContext, connectionRecord)
     if (emitStateChanged) {
       this.emitStateChangedEvent(agentContext, connectionRecord, null)

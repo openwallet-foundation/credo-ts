@@ -30,6 +30,8 @@ import { DidCommEnvelopeRegistry } from './envelope'
 import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
+import { DidCommConnectionRepository } from './modules/connections/repository'
+import { DidCommConnectionMetadataKeys } from './modules/connections/repository/DidCommConnectionMetadataTypes'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
@@ -246,6 +248,31 @@ export class DidCommMessageSender {
   }
 
   public async sendMessage(
+    outboundMessageContext: DidCommOutboundMessageContext,
+    options?: {
+      transportPriority?: TransportPriorityOptions
+    }
+  ): Promise<void> {
+    const { agentContext, connection, message } = outboundMessageContext
+    const appliedParentThreadId =
+      connection &&
+      !outboundMessageContext.isOutboundServiceMessage() &&
+      this.applyOutOfBandParentThreadId(connection, message)
+
+    await this.sendOutboundMessage(outboundMessageContext, options)
+
+    // Cleared only after a successful send so a retried first response still carries the pthid.
+    // The record is reloaded because inbound messages may have updated it while this one was in flight.
+    if (appliedParentThreadId) {
+      const connectionRepository = agentContext.dependencyManager.resolve(DidCommConnectionRepository)
+      const storedConnection = await connectionRepository.getById(agentContext, connection.id)
+      connection.metadata.delete(DidCommConnectionMetadataKeys.OutOfBandV2ParentThreadId)
+      storedConnection.metadata.delete(DidCommConnectionMetadataKeys.OutOfBandV2ParentThreadId)
+      await connectionRepository.update(agentContext, storedConnection)
+    }
+  }
+
+  private async sendOutboundMessage(
     outboundMessageContext: DidCommOutboundMessageContext,
     options?: {
       transportPriority?: TransportPriorityOptions
@@ -618,6 +645,19 @@ export class DidCommMessageSender {
     throw new MessageSendingError(`Unable to send message to service: ${service.serviceEndpoint}`, {
       outboundMessageContext,
     })
+  }
+
+  // https://identity.foundation/didcomm-messaging/spec/v2.1/#invitation
+  private applyOutOfBandParentThreadId(connection: DidCommConnectionRecord, message: DidCommMessage): boolean {
+    const pending = connection.metadata.get(DidCommConnectionMetadataKeys.OutOfBandV2ParentThreadId)
+    if (!pending) return false
+
+    if (!message.thread) {
+      message.setThread({ parentThreadId: pending.parentThreadId })
+    } else if (!message.thread.parentThreadId) {
+      message.thread.parentThreadId = pending.parentThreadId
+    }
+    return true
   }
 
   private findSessionForOutboundContext(outboundContext: DidCommOutboundMessageContext) {
