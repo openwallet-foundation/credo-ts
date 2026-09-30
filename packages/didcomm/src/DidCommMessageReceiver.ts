@@ -1,6 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
 import {
   type AgentContextProvider,
+  areEquivalentDidPeer4Forms,
   CredoError,
   DidsApi,
   InjectionSymbols,
@@ -159,17 +160,39 @@ export class DidCommMessageReceiver {
       plaintextMessage
     )
 
-    const connection = await this.findConnection(agentContext, decryptedMessage)
+    const { connection, linkedByFromPrior } = await this.findConnection(agentContext, decryptedMessage)
 
     if (connection) {
+      // DIDComm v2.1 DID Rotation: messages sent before a rotation that arrive after it MUST be ignored
+      if (authenticatedSenderDid && this.isSupersededTheirDid(connection, authenticatedSenderDid)) {
+        this.logger.debug('Ignoring v2 message from a superseded peer DID', {
+          connectionId: connection.id,
+          senderDid: authenticatedSenderDid,
+        })
+        await session?.close()
+        return
+      }
+
+      const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
       const fromPriorJws = plaintextMessage.from_prior as string | undefined
       if (fromPriorJws) {
-        const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
-        await didRotateV2Service.processFromPrior(agentContext, connection, fromPriorJws, authenticatedSenderDid)
+        const accepted = await didRotateV2Service.processFromPrior(
+          agentContext,
+          connection,
+          fromPriorJws,
+          authenticatedSenderDid
+        )
+        if (!accepted && linkedByFromPrior) {
+          this.logger.warn('Dropping v2 message tied to a connection only by an ignored from_prior', {
+            connectionId: connection.id,
+          })
+          await session?.close()
+          return
+        }
       }
+
       const inboundTo = Array.isArray(plaintextMessage.to) ? (plaintextMessage.to as string[]) : undefined
       if (inboundTo?.length) {
-        const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
         await didRotateV2Service.clearPendingRotationIfAcknowledged(agentContext, connection, inboundTo)
       }
     }
@@ -267,10 +290,15 @@ export class DidCommMessageReceiver {
     return message
   }
 
+  private isSupersededTheirDid(connection: DidCommConnectionRecord, senderDid: string): boolean {
+    if (connection.theirDid && areEquivalentDidPeer4Forms(connection.theirDid, senderDid)) return false
+    return connection.previousTheirDids.some((did) => areEquivalentDidPeer4Forms(did, senderDid))
+  }
+
   private async findConnection(
     agentContext: AgentContext,
     decryptedMessage: DecryptedDidCommMessageContext
-  ): Promise<DidCommConnectionRecord | null> {
+  ): Promise<{ connection: DidCommConnectionRecord | null; linkedByFromPrior?: boolean }> {
     const { plaintextMessage, recipientKey, senderKey, authenticatedSenderDid } = decryptedMessage
 
     // DIDComm v2: an anoncrypt `from` is unauthenticated, so only the authcrypt sender selects a connection.
@@ -286,7 +314,7 @@ export class DidCommMessageReceiver {
           ourDid: to[0],
           theirDid: from,
         })
-        if (byPair) return byPair
+        if (byPair) return { connection: byPair }
       }
 
       let connection: DidCommConnectionRecord | null = null
@@ -305,32 +333,23 @@ export class DidCommMessageReceiver {
           throw error
         }
       }
-      if (connection) return connection
+      if (connection) return { connection }
 
       // Fallback: try findByKeys. With v1 connections + v2 envelope, findByTheirDid can fail in edge cases.
       // With v2 OOB, findByKeys may work if DidRecords exist for the keys. DID record tags index
       // X25519 and P-256/P-384 fingerprints too, so v2 key-agreement keys can match.
       if (recipientKey && senderKey) {
         connection = await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
-        if (connection) return connection
+        if (connection) return { connection }
       }
     }
 
     // Connection lookup is by (ourDid, priorDid) pair per V2.
     if (fromPriorJws && to?.length) {
-      try {
-        const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
-        const payload = await didRotateV2Service.verifyFromPrior(agentContext, fromPriorJws)
-        const byPair = await this.connectionService.findByDids(agentContext, {
-          ourDid: to[0],
-          theirDid: payload.iss,
-        })
-        if (byPair) return byPair
-      } catch (error) {
-        this.logger.warn('from_prior JWT verification failed during connection lookup', {
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
+      const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
+      const { iss } = await didRotateV2Service.verifyFromPrior(agentContext, fromPriorJws)
+      const byPair = await this.connectionService.findByDids(agentContext, { ourDid: to[0], theirDid: iss })
+      if (byPair) return { connection: byPair, linkedByFromPrior: true }
     }
 
     if (from !== undefined && to?.length && this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
@@ -357,7 +376,7 @@ export class DidCommMessageReceiver {
         if (outOfBandRecord.reusable) {
           await this.rotateInviterDidForV2OOB(agentContext, connection)
         }
-        return connection
+        return { connection }
       }
 
       // For implicit v2 OOB invitations: no OutOfBandRecord exists on the responder side
@@ -380,15 +399,15 @@ export class DidCommMessageReceiver {
         )
         // Always rotate to a per-pair DID
         await this.rotateInviterDidForV2OOB(agentContext, connection)
-        return connection
+        return { connection }
       } catch {
         // recipient is not our DID — no connection created
       }
     }
 
     // v1: use sender/recipient keys
-    if (!recipientKey || !senderKey) return null
-    return this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
+    if (!recipientKey || !senderKey) return { connection: null }
+    return { connection: await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey }) }
   }
 
   /**
