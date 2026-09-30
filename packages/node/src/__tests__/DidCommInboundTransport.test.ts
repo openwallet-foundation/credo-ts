@@ -1,12 +1,18 @@
 import { createServer, type Server } from 'node:http'
 import type { AgentContext } from '@credo-ts/core'
-import { DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
+import {
+  DidCommHttpInboundTransport,
+  DidCommModuleConfig,
+  DidCommTransportService,
+  DidCommWsInboundTransport,
+  WebSocketTransportSession,
+} from '@credo-ts/didcomm'
 import express from 'express'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket, { WebSocketServer } from 'ws'
 
-import { DidCommHttpInboundTransport } from '../DidCommHttpInboundTransport'
-import { DidCommWsInboundTransport, WebSocketTransportSession } from '../DidCommWsInboundTransport'
+import { expressHost } from '../express'
+import { webSocketHost } from '../webSocketHost'
 
 const servers: Server[] = []
 
@@ -76,7 +82,7 @@ describe('DIDComm inbound transports', () => {
     })
     const port = await listen(publicServer)
 
-    const transport = new DidCommWsInboundTransport({ server: socketServer })
+    const transport = new DidCommWsInboundTransport({ host: webSocketHost({ server: socketServer }) })
     await transport.start(createAgentContext())
 
     const client = new WebSocket(`ws://127.0.0.1:${port}`)
@@ -118,7 +124,7 @@ describe('DIDComm inbound transports', () => {
   it('rejects startup when its configured port cannot bind', async () => {
     const occupiedServer = createServer()
     const port = await listen(occupiedServer)
-    const transport = new DidCommHttpInboundTransport({ port })
+    const transport = new DidCommHttpInboundTransport({ host: expressHost({ port }) })
 
     await expect(transport.start(createAgentContext())).rejects.toMatchObject({ code: 'EADDRINUSE' })
   })
@@ -126,10 +132,11 @@ describe('DIDComm inbound transports', () => {
   it('registers a route without binding or closing a host-owned server', async () => {
     const app = createApp()
     const publicServer = createServer(app)
-    const transport = new DidCommHttpInboundTransport({ app, path: '/didcomm' })
+    const host = expressHost({ app })
+    const transport = new DidCommHttpInboundTransport({ host, path: '/didcomm' })
 
     await transport.start(createAgentContext())
-    expect(transport.server).toBeUndefined()
+    expect(host.server).toBeUndefined()
 
     const port = await listen(publicServer)
     const response = await fetch(`http://127.0.0.1:${port}/didcomm`, {
@@ -153,7 +160,7 @@ describe('DIDComm inbound transports', () => {
       request.on('end', () => response.status(204).end())
     })
     const publicServer = createServer(app)
-    const transport = new DidCommHttpInboundTransport({ app, path: '/didcomm' })
+    const transport = new DidCommHttpInboundTransport({ host: expressHost({ app }), path: '/didcomm' })
 
     await transport.start(createAgentContext())
     const port = await listen(publicServer)

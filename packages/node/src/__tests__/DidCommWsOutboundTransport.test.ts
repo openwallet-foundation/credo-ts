@@ -6,7 +6,7 @@ import { Subject } from 'rxjs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket, { WebSocketServer } from 'ws'
 
-import { agentDependencies } from '../../index'
+import { agentDependencies } from '../index'
 
 const cleanup: Array<() => Promise<void>> = []
 
