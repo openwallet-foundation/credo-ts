@@ -273,6 +273,56 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       expect((await pingReceived).thread?.parentThreadId).toBeUndefined()
     })
 
+    it('v2 OOB with an attached request: the attached message is a v2 plaintext message', async () => {
+      const ping = new DidCommTrustPingMessage({ responseRequested: true })
+      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
+        didCommVersion: 'v2',
+        messages: [ping],
+      })
+
+      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
+      const invitationJson = JsonEncoder.fromBase64Url(new URL(invitationUrl).searchParams.get('_oob') as string)
+      const attachedMessage = invitationJson.attachments[0].data.json
+      expect(attachedMessage).toEqual({
+        id: ping.id,
+        type: DidCommTrustPingMessage.type.messageTypeUri,
+        body: { response_requested: true },
+      })
+      expect(attachedMessage).not.toHaveProperty('@type')
+    })
+
+    const toV2Json = (ping: DidCommTrustPingMessage) => ({
+      id: ping.id,
+      type: ping.type,
+      body: { response_requested: true },
+    })
+
+    it.each([
+      ['v2 shaped json', (ping: DidCommTrustPingMessage) => ({ json: toV2Json(ping) })],
+      ['v2 shaped base64', (ping: DidCommTrustPingMessage) => ({ base64: JsonEncoder.toBase64Url(toV2Json(ping)) })],
+      ['v1 shaped json', (ping: DidCommTrustPingMessage) => ({ json: ping.toJSON() })],
+      ['v1 shaped base64', (ping: DidCommTrustPingMessage) => ({ base64: JsonEncoder.toBase64Url(ping.toJSON()) })],
+    ])('v2 OOB with a %s attached request: it is dispatched and the reply carries the invitation id as pthid', async (_, toAttachedData) => {
+      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+      const invitationId = faberOutOfBandRecord.outOfBandInvitation.id
+      const ping = new DidCommTrustPingMessage({ responseRequested: true })
+      const invitationJson = {
+        ...faberOutOfBandRecord.outOfBandInvitation.v2Invitation?.toJSON(),
+        attachments: [{ id: 'request-0', media_type: 'application/json', data: toAttachedData(ping) }],
+      }
+
+      const pingReceived = waitForTrustPingReceivedEvent(aliceAgent, { threadId: ping.id })
+      const replyReceived = waitForTrustPingResponseReceivedEvent(faberAgent, { threadId: ping.id })
+      const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
+        `https://example.com?_oob=${JsonEncoder.toBase64Url(invitationJson)}`,
+        { label: 'alice' }
+      )
+      if (!connectionRecord) throw new Error('Expected connectionRecord to be defined')
+
+      await pingReceived
+      expect((await replyReceived).thread?.parentThreadId).toBe(invitationId)
+    })
+
     it('v2 OOB (no handshake): a first message sent from the connection state listener carries the pthid', async () => {
       const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
       const invitationId = faberOutOfBandRecord.outOfBandInvitation.id
