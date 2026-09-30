@@ -20,6 +20,7 @@ import {
   type ResolvedDidCommService,
   verkeyToPublicJwk,
 } from '@credo-ts/core'
+import { toAbsoluteDidUrl } from '../modules/connections/services/helpers'
 import type { DidCommVersion } from '../util/didcommVersion'
 
 export interface GetSupportedDidCommVersionsFromDidDocResult {
@@ -310,10 +311,7 @@ export class DidCommDocumentService {
           if (!publicJwk.is(Kms.X25519PublicJwk, Kms.Ed25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
             continue
           }
-          if (!publicJwk.hasKeyId) {
-            const vmId = verificationMethod.id
-            publicJwk.keyId = typeof vmId === 'string' && vmId.startsWith('#') ? `${didDocument.id}${vmId}` : vmId
-          }
+          publicJwk.keyId = toAbsoluteDidUrl(didDocument.id, verificationMethod.id)
           recipientKeys.push(publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
         }
 
