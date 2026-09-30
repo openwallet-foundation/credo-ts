@@ -36,6 +36,7 @@ import {
   supportsIncomingMessageType,
 } from '../../util/messageType'
 import { parseInvitationShortUrl } from '../../util/parseInvitation'
+import { buildV2PlaintextFromMessage } from '../../v2/plaintextBuilder'
 import type { DidCommV2Attachment, DidCommV2KeyAgreementJwk } from '../../v2/types'
 import {
   DidCommConnectionInvitationMessage,
@@ -396,7 +397,7 @@ export class DidCommOutOfBandApi {
         v2Attachments.push({
           id: utils.uuid(),
           media_type: 'application/json',
-          data: { json: message.toJSON() as Record<string, unknown> },
+          data: { json: buildV2PlaintextFromMessage(message) },
         })
       }
     }

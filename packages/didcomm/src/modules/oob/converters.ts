@@ -4,12 +4,14 @@ import {
   DidKey,
   didDocumentToNumAlgo4Did,
   didKeyToVerkey,
+  type JsonObject,
   JsonTransformer,
   verkeyToDidKey,
 } from '@credo-ts/core'
 import { DidCommAttachment } from '../../decorators/attachment/DidCommAttachment'
+import { normalizeV2PlaintextToV1 } from '../../v2/normalize'
 import { mapV1AttachmentToV2, mapV2AttachmentToV1 } from '../../v2/plaintextBuilder'
-import type { DidCommV2Attachment } from '../../v2/types'
+import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from '../../v2/types'
 import {
   DidCommConnectionInvitationMessage,
   type DidCommConnectionInvitationMessageOptions,
@@ -124,11 +126,32 @@ export function convertV2InvitationToOutOfBandInvitation(
 
   if (v2Invitation.attachments && v2Invitation.attachments.length > 0) {
     for (const v2Attachment of v2Invitation.attachments) {
-      invitation.addRequestAttachment(v2AttachmentToDidCommAttachment(v2Attachment))
+      const attachment = v2AttachmentToDidCommAttachment(v2Attachment)
+      const message = getAttachedJson(attachment)
+      if (isDidCommV2PlaintextMessage(message)) {
+        attachment.data.base64 = undefined
+        attachment.data.json = normalizeV2PlaintextToV1(message) as JsonObject
+      }
+      invitation.addRequestAttachment(attachment)
     }
   }
 
   return invitation
+}
+
+function getAttachedJson(attachment: DidCommAttachment): unknown {
+  try {
+    return attachment.getDataAsJson()
+  } catch {
+    // Links only or non JSON content is not an attached message, so it is kept as it is
+    return undefined
+  }
+}
+
+function isDidCommV2PlaintextMessage(json: unknown): json is DidCommV2PlaintextMessage {
+  return (
+    typeof json === 'object' && json !== null && !('@type' in json) && 'type' in json && typeof json.type === 'string'
+  )
 }
 
 export function outOfBandServiceToNumAlgo4Did(service: OutOfBandDidCommService) {
