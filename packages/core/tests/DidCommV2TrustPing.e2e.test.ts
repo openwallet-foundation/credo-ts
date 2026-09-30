@@ -12,6 +12,7 @@ import { JsonEncoder } from '../src'
 import { Agent } from '../src/agent/Agent'
 import {
   getAgentOptions,
+  makeConnection,
   waitForAgentMessageProcessedEvent,
   waitForBasicMessage,
   waitForTrustPingReceivedEvent,
@@ -72,106 +73,32 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       await aliceAgent.shutdown()
     })
 
-    it('invitee sends trust-ping and receives response over v2', async () => {
-      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
-      })
-
-      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        invitationUrl,
-        { label: 'alice' }
-      )
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-      expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
-
-      const ping = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection.id, {})
-
-      await waitForTrustPingResponseReceivedEvent(aliceAgent, { threadId: ping.threadId })
-    })
-
-    it('inviter sends trust-ping and receives response over v2', async () => {
-      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
-      })
-
-      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        invitationUrl,
-        { label: 'alice' }
-      )
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-      expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
-
-      const [faberConn] = await faberAgent.didcomm.connections.findAllByOutOfBandId(faberOutOfBandRecord.id)
-      expect(faberConn).toBeDefined()
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      const faberConnected = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
-
-      const ping = await faberAgent.didcomm.connections.sendPing(faberConnected.id, {})
-      await waitForTrustPingResponseReceivedEvent(faberAgent, { threadId: ping.threadId })
-    })
-
     it('sends trust-ping without response (responseRequested: false) over v2', async () => {
-      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
-      })
+      const [faberConnection] = await makeConnection(faberAgent, aliceAgent, { didCommVersion: 'v2' })
+      expect(faberConnection.didcommVersion).toBe('v2')
 
-      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        invitationUrl,
-        { label: 'alice' }
-      )
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-
-      const [faberConn] = await faberAgent.didcomm.connections.findAllByOutOfBandId(faberOutOfBandRecord.id)
-      expect(faberConn).toBeDefined()
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      const faberConnected = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
-
-      const ping = await faberAgent.didcomm.connections.sendPing(faberConnected.id, {
+      const pingReceived = waitForTrustPingReceivedEvent(aliceAgent, {})
+      const ping = await faberAgent.didcomm.connections.sendPing(faberConnection.id, {
         responseRequested: false,
       })
 
-      await waitForTrustPingReceivedEvent(aliceAgent, { threadId: ping.threadId })
+      expect((await pingReceived).threadId).toBe(ping.threadId)
       expect(ping.responseRequested).toBe(false)
     })
 
     it('bidirectional trust-ping over v2', async () => {
-      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
+      const [faberConnection, aliceFaberConnection] = await makeConnection(faberAgent, aliceAgent, {
+        didCommVersion: 'v2',
       })
+      expect(faberConnection.didcommVersion).toBe('v2')
 
-      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        invitationUrl,
-        { label: 'alice' }
-      )
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-
-      const [faberConn] = await faberAgent.didcomm.connections.findAllByOutOfBandId(faberOutOfBandRecord.id)
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      const faberConnected = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
-
+      const aliceResponseReceived = waitForTrustPingResponseReceivedEvent(aliceAgent, {})
+      const faberResponseReceived = waitForTrustPingResponseReceivedEvent(faberAgent, {})
       const alicePing = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection.id, {})
-      const faberPing = await faberAgent.didcomm.connections.sendPing(faberConnected.id, {})
+      const faberPing = await faberAgent.didcomm.connections.sendPing(faberConnection.id, {})
 
-      await Promise.all([
-        waitForTrustPingResponseReceivedEvent(aliceAgent, { threadId: alicePing.threadId }),
-        waitForTrustPingResponseReceivedEvent(faberAgent, { threadId: faberPing.threadId }),
-      ])
+      expect((await aliceResponseReceived).threadId).toBe(alicePing.threadId)
+      expect((await faberResponseReceived).threadId).toBe(faberPing.threadId)
     })
 
     it('v2 OOB (no handshake): Alice receives invitation and gets connection without handshake', async () => {
