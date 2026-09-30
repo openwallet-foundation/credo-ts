@@ -1,3 +1,18 @@
+import {
+  DidDocumentBuilder,
+  DidKey,
+  didDocumentToNumAlgo2Did,
+  getDidPeer4ShortFormForEquivalence,
+  getEd25519VerificationKey2018,
+  getJsonWebKey2020,
+  getX25519KeyAgreementKey2019,
+  JsonEncoder,
+  Kms,
+  NewDidCommV2Service,
+  NewDidCommV2ServiceEndpoint,
+  PeerDidNumAlgo,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import { first, ReplaySubject, timeout } from 'rxjs'
 
 import { Agent } from '../../../../../core/src/agent/Agent'
@@ -13,13 +28,40 @@ import {
   waitForBasicMessage,
   waitForDidRotate,
 } from '../../../../../core/tests/helpers'
+import { DidCommDispatcher } from '../../../DidCommDispatcher'
+import { DidCommMessageReceiver } from '../../../DidCommMessageReceiver'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
+import { DidCommV2Envelope } from '../../../envelope'
 import { getOutboundDidCommMessageContext } from '../../../getDidCommOutboundMessageContext'
-import { DidCommBasicMessage } from '../../basic-messages'
-import { DidCommDidRotateAckMessage, DidCommDidRotateProblemReportMessage, DidCommHangupMessage } from '../messages'
+import { DidCommEmptyMessage } from '../../../messages'
+import { DidCommDocumentService } from '../../../services/DidCommDocumentService'
+import {
+  type DidCommV2EncryptedMessage,
+  DidCommV2EnvelopeService,
+  DidCommV2KeyResolver,
+  type DidCommV2PlaintextMessage,
+} from '../../../v2'
+import { computeApu, computeApv } from '../../../v2/apuApv'
+import { DidCommBasicMessage, DidCommBasicMessageV2 } from '../../basic-messages'
+import { type DidCommOutOfBandRecord, DidCommOutOfBandState } from '../../oob'
+import { DidCommForwardV2Message } from '../../routing/protocol/v2/messages'
+import {
+  DidCommDidRotateAckMessage,
+  DidCommDidRotateMessage,
+  DidCommDidRotateProblemReportMessage,
+  DidCommHangupMessage,
+} from '../messages'
 import { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
+import { DidCommConnectionService } from '../services'
 import { DidCommDidRotateV2Service } from '../services/DidCommDidRotateV2Service'
+import {
+  createPeerDidForV2OOB,
+  findOwnKeyAgreementKey,
+  toKeyAgreement,
+  toKeyAgreementDidUrl,
+} from '../services/helpers'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
@@ -521,6 +563,157 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     expect(bobAfter?.previousTheirDids).toContain(aliceDidBeforeHangup)
   })
 
+  test('rotate-to-nothing wraps one forward per routing key, each naming the hop it encloses', async () => {
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const connection = aliceBobConnection!
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const theirDid = connection.theirDid!
+    const agentContext = aliceAgent.context
+
+    const createRoutingKey = async () => {
+      const { keyId, publicJwk } = await aliceAgent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      return { keyId, publicJwk: Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk> }
+    }
+    const r1 = await createRoutingKey()
+    const r2 = await createRoutingKey()
+
+    const [service] = await aliceAgent.dependencyManager
+      .resolve(DidCommDocumentService)
+      .resolveServicesFromDid(agentContext, theirDid)
+    const resolveServices = vi
+      .spyOn(DidCommDocumentService.prototype, 'resolveServicesFromDid')
+      .mockResolvedValueOnce([{ ...service, routingKeys: [r1.publicJwk, r2.publicJwk] }])
+
+    const transport = aliceAgent.dependencyManager
+      .resolve(DidCommModuleConfig)
+      .outboundTransports.find((t) => t.supportedSchemes.includes('rxjs'))
+    const sentPayloads: unknown[] = []
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const sendMessage = vi.spyOn(transport!, 'sendMessage').mockImplementation(async ({ payload }) => {
+      sentPayloads.push(payload)
+    })
+
+    // The module config, and so this transport, is shared with later tests
+    try {
+      await aliceAgent.dependencyManager
+        .resolve(DidCommDidRotateV2Service)
+        .sendRotateToNothing(agentContext, connection)
+    } finally {
+      resolveServices.mockRestore()
+      sendMessage.mockRestore()
+    }
+
+    const envelopeService = aliceAgent.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const openForward = async (message: DidCommV2EncryptedMessage, routingKey: typeof r1) => {
+      const matchedKid = message.recipients[0].header.kid
+      expect(matchedKid).toEqual(toKeyAgreementDidUrl(routingKey.publicJwk))
+
+      const recipientKey = toKeyAgreement(routingKey.publicJwk)
+      recipientKey.keyId = routingKey.keyId
+      const { plaintext } = await envelopeService.unpack(agentContext, message, {
+        recipientKey: recipientKey as typeof recipientKey & { keyId: string },
+        matchedKid,
+        resolveSenderKey: async () => null,
+      })
+      expect(plaintext.type).toEqual(DidCommForwardV2Message.type.messageTypeUri)
+      return {
+        next: plaintext.body?.next,
+        enclosed: plaintext.attachments?.[0].data.json as unknown as DidCommV2EncryptedMessage,
+      }
+    }
+
+    expect(sentPayloads).toHaveLength(1)
+    const outer = await openForward(sentPayloads[0] as DidCommV2EncryptedMessage, r1)
+    expect(outer.next).toEqual(new DidKey(r2.publicJwk).did)
+
+    const inner = await openForward(outer.enclosed, r2)
+    expect(inner.next).toEqual(getDidPeer4ShortFormForEquivalence(theirDid) ?? theirDid)
+
+    const bobRecipient = await bobAgent.dependencyManager
+      .resolve(DidCommV2KeyResolver)
+      .resolveRecipientKey(bobAgent.context, inner.enclosed)
+    if (!bobRecipient) throw new Error('Bob has no key for the enclosed message')
+    const { plaintext } = await bobAgent.dependencyManager
+      .resolve(DidCommV2EnvelopeService)
+      .unpack(bobAgent.context, inner.enclosed, { ...bobRecipient, resolveSenderKey: async () => null })
+    expect(plaintext.to).toEqual([theirDid])
+    expect(plaintext.from_prior).toBeDefined()
+  })
+
+  test.each([
+    'hangup',
+    'rotate',
+  ] as const)('an anoncrypt %s naming alice in from and skid leaves the connection alone', async (kind) => {
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const aliceDid = aliceBobConnection!.did!
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const bobDid = aliceBobConnection!.theirDid!
+    const { didDocument, keys } = await aliceAgent.dids.resolveCreatedDidDocumentWithKeys(aliceDid)
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const aliceSkid = findOwnKeyAgreementKey(didDocument, keys)!.didUrl
+    const [bobService] = await aliceAgent.dependencyManager
+      .resolve(DidCommDocumentService)
+      .resolveServicesFromDid(aliceAgent.context, bobDid)
+    const recipientKid = toKeyAgreementDidUrl(bobService.recipientKeys[0])
+    const { outOfBandInvitation } = await aliceAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+
+    const plaintext = {
+      id: uuid(),
+      type: kind === 'hangup' ? DidCommHangupMessage.type.messageTypeUri : DidCommDidRotateMessage.type.messageTypeUri,
+      from: aliceDid,
+      to: [bobDid],
+      body: kind === 'hangup' ? {} : { to_did: outOfBandInvitation.v2Invitation?.from },
+    }
+
+    const kms = aliceAgent.kms
+    const apv = computeApv([recipientKid])
+    const ephemeralKey = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+    const protectedHeader = JsonEncoder.toBase64Url({
+      typ: 'application/didcomm-encrypted+json',
+      alg: 'ECDH-ES+A256KW',
+      enc: 'A256CBC-HS512',
+      skid: aliceSkid,
+      apu: TypedArrayEncoder.toBase64Url(computeApu(aliceSkid)),
+      apv: TypedArrayEncoder.toBase64Url(apv),
+      epk: { kty: 'OKP', crv: 'X25519', x: (ephemeralKey.publicJwk as Kms.KmsJwkPublicOkp).x },
+    })
+    const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
+      key: {
+        keyAgreement: {
+          algorithm: 'ECDH-ES+A256KW',
+          keyId: ephemeralKey.keyId,
+          externalPublicJwk: toKeyAgreement(bobService.recipientKeys[0]).toJson() as Kms.KmsJwkPublicEcdh,
+          apv,
+        },
+      },
+      encryption: { algorithm: 'A256CBC-HS512', aad: TypedArrayEncoder.fromUtf8String(protectedHeader) },
+      data: JsonEncoder.toUint8Array(plaintext),
+    })
+    if (!iv || !tag || !encryptedKey) throw new Error('Expected iv, tag and encrypted key from KMS encrypt')
+    const message: DidCommV2EncryptedMessage = {
+      protected: protectedHeader,
+      recipients: [
+        { header: { kid: recipientKid }, encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted) },
+      ],
+      iv: TypedArrayEncoder.toBase64Url(iv),
+      ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
+      tag: TypedArrayEncoder.toBase64Url(tag),
+    }
+
+    const unpacked = await bobAgent.dependencyManager.resolve(DidCommV2Envelope).unpack(bobAgent.context, message)
+    expect(unpacked.plaintextMessage.from).toEqual(aliceDid)
+    expect(unpacked.authenticatedSenderDid).toBeUndefined()
+
+    await expect(bobAgent.dependencyManager.resolve(DidCommMessageReceiver).receiveMessage(message)).rejects.toThrow(
+      /connection/i
+    )
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const bobAfter = await bobAgent.didcomm.connections.getById(bobAliceConnection!.id)
+    expect(bobAfter.theirDid).toEqual(aliceDid)
+    expect(bobAfter.previousTheirDids).toEqual(bobAliceConnection?.previousTheirDids)
+  })
+
   test('alice rotates v2 DID; basic message carries from_prior and bob updates theirDid', async () => {
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     const oldAliceDid = aliceBobConnection?.did!
@@ -536,7 +729,11 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     const aliceAfterRotate = await aliceAgent.didcomm.connections.findById(aliceBobConnection?.id!)
     expect(aliceAfterRotate?.did).toEqual(newDid)
     expect(aliceAfterRotate?.previousDids).toContain(oldAliceDid)
-    expect(aliceAfterRotate?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)?.priorDid).toEqual(oldAliceDid)
+    const rotation = aliceAfterRotate?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)
+    expect(rotation?.priorDid).toEqual(oldAliceDid)
+    expect(oldAliceDid.startsWith('did:peer:4')).toBe(true)
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    expect(JsonEncoder.fromBase64Url(rotation!.fromPriorJwt.split('.')[0]).kid).toMatch(`${oldAliceDid}#`)
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     await aliceAgent.didcomm.basicMessages.sendMessage(aliceBobConnection?.id!, 'hello rotated')
@@ -580,6 +777,422 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     const bobAfter = await bobAgent.didcomm.connections.findById(bobAliceConnection?.id!)
     expect(bobAfter?.theirDid).toEqual(newDid)
     expect(bobAfter?.previousTheirDids).toContain(oldAliceDid)
+  })
+
+  describe('from_prior handling', () => {
+    const outboundTransport = (agent: Agent) => {
+      const transport = agent.dependencyManager
+        .resolve(DidCommModuleConfig)
+        .outboundTransports.find((t) => t.supportedSchemes.includes('rxjs'))
+      if (!transport) throw new Error('No rxjs outbound transport')
+      return transport
+    }
+
+    const captureFromAlice = async (send: () => Promise<unknown>): Promise<DidCommV2EncryptedMessage> => {
+      const payloads: unknown[] = []
+      const sendMessage = vi
+        .spyOn(outboundTransport(aliceAgent), 'sendMessage')
+        .mockImplementation(async ({ payload }) => {
+          payloads.push(payload)
+        })
+      try {
+        await send()
+      } finally {
+        sendMessage.mockRestore()
+      }
+      expect(payloads).toHaveLength(1)
+      return payloads[0] as DidCommV2EncryptedMessage
+    }
+
+    const sendBasicMessageAs = async (did: string, fromPriorJwt: string, content: string) => {
+      const connectionService = aliceAgent.dependencyManager.resolve(DidCommConnectionService)
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const connection = await connectionService.getById(aliceAgent.context, aliceBobConnection!.id)
+      connection.did = did
+      connection.metadata.set(DidCommConnectionMetadataKeys.DidRotateV2, { fromPriorJwt, priorDid: did, newDid: did })
+      await connectionService.update(aliceAgent.context, connection)
+      return captureFromAlice(() => aliceAgent.didcomm.basicMessages.sendMessage(connection.id, content))
+    }
+
+    const receiveOnBob = (message: DidCommV2EncryptedMessage) =>
+      bobAgent.dependencyManager.resolve(DidCommMessageReceiver).receiveMessage(message)
+
+    const bobRecipient = async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const did = aliceBobConnection!.theirDid!
+      const [bobService] = await aliceAgent.dependencyManager
+        .resolve(DidCommDocumentService)
+        .resolveServicesFromDid(aliceAgent.context, did)
+      return {
+        did,
+        recipientKey: toKeyAgreement(bobService.recipientKeys[0]),
+        recipientKid: toKeyAgreementDidUrl(bobService.recipientKeys[0]),
+      }
+    }
+
+    const anoncryptToBob = async (
+      plaintext: Pick<DidCommV2PlaintextMessage, 'type' | 'from_prior' | 'created_time' | 'body'>
+    ) => {
+      const { did, recipientKey, recipientKid } = await bobRecipient()
+      return aliceAgent.dependencyManager.resolve(DidCommV2EnvelopeService).packAnoncrypt(
+        aliceAgent.context,
+        { id: uuid(), to: [did], ...plaintext },
+        {
+          recipientKey,
+          recipientKid,
+          contentEncryptionAlgorithm:
+            aliceAgent.dependencyManager.resolve(DidCommModuleConfig).v2DefaultAnoncryptContentEncryption,
+        }
+      )
+    }
+
+    const bobContents = async () => (await bobAgent.didcomm.basicMessages.findAllByQuery({})).map((r) => r.content)
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const getBobConnection = () => bobAgent.didcomm.connections.getById(bobAliceConnection!.id)
+
+    const createAliceDid = async () =>
+      (await createPeerDidForV2OOB(aliceAgent.context, await aliceAgent.didcomm.mediationRecipient.getRouting({}))).did
+
+    const aliceRotateService = () => aliceAgent.dependencyManager.resolve(DidCommDidRotateV2Service)
+
+    const rotateAlice = async (toDid?: string) => {
+      const rotated = waitForDidRotate(bobAgent, {})
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const { newDid } = await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection!.id, toDid })
+      await rotated
+      return newDid
+    }
+
+    test('a retransmitted rotation is not verified again and the message is still processed', async () => {
+      const newDid = await rotateAlice()
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceConnection = await aliceAgent.didcomm.connections.getById(aliceBobConnection!.id)
+      expect(aliceRotateService().getPendingFromPrior(aliceConnection)).toBeDefined()
+
+      const verifyFromPrior = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDidRotateV2Service), 'verifyFromPrior')
+      try {
+        await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'retransmitted rotation')
+        await waitForBasicMessage(bobAgent, { content: 'retransmitted rotation' })
+        expect(verifyFromPrior).not.toHaveBeenCalled()
+      } finally {
+        verifyFromPrior.mockRestore()
+      }
+
+      expect((await getBobConnection()).theirDid).toEqual(newDid)
+    })
+
+    test('an anoncrypt termination is applied and processed once and a retransmission is dropped', async () => {
+      const termination = await captureFromAlice(() =>
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection!.id })
+      )
+
+      const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
+      try {
+        await receiveOnBob(termination)
+        const terminated = await getBobConnection()
+        expect(terminated.theirDid).toBeUndefined()
+        expect(dispatch).toHaveBeenCalledTimes(1)
+
+        await receiveOnBob(termination)
+        expect(dispatch).toHaveBeenCalledTimes(1)
+        expect((await getBobConnection()).previousTheirDids).toEqual(terminated.previousTheirDids)
+      } finally {
+        dispatch.mockRestore()
+      }
+    })
+
+    test.each([
+      { case: 'the acknowledged rotation JWT', signAgain: false },
+      { case: 'a new rotation JWT signed with the superseded key', signAgain: true },
+    ])('an anoncrypt message carrying $case is not processed on the connection', async ({ signAgain }) => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const oldAliceDid = aliceBobConnection!.did!
+      const newDid = await rotateAlice()
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceConnection = await aliceAgent.didcomm.connections.getById(aliceBobConnection!.id)
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const rotationJwt = aliceRotateService().getPendingFromPrior(aliceConnection)!
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection!.id, 'ack')
+      await waitForBasicMessage(aliceAgent, { content: 'ack' })
+
+      const fromPrior = signAgain
+        ? await aliceRotateService().createFromPriorForRotation(aliceAgent.context, oldAliceDid, newDid)
+        : rotationJwt
+      const message = await anoncryptToBob({
+        type: DidCommBasicMessageV2.type.messageTypeUri,
+        from_prior: fromPrior,
+        created_time: Math.floor(Date.now() / 1000),
+        body: { content: 'injected' },
+      })
+
+      const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
+      try {
+        await receiveOnBob(message)
+        expect(dispatch).not.toHaveBeenCalled()
+      } finally {
+        dispatch.mockRestore()
+      }
+
+      const bobConnection = await getBobConnection()
+      expect(
+        await bobAgent.didcomm.basicMessages.findAllByQuery({ connectionId: bobConnection.id })
+      ).not.toContainEqual(expect.objectContaining({ content: 'injected' }))
+      expect(bobConnection.theirDid).toEqual(newDid)
+    })
+
+    test('an unsigned copy of an applied rotation sent over anoncrypt is not processed on the connection', async () => {
+      await rotateAlice()
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceConnection = await aliceAgent.didcomm.connections.getById(aliceBobConnection!.id)
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const [header, payload] = aliceRotateService().getPendingFromPrior(aliceConnection)!.split('.')
+      const forged = `${header}.${payload}.${TypedArrayEncoder.toBase64Url(new Uint8Array(64))}`
+
+      const message = await anoncryptToBob({
+        type: DidCommEmptyMessage.type.messageTypeUri,
+        from_prior: forged,
+        body: {},
+      })
+      const before = await getBobConnection()
+
+      const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
+      try {
+        await expect(receiveOnBob(message)).rejects.toThrow(/from_prior/)
+        expect(dispatch).not.toHaveBeenCalled()
+      } finally {
+        dispatch.mockRestore()
+      }
+
+      const after = await getBobConnection()
+      expect(after.theirDid).toEqual(before.theirDid)
+      expect(after.previousTheirDids).toEqual(before.previousTheirDids)
+    })
+
+    test('a termination sent over authcrypt from the current peer DID is applied and the message is processed', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const termination = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, aliceDid)
+
+      await receiveOnBob(await sendBasicMessageAs(aliceDid, termination, 'goodbye'))
+
+      const bobAfter = await getBobConnection()
+      expect(bobAfter.theirDid).toBeUndefined()
+      expect(bobAfter.previousTheirDids).toContain(aliceDid)
+      expect(await bobContents()).toContain('goodbye')
+    })
+
+    test('a from_prior with a non-string sub drops the message', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const jwt = await aliceRotateService().createFromPriorForRotation(
+        aliceAgent.context,
+        aliceDid,
+        null as unknown as string
+      )
+      expect(JsonEncoder.fromBase64Url(jwt.split('.')[1]).sub).toBeNull()
+
+      await expect(receiveOnBob(await sendBasicMessageAs(aliceDid, jwt, 'null sub'))).rejects.toThrow(/sub/)
+
+      expect((await getBobConnection()).theirDid).toEqual(aliceDid)
+      expect(await bobContents()).not.toContain('null sub')
+    })
+
+    test('a from_prior with a bad signature drops the message and changes nothing', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const termination = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, aliceDid)
+      const rotation = await aliceRotateService().createFromPriorForRotation(
+        aliceAgent.context,
+        aliceDid,
+        await createAliceDid()
+      )
+      const [header, payload] = termination.split('.')
+      const badSignature = `${header}.${payload}.${rotation.split('.')[2]}`
+
+      const message = await sendBasicMessageAs(aliceDid, badSignature, 'bad signature')
+      await expect(receiveOnBob(message)).rejects.toThrow(/from_prior/)
+
+      const bobAfter = await getBobConnection()
+      expect(bobAfter.theirDid).toEqual(aliceDid)
+      expect(bobAfter.previousTheirDids).toEqual([])
+      expect(await bobContents()).not.toContain('bad signature')
+    })
+
+    test('a from_prior issued by a DID other than the peer changes nothing', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const foreignDid = await createAliceDid()
+      const jwt = await aliceRotateService().createFromPriorForTermination(aliceAgent.context, foreignDid)
+      const verified = await bobAgent.dependencyManager
+        .resolve(DidCommDidRotateV2Service)
+        .verifyFromPrior(bobAgent.context, jwt)
+      expect(verified.iss).toEqual(foreignDid)
+
+      await receiveOnBob(await sendBasicMessageAs(aliceDid, jwt, 'foreign issuer'))
+
+      expect((await getBobConnection()).theirDid).toEqual(aliceDid)
+      expect(await bobContents()).toContain('foreign issuer')
+    })
+
+    test('a from_prior signed by a superseded peer DID does not move the connection', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const oldAliceDid = aliceBobConnection!.did!
+      const newDid = await rotateAlice()
+
+      const otherDid = await createAliceDid()
+      const jwt = await aliceRotateService().createFromPriorForRotation(aliceAgent.context, oldAliceDid, otherDid)
+      await receiveOnBob(await sendBasicMessageAs(otherDid, jwt, 'rollback'))
+
+      expect((await getBobConnection()).theirDid).toEqual(newDid)
+      expect(await bobContents()).not.toContain('rollback')
+    })
+
+    test('a from_prior does not revive a terminated connection', async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceDid = aliceBobConnection!.did!
+      const terminated = waitForDidRotate(bobAgent, {})
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection!.id })
+      await terminated
+
+      const otherDid = await createAliceDid()
+      const jwt = await aliceRotateService().createFromPriorForRotation(aliceAgent.context, aliceDid, otherDid)
+      await receiveOnBob(await sendBasicMessageAs(otherDid, jwt, 'revive'))
+
+      expect((await getBobConnection()).theirDid).toBeUndefined()
+      expect(await bobContents()).not.toContain('revive')
+    })
+
+    test('a message sent from the old DID that arrives after the rotation is ignored', async () => {
+      const stale = await captureFromAlice(() =>
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        aliceAgent.didcomm.basicMessages.sendMessage(aliceBobConnection!.id, 'sent before rotation')
+      )
+      const newDid = await rotateAlice()
+
+      await receiveOnBob(stale)
+
+      expect((await getBobConnection()).theirDid).toEqual(newDid)
+      expect(await bobContents()).not.toContain('sent before rotation')
+    })
+
+    test('a message authcrypted by another DID with the key of a superseded peer DID is ignored', async () => {
+      const supersededDid = await rotateAlice()
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection!.id, 'ack first')
+      await waitForBasicMessage(aliceAgent, { content: 'ack first' })
+      await rotateAlice()
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection!.id, 'ack second')
+      await waitForBasicMessage(aliceAgent, { content: 'ack second' })
+      expect((await getBobConnection()).previousTheirDids).toContain(supersededDid)
+
+      const { didDocument, keys } = await aliceAgent.dids.resolveCreatedDidDocumentWithKeys(supersededDid)
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const supersededKey = findOwnKeyAgreementKey(didDocument, keys)!.publicJwk
+      const otherDid = didDocumentToNumAlgo2Did(
+        new DidDocumentBuilder('')
+          .addKeyAgreement(
+            getX25519KeyAgreementKey2019({
+              id: '#key-1',
+              publicJwk: supersededKey as Kms.PublicJwk<Kms.X25519PublicJwk>,
+              controller: '#id',
+            })
+          )
+          .build()
+      )
+      const { did: bobDid, recipientKey, recipientKid } = await bobRecipient()
+      const message = await aliceAgent.dependencyManager.resolve(DidCommV2EnvelopeService).pack(
+        aliceAgent.context,
+        {
+          id: uuid(),
+          type: DidCommBasicMessageV2.type.messageTypeUri,
+          from: otherDid,
+          to: [bobDid],
+          created_time: Math.floor(Date.now() / 1000),
+          body: { content: 'sent with a superseded key' },
+        },
+        { recipientKey, recipientKid, senderKey: supersededKey, senderKeySkid: `${otherDid}#key-1` }
+      )
+
+      const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
+      try {
+        await receiveOnBob(message)
+        expect(dispatch).not.toHaveBeenCalled()
+      } finally {
+        dispatch.mockRestore()
+      }
+      expect(await bobContents()).not.toContain('sent with a superseded key')
+    })
+
+    test('rotating away from a DID whose first authentication key is P-256 reaches the peer', async () => {
+      const authKey = await aliceAgent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const agreementKey = await aliceAgent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      // The message sender still needs an Ed25519 authentication key
+      const senderKey = await aliceAgent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const didDocument = new DidDocumentBuilder('')
+        .addAuthentication(
+          getJsonWebKey2020({
+            did: '#id',
+            publicJwk: Kms.PublicJwk.fromPublicJwk(authKey.publicJwk),
+            verificationMethodId: '#key-1',
+          })
+        )
+        .addAuthentication(
+          getEd25519VerificationKey2018({
+            id: '#key-3',
+            publicJwk: Kms.PublicJwk.fromPublicJwk(senderKey.publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk>,
+            controller: '#id',
+          })
+        )
+        .addKeyAgreement(
+          getX25519KeyAgreementKey2019({
+            id: '#key-2',
+            publicJwk: Kms.PublicJwk.fromPublicJwk(agreementKey.publicJwk) as Kms.PublicJwk<Kms.X25519PublicJwk>,
+            controller: '#id',
+          })
+        )
+        .addService(
+          new NewDidCommV2Service({
+            id: '#didcommmessaging-0',
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: 'rxjs:v2-alice', accept: ['didcomm/v2'] }),
+          })
+        )
+        .build()
+      const { didState } = await aliceAgent.dids.create({
+        method: 'peer',
+        didDocument,
+        options: {
+          numAlgo: PeerDidNumAlgo.ShortFormAndLongForm,
+          keys: [
+            { didDocumentRelativeKeyId: '#key-1', kmsKeyId: authKey.keyId },
+            { didDocumentRelativeKeyId: '#key-2', kmsKeyId: agreementKey.keyId },
+            { didDocumentRelativeKeyId: '#key-3', kmsKeyId: senderKey.keyId },
+          ],
+        },
+      })
+      if (!didState.did) throw new Error('P-256 DID was not created')
+
+      const p256Did = await rotateAlice(didState.did)
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection!.id, 'reached p-256 did')
+      await waitForBasicMessage(aliceAgent, { content: 'reached p-256 did' })
+
+      const newDid = await rotateAlice()
+
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceConnection = await aliceAgent.didcomm.connections.getById(aliceBobConnection!.id)
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const fromPrior = aliceRotateService().getPendingFromPrior(aliceConnection)!
+      expect(JsonEncoder.fromBase64Url(fromPrior.split('.')[0]).alg).toEqual('ES256')
+
+      const bobAfter = await getBobConnection()
+      expect(bobAfter.theirDid).toEqual(newDid)
+      expect(bobAfter.previousTheirDids).toContain(p256Did)
+    })
   })
 })
 
@@ -757,5 +1370,270 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     expect(accepterAfter?.theirDid).toEqual(inviterToFirst.did)
     expect(accepterTwoAfter?.theirDid).toEqual(inviterToSecond.did)
     expect(accepterAfter?.theirDid).not.toEqual(accepterTwoAfter?.theirDid)
+  })
+
+  test('an anoncrypt first message to a v2 invitation DID creates no connection', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+    const invitationDid = invitation.outOfBandInvitation.v2Invitation?.from as string
+    const { connectionRecord } = await accepter.didcomm.oob.receiveInvitation(invitation.outOfBandInvitation, {
+      label: '',
+    })
+    const [invitationService] = await accepter.dependencyManager
+      .resolve(DidCommDocumentService)
+      .resolveServicesFromDid(accepter.context, invitationDid)
+    const message = await accepter.dependencyManager.resolve(DidCommV2EnvelopeService).packAnoncrypt(
+      accepter.context,
+      {
+        id: uuid(),
+        type: DidCommEmptyMessage.type.messageTypeUri,
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        from: connectionRecord!.did!,
+        to: [invitationDid],
+        body: {},
+      },
+      {
+        recipientKey: toKeyAgreement(invitationService.recipientKeys[0]),
+        recipientKid: toKeyAgreementDidUrl(invitationService.recipientKeys[0]),
+        contentEncryptionAlgorithm:
+          accepter.dependencyManager.resolve(DidCommModuleConfig).v2DefaultAnoncryptContentEncryption,
+      }
+    )
+
+    await inviter.dependencyManager.resolve(DidCommMessageReceiver).receiveMessage(message)
+
+    expect(await inviter.didcomm.connections.getAll()).toHaveLength(0)
+    expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.AwaitResponse)
+  })
+
+  test('a rotation from_prior replayed by another accepter over anoncrypt changes nothing', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({
+      didCommVersion: 'v2',
+      multiUseInvitation: true,
+    })
+    const invitationDid = invitation.outOfBandInvitation.v2Invitation?.from
+
+    const { connectionRecord: attackerConnection } = await accepter.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await accepter.didcomm.basicMessages.sendMessage(attackerConnection!.id, 'hi from attacker')
+    await waitForBasicMessage(inviter, { content: 'hi from attacker' })
+    const [inviterConnection] = await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const { fromPriorJwt } = inviterConnection.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)!
+
+    const { connectionRecord: victimConnection } = await accepterTwo.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const victimDid = victimConnection!.did!
+    const [victimService] = await accepter.dependencyManager
+      .resolve(DidCommDocumentService)
+      .resolveServicesFromDid(accepter.context, victimDid)
+    const replay = await accepter.dependencyManager.resolve(DidCommV2EnvelopeService).packAnoncrypt(
+      accepter.context,
+      {
+        id: uuid(),
+        type: DidCommEmptyMessage.type.messageTypeUri,
+        to: [victimDid],
+        from_prior: fromPriorJwt,
+        body: {},
+      },
+      {
+        recipientKey: toKeyAgreement(victimService.recipientKeys[0]),
+        recipientKid: toKeyAgreementDidUrl(victimService.recipientKeys[0]),
+        contentEncryptionAlgorithm:
+          accepter.dependencyManager.resolve(DidCommModuleConfig).v2DefaultAnoncryptContentEncryption,
+      }
+    )
+
+    const dispatch = vi.spyOn(accepterTwo.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
+    try {
+      await accepterTwo.dependencyManager.resolve(DidCommMessageReceiver).receiveMessage(replay)
+      expect(dispatch).not.toHaveBeenCalled()
+    } finally {
+      dispatch.mockRestore()
+    }
+
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const victimAfter = await accepterTwo.didcomm.connections.getById(victimConnection!.id)
+    expect(victimAfter.theirDid).toEqual(invitationDid)
+    expect(victimAfter.previousTheirDids).toEqual([])
+  })
+
+  async function waitUntilInviterReceives(send: () => Promise<unknown>): Promise<void> {
+    const receive = vi.spyOn(inviter.dependencyManager.resolve(DidCommMessageReceiver), 'receiveMessage')
+    try {
+      await send()
+      await vi.waitFor(() => expect(receive).toHaveBeenCalled())
+      await Promise.allSettled(receive.mock.results.map((result) => result.value))
+    } finally {
+      receive.mockRestore()
+    }
+  }
+
+  test('a single-use invitation creates one connection and is then done', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+
+    const { connectionRecord: firstConnection } = await accepter.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await accepter.didcomm.basicMessages.sendMessage(firstConnection!.id, 'first')
+    await waitForBasicMessage(inviter, { content: 'first' })
+    expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.Done)
+    const [inviterConnection] = await inviter.didcomm.connections.getAll()
+    await inviter.didcomm.connections.deleteById(inviterConnection.id)
+
+    const { connectionRecord: secondConnection } = await accepterTwo.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+    await waitUntilInviterReceives(() =>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      accepterTwo.didcomm.basicMessages.sendMessage(secondConnection!.id, 'second')
+    )
+
+    expect(await inviter.didcomm.connections.getAll()).toHaveLength(0)
+    expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.Done)
+  })
+
+  test('a single-use invitation accepts a first message addressed to the short form of its DID', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+    const invitationDid = invitation.outOfBandInvitation.v2Invitation?.from as string
+    const { connectionRecord: accepterConnection } = await accepter.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+
+    const envelopeService = accepter.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const pack = envelopeService.pack.bind(envelopeService)
+    const shortFormTo = vi.spyOn(envelopeService, 'pack').mockImplementation((agentContext, payload, keys) =>
+      pack(
+        agentContext,
+        {
+          ...(payload as DidCommV2PlaintextMessage),
+          to: [getDidPeer4ShortFormForEquivalence(invitationDid) as string],
+        },
+        keys
+      )
+    )
+    try {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await accepter.didcomm.basicMessages.sendMessage(accepterConnection!.id, 'short form')
+      await waitForBasicMessage(inviter, { content: 'short form' })
+    } finally {
+      shortFormTo.mockRestore()
+    }
+
+    expect(await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)).toHaveLength(1)
+    expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.Done)
+  })
+
+  async function sendFirstMessageWithTo(invitation: DidCommOutOfBandRecord, to: string[]): Promise<void> {
+    const { connectionRecord } = await accepter.didcomm.oob.receiveInvitation(invitation.outOfBandInvitation, {
+      label: '',
+    })
+    const envelopeService = accepter.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const pack = envelopeService.pack.bind(envelopeService)
+    const rewriteTo = vi
+      .spyOn(envelopeService, 'pack')
+      .mockImplementation((agentContext, payload, keys) =>
+        pack(agentContext, { ...(payload as DidCommV2PlaintextMessage), to }, keys)
+      )
+    try {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await waitUntilInviterReceives(() => accepter.didcomm.basicMessages.sendMessage(connectionRecord!.id, 'first'))
+    } finally {
+      rewriteTo.mockRestore()
+    }
+  }
+
+  test('a first message binds to the invitation it was encrypted to, not the one named in to', async () => {
+    const encryptedTo = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+    const namedInTo = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+
+    await sendFirstMessageWithTo(encryptedTo, [namedInTo.outOfBandInvitation.v2Invitation?.from as string])
+
+    expect(await inviter.didcomm.connections.findAllByOutOfBandId(encryptedTo.id)).toHaveLength(1)
+    expect(await inviter.didcomm.connections.findAllByOutOfBandId(namedInTo.id)).toHaveLength(0)
+    expect((await inviter.didcomm.oob.getById(namedInTo.id)).state).toEqual(DidCommOutOfBandState.AwaitResponse)
+  })
+
+  test('a message from an unknown sender to a pairwise DID creates no connection', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2', multiUseInvitation: true })
+    const { connectionRecord: accepterConnection } = await accepter.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await accepter.didcomm.basicMessages.sendMessage(accepterConnection!.id, 'hello')
+    await waitForBasicMessage(inviter, { content: 'hello' })
+    const [inviterConnection] = await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const pairwiseDid = inviterConnection.did!
+
+    const { connectionRecord: strangerConnection } = await accepterTwo.didcomm.oob.receiveImplicitInvitation({
+      did: pairwiseDid,
+      didCommVersion: 'v2',
+      label: '',
+    })
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const strangerConnectionId = strangerConnection!.id
+    await waitUntilInviterReceives(() =>
+      accepterTwo.didcomm.basicMessages.sendMessage(strangerConnectionId, 'long form')
+    )
+
+    const envelopeService = accepterTwo.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const pack = envelopeService.pack.bind(envelopeService)
+    const shortFormTo = vi.spyOn(envelopeService, 'pack').mockImplementation((agentContext, payload, keys) =>
+      pack(
+        agentContext,
+        {
+          ...(payload as DidCommV2PlaintextMessage),
+          to: [getDidPeer4ShortFormForEquivalence(pairwiseDid) as string],
+        },
+        keys
+      )
+    )
+    try {
+      await waitUntilInviterReceives(() =>
+        accepterTwo.didcomm.basicMessages.sendMessage(strangerConnectionId, 'short form')
+      )
+    } finally {
+      shortFormTo.mockRestore()
+    }
+
+    expect(await inviter.didcomm.connections.getAll()).toHaveLength(1)
+  })
+
+  test('a created DID with no invitation or connection works as an implicit invitation', async () => {
+    const { did } = await createPeerDidForV2OOB(
+      inviter.context,
+      await inviter.didcomm.mediationRecipient.getRouting({})
+    )
+
+    for (const [invitee, content] of [
+      [accepter, 'implicit hello'],
+      [accepterTwo, 'implicit hello two'],
+    ] as const) {
+      const { connectionRecord } = await invitee.didcomm.oob.receiveImplicitInvitation({
+        did,
+        didCommVersion: 'v2',
+        label: '',
+      })
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await invitee.didcomm.basicMessages.sendMessage(connectionRecord!.id, content)
+      await waitForBasicMessage(inviter, { content })
+    }
+
+    const inviterConnections = await inviter.didcomm.connections.getAll()
+    expect(inviterConnections).toHaveLength(2)
+    for (const connection of inviterConnections) {
+      expect(connection.previousDids).toContain(did)
+    }
   })
 })

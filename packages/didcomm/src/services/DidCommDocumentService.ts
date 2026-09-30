@@ -3,10 +3,10 @@ import {
   CredoError,
   DidCommV1Service,
   DidCommV2Service,
+  DidKey,
   DidRecord,
   DidRepository,
   DidResolverService,
-  didKeyToEd25519PublicJwk,
   didToNumAlgo2DidDocument,
   didToNumAlgo4DidDocument,
   findMatchingEd25519Key,
@@ -20,6 +20,7 @@ import {
   type ResolvedDidCommService,
   verkeyToPublicJwk,
 } from '@credo-ts/core'
+import { toAbsoluteDidUrl } from '../modules/connections/services/helpers'
 import type { DidCommVersion } from '../util/didcommVersion'
 
 export interface GetSupportedDidCommVersionsFromDidDocResult {
@@ -91,7 +92,7 @@ export class DidCommDocumentService {
   }
 
   /**
-   * Resolve DIDComm v1-style routing key references (VM ids / did#fragment) to Ed25519 JWKS for Forward / packV2WithForward.
+   * Resolve DIDComm v1-style routing key references (VM ids / did#fragment) to public JWKs for Forward / packV2WithForward.
    */
   private async resolveRoutingKeyReferences(
     agentContext: AgentContext,
@@ -102,17 +103,19 @@ export class DidCommDocumentService {
       // routingKeys entries are commonly bare did:key DIDs, which dereferenceKey cannot resolve
       let publicJwk: Kms.PublicJwk
       if (routingKey.startsWith('did:key:') && !routingKey.includes('#')) {
-        publicJwk = didKeyToEd25519PublicJwk(routingKey)
+        publicJwk = DidKey.fromDid(routingKey).publicJwk
       } else {
         const routingDidDocument = await this.didResolverService.resolveDidDocument(agentContext, routingKey)
-        publicJwk = getPublicJwkFromVerificationMethod(
-          routingDidDocument.dereferenceKey(routingKey, ['authentication', 'keyAgreement'])
-        )
+        const verificationMethod = routingDidDocument.dereferenceKey(routingKey, ['authentication', 'keyAgreement'])
+        publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+        if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
+          publicJwk.keyId = toAbsoluteDidUrl(routingDidDocument.id, verificationMethod.id)
+        }
       }
-      if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
-        throw new CredoError(`Expected Ed25519PublicJwk but found ${publicJwk.JwkClass.name}`)
+      if (!publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
+        throw new CredoError(`Unsupported routing key type ${publicJwk.JwkClass.name}`)
       }
-      routingKeys.push(publicJwk)
+      routingKeys.push(publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
     }
     return routingKeys
   }
@@ -132,7 +135,8 @@ export class DidCommDocumentService {
    */
   private expandV2EndpointIfRoutingDid(
     endpoint: string,
-    routingKeysFromRefs: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+    routingKeysFromRefs: Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
+    singleHop = false
   ): { endpoint: string; routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] } {
     if (!endpoint.startsWith('did:')) {
       return { endpoint, routingKeys: routingKeysFromRefs }
@@ -176,7 +180,8 @@ export class DidCommDocumentService {
         addKey(getPublicJwkFromVerificationMethod(vm))
       }
 
-      const nestedRoutingKeys = Array.from(byX25519Fingerprint.values())
+      // A DID endpoint adds one hop: https://identity.foundation/didcomm-messaging/spec/v2.1/#using-a-did-as-an-endpoint
+      const nestedRoutingKeys = Array.from(byX25519Fingerprint.values()).slice(0, singleHop ? 1 : undefined)
 
       let resolvedEndpoint = endpoint
       const firstSvc = routingDoc.service?.[0]
@@ -300,21 +305,16 @@ export class DidCommDocumentService {
         // accumulates keys from ALL services (v1 + v2), which would mix Ed25519
         // authentication keys from v1 services into v2 encryption — causing the
         // recipient kid to point to an authentication VM instead of keyAgreement.
-        // Cast is safe: downstream toX25519() in DidCommMessageSender handles both
-        // Ed25519 and X25519 inputs correctly at runtime.
-        const recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
+        const recipientKeys: Kms.PublicJwk[] = []
         for (const keyRef of didDocument.keyAgreement ?? []) {
           const verificationMethod =
             typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
           const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-          if (!publicJwk.is(Kms.X25519PublicJwk, Kms.Ed25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
+          if (!publicJwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
             continue
           }
-          if (!publicJwk.hasKeyId) {
-            const vmId = verificationMethod.id
-            publicJwk.keyId = typeof vmId === 'string' && vmId.startsWith('#') ? `${didDocument.id}${vmId}` : vmId
-          }
-          recipientKeys.push(publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
+          publicJwk.keyId = toAbsoluteDidUrl(didDocument.id, verificationMethod.id)
+          recipientKeys.push(publicJwk)
         }
 
         let routingKeyRefs: string[] = []
@@ -334,10 +334,10 @@ export class DidCommDocumentService {
               : (didCommService.serviceEndpoint as { uri?: string })?.uri
         if (endpoint) {
           const routingKeys = await this.resolveRoutingKeyReferences(agentContext, routingKeyRefs)
-          const expanded = this.expandV2EndpointIfRoutingDid(endpoint, routingKeys)
+          const expanded = this.expandV2EndpointIfRoutingDid(endpoint, routingKeys, true)
           resolvedServices.push({
             id: didCommService.id,
-            recipientKeys,
+            recipientKeys: recipientKeys as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
             routingKeys: expanded.routingKeys,
             serviceEndpoint: expanded.endpoint,
           })

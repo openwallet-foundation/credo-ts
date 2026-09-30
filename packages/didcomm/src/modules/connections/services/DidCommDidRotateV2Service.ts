@@ -1,8 +1,8 @@
 import {
   type AgentContext,
+  areEquivalentDidPeer4Forms,
   CredoError,
   type DidDocument,
-  DidKey,
   DidRepository,
   DidResolverService,
   DidsApi,
@@ -13,8 +13,8 @@ import {
   inject,
   injectable,
   isValidPeerDid,
-  JsonEncoder,
   JwsService,
+  Jwt,
   JwtPayload,
   type Logger,
   utils,
@@ -22,12 +22,12 @@ import {
 } from '@credo-ts/core'
 import { DidCommEventTypes, type DidCommMessageSentEvent } from '../../../DidCommEvents'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
+import { wrapInV2Forward } from '../../../envelope/DidCommV2Envelope'
 import { DidCommEmptyMessage } from '../../../messages'
 import type { DidCommRouting } from '../../../models'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../../../models'
 import { DidCommDocumentService } from '../../../services/DidCommDocumentService'
 import { DidCommV2EnvelopeService, type DidCommV2PlaintextMessage } from '../../../v2'
-import { DidCommForwardV2Message } from '../../routing/protocol/v2/messages'
 import { DidCommRoutingService } from '../../routing/services/DidCommRoutingService'
 import { getMediationRecordForDidDocument } from '../../routing/services/helpers'
 import type { DidCommConnectionDidRotatedEvent } from '../DidCommConnectionEvents'
@@ -35,7 +35,7 @@ import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import type { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from './DidCommConnectionService'
-import { createPeerDidForV2OOB, toKeyAgreement } from './helpers'
+import { createPeerDidForV2OOB, toAbsoluteDidUrl, toKeyAgreement, toKeyAgreementDidUrl } from './helpers'
 
 export interface FromPriorPayload {
   iss: string
@@ -150,7 +150,10 @@ export class DidCommDidRotateV2Service {
     const pending = connection.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)
     if (!pending) return
     if (!inboundTo?.length || !connection.did) return
-    if (!inboundTo.includes(connection.did) && inboundTo.every((to) => !this.didsEqual(to, connection.did as string)))
+    if (
+      !inboundTo.includes(connection.did) &&
+      inboundTo.every((to) => !areEquivalentDidPeer4Forms(to, connection.did as string))
+    )
       return
 
     connection.metadata.delete(DidCommConnectionMetadataKeys.DidRotateV2)
@@ -158,46 +161,55 @@ export class DidCommDidRotateV2Service {
   }
 
   /**
-   * Process an inbound from_prior JWT. Verifies the JWT, then either rotates theirDid to
-   * `sub` (regular rotation) or clears theirDid (rotate-to-nothing termination).
-   *
-   * Idempotent: the sender retransmits from_prior on every outbound message until they
-   * receive a message addressed to the new DID, so the same payload may arrive repeatedly.
+   * Process an inbound from_prior JWT. Returns `applied` when it changed the connection now,
+   * `already-applied` when it repeats one applied before (the sender retransmits it until we address
+   * its new DID), and `ignored` otherwise. Throws when the JWT is invalid.
    */
   public async processFromPrior(
     agentContext: AgentContext,
     connection: DidCommConnectionRecord,
     jws: string,
     senderDid: string | undefined
-  ): Promise<FromPriorPayload | undefined> {
-    let payload: FromPriorPayload
-    try {
-      payload = await this.verifyFromPrior(agentContext, jws)
-    } catch (error) {
-      this.logger.warn('Ignoring v2 message with invalid from_prior JWT', {
-        error: error instanceof Error ? error.message : String(error),
+  ): Promise<'applied' | 'already-applied' | 'ignored'> {
+    if (this.isAppliedFromPrior(connection, this.decodeFromPrior(jws))) return 'already-applied'
+
+    const payload = await this.verifyFromPrior(agentContext, jws)
+
+    if (!connection.theirDid) {
+      this.logger.warn('Ignoring from_prior on a connection the peer has terminated', { connectionId: connection.id })
+      return 'ignored'
+    }
+
+    if (!areEquivalentDidPeer4Forms(payload.iss, connection.theirDid)) {
+      this.logger.warn("Ignoring from_prior whose 'iss' is not the connection's current peer DID", {
+        connectionId: connection.id,
+        iss: payload.iss,
       })
-      return undefined
+      return 'ignored'
     }
 
     if (payload.sub === undefined) {
-      if (connection.theirDid === undefined && connection.previousTheirDids.length > 0) return payload
       await this.processRotateToNothing(agentContext, connection)
-      return payload
+      return 'applied'
     }
 
-    if (senderDid && payload.sub !== senderDid) {
-      this.logger.warn("from_prior 'sub' does not match envelope 'from'; ignoring rotation", {
+    if (!senderDid || !areEquivalentDidPeer4Forms(payload.sub, senderDid)) {
+      this.logger.warn("Ignoring from_prior whose 'sub' is not the authenticated sender", {
+        connectionId: connection.id,
         sub: payload.sub,
-        from: senderDid,
+        senderDid,
       })
-      return payload
+      return 'ignored'
     }
-
-    if (connection.theirDid === payload.sub) return payload
 
     await this.processRotateFromPeer(agentContext, connection, payload.iss, payload.sub)
-    return payload
+    return 'applied'
+  }
+
+  private isAppliedFromPrior(connection: DidCommConnectionRecord, { iss, sub }: FromPriorPayload): boolean {
+    if (!connection.previousTheirDids.some((did) => areEquivalentDidPeer4Forms(did, iss))) return false
+    if (sub === undefined) return !connection.theirDid
+    return connection.theirDid !== undefined && areEquivalentDidPeer4Forms(sub, connection.theirDid)
   }
 
   /**
@@ -278,8 +290,6 @@ export class DidCommDidRotateV2Service {
     }
 
     const recipientEd25519 = service.recipientKeys[0]
-    const recipientKeyAgreement = toKeyAgreement(recipientEd25519)
-    recipientKeyAgreement.keyId = recipientEd25519.hasKeyId ? recipientEd25519.keyId : new DidKey(recipientEd25519).did
 
     const empty = new DidCommEmptyMessage({ fromPrior: fromPriorJwt })
     const plaintext: DidCommV2PlaintextMessage = {
@@ -290,37 +300,20 @@ export class DidCommDidRotateV2Service {
       body: {},
     }
 
+    const didCommModuleConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
     const v2EnvelopeService = agentContext.dependencyManager.resolve(DidCommV2EnvelopeService)
-    let payload = await v2EnvelopeService.packAnoncrypt(agentContext, plaintext, {
-      recipientKey: recipientKeyAgreement,
+    const encryptedMessage = await v2EnvelopeService.packAnoncrypt(agentContext, plaintext, {
+      recipientKey: toKeyAgreement(recipientEd25519),
+      recipientKid: toKeyAgreementDidUrl(recipientEd25519),
+      contentEncryptionAlgorithm: didCommModuleConfig.v2DefaultAnoncryptContentEncryption,
+    })
+    const payload = await wrapInV2Forward(agentContext, v2EnvelopeService, encryptedMessage, {
+      routingKeys: service.routingKeys,
+      recipientKey: recipientEd25519,
+      connection,
+      contentEncryptionAlgorithm: didCommModuleConfig.v2DefaultAnoncryptContentEncryption,
     })
 
-    if (service.routingKeys.length > 0) {
-      const recipientNext = new DidKey(toKeyAgreement(recipientEd25519)).did
-      const reversed = [...service.routingKeys].reverse()
-      for (let i = 0; i < reversed.length; i++) {
-        const routingKey = reversed[i]
-        const next = i === reversed.length - 1 ? recipientNext : new DidKey(reversed[i + 1]).did
-        const routingKeyAgreement = toKeyAgreement(routingKey)
-        routingKeyAgreement.keyId = new DidKey(routingKey).did
-        const forwardPlaintext = DidCommForwardV2Message.createV2PlaintextMessage({
-          to: [new DidKey(routingKey).did],
-          next,
-          attachments: [
-            {
-              id: utils.uuid(),
-              media_type: 'application/didcomm-encrypted+json',
-              data: { json: payload as unknown as Record<string, unknown> },
-            },
-          ],
-        })
-        payload = await v2EnvelopeService.packAnoncrypt(agentContext, forwardPlaintext, {
-          recipientKey: routingKeyAgreement,
-        })
-      }
-    }
-
-    const didCommModuleConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
     const scheme = utils.getProtocolScheme(service.serviceEndpoint)
     if (!scheme) {
       throw new CredoError(`No protocol scheme on service endpoint '${service.serviceEndpoint}'`)
@@ -391,17 +384,14 @@ export class DidCommDidRotateV2Service {
     const result = await this.jwsService.verifyJws(agentContext, {
       jws,
       allowedJwsSignerMethods: ['did'],
-      resolveJwsSigner: async ({ payload, protectedHeader }) => {
-        const claims = JsonEncoder.fromBase64Url(payload)
-        if (typeof claims.iss !== 'string') {
-          throw new CredoError("from_prior JWT payload missing or invalid 'iss'")
-        }
+      resolveJwsSigner: async ({ protectedHeader }) => {
+        const { iss } = this.decodeFromPrior(jws)
         const kid = typeof protectedHeader.kid === 'string' ? protectedHeader.kid : undefined
         if (!kid) {
           throw new CredoError("from_prior JWT protected header missing 'kid'")
         }
 
-        const didDocument = await this.resolveDidDocument(agentContext, claims.iss, dids, resolver)
+        const didDocument = await this.resolveDidDocument(agentContext, iss, dids, resolver)
         const vm = didDocument.dereferenceKey(kid, ['authentication'])
         const publicJwk = getPublicJwkFromVerificationMethod(vm)
 
@@ -411,18 +401,18 @@ export class DidCommDidRotateV2Service {
 
     if (!result.isValid) throw new CredoError('from_prior JWT signature verification failed')
 
-    const payloadJson = JsonEncoder.fromBase64Url(result.jws.payload) as Record<string, unknown>
-    if (typeof payloadJson.iss !== 'string') throw new CredoError("from_prior JWT missing 'iss'")
-    if (typeof payloadJson.iat !== 'number') throw new CredoError("from_prior JWT missing 'iat'")
-    if (payloadJson.sub !== undefined && typeof payloadJson.sub !== 'string') {
+    return this.decodeFromPrior(jws)
+  }
+
+  private decodeFromPrior(jws: string): FromPriorPayload {
+    const { payload } = Jwt.fromSerializedJwt(jws)
+    if (typeof payload.iss !== 'string') throw new CredoError("from_prior JWT missing 'iss'")
+    if (typeof payload.iat !== 'number') throw new CredoError("from_prior JWT missing 'iat'")
+    if (payload.sub !== undefined && typeof payload.sub !== 'string') {
       throw new CredoError("from_prior JWT 'sub' must be a string if present")
     }
 
-    return {
-      iss: payloadJson.iss,
-      sub: payloadJson.sub as string | undefined,
-      iat: payloadJson.iat,
-    }
+    return { iss: payload.iss, sub: payload.sub, iat: payload.iat }
   }
 
   private async createFromPrior(
@@ -449,10 +439,9 @@ export class DidCommDidRotateV2Service {
       keyId: kmsKey.kmsKeyId,
       payload,
       protectedHeaderOptions: {
-        alg: 'EdDSA',
-        kid: authVm.id,
+        alg: getPublicJwkFromVerificationMethod(authVm).signatureAlgorithm,
+        kid: toAbsoluteDidUrl(priorDid, authVm.id),
         typ: 'JWT',
-        crv: 'Ed25519',
       },
     })
   }
@@ -477,17 +466,6 @@ export class DidCommDidRotateV2Service {
     } catch {
       return resolver.resolveDidDocument(agentContext, did)
     }
-  }
-
-  private didsEqual(a: string, b: string): boolean {
-    if (a === b) return true
-    if (isValidPeerDid(a) && isValidPeerDid(b)) {
-      const altA = getAlternativeDidsForPeerDid(a) ?? []
-      if (altA.includes(b)) return true
-      const altB = getAlternativeDidsForPeerDid(b) ?? []
-      if (altB.includes(a)) return true
-    }
-    return false
   }
 
   private emitDidRotatedEvent(

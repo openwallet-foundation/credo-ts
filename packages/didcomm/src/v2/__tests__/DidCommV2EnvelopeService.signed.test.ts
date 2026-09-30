@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { InjectionSymbols, JsonEncoder, Kms } from '@credo-ts/core'
+import { InjectionSymbols, JsonEncoder, JwsService, Kms } from '@credo-ts/core'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../../../askar/src/AskarModuleConfig'
@@ -166,6 +166,53 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       ).rejects.toThrow(/Invalid DIDComm v2 signed message typ/)
     })
 
+    it('verifies the flattened JWS serialization', async () => {
+      const [signature] = signedMessage.signatures
+      const flattened = { payload: signedMessage.payload, ...signature }
+
+      const { plaintext: verifiedPlaintext } = await envelopeService.verifySignedMessage(agentContext, flattened, {
+        resolveSignerJwk: async (kid) => (kid === signerKid ? signerJwk : null),
+      })
+
+      expect(verifiedPlaintext).toEqual(plaintext)
+    })
+
+    async function signWithTyp(typ: string | undefined): Promise<DidCommV2SignedMessage> {
+      const jws = await agentContext.dependencyManager.resolve(JwsService).createJws(agentContext, {
+        payload: JsonEncoder.toUint8Array(plaintext),
+        keyId: signerJwk.keyId,
+        header: { kid: signerKid },
+        protectedHeaderOptions: { alg: 'EdDSA', ...(typ ? { typ } : {}) },
+      })
+      return {
+        payload: jws.payload,
+        signatures: [{ protected: jws.protected, signature: jws.signature, header: jws.header }],
+      }
+    }
+
+    it.each([
+      undefined,
+      'JWM',
+      'application/jwm',
+      'didcomm-signed+json',
+    ])('accepts a signed message with typ %s', async (typ) => {
+      const { plaintext: verifiedPlaintext } = await envelopeService.verifySignedMessage(
+        agentContext,
+        await signWithTyp(typ),
+        { resolveSignerJwk: async (kid) => (kid === signerKid ? signerJwk : null) }
+      )
+
+      expect(verifiedPlaintext).toEqual(plaintext)
+    })
+
+    it('rejects a signed message with typ JWT', async () => {
+      await expect(
+        envelopeService.verifySignedMessage(agentContext, await signWithTyp('JWT'), {
+          resolveSignerJwk: async () => signerJwk,
+        })
+      ).rejects.toThrow(/Invalid DIDComm v2 signed message typ/)
+    })
+
     it('rejects when the protected alg is outside the DIDComm v2.1 set', async () => {
       const badAlg = JsonEncoder.toBase64Url({ typ: DIDCOMM_V2_SIGNED_MIME_TYPE, alg: 'RS256' })
       const bad: DidCommV2SignedMessage = {
@@ -221,19 +268,24 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       senderEcdhKey.keyId = senderEcdh.keyId
     })
 
-    it('signs then authcrypts; unpacks back to the JWS which verifies to the original plaintext', async () => {
-      const envelope = await envelopeService.packSignedAndEncrypted(
-        agentContext,
-        plaintext,
-        { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' },
-        { senderKey: senderEcdhKey, recipientKey }
-      )
+    it('unpacks an authcrypted JWS back to the JWS which verifies to the original plaintext', async () => {
+      const signed = await envelopeService.signPlaintext(agentContext, plaintext, {
+        keyId: signerJwk.keyId,
+        kid: signerKid,
+        alg: 'EdDSA',
+      })
+      const envelope = await envelopeService.pack(agentContext, JsonEncoder.toUint8Array(signed), {
+        senderKey: senderEcdhKey,
+        senderKeySkid: 'did:example:alice#key-x25519-1',
+        recipientKey,
+        recipientKid: 'did:example:bob#key-x25519-1',
+      })
 
       const matchedKid = envelope.recipients[0]?.header?.kid ?? recipientKey.keyId
       const { plaintext: inner } = await envelopeService.unpack(agentContext, envelope, {
         recipientKey: recipientKey as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
         matchedKid,
-        resolveSenderKey: async (skid) => (skid === senderEcdhKey.keyId ? senderEcdhKey : null),
+        resolveSenderKey: async (skid) => (skid === 'did:example:alice#key-x25519-1' ? senderEcdhKey : null),
       })
 
       // The inner bytes are a JWS, not a JWM plaintext. Verify and recover the original.
@@ -247,12 +299,27 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       expect(verified).toEqual(plaintext)
     })
 
+    it.each([
+      { label: 'missing', to: undefined },
+      { label: 'empty', to: [] },
+    ])('refuses to sign and encrypt a message whose to is $label', async ({ to }) => {
+      const signer = { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' as const }
+      const unaddressed = { ...plaintext, to }
+
+      await expect(
+        envelopeService.packSignedAndAnoncrypted(agentContext, unaddressed, signer, {
+          recipientKey,
+          recipientKid: 'did:example:bob#key-x25519-1',
+        })
+      ).rejects.toThrow(/must have a 'to' header/)
+    })
+
     it('signs then anoncrypts; unpacks back to the JWS which verifies to the original plaintext', async () => {
       const envelope = await envelopeService.packSignedAndAnoncrypted(
         agentContext,
         plaintext,
         { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' },
-        { recipientKey }
+        { recipientKey, recipientKid: 'did:example:bob#key-x25519-1' }
       )
 
       const matchedKid = envelope.recipients[0]?.header?.kid ?? recipientKey.keyId

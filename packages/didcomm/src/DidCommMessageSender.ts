@@ -18,7 +18,6 @@ import {
 } from '@credo-ts/core'
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
-import { DidCommEnvelopeService } from './DidCommEnvelopeService'
 import type { DidCommMessageSentEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import type { DidCommMessage } from './DidCommMessage'
@@ -30,12 +29,12 @@ import { DidCommEnvelopeRegistry } from './envelope'
 import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
+import { findOwnKeyAgreementKey, toAbsoluteDidUrl } from './modules/connections/services/helpers'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
 import type { DidCommVersion } from './util/didcommVersion'
-import type { DidCommV2KeyAgreementJwk } from './v2'
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -44,7 +43,6 @@ export interface TransportPriorityOptions {
 
 @injectable()
 export class DidCommMessageSender {
-  private envelopeService: DidCommEnvelopeService
   private envelopeRegistry: DidCommEnvelopeRegistry
   private transportService: DidCommTransportService
   private didCommModuleConfig: DidCommModuleConfig
@@ -52,14 +50,12 @@ export class DidCommMessageSender {
   private eventEmitter: EventEmitter
 
   public constructor(
-    envelopeService: DidCommEnvelopeService,
     envelopeRegistry: DidCommEnvelopeRegistry,
     transportService: DidCommTransportService,
     didCommModuleConfig: DidCommModuleConfig,
     didCommDocumentService: DidCommDocumentService,
     eventEmitter: EventEmitter
   ) {
-    this.envelopeService = envelopeService
     this.envelopeRegistry = envelopeRegistry
     this.transportService = transportService
     this.didCommModuleConfig = didCommModuleConfig
@@ -366,20 +362,7 @@ export class DidCommMessageSender {
     // For DIDComm v2 authcrypt (ECDH-1PU): resolve the independent keyAgreement key
     // if it has its own kmsKeyId. This avoids using the Ed25519-derived X25519 (which would
     // produce a different public key than what skid points to with independent keys).
-    let senderKeyAgreement: { publicJwk: DidCommV2KeyAgreementJwk; vmId: string } | undefined
-    for (const kaRef of didDocument.keyAgreement ?? []) {
-      const vm = typeof kaRef === 'string' ? didDocument.dereferenceVerificationMethod(kaRef) : kaRef
-      try {
-        const jwk = getPublicJwkFromVerificationMethod(vm)
-        if (!jwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) continue
-        const kmsKeyId = keys?.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
-        if (kmsKeyId) {
-          jwk.keyId = kmsKeyId
-          senderKeyAgreement = { publicJwk: jwk as DidCommV2KeyAgreementJwk, vmId: vm.id }
-          break
-        }
-      } catch {}
-    }
+    const senderKeyAgreement = findOwnKeyAgreementKey(didDocument, keys)
 
     // If the returnRoute is already set we won't override it. This allows to set the returnRoute manually if this is desired.
     const shouldAddReturnRoute =
@@ -411,13 +394,8 @@ export class DidCommMessageSender {
     }
 
     // Per DIDComm v2 spec section 5.1.4, skid MUST point into the sender's keyAgreement (X25519).
-    const effectiveSenderKeySkid: string | undefined = (() => {
-      if (senderKeyAgreement) {
-        const id = senderKeyAgreement.vmId
-        if (id.startsWith('did:')) return id
-        if (id.startsWith('#')) return `${didDocument.id}${id}`
-        return undefined
-      }
+    const effectiveSenderKeySkid: string = (() => {
+      if (senderKeyAgreement) return senderKeyAgreement.didUrl
       // Legacy fallback: find first keyAgreement VM (X25519 or P-256)
       const kaVm = (didDocument.keyAgreement ?? [])
         .map((ref) => (typeof ref === 'string' ? didDocument.dereferenceVerificationMethod(ref) : ref))
@@ -428,10 +406,7 @@ export class DidCommMessageSender {
             return false
           }
         })
-      const id = kaVm?.id ?? senderVerificationMethod.verificationMethod.id
-      if (id.startsWith('did:')) return id
-      if (id.startsWith('#')) return `${didDocument.id}${id}`
-      return undefined
+      return toAbsoluteDidUrl(didDocument.id, kaVm?.id ?? senderVerificationMethod.verificationMethod.id)
     })()
 
     // Loop trough all available services and try to send the message
@@ -472,10 +447,11 @@ export class DidCommMessageSender {
       const keys = {
         recipientKeys: queueService.recipientKeys,
         routingKeys: queueService.routingKeys,
-        senderKey: senderVerificationMethod.publicJwk,
+        senderKey: effectiveSenderKey,
+        senderKeySkid: effectiveSenderKeySkid,
       }
 
-      const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
+      const encryptedMessage = await this.encryptMessage(agentContext, { message, keys, connection })
       await this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, {
         connectionId: connection.id,
         recipientDids: keys.recipientKeys.map((item) => new DidKey(item).did),
@@ -561,19 +537,8 @@ export class DidCommMessageSender {
       service: { ...service, recipientKeys: 'omitted...', routingKeys: 'omitted...' },
     })
 
-    // v2 spec: kid must be a DID URL into a keyAgreement vm. Preserve any attached keyId; only fall back to did:key for raw base58 from v1 ~service.
-    const recipientKeys =
-      !connection && this.didCommModuleConfig.isSupported('v2')
-        ? service.recipientKeys.map((k) => {
-            if (k.hasKeyId) return k
-            const copy = Kms.PublicJwk.fromPublicJwk(k.toJson())
-            copy.keyId = new DidKey(k).did
-            return copy
-          })
-        : service.recipientKeys
-
     const keys = {
-      recipientKeys,
+      recipientKeys: service.recipientKeys,
       routingKeys: service.routingKeys,
       senderKey,
       senderKeySkid: serviceParams.senderKeySkid,
@@ -690,6 +655,7 @@ export class DidCommMessageSender {
                   ? svc.serviceEndpoint
                   : (svc.serviceEndpoint as { uri?: string })?.uri
             let routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
+            const isV2Connection = (connection.didcommVersion ?? 'v1') === 'v2'
             // When endpoint is a DID (e.g. routing DID), resolve to get transport URL and mediator's keys for Forward.
             // Dedupe by X25519 fingerprint: a mediator's Ed25519 authentication VM and X25519 keyAgreement VM
             // are the same physical key (birational map) and must count as ONE hop. Without dedup, the sender
@@ -728,7 +694,7 @@ export class DidCommMessageSender {
                     byX25519Fp.set(fingerprint, publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
                   }
                 }
-                routingKeys = Array.from(byX25519Fp.values())
+                routingKeys = Array.from(byX25519Fp.values()).slice(0, isV2Connection ? 1 : undefined)
                 const firstSvc = routingDoc.service?.[0]
                 if (firstSvc) {
                   const resolved =
@@ -748,7 +714,6 @@ export class DidCommMessageSender {
               // For v2 connections, use only keyAgreement VMs (X25519) — DIDComm v2 spec requires
               // the kid to be a keyAgreement VM DID URL. For v1, include both authentication and
               // keyAgreement for backwards compatibility.
-              const isV2Connection = (connection.didcommVersion ?? 'v1') === 'v2'
               const keyRefs = isV2Connection
                 ? [...(didDocument.keyAgreement ?? [])]
                 : [...(didDocument.authentication ?? []), ...(didDocument.keyAgreement ?? [])]
@@ -758,15 +723,13 @@ export class DidCommMessageSender {
                   typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
                 if (seen.has(verificationMethod.id)) continue
                 const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-                if (publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
+                if (
+                  publicJwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk) ||
+                  (!isV2Connection && publicJwk.is(Kms.Ed25519PublicJwk))
+                ) {
                   seen.add(verificationMethod.id)
-                  const jwk = publicJwk
-                  if (verificationMethod?.id && !jwk.hasKeyId) {
-                    // Use full DID URL as kid so recipient can resolve without trying multiple DIDs
-                    const vmId = verificationMethod.id as string
-                    jwk.keyId = vmId.startsWith('#') ? `${didDocument.id}${vmId}` : vmId
-                  }
-                  recipientKeys.push(jwk)
+                  publicJwk.keyId = toAbsoluteDidUrl(didDocument.id, verificationMethod.id)
+                  recipientKeys.push(publicJwk)
                 }
               }
               didCommServices.push({

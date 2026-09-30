@@ -12,7 +12,7 @@ export interface MessageContextParams {
   sessionId?: string
   senderKey?: DidCommEnvelopeKey
   recipientKey?: DidCommEnvelopeKey
-  /** Sender DID from envelope (DIDComm v2 plaintext). Preserved before transformation. */
+  /** DIDComm v2 sender DID proven by the authcrypt envelope. Never set for anoncrypt. */
   senderDid?: string
   agentContext: AgentContext
   receivedAt?: Date
@@ -24,7 +24,7 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
   public sessionId?: string
   public senderKey?: DidCommEnvelopeKey
   public recipientKey?: DidCommEnvelopeKey
-  /** Sender DID from envelope (DIDComm v2 plaintext). Use when message.from may be lost in transformation. */
+  /** DIDComm v2 sender DID proven by the authcrypt envelope. Never set for anoncrypt. */
   public senderDid?: string
   public receivedAt: Date
 
