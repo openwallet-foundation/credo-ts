@@ -29,3 +29,5 @@
 <br />
 
 Credo Node provides platform specific dependencies to run Credo in [Node.JS](https://nodejs.org). See the [Getting Started Guide](https://github.com/openwallet-foundation/credo-ts#getting-started) for installation instructions.
+
+For DIDComm inbound HTTP and WebSocket hosting, import `expressHost` from `@credo-ts/node/express` and `webSocketHost` from `@credo-ts/node`, and configure them on the `http` and `webSocket` options of `DidCommModule`. See the [`@credo-ts/didcomm` README](../didcomm/README.md#inbound-http-and-websocket-hosting) for examples.
