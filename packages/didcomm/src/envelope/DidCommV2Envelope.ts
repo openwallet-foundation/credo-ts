@@ -405,7 +405,7 @@ export async function wrapInV2Forward(
       data: { json: payload },
     }
     const forwardPlaintext = DidCommForwardV2Message.createV2PlaintextMessage({
-      to: [new DidKey(routingKey).did],
+      to: [toKeyAgreementDidUrl(routingKey).split('#')[0]],
       next,
       attachments: [attachment],
     })

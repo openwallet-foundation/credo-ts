@@ -3,10 +3,10 @@ import {
   CredoError,
   DidCommV1Service,
   DidCommV2Service,
+  DidKey,
   DidRecord,
   DidRepository,
   DidResolverService,
-  didKeyToEd25519PublicJwk,
   didToNumAlgo2DidDocument,
   didToNumAlgo4DidDocument,
   findMatchingEd25519Key,
@@ -92,7 +92,7 @@ export class DidCommDocumentService {
   }
 
   /**
-   * Resolve DIDComm v1-style routing key references (VM ids / did#fragment) to Ed25519 JWKS for Forward / packV2WithForward.
+   * Resolve DIDComm v1-style routing key references (VM ids / did#fragment) to public JWKs for Forward / packV2WithForward.
    */
   private async resolveRoutingKeyReferences(
     agentContext: AgentContext,
@@ -103,17 +103,19 @@ export class DidCommDocumentService {
       // routingKeys entries are commonly bare did:key DIDs, which dereferenceKey cannot resolve
       let publicJwk: Kms.PublicJwk
       if (routingKey.startsWith('did:key:') && !routingKey.includes('#')) {
-        publicJwk = didKeyToEd25519PublicJwk(routingKey)
+        publicJwk = DidKey.fromDid(routingKey).publicJwk
       } else {
         const routingDidDocument = await this.didResolverService.resolveDidDocument(agentContext, routingKey)
-        publicJwk = getPublicJwkFromVerificationMethod(
-          routingDidDocument.dereferenceKey(routingKey, ['authentication', 'keyAgreement'])
-        )
+        const verificationMethod = routingDidDocument.dereferenceKey(routingKey, ['authentication', 'keyAgreement'])
+        publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+        if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
+          publicJwk.keyId = toAbsoluteDidUrl(routingDidDocument.id, verificationMethod.id)
+        }
       }
-      if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
-        throw new CredoError(`Expected Ed25519PublicJwk but found ${publicJwk.JwkClass.name}`)
+      if (!publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
+        throw new CredoError(`Unsupported routing key type ${publicJwk.JwkClass.name}`)
       }
-      routingKeys.push(publicJwk)
+      routingKeys.push(publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
     }
     return routingKeys
   }
