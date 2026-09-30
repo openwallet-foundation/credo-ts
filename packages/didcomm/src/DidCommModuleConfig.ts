@@ -12,6 +12,8 @@ import type { DidCommProofProtocol } from './modules/proofs/protocol/DidCommProo
 import type { DidCommMediationRecipientModuleConfigOptions } from './modules/routing/DidCommMediationRecipientModuleConfig'
 import type { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCommMediatorModuleConfig'
 import type { DidCommInboundTransport, DidCommOutboundTransport, DidCommQueueTransportRepository } from './transport'
+import type { DidCommHttpInboundTransportOptions } from './transport/DidCommHttpInboundTransport'
+import type { DidCommWsInboundTransportOptions } from './transport/DidCommWsInboundTransport'
 import { InMemoryQueueTransportRepository } from './transport/queue/InMemoryQueueTransportRepository'
 import { DidCommMimeType } from './types'
 
@@ -21,6 +23,19 @@ export interface DidCommModuleConfigOptions {
     inbound?: DidCommInboundTransport[]
     outbound?: DidCommOutboundTransport[]
   }
+
+  /**
+   * Accept inbound DIDComm messages over HTTP. The transport is added to the inbound transports
+   * and served by the provided host, for example `expressHost()` from `@credo-ts/node/express`.
+   */
+  http?: DidCommHttpInboundTransportOptions
+
+  /**
+   * Accept inbound DIDComm messages over WebSocket. The transport is added to the inbound transports
+   * and served by the provided host, for example `webSocketHost()` from `@credo-ts/node`.
+   */
+  webSocket?: DidCommWsInboundTransportOptions
+
   useDidSovPrefixWhereAllowed?: boolean
   processDidCommMessagesConcurrently?: boolean
   didCommMimeType?: string
