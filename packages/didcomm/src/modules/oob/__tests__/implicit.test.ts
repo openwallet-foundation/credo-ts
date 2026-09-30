@@ -96,6 +96,20 @@ describe('out of band implicit', () => {
     expect(outOfBandRecord.outOfBandInvitation.v2Invitation?.body?.accept).toEqual(['didcomm/v2'])
   })
 
+  test('v2 implicit invitation: first message has no pthid', async () => {
+    const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
+
+    const { connectionRecord } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+      did: inMemoryDid,
+      didCommVersion: 'v2',
+      label: 'Alice',
+    })
+    if (!connectionRecord) throw new Error('Expected connectionRecord to be defined')
+
+    const ping = await aliceAgent.didcomm.connections.sendPing(connectionRecord.id, { responseRequested: false })
+    expect(ping.thread?.parentThreadId).toBeUndefined()
+  })
+
   test('v2 with handshakeProtocols throws', async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
 

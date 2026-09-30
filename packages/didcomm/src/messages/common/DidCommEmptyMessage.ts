@@ -36,6 +36,7 @@ export class DidCommEmptyMessage extends DidCommMessage {
       body: {},
     }
     if (this.fromPrior !== undefined) v2.from_prior = this.fromPrior
+    if (this.thread?.parentThreadId) v2.pthid = this.thread.parentThreadId
     return v2
   }
 }
