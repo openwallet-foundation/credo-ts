@@ -1,8 +1,14 @@
 {
   "name": "@credo-ts/node",
   "exports": {
-    "cli": "./build/index.mjs",
-    "import": "./src/index.ts"
+    ".": {
+      "cli": "./build/index.mjs",
+      "import": "./src/index.ts"
+    },
+    "./express": {
+      "cli": "./build/express/index.mjs",
+      "import": "./src/express/index.ts"
+    }
   },
   "version": "0.7.1",
   "files": [
@@ -18,6 +24,11 @@
     "module": "./build/index.mjs",
     "exports": {
       ".": "./build/index.mjs",
+      "./express": {
+        "types": "./build/express/index.d.mts",
+        "import": "./build/express/index.mjs",
+        "require": "./build/express/index.mjs"
+      },
       "./package.json": "./package.json"
     }
   },
