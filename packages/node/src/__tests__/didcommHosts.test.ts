@@ -13,7 +13,7 @@ import {
 import express from 'express'
 import { Subject } from 'rxjs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import WebSocket from 'ws'
+import WebSocket, { WebSocketServer } from 'ws'
 
 import { expressHost, httpServerHost } from '../express'
 import { webSocketHost } from '../webSocketHost'
@@ -145,6 +145,46 @@ describe('webSocketHost', () => {
     await transport.stop()
     await expect(closed).resolves.toBe(1006)
     expect(host.server).toBeUndefined()
+  })
+
+  it('keeps an application-supplied server open and refuses connections while stopped', async () => {
+    const socketServer = new WebSocketServer({ noServer: true })
+    const publicServer = createServer()
+    publicServer.on('upgrade', (request, socket, head) => {
+      socketServer.handleUpgrade(request, socket, head, (webSocket) => {
+        socketServer.emit('connection', webSocket, request)
+      })
+    })
+    const port = await listen(publicServer)
+    const host = webSocketHost({ server: socketServer })
+    const transport = new DidCommWsInboundTransport({ host })
+
+    const connect = async () => {
+      const client = new WebSocket(`ws://127.0.0.1:${port}`)
+      const closed = new Promise<number>((resolve) => client.once('close', (code) => resolve(code)))
+      await new Promise<void>((resolve) => client.once('open', resolve))
+      return { client, closed }
+    }
+    const tryAgainLater = 1013
+
+    const beforeStart = await connect()
+    await expect(beforeStart.closed).resolves.toBe(tryAgainLater)
+
+    await transport.start(createAgentContext())
+    await transport.stop()
+    expect(host.server).toBe(socketServer)
+
+    const whileStopped = await connect()
+    await expect(whileStopped.closed).resolves.toBe(tryAgainLater)
+
+    await transport.start(createAgentContext())
+    const { client } = await connect()
+    const reply = new Promise<string>((resolve) => client.once('message', (data) => resolve(data.toString())))
+    client.send(JSON.stringify(encryptedMessage))
+    await expect(reply).resolves.toBe(JSON.stringify(encryptedMessage))
+
+    await transport.stop()
+    await new Promise<void>((resolve, reject) => socketServer.close((error) => (error ? reject(error) : resolve())))
   })
 
   it('rejects attach when the configured port cannot bind', async () => {

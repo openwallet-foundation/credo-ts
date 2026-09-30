@@ -10,17 +10,23 @@ interface WebSocketHostAcceptor {
 
 export type WebSocketHostOptions = { server: WebSocketServer; port?: undefined } | { server?: undefined; port: number }
 
+// Close code 1013 "Try Again Later": the server is up but the agent is not accepting connections.
+const TRY_AGAIN_LATER = 1013
+
 /**
  * Accepts DIDComm WebSocket connections from a `ws` WebSocketServer.
  *
- * When `port` is provided the host creates the server when an acceptor is attached. When `server`
- * is provided the application owns how connections reach it (for example `noServer` with `handleUpgrade`).
- * In both cases the server is closed when the acceptor is detached.
+ * When `port` is provided the host creates the server when an acceptor is attached, and closes it
+ * when the acceptor is detached. When `server` is provided the application owns the server and how
+ * connections reach it (for example `noServer` with `handleUpgrade`): it is never closed by the host,
+ * and while no acceptor is attached (before the agent starts or after it stops) new connections are
+ * closed with code 1013, so a stopped agent holds no sockets and the agent can be started again.
  */
 export class WebSocketHost {
   private port?: number
   private _server?: WebSocketServer
   private connectionListeners = new Map<WebSocketHostAcceptor, (socket: WebSocket) => void>()
+  private readonly rejectConnection = (socket: WebSocket) => socket.close(TRY_AGAIN_LATER)
 
   public get server() {
     return this._server
@@ -29,10 +35,15 @@ export class WebSocketHost {
   public constructor({ server, port }: WebSocketHostOptions) {
     this._server = server
     this.port = port
+
+    if (server) {
+      this.rejectConnectionsOn(server)
+    }
   }
 
   public async attach(acceptor: WebSocketHostAcceptor): Promise<void> {
     const server = this._server ?? (await this.listen())
+    server.off('connection', this.rejectConnection)
 
     const listener = (socket: WebSocket) => acceptor.accept(socket)
     this.connectionListeners.set(acceptor, listener)
@@ -51,9 +62,14 @@ export class WebSocketHost {
       this.connectionListeners.delete(acceptor)
     }
 
-    if (this.port !== undefined) {
-      this._server = undefined
+    if (this.port === undefined) {
+      if (this.connectionListeners.size === 0) {
+        this.rejectConnectionsOn(server)
+      }
+      return
     }
+
+    this._server = undefined
 
     return new Promise<void>((resolve, reject) => {
       server.close((error) => {
@@ -63,6 +79,11 @@ export class WebSocketHost {
         resolve()
       })
     })
+  }
+
+  private rejectConnectionsOn(server: WebSocketServer) {
+    server.off('connection', this.rejectConnection)
+    server.on('connection', this.rejectConnection)
   }
 
   private async listen(): Promise<WebSocketServer> {
