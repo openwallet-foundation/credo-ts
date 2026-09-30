@@ -33,6 +33,7 @@ import {
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import { DidCommDidRotateV2Service } from './modules/connections/services/DidCommDidRotateV2Service'
 import { DidCommOutOfBandService } from './modules/oob/DidCommOutOfBandService'
+import { DidCommOutOfBandRole, DidCommOutOfBandState } from './modules/oob/domain'
 import { DidCommRoutingService } from './modules/routing/services/DidCommRoutingService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isDidCommV2SignedMessage } from './util/didcommVersion'
@@ -368,7 +369,12 @@ export class DidCommMessageReceiver {
 
     if (from !== undefined && to?.length && this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
       const recipient = to[0]
-      const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipient)
+      const [recipientDidRecord] = await agentContext.resolve(DidsApi).getCreatedDids({ did: recipient })
+      // Match every form of the DID (did:peer:4 short and long) so a sender cannot pick the untracked one.
+      const recipientDids = recipientDidRecord
+        ? [recipientDidRecord.did, ...(recipientDidRecord.getTags().alternativeDids ?? [])]
+        : [recipient]
+      const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipientDids)
       if (outOfBandRecord) {
         // Inviter receives first message → Responder (so retrieveServicesByConnection uses theirDid parse fallback)
         const connection = await this.connectionService.createConnection(
@@ -389,16 +395,13 @@ export class DidCommMessageReceiver {
         // attached to the next outbound message notifies the peer about the linkage.
         if (outOfBandRecord.reusable) {
           await this.rotateInviterDidForV2OOB(agentContext, connection)
+        } else {
+          await this.outOfBandService.updateState(agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
         }
         return { connection }
       }
 
-      // For implicit v2 OOB invitations: no OutOfBandRecord exists on the responder side
-      // because the public DID itself IS the invitation. Auto-create the connection if the
-      // recipient DID is one of our created DIDs.
-      const dids = agentContext.resolve(DidsApi)
-      try {
-        await dids.resolveCreatedDidDocumentWithKeys(recipient)
+      if (recipientDidRecord && (await this.isImplicitInvitationDid(agentContext, recipientDids))) {
         const connection = await this.connectionService.createConnection(
           agentContext,
           {
@@ -407,6 +410,7 @@ export class DidCommMessageReceiver {
             state: DidCommDidExchangeState.Completed,
             theirDid: from,
             did: recipient,
+            invitationDid: recipient,
             didcommVersion: 'v2',
           },
           true
@@ -414,14 +418,26 @@ export class DidCommMessageReceiver {
         // Always rotate to a per-pair DID
         await this.rotateInviterDidForV2OOB(agentContext, connection)
         return { connection }
-      } catch {
-        // recipient is not our DID — no connection created
       }
     }
 
     // v1: use sender/recipient keys
     if (!recipientKey || !senderKey) return { connection: null }
     return { connection: await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey }) }
+  }
+
+  private async isImplicitInvitationDid(agentContext: AgentContext, dids: string[]): Promise<boolean> {
+    const outOfBandRecords = await this.outOfBandService.findAllByQuery(agentContext, {
+      role: DidCommOutOfBandRole.Sender,
+      $or: dids.map((recipientDid) => ({ recipientDid })),
+    })
+    if (outOfBandRecords.length > 0) return false
+
+    const connections = await this.connectionService.findAllByQuery(agentContext, {
+      $or: dids.flatMap((ourDid) => [{ did: ourDid }, { previousDids: [ourDid] }]),
+    })
+    // Connections this implicit invitation already opened rotated away from it, so they do not make it pairwise.
+    return connections.every(({ invitationDid }) => invitationDid !== undefined && dids.includes(invitationDid))
   }
 
   /**
