@@ -71,7 +71,7 @@ function createAgentContext() {
     config: { logger: { debug: vi.fn(), error: vi.fn() } },
     dependencyManager: {
       resolve: vi.fn((dependency) => {
-        if (dependency === DidCommTransportService) return { removeSession: vi.fn() }
+        if (dependency === DidCommTransportService) return { removeSession: vi.fn(), findSessionById: vi.fn() }
         if (dependency === DidCommModuleConfig) return { endpoints: [], didCommMimeType: DidCommMimeType.V1 }
         if (dependency === EventEmitter) return eventEmitter
         throw new Error(`Unexpected dependency: ${dependency.name}`)

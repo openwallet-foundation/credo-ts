@@ -29,6 +29,7 @@ afterEach(async () => {
 function createAgentContext() {
   const transportService = {
     removeSession: vi.fn(),
+    findSessionById: vi.fn(),
   }
 
   return {

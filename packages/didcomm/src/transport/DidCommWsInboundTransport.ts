@@ -20,81 +20,131 @@ export interface DidCommWsInboundTransportOptions {
 }
 
 export class DidCommWsInboundTransport implements DidCommInboundTransport {
-  private host: DidCommWebSocketHost
-  private acceptor?: DidCommWebSocketAcceptor
-  private logger!: Logger
+  private readonly host: DidCommWebSocketHost
+  private readonly acceptor: DidCommWebSocketAcceptor
+  private agentContext?: AgentContext
+  private lifecycle: Promise<void> = Promise.resolve()
 
-  // We're using a `socketId` just for the prevention of calling the connection handler twice.
-  private socketIds: Record<string, DidCommWebSocket> = {}
+  private sessions = new Map<DidCommWebSocket, WebSocketTransportSession>()
 
   public constructor({ host }: DidCommWsInboundTransportOptions) {
     this.host = host
-  }
-
-  public async start(agentContext: AgentContext) {
-    const transportService = agentContext.dependencyManager.resolve(DidCommTransportService)
-
-    this.logger = agentContext.config.logger
-
-    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
-    const wsEndpoint = didcommConfig.endpoints.find((e) => e.startsWith('ws'))
-    this.logger.debug('Starting WS inbound transport', {
-      endpoint: wsEndpoint,
-    })
-
-    const acceptor: DidCommWebSocketAcceptor = {
-      accept: (socket) => {
-        const socketId = utils.uuid()
-
-        this.logger.debug(`Saving new socket with id ${socketId}.`)
-        this.socketIds[socketId] = socket
-        const session = new WebSocketTransportSession(socketId, socket, this.logger)
-        this.listenOnWebSocketMessages(agentContext, socket, session)
-        socket.addEventListener('close', () => {
-          this.logger.debug('Socket closed.')
-          delete this.socketIds[socketId]
-          transportService.removeSession(session)
-        })
-      },
-    }
-    this.acceptor = acceptor
-    await this.host.attach(acceptor)
-  }
-
-  public async stop() {
-    this.logger.debug('Closing WebSocket Server')
-
-    for (const socket of Object.values(this.socketIds)) {
-      socket.terminate()
-    }
-
-    if (this.acceptor) {
-      await this.host.detach(this.acceptor)
+    this.acceptor = {
+      accept: (socket) => this.accept(socket),
     }
   }
 
-  private listenOnWebSocketMessages(
-    agentContext: AgentContext,
-    socket: DidCommWebSocket,
-    session: DidCommTransportSession
-  ) {
-    socket.addEventListener('message', async (event) => {
-      this.logger.debug('WebSocket message event received.')
+  public start(agentContext: AgentContext): Promise<void> {
+    return this.enqueue(async () => {
+      if (this.agentContext) return
+
+      const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
+      const wsEndpoint = didcommConfig.endpoints.find((e) => e.startsWith('ws'))
+      agentContext.config.logger.debug('Starting WS inbound transport', {
+        endpoint: wsEndpoint,
+      })
+
+      this.agentContext = agentContext
+
       try {
-        const encryptedMessage = JSON.parse(event.data as string) as DidCommEncryptedMessage
-
-        const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
-        eventEmitter.emit<DidCommMessageReceivedEvent>(agentContext, {
-          type: DidCommEventTypes.DidCommMessageReceived,
-          payload: {
-            message: encryptedMessage,
-            session: session,
-          },
-        })
+        await this.host.attach(this.acceptor)
       } catch (error) {
-        this.logger.error(`Error processing message: ${error}`)
+        this.agentContext = undefined
+        this.terminateAll(agentContext)
+        throw error
       }
     })
+  }
+
+  public stop(): Promise<void> {
+    return this.enqueue(async () => {
+      const agentContext = this.agentContext
+      if (!agentContext) return
+
+      agentContext.config.logger.debug('Closing WebSocket Server')
+      this.agentContext = undefined
+
+      this.terminateAll(agentContext)
+      await this.host.detach(this.acceptor)
+    })
+  }
+
+  private enqueue(operation: () => Promise<void>): Promise<void> {
+    const result = this.lifecycle.then(operation, operation)
+    this.lifecycle = result.catch(() => undefined)
+    return result
+  }
+
+  private accept(socket: DidCommWebSocket) {
+    const agentContext = this.agentContext
+    if (!agentContext || socket.readyState !== WEB_SOCKET_OPEN) {
+      socket.close()
+      return
+    }
+    if (this.sessions.has(socket)) return
+
+    const logger = agentContext.config.logger
+
+    const session = new WebSocketTransportSession(utils.uuid(), socket, logger)
+    this.sessions.set(socket, session)
+
+    socket.addEventListener('message', (event) => {
+      this.onMessage(agentContext, socket, session, event.data)
+    })
+    socket.addEventListener('close', () => {
+      logger.debug('Socket closed.')
+      if (this.sessions.get(socket) !== session) return
+      this.sessions.delete(socket)
+      this.removeSavedSession(agentContext, session)
+    })
+  }
+
+  private onMessage(
+    agentContext: AgentContext,
+    socket: DidCommWebSocket,
+    session: WebSocketTransportSession,
+    data: unknown
+  ) {
+    const logger = agentContext.config.logger
+    logger.debug('WebSocket message event received.')
+
+    try {
+      const encryptedMessage = JSON.parse(data as string) as DidCommEncryptedMessage
+
+      // Ignore messages that arrive after the transport was stopped or the socket's session was replaced
+      if (this.agentContext !== agentContext || this.sessions.get(socket) !== session) return
+
+      const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+      eventEmitter.emit<DidCommMessageReceivedEvent>(agentContext, {
+        type: DidCommEventTypes.DidCommMessageReceived,
+        payload: {
+          message: encryptedMessage,
+          session: session,
+        },
+      })
+    } catch (error) {
+      logger.error(`Error processing message: ${error}`)
+    }
+  }
+
+  private terminateAll(agentContext: AgentContext) {
+    for (const [socket, session] of this.sessions) {
+      this.sessions.delete(socket)
+      socket.terminate()
+      try {
+        this.removeSavedSession(agentContext, session)
+      } catch (error) {
+        agentContext.config.logger.error(`Error removing WebSocket session: ${error}`)
+      }
+    }
+  }
+
+  private removeSavedSession(agentContext: AgentContext, session: WebSocketTransportSession) {
+    const transportService = agentContext.dependencyManager.resolve(DidCommTransportService)
+    // Only remove the session while it is saved, so a session that was already removed or replaced is not removed twice
+    if (transportService.findSessionById(session.id) === session) {
+      transportService.removeSession(session)
+    }
   }
 }
 
