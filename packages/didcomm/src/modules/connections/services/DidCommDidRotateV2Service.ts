@@ -13,8 +13,8 @@ import {
   inject,
   injectable,
   isValidPeerDid,
-  JsonEncoder,
   JwsService,
+  Jwt,
   JwtPayload,
   type Logger,
   utils,
@@ -161,46 +161,55 @@ export class DidCommDidRotateV2Service {
   }
 
   /**
-   * Process an inbound from_prior JWT. Verifies the JWT, then either rotates theirDid to
-   * `sub` (regular rotation) or clears theirDid (rotate-to-nothing termination).
-   *
-   * Idempotent: the sender retransmits from_prior on every outbound message until they
-   * receive a message addressed to the new DID, so the same payload may arrive repeatedly.
+   * Process an inbound from_prior JWT. Returns true when it was applied or repeats one already
+   * applied (the sender retransmits it until we address its new DID), and false when it was ignored.
+   * Throws when the JWT is invalid.
    */
   public async processFromPrior(
     agentContext: AgentContext,
     connection: DidCommConnectionRecord,
     jws: string,
     senderDid: string | undefined
-  ): Promise<FromPriorPayload | undefined> {
-    let payload: FromPriorPayload
-    try {
-      payload = await this.verifyFromPrior(agentContext, jws)
-    } catch (error) {
-      this.logger.warn('Ignoring v2 message with invalid from_prior JWT', {
-        error: error instanceof Error ? error.message : String(error),
+  ): Promise<boolean> {
+    if (this.isAppliedFromPrior(connection, this.decodeFromPrior(jws))) return true
+
+    const payload = await this.verifyFromPrior(agentContext, jws)
+
+    if (!connection.theirDid) {
+      this.logger.warn('Ignoring from_prior on a connection the peer has terminated', { connectionId: connection.id })
+      return false
+    }
+
+    if (!areEquivalentDidPeer4Forms(payload.iss, connection.theirDid)) {
+      this.logger.warn("Ignoring from_prior whose 'iss' is not the connection's current peer DID", {
+        connectionId: connection.id,
+        iss: payload.iss,
       })
-      return undefined
+      return false
     }
 
     if (payload.sub === undefined) {
-      if (connection.theirDid === undefined && connection.previousTheirDids.length > 0) return payload
       await this.processRotateToNothing(agentContext, connection)
-      return payload
+      return true
     }
 
-    if (senderDid && payload.sub !== senderDid) {
-      this.logger.warn("from_prior 'sub' does not match envelope 'from'; ignoring rotation", {
+    if (!senderDid || !areEquivalentDidPeer4Forms(payload.sub, senderDid)) {
+      this.logger.warn("Ignoring from_prior whose 'sub' is not the authenticated sender", {
+        connectionId: connection.id,
         sub: payload.sub,
-        from: senderDid,
+        senderDid,
       })
-      return payload
+      return false
     }
-
-    if (connection.theirDid === payload.sub) return payload
 
     await this.processRotateFromPeer(agentContext, connection, payload.iss, payload.sub)
-    return payload
+    return true
+  }
+
+  private isAppliedFromPrior(connection: DidCommConnectionRecord, { iss, sub }: FromPriorPayload): boolean {
+    if (!connection.previousTheirDids.some((did) => areEquivalentDidPeer4Forms(did, iss))) return false
+    if (sub === undefined) return !connection.theirDid
+    return connection.theirDid !== undefined && areEquivalentDidPeer4Forms(sub, connection.theirDid)
   }
 
   /**
@@ -375,17 +384,14 @@ export class DidCommDidRotateV2Service {
     const result = await this.jwsService.verifyJws(agentContext, {
       jws,
       allowedJwsSignerMethods: ['did'],
-      resolveJwsSigner: async ({ payload, protectedHeader }) => {
-        const claims = JsonEncoder.fromBase64Url(payload)
-        if (typeof claims.iss !== 'string') {
-          throw new CredoError("from_prior JWT payload missing or invalid 'iss'")
-        }
+      resolveJwsSigner: async ({ protectedHeader }) => {
+        const { iss } = this.decodeFromPrior(jws)
         const kid = typeof protectedHeader.kid === 'string' ? protectedHeader.kid : undefined
         if (!kid) {
           throw new CredoError("from_prior JWT protected header missing 'kid'")
         }
 
-        const didDocument = await this.resolveDidDocument(agentContext, claims.iss, dids, resolver)
+        const didDocument = await this.resolveDidDocument(agentContext, iss, dids, resolver)
         const vm = didDocument.dereferenceKey(kid, ['authentication'])
         const publicJwk = getPublicJwkFromVerificationMethod(vm)
 
@@ -395,18 +401,18 @@ export class DidCommDidRotateV2Service {
 
     if (!result.isValid) throw new CredoError('from_prior JWT signature verification failed')
 
-    const payloadJson = JsonEncoder.fromBase64Url(result.jws.payload) as Record<string, unknown>
-    if (typeof payloadJson.iss !== 'string') throw new CredoError("from_prior JWT missing 'iss'")
-    if (typeof payloadJson.iat !== 'number') throw new CredoError("from_prior JWT missing 'iat'")
-    if (payloadJson.sub !== undefined && typeof payloadJson.sub !== 'string') {
+    return this.decodeFromPrior(jws)
+  }
+
+  private decodeFromPrior(jws: string): FromPriorPayload {
+    const { payload } = Jwt.fromSerializedJwt(jws)
+    if (typeof payload.iss !== 'string') throw new CredoError("from_prior JWT missing 'iss'")
+    if (typeof payload.iat !== 'number') throw new CredoError("from_prior JWT missing 'iat'")
+    if (payload.sub !== undefined && typeof payload.sub !== 'string') {
       throw new CredoError("from_prior JWT 'sub' must be a string if present")
     }
 
-    return {
-      iss: payloadJson.iss,
-      sub: payloadJson.sub as string | undefined,
-      iat: payloadJson.iat,
-    }
+    return { iss: payload.iss, sub: payload.sub, iat: payload.iat }
   }
 
   private async createFromPrior(
@@ -433,10 +439,9 @@ export class DidCommDidRotateV2Service {
       keyId: kmsKey.kmsKeyId,
       payload,
       protectedHeaderOptions: {
-        alg: 'EdDSA',
+        alg: getPublicJwkFromVerificationMethod(authVm).signatureAlgorithm,
         kid: authVm.id,
         typ: 'JWT',
-        crv: 'Ed25519',
       },
     })
   }
