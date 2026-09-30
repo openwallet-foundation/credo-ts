@@ -251,6 +251,7 @@ function mapContentEncryptionAlgorithmToKeyLength(
     case 'A128GCM':
     case 'A128KW':
       return 128
+    case 'A192GCM':
     case 'A192KW':
       return 192
     case 'A128CBC-HS256':
@@ -262,7 +263,6 @@ function mapContentEncryptionAlgorithmToKeyLength(
       return 256
 
     case 'A192CBC-HS384':
-    case 'A192GCM':
       return 384
     case 'A256CBC-HS512':
       return 512
