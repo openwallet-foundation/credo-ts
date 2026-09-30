@@ -121,7 +121,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
 
     return wrapInV2Forward(agentContext, this.envelopeService, encryptedMessage, {
       routingKeys: v2Keys.routingKeys,
-      recipientKey: keys.recipientKeys[0],
+      recipientKey: v2Keys.recipientKey,
       connection: options?.connection,
       contentEncryptionAlgorithm: this.config.v2DefaultAnoncryptContentEncryption,
     })
@@ -142,10 +142,12 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
 
     const senderKey = toKeyAgreement(keys.senderKey)
     senderKey.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
+    const recipientKey =
+      keys.recipientKeys.find((key) => toKeyAgreement(key).JwkClass === senderKey.JwkClass) ?? keys.recipientKeys[0]
 
     return {
-      recipientKey: toKeyAgreement(keys.recipientKeys[0]),
-      recipientKid: toKeyAgreementDidUrl(keys.recipientKeys[0]),
+      recipientKey: toKeyAgreement(recipientKey),
+      recipientKid: toKeyAgreementDidUrl(recipientKey),
       senderKey,
       routingKeys: keys.routingKeys,
       senderKeySkid: keys.senderKeySkid,
@@ -382,7 +384,7 @@ export async function wrapInV2Forward(
   encryptedMessage: DidCommEncryptedMessage,
   options: {
     routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
-    recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    recipientKey: Kms.PublicJwk
     connection?: DidCommPackOptions['connection']
     contentEncryptionAlgorithm: DidCommV2AnoncryptContentEncryptionAlgorithm
   }
@@ -427,7 +429,7 @@ export async function wrapInV2Forward(
  */
 function resolveRecipientNextForMediationForward(
   connection: DidCommPackOptions['connection'],
-  recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  recipientKey: Kms.PublicJwk
 ): string {
   // CM 2.0 recipients register their connection did:peer with the mediator, so prefer
   // that DID (short-form canonicalized like the mediator's keylist store and lookup).
