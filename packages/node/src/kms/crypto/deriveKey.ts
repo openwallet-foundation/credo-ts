@@ -1,5 +1,15 @@
 import { Buffer } from 'node:buffer'
-import { createECDH, createHash, getRandomValues, subtle } from 'node:crypto'
+import {
+  createCipheriv,
+  createDecipheriv,
+  createECDH,
+  createHash,
+  createPrivateKey,
+  createPublicKey,
+  diffieHellman,
+  getRandomValues,
+  subtle,
+} from 'node:crypto'
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import type { NodeKmsSupportedEcCrvs } from './createKey'
 
@@ -38,6 +48,9 @@ type NodeSupportedKeyAgreementDecryptOptions = Kms.KmsKeyAgreementDecryptOptions
 type NodeSupportedKeyAgreementEncryptOptions = Kms.KmsKeyAgreementEncryptOptions & {
   algorithm: (typeof nodeSupportedKeyAgreementAlgorithms)[number]
 }
+
+// Default IV from RFC 3394 section 2.2.3.1
+const aesKeyWrapIv = Buffer.from('a6a6a6a6a6a6a6a6', 'hex')
 
 export async function deriveEncryptionKey(options: {
   keyAgreement: NodeSupportedKeyAgreementEncryptOptions
@@ -83,16 +96,14 @@ export async function deriveEncryptionKey(options: {
     }
   }
 
-  const derivedKey = await subtle.importKey('raw', derivedKeyBytes, 'AES-KW', true, ['wrapKey'])
   const contentEncryptionKeyBytes = getRandomValues(
     new Uint8Array(mapContentEncryptionAlgorithmToKeyLength(encryption.algorithm) >> 3)
   )
-  const contentEncryptionKey = await subtle.importKey('raw', contentEncryptionKeyBytes, 'AES-KW', true, ['wrapKey'])
-  const encryptedContentEncryptionKey = await subtle.wrapKey('raw', contentEncryptionKey, derivedKey, 'AES-KW')
+  const cipher = createCipheriv(`id-aes${keyLength}-wrap`, derivedKeyBytes, aesKeyWrapIv)
 
   return {
     encryptedContentEncryptionKey: {
-      encrypted: new Uint8Array(encryptedContentEncryptionKey),
+      encrypted: Buffer.concat([cipher.update(contentEncryptionKeyBytes), cipher.final()]),
     } satisfies Kms.KmsEncryptedKey,
     contentEncryptionKey: {
       kty: 'oct',
@@ -131,7 +142,7 @@ async function deriveEncryptionKeyEcdh1Pu(options: {
     numberTo4ByteUint8Array(256),
     Buffer.alloc(0),
   ])
-  const kek = concatKDF(Z, 256, 256, otherInfo)
+  const kek = concatKDF(Z, 256, otherInfo)
 
   const derivedKey = await subtle.importKey('raw', kek, 'AES-KW', true, ['wrapKey'])
   const cekBytes = Buffer.from(getRandomValues(new Uint8Array(32)))
@@ -203,20 +214,17 @@ export async function deriveDecryptionKey(options: {
   }
 
   // Key wrapping
-  const derivedKey = await subtle.importKey('raw', derivedKeyBytes, 'AES-KW', true, ['wrapKey'])
-
-  const contentEncryptionKey = await subtle.unwrapKey(
-    'raw',
-    keyAgreement.encryptedKey.encrypted,
-    derivedKey,
-    'AES-KW',
-    { hash: 'SHA-256', name: 'HMAC' },
-    true,
-    ['decrypt']
-  )
+  const decipher = createDecipheriv(`id-aes${keyLength}-wrap`, derivedKeyBytes, aesKeyWrapIv)
+  const contentEncryptionKeyBytes = Buffer.concat([
+    decipher.update(keyAgreement.encryptedKey.encrypted),
+    decipher.final(),
+  ])
 
   return {
-    contentEncryptionKey: (await subtle.exportKey('jwk', contentEncryptionKey)) as Kms.KmsJwkPrivate,
+    contentEncryptionKey: {
+      kty: 'oct',
+      k: contentEncryptionKeyBytes.toString('base64url'),
+    } as const,
   }
 }
 
@@ -251,7 +259,7 @@ async function deriveDecryptionKeyEcdh1Pu(options: {
     numberTo4ByteUint8Array(256),
     Buffer.alloc(0),
   ])
-  const kek = concatKDF(Z, 256, 256, otherInfo)
+  const kek = concatKDF(Z, 256, otherInfo)
   const derivedKey = await subtle.importKey('raw', kek, 'AES-KW', true, ['unwrapKey'])
 
   const contentEncryptionKey = await subtle.unwrapKey(
@@ -282,25 +290,10 @@ async function deriveKeyEcdhEs(options: {
   privateJwk: Kms.KmsJwkPrivateEc | Kms.KmsJwkPrivateOkp
   publicJwk: Kms.KmsJwkPublicEc | Kms.KmsJwkPublicOkp
 }): Promise<Buffer> {
-  // const privateKey = createPrivateKey({ format: 'jwk', key: options.privateJwk })
-  // const publicKey = createPublicKey({ format: 'jwk', key: options.publicJwk })
-
-  // Create ECDH instance based on curve
-  const nodeEcdhCurveName = mapCrvToNodeEcdhCurveName(options.privateJwk.crv)
-  const nodeConcatKdfHash = mapCrvToHashLength(options.publicJwk.crv)
-
-  const ecdh = createECDH(nodeEcdhCurveName)
-
-  // Set private key
-  ecdh.setPrivateKey(TypedArrayEncoder.fromBase64Url(options.privateJwk.d))
-
-  const publicKey = Kms.PublicJwk.fromPublicJwk(options.publicJwk).publicKey
-  if (publicKey.kty === 'RSA') {
-    throw new Kms.KeyManagementError('Key type RSA is not supported for ECDH-ES')
-  }
-
-  // Compute shared secret
-  const sharedSecret = ecdh.computeSecret(publicKey.publicKey)
+  const sharedSecret = diffieHellman({
+    privateKey: createPrivateKey({ format: 'jwk', key: options.privateJwk }),
+    publicKey: createPublicKey({ format: 'jwk', key: options.publicJwk }),
+  })
 
   // Prepare AlgorithmID for KDF (Datalen || Data)
   const algorithmData = TypedArrayEncoder.fromUtf8String(options.usageAlgorithm) // ASCII representation of alg
@@ -333,7 +326,7 @@ async function deriveKeyEcdhEs(options: {
   ])
 
   // Derive final key using Concat KDF
-  return concatKDF(sharedSecret, options.keyLength, nodeConcatKdfHash, otherInfo)
+  return concatKDF(sharedSecret, options.keyLength, otherInfo)
 }
 
 function numberTo4ByteUint8Array(number: number) {
@@ -344,9 +337,10 @@ function numberTo4ByteUint8Array(number: number) {
 }
 
 /**
- * Implements Concat KDF as per NIST SP 800-56A
+ * Implements Concat KDF as per NIST SP 800-56A, with SHA-256 for every curve (RFC 7518 section 4.6.2)
  */
-function concatKDF(secret: Buffer, length: number, hashLength: ConcatKdfHashLength, otherInfo: Buffer): Buffer {
+function concatKDF(secret: Buffer, length: number, otherInfo: Buffer): Buffer {
+  const hashLength = 256
   const reps = Math.ceil((length >> 3) / (hashLength >> 3))
   const output = Buffer.alloc(reps * (hashLength >> 3))
 
@@ -363,39 +357,6 @@ function concatKDF(secret: Buffer, length: number, hashLength: ConcatKdfHashLeng
   }
 
   return output.subarray(0, length >> 3)
-}
-
-function mapCrvToNodeEcdhCurveName(crv: Kms.KmsJwkPublicEc['crv'] | Kms.KmsJwkPublicOkp['crv']) {
-  switch (crv) {
-    case 'P-256':
-      return 'prime256v1'
-    case 'P-384':
-      return 'secp384r1'
-    case 'P-521':
-      return 'secp521r1'
-    case 'secp256k1':
-      return 'secp256k1'
-    case 'X25519':
-      return 'x25519'
-    default:
-      throw new Kms.KeyManagementAlgorithmNotSupportedError(`crv '${crv}' for ECDH-ES`, 'node')
-  }
-}
-
-type ConcatKdfHashLength = ReturnType<typeof mapCrvToHashLength>
-function mapCrvToHashLength(crv: Kms.KmsJwkPublicEc['crv'] | Kms.KmsJwkPublicOkp['crv']) {
-  switch (crv) {
-    case 'secp256k1':
-    case 'X25519':
-    case 'P-256':
-      return 256
-    case 'P-384':
-      return 384
-    case 'P-521':
-      return 512
-    default:
-      throw new Kms.KeyManagementAlgorithmNotSupportedError(`crv '${crv}' for ECDH-ES`, 'node')
-  }
 }
 
 // TODO: might be worthwhile to add this to core?
