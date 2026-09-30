@@ -11,7 +11,22 @@ import { DidCommProblemReportMessage } from './messages'
 import { DidCommOutboundMessageContext } from './models'
 import type { DidCommInboundMessageContext } from './models/DidCommInboundMessageContext'
 import { DidCommProblemReportReason } from './models/problem-reports'
-import { canHandleMessageType, parseMessageType } from './util/messageType'
+import {
+  canHandleMessageType,
+  type ParsedMessageType,
+  parseMessageType,
+  supportsIncomingMessageType,
+} from './util/messageType'
+
+const reportProblemV2MessageType = parseMessageType('https://didcomm.org/report-problem/2.0/problem-report')
+
+// Answering a problem report with another one can loop forever: https://identity.foundation/didcomm-messaging/spec/v2.1/#cascading-problems
+export function isProblemReportMessageType(messageType: ParsedMessageType): boolean {
+  return (
+    canHandleMessageType(DidCommProblemReportMessage, messageType) ||
+    supportsIncomingMessageType(messageType, reportProblemV2MessageType)
+  )
+}
 
 @injectable()
 export class DidCommDispatcher {
@@ -84,7 +99,7 @@ export class DidCommDispatcher {
 
       if (problemReportMessage instanceof DidCommProblemReportMessage && messageContext.connection) {
         const messageType = parseMessageType(messageContext.message.type)
-        if (canHandleMessageType(DidCommProblemReportMessage, messageType)) {
+        if (isProblemReportMessageType(messageType)) {
           throw new CredoError(`Not sending problem report in response to problem report: ${message}`)
         }
 
