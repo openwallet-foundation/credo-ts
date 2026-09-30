@@ -43,12 +43,14 @@ async function listen(server: Server) {
   return address.port
 }
 
-async function freePort() {
-  const server = createServer()
-  const port = await listen(server)
-  await new Promise<void>((resolve) => server.close(() => resolve()))
-  servers.splice(servers.indexOf(server), 1)
-  return port
+function boundPort(server: { address(): ReturnType<Server['address']> } | undefined) {
+  const address = server?.address()
+
+  if (!address || typeof address === 'string') {
+    throw new Error('Host did not bind to a TCP port')
+  }
+
+  return address.port
 }
 
 function createAgentContext() {
@@ -80,12 +82,12 @@ function createAgentContext() {
 
 describe('expressHost', () => {
   it('listens on the configured port and returns responses from the DIDComm transport', async () => {
-    const port = await freePort()
-    const host = expressHost({ port })
+    const host = expressHost({ port: 0 })
     const transport = new DidCommHttpInboundTransport({ host, path: '/didcomm' })
 
     await transport.start(createAgentContext())
     expect(host.server?.listening).toBe(true)
+    const port = boundPort(host.server)
 
     const response = await fetch(`http://127.0.0.1:${port}/didcomm`, {
       method: 'POST',
@@ -123,13 +125,13 @@ describe('expressHost', () => {
 
 describe('webSocketHost', () => {
   it('listens when attached and closes when detached', async () => {
-    const port = await freePort()
-    const host = webSocketHost({ port })
+    const host = webSocketHost({ port: 0 })
     const transport = new DidCommWsInboundTransport({ host })
 
     expect(host.server).toBeUndefined()
     await transport.start(createAgentContext())
     expect(host.server).toBeDefined()
+    const port = boundPort(host.server)
 
     const client = new WebSocket(`ws://127.0.0.1:${port}`)
     await new Promise<void>((resolve) => client.once('open', resolve))
