@@ -17,6 +17,7 @@ import {
   encryptEcdh1Pu,
   nodeSupportedEcdh1PuContentEncryptionAlgorithms,
   nodeSupportedKeyAgreementAlgorithms,
+  toKeyAgreementPrivateJwk,
 } from './crypto/deriveKey'
 import { nodeSupportedEncryptionAlgorithms, performEncrypt } from './crypto/encrypt'
 import { hpkeOpen, hpkeSeal, nodeSupportedHpkeAlgorithms } from './crypto/hpke'
@@ -374,7 +375,8 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
       Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
       Kms.assertKeyAllowsDerive(privateJwk)
-      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
+      const agreementPrivateJwk = toKeyAgreementPrivateJwk(privateJwk)
+      Kms.assertAsymmetricJwkKeyTypeMatches(agreementPrivateJwk, key.keyAgreement.externalPublicJwk)
 
       if (key.keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
         const { ephemeralKeyId } = key.keyAgreement
@@ -385,7 +387,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
           return await encryptEcdh1Pu({
             keyAgreement: key.keyAgreement,
             encryption,
-            senderPrivateJwk: privateJwk,
+            senderPrivateJwk: agreementPrivateJwk,
             ephemeralPrivateJwk,
             data,
           })
@@ -399,7 +401,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       const { contentEncryptionKey, encryptedContentEncryptionKey } = await deriveEncryptionKey({
         keyAgreement: key.keyAgreement,
         encryption,
-        privateJwk,
+        privateJwk: agreementPrivateJwk,
       })
 
       encryptionKey = contentEncryptionKey
@@ -488,12 +490,13 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
       Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
       Kms.assertKeyAllowsDerive(privateJwk)
-      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, publicJwkForAssert)
+      const agreementPrivateJwk = toKeyAgreementPrivateJwk(privateJwk)
+      Kms.assertAsymmetricJwkKeyTypeMatches(agreementPrivateJwk, publicJwkForAssert)
 
       const { contentEncryptionKey } = await deriveDecryptionKey({
         keyAgreement: key.keyAgreement,
         decryption,
-        privateJwk,
+        privateJwk: agreementPrivateJwk,
       })
 
       decryptionKey = contentEncryptionKey

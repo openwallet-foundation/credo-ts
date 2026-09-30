@@ -71,6 +71,24 @@ function assertNodeSupportedEcdh1PuContentEncryptionAlgorithm<
 // Default IV from RFC 3394 section 2.2.3.1
 const aesKeyWrapIv = Buffer.from('a6a6a6a6a6a6a6a6', 'hex')
 
+const x25519Pkcs8Prefix = Buffer.from('302e020100300506032b656e04220420', 'hex')
+
+// Same conversion as libsodium crypto_sign_ed25519_sk_to_curve25519, which Askar uses for DIDComm
+export function toKeyAgreementPrivateJwk(privateJwk: Kms.KmsJwkPrivateAsymmetric): Kms.KmsJwkPrivateAsymmetric {
+  if (privateJwk.kty !== 'OKP' || privateJwk.crv !== 'Ed25519') return privateJwk
+
+  const scalar = createHash('sha512').update(TypedArrayEncoder.fromBase64Url(privateJwk.d)).digest().subarray(0, 32)
+  scalar[0] &= 248
+  scalar[31] &= 127
+  scalar[31] |= 64
+
+  return createPrivateKey({
+    key: Buffer.concat([x25519Pkcs8Prefix, scalar]),
+    format: 'der',
+    type: 'pkcs8',
+  }).export({ format: 'jwk' }) as Kms.KmsJwkPrivateOkp
+}
+
 export async function deriveEncryptionKey(options: {
   keyAgreement: NodeSupportedKeyAgreementEncryptOptions
   privateJwk: Kms.KmsJwkPrivateAsymmetric

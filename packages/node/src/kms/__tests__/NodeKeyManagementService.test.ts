@@ -9,6 +9,11 @@ import { NodeKeyManagementService } from '../NodeKeyManagementService'
 const agentContext = getAgentContext({ contextCorrelationId: 'default' })
 const agentContextTenant = getAgentContext({ contextCorrelationId: 'd5d0141d-9456-49ec-9c52-338d2f4a7c60' })
 
+const toX25519PublicJwk = (publicJwk: Kms.KmsJwkPublic): Kms.KmsJwkPublicEcdh =>
+  Kms.PublicJwk.fromPublicJwk(publicJwk as Kms.KmsJwkPublicOkp & { crv: 'Ed25519' })
+    .convertTo(Kms.X25519PublicJwk)
+    .toJson()
+
 describe('NodeKeyManagementService', () => {
   let service: NodeKeyManagementService
   let storage: NodeInMemoryKeyManagementStorage
@@ -1367,98 +1372,98 @@ describe('NodeKeyManagementService', () => {
       >
     }
 
-    it.each(
-      Object.entries(didcommVectors.encryptedMessages)
-    )('decrypts DIDComm v2.1 Appendix C.3 message %s for every recipient', async (_, jwe) => {
-      const header = JsonEncoder.fromBase64Url(jwe.protected)
+    it.each(Object.entries(didcommVectors.encryptedMessages))(
+      'decrypts DIDComm v2.1 Appendix C.3 message %s for every recipient',
+      async (_, jwe) => {
+        const header = JsonEncoder.fromBase64Url(jwe.protected)
 
-      for (const recipient of jwe.recipients) {
-        const privateJwk = didcommVectors.recipientSecrets.find(({ kid }) => kid === recipient.header.kid)
-        const { keyId } = await service.importKey(agentContext, { privateJwk: privateJwk as Kms.KmsJwkPrivate })
-        const encryptedKey = { encrypted: TypedArrayEncoder.fromBase64Url(recipient.encrypted_key) }
-        const senderPrivateJwk = didcommVectors.senderSecrets.find(({ kid }) => kid === header.skid)
+        for (const recipient of jwe.recipients) {
+          const privateJwk = didcommVectors.recipientSecrets.find(({ kid }) => kid === recipient.header.kid)
+          const { keyId } = await service.importKey(agentContext, { privateJwk: privateJwk as Kms.KmsJwkPrivate })
+          const encryptedKey = { encrypted: TypedArrayEncoder.fromBase64Url(recipient.encrypted_key) }
+          const senderPrivateJwk = didcommVectors.senderSecrets.find(({ kid }) => kid === header.skid)
 
-        const { data } = await service.decrypt(agentContext, {
-          key: {
-            keyAgreement:
-              header.alg === 'ECDH-1PU+A256KW'
-                ? {
-                    algorithm: header.alg,
-                    keyId,
-                    encryptedKey,
-                    ephemeralPublicJwk: header.epk,
-                    senderPublicJwk: Kms.publicJwkFromPrivateJwk(
-                      senderPrivateJwk as Kms.KmsJwkPrivate
-                    ) as Kms.KmsJwkPublicEcdh,
-                    apu: TypedArrayEncoder.fromBase64Url(header.apu),
-                    apv: TypedArrayEncoder.fromBase64Url(header.apv),
-                  }
-                : {
-                    algorithm: header.alg,
-                    keyId,
-                    encryptedKey,
-                    externalPublicJwk: header.epk,
-                    apv: TypedArrayEncoder.fromBase64Url(header.apv),
-                  },
-          },
-          decryption: {
-            algorithm: header.enc,
-            iv: TypedArrayEncoder.fromBase64Url(jwe.iv),
-            tag: TypedArrayEncoder.fromBase64Url(jwe.tag),
-            aad: TypedArrayEncoder.fromUtf8String(jwe.protected),
-          },
-          encrypted: TypedArrayEncoder.fromBase64Url(jwe.ciphertext),
-        })
+          const { data } = await service.decrypt(agentContext, {
+            key: {
+              keyAgreement:
+                header.alg === 'ECDH-1PU+A256KW'
+                  ? {
+                      algorithm: header.alg,
+                      keyId,
+                      encryptedKey,
+                      ephemeralPublicJwk: header.epk,
+                      senderPublicJwk: Kms.publicJwkFromPrivateJwk(
+                        senderPrivateJwk as Kms.KmsJwkPrivate
+                      ) as Kms.KmsJwkPublicEcdh,
+                      apu: TypedArrayEncoder.fromBase64Url(header.apu),
+                      apv: TypedArrayEncoder.fromBase64Url(header.apv),
+                    }
+                  : {
+                      algorithm: header.alg,
+                      keyId,
+                      encryptedKey,
+                      externalPublicJwk: header.epk,
+                      apv: TypedArrayEncoder.fromBase64Url(header.apv),
+                    },
+            },
+            decryption: {
+              algorithm: header.enc,
+              iv: TypedArrayEncoder.fromBase64Url(jwe.iv),
+              tag: TypedArrayEncoder.fromBase64Url(jwe.tag),
+              aad: TypedArrayEncoder.fromUtf8String(jwe.protected),
+            },
+            encrypted: TypedArrayEncoder.fromBase64Url(jwe.ciphertext),
+          })
 
-        // The C.3 P-256 authcrypt message is signed before it is encrypted
-        const message = JsonEncoder.fromUint8Array(data)
-        expect(message.payload ? JsonEncoder.fromBase64Url(message.payload) : message).toMatchObject({
-          id: '1234567890',
-          from: 'did:example:alice',
-          to: ['did:example:bob'],
-          body: { messagespecificattribute: 'and its value' },
-        })
+          // The C.3 P-256 authcrypt message is signed before it is encrypted
+          const message = JsonEncoder.fromUint8Array(data)
+          expect(message.payload ? JsonEncoder.fromBase64Url(message.payload) : message).toMatchObject({
+            id: '1234567890',
+            from: 'did:example:alice',
+            to: ['did:example:bob'],
+            body: { messagespecificattribute: 'and its value' },
+          })
+        }
       }
-    })
+    )
 
     it.each([
       { algorithm: 'ECDH-ES+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'OKP', crv: 'X25519' } },
       { algorithm: 'ECDH-ES+A192KW', encryption: 'A192GCM', type: { kty: 'EC', crv: 'P-256' } },
-    ] as const)('decrypts with $algorithm and $encryption using $type.crv keys', async ({
-      algorithm,
-      encryption,
-      type,
-    }) => {
-      const recipient = await service.createKey(agentContext, { type })
-      const ephemeral = await service.createKey(agentContext, { type })
+    ] as const)(
+      'decrypts with $algorithm and $encryption using $type.crv keys',
+      async ({ algorithm, encryption, type }) => {
+        const recipient = await service.createKey(agentContext, { type })
+        const ephemeral = await service.createKey(agentContext, { type })
 
-      const { encrypted, iv, tag, encryptedKey } = await service.encrypt(agentContext, {
-        key: {
-          keyAgreement: {
-            algorithm,
-            keyId: ephemeral.keyId,
-            externalPublicJwk: recipient.publicJwk as Kms.KmsJwkPublicEcdh,
+        const { encrypted, iv, tag, encryptedKey } = await service.encrypt(agentContext, {
+          key: {
+            keyAgreement: {
+              algorithm,
+              keyId: ephemeral.keyId,
+              externalPublicJwk: recipient.publicJwk as Kms.KmsJwkPublicEcdh,
+            },
           },
-        },
-        encryption: { algorithm: encryption },
-        data: TypedArrayEncoder.fromUtf8String('heelllo'),
-      })
+          encryption: { algorithm: encryption },
+          data: TypedArrayEncoder.fromUtf8String('heelllo'),
+        })
 
-      const { data } = await service.decrypt(agentContext, {
-        key: {
-          keyAgreement: {
-            algorithm,
-            keyId: recipient.keyId,
-            encryptedKey: { encrypted: encryptedKey?.encrypted as Uint8Array },
-            externalPublicJwk: ephemeral.publicJwk as Kms.KmsJwkPublicEcdh,
+        const { data } = await service.decrypt(agentContext, {
+          key: {
+            keyAgreement: {
+              algorithm,
+              keyId: recipient.keyId,
+              encryptedKey: { encrypted: encryptedKey?.encrypted as Uint8Array },
+              externalPublicJwk: ephemeral.publicJwk as Kms.KmsJwkPublicEcdh,
+            },
           },
-        },
-        decryption: { algorithm: encryption, iv: iv as Uint8Array, tag: tag as Uint8Array },
-        encrypted,
-      })
+          decryption: { algorithm: encryption, iv: iv as Uint8Array, tag: tag as Uint8Array },
+          encrypted,
+        })
 
-      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
-    })
+        expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
+      }
+    )
   })
 
   describe('ECDH-1PU+A256KW', () => {
@@ -1515,11 +1520,46 @@ describe('NodeKeyManagementService', () => {
       { type: { kty: 'EC', crv: 'P-256' }, withEphemeralKeyId: true },
       { type: { kty: 'EC', crv: 'P-384' }, withEphemeralKeyId: true },
       { type: { kty: 'EC', crv: 'P-256' }, withEphemeralKeyId: false },
-    ] as const)('encrypts and decrypts with $type.crv keys (ephemeralKeyId: $withEphemeralKeyId)', async ({
-      type,
-      withEphemeralKeyId,
-    }) => {
-      const { data } = await service.decrypt(agentContext, await encryptEcdh1Pu(type, withEphemeralKeyId))
+    ] as const)(
+      'encrypts and decrypts with $type.crv keys (ephemeralKeyId: $withEphemeralKeyId)',
+      async ({ type, withEphemeralKeyId }) => {
+        const { data } = await service.decrypt(agentContext, await encryptEcdh1Pu(type, withEphemeralKeyId))
+
+        expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
+      }
+    )
+
+    it('encrypts and decrypts with Ed25519 keys', async () => {
+      const sender = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'Ed25519' } })
+      const recipient = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'Ed25519' } })
+      const ephemeral = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
+
+      const { encrypted, iv, tag, encryptedKey } = await service.encrypt(agentContext, {
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-1PU+A256KW',
+            keyId: sender.keyId,
+            ephemeralKeyId: ephemeral.keyId,
+            externalPublicJwk: toX25519PublicJwk(recipient.publicJwk),
+          },
+        },
+        encryption: { algorithm: 'A256CBC-HS512' },
+        data: TypedArrayEncoder.fromUtf8String('heelllo'),
+      })
+
+      const { data } = await service.decrypt(agentContext, {
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-1PU+A256KW',
+            keyId: recipient.keyId,
+            encryptedKey: { encrypted: encryptedKey?.encrypted as Uint8Array },
+            ephemeralPublicJwk: ephemeral.publicJwk as Kms.KmsJwkPublicEcdh,
+            senderPublicJwk: toX25519PublicJwk(sender.publicJwk),
+          },
+        },
+        decryption: { algorithm: 'A256CBC-HS512', iv: iv as Uint8Array, tag: tag as Uint8Array },
+        encrypted,
+      })
 
       expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
     })
