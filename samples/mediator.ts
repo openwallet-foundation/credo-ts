@@ -16,7 +16,8 @@ import { AskarModule } from '@credo-ts/askar'
 import type { InitConfig } from '@credo-ts/core'
 import { Agent, LogLevel } from '@credo-ts/core'
 import { DidCommHttpOutboundTransport, DidCommModule, DidCommWsOutboundTransport } from '@credo-ts/didcomm'
-import { agentDependencies, DidCommHttpInboundTransport, DidCommWsInboundTransport } from '@credo-ts/node'
+import { agentDependencies, webSocketHost } from '@credo-ts/node'
+import { expressHost } from '@credo-ts/node/express'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
 import type { Socket } from 'net'
@@ -29,6 +30,7 @@ const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
 // but allows use to use the same server (and port) for both WebSockets and HTTP
 const app = express()
 const socketServer = new WebSocketServer({ noServer: true })
+const httpHost = expressHost({ app, port })
 
 const endpoints = process.env.AGENT_ENDPOINTS?.split(',') ?? [`http://localhost:${port}`, `ws://localhost:${port}`]
 
@@ -38,10 +40,8 @@ const agentConfig: InitConfig = {
   logger,
 }
 
-// Create all transports
-const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
+// Create outbound transports
 const httpOutboundTransport = new DidCommHttpOutboundTransport()
-const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
 const wsOutboundTransport = new DidCommWsOutboundTransport()
 
 // Set up agent
@@ -58,8 +58,9 @@ const agent = new Agent({
     }),
     didcomm: new DidCommModule({
       endpoints,
+      http: { host: httpHost },
+      webSocket: { host: webSocketHost({ server: socketServer }) },
       transports: {
-        inbound: [httpInboundTransport, wsInboundTransport],
         outbound: [httpOutboundTransport, wsOutboundTransport],
       },
       mediator: {
@@ -75,7 +76,7 @@ const agent = new Agent({
 await agent.initialize()
 
 // Allow to create invitation, no other way to ask for invitation yet
-httpInboundTransport.app.get('/invitation', async (_req, res) => {
+app.get('/invitation', async (_req, res) => {
   const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation()
   const httpEndpoint = endpoints.find((e) => e.startsWith('http'))
   res.send(outOfBandInvitation.toUrl({ domain: `${httpEndpoint}/invitation` }))
@@ -83,7 +84,7 @@ httpInboundTransport.app.get('/invitation', async (_req, res) => {
 
 // When an 'upgrade' to WS is made on our http server, we forward the
 // request to the WS server
-httpInboundTransport.server?.on('upgrade', (request, socket, head) => {
+httpHost.server?.on('upgrade', (request, socket, head) => {
   socketServer.handleUpgrade(request, socket as Socket, head, (socket) => {
     socketServer.emit('connection', socket, request)
   })
