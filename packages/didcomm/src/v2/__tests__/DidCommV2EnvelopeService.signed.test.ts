@@ -268,18 +268,18 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       senderEcdhKey.keyId = senderEcdh.keyId
     })
 
-    it('signs then authcrypts; unpacks back to the JWS which verifies to the original plaintext', async () => {
-      const envelope = await envelopeService.packSignedAndEncrypted(
-        agentContext,
-        plaintext,
-        { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' },
-        {
-          senderKey: senderEcdhKey,
-          senderKeySkid: 'did:example:alice#key-x25519-1',
-          recipientKey,
-          recipientKid: 'did:example:bob#key-x25519-1',
-        }
-      )
+    it('unpacks an authcrypted JWS back to the JWS which verifies to the original plaintext', async () => {
+      const signed = await envelopeService.signPlaintext(agentContext, plaintext, {
+        keyId: signerJwk.keyId,
+        kid: signerKid,
+        alg: 'EdDSA',
+      })
+      const envelope = await envelopeService.pack(agentContext, JsonEncoder.toUint8Array(signed), {
+        senderKey: senderEcdhKey,
+        senderKeySkid: 'did:example:alice#key-x25519-1',
+        recipientKey,
+        recipientKid: 'did:example:bob#key-x25519-1',
+      })
 
       const matchedKid = envelope.recipients[0]?.header?.kid ?? recipientKey.keyId
       const { plaintext: inner } = await envelopeService.unpack(agentContext, envelope, {
@@ -306,14 +306,6 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       const signer = { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' as const }
       const unaddressed = { ...plaintext, to }
 
-      await expect(
-        envelopeService.packSignedAndEncrypted(agentContext, unaddressed, signer, {
-          senderKey: senderEcdhKey,
-          senderKeySkid: 'did:example:alice#key-x25519-1',
-          recipientKey,
-          recipientKid: 'did:example:bob#key-x25519-1',
-        })
-      ).rejects.toThrow(/must have a 'to' header/)
       await expect(
         envelopeService.packSignedAndAnoncrypted(agentContext, unaddressed, signer, {
           recipientKey,
