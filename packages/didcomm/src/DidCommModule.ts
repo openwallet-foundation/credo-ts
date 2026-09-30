@@ -37,6 +37,8 @@ import type { DidCommCredentialsModuleConfigOptions } from './modules/credential
 import { DidCommMediationRecipientModule } from './modules/routing/DidCommMediationRecipientModule'
 import { DidCommMediatorModule } from './modules/routing/DidCommMediatorModule'
 import { DidCommMessageRepository } from './repository'
+import { DidCommHttpInboundTransport } from './transport/DidCommHttpInboundTransport'
+import { DidCommWsInboundTransport } from './transport/DidCommWsInboundTransport'
 import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
 import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
@@ -125,6 +127,12 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
 
   public constructor(config?: Options) {
     this.config = new DidCommModuleConfig<Options>(config)
+
+    const inboundTransports = [...this.config.inboundTransports]
+    if (config?.http) inboundTransports.push(new DidCommHttpInboundTransport(config.http))
+    if (config?.webSocket) inboundTransports.push(new DidCommWsInboundTransport(config.webSocket))
+    this.config.inboundTransports = inboundTransports
+
     this.modules = getDidcommModules(config ?? {})
   }
 
