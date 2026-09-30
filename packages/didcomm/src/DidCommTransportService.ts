@@ -3,8 +3,11 @@ import { AgentContext, CredoError, EventEmitter, injectable } from '@credo-ts/co
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import type { DidCommMessage } from './DidCommMessage'
-import type { DidCommTransportSessionRemovedEvent, DidCommTransportSessionSavedEvent } from './transport'
-import { DidCommTransportEventTypes } from './transport'
+import type {
+  DidCommTransportSessionRemovedEvent,
+  DidCommTransportSessionSavedEvent,
+} from './transport/DidCommTransportEventTypes'
+import { DidCommTransportEventTypes } from './transport/DidCommTransportEventTypes'
 import type { DidCommEncryptedMessage } from './types'
 
 @injectable()
