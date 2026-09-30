@@ -1,6 +1,7 @@
 import {
   DidDocumentBuilder,
   DidKey,
+  didDocumentToNumAlgo2Did,
   getDidPeer4ShortFormForEquivalence,
   getEd25519VerificationKey2018,
   getJsonWebKey2020,
@@ -42,7 +43,7 @@ import {
   type DidCommV2PlaintextMessage,
 } from '../../../v2'
 import { computeApu, computeApv } from '../../../v2/apuApv'
-import { DidCommBasicMessage } from '../../basic-messages'
+import { DidCommBasicMessage, DidCommBasicMessageV2 } from '../../basic-messages'
 import { DidCommOutOfBandState } from '../../oob'
 import { DidCommForwardV2Message } from '../../routing/protocol/v2/messages'
 import {
@@ -812,6 +813,35 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     const receiveOnBob = (message: DidCommV2EncryptedMessage) =>
       bobAgent.dependencyManager.resolve(DidCommMessageReceiver).receiveMessage(message)
 
+    const bobRecipient = async () => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const did = aliceBobConnection!.theirDid!
+      const [bobService] = await aliceAgent.dependencyManager
+        .resolve(DidCommDocumentService)
+        .resolveServicesFromDid(aliceAgent.context, did)
+      return {
+        did,
+        recipientKey: toKeyAgreement(bobService.recipientKeys[0]),
+        recipientKid: toKeyAgreementDidUrl(bobService.recipientKeys[0]),
+      }
+    }
+
+    const anoncryptToBob = async (
+      plaintext: Pick<DidCommV2PlaintextMessage, 'type' | 'from_prior' | 'created_time' | 'body'>
+    ) => {
+      const { did, recipientKey, recipientKid } = await bobRecipient()
+      return aliceAgent.dependencyManager.resolve(DidCommV2EnvelopeService).packAnoncrypt(
+        aliceAgent.context,
+        { id: uuid(), to: [did], ...plaintext },
+        {
+          recipientKey,
+          recipientKid,
+          contentEncryptionAlgorithm:
+            aliceAgent.dependencyManager.resolve(DidCommModuleConfig).v2DefaultAnoncryptContentEncryption,
+        }
+      )
+    }
+
     const bobContents = async () => (await bobAgent.didcomm.basicMessages.findAllByQuery({})).map((r) => r.content)
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
@@ -848,24 +878,65 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       expect((await getBobConnection()).theirDid).toEqual(newDid)
     })
 
-    test('a retransmitted termination is ignored and the message is still processed', async () => {
+    test('an anoncrypt termination is applied and processed once and a retransmission is dropped', async () => {
       const termination = await captureFromAlice(() =>
         // biome-ignore lint/style/noNonNullAssertion: no explanation
         aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection!.id })
       )
-      await receiveOnBob(termination)
-      const terminated = await getBobConnection()
-      expect(terminated.theirDid).toBeUndefined()
 
       const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
       try {
         await receiveOnBob(termination)
+        const terminated = await getBobConnection()
+        expect(terminated.theirDid).toBeUndefined()
         expect(dispatch).toHaveBeenCalledTimes(1)
+
+        await receiveOnBob(termination)
+        expect(dispatch).toHaveBeenCalledTimes(1)
+        expect((await getBobConnection()).previousTheirDids).toEqual(terminated.previousTheirDids)
+      } finally {
+        dispatch.mockRestore()
+      }
+    })
+
+    test.each([
+      { case: 'the acknowledged rotation JWT', signAgain: false },
+      { case: 'a new rotation JWT signed with the superseded key', signAgain: true },
+    ])('an anoncrypt message carrying $case is not processed on the connection', async ({ signAgain }) => {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const oldAliceDid = aliceBobConnection!.did!
+      const newDid = await rotateAlice()
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const aliceConnection = await aliceAgent.didcomm.connections.getById(aliceBobConnection!.id)
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const rotationJwt = aliceRotateService().getPendingFromPrior(aliceConnection)!
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection!.id, 'ack')
+      await waitForBasicMessage(aliceAgent, { content: 'ack' })
+
+      const fromPrior = signAgain
+        ? await aliceRotateService().createFromPriorForRotation(aliceAgent.context, oldAliceDid, newDid)
+        : rotationJwt
+      const message = await anoncryptToBob({
+        type: DidCommBasicMessageV2.type.messageTypeUri,
+        from_prior: fromPrior,
+        created_time: Math.floor(Date.now() / 1000),
+        body: { content: 'injected' },
+      })
+
+      const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
+      try {
+        await receiveOnBob(message)
+        expect(dispatch).not.toHaveBeenCalled()
       } finally {
         dispatch.mockRestore()
       }
 
-      expect((await getBobConnection()).previousTheirDids).toEqual(terminated.previousTheirDids)
+      const bobConnection = await getBobConnection()
+      expect(
+        await bobAgent.didcomm.basicMessages.findAllByQuery({ connectionId: bobConnection.id })
+      ).not.toContainEqual(expect.objectContaining({ content: 'injected' }))
+      expect(bobConnection.theirDid).toEqual(newDid)
     })
 
     test('an unsigned copy of an applied rotation sent over anoncrypt is not processed on the connection', async () => {
@@ -876,21 +947,11 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       const [header, payload] = aliceRotateService().getPendingFromPrior(aliceConnection)!.split('.')
       const forged = `${header}.${payload}.${TypedArrayEncoder.toBase64Url(new Uint8Array(64))}`
 
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      const bobDid = aliceConnection.theirDid!
-      const [bobService] = await aliceAgent.dependencyManager
-        .resolve(DidCommDocumentService)
-        .resolveServicesFromDid(aliceAgent.context, bobDid)
-      const message = await aliceAgent.dependencyManager.resolve(DidCommV2EnvelopeService).packAnoncrypt(
-        aliceAgent.context,
-        { id: uuid(), type: DidCommEmptyMessage.type.messageTypeUri, to: [bobDid], from_prior: forged, body: {} },
-        {
-          recipientKey: toKeyAgreement(bobService.recipientKeys[0]),
-          recipientKid: toKeyAgreementDidUrl(bobService.recipientKeys[0]),
-          contentEncryptionAlgorithm:
-            aliceAgent.dependencyManager.resolve(DidCommModuleConfig).v2DefaultAnoncryptContentEncryption,
-        }
-      )
+      const message = await anoncryptToBob({
+        type: DidCommEmptyMessage.type.messageTypeUri,
+        from_prior: forged,
+        body: {},
+      })
       const before = await getBobConnection()
 
       const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
@@ -1012,6 +1073,55 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
 
       expect((await getBobConnection()).theirDid).toEqual(newDid)
       expect(await bobContents()).not.toContain('sent before rotation')
+    })
+
+    test('a message authcrypted by another DID with the key of a superseded peer DID is ignored', async () => {
+      const supersededDid = await rotateAlice()
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection!.id, 'ack first')
+      await waitForBasicMessage(aliceAgent, { content: 'ack first' })
+      await rotateAlice()
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection!.id, 'ack second')
+      await waitForBasicMessage(aliceAgent, { content: 'ack second' })
+      expect((await getBobConnection()).previousTheirDids).toContain(supersededDid)
+
+      const { didDocument, keys } = await aliceAgent.dids.resolveCreatedDidDocumentWithKeys(supersededDid)
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      const supersededKey = findOwnKeyAgreementKey(didDocument, keys)!.publicJwk
+      const otherDid = didDocumentToNumAlgo2Did(
+        new DidDocumentBuilder('')
+          .addKeyAgreement(
+            getX25519KeyAgreementKey2019({
+              id: '#key-1',
+              publicJwk: supersededKey as Kms.PublicJwk<Kms.X25519PublicJwk>,
+              controller: '#id',
+            })
+          )
+          .build()
+      )
+      const { did: bobDid, recipientKey, recipientKid } = await bobRecipient()
+      const message = await aliceAgent.dependencyManager.resolve(DidCommV2EnvelopeService).pack(
+        aliceAgent.context,
+        {
+          id: uuid(),
+          type: DidCommBasicMessageV2.type.messageTypeUri,
+          from: otherDid,
+          to: [bobDid],
+          created_time: Math.floor(Date.now() / 1000),
+          body: { content: 'sent with a superseded key' },
+        },
+        { recipientKey, recipientKid, senderKey: supersededKey, senderKeySkid: `${otherDid}#key-1` }
+      )
+
+      const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
+      try {
+        await receiveOnBob(message)
+        expect(dispatch).not.toHaveBeenCalled()
+      } finally {
+        dispatch.mockRestore()
+      }
+      expect(await bobContents()).not.toContain('sent with a superseded key')
     })
 
     test('rotating away from a DID whose first authentication key is P-256 reaches the peer', async () => {
