@@ -6,6 +6,7 @@ import { WebSocket } from 'ws'
 import { NodeFileSystem } from './NodeFileSystem'
 import { DidCommHttpInboundTransport } from './transport/DidCommHttpInboundTransport'
 import { DidCommWsInboundTransport } from './transport/DidCommWsInboundTransport'
+import { WebSocketHost, type WebSocketHostAcceptor, type WebSocketHostOptions, webSocketHost } from './webSocketHost'
 
 export { NodeInMemoryKeyManagementStorage } from './kms/NodeInMemoryKeyManagementStorage'
 export { NodeKeyManagementService } from './kms/NodeKeyManagementService'
@@ -18,4 +19,13 @@ const agentDependencies: AgentDependencies = {
   WebSocketClass: WebSocket,
 }
 
-export { agentDependencies, DidCommHttpInboundTransport, DidCommWsInboundTransport, NodeFileSystem }
+export {
+  agentDependencies,
+  DidCommHttpInboundTransport,
+  DidCommWsInboundTransport,
+  NodeFileSystem,
+  WebSocketHost,
+  type WebSocketHostAcceptor,
+  type WebSocketHostOptions,
+  webSocketHost,
+}
