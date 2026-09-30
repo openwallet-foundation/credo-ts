@@ -16,6 +16,7 @@ import { Agent } from '../src/agent/Agent'
 import { setupEventReplaySubjects } from './events'
 import {
   getAgentOptions,
+  makeConnection,
   waitForAgentMessageProcessedEventSubject,
   waitForBasicMessageSubject,
   waitForTrustPingReceivedEventSubject,
@@ -81,76 +82,12 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       await aliceAgent.shutdown()
     })
 
-    it('invitee sends trust-ping and receives response over v2', async () => {
-      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
-      })
-
-      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        invitationUrl,
-        { label: 'alice' }
-      )
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-      expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
-
-      const [aliceReplay] = setupEventReplaySubjects([aliceAgent], trustPingEventTypes)
-      const ping = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection.id, {})
-
-      await waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: ping.threadId })
-    })
-
-    it('inviter sends trust-ping and receives response over v2', async () => {
-      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
-      })
-
-      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        invitationUrl,
-        { label: 'alice' }
-      )
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-      expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
-
-      const [faberConn] = await faberAgent.didcomm.connections.findAllByOutOfBandId(faberOutOfBandRecord.id)
-      expect(faberConn).toBeDefined()
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      const faberConnected = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
-
-      const [faberReplay] = setupEventReplaySubjects([faberAgent], trustPingEventTypes)
-      const ping = await faberAgent.didcomm.connections.sendPing(faberConnected.id, {})
-      await waitForTrustPingResponseReceivedEventSubject(faberReplay, { threadId: ping.threadId })
-    })
-
     it('sends trust-ping without response (responseRequested: false) over v2', async () => {
-      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
-      })
-
-      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        invitationUrl,
-        { label: 'alice' }
-      )
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-
-      const [faberConn] = await faberAgent.didcomm.connections.findAllByOutOfBandId(faberOutOfBandRecord.id)
-      expect(faberConn).toBeDefined()
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      const faberConnected = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
+      const [faberConnection] = await makeConnection(faberAgent, aliceAgent, { didCommVersion: 'v2' })
+      expect(faberConnection.didcommVersion).toBe('v2')
 
       const [aliceReplay] = setupEventReplaySubjects([aliceAgent], trustPingEventTypes)
-      const ping = await faberAgent.didcomm.connections.sendPing(faberConnected.id, {
+      const ping = await faberAgent.didcomm.connections.sendPing(faberConnection.id, {
         responseRequested: false,
       })
 
@@ -159,27 +96,14 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
     })
 
     it('bidirectional trust-ping over v2', async () => {
-      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
+      const [faberConnection, aliceFaberConnection] = await makeConnection(faberAgent, aliceAgent, {
+        didCommVersion: 'v2',
       })
-
-      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        invitationUrl,
-        { label: 'alice' }
-      )
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-
-      const [faberConn] = await faberAgent.didcomm.connections.findAllByOutOfBandId(faberOutOfBandRecord.id)
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      const faberConnected = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
+      expect(faberConnection.didcommVersion).toBe('v2')
 
       const [faberReplay, aliceReplay] = setupEventReplaySubjects([faberAgent, aliceAgent], trustPingEventTypes)
       const alicePing = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection.id, {})
-      const faberPing = await faberAgent.didcomm.connections.sendPing(faberConnected.id, {})
+      const faberPing = await faberAgent.didcomm.connections.sendPing(faberConnection.id, {})
 
       await Promise.all([
         waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: alicePing.threadId }),
