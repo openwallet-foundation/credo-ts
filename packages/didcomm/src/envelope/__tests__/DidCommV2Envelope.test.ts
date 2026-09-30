@@ -459,17 +459,18 @@ describe('DidCommV2Envelope', () => {
       const signingKeyId = keys?.find((key) => authentication.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
       if (!signingKeyId) throw new Error(`No authentication key in ${signer.did}`)
 
-      const encrypted = await agent.dependencyManager.resolve(DidCommV2EnvelopeService).packSignedAndEncrypted(
+      const envelopeService = agent.dependencyManager.resolve(DidCommV2EnvelopeService)
+      const signed = await envelopeService.signPlaintext(
         agent.context,
         { id: utils.uuid(), type: DidCommTrustPingMessage.type.messageTypeUri, to: [recipient.did] },
-        { keyId: signingKeyId, kid: toAbsoluteDidUrl(didDocument.id, authentication.id), alg: 'EdDSA' },
-        {
-          senderKey: sender.publicJwk,
-          senderKeySkid: sender.didUrl,
-          recipientKey: recipient.publicJwk,
-          recipientKid: recipient.didUrl,
-        }
+        { keyId: signingKeyId, kid: toAbsoluteDidUrl(didDocument.id, authentication.id), alg: 'EdDSA' }
       )
+      const encrypted = await envelopeService.pack(agent.context, JsonEncoder.toUint8Array(signed), {
+        senderKey: sender.publicJwk,
+        senderKeySkid: sender.didUrl,
+        recipientKey: recipient.publicJwk,
+        recipientKid: recipient.didUrl,
+      })
 
       await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
         /nested signer .* does not match the authcrypt sender/

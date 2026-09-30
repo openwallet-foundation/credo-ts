@@ -259,20 +259,6 @@ export class DidCommV2EnvelopeService {
     }
   }
 
-  /**
-   * Sign then authcrypt: sign the plaintext, JWE-wrap the JWS using ECDH-1PU.
-   * Spec mandates this order (sign before encrypt) for non-repudiation over DIDComm v2.
-   */
-  public async packSignedAndEncrypted(
-    agentContext: AgentContext,
-    plaintext: DidCommV2PlaintextMessage,
-    signer: DidCommV2Signer,
-    keys: DidCommV2EnvelopeKeys
-  ): Promise<DidCommV2EncryptedMessage> {
-    const signed = await this.signForEncryption(agentContext, plaintext, signer)
-    return this.pack(agentContext, JsonEncoder.toUint8Array(signed), keys)
-  }
-
   /** Sign then anoncrypt: hides sender identity on the wire while preserving the signature for the recipient. */
   public async packSignedAndAnoncrypted(
     agentContext: AgentContext,
