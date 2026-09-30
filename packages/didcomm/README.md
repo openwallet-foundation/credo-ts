@@ -174,7 +174,7 @@ httpHost.server?.on("upgrade", (request, socket, head) => {
 });
 ```
 
-`webSocketHost` closes the provided `WebSocketServer` when the agent shuts down.
+`webSocketHost` does not close a provided `WebSocketServer`; the application closes it. While the agent is not started, connections that reach it are closed with code 1013 (try again later), so the agent can be stopped and started again on the same server. A `WebSocketServer` created by `webSocketHost({ port })` is closed when the agent shuts down.
 
 #### Registering transports on the agent
 
