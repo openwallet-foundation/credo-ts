@@ -35,9 +35,15 @@ import { DidCommV2Envelope } from '../../../envelope'
 import { getOutboundDidCommMessageContext } from '../../../getDidCommOutboundMessageContext'
 import { DidCommEmptyMessage } from '../../../messages'
 import { DidCommDocumentService } from '../../../services/DidCommDocumentService'
-import { type DidCommV2EncryptedMessage, DidCommV2EnvelopeService, DidCommV2KeyResolver } from '../../../v2'
+import {
+  type DidCommV2EncryptedMessage,
+  DidCommV2EnvelopeService,
+  DidCommV2KeyResolver,
+  type DidCommV2PlaintextMessage,
+} from '../../../v2'
 import { computeApu, computeApv } from '../../../v2/apuApv'
 import { DidCommBasicMessage } from '../../basic-messages'
+import { DidCommOutOfBandState } from '../../oob'
 import { DidCommForwardV2Message } from '../../routing/protocol/v2/messages'
 import {
   DidCommDidRotateAckMessage,
@@ -1308,5 +1314,149 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     const victimAfter = await accepterTwo.didcomm.connections.getById(victimConnection!.id)
     expect(victimAfter.theirDid).toEqual(invitationDid)
     expect(victimAfter.previousTheirDids).toEqual([])
+  })
+
+  async function waitUntilInviterReceives(send: () => Promise<unknown>): Promise<void> {
+    const receive = vi.spyOn(inviter.dependencyManager.resolve(DidCommMessageReceiver), 'receiveMessage')
+    try {
+      await send()
+      await vi.waitFor(() => expect(receive).toHaveBeenCalled())
+      await Promise.allSettled(receive.mock.results.map((result) => result.value))
+    } finally {
+      receive.mockRestore()
+    }
+  }
+
+  test('a single-use invitation creates one connection and is then done', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+
+    const { connectionRecord: firstConnection } = await accepter.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await accepter.didcomm.basicMessages.sendMessage(firstConnection!.id, 'first')
+    await waitForBasicMessage(inviter, { content: 'first' })
+    expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.Done)
+    const [inviterConnection] = await inviter.didcomm.connections.getAll()
+    await inviter.didcomm.connections.deleteById(inviterConnection.id)
+
+    const { connectionRecord: secondConnection } = await accepterTwo.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+    await waitUntilInviterReceives(() =>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      accepterTwo.didcomm.basicMessages.sendMessage(secondConnection!.id, 'second')
+    )
+
+    expect(await inviter.didcomm.connections.getAll()).toHaveLength(0)
+    expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.Done)
+  })
+
+  test('a single-use invitation accepts a first message addressed to the short form of its DID', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+    const invitationDid = invitation.outOfBandInvitation.v2Invitation?.from as string
+    const { connectionRecord: accepterConnection } = await accepter.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+
+    const envelopeService = accepter.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const pack = envelopeService.pack.bind(envelopeService)
+    const shortFormTo = vi.spyOn(envelopeService, 'pack').mockImplementation((agentContext, payload, keys) =>
+      pack(
+        agentContext,
+        {
+          ...(payload as DidCommV2PlaintextMessage),
+          to: [getDidPeer4ShortFormForEquivalence(invitationDid) as string],
+        },
+        keys
+      )
+    )
+    try {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await accepter.didcomm.basicMessages.sendMessage(accepterConnection!.id, 'short form')
+      await waitForBasicMessage(inviter, { content: 'short form' })
+    } finally {
+      shortFormTo.mockRestore()
+    }
+
+    expect(await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)).toHaveLength(1)
+    expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.Done)
+  })
+
+  test('a message from an unknown sender to a pairwise DID creates no connection', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2', multiUseInvitation: true })
+    const { connectionRecord: accepterConnection } = await accepter.didcomm.oob.receiveInvitation(
+      invitation.outOfBandInvitation,
+      { label: '' }
+    )
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await accepter.didcomm.basicMessages.sendMessage(accepterConnection!.id, 'hello')
+    await waitForBasicMessage(inviter, { content: 'hello' })
+    const [inviterConnection] = await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const pairwiseDid = inviterConnection.did!
+
+    const { connectionRecord: strangerConnection } = await accepterTwo.didcomm.oob.receiveImplicitInvitation({
+      did: pairwiseDid,
+      didCommVersion: 'v2',
+      label: '',
+    })
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const strangerConnectionId = strangerConnection!.id
+    await waitUntilInviterReceives(() =>
+      accepterTwo.didcomm.basicMessages.sendMessage(strangerConnectionId, 'long form')
+    )
+
+    const envelopeService = accepterTwo.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const pack = envelopeService.pack.bind(envelopeService)
+    const shortFormTo = vi.spyOn(envelopeService, 'pack').mockImplementation((agentContext, payload, keys) =>
+      pack(
+        agentContext,
+        {
+          ...(payload as DidCommV2PlaintextMessage),
+          to: [getDidPeer4ShortFormForEquivalence(pairwiseDid) as string],
+        },
+        keys
+      )
+    )
+    try {
+      await waitUntilInviterReceives(() =>
+        accepterTwo.didcomm.basicMessages.sendMessage(strangerConnectionId, 'short form')
+      )
+    } finally {
+      shortFormTo.mockRestore()
+    }
+
+    expect(await inviter.didcomm.connections.getAll()).toHaveLength(1)
+  })
+
+  test('a created DID with no invitation or connection works as an implicit invitation', async () => {
+    const { did } = await createPeerDidForV2OOB(
+      inviter.context,
+      await inviter.didcomm.mediationRecipient.getRouting({})
+    )
+
+    for (const [invitee, content] of [
+      [accepter, 'implicit hello'],
+      [accepterTwo, 'implicit hello two'],
+    ] as const) {
+      const { connectionRecord } = await invitee.didcomm.oob.receiveImplicitInvitation({
+        did,
+        didCommVersion: 'v2',
+        label: '',
+      })
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await invitee.didcomm.basicMessages.sendMessage(connectionRecord!.id, content)
+      await waitForBasicMessage(inviter, { content })
+    }
+
+    const inviterConnections = await inviter.didcomm.connections.getAll()
+    expect(inviterConnections).toHaveLength(2)
+    for (const connection of inviterConnections) {
+      expect(connection.previousDids).toContain(did)
+    }
   })
 })
