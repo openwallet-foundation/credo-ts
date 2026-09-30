@@ -224,6 +224,31 @@ describe('DidCommV2Envelope', () => {
     expect(envelope.supportsPacking({ ...keys, senderKeySkid: undefined })).toBe(false)
   })
 
+  it('encrypts to the recipient key on the sender curve when it is not the first recipient key', async () => {
+    const sender = await createKeyAgreementDid()
+    const recipient = await createKeyAgreementDid()
+    recipient.publicJwk.keyId = recipient.didUrl
+    const p256Key: Kms.PublicJwk = Kms.PublicJwk.fromPublicJwk(
+      (await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+    )
+    const envelope = agent.dependencyManager.resolve(DidCommV2Envelope)
+
+    const keys = await envelope.buildReturnRouteKeys(agent.context, {
+      senderKey: recipient.publicJwk,
+      recipientKey: sender.publicJwk,
+      plaintextMessage: { '@type': DidCommTrustPingMessage.type.messageTypeUri, '@id': 'ping-7' },
+    })
+
+    const encrypted = await envelope.pack(agent.context, new DidCommTrustPingMessage({}), {
+      ...keys,
+      recipientKeys: [p256Key as Kms.PublicJwk<Kms.Ed25519PublicJwk>, ...keys.recipientKeys],
+    })
+    const { authenticatedSenderDid } = await envelope.unpack(agent.context, encrypted)
+
+    expect((encrypted as DidCommV2EncryptedMessage).recipients[0].header.kid).toBe(recipient.didUrl)
+    expect(authenticatedSenderDid).toBe(sender.did)
+  })
+
   describe('authcrypt sender binding', () => {
     const packAuthcrypt = async (
       plaintext: Omit<DidCommV2PlaintextMessage, 'id' | 'type'>,
