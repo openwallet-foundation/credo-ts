@@ -1,12 +1,14 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
 import { AgentContext, CredoError, DidResolverService, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { PthidRegExp } from '../../decorators/thread/ThreadDecorator'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidCommEmptyMessage } from '../../messages'
 import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
 import type { DidCommOutOfBandRecord } from '../oob/repository'
+import { DidCommOutOfBandRecordMetadataKeys } from '../oob/repository/outOfBandRecordMetadataTypes'
 import { DidCommRoutingService, type RemoveRoutingOptions } from '../routing/services/DidCommRoutingService'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
@@ -15,6 +17,8 @@ import { DidCommConnectionRequestMessage, DidCommDidExchangeRequestMessage } fro
 import type { DidCommConnectionType } from './models'
 import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
 import type { DidCommConnectionRecord } from './repository'
+import type { DidCommConnectionMetadata } from './repository/DidCommConnectionMetadataTypes'
+import { DidCommConnectionMetadataKeys } from './repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService, DidCommDidRotateService, DidCommDidRotateV2Service } from './services'
 import { createPeerDidForV2OOB } from './services/helpers'
 
@@ -131,7 +135,8 @@ export class DidCommConnectionsApi {
             theirLabel: outOfBandRecord.outOfBandInvitation.v2Invitation?.body?.goal,
             didcommVersion: 'v2',
           },
-          true
+          true,
+          this.getPendingOutOfBandParentThreadIdMetadata(outOfBandRecord)
         )
         return connectionRecord
       }
@@ -155,7 +160,8 @@ export class DidCommConnectionsApi {
           didcommVersion: 'v2',
           mediatorId: routing.mediatorId,
         },
-        true
+        true,
+        this.getPendingOutOfBandParentThreadIdMetadata(outOfBandRecord)
       )
       return connectionRecord
     } else {
@@ -623,5 +629,22 @@ export class DidCommConnectionsApi {
 
   public async findByInvitationDid(invitationDid: string): Promise<DidCommConnectionRecord[]> {
     return this.connectionService.findByInvitationDid(this.agentContext, invitationDid)
+  }
+
+  private getPendingOutOfBandParentThreadIdMetadata(
+    outOfBandRecord: DidCommOutOfBandRecord
+  ): Partial<DidCommConnectionMetadata> | undefined {
+    const invitationId = outOfBandRecord.outOfBandInvitation.id
+    if (outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.V2ImplicitInvitation)) return undefined
+
+    // An id the pthid validator rejects would make the first message undeliverable
+    if (!PthidRegExp.test(invitationId)) {
+      this.agentContext.config.logger.warn(
+        `Out-of-band invitation id '${invitationId}' is not a valid pthid, the first response will not reference it`
+      )
+      return undefined
+    }
+
+    return { [DidCommConnectionMetadataKeys.OutOfBandV2ParentThreadId]: { parentThreadId: invitationId } }
   }
 }

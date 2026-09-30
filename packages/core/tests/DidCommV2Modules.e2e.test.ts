@@ -41,7 +41,8 @@ describe('DIDComm v2 modules', () => {
       setupSubjectTransports([faberAgent, aliceAgent])
       await faberAgent.initialize()
       await aliceAgent.initialize()
-      ;[faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
+      ;[faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent, { didCommVersion: 'v2' })
+      expect(faberConnection.didcommVersion).toBe('v2')
     })
 
     afterEach(async () => {
@@ -98,7 +99,8 @@ describe('DIDComm v2 modules', () => {
       await faberAgent.initialize()
       await aliceAgent.initialize()
 
-      ;[faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
+      ;[faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent, { didCommVersion: 'v2' })
+      expect(faberConnection.didcommVersion).toBe('v2')
     })
 
     afterEach(async () => {

@@ -74,6 +74,7 @@ describe('DidCommOutOfBandInvitationV2', () => {
       const json = inv.toJSON() as unknown as Record<string, unknown>
 
       expect(json.type).toBe(TYPE_URI)
+      expect(json.typ).toBe('application/didcomm-plain+json')
       expect(json.id).toBe(inv.id)
       expect(json.from).toBe(FROM)
       expect(json['@type']).toBeUndefined()

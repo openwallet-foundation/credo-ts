@@ -5,6 +5,7 @@ export enum DidCommOutOfBandRecordMetadataKeys {
   LegacyInvitation = '_internal/legacyInvitation',
   /** V2 OOB: persisted because v2Invitation is @Exclude() and lost on record load */
   V2Invitation = '_internal/v2Invitation',
+  V2ImplicitInvitation = '_internal/v2ImplicitInvitation',
 }
 
 export type DidCommOutOfBandRecordMetadata = {
@@ -35,4 +36,5 @@ export type DidCommOutOfBandRecordMetadata = {
     legacyInvitationType?: Exclude<DidCommInvitationType, DidCommInvitationType.OutOfBand>
   }
   [DidCommOutOfBandRecordMetadataKeys.V2Invitation]: Record<string, unknown> // DidCommOutOfBandInvitationV2.toJSON() - from/body survive serialization
+  [DidCommOutOfBandRecordMetadataKeys.V2ImplicitInvitation]: Record<string, never>
 }
