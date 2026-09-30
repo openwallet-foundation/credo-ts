@@ -460,4 +460,5 @@ export interface DecryptedDidCommMessageContext {
   senderKey?: DidCommEnvelopeKey
   recipientKey: DidCommEnvelopeKey
   authenticatedSenderDid?: string
+  recipientDid?: string
 }
