@@ -1,4 +1,11 @@
-import { Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
+import {
+  DidDocumentBuilder,
+  didDocumentToNumAlgo2Did,
+  getEd25519VerificationKey2018,
+  Kms,
+  TypedArrayEncoder,
+  utils,
+} from '@credo-ts/core'
 import { Agent } from '../../../../core/src/agent/Agent'
 import { JsonEncoder } from '../../../../core/src/utils/JsonEncoder'
 import { getAgentOptions } from '../../../../core/tests/helpers'
@@ -8,6 +15,7 @@ import { DidCommConnectionRecord } from '../../modules/connections/repository'
 import {
   findOwnKeyAgreementKey,
   toAbsoluteDidUrl,
+  toKeyAgreement,
   toKeyAgreementDidUrl,
 } from '../../modules/connections/services/helpers'
 import { type DidCommV2EncryptedMessage, DidCommV2EnvelopeService, type DidCommV2PlaintextMessage } from '../../v2'
@@ -365,6 +373,28 @@ describe('DidCommV2Envelope', () => {
 
       await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
         /plaintext 'from' .* does not match the authcrypt sender/
+      )
+    })
+
+    it('rejects a sender whose keyAgreement key is Ed25519', async () => {
+      const recipient = await createKeyAgreementDid()
+      const { keyId, publicJwk } = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const ed25519 = Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+      const did = didDocumentToNumAlgo2Did(
+        new DidDocumentBuilder('')
+          .addKeyAgreement(getEd25519VerificationKey2018({ id: '#key-1', publicJwk: ed25519, controller: '#id' }))
+          .build()
+      )
+      const senderKey = toKeyAgreement(ed25519)
+      senderKey.keyId = keyId
+      const encrypted = await packAuthcrypt(
+        { to: [recipient.did] },
+        { did, didUrl: `${did}#key-1`, publicJwk: senderKey },
+        recipient
+      )
+
+      await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
+        'Sender key must be X25519 when recipient is X25519'
       )
     })
 

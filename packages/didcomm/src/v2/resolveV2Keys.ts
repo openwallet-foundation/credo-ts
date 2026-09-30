@@ -104,7 +104,7 @@ export class DidCommV2KeyResolver {
    * Per DIDComm v2 spec, `skid` is a DID URL into the sender's `keyAgreement`.
    * Used for ECDH-1PU authcrypt verification.
    */
-  public async resolveSenderKey(agentContext: AgentContext, skid: string): Promise<DidCommV2KeyAgreementJwk | null> {
+  public async resolveSenderKey(agentContext: AgentContext, skid: string): Promise<Kms.PublicJwk | null> {
     if (!skid.startsWith('did:')) return null
 
     try {
@@ -129,9 +129,8 @@ export class DidCommV2KeyResolver {
 
       if (!senderJwk) return null
 
-      const ka = toKeyAgreement(senderJwk)
-      if (vmId) ka.keyId = toAbsoluteDidUrl(didOnly, vmId)
-      return ka
+      if (vmId) senderJwk.keyId = toAbsoluteDidUrl(didOnly, vmId)
+      return senderJwk
     } catch {
       return null
     }

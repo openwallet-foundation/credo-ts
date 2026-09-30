@@ -301,18 +301,16 @@ export class DidCommDocumentService {
         // accumulates keys from ALL services (v1 + v2), which would mix Ed25519
         // authentication keys from v1 services into v2 encryption — causing the
         // recipient kid to point to an authentication VM instead of keyAgreement.
-        // Cast is safe: downstream toX25519() in DidCommMessageSender handles both
-        // Ed25519 and X25519 inputs correctly at runtime.
-        const recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
+        const recipientKeys: Kms.PublicJwk[] = []
         for (const keyRef of didDocument.keyAgreement ?? []) {
           const verificationMethod =
             typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
           const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-          if (!publicJwk.is(Kms.X25519PublicJwk, Kms.Ed25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
+          if (!publicJwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
             continue
           }
           publicJwk.keyId = toAbsoluteDidUrl(didDocument.id, verificationMethod.id)
-          recipientKeys.push(publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
+          recipientKeys.push(publicJwk)
         }
 
         let routingKeyRefs: string[] = []
@@ -335,7 +333,7 @@ export class DidCommDocumentService {
           const expanded = this.expandV2EndpointIfRoutingDid(endpoint, routingKeys)
           resolvedServices.push({
             id: didCommService.id,
-            recipientKeys,
+            recipientKeys: recipientKeys as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
             routingKeys: expanded.routingKeys,
             serviceEndpoint: expanded.endpoint,
           })

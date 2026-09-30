@@ -302,6 +302,44 @@ describe('DidCommDocumentService', () => {
 
       expect(resolved[0].recipientKeys[0].keyId).toBe('did:web:bob.example#key-1')
     })
+
+    test('skips an Ed25519 keyAgreement verification method for a DIDComm v2 service', async () => {
+      mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(
+        new DidDocument({
+          context: [
+            'https://w3id.org/did/v1',
+            'https://w3id.org/security/suites/ed25519-2018/v1',
+            'https://w3id.org/security/suites/x25519-2019/v1',
+          ],
+          id: 'did:web:bob.example',
+          verificationMethod: [
+            {
+              id: '#key-1',
+              type: 'Ed25519VerificationKey2018',
+              controller: 'did:web:bob.example',
+              publicKeyBase58: 'GyYtYWU1vjwd5PFJM4VSX5aUiSV3TyZMuLBJBTQvfdF8',
+            },
+            {
+              id: '#key-2',
+              type: 'X25519KeyAgreementKey2019',
+              controller: 'did:web:bob.example',
+              publicKeyBase58: 'S3AQEEKkGYrrszT9D55ozVVX2XixYp8uynqVm4okbud',
+            },
+          ],
+          keyAgreement: ['#key-1', '#key-2'],
+          service: [
+            new NewDidCommV2Service({
+              id: 'did:web:bob.example#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: 'https://bob.example/didcomm' }),
+            }),
+          ],
+        })
+      )
+
+      const resolved = await didCommDocumentService.resolveServicesFromDid(agentContext, 'did:web:bob.example')
+
+      expect(resolved[0].recipientKeys.map((key) => key.keyId)).toEqual(['did:web:bob.example#key-2'])
+    })
   })
 
   describe('getSupportedDidCommVersionsFromDidDoc', () => {

@@ -1,9 +1,21 @@
 import {
+  DidCommConnectionService,
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+  DidCommHandshakeProtocol,
   DidCommMessageReceiver,
   DidCommTrustPingEventTypes,
   DidCommV2EnvelopeService,
   type DidCommV2PlaintextMessage,
 } from '../../didcomm/src'
+import {
+  DidDocumentBuilder,
+  didDocumentToNumAlgo2Did,
+  getEd25519VerificationKey2018,
+  Kms,
+  NewDidCommV2Service,
+  NewDidCommV2ServiceEndpoint,
+} from '../src'
 import { Agent } from '../src/agent/Agent'
 import { JsonEncoder } from '../src/utils/JsonEncoder'
 import { setupEventReplaySubjects } from './events'
@@ -111,4 +123,47 @@ describe.each(['X25519', 'P-256', 'P-384'] as const)('DIDComm v2 key ids over %s
       expect(plaintext.to).toContain(keys.recipientKid.split('#')[0])
     }
   }, 30000)
+
+  it('does not encrypt to an Ed25519 keyAgreement key of a v2 peer', async () => {
+    const packSpy = vi.spyOn(DidCommV2EnvelopeService.prototype, 'pack')
+    const { id: outOfBandId, outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
+      didCommVersion: 'v2',
+    })
+    const { publicJwk } = await aliceAgent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+    const theirDid = didDocumentToNumAlgo2Did(
+      new DidDocumentBuilder('')
+        .addKeyAgreement(
+          getEd25519VerificationKey2018({
+            id: '#key-1',
+            publicJwk: Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk>,
+            controller: '#id',
+          })
+        )
+        .addService(
+          new NewDidCommV2Service({
+            id: '#didcommmessaging-0',
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+              uri: `rxjs:alice-key-ids-${endpointSuffix}`,
+              accept: ['didcomm/v2'],
+            }),
+          })
+        )
+        .build()
+    )
+    const connection = await faberAgent.dependencyManager
+      .resolve(DidCommConnectionService)
+      .createConnection(faberAgent.context, {
+        protocol: DidCommHandshakeProtocol.None,
+        role: DidCommDidExchangeRole.Requester,
+        state: DidCommDidExchangeState.Completed,
+        did: outOfBandInvitation.v2Invitation?.from,
+        theirDid,
+        outOfBandId,
+        didcommVersion: 'v2',
+      })
+
+    // Whether the send then fails or falls back to v1 does not matter here
+    await faberAgent.didcomm.connections.sendPing(connection.id, {}).catch(() => undefined)
+    expect(packSpy).not.toHaveBeenCalled()
+  })
 })

@@ -729,7 +729,10 @@ export class DidCommMessageSender {
                   typeof keyRef === 'string' ? didDocument.dereferenceVerificationMethod(keyRef) : keyRef
                 if (seen.has(verificationMethod.id)) continue
                 const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-                if (publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
+                if (
+                  publicJwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk) ||
+                  (!isV2Connection && publicJwk.is(Kms.Ed25519PublicJwk))
+                ) {
                   seen.add(verificationMethod.id)
                   publicJwk.keyId = toAbsoluteDidUrl(didDocument.id, verificationMethod.id)
                   recipientKeys.push(publicJwk)
