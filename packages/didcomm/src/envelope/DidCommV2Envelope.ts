@@ -23,7 +23,7 @@ import { DidCommForwardV2Message } from '../modules/routing/protocol/v2/messages
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from '../types'
 import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
-import type { DidCommV2KeyAgreementJwk, DidCommV2PlaintextMessage, DidCommV2SignedMessage } from '../v2'
+import type { DidCommV2KeyAgreementJwk, DidCommV2PlaintextMessage, DidCommV2SignedMessageWire } from '../v2'
 import {
   buildV2PlaintextFromMessage,
   DidCommV2EnvelopeService,
@@ -201,7 +201,10 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     // Sign-then-encrypt: the decrypted bytes are a JWS. Verify it and use the inner plaintext.
     let unwrapped: DidCommV2PlaintextMessage = plaintext
     if (isDidCommV2SignedMessage(plaintext as unknown)) {
-      const verified = await this.verifySignedPlaintext(agentContext, plaintext as unknown as DidCommV2SignedMessage)
+      const verified = await this.verifySignedPlaintext(
+        agentContext,
+        plaintext as unknown as DidCommV2SignedMessageWire
+      )
       unwrapped = verified.plaintext
       agentContext.config.logger.debug('Verified nested DIDComm v2 signed message', {
         type: unwrapped.type,
@@ -265,7 +268,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
    */
   public async unpackSigned(
     agentContext: AgentContext,
-    signedMessage: DidCommV2SignedMessage
+    signedMessage: DidCommV2SignedMessageWire
   ): Promise<DidCommPlaintextMessage> {
     const { plaintext } = await this.verifySignedPlaintext(agentContext, signedMessage)
     agentContext.config.logger.info(
@@ -282,7 +285,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
    */
   private async verifySignedPlaintext(
     agentContext: AgentContext,
-    signedMessage: DidCommV2SignedMessage
+    signedMessage: DidCommV2SignedMessageWire
   ): Promise<{ plaintext: DidCommV2PlaintextMessage; signerDid: string }> {
     const dids = agentContext.dependencyManager.resolve(DidsApi)
 

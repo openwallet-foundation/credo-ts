@@ -15,12 +15,14 @@ import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
 
+import { isDidCommV2EncryptedMessage } from '../../util/didcommVersion'
 import { computeApu, computeApv } from '../apuApv'
 import { DidCommV2EnvelopeService } from '../DidCommV2EnvelopeService'
 import { DidCommV2KeyResolver } from '../resolveV2Keys'
 import type {
   DidCommV2AnoncryptContentEncryptionAlgorithm,
   DidCommV2AuthcryptContentEncryptionAlgorithm,
+  DidCommV2EncryptedMessage,
   DidCommV2PlaintextMessage,
 } from '../types'
 
@@ -155,6 +157,63 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
 
       expect(decrypted).toEqual(plaintext)
       expect(resolvedSender).toBeNull()
+    })
+  })
+
+  describe('encrypted typ', () => {
+    // Mirrors packAnoncrypt with a caller-chosen typ, because the protected header is bound into the ciphertext.
+    async function packAnoncryptWithTyp(typ: string | undefined): Promise<DidCommV2EncryptedMessage> {
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      const ephemeralKey = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      const apv = computeApv([recipientKid])
+      const protectedHeader = JsonEncoder.toBase64Url({
+        typ,
+        alg: 'ECDH-ES+A256KW',
+        enc: 'A256CBC-HS512',
+        apv: TypedArrayEncoder.toBase64Url(apv),
+        epk: ephemeralKey.publicJwk,
+      })
+      const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-ES+A256KW',
+            keyId: ephemeralKey.keyId,
+            externalPublicJwk: recipientKey.toJson() as Kms.KmsJwkPublicEcdh,
+            apv,
+          },
+        },
+        encryption: { algorithm: 'A256CBC-HS512', aad: TypedArrayEncoder.fromUtf8String(protectedHeader) },
+        data: JsonEncoder.toUint8Array(plaintext),
+      })
+
+      return {
+        protected: protectedHeader,
+        recipients: [
+          {
+            header: { kid: recipientKid },
+            encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey?.encrypted as Uint8Array),
+          },
+        ],
+        iv: TypedArrayEncoder.toBase64Url(iv as Uint8Array),
+        ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
+        tag: TypedArrayEncoder.toBase64Url(tag as Uint8Array),
+      }
+    }
+
+    it.each([
+      undefined,
+      'didcomm-encrypted+json',
+      'application/didcomm+encrypted',
+    ])('detects and unpacks an envelope with typ %s', async (typ) => {
+      const encrypted = await packAnoncryptWithTyp(typ)
+
+      expect(isDidCommV2EncryptedMessage(encrypted)).toBe(true)
+      const { plaintext: decrypted } = await envelopeService.unpack(agentContext, encrypted, {
+        recipientKey: recipientKey as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
+        matchedKid: recipientKid,
+        resolveSenderKey: async () => null,
+      })
+      expect(decrypted).toEqual(plaintext)
     })
   })
 
@@ -324,6 +383,108 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
 
       expect(decrypted).toEqual(plaintext)
       expect(resolvedSender).toBeNull()
+    })
+  })
+
+  describe('off-curve NIST points', () => {
+    // There is no on-curve check of our own. These pin down that the KMS rejects the point on import,
+    // which fails with a different cause than a tag mismatch.
+    async function expectInvalidKeyData(unpack: Promise<unknown>): Promise<void> {
+      const error = await unpack.then(
+        () => undefined,
+        (e: Error) => e
+      )
+      expect(error?.cause).toEqual(expect.objectContaining({ message: 'Invalid key data' }))
+    }
+
+    function offCurve<T extends { y: string }>(jwk: T): T {
+      const y = TypedArrayEncoder.fromBase64Url(jwk.y)
+      y[y.length - 1] ^= 1
+      return { ...jwk, y: TypedArrayEncoder.toBase64Url(y) }
+    }
+
+    function withOffCurveEpk(encrypted: DidCommV2EncryptedMessage): DidCommV2EncryptedMessage {
+      const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected)
+      return {
+        ...encrypted,
+        protected: JsonEncoder.toBase64Url({ ...protectedJson, epk: offCurve(protectedJson.epk) }),
+      }
+    }
+
+    async function createKeyPair(crv: 'P-256' | 'P-384'): Promise<{
+      sender: Kms.PublicJwk<Kms.P256PublicJwk | Kms.P384PublicJwk>
+      recipient: Kms.PublicJwk<Kms.P256PublicJwk | Kms.P384PublicJwk> & { keyId: string }
+    }> {
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      const [sender, recipient] = await Promise.all([
+        kms.createKey({ type: { kty: 'EC', crv } }),
+        kms.createKey({ type: { kty: 'EC', crv } }),
+      ])
+      const senderJwk = Kms.PublicJwk.fromPublicJwk(sender.publicJwk) as Kms.PublicJwk<
+        Kms.P256PublicJwk | Kms.P384PublicJwk
+      >
+      senderJwk.keyId = sender.keyId
+      const recipientJwk = Kms.PublicJwk.fromPublicJwk(recipient.publicJwk) as Kms.PublicJwk<
+        Kms.P256PublicJwk | Kms.P384PublicJwk
+      >
+      recipientJwk.keyId = recipient.keyId
+      return { sender: senderJwk, recipient: recipientJwk }
+    }
+
+    it.each(['P-256', 'P-384'] as const)('rejects an anoncrypt envelope whose %s epk is off the curve', async (crv) => {
+      const { recipient } = await createKeyPair(crv)
+      const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
+        recipientKey: recipient,
+        recipientKid,
+      })
+
+      await expectInvalidKeyData(
+        envelopeService.unpack(agentContext, withOffCurveEpk(encrypted), {
+          recipientKey: recipient,
+          matchedKid: recipientKid,
+          resolveSenderKey: async () => null,
+        })
+      )
+    })
+
+    it.each(['P-256', 'P-384'] as const)('rejects an authcrypt envelope whose %s epk is off the curve', async (crv) => {
+      const { sender, recipient } = await createKeyPair(crv)
+      const encrypted = await envelopeService.pack(agentContext, plaintext, {
+        senderKey: sender,
+        senderKeySkid: senderKid,
+        recipientKey: recipient,
+        recipientKid,
+      })
+
+      await expectInvalidKeyData(
+        envelopeService.unpack(agentContext, withOffCurveEpk(encrypted), {
+          recipientKey: recipient,
+          matchedKid: recipientKid,
+          resolveSenderKey: async () => sender,
+        })
+      )
+    })
+
+    it.each([
+      'P-256',
+      'P-384',
+    ] as const)('rejects an authcrypt envelope whose resolved %s sender key is off the curve', async (crv) => {
+      const { sender, recipient } = await createKeyPair(crv)
+      const encrypted = await envelopeService.pack(agentContext, plaintext, {
+        senderKey: sender,
+        senderKeySkid: senderKid,
+        recipientKey: recipient,
+        recipientKid,
+      })
+      const offCurveSender = Kms.PublicJwk.fromUnknown(offCurve(sender.toJson() as { y: string }))
+
+      await expectInvalidKeyData(
+        envelopeService.unpack(agentContext, encrypted, {
+          recipientKey: recipient,
+          matchedKid: recipientKid,
+          resolveSenderKey: async () => offCurveSender,
+        })
+      )
     })
   })
 
