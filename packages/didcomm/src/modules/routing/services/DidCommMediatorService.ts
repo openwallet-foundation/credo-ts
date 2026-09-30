@@ -2,7 +2,6 @@ import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import {
   CredoError,
   DidDocumentBuilder,
-  DidDocumentService,
   DidKey,
   didDocumentToNumAlgo2Did,
   didKeyToVerkey,
@@ -14,9 +13,10 @@ import {
   inject,
   injectable,
   isDidKey,
-  JsonTransformer,
   Kms,
   type Logger,
+  NewDidCommV2Service,
+  NewDidCommV2ServiceEndpoint,
   RecordDuplicateError,
   RecordNotFoundError,
   TypedArrayEncoder,
@@ -147,12 +147,9 @@ export class DidCommMediatorService {
     const didDocumentBuilder = new DidDocumentBuilder('did:peer:2-placeholder')
     didDocumentBuilder.addAuthentication(ed25519VerificationMethod)
     didDocumentBuilder.addKeyAgreement(verificationMethod)
-    // Use DIDCommMessaging + string endpoint so abbreviate produces t:'dm', s:endpoint for parser compatibility
-    const service = JsonTransformer.fromJSON(
-      { id: '#dm-0', type: 'DIDCommMessaging', serviceEndpoint: wsEndpoint },
-      DidDocumentService
+    didDocumentBuilder.addService(
+      new NewDidCommV2Service({ id: '#dm-0', serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: wsEndpoint }) })
     )
-    didDocumentBuilder.addService(service)
 
     const didDocument = didDocumentBuilder.build()
     const did = didDocumentToNumAlgo2Did(didDocument)
