@@ -268,6 +268,40 @@ describe('DidCommDocumentService', () => {
       })
       expect(resolved[0].routingKeys[0].equals(ed25519Key)).toBe(true)
     })
+
+    test('uses the keyAgreement verification method id as DIDComm v2 recipient key id', async () => {
+      mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(
+        new DidDocument({
+          context: ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
+          id: 'did:web:bob.example',
+          verificationMethod: [
+            {
+              id: '#key-1',
+              type: 'JsonWebKey2020',
+              controller: 'did:web:bob.example',
+              publicKeyJwk: {
+                kty: 'EC',
+                crv: 'P-256',
+                x: 'acbIQiuMs3i8_uszEjJ2tpTtRM4EU3yz91PH6CdH2V0',
+                y: '_KcyLj9vWMptnmKtm46GqDz8wf74I5LKgrl2GzH3nSE',
+                kid: 'key-1',
+              },
+            },
+          ],
+          keyAgreement: ['#key-1'],
+          service: [
+            new NewDidCommV2Service({
+              id: 'did:web:bob.example#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: 'https://bob.example/didcomm' }),
+            }),
+          ],
+        })
+      )
+
+      const resolved = await didCommDocumentService.resolveServicesFromDid(agentContext, 'did:web:bob.example')
+
+      expect(resolved[0].recipientKeys[0].keyId).toBe('did:web:bob.example#key-1')
+    })
   })
 
   describe('getSupportedDidCommVersionsFromDidDoc', () => {

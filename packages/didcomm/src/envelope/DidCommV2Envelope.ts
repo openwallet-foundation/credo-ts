@@ -9,11 +9,16 @@ import {
   JsonEncoder,
   utils,
 } from '@credo-ts/core'
-import type { DecryptedDidCommMessageContext, EnvelopeKeys } from '../DidCommEnvelopeService'
+import type { DecryptedDidCommMessageContext, DidCommEnvelopeKey, EnvelopeKeys } from '../DidCommEnvelopeService'
 import type { DidCommMessage } from '../DidCommMessage'
 import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { DidCommConnectionMetadataKeys } from '../modules/connections/repository/DidCommConnectionMetadataTypes'
-import { toKeyAgreement } from '../modules/connections/services/helpers'
+import {
+  findOwnKeyAgreementKey,
+  toAbsoluteDidUrl,
+  toKeyAgreement,
+  toKeyAgreementDidUrl,
+} from '../modules/connections/services/helpers'
 import { DidCommForwardV2Message } from '../modules/routing/protocol/v2/messages'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from '../types'
 import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
@@ -35,9 +40,10 @@ import type { DidCommEnvelope, DidCommPackOptions, DidCommReturnRouteOptions } f
  */
 interface DidCommV2PackKeys {
   recipientKey: DidCommV2KeyAgreementJwk
+  recipientKid: string
   senderKey: DidCommV2KeyAgreementJwk
   routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
-  senderKeySkid?: string
+  senderKeySkid: string
 }
 
 /**
@@ -98,6 +104,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
 
     const encryptedMessage = await this.envelopeService.pack(agentContext, plaintext, {
       recipientKey: v2Keys.recipientKey,
+      recipientKid: v2Keys.recipientKid,
       senderKey: v2Keys.senderKey,
       senderKeySkid: v2Keys.senderKeySkid,
       contentEncryptionAlgorithm: this.config.v2DefaultAuthcryptContentEncryption,
@@ -111,24 +118,22 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
   /**
    * Convert the transport-level key carrier into v2 key-agreement keys.
    *
-   * Uses `did:key` as the `kid` when the key carries no explicit key id. The `did:key` form
-   * includes the multicodec prefix, so the recipient can determine the key type without guessing.
+   * The recipient `kid` is a `did:key` URL when the key carries no DID URL of its own.
    */
   private toV2EnvelopeKeys(keys: EnvelopeKeys): DidCommV2PackKeys {
     if (!keys.senderKey) {
       throw new CredoError('DIDComm v2 pack requires a sender key')
     }
-
-    const recipientKey = toKeyAgreement(keys.recipientKeys[0])
-    recipientKey.keyId = keys.recipientKeys[0].hasKeyId
-      ? keys.recipientKeys[0].keyId
-      : new DidKey(keys.recipientKeys[0]).did
+    if (!keys.senderKeySkid) {
+      throw new CredoError('DIDComm v2 pack requires a sender key skid')
+    }
 
     const senderKey = toKeyAgreement(keys.senderKey)
     senderKey.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
 
     return {
-      recipientKey,
+      recipientKey: toKeyAgreement(keys.recipientKeys[0]),
+      recipientKid: toKeyAgreementDidUrl(keys.recipientKeys[0]),
       senderKey,
       routingKeys: keys.routingKeys,
       senderKeySkid: keys.senderKeySkid,
@@ -171,8 +176,6 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       const routingKey = routingKeysReversed[i]
       // next points at the enclosed hop (recipient at i === 0); single-routing-key tests cannot detect an inverted chain
       const next = i === 0 ? recipientNext : new DidKey(routingKeysReversed[i - 1]).did
-      const routingKeyAgreement = toKeyAgreement(routingKey)
-      routingKeyAgreement.keyId = new DidKey(routingKey).did
 
       const attachment = {
         id: utils.uuid(),
@@ -186,7 +189,8 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       })
 
       payload = await this.envelopeService.packAnoncrypt(agentContext, forwardPlaintext, {
-        recipientKey: routingKeyAgreement,
+        recipientKey: toKeyAgreement(routingKey),
+        recipientKid: toKeyAgreementDidUrl(routingKey),
         contentEncryptionAlgorithm: this.config.v2DefaultAnoncryptContentEncryption,
       })
     }
@@ -320,54 +324,46 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
    * inbound session must carry a `skid` the peer can resolve.
    *
    * The lookup finds the verification method in our own DID document that holds the key the
-   * message was addressed to, rather than assuming a peer DID fragment convention. When that fails,
-   * `did:key` still lets the peer resolve the key directly from the identifier.
+   * message was addressed to. When our DID changed since, the reply uses a keyAgreement key of the
+   * current DID instead, so the `skid` matches the plaintext `from`.
    */
   public async buildReturnRouteKeys(
     agentContext: AgentContext,
-    { senderKey, recipientKey, plaintextMessage, connection }: DidCommReturnRouteOptions
+    options: DidCommReturnRouteOptions
   ): Promise<EnvelopeKeys> {
+    const ourKey = await this.resolveReturnRouteSenderKey(agentContext, options)
+
     return {
-      recipientKeys: [senderKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>],
+      recipientKeys: [options.senderKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>],
       routingKeys: [],
-      senderKey: recipientKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>,
-      senderKeySkid: await this.resolveReturnRouteSkid(agentContext, {
-        recipientKey,
-        plaintextMessage,
-        connection,
-      }),
+      senderKey: ourKey.publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>,
+      senderKeySkid: ourKey.skid,
     }
   }
 
-  private async resolveReturnRouteSkid(
+  private async resolveReturnRouteSenderKey(
     agentContext: AgentContext,
-    {
-      recipientKey,
-      plaintextMessage,
-      connection,
-    }: Pick<DidCommReturnRouteOptions, 'recipientKey' | 'plaintextMessage' | 'connection'>
-  ): Promise<string | undefined> {
-    // Connectionless: did:key lets the peer resolve the key through tryParseKidAsPublicJwk.
-    if (!connection) return new DidKey(recipientKey).did
+    { senderKey, recipientKey, plaintextMessage, connection }: DidCommReturnRouteOptions
+  ): Promise<{ publicJwk: DidCommEnvelopeKey; skid: string }> {
+    const addressedKey = { publicJwk: recipientKey, skid: toKeyAgreementDidUrl(recipientKey) }
+    if (!connection) return addressedKey
 
-    // The outbound plaintext sets `from: connection.did`, and the spec requires the encryption
-    // layer skid to match `from`. The inbound `to` can still hold our prior DID mid-rotation, so
-    // it is only a fallback.
+    // The inbound `to` can still hold our prior DID mid-rotation, so it is only a fallback.
     const to = Array.isArray(plaintextMessage.to) ? (plaintextMessage.to as string[]) : undefined
     const ourDid = connection.did ?? to?.[0]
-    // No DID yet: leave the skid unset so the pack falls back to the sender key's own kid.
-    if (!ourDid) return undefined
+    if (!ourDid) return addressedKey
+
+    const dids = agentContext.resolve(DidsApi)
+    const created = await dids.resolveCreatedDidDocumentWithKeys(ourDid).catch(() => undefined)
+    if (!created) return addressedKey
+    const { didDocument, keys } = created
 
     try {
-      const dids = agentContext.resolve(DidsApi)
-      const { didDocument } = await dids.resolveCreatedDidDocumentWithKeys(ourDid)
-      const verificationMethod = didDocument.findVerificationMethodByPublicKey(recipientKey)
-      if (!verificationMethod) return new DidKey(recipientKey).did
+      const { id } = didDocument.findVerificationMethodByPublicKey(recipientKey, ['keyAgreement'])
+      return { publicJwk: recipientKey, skid: toAbsoluteDidUrl(didDocument.id, id) }
+    } catch {}
 
-      const id = verificationMethod.id
-      return id.startsWith('did:') ? id : `${didDocument.id}${id.startsWith('#') ? '' : '#'}${id}`
-    } catch {
-      return new DidKey(recipientKey).did
-    }
+    const currentKey = connection.did ? findOwnKeyAgreementKey(didDocument, keys, senderKey) : undefined
+    return currentKey ? { publicJwk: currentKey.publicJwk, skid: currentKey.didUrl } : addressedKey
   }
 }

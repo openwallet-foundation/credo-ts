@@ -29,9 +29,10 @@ type EpkJwk =
 
 export interface DidCommV2EnvelopeKeys {
   recipientKey: DidCommV2KeyAgreementJwk
+  recipientKid: string
+  /** Its `keyId` is the local KMS key id, so it never goes on the wire. */
   senderKey: DidCommV2KeyAgreementJwk
-  /** DID URL of the sender key; used as skid in JWE so recipient can resolve it. Falls back to senderKey.keyId if absent. */
-  senderKeySkid?: string
+  senderKeySkid: string
   /** Content encryption algorithm. Authcrypt is restricted to A256CBC-HS512 per DIDComm v2.1. */
   contentEncryptionAlgorithm?: DidCommV2AuthcryptContentEncryptionAlgorithm
 }
@@ -39,6 +40,7 @@ export interface DidCommV2EnvelopeKeys {
 /** Keys for anoncrypt: only recipient key; no sender (anonymous). */
 export interface DidCommV2AnoncryptKeys {
   recipientKey: DidCommV2KeyAgreementJwk
+  recipientKid: string
   /** Content encryption algorithm. Defaults to A256CBC-HS512; A256GCM is also accepted. */
   contentEncryptionAlgorithm?: DidCommV2AnoncryptContentEncryptionAlgorithm
 }
@@ -85,8 +87,8 @@ export class DidCommV2EnvelopeService {
     }
 
     const enc: DidCommV2AuthcryptContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256CBC-HS512'
-    const skid = keys.senderKeySkid ?? keys.senderKey.keyId
-    const recipientKid = keys.recipientKey.keyId
+    const skid = keys.senderKeySkid
+    const recipientKid = keys.recipientKid
     const apu = computeApu(skid)
     const apv = computeApv([recipientKid])
 
@@ -158,7 +160,7 @@ export class DidCommV2EnvelopeService {
     const recipientCurve = getKeyAgreementCurve(keys.recipientKey)
 
     const enc: DidCommV2AnoncryptContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256CBC-HS512'
-    const recipientKid = keys.recipientKey.keyId
+    const recipientKid = keys.recipientKid
     const apv = computeApv([recipientKid])
 
     const ephemeralKey = await kms.createKey({ type: keyTypeForCurve(recipientCurve) })

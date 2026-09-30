@@ -226,14 +226,19 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
         agentContext,
         plaintext,
         { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' },
-        { senderKey: senderEcdhKey, recipientKey }
+        {
+          senderKey: senderEcdhKey,
+          senderKeySkid: 'did:example:alice#key-x25519-1',
+          recipientKey,
+          recipientKid: 'did:example:bob#key-x25519-1',
+        }
       )
 
       const matchedKid = envelope.recipients[0]?.header?.kid ?? recipientKey.keyId
       const { plaintext: inner } = await envelopeService.unpack(agentContext, envelope, {
         recipientKey: recipientKey as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
         matchedKid,
-        resolveSenderKey: async (skid) => (skid === senderEcdhKey.keyId ? senderEcdhKey : null),
+        resolveSenderKey: async (skid) => (skid === 'did:example:alice#key-x25519-1' ? senderEcdhKey : null),
       })
 
       // The inner bytes are a JWS, not a JWM plaintext. Verify and recover the original.
@@ -252,7 +257,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
         agentContext,
         plaintext,
         { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' },
-        { recipientKey }
+        { recipientKey, recipientKid: 'did:example:bob#key-x25519-1' }
       )
 
       const matchedKid = envelope.recipients[0]?.header?.kid ?? recipientKey.keyId
