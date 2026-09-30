@@ -19,9 +19,18 @@ import type {
   DidCommV2KeyAgreementJwk,
   DidCommV2PlaintextMessage,
   DidCommV2SignedMessage,
+  DidCommV2SignedMessageWire,
   DidCommV2SigningAlgorithm,
 } from './types'
-import { DIDCOMM_V2_SIGNED_MIME_TYPE, DIDCOMM_V2_SIGNING_ALGORITHMS, keyTypeForCurve } from './types'
+import {
+  DIDCOMM_V2_SIGNED_MIME_TYPE,
+  DIDCOMM_V2_SIGNING_ALGORITHMS,
+  keyTypeForCurve,
+  normalizeDidCommMediaType,
+} from './types'
+
+// The DIDComm v2.1 signed message example uses the JWM media type.
+const ACCEPTED_SIGNED_MESSAGE_TYPS = [DIDCOMM_V2_SIGNED_MIME_TYPE, 'application/jwm']
 
 type EpkJwk =
   | { kty: 'OKP'; crv: 'X25519'; x: string }
@@ -48,7 +57,7 @@ export interface DidCommV2AnoncryptKeys {
 
 export interface DidCommV2Signer {
   keyId: string
-  /** DID URL emitted in the JWS protected header; recipients dereference it against authentication. */
+  /** DID URL of the signing key, sent in the unprotected per-signature JWS header. */
   kid: string
   alg: DidCommV2SigningAlgorithm
 }
@@ -232,9 +241,8 @@ export class DidCommV2EnvelopeService {
       )
     }
 
-    // SICPA's validate_jws requires kid in the unprotected per-signature header. The DIDComm
-    // v2.1 spec example shows kid in the protected header but doesn't normatively mandate it.
-    // We emit unprotected for interop; verify accepts either location.
+    // kid goes only in the unprotected header, as in the spec's Appendix C.2 vectors.
+    // didcomm-rust and didcomm-python require it there.
     const signed = await this.jwsService.createJws(agentContext, {
       payload: JsonEncoder.toUint8Array(plaintext),
       keyId: signer.keyId,
@@ -261,7 +269,7 @@ export class DidCommV2EnvelopeService {
     signer: DidCommV2Signer,
     keys: DidCommV2EnvelopeKeys
   ): Promise<DidCommV2EncryptedMessage> {
-    const signed = await this.signPlaintext(agentContext, plaintext, signer)
+    const signed = await this.signForEncryption(agentContext, plaintext, signer)
     return this.pack(agentContext, JsonEncoder.toUint8Array(signed), keys)
   }
 
@@ -272,8 +280,20 @@ export class DidCommV2EnvelopeService {
     signer: DidCommV2Signer,
     keys: DidCommV2AnoncryptKeys
   ): Promise<DidCommV2EncryptedMessage> {
-    const signed = await this.signPlaintext(agentContext, plaintext, signer)
+    const signed = await this.signForEncryption(agentContext, plaintext, signer)
     return this.packAnoncrypt(agentContext, JsonEncoder.toUint8Array(signed), keys)
+  }
+
+  // DIDComm v2.1: the inner JWM of a signed and encrypted message MUST contain a to header.
+  private async signForEncryption(
+    agentContext: AgentContext,
+    plaintext: DidCommV2PlaintextMessage,
+    signer: DidCommV2Signer
+  ): Promise<DidCommV2SignedMessage> {
+    if (!Array.isArray(plaintext.to) || plaintext.to.length === 0) {
+      throw new CredoError("A DIDComm v2 message that is signed and encrypted must have a 'to' header")
+    }
+    return this.signPlaintext(agentContext, plaintext, signer)
   }
 
   /**
@@ -300,10 +320,6 @@ export class DidCommV2EnvelopeService {
   }> {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected)
-
-    if (protectedJson.typ !== 'application/didcomm-encrypted+json') {
-      throw new CredoError(`Invalid DIDComm v2 envelope typ: ${protectedJson.typ}`)
-    }
 
     const enc = protectedJson.enc
     if (enc !== 'A256GCM' && enc !== 'A256CBC-HS512' && enc !== 'XC20P') {
@@ -431,14 +447,16 @@ export class DidCommV2EnvelopeService {
   }
 
   /**
-   * Verify a single-signer DIDComm v2 signed message and return its plaintext.
+   * Verify a single-signer DIDComm v2 signed message, in the General or the Flattened JWS JSON
+   * serialization, and return its plaintext.
    * Enforces typ, alg allowlist, and that the plaintext `from` matches the signer DID.
    */
   public async verifySignedMessage(
     agentContext: AgentContext,
-    signedMessage: DidCommV2SignedMessage,
+    signedMessageWire: DidCommV2SignedMessageWire,
     options: { resolveSignerJwk: (kid: string) => Promise<Kms.PublicJwk | null> }
   ): Promise<{ plaintext: DidCommV2PlaintextMessage; signers: DidCommV2VerifiedSigner[] }> {
+    const signedMessage = toGeneralSignedMessage(signedMessageWire)
     if (signedMessage.signatures.length !== 1) {
       throw new CredoError(
         `DIDComm v2 signed message must have exactly one signature, found ${signedMessage.signatures.length}`
@@ -451,7 +469,11 @@ export class DidCommV2EnvelopeService {
       alg?: string
       kid?: string
     }
-    if (protectedJson.typ !== DIDCOMM_V2_SIGNED_MIME_TYPE) {
+    if (
+      protectedJson.typ !== undefined &&
+      (typeof protectedJson.typ !== 'string' ||
+        !ACCEPTED_SIGNED_MESSAGE_TYPS.includes(normalizeDidCommMediaType(protectedJson.typ)))
+    ) {
       throw new CredoError(`Invalid DIDComm v2 signed message typ: ${protectedJson.typ}`)
     }
     if (!protectedJson.alg || !DIDCOMM_V2_SIGNING_ALGORITHMS.includes(protectedJson.alg as DidCommV2SigningAlgorithm)) {
@@ -461,7 +483,7 @@ export class DidCommV2EnvelopeService {
     }
     const alg = protectedJson.alg as DidCommV2SigningAlgorithm
 
-    // Spec puts kid in protected; SICPA fixtures put it in unprotected.
+    // Senders put kid in the unprotected header (spec Appendix C.2). A protected kid is also accepted.
     const kid = protectedJson.kid ?? signature.header?.kid
     if (!kid || typeof kid !== 'string') {
       throw new CredoError('DIDComm v2 signed message signature missing kid in protected or unprotected header')
@@ -536,6 +558,12 @@ export class DidCommV2EnvelopeService {
     }
     return received
   }
+}
+
+function toGeneralSignedMessage(message: DidCommV2SignedMessageWire): DidCommV2SignedMessage {
+  if ('signatures' in message) return message
+  const { payload, protected: protectedHeader, signature, header } = message
+  return { payload, signatures: [{ protected: protectedHeader, signature, header }] }
 }
 
 function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {

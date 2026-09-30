@@ -59,6 +59,14 @@ export const DIDCOMM_V2_PLAIN_MIME_TYPE = 'application/didcomm-plain+json'
 export const DIDCOMM_V2_ENCRYPTED_MIME_TYPE = 'application/didcomm-encrypted+json'
 export const DIDCOMM_V2_SIGNED_MIME_TYPE = 'application/didcomm-signed+json'
 
+export const DIDCOMM_V2_KEY_WRAPPING_ALGORITHMS = ['ECDH-1PU+A256KW', 'ECDH-ES+A256KW']
+
+// DIDComm v2.1 IANA Media Types: a media type without a '/' has an implied application/ prefix.
+export function normalizeDidCommMediaType(mediaType: string): string {
+  const type = mediaType.split(';')[0].trim().toLowerCase()
+  return type.includes('/') ? type : `application/${type}`
+}
+
 export type DidCommV2AuthcryptContentEncryptionAlgorithm = 'A256CBC-HS512'
 export type DidCommV2AnoncryptContentEncryptionAlgorithm = 'A256CBC-HS512' | 'A256GCM' | 'XC20P'
 export type DidCommV2ContentEncryptionAlgorithm =
@@ -86,7 +94,7 @@ export interface DidCommV2EncryptedMessage {
 export interface DidCommV2JwsSignature {
   protected: string
   signature: string
-  // Optional: spec puts kid in `protected`, SICPA fixtures put it here. Verifiers accept either.
+  // Senders put kid here (spec Appendix C.2). Verifiers also accept a protected kid.
   header?: { kid?: string }
 }
 
@@ -98,6 +106,9 @@ export interface DidCommV2SignedMessage {
   payload: string
   signatures: DidCommV2JwsSignature[]
 }
+
+/** A signed message in the General or the Flattened JWS JSON serialization. */
+export type DidCommV2SignedMessageWire = DidCommV2SignedMessage | (DidCommV2JwsSignature & { payload: string })
 
 /** Algorithms required by DIDComm v2.1: verify all three, sign at least one. */
 export const DIDCOMM_V2_SIGNING_ALGORITHMS = ['EdDSA', 'ES256', 'ES256K'] as const

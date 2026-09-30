@@ -40,7 +40,7 @@ import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isDidCommV2SignedMessage } from './util/didcommVersion'
 import { isValidJweStructure } from './util/JWE'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
-import type { DidCommV2SignedMessage } from './v2'
+import type { DidCommV2SignedMessageWire } from './v2'
 
 @injectable()
 export class DidCommMessageReceiver {
@@ -143,7 +143,7 @@ export class DidCommMessageReceiver {
 
   private async receiveSignedMessage(
     agentContext: AgentContext,
-    signedMessage: DidCommV2SignedMessage,
+    signedMessage: DidCommV2SignedMessageWire,
     connection?: DidCommConnectionRecord,
     receivedAt?: Date
   ) {

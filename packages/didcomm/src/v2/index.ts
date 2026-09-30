@@ -19,5 +19,7 @@ export {
   type DidCommV2KeyAgreementJwk,
   type DidCommV2PlaintextMessage,
   type DidCommV2SignedMessage,
+  type DidCommV2SignedMessageWire,
   type DidCommV2SigningAlgorithm,
+  normalizeDidCommMediaType,
 } from './types'
