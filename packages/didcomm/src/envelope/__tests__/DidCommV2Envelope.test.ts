@@ -119,6 +119,32 @@ describe('DidCommV2Envelope', () => {
     expect(plaintextMessage.to).toBeUndefined()
   })
 
+  it('names the created DID that holds the addressed key in a connectionless return route reply', async () => {
+    const ours = await createKeyAgreementDid()
+    const peer = await createKeyAgreementDid()
+    const envelope = agent.dependencyManager.resolve(DidCommV2Envelope)
+    const inbound = await agent.dependencyManager.resolve(DidCommV2EnvelopeService).pack(
+      agent.context,
+      { id: utils.uuid(), type: DidCommTrustPingMessage.type.messageTypeUri, from: peer.did, to: [ours.did] },
+      {
+        senderKey: peer.publicJwk,
+        senderKeySkid: peer.didUrl,
+        recipientKey: ours.publicJwk,
+        recipientKid: ours.didUrl,
+      }
+    )
+    const { plaintextMessage, senderKey, recipientKey } = await envelope.unpack(agent.context, inbound)
+    if (!senderKey) throw new Error('Expected an authcrypt sender key')
+
+    const keys = await envelope.buildReturnRouteKeys(agent.context, { senderKey, recipientKey, plaintextMessage })
+    const reply = await envelope.pack(agent.context, new DidCommTrustPingMessage({}), keys)
+    const { plaintextMessage: replyPlaintext, authenticatedSenderDid } = await envelope.unpack(agent.context, reply)
+
+    expect(JsonEncoder.fromBase64Url(reply.protected).skid).toBe(ours.didUrl)
+    expect(replyPlaintext.from).toBe(ours.did)
+    expect(authenticatedSenderDid).toBe(ours.did)
+  })
+
   it('sets from to the skid DID on a return route reply over a connection without theirDid', async () => {
     const current = await createKeyAgreementDid()
     const peer = await createKeyAgreementDid()
@@ -212,14 +238,16 @@ describe('DidCommV2Envelope', () => {
       sender,
       recipient,
       skid,
+      apuSkid = sender.didUrl,
       enc,
     }: {
       sender: Awaited<ReturnType<typeof createKeyAgreementDid>>
       recipient: Awaited<ReturnType<typeof createKeyAgreementDid>>
       skid?: string
+      apuSkid?: string
       enc: 'A256CBC-HS512' | 'A256GCM'
     }): Promise<DidCommV2EncryptedMessage> => {
-      const apu = computeApu(sender.didUrl)
+      const apu = computeApu(apuSkid)
       const apv = computeApv([recipient.didUrl])
       const ephemeralKey = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
       const protectedHeader = JsonEncoder.toBase64Url({
@@ -284,6 +312,26 @@ describe('DidCommV2Envelope', () => {
 
       await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
         'apu in protected header does not match skid'
+      )
+    })
+
+    it.each([
+      { case: 'skid', inSkid: true },
+      { case: 'apu with no skid', inSkid: false },
+    ])('rejects a local KMS key id as the sender in $case', async ({ inSkid }) => {
+      const sender = await createKeyAgreementDid()
+      const recipient = await createKeyAgreementDid()
+      const kmsKeyId = sender.publicJwk.keyId
+      const encrypted = await packAuthcryptWithHeaders({
+        sender,
+        recipient,
+        skid: inSkid ? kmsKeyId : undefined,
+        apuSkid: kmsKeyId,
+        enc: 'A256CBC-HS512',
+      })
+
+      await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
+        'Could not resolve sender key for skid'
       )
     })
 
