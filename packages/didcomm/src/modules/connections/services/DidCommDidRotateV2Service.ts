@@ -35,7 +35,7 @@ import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import type { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from './DidCommConnectionService'
-import { createPeerDidForV2OOB, toKeyAgreement, toKeyAgreementDidUrl } from './helpers'
+import { createPeerDidForV2OOB, toAbsoluteDidUrl, toKeyAgreement, toKeyAgreementDidUrl } from './helpers'
 
 export interface FromPriorPayload {
   iss: string
@@ -440,7 +440,7 @@ export class DidCommDidRotateV2Service {
       payload,
       protectedHeaderOptions: {
         alg: getPublicJwkFromVerificationMethod(authVm).signatureAlgorithm,
-        kid: authVm.id,
+        kid: toAbsoluteDidUrl(priorDid, authVm.id),
         typ: 'JWT',
       },
     })
