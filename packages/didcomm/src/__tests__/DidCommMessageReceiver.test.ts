@@ -1,8 +1,9 @@
 import { JsonEncoder } from '@credo-ts/core'
 import { Agent } from '../../../core/src/agent/Agent'
-import { getAgentOptions } from '../../../core/tests/helpers'
+import { getAgentOptions, getMockConnection } from '../../../core/tests/helpers'
 import { setupSubjectTransports } from '../../../core/tests/transport'
 import { DidCommMessageReceiver } from '../DidCommMessageReceiver'
+import { DidCommMessageSender } from '../DidCommMessageSender'
 import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
 
 describe('DidCommMessageReceiver', () => {
@@ -63,6 +64,28 @@ describe('DidCommMessageReceiver', () => {
       await expect(receiver.receiveMessage(signedMessage, { contextCorrelationId: 'default' })).rejects.toThrow(
         /v2 is not enabled/
       )
+
+      await agent.shutdown()
+    })
+
+    it('does not answer an invalid DIDComm v2 problem report with a problem report', async () => {
+      const agent = new Agent(getAgentOptions('ReceiverProblemReportTest', {}, {}, undefined, { requireDidcomm: true }))
+      await agent.initialize()
+
+      const sendMessage = vi
+        .spyOn(agent.dependencyManager.resolve(DidCommMessageSender), 'sendMessage')
+        .mockResolvedValue()
+      const receiver = agent.dependencyManager.resolve(DidCommMessageReceiver)
+      const connection = getMockConnection()
+
+      // @ts-expect-error
+      const transformed = receiver.transformAndValidate(
+        agent.context,
+        { '@type': 'https://didcomm.org/report-problem/2.0/problem-report', '@id': 'short' },
+        connection
+      )
+      await expect(transformed).rejects.toThrow('Not sending problem report in response to problem report')
+      expect(sendMessage).not.toHaveBeenCalled()
 
       await agent.shutdown()
     })

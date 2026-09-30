@@ -12,7 +12,7 @@ import {
   type Logger,
   RecordDuplicateError,
 } from '@credo-ts/core'
-import { DidCommDispatcher } from './DidCommDispatcher'
+import { DidCommDispatcher, isProblemReportMessageType } from './DidCommDispatcher'
 import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
 import { DidCommMessage } from './DidCommMessage'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
@@ -39,7 +39,7 @@ import { DidCommRoutingService } from './modules/routing/services/DidCommRouting
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isDidCommV2SignedMessage } from './util/didcommVersion'
 import { isValidJweStructure } from './util/JWE'
-import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
+import { parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
 import type { DidCommV2SignedMessageWire } from './v2'
 
 @injectable()
@@ -523,7 +523,7 @@ export class DidCommMessageReceiver {
     plaintextMessage: DidCommPlaintextMessage
   ) {
     const messageType = parseMessageType(plaintextMessage['@type'])
-    if (canHandleMessageType(DidCommProblemReportMessage, messageType)) {
+    if (isProblemReportMessageType(messageType)) {
       throw new CredoError(`Not sending problem report in response to problem report: ${message}`)
     }
     const problemReportMessage = new DidCommProblemReportMessage({
