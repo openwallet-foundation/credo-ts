@@ -150,7 +150,7 @@ jobs:
 
       # Services are started in the background earlier, wait until they are healthy
       - name: Wait for services
-        run: docker compose up -d --wait --wait-timeout 600
+        run: docker compose up -d --wait --wait-timeout 600 --no-recreate
 
       - name: Run tests
         run: COLLECT_FAILED_TEST_LOGS=true pnpm test:e2e --coverage
@@ -222,7 +222,7 @@ jobs:
 
       # Services are started in the background earlier, wait until they are healthy
       - name: Wait for services
-        run: docker compose up -d --wait --wait-timeout 600
+        run: docker compose up -d --wait --wait-timeout 600 --no-recreate
 
       - name: Run tests
         run: COLLECT_FAILED_TEST_LOGS=true pnpm test:drizzle --coverage
