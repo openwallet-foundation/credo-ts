@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.7.2
+
+### Patch Changes
+
+- 0b9531a: Added Aries RFC 881 (vc+sd-jwt) format handler
+  
+  `@credo-ts/core` now exports `validateW3cV2SdJwtDisclosureFrame` and `NON_DISCLOSEABLE_FIELDS`, so that
+  a disclosure frame can be validated before it is used to sign a credential.
+  
+  The `didcomm_signed_attachment` binding method is now implemented by a helper shared with the data
+  integrity format. As a result the data integrity format also accepts a binding proof whose attachment
+  payload is base64url encoded, in addition to base64. Signed attachments are still produced as base64,
+  so this only widens what is accepted from other agents.
+- 7a1a5c9: Consolidate Ed25519 linked data proof suite contexts to use the bundled JSON-LD context registry and shared VC context URL constants. This removes duplicate suite-local Ed25519 context documents/constants, flattens the Ed25519 signature suite files into the main signature suites folder, and fixes bundled context document loading for URLs with fragments.
+- 8323b52: Migrate Credo's examples, tests, and documentation to the AnonCreds integration subpaths. DIDComm formats, protocols, and related types now use `@credo-ts/anoncreds/didcomm`, while Cheqd and Hedera registries use their `/anoncreds` subpaths.
+  
+  The existing package-root exports remain available, so this caller migration does not require consumers to change their imports yet.
+- 4fed115: Fix `SdJwtVcSignOptions.hashingAlgorithm` being ignored when issuing an SD-JWT VC.
+  
+  `sign()` rejected every value other than `sha-256` and then hardcoded `sha-256` as the hash algorithm of the `@sd-jwt` instance, so the option could only ever hold its documented default. The option is now passed through, meaning an issuer can produce a credential with e.g. `_sd_alg: "sha-512"` and SHA-512 disclosure digests, as allowed by SD-JWT VC. The option type now excludes `sha-1`, matching the W3C VC 2.0 SD-JWT sign options, since `_sd_alg` must name a hash algorithm that is considered secure, and this is now enforced at runtime as well (for both SD-JWT VCs and W3C VC 2.0 credentials/presentations secured with SD-JWT).
+- c69f5ad: Add AnonCreds integration subpaths and canonical W3C proof API exports while preserving and deprecating the existing root exports.
+- 7ba15bc: Fix JSON-LD credential exchanges failing or silently stalling when the issuer's signature suite adds its own `@context` to the credential.
+  
+  A signature suite must add its `@context` to the document it signs when the document does not already carry a compatible one. The holder compared the received credential to the credential request for exact equality, so this required addition was treated as a mismatch. In practice this affected `Ed25519Signature2020`, whose terms are not defined by the `credentials/v1` context, and it was not limited to a hard failure: the same check backs `shouldAutoRespondToCredential`, so with `AutoAcceptCredential.ContentApproved` the exchange stalled without an error.
+  
+  The holder now also accepts the requested credential with the agreed proof type's suite context appended. Any other difference is still rejected.
+- 5725476: Make published TypeScript declarations resolvable without development dependencies. Move `@types/events` to dependencies in `@credo-ts/core`, and `@types/node` and `@types/ws` to dependencies in `@credo-ts/node`. Replace non-portable and self-referential imports in core, and use `AgentDependencies` for the WebSocket type in `@credo-ts/didcomm` instead of importing from undeclared `ws`.
+
 ## 0.7.1
 
 ### Patch Changes
