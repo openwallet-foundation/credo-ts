@@ -676,6 +676,44 @@ export async function waitForBasicMessage(
   })
 }
 
+const isBasicMessageStateChangedEvent = (e: BaseEvent): e is DidCommBasicMessageStateChangedEvent =>
+  e.type === DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged
+
+export function waitForBasicMessageSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    threadId,
+    content,
+    connectionId,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    content?: string
+    connectionId?: string
+    timeoutMs?: number
+  }
+): Promise<DidCommBasicMessage> {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+
+  return firstValueWithStackTrace(
+    observable.pipe(
+      filter(isBasicMessageStateChangedEvent),
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      filter((e) => content === undefined || e.payload.message.content === content),
+      filter((e) => connectionId === undefined || e.payload.basicMessageRecord.connectionId === connectionId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(`DidCommBasicMessageStateChanged event not emitted within specified timeout: {
+  threadId: ${threadId},
+  content: ${content},
+  connectionId: ${connectionId}
+}`)
+      }),
+      map((e) => e.payload.message)
+    )
+  )
+}
+
 export async function waitForRevocationNotification(
   agent: Agent,
   options: {

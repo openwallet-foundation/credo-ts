@@ -95,10 +95,11 @@ services:
       (echo "hire violin basic rare nerve demand sea drastic pet bench glass salad steak between action field diamond recipe bind success erase sleep next mirror"; echo "12345678") | cheqd-noded keys add extra4 --recover --keyring-backend test --home "/tmp/.single-node" &&
       (echo "12345678") | cheqd-noded tx bank multi-send validator cheqd1rnr5jrt4exl0samwj0yegv99jeskl0hsxmcz96 cheqd1yeahnxhfa583wwpm9xt452xzet4xsgsqacgjkr cheqd14y3xeqd2xmhl9sxn8cf974k6nntqrveufqpqrs cheqd10qh2vl0jrax6yh2mzes03cm6vt27vd47geu375 cheqd18kgq9rycwmdluyjtnkv3jn57ttspu639fug2s2 10000000000000000ncheq --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
       until cheqd-noded query bank balances cheqd18kgq9rycwmdluyjtnkv3jn57ttspu639fug2s2 --home "/tmp/.single-node" | grep -q 10000000000000000; do sleep 1; done &&
+      until cheqd-noded query oracle convert-usdc-to-cheq 2000000000000000000usd wma BALANCED --home "/tmp/.single-node" 2>/dev/null | grep -q ncheq; do sleep 1; done &&
       touch /tmp/cheqd-ready &&
       wait $$RUN_TESTNET_PID;
       '
-    # Only healthy once the test accounts are funded, not just when the node accepts connections
+    # Only healthy once the test accounts are funded and the oracle can price DID fees
     healthcheck:
       test: ['CMD-SHELL', 'test -f /tmp/cheqd-ready']
       interval: 5s

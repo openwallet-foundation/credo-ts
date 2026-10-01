@@ -3,11 +3,13 @@ import { Subject } from 'rxjs'
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../../../core/tests/helpers'
+import { type EventReplaySubject, setupEventReplaySubjects } from '../../../../../core/tests/events'
+import { getAgentOptions, makeConnection, waitForBasicMessageSubject } from '../../../../../core/tests/helpers'
 import testLogger from '../../../../../core/tests/logger'
 import { DidCommModule } from '../../../DidCommModule'
 import { MessageSendingError } from '../../../errors'
 import type { DidCommConnectionRecord } from '../../connections'
+import { DidCommBasicMessageEventTypes } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessage } from '../messages'
 import { DidCommBasicMessageRecord } from '../repository'
 
@@ -36,6 +38,8 @@ describe('Basic Messages E2E', () => {
   let aliceAgent: Agent<{ didcomm: DidCommModule }>
   let faberConnection: DidCommConnectionRecord
   let aliceConnection: DidCommConnectionRecord
+  let faberReplay: EventReplaySubject
+  let aliceReplay: EventReplaySubject
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -54,6 +58,10 @@ describe('Basic Messages E2E', () => {
     aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
+    ;[faberReplay, aliceReplay] = setupEventReplaySubjects(
+      [faberAgent, aliceAgent],
+      [DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged]
+    )
     ;[aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
   })
 
@@ -69,7 +77,8 @@ describe('Basic Messages E2E', () => {
     expect(helloRecord.content).toBe('Hello')
 
     testLogger.test('Faber waits for message from Alice')
-    await waitForBasicMessage(faberAgent, {
+    await waitForBasicMessageSubject(faberReplay, {
+      threadId: helloRecord.threadId,
       content: 'Hello',
     })
 
@@ -78,7 +87,8 @@ describe('Basic Messages E2E', () => {
     expect(replyRecord.content).toBe('How are you?')
 
     testLogger.test('Alice waits until she receives message from faber')
-    await waitForBasicMessage(aliceAgent, {
+    await waitForBasicMessageSubject(aliceReplay, {
+      threadId: replyRecord.threadId,
       content: 'How are you?',
     })
   })
@@ -90,7 +100,8 @@ describe('Basic Messages E2E', () => {
     expect(helloRecord.content).toBe('Hello')
 
     testLogger.test('Faber waits for message from Alice')
-    const helloMessage = await waitForBasicMessage(faberAgent, {
+    const helloMessage = await waitForBasicMessageSubject(faberReplay, {
+      threadId: helloRecord.threadId,
       content: 'Hello',
     })
 
@@ -104,7 +115,8 @@ describe('Basic Messages E2E', () => {
     expect(replyRecord.parentThreadId).toBe(helloMessage.id)
 
     testLogger.test('Alice waits until she receives message from faber')
-    const replyMessage = await waitForBasicMessage(aliceAgent, {
+    const replyMessage = await waitForBasicMessageSubject(aliceReplay, {
+      threadId: replyRecord.threadId,
       content: 'How are you?',
     })
     expect(replyMessage.content).toBe('How are you?')
