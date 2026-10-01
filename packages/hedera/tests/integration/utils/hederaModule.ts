@@ -6,13 +6,8 @@ import type { HederaNetwork } from '@hiero-did-sdk/client'
 import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { InMemoryTailsFileService } from '../../../../anoncreds/tests/InMemoryTailsFileService'
-import {
-  HederaAnonCredsRegistry,
-  HederaDidRegistrar,
-  HederaDidResolver,
-  HederaModule,
-  type HederaModuleConfigOptions,
-} from '../../../src'
+import { HederaDidRegistrar, HederaDidResolver, HederaModule, type HederaModuleConfigOptions } from '../../../src'
+import { HederaAnonCredsRegistry } from '../../../src/anoncreds'
 
 export const getHederaModuleConfig = (props: {
   network?: HederaNetwork

@@ -4,8 +4,6 @@ import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionRecord,
   AnonCredsCredentialDefinitionRepository,
-  AnonCredsDidCommCredentialFormatService,
-  AnonCredsDidCommProofFormatService,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
   AnonCredsKeyCorrectnessProofRecord,
@@ -22,6 +20,10 @@ import {
   AnonCredsSchemaRepository,
   AnonCredsVerifierServiceSymbol,
 } from '@credo-ts/anoncreds'
+import {
+  AnonCredsDidCommCredentialFormatService,
+  AnonCredsDidCommProofFormatService,
+} from '@credo-ts/anoncreds/didcomm'
 import type { DidRepository } from '@credo-ts/core'
 import {
   CacheModuleConfig,

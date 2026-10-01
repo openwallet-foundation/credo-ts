@@ -8,14 +8,17 @@ import {
   InMemoryLruCache,
   TypedArrayEncoder,
 } from '@credo-ts/core'
-import type { DidCommAutoAcceptProof, DidCommConnectionRecord, DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import {
   DidCommAutoAcceptCredential,
+  type DidCommAutoAcceptProof,
+  type DidCommConnectionRecord,
   DidCommCredentialEventTypes,
   DidCommCredentialState,
   DidCommCredentialV2Protocol,
+  DidCommDataIntegrityCredentialFormatService,
   DidCommDifPresentationExchangeProofFormatService,
   DidCommModule,
+  type DidCommModuleConfigOptions,
   DidCommProofEventTypes,
   DidCommProofState,
   DidCommProofV2Protocol,
@@ -36,7 +39,6 @@ import {
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import type {
-  AnonCredsDidCommOfferCredentialFormat,
   AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRegisterRevocationRegistryDefinitionOptions,
   AnonCredsRegisterRevocationStatusListOptions,
@@ -49,8 +51,9 @@ import type {
   RegisterRevocationStatusListReturnStateFinished,
   RegisterSchemaReturnStateFinished,
 } from '../src'
-import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService, AnonCredsModule } from '../src'
-import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
+import { AnonCredsModule } from '../src'
+import type { AnonCredsDidCommOfferCredentialFormat } from '../src/didcomm'
+import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService } from '../src/didcomm'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
@@ -76,7 +79,7 @@ export const getAnonCredsModules = ({
   }
   extraDidCommConfig?: Omit<DidCommModuleConfigOptions, 'proofs' | 'credentials'>
 } = {}) => {
-  const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
+  const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService()
   // Add support for resolving pre-created credential definitions and schemas
   const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
     existingCredentialDefinitions: {

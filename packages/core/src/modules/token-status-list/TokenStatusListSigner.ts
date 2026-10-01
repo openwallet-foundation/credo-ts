@@ -1,4 +1,5 @@
-import { Kms, X509Certificate } from '@credo-ts/core'
+import type * as Kms from '../kms'
+import type { X509Certificate } from '../x509'
 
 export interface TokenStatusListSignerDid {
   method: 'did'
