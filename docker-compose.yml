@@ -7,20 +7,20 @@ services:
     ports:
       - '5432:5432'
     healthcheck:
-      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
       timeout: 5s
-      retries: 12
+      retries: 20
 
   redis:
     image: valkey/valkey:9.1.2
     ports:
       - '6379:6379'
     healthcheck:
-      test: ['CMD', 'valkey-cli', 'ping']
+      test: ['CMD-SHELL', 'valkey-cli ping | grep -q PONG']
       interval: 5s
-      timeout: 3s
-      retries: 12
+      timeout: 5s
+      retries: 20
 
   indy-pool:
     build:
@@ -28,14 +28,8 @@ services:
       dockerfile: network/indy-pool.dockerfile
     ports:
       - '9701-9708:9701-9708'
-    # Healthy once the ledger DIDs have been written
-    healthcheck:
-      test: ['CMD-SHELL', 'test -f /tmp/indy-pool-ready']
-      interval: 5s
-      timeout: 3s
-      retries: 36
-      start_period: 30s
-    # Start supervisord in bg, run commands, bring supervisor to fg
+    # Start supervisord in bg, run commands, bring supervisor to fg.
+    # The ready marker is written once the DIDs the tests depend on are on the ledger
     command: >
       /bin/bash -c "
         rm -f /tmp/indy-pool-ready;
@@ -46,6 +40,12 @@ services:
         touch /tmp/indy-pool-ready &&
         /usr/bin/supervisord -n
       "
+    healthcheck:
+      test: ['CMD-SHELL', 'test -f /tmp/indy-pool-ready']
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
 
   cheqd-ledger:
     image: ghcr.io/cheqd/cheqd-node:4.2.1
@@ -53,13 +53,6 @@ services:
     platform: linux/amd64
     ports:
       - '26657:26657'
-    # Healthy once the test accounts have been funded
-    healthcheck:
-      test: ['CMD-SHELL', 'test -f /tmp/cheqd-ledger-ready']
-      interval: 5s
-      timeout: 3s
-      retries: 36
-      start_period: 30s
     command: >
       /bin/bash -c '
       mock-price-feed &
@@ -102,15 +95,15 @@ services:
       (echo "lobster pizza cost soft else rather rich find rose pride catch bar cube switch help joy stable dirt stumble voyage bind cabbage cram exist"; echo "12345678") | cheqd-noded keys add extra2 --recover --keyring-backend test --home "/tmp/.single-node" &&
       (echo "state online hedgehog turtle daring lab panda bottom agent pottery mixture venue letter decade bridge win snake mandate trust village emerge awkward fire mimic"; echo "12345678") | cheqd-noded keys add extra3 --recover --keyring-backend test --home "/tmp/.single-node" &&
       (echo "hire violin basic rare nerve demand sea drastic pet bench glass salad steak between action field diamond recipe bind success erase sleep next mirror"; echo "12345678") | cheqd-noded keys add extra4 --recover --keyring-backend test --home "/tmp/.single-node" &&
-      (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd1rnr5jrt4exl0samwj0yegv99jeskl0hsxmcz96 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
-      sleep 2 &&
-      (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd1yeahnxhfa583wwpm9xt452xzet4xsgsqacgjkr 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
-      sleep 2 &&
-      (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd14y3xeqd2xmhl9sxn8cf974k6nntqrveufqpqrs 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
-      sleep 2 &&
-      (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd10qh2vl0jrax6yh2mzes03cm6vt27vd47geu375 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
-      sleep 2 &&
-      (echo "12345678") | cheqd-noded tx bank send $(cheqd-noded keys show validator -a --keyring-backend test --home "/tmp/.single-node") cheqd18kgq9rycwmdluyjtnkv3jn57ttspu639fug2s2 10000000000000000ncheq --from validator --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
+      (echo "12345678") | cheqd-noded tx bank multi-send validator cheqd1rnr5jrt4exl0samwj0yegv99jeskl0hsxmcz96 cheqd1yeahnxhfa583wwpm9xt452xzet4xsgsqacgjkr cheqd14y3xeqd2xmhl9sxn8cf974k6nntqrveufqpqrs cheqd10qh2vl0jrax6yh2mzes03cm6vt27vd47geu375 cheqd18kgq9rycwmdluyjtnkv3jn57ttspu639fug2s2 10000000000000000ncheq --gas auto --gas-adjustment=1.8 --fees 10000000000ncheq --chain-id testnet --keyring-backend test --home "/tmp/.single-node" -y &&
+      until cheqd-noded query bank balances cheqd18kgq9rycwmdluyjtnkv3jn57ttspu639fug2s2 --home "/tmp/.single-node" | grep -q 10000000000000000; do sleep 1; done &&
       touch /tmp/cheqd-ledger-ready &&
       wait $$RUN_TESTNET_PID;
-      ' 
+      '
+    # Only healthy once the test accounts are funded, not just when the node accepts connections
+    healthcheck:
+      test: ['CMD-SHELL', 'test -f /tmp/cheqd-ledger-ready']
+      interval: 5s
+      timeout: 5s
+      retries: 120
+      start_period: 20s
