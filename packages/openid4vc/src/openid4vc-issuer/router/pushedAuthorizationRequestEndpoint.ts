@@ -3,6 +3,7 @@ import type { HttpMethod, ParsePushedAuthorizationRequestResult, RequestLike } f
 import {
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
+  PkceCodeChallengeMethod,
   pushedAuthorizationRequestUriPrefix,
 } from '@openid4vc/oauth2'
 import { addSecondsToDate } from '@openid4vc/utils'
@@ -24,7 +25,7 @@ import {
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
-import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../repository'
+import { type OpenId4VcIssuanceSessionPkce, OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../repository'
 import { getClientAttestationToVerify } from '../util/walletAttestation'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
@@ -56,6 +57,11 @@ export async function handlePushedAuthorizationRequest(
       error_description: `Missing required 'redirect_uri' parameter.`,
     })
   }
+
+  const walletPkce = getPkceFromAuthorizationRequest(
+    parsedAuthorizationRequest.authorizationRequest,
+    config.pkceRequired
+  )
 
   const allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
   if (!allowedStates.includes(issuanceSession.state)) {
@@ -126,6 +132,11 @@ export async function handlePushedAuthorizationRequest(
       // If client attestation is provided at the start, it's required from now on.
       required: true,
     }
+  }
+
+  // Bind the code challenge to the session, so the code verifier is checked at the token endpoint
+  if (walletPkce) {
+    issuanceSession.pkce = walletPkce
   }
 
   const offeredCredentialConfigurations = getOfferedCredentials(
@@ -273,6 +284,41 @@ export async function handlePushedAuthorizationRequest(
   )
 
   return { pushedAuthorizationResponse }
+}
+
+function getPkceFromAuthorizationRequest(
+  authorizationRequest: { code_challenge?: string; code_challenge_method?: string },
+  pkceRequired: boolean
+): OpenId4VcIssuanceSessionPkce | undefined {
+  const codeChallenge = authorizationRequest.code_challenge
+  // Defaults to 'plain' if not provided (RFC 7636 section 4.3)
+  const codeChallengeMethod = authorizationRequest.code_challenge_method ?? PkceCodeChallengeMethod.Plain
+
+  if (!codeChallenge) {
+    if (pkceRequired) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidRequest,
+        error_description: `Missing required 'code_challenge' parameter. PKCE with code challenge method '${PkceCodeChallengeMethod.S256}' is required.`,
+      })
+    }
+
+    return undefined
+  }
+
+  const allowedCodeChallengeMethods: string[] = pkceRequired
+    ? [PkceCodeChallengeMethod.S256]
+    : Object.values(PkceCodeChallengeMethod)
+  if (!allowedCodeChallengeMethods.includes(codeChallengeMethod)) {
+    throw new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.InvalidRequest,
+      error_description: `Unsupported 'code_challenge_method' '${codeChallengeMethod}'. Supported values are '${allowedCodeChallengeMethods.join("', '")}'.`,
+    })
+  }
+
+  return {
+    codeChallenge,
+    codeChallengeMethod: codeChallengeMethod as PkceCodeChallengeMethod,
+  }
 }
 
 export function configurePushedAuthorizationRequestEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {

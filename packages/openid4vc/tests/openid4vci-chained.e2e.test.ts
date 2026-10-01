@@ -1097,4 +1097,113 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     await issuerTenant.endSession()
   })
+
+  it('requires PKCE with S256 on the pushed authorization request when pkceRequired is enabled', async () => {
+    issuer = (await createAgentFromModules(
+      {
+        inMemory: new InMemoryWalletModule(),
+        openid4vc: new OpenId4VcModule({
+          app: expressApp,
+          issuer: {
+            baseUrl: issuanceBaseUrl,
+            credentialRequestToCredentialMapper,
+            pkceRequired: true,
+          },
+        }),
+        tenants: new TenantsModule(),
+      },
+      '96213c3d7fc8d4d6754c7a0fd969598g',
+      global.fetch
+    )) as unknown as typeof issuer
+    issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
+
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+      authorizationServerConfigs: [
+        {
+          type: 'chained',
+          issuer: 'http://localhost:4747',
+          clientAuthentication: {
+            type: 'clientSecret',
+            clientId: 'issuer-client',
+            clientSecret: 'issuer-secret',
+          },
+          scopesMapping: {
+            UniversityDegreeCredential: ['openid'],
+          },
+        },
+      ],
+    })
+
+    const { issuanceSession } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      authorizationCodeFlowConfig: {
+        authorizationServerUrl: 'http://localhost:4747',
+      },
+    })
+
+    const idpApp = express()
+    idpApp.get('/.well-known/oauth-authorization-server', (_req, res) =>
+      res.json({
+        issuer: 'http://localhost:4747',
+        authorization_endpoint: 'http://localhost:4747/authorize',
+        token_endpoint: 'http://localhost:4747/token',
+      } satisfies AuthorizationServerMetadata)
+    )
+    const clearIdpNock = setupNockToExpress('http://localhost:4747', idpApp)
+
+    const sendPushedAuthorizationRequest = (pkce: { code_challenge?: string; code_challenge_method?: string }) =>
+      fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/par`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: 'wallet',
+          response_type: 'code',
+          redirect_uri: 'http://localhost:5757/redirect',
+          scope: 'UniversityDegreeCredential',
+          state: 'wallet-state',
+          issuer_state: issuanceSession.authorization?.issuerState,
+          ...pkce,
+        }),
+      })
+
+    const missingChallengeResponse = await sendPushedAuthorizationRequest({})
+    expect(missingChallengeResponse.status).toBe(400)
+    expect(await missingChallengeResponse.json()).toMatchObject({
+      error: 'invalid_request',
+      error_description:
+        "Missing required 'code_challenge' parameter. PKCE with code challenge method 'S256' is required.",
+    })
+
+    const plainChallengeResponse = await sendPushedAuthorizationRequest({
+      code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      code_challenge_method: 'plain',
+    })
+    expect(plainChallengeResponse.status).toBe(400)
+    expect(await plainChallengeResponse.json()).toMatchObject({
+      error: 'invalid_request',
+      error_description: "Unsupported 'code_challenge_method' 'plain'. Supported values are 'S256'.",
+    })
+
+    const s256ChallengeResponse = await sendPushedAuthorizationRequest({
+      code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      code_challenge_method: 'S256',
+    })
+    expect(s256ChallengeResponse.ok).toBe(true)
+
+    const updatedIssuanceSession = await issuerTenant.openid4vc.issuer.getIssuanceSessionById(issuanceSession.id)
+    expect(updatedIssuanceSession.pkce).toEqual({
+      codeChallenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      codeChallengeMethod: 'S256',
+    })
+
+    clearIdpNock()
+
+    await issuerTenant.endSession()
+  })
 })

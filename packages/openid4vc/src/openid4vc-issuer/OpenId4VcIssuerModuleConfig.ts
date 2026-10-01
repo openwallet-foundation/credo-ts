@@ -90,6 +90,15 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   dpopRequired?: boolean
 
   /**
+   * Whether PKCE with the `S256` code challenge method is required for authorization code flows that
+   * start with a pushed authorization request. If PKCE is not required, but used by a client, the
+   * `code_verifier` is still verified at the token endpoint.
+   *
+   * @default false
+   */
+  pkceRequired?: boolean
+
+  /**
    * Whether wallet attestations are required for all issuance sessions. This value can be overridden when creating
    * a credential offer, but will have effect for dynamic issuance sessions. If wallet attestations are not required
    * but used by a client in the first request to credo,
@@ -392,6 +401,17 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get dpopRequired(): boolean {
     return this.options.dpopRequired ?? false
+  }
+
+  /**
+   * Whether PKCE with the `S256` code challenge method is required for authorization code flows that
+   * start with a pushed authorization request. If PKCE is not required, but used by a client, the
+   * `code_verifier` is still verified at the token endpoint.
+   *
+   * @default false
+   */
+  public get pkceRequired(): boolean {
+    return this.options.pkceRequired ?? false
   }
 
   /**
