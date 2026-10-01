@@ -1,9 +1,10 @@
 import type { DidCommConnectionRecord } from '../../didcomm/src'
 
-import { DidCommHandshakeProtocol } from '../../didcomm/src'
+import { DidCommBasicMessageEventTypes, DidCommHandshakeProtocol } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
 
-import { getAgentOptions, waitForBasicMessage } from './helpers'
+import { type EventReplaySubject, setupEventReplaySubjects } from './events'
+import { getAgentOptions, waitForBasicMessageSubject } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 const aliceAgentOptions = getAgentOptions(
@@ -30,6 +31,7 @@ describe('agents', () => {
   let bobAgent: Agent
   let aliceConnection: DidCommConnectionRecord
   let bobConnection: DidCommConnectionRecord
+  let bobReplay: EventReplaySubject
 
   afterAll(async () => {
     await bobAgent.shutdown()
@@ -44,6 +46,7 @@ describe('agents', () => {
 
     await aliceAgent.initialize()
     await bobAgent.initialize()
+    ;[bobReplay] = setupEventReplaySubjects([bobAgent], [DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged])
 
     const aliceBobOutOfBandRecord = await aliceAgent.didcomm.oob.createInvitation({
       handshakeProtocols: [DidCommHandshakeProtocol.Connections],
@@ -66,9 +69,10 @@ describe('agents', () => {
 
   test('send a message to connection', async () => {
     const message = 'hello, world'
-    await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, message)
+    const { threadId } = await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, message)
 
-    const basicMessage = await waitForBasicMessage(bobAgent, {
+    const basicMessage = await waitForBasicMessageSubject(bobReplay, {
+      threadId,
       content: message,
     })
 

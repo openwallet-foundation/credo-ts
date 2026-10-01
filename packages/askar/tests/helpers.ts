@@ -2,10 +2,11 @@ import type { Agent, InitConfig } from '@credo-ts/core'
 import { LogLevel, utils } from '@credo-ts/core'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import path from 'path'
-import { waitForBasicMessage } from '../../core/tests/helpers'
+import { setupEventReplaySubjects } from '../../core/tests/events'
+import { waitForBasicMessageSubject } from '../../core/tests/helpers'
 import { TestLogger } from '../../core/tests/logger'
 import type { DidCommModuleConfigOptions } from '../../didcomm/src'
-import { DidCommHandshakeProtocol, DidCommModule } from '../../didcomm/src'
+import { DidCommBasicMessageEventTypes, DidCommHandshakeProtocol, DidCommModule } from '../../didcomm/src'
 import { agentDependencies } from '../../node/src'
 import type { AskarPostgresStorageConfig } from '../src'
 import { AskarModule } from '../src/AskarModule'
@@ -125,10 +126,16 @@ export async function e2eTest(
   )
   const senderConnection = await senderAgent.didcomm.connections.returnWhenIsConnected(senderConnectionAtReceiver.id)
 
-  const message = 'hello, world'
-  await senderAgent.didcomm.basicMessages.sendMessage(senderConnection.id, message)
+  const [receiverReplay] = setupEventReplaySubjects(
+    [receiverAgent],
+    [DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged]
+  )
 
-  const basicMessage = await waitForBasicMessage(receiverAgent, {
+  const message = 'hello, world'
+  const { threadId } = await senderAgent.didcomm.basicMessages.sendMessage(senderConnection.id, message)
+
+  const basicMessage = await waitForBasicMessageSubject(receiverReplay, {
+    threadId,
     content: message,
   })
 
