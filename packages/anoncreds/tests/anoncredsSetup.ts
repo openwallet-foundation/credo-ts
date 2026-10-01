@@ -399,7 +399,11 @@ export async function setupAnonCredsTests<
   setupSubjectTransports(verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent])
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
     verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
-    [DidCommCredentialEventTypes.DidCommCredentialStateChanged, DidCommProofEventTypes.ProofStateChanged]
+    [
+      DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+      DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
+      DidCommProofEventTypes.ProofStateChanged,
+    ]
   )
 
   await issuerAgent.initialize()

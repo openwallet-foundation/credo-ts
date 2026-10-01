@@ -6,7 +6,7 @@ import {
   DidCommCredentialState,
 } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../../../../../core/tests'
-import { testLogger, waitForCredentialRecord, waitForCredentialRecordSubject } from '../../../../../../core/tests'
+import { testLogger, waitForCredentialRecordSubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 import { DidCommCredentialV1Preview } from '../messages'
@@ -74,13 +74,13 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       testLogger.test('Alice waits for credential from Faber')
-      let aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: DidCommCredentialState.CredentialReceived,
       })
 
       testLogger.test('Faber waits for credential ack from Alice')
-      aliceCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      aliceCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: aliceCredentialRecord.threadId,
         state: DidCommCredentialState.Done,
       })
@@ -388,7 +388,7 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       testLogger.test('Faber waits for credential proposal from Alice')
-      faberCredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {
+      faberCredentialExchangeRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: aliceExchangeCredentialRecord.threadId,
         state: DidCommCredentialState.ProposalReceived,
       })

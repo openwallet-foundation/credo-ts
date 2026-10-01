@@ -38,10 +38,7 @@ import {
   OutOfBandDidCommService,
 } from '../../didcomm/src'
 import type { DidCommModuleConfigOptions } from '../../didcomm/src/DidCommModuleConfig'
-import type {
-  DidCommTrustPingReceivedEvent,
-  TrustPingResponseReceivedEvent,
-} from '../../didcomm/src/modules/connections/DidCommTrustPingEvents'
+import type { TrustPingResponseReceivedEvent } from '../../didcomm/src/modules/connections/DidCommTrustPingEvents'
 import { DidCommOutOfBandRole } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
 import { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
@@ -314,8 +311,6 @@ const isConnectionStateChangedEvent = (e: BaseEvent): e is DidCommConnectionStat
   e.type === DidCommConnectionEventTypes.DidCommConnectionStateChanged
 const isConnectionDidRotatedEvent = (e: BaseEvent): e is DidCommConnectionDidRotatedEvent =>
   e.type === DidCommConnectionEventTypes.DidCommConnectionDidRotated
-const isTrustPingReceivedEvent = (e: BaseEvent): e is DidCommTrustPingReceivedEvent =>
-  e.type === DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent
 const isTrustPingResponseReceivedEvent = (e: BaseEvent): e is TrustPingResponseReceivedEvent =>
   e.type === DidCommTrustPingEventTypes.DidCommTrustPingResponseReceivedEvent
 const isAgentMessageProcessedEvent = (e: BaseEvent): e is DidCommMessageProcessedEvent =>
@@ -364,62 +359,6 @@ export function waitForProofExchangeRecordSubject(
   )
 }
 
-export async function waitForTrustPingReceivedEvent(
-  agent: Agent,
-  options: {
-    threadId?: string
-    timeoutMs?: number
-  }
-) {
-  const observable = agent.events.observable<DidCommTrustPingReceivedEvent>(
-    DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent
-  )
-
-  return waitForTrustPingReceivedEventSubject(observable, options)
-}
-
-export function waitForTrustPingReceivedEventSubject(
-  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
-  {
-    threadId,
-    timeoutMs = 10000,
-  }: {
-    threadId?: string
-    timeoutMs?: number
-  }
-) {
-  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
-  return firstValueWithStackTrace(
-    observable.pipe(
-      filter(isTrustPingReceivedEvent),
-      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
-      timeout(timeoutMs),
-      catchError(() => {
-        throw new Error(
-          `TrustPingReceivedEvent event not emitted within specified timeout: ${timeoutMs}
-  threadId: ${threadId},
-}`
-        )
-      }),
-      map((e) => e.payload.message)
-    )
-  )
-}
-
-export async function waitForTrustPingResponseReceivedEvent(
-  agent: Agent,
-  options: {
-    threadId?: string
-    timeoutMs?: number
-  }
-) {
-  const observable = agent.events.observable<TrustPingResponseReceivedEvent>(
-    DidCommTrustPingEventTypes.DidCommTrustPingResponseReceivedEvent
-  )
-
-  return waitForTrustPingResponseReceivedEventSubject(observable, options)
-}
-
 export function waitForTrustPingResponseReceivedEventSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
   {
@@ -446,19 +385,6 @@ export function waitForTrustPingResponseReceivedEventSubject(
       map((e) => e.payload.message)
     )
   )
-}
-
-export async function waitForAgentMessageProcessedEvent(
-  agent: Agent,
-  options: {
-    threadId?: string
-    messageType?: string
-    timeoutMs?: number
-  }
-) {
-  const observable = agent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed)
-
-  return waitForAgentMessageProcessedEventSubject(observable, options)
 }
 
 export async function firstValueWithStackTrace<T>(source: Observable<T>): Promise<T> {
@@ -620,80 +546,49 @@ export function waitForConnectionRecordSubject(
   )
 }
 
-export async function waitForConnectionRecord(
-  agent: Agent,
-  options: {
+const isBasicMessageStateChangedEvent = (e: BaseEvent): e is DidCommBasicMessageStateChangedEvent =>
+  e.type === DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged
+
+export function waitForBasicMessageSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    threadId,
+    content,
+    connectionId,
+    timeoutMs = 10000,
+  }: {
     threadId?: string
-    state?: DidCommDidExchangeState
-    previousState?: DidCommDidExchangeState | null
+    content?: string
+    connectionId?: string
     timeoutMs?: number
   }
-) {
-  const observable = agent.events.observable<DidCommConnectionStateChangedEvent>(
-    DidCommConnectionEventTypes.DidCommConnectionStateChanged
-  )
-  return waitForConnectionRecordSubject(observable, options)
-}
-
-export async function waitForDidRotate(
-  agent: Agent,
-  options: {
-    threadId?: string
-    state?: DidCommDidExchangeState
-    timeoutMs?: number
-  }
-) {
-  const observable = agent.events.observable<DidCommConnectionDidRotatedEvent>(
-    DidCommConnectionEventTypes.DidCommConnectionDidRotated
-  )
-  return waitForDidRotateSubject(observable, options)
-}
-
-export async function waitForBasicMessage(
-  agent: Agent,
-  { content, connectionId }: { content?: string; connectionId?: string }
 ): Promise<DidCommBasicMessage> {
-  return new Promise((resolve) => {
-    const listener = (event: DidCommBasicMessageStateChangedEvent) => {
-      const contentMatches = content === undefined || event.payload.message.content === content
-      const connectionIdMatches =
-        connectionId === undefined || event.payload.basicMessageRecord.connectionId === connectionId
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
 
-      if (contentMatches && connectionIdMatches) {
-        agent.events.off<DidCommBasicMessageStateChangedEvent>(
-          DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
-          listener
-        )
-
-        resolve(event.payload.message)
-      }
-    }
-
-    agent.events.on<DidCommBasicMessageStateChangedEvent>(
-      DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
-      listener
+  return firstValueWithStackTrace(
+    observable.pipe(
+      filter(isBasicMessageStateChangedEvent),
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      filter((e) => content === undefined || e.payload.message.content === content),
+      filter((e) => connectionId === undefined || e.payload.basicMessageRecord.connectionId === connectionId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(`DidCommBasicMessageStateChanged event not emitted within specified timeout: {
+  threadId: ${threadId},
+  content: ${content},
+  connectionId: ${connectionId}
+}`)
+      }),
+      map((e) => e.payload.message)
     )
-  })
-}
-
-export async function waitForRevocationNotification(
-  agent: Agent,
-  options: {
-    threadId?: string
-    timeoutMs?: number
-  }
-) {
-  const observable = agent.events.observable<DidCommRevocationNotificationReceivedEvent>(
-    DidCommCredentialEventTypes.DidCommRevocationNotificationReceived
   )
-
-  return waitForRevocationNotificationSubject(observable, options)
 }
+
+const isRevocationNotificationReceivedEvent = (e: BaseEvent): e is DidCommRevocationNotificationReceivedEvent =>
+  e.type === DidCommCredentialEventTypes.DidCommRevocationNotificationReceived
 
 export function waitForRevocationNotificationSubject(
-  subject:
-    | ReplaySubject<DidCommRevocationNotificationReceivedEvent>
-    | Observable<DidCommRevocationNotificationReceivedEvent>,
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
   {
     threadId,
     timeoutMs = 10000,
@@ -705,6 +600,7 @@ export function waitForRevocationNotificationSubject(
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
   return firstValueWithStackTrace(
     observable.pipe(
+      filter(isRevocationNotificationReceivedEvent),
       filter((e) => threadId === undefined || e.payload.credentialExchangeRecord.threadId === threadId),
       timeout(timeoutMs),
       catchError(() => {
