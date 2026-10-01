@@ -406,6 +406,12 @@ export class DidCommMessageSender {
             return false
           }
         })
+      if (!kaVm && useV2ForServiceOrder) {
+        throw new MessageSendingError(
+          `Unable to determine DIDComm v2 sender key for did ${connection.did}, no keyAgreement key`,
+          { outboundMessageContext }
+        )
+      }
       return toAbsoluteDidUrl(didDocument.id, kaVm?.id ?? senderVerificationMethod.verificationMethod.id)
     })()
 
