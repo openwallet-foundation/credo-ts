@@ -81,19 +81,39 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   requestUriExpiresInSeconds?: number
 
   /**
-   * Whether DPoP is required for all issuance sessions. This value can be overridden when creating
-   * a credential offer. If dpop is not required, but used by a client in the first request to credo,
-   * DPoP will be required going forward.
+   * Whether DPoP is required for all issuance sessions. If dpop is not required, but used by a client in the
+   * first request to credo, DPoP will be required going forward.
+   *
+   * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
+   * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
    *
    * @default false
    */
   dpopRequired?: boolean
 
   /**
-   * Whether wallet attestations are required for all issuance sessions. This value can be overridden when creating
-   * a credential offer, but will have effect for dynamic issuance sessions. If wallet attestations are not required
-   * but used by a client in the first request to credo,
-   * wallet attestations will be required going forward.
+   * Whether PKCE is required for authorization requests (pushed authorization requests and authorization
+   * challenge requests). When enabled, authorization requests without a `code_challenge` are rejected. When
+   * a client provides a `code_challenge` it is always verified at the token endpoint, regardless of this option.
+   *
+   * This value can be overridden per issuance session when creating a credential offer (`authorization.requirePkce`)
+   * or in the `getDynamicIssuanceSession` callback (`requirePkce`).
+   *
+   * Only the `S256` code challenge method is supported.
+   *
+   * NOTE: the default will change to `true` in 0.8.0.
+   *
+   * @default false
+   */
+  pkceRequired?: boolean
+
+  /**
+   * Whether wallet attestations are required for all issuance sessions. If wallet attestations are not required
+   * but used by a client in the first request to credo, wallet attestations will be required going forward.
+   *
+   * This value can be overridden per issuance session when creating a credential offer
+   * (`authorization.requireWalletAttestation`) or in the `getDynamicIssuanceSession` callback
+   * (`requireWalletAttestation`).
    *
    * @default false
    */
@@ -384,9 +404,11 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
-   * Whether DPoP is required for all issuance sessions. This value can be overridden when creating
-   * a credential offer. If dpop is not required, but used by a client in the first request to credo,
-   * DPoP will be required going forward.
+   * Whether DPoP is required for all issuance sessions. If dpop is not required, but used by a client in the
+   * first request to credo, DPoP will be required going forward.
+   *
+   * This value can be overridden per issuance session when creating a credential offer (`authorization.requireDpop`)
+   * or in the `getDynamicIssuanceSession` callback (`requireDpop`).
    *
    * @default false
    */
@@ -395,10 +417,22 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
-   * Whether wallet attestations are required for all issuance sessions. This value can be overridden when creating
-   * a credential offer, but will have effect for dynamic issuance sessions. If wallet attestations are not required
-   * but used by a client in the first request to credo,
-   * wallet attestations will be required going forward.
+   * Whether PKCE is required for authorization requests. When a client provides
+   * a `code_challenge` it is always verified, regardless of this option.
+   *
+   * @default false
+   */
+  public get pkceRequired(): boolean {
+    return this.options.pkceRequired ?? false
+  }
+
+  /**
+   * Whether wallet attestations are required for all issuance sessions. If wallet attestations are not required
+   * but used by a client in the first request to credo, wallet attestations will be required going forward.
+   *
+   * This value can be overridden per issuance session when creating a credential offer
+   * (`authorization.requireWalletAttestation`) or in the `getDynamicIssuanceSession` callback
+   * (`requireWalletAttestation`).
    *
    * @default false
    */
