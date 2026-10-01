@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- 194cf1e: Make published TypeScript declarations resolvable without development dependencies. Move `@types/events` to dependencies in `@credo-ts/core`, and `@types/node` and `@types/ws` to dependencies in `@credo-ts/node`. Replace non-portable and self-referential imports in core, and use `AgentDependencies` for the WebSocket type in `@credo-ts/didcomm` instead of importing from undeclared `ws`.
+
+### Patch Changes
+
+- fbb6517: Allow HTTP DIDComm routes to be hosted on an externally managed Express application and make listener startup failures observable.
+- 526a989: feat: support node 26
+- Updated dependencies [0b9531a]
+- Updated dependencies [798c401]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [fac9757]
+- Updated dependencies [3d4b386]
+- Updated dependencies [526a989]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [526a989]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+  - @credo-ts/didcomm@0.8.0
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes
