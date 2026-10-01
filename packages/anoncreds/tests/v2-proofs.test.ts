@@ -1,4 +1,4 @@
-import type { AnonCredsRequestProofFormat } from '@credo-ts/anoncreds'
+import type { AnonCredsRequestProofFormat } from '@credo-ts/anoncreds/didcomm'
 import type { DidCommCredentialExchangeRecord } from '@credo-ts/didcomm'
 import {
   DidCommPresentationV2Message,
