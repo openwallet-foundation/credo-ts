@@ -19,7 +19,7 @@ import {
   Kms,
   TypedArrayEncoder,
 } from '@credo-ts/core'
-import type { Jwk } from '@openid4vc/oauth2'
+import { type Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   extractEncryptionJwkFromJwks,
   getOpenid4vpClientId,
@@ -99,7 +99,26 @@ export class OpenId4VpHolderService {
     const dcqlQuery = this.dcqlService.validateDcqlQuery(dcql)
     const dcqlQueryResult = await this.dcqlService.getCredentialsForRequest(agentContext, dcqlQuery)
 
-    // for each transaction data entry, get all credentials that can fore used to sign the respective transaction
+    // Each credential id in a transaction data entry MUST reference a credential query in the dcql query
+    const credentialQueryIds = dcqlQuery.credentials.map((credential) => credential.id)
+    const unknownCredentialIdErrors = (transactionData ?? []).flatMap((entry) => {
+      const unknownCredentialIds = entry.transactionData.credential_ids.filter(
+        (credentialId) => !credentialQueryIds.includes(credentialId)
+      )
+      return unknownCredentialIds.length > 0
+        ? [
+            `entry with index ${entry.transactionDataIndex} references ${unknownCredentialIds.map((id) => `'${id}'`).join(', ')}`,
+          ]
+        : []
+    })
+    if (unknownCredentialIdErrors.length > 0) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidTransactionData,
+        error_description: `Transaction data references credential ids that are not present in the dcql query: ${unknownCredentialIdErrors.join('; ')}.`,
+      })
+    }
+
+    // for each transaction data entry, get all credentials that can be used to sign the respective transaction
     const matchedTransactionData = transactionData?.map((entry) => ({
       entry,
       matchedCredentialIds: entry.transactionData.credential_ids.filter(

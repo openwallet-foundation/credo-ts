@@ -750,6 +750,70 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
   })
 
+  it('holder rejects transaction data with credential ids that are not present in the dcql query', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: { commonName: 'Credo', countryName: 'NL' },
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
+    })
+
+    const rawCertificate = certificate.toString('base64')
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
+
+    const { authorizationRequest } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+      verifierId: openIdVerifier.verifierId,
+      responseMode: 'direct_post.jwt',
+      requestSigner: {
+        method: 'x5c',
+        x5c: [certificate],
+      },
+      transactionData: [
+        {
+          type: 'OpenBadgeTx',
+          credential_ids: ['UnknownCredentialId', 'OpenBadgeCredentialDescriptor', 'OtherUnknownCredentialId'],
+          transaction_data_hashes_alg: ['sha-256'],
+        },
+        {
+          type: 'OpenBadgeTx',
+          credential_ids: ['OpenBadgeCredentialDescriptor'],
+          transaction_data_hashes_alg: ['sha-256'],
+        },
+        {
+          type: 'OpenBadgeTx',
+          credential_ids: ['ThirdUnknownCredentialId'],
+          transaction_data_hashes_alg: ['sha-256'],
+        },
+      ],
+      dcql: {
+        query: {
+          credentials: [
+            {
+              id: 'OpenBadgeCredentialDescriptor',
+              format: 'dc+sd-jwt',
+              meta: { vct_values: ['OpenBadgeCredential'] },
+            },
+          ],
+        },
+      },
+      version: 'v1',
+    })
+
+    await expect(
+      holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+    ).rejects.toMatchObject({
+      errorResponse: {
+        error: 'invalid_transaction_data',
+        error_description:
+          "Transaction data references credential ids that are not present in the dcql query: entry with index 0 references 'UnknownCredentialId', 'OtherUnknownCredentialId'; entry with index 2 references 'ThirdUnknownCredentialId'.",
+      },
+    })
+  })
+
   it('e2e flow (jarm) with verifier endpoints verifying a sd-jwt-vc with selective disclosure (transaction data)', async () => {
     const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
