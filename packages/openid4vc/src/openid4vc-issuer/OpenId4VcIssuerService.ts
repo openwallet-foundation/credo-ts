@@ -302,6 +302,12 @@ export class OpenId4VcIssuerService {
             required: true,
           }
         : undefined,
+      pkce:
+        authorization?.requirePkce !== undefined
+          ? {
+              required: authorization.requirePkce,
+            }
+          : undefined,
       chainedIdentity: chainedAuthorizationServerConfig
         ? {
             externalAuthorizationServerUrl: chainedAuthorizationServerConfig.issuer,
@@ -537,12 +543,17 @@ export class OpenId4VcIssuerService {
       sessionOptions.expirationInSeconds ?? this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds
     )
 
-    // Wallet attestation and refresh tokens only apply to the internal authorization flows. DPoP can
+    // Wallet attestation, PKCE and refresh tokens only apply to the internal authorization flows. DPoP can
     // be configured for the internal flows through the session options, or for the legacy `external`
     // flow fallback through the `requireDpop` override.
     const internalOptions =
       sessionOptions.authorizationFlow === 'external'
-        ? { requireDpop: options.requireDpop, requireWalletAttestation: undefined, generateRefreshTokens: undefined }
+        ? {
+            requireDpop: options.requireDpop,
+            requireWalletAttestation: undefined,
+            requirePkce: undefined,
+            generateRefreshTokens: undefined,
+          }
         : sessionOptions
 
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
@@ -562,6 +573,7 @@ export class OpenId4VcIssuerService {
       authorization: sessionAuthorization,
       dpop: internalOptions.requireDpop ? { required: true } : undefined,
       walletAttestation: internalOptions.requireWalletAttestation ? { required: true } : undefined,
+      pkce: internalOptions.requirePkce !== undefined ? { required: internalOptions.requirePkce } : undefined,
       chainedIdentity,
       presentation,
       issuanceMetadata: sessionOptions.issuanceMetadata,
