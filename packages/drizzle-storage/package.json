@@ -124,7 +124,7 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "drizzle-orm": "^0.44.6"
+    "drizzle-orm": "^0.45.3"
   },
   "devDependencies": {
     "@libsql/client": "^0.17.2",
