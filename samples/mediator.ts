@@ -77,6 +77,8 @@ const agent = new Agent({
   },
 })
 
+await agent.initialize()
+
 // Allow to create invitation, no other way to ask for invitation yet
 httpInboundTransport.app.get('/invitation', async (req, res) => {
   if (typeof req.query.c_i === 'string') {
@@ -88,8 +90,6 @@ httpInboundTransport.app.get('/invitation', async (req, res) => {
     res.send(outOfBandInvitation.toUrl({ domain: `${httpEndpoint}/invitation` }))
   }
 })
-
-await agent.initialize()
 
 // When an 'upgrade' to WS is made on our http server, we forward the
 // request to the WS server

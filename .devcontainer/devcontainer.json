@@ -7,7 +7,7 @@
   "containerEnv": {
     "COREPACK_ENABLE_STRICT": "1"
   },
-  "postCreateCommand": "sudo chown node node_modules && sudo sudo corepack enable && yes | corepack prepare pnpm --activate && yes | pnpm install --frozen-lockfile",
+  "postCreateCommand": "sudo chown node node_modules && sudo corepack enable && yes | corepack prepare pnpm --activate && yes | pnpm install --frozen-lockfile",
   "customizations": {
     "vscode": {
       "extensions": ["esbenp.prettier-vscode"]
