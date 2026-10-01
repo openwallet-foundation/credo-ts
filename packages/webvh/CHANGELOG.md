@@ -1,5 +1,30 @@
 # @credo-ts/webvh
 
+## 0.8.0
+
+### Minor Changes
+
+- 1c18cf8: Expose the canonical AnonCreds W3C proof APIs from `@credo-ts/anoncreds`, as established by the v0.7.x API migration. Remove the deprecated AnonCreds DIDComm formats and protocols from the package root and expose them through `@credo-ts/anoncreds/didcomm`, while keeping DIDComm as a required AnonCreds dependency. Make AnonCreds an optional peer dependency of Cheqd and WebVH and expose their registries only through their `/anoncreds` subpaths. Consumers using those registries must install `@credo-ts/anoncreds` explicitly.
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+
+### Patch Changes
+
+- 526a989: feat: support node 26
+- Updated dependencies [61d7d0f]
+- Updated dependencies [0b9531a]
+- Updated dependencies [798c401]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [1c18cf8]
+- Updated dependencies [526a989]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [526a989]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [3d4b386]
+  - @credo-ts/anoncreds@0.8.0
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes
