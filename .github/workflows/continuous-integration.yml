@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - feat/extract-didcomm-from-node
   push:
     branches:
       - main
