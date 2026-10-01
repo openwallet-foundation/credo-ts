@@ -76,7 +76,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     }
 
     const socketId = `${endpoint}-${connectionId}`
-    const isOpenSocket = this.transportTable.get(socketId)?.readyState === this.WebSocketClass.OPEN
+    const isNewSocket = this.transportTable.get(socketId)?.readyState !== this.WebSocketClass.OPEN
     const socket = await this.resolveSocket({ socketId, endpoint, connectionId })
 
     // If the socket was created for this message and we don't have return routing enabled
@@ -84,7 +84,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     // make sure to use the socket in a manner that is compliant with the https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
     // (React Native) and https://github.com/websockets/ws (NodeJs)
     socket.send(JsonEncoder.toUint8Array(payload))
-    if (isOpenSocket && !outboundPackage.responseRequested) {
+    if (isNewSocket && !outboundPackage.responseRequested) {
       socket.close()
     }
   }
@@ -98,8 +98,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     endpoint?: string
     connectionId?: string
   }) {
-    // If we already have an open socket connection use it. A socket that is no longer open (e.g.
-    // because the other agent closed it) can't be reused, so we replace it with a new connection.
+    // Reuse the socket if it's still open, otherwise replace it with a new connection
     let socket = this.transportTable.get(socketId)
 
     if (!socket || socket.readyState !== this.WebSocketClass.OPEN) {
@@ -187,9 +186,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
         this.logger.debug(`WebSocket closing to ${endpoint}`)
         socket.removeEventListener('message', this.handleMessageEvent)
 
-        // Only remove the socket from the transport table if it's still the active socket for this
-        // id. A closing socket may already have been replaced by a new connection, and we don't
-        // want to remove that one from the table.
+        // The socket may already have been replaced by a new connection, which we should keep
         if (this.transportTable.get(socketId) === socket) {
           this.transportTable.delete(socketId)
         }

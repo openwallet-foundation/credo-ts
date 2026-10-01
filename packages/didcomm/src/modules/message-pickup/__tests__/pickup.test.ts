@@ -234,18 +234,13 @@ describe('E2E Pick Up protocol', () => {
 
     await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
 
-    // A single `pickupMessages` call triggers the whole exchange (status -> delivery-request ->
-    // delivery -> messages-received -> status), so all listeners must be set up before it is
-    // called. Attaching them in between the awaits means an event can be emitted before we're
-    // subscribed, which would make the test hang until it times out. The replay subjects buffer
-    // the events, so it doesn't matter when we get around to asserting on them.
+    // `pickupMessages` triggers the whole exchange, so subscribe to all events before calling it
     const [recipientReplay, mediatorReplay] = setupEventReplaySubjects(
       [recipientAgent, mediatorAgent],
       [DidCommEventTypes.DidCommMessageProcessed]
     )
 
-    // The recipient receives two status messages: one in response to the status request (still
-    // holding the queued message), and one after it acknowledged the delivery (empty queue).
+    // One status before delivery (1 message queued), and one after it was acknowledged (0 queued)
     const statusMessagesPromise = firstValueFrom(
       recipientReplay.pipe(
         map((event) => (event as DidCommMessageProcessedEvent).payload.message),

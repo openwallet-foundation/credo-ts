@@ -78,6 +78,10 @@ export class DidCommMessageReceiver {
   ) {
     this.logger.debug('Agent received message')
 
+    // Determined before any await, so concurrently processed messages can't change which one opened the session
+    const isSessionOpeningMessage = session !== undefined && !session.hasReceivedMessage
+    if (session) session.hasReceivedMessage = true
+
     // Find agent context for the inbound message
     const agentContext = await this.agentContextProvider.getContextForInboundMessage(inboundMessage, {
       contextCorrelationId,
@@ -85,7 +89,11 @@ export class DidCommMessageReceiver {
 
     try {
       if (this.isEncryptedMessage(inboundMessage)) {
-        await this.receiveEncryptedMessage(agentContext, inboundMessage as DidCommEncryptedMessage, session, receivedAt)
+        await this.receiveEncryptedMessage(agentContext, inboundMessage as DidCommEncryptedMessage, {
+          session,
+          isSessionOpeningMessage,
+          receivedAt,
+        })
       } else if (this.isPlaintextMessage(inboundMessage)) {
         await this.receivePlaintextMessage(agentContext, inboundMessage, connection, receivedAt)
       } else {
@@ -111,8 +119,11 @@ export class DidCommMessageReceiver {
   private async receiveEncryptedMessage(
     agentContext: AgentContext,
     encryptedMessage: DidCommEncryptedMessage,
-    session?: DidCommTransportSession,
-    receivedAt?: Date
+    {
+      session,
+      isSessionOpeningMessage,
+      receivedAt,
+    }: { session?: DidCommTransportSession; isSessionOpeningMessage: boolean; receivedAt?: Date }
   ) {
     const decryptedMessage = await this.decryptMessage(agentContext, encryptedMessage)
     const { plaintextMessage, senderKey, recipientKey } = decryptedMessage
@@ -138,14 +149,6 @@ export class DidCommMessageReceiver {
       encryptedMessage,
     })
 
-    // A session can be reused for multiple messages. A WebSocket for example is a duplex connection
-    // that carries every message the other agent sends over it, and the other agent has no way of
-    // knowing we closed it. Only the message that opened the session therefore decides whether the
-    // session is closed: closing it for a later message would drop exchanges that the other agent
-    // already started over the same connection, and those responses end up queued instead of sent.
-    const isSessionOpeningMessage = session !== undefined && !session.hasReceivedMessage
-    if (session) session.hasReceivedMessage = true
-
     // We want to save a session if there is a chance of returning outbound message via inbound transport.
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
@@ -165,9 +168,9 @@ export class DidCommMessageReceiver {
       messageContext.sessionId = session.id
       this.transportService.saveSession(session)
     }
-    // No need to wait for session to stay open if we're not actually going to respond to the message.
-    // Session is only closed if this message opened the socket, otherwise we're just reusing an existing
-    // session that we should not close.
+    // No need to keep the session open if we're not going to respond to the message. Only the message
+    // that opened the session closes it, as the other agent may already have sent messages over it that
+    // do expect a response.
     else if (session && isSessionOpeningMessage) {
       await session.close()
     }

@@ -1,4 +1,3 @@
-version: '3'
 services:
   postgres:
     image: postgres:18-alpine
@@ -30,8 +29,7 @@ services:
     ports:
       - '9701-9708:9701-9708'
     # Start supervisord in bg, run commands, bring supervisor to fg.
-    # The ready marker is written once the DIDs the tests depend on have been added to the
-    # ledger, so the healthcheck below only reports healthy when the pool is actually usable.
+    # The ready marker is written once the DIDs the tests depend on are on the ledger
     command: >
       /bin/bash -c "
         /usr/bin/supervisord &
@@ -108,10 +106,7 @@ services:
       touch /tmp/cheqd-ready &&
       wait $RUN_TESTNET_PID;
       '
-    # The bootstrap above (genesis, key import and funding the test accounts) takes a while and
-    # runs long after the node itself accepts connections. Tests that start before the accounts
-    # are funded fail with errors like `Missing issuerId`, so gate readiness on the marker that
-    # is written once the last funding transaction has gone through.
+    # Only healthy once the test accounts are funded, not just when the node accepts connections
     healthcheck:
       test: ['CMD-SHELL', 'test -f /tmp/cheqd-ready']
       interval: 5s

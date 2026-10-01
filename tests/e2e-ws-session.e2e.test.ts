@@ -16,11 +16,8 @@ describe('E2E WS session tests', () => {
     await mediatorAgent?.shutdown()
   })
 
-  // A WebSocket carries every message the recipient sends over it. Connecting and requesting
-  // mediation sends a trust ping with `~transport.return_route` set to `none` in between two
-  // messages that do use return routing. If the mediator closes the socket for that trust ping,
-  // the `mediate-grant` can no longer be returned over it and ends up queued instead, leaving
-  // `requestAndAwaitGrant` to time out.
+  // Connecting sends a trust ping without return routing in between messages that do use return routing.
+  // The mediator must not close the socket for it, otherwise the mediate-grant gets queued instead.
   test('mediator keeps the WebSocket open for messages that follow one without return routing', async () => {
     const socketServer = new WebSocketServer({ port: mediatorPort })
     let openedSocketCount = 0
@@ -55,8 +52,6 @@ describe('E2E WS session tests', () => {
       await recipientAgent.didcomm.mediationRecipient.requestAndAwaitGrant(recipientMediatorConnection)
     expect(mediationRecord.state).toBe(DidCommMediationState.Granted)
 
-    // The whole exchange must happen over the single socket the recipient opened. If the mediator
-    // closed it in between, the recipient would have had to reconnect.
     expect(openedSocketCount).toBe(1)
   })
 })

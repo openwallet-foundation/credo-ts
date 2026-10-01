@@ -26,10 +26,6 @@ function createAgentContext() {
   } as unknown as AgentContext
 }
 
-/**
- * Starts a WebSocket server that records every socket the client opens, so tests can assert
- * whether the outbound transport reused a connection or opened a new one.
- */
 async function startServer() {
   const socketServer = new WebSocketServer({ noServer: true })
   const publicServer = createServer()
@@ -74,9 +70,6 @@ async function waitForSockets(serverSockets: WebSocket[], count: number) {
 const payload = { protected: 'protected', iv: 'iv', ciphertext: 'ciphertext', tag: 'tag' }
 
 describe('DidCommWsOutboundTransport', () => {
-  // The other agent closes the session (and with it the socket) for an inbound message that does
-  // not request return routing. Reusing such a socket for a message that does request return
-  // routing would race with that close, and the response would be lost.
   it('does not reuse a socket that was opened for a message without return routing', async () => {
     const { endpoint, serverSockets } = await startServer()
     const transport = await startTransport()
@@ -86,14 +79,10 @@ describe('DidCommWsOutboundTransport', () => {
     await waitForSockets(serverSockets, 2)
 
     expect(serverSockets).toHaveLength(2)
-    // Closed by us immediately after sending, as no response is expected over it
     expect(serverSockets[0].readyState).not.toBe(WebSocket.OPEN)
-    // Kept open, as the other agent is expected to respond over it
     expect(serverSockets[1].readyState).toBe(WebSocket.OPEN)
   })
 
-  // Once a socket is used for a message with return routing the other agent keeps it open, so
-  // following messages reuse it even when they don't request return routing themselves.
   it('reuses a socket opened with return routing for a message without return routing', async () => {
     const { endpoint, serverSockets } = await startServer()
     const transport = await startTransport()
@@ -106,8 +95,6 @@ describe('DidCommWsOutboundTransport', () => {
     expect(serverSockets[0].readyState).toBe(WebSocket.OPEN)
   })
 
-  // The other agent may close a socket we still consider usable (e.g. on shutdown). The next
-  // message should transparently open a new connection instead of failing with 'Socket is not open.'
   it('opens a new socket when the other agent closed the previous one', async () => {
     const { endpoint, serverSockets } = await startServer()
     const transport = await startTransport()

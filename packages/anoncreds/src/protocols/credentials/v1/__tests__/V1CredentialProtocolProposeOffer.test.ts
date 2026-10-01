@@ -425,9 +425,6 @@ describe('V1CredentialProtocolProposeOffer', () => {
   })
 
   describe('processProposal', () => {
-    // Handlers of the state changed event (auto accept, or a call to `acceptProposal`) look up the
-    // proposal message by the credential exchange record id. If the event is emitted before the
-    // message is stored they fail with `RecordNotFoundError: DidCommMessageRecord`.
     test('stores the proposal message before emitting the state changed event', async () => {
       const credentialProposalMessage = new DidCommProposeCredentialV1Message({
         comment: 'some comment',

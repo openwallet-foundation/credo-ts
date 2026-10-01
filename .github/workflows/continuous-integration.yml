@@ -148,9 +148,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # The services were started in the background so they could boot while the dependencies
-      # were installing. The ledgers need several minutes to bootstrap, and starting the tests
-      # before they are ready makes entire suites (e.g. cheqd) fail within milliseconds.
+      # Services are started in the background earlier, wait until they are healthy
       - name: Wait for services
         run: docker compose up -d --wait --wait-timeout 600
 
@@ -222,9 +220,7 @@ jobs:
       - name: Build drizzle package
         run: pnpm --filter @credo-ts/drizzle-storage run build
 
-      # The services were started in the background so they could boot while the dependencies
-      # were installing. The ledgers need several minutes to bootstrap, and starting the tests
-      # before they are ready makes entire suites (e.g. cheqd) fail within milliseconds.
+      # Services are started in the background earlier, wait until they are healthy
       - name: Wait for services
         run: docker compose up -d --wait --wait-timeout 600
 

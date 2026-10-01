@@ -234,9 +234,7 @@ export class DidCommCredentialV1Protocol
         }),
       })
 
-      // NOTE: the message must be stored before the state is updated. Updating the state emits the
-      // state changed event, and handlers of that event (e.g. auto accept, or a call to
-      // `acceptProposal`) look up the proposal message by the credential exchange record id.
+      // Store the message before updating the state, as state changed event handlers look it up
       await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
@@ -266,9 +264,7 @@ export class DidCommCredentialV1Protocol
       // Save record
       await credentialRepository.save(messageContext.agentContext, credentialExchangeRecord)
 
-      // NOTE: the message must be stored before the state changed event is emitted. Handlers of
-      // that event (e.g. auto accept, or a call to `acceptProposal`) look up the proposal message
-      // by the credential exchange record id, and would not find it yet.
+      // Store the message before emitting the event, as state changed event handlers look it up
       await didCommMessageRepository.saveAgentMessage(messageContext.agentContext, {
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
@@ -344,9 +340,7 @@ export class DidCommCredentialV1Protocol
     credentialExchangeRecord.autoAcceptCredential =
       autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
 
-    // NOTE: the message must be stored before the state is updated, as updating the state emits
-    // the state changed event and handlers of that event look up the offer message by the
-    // credential exchange record id.
+    // Store the message before updating the state, as state changed event handlers look it up
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
@@ -408,9 +402,7 @@ export class DidCommCredentialV1Protocol
     credentialExchangeRecord.autoAcceptCredential =
       autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
 
-    // NOTE: the message must be stored before the state is updated, as updating the state emits
-    // the state changed event and handlers of that event look up the offer message by the
-    // credential exchange record id.
+    // Store the message before updating the state, as state changed event handlers look it up
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
