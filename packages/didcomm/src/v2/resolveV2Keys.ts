@@ -120,7 +120,7 @@ export class DidCommV2KeyResolver {
         vmId = typeof vm === 'object' && vm !== null && 'id' in vm ? (vm as { id: string }).id : undefined
       } else {
         const kaVms = didDocument.keyAgreement
-        if (kaVms && kaVms.length > 0) {
+        if (kaVms?.length === 1) {
           const ka = typeof kaVms[0] === 'string' ? didDocument.dereferenceKey(kaVms[0], ['keyAgreement']) : kaVms[0]
           senderJwk = getPublicJwkFromVerificationMethod(ka)
           vmId = typeof ka === 'object' && ka !== null && 'id' in ka ? (ka as { id: string }).id : undefined
