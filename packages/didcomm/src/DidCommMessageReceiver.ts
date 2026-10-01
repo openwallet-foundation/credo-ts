@@ -78,6 +78,10 @@ export class DidCommMessageReceiver {
   ) {
     this.logger.debug('Agent received message')
 
+    // Determined before any await, so concurrently processed messages can't change which one opened the session
+    const isSessionOpeningMessage = session !== undefined && !session.hasReceivedMessage
+    if (session) session.hasReceivedMessage = true
+
     // Find agent context for the inbound message
     const agentContext = await this.agentContextProvider.getContextForInboundMessage(inboundMessage, {
       contextCorrelationId,
@@ -85,7 +89,11 @@ export class DidCommMessageReceiver {
 
     try {
       if (this.isEncryptedMessage(inboundMessage)) {
-        await this.receiveEncryptedMessage(agentContext, inboundMessage as DidCommEncryptedMessage, session, receivedAt)
+        await this.receiveEncryptedMessage(agentContext, inboundMessage as DidCommEncryptedMessage, {
+          session,
+          isSessionOpeningMessage,
+          receivedAt,
+        })
       } else if (this.isPlaintextMessage(inboundMessage)) {
         await this.receivePlaintextMessage(agentContext, inboundMessage, connection, receivedAt)
       } else {
@@ -111,8 +119,11 @@ export class DidCommMessageReceiver {
   private async receiveEncryptedMessage(
     agentContext: AgentContext,
     encryptedMessage: DidCommEncryptedMessage,
-    session?: DidCommTransportSession,
-    receivedAt?: Date
+    {
+      session,
+      isSessionOpeningMessage,
+      receivedAt,
+    }: { session?: DidCommTransportSession; isSessionOpeningMessage: boolean; receivedAt?: Date }
   ) {
     const decryptedMessage = await this.decryptMessage(agentContext, encryptedMessage)
     const { plaintextMessage, senderKey, recipientKey } = decryptedMessage
@@ -156,8 +167,11 @@ export class DidCommMessageReceiver {
       session.connectionId = connection?.id
       messageContext.sessionId = session.id
       this.transportService.saveSession(session)
-    } else if (session) {
-      // No need to wait for session to stay open if we're not actually going to respond to the message.
+    }
+    // No need to keep the session open if we're not going to respond to the message. Only the message
+    // that opened the session closes it, as the other agent may already have sent messages over it that
+    // do expect a response.
+    else if (session && isSessionOpeningMessage) {
       await session.close()
     }
 

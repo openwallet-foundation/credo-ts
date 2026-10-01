@@ -76,7 +76,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     }
 
     const socketId = `${endpoint}-${connectionId}`
-    const isNewSocket = !this.hasOpenSocket(socketId)
+    const isNewSocket = this.transportTable.get(socketId)?.readyState !== this.WebSocketClass.OPEN
     const socket = await this.resolveSocket({ socketId, endpoint, connectionId })
 
     // If the socket was created for this message and we don't have return routing enabled
@@ -89,10 +89,6 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     }
   }
 
-  private hasOpenSocket(socketId: string) {
-    return this.transportTable.get(socketId) !== undefined
-  }
-
   private async resolveSocket({
     socketId,
     endpoint,
@@ -102,10 +98,10 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
     endpoint?: string
     connectionId?: string
   }) {
-    // If we already have a socket connection use it
+    // Reuse the socket if it's still open, otherwise replace it with a new connection
     let socket = this.transportTable.get(socketId)
 
-    if (!socket || socket.readyState === this.WebSocketClass.CLOSING) {
+    if (!socket || socket.readyState !== this.WebSocketClass.OPEN) {
       if (!endpoint) {
         throw new CredoError(`Missing endpoint. I don't know how and where to send the message.`)
       }
@@ -189,7 +185,11 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
       socket.onclose = async () => {
         this.logger.debug(`WebSocket closing to ${endpoint}`)
         socket.removeEventListener('message', this.handleMessageEvent)
-        this.transportTable.delete(socketId)
+
+        // The socket may already have been replaced by a new connection, which we should keep
+        if (this.transportTable.get(socketId) === socket) {
+          this.transportTable.delete(socketId)
+        }
 
         eventEmitter.emit<DidCommOutboundWebSocketClosedEvent>(this.agentContext, {
           type: DidCommTransportEventTypes.DidCommOutboundWebSocketClosedEvent,

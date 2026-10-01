@@ -234,17 +234,19 @@ export class DidCommCredentialV1Protocol
         }),
       })
 
+      // Store the message before updating the state, as state changed event handlers look it up
+      await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
+        agentMessage: proposalMessage,
+        role: DidCommMessageRole.Receiver,
+        associatedRecordId: credentialExchangeRecord.id,
+      })
+
       // Update record
       await this.updateState(
         messageContext.agentContext,
         credentialExchangeRecord,
         DidCommCredentialState.ProposalReceived
       )
-      await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
-        agentMessage: proposalMessage,
-        role: DidCommMessageRole.Receiver,
-        associatedRecordId: credentialExchangeRecord.id,
-      })
     } else {
       agentContext.config.logger.debug('Credential record does not exists yet for incoming proposal')
       // Assert
@@ -261,13 +263,15 @@ export class DidCommCredentialV1Protocol
 
       // Save record
       await credentialRepository.save(messageContext.agentContext, credentialExchangeRecord)
-      this.emitStateChangedEvent(messageContext.agentContext, credentialExchangeRecord, null)
 
+      // Store the message before emitting the event, as state changed event handlers look it up
       await didCommMessageRepository.saveAgentMessage(messageContext.agentContext, {
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialExchangeRecord.id,
       })
+
+      this.emitStateChangedEvent(messageContext.agentContext, credentialExchangeRecord, null)
     }
     return credentialExchangeRecord
   }
@@ -335,13 +339,15 @@ export class DidCommCredentialV1Protocol
     credentialExchangeRecord.credentialAttributes = message.credentialPreview.attributes
     credentialExchangeRecord.autoAcceptCredential =
       autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
-    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
+    // Store the message before updating the state, as state changed event handlers look it up
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
       associatedRecordId: credentialExchangeRecord.id,
     })
+
+    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
     return { credentialExchangeRecord, message }
   }
@@ -395,13 +401,15 @@ export class DidCommCredentialV1Protocol
     credentialExchangeRecord.credentialAttributes = message.credentialPreview.attributes
     credentialExchangeRecord.autoAcceptCredential =
       autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
-    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
+    // Store the message before updating the state, as state changed event handlers look it up
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
       associatedRecordId: credentialExchangeRecord.id,
     })
+
+    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
     return { credentialExchangeRecord, message }
   }
