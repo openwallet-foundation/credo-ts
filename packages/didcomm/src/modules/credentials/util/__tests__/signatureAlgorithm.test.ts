@@ -1,6 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 import { CredoError, Kms } from '@credo-ts/core'
-import { getSupportedJwaSignatureAlgorithms, selectJwaSignatureAlgorithm } from '../signatureAlgorithm'
+import { selectJwaSignatureAlgorithm } from '../signatureAlgorithm'
 
 /**
  * Builds an agent context whose key management api only supports signing with `supportedAlgs`.
@@ -9,8 +9,7 @@ function getAgentContextWithSigningAlgs(supportedAlgs: Kms.KnownJwaSignatureAlgo
   return {
     dependencyManager: {
       resolve: () => ({
-        supportedBackendsForOperation: ({ algorithm }: { operation: string; algorithm: string }) =>
-          supportedAlgs.includes(algorithm as Kms.KnownJwaSignatureAlgorithm) ? ['mock'] : [],
+        supportedJwaSignatureAlgorithms: () => supportedAlgs,
       }),
     },
   } as unknown as AgentContext
@@ -25,20 +24,6 @@ function getPublicJwk(supportedSignatureAlgorithms: Kms.KnownJwaSignatureAlgorit
     jwkTypeHumanDescription: 'test key',
   } as unknown as Kms.PublicJwk
 }
-
-describe('getSupportedJwaSignatureAlgorithms', () => {
-  test('returns only the algorithms a backend can sign with', () => {
-    const agentContext = getAgentContextWithSigningAlgs([
-      Kms.KnownJwaSignatureAlgorithms.EdDSA,
-      Kms.KnownJwaSignatureAlgorithms.ES256,
-    ])
-
-    expect(getSupportedJwaSignatureAlgorithms(agentContext)).toEqual([
-      Kms.KnownJwaSignatureAlgorithms.ES256,
-      Kms.KnownJwaSignatureAlgorithms.EdDSA,
-    ])
-  })
-})
 
 describe('selectJwaSignatureAlgorithm', () => {
   test('returns the first algorithm supported by both the key and the agent', () => {

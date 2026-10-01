@@ -45,7 +45,6 @@ import {
 } from '../../indy-vdr/src'
 import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
 import type {
-  AnonCredsDidCommOfferCredentialFormat,
   AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRequestedAttribute,
   AnonCredsRequestedPredicate,
@@ -54,18 +53,21 @@ import type {
   RegisterSchemaReturnStateFinished,
 } from '../src'
 import {
-  AnonCredsDidCommCredentialFormatService,
-  AnonCredsDidCommProofFormatService,
   AnonCredsModule,
-  DidCommCredentialV1Protocol,
-  DidCommProofV1Protocol,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
-  LegacyIndyDidCommCredentialFormatService,
-  LegacyIndyDidCommProofFormatService,
   parseIndyCredentialDefinitionId,
   parseIndySchemaId,
 } from '../src'
+import type { AnonCredsDidCommOfferCredentialFormat } from '../src/didcomm'
+import {
+  AnonCredsDidCommCredentialFormatService,
+  AnonCredsDidCommProofFormatService,
+  DidCommCredentialV1Protocol,
+  DidCommProofV1Protocol,
+  LegacyIndyDidCommCredentialFormatService,
+  LegacyIndyDidCommProofFormatService,
+} from '../src/didcomm'
 import { NativeAnoncreds } from './helpers'
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import type { PreCreatedAnonCredsDefinition } from './preCreatedAnonCredsDefinition'

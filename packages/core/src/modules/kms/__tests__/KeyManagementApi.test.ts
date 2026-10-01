@@ -2,6 +2,10 @@ import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { ZodValidationError } from '../../../error/ZodValidationError'
 import { KeyManagementError } from '../error/KeyManagementError'
+import { KeyManagementApi } from '../KeyManagementApi'
+import { KeyManagementModuleConfig } from '../KeyManagementModuleConfig'
+import type { KeyManagementService } from '../KeyManagementService'
+import type { KmsOperation } from '../options'
 
 const agentOptions = getAgentOptions('KeyManagementApi')
 const agent = new Agent(agentOptions)
@@ -140,6 +144,43 @@ describe('KeyManagementApi', () => {
         key: undefined,
       })
     ).rejects.toThrow(ZodValidationError)
+  })
+
+  describe('supportedJwaSignatureAlgorithms', () => {
+    test('does not return symmetric algorithms by default', () => {
+      const supportedAlgorithms = agent.kms.supportedJwaSignatureAlgorithms()
+
+      expect(supportedAlgorithms).toEqual(expect.arrayContaining(['ES256', 'EdDSA']))
+      expect(supportedAlgorithms).not.toContain('HS256')
+      expect(supportedAlgorithms).not.toContain('HS384')
+      expect(supportedAlgorithms).not.toContain('HS512')
+    })
+
+    test('returns symmetric algorithms when includeSymmetricAlgorithms is true', () => {
+      expect(agent.kms.supportedJwaSignatureAlgorithms({ includeSymmetricAlgorithms: true })).toEqual(
+        expect.arrayContaining(['HS256', 'HS384', 'HS512', 'ES256', 'EdDSA'])
+      )
+    })
+
+    test('only returns algorithms a backend can sign with', () => {
+      const hmacAndEs256Backend = {
+        backend: 'hmac-and-es256',
+        isOperationSupported: (_agentContext: unknown, operation: KmsOperation) =>
+          operation.operation === 'sign' && (operation.algorithm === 'ES256' || operation.algorithm.startsWith('HS')),
+      } as unknown as KeyManagementService
+      const kms = new KeyManagementApi(
+        new KeyManagementModuleConfig({ backends: [hmacAndEs256Backend] }),
+        agent.context
+      )
+
+      expect(kms.supportedJwaSignatureAlgorithms()).toEqual(['ES256'])
+      expect(kms.supportedJwaSignatureAlgorithms({ includeSymmetricAlgorithms: true })).toEqual([
+        'HS256',
+        'HS384',
+        'HS512',
+        'ES256',
+      ])
+    })
   })
 
   describe('hpke', () => {

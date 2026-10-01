@@ -22,7 +22,7 @@ import { DidCommCredentialProblemReportReason } from '../../models/DidCommCreden
 import { assertAndSetCredentialSubjectId, assertCredentialSubjectMatchesOffer } from '../../util/credentialSubject'
 import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../../util/didCommSignedAttachment'
 import { getFormatDataAttachment } from '../../util/formatData'
-import { getSupportedJwaSignatureAlgorithms, selectJwaSignatureAlgorithm } from '../../util/signatureAlgorithm'
+import { selectJwaSignatureAlgorithm } from '../../util/signatureAlgorithm'
 import { getIssuerVerificationMethod } from '../../util/verificationMethod'
 import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
 import type {
@@ -112,8 +112,7 @@ export class DidCommW3cV2SdJwtCredentialFormatService
       const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
       const didsApi = agentContext.dependencyManager.resolve(DidsApi)
 
-      const algsSupported =
-        didCommSignedAttachmentBinding.algsSupported ?? getSupportedJwaSignatureAlgorithms(agentContext)
+      const algsSupported = didCommSignedAttachmentBinding.algsSupported ?? kms.supportedJwaSignatureAlgorithms()
       const didMethodsSupported = didCommSignedAttachmentBinding.didMethodsSupported ?? didsApi.supportedResolverMethods
 
       if (algsSupported.length === 0) throw new CredoError('No supported JWA signature algorithms found.')

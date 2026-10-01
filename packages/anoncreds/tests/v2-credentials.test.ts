@@ -1,5 +1,6 @@
-import type { AnonCredsDidCommProposeCredentialFormat, AnonCredsHolderService } from '@credo-ts/anoncreds'
+import type { AnonCredsHolderService } from '@credo-ts/anoncreds'
 import { AnonCredsHolderServiceSymbol } from '@credo-ts/anoncreds'
+import type { AnonCredsDidCommProposeCredentialFormat } from '@credo-ts/anoncreds/didcomm'
 import { JsonTransformer } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,

@@ -1,8 +1,11 @@
 {
   "name": "@credo-ts/anoncreds",
   "exports": {
-    "cli": "./build/index.mjs",
-    "import": "./src/index.ts"
+    ".": {
+      "cli": "./build/index.mjs",
+      "import": "./src/index.ts"
+    },
+    "./didcomm": "./src/didcomm/index.ts"
   },
   "version": "0.7.1",
   "files": [
@@ -15,6 +18,11 @@
     "module": "./build/index.mjs",
     "exports": {
       ".": "./build/index.mjs",
+      "./didcomm": {
+        "import": "./build/didcomm/index.mjs",
+        "require": "./build/didcomm/index.mjs",
+        "types": "./build/didcomm/index.d.mts"
+      },
       "./package.json": "./package.json"
     }
   },

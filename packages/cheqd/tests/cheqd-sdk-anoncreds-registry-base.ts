@@ -2,7 +2,8 @@ import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
 import { Agent, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
 import { getAgentOptions } from '../../core/tests/helpers'
-import { CheqdAnonCredsRegistry, type CheqdDidCreateOptions } from '../src'
+import type { CheqdDidCreateOptions } from '../src'
+import { CheqdAnonCredsRegistry } from '../src/anoncreds'
 import { getCheqdModules } from './setupCheqdModule'
 
 const cheqdWriteRetryConfig = {

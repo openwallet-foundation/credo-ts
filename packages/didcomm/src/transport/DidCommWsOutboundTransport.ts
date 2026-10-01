@@ -1,6 +1,5 @@
-import type { AgentContext, Logger } from '@credo-ts/core'
+import type { AgentContext, AgentDependencies, Logger } from '@credo-ts/core'
 import { CredoError, EventEmitter, JsonEncoder } from '@credo-ts/core'
-import type { WebSocket } from 'ws'
 import type { DidCommMessageReceivedEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
 import type { DidCommOutboundPackage } from '../types'
@@ -13,11 +12,13 @@ import type {
 
 import { DidCommTransportEventTypes } from './DidCommTransportEventTypes'
 
+type WebSocket = InstanceType<AgentDependencies['WebSocketClass']>
+
 export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
   private agentContext!: AgentContext
   private logger!: Logger
-  private WebSocketClass!: typeof WebSocket
+  private WebSocketClass!: AgentDependencies['WebSocketClass']
   public supportedSchemes = ['ws', 'wss']
   private isActive = false
 

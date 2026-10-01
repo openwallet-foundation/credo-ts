@@ -536,4 +536,42 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     await holderTenant1.endSession()
   })
+
+  it('credential endpoint responds with unknown_credential_identifier for a credential_identifier that was never granted', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const { accessToken } = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const response = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        credential_identifier: 'never-granted',
+        proofs: { jwt: ['ey.ey.S'] },
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({
+      error: 'unknown_credential_identifier',
+      error_description: "Credential identifier 'never-granted' is unknown",
+    })
+
+    await holderTenant.endSession()
+  })
 })
