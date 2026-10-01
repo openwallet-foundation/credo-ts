@@ -1,7 +1,5 @@
 import { JsonTransformer } from '@credo-ts/core'
-import type { DidCommRevocationNotificationReceivedEvent } from '@credo-ts/didcomm'
 import {
-  DidCommCredentialEventTypes,
   DidCommCredentialExchangeRecord,
   DidCommCredentialRole,
   DidCommCredentialState,
@@ -9,7 +7,6 @@ import {
   DidCommMessageRepository,
   DidCommOfferCredentialV2Message,
 } from '@credo-ts/didcomm'
-import { ReplaySubject } from 'rxjs'
 import type { EventReplaySubject } from '../../core/tests'
 import { waitForCredentialRecordSubject } from '../../core/tests'
 import { waitForRevocationNotificationSubject } from '../../core/tests/helpers'
@@ -34,7 +31,6 @@ describe('IC v2 credential revocation', () => {
 
   let faberReplay: EventReplaySubject
   let aliceReplay: EventReplaySubject
-  let aliceRevocationReplay: ReplaySubject<DidCommRevocationNotificationReceivedEvent>
 
   const inMemoryRegistry = new InMemoryAnonCredsRegistry()
 
@@ -57,13 +53,6 @@ describe('IC v2 credential revocation', () => {
       supportRevocation: true,
       registries: [inMemoryRegistry],
     }))
-
-    aliceRevocationReplay = new ReplaySubject<DidCommRevocationNotificationReceivedEvent>()
-    aliceAgent.events
-      .observable<DidCommRevocationNotificationReceivedEvent>(
-        DidCommCredentialEventTypes.DidCommRevocationNotificationReceived
-      )
-      .subscribe(aliceRevocationReplay)
   })
 
   afterAll(async () => {
@@ -242,7 +231,7 @@ describe('IC v2 credential revocation', () => {
     })
 
     testLogger.test('Alice waits for credential revocation notification from Faber')
-    await waitForRevocationNotificationSubject(aliceRevocationReplay, {
+    await waitForRevocationNotificationSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
     })
   })
