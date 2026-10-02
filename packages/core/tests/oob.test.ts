@@ -3,7 +3,7 @@ import { Subject } from 'rxjs'
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import type { AnonCredsDidCommCredentialFormatService } from '../../anoncreds/src'
+import type { AnonCredsDidCommCredentialFormatService } from '../../anoncreds/src/didcomm'
 import { getAnonCredsIndyModules } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,

@@ -10,7 +10,7 @@
   ],
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=20.19"
+    "node": ">=22"
   },
   "publishConfig": {
     "access": "public",
@@ -34,15 +34,15 @@
   "dependencies": {
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
+    "@types/node": "catalog:",
     "@types/express": "catalog:",
+    "@types/ws": "catalog:",
     "express": "catalog:",
     "hpke": "catalog:",
     "rxjs": "catalog:",
     "ws": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "catalog:",
-    "@types/ws": "catalog:",
     "nock": "catalog:",
     "typescript": "catalog:"
   }

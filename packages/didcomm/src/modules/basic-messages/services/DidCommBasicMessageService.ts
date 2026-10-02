@@ -17,7 +17,6 @@ import { DidCommBaseBasicMessageService } from './DidCommBaseBasicMessageService
 export class DidCommBasicMessageService extends DidCommBaseBasicMessageService {
   public readonly version = 'v1'
 
-  // biome-ignore lint/complexity/noUselessConstructor: tsyringe needs an own constructor for design:paramtypes
   public constructor(basicMessageRepository: DidCommBasicMessageRepository, eventEmitter: EventEmitter) {
     super(basicMessageRepository, eventEmitter)
   }

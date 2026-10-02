@@ -31,6 +31,21 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
   return response
 }
 
+// Invitations are spec'd as base64url, but agents in the wild also emit padded base64url or standard base64
+const decodeInvitationJson = (encoded: string): Record<string, unknown> => {
+  try {
+    return JsonEncoder.fromBase64Url(encoded.replace(/=+$/, '')) as Record<string, unknown>
+  } catch (base64UrlError) {
+    try {
+      return JsonEncoder.fromBase64(encoded) as Record<string, unknown>
+    } catch {
+      throw new CredoError('Could not decode invitation data as base64url or base64 string.', {
+        cause: base64UrlError,
+      })
+    }
+  }
+}
+
 /**
  * Parses a JSON containing an invitation message and returns an DidCommOutOfBandInvitation instance
  *
@@ -86,8 +101,7 @@ export const parseInvitationUrl = (invitationUrl: string): DidCommOutOfBandInvit
   const encodedInvitation = parsedUrl._oob ?? parsedUrl.oob ?? parsedUrl.c_i ?? parsedUrl.d_m
 
   if (typeof encodedInvitation === 'string') {
-    const invitationJson = JsonEncoder.fromBase64Url(encodedInvitation) as Record<string, unknown>
-    return parseInvitationJson(invitationJson)
+    return parseInvitationJson(decodeInvitationJson(encodedInvitation))
   }
   throw new CredoError(
     'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob`, `c_i` or `d_m`.'
@@ -158,8 +172,7 @@ export const parseInvitationShortUrl = async (
   }
   // Legacy connectionless invitation
   if (parsedUrl.d_m) {
-    const messageJson = JsonEncoder.fromBase64Url(parsedUrl.d_m as string)
-    return transformLegacyConnectionlessInvitationToOutOfBandInvitation(messageJson)
+    return transformLegacyConnectionlessInvitationToOutOfBandInvitation(decodeInvitationJson(parsedUrl.d_m as string))
   }
   try {
     const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))

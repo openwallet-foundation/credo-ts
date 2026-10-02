@@ -65,7 +65,6 @@ import type { OpenId4VciCredentialConfigurationSupportedWithFormats, OpenId4VciM
 import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
-import { getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 import type {
   OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciAuthCodeFlowOptions,
@@ -613,7 +612,8 @@ export class OpenId4VciHolderService {
     for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
       const { proofs, jwkThumbprintKmsKeyIdMapping } = await this.getCredentialRequestOptions(agentContext, {
         allowedProofOfPossessionAlgorithms:
-          allowedProofOfPossessionSignatureAlgorithms ?? getSupportedJwaSignatureAlgorithms(agentContext),
+          allowedProofOfPossessionSignatureAlgorithms ??
+          agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms(),
         metadata,
         offeredCredential: {
           id: offeredCredentialId,
@@ -819,7 +819,7 @@ export class OpenId4VciHolderService {
     const dids = agentContext.resolve(DidsApi)
     const { allowedProofOfPossessionAlgorithms, offeredCredential } = options
     const { configuration, id: configurationId } = offeredCredential
-    const supportedJwaSignatureAlgorithms = getSupportedJwaSignatureAlgorithms(agentContext)
+    const supportedJwaSignatureAlgorithms = agentContext.resolve(Kms.KeyManagementApi).supportedJwaSignatureAlgorithms()
 
     const possibleProofOfPossessionSignatureAlgorithms = allowedProofOfPossessionAlgorithms
       ? allowedProofOfPossessionAlgorithms.filter((algorithm) => supportedJwaSignatureAlgorithms.includes(algorithm))

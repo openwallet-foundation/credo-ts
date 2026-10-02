@@ -65,6 +65,7 @@
     "@sphereon/pex-models": "catalog:",
     "@sphereon/ssi-types": "0.33.0",
     "@stablelib/ed25519": "catalog:",
+    "@types/events": "^3.0.3",
     "@types/ws": "catalog:",
     "@verifiables/request-converter": "^0.2.0",
     "class-transformer": "catalog:",
@@ -79,14 +80,13 @@
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "tsyringe": "catalog:",
-    "uuid": "^14.0.0",
+    "uuid": "^14.0.2",
     "varint": "^6.0.0",
     "web-did-resolver": "^2.0.32",
     "webcrypto-core": "^1.8.1",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/events": "^3.0.3",
     "@types/object-inspect": "^1.13.0",
     "@types/varint": "^6.0.3",
     "nock": "catalog:",

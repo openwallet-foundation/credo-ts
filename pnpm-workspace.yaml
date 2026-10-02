@@ -4,10 +4,23 @@ packages:
   - demo-openid
   - samples/*
 
+allowBuilds:
+  '@hyperledger/anoncreds-nodejs': true
+  '@hyperledger/indy-vdr-nodejs': true
+  '@openwallet-foundation/askar-nodejs': true
+  cbor-extract: true
+  cpu-features: false
+  esbuild: false
+  koffi: true
+  protobufjs: false
+  secp256k1: false
+  ssh2: false
+  zstd-napi: true
+
 catalog:
   '@animo-id/pex': ^6.1.1
   '@astronautlabs/jsonpath': ^1.1.2
-  '@biomejs/biome': 2.4.15
+  '@biomejs/biome': 2.5.14
   # Keep the cheqd dependencies aligned with the versions supported by @cheqd/sdk-esm.
   '@cheqd/sdk': npm:@cheqd/sdk-esm@5.5.1
   '@cheqd/ts-proto': ^4.2.0
@@ -15,18 +28,18 @@ catalog:
   '@cosmjs/proto-signing': ^0.36.2
   '@cosmjs/stargate': ^0.36.2
   # End @cheqd/sdk-esm-supported dependency versions.
-  '@hyperledger/anoncreds-nodejs': ^0.4.0
-  '@hyperledger/anoncreds-shared': ^0.4.0
+  '@hyperledger/anoncreds-nodejs': ^0.4.1
+  '@hyperledger/anoncreds-shared': ^0.4.1
   '@hyperledger/indy-vdr-nodejs': ^0.3.0
   '@hyperledger/indy-vdr-shared': ^0.3.0
-  '@openwallet-foundation/askar-nodejs': 0.6.0
-  '@openwallet-foundation/askar-shared': 0.6.0
+  '@openwallet-foundation/askar-nodejs': 0.6.1
+  '@openwallet-foundation/askar-shared': 0.6.1
   '@panva/hpke-noble': ^1.1.4
   '@peculiar/x509': ^2.0.0
   '@sphereon/pex-models': ^2.3.2
   '@stablelib/ed25519': ^2.0.2
   '@types/express': ^5.0.6
-  '@types/node': ^20.19.31
+  '@types/node': ^22.19.0
   '@types/ws': ^8.18.1
   '@vitest/coverage-v8': ^4.1.11
   class-transformer: 0.5.1
@@ -39,20 +52,5 @@ catalog:
   tsyringe: ^4.10.0
   typescript: ~5.9.3
   vitest: ^4.1.11
-  ws: ^8.19.0
+  ws: ^8.22.0
   zod: ^4.6.5
-
-ignoredBuiltDependencies:
-  - es5-ext
-  - esbuild
-  - protobufjs
-  - secp256k1
-
-onlyBuiltDependencies:
-  - '@biomejs/biome'
-  - '@hyperledger/anoncreds-nodejs'
-  - '@hyperledger/indy-vdr-nodejs'
-  - '@openwallet-foundation/askar-nodejs'
-  - cbor-extract
-  - koffi
-  - zstd-napi

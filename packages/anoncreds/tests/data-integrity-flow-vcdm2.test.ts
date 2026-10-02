@@ -22,6 +22,7 @@ import {
   DidCommCredentialPreviewAttribute,
   DidCommCredentialRole,
   DidCommCredentialState,
+  DidCommDataIntegrityCredentialFormatService,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
@@ -35,7 +36,6 @@ import {
   getAgentContext,
   testLogger,
 } from '../../core/tests'
-import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 
 const agentConfig = getAgentConfig('data integrity format service (vcdm 2.0)')
 const inMemoryStorageService = new InMemoryStorageService()
@@ -72,7 +72,7 @@ const agentContext = getAgentContext({
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 
-const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
+const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService()
 
 /** Runs the offer and request steps for an unbound data model 2.0 credential issued by `issuerDid` with the given claims */
 async function offerAndRequest(issuerDid: string, credentialSubject: JsonObject = { name: 'John', age: '25' }) {

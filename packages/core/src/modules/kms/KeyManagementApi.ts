@@ -3,7 +3,12 @@ import { injectable } from '../../plugins'
 import { zParseWithErrorHandling } from '../../utils/zod'
 import { KeyManagementError } from './error/KeyManagementError'
 import { KeyManagementKeyNotFoundError } from './error/KeyManagementKeyNotFoundError'
-import { getJwkHumanDescription, type KmsJwkPrivate } from './jwk'
+import {
+  getJwkHumanDescription,
+  type KmsJwkPrivate,
+  type KnownJwaSignatureAlgorithm,
+  KnownJwaSignatureAlgorithms,
+} from './jwk'
 import { createKeyTypeForSigningAlgorithm } from './jwk/alg/signing'
 import { KeyManagementModuleConfig } from './KeyManagementModuleConfig'
 import {
@@ -58,6 +63,24 @@ export class KeyManagementApi {
     }
 
     return supportedBackends
+  }
+
+  /**
+   * The JWA signature algorithms that at least one backend can sign with.
+   *
+   * Symmetric (HMAC) algorithms are excluded by default, since in most cases signatures are
+   * verified by another party using a public key.
+   */
+  public supportedJwaSignatureAlgorithms(options?: {
+    includeSymmetricAlgorithms?: boolean
+  }): KnownJwaSignatureAlgorithm[] {
+    const includeSymmetricAlgorithms = options?.includeSymmetricAlgorithms ?? false
+
+    return Object.values(KnownJwaSignatureAlgorithms).filter(
+      (algorithm) =>
+        (includeSymmetricAlgorithms || createKeyTypeForSigningAlgorithm(algorithm).kty !== 'oct') &&
+        this.supportedBackendsForOperation({ operation: 'sign', algorithm }).length > 0
+    )
   }
 
   /**

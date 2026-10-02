@@ -35,7 +35,6 @@ import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCr
 import { assertAndSetCredentialSubjectId, assertCredentialSubjectMatchesOffer } from '../../util/credentialSubject'
 import { createDidCommSignedAttachment, verifyDidCommSignedAttachment } from '../../util/didCommSignedAttachment'
 import { getFormatDataAttachment } from '../../util/formatData'
-import { getSupportedJwaSignatureAlgorithms } from '../../util/signatureAlgorithm'
 import { getIssuerVerificationMethod } from '../../util/verificationMethod'
 import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
 import type {
@@ -855,7 +854,7 @@ export class DidCommDataIntegrityCredentialFormatService
       didCommSignedAttachmentBindingMethod = {
         didMethodsSupported:
           didMethodsSupported ?? agentContext.dependencyManager.resolve(DidsApi).supportedResolverMethods,
-        algsSupported: algsSupported ?? getSupportedJwaSignatureAlgorithms(agentContext),
+        algsSupported: algsSupported ?? kms.supportedJwaSignatureAlgorithms(),
         nonce: TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 })),
       }
 

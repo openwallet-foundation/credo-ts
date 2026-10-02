@@ -1,9 +1,10 @@
 import { AnonCredsModule } from '@credo-ts/anoncreds'
+import { CheqdAnonCredsRegistry } from '@credo-ts/cheqd/anoncreds'
 import { DidsModule } from '@credo-ts/core'
 import { NativeAnoncreds } from '../../anoncreds/tests/helpers'
 import { InMemoryTailsFileService } from '../../anoncreds/tests/InMemoryTailsFileService'
 import type { CheqdModuleConfigOptions } from '../src'
-import { CheqdAnonCredsRegistry, CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../src'
+import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../src'
 
 export const cheqdPayerSeeds = [
   'sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright',
