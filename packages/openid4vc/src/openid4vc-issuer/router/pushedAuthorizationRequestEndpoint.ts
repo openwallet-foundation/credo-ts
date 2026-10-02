@@ -3,6 +3,7 @@ import type { HttpMethod, ParsePushedAuthorizationRequestResult, RequestLike } f
 import {
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
+  PkceCodeChallengeMethod,
   pushedAuthorizationRequestUriPrefix,
 } from '@openid4vc/oauth2'
 import { addSecondsToDate } from '@openid4vc/utils'
@@ -126,6 +127,24 @@ export async function handlePushedAuthorizationRequest(
       // If client attestation is provided at the start, it's required from now on.
       required: true,
     }
+  }
+
+  // Bind the wallet's PKCE code challenge to the session, so the code verifier is verified at the token endpoint.
+  // The code challenge method defaults to `plain` when omitted (RFC 7636 §4.3).
+  const { code_challenge: codeChallenge, code_challenge_method: requestedCodeChallengeMethod = 'plain' } =
+    parsedAuthorizationRequest.authorizationRequest
+  if (codeChallenge) {
+    const codeChallengeMethod = Object.values(PkceCodeChallengeMethod).find(
+      (method) => method === requestedCodeChallengeMethod
+    )
+    if (!codeChallengeMethod) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidRequest,
+        error_description: `Unsupported 'code_challenge_method' '${requestedCodeChallengeMethod}'.`,
+      })
+    }
+
+    issuanceSession.pkce = { codeChallenge, codeChallengeMethod }
   }
 
   const offeredCredentialConfigurations = getOfferedCredentials(
