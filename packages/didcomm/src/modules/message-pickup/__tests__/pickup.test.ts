@@ -7,11 +7,13 @@ import { Agent } from '../../../../../core/src/agent/Agent'
 import { setupEventReplaySubjects } from '../../../../../core/tests'
 import {
   getAgentOptions,
+  makeConnection,
   waitForAgentMessageProcessedEventSubject,
   waitForBasicMessageSubject,
 } from '../../../../../core/tests/helpers'
 import type { DidCommMessageProcessedEvent } from '../../../DidCommEvents'
 import { DidCommEventTypes } from '../../../DidCommEvents'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { DidCommBasicMessageEventTypes } from '../../basic-messages'
 import { DidCommHandshakeProtocol } from '../../connections'
 import { DidCommMessageForwardingStrategy } from '../../routing/DidCommMessageForwardingStrategy'
@@ -362,4 +364,76 @@ describe('E2E Pick Up protocol', () => {
     const basicMessage = await basicMessagePromise
     expect(basicMessage.content).toBe(message)
   })
+
+  // Full Message Pickup 4.0 protocol loop over a v2 connection: a message is queued for an offline
+  // recipient, then drained via the v4 cascade (status-request -> status -> delivery-request ->
+  // delivery -> messages-received -> status), verifying the recipient drives the loop and that
+  // messages-received empties the mediator queue on acknowledgement.
+  test('E2E manual Pick Up V4 loop', async () => {
+    const mediatorMessages = new Subject<SubjectMessage>()
+    const subjectMap = { 'wss://mediator': mediatorMessages }
+
+    const mediatorOptionsV2 = getAgentOptions(
+      'Mediation Pickup Loop Mediator V2',
+      {
+        endpoints: ['wss://mediator'],
+        mediator: {
+          autoAcceptMediationRequests: true,
+          messageForwardingStrategy: DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery,
+        },
+        didcommVersions: ['v1', 'v2'],
+      },
+      {},
+      {},
+      { requireDidcomm: true, inMemory: false }
+    )
+    const recipientOptionsV2 = getAgentOptions(
+      'Mediation Pickup Loop Recipient V2',
+      { didcommVersions: ['v1', 'v2'] },
+      {},
+      {},
+      { requireDidcomm: true, inMemory: false }
+    )
+
+    mediatorAgent = new Agent(mediatorOptionsV2)
+    mediatorAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    mediatorAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    await mediatorAgent.initialize()
+
+    recipientAgent = new Agent(recipientOptionsV2)
+    recipientAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    await recipientAgent.initialize()
+
+    // Recipient has no inbound endpoint, so the mediator must queue anything it sends.
+    const [recipientMediatorConnection, mediatorRecipientConnection] = await makeConnection(
+      recipientAgent,
+      mediatorAgent,
+      { didCommVersion: 'v2' }
+    )
+    expect(recipientMediatorConnection.didcommVersion).toBe('v2')
+
+    // Drop the live session so the next message lands in the queue.
+    await recipientAgent.shutdown()
+    await recipientAgent.initialize()
+
+    const queueTransportRepository =
+      mediatorAgent.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
+    const queuedCount = () =>
+      queueTransportRepository.getAvailableMessageCount(mediatorAgent.context, {
+        connectionId: mediatorRecipientConnection.id,
+      })
+
+    for (let i = 0; i < 11; i++) {
+      await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, `hello pickup V4 ${i}`)
+    }
+    expect(await queuedCount()).toBe(11)
+
+    await recipientAgent.didcomm.messagePickup.pickupMessages({
+      connectionId: recipientMediatorConnection.id,
+      protocolVersion: 'v4',
+      awaitCompletion: true,
+    })
+
+    expect(await queuedCount()).toBe(0)
+  }, 60000)
 })
