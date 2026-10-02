@@ -3,6 +3,7 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../dids'
+import { Ed25519PublicJwk } from '../../kms'
 import { SECURITY_ED25519_2018_CONTEXT_URL, SECURITY_ED25519_2020_CONTEXT_URL } from '../constants'
 import { DEFAULT_CONTEXTS } from '../jsonld/contexts'
 import { W3cJwtCredentialService } from '../jwt-vc'
@@ -37,6 +38,30 @@ describe('W3cCredentialsModule', () => {
     expect(signatureSuiteRegistry.getByProofType('Ed25519Signature2020').verificationMethodTypes).toEqual([
       VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
     ])
+  })
+
+  test('custom signature suite replaces a built-in suite without removing other built-ins', () => {
+    class CustomEd25519Signature2018 extends Ed25519Signature2018 {}
+
+    const customSuite = {
+      suiteClass: CustomEd25519Signature2018,
+      proofType: 'Ed25519Signature2018',
+      verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
+      supportedPublicJwkTypes: [Ed25519PublicJwk],
+    }
+    const module = new W3cCredentialsModule({ signatureSuites: [customSuite] })
+    const dependencyManager = new DependencyManager()
+
+    module.register(dependencyManager)
+
+    const registry = dependencyManager.resolve(SignatureSuiteRegistry)
+    expect(registry.getByProofType('Ed25519Signature2018')).toBe(customSuite)
+    expect(registry.supportedProofTypes).toEqual(['Ed25519Signature2018', 'Ed25519Signature2020'])
+    expect(registry.getAllByPublicJwkType(Ed25519PublicJwk).map((suite) => suite.suiteClass)).toEqual([
+      CustomEd25519Signature2018,
+      Ed25519Signature2020,
+    ])
+    expect(registry.getByProofType('Ed25519Signature2020').suiteClass).toBe(Ed25519Signature2020)
   })
 
   test('ed25519 signature suites expose centrally bundled context metadata', () => {

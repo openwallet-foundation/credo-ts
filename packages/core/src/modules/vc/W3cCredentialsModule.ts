@@ -41,22 +41,27 @@ export class W3cCredentialsModule implements Module {
       dependencyManager.registerInstance(JsonLdModuleConfig, this.config)
     }
 
-    // Always register ed25519 signature suites
+    const builtInSuites: SuiteInfo[] = [
+      {
+        suiteClass: Ed25519Signature2018,
+        proofType: 'Ed25519Signature2018',
+        verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
+        supportedPublicJwkTypes: [Ed25519PublicJwk],
+      },
+      {
+        suiteClass: Ed25519Signature2020,
+        proofType: 'Ed25519Signature2020',
+        verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
+        supportedPublicJwkTypes: [Ed25519PublicJwk],
+      },
+    ]
+    const customProofTypes = new Set(this.config.signatureSuites.map((suite) => suite.proofType))
+
     dependencyManager.registerInstance(
       SignatureSuiteRegistry,
       new SignatureSuiteRegistry([
-        {
-          suiteClass: Ed25519Signature2018,
-          proofType: 'Ed25519Signature2018',
-          verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
-          supportedPublicJwkTypes: [Ed25519PublicJwk],
-        } satisfies SuiteInfo,
-        {
-          suiteClass: Ed25519Signature2020,
-          proofType: 'Ed25519Signature2020',
-          verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
-          supportedPublicJwkTypes: [Ed25519PublicJwk],
-        } satisfies SuiteInfo,
+        ...this.config.signatureSuites,
+        ...builtInSuites.filter((suite) => !customProofTypes.has(suite.proofType)),
       ])
     )
   }
