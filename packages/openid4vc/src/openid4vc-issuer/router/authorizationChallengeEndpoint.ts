@@ -252,6 +252,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     clientAttestation: {
       ...getClientAttestationToVerify(config, parseResult.clientAttestation, walletAttestationRequired),
       required: walletAttestationRequired,
+      allowedSkewInSeconds: config.allowedClockSkewInSeconds,
       // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not set. Per draft §7.2/§7.3 the DPoP key
       // only has to match the attestation `cnf.jwk` in DPoP combined mode, which this endpoint doesn't support.
     },
@@ -259,6 +260,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
       ...parseResult.dpop,
       // First session config, fall back to global config
       required: issuanceSession.dpop?.required ?? config.dpopRequired,
+      allowedClockSkewSeconds: config.allowedClockSkewInSeconds,
     },
   })
 
@@ -412,6 +414,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
       // We only look at the issuance session here. If it is required
       // it will be defined on the issuance session now.
       required: issuanceSession.walletAttestation?.required,
+      allowedSkewInSeconds: config.allowedClockSkewInSeconds,
       // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not set. Per draft §7.2/§7.3 the DPoP key
       // only has to match the attestation `cnf.jwk` in DPoP combined mode, which this endpoint doesn't support.
     },
@@ -420,6 +423,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
       // We only look at the issuance session here. If it is required
       // it will be defined on the issuance session now.
       required: issuanceSession.dpop?.required,
+      allowedClockSkewSeconds: config.allowedClockSkewInSeconds,
     },
   })
 

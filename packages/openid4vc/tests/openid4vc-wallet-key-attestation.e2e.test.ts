@@ -886,6 +886,129 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     }
   })
 
+  it('pushed authorization request accepts a client attestation pop jwt from the future only within allowedClockSkewInSeconds', async () => {
+    const idpApp = express()
+    idpApp.get('/.well-known/oauth-authorization-server', (_req, res) =>
+      res.json({
+        issuer: externalAuthorizationServerUrl,
+        token_endpoint: `${externalAuthorizationServerUrl}/token`,
+        authorization_endpoint: `${externalAuthorizationServerUrl}/authorize`,
+      } satisfies AuthorizationServerMetadata)
+    )
+    const clearIdpNock = setupNockToExpress(externalAuthorizationServerUrl, idpApp)
+
+    // Freeze the clock, so the `nbf` of the pop jwt is exactly the given number of seconds ahead of the issuer
+    vi.useFakeTimers({ toFake: ['Date'] })
+
+    try {
+      const chainedIssuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
+        issuerId: '5d1e0a37-3c8b-4f0e-9a51-7b2f6c9d4e18',
+        clientAttestationSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+        clientAttestationPopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+        credentialConfigurationsSupported: {
+          universityDegree: universityDegreeCredentialConfigurationSupportedMdoc,
+        },
+        authorizationServerConfigs: [
+          {
+            type: 'chained',
+            issuer: externalAuthorizationServerUrl,
+            clientAuthentication: {
+              type: 'clientSecret',
+              clientId: 'issuer-client-id',
+              clientSecret: 'issuer-client-secret',
+            },
+            scopesMapping: {
+              [universityDegreeCredentialConfigurationSupportedMdoc.scope]: ['MappedUniversityDegreeCredential'],
+            },
+          },
+        ],
+      })
+
+      const issuerState = utils.uuid()
+      await issuer.agent.openid4vc.issuer.createCredentialOffer({
+        issuerId: chainedIssuerRecord.issuerId,
+        credentialConfigurationIds: ['universityDegree'],
+        authorizationCodeFlowConfig: {
+          authorizationServerUrl: externalAuthorizationServerUrl,
+          issuerState,
+        },
+        authorization: {
+          requireDpop: false,
+          requireWalletAttestation: true,
+        },
+      })
+
+      const authorizationServer = `${issuerBaseUrl}/${chainedIssuerRecord.issuerId}`
+      const issuerService = issuer.agent.dependencyManager.resolve(OpenId4VcIssuerService)
+      const holderCallbacks = getOid4vcCallbacks(holder.agent.context)
+
+      const pushAuthorizationRequest = async (popNbfAheadInSeconds: number) => {
+        const { challenge } = await issuerService.createClientAttestationChallenge(
+          issuer.agent.context,
+          chainedIssuerRecord
+        )
+        const walletNowInSeconds = Math.floor(Date.now() / 1000) + popNbfAheadInSeconds
+        const { jwt: clientAttestationPopJwt } = await holderCallbacks.signJwt(
+          {
+            method: 'jwk',
+            alg: Kms.KnownJwaSignatureAlgorithms.ES256,
+            publicJwk: walletInstanceKey.toJson() as Jwk,
+            kid: walletInstanceKey.keyId,
+          },
+          {
+            header: { typ: 'oauth-client-attestation-pop+jwt', alg: Kms.KnownJwaSignatureAlgorithms.ES256 },
+            payload: {
+              aud: authorizationServer,
+              iat: walletNowInSeconds,
+              nbf: walletNowInSeconds,
+              jti: utils.uuid(),
+              challenge,
+            },
+          }
+        )
+
+        const response = await fetch(`${authorizationServer}/par`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'OAuth-Client-Attestation': walletAttestationJwt,
+            'OAuth-Client-Attestation-PoP': clientAttestationPopJwt,
+          },
+          body: new URLSearchParams({
+            response_type: 'code',
+            client_id: 'wallet',
+            redirect_uri: 'http://localhost/callback',
+            scope: universityDegreeCredentialConfigurationSupportedMdoc.scope,
+            issuer_state: issuerState,
+          }).toString(),
+        })
+
+        return { status: response.status, body: await response.json() }
+      }
+
+      // By default no clock skew is allowed
+      await expect(pushAuthorizationRequest(2)).resolves.toMatchObject({
+        status: 401,
+        body: { error: 'invalid_client', error_description: expect.stringContaining("'nbf' is in the future") },
+      })
+
+      const issuerConfig = issuer.agent.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+      vi.spyOn(issuerConfig, 'allowedClockSkewInSeconds', 'get').mockReturnValue(5)
+
+      await expect(pushAuthorizationRequest(10)).resolves.toMatchObject({
+        status: 401,
+        body: { error: 'invalid_client' },
+      })
+      await expect(pushAuthorizationRequest(2)).resolves.toMatchObject({
+        status: 200,
+        body: { request_uri: expect.any(String) },
+      })
+    } finally {
+      vi.useRealTimers()
+      clearIdpNock()
+    }
+  })
+
   it('throws error if wallet attestation required but not provided', async () => {
     // Create offer for university degree
     const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({

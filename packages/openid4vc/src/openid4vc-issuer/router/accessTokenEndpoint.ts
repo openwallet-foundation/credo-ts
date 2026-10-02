@@ -140,6 +140,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
             required: walletAttestationRequired,
+            allowedSkewInSeconds: config.allowedClockSkewInSeconds,
 
             // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
             // with an `OAuth-Client-Attestation-PoP` header has its DPoP proof verified per RFC 9449
@@ -149,6 +150,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             ...dpop,
             // First session config, fall back to global config
             required: issuanceSession.dpop?.required ?? config.dpopRequired,
+            allowedClockSkewSeconds: config.allowedClockSkewInSeconds,
           },
           expectedTxCode: issuanceSession.userPin,
           preAuthorizedCodeExpiresAt:
@@ -185,6 +187,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             // NOTE: we don't look at the global config here. As we already checked and
             // set required to true previously if client attestations were provided or required.
             required: issuanceSession.walletAttestation?.required,
+            allowedSkewInSeconds: config.allowedClockSkewInSeconds,
 
             // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
             // with an `OAuth-Client-Attestation-PoP` header has its DPoP proof verified per RFC 9449
@@ -198,6 +201,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
 
             // Ensure it matches previously provided jwk thumbprint
             expectedJwkThumbprint: issuanceSession.dpop?.dpopJkt,
+            allowedClockSkewSeconds: config.allowedClockSkewInSeconds,
           },
           pkce: issuanceSession.pkce
             ? {
@@ -222,6 +226,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
             required: walletAttestationRequired,
+            allowedSkewInSeconds: config.allowedClockSkewInSeconds,
 
             // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
             // with an `OAuth-Client-Attestation-PoP` header has its DPoP proof verified per RFC 9449
@@ -231,6 +236,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             ...dpop,
             // First session config, fall back to global config
             required: issuanceSession.dpop?.required ?? config.dpopRequired,
+            allowedClockSkewSeconds: config.allowedClockSkewInSeconds,
           },
           refreshTokenExpiresAt: parsedRefreshToken?.expiresAt,
         })
