@@ -9,7 +9,7 @@ import {
 } from '@credo-ts/didcomm'
 import { sleep } from '../../core/src/utils/sleep'
 import type { EventReplaySubject } from '../../core/tests'
-import { waitForProofExchangeRecord } from '../../core/tests'
+import { waitForProofExchangeRecordSubject } from '../../core/tests'
 import testLogger from '../../core/tests/logger'
 import { dateToTimestamp } from '../src/utils/timestamp'
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
@@ -87,10 +87,6 @@ describe('PP V2 AnonCreds Proofs', () => {
     // Alice sends a presentation proposal to Faber
     testLogger.test('Alice sends a presentation proposal to Faber')
 
-    let faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
-      state: DidCommProofState.ProposalReceived,
-    })
-
     aliceProofExchangeRecord = await aliceAgent.didcomm.proofs.proposeProof({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
@@ -119,7 +115,10 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     // Faber waits for a presentation proposal from Alice
     testLogger.test('Faber waits for a presentation proposal from Alice')
-    faberProofExchangeRecord = await faberProofExchangeRecordPromise
+    faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
+      threadId: aliceProofExchangeRecord.threadId,
+      state: DidCommProofState.ProposalReceived,
+    })
 
     const proposal = await faberAgent.didcomm.proofs.findProposalMessage(faberProofExchangeRecord.id)
     expect(proposal).toMatchObject({
@@ -148,10 +147,6 @@ describe('PP V2 AnonCreds Proofs', () => {
       protocolVersion: 'v2',
     })
 
-    let aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: DidCommProofState.RequestReceived,
-    })
-
     // Faber accepts the presentation proposal from Alice
     testLogger.test('Faber accepts presentation proposal from Alice')
     faberProofExchangeRecord = await faberAgent.didcomm.proofs.acceptProposal({
@@ -160,7 +155,10 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     // Alice waits for presentation request from Faber
     testLogger.test('Alice waits for presentation request from Faber')
-    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
+    aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
+      threadId: faberProofExchangeRecord.threadId,
+      state: DidCommProofState.RequestReceived,
+    })
 
     const request = await faberAgent.didcomm.proofs.findRequestMessage(faberProofExchangeRecord.id)
     expect(request).toMatchObject({
@@ -193,7 +191,7 @@ describe('PP V2 AnonCreds Proofs', () => {
       proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
 
-    faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       threadId: aliceProofExchangeRecord.threadId,
       state: DidCommProofState.PresentationReceived,
     })
@@ -237,7 +235,7 @@ describe('PP V2 AnonCreds Proofs', () => {
       protocolVersion: 'v2',
     })
 
-    aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: aliceProofExchangeRecord.threadId,
       state: DidCommProofState.Done,
     })
@@ -362,10 +360,6 @@ describe('PP V2 AnonCreds Proofs', () => {
   })
 
   test('Faber starts with proof request to Alice', async () => {
-    let aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: DidCommProofState.RequestReceived,
-    })
-
     // Faber sends a presentation request to Alice
     testLogger.test('Faber sends a presentation request to Alice')
     faberProofExchangeRecord = await faberAgent.didcomm.proofs.requestProof({
@@ -403,7 +397,10 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     // Alice waits for presentation request from Faber
     testLogger.test('Alice waits for presentation request from Faber')
-    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
+    aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
+      threadId: faberProofExchangeRecord.threadId,
+      state: DidCommProofState.RequestReceived,
+    })
 
     const request = await faberAgent.didcomm.proofs.findRequestMessage(faberProofExchangeRecord.id)
     expect(request).toMatchObject({
@@ -440,7 +437,7 @@ describe('PP V2 AnonCreds Proofs', () => {
       proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
 
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       threadId: aliceProofExchangeRecord.threadId,
       state: DidCommProofState.PresentationReceived,
     })
@@ -484,7 +481,7 @@ describe('PP V2 AnonCreds Proofs', () => {
       protocolVersion: 'v2',
     })
 
-    aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: aliceProofExchangeRecord.threadId,
       state: DidCommProofState.Done,
     })
@@ -518,10 +515,6 @@ describe('PP V2 AnonCreds Proofs', () => {
   })
 
   test('Alice provides credentials via call to getRequestedCredentials', async () => {
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: DidCommProofState.RequestReceived,
-    })
-
     // Faber sends a presentation request to Alice
     testLogger.test('Faber sends a presentation request to Alice')
     faberProofExchangeRecord = await faberAgent.didcomm.proofs.requestProof({
@@ -559,7 +552,10 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     // Alice waits for presentation request from Faber
     testLogger.test('Alice waits for presentation request from Faber')
-    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
+    aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
+      threadId: faberProofExchangeRecord.threadId,
+      state: DidCommProofState.RequestReceived,
+    })
 
     const retrievedCredentials = await aliceAgent.didcomm.proofs.getCredentialsForRequest({
       proofExchangeRecordId: aliceProofExchangeRecord.id,
@@ -611,10 +607,6 @@ describe('PP V2 AnonCreds Proofs', () => {
   })
 
   test('Faber starts with proof request to Alice but gets Problem Reported', async () => {
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: DidCommProofState.RequestReceived,
-    })
-
     // Faber sends a presentation request to Alice
     testLogger.test('Faber sends a presentation request to Alice')
     faberProofExchangeRecord = await faberAgent.didcomm.proofs.requestProof({
@@ -652,7 +644,10 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     // Alice waits for presentation request from Faber
     testLogger.test('Alice waits for presentation request from Faber')
-    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
+    aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
+      threadId: faberProofExchangeRecord.threadId,
+      state: DidCommProofState.RequestReceived,
+    })
 
     const request = await faberAgent.didcomm.proofs.findRequestMessage(faberProofExchangeRecord.id)
 
@@ -683,7 +678,7 @@ describe('PP V2 AnonCreds Proofs', () => {
       protocolVersion: 'v2',
     })
 
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       threadId: aliceProofExchangeRecord.threadId,
       state: DidCommProofState.Abandoned,
     })
@@ -703,10 +698,6 @@ describe('PP V2 AnonCreds Proofs', () => {
   })
 
   test('Credential is revoked after proof request and before presentation', async () => {
-    let aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: DidCommProofState.RequestReceived,
-    })
-
     const nrpRequestedTime = dateToTimestamp(new Date()) + 1
 
     const requestProofFormat: AnonCredsRequestProofFormat = {
@@ -749,7 +740,10 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     // Alice waits for presentation request from Faber
     testLogger.test('Alice waits for presentation request from Faber')
-    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
+    aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
+      threadId: faberProofExchangeRecord.threadId,
+      state: DidCommProofState.RequestReceived,
+    })
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
@@ -758,7 +752,7 @@ describe('PP V2 AnonCreds Proofs', () => {
       proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
 
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       threadId: aliceProofExchangeRecord.threadId,
       state: DidCommProofState.PresentationReceived,
     })
@@ -792,7 +786,7 @@ describe('PP V2 AnonCreds Proofs', () => {
     testLogger.test('Faber waits for presentation from Alice')
     faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
-    aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: aliceProofExchangeRecord.threadId,
       state: DidCommProofState.Done,
     })
@@ -838,10 +832,6 @@ describe('PP V2 AnonCreds Proofs', () => {
     expect(revocationStatusListState.revocationStatusList).toBeDefined()
     const revokedTimestamp = revocationStatusListState.revocationStatusList?.timestamp
 
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: DidCommProofState.RequestReceived,
-    })
-
     const nrpRequestedTime = (revokedTimestamp ?? dateToTimestamp(new Date())) + 1
 
     const requestProofFormat: AnonCredsRequestProofFormat = {
@@ -884,7 +874,10 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     // Alice waits for presentation request from Faber
     testLogger.test('Alice waits for presentation request from Faber')
-    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
+    aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
+      threadId: faberProofExchangeRecord.threadId,
+      state: DidCommProofState.RequestReceived,
+    })
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
@@ -894,8 +887,9 @@ describe('PP V2 AnonCreds Proofs', () => {
       proofFormats: { anoncreds: { filterByNonRevocationRequirements: false } },
     })
 
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       threadId: aliceProofExchangeRecord.threadId,
+      state: DidCommProofState.Abandoned,
     })
 
     await aliceAgent.didcomm.proofs.acceptRequest({
@@ -916,7 +910,7 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     // Faber will send a problem report, meaning for Alice that the proof state is abandoned
     // as well
-    await waitForProofExchangeRecord(aliceAgent, {
+    await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: aliceProofExchangeRecord.threadId,
       state: DidCommProofState.Abandoned,
     })
