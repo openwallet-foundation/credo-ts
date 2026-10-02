@@ -141,6 +141,19 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
   clientAttestationPopChallengeRequired?: boolean
 
   /**
+   * Allowed clock skew in seconds between the issuer and the wallet when verifying time-based claims of
+   * JWTs sent by the wallet to the authorization server (pushed authorization request, authorization challenge
+   * and token endpoints). Applied to the `nbf` and `exp` claims of the wallet (client) attestation and Client
+   * Attestation PoP JWTs. It is also passed as the allowed clock skew for DPoP proof verification, where it only
+   * affects the `iat` check if a maximum DPoP proof age is enforced (which is currently not the case).
+   *
+   * Use a small value (a few seconds) to tolerate wallets whose clock is slightly ahead or behind.
+   *
+   * @default 0
+   */
+  allowedClockSkewInSeconds?: number
+
+  /**
    * Whether to allow dynamic issuance sessions based on a credential request.
    *
    * This only works with **external authorization servers** which issue access tokens without
@@ -456,6 +469,16 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get clientAttestationPopChallengeRequired(): boolean {
     return this.options.clientAttestationPopChallengeRequired ?? false
+  }
+
+  /**
+   * Allowed clock skew in seconds between the issuer and the wallet when verifying time-based claims of
+   * JWTs sent by the wallet to the authorization server (wallet attestation, Client Attestation PoP and DPoP proof).
+   *
+   * @default 0
+   */
+  public get allowedClockSkewInSeconds(): number {
+    return this.options.allowedClockSkewInSeconds ?? 0
   }
 
   /**
