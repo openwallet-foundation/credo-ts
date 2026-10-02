@@ -40,7 +40,9 @@ In order for this module to work, we have to inject it into the agent to access 
 import { Agent } from "@credo-ts/core";
 import {
   DidCommModule,
+  DidCommHttpInboundTransport,
   DidCommHttpOutboundTransport,
+  DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
 } from "@credo-ts/didcomm";
 import { agentDependencies, webSocketHost } from "@credo-ts/node";
@@ -58,14 +60,16 @@ const agent = new Agent({
       // Addresses advertised to other agents for sending messages to this agent
       endpoints: ["http://localhost:3000", "ws://localhost:3001"],
 
-      // Inbound: receive messages over HTTP and WebSocket. These options create a
-      // DidCommHttpInboundTransport and a DidCommWsInboundTransport, served by the given hosts.
-      http: { host: expressHost({ port: 3000 }) },
-      webSocket: { host: webSocketHost({ port: 3001 }) },
-
-      // Outbound: send messages to other agents over HTTP and WebSocket.
+      // Inbound and outbound transports are explicit instances in the same configuration.
       transports: {
-        outbound: [new DidCommHttpOutboundTransport(), new DidCommWsOutboundTransport()],
+        inbound: [
+          new DidCommHttpInboundTransport({ host: expressHost({ port: 3000 }) }),
+          new DidCommWsInboundTransport({ host: webSocketHost({ port: 3001 }) }),
+        ],
+        outbound: [
+          new DidCommHttpOutboundTransport(),
+          new DidCommWsOutboundTransport(),
+        ],
       },
 
       connections: {
@@ -96,9 +100,9 @@ await agent.initialize();
 const outOfBand = await agent.didcomm.oob.createInvitation();
 ```
 
-### Inbound HTTP and WebSocket hosting
+### Inbound HTTP and WebSocket transports
 
-The `http` and `webSocket` options add a `DidCommHttpInboundTransport` and a `DidCommWsInboundTransport` to the inbound transports. Each transport is served by a host: in Node, `expressHost` from `@credo-ts/node/express` and `webSocketHost` from `@credo-ts/node`. The endpoint URLs are the externally reachable addresses advertised to other agents; they can differ from local ports when running behind a proxy.
+Create inbound transport instances and add them to `transports.inbound`, just like outbound transports in `transports.outbound`. In Node, serve HTTP with `expressHost` from `@credo-ts/node/express` and WebSocket with `webSocketHost` from `@credo-ts/node`. Custom transports use the same arrays. The endpoint URLs are the externally reachable addresses advertised to other agents; they can differ from local ports when running behind a proxy.
 
 #### Credo-owned listeners
 
@@ -107,12 +111,16 @@ When a host is given a `port`, it creates and starts the listener when the agent
 ```ts
 const didcomm = new DidCommModule({
   endpoints: ["http://localhost:3000", "ws://localhost:3001"],
-  http: { host: expressHost({ port: 3000 }) },
-  webSocket: { host: webSocketHost({ port: 3001 }) },
+  transports: {
+    inbound: [
+      new DidCommHttpInboundTransport({ host: expressHost({ port: 3000 }) }),
+      new DidCommWsInboundTransport({ host: webSocketHost({ port: 3001 }) }),
+    ],
+  },
 });
 ```
 
-HTTP messages are accepted on `/` by default; set `http: { host, path: "/didcomm" }` to use another path.
+HTTP messages are accepted on `/` by default; pass `path: "/didcomm"` to `DidCommHttpInboundTransport` to use another path.
 
 #### Application-owned Express app
 
@@ -126,7 +134,9 @@ app.get("/health", (_request, response) => response.sendStatus(204));
 
 const didcomm = new DidCommModule({
   endpoints: ["https://agent.example"],
-  http: { host: expressHost({ app }) },
+  transports: {
+    inbound: [new DidCommHttpInboundTransport({ host: expressHost({ app }) })],
+  },
 });
 
 const agent = new Agent({ /* ... */ modules: { didcomm } });
@@ -148,8 +158,12 @@ const httpHost = expressHost({ app, port: 3000 });
 
 const didcomm = new DidCommModule({
   endpoints: ["http://localhost:3000", "ws://localhost:3000"],
-  http: { host: httpHost },
-  webSocket: { host: webSocketHost({ server: socketServer }) },
+  transports: {
+    inbound: [
+      new DidCommHttpInboundTransport({ host: httpHost }),
+      new DidCommWsInboundTransport({ host: webSocketHost({ server: socketServer }) }),
+    ],
+  },
 });
 
 const agent = new Agent({ /* ... */ modules: { didcomm } });
@@ -193,11 +207,11 @@ agent.didcomm.registerOutboundTransport(new DidCommWsOutboundTransport());
 await agent.initialize();
 ```
 
-The same transport instances can also be passed to `transports.inbound` and `transports.outbound` in the module configuration. The `DidCommHttpInboundTransport` and `DidCommWsInboundTransport` classes exported by `@credo-ts/node` continue to work unchanged, but are deprecated in favour of the `http` and `webSocket` options.
+The same transport instances can also be passed to `transports.inbound` and `transports.outbound` in the module configuration. The `DidCommHttpInboundTransport` and `DidCommWsInboundTransport` classes exported by `@credo-ts/node` continue to work unchanged, but are deprecated in favour of the transport classes exported by `@credo-ts/didcomm`.
 
 #### Other or custom inbound transports
 
-Any class implementing `DidCommInboundTransport` can receive messages, for example a transport for another protocol or an existing transport configured differently. Add it with `transports.inbound`, alongside the `http` and `webSocket` options:
+Any class implementing `DidCommInboundTransport` can receive messages, for example a transport for another protocol or an existing transport configured differently. Add it to `transports.inbound` alongside the built-in inbound transports:
 
 ```ts
 import type { AgentContext } from "@credo-ts/core";
@@ -215,11 +229,13 @@ class MyInboundTransport implements DidCommInboundTransport {
 
 const didcomm = new DidCommModule({
   endpoints: ["http://localhost:3000"],
-  http: { host: expressHost({ port: 3000 }) },
   transports: {
-    inbound: [new MyInboundTransport()],
+    inbound: [
+      new DidCommHttpInboundTransport({ host: expressHost({ port: 3000 }) }),
+      new MyInboundTransport(),
+    ],
   },
 });
 ```
 
-The transports created by the `http` and `webSocket` options are added after those in `transports.inbound`. All inbound transports are started when the agent is initialized and stopped when it shuts down.
+All configured inbound and outbound transports are started when the agent is initialized and stopped when it shuts down.

@@ -154,10 +154,14 @@ describe('webSocketHost', () => {
 })
 
 describe('DidCommModule inbound transport options', () => {
-  it('accepts the Node hosts', () => {
+  it('accepts built-in transports with explicit Node hosts', () => {
     const module = new DidCommModule({
-      http: { host: expressHost({ port: 0 }) },
-      webSocket: { host: webSocketHost({ port: 0 }) },
+      transports: {
+        inbound: [
+          new DidCommHttpInboundTransport({ host: expressHost({ port: 0 }) }),
+          new DidCommWsInboundTransport({ host: webSocketHost({ port: 0 }) }),
+        ],
+      },
     })
 
     expect(module.config.inboundTransports).toEqual([
