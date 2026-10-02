@@ -1,7 +1,17 @@
-import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../didcomm/src'
+import { DidCommDidExchangeState, DidCommHandshakeProtocol, DidCommTrustPingEventTypes } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
-import { getAgentOptions, waitForTrustPingReceivedEvent, waitForTrustPingResponseReceivedEvent } from './helpers'
+import { setupEventReplaySubjects } from './events'
+import {
+  getAgentOptions,
+  waitForTrustPingReceivedEventSubject,
+  waitForTrustPingResponseReceivedEventSubject,
+} from './helpers'
 import { setupSubjectTransports } from './transport'
+
+const trustPingEventTypes = [
+  DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent,
+  DidCommTrustPingEventTypes.DidCommTrustPingResponseReceivedEvent,
+]
 
 type DidCommV2Config = { endpoints: string[]; didcommVersions: ('v1' | 'v2')[] }
 
@@ -72,9 +82,10 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
       expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
+      const [aliceReplay] = setupEventReplaySubjects([aliceAgent], trustPingEventTypes)
       const ping = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection.id, {})
 
-      await waitForTrustPingResponseReceivedEvent(aliceAgent, { threadId: ping.threadId })
+      await waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: ping.threadId })
     })
 
     it('inviter sends trust-ping and receives response over v2', async () => {
@@ -98,8 +109,9 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const faberConnected = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
 
+      const [faberReplay] = setupEventReplaySubjects([faberAgent], trustPingEventTypes)
       const ping = await faberAgent.didcomm.connections.sendPing(faberConnected.id, {})
-      await waitForTrustPingResponseReceivedEvent(faberAgent, { threadId: ping.threadId })
+      await waitForTrustPingResponseReceivedEventSubject(faberReplay, { threadId: ping.threadId })
     })
 
     it('sends trust-ping without response (responseRequested: false) over v2', async () => {
@@ -122,11 +134,12 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const faberConnected = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
 
+      const [aliceReplay] = setupEventReplaySubjects([aliceAgent], trustPingEventTypes)
       const ping = await faberAgent.didcomm.connections.sendPing(faberConnected.id, {
         responseRequested: false,
       })
 
-      await waitForTrustPingReceivedEvent(aliceAgent, { threadId: ping.threadId })
+      await waitForTrustPingReceivedEventSubject(aliceReplay, { threadId: ping.threadId })
       expect(ping.responseRequested).toBe(false)
     })
 
@@ -149,12 +162,13 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const faberConnected = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
 
+      const [faberReplay, aliceReplay] = setupEventReplaySubjects([faberAgent, aliceAgent], trustPingEventTypes)
       const alicePing = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection.id, {})
       const faberPing = await faberAgent.didcomm.connections.sendPing(faberConnected.id, {})
 
       await Promise.all([
-        waitForTrustPingResponseReceivedEvent(aliceAgent, { threadId: alicePing.threadId }),
-        waitForTrustPingResponseReceivedEvent(faberAgent, { threadId: faberPing.threadId }),
+        waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: alicePing.threadId }),
+        waitForTrustPingResponseReceivedEventSubject(faberReplay, { threadId: faberPing.threadId }),
       ])
     })
 
@@ -189,8 +203,9 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       if (!aliceFaberConnection) throw new Error('Expected aliceFaberConnection to be defined')
       expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
+      const [aliceReplay] = setupEventReplaySubjects([aliceAgent], trustPingEventTypes)
       const ping = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection.id, {})
-      await waitForTrustPingResponseReceivedEvent(aliceAgent, { threadId: ping.threadId })
+      await waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: ping.threadId })
     })
   })
 
@@ -223,9 +238,10 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       expect(faberConn).toBeDefined()
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const faberConnected = await faber.didcomm.connections.returnWhenIsConnected(faberConn!.id)
+      const [faberReplay] = setupEventReplaySubjects([faber], trustPingEventTypes)
       const ping = await faber.didcomm.connections.sendPing(faberConnected.id, {})
 
-      await waitForTrustPingResponseReceivedEvent(faber, { threadId: ping.threadId })
+      await waitForTrustPingResponseReceivedEventSubject(faberReplay, { threadId: ping.threadId })
 
       await faber.shutdown()
       await alice.shutdown()
@@ -254,8 +270,9 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       aliceConn = await alice.didcomm.connections.returnWhenIsConnected(aliceConn?.id!)
 
+      const [aliceReplay] = setupEventReplaySubjects([alice], trustPingEventTypes)
       const ping = await alice.didcomm.connections.sendPing(aliceConn.id, {})
-      await waitForTrustPingResponseReceivedEvent(alice, { threadId: ping.threadId })
+      await waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: ping.threadId })
 
       await faber.shutdown()
       await alice.shutdown()
@@ -289,8 +306,9 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const faberConnected = await faber.didcomm.connections.returnWhenIsConnected(faberConn!.id)
 
+      const [faberReplay] = setupEventReplaySubjects([faber], trustPingEventTypes)
       const ping = await faber.didcomm.connections.sendPing(faberConnected.id, {})
-      await waitForTrustPingResponseReceivedEvent(faber, { threadId: ping.threadId })
+      await waitForTrustPingResponseReceivedEventSubject(faberReplay, { threadId: ping.threadId })
 
       await faber.shutdown()
       await alice.shutdown()
@@ -323,8 +341,9 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const faberConnected = await faber.didcomm.connections.returnWhenIsConnected(faberConn!.id)
 
+      const [aliceReplay] = setupEventReplaySubjects([alice], trustPingEventTypes)
       const ping = await faber.didcomm.connections.sendPing(faberConnected.id, { responseRequested: false })
-      await waitForTrustPingReceivedEvent(alice, { threadId: ping.threadId })
+      await waitForTrustPingReceivedEventSubject(aliceReplay, { threadId: ping.threadId })
       expect(ping.responseRequested).toBe(false)
 
       await faber.shutdown()
@@ -358,12 +377,13 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const faberConnected = await faber.didcomm.connections.returnWhenIsConnected(faberConn!.id)
 
+      const [faberReplay, aliceReplay] = setupEventReplaySubjects([faber, alice], trustPingEventTypes)
       const alicePing = await alice.didcomm.connections.sendPing(aliceConn.id, {})
       const faberPing = await faber.didcomm.connections.sendPing(faberConnected.id, {})
 
       await Promise.all([
-        waitForTrustPingResponseReceivedEvent(alice, { threadId: alicePing.threadId }),
-        waitForTrustPingResponseReceivedEvent(faber, { threadId: faberPing.threadId }),
+        waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: alicePing.threadId }),
+        waitForTrustPingResponseReceivedEventSubject(faberReplay, { threadId: faberPing.threadId }),
       ])
 
       await faber.shutdown()

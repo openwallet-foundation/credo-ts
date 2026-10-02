@@ -1,5 +1,7 @@
+import { DidCommTrustPingEventTypes } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
-import { getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
+import { setupEventReplaySubjects } from './events'
+import { getAgentOptions, waitForTrustPingResponseReceivedEventSubject } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 const faberAgent = new Agent(
@@ -76,7 +78,11 @@ describe('DIDComm v2 P-256 connection', () => {
     expect(faberConnection.theirDid).toBe(aliceDid)
     expect(aliceConnection.theirDid).toBe(faberConnection.did)
 
+    const [aliceReplay] = setupEventReplaySubjects(
+      [aliceAgent],
+      [DidCommTrustPingEventTypes.DidCommTrustPingResponseReceivedEvent]
+    )
     const ping = await aliceAgent.didcomm.connections.sendPing(aliceConnection.id, {})
-    await waitForTrustPingResponseReceivedEvent(aliceAgent, { threadId: ping.threadId })
+    await waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: ping.threadId })
   }, 30000)
 })

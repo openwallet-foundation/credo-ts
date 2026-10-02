@@ -1,5 +1,5 @@
 import { ReplaySubject } from 'rxjs'
-import { DidCommDiscoverFeaturesEventTypes, DidCommGoalCode } from '../../didcomm/src'
+import { DidCommBasicMessageEventTypes, DidCommDiscoverFeaturesEventTypes, DidCommGoalCode } from '../../didcomm/src'
 import {
   waitForDisclosureSubject,
   waitForQuerySubject,
@@ -9,7 +9,8 @@ import type {
   DidCommDiscoverFeaturesQueryReceivedEvent,
 } from '../../didcomm/src/modules/discover-features/DidCommDiscoverFeaturesEvents'
 import { Agent } from '../src/agent/Agent'
-import { getAgentOptions, makeConnection, waitForBasicMessage } from './helpers'
+import { type EventReplaySubject, setupEventReplaySubjects } from './events'
+import { getAgentOptions, makeConnection, waitForBasicMessageSubject } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 const faberAgent = new Agent(
@@ -36,11 +37,20 @@ describe('DIDComm v2 modules', () => {
   describe('Basic messages', () => {
     let faberConnection: Awaited<ReturnType<typeof makeConnection>>[0]
     let aliceConnection: Awaited<ReturnType<typeof makeConnection>>[1]
+    let faberReplay: EventReplaySubject
+    let aliceReplay: EventReplaySubject
 
     beforeEach(async () => {
       setupSubjectTransports([faberAgent, aliceAgent])
       await faberAgent.initialize()
       await aliceAgent.initialize()
+      ;[faberReplay, aliceReplay] = setupEventReplaySubjects(
+        [faberAgent, aliceAgent],
+        [
+          DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+          DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged,
+        ]
+      )
       ;[faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
     })
 
@@ -53,7 +63,8 @@ describe('DIDComm v2 modules', () => {
       const helloRecord = await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'Hello over v2')
       expect(helloRecord.content).toBe('Hello over v2')
 
-      const receivedHello = await waitForBasicMessage(faberAgent, {
+      const receivedHello = await waitForBasicMessageSubject(faberReplay, {
+        threadId: helloRecord.threadId,
         content: 'Hello over v2',
       })
       expect(receivedHello.content).toBe('Hello over v2')
@@ -61,7 +72,8 @@ describe('DIDComm v2 modules', () => {
       const replyRecord = await faberAgent.didcomm.basicMessages.sendMessage(faberConnection.id, 'How are you? (v2)')
       expect(replyRecord.content).toBe('How are you? (v2)')
 
-      const receivedReply = await waitForBasicMessage(aliceAgent, {
+      const receivedReply = await waitForBasicMessageSubject(aliceReplay, {
+        threadId: replyRecord.threadId,
         content: 'How are you? (v2)',
       })
       expect(receivedReply.content).toBe('How are you? (v2)')
@@ -71,7 +83,8 @@ describe('DIDComm v2 modules', () => {
       const helloRecord = await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'Threaded hello')
       expect(helloRecord.content).toBe('Threaded hello')
 
-      const helloMessage = await waitForBasicMessage(faberAgent, {
+      const helloMessage = await waitForBasicMessageSubject(faberReplay, {
+        threadId: helloRecord.threadId,
         content: 'Threaded hello',
       })
 
@@ -83,7 +96,8 @@ describe('DIDComm v2 modules', () => {
       expect(replyRecord.content).toBe('Threaded reply')
       expect(replyRecord.parentThreadId).toBe(helloMessage.id)
 
-      await waitForBasicMessage(aliceAgent, {
+      await waitForBasicMessageSubject(aliceReplay, {
+        threadId: replyRecord.threadId,
         content: 'Threaded reply',
       })
     })
