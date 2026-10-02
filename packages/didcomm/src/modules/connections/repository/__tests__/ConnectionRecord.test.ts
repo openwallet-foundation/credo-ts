@@ -14,6 +14,7 @@ describe('DidCommConnectionRecord', () => {
         theirDid: 'a-their-did',
         outOfBandId: 'a-out-of-band-id',
         invitationDid: 'a-invitation-did',
+        didcommVersion: 'v2',
       })
 
       expect(connectionRecord.getTags()).toEqual({
@@ -25,6 +26,7 @@ describe('DidCommConnectionRecord', () => {
         theirDid: 'a-their-did',
         outOfBandId: 'a-out-of-band-id',
         invitationDid: 'a-invitation-did',
+        didcommVersion: 'v2',
         connectionTypes: [],
         previousDids: [],
         previousTheirDids: [],

@@ -849,6 +849,9 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
+      '@stablelib/ed25519':
+        specifier: 'catalog:'
+        version: 2.1.0
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1
@@ -868,6 +871,9 @@ importers:
       '@animo-id/pex':
         specifier: 'catalog:'
         version: 6.1.1(supports-color@8.1.1)
+      '@openwallet-foundation/askar-nodejs':
+        specifier: 'catalog:'
+        version: 0.6.1
       '@sphereon/pex-models':
         specifier: 'catalog:'
         version: 2.3.2
@@ -6604,10 +6610,6 @@ packages:
     resolution: {integrity: sha512-NCrCHhWmnQklfH4MtJMRjZ2a8c80qXeMlQMv2uVp9ISJMTt562SbGd6n2oq0PaPgKm7Z6pL9E2UlLIhC+SHL3w==}
     engines: {node: '>=4.0.0'}
 
-  postcss@8.5.25:
-    resolution: {integrity: sha512-DTPx3RWSSnWyzLxQnlH0rJP+EW5ekl16ZU4/psbIhA0e53kJfdgaN5vKM+xP7yJtXVu+nfdVFmlgFDEKAe4Pyw==}
-    engines: {node: ^10 || ^12 || >=14}
-
   postcss@8.5.28:
     resolution: {integrity: sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==}
     engines: {node: ^10 || ^12 || >=14}
@@ -9440,7 +9442,7 @@ snapshots:
       jsc-safe-url: 0.2.4
       lightningcss: 1.33.0
       picomatch: 4.0.7
-      postcss: 8.5.25
+      postcss: 8.5.28
       resolve-from: 5.0.0
     optionalDependencies:
       expo: 57.0.22(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@5.9.3)
@@ -13997,13 +13999,6 @@ snapshots:
       toposort: 2.0.2
 
   pngjs@3.4.0:
-    optional: true
-
-  postcss@8.5.25:
-    dependencies:
-      nanoid: 3.3.19
-      picocolors: 1.1.1
-      source-map-js: 1.2.1
     optional: true
 
   postcss@8.5.28:
