@@ -6,12 +6,6 @@ import { suites } from './adapters/jsonld-signatures-adapter'
 
 const LinkedDataSignature = suites.LinkedDataSignature
 
-/**
- * @deprecated Registration token retained for backward compatibility.
- * Will be removed in 0.8.
- */
-export const SignatureSuiteToken = Symbol('SignatureSuiteToken')
-
 export interface SuiteInfo {
   suiteClass: typeof LinkedDataSignature
   proofType: string
@@ -27,33 +21,8 @@ export class SignatureSuiteRegistry {
     this.suiteMapping = [...suites]
   }
 
-  /**
-   * @deprecated Pass suites to the constructor instead.
-   * Will be removed in 0.8.
-   */
-  public registerSuite(suiteInfo: SuiteInfo) {
-    this.suiteMapping.push(suiteInfo)
-  }
-
-  /**
-   * @deprecated Pass suites to the constructor instead.
-   * Will be removed in 0.8.
-   */
-  public registerSuites(suites: SuiteInfo[]) {
-    for (const suite of suites) {
-      this.registerSuite(suite)
-    }
-  }
-
   public get supportedProofTypes(): string[] {
     return this.suiteMapping.map((x) => x.proofType)
-  }
-
-  /**
-   * @deprecated recommended to always search by key type instead as that will have broader support
-   */
-  public getByVerificationMethodType(verificationMethodType: string) {
-    return this.suiteMapping.find((x) => x.verificationMethodTypes.includes(verificationMethodType))
   }
 
   public getAllByPublicJwkType(publicJwkType: SupportedPublicJwkClass | PublicJwk) {
