@@ -17,8 +17,10 @@ import type { InitConfig } from '@credo-ts/core'
 import { Agent, LogLevel } from '@credo-ts/core'
 import {
   DidCommConnectionInvitationMessage,
+  DidCommHttpInboundTransport,
   DidCommHttpOutboundTransport,
   DidCommModule,
+  DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
 import { agentDependencies, webSocketHost } from '@credo-ts/node'
@@ -45,10 +47,6 @@ const agentConfig: InitConfig = {
   logger,
 }
 
-// Create outbound transports
-const httpOutboundTransport = new DidCommHttpOutboundTransport()
-const wsOutboundTransport = new DidCommWsOutboundTransport()
-
 // Set up agent
 const agent = new Agent({
   config: agentConfig,
@@ -63,10 +61,12 @@ const agent = new Agent({
     }),
     didcomm: new DidCommModule({
       endpoints,
-      http: { host: httpHost },
-      webSocket: { host: webSocketHost({ server: socketServer }) },
       transports: {
-        outbound: [httpOutboundTransport, wsOutboundTransport],
+        inbound: [
+          new DidCommHttpInboundTransport({ host: httpHost }),
+          new DidCommWsInboundTransport({ host: webSocketHost({ server: socketServer }) }),
+        ],
+        outbound: [new DidCommHttpOutboundTransport(), new DidCommWsOutboundTransport()],
       },
       mediator: {
         autoAcceptMediationRequests: true,

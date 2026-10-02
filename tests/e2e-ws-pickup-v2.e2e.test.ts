@@ -7,6 +7,7 @@ import {
   DidCommAutoAcceptCredential,
   DidCommMediatorPickupStrategy,
   DidCommMessageForwardingStrategy,
+  DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
 } from '../packages/didcomm/src'
 import { e2eTest } from './e2e-test'
@@ -26,7 +27,9 @@ const mediatorOptions = () =>
         autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
         extraDidCommConfig: {
           endpoints: [`ws://localhost:${mediatorPort}`],
-          webSocket: { host: webSocketHost({ port: mediatorPort }) },
+          transports: {
+            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ port: mediatorPort }) })],
+          },
           mediator: {
             autoAcceptMediationRequests: true,
             messageForwardingStrategy: DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery,
@@ -48,7 +51,9 @@ const senderOptions = () =>
         autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
         extraDidCommConfig: {
           endpoints: [`ws://localhost:${senderPort}`],
-          webSocket: { host: webSocketHost({ port: senderPort }) },
+          transports: {
+            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ port: senderPort }) })],
+          },
         },
       }),
     },
