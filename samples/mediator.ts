@@ -15,7 +15,13 @@
 import { AskarModule } from '@credo-ts/askar'
 import type { InitConfig } from '@credo-ts/core'
 import { Agent, LogLevel } from '@credo-ts/core'
-import { DidCommHttpOutboundTransport, DidCommModule, DidCommWsOutboundTransport } from '@credo-ts/didcomm'
+import {
+  DidCommHttpInboundTransport,
+  DidCommHttpOutboundTransport,
+  DidCommModule,
+  DidCommWsInboundTransport,
+  DidCommWsOutboundTransport,
+} from '@credo-ts/didcomm'
 import { agentDependencies, webSocketHost } from '@credo-ts/node'
 import { expressHost } from '@credo-ts/node/express'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
@@ -40,10 +46,6 @@ const agentConfig: InitConfig = {
   logger,
 }
 
-// Create outbound transports
-const httpOutboundTransport = new DidCommHttpOutboundTransport()
-const wsOutboundTransport = new DidCommWsOutboundTransport()
-
 // Set up agent
 const agent = new Agent({
   config: agentConfig,
@@ -58,10 +60,12 @@ const agent = new Agent({
     }),
     didcomm: new DidCommModule({
       endpoints,
-      http: { host: httpHost },
-      webSocket: { host: webSocketHost({ server: socketServer }) },
       transports: {
-        outbound: [httpOutboundTransport, wsOutboundTransport],
+        inbound: [
+          new DidCommHttpInboundTransport({ host: httpHost }),
+          new DidCommWsInboundTransport({ host: webSocketHost({ server: socketServer }) }),
+        ],
+        outbound: [new DidCommHttpOutboundTransport(), new DidCommWsOutboundTransport()],
       },
       mediator: {
         autoAcceptMediationRequests: true,

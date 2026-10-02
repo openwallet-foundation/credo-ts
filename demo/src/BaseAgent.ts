@@ -13,6 +13,7 @@ import {
   DidCommAutoAcceptCredential,
   DidCommAutoAcceptProof,
   DidCommCredentialV2Protocol,
+  DidCommHttpInboundTransport,
   DidCommHttpOutboundTransport,
   DidCommModule,
   DidCommProofV2Protocol,
@@ -58,8 +59,8 @@ export class BaseAgent {
       modules: getAskarAnonCredsIndyModules(
         {
           endpoints: [`http://localhost:${this.port}`],
-          http: { host: expressHost({ port }) },
           transports: {
+            inbound: [new DidCommHttpInboundTransport({ host: expressHost({ port }) })],
             outbound: [new DidCommHttpOutboundTransport()],
           },
         },

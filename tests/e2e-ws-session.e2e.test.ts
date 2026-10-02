@@ -1,4 +1,5 @@
 import { Agent } from '@credo-ts/core'
+import { DidCommWsInboundTransport } from '@credo-ts/didcomm'
 import { webSocketHost } from '@credo-ts/node'
 import { WebSocketServer } from 'ws'
 import { getAgentOptions, makeConnection } from '../packages/core/tests/helpers'
@@ -30,7 +31,9 @@ describe('E2E WS session tests', () => {
         'E2E WS Session Mediator',
         {
           endpoints: [`ws://localhost:${mediatorPort}`],
-          webSocket: { host: webSocketHost({ server: socketServer }) },
+          transports: {
+            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ server: socketServer }) })],
+          },
           mediator: { autoAcceptMediationRequests: true },
         },
         {},

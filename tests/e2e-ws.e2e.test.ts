@@ -2,6 +2,7 @@ import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
   DidCommMediatorPickupStrategy,
+  DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
 import { webSocketHost } from '@credo-ts/node'
@@ -39,7 +40,9 @@ const mediatorAgentOptions = getAgentOptions(
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
       extraDidCommConfig: {
         endpoints: [`ws://localhost:${mediatorPort}`],
-        webSocket: { host: webSocketHost({ port: mediatorPort }) },
+        transports: {
+          inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ port: mediatorPort }) })],
+        },
         mediator: {
           autoAcceptMediationRequests: true,
         },
@@ -59,7 +62,9 @@ const senderAgentOptions = getAgentOptions(
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
       extraDidCommConfig: {
         endpoints: [`ws://localhost:${senderPort}`],
-        webSocket: { host: webSocketHost({ port: senderPort }) },
+        transports: {
+          inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ port: senderPort }) })],
+        },
         mediationRecipient: {
           mediatorPollingInterval: 1000,
           mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,

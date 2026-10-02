@@ -1,6 +1,6 @@
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
-import { DidCommModule } from '@credo-ts/didcomm'
+import { DidCommHttpInboundTransport, DidCommModule, DidCommWsInboundTransport } from '@credo-ts/didcomm'
 import { agentDependencies, webSocketHost } from '@credo-ts/node'
 import { expressHost } from '@credo-ts/node/express'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
@@ -34,8 +34,12 @@ const run = async () => {
       }),
       didcomm: new DidCommModule({
         endpoints: [`http://localhost:${port}`],
-        http: { host: httpHost },
-        webSocket: { host: webSocketHost({ server: socketServer }) },
+        transports: {
+          inbound: [
+            new DidCommHttpInboundTransport({ host: httpHost }),
+            new DidCommWsInboundTransport({ host: webSocketHost({ server: socketServer }) }),
+          ],
+        },
         connections: { autoAcceptConnections: true },
       }),
       dummy: new DummyModule({ autoAcceptRequests }),
