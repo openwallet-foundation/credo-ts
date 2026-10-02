@@ -137,7 +137,7 @@ export class DidCommJsonLdCredentialFormatService
    *
    */
   public async createOffer(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { credentialFormats, attachmentId }: DidCommCredentialFormatCreateOfferOptions<DidCommJsonLdCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
@@ -153,6 +153,15 @@ export class DidCommJsonLdCredentialFormatService
 
     // validate
     JsonTransformer.fromJSON(jsonLdFormat.credential, DidCommJsonLdCredentialDetail)
+
+    const verificationMethod = await this.deriveVerificationMethod(agentContext, jsonLdFormat.credential, jsonLdFormat)
+    const w3cJsonLdCredentialService = agentContext.dependencyManager.resolve(W3cJsonLdCredentialService)
+    const credential = JsonTransformer.fromJSON(jsonLdFormat.credential, W3cCredential)
+    await w3cJsonLdCredentialService.assertCanSignCredential(agentContext, {
+      proofType: jsonLdFormat.options.proofType,
+      verificationMethod,
+      controller: credential.issuerId,
+    })
 
     const attachment = this.getFormatData(jsonLdFormat, format.attachmentId)
 
@@ -287,7 +296,7 @@ export class DidCommJsonLdCredentialFormatService
   private async deriveVerificationMethod(
     agentContext: AgentContext,
     credentialAsJson: JsonCredential,
-    credentialRequest: JsonLdFormatDataCredentialDetail
+    credentialRequest: { options: { proofType: string } }
   ): Promise<string> {
     const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
     const w3cJsonLdCredentialService = agentContext.dependencyManager.resolve(W3cJsonLdCredentialService)
