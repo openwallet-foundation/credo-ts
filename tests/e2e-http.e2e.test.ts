@@ -1,6 +1,7 @@
 import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
+  DidCommHttpInboundTransport,
   DidCommHttpOutboundTransport,
   DidCommMediatorPickupStrategy,
 } from '@credo-ts/didcomm'
@@ -38,7 +39,9 @@ const mediatorAgentOptions = getAgentOptions(
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
       extraDidCommConfig: {
         endpoints: [`http://localhost:${mediatorPort}`],
-        http: { host: expressHost({ port: mediatorPort }) },
+        transports: {
+          inbound: [new DidCommHttpInboundTransport({ host: expressHost({ port: mediatorPort }) })],
+        },
         mediator: {
           autoAcceptMediationRequests: true,
         },
@@ -57,7 +60,9 @@ const senderAgentOptions = getAgentOptions(
     autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
     extraDidCommConfig: {
       endpoints: [`http://localhost:${senderPort}`],
-      http: { host: expressHost({ port: senderPort }) },
+      transports: {
+        inbound: [new DidCommHttpInboundTransport({ host: expressHost({ port: senderPort }) })],
+      },
     },
   }),
   { requireDidcomm: true }
