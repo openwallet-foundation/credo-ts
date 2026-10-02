@@ -6,7 +6,7 @@ import {
 } from '@credo-ts/anoncreds'
 import { Agent, DidsModule, TypedArrayEncoder } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
-import { anoncreds } from '../../anoncreds/tests/helpers'
+import { NativeAnoncreds } from '../../anoncreds/tests/helpers'
 import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
 import { IndyVdrIndyDidResolver, IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
@@ -15,6 +15,19 @@ import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrPoolService } from '../src/pool'
 import { credentialDefinitionValue, revocationRegistryDefinitionValue } from './__fixtures__/anoncreds'
 import { indyVdrModuleConfig } from './helpers'
+
+// Reads can be served by a ledger node that hasn't applied a just-written transaction yet
+async function resolveWhenAvailable<T extends { resolutionMetadata: { error?: string } }>(
+  resolve: () => Promise<T>
+): Promise<T> {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const result = await resolve()
+    if (!result.resolutionMetadata.error) return result
+    await new Promise((res) => setTimeout(res, 500))
+  }
+
+  return resolve()
+}
 
 const indyVdrAnonCredsRegistry = new IndyVdrAnonCredsRegistry()
 
@@ -25,7 +38,7 @@ const endorser = new Agent(
     {},
     {
       anoncreds: new AnonCredsModule({
-        anoncreds,
+        anoncreds: NativeAnoncreds,
         registries: [indyVdrAnonCredsRegistry],
       }),
       indyVdr: new IndyVdrModule({
@@ -47,7 +60,7 @@ const agent = new Agent(
     {},
     {
       anoncreds: new AnonCredsModule({
-        anoncreds,
+        anoncreds: NativeAnoncreds,
         registries: [indyVdrAnonCredsRegistry],
       }),
       indyVdr: new IndyVdrModule({
@@ -140,10 +153,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, legacySchemaId)
+    const legacySchema = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getSchema(endorser.context, legacySchemaId)
+    )
     expect(legacySchema).toMatchObject({
       schema: {
         attrNames: ['age'],
@@ -160,7 +172,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
     })
 
     // Resolve using did indy schema id
-    const didIndySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
+    const didIndySchema = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
+    )
     expect(didIndySchema).toMatchObject({
       schema: {
         attrNames: ['age'],
@@ -208,12 +222,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      endorser.context,
-      legacyCredentialDefinitionId
+    const legacyCredentialDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getCredentialDefinition(endorser.context, legacyCredentialDefinitionId)
     )
 
     expect(legacyCredentialDefinition).toMatchObject({
@@ -232,9 +242,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
     })
 
     // resolve using did indy credential definition id
-    const didIndyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      endorser.context,
-      didIndyCredentialDefinitionId
+    const didIndyCredentialDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getCredentialDefinition(endorser.context, didIndyCredentialDefinitionId)
     )
 
     expect(didIndyCredentialDefinition).toMatchObject({
@@ -292,12 +301,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       revocationRegistryTag
     )
 
-    // Wait some time before resolving revocation registry definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
-      endorser.context,
-      legacyRevocationRegistryDefinitionId
+    const legacyRevocationRegistryDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(endorser.context, legacyRevocationRegistryDefinitionId)
     )
 
     expect(legacyRevocationRegistryDefinition).toMatchObject({
@@ -326,9 +331,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       resolutionMetadata: {},
     })
 
-    const didIndyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
-      endorser.context,
-      didIndyRevocationRegistryDefinitionId
+    const didIndyRevocationRegistryDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(endorser.context, didIndyRevocationRegistryDefinitionId)
     )
 
     expect(didIndyRevocationRegistryDefinition).toMatchObject({
@@ -373,14 +377,14 @@ describe('IndyVdrAnonCredsRegistry', () => {
     if (registerStatusListResult.revocationStatusListState.state !== 'finished') {
       throw new Error(`Unable to register status list: ${JSON.stringify(registerStatusListResult)}`)
     }
+    const statusListTimestamp = registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp
 
-    // Wait some time before resolving revocation status list object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
-      endorser.context,
-      legacyRevocationRegistryDefinitionId,
-      registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp
+    const legacyRevocationStatusList = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationStatusList(
+        endorser.context,
+        legacyRevocationRegistryDefinitionId,
+        statusListTimestamp
+      )
     )
 
     expect(legacyRevocationStatusList).toMatchObject({
@@ -394,17 +398,19 @@ describe('IndyVdrAnonCredsRegistry', () => {
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ],
-        timestamp: registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp,
+        timestamp: statusListTimestamp,
       },
       revocationStatusListMetadata: {
         didIndyNamespace: 'pool:localtest',
       },
     })
 
-    const didIndyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
-      endorser.context,
-      didIndyRevocationRegistryDefinitionId,
-      registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp
+    const didIndyRevocationStatusList = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationStatusList(
+        endorser.context,
+        didIndyRevocationRegistryDefinitionId,
+        statusListTimestamp
+      )
     )
 
     expect(didIndyRevocationStatusList).toMatchObject({
@@ -418,7 +424,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ],
-        timestamp: registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp,
+        timestamp: statusListTimestamp,
       },
       revocationStatusListMetadata: {
         didIndyNamespace: 'pool:localtest',
@@ -466,10 +472,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, legacySchemaId)
+    const legacySchema = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getSchema(endorser.context, legacySchemaId)
+    )
     expect(legacySchema).toMatchObject({
       schema: {
         attrNames: ['age'],
@@ -486,7 +491,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
     })
 
     // Resolve using did indy schema id
-    const didIndySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
+    const didIndySchema = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
+    )
     expect(didIndySchema).toMatchObject({
       schema: {
         attrNames: ['age'],
@@ -534,12 +541,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      endorser.context,
-      legacyCredentialDefinitionId
+    const legacyCredentialDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getCredentialDefinition(endorser.context, legacyCredentialDefinitionId)
     )
 
     expect(legacyCredentialDefinition).toMatchObject({
@@ -558,9 +561,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
     })
 
     // resolve using did indy credential definition id
-    const didIndyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      endorser.context,
-      didIndyCredentialDefinitionId
+    const didIndyCredentialDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getCredentialDefinition(endorser.context, didIndyCredentialDefinitionId)
     )
 
     expect(didIndyCredentialDefinition).toMatchObject({
@@ -618,12 +620,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       revocationRegistryTag
     )
 
-    // Wait some time before resolving revocation registry definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
-      endorser.context,
-      legacyRevocationRegistryDefinitionId
+    const legacyRevocationRegistryDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(endorser.context, legacyRevocationRegistryDefinitionId)
     )
 
     expect(legacyRevocationRegistryDefinition).toMatchObject({
@@ -652,9 +650,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       resolutionMetadata: {},
     })
 
-    const didIndyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
-      endorser.context,
-      didIndyRevocationRegistryDefinitionId
+    const didIndyRevocationRegistryDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(endorser.context, didIndyRevocationRegistryDefinitionId)
     )
 
     expect(didIndyRevocationRegistryDefinition).toMatchObject({
@@ -699,14 +696,14 @@ describe('IndyVdrAnonCredsRegistry', () => {
     if (registerStatusListResult.revocationStatusListState.state !== 'finished') {
       throw new Error(`Unable to register status list: ${JSON.stringify(registerStatusListResult)}`)
     }
+    const statusListTimestamp = registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp
 
-    // Wait some time before resolving revocation status list object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
-      endorser.context,
-      legacyRevocationRegistryDefinitionId,
-      registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp
+    const legacyRevocationStatusList = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationStatusList(
+        endorser.context,
+        legacyRevocationRegistryDefinitionId,
+        statusListTimestamp
+      )
     )
 
     expect(legacyRevocationStatusList).toMatchObject({
@@ -720,17 +717,19 @@ describe('IndyVdrAnonCredsRegistry', () => {
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ],
-        timestamp: registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp,
+        timestamp: statusListTimestamp,
       },
       revocationStatusListMetadata: {
         didIndyNamespace: 'pool:localtest',
       },
     })
 
-    const didIndyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
-      endorser.context,
-      didIndyRevocationRegistryDefinitionId,
-      registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp
+    const didIndyRevocationStatusList = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationStatusList(
+        endorser.context,
+        didIndyRevocationRegistryDefinitionId,
+        statusListTimestamp
+      )
     )
 
     expect(didIndyRevocationStatusList).toMatchObject({
@@ -744,7 +743,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ],
-        timestamp: registerStatusListResult.revocationStatusListState.revocationStatusList.timestamp,
+        timestamp: statusListTimestamp,
       },
       revocationStatusListMetadata: {
         didIndyNamespace: 'pool:localtest',
@@ -843,10 +842,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacySchema = await indyVdrAnonCredsRegistry.getSchema(agent.context, legacySchemaId)
+    const legacySchema = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getSchema(agent.context, legacySchemaId)
+    )
     expect(legacySchema).toMatchObject({
       schema: {
         attrNames: ['age'],
@@ -863,7 +861,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
     })
 
     // Resolve using did indy schema id
-    const didIndySchema = await indyVdrAnonCredsRegistry.getSchema(agent.context, didIndySchemaId)
+    const didIndySchema = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getSchema(agent.context, didIndySchemaId)
+    )
     expect(didIndySchema).toMatchObject({
       schema: {
         attrNames: ['age'],
@@ -932,12 +932,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      agent.context,
-      legacyCredentialDefinitionId
+    const legacyCredentialDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getCredentialDefinition(agent.context, legacyCredentialDefinitionId)
     )
 
     expect(legacyCredentialDefinition).toMatchObject({
@@ -956,9 +952,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
     })
 
     // resolve using did indy credential definition id
-    const didIndyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      agent.context,
-      didIndyCredentialDefinitionId
+    const didIndyCredentialDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getCredentialDefinition(agent.context, didIndyCredentialDefinitionId)
     )
 
     expect(didIndyCredentialDefinition).toMatchObject({
@@ -1032,11 +1027,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
-      agent.context,
-      legacyRevocationRegistryDefinitionId
+    const legacyRevocationRegistryDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(agent.context, legacyRevocationRegistryDefinitionId)
     )
 
     expect(legacyRevocationRegistryDefinition).toMatchObject({
@@ -1055,9 +1047,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       resolutionMetadata: {},
     })
 
-    const didIndyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
-      agent.context,
-      didIndyRevocationRegistryDefinitionId
+    const didIndyRevocationRegistryDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(agent.context, didIndyRevocationRegistryDefinitionId)
     )
 
     expect(didIndyRevocationRegistryDefinition).toMatchObject({
@@ -1122,13 +1113,12 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    // Wait some time before resolving status list
-    await new Promise((res) => setTimeout(res, 1000))
-
-    const legacyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
-      agent.context,
-      legacyRevocationRegistryDefinitionId,
-      submitRevStatusListTxResult.revocationStatusListState.revocationStatusList?.timestamp as number
+    const legacyRevocationStatusList = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationStatusList(
+        agent.context,
+        legacyRevocationRegistryDefinitionId,
+        submitRevStatusListTxResult.revocationStatusListState.revocationStatusList?.timestamp as number
+      )
     )
 
     expect(legacyRevocationStatusList).toMatchObject({
@@ -1145,10 +1135,12 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
-    const didIndyRevocationStatusList = await indyVdrAnonCredsRegistry.getRevocationStatusList(
-      agent.context,
-      didIndyRevocationRegistryDefinitionId,
-      submitRevStatusListTxResult.revocationStatusListState.revocationStatusList?.timestamp as number
+    const didIndyRevocationStatusList = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getRevocationStatusList(
+        agent.context,
+        didIndyRevocationRegistryDefinitionId,
+        submitRevStatusListTxResult.revocationStatusListState.revocationStatusList?.timestamp as number
+      )
     )
 
     expect(didIndyRevocationStatusList).toMatchObject({
@@ -1212,9 +1204,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
         indyLedgerSeqNo: expect.any(Number),
       },
     })
-    // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-    const legacySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, legacySchemaId)
+    const legacySchema = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getSchema(endorser.context, legacySchemaId)
+    )
     expect(legacySchema).toMatchObject({
       schema: {
         attrNames: ['age'],
@@ -1230,7 +1222,9 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
     // Resolve using did indy schema id
-    const didIndySchema = await indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
+    const didIndySchema = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getSchema(endorser.context, didIndySchemaId)
+    )
     expect(didIndySchema).toMatchObject({
       schema: {
         attrNames: ['age'],
@@ -1291,11 +1285,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    // // Wait some time before resolving credential definition object
-    await new Promise((res) => setTimeout(res, 1000))
-    const legacyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      agent.context,
-      legacyCredentialDefinitionId
+    const legacyCredentialDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getCredentialDefinition(agent.context, legacyCredentialDefinitionId)
     )
 
     expect(legacyCredentialDefinition).toMatchObject({
@@ -1313,9 +1304,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
       resolutionMetadata: {},
     })
     // resolve using did indy credential definition id
-    const didIndyCredentialDefinition = await indyVdrAnonCredsRegistry.getCredentialDefinition(
-      agent.context,
-      didIndyCredentialDefinitionId
+    const didIndyCredentialDefinition = await resolveWhenAvailable(() =>
+      indyVdrAnonCredsRegistry.getCredentialDefinition(agent.context, didIndyCredentialDefinitionId)
     )
 
     expect(didIndyCredentialDefinition).toMatchObject({

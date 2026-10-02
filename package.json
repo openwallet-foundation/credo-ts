@@ -2,7 +2,7 @@
   "name": "credo-ts",
   "private": true,
   "license": "Apache-2.0",
-  "packageManager": "pnpm@10.22.0+sha512.bf049efe995b28f527fd2b41ae0474ce29186f7edcb3bf545087bd61fbbebb2bf75362d1307fda09c2d288e1e499787ac12d4fcb617a974718a6051f2eee741c",
+  "packageManager": "pnpm@12.6.0+sha512.3ef68f951cb111ac204b4a5a16f0b2ddf0da56a96e0413e81d855d9f0b55ef926714709028e1cd00c405c2c5fb7b9e8ec4dc46777c805d0373c2f2ff00fd20ec",
   "repository": {
     "url": "https://github.com/openwallet-foundation/credo-ts",
     "type": "git"
@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
-    "@changesets/cli": "^3.0.2",
+    "@changesets/cli": "^3.0.3",
     "@credo-ts/action-menu": "workspace:*",
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/askar": "workspace:*",
@@ -49,31 +49,32 @@
     "@types/cors": "^2.8.19",
     "@types/express": "catalog:",
     "@types/node": "catalog:",
-    "@types/supertest": "^7.2.0",
+    "@types/supertest": "^7.2.1",
     "@types/varint": "^6.0.3",
     "@types/ws": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "cors": "^2.8.6",
-    "drizzle-kit": "^0.31.10",
+    "drizzle-kit": "^0.31.11",
     "express": "catalog:",
+    "magic-string": "^0.30.21",
     "nock": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
-    "supertest": "^7.2.2",
-    "testcontainers": "^12.0.3",
-    "tsdown": "^0.20.3",
+    "supertest": "^7.3.0",
+    "testcontainers": "^12.1.0",
+    "tsdown": "^0.23.0",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
-    "undici": "^6.27.0",
-    "vite": "^8.0.16",
-    "vite-node": "^5.3.0",
+    "undici": "^6.28.0",
+    "vite": "^8.3.1",
+    "vite-node": "^6.0.0",
     "vitest": "catalog:",
     "ws": "catalog:"
   },
   "resolutions": {
-    "undici": "^6.20.1"
+    "undici": "^6.28.0"
   },
   "engines": {
-    "node": ">=20.19"
+    "node": ">=22"
   }
 }

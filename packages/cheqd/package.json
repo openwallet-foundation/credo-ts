@@ -1,10 +1,13 @@
 {
   "name": "@credo-ts/cheqd",
   "exports": {
-    "cli": "./build/index.mjs",
-    "import": "./src/index.ts"
+    ".": {
+      "cli": "./build/index.mjs",
+      "import": "./src/index.ts"
+    },
+    "./anoncreds": "./src/anoncreds/index.ts"
   },
-  "version": "0.7.0",
+  "version": "0.7.1",
   "files": [
     "build"
   ],
@@ -15,6 +18,11 @@
     "module": "./build/index.mjs",
     "exports": {
       ".": "./build/index.mjs",
+      "./anoncreds": {
+        "import": "./build/anoncreds/index.mjs",
+        "require": "./build/anoncreds/index.mjs",
+        "types": "./build/anoncreds/index.d.mts"
+      },
       "./package.json": "./package.json"
     }
   },
@@ -29,12 +37,11 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@cheqd/sdk": "npm:@cheqd/sdk-esm@~5.5.0",
-    "@cheqd/ts-proto": "^4.2.1",
-    "@cosmjs/crypto": "^0.38.1",
-    "@cosmjs/proto-signing": "^0.36.2",
-    "@cosmjs/stargate": "^0.36.2",
-    "@credo-ts/anoncreds": "workspace:*",
+    "@cheqd/sdk": "catalog:",
+    "@cheqd/ts-proto": "catalog:",
+    "@cosmjs/crypto": "catalog:",
+    "@cosmjs/proto-signing": "catalog:",
+    "@cosmjs/stargate": "catalog:",
     "@credo-ts/core": "workspace:*",
     "@stablelib/ed25519": "catalog:",
     "buffer": "^6.0.3",
@@ -44,6 +51,15 @@
     "tsyringe": "catalog:"
   },
   "devDependencies": {
+    "@credo-ts/anoncreds": "workspace:*",
     "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "@credo-ts/anoncreds": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@credo-ts/anoncreds": {
+      "optional": true
+    }
   }
 }

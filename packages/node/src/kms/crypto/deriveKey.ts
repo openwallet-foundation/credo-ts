@@ -41,7 +41,7 @@ type NodeSupportedKeyAgreementEncryptOptions = Kms.KmsKeyAgreementEncryptOptions
 export async function deriveEncryptionKey(options: {
   keyAgreement: NodeSupportedKeyAgreementEncryptOptions
   privateJwk: Kms.KmsJwkPrivateAsymmetric
-  encryption: Kms.KmsEncryptDataEncryption
+  encryption: Kms.KmsEncryptDataContentEncryption
 }) {
   const { keyAgreement, encryption, privateJwk } = options
 
@@ -98,7 +98,7 @@ export async function deriveEncryptionKey(options: {
 export async function deriveDecryptionKey(options: {
   keyAgreement: NodeSupportedKeyAgreementDecryptOptions
   privateJwk: Kms.KmsJwkPrivateAsymmetric
-  decryption: Kms.KmsDecryptDataDecryption
+  decryption: Kms.KmsDecryptDataContentDecryption
 }) {
   const { keyAgreement, decryption, privateJwk } = options
 

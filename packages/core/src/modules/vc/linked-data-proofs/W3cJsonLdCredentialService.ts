@@ -6,8 +6,7 @@ import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import type { SingleOrArray } from '../../../types'
 import { asArray, JsonTransformer } from '../../../utils'
-import { DidsApi, parseDid } from '../../dids'
-import { PublicJwk } from '../../kms'
+import { type DidPurpose, DidsApi, parseDid } from '../../dids'
 import { ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE } from '../anoncreds-w3c-credential'
 import { JsonLdModuleConfig } from '../jsonld'
 import jsonld from '../jsonld/jsonld'
@@ -47,33 +46,12 @@ export class W3cJsonLdCredentialService {
     agentContext: AgentContext,
     options: W3cJsonLdSignCredentialOptions
   ): Promise<W3cJsonLdVerifiableCredential> {
-    const WalletKeyPair = createKmsKeyPairClass(agentContext)
-
-    const signingKey = await this.getPublicJwkFromVerificationMethod(agentContext, options.verificationMethod)
-    const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
-
-    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwkType(signingKey)
-
-    if (!suitesForKey.some(({ suiteClass }) => suiteClass === suiteInfo.suiteClass)) {
-      throw new CredoError('The key type of the verification method does not match the suite')
-    }
-
-    const keyPair = new WalletKeyPair({
-      controller: options.credential.issuerId, // should we check this against the verificationMethod.controller?
-      id: options.verificationMethod,
-      publicJwk: signingKey,
-    })
-
-    const SuiteClass = suiteInfo.suiteClass
-
-    const suite = new SuiteClass({
-      key: keyPair,
-      LDKeyClass: WalletKeyPair,
-      proof: {
-        verificationMethod: options.verificationMethod,
-      },
-      useNativeCanonize: false,
+    const { suite } = await this.prepareSigningSuite(agentContext, {
+      proofType: options.proofType,
+      verificationMethodId: options.verificationMethod,
+      allowedPurposes: options.proofPurpose?.term ? [options.proofPurpose.term] : ['assertionMethod'],
       date: options.created ?? w3cDate(),
+      controller: options.credential.issuerId,
     })
 
     try {
@@ -173,42 +151,11 @@ export class W3cJsonLdCredentialService {
     agentContext: AgentContext,
     options: W3cJsonLdSignPresentationOptions
   ): Promise<W3cJsonLdVerifiablePresentation> {
-    // create keyPair
-    const WalletKeyPair = createKmsKeyPairClass(agentContext)
-
-    const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
-
-    if (!suiteInfo) {
-      throw new CredoError(`The requested proofType ${options.proofType} is not supported`)
-    }
-
-    const signingKey = await this.getPublicJwkFromVerificationMethod(agentContext, options.verificationMethod)
-    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwkType(signingKey)
-
-    if (!suitesForKey.some(({ suiteClass }) => suiteClass === suiteInfo.suiteClass)) {
-      throw new CredoError('The key type of the verification method does not match the suite')
-    }
-
-    const documentLoader = this.jsonLdModuleConfig.documentLoader(agentContext)
-    const verificationMethodObject = (await documentLoader(options.verificationMethod)).document as Record<
-      string,
-      unknown
-    >
-
-    const keyPair = new WalletKeyPair({
-      controller: verificationMethodObject.controller as string,
-      id: options.verificationMethod,
-      publicJwk: signingKey,
-    })
-
-    const suite = new suiteInfo.suiteClass({
-      LDKeyClass: WalletKeyPair,
-      proof: {
-        verificationMethod: options.verificationMethod,
-      },
+    const { suite } = await this.prepareSigningSuite(agentContext, {
+      proofType: options.proofType,
+      verificationMethodId: options.verificationMethod,
+      allowedPurposes: options.proofPurpose?.term ? [options.proofPurpose.term] : ['authentication'],
       date: new Date().toISOString(),
-      key: keyPair,
-      useNativeCanonize: false,
     })
 
     const signOptions: Record<string, unknown> = {
@@ -416,17 +363,74 @@ export class W3cJsonLdCredentialService {
     }
   }
 
-  private async getPublicJwkFromVerificationMethod(
+  private async prepareSigningSuite(
     agentContext: AgentContext,
-    verificationMethod: string
-  ): Promise<PublicJwk> {
+    options: {
+      proofType: string
+      verificationMethodId: string
+      allowedPurposes: Array<DidPurpose | 'verificationMethod'>
+      date?: string
+      controller?: string
+    }
+  ) {
+    const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
+    if (!suiteInfo) {
+      throw new CredoError(`The requested proofType ${options.proofType} is not supported`)
+    }
+
     const dids = agentContext.resolve(DidsApi)
+    const { verificationMethod: nativeVerificationMethod, publicJwk } =
+      await dids.resolveVerificationMethodFromCreatedDidRecord(options.verificationMethodId, options.allowedPurposes)
 
-    const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(verificationMethod, [
-      'assertionMethod',
-    ])
+    if (!suiteInfo.verificationMethodTypes.includes(nativeVerificationMethod.type)) {
+      throw new CredoError(
+        `Unsupported verification method type '${nativeVerificationMethod.type}' for proof type '${options.proofType}'. Supported types are: ${suiteInfo.verificationMethodTypes.join(', ')}`
+      )
+    }
 
-    return publicJwk
+    const documentLoader = this.jsonLdModuleConfig.documentLoader(agentContext)
+    const loaderResult = await documentLoader(options.verificationMethodId)
+    const framedVerificationMethod =
+      typeof loaderResult.document === 'string' ? JSON.parse(loaderResult.document) : loaderResult.document
+
+    const WalletKeyPair = createKmsKeyPairClass(agentContext)
+
+    // Instantiate suite to validate verification method and framing context
+    const SuiteClass = suiteInfo.suiteClass
+    const validationSuite = new SuiteClass({
+      LDKeyClass: WalletKeyPair,
+      proof: {
+        verificationMethod: options.verificationMethodId,
+      },
+      useNativeCanonize: false,
+      date: options.date ?? w3cDate(),
+    })
+
+    await validationSuite.assertVerificationMethod(framedVerificationMethod)
+
+    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwkType(publicJwk)
+    if (!suitesForKey.some(({ suiteClass }) => suiteClass === suiteInfo.suiteClass)) {
+      throw new CredoError('The key type of the verification method does not match the suite')
+    }
+
+    const keyPair = new WalletKeyPair({
+      controller:
+        options.controller ?? (framedVerificationMethod.controller as string) ?? nativeVerificationMethod.controller,
+      id: options.verificationMethodId,
+      publicJwk,
+    })
+
+    const suite = new SuiteClass({
+      key: keyPair,
+      LDKeyClass: WalletKeyPair,
+      proof: {
+        verificationMethod: options.verificationMethodId,
+      },
+      useNativeCanonize: false,
+      date: options.date ?? w3cDate(),
+    })
+
+    return { suite, suiteInfo, keyPair, WalletKeyPair }
   }
 
   private getSignatureSuitesForCredential(agentContext: AgentContext, credential: W3cJsonLdVerifiableCredential) {

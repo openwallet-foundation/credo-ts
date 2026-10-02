@@ -1,6 +1,6 @@
 import { clear } from 'console'
 import figlet from 'figlet'
-import { prompt } from 'inquirer'
+import inquirer from 'inquirer'
 
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Faber, RegistryOptions } from './Faber'
@@ -42,10 +42,10 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    if (this.faber.outOfBandId) return prompt([this.inquireOptions(this.promptOptionsString)])
+    if (this.faber.outOfBandId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
 
     const reducedOption = [PromptOptions.CreateConnection, PromptOptions.Exit, PromptOptions.Restart]
-    return prompt([this.inquireOptions(reducedOption)])
+    return inquirer.prompt([this.inquireOptions(reducedOption)])
   }
 
   public async processAnswer() {
@@ -80,7 +80,7 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   public async exitUseCase(title: string) {
-    const confirm = await prompt([this.inquireConfirmation(title)])
+    const confirm = await inquirer.prompt([this.inquireConfirmation(title)])
     if (confirm.options === ConfirmOptions.No) {
       return false
     }
@@ -90,7 +90,7 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   public async credential() {
-    const registry = await prompt([
+    const registry = await inquirer.prompt([
       this.inquireOptions([RegistryOptions.indy, RegistryOptions.cheqd, RegistryOptions.hedera]),
     ])
     await this.faber.importDid(registry.options)
@@ -113,7 +113,7 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   public async exit() {
-    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
+    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       return
     }
@@ -123,7 +123,7 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   public async restart() {
-    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
+    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       await this.processAnswer()
       return

@@ -1,4 +1,4 @@
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
 import { AskarKeyManagementService, AskarModuleConfig, transformSeedToPrivateJwk } from '../../../../../../askar/src'
@@ -41,6 +41,10 @@ import {
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 const storageService = new InMemoryStorageService<any>()
 const config = getAgentConfig('W3cV2SdJwtCredentialService')
+const askarModuleConfig = new AskarModuleConfig({
+  askar: NativeAskar,
+  store: getAskarStoreConfig('W3cV2SdJwtCredentialService'),
+})
 const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.Logger, testLogger],
@@ -48,16 +52,8 @@ const agentContext = getAgentContext({
     [DidRepository, new DidRepository(storageService, new EventEmitter(agentDependencies, new Subject()))],
     [InjectionSymbols.StorageService, storageService],
     [X509ModuleConfig, new X509ModuleConfig()],
-    [
-      AskarStoreManager,
-      new AskarStoreManager(
-        new NodeFileSystem(),
-        new AskarModuleConfig({
-          askar,
-          store: getAskarStoreConfig('W3cV2SdJwtCredentialService'),
-        })
-      ),
-    ],
+    [AskarModuleConfig, askarModuleConfig],
+    [AskarStoreManager, new AskarStoreManager(new NodeFileSystem(), askarModuleConfig)],
     [
       CacheModuleConfig,
       new CacheModuleConfig({
@@ -664,6 +660,22 @@ describe('W3cV2SdJwtCredentialService', () => {
           format: ClaimFormat.SdJwtW3cVp,
         })
       ).resolves.toBeInstanceOf(W3cV2SdJwtVerifiablePresentation)
+    })
+  })
+
+  describe('applyDisclosuresForPaths', () => {
+    test('discloses only the claims at the paths', () => {
+      const withAchievement = w3cV2JwtCredentialService.applyDisclosuresForPaths(CredoEs256DidJwkJwtVc, [
+        ['credentialSubject', 'achievement'],
+      ])
+      expect(
+        (withAchievement.resolvedCredential.credentialSubject as Record<string, unknown>).achievement
+      ).toStrictEqual(Ed256DidJwkJwtVcUnsigned.credentialSubject.achievement)
+
+      const withoutAchievement = w3cV2JwtCredentialService.applyDisclosuresForPaths(CredoEs256DidJwkJwtVc, [])
+      expect(withoutAchievement.resolvedCredential.credentialSubject).not.toHaveProperty('achievement')
+      // Only the issuer-signed JWT, without disclosures
+      expect(withoutAchievement.encoded.split('~').filter(Boolean)).toHaveLength(1)
     })
   })
 

@@ -9,7 +9,7 @@ import {
   KeyDidRegistrar,
   KeyDidResolver,
   Kms,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   W3cCredential,
@@ -22,8 +22,9 @@ import {
   DidCommCredentialPreviewAttribute,
   DidCommCredentialRole,
   DidCommCredentialState,
+  DidCommDataIntegrityCredentialFormatService,
 } from '@credo-ts/didcomm'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
@@ -47,14 +48,13 @@ import {
   AnonCredsVerifierServiceSymbol,
 } from '../src'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
-import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
-import { anoncreds } from './helpers'
+import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
-  anoncreds,
+  anoncreds: NativeAnoncreds,
   registries: [registry],
   tailsFileService,
 })
@@ -71,6 +71,17 @@ const didsModuleConfig = new DidsModuleConfig({
   resolvers: [new KeyDidResolver()],
 })
 const fileSystem = new agentDependencies.FileSystem()
+const signatureSuiteRegistry = new SignatureSuiteRegistry([
+  {
+    suiteClass: Ed25519Signature2018,
+    proofType: 'Ed25519Signature2018',
+    verificationMethodTypes: [
+      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+    ],
+    supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
+  } satisfies SuiteInfo,
+])
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -88,22 +99,11 @@ const agentContext = getAgentContext({
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [JsonLdModuleConfig, new JsonLdModuleConfig()],
     [X509ModuleConfig, new X509ModuleConfig()],
-    [
-      SignatureSuiteToken,
-      {
-        suiteClass: Ed25519Signature2018,
-        proofType: 'Ed25519Signature2018',
-        verificationMethodTypes: [
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-          VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-        ],
-        supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
-      } satisfies SuiteInfo,
-    ],
+    [SignatureSuiteRegistry, signatureSuiteRegistry],
     [
       AskarModuleConfig,
       new AskarModuleConfig({
-        askar,
+        askar: NativeAskar,
         store: getAskarStoreConfig('data-integrity-flow-w3c'),
       }),
     ],
@@ -114,7 +114,7 @@ const agentContext = getAgentContext({
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 
-const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
+const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService()
 
 describe('data integrity format service (w3c)', () => {
   let issuerKdv: CreateDidKidVerificationMethodReturn

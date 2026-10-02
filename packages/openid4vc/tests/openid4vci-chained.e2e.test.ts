@@ -233,7 +233,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     const usedDpopJtis = new Set<string>()
     idpApp.post('/token', async (req, res) => {
       const authorizationHeader = req.headers.authorization?.split(' ')
-      if (!authorizationHeader || authorizationHeader[0] !== 'Basic' || authorizationHeader.length !== 2) {
+      if (authorizationHeader?.[0] !== 'Basic' || authorizationHeader.length !== 2) {
         return res.status(401).json({
           error: 'invalid_client',
           error_description: 'Invalid authorization header',
@@ -555,7 +555,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     })
     idpApp.post('/token', async (req, res) => {
       const authorizationHeader = req.headers.authorization?.split(' ')
-      if (!authorizationHeader || authorizationHeader[0] !== 'Basic' || authorizationHeader.length !== 2) {
+      if (authorizationHeader?.[0] !== 'Basic' || authorizationHeader.length !== 2) {
         return res.status(401).json({
           error: 'invalid_client',
           error_description: 'Invalid authorization header',

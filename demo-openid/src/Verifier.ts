@@ -2,7 +2,7 @@ import { AskarModule } from '@credo-ts/askar'
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2 } from '@credo-ts/core'
 import type { OpenId4VcVerifierModuleConfigOptions, OpenId4VcVerifierRecord } from '@credo-ts/openid4vc'
 import { OpenId4VcModule } from '@credo-ts/openid4vc'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
@@ -130,7 +130,7 @@ export class Verifier extends BaseAgent<{
       port,
       name,
       modules: (app) => ({
-        askar: new AskarModule({ askar, store: { id: name, key: name } }),
+        askar: new AskarModule({ askar: NativeAskar, store: { id: name, key: name } }),
         openid4vc: new OpenId4VcModule({
           app,
           verifier: {

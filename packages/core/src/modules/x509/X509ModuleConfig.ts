@@ -1,4 +1,5 @@
 import type { AgentContext } from '../../agent/context/AgentContext'
+import type { VerificationTypeMdocReaderAuth } from '../../agent/TrustedIssuersForVerification'
 import type { JwtPayload } from '../../crypto/jose/jwt/JwtPayload'
 import type { Mdoc } from '../mdoc/Mdoc'
 import type { SdJwtVc } from '../sd-jwt-vc/SdJwtVcService'
@@ -26,6 +27,15 @@ export type X509VerificationTypeCredential = {
    */
   openId4VcVerificationSessionId?: string
 }
+
+/**
+ * Reader authentication on an incoming mdoc request.
+ *
+ * There is no separate legacy shape for this verification type: reader authentication is only
+ * resolved on the DC API paths that were added after this callback was deprecated, so the type of
+ * the `getTrustedIssuersForVerification` callback is reused as-is.
+ */
+export type X509VerificationTypeMdocReaderAuth = VerificationTypeMdocReaderAuth
 
 // NOTE: we should probably move these to the OpenID4VC module
 // but have to think about the typing. Probably the base interface should just contain
@@ -94,6 +104,7 @@ export interface X509VerificationContext {
 
   verification:
     | X509VerificationTypeCredential
+    | X509VerificationTypeMdocReaderAuth
     | X509VerificationTypeOauth2SecuredAuthorizationRequest
     | X509VerificationTypeOauth2ClientAttestation
     | X509VerificationTypeOpenId4VciKeyAttestation

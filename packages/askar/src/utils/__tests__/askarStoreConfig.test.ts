@@ -35,30 +35,25 @@ describe('uriFromStoreConfig', () => {
     )
   })
 
-  test.each([
-    'connect_timeout',
-    'admin_account',
-    'max_connections',
-    'user',
-    'password',
-    'dbname',
-    'host',
-  ])('throws when connection parameters contain reserved parameter %s', (parameter) => {
-    expect(() =>
-      uriFromStoreConfig(
-        {
-          id: 'wallet',
-          key: 'key',
-          database: {
-            type: 'postgres',
-            config: { host: 'localhost:5432', connectionParameters: { [parameter]: 'value' } },
-            credentials: { account: 'user', password: 'pass' },
+  test.each(['connect_timeout', 'admin_account', 'max_connections', 'user', 'password', 'dbname', 'host'])(
+    'throws when connection parameters contain reserved parameter %s',
+    (parameter) => {
+      expect(() =>
+        uriFromStoreConfig(
+          {
+            id: 'wallet',
+            key: 'key',
+            database: {
+              type: 'postgres',
+              config: { host: 'localhost:5432', connectionParameters: { [parameter]: 'value' } },
+              credentials: { account: 'user', password: 'pass' },
+            },
           },
-        },
-        '/data'
-      )
-    ).toThrow(`Postgres connection parameter '${parameter}' is not allowed in 'connectionParameters'`)
-  })
+          '/data'
+        )
+      ).toThrow(`Postgres connection parameter '${parameter}' is not allowed in 'connectionParameters'`)
+    }
+  )
 
   test('creates postgres uri without query parameters', () => {
     const { uri } = uriFromStoreConfig(

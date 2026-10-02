@@ -8,7 +8,7 @@ import {
   InMemoryLruCache,
   JsonLdModuleConfig,
   Kms,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import {
@@ -22,7 +22,7 @@ import {
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { anoncreds } from '../../../../anoncreds/tests/helpers'
+import { NativeAnoncreds } from '../../../../anoncreds/tests/helpers'
 import { indyDidFromPublicKeyBase58 } from '../../../../core/src/utils/did'
 import { testLogger } from '../../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
@@ -54,7 +54,7 @@ import { AnonCredsDidCommProofFormatService } from '../AnonCredsDidCommProofForm
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
-  anoncreds,
+  anoncreds: NativeAnoncreds,
   autoCreateLinkSecret: false,
 })
 
@@ -98,8 +98,8 @@ const agentContext = getAgentContext({
     [AnonCredsCredentialRepository, anonCredsCredentialRepository],
     [AnonCredsKeyCorrectnessProofRepository, anonCredsKeyCorrectnessProofRepository],
     [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [InjectionSymbols.StorageService, storageService],
-    [SignatureSuiteToken, 'default'],
     [
       CacheModuleConfig,
       new CacheModuleConfig({

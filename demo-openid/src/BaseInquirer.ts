@@ -1,6 +1,10 @@
-import { prompt } from 'inquirer'
+import type { DistinctQuestion } from 'inquirer'
+import inquirer from 'inquirer'
 
 import { Title } from './OutputClass'
+
+type SelectQuestion = Extract<DistinctQuestion, { type: 'select' }>
+type InputQuestion = Extract<DistinctQuestion, { type: 'input' }>
 
 export enum ConfirmOptions {
   Yes = 'yes',
@@ -8,23 +12,22 @@ export enum ConfirmOptions {
 }
 
 export class BaseInquirer {
-  private optionsInquirer = {
-    type: 'list',
-    prefix: '',
+  private optionsInquirer: SelectQuestion = {
+    type: 'select',
+    theme: { prefix: '' },
     name: 'options',
     message: '',
     choices: [],
   }
-  private inputInquirer = {
+  private inputInquirer: InputQuestion = {
     type: 'input',
-    prefix: '',
+    theme: { prefix: '' },
     name: 'input',
     message: '',
-    choices: [],
   }
 
   public async pickOne(options: string[], title?: string): Promise<string> {
-    const result = await prompt([
+    const result = await inquirer.prompt([
       {
         ...this.optionsInquirer,
         message: title ?? Title.OptionsTitle,
@@ -36,7 +39,7 @@ export class BaseInquirer {
   }
 
   public async pickMultiple(options: string[], title?: string): Promise<string[]> {
-    const result = await prompt([
+    const result = await inquirer.prompt([
       {
         ...this.optionsInquirer,
         message: title ?? Title.OptionsTitle,
@@ -49,7 +52,7 @@ export class BaseInquirer {
   }
 
   public async inquireInput(title: string): Promise<string> {
-    const result = await prompt([
+    const result = await inquirer.prompt([
       {
         ...this.inputInquirer,
         message: title,
@@ -60,7 +63,7 @@ export class BaseInquirer {
   }
 
   public async inquireConfirmation(title: string) {
-    const result = await prompt([
+    const result = await inquirer.prompt([
       {
         ...this.optionsInquirer,
         choices: [ConfirmOptions.Yes, ConfirmOptions.No],

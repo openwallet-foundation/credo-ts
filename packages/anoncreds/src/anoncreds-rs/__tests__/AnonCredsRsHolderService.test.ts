@@ -17,14 +17,15 @@ import {
   DidsModuleConfig,
   InjectionSymbols,
   JsonLdModuleConfig,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   W3cCredentialRecord,
   W3cCredentialRepository,
   W3cCredentialSubject,
+  W3cCredentialsModuleConfig,
   W3cJsonLdVerifiableCredential,
   w3cDate,
 } from '@credo-ts/core'
-import { anoncreds } from '@hyperledger/anoncreds-nodejs'
+import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
@@ -88,13 +89,14 @@ const agentContext = getAgentContext({
       AnonCredsModuleConfig,
       new AnonCredsModuleConfig({
         registries: [new InMemoryAnonCredsRegistry({})],
-        anoncreds,
+        anoncreds: NativeAnoncreds,
       }),
     ],
     [InjectionSymbols.Logger, testLogger],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [JsonLdModuleConfig, new JsonLdModuleConfig()],
-    [SignatureSuiteToken, 'default'],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
   ],
   agentConfig,
 })
@@ -147,7 +149,7 @@ describe('AnonCredsRsHolderService', () => {
 
   test('createProof', async () => {
     const proofRequest: AnonCredsProofRequest = {
-      nonce: anoncreds.generateNonce(),
+      nonce: NativeAnoncreds.instance.generateNonce(),
       name: 'pres_req_1',
       version: '0.1',
       requested_attributes: {
@@ -286,12 +288,12 @@ describe('AnonCredsRsHolderService', () => {
     const revocationRegistries = {
       'personrevregid:uri': {
         tailsFilePath: personTailsPath,
-        definition: JSON.parse(anoncreds.getJson({ objectHandle: personRevRegDef })),
+        definition: JSON.parse(NativeAnoncreds.instance.getJson({ objectHandle: personRevRegDef })),
         revocationStatusLists: { '1': {} as AnonCredsRevocationStatusList },
       },
       'phonerevregid:uri': {
         tailsFilePath: phoneTailsPath,
-        definition: JSON.parse(anoncreds.getJson({ objectHandle: phoneRevRegDef })),
+        definition: JSON.parse(NativeAnoncreds.instance.getJson({ objectHandle: phoneRevRegDef })),
         revocationStatusLists: { '1': {} as AnonCredsRevocationStatusList },
       },
     }
@@ -324,7 +326,7 @@ describe('AnonCredsRsHolderService', () => {
     const anonCredsFindByQueryMock = vi.spyOn(anoncredsCredentialRepositoryMock, 'findByQuery')
 
     const proofRequest: AnonCredsProofRequest = {
-      nonce: anoncreds.generateNonce(),
+      nonce: NativeAnoncreds.instance.generateNonce(),
       name: 'pres_req_1',
       version: '0.1',
       requested_attributes: {

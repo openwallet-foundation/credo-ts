@@ -1,1 +1,1 @@
-export { anoncreds } from '@hyperledger/anoncreds-nodejs'
+export { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'

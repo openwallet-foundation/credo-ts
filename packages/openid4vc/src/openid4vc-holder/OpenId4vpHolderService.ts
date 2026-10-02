@@ -19,7 +19,7 @@ import {
   Kms,
   TypedArrayEncoder,
 } from '@credo-ts/core'
-import type { Jwk } from '@openid4vc/oauth2'
+import { type Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   extractEncryptionJwkFromJwks,
   getOpenid4vpClientId,
@@ -34,6 +34,7 @@ import {
 import type { OpenId4VpVersion } from '../openid4vc-verifier'
 import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
+import { getSupportedResponseEncryptionJwks } from '../shared/utils'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
   OpenId4VpResolvedAuthorizationRequest,
@@ -98,7 +99,26 @@ export class OpenId4VpHolderService {
     const dcqlQuery = this.dcqlService.validateDcqlQuery(dcql)
     const dcqlQueryResult = await this.dcqlService.getCredentialsForRequest(agentContext, dcqlQuery)
 
-    // for each transaction data entry, get all credentials that can fore used to sign the respective transaction
+    // Each credential id in a transaction data entry MUST reference a credential query in the dcql query
+    const credentialQueryIds = dcqlQuery.credentials.map((credential) => credential.id)
+    const unknownCredentialIdErrors = (transactionData ?? []).flatMap((entry) => {
+      const unknownCredentialIds = entry.transactionData.credential_ids.filter(
+        (credentialId) => !credentialQueryIds.includes(credentialId)
+      )
+      return unknownCredentialIds.length > 0
+        ? [
+            `entry with index ${entry.transactionDataIndex} references ${unknownCredentialIds.map((id) => `'${id}'`).join(', ')}`,
+          ]
+        : []
+    })
+    if (unknownCredentialIdErrors.length > 0) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidTransactionData,
+        error_description: `Transaction data references credential ids that are not present in the dcql query: ${unknownCredentialIdErrors.join('; ')}.`,
+      })
+    }
+
+    // for each transaction data entry, get all credentials that can be used to sign the respective transaction
     const matchedTransactionData = transactionData?.map((entry) => ({
       entry,
       matchedCredentialIds: entry.transactionData.credential_ids.filter(
@@ -169,7 +189,7 @@ export class OpenId4VpHolderService {
     const dcqlResult = dcql?.query ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData) : undefined
 
     agentContext.config.logger.debug('verified Authorization Request')
-    agentContext.config.logger.debug(`request '${authorizationRequest}'`)
+    agentContext.config.logger.debug(`request '${JSON.stringify(authorizationRequest)}'`)
 
     return {
       ...returnValue,
@@ -246,7 +266,11 @@ export class OpenId4VpHolderService {
       credentialsToTransactionData[credentialId].push(transactionDataEntry)
     })
 
-    const updatedCredentials = {
+    // Widened so entries can be updated without knowing whether T is PEX or DCQL
+    const updatedCredentials: Record<
+      string,
+      Array<DifPexInputDescriptorToCredentials[string][number] | DcqlCredentialsForRequest[string][number]>
+    > = {
       ...selectedCredentials,
     }
     for (const [credentialId, entries] of Object.entries(credentialsToTransactionData)) {
@@ -298,7 +322,8 @@ export class OpenId4VpHolderService {
       })
     }
 
-    return updatedCredentials
+    // Only the additional payload was extended, so each credential keeps the type it has in T
+    return updatedCredentials as T
   }
 
   public async acceptAuthorizationRequest(
@@ -365,7 +390,18 @@ export class OpenId4VpHolderService {
         )
       }
 
-      encryptionJwk = extractEncryptionJwkFromJwks(clientMetadata.jwks, {
+      // The verifier can include multiple keys (e.g. P-256, P-384 and P-521). We first filter the
+      // keys to the ones we can actually perform the key agreement with, so we don't pick a key
+      // that is not supported by the key management backends of this agent.
+      const supportedJwks = getSupportedResponseEncryptionJwks(agentContext, clientMetadata.jwks)
+
+      if (supportedJwks.keys.length === 0) {
+        throw new CredoError(
+          `Unable to extract encryption JWK from 'client_metadata' for supported alg 'ECDH-ES'. None of the ${clientMetadata.jwks.keys.length} JWK(s) in 'client_metadata.jwks' can be used for response encryption by this agent.`
+        )
+      }
+
+      encryptionJwk = extractEncryptionJwkFromJwks(supportedJwks, {
         supportedAlgValues: ['ECDH-ES'],
       })
 

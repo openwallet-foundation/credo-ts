@@ -9,8 +9,9 @@ import {
   EventEmitter,
   InjectionSymbols,
   JsonLdModuleConfig,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
   W3cCredentialRepository,
+  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -23,7 +24,7 @@ import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction, testLogger } from '../../../../../core/tests'
-import { anoncreds } from './../../../../tests/helpers'
+import { NativeAnoncreds } from './../../../../tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
 import { AnonCredsRsHolderService } from '../../../anoncreds-rs'
@@ -35,7 +36,7 @@ import * as testModule from '../anonCredsCredentialRecord'
 const agentConfig = getAgentConfig('Migration AnonCreds Credential Records 0.4-0.5')
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
-  anoncreds,
+  anoncreds: NativeAnoncreds,
   registries: [registry],
 })
 
@@ -78,10 +79,11 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [InjectionSymbols.Logger, testLogger],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [AnonCredsHolderServiceSymbol, new AnonCredsRsHolderService()],
-    [SignatureSuiteToken, 'default'],
+    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
   ],
   agentConfig,
 })

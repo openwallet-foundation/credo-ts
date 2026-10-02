@@ -8,9 +8,11 @@ import type { JsonObject } from '../../../types'
 import { asArray, JsonTransformer, MessageValidator, nowInSeconds, TypedArrayEncoder } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi } from '../../kms'
-import { applyDisclosuresForPayload } from '../../sd-jwt-vc/disclosureFrame'
+import type { IDisclosureFrame } from '../../sd-jwt-vc'
+import { applyDisclosuresForPaths, applyDisclosuresForPayload, type ClaimPath } from '../../sd-jwt-vc/disclosureFrame'
 import {
   extractKeyFromHolderBinding,
+  getSdJwtHashingAlgorithm,
   getSdJwtSigner,
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
@@ -39,17 +41,10 @@ import type {
   W3cV2SdJwtVerifyCredentialOptions,
   W3cV2SdJwtVerifyPresentationOptions,
 } from '../W3cV2CredentialServiceOptions'
+import { validateW3cV2SdJwtDisclosureFrame } from './disclosureFrame'
 import { sdJwtVcHasher } from './W3cV2SdJwt'
 import { W3cV2SdJwtVerifiableCredential } from './W3cV2SdJwtVerifiableCredential'
 import { W3cV2SdJwtVerifiablePresentation } from './W3cV2SdJwtVerifiablePresentation'
-
-/**
- * List of fields that cannot be selectively disclosed.
- *
- * @see https://www.w3.org/TR/vc-jose-cose/#securing-with-sd-jwt
- * @see https://www.w3.org/TR/vc-jose-cose/#securing-vps-sd-jwt
- */
-const NON_DISCLOSEABLE_FIELDS = ['@context', 'type', 'credentialStatus', 'credentialSchema', 'relatedResource']
 
 /**
  * Supports signing and verifying W3C Verifiable Credentials and Presentations
@@ -91,7 +86,7 @@ export class W3cV2SdJwtCredentialService {
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       signer: getSdJwtSigner(agentContext, publicJwk),
-      hashAlg: options.hashingAlgorithm ?? 'sha-256',
+      hashAlg: getSdJwtHashingAlgorithm(options.hashingAlgorithm),
       signAlg: options.alg,
     })
 
@@ -271,7 +266,7 @@ export class W3cV2SdJwtCredentialService {
     const sdJwt = new SDJwtInstance({
       ...this.getBaseSdJwtConfig(agentContext),
       signer: getSdJwtSigner(agentContext, holder.publicJwk),
-      hashAlg: options.hashingAlgorithm ?? 'sha-256',
+      hashAlg: getSdJwtHashingAlgorithm(options.hashingAlgorithm),
       signAlg: holder.alg,
     })
 
@@ -442,6 +437,9 @@ export class W3cV2SdJwtCredentialService {
     return W3cV2SdJwtVerifiableCredential.fromCompact(disclosedCompact)
   }
 
+  /**
+   * @deprecated use `applyDisclosuresForPaths` instead
+   */
   public applyDisclosuresForPayload(
     compactSdJwtVc: string,
     requestedPayload: JsonObject
@@ -450,18 +448,13 @@ export class W3cV2SdJwtCredentialService {
     return W3cV2SdJwtVerifiableCredential.fromCompact(sdJwt)
   }
 
+  public applyDisclosuresForPaths(compactSdJwtVc: string, disclosedPaths: ClaimPath[]): W3cV2SdJwtVerifiableCredential {
+    const { compact } = applyDisclosuresForPaths(compactSdJwtVc, disclosedPaths)
+    return W3cV2SdJwtVerifiableCredential.fromCompact(compact)
+  }
+
   private validateDisclosureFrame(disclosureFrame?: DisclosureFrame<W3cV2JsonCredential | W3cV2JsonPresentation>) {
-    if (!disclosureFrame) return
-
-    for (const field of NON_DISCLOSEABLE_FIELDS) {
-      if (disclosureFrame[field]) {
-        throw new CredoError(`'${field}' property cannot be selectively disclosed`)
-      }
-
-      if (Array.isArray(disclosureFrame._sd) && disclosureFrame._sd?.includes(field)) {
-        throw new CredoError(`'${field}' property cannot be selectively disclosed`)
-      }
-    }
+    validateW3cV2SdJwtDisclosureFrame(disclosureFrame as IDisclosureFrame | undefined)
   }
 
   private getBaseSdJwtConfig(agentContext: AgentContext): SDJWTConfig {

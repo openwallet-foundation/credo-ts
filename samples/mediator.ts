@@ -22,7 +22,7 @@ import {
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
 import { agentDependencies, DidCommHttpInboundTransport, DidCommWsInboundTransport } from '@credo-ts/node'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
 import type { Socket } from 'net'
 import { WebSocketServer } from 'ws'
@@ -55,7 +55,7 @@ const agent = new Agent({
   dependencies: agentDependencies,
   modules: {
     askar: new AskarModule({
-      askar,
+      askar: NativeAskar,
       store: {
         id: process.env.WALLET_NAME || 'Credo',
         key: process.env.WALLET_KEY || 'Credo',
@@ -77,6 +77,8 @@ const agent = new Agent({
   },
 })
 
+await agent.initialize()
+
 // Allow to create invitation, no other way to ask for invitation yet
 httpInboundTransport.app.get('/invitation', async (req, res) => {
   if (typeof req.query.c_i === 'string') {
@@ -88,8 +90,6 @@ httpInboundTransport.app.get('/invitation', async (req, res) => {
     res.send(outOfBandInvitation.toUrl({ domain: `${httpEndpoint}/invitation` }))
   }
 })
-
-await agent.initialize()
 
 // When an 'upgrade' to WS is made on our http server, we forward the
 // request to the WS server

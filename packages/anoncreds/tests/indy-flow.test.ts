@@ -16,11 +16,13 @@ import {
   AnonCredsVerifierServiceSymbol,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
-  LegacyIndyDidCommCredentialFormatService,
-  LegacyIndyDidCommProofFormatService,
   parseIndyCredentialDefinitionId,
   parseIndySchemaId,
 } from '@credo-ts/anoncreds'
+import {
+  LegacyIndyDidCommCredentialFormatService,
+  LegacyIndyDidCommProofFormatService,
+} from '@credo-ts/anoncreds/didcomm'
 import type { DidRepository } from '@credo-ts/core'
 import {
   CacheModuleConfig,
@@ -29,7 +31,8 @@ import {
   InjectionSymbols,
   InMemoryLruCache,
   JsonLdModuleConfig,
-  SignatureSuiteToken,
+  SignatureSuiteRegistry,
+  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -46,12 +49,12 @@ import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
-import { anoncreds } from './helpers'
+import { NativeAnoncreds } from './helpers'
 
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
-  anoncreds,
+  anoncreds: NativeAnoncreds,
 })
 
 const agentConfig = getAgentConfig('LegacyIndyDidCommCredentialFormatService using anoncreds-rs')
@@ -71,9 +74,10 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
     [InjectionSymbols.Logger, testLogger],
-    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [SignatureSuiteToken, 'default'],
+    [JsonLdModuleConfig, new JsonLdModuleConfig()],
+    [SignatureSuiteRegistry, new SignatureSuiteRegistry()],
     [
       CacheModuleConfig,
       new CacheModuleConfig({

@@ -1,7 +1,8 @@
 import type { DependencyManager, Module } from '../../plugins'
 import { MdocApi } from './MdocApi'
+import { MdocDcApiService } from './MdocDcApiService'
 import { MdocService } from './MdocService'
-import { MdocRepository } from './repository'
+import { MdocRepository, MdocVerificationSessionRepository } from './repository'
 
 /**
  * @public
@@ -15,8 +16,10 @@ export class MdocModule implements Module {
   public register(dependencyManager: DependencyManager) {
     // Services
     dependencyManager.registerSingleton(MdocService)
+    dependencyManager.registerSingleton(MdocDcApiService)
 
     // Repositories
     dependencyManager.registerSingleton(MdocRepository)
+    dependencyManager.registerSingleton(MdocVerificationSessionRepository)
   }
 }

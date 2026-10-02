@@ -1,3 +1,4 @@
+import MagicString from 'magic-string'
 import { defineConfig } from 'tsdown'
 import config from '../../tsdown.config.base'
 
@@ -15,13 +16,21 @@ function preserveRequirePlugin() {
   return {
     name: 'preserve-require',
     renderChunk(code: string) {
-      // Remove the rolldown runtime import that defines __require
-      const withoutImport = code.replace(
-        /import\s*\{\s*__require\s*\}\s*from\s*"[^"]*\/_virtual\/_rolldown\/runtime\.mjs"\s*;?\n?/g,
-        ''
-      )
-      // Replace __require() calls with standard require()
-      return withoutImport.replace(/__require\(/g, 'require(')
+      const transformed = new MagicString(code)
+      const runtimeImport = /import\s*\{\s*__require\s*\}\s*from\s*"[^"]*\/_virtual\/_rolldown\/runtime\.mjs"\s*;?\n?/g
+
+      for (const match of code.matchAll(runtimeImport)) {
+        transformed.remove(match.index, match.index + match[0].length)
+      }
+
+      for (const match of code.matchAll(/__require\(/g)) {
+        transformed.overwrite(match.index, match.index + match[0].length, 'require(')
+      }
+
+      return {
+        code: transformed.toString(),
+        map: transformed.generateMap({ hires: true }),
+      }
     },
   }
 }

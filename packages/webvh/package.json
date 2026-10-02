@@ -9,7 +9,7 @@
     "./anoncreds": "./src/anoncreds/index.ts",
     "./resources": "./src/resources/index.ts"
   },
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Credo WebVH DID method implementation",
   "files": [
     "build"
@@ -49,15 +49,23 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
     "didwebvh-ts": "^2.8.0",
-    "json-canonicalize": "^2.0.0",
+    "json-canonicalize": "^3.0.0",
     "tsyringe": "catalog:"
   },
   "devDependencies": {
+    "@credo-ts/anoncreds": "workspace:*",
     "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "@credo-ts/anoncreds": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@credo-ts/anoncreds": {
+      "optional": true
+    }
   }
 }

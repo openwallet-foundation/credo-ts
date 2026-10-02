@@ -1,5 +1,6 @@
 import type { Signer, Verifier } from '@sd-jwt/core'
 import { AgentContext } from '../../agent'
+import type { HashName } from '../../crypto'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
 import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
@@ -93,6 +94,35 @@ export function setJwkAlgFromJwtHeader(publicJwk: PublicJwk, jwtHeaderAlg: unkno
   }
 
   publicJwk.alg = jwtHeaderAlg
+}
+
+/**
+ * Hashing algorithms that can be used for the disclosure digests of an SD-JWT, and are placed
+ * in the `_sd_alg` claim.
+ *
+ * `sha-1` is omitted, as SD-JWT requires a hash algorithm that is considered secure at the
+ * time of issuance.
+ *
+ * @see https://www.ietf.org/archive/id/draft-ietf-oauth-selective-disclosure-jwt-22.html#name-hash-function-claim
+ */
+export const sdJwtHashingAlgorithms: Array<Exclude<HashName, 'sha-1'>> = ['sha-256', 'sha-384', 'sha-512']
+
+/**
+ * Get the hashing algorithm to use for the disclosure digests of an SD-JWT, defaulting to `sha-256`.
+ *
+ * The sign options already exclude insecure hashing algorithms on a type level, but this is
+ * enforced at runtime as well, as the value can originate from JavaScript callers or dynamic input.
+ */
+export function getSdJwtHashingAlgorithm(hashingAlgorithm?: HashName): Exclude<HashName, 'sha-1'> {
+  const hashAlg = hashingAlgorithm ?? 'sha-256'
+
+  if (!sdJwtHashingAlgorithms.includes(hashAlg as Exclude<HashName, 'sha-1'>)) {
+    throw new CredoError(
+      `Unsupported hashing algorithm '${hashAlg}' for the disclosure digests of an SD-JWT. Supported hashing algorithms are ${sdJwtHashingAlgorithms.join(', ')}`
+    )
+  }
+
+  return hashAlg as Exclude<HashName, 'sha-1'>
 }
 
 export function getSdJwtSigner(agentContext: AgentContext, key: PublicJwk): Signer {

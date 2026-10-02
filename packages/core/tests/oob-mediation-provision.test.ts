@@ -1,9 +1,11 @@
+import { DidCommBasicMessageEventTypes } from '../../didcomm/src/modules/basic-messages'
 import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../didcomm/src/modules/connections'
 import type { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { DidCommMediationState, DidCommMediatorPickupStrategy } from '../../didcomm/src/modules/routing'
 import { Agent } from '../src/agent/Agent'
 
-import { getAgentOptions, waitForBasicMessage } from './helpers'
+import { type EventReplaySubject, setupEventReplaySubjects } from './events'
+import { getAgentOptions, waitForBasicMessageSubject } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 const faberAgentOptions = getAgentOptions(
@@ -50,6 +52,7 @@ describe('out of band with mediation set up with provision method', () => {
   let faberAgent: Agent<(typeof faberAgentOptions)['modules']>
   let aliceAgent: Agent<(typeof aliceAgentOptions)['modules']>
   let mediatorAgent: Agent<(typeof mediatorAgentOptions)['modules']>
+  let faberReplay: EventReplaySubject
 
   let mediatorOutOfBandInvitation: DidCommOutOfBandInvitation
 
@@ -63,6 +66,10 @@ describe('out of band with mediation set up with provision method', () => {
     await mediatorAgent.initialize()
     await aliceAgent.initialize()
     await faberAgent.initialize()
+    ;[faberReplay] = setupEventReplaySubjects(
+      [faberAgent],
+      [DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged]
+    )
 
     const mediationOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation(makeConnectionConfig)
     mediatorOutOfBandInvitation = mediationOutOfBandRecord.outOfBandInvitation
@@ -108,8 +115,8 @@ describe('out of band with mediation set up with provision method', () => {
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
 
-    await aliceAgent.didcomm.basicMessages.sendMessage(aliceFaberConnection.id, 'hello')
-    const basicMessage = await waitForBasicMessage(faberAgent, {})
+    const { threadId } = await aliceAgent.didcomm.basicMessages.sendMessage(aliceFaberConnection.id, 'hello')
+    const basicMessage = await waitForBasicMessageSubject(faberReplay, { threadId })
 
     expect(basicMessage.content).toBe('hello')
 

@@ -1,10 +1,12 @@
 import type { AgentContext, Constructable, SdJwtVc } from '@credo-ts/core'
 import {
   Agent,
+  CredoError,
   DidKey,
   DidsModule,
   getDomainFromUrl,
   Hasher,
+  JsonEncoder,
   JwsService,
   JwtPayload,
   KeyDidRegistrar,
@@ -16,16 +18,17 @@ import {
   X509Service,
 } from '@credo-ts/core'
 import { createHeaderAndPayload, StatusList } from '@owf/token-status-list'
-import { Jwt, SDJWTException, SDJwt } from '@sd-jwt/core'
+import { decodeSdJwtSync, getClaimsSync, Jwt, SDJWTException, SDJwt } from '@sd-jwt/core'
 import { randomUUID } from 'crypto'
 import nock from 'nock'
 import { vi } from 'vitest'
 import { transformSeedToPrivateJwk } from '../../../../../askar/src'
 import { getAgentOptions, mockProperty } from '../../../../tests'
 import { PublicJwk } from '../../kms'
+import { applyDisclosuresForPaths, buildPresentationFrameForPaths } from '../disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from '../repository'
 import { type CustomTypeMetadataResolver, SdJwtVcModuleConfig } from '../SdJwtVcModuleConfig'
-import type { SdJwtVcHeader, SdJwtVcPayload } from '../SdJwtVcOptions'
+import type { IDisclosureFrame, SdJwtVcHeader, SdJwtVcPayload } from '../SdJwtVcOptions'
 import { SdJwtVcService } from '../SdJwtVcService'
 import {
   complexSdJwtVc,
@@ -77,9 +80,14 @@ const agent = new Agent(
   )
 )
 
-agent.kms.randomBytes = vi.fn(function () {
-  return TypedArrayEncoder.fromUtf8String('salt')
-})
+const staticSalt = () => TypedArrayEncoder.fromUtf8String('salt')
+agent.kms.randomBytes = vi.fn(staticSalt)
+
+// Disclosure salts must be unique within a single sd-jwt, so tests issuing multiple disclosures need unique salts
+const mockUniqueSalts = () => {
+  let counter = 0
+  vi.mocked(agent.kms.randomBytes).mockImplementation(() => TypedArrayEncoder.fromUtf8String(`salt${counter++}`))
+}
 Date.prototype.getTime = vi.fn(function () {
   return 1698151532000
 })
@@ -106,7 +114,7 @@ const generateStatusList = async (
     statusList,
     {
       iss: did,
-      sub: 'https://example.com/status/1',
+      sub: 'https://example.com/status-list',
       iat: Date.now() / 1000,
     },
     {
@@ -144,7 +152,7 @@ const generateX509StatusList = async (
     statusList,
     {
       iss: 'https://example.com',
-      sub: 'https://example.com/status/1',
+      sub: 'https://example.com/status-list',
       iat: Date.now() / 1000,
     },
     {
@@ -248,6 +256,10 @@ describe('SdJwtVcService', () => {
   })
 
   describe('SdJwtVcService.sign', () => {
+    afterEach(() => {
+      vi.mocked(agent.kms.randomBytes).mockImplementation(staticSalt)
+    })
+
     test('Sign (x509) sd-jwt-vc with an invalid certificate issuer should fail', async () => {
       await expect(
         sdJwtVcService.sign(agent.context, {
@@ -548,8 +560,60 @@ describe('SdJwtVcService', () => {
       })
     })
 
+    test('Create sd-jwt-vc with a hashing algorithm other than sha-256', async () => {
+      const iat = 1698151532
+      const { compact, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
+        payload: { claim: 'some-claim', vct: 'IdentityCredential', iat },
+        disclosureFrame: { _sd: ['claim'] },
+        holder: {
+          method: 'jwk',
+          jwk: holderKey,
+        },
+        issuer: {
+          method: 'did',
+          didUrl: issuerDidUrl,
+        },
+        hashingAlgorithm: 'sha-512',
+      })
+
+      const [, encodedDisclosure] = compact.split('~')
+
+      expect(payload).toEqual({
+        vct: 'IdentityCredential',
+        iat,
+        iss: issuerDidUrl.split('#')[0],
+        _sd: [TypedArrayEncoder.toBase64Url(Hasher.hash(encodedDisclosure, 'sha-512'))],
+        _sd_alg: 'sha-512',
+        cnf: {
+          jwk: holderKey.toJson(),
+        },
+      })
+
+      // The digests must be resolvable using the algorithm from `_sd_alg`
+      expect(prettyClaims.claim).toStrictEqual('some-claim')
+      expect(sdJwtVcService.fromCompact(compact).prettyClaims.claim).toStrictEqual('some-claim')
+    })
+
+    test('Create sd-jwt-vc with sha-1 as hashing algorithm and fails', async () => {
+      await expect(
+        sdJwtVcService.sign(agent.context, {
+          payload: { claim: 'some-claim', vct: 'IdentityCredential' },
+          disclosureFrame: { _sd: ['claim'] },
+          issuer: {
+            method: 'did',
+            didUrl: issuerDidUrl,
+          },
+          // `sha-1` is excluded on a type level, but JavaScript callers can still provide it
+          hashingAlgorithm: 'sha-1' as never,
+        })
+      ).rejects.toThrow(
+        "Unsupported hashing algorithm 'sha-1' for the disclosure digests of an SD-JWT. Supported hashing algorithms are sha-256, sha-384, sha-512"
+      )
+    })
+
     test('Create sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const { compact, header, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
+      mockUniqueSalts()
+      const { header, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
         disclosureFrame: {
           _sd: ['is_over_65', 'is_over_21', 'is_over_18', 'birthdate', 'email', 'given_name'],
           address: {
@@ -585,8 +649,6 @@ describe('SdJwtVcService', () => {
         headerType: 'vc+sd-jwt',
       })
 
-      expect(compact).toStrictEqual(complexSdJwtVc)
-
       expect(header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
@@ -597,7 +659,7 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(Date.now() / 1000),
         address: {
-          _sd: ['8Kl-6KGl7JjFrlN0ZKDPKzeRfo0oJ5Tv0F6cXgpmOCY', 'cxH6g51BOh8vDiQXW88Kq896DEVLZZ4mbuLO6z__5ds'],
+          _sd: ['-5id9AETSlfSgueABbi7AxNO_jMnixiMAK0Y-RFSg1M', 'k1UUbHcbyjSI3lqKAIUXdqgVrVA8W_SlgPmL0DGSvcA'],
           locality: 'Anytown',
           street_address: '123 Main St',
         },
@@ -605,12 +667,12 @@ describe('SdJwtVcService', () => {
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         _sd: [
-          '1oLbHVhfmVs2oA3vhFNTXhMw4lGu7ql9dZ0T7p-vWqE',
-          '2xuzS3kUrT6VPJD-MySIkQ47HIB-gcyzF5NDY19cPBw',
-          'hn1gcrO_Q2HskW2Z_nzIrIl6KpgqldvScozutJdbhWM',
-          'jc73t3yBoDs_pDYb03lEYKYvCbtCq9NhuJ6_5A7QNSs',
-          'lKI_sY05pDIs9MDrjCO4v8XoDM963JXxrp9T2FNLyTY',
-          'sl0hkY5LeVwy3rIjNaCl4P4CJ3C3v8Ip-GH2lB9Sd_A',
+          'GRuP81jhLKxUXmVTvd_wNCdbIoc_mxx75PNavKn_XKI',
+          'OXrkrM39EeoiWKZMLCOJxzImLUseRo9kdUgQfeOSnEQ',
+          'YrwUmkjIZz4ZRW1vfPvMunqKaEn-bCpSFEJO-RFwVTs',
+          'gjCZSKGwu9bO3mqnBVfhakDSzFrKhfeWWrhZpcnZLzo',
+          'o1MzUdDNDx5gOAW2FaaVhGald8-3Jb4A6S_FBhzn5zk',
+          'ws7qipcgSSOKTtgPFd7u0fwpOLoK4rIKgGqQoM1ORi0',
         ],
         _sd_alg: 'sha-256',
         cnf: {
@@ -643,6 +705,7 @@ describe('SdJwtVcService', () => {
     })
 
     test('Create sd-jwt-vc from a basic payload with multiple (nested) disclosure where a disclosure contains other disclosures', async () => {
+      mockUniqueSalts()
       const { header, payload, prettyClaims } = await sdJwtVcService.sign(agent.context, {
         disclosureFrame: {
           _sd: ['is_over_65', 'is_over_21', 'is_over_18', 'birthdate', 'email', 'given_name', 'address'],
@@ -691,13 +754,13 @@ describe('SdJwtVcService', () => {
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         _sd: [
-          '1oLbHVhfmVs2oA3vhFNTXhMw4lGu7ql9dZ0T7p-vWqE',
-          '2xuzS3kUrT6VPJD-MySIkQ47HIB-gcyzF5NDY19cPBw',
-          'RDQeb-TXvRaGsX5jV4W2-xAKutsaYZVm8qEvMtP71pc',
-          'hn1gcrO_Q2HskW2Z_nzIrIl6KpgqldvScozutJdbhWM',
-          'jc73t3yBoDs_pDYb03lEYKYvCbtCq9NhuJ6_5A7QNSs',
-          'lKI_sY05pDIs9MDrjCO4v8XoDM963JXxrp9T2FNLyTY',
-          'sl0hkY5LeVwy3rIjNaCl4P4CJ3C3v8Ip-GH2lB9Sd_A',
+          'LYk_sFxcqWbJvdoB_qrXkMRJwu3FafsVe_1RJwz3L-8',
+          'SUShCtoCQQ_YUfyfmhSKwqyQHjqH1X9ZiurnWNvfHI4',
+          'YrwUmkjIZz4ZRW1vfPvMunqKaEn-bCpSFEJO-RFwVTs',
+          'gjCZSKGwu9bO3mqnBVfhakDSzFrKhfeWWrhZpcnZLzo',
+          'hu-enwvnFozp9eH1NTcQnl_g3-gqlmHRBFD8lreDM4s',
+          'keoVRCHpUVfOQEma48MMA0sYCjox8yS2IPEc9MQgzGM',
+          'mvwvkBPwUX28Bm8dwhDHyXT9_SeLsPHPPUFMSTAyRK4',
         ],
         _sd_alg: 'sha-256',
         cnf: {
@@ -937,6 +1000,276 @@ describe('SdJwtVcService', () => {
       })
 
       expect(presentation.compact).toEqual(simpleJwtVc)
+    })
+  })
+
+  describe('applyDisclosuresForPaths', () => {
+    beforeEach(() => {
+      mockUniqueSalts()
+    })
+
+    afterEach(() => {
+      vi.mocked(agent.kms.randomBytes).mockImplementation(staticSalt)
+    })
+
+    const sign = (payload: Record<string, unknown>, disclosureFrame: IDisclosureFrame) =>
+      sdJwtVcService.sign(agent.context, {
+        payload: { vct: 'IdentityCredential', ...payload },
+        disclosureFrame,
+        holder: { method: 'jwk', jwk: holderKey },
+        issuer: { method: 'did', didUrl: issuerDidUrl },
+      })
+
+    test('Returns the SD-JWT VC with only the disclosures for the paths', async () => {
+      const { compact } = await sign(
+        { given_name: 'Erika', family_name: 'Mustermann' },
+        { _sd: ['given_name', 'family_name'] }
+      )
+
+      const sdJwtVc = sdJwtVcService.applyDisclosuresForPaths(compact, [['given_name']])
+
+      expect(sdJwtVc.prettyClaims.given_name).toBe('Erika')
+      expect(sdJwtVc.prettyClaims).not.toHaveProperty('family_name')
+    })
+
+    test('Discloses only the array elements at the given positions', async () => {
+      const { compact } = await sign({ nationalities: ['DE', 'NL', 'FR'] }, { nationalities: { _sd: [0, 1, 2] } })
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['nationalities', 1]])
+
+      expect(prettyClaims.nationalities).toStrictEqual(['NL'])
+      expect(disclosedPaths.filter((path) => path[0] === 'nationalities')).toStrictEqual([['nationalities', 1]])
+    })
+
+    test('Discloses all elements of an array whose elements are not selectively disclosable', async () => {
+      const { compact } = await sign({ nationalities: ['DE', 'NL', 'FR'] }, { _sd: ['nationalities'] })
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['nationalities', 1]])
+
+      expect(prettyClaims.nationalities).toStrictEqual(['DE', 'NL', 'FR'])
+      expect(disclosedPaths.filter((path) => path[0] === 'nationalities')).toStrictEqual([['nationalities']])
+    })
+
+    test('Discloses claims in selectively disclosable array elements', async () => {
+      const { compact } = await sign(
+        {
+          addresses: [
+            { street: 'Main St', city: 'Anytown' },
+            { street: 'Second St', city: 'Othertown' },
+          ],
+        },
+        { addresses: { _sd: [0, 1], 0: { _sd: ['street', 'city'] }, 1: { _sd: ['street', 'city'] } } }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['addresses', 1, 'city']])
+
+      expect(prettyClaims.addresses).toStrictEqual([{ city: 'Othertown' }])
+      expect(disclosedPaths.filter((path) => path[0] === 'addresses')).toStrictEqual([['addresses', 1, 'city']])
+    })
+
+    test('Discloses the selectively disclosable claims nested in a requested object', async () => {
+      const { compact } = await sign(
+        {
+          address: {
+            street: 'Main St',
+            city: 'Anytown',
+            country: { code: 'DE', name: 'Germany' },
+          },
+        },
+        { _sd: ['address'], address: { _sd: ['street', 'city', 'country'], country: { _sd: ['code', 'name'] } } }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['address']])
+
+      expect(prettyClaims.address).toStrictEqual({
+        street: 'Main St',
+        city: 'Anytown',
+        country: { code: 'DE', name: 'Germany' },
+      })
+      expect(disclosedPaths.filter((path) => path[0] === 'address')).toStrictEqual([['address']])
+    })
+
+    test('Discloses the selectively disclosable claims on the way to a requested claim', async () => {
+      const { compact } = await sign(
+        { address: { street: 'Main St', country: { code: 'DE', name: 'Germany' } } },
+        { _sd: ['address'], address: { _sd: ['street', 'country'], country: { _sd: ['code', 'name'] } } }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['address', 'country', 'code']])
+
+      expect(prettyClaims.address).toStrictEqual({ country: { code: 'DE' } })
+      expect(disclosedPaths.filter((path) => path[0] === 'address')).toStrictEqual([['address', 'country', 'code']])
+    })
+
+    test('Has a single path for a requested array with many nested selectively disclosable claims', async () => {
+      const drivingPrivileges = Array.from({ length: 1000 }, (_, index) => ({
+        vehicle_category_code: `C${index}`,
+        codes: [{ code: 'D', sign: '=', value: String(index) }],
+      }))
+
+      const { compact } = await sign(
+        { driving_privileges: drivingPrivileges },
+        {
+          _sd: ['driving_privileges'],
+          driving_privileges: {
+            _sd: drivingPrivileges.map((_, index) => index),
+            ...Object.fromEntries(
+              drivingPrivileges.map((_, index) => [index, { _sd: ['vehicle_category_code', 'codes'] }])
+            ),
+          },
+        }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['driving_privileges']])
+
+      expect(prettyClaims.driving_privileges).toStrictEqual(drivingPrivileges)
+      expect(disclosedPaths.filter((path) => path[0] === 'driving_privileges')).toStrictEqual([['driving_privileges']])
+    })
+
+    test('Builds a presentation frame that discloses everything below a path', async () => {
+      const { compact } = await sign(
+        { address: { street: 'Main St', country: { code: 'DE', name: 'Germany' } } },
+        { _sd: ['address'], address: { _sd: ['street', 'country'], country: { _sd: ['code', 'name'] } } }
+      )
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: compact,
+        presentationFrame: buildPresentationFrameForPaths(compact, [['address']]),
+      })
+
+      expect(sdJwtVcService.fromCompact(presentation).prettyClaims.address).toStrictEqual({
+        street: 'Main St',
+        country: { code: 'DE', name: 'Germany' },
+      })
+    })
+
+    test('Only discloses the requested claims nested in an object', async () => {
+      const { compact } = await sign(
+        { address: { street: 'Main St', city: 'Anytown' } },
+        { _sd: ['address'], address: { _sd: ['street', 'city'] } }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['address', 'city']])
+
+      expect(prettyClaims.address).toStrictEqual({ city: 'Anytown' })
+      expect(disclosedPaths.filter((path) => path[0] === 'address')).toStrictEqual([['address', 'city']])
+    })
+
+    test('Includes the path to a disclosed claim with a null value', async () => {
+      const { compact } = await sign({ middle_name: null, given_name: 'Erika' }, { _sd: ['given_name'] })
+
+      const { disclosedPaths } = applyDisclosuresForPaths(compact, [])
+
+      expect(disclosedPaths).toContainEqual(['middle_name'])
+      expect(disclosedPaths).not.toContainEqual(['given_name'])
+    })
+
+    // Builds an SD-JWT that is not signed, for payloads that sign() does not create
+    const buildUnsignedSdJwt = (
+      buildPayload: (digest: (disclosure: unknown[]) => string) => object,
+      alg = 'sha-256'
+    ) => {
+      const toBase64Url = (value: unknown) =>
+        TypedArrayEncoder.toBase64Url(TypedArrayEncoder.fromUtf8String(JSON.stringify(value)))
+
+      const disclosures: string[] = []
+      const payload = buildPayload((disclosure) => {
+        const encoded = toBase64Url(disclosure)
+        disclosures.push(encoded)
+        return TypedArrayEncoder.toBase64Url(Hasher.hash(encoded, alg))
+      })
+
+      return `${toBase64Url({ alg: 'ES256' })}.${toBase64Url(payload)}.signature~${disclosures.map((disclosure) => `${disclosure}~`).join('')}`
+    }
+
+    // The claims of an SD-JWT, which unlike fromCompact() does not need an issuer
+    const getClaims = (compact: string) => {
+      const { jwt, disclosures } = decodeSdJwtSync(compact, Hasher.hash)
+      return getClaimsSync(jwt.payload, disclosures, Hasher.hash) as Record<string, unknown>
+    }
+
+    test('Gives array elements after a decoy digest the position they have in the claims', async () => {
+      const compact = buildUnsignedSdJwt((digest) => ({
+        vct: 'IdentityCredential',
+        nationalities: [
+          { '...': digest(['salt1', 'DE']) },
+          { '...': TypedArrayEncoder.toBase64Url(Hasher.hash('decoy', 'sha-256')) },
+          { '...': digest(['salt2', 'FR']) },
+        ],
+      }))
+      expect(getClaims(compact).nationalities).toStrictEqual(['DE', 'FR'])
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['nationalities', 1]])
+      expect(prettyClaims.nationalities).toStrictEqual(['FR'])
+      expect(disclosedPaths.filter((path) => path[0] === 'nationalities')).toStrictEqual([['nationalities', 1]])
+
+      const presentation = await sdJwtVcService.present(agent.context, {
+        sdJwtVc: compact,
+        presentationFrame: buildPresentationFrameForPaths(compact, disclosedPaths),
+      })
+      expect(getClaims(presentation).nationalities).toStrictEqual(['FR'])
+    })
+
+    test('Does not disclose the claims on the way to a path without a claim', async () => {
+      const { compact } = await sign(
+        { address: { street: 'Main St', city: 'Anytown' } },
+        { _sd: ['address'], address: { _sd: ['street', 'city'] } }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['address', 'country']])
+
+      expect(prettyClaims.address).toBeUndefined()
+      expect(disclosedPaths.filter((path) => path[0] === 'address')).toStrictEqual([])
+      expect(buildPresentationFrameForPaths(compact, [['address', 'country']])).not.toHaveProperty('address')
+    })
+
+    test('Only has a single path for a nested claim when everything below it is disclosed', async () => {
+      const { compact } = await sign(
+        { address: { street: 'Main St', country: { code: 'DE', name: 'Germany' } } },
+        { _sd: ['address'], address: { _sd: ['street'], country: { _sd: ['name'] } } }
+      )
+
+      const { prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['address', 'street']])
+
+      expect(prettyClaims.address).toStrictEqual({ street: 'Main St', country: { code: 'DE' } })
+      expect(disclosedPaths.filter((path) => path[0] === 'address')).toStrictEqual([
+        ['address', 'country', 'code'],
+        ['address', 'street'],
+      ])
+    })
+
+    test('Selects an array element only by a number, and a property only by a string', async () => {
+      const { compact } = await sign(
+        { list: ['a', 'b'], object: { '0': 'zero', '1': 'one' } },
+        { list: { _sd: [0, 1] }, object: { _sd: ['0', '1'] } }
+      )
+
+      const claimsFor = (paths: Array<Array<string | number>>) => applyDisclosuresForPaths(compact, paths).prettyClaims
+
+      expect(claimsFor([['list', 0]]).list).toStrictEqual(['a'])
+      expect(claimsFor([['list', '0']]).list).toStrictEqual([])
+      expect(claimsFor([['object', '0']]).object).toStrictEqual({ '0': 'zero' })
+      expect(claimsFor([['object', 0]]).object).toStrictEqual({})
+    })
+
+    test('Uses the hash algorithm of the SD-JWT', () => {
+      const compact = buildUnsignedSdJwt(
+        (digest) => ({
+          vct: 'IdentityCredential',
+          _sd_alg: 'sha-384',
+          _sd: [digest(['salt1', 'given_name', 'Erika']), digest(['salt2', 'family_name', 'Mustermann'])],
+        }),
+        'sha-384'
+      )
+
+      const { compact: disclosed, prettyClaims, disclosedPaths } = applyDisclosuresForPaths(compact, [['given_name']])
+
+      expect(prettyClaims).toStrictEqual({ vct: 'IdentityCredential', given_name: 'Erika' })
+      expect(disclosedPaths).toStrictEqual([['vct'], ['given_name']])
+      expect(getClaims(disclosed)).toStrictEqual({
+        vct: 'IdentityCredential',
+        given_name: 'Erika',
+      })
     })
   })
 
@@ -1387,6 +1720,29 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: false,
         error: new SDJWTException('Verify Error: Invalid JWT Signature'),
+        sdJwtVc: expect.any(Object),
+      })
+    })
+
+    test('verify sd-jwt-vc signed with a sha-1 based signature algorithm and fails', async () => {
+      // SHA-1 based signature algorithms (such as RS1) are not registered JWA signature algorithms,
+      // and thus can never be used to sign or verify an sd-jwt-vc
+      const [jwt, ...disclosures] = simpleJwtVc.split('~')
+      const [encodedHeader, encodedPayload, signature] = jwt.split('.')
+      const header = JsonEncoder.fromBase64Url(encodedHeader)
+
+      const sha1SignedSdJwtVc = [
+        [JsonEncoder.toBase64Url({ ...header, alg: 'RS1' }), encodedPayload, signature].join('.'),
+        ...disclosures,
+      ].join('~')
+
+      const verificationResult = await sdJwtVcService.verify(agent.context, {
+        compactSdJwtVc: sha1SignedSdJwtVc,
+      })
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        error: new CredoError("Expected JWT header 'alg' to be a known JWA signature algorithm, found 'RS1'"),
         sdJwtVc: expect.any(Object),
       })
     })

@@ -5,7 +5,7 @@ import { agentDependencies } from '@credo-ts/node'
 import { TenantsModule } from '@credo-ts/tenants'
 import path from 'path'
 import { AskarModule, AskarMultiWalletDatabaseScheme } from '../../askar/src'
-import { askar } from '../../askar/tests/helpers'
+import { NativeAskar } from '../../askar/tests/helpers'
 import { testLogger } from '../../core/tests'
 import { TenantSessionCoordinator } from '../src/context/TenantSessionCoordinator'
 
@@ -21,7 +21,7 @@ const modules = {
   }),
   tenants: new TenantsModule(),
   askar: new AskarModule({
-    askar,
+    askar: NativeAskar,
     multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,
     store: {
       id: 'tenants-agent-04',

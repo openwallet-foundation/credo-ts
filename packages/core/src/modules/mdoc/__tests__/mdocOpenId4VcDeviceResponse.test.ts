@@ -154,6 +154,7 @@ describe('mdoc device-response openid4vp test', () => {
           validUntil: new Date('2050-10-24'),
         },
         holderKey: deviceKeyPublicJwk,
+        keyAuthorizations: { namespaces: ['com.foobar-device'] },
         issuerCertificate,
         namespaces: {
           'org.iso.18013.5.1': {
@@ -197,7 +198,12 @@ describe('mdoc device-response openid4vp test', () => {
           documentRequests: (PRESENTATION_DEFINITION_1.input_descriptors as InputDescriptorV2[])
             .filter((id) => Object.keys(id.format ?? {}).includes('mso_mdoc'))
             .map(assertMdocInputDescriptor)
-            .map(inputDescriptorToDocumentRequest),
+            .map(inputDescriptorToDocumentRequest)
+            // Device signed values are only disclosed when requested
+            .map((documentRequest) => ({
+              ...documentRequest,
+              nameSpaces: { ...documentRequest.nameSpaces, 'com.foobar-device': { test: false } },
+            })),
           sessionTranscriptOptions: {
             type: 'openId4VpDraft18',
             clientId,
@@ -320,6 +326,7 @@ describe('mdoc device-response openid4vp test', () => {
           validUntil: new Date('2050-10-24'),
         },
         holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+        keyAuthorizations: { namespaces: ['com.foobar-device'] },
         issuerCertificate,
         namespaces: {
           'org.iso.18013.5.1': {
@@ -363,7 +370,12 @@ describe('mdoc device-response openid4vp test', () => {
         documentRequests: (PRESENTATION_DEFINITION_1.input_descriptors as InputDescriptorV2[])
           .filter((id) => Object.keys(id.format ?? {}).includes('mso_mdoc'))
           .map(assertMdocInputDescriptor)
-          .map(inputDescriptorToDocumentRequest),
+          .map(inputDescriptorToDocumentRequest)
+          // Device signed values are only disclosed when requested
+          .map((documentRequest) => ({
+            ...documentRequest,
+            nameSpaces: { ...documentRequest.nameSpaces, 'com.foobar-device': { test: false } },
+          })),
         sessionTranscriptOptions: {
           type: 'openId4VpDraft18',
           clientId,

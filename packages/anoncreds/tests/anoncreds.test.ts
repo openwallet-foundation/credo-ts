@@ -2,7 +2,7 @@ import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
 
 import { getAgentOptions } from '../../core/tests'
 import { AnonCredsModule } from '../src'
-import { anoncreds } from './helpers'
+import { NativeAnoncreds } from './helpers'
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 
 const existingSchemas = {
@@ -82,7 +82,7 @@ const agent = new Agent(
       }),
       anoncreds: new AnonCredsModule({
         autoCreateLinkSecret: false,
-        anoncreds,
+        anoncreds: NativeAnoncreds,
         registries: [
           new InMemoryAnonCredsRegistry({
             existingSchemas,

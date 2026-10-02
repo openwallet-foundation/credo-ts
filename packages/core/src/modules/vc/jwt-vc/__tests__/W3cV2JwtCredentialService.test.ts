@@ -1,4 +1,4 @@
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
 import { AskarKeyManagementService, AskarModuleConfig, transformSeedToPrivateJwk } from '../../../../../../askar/src'
@@ -42,6 +42,10 @@ import {
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 const storageService = new InMemoryStorageService<any>()
 const config = getAgentConfig('W3cV2JwtCredentialService')
+const askarModuleConfig = new AskarModuleConfig({
+  askar: NativeAskar,
+  store: getAskarStoreConfig('W3cV2JwtCredentialService'),
+})
 const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.Logger, testLogger],
@@ -49,16 +53,8 @@ const agentContext = getAgentContext({
     [DidRepository, new DidRepository(storageService, new EventEmitter(agentDependencies, new Subject()))],
     [InjectionSymbols.StorageService, storageService],
     [X509ModuleConfig, new X509ModuleConfig()],
-    [
-      AskarStoreManager,
-      new AskarStoreManager(
-        new NodeFileSystem(),
-        new AskarModuleConfig({
-          askar,
-          store: getAskarStoreConfig('W3cV2JwtCredentialService'),
-        })
-      ),
-    ],
+    [AskarModuleConfig, askarModuleConfig],
+    [AskarStoreManager, new AskarStoreManager(new NodeFileSystem(), askarModuleConfig)],
     [
       CacheModuleConfig,
       new CacheModuleConfig({

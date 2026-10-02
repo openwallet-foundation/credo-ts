@@ -69,6 +69,7 @@ jobs:
   release-unstable:
     name: Release Unstable
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: "always() && (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'openwallet-foundation/credo-ts') || (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(release): new version'))"
     steps:
       - uses: snnaplab/get-labels-action@v1
@@ -86,6 +87,11 @@ jobs:
 
       - uses: actions/checkout@v7.0.1
         if: steps.should-run.outputs.run == 'true'
+        with:
+          # changesets deepens shallow clones until it finds the commits that added the changesets. On pull requests
+          # the checked out merge commit can become unreachable (e.g. when re-running a job after the PR merge ref
+          # was updated), in which case deepening never succeeds and changesets loops forever.
+          fetch-depth: 0
       - uses: pnpm/action-setup@v6
         if: steps.should-run.outputs.run == 'true'
 

@@ -1,6 +1,10 @@
-import { prompt } from 'inquirer'
+import type { DistinctQuestion } from 'inquirer'
+import inquirer from 'inquirer'
 
 import { Title } from './OutputClass'
+
+type SelectQuestion = Extract<DistinctQuestion, { type: 'select' }>
+type InputQuestion = Extract<DistinctQuestion, { type: 'input' }>
 
 export enum ConfirmOptions {
   Yes = 'yes',
@@ -8,13 +12,13 @@ export enum ConfirmOptions {
 }
 
 export class BaseInquirer {
-  public optionsInquirer: { type: string; prefix: string; name: string; message: string; choices: string[] }
-  public inputInquirer: { type: string; prefix: string; name: string; message: string; choices: string[] }
+  public optionsInquirer: SelectQuestion
+  public inputInquirer: InputQuestion
 
   public constructor() {
     this.optionsInquirer = {
-      type: 'list',
-      prefix: '',
+      type: 'select',
+      theme: { prefix: '' },
       name: 'options',
       message: '',
       choices: [],
@@ -22,25 +26,24 @@ export class BaseInquirer {
 
     this.inputInquirer = {
       type: 'input',
-      prefix: '',
+      theme: { prefix: '' },
       name: 'input',
       message: '',
-      choices: [],
     }
   }
 
-  public inquireOptions(promptOptions: string[]) {
+  public inquireOptions(promptOptions: string[]): SelectQuestion {
     this.optionsInquirer.message = Title.OptionsTitle
     this.optionsInquirer.choices = promptOptions
     return this.optionsInquirer
   }
 
-  public inquireInput(title: string) {
+  public inquireInput(title: string): InputQuestion {
     this.inputInquirer.message = title
     return this.inputInquirer
   }
 
-  public inquireConfirmation(title: string) {
+  public inquireConfirmation(title: string): SelectQuestion {
     this.optionsInquirer.message = title
     this.optionsInquirer.choices = [ConfirmOptions.Yes, ConfirmOptions.No]
     return this.optionsInquirer
@@ -48,7 +51,7 @@ export class BaseInquirer {
 
   public async inquireMessage() {
     this.inputInquirer.message = Title.MessageTitle
-    const message = await prompt([this.inputInquirer])
+    const message = await inquirer.prompt([this.inputInquirer])
 
     return message.input[0] === 'q' ? null : message.input
   }

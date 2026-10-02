@@ -14,9 +14,12 @@ export type { SdJwtVcPayload }
 export type SdJwtVcHeader = Record<string, unknown>
 
 export interface IDisclosureFrame {
-  _sd?: string[]
+  /**
+   * The claims that are selectively disclosable: property names in an object, element positions in an array.
+   */
+  _sd?: Array<string | number>
   _sd_decoy?: number
-  [x: string]: string[] | number | IDisclosureFrame | undefined
+  [x: string]: Array<string | number> | number | IDisclosureFrame | undefined
 }
 
 export interface IPresentationFrame {
@@ -87,9 +90,15 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
   disclosureFrame?: IDisclosureFrame
 
   /**
-   * Default of sha-256 will be used if not provided
+   * The hashing algorithm used for the disclosure digests, and placed in the
+   * `_sd_alg` claim of the SD-JWT VC.
+   *
+   * `sha-1` is not supported, as SD-JWT VC requires a hash algorithm that is
+   * considered secure at the time of issuance.
+   *
+   * @default 'sha-256'
    */
-  hashingAlgorithm?: HashName
+  hashingAlgorithm?: Exclude<HashName, 'sha-1'>
 
   /**
    * The header 'typ' to use for the SD-JWT VC. vc+sd-jwt is supported

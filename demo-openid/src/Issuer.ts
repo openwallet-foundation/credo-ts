@@ -31,7 +31,7 @@ import {
   OpenId4VcVerifierRecord,
   type VerifiedOpenId4VcCredentialHolderBinding,
 } from '@credo-ts/openid4vc'
-import { askar } from '@openwallet-foundation/askar-nodejs'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { decodeJwt } from 'jose'
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
@@ -264,7 +264,7 @@ export class Issuer extends BaseAgent<{
       port,
       name,
       modules: (app) => ({
-        askar: new AskarModule({ askar, store: { id: name, key: name } }),
+        askar: new AskarModule({ askar: NativeAskar, store: { id: name, key: name } }),
         kms: new Kms.KeyManagementModule({
           backends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())],
         }),

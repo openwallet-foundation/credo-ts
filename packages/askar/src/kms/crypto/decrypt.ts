@@ -3,7 +3,7 @@ import { Key } from '@openwallet-foundation/askar-shared'
 import { jwkEncToAskarAlg } from '../../utils'
 
 // TODO: should we make these methods generic, so they can be reused across backends?
-type AskarSupportedDecryptionOptions = Kms.KmsDecryptDataDecryption & {
+type AskarSupportedDecryptionOptions = Kms.KmsDecryptDataContentDecryption & {
   algorithm: keyof typeof jwkEncToAskarAlg
 }
 

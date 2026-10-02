@@ -1,13 +1,21 @@
 import 'reflect-metadata'
 
+export {
+  ANONCREDS_W3C_CREDENTIAL_CRYPTOSUITE,
+  AnonCredsW3cCredentialProof,
+  AnonCredsW3cCredentialServiceSymbol,
+  type IAnonCredsW3cCredentialService,
+} from '@credo-ts/core'
 export { AnonCredsApi } from './AnonCredsApi'
 export * from './AnonCredsApiOptions'
 export { AnonCredsModule } from './AnonCredsModule'
-export { AnonCredsModuleConfig, type AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
+export {
+  AnonCredsModuleConfig,
+  type AnonCredsModuleConfigOptions,
+  type NativeAnoncredsLike,
+} from './AnonCredsModuleConfig'
 export * from './error'
-export * from './formats'
 export * from './models'
-export * from './protocols'
 export * from './repository'
 export * from './services'
 export { type AnonCredsCredentialMetadata, type AnonCredsCredentialValue, dateToTimestamp } from './utils'

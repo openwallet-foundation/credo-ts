@@ -8,12 +8,14 @@ import {
   DidCommHandshakeProtocol,
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdateMessage,
+  DidCommTrustPingEventTypes,
 } from '../../didcomm/src'
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
 import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 import { Ed25519PublicJwk, PublicJwk } from '../src/modules/kms'
-import { firstValueWithStackTrace, getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
+import { setupEventReplaySubjects } from './events'
+import { firstValueWithStackTrace, getAgentOptions, waitForTrustPingResponseReceivedEventSubject } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 const faberAgent = new Agent(
@@ -82,6 +84,11 @@ describe('connections', () => {
   })
 
   it('one agent should be able to send and receive a ping', async () => {
+    const [aliceReplay] = setupEventReplaySubjects(
+      [aliceAgent],
+      [DidCommTrustPingEventTypes.DidCommTrustPingResponseReceivedEvent]
+    )
+
     const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
       handshakeProtocols: [DidCommHandshakeProtocol.Connections],
       multiUseInvitation: true,
@@ -101,7 +108,7 @@ describe('connections', () => {
 
     const ping = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection.id, {})
 
-    await waitForTrustPingResponseReceivedEvent(aliceAgent, { threadId: ping.threadId })
+    await waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: ping.threadId })
   })
 
   it('one should be able to make multiple connections using a multi use invite', async () => {
