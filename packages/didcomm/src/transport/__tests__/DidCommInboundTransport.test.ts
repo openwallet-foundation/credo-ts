@@ -15,6 +15,7 @@ import type {
   DidCommWebSocketHost,
 } from '../DidCommInboundHosting'
 import type { DidCommInboundTransport } from '../DidCommInboundTransport'
+import type { DidCommOutboundTransport } from '../DidCommOutboundTransport'
 import { DidCommWsInboundTransport } from '../DidCommWsInboundTransport'
 
 const encryptedMessage = { protected: 'p', iv: 'i', ciphertext: 'c', tag: 't' }
@@ -196,18 +197,17 @@ describe('DidCommWsInboundTransport', () => {
 })
 
 describe('DidCommModule inbound transport options', () => {
-  test('adds HTTP and WebSocket inbound transports after the configured transports', () => {
+  test('uses explicitly configured inbound and outbound transport instances', () => {
     const inbound: DidCommInboundTransport[] = [{ start: vi.fn(), stop: vi.fn() }]
+    const outbound: DidCommOutboundTransport[] = [
+      { start: vi.fn(), stop: vi.fn(), supportedSchemes: ['test'], sendMessage: vi.fn() },
+    ]
     const module = new DidCommModule({
-      transports: { inbound },
-      http: { host: createHttpHost() },
-      webSocket: { host: createWebSocketHost() },
+      transports: { inbound, outbound },
     })
 
-    expect(module.config.inboundTransports).toHaveLength(3)
-    expect(module.config.inboundTransports[0]).toBe(inbound[0])
-    expect(module.config.inboundTransports[1]).toBeInstanceOf(DidCommHttpInboundTransport)
-    expect(module.config.inboundTransports[2]).toBeInstanceOf(DidCommWsInboundTransport)
+    expect(module.config.inboundTransports).toEqual(inbound)
+    expect(module.config.outboundTransports).toEqual(outbound)
     expect(inbound).toHaveLength(1)
   })
 })
