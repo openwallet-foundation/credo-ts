@@ -1093,17 +1093,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: ^0.5.6
-        version: 0.5.6
+        specifier: 0.6.1-alpha-20261002115908
+        version: 0.6.1-alpha-20261002115908
       '@openid4vc/openid4vci':
-        specifier: ^0.5.6
-        version: 0.5.6
+        specifier: 0.6.1-alpha-20261002115908
+        version: 0.6.1-alpha-20261002115908
       '@openid4vc/openid4vp':
-        specifier: ^0.5.6
-        version: 0.5.6
+        specifier: 0.6.1-alpha-20261002115908
+        version: 0.6.1-alpha-20261002115908
       '@openid4vc/utils':
-        specifier: ^0.5.6
-        version: 0.5.6
+        specifier: 0.6.1-alpha-20261002115908
+        version: 0.6.1-alpha-20261002115908
       '@types/express':
         specifier: 'catalog:'
         version: 5.0.6
@@ -3202,17 +3202,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.5.6':
-    resolution: {integrity: sha512-o//4lEC8SYfxpgR7ywTTesNICPLDqNKFkef8DtFJ7C5xCVdqP/IWpiW0dRbkCqCmpSSMrFq7Fraz6Sj5pwqcIg==}
+  '@openid4vc/oauth2@0.6.1-alpha-20261002115908':
+    resolution: {integrity: sha512-RS/v/6pBf0kYKmGOR7ZbsFBZsCZ0PtCNKOLieUnihMJZ4R1CMXl0QLSuaUN/wOuMXGJFuH7mi5hPFO6I41pLow==}
 
-  '@openid4vc/openid4vci@0.5.6':
-    resolution: {integrity: sha512-m9nvIisWpOFdK7/pHsFTmoNiNCRYIF0tsdKXb2h+vexCetNdBiJyXEA+NQBMcXmYDgWEZ/y3J72SHJNUJOh7rw==}
+  '@openid4vc/openid4vci@0.6.1-alpha-20261002115908':
+    resolution: {integrity: sha512-OcOuCjEAkKvEh+EppZgqwbtJZmXVH9aEvAka4m4i4pk1fzirBhQ7LZkN1q+RZnFD3frqnoqndrYVVUsSkr+Ssw==}
 
-  '@openid4vc/openid4vp@0.5.6':
-    resolution: {integrity: sha512-ONuB/5EPNXmuqXthZbMySaB/jDFJ2TdoKAhJMdUYDjdZVyLekRpo1my6REnpYzAeMhKdcyn33kOT0T8B+bsaHA==}
+  '@openid4vc/openid4vp@0.6.1-alpha-20261002115908':
+    resolution: {integrity: sha512-86eMVEeqwKDZylprpYSMj4TgwkAx+I/pmSg2pK7U62HVgH9FGUtvwFqkekszvrOA4KMrCEQ6wRLv3swZ+UIWqA==}
 
-  '@openid4vc/utils@0.5.6':
-    resolution: {integrity: sha512-LIKYEH+vioseeNDZ4zqM37tGLPuE803YwQIIv6SPI4ZeXqDwAJZs5acIxp0nzpDkk/AaxXUIEiH8eQd0MZL6kw==}
+  '@openid4vc/utils@0.6.1-alpha-20261002115908':
+    resolution: {integrity: sha512-xgJ3DdrDQ7u+RojSDnZPPx6vpd2s7QjHHumk6UrHU3g8+MIHUMDTs3DTTVfmRSZ1Vb3nuZE1efZwXYHZWzQbEA==}
 
   '@openwallet-foundation/askar-nodejs@0.6.1':
     resolution: {integrity: sha512-9cAXjAA9vHyUJ/wKZUCFpJZghcopR1DCEc98OdihY7X/RGSevuxA+twArLDgJSzasqINPNLMuGpp3FCJjVIlGg==}
@@ -6604,10 +6604,6 @@ packages:
     resolution: {integrity: sha512-NCrCHhWmnQklfH4MtJMRjZ2a8c80qXeMlQMv2uVp9ISJMTt562SbGd6n2oq0PaPgKm7Z6pL9E2UlLIhC+SHL3w==}
     engines: {node: '>=4.0.0'}
 
-  postcss@8.5.25:
-    resolution: {integrity: sha512-DTPx3RWSSnWyzLxQnlH0rJP+EW5ekl16ZU4/psbIhA0e53kJfdgaN5vKM+xP7yJtXVu+nfdVFmlgFDEKAe4Pyw==}
-    engines: {node: ^10 || ^12 || >=14}
-
   postcss@8.5.28:
     resolution: {integrity: sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==}
     engines: {node: ^10 || ^12 || >=14}
@@ -9440,7 +9436,7 @@ snapshots:
       jsc-safe-url: 0.2.4
       lightningcss: 1.33.0
       picomatch: 4.0.7
-      postcss: 8.5.25
+      postcss: 8.5.28
       resolve-from: 5.0.0
     optionalDependencies:
       expo: 57.0.22(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(react-native@0.84.1(@babel/core@7.29.7(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@5.9.3)
@@ -10238,24 +10234,24 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.5.6':
+  '@openid4vc/oauth2@0.6.1-alpha-20261002115908':
     dependencies:
-      '@openid4vc/utils': 0.5.6
+      '@openid4vc/utils': 0.6.1-alpha-20261002115908
       zod: 4.6.5
 
-  '@openid4vc/openid4vci@0.5.6':
+  '@openid4vc/openid4vci@0.6.1-alpha-20261002115908':
     dependencies:
-      '@openid4vc/oauth2': 0.5.6
-      '@openid4vc/utils': 0.5.6
+      '@openid4vc/oauth2': 0.6.1-alpha-20261002115908
+      '@openid4vc/utils': 0.6.1-alpha-20261002115908
       zod: 4.6.5
 
-  '@openid4vc/openid4vp@0.5.6':
+  '@openid4vc/openid4vp@0.6.1-alpha-20261002115908':
     dependencies:
-      '@openid4vc/oauth2': 0.5.6
-      '@openid4vc/utils': 0.5.6
+      '@openid4vc/oauth2': 0.6.1-alpha-20261002115908
+      '@openid4vc/utils': 0.6.1-alpha-20261002115908
       zod: 4.6.5
 
-  '@openid4vc/utils@0.5.6':
+  '@openid4vc/utils@0.6.1-alpha-20261002115908':
     dependencies:
       buffer: 6.0.3
       zod: 4.6.5
@@ -13997,13 +13993,6 @@ snapshots:
       toposort: 2.0.2
 
   pngjs@3.4.0:
-    optional: true
-
-  postcss@8.5.25:
-    dependencies:
-      nanoid: 3.3.19
-      picocolors: 1.1.1
-      source-map-js: 1.2.1
     optional: true
 
   postcss@8.5.28:
