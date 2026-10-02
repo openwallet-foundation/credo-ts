@@ -71,6 +71,21 @@ export class W3cJsonLdCredentialService {
   }
 
   /**
+   * Validate that the agent can prepare to sign a credential with the given proof type and verification method.
+   */
+  public async assertCanSignCredential(
+    agentContext: AgentContext,
+    options: Pick<W3cJsonLdSignCredentialOptions, 'proofType' | 'verificationMethod'> & { controller?: string }
+  ): Promise<void> {
+    await this.prepareSigningSuite(agentContext, {
+      proofType: options.proofType,
+      verificationMethodId: options.verificationMethod,
+      allowedPurposes: ['assertionMethod'],
+      controller: options.controller,
+    })
+  }
+
+  /**
    * Verifies the signature(s) of a credential
    *
    * @param credential the credential to be verified

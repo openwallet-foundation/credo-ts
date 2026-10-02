@@ -97,7 +97,7 @@ export class DidCommJsonLdCredentialFormatService
   }
 
   public async acceptProposal(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { attachmentId, proposalAttachment }: DidCommCredentialFormatAcceptProposalOptions<DidCommJsonLdCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
@@ -108,6 +108,19 @@ export class DidCommJsonLdCredentialFormatService
 
     const credentialProposal = proposalAttachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
     JsonTransformer.fromJSON(credentialProposal, DidCommJsonLdCredentialDetail)
+
+    const verificationMethod = await this.deriveVerificationMethod(
+      agentContext,
+      credentialProposal.credential,
+      credentialProposal
+    )
+    const w3cJsonLdCredentialService = agentContext.dependencyManager.resolve(W3cJsonLdCredentialService)
+    const credential = JsonTransformer.fromJSON(credentialProposal.credential, W3cCredential)
+    await w3cJsonLdCredentialService.assertCanSignCredential(agentContext, {
+      proofType: credentialProposal.options.proofType,
+      verificationMethod,
+      controller: credential.issuerId,
+    })
 
     const offerData = credentialProposal
 
