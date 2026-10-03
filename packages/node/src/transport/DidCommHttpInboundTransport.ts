@@ -9,7 +9,7 @@ import { ExpressHost } from '../express'
  *
  * Wraps the DIDComm HTTP inbound transport from `@credo-ts/didcomm` with an {@link ExpressHost}.
  *
- * @deprecated Use the `http` option of `DidCommModule` with `expressHost()` from `@credo-ts/node/express` instead.
+ * @deprecated Use the `transports.inbound` option of `DidCommModule` with `httpServerHost()` from `@credo-ts/node` instead.
  */
 export class DidCommHttpInboundTransport implements DidCommInboundTransport {
   private host: ExpressHost

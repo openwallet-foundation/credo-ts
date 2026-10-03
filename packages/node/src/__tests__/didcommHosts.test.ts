@@ -15,7 +15,7 @@ import { Subject } from 'rxjs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket from 'ws'
 
-import { expressHost } from '../express'
+import { expressHost, httpServerHost } from '../express'
 import { webSocketHost } from '../webSocketHost'
 
 const encryptedMessage = { protected: 'p', iv: 'i', ciphertext: 'c', tag: 't' }
@@ -80,9 +80,9 @@ function createAgentContext() {
   } as unknown as AgentContext
 }
 
-describe('expressHost', () => {
+describe('httpServerHost', () => {
   it('listens on the configured port and returns responses from the DIDComm transport', async () => {
-    const host = expressHost({ port: 0 })
+    const host = httpServerHost({ port: 0 })
     const transport = new DidCommHttpInboundTransport({ host, path: '/didcomm' })
 
     await transport.start(createAgentContext())
@@ -102,7 +102,9 @@ describe('expressHost', () => {
     await transport.stop()
     expect(host.server?.listening).toBe(false)
   })
+})
 
+describe('expressHost', () => {
   it('mounts on an application-owned app without listening', async () => {
     const app = express()
     const host = expressHost({ app })
@@ -158,7 +160,7 @@ describe('DidCommModule inbound transport options', () => {
     const module = new DidCommModule({
       transports: {
         inbound: [
-          new DidCommHttpInboundTransport({ host: expressHost({ port: 0 }) }),
+          new DidCommHttpInboundTransport({ host: httpServerHost({ port: 0 }) }),
           new DidCommWsInboundTransport({ host: webSocketHost({ port: 0 }) }),
         ],
       },

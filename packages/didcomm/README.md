@@ -45,8 +45,7 @@ import {
   DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
 } from "@credo-ts/didcomm";
-import { agentDependencies, webSocketHost } from "@credo-ts/node";
-import { expressHost } from "@credo-ts/node/express";
+import { agentDependencies, httpServerHost, webSocketHost } from "@credo-ts/node";
 
 const agent = new Agent({
   config: {
@@ -63,7 +62,7 @@ const agent = new Agent({
       // Inbound and outbound transports are explicit instances in the same configuration.
       transports: {
         inbound: [
-          new DidCommHttpInboundTransport({ host: expressHost({ port: 3000 }) }),
+          new DidCommHttpInboundTransport({ host: httpServerHost({ port: 3000 }) }),
           new DidCommWsInboundTransport({ host: webSocketHost({ port: 3001 }) }),
         ],
         outbound: [
@@ -102,7 +101,7 @@ const outOfBand = await agent.didcomm.oob.createInvitation();
 
 ### Inbound HTTP and WebSocket transports
 
-Create inbound transport instances and add them to `transports.inbound`, just like outbound transports in `transports.outbound`. In Node, serve HTTP with `expressHost` from `@credo-ts/node/express` and WebSocket with `webSocketHost` from `@credo-ts/node`. Custom transports use the same arrays. The endpoint URLs are the externally reachable addresses advertised to other agents; they can differ from local ports when running behind a proxy.
+Create inbound transport instances and add them to `transports.inbound`, just like outbound transports in `transports.outbound`. In Node, serve HTTP with `httpServerHost` from `@credo-ts/node` (backed by Express) and WebSocket with `webSocketHost` from `@credo-ts/node`. Use `expressHost` from `@credo-ts/node/express` for an application-owned Express app. Custom transports use the same arrays. The endpoint URLs are the externally reachable addresses advertised to other agents; they can differ from local ports when running behind a proxy.
 
 #### Credo-owned listeners
 
@@ -113,7 +112,7 @@ const didcomm = new DidCommModule({
   endpoints: ["http://localhost:3000", "ws://localhost:3001"],
   transports: {
     inbound: [
-      new DidCommHttpInboundTransport({ host: expressHost({ port: 3000 }) }),
+      new DidCommHttpInboundTransport({ host: httpServerHost({ port: 3000 }) }),
       new DidCommWsInboundTransport({ host: webSocketHost({ port: 3001 }) }),
     ],
   },
@@ -149,12 +148,11 @@ const server = app.listen(3000);
 To accept WebSocket connections on the HTTP listener, pass a `WebSocketServer` created with `noServer: true` to `webSocketHost` and forward upgrade requests to it:
 
 ```ts
-import express from "express";
 import { WebSocketServer } from "ws";
 
-const app = express();
 const socketServer = new WebSocketServer({ noServer: true });
-const httpHost = expressHost({ app, port: 3000 });
+const httpHost = httpServerHost({ port: 3000 });
+httpHost.app.get("/health", (_request, response) => response.sendStatus(204));
 
 const didcomm = new DidCommModule({
   endpoints: ["http://localhost:3000", "ws://localhost:3000"],
@@ -189,12 +187,11 @@ import {
   DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
 } from "@credo-ts/didcomm";
-import { webSocketHost } from "@credo-ts/node";
-import { expressHost } from "@credo-ts/node/express";
+import { httpServerHost, webSocketHost } from "@credo-ts/node";
 
 // Inbound: receive messages over HTTP and WebSocket
 agent.didcomm.registerInboundTransport(
-  new DidCommHttpInboundTransport({ host: expressHost({ port: 3000 }) })
+  new DidCommHttpInboundTransport({ host: httpServerHost({ port: 3000 }) })
 );
 agent.didcomm.registerInboundTransport(
   new DidCommWsInboundTransport({ host: webSocketHost({ port: 3001 }) })
@@ -231,7 +228,7 @@ const didcomm = new DidCommModule({
   endpoints: ["http://localhost:3000"],
   transports: {
     inbound: [
-      new DidCommHttpInboundTransport({ host: expressHost({ port: 3000 }) }),
+      new DidCommHttpInboundTransport({ host: httpServerHost({ port: 3000 }) }),
       new MyInboundTransport(),
     ],
   },

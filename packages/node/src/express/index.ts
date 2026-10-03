@@ -83,7 +83,17 @@ export class ExpressHost {
   }
 }
 
-export function expressHost(options: ExpressHostOptions): ExpressHost {
+/**
+ * Creates a Credo-owned HTTP listener, backed by an internal Express application.
+ */
+export function httpServerHost(options: { port: number }): ExpressHost {
+  return new ExpressHost(options)
+}
+
+/**
+ * Attaches DIDComm routes to an application-owned Express app without managing its listener.
+ */
+export function expressHost(options: { app: Express }): ExpressHost {
   return new ExpressHost(options)
 }
 
