@@ -1,10 +1,8 @@
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
 import { DidCommHttpInboundTransport, DidCommModule, DidCommWsInboundTransport } from '@credo-ts/didcomm'
-import { agentDependencies, webSocketHost } from '@credo-ts/node'
-import { expressHost } from '@credo-ts/node/express'
+import { agentDependencies, httpServerHost, webSocketHost } from '@credo-ts/node'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
-import express from 'express'
 import type { Socket } from 'net'
 import { WebSocketServer } from 'ws'
 import type { DummyStateChangedEvent } from './dummy'
@@ -15,9 +13,9 @@ const run = async () => {
   // Create transports
   const port = process.env.RESPONDER_PORT ? Number(process.env.RESPONDER_PORT) : 3002
   const autoAcceptRequests = true
-  const app = express()
   const socketServer = new WebSocketServer({ noServer: true })
-  const httpHost = expressHost({ app, port })
+  const httpHost = httpServerHost({ port })
+  const app = httpHost.app
 
   // Setup the agent
   const agent = new Agent({

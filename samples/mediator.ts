@@ -23,21 +23,17 @@ import {
   DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
-import { agentDependencies, webSocketHost } from '@credo-ts/node'
-import { expressHost } from '@credo-ts/node/express'
+import { agentDependencies, httpServerHost, webSocketHost } from '@credo-ts/node'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
-import express from 'express'
 import type { Socket } from 'net'
 import { WebSocketServer } from 'ws'
 import { TestLogger } from '../packages/core/tests/logger'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
 
-// We create our own instance of express here. This is not required
-// but allows use to use the same server (and port) for both WebSockets and HTTP
-const app = express()
 const socketServer = new WebSocketServer({ noServer: true })
-const httpHost = expressHost({ app, port })
+const httpHost = httpServerHost({ port })
+const app = httpHost.app
 
 const endpoints = process.env.AGENT_ENDPOINTS?.split(',') ?? [`http://localhost:${port}`, `ws://localhost:${port}`]
 

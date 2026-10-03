@@ -11,7 +11,7 @@ import express from 'express'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket, { WebSocketServer } from 'ws'
 
-import { expressHost } from '../express'
+import { expressHost, httpServerHost } from '../express'
 import { webSocketHost } from '../webSocketHost'
 
 const servers: Server[] = []
@@ -124,7 +124,7 @@ describe('DIDComm inbound transports', () => {
   it('rejects startup when its configured port cannot bind', async () => {
     const occupiedServer = createServer()
     const port = await listen(occupiedServer)
-    const transport = new DidCommHttpInboundTransport({ host: expressHost({ port }) })
+    const transport = new DidCommHttpInboundTransport({ host: httpServerHost({ port }) })
 
     await expect(transport.start(createAgentContext())).rejects.toMatchObject({ code: 'EADDRINUSE' })
   })

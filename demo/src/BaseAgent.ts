@@ -26,8 +26,7 @@ import { HederaDidRegistrar, HederaDidResolver, HederaModule } from '@credo-ts/h
 import { HederaAnonCredsRegistry } from '@credo-ts/hedera/anoncreds'
 import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
-import { agentDependencies } from '@credo-ts/node'
-import { expressHost } from '@credo-ts/node/express'
+import { agentDependencies, httpServerHost } from '@credo-ts/node'
 import type { HederaNetwork } from '@hiero-did-sdk/client'
 import { NativeAnoncreds } from '@hyperledger/anoncreds-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
@@ -64,7 +63,7 @@ export class BaseAgent {
         {
           endpoints: [`http://localhost:${this.port}`],
           transports: {
-            inbound: [new DidCommHttpInboundTransport({ host: expressHost({ port }) })],
+            inbound: [new DidCommHttpInboundTransport({ host: httpServerHost({ port }) })],
             outbound: [new DidCommHttpOutboundTransport()],
           },
         },
