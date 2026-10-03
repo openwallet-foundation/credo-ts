@@ -5,7 +5,7 @@ import {
   DidCommHttpOutboundTransport,
   DidCommMediatorPickupStrategy,
 } from '@credo-ts/didcomm'
-import { expressHost } from '@credo-ts/node/express'
+import { httpServerHost } from '@credo-ts/node'
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
@@ -40,7 +40,7 @@ const mediatorAgentOptions = getAgentOptions(
       extraDidCommConfig: {
         endpoints: [`http://localhost:${mediatorPort}`],
         transports: {
-          inbound: [new DidCommHttpInboundTransport({ host: expressHost({ port: mediatorPort }) })],
+          inbound: [new DidCommHttpInboundTransport({ host: httpServerHost({ port: mediatorPort }) })],
         },
         mediator: {
           autoAcceptMediationRequests: true,
@@ -61,7 +61,7 @@ const senderAgentOptions = getAgentOptions(
     extraDidCommConfig: {
       endpoints: [`http://localhost:${senderPort}`],
       transports: {
-        inbound: [new DidCommHttpInboundTransport({ host: expressHost({ port: senderPort }) })],
+        inbound: [new DidCommHttpInboundTransport({ host: httpServerHost({ port: senderPort }) })],
       },
     },
   }),
