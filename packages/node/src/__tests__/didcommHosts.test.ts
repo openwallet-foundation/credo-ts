@@ -1,4 +1,4 @@
-import { createServer, type Server } from 'node:http'
+import { createServer, request as httpRequest, type Server } from 'node:http'
 import type { AgentContext } from '@credo-ts/core'
 import { EventEmitter } from '@credo-ts/core'
 import {
@@ -53,12 +53,21 @@ function boundPort(server: { address(): ReturnType<Server['address']> } | undefi
   return address.port
 }
 
-function createAgentContext() {
+function createAgentContext({
+  processMessages = true,
+  onMessageReceived,
+}: {
+  processMessages?: boolean
+  onMessageReceived?: () => void
+} = {}) {
   const processed = new Subject<unknown>()
   const eventEmitter = {
     observable: vi.fn(() => processed.asObservable()),
     // biome-ignore lint/suspicious/noExplicitAny: test double
     emit: vi.fn(async (agentContext: AgentContext, event: any) => {
+      onMessageReceived?.()
+      if (!processMessages) return
+
       await event.payload.session.send(agentContext, event.payload.message)
       processed.next({
         type: DidCommEventTypes.DidCommMessageProcessed,
@@ -81,13 +90,55 @@ function createAgentContext() {
 }
 
 describe('httpServerHost', () => {
+  it('keeps one owned listener open until its last binding detaches', async () => {
+    const host = httpServerHost({ port: 0 })
+    const post = vi.spyOn(host.app, 'post')
+    const didcomm = new DidCommHttpInboundTransport({ host, path: '/didcomm' })
+    const pickup = new DidCommHttpInboundTransport({ host, path: '/pickup' })
+    const agentContext = createAgentContext()
+
+    await didcomm.start(agentContext)
+    const server = host.server
+    expect(server?.listening).toBe(true)
+    const port = boundPort(server)
+
+    await pickup.start(agentContext)
+    expect(host.server).toBe(server)
+    expect(post).toHaveBeenCalledTimes(2)
+
+    const postMessage = (path: string) =>
+      fetch(`http://127.0.0.1:${port}${path}`, {
+        method: 'POST',
+        headers: { 'content-type': DidCommMimeType.V1 },
+        body: JSON.stringify(encryptedMessage),
+      })
+
+    expect((await postMessage('/didcomm')).status).toBe(200)
+    expect((await postMessage('/pickup')).status).toBe(200)
+
+    await didcomm.stop()
+    expect(server?.listening).toBe(true)
+    expect((await postMessage('/didcomm')).status).toBe(503)
+    expect((await postMessage('/pickup')).status).toBe(200)
+
+    await didcomm.start(agentContext)
+    expect(post).toHaveBeenCalledTimes(2)
+    expect((await postMessage('/didcomm')).status).toBe(200)
+
+    await didcomm.stop()
+    expect(server?.listening).toBe(true)
+    await pickup.stop()
+    expect(server?.listening).toBe(false)
+  })
+
   it('listens on the configured port and returns responses from the DIDComm transport', async () => {
     const host = httpServerHost({ port: 0 })
     const transport = new DidCommHttpInboundTransport({ host, path: '/didcomm' })
 
     await transport.start(createAgentContext())
-    expect(host.server?.listening).toBe(true)
-    const port = boundPort(host.server)
+    const server = host.server
+    expect(server?.listening).toBe(true)
+    const port = boundPort(server)
 
     const response = await fetch(`http://127.0.0.1:${port}/didcomm`, {
       method: 'POST',
@@ -100,7 +151,67 @@ describe('httpServerHost', () => {
     await expect(response.json()).resolves.toEqual(encryptedMessage)
 
     await transport.stop()
-    expect(host.server?.listening).toBe(false)
+    expect(server?.listening).toBe(false)
+    expect(host.server).toBeUndefined()
+  })
+
+  it('force-closes a request stalled during body parsing after the drain deadline', async () => {
+    const host = httpServerHost({ port: 0 })
+    const transport = new DidCommHttpInboundTransport({ host, path: '/didcomm' })
+    await transport.start(createAgentContext())
+    const server = host.server
+    const port = boundPort(server)
+
+    const request = httpRequest({
+      hostname: '127.0.0.1',
+      port,
+      path: '/didcomm',
+      method: 'POST',
+      headers: {
+        'content-type': DidCommMimeType.V1,
+        'content-length': '1000000',
+      },
+    })
+    request.on('error', () => {})
+    request.flushHeaders()
+    await new Promise<void>((resolve) => setTimeout(resolve, 20))
+
+    vi.useFakeTimers()
+    try {
+      const stopping = transport.stop()
+      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(15_000)
+      await stopping
+
+      expect(server?.listening).toBe(false)
+      expect(host.server).toBeUndefined()
+    } finally {
+      vi.useRealTimers()
+      request.destroy()
+    }
+  })
+
+  it('settles in-flight DIDComm requests before waiting for the listener to close', async () => {
+    let messageReceived: (() => void) | undefined
+    const received = new Promise<void>((resolve) => {
+      messageReceived = resolve
+    })
+    const host = httpServerHost({ port: 0 })
+    const transport = new DidCommHttpInboundTransport({ host, path: '/didcomm' })
+    await transport.start(createAgentContext({ processMessages: false, onMessageReceived: () => messageReceived?.() }))
+    const server = host.server
+    const port = boundPort(server)
+
+    const response = fetch(`http://127.0.0.1:${port}/didcomm`, {
+      method: 'POST',
+      headers: { 'content-type': DidCommMimeType.V1 },
+      body: JSON.stringify(encryptedMessage),
+    })
+    await received
+
+    await transport.stop()
+    expect((await response).status).toBe(200)
+    expect(server?.listening).toBe(false)
   })
 })
 
@@ -113,7 +224,8 @@ describe('expressHost', () => {
     await transport.start(createAgentContext())
     expect(host.server).toBeUndefined()
 
-    const port = await listen(createServer(app))
+    const server = createServer(app)
+    const port = await listen(server)
     const response = await fetch(`http://127.0.0.1:${port}/`, {
       method: 'POST',
       headers: { 'content-type': DidCommMimeType.V1 },
@@ -122,6 +234,7 @@ describe('expressHost', () => {
 
     expect(response.status).toBe(200)
     await transport.stop()
+    expect(server.listening).toBe(true)
   })
 })
 

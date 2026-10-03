@@ -90,11 +90,13 @@ export class DidCommHttpInboundTransport implements DidCommInboundTransport {
       this.stopped$?.complete()
       this.stopped$ = undefined
 
+      const sessions = [...this.sessions]
+      this.sessions.clear()
+
       try {
-        await this.host.detach(this.binding)
+        await Promise.all(sessions.map((session) => session.close()))
       } finally {
-        for (const session of this.sessions) await session.close()
-        this.sessions.clear()
+        await this.host.detach(this.binding)
       }
     })
   }
