@@ -21,7 +21,7 @@ const maxBodyBytes = 5 * 1024 * 1024
 
 export interface DidCommHttpInboundTransportOptions {
   /**
-   * The host that serves the HTTP route, for example `expressHost()` from `@credo-ts/node/express`.
+   * The host that serves the HTTP route, for example `httpServerHost()` from `@credo-ts/node`.
    */
   host: DidCommHttpInboundHost
 
