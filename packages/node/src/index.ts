@@ -2,7 +2,7 @@ import type { AgentDependencies } from '@credo-ts/core'
 
 import { EventEmitter } from 'events'
 import { WebSocket } from 'ws'
-
+import { httpServerHost } from './express'
 import { NodeFileSystem } from './NodeFileSystem'
 import { DidCommHttpInboundTransport } from './transport/DidCommHttpInboundTransport'
 import { DidCommWsInboundTransport } from './transport/DidCommWsInboundTransport'
@@ -23,6 +23,7 @@ export {
   agentDependencies,
   DidCommHttpInboundTransport,
   DidCommWsInboundTransport,
+  httpServerHost,
   NodeFileSystem,
   WebSocketHost,
   type WebSocketHostAcceptor,
