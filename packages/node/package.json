@@ -9,6 +9,10 @@
       "cli": "./build/express/index.mjs",
       "import": "./src/express/index.ts"
     },
+    "./http": {
+      "cli": "./build/http/index.mjs",
+      "import": "./src/http/index.ts"
+    },
     "./websocket": {
       "cli": "./build/websocket/index.mjs",
       "import": "./src/websocket/index.ts"
@@ -32,6 +36,11 @@
         "types": "./build/express/index.d.mts",
         "import": "./build/express/index.mjs",
         "require": "./build/express/index.mjs"
+      },
+      "./http": {
+        "types": "./build/http/index.d.mts",
+        "import": "./build/http/index.mjs",
+        "require": "./build/http/index.mjs"
       },
       "./websocket": {
         "types": "./build/websocket/index.d.mts",

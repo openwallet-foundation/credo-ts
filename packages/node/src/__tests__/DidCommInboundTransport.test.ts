@@ -11,7 +11,8 @@ import express from 'express'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket, { WebSocketServer } from 'ws'
 
-import { expressHost, httpServerHost } from '../express'
+import { expressHost } from '../express'
+import { httpServerHost } from '../http'
 import { webSocketHost } from '../webSocketHost'
 
 const servers: Server[] = []
@@ -136,7 +137,7 @@ describe('DIDComm inbound transports', () => {
     const transport = new DidCommHttpInboundTransport({ host, path: '/didcomm' })
 
     await transport.start(createAgentContext())
-    expect(host.server).toBeUndefined()
+    expect('server' in host).toBe(false)
 
     const port = await listen(publicServer)
     const response = await fetch(`http://127.0.0.1:${port}/didcomm`, {

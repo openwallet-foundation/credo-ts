@@ -1,117 +1,90 @@
-import type { Express, Request, Response } from 'express'
-import express, { text } from 'express'
-import type { Server } from 'http'
+import type { HttpHandler, HttpHandlerHost, HttpRequest } from '@credo-ts/core/http'
+import type { Express, NextFunction, Request, Response } from 'express'
+import { raw } from 'express'
+
+export type ExpressHostOptions = { app: Express }
 
 /**
- * A route served by {@link ExpressHost}. Satisfied structurally by the DIDComm HTTP inbound transport.
+ * Adapts Fetch-style HTTP handlers to an application-owned Express app without managing its listener.
  */
-interface ExpressHostBinding {
-  readonly path: string
-  readonly contentTypes: string[]
-  readonly maxBodyBytes: number
-  handle(request: ExpressHostRequest, response: ExpressHostResponse): Promise<void>
-}
-
-interface ExpressHostRequest {
-  readonly body?: string
-  readonly contentType?: string
-  onClose(listener: () => void): void
-}
-
-interface ExpressHostResponse {
-  readonly headersSent: boolean
-  send(statusCode: number, body?: string, contentType?: string): void
-}
-
-export type ExpressHostOptions = { app: Express; port?: undefined } | { app?: Express; port: number }
-
-// Allow the default DIDComm processing timeout (10 seconds) to elapse before force-closing requests.
-const HTTP_SERVER_DRAIN_TIMEOUT_MS = 15_000
-
-/**
- * Serves DIDComm HTTP inbound routes on an Express application.
- *
- * When `port` is provided the host starts listening when the first route is attached, and closes the
- * listener after the last route is detached. Reuse one host instance when transports should share its listener.
- * When only `app` is provided the application owns the listener.
- */
-export class ExpressHost {
+export class ExpressHost implements HttpHandlerHost {
   public readonly app: Express
-  private readonly port?: number
-  private _server?: Server
-  private attachedBindings = new Set<ExpressHostBinding>()
-  private registeredBindings = new Set<ExpressHostBinding>()
+  private readonly attachedHandlers = new Set<HttpHandler>()
   private lifecycle: Promise<void> = Promise.resolve()
 
-  public get server() {
-    return this._server
-  }
+  public constructor({ app }: ExpressHostOptions) {
+    this.app = app
 
-  public constructor({ app, port }: ExpressHostOptions) {
-    this.port = port
-
-    // Use the caller-provided Express app, or create one
-    this.app = app ?? express()
-  }
-
-  public attach(binding: ExpressHostBinding): Promise<void> {
-    return this.enqueue(async () => {
-      if (this.attachedBindings.has(binding)) return
-
-      if (!this.registeredBindings.has(binding)) {
-        this.app.post(binding.path, text({ type: binding.contentTypes, limit: binding.maxBodyBytes }), (req, res) =>
-          binding.handle(toHostRequest(req), toHostResponse(res))
-        )
-        this.registeredBindings.add(binding)
-      }
-
-      this.attachedBindings.add(binding)
-
-      if (this.port === undefined || this._server) return
-
-      const server = this.app.listen(this.port)
-      this._server = server
-
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const onError = (error: Error) => {
-            server.off('listening', onListening)
-            reject(error)
-          }
-          const onListening = () => {
-            server.off('error', onError)
-            resolve()
-          }
-
-          server.once('error', onError)
-          server.once('listening', onListening)
-        })
-      } catch (error) {
-        this.attachedBindings.delete(binding)
-        if (this._server === server) this._server = undefined
-        throw error
-      }
+    this.app.use((request, response, next) => {
+      void this.dispatch(request, response, next).catch(next)
     })
   }
 
-  public detach(binding: ExpressHostBinding): Promise<void> {
+  public attach(handler: HttpHandler): Promise<void> {
     return this.enqueue(async () => {
-      if (!this.attachedBindings.delete(binding) || this.port === undefined || this.attachedBindings.size > 0) return
+      if (this.attachedHandlers.has(handler)) return
 
-      const server = this._server
-      if (!server) return
-
-      await new Promise<void>((resolve, reject) => {
-        const drainTimeout = setTimeout(() => server.closeAllConnections(), HTTP_SERVER_DRAIN_TIMEOUT_MS)
-
-        server.close((error) => {
-          clearTimeout(drainTimeout)
-          if (this._server === server) this._server = undefined
-          if (error) reject(error)
-          else resolve()
-        })
-      })
+      validateHandler(handler)
+      this.attachedHandlers.add(handler)
     })
+  }
+
+  public detach(handler: HttpHandler): Promise<void> {
+    return this.enqueue(async () => {
+      this.attachedHandlers.delete(handler)
+    })
+  }
+
+  private async dispatch(request: Request, response: Response, next: NextFunction): Promise<void> {
+    const pathname = requestPathname(request)
+    const handlers = [...this.attachedHandlers].filter((handler) =>
+      handler.pathPrefixes.some((prefix) => pathMatchesPrefix(pathname, prefix))
+    )
+    if (handlers.length === 0) return next()
+
+    const maxRequestBodyBytes = Math.max(...handlers.map((handler) => handler.maxRequestBodyBytes))
+    raw({ type: () => true, limit: maxRequestBodyBytes })(request, response, (error?: unknown) => {
+      if (error) {
+        next(error)
+        return
+      }
+
+      void this.dispatchHandlers(handlers, request, response, next, pathname)
+    })
+  }
+
+  private async dispatchHandlers(
+    handlers: HttpHandler[],
+    request: Request,
+    response: Response,
+    next: NextFunction,
+    pathname: string
+  ): Promise<void> {
+    const abortController = new AbortController()
+    const onClose = () => {
+      if (!response.writableEnded) abortController.abort()
+    }
+    response.once('close', onClose)
+
+    try {
+      for (const handler of handlers) {
+        const fetchRequest = toFetchRequest(request, pathname, abortController.signal)
+        const result = await handler.handle(fetchRequest)
+        if (result) {
+          await writeFetchResponse(result, request, response)
+          return
+        }
+        if (fetchRequest.bodyUsed) {
+          throw new TypeError('An HTTP handler consumed the request body before returning undefined')
+        }
+      }
+
+      if (!response.destroyed) next()
+    } catch (error) {
+      next(error)
+    } finally {
+      response.off('close', onClose)
+    }
   }
 
   private enqueue(operation: () => Promise<void>): Promise<void> {
@@ -122,37 +95,102 @@ export class ExpressHost {
 }
 
 /**
- * Creates a Credo-owned HTTP listener, backed by an internal Express application.
- */
-export function httpServerHost(options: { port: number }): ExpressHost {
-  return new ExpressHost(options)
-}
-
-/**
- * Attaches DIDComm routes to an application-owned Express app without managing its listener.
+ * Attaches Fetch-style HTTP handlers to an application-owned Express app without managing its listener.
  */
 export function expressHost(options: { app: Express }): ExpressHost {
   return new ExpressHost(options)
 }
 
-function toHostRequest(req: Request): ExpressHostRequest {
-  return {
-    body: req.body,
-    contentType: req.headers['content-type'],
-    onClose: (listener) => req.once('close', listener),
+function validateHandler(handler: HttpHandler): void {
+  if (!Number.isSafeInteger(handler.maxRequestBodyBytes) || handler.maxRequestBodyBytes < 0) {
+    throw new RangeError('HTTP handler maxRequestBodyBytes must be a non-negative safe integer')
+  }
+  if (handler.pathPrefixes.length === 0 || handler.pathPrefixes.some((prefix) => !prefix.startsWith('/'))) {
+    throw new Error('HTTP handler pathPrefixes must contain absolute paths')
   }
 }
 
-function toHostResponse(res: Response): ExpressHostResponse {
-  return {
-    get headersSent() {
-      return res.headersSent
-    },
-    send: (statusCode, body, contentType) => {
-      res.status(statusCode)
-      if (contentType) res.contentType(contentType)
-      if (body === undefined) res.end()
-      else res.send(body)
-    },
+function requestPathname(request: Request): string {
+  return new URL(request.originalUrl, `${request.protocol}://${request.headers.host ?? 'localhost'}`).pathname
+}
+
+function pathMatchesPrefix(pathname: string, prefix: string): boolean {
+  if (prefix === '/') return true
+  return pathname === prefix || pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`)
+}
+
+function toFetchRequest(request: Request, pathname: string, signal: AbortSignal): HttpRequest {
+  const headers = new Headers()
+  for (const [name, value] of Object.entries(request.headers)) {
+    if (value === undefined) continue
+    for (const headerValue of Array.isArray(value) ? value : [value]) headers.append(name, headerValue)
   }
+
+  const method = request.method.toUpperCase()
+  const body = requestBody(request, headers)
+  const url = new URL(request.originalUrl, `${request.protocol}://${request.headers.host ?? 'localhost'}`)
+  url.pathname = pathname
+
+  return new globalThis.Request(url, {
+    method,
+    headers,
+    signal,
+    ...(body === undefined || method === 'GET' || method === 'HEAD' ? {} : { body }),
+  })
+}
+
+function requestBody(request: Request, headers: Headers): Uint8Array | URLSearchParams | string | undefined {
+  const body: unknown = request.body
+  if (body === undefined) return undefined
+  if (typeof body === 'string' || body instanceof Uint8Array || body instanceof URLSearchParams) return body
+
+  const mediaType = headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase()
+  if (isRecord(body) && isJsonMediaType(mediaType)) {
+    return JSON.stringify(body)
+  }
+  if (isRecord(body) && mediaType === 'application/x-www-form-urlencoded') {
+    return encodeForm(body)
+  }
+
+  throw new TypeError(`Cannot rebuild the consumed Express request body for content type '${mediaType ?? 'unknown'}'`)
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isJsonMediaType(mediaType: string | undefined): boolean {
+  return mediaType === 'application/json' || mediaType?.endsWith('+json') === true
+}
+
+function encodeForm(body: Record<string, unknown>): URLSearchParams {
+  const parameters = new URLSearchParams()
+  for (const [key, value] of Object.entries(body)) appendFormValue(parameters, key, value)
+  return parameters
+}
+
+function appendFormValue(parameters: URLSearchParams, key: string, value: unknown): void {
+  if (Array.isArray(value)) {
+    for (const entry of value) appendFormValue(parameters, key, entry)
+  } else if (isRecord(value)) {
+    for (const [nestedKey, nestedValue] of Object.entries(value)) {
+      appendFormValue(parameters, `${key}[${nestedKey}]`, nestedValue)
+    }
+  } else {
+    parameters.append(key, value === null ? '' : String(value))
+  }
+}
+
+async function writeFetchResponse(result: globalThis.Response, request: Request, response: Response): Promise<void> {
+  if (response.headersSent || response.writableEnded || response.destroyed) return
+
+  response.status(result.status)
+  result.headers.forEach((value, key) => {
+    if (key !== 'set-cookie') response.setHeader(key, value)
+  })
+  const setCookies = result.headers.getSetCookie()
+  if (setCookies.length > 0) response.setHeader('set-cookie', setCookies)
+
+  const body = request.method === 'HEAD' || !result.body ? undefined : new Uint8Array(await result.arrayBuffer())
+  response.end(body)
 }
