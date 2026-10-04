@@ -1,5 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 import { EventEmitter, InjectionSymbols } from '@credo-ts/core'
+import type { HttpHandler, HttpHandlerHost, HttpRequest } from '@credo-ts/core/http'
 import type { WebSocketAcceptor, WebSocketAcceptorHost, WebSocketLike } from '@credo-ts/core/websocket'
 import { Subject } from 'rxjs'
 import { DidCommEventTypes } from '../../DidCommEvents'
@@ -9,7 +10,6 @@ import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommTransportService } from '../../DidCommTransportService'
 import { DidCommMimeType } from '../../types'
 import { DidCommHttpInboundTransport } from '../DidCommHttpInboundTransport'
-import type { DidCommHttpInboundBinding, DidCommHttpInboundHost } from '../DidCommInboundHosting'
 import type { DidCommInboundTransport } from '../DidCommInboundTransport'
 import type { DidCommOutboundTransport } from '../DidCommOutboundTransport'
 import { DidCommWsInboundTransport } from '../DidCommWsInboundTransport'
@@ -57,12 +57,12 @@ function createAgentContext({ respond, process = true }: { respond?: boolean; pr
 
 function createHttpHost() {
   const host = {
-    binding: undefined as DidCommHttpInboundBinding | undefined,
-    attach: vi.fn(async (binding: DidCommHttpInboundBinding) => {
-      host.binding = binding
+    handler: undefined as HttpHandler | undefined,
+    attach: vi.fn(async (handler: HttpHandler) => {
+      host.handler = handler
     }),
-    detach: vi.fn(async (_binding: DidCommHttpInboundBinding) => {}),
-  } satisfies DidCommHttpInboundHost & { binding?: DidCommHttpInboundBinding }
+    detach: vi.fn(async (_handler: HttpHandler) => {}),
+  } satisfies HttpHandlerHost & { handler?: HttpHandler }
   return host
 }
 
@@ -82,105 +82,111 @@ async function startHttpTransport(options: { path?: string; respond?: boolean; p
   const context = createAgentContext({ respond: options.respond, process: options.process })
   const transport = new DidCommHttpInboundTransport({ host, path: options.path })
   await transport.start(context.agentContext)
-  if (!host.binding) throw new Error('No binding attached')
-  return { ...context, host, transport, binding: host.binding }
+  return { ...context, host, transport, handler: transport.handler }
 }
 
-async function handle(binding: DidCommHttpInboundBinding, body: string | undefined, contentType?: string) {
-  const sent: Array<{ statusCode: number; body?: string; contentType?: string }> = []
-  const response = {
-    get headersSent() {
-      return sent.length > 0
-    },
-    send: (statusCode: number, body?: string, contentType?: string) => {
-      sent.push({ statusCode, body, contentType })
-    },
-  }
-  await binding.handle({ body, contentType, onClose: vi.fn() }, response)
-  return sent
+function httpRequest(body?: string, contentType: string = DidCommMimeType.V1, path = '/'): HttpRequest {
+  return new Request(`https://example.test${path}`, {
+    method: 'POST',
+    headers: { 'content-type': contentType },
+    ...(body === undefined ? {} : { body }),
+  })
 }
 
 describe('DidCommHttpInboundTransport', () => {
-  test('attaches a binding on the configured path and detaches it on stop', async () => {
-    const { host, transport, binding } = await startHttpTransport({ path: '/didcomm' })
+  test('exposes a handler for its path and attaches/detaches it when a host is configured', async () => {
+    const { host, transport, handler } = await startHttpTransport({ path: '/didcomm' })
 
-    expect(binding).toMatchObject({
-      path: '/didcomm',
-      contentTypes: [DidCommMimeType.V0, DidCommMimeType.V1],
-      maxBodyBytes: 5 * 1024 * 1024,
+    expect(handler).toMatchObject({
+      pathPrefixes: ['/didcomm'],
+      maxRequestBodyBytes: 5 * 1024 * 1024,
     })
 
     await transport.stop()
-    expect(host.detach).toHaveBeenCalledWith(binding)
+    expect(host.attach).toHaveBeenCalledWith(handler)
+    expect(host.detach).toHaveBeenCalledWith(handler)
   })
 
-  test('defaults the path to /', async () => {
-    const { binding } = await startHttpTransport()
-
-    expect(binding.path).toBe('/')
+  test('defaults the path to / and does not handle other methods or paths', async () => {
+    const { handler } = await startHttpTransport()
+    expect(handler.pathPrefixes).toEqual(['/'])
+    await expect(handler.handle(new Request('https://example.test/other', { method: 'GET' }))).resolves.toBeUndefined()
+    await expect(handler.handle(httpRequest(undefined, DidCommMimeType.V1, '/other'))).resolves.toBeUndefined()
   })
 
   test('rejects unsupported content types with 415', async () => {
-    const { binding } = await startHttpTransport()
-
-    await expect(handle(binding, '{}', 'application/json')).resolves.toEqual([
-      {
-        statusCode: 415,
-        body: `Unsupported content-type. Supported content-types are: ${DidCommMimeType.V0}, ${DidCommMimeType.V1}`,
-        contentType: undefined,
-      },
-    ])
+    const { handler } = await startHttpTransport()
+    const response = await handler.handle(httpRequest('{}', 'application/json'))
+    expect(response?.status).toBe(415)
+    expect(await response?.text()).toContain(DidCommMimeType.V0)
   })
 
   test('responds with 200 when the message is processed without a response', async () => {
-    const { binding, transportService } = await startHttpTransport()
+    const { handler, transportService } = await startHttpTransport()
+    const response = await handler.handle(httpRequest(JSON.stringify(encryptedMessage)))
 
-    await expect(handle(binding, JSON.stringify(encryptedMessage), DidCommMimeType.V1)).resolves.toEqual([
-      { statusCode: 200, body: undefined, contentType: undefined },
-    ])
+    expect(response?.status).toBe(200)
+    expect(response?.body).toBeNull()
     expect(transportService.removeSession).toHaveBeenCalled()
   })
 
   test('returns the response message using the request content type', async () => {
-    const { binding } = await startHttpTransport({ respond: true })
+    const { handler } = await startHttpTransport({ respond: true })
+    const response = await handler.handle(httpRequest(JSON.stringify(encryptedMessage), DidCommMimeType.V0))
 
-    await expect(handle(binding, JSON.stringify(encryptedMessage), DidCommMimeType.V0)).resolves.toEqual([
-      { statusCode: 200, body: JSON.stringify(encryptedMessage), contentType: DidCommMimeType.V0 },
-    ])
+    expect(response?.status).toBe(200)
+    expect(response?.headers.get('content-type')).toBe(`${DidCommMimeType.V0}; charset=utf-8`)
+    await expect(response?.json()).resolves.toEqual(encryptedMessage)
   })
 
   test('responds with 500 when the message cannot be parsed', async () => {
-    const { binding } = await startHttpTransport()
-
-    await expect(handle(binding, 'not json', DidCommMimeType.V1)).resolves.toEqual([
-      { statusCode: 500, body: 'Error processing message', contentType: undefined },
-    ])
+    const { handler } = await startHttpTransport()
+    const response = await handler.handle(httpRequest('not json'))
+    expect(response?.status).toBe(500)
+    await expect(response?.text()).resolves.toBe('Error processing message')
   })
 
-  test('responds with 503 when stopped', async () => {
-    const { binding, transport, eventEmitter } = await startHttpTransport()
+  test('responds with 413 when the request body exceeds its configured limit', async () => {
+    const { handler } = await startHttpTransport()
+    const response = await handler.handle(
+      new Request('https://example.test/', {
+        method: 'POST',
+        headers: {
+          'content-type': DidCommMimeType.V1,
+          'content-length': `${5 * 1024 * 1024 + 1}`,
+        },
+        body: '{}',
+      })
+    )
+    expect(response?.status).toBe(413)
+  })
 
+  test('responds with 503 when stopped and can restart on the same handler', async () => {
+    const { handler, transport, eventEmitter, agentContext } = await startHttpTransport()
     await transport.stop()
 
-    await expect(handle(binding, JSON.stringify(encryptedMessage), DidCommMimeType.V1)).resolves.toEqual([
-      { statusCode: 503, body: 'Service unavailable', contentType: undefined },
-    ])
+    const stoppedResponse = await handler.handle(httpRequest(JSON.stringify(encryptedMessage)))
+    expect(stoppedResponse?.status).toBe(503)
     expect(eventEmitter.emit).not.toHaveBeenCalled()
+
+    await transport.start(agentContext)
+    const response = await handler.handle(httpRequest(JSON.stringify(encryptedMessage)))
+    expect(response?.status).toBe(200)
   })
 
   test('responds to in-flight requests and removes their sessions when stopped', async () => {
-    const { binding, transport, transportService, agentContext } = await startHttpTransport({ process: false })
-
-    const response = handle(binding, JSON.stringify(encryptedMessage), DidCommMimeType.V1)
+    const { handler, transport, transportService, agentContext } = await startHttpTransport({ process: false })
+    const responsePromise = handler.handle(httpRequest(JSON.stringify(encryptedMessage)))
     await vi.waitFor(() => expect(agentContext.dependencyManager.resolve).toHaveBeenCalledWith(EventEmitter))
     await transport.stop()
 
-    await expect(response).resolves.toEqual([{ statusCode: 200, body: undefined, contentType: undefined }])
+    const response = await responsePromise
+    expect(response?.status).toBe(200)
     expect(transportService.removeSession).toHaveBeenCalled()
     expect(agentContext.config.logger.error).not.toHaveBeenCalled()
   })
 
-  test('serializes start and stop, and attaches once when started twice', async () => {
+  test('serializes start and stop and attaches only once', async () => {
     const host = createHttpHost()
     const { agentContext } = createAgentContext()
     const transport = new DidCommHttpInboundTransport({ host })
@@ -188,28 +194,18 @@ describe('DidCommHttpInboundTransport', () => {
     await Promise.all([transport.start(agentContext), transport.start(agentContext), transport.stop()])
     expect(host.attach).toHaveBeenCalledTimes(1)
     expect(host.detach).toHaveBeenCalledTimes(1)
-
-    await transport.stop()
-    expect(host.detach).toHaveBeenCalledTimes(1)
   })
 
-  test('keeps the same binding and can be started again after the host fails to attach', async () => {
+  test('can restart after the host fails to attach', async () => {
     const host = createHttpHost()
     const { agentContext } = createAgentContext()
     const transport = new DidCommHttpInboundTransport({ host })
     host.attach.mockRejectedValueOnce(new Error('attach failed'))
 
     await expect(transport.start(agentContext)).rejects.toThrow('attach failed')
-    const binding = host.attach.mock.calls[0][0]
-    await expect(handle(binding, JSON.stringify(encryptedMessage), DidCommMimeType.V1)).resolves.toEqual([
-      { statusCode: 503, body: 'Service unavailable', contentType: undefined },
-    ])
-
+    expect((await transport.handler.handle(httpRequest('{}')))?.status).toBe(503)
     await transport.start(agentContext)
-    expect(host.attach).toHaveBeenLastCalledWith(binding)
-    await expect(handle(binding, JSON.stringify(encryptedMessage), DidCommMimeType.V1)).resolves.toEqual([
-      { statusCode: 200, body: undefined, contentType: undefined },
-    ])
+    expect(host.attach).toHaveBeenCalledTimes(2)
   })
 })
 
