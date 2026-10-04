@@ -114,6 +114,7 @@ export { getDomainFromUrl } from './utils/domain'
 export type { Constructable, Constructor, UnionToIntersection } from './utils/mixins'
 export { getDirFromFilePath, joinUriParts } from './utils/path'
 export type { VersionString } from './utils/version'
+export type { WebSocketLike } from './websocket'
 
 import { indyDidFromPublicKeyBase58 } from './utils/did'
 import { areObjectsEqual } from './utils/objectEquality'
