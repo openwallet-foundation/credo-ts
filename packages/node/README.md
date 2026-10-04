@@ -30,4 +30,6 @@
 
 Credo Node provides platform specific dependencies to run Credo in [Node.JS](https://nodejs.org). See the [Getting Started Guide](https://github.com/openwallet-foundation/credo-ts#getting-started) for installation instructions.
 
-For DIDComm inbound HTTP and WebSocket hosting, import `httpServerHost` from `@credo-ts/node` and `webSocketHost` from `@credo-ts/node/websocket` for Credo-owned listeners, or `expressHost` from `@credo-ts/node/express` to attach to an application-owned Express app. Pass the hosts to `DidCommHttpInboundTransport` and `DidCommWsInboundTransport` instances in `DidCommModule`'s `transports.inbound` array. See the [`@credo-ts/didcomm` README](../didcomm/README.md#inbound-http-and-websocket-transports) for examples.
+For DIDComm inbound HTTP and WebSocket hosting, import `httpServerHost` from `@credo-ts/node/http` and `webSocketHost` from `@credo-ts/node/websocket` for Credo-owned listeners, or `expressHost` from `@credo-ts/node/express` to attach to an application-owned Express app. Pass the hosts to `DidCommHttpInboundTransport` and `DidCommWsInboundTransport` instances in `DidCommModule`'s `transports.inbound` array. See the [`@credo-ts/didcomm` README](../didcomm/README.md#hosting-didcomm-inbound-http-and-websocket) for examples.
+
+`HttpServerHost` manages its own Express-backed listener. `ExpressHost` only dispatches on a supplied app; it never starts or closes the application's server.
