@@ -24,6 +24,7 @@ import type { DidCommCredentialsModuleConfigOptions } from './modules/credential
 import { DidCommMediationRecipientApi } from './modules/routing/DidCommMediationRecipientApi'
 import { DidCommMediatorApi } from './modules/routing/DidCommMediatorApi'
 import type { DidCommInboundTransport, DidCommOutboundTransport } from './transport'
+import { DidCommWsInboundTransport } from './transport'
 
 type ApiOrUndefined<Config, Api> = Config extends false ? never : Api
 
@@ -90,6 +91,18 @@ export class DidCommApi<Options extends DidCommModuleConfigOptions> {
 
   public get inboundTransports() {
     return this.config.inboundTransports
+  }
+
+  public get webSocketAcceptor() {
+    const transports = this.config.inboundTransports.filter(
+      (transport): transport is DidCommWsInboundTransport => transport instanceof DidCommWsInboundTransport
+    )
+
+    if (transports.length > 1) {
+      throw new Error('Only one DIDComm WebSocket inbound transport can be mounted without a host')
+    }
+
+    return transports[0]?.acceptor
   }
 
   public registerOutboundTransport(outboundTransport: DidCommOutboundTransport) {

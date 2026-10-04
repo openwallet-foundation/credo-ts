@@ -1,23 +1,29 @@
+import { once } from 'node:events'
 import { Agent } from '@credo-ts/core'
-import { webSocketHost } from '@credo-ts/node'
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
-import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
-import { getAgentOptions } from '../packages/core/tests/helpers'
 import {
   DidCommAutoAcceptCredential,
   DidCommMediatorPickupStrategy,
   DidCommMessageForwardingStrategy,
   DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
-} from '../packages/didcomm/src'
+} from '@credo-ts/didcomm'
+import { webSocketHost } from '@credo-ts/node/websocket'
+import { WebSocketServer } from 'ws'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
+import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
+import { getAgentOptions } from '../packages/core/tests/helpers'
 import { e2eTest } from './e2e-test'
 
 // FIXME: somehow if we use the in memory wallet and storage service in the WS test it will fail,
 // but it succeeds with Askar. We should look into this at some point
 
-// FIXME: port numbers should not depend on availability from other test suites that use web sockets
-const mediatorPort = 4100
-const mediatorOptions = () =>
+function boundPort(server: WebSocketServer): number {
+  const address = server.address()
+  if (!address || typeof address === 'string') throw new Error('WebSocket server did not bind to a TCP port')
+  return address.port
+}
+
+const mediatorOptions = (server: WebSocketServer) =>
   getAgentOptions(
     'E2E WS Pickup V2 Mediator',
     {},
@@ -26,9 +32,9 @@ const mediatorOptions = () =>
       ...getAnonCredsModules({
         autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
         extraDidCommConfig: {
-          endpoints: [`ws://localhost:${mediatorPort}`],
+          endpoints: [`ws://localhost:${boundPort(server)}`],
           transports: {
-            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ port: mediatorPort }) })],
+            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ server }) })],
           },
           mediator: {
             autoAcceptMediationRequests: true,
@@ -40,8 +46,7 @@ const mediatorOptions = () =>
     { requireDidcomm: true }
   )
 
-const senderPort = 4101
-const senderOptions = () =>
+const senderOptions = (server: WebSocketServer) =>
   getAgentOptions(
     'E2E WS Pickup V2 Sender',
     {},
@@ -50,9 +55,9 @@ const senderOptions = () =>
       ...getAnonCredsModules({
         autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
         extraDidCommConfig: {
-          endpoints: [`ws://localhost:${senderPort}`],
+          endpoints: [`ws://localhost:${boundPort(server)}`],
           transports: {
-            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ port: senderPort }) })],
+            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ server }) })],
           },
         },
       }),
@@ -64,18 +69,34 @@ describe('E2E WS Pickup V2 tests', () => {
   let recipientAgent: AnonCredsTestsAgent
   let mediatorAgent: AnonCredsTestsAgent
   let senderAgent: AnonCredsTestsAgent
+  let mediatorServer: WebSocketServer
+  let senderServer: WebSocketServer
 
   beforeEach(async () => {
-    mediatorAgent = new Agent(mediatorOptions()) as unknown as AnonCredsTestsAgent
-    senderAgent = new Agent(senderOptions()) as unknown as AnonCredsTestsAgent
+    mediatorServer = new WebSocketServer({ port: 0 })
+    senderServer = new WebSocketServer({ port: 0 })
+    await Promise.all([once(mediatorServer, 'listening'), once(senderServer, 'listening')])
+    mediatorAgent = new Agent(mediatorOptions(mediatorServer)) as unknown as AnonCredsTestsAgent
+    senderAgent = new Agent(senderOptions(senderServer)) as unknown as AnonCredsTestsAgent
   })
 
   afterEach(async () => {
     // NOTE: the order is important here, as the recipient sends pickup messages to the mediator
     // so we first want the recipient to fully be finished with the sending of messages
-    await recipientAgent.shutdown()
-    await mediatorAgent.shutdown()
-    await senderAgent.shutdown()
+    try {
+      await recipientAgent?.shutdown()
+      await mediatorAgent?.shutdown()
+      await senderAgent?.shutdown()
+    } finally {
+      await Promise.all(
+        [mediatorServer, senderServer]
+          .filter((server) => server)
+          .map(
+            (server) =>
+              new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())))
+          )
+      )
+    }
   })
 
   test('Full WS flow (connect, request mediation, issue, verify) using Message Pickup V2 polling mode', async () => {

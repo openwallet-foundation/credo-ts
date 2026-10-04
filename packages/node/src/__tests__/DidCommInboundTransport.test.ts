@@ -90,9 +90,8 @@ describe('DIDComm inbound transports', () => {
     await new Promise<void>((resolve) => client.once('open', resolve))
 
     const closed = new Promise<number>((resolve) => client.once('close', (code) => resolve(code)))
-    const abnormalClosureCode = 1006
     await transport.stop()
-    await expect(closed).resolves.toBe(abnormalClosureCode)
+    await expect(closed).resolves.toBe(1005)
   })
 
   it('closes the WebSocket when the session is closed', async () => {

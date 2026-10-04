@@ -8,6 +8,10 @@
     "./express": {
       "cli": "./build/express/index.mjs",
       "import": "./src/express/index.ts"
+    },
+    "./websocket": {
+      "cli": "./build/websocket/index.mjs",
+      "import": "./src/websocket/index.ts"
     }
   },
   "version": "0.7.1",
@@ -28,6 +32,11 @@
         "types": "./build/express/index.d.mts",
         "import": "./build/express/index.mjs",
         "require": "./build/express/index.mjs"
+      },
+      "./websocket": {
+        "types": "./build/websocket/index.d.mts",
+        "import": "./build/websocket/index.mjs",
+        "require": "./build/websocket/index.mjs"
       },
       "./package.json": "./package.json"
     }

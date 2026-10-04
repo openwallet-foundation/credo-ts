@@ -1,32 +1,28 @@
-import type { WebSocket } from 'ws'
-import { WebSocketServer } from 'ws'
-
-/**
- * Accepts connections from {@link WebSocketHost}. Satisfied structurally by the DIDComm WebSocket inbound transport.
- */
-interface WebSocketHostAcceptor {
-  accept(socket: WebSocket): void
-}
+import { TypedArrayEncoder } from '@credo-ts/core'
+import type { WebSocketAcceptor, WebSocketAcceptorHost, WebSocketLike } from '@credo-ts/core/websocket'
+import type { WebSocket as WsSocket } from 'ws'
+import WebSocket, { WebSocketServer } from 'ws'
 
 export type WebSocketHostOptions = { server: WebSocketServer; port?: undefined } | { server?: undefined; port: number }
 
-// Close code 1013 "Try Again Later": the server is up but the agent is not accepting connections.
 const TRY_AGAIN_LATER = 1013
 
 /**
- * Accepts DIDComm WebSocket connections from a `ws` WebSocketServer.
+ * Accepts framework-neutral WebSocket connections from a `ws` WebSocketServer.
  *
  * When `port` is provided the host creates the server when an acceptor is attached, and closes it
- * when the acceptor is detached. When `server` is provided the application owns the server and how
- * connections reach it (for example `noServer` with `handleUpgrade`): it is never closed by the host,
- * and while no acceptor is attached (before the agent starts or after it stops) new connections are
- * closed with code 1013, so a stopped agent holds no sockets and the agent can be started again.
+ * when the acceptor is detached. When `server` is provided the application owns the server: it is
+ * never closed by the host, and connections are rejected while no acceptor is attached.
  */
-export class WebSocketHost {
-  private port?: number
+export class WebSocketHost implements WebSocketAcceptorHost {
+  private readonly port?: number
   private _server?: WebSocketServer
-  private connectionListeners = new Map<WebSocketHostAcceptor, (socket: WebSocket) => void>()
-  private readonly rejectConnection = (socket: WebSocket) => socket.close(TRY_AGAIN_LATER)
+  private readonly acceptors = new Map<
+    WebSocketAcceptor,
+    { listener: (socket: WsSocket) => void; sockets: Set<WsSocket> }
+  >()
+  private lifecycle: Promise<void> = Promise.resolve()
+  private readonly rejectConnection = (socket: WsSocket) => socket.close(TRY_AGAIN_LATER)
 
   public get server() {
     return this._server
@@ -35,50 +31,71 @@ export class WebSocketHost {
   public constructor({ server, port }: WebSocketHostOptions) {
     this._server = server
     this.port = port
-
-    if (server) {
-      this.rejectConnectionsOn(server)
-    }
+    if (server) this.rejectConnectionsOn(server)
   }
 
-  public async attach(acceptor: WebSocketHostAcceptor): Promise<void> {
-    const server = this._server ?? (await this.listen())
-    server.off('connection', this.rejectConnection)
-
-    const listener = (socket: WebSocket) => acceptor.accept(socket)
-    this.connectionListeners.set(acceptor, listener)
-    server.on('connection', listener)
-  }
-
-  public async detach(acceptor: WebSocketHostAcceptor): Promise<void> {
-    const server = this._server
-    if (!server) {
-      return
-    }
-
-    const listener = this.connectionListeners.get(acceptor)
-    if (listener) {
-      server.off('connection', listener)
-      this.connectionListeners.delete(acceptor)
-    }
-
-    if (this.port === undefined) {
-      if (this.connectionListeners.size === 0) {
-        this.rejectConnectionsOn(server)
+  public attach(acceptor: WebSocketAcceptor): Promise<void> {
+    return this.enqueue(async () => {
+      if (this.acceptors.has(acceptor)) return
+      if (this.acceptors.size > 0) {
+        throw new Error('A WebSocket host can attach only one acceptor because it has no path-routing contract')
       }
-      return
-    }
 
-    this._server = undefined
+      const server = this._server ?? (await this.listen())
+      server.off('connection', this.rejectConnection)
 
-    return new Promise<void>((resolve, reject) => {
-      server.close((error) => {
-        if (error) {
-          reject(error)
+      const sockets = new Set<WebSocket>()
+      const listener = (socket: WsSocket) => {
+        // TODO: Optionally ping accepted sockets and terminate those that miss a pong; avoid
+        // conflicting with an application-owned server's heartbeat policy.
+        sockets.add(socket)
+        socket.once('close', () => sockets.delete(socket))
+        try {
+          acceptor.accept(new WsSocketAdapter(socket))
+        } catch (error) {
+          socket.terminate()
+          const details = error instanceof Error ? (error.stack ?? error.message) : String(error)
+          process.stderr.write(`Failed to pass a WebSocket connection to its acceptor: ${details}\n`)
         }
-        resolve()
+      }
+
+      this.acceptors.set(acceptor, { listener, sockets })
+      server.on('connection', listener)
+    })
+  }
+
+  public detach(acceptor: WebSocketAcceptor): Promise<void> {
+    return this.enqueue(async () => {
+      const attached = this.acceptors.get(acceptor)
+      if (!attached) return
+
+      this.acceptors.delete(acceptor)
+      const server = this._server
+      if (!server) return
+
+      server.off('connection', attached.listener)
+      for (const socket of attached.sockets) socket.terminate()
+      attached.sockets.clear()
+
+      if (this.port === undefined) {
+        this.rejectConnectionsOn(server)
+        return
+      }
+
+      this._server = undefined
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) reject(error)
+          else resolve()
+        })
       })
     })
+  }
+
+  private enqueue(operation: () => Promise<void>): Promise<void> {
+    const result = this.lifecycle.then(operation, operation)
+    this.lifecycle = result.catch(() => undefined)
+    return result
   }
 
   private rejectConnectionsOn(server: WebSocketServer) {
@@ -93,7 +110,7 @@ export class WebSocketHost {
     await new Promise<void>((resolve, reject) => {
       const onError = (error: Error) => {
         server.off('listening', onListening)
-        this._server = undefined
+        if (this._server === server) this._server = undefined
         reject(error)
       }
       const onListening = () => {
@@ -106,6 +123,82 @@ export class WebSocketHost {
     })
 
     return server
+  }
+}
+
+class WsSocketAdapter implements WebSocketLike {
+  private readonly listeners = new Map<string, Map<unknown, () => void>>()
+
+  public get readyState() {
+    return this.socket.readyState
+  }
+
+  public get OPEN() {
+    return WebSocket.OPEN
+  }
+
+  public get CLOSING() {
+    return WebSocket.CLOSING
+  }
+
+  public get CLOSED() {
+    return WebSocket.CLOSED
+  }
+
+  public constructor(private readonly socket: WsSocket) {}
+
+  public send(data: string | Uint8Array): void {
+    this.socket.send(data)
+  }
+
+  public close(code?: number, reason?: string): void {
+    this.socket.close(code, reason)
+  }
+
+  public addEventListener(type: 'open' | 'close', listener: () => void): void
+  public addEventListener(type: 'error', listener: (event: unknown) => void): void
+  public addEventListener(type: 'message', listener: (event: { readonly data: unknown }) => void): void
+  public addEventListener(
+    type: 'open' | 'close' | 'error' | 'message',
+    listener: (() => void) | ((event: unknown) => void) | ((event: { readonly data: unknown }) => void)
+  ): void {
+    let wrapper: () => void
+
+    if (type === 'message') {
+      wrapper = () => {}
+      const messageListener = (data: WebSocket.RawData, isBinary: boolean) => {
+        const bytes =
+          data instanceof Uint8Array
+            ? data
+            : data instanceof ArrayBuffer
+              ? new Uint8Array(data)
+              : TypedArrayEncoder.concat(data)
+        ;(listener as (event: { readonly data: unknown }) => void)({
+          data: isBinary ? bytes : TypedArrayEncoder.toUtf8String(bytes),
+        })
+      }
+      this.socket.on(type, messageListener)
+      wrapper = () => this.socket.off(type, messageListener)
+    } else {
+      const eventListener = (event?: unknown) => (listener as (event: unknown) => void)(event)
+      this.socket.on(type, eventListener)
+      wrapper = () => this.socket.off(type, eventListener)
+    }
+
+    const typeListeners = this.listeners.get(type) ?? new Map()
+    typeListeners.set(listener, wrapper)
+    this.listeners.set(type, typeListeners)
+  }
+
+  public removeEventListener(type: 'open' | 'close', listener: () => void): void
+  public removeEventListener(type: 'error', listener: (event: unknown) => void): void
+  public removeEventListener(type: 'message', listener: (event: { readonly data: unknown }) => void): void
+  public removeEventListener(type: 'open' | 'close' | 'error' | 'message', listener: unknown): void {
+    const typeListeners = this.listeners.get(type)
+    const wrapper = typeListeners?.get(listener)
+    if (!wrapper) return
+    wrapper()
+    typeListeners?.delete(listener)
   }
 }
 

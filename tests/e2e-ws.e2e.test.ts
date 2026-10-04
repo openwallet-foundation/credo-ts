@@ -1,3 +1,4 @@
+import { once } from 'node:events'
 import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
@@ -5,7 +6,8 @@ import {
   DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
-import { webSocketHost } from '@credo-ts/node'
+import { webSocketHost } from '@credo-ts/node/websocket'
+import { WebSocketServer } from 'ws'
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
@@ -30,66 +32,88 @@ const recipientAgentOptions = getAgentOptions(
   { requireDidcomm: true }
 )
 
-const mediatorPort = 4000
-const mediatorAgentOptions = getAgentOptions(
-  'E2E WS Mediator',
-  {},
-  {},
-  {
-    ...getAnonCredsModules({
-      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-      extraDidCommConfig: {
-        endpoints: [`ws://localhost:${mediatorPort}`],
-        transports: {
-          inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ port: mediatorPort }) })],
-        },
-        mediator: {
-          autoAcceptMediationRequests: true,
-        },
-      },
-    }),
-  },
-  { requireDidcomm: true }
-)
+function boundPort(server: WebSocketServer): number {
+  const address = server.address()
+  if (!address || typeof address === 'string') throw new Error('WebSocket server did not bind to a TCP port')
+  return address.port
+}
 
-const senderPort = 4001
-const senderAgentOptions = getAgentOptions(
-  'E2E WS Sender',
-  {},
-  {},
-  {
-    ...getAnonCredsModules({
-      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-      extraDidCommConfig: {
-        endpoints: [`ws://localhost:${senderPort}`],
-        transports: {
-          inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ port: senderPort }) })],
+const mediatorAgentOptions = (server: WebSocketServer) =>
+  getAgentOptions(
+    'E2E WS Mediator',
+    {},
+    {},
+    {
+      ...getAnonCredsModules({
+        autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+        extraDidCommConfig: {
+          endpoints: [`ws://localhost:${boundPort(server)}`],
+          transports: {
+            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ server }) })],
+          },
+          mediator: {
+            autoAcceptMediationRequests: true,
+          },
         },
-        mediationRecipient: {
-          mediatorPollingInterval: 1000,
-          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+      }),
+    },
+    { requireDidcomm: true }
+  )
+
+const senderAgentOptions = (server: WebSocketServer) =>
+  getAgentOptions(
+    'E2E WS Sender',
+    {},
+    {},
+    {
+      ...getAnonCredsModules({
+        autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+        extraDidCommConfig: {
+          endpoints: [`ws://localhost:${boundPort(server)}`],
+          transports: {
+            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ server }) })],
+          },
+          mediationRecipient: {
+            mediatorPollingInterval: 1000,
+            mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+          },
         },
-      },
-    }),
-  },
-  { requireDidcomm: true }
-)
+      }),
+    },
+    { requireDidcomm: true }
+  )
 
 describe('E2E WS tests', () => {
   let recipientAgent: AnonCredsTestsAgent
   let mediatorAgent: AnonCredsTestsAgent
   let senderAgent: AnonCredsTestsAgent
+  let mediatorServer: WebSocketServer | undefined
+  let senderServer: WebSocketServer | undefined
 
   beforeEach(async () => {
+    mediatorServer = new WebSocketServer({ port: 0 })
+    senderServer = new WebSocketServer({ port: 0 })
+    await Promise.all([once(mediatorServer, 'listening'), once(senderServer, 'listening')])
     recipientAgent = new Agent(recipientAgentOptions) as unknown as AnonCredsTestsAgent
-    mediatorAgent = new Agent(mediatorAgentOptions) as unknown as AnonCredsTestsAgent
-    senderAgent = new Agent(senderAgentOptions) as unknown as AnonCredsTestsAgent
+    mediatorAgent = new Agent(mediatorAgentOptions(mediatorServer)) as unknown as AnonCredsTestsAgent
+    senderAgent = new Agent(senderAgentOptions(senderServer)) as unknown as AnonCredsTestsAgent
   })
 
   afterEach(async () => {
-    await recipientAgent.shutdown()
-    await mediatorAgent.shutdown()
-    await senderAgent.shutdown()
+    try {
+      await recipientAgent?.shutdown()
+      await mediatorAgent?.shutdown()
+      await senderAgent?.shutdown()
+    } finally {
+      await Promise.all(
+        [mediatorServer, senderServer]
+          .filter((server): server is WebSocketServer => server !== undefined)
+          .map(
+            (server) =>
+              new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())))
+          )
+      )
+    }
   })
 
   test('Full WS flow (connect, request mediation, issue, verify)', async () => {
