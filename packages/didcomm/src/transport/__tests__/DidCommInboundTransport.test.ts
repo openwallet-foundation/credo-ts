@@ -236,6 +236,20 @@ describe('DidCommWsInboundTransport', () => {
     return { socket, listeners, send, close, setReadyState: (state: number) => (readyState = state) }
   }
 
+  test('processes an externally accepted WebSocketLike connection', async () => {
+    const { agentContext, eventEmitter } = createAgentContext()
+    const transport = new DidCommWsInboundTransport()
+    await transport.start(agentContext)
+
+    const { socket, listeners, close } = createSocket()
+    transport.acceptor.accept(socket)
+    listeners.message[0]({ data: JSON.stringify(encryptedMessage) })
+    await vi.waitFor(() => expect(eventEmitter.emit).toHaveBeenCalled())
+
+    await transport.stop()
+    expect(close).toHaveBeenCalledTimes(1)
+  })
+
   test('emits messages, closes sockets on stop and removes saved sessions once', async () => {
     const host = createWebSocketHost()
     const { agentContext, eventEmitter, transportService } = createAgentContext()
@@ -245,7 +259,15 @@ describe('DidCommWsInboundTransport', () => {
     const { socket, listeners, close } = createSocket()
     host.acceptor?.accept(socket)
     listeners.message[0]({ data: JSON.stringify(encryptedMessage) })
-    await vi.waitFor(() => expect(eventEmitter.emit).toHaveBeenCalled())
+    await vi.waitFor(() =>
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        agentContext,
+        expect.objectContaining({
+          type: DidCommEventTypes.DidCommMessageReceived,
+          payload: expect.objectContaining({ message: encryptedMessage }),
+        })
+      )
+    )
 
     const session = eventEmitter.emit.mock.calls[0][1].payload.session
     transportService.saveSession(session)
@@ -256,6 +278,37 @@ describe('DidCommWsInboundTransport', () => {
     expect(transportService.removeSession).toHaveBeenCalledWith(session)
     listeners.close[0]()
     expect(transportService.removeSession).toHaveBeenCalledTimes(1)
+  })
+
+  test('removes a saved session when the socket closes', async () => {
+    const host = createWebSocketHost()
+    const { agentContext, eventEmitter, transportService } = createAgentContext()
+    const transport = new DidCommWsInboundTransport({ host })
+    await transport.start(agentContext)
+
+    const { socket, listeners } = createSocket()
+    host.acceptor?.accept(socket)
+    listeners.message[0]({ data: JSON.stringify(encryptedMessage) })
+    await vi.waitFor(() => expect(eventEmitter.emit).toHaveBeenCalled())
+    const session = eventEmitter.emit.mock.calls[0][1].payload.session
+    transportService.saveSession(session)
+
+    listeners.close[0]()
+    expect(transportService.removeSession).toHaveBeenCalledWith(session)
+  })
+
+  test('does not remove a session that was not saved', async () => {
+    const host = createWebSocketHost()
+    const { agentContext, transportService } = createAgentContext()
+    const transport = new DidCommWsInboundTransport({ host })
+    await transport.start(agentContext)
+
+    const { socket, listeners } = createSocket()
+    host.acceptor?.accept(socket)
+    listeners.close[0]()
+    await transport.stop()
+
+    expect(transportService.removeSession).not.toHaveBeenCalled()
   })
 
   test('accepts Uint8Array message data', async () => {
@@ -281,11 +334,13 @@ describe('DidCommWsInboundTransport', () => {
     closing.setReadyState(closing.socket.CLOSING)
     acceptor.accept(closing.socket)
     expect(closing.close).toHaveBeenCalled()
+    expect(closing.socket.addEventListener).not.toHaveBeenCalled()
 
     await transport.stop()
     const late = createSocket()
     acceptor.accept(late.socket)
     expect(late.close).toHaveBeenCalled()
+    expect(late.socket.addEventListener).not.toHaveBeenCalled()
   })
 
   test('ignores messages after stop and logs malformed messages', async () => {
@@ -301,6 +356,7 @@ describe('DidCommWsInboundTransport', () => {
 
     await transport.stop()
     listeners.message[0]({ data: JSON.stringify(encryptedMessage) })
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(eventEmitter.emit).not.toHaveBeenCalled()
   })
 
@@ -311,6 +367,9 @@ describe('DidCommWsInboundTransport', () => {
 
     await Promise.all([transport.start(agentContext), transport.start(agentContext), transport.stop()])
     expect(host.attach).toHaveBeenCalledTimes(1)
+    expect(host.detach).toHaveBeenCalledTimes(1)
+
+    await transport.stop()
     expect(host.detach).toHaveBeenCalledTimes(1)
   })
 
