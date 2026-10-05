@@ -463,12 +463,6 @@ importers:
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
         version: 0.6.0
-      '@types/ref-array-di':
-        specifier: ^1.2.8
-        version: 1.2.8
-      '@types/ref-struct-di':
-        specifier: ^1.1.12
-        version: 1.1.12
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -882,12 +876,6 @@ importers:
       '@stablelib/ed25519':
         specifier: ^2.0.2
         version: 2.1.0
-      '@types/ref-array-di':
-        specifier: ^1.2.8
-        version: 1.2.8
-      '@types/ref-struct-di':
-        specifier: ^1.1.12
-        version: 1.1.12
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -3986,15 +3974,6 @@ packages:
 
   '@types/range-parser@1.2.7':
     resolution: {integrity: sha512-hKormJbkJqzQGhziax5PItDUTMAM9uE2XXQmM37dyd4hVM+5aVl7oVxMVUiVQn2oCQFN/LKCZdvSM0pFRqbSmQ==}
-
-  '@types/ref-array-di@1.2.8':
-    resolution: {integrity: sha512-+re5xrhRXDUR3sicMvN9N3C+6mklq5kd7FkN3ciRWio3BAvUDh2OEUTTG+619r10dqc6de25LIDtgpHtXCKGbA==}
-
-  '@types/ref-napi@3.0.12':
-    resolution: {integrity: sha512-UZPKghRaLlWx2lPAphpdtYe62TbGBaPeqUM6gF1vI6FPRIu/Tff/WMAzpJRFU3jJIiD8HiXpVt2RjcFHtA6YRg==}
-
-  '@types/ref-struct-di@1.1.12':
-    resolution: {integrity: sha512-R2RNkGIROGoJTbXYTXrsXybnsQD4iAy26ih/G6HCeCB9luWFQKkr537XGz0uGJ1kH8y8RMkdbQmD/wBulrOPHw==}
 
   '@types/secp256k1@4.0.7':
     resolution: {integrity: sha512-Rcvjl6vARGAKRO6jHeKMatGrvOMGrR/AR11N1x2LqintPCyDZ7NBhrh238Z2VZc7aM7KIwnFpFQ7fnfK4H/9Qw==}
@@ -11148,18 +11127,6 @@ snapshots:
   '@types/qs@6.14.0': {}
 
   '@types/range-parser@1.2.7': {}
-
-  '@types/ref-array-di@1.2.8':
-    dependencies:
-      '@types/ref-napi': 3.0.12
-
-  '@types/ref-napi@3.0.12':
-    dependencies:
-      '@types/node': 25.6.0
-
-  '@types/ref-struct-di@1.1.12':
-    dependencies:
-      '@types/ref-napi': 3.0.12
 
   '@types/secp256k1@4.0.7':
     dependencies:
