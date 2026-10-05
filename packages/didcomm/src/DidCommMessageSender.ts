@@ -136,7 +136,14 @@ export class DidCommMessageSender {
 
     // Loop trough all available services and try to send the message
     for (const service of services) {
-      agentContext.config.logger.debug('Sending outbound message to service:', { service })
+      agentContext.config.logger.debug('Sending outbound message to service:', {
+        service: {
+          id: service.id,
+          serviceEndpoint: service.serviceEndpoint,
+          recipientKeys: service.recipientKeys.map((key) => key.fingerprint),
+          routingKeys: service.routingKeys.map((key) => key.fingerprint),
+        },
+      })
       try {
         const protocolScheme = utils.getProtocolScheme(service.serviceEndpoint)
         for (const transport of this.didCommModuleConfig.outboundTransports) {
