@@ -30,6 +30,7 @@ import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
 import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
+import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
 import { openBadgeDcqlQuery, universityDegreeDcqlQuery } from './utilsVp'
@@ -3548,5 +3549,92 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     }
   ]
 }`)
+  })
+
+  it('responds with 200 to an authorization error response (direct_post)', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post',
+        dcql: { query: openBadgeDcqlQuery },
+        authorizationResponseRedirectUri: 'https://example.com/redirect',
+        version: 'v1',
+      })
+
+    const errorResponse = {
+      error: 'access_denied',
+      error_description: 'The user declined the request',
+      state: authorizationRequestObject.state as string,
+    }
+
+    const response = await fetch(authorizationRequestObject.response_uri as string, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(errorResponse).toString(),
+    })
+
+    expect(response.status).toEqual(200)
+    expect(await response.json()).toEqual({ redirect_uri: 'https://example.com/redirect' })
+
+    const updatedVerificationSession = await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.Error,
+      verificationSessionId: verificationSession.id,
+    })
+
+    expect(updatedVerificationSession.errorMessage).toEqual(
+      `The wallet returned an openid4vp authorization error response.\n${JSON.stringify(errorResponse, null, 2)}`
+    )
+  })
+
+  it('responds with 200 to an encrypted authorization error response (direct_post.jwt)', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post.jwt',
+        dcql: { query: openBadgeDcqlQuery },
+        version: 'v1',
+      })
+
+    const encryptionJwk = verificationSession.requestPayload.client_metadata?.jwks?.keys[0]
+    if (!encryptionJwk) {
+      throw new Error('Expected an encryption jwk in the client metadata')
+    }
+
+    const errorResponse = {
+      error: 'access_denied',
+      error_description: 'The user declined the request',
+      state: authorizationRequestObject.state as string,
+    }
+
+    const { jwe } = await getOid4vcCallbacks(holder.agent.context).encryptJwe(
+      { method: 'jwk', publicJwk: encryptionJwk, alg: 'ECDH-ES', enc: 'A128GCM' },
+      JSON.stringify(errorResponse)
+    )
+
+    const response = await fetch(authorizationRequestObject.response_uri as string, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ response: jwe }).toString(),
+    })
+
+    expect(response.status).toEqual(200)
+    expect(await response.json()).toEqual({})
+
+    const updatedVerificationSession = await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.Error,
+      verificationSessionId: verificationSession.id,
+    })
+
+    expect(updatedVerificationSession.errorMessage).toEqual(
+      `The wallet returned an openid4vp authorization error response.\n${JSON.stringify(errorResponse, null, 2)}`
+    )
   })
 })
