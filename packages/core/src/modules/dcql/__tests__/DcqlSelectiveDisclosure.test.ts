@@ -730,7 +730,7 @@ describe('DCQL selective disclosure', () => {
     // presenting, and presents twice to add the key binding. The second time, a disclosure below a claim
     // that is not selectively disclosable in a selectively disclosable claim is no longer referenced.
     // Tests above make such claims selectively disclosable to avoid this. Remove `.fails` once fixed.
-    test.fails('presents claims in a claim that is not selectively disclosable in a selectively disclosable claim', async () => {
+    test('presents claims in a claim that is not selectively disclosable in a selectively disclosable claim', async () => {
       const { disclosed } = await presentSdJwtVc({ address: sd({ geo: { lat: sd(1) }, tags: [sd('home')] }) }, [
         { path: ['address'] },
       ])
