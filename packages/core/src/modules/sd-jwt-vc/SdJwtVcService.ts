@@ -649,22 +649,56 @@ export class SdJwtVcService {
   }
 
   private getStatusListFetcher(agentContext: AgentContext) {
+    const sdJwtVcConfig = agentContext.dependencyManager.resolve(SdJwtVcModuleConfig)
+
     return async (uri: string) => {
-      const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
-        headers: {
-          Accept: 'application/statuslist+jwt',
-        },
+      const defaultFetcher = () => this.fetchStatusListJwt(agentContext, uri)
+      const statusListJwt = sdJwtVcConfig.customStatusListFetcher
+        ? await sdJwtVcConfig.customStatusListFetcher(uri, { defaultFetcher })
+        : await defaultFetcher()
+
+      this.assertStatusListJwtTyp(statusListJwt, uri)
+      return statusListJwt
+    }
+  }
+
+  private async fetchStatusListJwt(agentContext: AgentContext, uri: string): Promise<string> {
+    const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
+      headers: {
+        Accept: 'application/statuslist+jwt',
+      },
+    })
+
+    if (!response.ok) {
+      throw new CredoError(
+        `Received invalid response with status ${
+          response.status
+        } when fetching status list JWT from ${uri}. ${await response.text()}`
+      )
+    }
+
+    return await response.text()
+  }
+
+  /**
+   * Token Status List requires a status list JWT to carry the JOSE header `typ` `statuslist+jwt`,
+   * and requires the relying party to check it. `@sd-jwt/sd-jwt-vc` does not check the `typ`, so it
+   * is checked here, before the signature. The library does check the `sub` claim against the uri.
+   */
+  private assertStatusListJwtTyp(statusListJwt: string, uri: string) {
+    let header: { typ?: unknown }
+    try {
+      header = JsonEncoder.fromBase64Url(statusListJwt.split('.')[0])
+    } catch (error) {
+      throw new SdJwtVcError(`Unable to decode the header of the status list JWT fetched from ${uri}.`, {
+        cause: error,
       })
+    }
 
-      if (!response.ok) {
-        throw new CredoError(
-          `Received invalid response with status ${
-            response.status
-          } when fetching status list from ${uri}. ${await response.text()}`
-        )
-      }
-
-      return await response.text()
+    if (header.typ !== 'statuslist+jwt') {
+      throw new SdJwtVcError(
+        `The status list JWT fetched from ${uri} has 'typ' '${header.typ}', but 'statuslist+jwt' is required.`
+      )
     }
   }
 

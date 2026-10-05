@@ -72,11 +72,43 @@ export type CustomTypeMetadataResolver = (
   options: CustomTypeMetadataResolverOptions
 ) => Promise<SdJwtVcTypeMetadata | Record<string, unknown> | undefined>
 
+export type CustomStatusListFetcherOptions = {
+  /**
+   * The default fetcher for a status list JWT: an HTTP GET of the uri with the
+   * `Accept` header `application/statuslist+jwt`, through the `fetch` of the agent
+   * dependencies, with a timeout. It returns the status list JWT in compact form
+   * and throws when the response is not successful.
+   *
+   * You can use this in your custom fetcher, to avoid re-implementing the default
+   * HTTP fetching of the status list JWT.
+   */
+  defaultFetcher: () => Promise<string>
+}
+
+/**
+ * Custom fetcher for the status list JWT that the `status.status_list.uri` claim of an
+ * SD-JWT VC references, used when a presented credential is verified.
+ *
+ * Use it to apply a network policy to the fetch (for example HTTPS only, no redirects, an
+ * address allowlist or a response size bound), or to serve the status list JWT from a cache.
+ * The uri is taken from the credential, so a verifier that does not control the issuer should
+ * treat it as untrusted input.
+ *
+ * The fetcher MUST return the status list JWT in compact form. The `typ` header, the `sub` claim, the
+ * signature, the validity period, the index and the status are verified AFTER the fetcher returns it.
+ */
+export type CustomStatusListFetcher = (uri: string, options: CustomStatusListFetcherOptions) => Promise<string>
+
 export interface SdJwtVcModuleConfigOptions {
   /**
    * @see {@link CustomTypeMetadataResolver}
    */
   customTypeMetadataResolver?: CustomTypeMetadataResolver
+
+  /**
+   * @see {@link CustomStatusListFetcher}
+   */
+  customStatusListFetcher?: CustomStatusListFetcher
 }
 
 /**
@@ -91,5 +123,9 @@ export class SdJwtVcModuleConfig {
 
   public get customTypeMetadataResolver() {
     return this.options.customTypeMetadataResolver
+  }
+
+  public get customStatusListFetcher() {
+    return this.options.customStatusListFetcher
   }
 }

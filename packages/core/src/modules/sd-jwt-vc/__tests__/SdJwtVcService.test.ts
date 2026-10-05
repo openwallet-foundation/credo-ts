@@ -17,7 +17,7 @@ import {
   X509ModuleConfig,
   X509Service,
 } from '@credo-ts/core'
-import { createHeaderAndPayload, StatusList } from '@owf/token-status-list'
+import { createHeaderAndPayload, SLException, StatusList } from '@owf/token-status-list'
 import { decodeSdJwtSync, getClaimsSync, Jwt, SDJWTException, SDJwt } from '@sd-jwt/core'
 import { randomUUID } from 'crypto'
 import nock from 'nock'
@@ -27,7 +27,12 @@ import { getAgentOptions, mockProperty } from '../../../../tests'
 import { PublicJwk } from '../../kms'
 import { applyDisclosuresForPaths, buildPresentationFrameForPaths } from '../disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from '../repository'
-import { type CustomTypeMetadataResolver, SdJwtVcModuleConfig } from '../SdJwtVcModuleConfig'
+import { SdJwtVcError } from '../SdJwtVcError'
+import {
+  type CustomStatusListFetcher,
+  type CustomTypeMetadataResolver,
+  SdJwtVcModuleConfig,
+} from '../SdJwtVcModuleConfig'
 import type { IDisclosureFrame, SdJwtVcHeader, SdJwtVcPayload } from '../SdJwtVcOptions'
 import { SdJwtVcService } from '../SdJwtVcService'
 import {
@@ -102,7 +107,9 @@ const generateStatusList = async (
   key: PublicJwk,
   issuerDidUrl: string,
   length: number,
-  revokedIndexes: number[]
+  revokedIndexes: number[],
+  // `createHeaderAndPayload` always sets the `typ`, so a wrong `typ` is set on the JWS header instead
+  overrides: { typ?: string; sub?: string } = {}
 ): Promise<string> => {
   const statusList = new StatusList(
     Array.from({ length }, (_, i) => (revokedIndexes.includes(i) ? 1 : 0)),
@@ -114,7 +121,7 @@ const generateStatusList = async (
     statusList,
     {
       iss: did,
-      sub: 'https://example.com/status-list',
+      sub: overrides.sub ?? 'https://example.com/status-list',
       iat: Date.now() / 1000,
     },
     {
@@ -131,6 +138,7 @@ const generateStatusList = async (
     protectedHeaderOptions: {
       ...header,
       alg: 'EdDSA',
+      ...(overrides.typ ? { typ: overrides.typ } : {}),
     },
   })
 }
@@ -179,6 +187,12 @@ describe('SdJwtVcService', () => {
   let issuerKey: PublicJwk
   let holderKey: PublicJwk
   let sdJwtVcService: SdJwtVcService
+
+  const mockStatusList = (statusList: string) =>
+    nock('https://example.com')
+      .get('/status-list')
+      .matchHeader('accept', 'application/statuslist+jwt')
+      .reply(200, statusList, { 'Content-Type': 'application/statuslist+jwt' })
 
   afterEach(() => {
     nock.cleanAll()
@@ -1946,12 +1960,6 @@ describe('SdJwtVcService', () => {
       return sdJwtVcService.present(agent.context, { sdJwtVc: signed, presentationFrame: {} })
     }
 
-    const mockStatusList = (statusList: string) =>
-      nock('https://example.com')
-        .get('/status-list')
-        .matchHeader('accept', 'application/statuslist+jwt')
-        .reply(200, statusList, { 'Content-Type': 'application/statuslist+jwt' })
-
     afterEach(() => {
       const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
       agent.context.config.setTrustedIssuersForVerification(undefined)
@@ -2135,6 +2143,98 @@ describe('SdJwtVcService', () => {
       if (!verificationResult.isValid) {
         expect(verificationResult.error?.message).toContain('Status List JWT verification failed')
       }
+    })
+  })
+
+  describe('SdJwtVcService.verify fetches the status list', () => {
+    const statusListUri = 'https://example.com/status-list'
+
+    const presentWithStatus = async () => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+      return sdJwtVcService.present(agent.context, { sdJwtVc: simpleSdJwtVcWithStatus, presentationFrame: {} })
+    }
+
+    const verify = async (compactSdJwtVc: string) => {
+      const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
+      return sdJwtVcService.verify(agent.context, { compactSdJwtVc })
+    }
+
+    afterEach(() => {
+      agent.context.dependencyManager.registerInstance(SdJwtVcModuleConfig, new SdJwtVcModuleConfig())
+    })
+
+    test('uses the custom status list fetcher instead of an HTTP GET', async () => {
+      const statusList = await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [])
+      const customStatusListFetcher = vi.fn(async () => statusList)
+      agent.context.dependencyManager.registerInstance(
+        SdJwtVcModuleConfig,
+        new SdJwtVcModuleConfig({ customStatusListFetcher })
+      )
+
+      const verificationResult = await verify(await presentWithStatus())
+
+      expect(verificationResult.isValid).toBe(true)
+      expect(customStatusListFetcher).toHaveBeenCalledWith(statusListUri, {
+        defaultFetcher: expect.any(Function),
+      })
+    })
+
+    test('the custom status list fetcher can delegate to the default fetcher', async () => {
+      const scope = mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, []))
+      const customStatusListFetcher: CustomStatusListFetcher = vi.fn((_uri, { defaultFetcher }) => defaultFetcher())
+      agent.context.dependencyManager.registerInstance(
+        SdJwtVcModuleConfig,
+        new SdJwtVcModuleConfig({ customStatusListFetcher })
+      )
+
+      const verificationResult = await verify(await presentWithStatus())
+
+      expect(verificationResult.isValid).toBe(true)
+      expect(scope.isDone()).toBe(true)
+    })
+
+    test('verifies the status against the status list JWT the custom status list fetcher returns', async () => {
+      const statusList = await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [12])
+      agent.context.dependencyManager.registerInstance(
+        SdJwtVcModuleConfig,
+        new SdJwtVcModuleConfig({ customStatusListFetcher: async () => statusList })
+      )
+
+      const verificationResult = await verify(await presentWithStatus())
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        sdJwtVc: expect.any(Object),
+        error: new SDJWTException('Status is not valid'),
+      })
+    })
+
+    test("rejects a status list JWT whose 'typ' is not 'statuslist+jwt'", async () => {
+      mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [], { typ: 'JWT' }))
+
+      const verificationResult = await verify(await presentWithStatus())
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        sdJwtVc: expect.any(Object),
+        error: new SdJwtVcError(
+          `The status list JWT fetched from ${statusListUri} has 'typ' 'JWT', but 'statuslist+jwt' is required.`
+        ),
+      })
+    })
+
+    test("rejects a status list JWT whose 'sub' is not the uri of the status claim", async () => {
+      const otherUri = 'https://example.com/other-status-list'
+      mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [], { sub: otherUri }))
+
+      const verificationResult = await verify(await presentWithStatus())
+
+      expect(verificationResult).toEqual({
+        isValid: false,
+        sdJwtVc: expect.any(Object),
+        // `@sd-jwt/sd-jwt-vc` does this check
+        error: new SLException(`The subject claim '${otherUri}' must be equal to the uri '${statusListUri}'`),
+      })
     })
   })
 
