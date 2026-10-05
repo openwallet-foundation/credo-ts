@@ -1258,4 +1258,72 @@ describe('OpenId4VcIssuer', () => {
     expect(jwt.header.x5c).toEqual([certificate.toString('base64')])
     expect(jwt.payload.additionalClaims.display).toMatchObject([{ name: 'Updated issuer' }])
   })
+
+  it('encrypts the credential response when the wallet requests credential_response_encryption', async () => {
+    const preAuthorizedCode = '1234567890'
+
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationIds: [universityDegreeCredentialSdJwt.id],
+      preAuthorizedCodeFlowConfig: { preAuthorizedCode },
+    })
+
+    const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+    const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
+    result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
+    await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
+
+    // Create a P-256 key in the holder's KMS to use as the encryption recipient key
+    const encKey = await holder.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const encPublicJwk = {
+      ...Kms.PublicJwk.fromPublicJwk(encKey.publicJwk).toJson(),
+      alg: 'ECDH-ES',
+      kid: encKey.keyId,
+    }
+
+    const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const baseRequest = await createCredentialRequest(holder.context, {
+      credentialConfiguration: universityDegreeCredentialSdJwt,
+      issuerMetadata,
+      kid: holderKid,
+      nonce: cNonce,
+    })
+
+    const credentialRequest = {
+      ...baseRequest,
+      credential_response_encryption: { jwk: encPublicJwk, enc: 'A128GCM' },
+    }
+
+    const { credentialResponse, credentialResponseJwt } = await issuer.openid4vc.issuer.createCredentialResponse({
+      issuanceSessionId: result.issuanceSession.id,
+      credentialRequest,
+      authorization: {
+        authorizationServer: 'https://authorization.com',
+        accessToken: {
+          payload: { active: true, sub: 'something', 'pre-authorized_code': preAuthorizedCode },
+          value: 'the-access-token',
+        },
+      },
+      credentialRequestToCredentialMapper: () => ({
+        type: 'credentials',
+        format: 'dc+sd-jwt',
+        credentials: [
+          {
+            payload: { vct: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
+            issuer: { method: 'did', didUrl: issuerVerificationMethod.id },
+            holder: { method: 'did', didUrl: holderVerificationMethod.id },
+            disclosureFrame: { _sd: ['university', 'degree'] },
+          },
+        ],
+        credentialConfigurationId: universityDegreeCredentialSdJwt.id,
+      }),
+    })
+
+    // Response is encrypted: credentialResponseJwt is a compact JWE (header.encKey.iv.ciphertext.tag)
+    expect(credentialResponseJwt).toBeDefined()
+    expect(credentialResponseJwt?.split('.').length).toBe(5)
+    // The unencrypted response object is still available for session bookkeeping
+    expect(credentialResponse.credential).toBeDefined()
+  })
 })

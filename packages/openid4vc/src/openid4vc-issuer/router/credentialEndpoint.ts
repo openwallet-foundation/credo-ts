@@ -282,17 +282,28 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
     }
 
     try {
-      const { credentialResponse } = await openId4VcIssuerService.createCredentialResponse(agentContext, {
-        issuanceSession,
-        credentialRequest,
-        authorization: {
-          authorizationServer,
-          accessToken: {
-            payload: tokenPayload,
-            value: accessToken,
+      const { credentialResponse, credentialResponseJwt } = await openId4VcIssuerService.createCredentialResponse(
+        agentContext,
+        {
+          issuanceSession,
+          credentialRequest,
+          authorization: {
+            authorizationServer,
+            accessToken: {
+              payload: tokenPayload,
+              value: accessToken,
+            },
           },
-        },
-      })
+        }
+      )
+
+      if (credentialResponseJwt) {
+        response
+          .type('application/jwt')
+          .status(credentialResponse.transaction_id ? 202 : 200)
+          .send(credentialResponseJwt)
+        return next()
+      }
 
       return sendJsonResponse(
         response,
