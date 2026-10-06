@@ -291,7 +291,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
   // Bind the pkce code challenge to the session, it will be verified at the token endpoint
   if (walletPkce) {
     issuanceSession.pkce = {
-      // If PKCE is provided at the start, it's required from now on.
+      // If PKCE is provided by the client, it is required for the remainder of this issuance session, even if the session or global config do not require it.
       required: true,
       ...walletPkce,
     }
