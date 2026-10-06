@@ -705,7 +705,10 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       return {
-        revocationRegistryDefinitionMetadata: {},
+        revocationRegistryDefinitionMetadata: {
+          issuanceType: 'ISSUANCE_BY_DEFAULT',
+          didIndyNamespace: pool.indyNamespace,
+        },
         revocationRegistryDefinitionState: {
           revocationRegistryDefinition,
           revocationRegistryDefinitionId: didIndyRevocationRegistryDefinitionId,
@@ -763,17 +766,34 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       const anoncredsRegistryService = agentContext.resolve(AnonCredsRegistryService)
-      const { revocationRegistryDefinition, resolutionMetadata, revocationRegistryDefinitionMetadata } =
+      let { revocationRegistryDefinition, resolutionMetadata, revocationRegistryDefinitionMetadata } =
         await anoncredsRegistryService.getRevocationRegistryDefinition(agentContext, revocationRegistryDefinitionId)
 
-      if (
-        !revocationRegistryDefinition ||
-        !revocationRegistryDefinitionMetadata.issuanceType ||
-        typeof revocationRegistryDefinitionMetadata.issuanceType !== 'string'
-      ) {
+      if (revocationRegistryDefinition && revocationRegistryDefinitionMetadata.issuanceType === undefined) {
+        // Local records may predate issuance metadata; re-resolve from the ledger for its source of truth (#2671).
+        const ledgerResolution = await anoncredsRegistryService.getRevocationRegistryDefinition(
+          agentContext,
+          revocationRegistryDefinitionId,
+          { useLocalRecord: false }
+        )
+
+        revocationRegistryDefinition = ledgerResolution.revocationRegistryDefinition
+        resolutionMetadata = ledgerResolution.resolutionMetadata
+        revocationRegistryDefinitionMetadata = ledgerResolution.revocationRegistryDefinitionMetadata
+      }
+
+      const issuanceType = revocationRegistryDefinitionMetadata.issuanceType
+      if (!revocationRegistryDefinition || typeof issuanceType !== 'string') {
+        const resolutionError = [resolutionMetadata.error, resolutionMetadata.message]
+          .filter((value): value is string => typeof value === 'string' && value.length > 0)
+          .join(': ')
+
         return {
           resolutionMetadata: {
-            error: `error resolving revocation registry definition with id ${revocationRegistryDefinitionId}: ${resolutionMetadata.error} ${resolutionMetadata.message}`,
+            error: 'error',
+            message: `Error resolving revocation registry definition with id ${revocationRegistryDefinitionId}: ${
+              resolutionError || 'the definition is missing or has invalid issuance type metadata'
+            }`,
           },
           revocationStatusListMetadata: {
             didIndyNamespace: pool.indyNamespace,
@@ -781,7 +801,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         }
       }
 
-      const isIssuanceByDefault = revocationRegistryDefinitionMetadata.issuanceType === 'ISSUANCE_BY_DEFAULT'
+      const isIssuanceByDefault = issuanceType === 'ISSUANCE_BY_DEFAULT'
 
       return {
         resolutionMetadata: {},
