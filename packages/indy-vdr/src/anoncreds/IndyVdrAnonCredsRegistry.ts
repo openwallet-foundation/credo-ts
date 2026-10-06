@@ -705,7 +705,10 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       return {
-        revocationRegistryDefinitionMetadata: {},
+        revocationRegistryDefinitionMetadata: {
+          issuanceType: 'ISSUANCE_BY_DEFAULT',
+          didIndyNamespace: pool.indyNamespace,
+        },
         revocationRegistryDefinitionState: {
           revocationRegistryDefinition,
           revocationRegistryDefinitionId: didIndyRevocationRegistryDefinitionId,
@@ -766,14 +769,21 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       const { revocationRegistryDefinition, resolutionMetadata, revocationRegistryDefinitionMetadata } =
         await anoncredsRegistryService.getRevocationRegistryDefinition(agentContext, revocationRegistryDefinitionId)
 
-      if (
-        !revocationRegistryDefinition ||
-        !revocationRegistryDefinitionMetadata.issuanceType ||
-        typeof revocationRegistryDefinitionMetadata.issuanceType !== 'string'
-      ) {
+      // Credo always registers revocation registries with ISSUANCE_BY_DEFAULT. Local records created before the
+      // issuance type was stored in the metadata don't contain it, so we can safely default it for those.
+      const issuanceType =
+        revocationRegistryDefinitionMetadata.issuanceType ??
+        (resolutionMetadata.servedFromRecord ? 'ISSUANCE_BY_DEFAULT' : undefined)
+
+      if (!revocationRegistryDefinition || typeof issuanceType !== 'string') {
         return {
           resolutionMetadata: {
-            error: `error resolving revocation registry definition with id ${revocationRegistryDefinitionId}: ${resolutionMetadata.error} ${resolutionMetadata.message}`,
+            error: 'error',
+            message: `Error resolving revocation registry definition with id ${revocationRegistryDefinitionId}: ${
+              resolutionMetadata.message ??
+              resolutionMetadata.error ??
+              'the definition is missing or has invalid issuance type metadata'
+            }`,
           },
           revocationStatusListMetadata: {
             didIndyNamespace: pool.indyNamespace,
@@ -781,7 +791,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         }
       }
 
-      const isIssuanceByDefault = revocationRegistryDefinitionMetadata.issuanceType === 'ISSUANCE_BY_DEFAULT'
+      const isIssuanceByDefault = issuanceType === 'ISSUANCE_BY_DEFAULT'
 
       return {
         resolutionMetadata: {},
