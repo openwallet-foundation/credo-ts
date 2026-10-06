@@ -24,6 +24,7 @@ import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { DidCommTransportService } from '../DidCommTransportService'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { DidCommEnvelopeRegistry, DidCommV1Envelope, type DidCommV2Envelope } from '../envelope'
+import { MessageSendingError } from '../errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../models'
 import type { DidCommConnectionRecord } from '../modules'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
@@ -247,6 +248,28 @@ describe('DidCommMessageSender', () => {
       })
     })
 
+    test('reports an undeliverable message when resolving services fails', async () => {
+      const originalError = new Error('service resolution failed')
+      didResolverServiceResolveDidServicesMock.mockRejectedValueOnce(originalError)
+      const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
+
+      await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toMatchObject({
+        message: `Unable to retrieve services for connection '${connection.id}`,
+        cause: originalError,
+      } satisfies Partial<MessageSendingError>)
+      expect(sendMessageSpy).not.toHaveBeenCalled()
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: DidCommEventTypes.DidCommMessageSent,
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
+        payload: {
+          message: outboundMessageContext,
+          status: OutboundMessageSendStatus.Undeliverable,
+        },
+      })
+    })
+
     test('call send message when session send method fails', async () => {
       didCommModuleConfig.outboundTransports = [outboundTransport]
       transportServiceFindSessionMock.mockReturnValue(session)
@@ -305,16 +328,18 @@ describe('DidCommMessageSender', () => {
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
     })
 
-    test("throws an error if connection.theirDid starts with 'did:' but the resolver can't resolve the did document", async () => {
+    test('reports an undeliverable message when the sender DID cannot be resolved', async () => {
       didCommModuleConfig.outboundTransports = [outboundTransport]
 
-      resolveCreatedDidDocumentWithKeysMock.mockRejectedValue(
-        new Error(`Unable to resolve did document for did '${connection.theirDid}': notFound`)
-      )
+      const originalError = new Error(`Unable to resolve did document for did '${connection.theirDid}': notFound`)
+      resolveCreatedDidDocumentWithKeysMock.mockRejectedValue(originalError)
+      const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
 
-      await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrow(
-        `Unable to send message using connection 'test-123'. Unble to resolve did`
-      )
+      await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toMatchObject({
+        message: `Unable to send message using connection '${connection.id}'. Unble to resolve did`,
+        cause: originalError,
+      } satisfies Partial<MessageSendingError>)
+      expect(sendMessageSpy).not.toHaveBeenCalled()
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: DidCommEventTypes.DidCommMessageSent,

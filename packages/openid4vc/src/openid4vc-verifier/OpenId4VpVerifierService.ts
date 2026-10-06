@@ -144,6 +144,15 @@ export class OpenId4VpVerifierService {
         `OpenID4VP version '${version}' cannot be used with dcql. Use version 'v1' or 'v1.draft24' instead.`
       )
     }
+    if (
+      version === 'v1.draft21' &&
+      options.requestSigner.method === 'x5c' &&
+      options.requestSigner.clientIdPrefix === 'x509_hash'
+    ) {
+      throw new CredoError(
+        `OpenID4VP version '${version}' cannot be used with clientIdPrefix 'x509_hash'. Use clientIdPrefix 'x509_san_dns', or version 'v1' instead.`
+      )
+    }
     if (version !== 'v1' && options.verifierInfo) {
       throw new CredoError(`OpenID4VP version '${version}' cannot be used with verifierInfo. Use version 'v1' instead.`)
     }

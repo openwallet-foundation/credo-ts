@@ -42,7 +42,12 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         },
       })
       .catch((error) => {
-        sendUnauthorizedError(response, next, agentContext.config.logger, error)
+        // Only a rejected token or DPoP proof is a client error, anything else (e.g. a misconfigured resource server) is ours
+        if (error instanceof Oauth2ResourceUnauthorizedError) {
+          sendUnauthorizedError(response, next, agentContext.config.logger, error)
+        } else {
+          sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
+        }
       })
     if (!resourceRequestResult) return
     const { tokenPayload, accessToken, scheme, authorizationServer } = resourceRequestResult
@@ -50,10 +55,18 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
     const credentialRequest = request.body
     const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
 
-    const parsedCredentialRequest = vcIssuer.parseCredentialRequest({
-      credentialRequest,
-      issuerMetadata,
-    })
+    let parsedCredentialRequest: ReturnType<typeof vcIssuer.parseCredentialRequest>
+    try {
+      parsedCredentialRequest = vcIssuer.parseCredentialRequest({
+        credentialRequest,
+        issuerMetadata,
+      })
+    } catch (error) {
+      if (error instanceof Oauth2ServerErrorResponseError) {
+        return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
+      }
+      return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
+    }
 
     let issuanceSession: OpenId4VcIssuanceSessionRecord | null = null
     const preAuthorizedCode =

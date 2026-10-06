@@ -89,8 +89,9 @@ export class DidCommMediatorService {
 
     if (mediatorRoutingRecord) {
       // Return the routing keys
-      this.logger.debug(`Returning mediator routing keys ${mediatorRoutingRecord.routingKeys}`)
-      return mediatorRoutingRecord.routingKeysWithKeyId
+      const routingKeys = mediatorRoutingRecord.routingKeysWithKeyId
+      this.logger.debug(`Returning mediator routing keys ${routingKeys.map((key) => key.fingerprint)}`)
+      return routingKeys
     }
 
     throw new CredoError('Mediator has not been initialized yet.')
