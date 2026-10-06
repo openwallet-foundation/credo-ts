@@ -20,19 +20,18 @@ export interface InitConfig {
   allowInsecureHttpUrls?: boolean
 
   /**
-   * The allowed skew in seconds that should be allowed for validity time of a credentials and other signed
-   * objects (e.g. StatusList). Mobile devices especially can run a bit behind actual time, making validity
-   * checks fail based on a milliseconds / seconds.
+   * The allowed clock skew in seconds for validity checks of credentials and other signed objects, such as status
+   * lists. Mobile devices especially can run slightly behind actual time, causing validity checks to fail at a
+   * milliseconds / seconds boundary.
    *
-   * NOTE: this currently only affects JWT based objects and credentials:
+   * This currently applies to:
    * - OAuth client attestations and DPoP proofs in the OpenID4VC issuer module
-   * - Token Status List
-   * - SD-JWT VC
+   * - SD-JWT VC, including status verification
    * - W3C VCDM 1.1 and 2.0 with JWT/SD-JWT
+   * - mDOC device responses, including CWT status and identifier list checks
    *
-   * It does not cover
+   * It does not cover:
    * - W3C VCDM 1.1 JSON-LD
-   * - mDOC
    *
    * @default 30
    */
