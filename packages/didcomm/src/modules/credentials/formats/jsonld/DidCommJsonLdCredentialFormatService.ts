@@ -11,6 +11,7 @@ import {
   W3cCredentialRecord,
   W3cCredentialService,
   W3cJsonLdCredentialService,
+  W3cJsonLdCredentialSigningNotSupportedError,
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
@@ -319,7 +320,10 @@ export class DidCommJsonLdCredentialFormatService
     const keyType = w3cJsonLdCredentialService.getVerificationMethodTypesByProofType(proofType)
 
     if (!keyType || keyType.length === 0) {
-      throw new CredoError(`No Key Type found for proofType ${proofType}`)
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        `No Key Type found for proofType ${proofType}`,
+        'no-verification-method-types-for-proof-type'
+      )
     }
 
     const verificationMethod = issuerDidDocument.findVerificationMethodsByTypeAndPurpose(keyType, [
@@ -328,7 +332,10 @@ export class DidCommJsonLdCredentialFormatService
     ])[0]
 
     if (!verificationMethod) {
-      throw new CredoError(`Missing verification method for key type ${keyType}`)
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        `Missing verification method for key type ${keyType}`,
+        'no-compatible-verification-method'
+      )
     }
 
     return verificationMethod.id

@@ -34,6 +34,7 @@ import { CredentialIssuancePurpose } from '../proof-purposes/CredentialIssuanceP
 import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
 import { Ed25519Signature2018, Ed25519Signature2020 } from '../signature-suites'
 import { W3cJsonLdCredentialService } from '../W3cJsonLdCredentialService'
+import { W3cJsonLdCredentialSigningNotSupportedError } from '../W3cJsonLdCredentialSigningNotSupportedError'
 import { customDocumentLoader, DOCUMENTS } from './documentLoader'
 import { Ed25519Signature2018Fixtures, Ed25519Signature2020Fixtures } from './fixtures'
 
@@ -336,21 +337,27 @@ describe('W3cJsonLdCredentialsService', () => {
         expect(asArray(vc.proof)[0].verificationMethod).toEqual(verificationMethod)
       })
 
-      it('should throw because of verificationMethod does not belong to this wallet', async () => {
+      it('throws a typed error when the verification method is not controlled by this wallet', async () => {
         const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT
         credentialJson.issuer = issuerDidKey.did
 
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
-        await expect(async () => {
-          await w3cJsonLdCredentialService.signCredential(agentContext, {
-            format: ClaimFormat.LdpVc,
-            credential,
-            proofType: 'Ed25519Signature2018',
-            verificationMethod:
-              'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV#z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
-          })
-        }).rejects.toThrow(`Created did 'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV' not found`)
+        const signing = w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential,
+          proofType: 'Ed25519Signature2018',
+          verificationMethod:
+            'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV#z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
+        })
+
+        await expect(signing).rejects.toMatchObject({
+          name: W3cJsonLdCredentialSigningNotSupportedError.name,
+          reason: 'verification-method-not-controlled',
+          message: expect.stringContaining(
+            `Created did 'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV' not found`
+          ),
+        })
       })
 
       it('calls resolveVerificationMethodFromCreatedDidRecord with assertionMethod purpose', async () => {

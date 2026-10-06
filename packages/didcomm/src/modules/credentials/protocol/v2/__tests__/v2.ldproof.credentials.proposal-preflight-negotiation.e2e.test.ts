@@ -1,4 +1,5 @@
 import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
+import { W3cJsonLdCredentialSigningNotSupportedError } from '../../../../../../../core/src/modules/vc'
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import type { JsonLdTestsAgent } from '../../../../../../../core/tests'
 import { setupJsonLdTests } from '../../../../../../../core/tests'
@@ -107,11 +108,14 @@ describe('V2 JSON-LD credential proposal signing preflight', () => {
       state: DidCommCredentialState.ProposalReceived,
     })
 
-    await expect(
-      issuerAgent.didcomm.credentials.acceptProposal({
-        credentialExchangeRecordId: issuerProposal.id,
-      })
-    ).rejects.toThrow(`Created did '${holderIssuerDidResult.didState.did}' not found`)
+    const failedAcceptance = issuerAgent.didcomm.credentials.acceptProposal({
+      credentialExchangeRecordId: issuerProposal.id,
+    })
+    await expect(failedAcceptance).rejects.toBeInstanceOf(W3cJsonLdCredentialSigningNotSupportedError)
+    await expect(failedAcceptance).rejects.toMatchObject({
+      reason: 'verification-method-not-controlled',
+      message: expect.stringContaining(`Created did '${holderIssuerDidResult.didState.did}' not found`),
+    })
 
     expect((await issuerAgent.didcomm.credentials.getById(issuerProposal.id)).state).toBe(
       DidCommCredentialState.ProposalReceived
