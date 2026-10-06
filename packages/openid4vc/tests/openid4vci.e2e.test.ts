@@ -15,6 +15,8 @@ import {
   calculateJwkThumbprint,
   HashAlgorithm,
   Oauth2AuthorizationServer,
+  Oauth2Error,
+  Oauth2ResourceServer,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
@@ -620,5 +622,30 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     await holderTenant.endSession()
+  })
+  it('credential endpoint responds with a server error instead of 401 when the resource server is misconfigured', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '3f9d5a1e-2c4b-4e8a-9b7d-6a1f0c2e8d45',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    vi.spyOn(Oauth2ResourceServer.prototype, 'verifyResourceRequest').mockRejectedValueOnce(
+      new Oauth2Error(
+        "Empty array provided for 'allowedAuthenticationSchemes', provide at least one allowed authentication scheme, or remove the value to allow all supported authentication schemes"
+      )
+    )
+
+    const response = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer some-access-token' },
+      body: JSON.stringify({ credential_configuration_id: 'universityDegree' }),
+    })
+
+    expect(response.status).toBe(500)
+    expect(response.headers.get('WWW-Authenticate')).toBeNull()
+    expect(await response.json()).toEqual({ error: 'server_error' })
   })
 })
