@@ -34,7 +34,7 @@ export function sendUnauthorizedError(
 
   response
     .setHeader('WWW-Authenticate', unauthorizedError.toHeaderValue())
-    .status(status ?? 403)
+    .status(status ?? 401)
     .send()
   next(error)
 }

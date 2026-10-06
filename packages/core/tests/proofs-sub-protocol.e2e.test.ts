@@ -4,7 +4,7 @@ import { DidCommProofState } from '../../didcomm/src/modules/proofs'
 import { uuid } from '../src/utils/uuid'
 import type { EventReplaySubject } from './events'
 
-import { waitForProofExchangeRecord } from './helpers'
+import { waitForProofExchangeRecordSubject } from './helpers'
 import testLogger from './logger'
 
 describe('Present Proof Subprotocol', () => {
@@ -66,7 +66,7 @@ describe('Present Proof Subprotocol', () => {
     // Alice sends a presentation proposal to Faber
     testLogger.test('Alice sends a presentation proposal to Faber')
 
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       parentThreadId,
       state: DidCommProofState.ProposalReceived,
     })
@@ -113,7 +113,7 @@ describe('Present Proof Subprotocol', () => {
     await faberAgent.didcomm.proofs.acceptProposal({ proofExchangeRecordId: faberProofExchangeRecord.id })
 
     testLogger.test('Alice waits till it receives presentation ack')
-    await waitForProofExchangeRecord(aliceAgent, {
+    await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId,
       parentThreadId,
       state: DidCommProofState.RequestReceived,
@@ -130,7 +130,7 @@ describe('Present Proof Subprotocol', () => {
     })
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofExchangeRecord = await waitForProofExchangeRecord(faberAgent, {
+    faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
       threadId,
       parentThreadId,
       state: DidCommProofState.PresentationReceived,
@@ -142,7 +142,7 @@ describe('Present Proof Subprotocol', () => {
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
-    await waitForProofExchangeRecord(aliceAgent, {
+    await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId,
       parentThreadId,
       state: DidCommProofState.Done,
@@ -153,7 +153,7 @@ describe('Present Proof Subprotocol', () => {
     const parentThreadId = uuid()
     testLogger.test('Faber sends presentation request to Alice')
 
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       parentThreadId,
       state: DidCommProofState.RequestReceived,
     })
@@ -217,7 +217,7 @@ describe('Present Proof Subprotocol', () => {
 
     // Faber waits until it receives a presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')
-    await waitForProofExchangeRecord(faberAgent, {
+    await waitForProofExchangeRecordSubject(faberReplay, {
       threadId,
       parentThreadId,
       state: DidCommProofState.PresentationReceived,
@@ -229,7 +229,7 @@ describe('Present Proof Subprotocol', () => {
 
     // Alice waits until she receives a presentation acknowledgement
     testLogger.test('Alice waits for acceptance by Faber')
-    await waitForProofExchangeRecord(aliceAgent, {
+    await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId,
       parentThreadId,
       state: DidCommProofState.Done,
@@ -242,7 +242,7 @@ describe('Present Proof Subprotocol', () => {
     // Alice sends a presentation proposal to Faber
     testLogger.test('Alice sends a presentation proposal to Faber')
 
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       parentThreadId,
       state: DidCommProofState.ProposalReceived,
     })
@@ -289,7 +289,7 @@ describe('Present Proof Subprotocol', () => {
     await faberAgent.didcomm.proofs.acceptProposal({ proofExchangeRecordId: faberProofExchangeRecord.id })
 
     testLogger.test('Alice waits till it receives presentation ack')
-    await waitForProofExchangeRecord(aliceAgent, {
+    await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId,
       parentThreadId,
       state: DidCommProofState.RequestReceived,
@@ -306,7 +306,7 @@ describe('Present Proof Subprotocol', () => {
     })
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofExchangeRecord = await waitForProofExchangeRecord(faberAgent, {
+    faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
       threadId,
       parentThreadId,
       state: DidCommProofState.PresentationReceived,
@@ -318,7 +318,7 @@ describe('Present Proof Subprotocol', () => {
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
-    await waitForProofExchangeRecord(aliceAgent, {
+    await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId,
       parentThreadId,
       state: DidCommProofState.Done,
@@ -329,7 +329,7 @@ describe('Present Proof Subprotocol', () => {
     const parentThreadId = uuid()
     testLogger.test('Faber sends presentation request to Alice')
 
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       parentThreadId,
       state: DidCommProofState.RequestReceived,
     })
@@ -393,7 +393,7 @@ describe('Present Proof Subprotocol', () => {
 
     // Faber waits until it receives a presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')
-    await waitForProofExchangeRecord(faberAgent, {
+    await waitForProofExchangeRecordSubject(faberReplay, {
       threadId,
       parentThreadId,
       state: DidCommProofState.PresentationReceived,
@@ -405,7 +405,7 @@ describe('Present Proof Subprotocol', () => {
 
     // Alice waits until she receives a presentation acknowledgement
     testLogger.test('Alice waits for acceptance by Faber')
-    await waitForProofExchangeRecord(aliceAgent, {
+    await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId,
       parentThreadId,
       state: DidCommProofState.Done,

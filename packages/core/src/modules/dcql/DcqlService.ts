@@ -262,7 +262,7 @@ export class DcqlService {
       } satisfies DcqlSdJwtVcCredential
     }
     if (presentation.claimFormat === ClaimFormat.MsoMdoc) {
-      if (!presentation.deviceResponse.documents || presentation.deviceResponse.documents.length !== 1) {
+      if (presentation.deviceResponse.documents?.length !== 1) {
         throw new DcqlError('MDOC presentations must contain exactly one document')
       }
 

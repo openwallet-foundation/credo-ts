@@ -4,7 +4,6 @@ import { anoncredsDefinitionFourAttributesNoRevocation } from '../../../../../..
 import type { EventReplaySubject } from '../../../../../../../core/tests'
 import {
   waitForAgentMessageProcessedEventSubject,
-  waitForCredentialRecord,
   waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
@@ -224,7 +223,7 @@ describe('V2 Credentials Auto Accept', () => {
         threadId: faberCredentialRecord.threadId,
       })
 
-      faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+      faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: faberCredentialRecord.threadId,
         state: DidCommCredentialState.Done,
       })

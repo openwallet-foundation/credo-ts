@@ -175,11 +175,10 @@ export class AskarStoreManager {
       }
 
       const errorMessage = `Error creating store '${storeConfig.id}'`
-      agentContext.config.logger.error(errorMessage, {
+      agentContext.config.logger.debug(errorMessage, {
         error,
         errorMessage: error.message,
       })
-
       throw new AskarStoreError(errorMessage, { cause: error })
     }
   }
@@ -260,11 +259,10 @@ export class AskarStoreManager {
       })
     } catch (error) {
       const errorMessage = `Error rotating key for store '${storeConfig.id}': ${error.message}`
-      agentContext.config.logger.error(errorMessage, {
+      agentContext.config.logger.debug(errorMessage, {
         error,
         errorMessage: error.message,
       })
-
       throw new AskarStoreError(errorMessage, { cause: error })
     }
   }
@@ -406,11 +404,10 @@ export class AskarStoreManager {
       agentContext.dependencyManager.registerInstance(Store, undefined)
     } catch (error) {
       const errorMessage = `Error deleting store '${storeConfig.id}': ${error.message}`
-      agentContext.config.logger.error(errorMessage, {
+      agentContext.config.logger.debug(errorMessage, {
         error,
         errorMessage: error.message,
       })
-
       throw new AskarStoreError(errorMessage, { cause: error })
     }
   }
@@ -435,11 +432,10 @@ export class AskarStoreManager {
       agentContext.dependencyManager.registerInstance(Store, undefined)
     } catch (error) {
       const errorMessage = `Error closing store '${storeConfig.id}': ${error.message}`
-      agentContext.config.logger.error(errorMessage, {
+      agentContext.config.logger.debug(errorMessage, {
         error,
         errorMessage: error.message,
       })
-
       throw new AskarStoreError(errorMessage, { cause: error })
     }
   }

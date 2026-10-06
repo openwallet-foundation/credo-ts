@@ -1,14 +1,18 @@
-import { Subject } from 'rxjs'
+import { filter, firstValueFrom, map, Subject, take, timeout, toArray } from 'rxjs'
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../../../../../core/src/agent/Agent'
+import { setupEventReplaySubjects } from '../../../../../core/tests'
 import {
   getAgentOptions,
-  waitForAgentMessageProcessedEvent,
-  waitForBasicMessage,
+  waitForAgentMessageProcessedEventSubject,
+  waitForBasicMessageSubject,
 } from '../../../../../core/tests/helpers'
+import type { DidCommMessageProcessedEvent } from '../../../DidCommEvents'
+import { DidCommEventTypes } from '../../../DidCommEvents'
+import { DidCommBasicMessageEventTypes } from '../../basic-messages'
 import { DidCommHandshakeProtocol } from '../../connections'
 import { DidCommMessageForwardingStrategy } from '../../routing/DidCommMessageForwardingStrategy'
 import { DidCommMessagesReceivedV2Message, DidCommStatusV2Message } from '../protocol'
@@ -91,16 +95,21 @@ describe('E2E Pick Up protocol', () => {
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
     await recipientAgent.shutdown()
     await recipientAgent.initialize()
+    const [recipientBasicMessageReplay] = setupEventReplaySubjects(
+      [recipientAgent],
+      [DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged]
+    )
 
     const message = 'hello pickup V1'
-    await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
+    const { threadId } = await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
 
     await recipientAgent.didcomm.messagePickup.pickupMessages({
       connectionId: recipientMediatorConnection.id,
       protocolVersion: 'v1',
     })
 
-    const basicMessage = await waitForBasicMessage(recipientAgent, {
+    const basicMessage = await waitForBasicMessageSubject(recipientBasicMessageReplay, {
+      threadId,
       content: message,
     })
 
@@ -156,11 +165,16 @@ describe('E2E Pick Up protocol', () => {
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
     await recipientAgent.shutdown()
     await recipientAgent.initialize()
+    const [recipientBasicMessageReplay] = setupEventReplaySubjects(
+      [recipientAgent],
+      [DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged]
+    )
 
     const message = 'hello pickup V1'
-    await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
+    const { threadId } = await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
 
-    const basicMessagePromise = waitForBasicMessage(recipientAgent, {
+    const basicMessagePromise = waitForBasicMessageSubject(recipientBasicMessageReplay, {
+      threadId,
       content: message,
     })
     await recipientAgent.didcomm.messagePickup.pickupMessages({
@@ -229,35 +243,48 @@ describe('E2E Pick Up protocol', () => {
 
     const message = 'hello pickup V2'
 
-    await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
+    const { threadId } = await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
 
-    const basicMessagePromise = waitForBasicMessage(recipientAgent, {
+    // `pickupMessages` triggers the whole exchange, so subscribe to all events before calling it
+    const [recipientReplay, mediatorReplay] = setupEventReplaySubjects(
+      [recipientAgent, mediatorAgent],
+      [DidCommEventTypes.DidCommMessageProcessed, DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged]
+    )
+
+    // One status before delivery (1 message queued), and one after it was acknowledged (0 queued)
+    const statusMessagesPromise = firstValueFrom(
+      recipientReplay.pipe(
+        filter((event) => event.type === DidCommEventTypes.DidCommMessageProcessed),
+        map((event) => (event as DidCommMessageProcessedEvent).payload.message),
+        filter((agentMessage) => agentMessage.type === DidCommStatusV2Message.type.messageTypeUri),
+        take(2),
+        toArray(),
+        timeout(10000)
+      )
+    )
+    const messagesReceivedPromise = waitForAgentMessageProcessedEventSubject(mediatorReplay, {
+      messageType: DidCommMessagesReceivedV2Message.type.messageTypeUri,
+    })
+    const basicMessagePromise = waitForBasicMessageSubject(recipientReplay, {
+      threadId,
       content: message,
     })
+
     await recipientAgent.didcomm.messagePickup.pickupMessages({
       connectionId: recipientMediatorConnection.id,
       protocolVersion: 'v2',
     })
-    const firstStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
-      messageType: DidCommStatusV2Message.type.messageTypeUri,
-    })
 
-    expect((firstStatusMessage as DidCommStatusV2Message).messageCount).toBe(1)
+    const [firstStatusMessage, secondStatusMessage] = (await statusMessagesPromise) as DidCommStatusV2Message[]
+    expect(firstStatusMessage.messageCount).toBe(1)
 
     const basicMessage = await basicMessagePromise
     expect(basicMessage.content).toBe(message)
 
-    const messagesReceived = await waitForAgentMessageProcessedEvent(mediatorAgent, {
-      messageType: DidCommMessagesReceivedV2Message.type.messageTypeUri,
-    })
-
+    const messagesReceived = await messagesReceivedPromise
     expect((messagesReceived as DidCommMessagesReceivedV2Message).messageIdList.length).toBe(1)
 
-    const secondStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
-      messageType: DidCommStatusV2Message.type.messageTypeUri,
-    })
-
-    expect((secondStatusMessage as DidCommStatusV2Message).messageCount).toBe(0)
+    expect(secondStatusMessage.messageCount).toBe(0)
   })
 
   test('E2E manual Pick Up V2 loop - waiting for completion', async () => {
@@ -313,12 +340,17 @@ describe('E2E Pick Up protocol', () => {
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
     await recipientAgent.shutdown()
     await recipientAgent.initialize()
+    const [recipientBasicMessageReplay] = setupEventReplaySubjects(
+      [recipientAgent],
+      [DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged]
+    )
 
     const message = 'hello pickup V2'
 
-    await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
+    const { threadId } = await mediatorAgent.didcomm.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
 
-    const basicMessagePromise = waitForBasicMessage(recipientAgent, {
+    const basicMessagePromise = waitForBasicMessageSubject(recipientBasicMessageReplay, {
+      threadId,
       content: message,
     })
     await recipientAgent.didcomm.messagePickup.pickupMessages({

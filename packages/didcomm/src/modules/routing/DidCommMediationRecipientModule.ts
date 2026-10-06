@@ -106,7 +106,12 @@ export class DidCommMediationRecipientModule implements Module {
       // We don't want to use the current default mediator when connecting to another mediator
       const routing = await mediationRecipientApi.getRouting({ useDefaultMediator: false })
 
-      agentContext.config.logger.debug('Routing created', routing)
+      agentContext.config.logger.debug('Routing created', {
+        endpoints: routing.endpoints,
+        recipientKey: routing.recipientKey.fingerprint,
+        routingKeys: routing.routingKeys.map((key) => key.fingerprint),
+        mediatorId: routing.mediatorId,
+      })
       const { connectionRecord: newConnection } = await oobApi.receiveInvitation(outOfBandInvitation, {
         label: '',
         routing,

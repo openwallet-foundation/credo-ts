@@ -401,7 +401,7 @@ export function configurePushedAuthorizationRequestEndpoint(router: Router, conf
           request: requestLike,
         })
 
-        return sendJsonResponse(response, next, pushedAuthorizationResponse)
+        return sendJsonResponse(response, next, pushedAuthorizationResponse, undefined, 201)
       } catch (error) {
         if (error instanceof Oauth2ServerErrorResponseError) {
           return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)

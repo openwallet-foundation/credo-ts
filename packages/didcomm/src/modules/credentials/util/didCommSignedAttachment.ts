@@ -128,7 +128,7 @@ export async function verifyDidCommSignedAttachment(
     throw new CredoError('Invalid payload in signed attachment')
   }
 
-  if (!jwsSigner || jwsSigner.method !== 'did') throw new CredoError('Could not resolve kid from signed attachment')
+  if (jwsSigner?.method !== 'did') throw new CredoError('Could not resolve kid from signed attachment')
 
   return { nonce: payload.nonce, kid: jwsSigner.didUrl }
 }
