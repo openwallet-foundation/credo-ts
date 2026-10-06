@@ -21,7 +21,7 @@ import { createHeaderAndPayload, SLException, StatusList } from '@owf/token-stat
 import { decodeSdJwtSync, getClaimsSync, Jwt, SDJWTException, SDJwt } from '@sd-jwt/core'
 import { randomUUID } from 'crypto'
 import nock from 'nock'
-import { vi } from 'vitest'
+import { type Mock, vi } from 'vitest'
 import { transformSeedToPrivateJwk } from '../../../../../askar/src'
 import { getAgentOptions, mockProperty } from '../../../../tests'
 import { PublicJwk } from '../../kms'
@@ -2181,7 +2181,11 @@ describe('SdJwtVcService', () => {
 
     test('the custom status list fetcher can delegate to the default fetcher', async () => {
       const scope = mockStatusList(await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, []))
-      const customStatusListFetcher: CustomStatusListFetcher = vi.fn((_uri, { defaultFetcher }) => defaultFetcher())
+      let defaultFetcher: Mock<() => Promise<string>> | undefined
+      const customStatusListFetcher: CustomStatusListFetcher = async (_uri, options) => {
+        defaultFetcher = vi.fn(options.defaultFetcher)
+        return defaultFetcher()
+      }
       agent.context.dependencyManager.registerInstance(
         SdJwtVcModuleConfig,
         new SdJwtVcModuleConfig({ customStatusListFetcher })
@@ -2190,6 +2194,7 @@ describe('SdJwtVcService', () => {
       const verificationResult = await verify(await presentWithStatus())
 
       expect(verificationResult.isValid).toBe(true)
+      expect(defaultFetcher).toHaveBeenCalledTimes(1)
       expect(scope.isDone()).toBe(true)
     })
 
@@ -2221,6 +2226,16 @@ describe('SdJwtVcService', () => {
           `The status list JWT fetched from ${statusListUri} has 'typ' 'JWT', but 'statuslist+jwt' is required.`
         ),
       })
+    })
+
+    test("accepts a status list JWT whose 'typ' is 'application/statuslist+jwt'", async () => {
+      mockStatusList(
+        await generateStatusList(agent.context, issuerKey, issuerDidUrl, 24, [], { typ: 'application/statuslist+jwt' })
+      )
+
+      const verificationResult = await verify(await presentWithStatus())
+
+      expect(verificationResult.isValid).toBe(true)
     })
 
     test("rejects a status list JWT whose 'sub' is not the uri of the status claim", async () => {
