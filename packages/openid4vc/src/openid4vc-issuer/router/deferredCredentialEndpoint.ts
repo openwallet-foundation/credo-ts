@@ -40,7 +40,12 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
           },
         })
         .catch((error) => {
-          sendUnauthorizedError(response, next, agentContext.config.logger, error)
+          // Only a rejected token or DPoP proof is a client error, anything else (e.g. a misconfigured resource server) is ours
+          if (error instanceof Oauth2ResourceUnauthorizedError) {
+            sendUnauthorizedError(response, next, agentContext.config.logger, error)
+          } else {
+            sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
+          }
         })
 
       if (!resourceRequestResult) return
