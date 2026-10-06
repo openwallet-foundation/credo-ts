@@ -766,33 +766,23 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       const anoncredsRegistryService = agentContext.resolve(AnonCredsRegistryService)
-      let { revocationRegistryDefinition, resolutionMetadata, revocationRegistryDefinitionMetadata } =
+      const { revocationRegistryDefinition, resolutionMetadata, revocationRegistryDefinitionMetadata } =
         await anoncredsRegistryService.getRevocationRegistryDefinition(agentContext, revocationRegistryDefinitionId)
 
-      if (revocationRegistryDefinition && revocationRegistryDefinitionMetadata.issuanceType === undefined) {
-        // Local records may predate issuance metadata; re-resolve from the ledger for its source of truth (#2671).
-        const ledgerResolution = await anoncredsRegistryService.getRevocationRegistryDefinition(
-          agentContext,
-          revocationRegistryDefinitionId,
-          { useLocalRecord: false }
-        )
+      // Credo always registers revocation registries with ISSUANCE_BY_DEFAULT. Local records created before the
+      // issuance type was stored in the metadata don't contain it, so we can safely default it for those.
+      const issuanceType =
+        revocationRegistryDefinitionMetadata.issuanceType ??
+        (resolutionMetadata.servedFromRecord ? 'ISSUANCE_BY_DEFAULT' : undefined)
 
-        revocationRegistryDefinition = ledgerResolution.revocationRegistryDefinition
-        resolutionMetadata = ledgerResolution.resolutionMetadata
-        revocationRegistryDefinitionMetadata = ledgerResolution.revocationRegistryDefinitionMetadata
-      }
-
-      const issuanceType = revocationRegistryDefinitionMetadata.issuanceType
       if (!revocationRegistryDefinition || typeof issuanceType !== 'string') {
-        const resolutionError = [resolutionMetadata.error, resolutionMetadata.message]
-          .filter((value): value is string => typeof value === 'string' && value.length > 0)
-          .join(': ')
-
         return {
           resolutionMetadata: {
             error: 'error',
             message: `Error resolving revocation registry definition with id ${revocationRegistryDefinitionId}: ${
-              resolutionError || 'the definition is missing or has invalid issuance type metadata'
+              resolutionMetadata.message ??
+              resolutionMetadata.error ??
+              'the definition is missing or has invalid issuance type metadata'
             }`,
           },
           revocationStatusListMetadata: {
