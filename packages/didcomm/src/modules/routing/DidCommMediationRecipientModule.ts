@@ -133,7 +133,7 @@ export class DidCommMediationRecipientModule implements Module {
       agentContext.config.logger.debug('Routing created', {
         endpoints: routing.endpoints,
         recipientKey: routing.recipientKey.fingerprint,
-        routingKeys: routing.routingKeys.map((key) => key.fingerprint),
+        routingKeys: (routing.routingKeys ?? []).map((key) => key.fingerprint),
         mediatorId: routing.mediatorId,
       })
       const { connectionRecord: newConnection } = await oobApi.receiveInvitation(outOfBandInvitation, {

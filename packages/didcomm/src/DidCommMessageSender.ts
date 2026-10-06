@@ -657,10 +657,13 @@ export class DidCommMessageSender {
 
     if (connection.theirDid) {
       agentContext.config.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
+      let resolveServicesError: unknown
       try {
         didCommServices = await this.didCommDocumentService.resolveServicesFromDid(agentContext, connection.theirDid)
-      } catch {
-        // did:peer:1 may not yet be resolvable (e.g. immediately after connection response)
+      } catch (error) {
+        // did:peer:1 may not yet be resolvable (e.g. immediately after connection response).
+        // The fallbacks below can supply the services. If they do not, the error is thrown again.
+        resolveServicesError = error
         didCommServices = []
       }
 
@@ -808,6 +811,10 @@ export class DidCommMessageSender {
         } catch {
           // Ignore: proceed with empty services
         }
+      }
+
+      if (didCommServices.length === 0 && resolveServicesError) {
+        throw resolveServicesError
       }
     } else if (outOfBand) {
       agentContext.config.logger.debug(`Resolving services from out-of-band record ${outOfBand.id}.`)
