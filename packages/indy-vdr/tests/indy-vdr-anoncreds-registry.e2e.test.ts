@@ -1018,7 +1018,10 @@ describe('IndyVdrAnonCredsRegistry', () => {
     })
 
     expect(submitRevRegDefTxResult).toMatchObject({
-      revocationRegistryDefinitionMetadata: {},
+      revocationRegistryDefinitionMetadata: {
+        issuanceType: 'ISSUANCE_BY_DEFAULT',
+        didIndyNamespace: 'pool:localtest',
+      },
       revocationRegistryDefinitionState: {
         revocationRegistryDefinition: {
           credDefId: didIndyCredentialDefinitionId,
