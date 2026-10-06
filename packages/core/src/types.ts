@@ -24,7 +24,8 @@ export interface InitConfig {
    * objects (e.g. StatusList). Mobile devices especially can run a bit behind actual time, making validity
    * checks fail based on a milliseconds / seconds.
    *
-   * NOTE: this does currently only affects JWT based objects and credentials:
+   * NOTE: this currently only affects JWT based objects and credentials:
+   * - OAuth client attestations and DPoP proofs in the OpenID4VC issuer module
    * - Token Status List
    * - SD-JWT VC
    * - W3C VCDM 1.1 and 2.0 with JWT/SD-JWT

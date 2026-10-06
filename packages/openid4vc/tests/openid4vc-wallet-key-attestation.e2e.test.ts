@@ -888,7 +888,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     }
   })
 
-  it('pushed authorization request accepts a client attestation pop jwt from the future only within allowedClockSkewInSeconds', async () => {
+  it('pushed authorization request applies AgentConfig validitySkewSeconds to client attestation PoP JWT validation', async () => {
     const idpApp = express()
     idpApp.get('/.well-known/oauth-authorization-server', (_req, res) =>
       res.json({
@@ -991,14 +991,13 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
         return { status: response.status, body: await response.json() }
       }
 
-      // By default no clock skew is allowed
-      await expect(pushAuthorizationRequest(2)).resolves.toMatchObject({
+      // The default validity skew is 30 seconds.
+      await expect(pushAuthorizationRequest(31)).resolves.toMatchObject({
         status: 401,
         body: { error: 'invalid_client', error_description: expect.stringContaining("'nbf' is in the future") },
       })
 
-      const issuerConfig = issuer.agent.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
-      vi.spyOn(issuerConfig, 'allowedClockSkewInSeconds', 'get').mockReturnValue(5)
+      vi.spyOn(issuer.agent.context.config, 'validitySkewSeconds', 'get').mockReturnValue(5)
 
       await expect(pushAuthorizationRequest(10)).resolves.toMatchObject({
         status: 401,
