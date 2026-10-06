@@ -701,7 +701,13 @@ export class DidExchangeProtocol {
           .concat(invitationKeys)
       : undefined
 
-    this.logger.trace('JWS verification result', { isValid, jwsSigners })
+    this.logger.trace('JWS verification result', {
+      isValid,
+      jwsSigners: jwsSigners.map((signer) => ({
+        ...signer,
+        jwk: signer.jwk.fingerprint,
+      })),
+    })
 
     if (!isValid || !jwsSigners.every((jwsSigner) => didDocumentKeys?.some((key) => key.equals(jwsSigner.jwk)))) {
       const problemCode =
