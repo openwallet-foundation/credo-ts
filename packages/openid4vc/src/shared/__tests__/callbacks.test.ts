@@ -173,20 +173,20 @@ describe('getOid4vcJwtVerifyCallback', () => {
       expect(getTrustedIssuersForVerification).not.toHaveBeenCalled()
     })
 
-    test.each(['key-attestation+jwt', 'oauth-client-attestation+jwt'])(
-      'trusted issuers callback is not called for typ %s without an issuance session',
-      async (typ) => {
-        const getTrustedIssuersForVerification = vi.fn().mockResolvedValue({ trustedIssuers: [] })
-        agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
+    test.each([
+      'key-attestation+jwt',
+      'oauth-client-attestation+jwt',
+    ])('trusted issuers callback is not called for typ %s without an issuance session', async (typ) => {
+      const getTrustedIssuersForVerification = vi.fn().mockResolvedValue({ trustedIssuers: [] })
+      agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
 
-        const jwt = await createJwt(agent.context, { typ, signer: didSigner })
-        await expect(verify(jwt, { issuanceSession: false })).resolves.toEqual(
-          expect.objectContaining({ verified: true })
-        )
+      const jwt = await createJwt(agent.context, { typ, signer: didSigner })
+      await expect(verify(jwt, { issuanceSession: false })).resolves.toEqual(
+        expect.objectContaining({ verified: true })
+      )
 
-        expect(getTrustedIssuersForVerification).not.toHaveBeenCalled()
-      }
-    )
+      expect(getTrustedIssuersForVerification).not.toHaveBeenCalled()
+    })
   })
 
   describe('jwk signer', () => {

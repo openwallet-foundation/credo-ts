@@ -14,10 +14,18 @@ import type { Jwk, JwkSet, JwtSigner } from '@openid4vc/oauth2'
 import type { OpenId4VcJwtIssuer, OpenId4VcJwtIssuerEncoded } from './models'
 
 /**
- * The `enc` values supported for JARM response encryption. Keep in sync with the
- * encrypt/decrypt jwe callbacks.
+ * The `alg` values supported for response encryption (JARM and OpenID4VCI credential responses).
+ * Keep in sync with the encrypt/decrypt jwe callbacks.
  */
-export const supportedJarmContentEncryptionAlgorithms = [
+export const supportedResponseEncryptionKeyAgreementAlgorithms = [
+  'ECDH-ES',
+] satisfies Kms.KnownJwaKeyAgreementAlgorithm[]
+
+/**
+ * The `enc` values supported for response encryption (JARM and OpenID4VCI credential responses).
+ * Keep in sync with the encrypt/decrypt jwe callbacks.
+ */
+export const supportedResponseEncryptionContentAlgorithms = [
   'A128GCM',
   'A256GCM',
   'A128CBC-HS256',
@@ -50,7 +58,7 @@ export function getSupportedResponseEncryptionJwks(agentContext: AgentContext, j
           : undefined
       if (!externalPublicJwk) return false
 
-      return supportedJarmContentEncryptionAlgorithms.some(
+      return supportedResponseEncryptionContentAlgorithms.some(
         (algorithm) =>
           kms.supportedBackendsForOperation({
             operation: 'encrypt',
