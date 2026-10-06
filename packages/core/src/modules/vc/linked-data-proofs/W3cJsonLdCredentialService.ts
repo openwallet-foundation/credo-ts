@@ -28,7 +28,7 @@ import { W3cJsonLdCredentialSigningNotSupportedError } from './W3cJsonLdCredenti
 
 /**
  * Supports signing and verification of credentials according to the [Verifiable Credential Data Model](https://www.w3.org/TR/vc-data-model)
- * using [Data Integrity Proof](https://www.w3.org/TR/vc-data-model/#data-integrity-proofs).
+ * using [Linked Data Proofs](https://www.w3.org/TR/vc-data-model/#proofs).
  */
 @injectable()
 export class W3cJsonLdCredentialService {
