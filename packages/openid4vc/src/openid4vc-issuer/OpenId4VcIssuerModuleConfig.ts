@@ -101,9 +101,7 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
    *
    * Only the `S256` code challenge method is supported.
    *
-   * NOTE: the default will change to `true` in 0.8.0.
-   *
-   * @default false
+   * @default true
    */
   pkceRequired?: boolean
 
@@ -420,10 +418,10 @@ export class OpenId4VcIssuerModuleConfig {
    * Whether PKCE is required for authorization requests. When a client provides
    * a `code_challenge` it is always verified, regardless of this option.
    *
-   * @default false
+   * @default true
    */
   public get pkceRequired(): boolean {
-    return this.options.pkceRequired ?? false
+    return this.options.pkceRequired ?? true
   }
 
   /**

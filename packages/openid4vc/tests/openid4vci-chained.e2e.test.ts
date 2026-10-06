@@ -1114,6 +1114,7 @@ describe('OpenId4Vc (Chained Authorization)', () => {
   })
 
   it.each([
+    { name: 'by default', pkceRequired: undefined, requirePkce: undefined },
     { name: 'globally', pkceRequired: true, requirePkce: undefined },
     { name: 'for the issuance session', pkceRequired: false, requirePkce: true },
   ])('rejects a pushed authorization request without S256 pkce when pkce is required $name', async ({

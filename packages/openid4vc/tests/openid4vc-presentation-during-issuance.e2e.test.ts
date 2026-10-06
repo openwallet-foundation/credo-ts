@@ -592,6 +592,9 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       authorizationCodeFlowConfig: {
         requirePresentationDuringIssuance: true,
       },
+      authorization: {
+        requirePkce: false,
+      },
     })
 
     const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
@@ -630,8 +633,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
     })
 
-    // Simulate a client that did not use pkce in the authorization challenge request (allowed with the
-    // default `pkceRequired: false`), by removing the bound code challenge from the issuance session.
+    // Simulate a client that did not use pkce in the authorization challenge request (allowed because
+    // `requirePkce` is `false` for this session), by removing the bound code challenge from the issuance session.
     const issuanceSessionRepository = issuer.agent.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
     const issuanceSessionRecord = await issuanceSessionRepository.getById(issuer.agent.context, issuanceSession.id)
     issuanceSessionRecord.pkce = undefined
@@ -660,7 +663,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       error_description: `Unexpected 'code_verifier' in access token request, no code challenge is bound to the grant`,
     })
 
-    // Without a code verifier the code can still be redeemed, as pkce was not required
+    // Without a code verifier the code can still be redeemed, as pkce was not required for this session
     const tokenResponse = await requestAccessToken({})
     expect(tokenResponse.status).toBe(200)
     expect(await tokenResponse.json()).toMatchObject({ access_token: expect.any(String) })
