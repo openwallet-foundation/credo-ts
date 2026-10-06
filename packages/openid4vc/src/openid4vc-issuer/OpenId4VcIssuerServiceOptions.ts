@@ -154,24 +154,37 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
     /**
      * Whether wallet attestations are required at the PAR, Authorization Challenge and token endpoints.
      *
-     * If not provided, the value from the global agent config will be used.
+     * If not provided or `false`, the value from the global agent config will be used.
      *
      * NOTE: this only has effect if the Credo authorization server is used. If an external authorization
      * server is used, it's up to the authorization server to require wallet attestations for client authentication.
      */
-    requireWalletAttestation: boolean
+    requireWalletAttestation?: boolean
 
     /**
      * Whether DPoP is required.
      *
-     * If not provided, the value from the global agent config will be used.
+     * If not provided or `false`, the value from the global agent config will be used.
      *
      * NOTE: it's up to the authorization server to enforce DPoP binding. So if an external authorization server
      * is used, and DPoP is required, you should ensure the authorization server enforces DPoP. If DPoP is required
      * but not bound to the access token created by an external authorization server, the issuance will fail when the
      * credential endpoint is called.
      */
-    requireDpop: boolean
+    requireDpop?: boolean
+
+    /**
+     * Whether PKCE is required for the authorization code flow. When required, authorization requests
+     * (pushed authorization requests and authorization challenge requests) without a `code_challenge`
+     * are rejected. When a client provides a `code_challenge` it is always verified.
+     *
+     * If not provided, the value from the global agent config will be used. If `false`, PKCE is not required
+     * for this issuance session, even if it is required in the global agent config.
+     *
+     * NOTE: this only has effect if the Credo authorization server is used. If an external authorization
+     * server is used, it's up to the authorization server to require PKCE.
+     */
+    requirePkce?: boolean
   }
 
   /**
@@ -329,16 +342,23 @@ interface OpenId4VciDynamicIssuanceSessionOptionsBase {
  */
 interface OpenId4VciInternalDynamicIssuanceSessionOptionsBase extends OpenId4VciDynamicIssuanceSessionOptionsBase {
   /**
-   * Whether DPoP is required for this issuance session. If not provided, the global config value
-   * is used.
+   * Whether DPoP is required for this issuance session. If not provided or `false`, the global config
+   * value is used.
    */
   requireDpop?: boolean
 
   /**
-   * Whether wallet attestations are required for this issuance session. If not provided, the
+   * Whether wallet attestations are required for this issuance session. If not provided or `false`, the
    * global config value is used.
    */
   requireWalletAttestation?: boolean
+
+  /**
+   * Whether PKCE is required for this issuance session. If not provided, the global config value is used.
+   * If `false`, PKCE is not required for this issuance session, even if it is required in the global config.
+   * When a client provides a `code_challenge` it is always verified.
+   */
+  requirePkce?: boolean
 
   /**
    * Whether this issuance session allows to generate refresh tokens.

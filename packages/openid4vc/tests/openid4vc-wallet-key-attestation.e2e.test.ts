@@ -677,6 +677,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       code: authorizationCode,
+      codeVerifier: resolvedAuthorizationRequest.codeVerifier,
       dpop,
       walletAttestationJwt,
       clientId: 'wallet',
@@ -781,6 +782,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       code: authorizationCode,
+      codeVerifier: resolvedAuthorizationRequest.codeVerifier,
       dpop,
       walletAttestationJwt,
       clientId: 'wallet',
@@ -979,6 +981,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       holder.agent.openid4vc.holder.requestToken({
         resolvedCredentialOffer,
         code: authorizationCode,
+        codeVerifier: resolvedAuthorizationRequest.codeVerifier,
         dpop,
         clientId: 'wallet',
       })
@@ -989,6 +992,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       holder.agent.openid4vc.holder.requestToken({
         resolvedCredentialOffer,
         code: authorizationCode,
+        codeVerifier: resolvedAuthorizationRequest.codeVerifier,
         dpop,
         walletAttestationJwt,
         clientId: 'wallet',

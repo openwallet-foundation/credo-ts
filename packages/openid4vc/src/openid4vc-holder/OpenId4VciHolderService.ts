@@ -187,6 +187,11 @@ export class OpenId4VciHolderService {
         })
       : undefined
 
+    // We generate the pkce code verifier ourselves, as it's not returned by `initiateAuthorization` for the
+    // presentation during issuance flow, but it is still needed when exchanging the authorization code.
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const pkceCodeVerifier = TypedArrayEncoder.toBase64Url(kms.randomBytes({ length: 32 }))
+
     const authorizationResult = await client.initiateAuthorization({
       clientId,
       issuerMetadata: metadata,
@@ -194,6 +199,7 @@ export class OpenId4VciHolderService {
       scope: scope.join(' '),
       redirectUri,
       dpop,
+      pkceCodeVerifier,
     })
 
     if (authorizationResult.authorizationFlow === AuthorizationFlow.InteractiveAuthorizationOpenid4vp) {
@@ -205,6 +211,8 @@ export class OpenId4VciHolderService {
         authorizationFlow: AuthorizationFlow.PresentationDuringIssuance,
         openid4vpRequestUrl: authorizationResult.openid4vpRequestUrl,
         authSession: authorizationResult.authSession,
+        // Only used if the authorization server supports pkce
+        codeVerifier: authorizationServerMetadata.code_challenge_methods_supported ? pkceCodeVerifier : undefined,
         // FIXME: return dpop result from this endpoint (dpop nonce)
         dpop: dpop
           ? {

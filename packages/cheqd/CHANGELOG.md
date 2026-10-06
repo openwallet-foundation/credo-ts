@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.7.2
+
+### Patch Changes
+
+- 5364f64: Pin CosmJS dependencies to the versions supported by `@cheqd/sdk-esm`.
+- 7a1a5c9: Consolidate Ed25519 linked data proof suite contexts to use the bundled JSON-LD context registry and shared VC context URL constants. This removes duplicate suite-local Ed25519 context documents/constants, flattens the Ed25519 signature suite files into the main signature suites folder, and fixes bundled context document loading for URLs with fragments.
+- 8323b52: Migrate Credo's examples, tests, and documentation to the AnonCreds integration subpaths. DIDComm formats, protocols, and related types now use `@credo-ts/anoncreds/didcomm`, while Cheqd and Hedera registries use their `/anoncreds` subpaths.
+  
+  The existing package-root exports remain available, so this caller migration does not require consumers to change their imports yet.
+- c69f5ad: Add AnonCreds integration subpaths and canonical W3C proof API exports while preserving and deprecating the existing root exports.
+- Updated dependencies [61d7d0f]
+- Updated dependencies [0b9531a]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [8323b52]
+- Updated dependencies [4fed115]
+- Updated dependencies [c69f5ad]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [5725476]
+  - @credo-ts/anoncreds@0.7.2
+  - @credo-ts/core@0.7.2
+
 ## 0.7.1
 
 ### Patch Changes
