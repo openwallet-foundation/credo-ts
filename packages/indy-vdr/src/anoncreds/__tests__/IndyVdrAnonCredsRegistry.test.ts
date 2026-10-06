@@ -27,7 +27,7 @@ const revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition = {
 }
 
 describe('IndyVdrAnonCredsRegistry', () => {
-  test('resolves missing issuance metadata from the ledger and reports missing definitions', async () => {
+  test('defaults missing issuance metadata of local records, uses ledger metadata and reports missing definitions', async () => {
     const getRevocationRegistryDefinition = vi
       .fn()
       .mockResolvedValueOnce({
@@ -85,13 +85,20 @@ describe('IndyVdrAnonCredsRegistry', () => {
       1
     )
 
+    // Local record without issuance type defaults to ISSUANCE_BY_DEFAULT
     expect(result.resolutionMetadata).toEqual({})
-    expect(result.revocationStatusList).toBeDefined()
-    expect(result.revocationStatusList?.revocationList).toEqual([1, 1, 1])
-    expect(getRevocationRegistryDefinition).toHaveBeenCalledTimes(2)
-    expect(getRevocationRegistryDefinition).toHaveBeenLastCalledWith(agentContext, revocationRegistryDefinitionId, {
-      useLocalRecord: false,
-    })
+    expect(result.revocationStatusList?.revocationList).toEqual([0, 0, 0])
+    expect(getRevocationRegistryDefinition).toHaveBeenCalledTimes(1)
+
+    // Issuance type from the ledger is used
+    const ledgerResult = await new IndyVdrAnonCredsRegistry().getRevocationStatusList(
+      agentContext,
+      revocationRegistryDefinitionId,
+      1
+    )
+
+    expect(ledgerResult.resolutionMetadata).toEqual({})
+    expect(ledgerResult.revocationStatusList?.revocationList).toEqual([1, 1, 1])
 
     const missingDefinitionResult = await new IndyVdrAnonCredsRegistry().getRevocationStatusList(
       agentContext,
