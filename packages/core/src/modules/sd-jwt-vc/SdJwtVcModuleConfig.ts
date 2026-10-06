@@ -72,11 +72,31 @@ export type CustomTypeMetadataResolver = (
   options: CustomTypeMetadataResolverOptions
 ) => Promise<SdJwtVcTypeMetadata | Record<string, unknown> | undefined>
 
+export type CustomStatusListFetcherOptions = {
+  /**
+   * The default fetcher: an HTTP GET of the uri with the `Accept` header
+   * `application/statuslist+jwt`, through the `fetch` of the agent dependencies.
+   */
+  defaultFetcher: () => Promise<string>
+}
+
+/**
+ * Custom fetcher for the status list JWT that the `status.status_list.uri` claim of an
+ * SD-JWT VC references. Use it to apply a network policy to the fetch, or to serve the
+ * status list JWT from a cache. The status list JWT is verified AFTER it is returned.
+ */
+export type CustomStatusListFetcher = (uri: string, options: CustomStatusListFetcherOptions) => Promise<string>
+
 export interface SdJwtVcModuleConfigOptions {
   /**
    * @see {@link CustomTypeMetadataResolver}
    */
   customTypeMetadataResolver?: CustomTypeMetadataResolver
+
+  /**
+   * @see {@link CustomStatusListFetcher}
+   */
+  customStatusListFetcher?: CustomStatusListFetcher
 }
 
 /**
@@ -91,5 +111,9 @@ export class SdJwtVcModuleConfig {
 
   public get customTypeMetadataResolver() {
     return this.options.customTypeMetadataResolver
+  }
+
+  public get customStatusListFetcher() {
+    return this.options.customStatusListFetcher
   }
 }
