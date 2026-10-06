@@ -44,6 +44,7 @@ import {
   type CredentialIssuerMetadata,
   type CredentialRequestFormatSpecific,
   type CredentialResponse,
+  type CredentialResponseEncryption,
   type DeferredCredentialResponse,
   extractScopesForCredentialConfigurationIds,
   getCredentialConfigurationsMatchingRequestFormat,
@@ -75,7 +76,8 @@ import {
   encodeJwtIssuer,
   getProofTypeFromPublicJwk,
   getPublicJwkFromDid,
-  supportedJarmContentEncryptionAlgorithms,
+  supportedResponseEncryptionContentAlgorithms,
+  supportedResponseEncryptionKeyAgreementAlgorithms,
 } from '../shared/utils'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
@@ -626,6 +628,8 @@ export class OpenId4VcIssuerService {
       })
     }
 
+    assertCredentialResponseEncryption(issuer, parsedCredentialRequest.credentialResponseEncryption)
+
     if (credentialRequest.format && !format && !parsedCredentialRequest.credentialConfigurationId) {
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.UnsupportedCredentialFormat,
@@ -818,6 +822,8 @@ export class OpenId4VcIssuerService {
 
     const issuer = await this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
+
+    assertCredentialResponseEncryption(issuer, deferredCredentialRequest.credential_response_encryption)
 
     // Optimization: if the deferral interval hasn't passed yet, we immediately
     // return a new deferral response with the remaining interval. This avoids
@@ -1337,6 +1343,7 @@ export class OpenId4VcIssuerService {
       authorizationServerConfigs: options.authorizationServerConfigs,
       credentialConfigurationsSupported: options.credentialConfigurationsSupported,
       batchCredentialIssuance: options.batchCredentialIssuance,
+      credentialResponseEncryption: options.credentialResponseEncryption,
     })
 
     if (options.metadataSigner) {
@@ -1443,11 +1450,7 @@ export class OpenId4VcIssuerService {
             batch_size: issuerRecord.batchCredentialIssuance.batchSize,
           }
         : undefined,
-      credential_response_encryption: {
-        alg_values_supported: ['ECDH-ES'],
-        enc_values_supported: supportedJarmContentEncryptionAlgorithms,
-        encryption_required: false,
-      },
+      credential_response_encryption: getCredentialResponseEncryptionMetadata(issuerRecord),
     } satisfies CredentialIssuerMetadata
 
     const clientAttestationAuthMethods = [
@@ -2304,6 +2307,55 @@ export class OpenId4VcIssuerService {
       credential: options.credential,
       verificationMethod: options.verificationMethod,
       proofType: proofType,
+    })
+  }
+}
+
+function getCredentialResponseEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
+  return {
+    alg_values_supported: issuerRecord.credentialResponseEncryption?.algValuesSupported ?? [
+      ...supportedResponseEncryptionKeyAgreementAlgorithms,
+    ],
+    enc_values_supported: issuerRecord.credentialResponseEncryption?.encValuesSupported ?? [
+      ...supportedResponseEncryptionContentAlgorithms,
+    ],
+    encryption_required: issuerRecord.credentialResponseEncryption?.required ?? false,
+  }
+}
+
+/**
+ * Asserts the credential response encryption requested by the wallet matches the issuer
+ * metadata (OpenID4VCI 1.0 §8.2, §8.3.1.2)
+ */
+function assertCredentialResponseEncryption(
+  issuerRecord: OpenId4VcIssuerRecord,
+  credentialResponseEncryption: CredentialResponseEncryption | undefined
+) {
+  const metadata = getCredentialResponseEncryptionMetadata(issuerRecord)
+
+  if (!credentialResponseEncryption) {
+    if (metadata.encryption_required) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidEncryptionParameters,
+        error_description: `Credential response encryption is required, but the request does not contain 'credential_response_encryption'`,
+      })
+    }
+
+    return
+  }
+
+  const alg = credentialResponseEncryption.jwk.alg ?? credentialResponseEncryption.alg
+  if (!alg || !(metadata.alg_values_supported as string[]).includes(alg)) {
+    throw new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.InvalidEncryptionParameters,
+      error_description: `Credential response encryption 'alg' must be one of ${metadata.alg_values_supported.map((alg) => `'${alg}'`).join(', ')}`,
+    })
+  }
+
+  if (!(metadata.enc_values_supported as string[]).includes(credentialResponseEncryption.enc)) {
+    throw new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.InvalidEncryptionParameters,
+      error_description: `Credential response encryption 'enc' must be one of ${metadata.enc_values_supported.map((enc) => `'${enc}'`).join(', ')}`,
     })
   }
 }
