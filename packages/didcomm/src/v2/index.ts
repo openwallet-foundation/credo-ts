@@ -1,6 +1,7 @@
 export {
   type DidCommV2AnoncryptKeys,
   type DidCommV2EnvelopeKeys,
+  type DidCommV2EnvelopeRecipient,
   DidCommV2EnvelopeService,
   type DidCommV2Signer,
   type DidCommV2VerifiedSigner,

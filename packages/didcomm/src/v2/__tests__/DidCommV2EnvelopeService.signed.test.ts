@@ -275,8 +275,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
       const envelope = await envelopeService.pack(agentContext, JsonEncoder.toUint8Array(signed), {
         senderKey: senderEcdhKey,
         senderKeySkid: 'did:example:alice#key-x25519-1',
-        recipientKey,
-        recipientKid: 'did:example:bob#key-x25519-1',
+        recipients: [{ key: recipientKey, kid: 'did:example:bob#key-x25519-1' }],
       })
 
       const matchedKid = envelope.recipients[0]?.header?.kid ?? recipientKey.keyId
@@ -306,8 +305,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
 
       await expect(
         envelopeService.packSignedAndAnoncrypted(agentContext, unaddressed, signer, {
-          recipientKey,
-          recipientKid: 'did:example:bob#key-x25519-1',
+          recipients: [{ key: recipientKey, kid: 'did:example:bob#key-x25519-1' }],
         })
       ).rejects.toThrow(/must have a 'to' header/)
     })
@@ -317,7 +315,7 @@ describe('DidCommV2EnvelopeService (signed messages)', () => {
         agentContext,
         plaintext,
         { keyId: signerJwk.keyId, kid: signerKid, alg: 'EdDSA' },
-        { recipientKey, recipientKid: 'did:example:bob#key-x25519-1' }
+        { recipients: [{ key: recipientKey, kid: 'did:example:bob#key-x25519-1' }] }
       )
 
       const matchedKid = envelope.recipients[0]?.header?.kid ?? recipientKey.keyId

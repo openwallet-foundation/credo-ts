@@ -912,8 +912,7 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
         aliceAgent.context,
         { id: uuid(), to: [did], ...plaintext },
         {
-          recipientKey,
-          recipientKid,
+          recipients: [{ key: recipientKey, kid: recipientKid }],
           contentEncryptionAlgorithm:
             aliceAgent.dependencyManager.resolve(DidCommModuleConfig).v2DefaultAnoncryptContentEncryption,
         }
@@ -1195,7 +1194,11 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
           created_time: Math.floor(Date.now() / 1000),
           body: { content: 'sent with a superseded key' },
         },
-        { recipientKey, recipientKid, senderKey: supersededKey, senderKeySkid: `${otherDid}#key-1` }
+        {
+          recipients: [{ key: recipientKey, kid: recipientKid }],
+          senderKey: supersededKey,
+          senderKeySkid: `${otherDid}#key-1`,
+        }
       )
 
       const dispatch = vi.spyOn(bobAgent.dependencyManager.resolve(DidCommDispatcher), 'dispatch')
@@ -1482,8 +1485,12 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
         body: {},
       },
       {
-        recipientKey: toKeyAgreement(invitationService.recipientKeys[0]),
-        recipientKid: toKeyAgreementDidUrl(invitationService.recipientKeys[0]),
+        recipients: [
+          {
+            key: toKeyAgreement(invitationService.recipientKeys[0]),
+            kid: toKeyAgreementDidUrl(invitationService.recipientKeys[0]),
+          },
+        ],
         contentEncryptionAlgorithm:
           accepter.dependencyManager.resolve(DidCommModuleConfig).v2DefaultAnoncryptContentEncryption,
       }
@@ -1532,8 +1539,12 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
         body: {},
       },
       {
-        recipientKey: toKeyAgreement(victimService.recipientKeys[0]),
-        recipientKid: toKeyAgreementDidUrl(victimService.recipientKeys[0]),
+        recipients: [
+          {
+            key: toKeyAgreement(victimService.recipientKeys[0]),
+            kid: toKeyAgreementDidUrl(victimService.recipientKeys[0]),
+          },
+        ],
         contentEncryptionAlgorithm:
           accepter.dependencyManager.resolve(DidCommModuleConfig).v2DefaultAnoncryptContentEncryption,
       }

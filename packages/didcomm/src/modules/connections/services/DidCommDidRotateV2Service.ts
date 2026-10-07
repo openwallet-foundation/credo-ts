@@ -303,8 +303,7 @@ export class DidCommDidRotateV2Service {
     const didCommModuleConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
     const v2EnvelopeService = agentContext.dependencyManager.resolve(DidCommV2EnvelopeService)
     const encryptedMessage = await v2EnvelopeService.packAnoncrypt(agentContext, plaintext, {
-      recipientKey: toKeyAgreement(recipientEd25519),
-      recipientKid: toKeyAgreementDidUrl(recipientEd25519),
+      recipients: [{ key: toKeyAgreement(recipientEd25519), kid: toKeyAgreementDidUrl(recipientEd25519) }],
       contentEncryptionAlgorithm: didCommModuleConfig.v2DefaultAnoncryptContentEncryption,
     })
     const payload = await wrapInV2Forward(agentContext, v2EnvelopeService, encryptedMessage, {

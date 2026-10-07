@@ -110,8 +110,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     })
 
     const encryptedMessage = await this.envelopeService.pack(agentContext, plaintext, {
-      recipientKey: v2Keys.recipientKey,
-      recipientKid: v2Keys.recipientKid,
+      recipients: [{ key: v2Keys.recipientKey, kid: v2Keys.recipientKid }],
       senderKey: v2Keys.senderKey,
       senderKeySkid: v2Keys.senderKeySkid,
       contentEncryptionAlgorithm: this.config.v2DefaultAuthcryptContentEncryption,
@@ -414,8 +413,7 @@ export async function wrapInV2Forward(
     })
 
     payload = await envelopeService.packAnoncrypt(agentContext, forwardPlaintext, {
-      recipientKey: toKeyAgreement(routingKey),
-      recipientKid: toKeyAgreementDidUrl(routingKey),
+      recipients: [{ key: toKeyAgreement(routingKey), kid: toKeyAgreementDidUrl(routingKey) }],
       contentEncryptionAlgorithm: options.contentEncryptionAlgorithm,
     })
   }

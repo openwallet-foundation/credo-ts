@@ -85,8 +85,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
         const encrypted = await envelopeService.pack(agentContext, plaintext, {
           senderKey,
           senderKeySkid: senderKid,
-          recipientKey,
-          recipientKid,
+          recipients: [{ key: recipientKey, kid: recipientKid }],
           contentEncryptionAlgorithm: enc,
         })
 
@@ -125,8 +124,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       'round-trips with %s content encryption',
       async (enc) => {
         const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
-          recipientKey,
-          recipientKid,
+          recipients: [{ key: recipientKey, kid: recipientKid }],
           contentEncryptionAlgorithm: enc,
         })
 
@@ -239,8 +237,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
         const encrypted = await envelopeService.pack(agentContext, plaintext, {
           senderKey: p256SenderKey,
           senderKeySkid: p256SenderKid,
-          recipientKey: p256RecipientKey,
-          recipientKid: p256RecipientKid,
+          recipients: [{ key: p256RecipientKey, kid: p256RecipientKid }],
           contentEncryptionAlgorithm: enc,
         })
 
@@ -273,8 +270,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       'anoncrypt round-trips with %s content encryption',
       async (enc) => {
         const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
-          recipientKey: p256RecipientKey,
-          recipientKid: p256RecipientKid,
+          recipients: [{ key: p256RecipientKey, kid: p256RecipientKid }],
           contentEncryptionAlgorithm: enc,
         })
 
@@ -327,8 +323,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
         const encrypted = await envelopeService.pack(agentContext, plaintext, {
           senderKey: p384SenderKey,
           senderKeySkid: p384SenderKid,
-          recipientKey: p384RecipientKey,
-          recipientKid: p384RecipientKid,
+          recipients: [{ key: p384RecipientKey, kid: p384RecipientKid }],
           contentEncryptionAlgorithm: enc,
         })
 
@@ -359,8 +354,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       'anoncrypt round-trips with %s content encryption',
       async (enc) => {
         const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
-          recipientKey: p384RecipientKey,
-          recipientKid: p384RecipientKid,
+          recipients: [{ key: p384RecipientKey, kid: p384RecipientKid }],
           contentEncryptionAlgorithm: enc,
         })
 
@@ -435,8 +429,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
     it.each(['P-256', 'P-384'] as const)('rejects an anoncrypt envelope whose %s epk is off the curve', async (crv) => {
       const { recipient } = await createKeyPair(crv)
       const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
-        recipientKey: recipient,
-        recipientKid,
+        recipients: [{ key: recipient, kid: recipientKid }],
       })
 
       await expectInvalidKeyData(
@@ -453,8 +446,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       const encrypted = await envelopeService.pack(agentContext, plaintext, {
         senderKey: sender,
         senderKeySkid: senderKid,
-        recipientKey: recipient,
-        recipientKid,
+        recipients: [{ key: recipient, kid: recipientKid }],
       })
 
       await expectInvalidKeyData(
@@ -473,8 +465,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
         const encrypted = await envelopeService.pack(agentContext, plaintext, {
           senderKey: sender,
           senderKeySkid: senderKid,
-          recipientKey: recipient,
-          recipientKid,
+          recipients: [{ key: recipient, kid: recipientKid }],
         })
         const offCurveSender = Kms.PublicJwk.fromUnknown(offCurve(sender.toJson() as { y: string }))
 
@@ -493,8 +484,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
     it('does not resolve a recipient kid that is a local KMS key id', async () => {
       const resolver = new DidCommV2KeyResolver({} as DidResolverService)
       const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
-        recipientKey,
-        recipientKid: recipientKey.keyId,
+        recipients: [{ key: recipientKey, kid: recipientKey.keyId }],
       })
 
       expect(await resolver.resolveRecipientKey(agentContext, encrypted)).toBeNull()

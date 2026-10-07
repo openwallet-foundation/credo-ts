@@ -120,7 +120,7 @@ describe.each(['X25519', 'P-256', 'P-384'] as const)('DIDComm v2 key ids over %s
     expect(addressed.length).toBeGreaterThan(0)
     for (const { plaintext, keys } of addressed) {
       expect(keys.senderKeySkid.split('#')[0]).toBe(plaintext.from)
-      expect(plaintext.to).toContain(keys.recipientKid.split('#')[0])
+      expect(plaintext.to).toContain(keys.recipients[0].kid.split('#')[0])
     }
   }, 30000)
 

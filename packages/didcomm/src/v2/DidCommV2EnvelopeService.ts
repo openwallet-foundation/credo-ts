@@ -37,9 +37,13 @@ type EpkJwk =
   | { kty: 'EC'; crv: 'P-256'; x: string; y: string }
   | { kty: 'EC'; crv: 'P-384'; x: string; y: string }
 
+export interface DidCommV2EnvelopeRecipient {
+  key: DidCommV2KeyAgreementJwk
+  kid: string
+}
+
 export interface DidCommV2EnvelopeKeys {
-  recipientKey: DidCommV2KeyAgreementJwk
-  recipientKid: string
+  recipients: DidCommV2EnvelopeRecipient[]
   /** Its `keyId` is the local KMS key id, so it never goes on the wire. */
   senderKey: DidCommV2KeyAgreementJwk
   senderKeySkid: string
@@ -47,10 +51,9 @@ export interface DidCommV2EnvelopeKeys {
   contentEncryptionAlgorithm?: DidCommV2AuthcryptContentEncryptionAlgorithm
 }
 
-/** Keys for anoncrypt: only recipient key; no sender (anonymous). */
+/** Keys for anoncrypt: only recipient keys; no sender (anonymous). */
 export interface DidCommV2AnoncryptKeys {
-  recipientKey: DidCommV2KeyAgreementJwk
-  recipientKid: string
+  recipients: DidCommV2EnvelopeRecipient[]
   /** Content encryption algorithm. Defaults to A256CBC-HS512; A256GCM is also accepted. */
   contentEncryptionAlgorithm?: DidCommV2AnoncryptContentEncryptionAlgorithm
 }
@@ -90,7 +93,8 @@ export class DidCommV2EnvelopeService {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     const plaintextBytes = payload instanceof Uint8Array ? payload : JsonEncoder.toUint8Array(payload)
 
-    const recipientCurve = getKeyAgreementCurve(keys.recipientKey)
+    const recipient = singleRecipient(keys.recipients)
+    const recipientCurve = getKeyAgreementCurve(recipient.key)
     const senderCurve = getKeyAgreementCurve(keys.senderKey)
     if (recipientCurve !== senderCurve) {
       throw new CredoError('DIDComm v2 authcrypt requires sender and recipient on the same curve')
@@ -98,9 +102,8 @@ export class DidCommV2EnvelopeService {
 
     const enc: DidCommV2AuthcryptContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256CBC-HS512'
     const skid = keys.senderKeySkid
-    const recipientKid = keys.recipientKid
     const apu = computeApu(skid)
-    const apv = computeApv([recipientKid])
+    const apv = computeApv(keys.recipients.map((r) => r.kid))
 
     const ephemeralKey = await kms.createKey({ type: keyTypeForCurve(recipientCurve) })
     try {
@@ -122,7 +125,7 @@ export class DidCommV2EnvelopeService {
             algorithm: 'ECDH-1PU+A256KW',
             keyId: keys.senderKey.keyId,
             ephemeralKeyId: ephemeralKey.keyId,
-            externalPublicJwk: keys.recipientKey.toJson() as Kms.KmsJwkPublicEcdh,
+            externalPublicJwk: recipient.key.toJson() as Kms.KmsJwkPublicEcdh,
             apu,
             apv,
           },
@@ -142,7 +145,7 @@ export class DidCommV2EnvelopeService {
         protected: protectedHeader,
         recipients: [
           {
-            header: { kid: recipientKid },
+            header: { kid: recipient.kid },
             encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
           },
         ],
@@ -167,11 +170,11 @@ export class DidCommV2EnvelopeService {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     const plaintextBytes = payload instanceof Uint8Array ? payload : JsonEncoder.toUint8Array(payload)
 
-    const recipientCurve = getKeyAgreementCurve(keys.recipientKey)
+    const recipient = singleRecipient(keys.recipients)
+    const recipientCurve = getKeyAgreementCurve(recipient.key)
 
     const enc: DidCommV2AnoncryptContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256CBC-HS512'
-    const recipientKid = keys.recipientKid
-    const apv = computeApv([recipientKid])
+    const apv = computeApv(keys.recipients.map((r) => r.kid))
 
     const ephemeralKey = await kms.createKey({ type: keyTypeForCurve(recipientCurve) })
 
@@ -191,7 +194,7 @@ export class DidCommV2EnvelopeService {
           keyAgreement: {
             algorithm: 'ECDH-ES+A256KW',
             keyId: ephemeralKey.keyId,
-            externalPublicJwk: keys.recipientKey.toJson() as Kms.KmsJwkPublicEcdh,
+            externalPublicJwk: recipient.key.toJson() as Kms.KmsJwkPublicEcdh,
             apv,
           },
         },
@@ -210,7 +213,7 @@ export class DidCommV2EnvelopeService {
         protected: protectedHeader,
         recipients: [
           {
-            header: { kid: recipientKid },
+            header: { kid: recipient.kid },
             encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
           },
         ],
@@ -557,6 +560,14 @@ function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
   let diff = 0
   for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
   return diff === 0
+}
+
+// The KMS encrypt API wraps the content key for one recipient
+function singleRecipient(recipients: DidCommV2EnvelopeRecipient[]): DidCommV2EnvelopeRecipient {
+  if (recipients.length !== 1) {
+    throw new CredoError(`DIDComm v2 pack supports exactly one recipient, got ${recipients.length}`)
+  }
+  return recipients[0]
 }
 
 function getKeyAgreementCurve(jwk: DidCommV2KeyAgreementJwk): 'X25519' | 'P-256' | 'P-384' {

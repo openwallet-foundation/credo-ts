@@ -142,8 +142,7 @@ describe('DidCommV2Envelope', () => {
       {
         senderKey: peer.publicJwk,
         senderKeySkid: peer.didUrl,
-        recipientKey: ours.publicJwk,
-        recipientKid: ours.didUrl,
+        recipients: [{ key: ours.publicJwk, kid: ours.didUrl }],
       }
     )
     const { plaintextMessage, senderKey, recipientKey } = await envelope.unpack(agent.context, inbound)
@@ -288,8 +287,7 @@ describe('DidCommV2Envelope', () => {
         {
           senderKey: sender.publicJwk,
           senderKeySkid: sender.didUrl,
-          recipientKey: recipient.publicJwk,
-          recipientKid: recipient.didUrl,
+          recipients: [{ key: recipient.publicJwk, kid: recipient.didUrl }],
         }
       )
 
@@ -468,8 +466,7 @@ describe('DidCommV2Envelope', () => {
       const encrypted = await envelopeService.pack(agent.context, JsonEncoder.toUint8Array(signed), {
         senderKey: sender.publicJwk,
         senderKeySkid: sender.didUrl,
-        recipientKey: recipient.publicJwk,
-        recipientKid: recipient.didUrl,
+        recipients: [{ key: recipient.publicJwk, kid: recipient.didUrl }],
       })
 
       await expect(agent.dependencyManager.resolve(DidCommV2Envelope).unpack(agent.context, encrypted)).rejects.toThrow(
