@@ -32,6 +32,10 @@ export interface InitConfig {
    *
    * It does not cover:
    * - W3C VCDM 1.1 JSON-LD
+   * - W3C VCDM 2.0 Data Integrity Proofs, as the credential `validFrom` / `validUntil` and the proof `created` /
+   *   `expires` values are not checked against the current time
+   * - AnonCreds, as AnonCreds credentials have no validity period and non-revocation intervals are checked against
+   *   the timestamps of the revocation status lists rather than the current time
    *
    * @default 30
    */
