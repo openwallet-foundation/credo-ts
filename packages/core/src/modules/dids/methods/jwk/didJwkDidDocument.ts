@@ -9,15 +9,15 @@ export function getDidJwkDocument(didJwk: DidJwk) {
     throw new CredoError('At least one of allowsSigning or allowsEncrypting must be enabled')
   }
 
-  const verificationMethod = {
-    ...getJsonWebKey2020({
-      did: didJwk.did,
-      publicJwk: didJwk.publicJwk,
-      verificationMethodId: didJwk.verificationMethodId,
-    }),
-    // The did:jwk spec puts the jwk exactly as encoded in the did into publicKeyJwk, kid included
-    publicKeyJwk: JsonEncoder.fromBase64Url(parseDid(didJwk.did).id),
-  }
+  const verificationMethod = getJsonWebKey2020({
+    did: didJwk.did,
+    publicJwk: didJwk.publicJwk,
+    verificationMethodId: didJwk.verificationMethodId,
+  })
+
+  // A kid encoded in the did stays in the document, the kid on the PublicJwk is the local key id
+  const { kid } = JsonEncoder.fromBase64Url(parseDid(didJwk.did).id)
+  if (typeof kid === 'string') verificationMethod.publicKeyJwk = { ...verificationMethod.publicKeyJwk, kid }
 
   const didDocumentBuilder = new DidDocumentBuilder(didJwk.did)
     .addContext(SECURITY_JWS_CONTEXT_URL)
