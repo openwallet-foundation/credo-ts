@@ -1,9 +1,10 @@
 import { Agent, RecordNotFoundError } from '@credo-ts/core'
-import { Subject } from 'rxjs'
+import { filter, firstValueFrom, map, Subject, throwError, timeout } from 'rxjs'
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../../../core/tests/helpers'
+import { type EventReplaySubject, setupEventReplaySubjects } from '../../../../../core/tests/events'
+import { getAgentOptions, makeConnection, waitForBasicMessageSubject } from '../../../../../core/tests/helpers'
 import testLogger from '../../../../../core/tests/logger'
 import { DidCommModule } from '../../../DidCommModule'
 import { MessageSendingError } from '../../../errors'
@@ -15,28 +16,27 @@ import {
 import { DidCommBasicMessage } from '../protocol/v1'
 import { DidCommBasicMessageRecord } from '../repository'
 
-async function waitForBasicMessageV2(
-  agent: Agent<{ didcomm: DidCommModule }>,
-  options: { content?: string; timeoutMs?: number } = {}
+function waitForBasicMessageV2(
+  subject: EventReplaySubject,
+  { content, timeoutMs = 5000 }: { content?: string; timeoutMs?: number } = {}
 ): Promise<DidCommBasicMessageRecord> {
-  const { content, timeoutMs = 5000 } = options
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      agent.events.off(DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged, listener)
-      reject(new Error(`Timeout waiting for BasicMessage 2.0${content ? ` with content "${content}"` : ''}`))
-    }, timeoutMs)
-
-    const listener = (event: DidCommBasicMessageV2StateChangedEvent) => {
-      const contentMatches = content === undefined || event.payload.message.content === content
-      if (contentMatches) {
-        clearTimeout(timeout)
-        agent.events.off(DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged, listener)
-        resolve(event.payload.basicMessageRecord)
-      }
-    }
-
-    agent.events.on(DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged, listener)
-  })
+  return firstValueFrom(
+    subject.pipe(
+      filter(
+        (event): event is DidCommBasicMessageV2StateChangedEvent =>
+          event.type === DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged
+      ),
+      filter((event) => content === undefined || event.payload.message.content === content),
+      map((event) => event.payload.basicMessageRecord),
+      timeout({
+        first: timeoutMs,
+        with: () =>
+          throwError(
+            () => new Error(`Timeout waiting for BasicMessage 2.0${content ? ` with content "${content}"` : ''}`)
+          ),
+      })
+    )
+  )
 }
 
 const faberConfig = getAgentOptions(
@@ -90,6 +90,8 @@ describe('Basic Messages E2E', () => {
   let aliceAgent: Agent<{ didcomm: DidCommModule }>
   let faberConnection: DidCommConnectionRecord
   let aliceConnection: DidCommConnectionRecord
+  let faberReplay: EventReplaySubject
+  let aliceReplay: EventReplaySubject
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -108,6 +110,10 @@ describe('Basic Messages E2E', () => {
     aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
+    ;[faberReplay, aliceReplay] = setupEventReplaySubjects(
+      [faberAgent, aliceAgent],
+      [DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged]
+    )
     ;[aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
   })
 
@@ -123,7 +129,8 @@ describe('Basic Messages E2E', () => {
     expect(helloRecord.content).toBe('Hello')
 
     testLogger.test('Faber waits for message from Alice')
-    await waitForBasicMessage(faberAgent, {
+    await waitForBasicMessageSubject(faberReplay, {
+      threadId: helloRecord.threadId,
       content: 'Hello',
     })
 
@@ -132,7 +139,8 @@ describe('Basic Messages E2E', () => {
     expect(replyRecord.content).toBe('How are you?')
 
     testLogger.test('Alice waits until she receives message from faber')
-    await waitForBasicMessage(aliceAgent, {
+    await waitForBasicMessageSubject(aliceReplay, {
+      threadId: replyRecord.threadId,
       content: 'How are you?',
     })
   })
@@ -144,7 +152,8 @@ describe('Basic Messages E2E', () => {
     expect(helloRecord.content).toBe('Hello')
 
     testLogger.test('Faber waits for message from Alice')
-    const helloMessage = await waitForBasicMessage(faberAgent, {
+    const helloMessage = await waitForBasicMessageSubject(faberReplay, {
+      threadId: helloRecord.threadId,
       content: 'Hello',
     })
 
@@ -158,7 +167,8 @@ describe('Basic Messages E2E', () => {
     expect(replyRecord.parentThreadId).toBe(helloMessage.id)
 
     testLogger.test('Alice waits until she receives message from faber')
-    const replyMessage = await waitForBasicMessage(aliceAgent, {
+    const replyMessage = await waitForBasicMessageSubject(aliceReplay, {
+      threadId: replyRecord.threadId,
       content: 'How are you?',
     })
     expect(replyMessage.content).toBe('How are you?')
@@ -218,6 +228,10 @@ describe('Basic Messages E2E', () => {
     aliceAgentV2.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgentV2.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgentV2.initialize()
+    const [faberReplayV2, aliceReplayV2] = setupEventReplaySubjects(
+      [faberAgentV2, aliceAgentV2],
+      [DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged]
+    )
 
     const [aliceConn, faberConn] = await makeConnection(aliceAgentV2, faberAgentV2, { didCommVersion: 'v2' })
 
@@ -227,7 +241,7 @@ describe('Basic Messages E2E', () => {
     expect(helloRecord.protocolVersion).toBe('v2')
 
     testLogger.test('Faber receives BM 2.0')
-    const receivedHello = await waitForBasicMessageV2(faberAgentV2, { content: 'Hello 2.0' })
+    const receivedHello = await waitForBasicMessageV2(faberReplayV2, { content: 'Hello 2.0' })
     expect(receivedHello.content).toBe('Hello 2.0')
     expect(receivedHello.protocolVersion).toBe('v2')
 
@@ -236,7 +250,7 @@ describe('Basic Messages E2E', () => {
     expect(replyRecord.content).toBe('Reply 2.0')
     expect(replyRecord.protocolVersion).toBe('v2')
 
-    await waitForBasicMessageV2(aliceAgentV2, { content: 'Reply 2.0' })
+    await waitForBasicMessageV2(aliceReplayV2, { content: 'Reply 2.0' })
 
     await faberAgentV2.shutdown()
     await aliceAgentV2.shutdown()

@@ -30,6 +30,7 @@ import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
 import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
+import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
 import { openBadgeDcqlQuery, universityDegreeDcqlQuery } from './utilsVp'
@@ -622,9 +623,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         ],
       },
     })
+    if (!dcql) {
+      throw new Error('DCQL not defined')
+    }
 
     const openBadgeEntry = asArray(
-      (dcql?.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+      (dcql.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
         .verifiableCredential
     )[0]
     if (!openBadgeEntry || !('resolvedCredential' in openBadgeEntry)) {
@@ -692,8 +696,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         ],
       },
     })
+    if (!dcql2) {
+      throw new Error('DCQL not defined')
+    }
     const universityDegreeEntry = asArray(
-      (dcql2?.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+      (dcql2.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
         .verifiableCredential
     )[0]
     if (!universityDegreeEntry || !('resolvedCredential' in universityDegreeEntry)) {
@@ -748,6 +755,70 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     ).rejects.toThrow(
       'Verifier info (attestations) were provided, but the verifier info used credential ids that are not present in the query'
     )
+  })
+
+  it('holder rejects transaction data with credential ids that are not present in the dcql query', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: { commonName: 'Credo', countryName: 'NL' },
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
+    })
+
+    const rawCertificate = certificate.toString('base64')
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
+
+    const { authorizationRequest } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+      verifierId: openIdVerifier.verifierId,
+      responseMode: 'direct_post.jwt',
+      requestSigner: {
+        method: 'x5c',
+        x5c: [certificate],
+      },
+      transactionData: [
+        {
+          type: 'OpenBadgeTx',
+          credential_ids: ['UnknownCredentialId', 'OpenBadgeCredentialDescriptor', 'OtherUnknownCredentialId'],
+          transaction_data_hashes_alg: ['sha-256'],
+        },
+        {
+          type: 'OpenBadgeTx',
+          credential_ids: ['OpenBadgeCredentialDescriptor'],
+          transaction_data_hashes_alg: ['sha-256'],
+        },
+        {
+          type: 'OpenBadgeTx',
+          credential_ids: ['ThirdUnknownCredentialId'],
+          transaction_data_hashes_alg: ['sha-256'],
+        },
+      ],
+      dcql: {
+        query: {
+          credentials: [
+            {
+              id: 'OpenBadgeCredentialDescriptor',
+              format: 'dc+sd-jwt',
+              meta: { vct_values: ['OpenBadgeCredential'] },
+            },
+          ],
+        },
+      },
+      version: 'v1',
+    })
+
+    await expect(
+      holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+    ).rejects.toMatchObject({
+      errorResponse: {
+        error: 'invalid_transaction_data',
+        error_description:
+          "Transaction data references credential ids that are not present in the dcql query: entry with index 0 references 'UnknownCredentialId', 'OtherUnknownCredentialId'; entry with index 2 references 'ThirdUnknownCredentialId'.",
+      },
+    })
   })
 
   it('e2e flow (jarm) with verifier endpoints verifying a sd-jwt-vc with selective disclosure (transaction data)', async () => {
@@ -1081,7 +1152,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       })
 
     expect(authorizationRequest).toEqual(
-      `openid4vp://?response_type=vp_token&client_id=redirect_uri%3A${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_uri=${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_mode=direct_post&nonce=${authorizationRequestObject.nonce}&dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22OpenBadgeCredentialDescriptor%22%2C%22format%22%3A%22dc%2Bsd-jwt%22%2C%22meta%22%3A%7B%22vct_values%22%3A%5B%22OpenBadgeCredential%22%5D%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22university%22%5D%7D%5D%7D%5D%7D&client_metadata=%7B%22vp_formats_supported%22%3A%7B%22dc%2Bsd-jwt%22%3A%7B%22sd-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%2C%22kb-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%7D%7D%7D&state=${authorizationRequestObject.state}`
+      `openid4vp://?response_type=vp_token&client_id=redirect_uri%3A${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_uri=${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_mode=direct_post&nonce=${authorizationRequestObject.nonce}&dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22OpenBadgeCredentialDescriptor%22%2C%22format%22%3A%22dc%2Bsd-jwt%22%2C%22meta%22%3A%7B%22vct_values%22%3A%5B%22OpenBadgeCredential%22%5D%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22university%22%5D%7D%5D%7D%5D%7D&client_metadata=%7B%22vp_formats_supported%22%3A%7B%22dc%2Bsd-jwt%22%3A%7B%22sd-jwt_alg_values%22%3A%5B%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%2C%22kb-jwt_alg_values%22%3A%5B%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22Ed25519%22%2C%22ES256K%22%5D%7D%7D%7D&state=${authorizationRequestObject.state}`
     )
 
     const resolvedAuthorizationRequest =
@@ -1565,7 +1636,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     }
 
     const validCredentials =
-      resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor.valid_credentials
+      resolvedAuthorizationRequest.dcql.queryResult.credential_matches.OpenBadgeCredentialDescriptor.valid_credentials
+    if (!validCredentials || validCredentials.length < 2) {
+      throw new Error('Expected at least two valid OpenBadge credentials')
+    }
 
     const { serverResponse, authorizationResponsePayload } =
       await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
@@ -1576,16 +1650,16 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               {
                 claimFormat: ClaimFormat.SdJwtDc,
                 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-                credentialRecord: (validCredentials?.[0] as any).record,
+                credentialRecord: (validCredentials[0] as any).record,
                 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-                disclosedPayload: (validCredentials?.[0] as any).claims.valid_claim_sets[0].output,
+                disclosedPayload: (validCredentials[0] as any).claims.valid_claim_sets[0].output,
               },
               {
                 claimFormat: ClaimFormat.SdJwtDc,
                 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-                credentialRecord: (validCredentials?.[1] as any).record,
+                credentialRecord: (validCredentials[1] as any).record,
                 // biome-ignore lint/suspicious/noExplicitAny: no explanation
-                disclosedPayload: (validCredentials?.[1] as any).claims.valid_claim_sets[0].output,
+                disclosedPayload: (validCredentials[1] as any).claims.valid_claim_sets[0].output,
               },
             ],
           },
@@ -3548,5 +3622,92 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     }
   ]
 }`)
+  })
+
+  it('responds with 200 to an authorization error response (direct_post)', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post',
+        dcql: { query: openBadgeDcqlQuery },
+        authorizationResponseRedirectUri: 'https://example.com/redirect',
+        version: 'v1',
+      })
+
+    const errorResponse = {
+      error: 'access_denied',
+      error_description: 'The user declined the request',
+      state: authorizationRequestObject.state as string,
+    }
+
+    const response = await fetch(authorizationRequestObject.response_uri as string, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(errorResponse).toString(),
+    })
+
+    expect(response.status).toEqual(200)
+    expect(await response.json()).toEqual({ redirect_uri: 'https://example.com/redirect' })
+
+    const updatedVerificationSession = await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.Error,
+      verificationSessionId: verificationSession.id,
+    })
+
+    expect(updatedVerificationSession.errorMessage).toEqual(
+      `The wallet returned an openid4vp authorization error response.\n${JSON.stringify(errorResponse, null, 2)}`
+    )
+  })
+
+  it('responds with 200 to an encrypted authorization error response (direct_post.jwt)', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const { authorizationRequestObject, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post.jwt',
+        dcql: { query: openBadgeDcqlQuery },
+        version: 'v1',
+      })
+
+    const encryptionJwk = verificationSession.requestPayload.client_metadata?.jwks?.keys[0]
+    if (!encryptionJwk) {
+      throw new Error('Expected an encryption jwk in the client metadata')
+    }
+
+    const errorResponse = {
+      error: 'access_denied',
+      error_description: 'The user declined the request',
+      state: authorizationRequestObject.state as string,
+    }
+
+    const { jwe } = await getOid4vcCallbacks(holder.agent.context).encryptJwe(
+      { method: 'jwk', publicJwk: encryptionJwk, alg: 'ECDH-ES', enc: 'A128GCM' },
+      JSON.stringify(errorResponse)
+    )
+
+    const response = await fetch(authorizationRequestObject.response_uri as string, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ response: jwe }).toString(),
+    })
+
+    expect(response.status).toEqual(200)
+    expect(await response.json()).toEqual({})
+
+    const updatedVerificationSession = await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.Error,
+      verificationSessionId: verificationSession.id,
+    })
+
+    expect(updatedVerificationSession.errorMessage).toEqual(
+      `The wallet returned an openid4vp authorization error response.\n${JSON.stringify(errorResponse, null, 2)}`
+    )
   })
 })

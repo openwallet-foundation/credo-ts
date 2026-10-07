@@ -6,9 +6,11 @@ import { Agent } from '../../../../../core/src/agent/Agent'
 import type { AgentDependencies } from '../../../../../core/src/agent/AgentDependencies'
 import type { InitConfig } from '../../../../../core/src/types'
 import { sleep } from '../../../../../core/src/utils/sleep'
-import { getAgentOptions, waitForBasicMessage } from '../../../../../core/tests/helpers'
+import { setupEventReplaySubjects } from '../../../../../core/tests/events'
+import { getAgentOptions, waitForBasicMessageSubject } from '../../../../../core/tests/helpers'
 import { DidCommModule } from '../../../DidCommModule'
 import type { DidCommModuleConfigOptions } from '../../../DidCommModuleConfig'
+import { DidCommBasicMessageEventTypes } from '../../basic-messages'
 import { DidCommConnectionRecord, DidCommHandshakeProtocol } from '../../connections'
 import { DidCommMediatorPickupStrategy } from '../DidCommMediatorPickupStrategy'
 import { DidCommMediationState } from '../models/DidCommMediationState'
@@ -123,6 +125,10 @@ describe('mediator establishment', () => {
       },
     })
     await recipientAgent.initialize()
+    const [recipientReplay] = setupEventReplaySubjects(
+      [recipientAgent],
+      [DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged]
+    )
 
     const recipientMediator = await recipientAgent.didcomm.mediationRecipient.findDefaultMediator()
     if (!recipientMediator) {
@@ -183,9 +189,10 @@ describe('mediator establishment', () => {
     )
 
     const message = 'hello, world'
-    await senderAgent.didcomm.basicMessages.sendMessage(senderRecipientConnection.id, message)
+    const { threadId } = await senderAgent.didcomm.basicMessages.sendMessage(senderRecipientConnection.id, message)
 
-    const basicMessage = await waitForBasicMessage(recipientAgent, {
+    const basicMessage = await waitForBasicMessageSubject(recipientReplay, {
+      threadId,
       content: message,
     })
 
@@ -271,6 +278,10 @@ describe('mediator establishment', () => {
     // Restart recipient agent
     await recipientAgent.shutdown()
     await recipientAgent.initialize()
+    const [recipientReplay] = setupEventReplaySubjects(
+      [recipientAgent],
+      [DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged]
+    )
 
     // Initialize sender agent
     senderAgent = new Agent(senderAgentOptions())
@@ -307,9 +318,10 @@ describe('mediator establishment', () => {
     expect(senderRecipientConnection.isReady).toBe(true)
 
     const message = 'hello, world'
-    await senderAgent.didcomm.basicMessages.sendMessage(senderRecipientConnection.id, message)
+    const { threadId } = await senderAgent.didcomm.basicMessages.sendMessage(senderRecipientConnection.id, message)
 
-    const basicMessage = await waitForBasicMessage(recipientAgent, {
+    const basicMessage = await waitForBasicMessageSubject(recipientReplay, {
+      threadId,
       content: message,
     })
 

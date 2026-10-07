@@ -73,11 +73,7 @@ import type {
 } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
-import {
-  credoJwtIssuerToOpenId4VcJwtIssuer,
-  dcqlCredentialQueryToPresentationFormat,
-  getSupportedJwaSignatureAlgorithms,
-} from '../shared/utils'
+import { credoJwtIssuerToOpenId4VcJwtIssuer, dcqlCredentialQueryToPresentationFormat } from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
 import { type OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
@@ -146,6 +142,15 @@ export class OpenId4VpVerifierService {
     if (version === 'v1.draft21' && options.dcql) {
       throw new CredoError(
         `OpenID4VP version '${version}' cannot be used with dcql. Use version 'v1' or 'v1.draft24' instead.`
+      )
+    }
+    if (
+      version === 'v1.draft21' &&
+      options.requestSigner.method === 'x5c' &&
+      options.requestSigner.clientIdPrefix === 'x509_hash'
+    ) {
+      throw new CredoError(
+        `OpenID4VP version '${version}' cannot be used with clientIdPrefix 'x509_hash'. Use clientIdPrefix 'x509_san_dns', or version 'v1' instead.`
       )
     }
     if (version !== 'v1' && options.verifierInfo) {
@@ -956,7 +961,7 @@ export class OpenId4VpVerifierService {
 
     const signatureSuiteRegistry = agentContext.resolve(SignatureSuiteRegistry)
     const kms = agentContext.resolve(Kms.KeyManagementApi)
-    const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext) as [
+    const supportedAlgs = kms.supportedJwaSignatureAlgorithms() as [
       Kms.KnownJwaSignatureAlgorithm,
       ...Kms.KnownJwaSignatureAlgorithm[],
     ]

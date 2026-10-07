@@ -4,18 +4,20 @@ import { Agent } from '../../../../../core/src/agent/Agent'
 import { RecordNotFoundError } from '../../../../../core/src/error'
 import { createPeerDidDocumentFromServices } from '../../../../../core/src/modules/dids'
 import { uuid } from '../../../../../core/src/utils/uuid'
-import { setupSubjectTransports } from '../../../../../core/tests'
+import { type EventReplaySubject, setupEventReplaySubjects, setupSubjectTransports } from '../../../../../core/tests'
 import {
   firstValueWithStackTrace,
   getAgentOptions,
   makeConnection,
-  waitForAgentMessageProcessedEvent,
-  waitForBasicMessage,
-  waitForDidRotate,
+  waitForAgentMessageProcessedEventSubject,
+  waitForBasicMessageSubject,
+  waitForDidRotateSubject,
 } from '../../../../../core/tests/helpers'
+import { DidCommEventTypes } from '../../../DidCommEvents'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { getOutboundDidCommMessageContext } from '../../../getDidCommOutboundMessageContext'
-import { DidCommBasicMessage } from '../../basic-messages'
+import { DidCommBasicMessage, DidCommBasicMessageEventTypes } from '../../basic-messages'
+import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import { DidCommDidRotateAckMessage, DidCommDidRotateProblemReportMessage, DidCommHangupMessage } from '../messages'
 import { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
@@ -48,6 +50,8 @@ describe('Rotation E2E tests', () => {
   let bobAgent: Agent<(typeof bobAgentOptions)['modules']>
   let aliceBobConnection: DidCommConnectionRecord | undefined
   let bobAliceConnection: DidCommConnectionRecord | undefined
+  let aliceReplay: EventReplaySubject
+  let bobReplay: EventReplaySubject
 
   beforeEach(async () => {
     aliceAgent = new Agent(aliceAgentOptions)
@@ -56,6 +60,14 @@ describe('Rotation E2E tests', () => {
     setupSubjectTransports([aliceAgent, bobAgent])
     await aliceAgent.initialize()
     await bobAgent.initialize()
+    ;[aliceReplay, bobReplay] = setupEventReplaySubjects(
+      [aliceAgent, bobAgent],
+      [
+        DidCommEventTypes.DidCommMessageProcessed,
+        DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+        DidCommConnectionEventTypes.DidCommConnectionDidRotated,
+      ]
+    )
     ;[aliceBobConnection, bobAliceConnection] = await makeConnection(aliceAgent, bobAgent)
   })
 
@@ -70,17 +82,20 @@ describe('Rotation E2E tests', () => {
       expect(bobAliceConnection?.theirDid).toEqual(oldDid)
 
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
+      const { threadId: initialMessageThreadId } = await bobAgent.didcomm.basicMessages.sendMessage(
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        bobAliceConnection?.id!,
+        'Hello initial did'
+      )
 
-      await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
+      await waitForBasicMessageSubject(aliceReplay, { threadId: initialMessageThreadId, content: 'Hello initial did' })
 
       // Do did rotate
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const { newDid } = await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection?.id! })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, {
+      await waitForAgentMessageProcessedEventSubject(aliceReplay, {
         messageType: DidCommDidRotateAckMessage.type.messageTypeUri,
       })
 
@@ -98,18 +113,28 @@ describe('Rotation E2E tests', () => {
       expect(newBobAliceConnection.previousTheirDids).toContain(oldDid)
 
       // Send message to new did
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello new did')
+      const { threadId: newDidMessageThreadId } = await bobAgent.didcomm.basicMessages.sendMessage(
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        bobAliceConnection?.id!,
+        'Hello new did'
+      )
 
-      await waitForBasicMessage(aliceAgent, { content: 'Hello new did', connectionId: aliceBobConnection?.id })
+      await waitForBasicMessageSubject(aliceReplay, {
+        threadId: newDidMessageThreadId,
+        content: 'Hello new did',
+        connectionId: aliceBobConnection?.id,
+      })
     })
 
     test('Rotate succesfully and send messages to previous did afterwards', async () => {
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
+      const { threadId: initialMessageThreadId } = await bobAgent.didcomm.basicMessages.sendMessage(
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        bobAliceConnection?.id!,
+        'Hello initial did'
+      )
 
-      await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
+      await waitForBasicMessageSubject(aliceReplay, { threadId: initialMessageThreadId, content: 'Hello initial did' })
 
       const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new DidCommBasicMessage({ content: 'Message to previous did' }),
@@ -121,14 +146,15 @@ describe('Rotation E2E tests', () => {
       await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection?.id! })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, {
+      await waitForAgentMessageProcessedEventSubject(aliceReplay, {
         messageType: DidCommDidRotateAckMessage.type.messageTypeUri,
       })
 
       // Send message to previous did
       await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageToPreviousDid)
 
-      await waitForBasicMessage(aliceAgent, {
+      await waitForBasicMessageSubject(aliceReplay, {
+        threadId: messageToPreviousDid.message.threadId,
         content: 'Message to previous did',
         connectionId: aliceBobConnection?.id,
       })
@@ -141,10 +167,13 @@ describe('Rotation E2E tests', () => {
       expect(bobAliceConnection?.theirDid).toEqual(oldDid)
 
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
+      const { threadId: initialMessageThreadId } = await bobAgent.didcomm.basicMessages.sendMessage(
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        bobAliceConnection?.id!,
+        'Hello initial did'
+      )
 
-      await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
+      await waitForBasicMessageSubject(aliceReplay, { threadId: initialMessageThreadId, content: 'Hello initial did' })
 
       // Create a new external did
 
@@ -186,7 +215,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, {
+      await waitForAgentMessageProcessedEventSubject(aliceReplay, {
         messageType: DidCommDidRotateAckMessage.type.messageTypeUri,
       })
 
@@ -204,18 +233,28 @@ describe('Rotation E2E tests', () => {
       expect(newBobAliceConnection.previousTheirDids).toContain(oldDid)
 
       // Send message to new did
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello new did')
+      const { threadId: newDidMessageThreadId } = await bobAgent.didcomm.basicMessages.sendMessage(
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        bobAliceConnection?.id!,
+        'Hello new did'
+      )
 
-      await waitForBasicMessage(aliceAgent, { content: 'Hello new did', connectionId: aliceBobConnection?.id })
+      await waitForBasicMessageSubject(aliceReplay, {
+        threadId: newDidMessageThreadId,
+        content: 'Hello new did',
+        connectionId: aliceBobConnection?.id,
+      })
     })
 
     test('Rotate succesfully and send messages to previous did afterwards', async () => {
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
+      const { threadId: initialMessageThreadId } = await bobAgent.didcomm.basicMessages.sendMessage(
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        bobAliceConnection?.id!,
+        'Hello initial did'
+      )
 
-      await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
+      await waitForBasicMessageSubject(aliceReplay, { threadId: initialMessageThreadId, content: 'Hello initial did' })
 
       const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new DidCommBasicMessage({ content: 'Message to previous did' }),
@@ -254,7 +293,10 @@ describe('Rotation E2E tests', () => {
         },
       })
 
-      const waitForAllDidRotate = Promise.all([waitForDidRotate(aliceAgent, {}), waitForDidRotate(bobAgent, {})])
+      const waitForAllDidRotate = Promise.all([
+        waitForDidRotateSubject(aliceReplay, {}),
+        waitForDidRotateSubject(bobReplay, {}),
+      ])
 
       // Do did rotate
 
@@ -262,7 +304,7 @@ describe('Rotation E2E tests', () => {
       await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection?.id!, toDid: did })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, {
+      await waitForAgentMessageProcessedEventSubject(aliceReplay, {
         messageType: DidCommDidRotateAckMessage.type.messageTypeUri,
       })
       const [firstRotate, secondRotate] = await waitForAllDidRotate
@@ -289,7 +331,8 @@ describe('Rotation E2E tests', () => {
       // Send message to previous did
       await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageToPreviousDid)
 
-      await waitForBasicMessage(aliceAgent, {
+      await waitForBasicMessageSubject(aliceReplay, {
+        threadId: messageToPreviousDid.message.threadId,
         content: 'Message to previous did',
         connectionId: aliceBobConnection?.id,
       })
@@ -297,10 +340,13 @@ describe('Rotation E2E tests', () => {
 
     test('Rotate failed and send messages to previous did afterwards', async () => {
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
+      const { threadId: initialMessageThreadId } = await bobAgent.didcomm.basicMessages.sendMessage(
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        bobAliceConnection?.id!,
+        'Hello initial did'
+      )
 
-      await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
+      await waitForBasicMessageSubject(aliceReplay, { threadId: initialMessageThreadId, content: 'Hello initial did' })
 
       const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new DidCommBasicMessage({ content: 'Message to previous did' }),
@@ -342,23 +388,28 @@ describe('Rotation E2E tests', () => {
       await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection?.id!, toDid: did })
 
       // Wait for a problem report
-      await waitForAgentMessageProcessedEvent(aliceAgent, {
+      await waitForAgentMessageProcessedEventSubject(aliceReplay, {
         messageType: DidCommDidRotateProblemReportMessage.type.messageTypeUri,
       })
 
       // Send message to previous did
       await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageToPreviousDid)
 
-      await waitForBasicMessage(aliceAgent, {
+      await waitForBasicMessageSubject(aliceReplay, {
+        threadId: messageToPreviousDid.message.threadId,
         content: 'Message to previous did',
         connectionId: aliceBobConnection?.id,
       })
 
       // Send message to stored did (should be the previous one)
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Message after did rotation failure')
+      const { threadId: messageAfterFailureThreadId } = await bobAgent.didcomm.basicMessages.sendMessage(
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        bobAliceConnection?.id!,
+        'Message after did rotation failure'
+      )
 
-      await waitForBasicMessage(aliceAgent, {
+      await waitForBasicMessageSubject(aliceReplay, {
+        threadId: messageAfterFailureThreadId,
         content: 'Message after did rotation failure',
         connectionId: aliceBobConnection?.id,
       })
@@ -368,10 +419,13 @@ describe('Rotation E2E tests', () => {
   describe('Hangup', () => {
     test('Hangup without record deletion', async () => {
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
+      const { threadId: initialMessageThreadId } = await bobAgent.didcomm.basicMessages.sendMessage(
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        bobAliceConnection?.id!,
+        'Hello initial did'
+      )
 
-      await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
+      await waitForBasicMessageSubject(aliceReplay, { threadId: initialMessageThreadId, content: 'Hello initial did' })
 
       // Store an outbound context so we can attempt to send a message even if the connection is terminated.
       // A bit hacky, but may happen in some cases where message retry mechanisms are being used
@@ -384,7 +438,7 @@ describe('Rotation E2E tests', () => {
       await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection?.id! })
 
       // Wait for hangup
-      await waitForAgentMessageProcessedEvent(bobAgent, {
+      await waitForAgentMessageProcessedEventSubject(bobReplay, {
         messageType: DidCommHangupMessage.type.messageTypeUri,
       })
 
@@ -397,7 +451,8 @@ describe('Rotation E2E tests', () => {
       // If Bob sends a message afterwards, Alice should still be able to receive it
       await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageBeforeHangup)
 
-      await waitForBasicMessage(aliceAgent, {
+      await waitForBasicMessageSubject(aliceReplay, {
+        threadId: messageBeforeHangup.message.threadId,
         content: 'Message before hangup',
         connectionId: aliceBobConnection?.id,
       })
@@ -405,10 +460,13 @@ describe('Rotation E2E tests', () => {
 
     test('Hangup and delete connection record', async () => {
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
+      const { threadId: initialMessageThreadId } = await bobAgent.didcomm.basicMessages.sendMessage(
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        bobAliceConnection?.id!,
+        'Hello initial did'
+      )
 
-      await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
+      await waitForBasicMessageSubject(aliceReplay, { threadId: initialMessageThreadId, content: 'Hello initial did' })
 
       // Store an outbound context so we can attempt to send a message even if the connection is terminated.
       // A bit hacky, but may happen in some cases where message retry mechanisms are being used
@@ -425,18 +483,20 @@ describe('Rotation E2E tests', () => {
       await expect(aliceAgent.didcomm.connections.getById(aliceBobConnection?.id!)).rejects.toThrow(RecordNotFoundError)
 
       // Wait for hangup
-      await waitForAgentMessageProcessedEvent(bobAgent, {
+      await waitForAgentMessageProcessedEventSubject(bobReplay, {
         messageType: DidCommHangupMessage.type.messageTypeUri,
       })
+
+      // An error is thrown by Alice agent and, after inspecting all basic messages, it cannot be found
+      // TODO: Update as soon as agent sends error events upon reception of messages
+      // Subscribe before sending, as delivery may be synchronous
+      const observable = aliceAgent.events.observable('AgentReceiveMessageError')
+      const subject = new ReplaySubject(1)
+      observable.pipe(first(), timeout({ first: 10000 })).subscribe(subject)
 
       // If Bob sends a message afterwards, Alice should not receive it since the connection has been deleted
       await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageBeforeHangup)
 
-      // An error is thrown by Alice agent and, after inspecting all basic messages, it cannot be found
-      // TODO: Update as soon as agent sends error events upon reception of messages
-      const observable = aliceAgent.events.observable('AgentReceiveMessageError')
-      const subject = new ReplaySubject(1)
-      observable.pipe(first(), timeout({ first: 10000 })).subscribe(subject)
       await firstValueWithStackTrace(subject)
 
       const aliceBasicMessages = await aliceAgent.didcomm.basicMessages.findAllByQuery({})
@@ -445,16 +505,19 @@ describe('Rotation E2E tests', () => {
 
     test('Event emitted after processing hangup', async () => {
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
+      const { threadId: initialMessageThreadId } = await bobAgent.didcomm.basicMessages.sendMessage(
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        bobAliceConnection?.id!,
+        'Hello initial did'
+      )
 
-      await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
+      await waitForBasicMessageSubject(aliceReplay, { threadId: initialMessageThreadId, content: 'Hello initial did' })
 
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection?.id! })
 
       // Catch did rotation event message from processHangup()
-      const rotationEvent = await waitForDidRotate(bobAgent, {})
+      const rotationEvent = await waitForDidRotateSubject(bobReplay, {})
       expect(rotationEvent.theirDid?.to).toBeUndefined()
     })
   })
@@ -480,6 +543,8 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
   let bobAgent: Agent<(typeof v2BobAgentOptions)['modules']>
   let aliceBobConnection: DidCommConnectionRecord | undefined
   let bobAliceConnection: DidCommConnectionRecord | undefined
+  let aliceReplay: EventReplaySubject
+  let bobReplay: EventReplaySubject
 
   beforeEach(async () => {
     aliceAgent = new Agent(v2AliceAgentOptions)
@@ -488,6 +553,14 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     setupSubjectTransports([aliceAgent, bobAgent])
     await aliceAgent.initialize()
     await bobAgent.initialize()
+    ;[aliceReplay, bobReplay] = setupEventReplaySubjects(
+      [aliceAgent, bobAgent],
+      [
+        DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+        DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged,
+        DidCommConnectionEventTypes.DidCommConnectionDidRotated,
+      ]
+    )
     ;[aliceBobConnection, bobAliceConnection] = await makeConnection(aliceAgent, bobAgent, { didCommVersion: 'v2' })
   })
 
@@ -507,7 +580,7 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
 
     // Bob receives an empty/1.0/empty message carrying from_prior, processes it,
     // and emits the same rotated event used for v1 hangup.
-    const rotationEvent = await waitForDidRotate(bobAgent, {})
+    const rotationEvent = await waitForDidRotateSubject(bobReplay, {})
     expect(rotationEvent.theirDid?.to).toBeUndefined()
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
@@ -540,7 +613,7 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     await aliceAgent.didcomm.basicMessages.sendMessage(aliceBobConnection?.id!, 'hello rotated')
-    await waitForBasicMessage(bobAgent, { content: 'hello rotated' })
+    await waitForBasicMessageSubject(bobReplay, { content: 'hello rotated' })
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     const bobAfter = await bobAgent.didcomm.connections.findById(bobAliceConnection?.id!)
@@ -550,7 +623,7 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     // Bob replies to the new DID; this acknowledges the rotation and Alice clears the pending JWT.
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'ack')
-    await waitForBasicMessage(aliceAgent, { content: 'ack' })
+    await waitForBasicMessageSubject(aliceReplay, { content: 'ack' })
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     const aliceCleared = await aliceAgent.didcomm.connections.findById(aliceBobConnection?.id!)
@@ -574,7 +647,7 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     await aliceAgent.didcomm.basicMessages.sendMessage(aliceBobConnection?.id!, 'after rotate')
-    await waitForBasicMessage(bobAgent, { content: 'after rotate' })
+    await waitForBasicMessageSubject(bobReplay, { content: 'after rotate' })
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     const bobAfter = await bobAgent.didcomm.connections.findById(bobAliceConnection?.id!)
@@ -621,6 +694,9 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
   let inviter: Agent<(typeof v2InviterAgentOptions)['modules']>
   let accepter: Agent<(typeof v2AccepterAgentOptions)['modules']>
   let accepterTwo: Agent<(typeof v2AccepterTwoAgentOptions)['modules']>
+  let inviterReplay: EventReplaySubject
+  let accepterReplay: EventReplaySubject
+  let accepterTwoReplay: EventReplaySubject
 
   beforeEach(async () => {
     inviter = new Agent(v2InviterAgentOptions)
@@ -630,6 +706,13 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     await inviter.initialize()
     await accepter.initialize()
     await accepterTwo.initialize()
+    ;[inviterReplay, accepterReplay, accepterTwoReplay] = setupEventReplaySubjects(
+      [inviter, accepter, accepterTwo],
+      [
+        DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+        DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged,
+      ]
+    )
   })
 
   afterEach(async () => {
@@ -655,7 +738,7 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     // First inbound from accepter to invitation DID triggers inviter-side auto-create + rotation.
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     await accepter.didcomm.basicMessages.sendMessage(accepterConnection?.id!, 'hi from accepter')
-    await waitForBasicMessage(inviter, { content: 'hi from accepter' })
+    await waitForBasicMessageSubject(inviterReplay, { content: 'hi from accepter' })
 
     const inviterConnections = await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)
     expect(inviterConnections.length).toBeGreaterThan(0)
@@ -669,7 +752,7 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     expect(pending?.fromPriorJwt).toBeDefined()
 
     await inviter.didcomm.basicMessages.sendMessage(inviterConnection.id, 'hi from inviter (rotated)')
-    await waitForBasicMessage(accepter, { content: 'hi from inviter (rotated)' })
+    await waitForBasicMessageSubject(accepterReplay, { content: 'hi from inviter (rotated)' })
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     const accepterAfter = await accepter.didcomm.connections.findById(accepterConnection?.id!)
@@ -679,7 +762,7 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     // Accepter now replies to the inviter's new DID; inviter clears pending rotation.
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     await accepter.didcomm.basicMessages.sendMessage(accepterConnection?.id!, 'ack')
-    await waitForBasicMessage(inviter, { content: 'ack' })
+    await waitForBasicMessageSubject(inviterReplay, { content: 'ack' })
 
     const inviterCleared = await inviter.didcomm.connections.findById(inviterConnection.id)
     expect(inviterCleared?.metadata.get(DidCommConnectionMetadataKeys.DidRotateV2)).toBeFalsy()
@@ -700,7 +783,7 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     expect(firstAccepterConnection?.theirDid).toEqual(invitationDid)
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     await accepter.didcomm.basicMessages.sendMessage(firstAccepterConnection?.id!, 'first hello')
-    await waitForBasicMessage(inviter, { content: 'first hello' })
+    await waitForBasicMessageSubject(inviterReplay, { content: 'first hello' })
 
     const { connectionRecord: secondAccepterConnection } = await accepterTwo.didcomm.oob.receiveInvitation(
       invitation.outOfBandInvitation,
@@ -709,7 +792,7 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     expect(secondAccepterConnection?.theirDid).toEqual(invitationDid)
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     await accepterTwo.didcomm.basicMessages.sendMessage(secondAccepterConnection?.id!, 'second hello')
-    await waitForBasicMessage(inviter, { content: 'second hello' })
+    await waitForBasicMessageSubject(inviterReplay, { content: 'second hello' })
 
     const inviterConnections = await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)
     expect(inviterConnections.length).toEqual(2)
@@ -747,8 +830,8 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     // other accepter's per-pair DID.
     await inviter.didcomm.basicMessages.sendMessage(inviterToFirst.id, 'hello first (rotated)')
     await inviter.didcomm.basicMessages.sendMessage(inviterToSecond.id, 'hello second (rotated)')
-    await waitForBasicMessage(accepter, { content: 'hello first (rotated)' })
-    await waitForBasicMessage(accepterTwo, { content: 'hello second (rotated)' })
+    await waitForBasicMessageSubject(accepterReplay, { content: 'hello first (rotated)' })
+    await waitForBasicMessageSubject(accepterTwoReplay, { content: 'hello second (rotated)' })
 
     // biome-ignore lint/style/noNonNullAssertion: no explanation
     const accepterAfter = await accepter.didcomm.connections.findById(firstAccepterConnection?.id!)

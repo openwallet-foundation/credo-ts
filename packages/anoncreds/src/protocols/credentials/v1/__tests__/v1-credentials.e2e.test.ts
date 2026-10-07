@@ -9,7 +9,7 @@ import {
   DidCommModuleConfig,
 } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../../../../../core/tests'
-import { waitForCredentialRecord } from '../../../../../../core/tests/helpers'
+import { waitForCredentialRecordSubject } from '../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../core/tests/logger'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
@@ -23,8 +23,8 @@ import {
 
 describe('V1 Credentials', () => {
   let faberAgent: AnonCredsTestsAgent
-  let aliceAgent: AnonCredsTestsAgent
   let faberReplay: EventReplaySubject
+  let aliceAgent: AnonCredsTestsAgent
   let aliceReplay: EventReplaySubject
   let credentialDefinitionId: string
   let aliceConnectionId: string
@@ -32,8 +32,8 @@ describe('V1 Credentials', () => {
   beforeAll(async () => {
     ;({
       issuerAgent: faberAgent,
-      holderAgent: aliceAgent,
       issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
       holderReplay: aliceReplay,
       credentialDefinitionId,
       holderIssuerConnectionId: aliceConnectionId,
@@ -125,7 +125,7 @@ describe('V1 Credentials', () => {
     })
 
     testLogger.test('Faber waits for credential proposal from Alice')
-    let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+    let faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: credentialExchangeRecord.threadId,
       state: DidCommCredentialState.ProposalReceived,
     })
@@ -143,7 +143,7 @@ describe('V1 Credentials', () => {
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
-    let aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+    let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
       state: DidCommCredentialState.OfferReceived,
     })
@@ -214,7 +214,7 @@ describe('V1 Credentials', () => {
     })
 
     testLogger.test('Faber waits for credential request from Alice')
-    faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+    faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: aliceCredentialRecord.threadId,
       state: DidCommCredentialState.RequestReceived,
     })
@@ -226,7 +226,7 @@ describe('V1 Credentials', () => {
     })
 
     testLogger.test('Alice waits for credential from Faber')
-    aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+    aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
       state: DidCommCredentialState.CredentialReceived,
     })
@@ -236,7 +236,7 @@ describe('V1 Credentials', () => {
     })
 
     testLogger.test('Faber waits for state done')
-    await waitForCredentialRecord(faberAgent, {
+    await waitForCredentialRecordSubject(faberReplay, {
       threadId: faberCredentialRecord.threadId,
       state: DidCommCredentialState.Done,
     })

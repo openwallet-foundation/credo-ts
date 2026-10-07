@@ -9,9 +9,9 @@ import {
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
 } from '../../../../../core/src/modules/dids'
-import { setupSubjectTransports } from '../../../../../core/tests'
-import { getAgentOptions, waitForConnectionRecord } from '../../../../../core/tests/helpers'
-import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../connections'
+import { type EventReplaySubject, setupEventReplaySubjects, setupSubjectTransports } from '../../../../../core/tests'
+import { getAgentOptions, waitForConnectionRecordSubject } from '../../../../../core/tests/helpers'
+import { DidCommConnectionEventTypes, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../connections'
 import { InMemoryDidRegistry } from '../../connections/__tests__/InMemoryDidRegistry'
 
 const inMemoryDidsRegistry = new InMemoryDidRegistry()
@@ -50,6 +50,7 @@ const aliceAgentOptions = getAgentOptions(
 describe('out of band implicit', () => {
   let faberAgent: Agent<typeof faberAgentOptions.modules>
   let aliceAgent: Agent<typeof aliceAgentOptions.modules>
+  let faberReplay: EventReplaySubject
 
   beforeAll(async () => {
     faberAgent = new Agent(faberAgentOptions)
@@ -58,6 +59,8 @@ describe('out of band implicit', () => {
     setupSubjectTransports([faberAgent, aliceAgent])
     await faberAgent.initialize()
     await aliceAgent.initialize()
+
+    ;[faberReplay] = setupEventReplaySubjects([faberAgent], [DidCommConnectionEventTypes.DidCommConnectionStateChanged])
   })
 
   afterAll(async () => {
@@ -134,7 +137,8 @@ describe('out of band implicit', () => {
     })
 
     // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
+    let faberAliceConnection = await waitForConnectionRecordSubject(faberReplay, {
+      threadId: aliceFaberConnection?.threadId,
       state: DidCommDidExchangeState.RequestReceived,
     })
     await faberAgent.didcomm.connections.acceptRequest(faberAliceConnection.id)
@@ -171,7 +175,8 @@ describe('out of band implicit', () => {
     })
 
     // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
+    let faberAliceConnection = await waitForConnectionRecordSubject(faberReplay, {
+      threadId: aliceFaberConnection?.threadId,
       state: DidCommDidExchangeState.RequestReceived,
     })
     await faberAgent.didcomm.connections.acceptRequest(faberAliceConnection.id)
@@ -206,7 +211,8 @@ describe('out of band implicit', () => {
     })
 
     // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
+    let faberAliceConnection = await waitForConnectionRecordSubject(faberReplay, {
+      threadId: aliceFaberConnection?.threadId,
       state: DidCommDidExchangeState.RequestReceived,
     })
     await faberAgent.didcomm.connections.acceptRequest(faberAliceConnection.id)
@@ -252,7 +258,8 @@ describe('out of band implicit', () => {
     })
 
     // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
+    let faberAliceConnection = await waitForConnectionRecordSubject(faberReplay, {
+      threadId: aliceFaberConnection?.threadId,
       state: DidCommDidExchangeState.RequestReceived,
     })
     await faberAgent.didcomm.connections.acceptRequest(faberAliceConnection.id)
@@ -280,7 +287,8 @@ describe('out of band implicit', () => {
     })
 
     // Wait for a connection event in faber agent
-    let faberAliceNewConnection = await waitForConnectionRecord(faberAgent, {
+    let faberAliceNewConnection = await waitForConnectionRecordSubject(faberReplay, {
+      threadId: aliceFaberNewConnection?.threadId,
       state: DidCommDidExchangeState.RequestReceived,
     })
     await faberAgent.didcomm.connections.acceptRequest(faberAliceNewConnection.id)

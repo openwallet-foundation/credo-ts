@@ -3,7 +3,6 @@ import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionRecord,
   AnonCredsCredentialDefinitionRepository,
-  AnonCredsDidCommProofFormatService,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
   AnonCredsKeyCorrectnessProofRecord,
@@ -20,6 +19,7 @@ import {
   AnonCredsSchemaRepository,
   AnonCredsVerifierServiceSymbol,
 } from '@credo-ts/anoncreds'
+import { AnonCredsDidCommProofFormatService } from '@credo-ts/anoncreds/didcomm'
 import type { DidRepository } from '@credo-ts/core'
 
 import {
@@ -44,6 +44,7 @@ import {
   DidCommCredentialPreviewAttribute,
   DidCommCredentialRole,
   DidCommCredentialState,
+  DidCommDataIntegrityCredentialFormatService,
   DidCommDataIntegrityLinkSecretBindingProviderToken,
   DidCommProofExchangeRecord,
   DidCommProofRole,
@@ -57,7 +58,6 @@ import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCre
 import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
 import { AnonCredsLinkSecretBindingProvider } from '../src/formats/AnonCredsLinkSecretBindingProvider'
-import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { NativeAnoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
@@ -112,7 +112,7 @@ const agentContext = getAgentContext({
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 
-const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
+const dataIntegrityCredentialFormatService = new DidCommDataIntegrityCredentialFormatService()
 const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'

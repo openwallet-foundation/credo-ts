@@ -96,6 +96,8 @@ const agent = new Agent({
   },
 })
 
+await agent.initialize()
+
 // Create invitation: GET /invitation (follows the configured DIDComm version)
 httpInboundTransport.app.get('/invitation', async (req, res) => {
   if (typeof req.query.c_i === 'string') {
@@ -107,8 +109,6 @@ httpInboundTransport.app.get('/invitation', async (req, res) => {
     res.send(outOfBandInvitation.toUrl({ domain: `${httpEndpoint}/invitation` }))
   }
 })
-
-await agent.initialize()
 
 // When an 'upgrade' to WS is made on our http server, we forward the
 // request to the WS server

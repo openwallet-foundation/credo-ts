@@ -56,7 +56,7 @@ export class DidCommOutOfBandInvitationV2 extends DidCommMessage {
   public static readonly type = parseMessageType('https://didcomm.org/out-of-band/2.0/invitation')
 
   @IsString()
-  public declare from: string
+  declare public from: string
 
   @Expose({ name: 'goal' })
   @IsString()

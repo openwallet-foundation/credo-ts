@@ -15,6 +15,8 @@ import {
   calculateJwkThumbprint,
   HashAlgorithm,
   Oauth2AuthorizationServer,
+  Oauth2Error,
+  Oauth2ResourceServer,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
@@ -391,6 +393,53 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     clearNock()
   })
 
+  it('issuer endpoints respond with spec compliant status codes and metadata', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+    const issuerUrl = `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}`
+
+    const metadataResponse = await fetch(`${issuerUrl}/.well-known/oauth-authorization-server`)
+    expect(await metadataResponse.json()).toMatchObject({ response_types_supported: ['code'] })
+
+    const unauthenticatedResponse = await fetch(`${issuerUrl}/credential`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential_configuration_id: 'universityDegree' }),
+    })
+    expect(unauthenticatedResponse.status).toBe(401)
+    expect(unauthenticatedResponse.headers.get('WWW-Authenticate')).toContain('Bearer')
+
+    const { credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1.draft15',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const { accessToken, dpop } = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+    expect(dpop).toBeUndefined()
+
+    const unknownConfigurationResponse = await fetch(`${issuerUrl}/credential`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        credential_configuration_id: 'not-offered',
+        proof: { proof_type: 'jwt', jwt: 'ey.ey.S' },
+      }),
+    })
+    expect(unknownConfigurationResponse.status).toBe(400)
+    expect(await unknownConfigurationResponse.json()).toMatchObject({ error: expect.any(String) })
+
+    clearNock()
+  })
+
   it('e2e flow with tenants, issuer endpoints requesting a mdoc', async () => {
     const issuerTenant1 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
 
@@ -535,5 +584,68 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(firstMdoc.docType).toEqual('UniversityDegreeCredential')
 
     await holderTenant1.endSession()
+  })
+
+  it('credential endpoint responds with unknown_credential_identifier for a credential_identifier that was never granted', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    const { credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const { accessToken } = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const response = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        credential_identifier: 'never-granted',
+        proofs: { jwt: ['ey.ey.S'] },
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({
+      error: 'unknown_credential_identifier',
+      error_description: "Credential identifier 'never-granted' is unknown",
+    })
+
+    await holderTenant.endSession()
+  })
+  it('credential endpoint responds with a server error instead of 401 when the resource server is misconfigured', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '3f9d5a1e-2c4b-4e8a-9b7d-6a1f0c2e8d45',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+    })
+
+    vi.spyOn(Oauth2ResourceServer.prototype, 'verifyResourceRequest').mockRejectedValueOnce(
+      new Oauth2Error(
+        "Empty array provided for 'allowedAuthenticationSchemes', provide at least one allowed authentication scheme, or remove the value to allow all supported authentication schemes"
+      )
+    )
+
+    const response = await fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer some-access-token' },
+      body: JSON.stringify({ credential_configuration_id: 'universityDegree' }),
+    })
+
+    expect(response.status).toBe(500)
+    expect(response.headers.get('WWW-Authenticate')).toBeNull()
+    expect(await response.json()).toEqual({ error: 'server_error' })
   })
 })

@@ -1384,7 +1384,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     ])
 
-    const presentation = presentationExchange?.presentations[0] as SdJwtVc
+    if (!presentationExchange) {
+      throw new Error('Presentation exchange not defined')
+    }
+
+    const presentation = presentationExchange.presentations[0] as SdJwtVc
     // name SHOULD NOT be disclosed
     expect(presentation.prettyClaims).not.toHaveProperty('name')
 
@@ -1398,7 +1402,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       transaction_data_hashes: ['_W3dA7YK86o2y2JjRzgbsWnc8IJD3OJd9Rk7sGUlars'],
       transaction_data_hashes_alg: 'sha-256',
     }
-    expect((presentationExchange?.presentations[1] as SdJwtVc).kbJwt?.payload).toMatchObject(
+    expect((presentationExchange.presentations[1] as SdJwtVc).kbJwt?.payload).toMatchObject(
       signedTransactionDataHashes2
     )
 

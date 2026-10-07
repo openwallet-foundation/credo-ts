@@ -65,20 +65,6 @@ export function getSupportedResponseEncryptionJwks(agentContext: AgentContext, j
   }
 }
 
-/**
- * Returns the JWA Signature Algorithms that are supported by the wallet.
- */
-export function getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): Kms.KnownJwaSignatureAlgorithm[] {
-  const kms = agentContext.resolve(Kms.KeyManagementApi)
-
-  // If we can sign with an algorithm we assume it's supported (also for verification)
-  const supportedJwaSignatureAlgorithms = Object.values(Kms.KnownJwaSignatureAlgorithms).filter(
-    (algorithm) => kms.supportedBackendsForOperation({ operation: 'sign', algorithm }).length > 0
-  )
-
-  return supportedJwaSignatureAlgorithms
-}
-
 export async function getPublicJwkFromDid(
   agentContext: AgentContext,
   didUrl: string,

@@ -75,7 +75,6 @@ import {
   encodeJwtIssuer,
   getProofTypeFromPublicJwk,
   getPublicJwkFromDid,
-  getSupportedJwaSignatureAlgorithms,
 } from '../shared/utils'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
@@ -927,7 +926,11 @@ export class OpenId4VcIssuerService {
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
     const allowedProofTypes = credentialConfiguration.proof_types_supported ?? {
-      jwt: { proof_signing_alg_values_supported: getSupportedJwaSignatureAlgorithms(agentContext) },
+      jwt: {
+        proof_signing_alg_values_supported: agentContext
+          .resolve(Kms.KeyManagementApi)
+          .supportedJwaSignatureAlgorithms(),
+      },
     }
 
     const [proofType, proofValue] = (Object.entries(proofs ?? {})[0] as [string, string[]] | undefined) ?? []
@@ -1451,6 +1454,7 @@ export class OpenId4VcIssuerService {
 
       authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
       authorization_endpoint: joinUriParts(issuerUrl, [config.authorizationEndpoint]),
+      response_types_supported: ['code'],
 
       // Client Attestation based client authentication (draft 09)
       token_endpoint_auth_methods_supported: clientAttestationAuthMethodsSupported,

@@ -2,7 +2,7 @@ import { Subject } from 'rxjs'
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { DidCommCredentialV1Preview } from '../../../../../../../anoncreds/src'
+import { DidCommCredentialV1Preview } from '../../../../../../../anoncreds/src/didcomm'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import {
   getAnonCredsIndyModules,

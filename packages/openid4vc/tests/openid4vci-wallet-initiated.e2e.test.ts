@@ -178,8 +178,7 @@ describe('OpenId4Vc (Wallet Initiated Issuance)', () => {
     idpApp.post('/token', async (req, res) => {
       const authorizationHeader = req.headers.authorization?.split(' ')
       if (
-        !authorizationHeader ||
-        authorizationHeader[0] !== 'Basic' ||
+        authorizationHeader?.[0] !== 'Basic' ||
         authorizationHeader.length !== 2 ||
         TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(authorizationHeader[1])) !==
           `${idpClientId}:${idpClientSecret}`
