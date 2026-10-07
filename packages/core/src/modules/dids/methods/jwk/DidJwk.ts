@@ -1,3 +1,4 @@
+import { CredoError } from '../../../../error'
 import { JsonEncoder } from '../../../../utils'
 import { PublicJwk } from '../../../kms'
 import { parseDid } from '../../domain/parse'
@@ -20,6 +21,11 @@ export class DidJwk {
   public static fromDid(did: string) {
     const parsed = parseDid(did)
     const jwkJson = JsonEncoder.fromBase64Url(parsed.id)
+
+    // https://github.com/quartzjer/did-jwk/blob/main/spec.md#security
+    if (typeof jwkJson === 'object' && jwkJson !== null && 'd' in jwkJson) {
+      throw new CredoError('did:jwk must not contain a private key')
+    }
 
     // This validates the jwk
     const publicJwk = PublicJwk.fromUnknown(jwkJson)
