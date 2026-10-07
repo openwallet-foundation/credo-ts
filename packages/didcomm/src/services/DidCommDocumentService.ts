@@ -153,7 +153,7 @@ export class DidCommDocumentService {
       const addKey = (publicJwk: Kms.PublicJwk) => {
         let fingerprint: string
         try {
-          if (publicJwk.is(Kms.X25519PublicJwk)) {
+          if (publicJwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
             fingerprint = publicJwk.fingerprint
           } else if (publicJwk.is(Kms.Ed25519PublicJwk)) {
             fingerprint = (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk).fingerprint
