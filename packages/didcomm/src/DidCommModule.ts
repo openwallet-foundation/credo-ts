@@ -1,11 +1,11 @@
 import type { AgentContext, Constructor, DependencyManager, Module, Update } from '@credo-ts/core'
-import { EventEmitter, InjectionSymbols } from '@credo-ts/core'
+import { CredoError, EventEmitter, InjectionSymbols } from '@credo-ts/core'
 import type { Subject } from 'rxjs'
 import { mergeMap, takeUntil } from 'rxjs'
 import { DidCommApi } from './DidCommApi'
 import { DidCommDispatcher } from './DidCommDispatcher'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
-import type { DidCommMessageReceivedEvent } from './DidCommEvents'
+import type { DidCommMessageProcessingFailedEvent, DidCommMessageReceivedEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
@@ -192,6 +192,28 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
               })
               .catch((error) => {
                 agentContext.config.logger.error('Failed to process message', { error })
+                const processingError =
+                  error instanceof Error
+                    ? error
+                    : new CredoError('Failed to process message', { cause: new Error(String(error)) })
+
+                try {
+                  eventEmitter.emit<DidCommMessageProcessingFailedEvent>(agentContext, {
+                    type: DidCommEventTypes.DidCommMessageProcessingFailed,
+                    payload: {
+                      error: processingError,
+                      message: e.payload.message,
+                      connection: e.payload.connection,
+                      contextCorrelationId: e.payload.contextCorrelationId,
+                      receivedAt: e.payload.receivedAt,
+                    },
+                  })
+                } catch (eventError) {
+                  agentContext.config.logger.error('Failed to emit message processing failure event', {
+                    error: eventError,
+                    processingError,
+                  })
+                }
               }),
           this.config.processDidCommMessagesConcurrently ? undefined : 1
         )

@@ -359,6 +359,21 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     expect(code).toBeDefined()
 
+    // The pkce code challenge from the pushed authorization request is bound to the authorization code,
+    // so it can't be redeemed without the (correct) code verifier
+    expect(resolvedAuthorization.codeVerifier).toEqual(expect.any(String))
+    for (const codeVerifier of [undefined, 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA']) {
+      await expect(
+        holderTenant.openid4vc.holder.requestToken({
+          resolvedCredentialOffer,
+          clientId: walletClientId,
+          codeVerifier,
+          code,
+          redirectUri: 'http://localhost:5757/redirect',
+        })
+      ).rejects.toThrow('Received token error response with status 400')
+    }
+
     const tokenResponseTenant = await holderTenant.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       clientId: walletClientId,
@@ -1181,4 +1196,132 @@ describe('OpenId4Vc (Chained Authorization)', () => {
 
     await issuerTenant.endSession()
   })
+
+  it.each([
+    { name: 'by default', pkceRequired: undefined, requirePkce: undefined },
+    { name: 'globally', pkceRequired: true, requirePkce: undefined },
+    { name: 'for the issuance session', pkceRequired: false, requirePkce: true },
+  ])(
+    'rejects a pushed authorization request without S256 pkce when pkce is required $name',
+    async ({ pkceRequired, requirePkce }) => {
+      issuer = (await createAgentFromModules(
+        {
+          inMemory: new InMemoryWalletModule(),
+          openid4vc: new OpenId4VcModule({
+            app: expressApp,
+            issuer: {
+              baseUrl: issuanceBaseUrl,
+              credentialRequestToCredentialMapper,
+              pkceRequired,
+            },
+          }),
+          tenants: new TenantsModule(),
+        },
+        '96213c3d7fc8d4d6754c7a0fd969598g',
+        global.fetch
+      )) as unknown as typeof issuer
+      issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
+
+      const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+      const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
+        issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+        credentialConfigurationsSupported: {
+          universityDegree: universityDegreeCredentialConfigurationSupported,
+        },
+        authorizationServerConfigs: [
+          {
+            type: 'chained',
+            issuer: 'http://localhost:4747',
+            clientAuthentication: {
+              type: 'clientSecret',
+              clientId: 'issuer-client',
+              clientSecret: 'issuer-secret',
+            },
+            scopesMapping: {
+              UniversityDegreeCredential: ['openid'],
+            },
+          },
+        ],
+      })
+
+      const createCredentialOffer = (requirePkce?: boolean) =>
+        issuerTenant.openid4vc.issuer.createCredentialOffer({
+          issuerId: openIdIssuerTenant.issuerId,
+          credentialConfigurationIds: ['universityDegree'],
+          authorizationCodeFlowConfig: {
+            authorizationServerUrl: 'http://localhost:4747',
+          },
+          authorization: {
+            requirePkce,
+          },
+        })
+
+      const sendPushedAuthorizationRequest = (issuerState: string | undefined, pkce: Record<string, string>) =>
+        fetch(`${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/par`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: 'wallet',
+            response_type: 'code',
+            redirect_uri: 'http://localhost:5757/redirect',
+            scope: 'UniversityDegreeCredential',
+            issuer_state: issuerState,
+            ...pkce,
+          }),
+        })
+
+      const { issuanceSession } = await createCredentialOffer(requirePkce)
+      const issuerState = issuanceSession.authorization?.issuerState
+
+      const missingPkceResponse = await sendPushedAuthorizationRequest(issuerState, {})
+      expect(missingPkceResponse.status).toBe(400)
+      expect(await missingPkceResponse.json()).toEqual({
+        error: 'invalid_request',
+        error_description: `Missing required 'code_challenge' parameter.`,
+      })
+
+      const plainPkceResponse = await sendPushedAuthorizationRequest(issuerState, {
+        code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        code_challenge_method: 'plain',
+      })
+      expect(plainPkceResponse.status).toBe(400)
+      expect(await plainPkceResponse.json()).toEqual({
+        error: 'invalid_request',
+        error_description: `Unsupported 'code_challenge_method' 'plain'. Only 'S256' is supported.`,
+      })
+
+      const missingMethodResponse = await sendPushedAuthorizationRequest(issuerState, {
+        code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      })
+      expect(missingMethodResponse.status).toBe(400)
+      expect(await missingMethodResponse.json()).toEqual({
+        error: 'invalid_request',
+        error_description: `Unsupported 'code_challenge_method' 'plain'. Only 'S256' is supported.`,
+      })
+
+      const idpApp = express()
+      idpApp.get('/.well-known/oauth-authorization-server', (_req, res) =>
+        res.json({
+          issuer: 'http://localhost:4747',
+          authorization_endpoint: 'http://localhost:4747/authorize',
+          token_endpoint: 'http://localhost:4747/token',
+        } satisfies AuthorizationServerMetadata)
+      )
+      const clearIdpNock = setupNockToExpress('http://localhost:4747', idpApp)
+
+      // `requirePkce: false` on the issuance session disables the requirement, also when required globally
+      const { issuanceSession: issuanceSessionPkceNotRequired } = await createCredentialOffer(false)
+      expect(issuanceSessionPkceNotRequired.pkce).toEqual({ required: false })
+      const pkceNotRequiredResponse = await sendPushedAuthorizationRequest(
+        issuanceSessionPkceNotRequired.authorization?.issuerState,
+        {}
+      )
+      expect(pkceNotRequiredResponse.ok).toBe(true)
+      expect(await pkceNotRequiredResponse.json()).toMatchObject({ request_uri: expect.any(String) })
+
+      clearIdpNock()
+
+      await issuerTenant.endSession()
+    }
+  )
 })

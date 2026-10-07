@@ -109,6 +109,12 @@ export type OpenId4VciResolvedAuthorizationRequest =
       authSession: string
 
       /**
+       * The pkce code verifier, to be provided in the token request when exchanging
+       * the authorization code obtained using the presentation.
+       */
+      codeVerifier?: string
+
+      /**
        * DPoP request options if DPoP was used for the authorization challenge request
        */
       dpop?: OpenId4VciDpopRequestOptions
