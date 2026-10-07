@@ -1,3 +1,4 @@
+import { JsonEncoder } from '../../../../../utils'
 import { PublicJwk } from '../../../../kms'
 import { DidJwk } from '../DidJwk'
 
@@ -22,5 +23,12 @@ describe('DidJwk', () => {
 
     expect(didJwk.did).toBe(p256DidJwkEyJjcnYi0iFixture.id)
     expect(didJwk.didDocument.toJSON()).toMatchObject(p256DidJwkEyJjcnYi0iFixture)
+  })
+
+  it('keeps a kid that is encoded in the did', async () => {
+    const jwk = { ...p256DidJwkEyJjcnYi0iFixture.verificationMethod[0].publicKeyJwk, kid: 'issuer-key-1' }
+    const didJwk = DidJwk.fromDid(`did:jwk:${JsonEncoder.toBase64Url(jwk)}`)
+
+    expect(didJwk.didDocument.verificationMethod?.[0].publicKeyJwk).toEqual(jwk)
   })
 })
