@@ -190,10 +190,11 @@ export class HttpTransportSession implements DidCommTransportSession {
     // However, if the request mime-type is a mime-type that is supported by us, we use that
     // to minimize the chance of interoperability issues
     const requestMimeType = this.req.headers['content-type']
+    const normalized = requestMimeType ? normalizeDidCommMediaType(requestMimeType) : undefined
     if (isDidCommV2EncryptedMessage(encryptedMessage)) {
       responseMimeType = DIDCOMM_V2_ENCRYPTED_MIME_TYPE
-    } else if (requestMimeType && supportedContentTypes.includes(requestMimeType)) {
-      responseMimeType = requestMimeType
+    } else if (normalized && supportedContentTypes.includes(normalized)) {
+      responseMimeType = normalized
     }
 
     this.res.status(200).contentType(responseMimeType).json(encryptedMessage).end()
