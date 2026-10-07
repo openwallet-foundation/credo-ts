@@ -5,7 +5,7 @@ import { Kms } from '@credo-ts/core'
 import type { MockedClassConstructor } from '../../../../../tests/types'
 import { EventEmitter } from '../../../../core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
-import { TenantRecord, TenantRoutingRecord } from '../../repository'
+import { TenantRecord, TenantRoutingRecord, TenantStatus } from '../../repository'
 import { TenantRecordService } from '../../services/TenantRecordService'
 import { TenantAgentContextProvider } from '../TenantAgentContextProvider'
 import { type TenantContextCorrelationId, TenantSessionCoordinator } from '../TenantSessionCoordinator'
@@ -74,6 +74,46 @@ describe('TenantAgentContextProvider', () => {
         runInMutex: undefined,
         provisionContext: false,
       })
+      expect(returnedAgentContext).toBe(tenantAgentContext)
+    })
+
+    test('throws an error if the tenant is inactive', async () => {
+      const tenantRecord = new TenantRecord({
+        id: 'tenant1',
+        config: {
+          label: 'Test Tenant',
+        },
+        storageVersion: '0.5',
+        status: TenantStatus.Inactive,
+      })
+
+      mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
+
+      await expect(tenantAgentContextProvider.getAgentContextForContextCorrelationId('tenant1')).rejects.toThrow(
+        "Tenant 'tenant1' is inactive. Sessions can not be opened for inactive tenants."
+      )
+      expect(tenantSessionCoordinator.getContextForSession).not.toHaveBeenCalled()
+    })
+
+    test('returns the agent context for an inactive tenant if allowInactive is true', async () => {
+      const tenantRecord = new TenantRecord({
+        id: 'tenant1',
+        config: {
+          label: 'Test Tenant',
+        },
+        storageVersion: '0.5',
+        status: TenantStatus.Inactive,
+      })
+
+      const tenantAgentContext = vi.fn() as unknown as AgentContext
+
+      mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
+      mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
+
+      const returnedAgentContext = await tenantAgentContextProvider.getAgentContextForContextCorrelationId('tenant1', {
+        allowInactive: true,
+      })
+
       expect(returnedAgentContext).toBe(tenantAgentContext)
     })
   })
