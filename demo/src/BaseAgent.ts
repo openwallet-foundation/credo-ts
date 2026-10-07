@@ -2,8 +2,6 @@ import { AnonCredsModule } from '@credo-ts/anoncreds'
 import {
   AnonCredsDidCommCredentialFormatService,
   AnonCredsDidCommProofFormatService,
-  DidCommCredentialV1Protocol,
-  DidCommProofV1Protocol,
   LegacyIndyDidCommCredentialFormatService,
   LegacyIndyDidCommProofFormatService,
 } from '@credo-ts/anoncreds/didcomm'
@@ -94,9 +92,6 @@ function getAskarAnonCredsIndyModules(
       credentials: {
         autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
         credentialProtocols: [
-          new DidCommCredentialV1Protocol({
-            indyCredentialFormat: legacyIndyCredentialFormatService,
-          }),
           new DidCommCredentialV2Protocol({
             credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsDidCommCredentialFormatService()],
           }),
@@ -105,9 +100,6 @@ function getAskarAnonCredsIndyModules(
       proofs: {
         autoAcceptProofs: DidCommAutoAcceptProof.ContentApproved,
         proofProtocols: [
-          new DidCommProofV1Protocol({
-            indyProofFormat: legacyIndyProofFormatService,
-          }),
           new DidCommProofV2Protocol({
             proofFormats: [legacyIndyProofFormatService, new AnonCredsDidCommProofFormatService()],
           }),

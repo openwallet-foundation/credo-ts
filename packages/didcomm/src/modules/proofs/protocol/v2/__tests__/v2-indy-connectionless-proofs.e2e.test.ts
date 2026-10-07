@@ -2,7 +2,6 @@ import { Subject } from 'rxjs'
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { DidCommCredentialV1Preview } from '../../../../../../../anoncreds/src/didcomm'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import {
   getAnonCredsIndyModules,
@@ -23,6 +22,7 @@ import {
 import {
   DidCommAutoAcceptProof,
   DidCommCredentialEventTypes,
+  DidCommCredentialV2Preview,
   DidCommHandshakeProtocol,
   DidCommMediatorPickupStrategy,
   DidCommPresentationV2Message,
@@ -258,7 +258,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const credentialPreview = DidCommCredentialV1Preview.fromRecord({
+    const credentialPreview = DidCommCredentialV2Preview.fromRecord({
       name: 'John',
       age: '99',
     })
@@ -292,12 +292,12 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const faberMediationOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
       label: 'faber invitation',
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     const aliceMediationOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
       label: 'alice invitation',
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     const faberOptions = getAgentOptions(

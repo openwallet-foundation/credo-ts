@@ -147,40 +147,6 @@ describe('out of band implicit', () => {
     expect(await aliceAgent.didcomm.connections.findByInvitationDid(serviceUrl!)).toEqual([aliceFaberConnection])
   })
 
-  test(`make a connection with ${DidCommHandshakeProtocol.Connections} based on implicit OOB invitation`, async () => {
-    const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
-
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
-      did: inMemoryDid,
-      label: 'alice',
-      alias: 'Faber public',
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
-    })
-
-    // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecordSubject(faberReplay, {
-      threadId: aliceFaberConnection?.threadId,
-      state: DidCommDidExchangeState.RequestReceived,
-    })
-    await faberAgent.didcomm.connections.acceptRequest(faberAliceConnection.id)
-    faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
-    expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
-
-    // Alice should now be connected
-    // biome-ignore lint/style/noNonNullAssertion: no explanation
-    aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-    expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
-
-    expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
-    expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-    expect(faberAliceConnection.theirLabel).toBe('alice')
-    expect(aliceFaberConnection.theirLabel).toBe('Faber public')
-    expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
-
-    // It is possible for an agent to check if it has already a connection to a certain public entity
-    expect(await aliceAgent.didcomm.connections.findByInvitationDid(inMemoryDid)).toEqual([aliceFaberConnection])
-  })
-
   test('receive an implicit invitation using an unresolvable did', async () => {
     await expect(
       aliceAgent.didcomm.oob.receiveImplicitInvitation({
@@ -199,7 +165,7 @@ describe('out of band implicit', () => {
       did: inMemoryDid,
       label: 'alice',
       alias: 'Faber public',
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Wait for a connection event in faber agent and accept the request
@@ -227,7 +193,7 @@ describe('out of band implicit', () => {
       did: inMemoryDid,
       alias: 'Faber public New',
       label: 'Alice New',
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Wait for a connection event in faber agent

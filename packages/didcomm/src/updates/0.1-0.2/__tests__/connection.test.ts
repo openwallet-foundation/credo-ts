@@ -4,8 +4,6 @@ import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../co
 import {
   DidCommConnectionRecord,
   DidCommConnectionRepository,
-  DidCommConnectionRole,
-  DidCommConnectionState,
   DidCommDidExchangeRole,
   DidCommDidExchangeState,
   DidCommOutOfBandRecord,
@@ -678,51 +676,51 @@ describe('0.1-0.2 | Connection', () => {
     it('should return the correct state for all connection role and state combinations', () => {
       expect(
         testModule.didExchangeStateAndRoleFromRoleAndState(
-          DidCommConnectionRole.Inviter,
-          DidCommConnectionState.Invited
+          testModule.LegacyConnectionRole.Inviter,
+          testModule.LegacyConnectionState.Invited
         )
       ).toEqual([DidCommDidExchangeRole.Responder, DidCommDidExchangeState.InvitationSent])
       expect(
         testModule.didExchangeStateAndRoleFromRoleAndState(
-          DidCommConnectionRole.Inviter,
-          DidCommConnectionState.Requested
+          testModule.LegacyConnectionRole.Inviter,
+          testModule.LegacyConnectionState.Requested
         )
       ).toEqual([DidCommDidExchangeRole.Responder, DidCommDidExchangeState.RequestReceived])
       expect(
         testModule.didExchangeStateAndRoleFromRoleAndState(
-          DidCommConnectionRole.Inviter,
-          DidCommConnectionState.Responded
+          testModule.LegacyConnectionRole.Inviter,
+          testModule.LegacyConnectionState.Responded
         )
       ).toEqual([DidCommDidExchangeRole.Responder, DidCommDidExchangeState.ResponseSent])
       expect(
         testModule.didExchangeStateAndRoleFromRoleAndState(
-          DidCommConnectionRole.Inviter,
-          DidCommConnectionState.Complete
+          testModule.LegacyConnectionRole.Inviter,
+          testModule.LegacyConnectionState.Complete
         )
       ).toEqual([DidCommDidExchangeRole.Responder, DidCommDidExchangeState.Completed])
 
       expect(
         testModule.didExchangeStateAndRoleFromRoleAndState(
-          DidCommConnectionRole.Invitee,
-          DidCommConnectionState.Invited
+          testModule.LegacyConnectionRole.Invitee,
+          testModule.LegacyConnectionState.Invited
         )
       ).toEqual([DidCommDidExchangeRole.Requester, DidCommDidExchangeState.InvitationReceived])
       expect(
         testModule.didExchangeStateAndRoleFromRoleAndState(
-          DidCommConnectionRole.Invitee,
-          DidCommConnectionState.Requested
+          testModule.LegacyConnectionRole.Invitee,
+          testModule.LegacyConnectionState.Requested
         )
       ).toEqual([DidCommDidExchangeRole.Requester, DidCommDidExchangeState.RequestSent])
       expect(
         testModule.didExchangeStateAndRoleFromRoleAndState(
-          DidCommConnectionRole.Invitee,
-          DidCommConnectionState.Responded
+          testModule.LegacyConnectionRole.Invitee,
+          testModule.LegacyConnectionState.Responded
         )
       ).toEqual([DidCommDidExchangeRole.Requester, DidCommDidExchangeState.ResponseReceived])
       expect(
         testModule.didExchangeStateAndRoleFromRoleAndState(
-          DidCommConnectionRole.Invitee,
-          DidCommConnectionState.Complete
+          testModule.LegacyConnectionRole.Invitee,
+          testModule.LegacyConnectionState.Complete
         )
       ).toEqual([DidCommDidExchangeRole.Requester, DidCommDidExchangeState.Completed])
     })
@@ -738,7 +736,7 @@ describe('0.1-0.2 | Connection', () => {
       expect(
         testModule.didExchangeStateAndRoleFromRoleAndState(
           DidCommDidExchangeRole.Requester,
-          DidCommConnectionState.Requested
+          testModule.LegacyConnectionState.Requested
         )
       ).toEqual([DidCommDidExchangeRole.Requester, expect.anything()])
     })
@@ -747,7 +745,7 @@ describe('0.1-0.2 | Connection', () => {
       expect(
         testModule.didExchangeStateAndRoleFromRoleAndState(
           DidCommDidExchangeRole.Responder,
-          'something-weird' as DidCommConnectionState
+          'something-weird' as testModule.LegacyConnectionState
         )
       ).toEqual([DidCommDidExchangeRole.Responder, 'something-weird'])
     })

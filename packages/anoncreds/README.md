@@ -42,14 +42,14 @@ import {
 } from '@credo-ts/anoncreds'
 ```
 
-Import the AnonCreds and legacy Indy DIDComm formats and protocols from the DIDComm integration entry point:
+Import the AnonCreds and legacy Indy DIDComm formats from the DIDComm integration entry point:
 
 ```ts
 import {
   AnonCredsDidCommCredentialFormatService,
   AnonCredsDidCommProofFormatService,
-  DidCommCredentialV1Protocol,
-  DidCommProofV1Protocol,
+  LegacyIndyDidCommCredentialFormatService,
+  LegacyIndyDidCommProofFormatService,
 } from '@credo-ts/anoncreds/didcomm'
 ```
 

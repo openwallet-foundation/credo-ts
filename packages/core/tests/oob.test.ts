@@ -1,4 +1,4 @@
-import { CredoError, Kms } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
@@ -243,12 +243,12 @@ describe('out of band', () => {
       const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
         label: 'test-connection',
-        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
         messages: [message],
       })
 
       // expect supported handshake protocols
-      expect(outOfBandInvitation.handshakeProtocols).toContain('https://didcomm.org/connections/1.0')
+      expect(outOfBandInvitation.handshakeProtocols).toContain('https://didcomm.org/didexchange/1.1')
       expect(outOfBandInvitation.getRequests()).toHaveLength(1)
 
       // expect contains services
@@ -327,76 +327,6 @@ describe('out of band', () => {
       expect(aliceFaberConnection.imageUrl).toBe(makeConnectionConfig.imageUrl)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
       expect(faberAliceConnection.alias).toBe(makeConnectionConfig.alias)
-    })
-
-    test(`make a connection with ${DidCommHandshakeProtocol.Connections} based on OOB invitation encoded in URL`, async () => {
-      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        ...makeConnectionConfig,
-        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
-      })
-      const { outOfBandInvitation } = outOfBandRecord
-      const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        urlMessage,
-        { label: 'alice' }
-      )
-
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-      expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
-
-      let [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord?.id)
-      faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
-      expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
-
-      expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
-      expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-      expect(faberAliceConnection.alias).toBe(makeConnectionConfig.alias)
-    })
-
-    test('make a connection based on old connection invitation encoded in URL', async () => {
-      const { outOfBandRecord, invitation } = await faberAgent.didcomm.oob.createLegacyInvitation(makeConnectionConfig)
-      const urlMessage = invitation.toUrl({ domain: 'http://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        urlMessage,
-        { label: 'alice' }
-      )
-
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-      let [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord.id)
-      faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
-
-      expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
-      expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
-
-      expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-      expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
-    })
-
-    test('make a connection based on old connection invitation with multiple endpoints uses first endpoint for invitation', async () => {
-      const routingKey = Kms.PublicJwk.fromFingerprint(
-        'z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE'
-      ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
-      routingKey.keyId = routingKey.legacyKeyId
-
-      const recipientKey = Kms.PublicJwk.fromFingerprint(
-        'z6MkuXrzmDjBoy7r9LA1Czjv9eQXMGr9gt6JBH8zPUMKkCQH'
-      ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
-      recipientKey.keyId = recipientKey.legacyKeyId
-
-      const { invitation } = await faberAgent.didcomm.oob.createLegacyInvitation({
-        ...makeConnectionConfig,
-        routing: {
-          endpoints: ['https://endpoint-1.com', 'https://endpoint-2.com'],
-          routingKeys: [routingKey],
-          recipientKey,
-        },
-      })
-
-      expect(invitation.serviceEndpoint).toBe('https://endpoint-1.com')
     })
 
     test('process credential offer requests based on OOB message', async () => {

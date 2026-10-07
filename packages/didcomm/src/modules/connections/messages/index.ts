@@ -1,7 +1,3 @@
-export * from './DidCommConnectionInvitationMessage'
-export * from './DidCommConnectionProblemReportMessage'
-export * from './DidCommConnectionRequestMessage'
-export * from './DidCommConnectionResponseMessage'
 export * from './DidCommDidExchangeCompleteMessage'
 export * from './DidCommDidExchangeProblemReportMessage'
 export * from './DidCommDidExchangeRequestMessage'
