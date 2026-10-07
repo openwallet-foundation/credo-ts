@@ -1,20 +1,8 @@
 import { CredoError } from '../../../../error'
 import { JsonEncoder } from '../../../../utils'
-import { PublicJwk } from '../../../kms'
+import { assertJwkHasNoPrivateKeyMaterial, PublicJwk } from '../../../kms'
 import { parseDid } from '../../domain/parse'
 import { getDidJwkDocument } from './didJwkDidDocument'
-
-const privateJwkParameters = ['d', 'p', 'q', 'dp', 'dq', 'qi', 'oth']
-
-function assertPublicJwk(jwk: unknown): asserts jwk is Record<string, unknown> {
-  if (!jwk || typeof jwk !== 'object' || Array.isArray(jwk)) {
-    throw new CredoError('The did:jwk value must decode to a JWK object')
-  }
-
-  if (privateJwkParameters.some((parameter) => parameter in jwk)) {
-    throw new CredoError('Private JWK material is not allowed in a did:jwk identifier')
-  }
-}
 
 export class DidJwk {
   private constructor(
@@ -45,7 +33,7 @@ export class DidJwk {
     }
 
     const jwkJson = JsonEncoder.fromBase64Url(parsed.id)
-    assertPublicJwk(jwkJson)
+    assertJwkHasNoPrivateKeyMaterial(jwkJson)
 
     // Validate the public JWK and remove unsupported or private properties.
     const publicJwk = PublicJwk.fromUnknown(jwkJson)

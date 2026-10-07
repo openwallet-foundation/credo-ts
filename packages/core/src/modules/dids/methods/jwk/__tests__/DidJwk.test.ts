@@ -40,9 +40,7 @@ describe('DidJwk', () => {
       d: 'private-key-material',
     }
 
-    expect(() => DidJwk.fromDid(`did:jwk:${JsonEncoder.toBase64Url(jwk)}`)).toThrow(
-      'Private JWK material is not allowed in a did:jwk identifier'
-    )
+    expect(() => DidJwk.fromDid(`did:jwk:${JsonEncoder.toBase64Url(jwk)}`)).toThrow('JWK contains private key material')
   })
 
   it('accepts only the #0 DID URL fragment', () => {
