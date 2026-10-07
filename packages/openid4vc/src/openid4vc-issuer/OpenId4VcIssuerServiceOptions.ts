@@ -34,7 +34,7 @@ import type {
 import type {
   supportedResponseEncryptionContentAlgorithms,
   supportedResponseEncryptionKeyAgreementAlgorithms,
-} from '../shared/utils'
+} from '../shared/responseEncryption'
 import {
   OpenId4VcIssuanceSessionRecord,
   type OpenId4VcIssuanceSessionRecordTransaction,

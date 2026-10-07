@@ -30,10 +30,10 @@ import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../o
 import type { OpenId4VcVerificationTypes } from './OpenId4VcTrustedIssuersVerificationTypes'
 
 import {
-  getPublicJwkFromDid,
   supportedResponseEncryptionContentAlgorithms,
   supportedResponseEncryptionKeyAgreementAlgorithms,
-} from './utils'
+} from './responseEncryption'
+import { getPublicJwkFromDid } from './utils'
 
 /**
  * Maps the `typ` header of a jwt verified by oid4vc-ts to the trust verification context.

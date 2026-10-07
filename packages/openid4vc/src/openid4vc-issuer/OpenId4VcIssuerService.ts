@@ -69,6 +69,10 @@ import {
   getScopesFromCredentialConfigurationsSupported,
 } from '../shared/issuerMetadataUtils'
 import { getLocalAccessTokenJwks, getOid4vcLocalJwksCallback } from '../shared/localJwks'
+import {
+  supportedResponseEncryptionContentAlgorithms,
+  supportedResponseEncryptionKeyAgreementAlgorithms,
+} from '../shared/responseEncryption'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import {
   credoJwtIssuerToOpenId4VcJwtIssuer,
@@ -76,8 +80,6 @@ import {
   encodeJwtIssuer,
   getProofTypeFromPublicJwk,
   getPublicJwkFromDid,
-  supportedResponseEncryptionContentAlgorithms,
-  supportedResponseEncryptionKeyAgreementAlgorithms,
 } from '../shared/utils'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
