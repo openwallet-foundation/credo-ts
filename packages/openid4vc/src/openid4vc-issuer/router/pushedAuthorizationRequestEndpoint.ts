@@ -25,6 +25,7 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../repository'
+import { getPkceFromAuthorizationRequest } from '../util/pkce'
 import { getClientAttestationToVerify } from '../util/walletAttestation'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
@@ -56,6 +57,12 @@ export async function handlePushedAuthorizationRequest(
       error_description: `Missing required 'redirect_uri' parameter.`,
     })
   }
+
+  const walletPkce = getPkceFromAuthorizationRequest({
+    authorizationRequest: parsedAuthorizationRequest.authorizationRequest,
+    // First session config, fall back to global config
+    required: issuanceSession.pkce?.required ?? config.pkceRequired,
+  })
 
   const allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
   if (!allowedStates.includes(issuanceSession.state)) {
@@ -125,6 +132,15 @@ export async function handlePushedAuthorizationRequest(
     issuanceSession.walletAttestation = {
       // If client attestation is provided at the start, it's required from now on.
       required: true,
+    }
+  }
+
+  // Bind the pkce code challenge to the session, it will be verified at the token endpoint
+  if (walletPkce) {
+    issuanceSession.pkce = {
+      // If PKCE is provided by the client, it is required for the remainder of this issuance session, even if the session or global config do not require it.
+      required: true,
+      ...walletPkce,
     }
   }
 
@@ -385,7 +401,7 @@ export function configurePushedAuthorizationRequestEndpoint(router: Router, conf
           request: requestLike,
         })
 
-        return sendJsonResponse(response, next, pushedAuthorizationResponse)
+        return sendJsonResponse(response, next, pushedAuthorizationResponse, undefined, 201)
       } catch (error) {
         if (error instanceof Oauth2ServerErrorResponseError) {
           return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
