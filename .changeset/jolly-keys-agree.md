@@ -1,5 +1,5 @@
 ---
-'@credo-ts/core': patch
+'@credo-ts/core': minor
 ---
 
-Reject private key material in did:jwk identifiers and align generated verification relationships with the JWK use value.
+Reject `did:jwk` identifiers containing private key material, restrict DID URL fragments to `#0`, and generate verification relationships according to the JWK `use` value.
