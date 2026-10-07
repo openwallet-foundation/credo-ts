@@ -12,8 +12,8 @@
     {
       "idx": 1,
       "version": "6",
-      "when": 1791376421689,
-      "tag": "0001_fantastic_preak",
+      "when": 1791378659807,
+      "tag": "0001_add-tenant-status",
       "breakpoints": true
     }
   ]

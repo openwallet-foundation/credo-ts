@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "512da3ec-051a-49c6-bbf8-1a8214b7be14",
+  "id": "6ad8b1e2-cc77-41a0-9e16-3f40651de590",
   "prevId": "aa457e42-476c-4386-ab7c-419e4b51b872",
   "tables": {
     "Tenant": {
