@@ -1329,12 +1329,24 @@ describe('OpenId4VcIssuer', () => {
 
   describe('credential response encryption configuration', () => {
     // Requests an sd-jwt credential, with credential response encryption using `enc` if provided
-    const requestSdJwtCredential = async (enc?: string) => {
+    const requestSdJwtCredential = async (
+      enc?: string,
+      {
+        version,
+        algOnJwk = true,
+        encryption = {},
+      }: {
+        version?: 'v1' | 'v1.draft15'
+        algOnJwk?: boolean
+        encryption?: { alg?: string; zip?: string }
+      } = {}
+    ) => {
       const preAuthorizedCode = '1234567890'
       const result = await issuer.openid4vc.issuer.createCredentialOffer({
         issuerId: openId4VcIssuer.issuerId,
         credentialConfigurationIds: [universityDegreeCredentialSdJwt.id],
         preAuthorizedCodeFlowConfig: { preAuthorizedCode },
+        version,
       })
 
       const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
@@ -1343,7 +1355,11 @@ describe('OpenId4VcIssuer', () => {
       await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
       const encKey = await holder.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
-      const jwk = { ...Kms.PublicJwk.fromPublicJwk(encKey.publicJwk).toJson(), alg: 'ECDH-ES', kid: encKey.keyId }
+      const jwk = {
+        ...Kms.PublicJwk.fromPublicJwk(encKey.publicJwk).toJson(),
+        ...(algOnJwk ? { alg: 'ECDH-ES' } : {}),
+        kid: encKey.keyId,
+      }
 
       const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
       const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
@@ -1356,7 +1372,9 @@ describe('OpenId4VcIssuer', () => {
 
       return issuer.openid4vc.issuer.createCredentialResponse({
         issuanceSessionId: result.issuanceSession.id,
-        credentialRequest: enc ? { ...baseRequest, credential_response_encryption: { jwk, enc } } : baseRequest,
+        credentialRequest: enc
+          ? { ...baseRequest, credential_response_encryption: { jwk, enc, ...encryption } }
+          : baseRequest,
         authorization: {
           authorizationServer: 'https://authorization.com',
           accessToken: {
@@ -1425,6 +1443,35 @@ describe('OpenId4VcIssuer', () => {
           error_description: "Credential response encryption 'enc' must be one of 'A256GCM'",
         },
       })
+    })
+
+    it('rejects a compressed credential response', async () => {
+      await expect(requestSdJwtCredential('A256GCM', { encryption: { zip: 'DEF' } })).rejects.toMatchObject({
+        errorResponse: {
+          error: 'invalid_encryption_parameters',
+          error_description: "Credential response compression ('zip') is not supported",
+        },
+      })
+    })
+
+    it('requires the alg in the jwk for OpenID4VCI 1.0', async () => {
+      await expect(
+        requestSdJwtCredential('A256GCM', { version: 'v1', algOnJwk: false, encryption: { alg: 'ECDH-ES' } })
+      ).rejects.toMatchObject({
+        errorResponse: {
+          error: 'invalid_encryption_parameters',
+          error_description: "Credential response encryption 'jwk' must contain an 'alg'",
+        },
+      })
+    })
+
+    it('accepts the alg next to the jwk for earlier drafts', async () => {
+      const { credentialResponseJwt } = await requestSdJwtCredential('A256GCM', {
+        version: 'v1.draft15',
+        algOnJwk: false,
+        encryption: { alg: 'ECDH-ES' },
+      })
+      expect(credentialResponseJwt?.split('.').length).toBe(5)
     })
 
     it('encrypts the credential response when encryption is required and requested', async () => {

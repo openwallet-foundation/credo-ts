@@ -101,6 +101,7 @@ import type {
   OpenId4VciPreAuthorizedCodeFlowConfig,
   OpenId4VciSignCredentials,
   OpenId4VciSignW3cCredentials,
+  OpenId4VciVersion,
   OpenId4VcUpdateIssuerOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import {
@@ -630,7 +631,11 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    assertCredentialResponseEncryption(issuer, parsedCredentialRequest.credentialResponseEncryption)
+    assertCredentialResponseEncryption(
+      issuer,
+      parsedCredentialRequest.credentialResponseEncryption,
+      issuanceSession.openId4VciVersion
+    )
 
     if (credentialRequest.format && !format && !parsedCredentialRequest.credentialConfigurationId) {
       throw new Oauth2ServerErrorResponseError({
@@ -825,7 +830,11 @@ export class OpenId4VcIssuerService {
     const issuer = await this.getIssuerByIssuerId(agentContext, issuanceSession.issuerId)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSession })
 
-    assertCredentialResponseEncryption(issuer, deferredCredentialRequest.credential_response_encryption)
+    assertCredentialResponseEncryption(
+      issuer,
+      deferredCredentialRequest.credential_response_encryption,
+      issuanceSession.openId4VciVersion
+    )
 
     // Optimization: if the deferral interval hasn't passed yet, we immediately
     // return a new deferral response with the remaining interval. This avoids
@@ -2331,7 +2340,8 @@ function getCredentialResponseEncryptionMetadata(issuerRecord: OpenId4VcIssuerRe
  */
 function assertCredentialResponseEncryption(
   issuerRecord: OpenId4VcIssuerRecord,
-  credentialResponseEncryption: CredentialResponseEncryption | undefined
+  credentialResponseEncryption: CredentialResponseEncryption | undefined,
+  openId4VciVersion: OpenId4VciVersion | undefined
 ) {
   const metadata = getCredentialResponseEncryptionMetadata(issuerRecord)
 
@@ -2346,8 +2356,29 @@ function assertCredentialResponseEncryption(
     return
   }
 
-  const alg = credentialResponseEncryption.jwk.alg ?? credentialResponseEncryption.alg
-  if (!alg || !(metadata.alg_values_supported as string[]).includes(alg)) {
+  // Compression of the credential response is not supported (no `zip_values_supported` in the metadata)
+  if (credentialResponseEncryption.zip !== undefined) {
+    throw new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.InvalidEncryptionParameters,
+      error_description: `Credential response compression ('zip') is not supported`,
+    })
+  }
+
+  // OpenID4VCI 1.0 requires `alg` in the `jwk`, earlier drafts send it next to the `jwk`
+  const alg =
+    openId4VciVersion === 'v1'
+      ? credentialResponseEncryption.jwk.alg
+      : (credentialResponseEncryption.jwk.alg ?? credentialResponseEncryption.alg)
+  if (!alg) {
+    throw new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.InvalidEncryptionParameters,
+      error_description:
+        openId4VciVersion === 'v1'
+          ? `Credential response encryption 'jwk' must contain an 'alg'`
+          : `Credential response encryption 'alg' is missing`,
+    })
+  }
+  if (!(metadata.alg_values_supported as string[]).includes(alg)) {
     throw new Oauth2ServerErrorResponseError({
       error: Oauth2ErrorCodes.InvalidEncryptionParameters,
       error_description: `Credential response encryption 'alg' must be one of ${metadata.alg_values_supported.map((alg) => `'${alg}'`).join(', ')}`,
