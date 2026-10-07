@@ -73,6 +73,16 @@ export const zKmsJwkPublic = z.discriminatedUnion('kty', [
 ])
 export type KmsJwkPublic = z.output<typeof zKmsJwkPublic>
 
+const zJwkWithoutPrivateKeyMaterial = z
+  .record(z.string(), z.unknown())
+  .refine((jwk) => !['d', 'p', 'q', 'dp', 'dq', 'qi', 'oth', 'k'].some((parameter) => parameter in jwk), {
+    message: 'JWK contains private key material',
+  })
+
+export function assertJwkHasNoPrivateKeyMaterial(jwk: unknown): asserts jwk is Record<string, unknown> {
+  zParseWithErrorHandling(zJwkWithoutPrivateKeyMaterial, jwk, 'Unsafe JWK')
+}
+
 const zKmsJwkPrivateToPublic = z
   .discriminatedUnion('kty', [
     zKmsJwkPrivateToPublicEc,
