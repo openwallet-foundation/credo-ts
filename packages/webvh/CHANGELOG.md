@@ -1,5 +1,37 @@
 # @credo-ts/webvh
 
+## 0.8.0
+
+### Minor Changes
+
+- 1c18cf8: Expose the canonical AnonCreds W3C proof APIs from `@credo-ts/anoncreds`, as established by the v0.7.x API migration. Remove the deprecated AnonCreds DIDComm formats and protocols from the package root and expose them through `@credo-ts/anoncreds/didcomm`, while keeping DIDComm as a required AnonCreds dependency. Make AnonCreds an optional peer dependency of Cheqd and WebVH and expose their registries only through their `/anoncreds` subpaths. Consumers using those registries must install `@credo-ts/anoncreds` explicitly.
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+
+### Patch Changes
+
+- 526a989: feat: support node 26
+- 4bff7a3: The did:webvh AnonCreds registry signs again with an `assertionMethod` key of any type Credo maps to an Ed25519 key (`Multikey`, `Ed25519VerificationKey2020`, `Ed25519VerificationKey2018`, `JsonWebKey2020`), preferring `Multikey`. Since #2934 it only looked at `Multikey`, so a DID whose `assertionMethod` key is an `Ed25519VerificationKey2020` could not register a schema, credential definition, revocation registry or status list.
+- Updated dependencies [61d7d0f]
+- Updated dependencies [0b9531a]
+- Updated dependencies [798c401]
+- Updated dependencies [8abea64]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [1c18cf8]
+- Updated dependencies [33d3f53]
+- Updated dependencies [526a989]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [716cb84]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [526a989]
+- Updated dependencies [144ca38]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [3d4b386]
+  - @credo-ts/anoncreds@0.8.0
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes

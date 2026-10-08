@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 798c401: Remove deprecated AnonCreds Data Integrity compatibility aliases. Use the canonical AnonCreds W3C credential APIs and `DidCommDataIntegrityCredentialFormatService` from `@credo-ts/didcomm` instead.
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- b2ac66a: Reject `did:jwk` identifiers containing private key material, restrict DID URL fragments to `#0`, and generate verification relationships according to the JWK `use` value.
+- 194cf1e: Make published TypeScript declarations resolvable without development dependencies. Move `@types/events` to dependencies in `@credo-ts/core`, and `@types/node` and `@types/ws` to dependencies in `@credo-ts/node`. Replace non-portable and self-referential imports in core, and use `AgentDependencies` for the WebSocket type in `@credo-ts/didcomm` instead of importing from undeclared `ws`.
+
+### Patch Changes
+
+- 0b9531a: Added Aries RFC 881 (vc+sd-jwt) format handler
+  
+  `@credo-ts/core` now exports `validateW3cV2SdJwtDisclosureFrame` and `NON_DISCLOSEABLE_FIELDS`, so that
+  a disclosure frame can be validated before it is used to sign a credential.
+  
+  The `didcomm_signed_attachment` binding method is now implemented by a helper shared with the data
+  integrity format. As a result the data integrity format also accepts a binding proof whose attachment
+  payload is base64url encoded, in addition to base64. Signed attachments are still produced as base64,
+  so this only widens what is accepted from other agents.
+- 8abea64: Update `@sd-jwt/*` to `^0.22.0` and `@owf/*` to `^0.4.2` (`@owf/mdoc` to `^0.8.2`).
+  
+  - The error of a failed SD-JWT VC verification now carries a `code` (e.g. `JWT_EXPIRED`, `JWT_NOT_YET_VALID`, `INVALID_JWT_SIGNATURE`, `STATUS_INVALID`) and, for time and status checks, `details`. A failed `iat`, `nbf` or `exp` check is reported as a `JwtTimeClaimException`, a subclass of `SDJWTException`, whose `details` include the allowed clock skew.
+  - The `typ` header of a status list JWT is now checked by `@sd-jwt/sd-jwt-vc`, so Credo's own check is removed. A status list JWT whose `typ` is not `statuslist+jwt` is still rejected, now with an `SLException` (`The typ header '<typ>' must be equal to 'statuslist+jwt'`) instead of an `SdJwtVcError`.
+- 7a1a5c9: Consolidate Ed25519 linked data proof suite contexts to use the bundled JSON-LD context registry and shared VC context URL constants. This removes duplicate suite-local Ed25519 context documents/constants, flattens the Ed25519 signature suite files into the main signature suites folder, and fixes bundled context document loading for URLs with fragments.
+- 33d3f53: Added a `customStatusListFetcher` option to the SD-JWT VC module. It replaces the HTTP GET with which the agent fetches the status list JWT that the `status.status_list.uri` claim of a presented SD-JWT VC references, in the same way `customTypeMetadataResolver` replaces the fetch of Type Metadata. The option receives the `uri` and a `defaultFetcher`, so a verifier can apply a network policy to the fetch (HTTPS only, no redirects, an address allowlist, a response size bound) or serve the status list JWT from a cache, and fall back to the default fetch where it wants to.
+  
+  `@credo-ts/core` now exports `SdJwtVcModuleConfig`, `SdJwtVcModuleConfigOptions`, and the types of the `customStatusListFetcher` and `customTypeMetadataResolver` options.
+  
+  The agent now also rejects a status list JWT whose JOSE header `typ` is not `statuslist+jwt`, as Token Status List requires of a relying party. This check runs before the signature of the status list JWT is verified, whichever fetcher returned it.
+- 716cb84: `KeyManagementApi` now picks the backend that holds the key for `encrypt`, `decrypt` and `verify` when no `backend` is given, like `sign` already did. Before, these always used the default backend, so a key that lived in another backend was not found.
+- 56516ee: `CredoError` and its subclasses are now native subclasses of `Error`, and the `make-error` dependency is removed. Engines and test runners now recognise a Credo error as an error (`Error.isError`, `util.types.isNativeError`), and Vitest compares the `message` in `toEqual` and `toThrow` on Node 24 and later. The observable behaviour is unchanged: `name` is the class name, `cause` is a non-enumerable read-only property, and `inspect()` returns the full cause chain.
+- 4fed115: Fix `SdJwtVcSignOptions.hashingAlgorithm` being ignored when issuing an SD-JWT VC.
+  
+  `sign()` rejected every value other than `sha-256` and then hardcoded `sha-256` as the hash algorithm of the `@sd-jwt` instance, so the option could only ever hold its documented default. The option is now passed through, meaning an issuer can produce a credential with e.g. `_sd_alg: "sha-512"` and SHA-512 disclosure digests, as allowed by SD-JWT VC. The option type now excludes `sha-1`, matching the W3C VC 2.0 SD-JWT sign options, since `_sd_alg` must name a hash algorithm that is considered secure, and this is now enforced at runtime as well (for both SD-JWT VCs and W3C VC 2.0 credentials/presentations secured with SD-JWT).
+- aadabc9: Add `supportedJwaSignatureAlgorithms` to the `KeyManagementApi`, which excludes symmetric (HMAC) algorithms unless `includeSymmetricAlgorithms` is set. OpenID4VC and DIDComm now use it, so symmetric algorithms are no longer advertised in metadata such as `vp_formats_supported`, `proof_signing_alg_values_supported` and `algsSupported`.
+- 526a989: feat: support node 26
+- 7ba15bc: Fix JSON-LD credential exchanges failing or silently stalling when the issuer's signature suite adds its own `@context` to the credential.
+  
+  A signature suite must add its `@context` to the document it signs when the document does not already carry a compatible one. The holder compared the received credential to the credential request for exact equality, so this required addition was treated as a mismatch. In practice this affected `Ed25519Signature2020`, whose terms are not defined by the `credentials/v1` context, and it was not limited to a hard failure: the same check backs `shouldAutoRespondToCredential`, so with `AutoAcceptCredential.ContentApproved` the exchange stalled without an error.
+  
+  The holder now also accepts the requested credential with the agreed proof type's suite context appended. Any other difference is still rejected.
+
 ## 0.7.1
 
 ### Patch Changes

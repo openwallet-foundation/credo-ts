@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- 194cf1e: Make published TypeScript declarations resolvable without development dependencies. Move `@types/events` to dependencies in `@credo-ts/core`, and `@types/node` and `@types/ws` to dependencies in `@credo-ts/node`. Replace non-portable and self-referential imports in core, and use `AgentDependencies` for the WebSocket type in `@credo-ts/didcomm` instead of importing from undeclared `ws`.
+
+### Patch Changes
+
+- fbb6517: Allow HTTP DIDComm routes to be hosted on an externally managed Express application and make listener startup failures observable.
+- e3788dc: ECDH-ES with `A192GCM` content encryption in the node KMS now uses a 192 bit key, so it no longer fails.
+- e3788dc: ECDH-ES in the node KMS now works with X25519 keys and with key wrapping, including 64 byte keys such as for `A256CBC-HS512`. P-384 and P-521 now derive keys with SHA-256 like other JOSE libraries, so data encrypted with the old node KMS on those curves won't decrypt.
+- e3788dc: The node KMS now returns `Uint8Array` instead of `Buffer` from `randomBytes`, `sign`, `encrypt` and `decrypt`.
+- 526a989: feat: support node 26
+- Updated dependencies [0b9531a]
+- Updated dependencies [798c401]
+- Updated dependencies [8abea64]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [fac9757]
+- Updated dependencies [3d4b386]
+- Updated dependencies [526a989]
+- Updated dependencies [4dd128a]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [716cb84]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [526a989]
+- Updated dependencies [b1090de]
+- Updated dependencies [78d5cfb]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+  - @credo-ts/didcomm@0.8.0
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes

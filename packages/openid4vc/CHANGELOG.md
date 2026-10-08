@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- 28bc709: Setting `requireDpop` or `requireWalletAttestation` to `false` when creating a credential offer or in the `getDynamicIssuanceSession` callback now disables the requirement for the issuance session, even if it is required in the global config. Previously `false` fell back to the global config value. To keep using the global config value, omit the option (or set it to `undefined`).
+- 28bc709: Change the default for `pkceRequired` to `true`. By default PKCE MUST be required unless it is overridden on `OpenId4VcIssuerModule` or on individual issuance sessions
+
+### Patch Changes
+
+- aadabc9: Add `supportedJwaSignatureAlgorithms` to the `KeyManagementApi`, which excludes symmetric (HMAC) algorithms unless `includeSymmetricAlgorithms` is set. OpenID4VC and DIDComm now use it, so symmetric algorithms are no longer advertised in metadata such as `vp_formats_supported`, `proof_signing_alg_values_supported` and `algsSupported`.
+- 8abea64: Use the agent's `validitySkewSeconds` configuration as the allowed clock skew of the OpenID4VC issuer's authorization server. It is applied when verifying the `nbf` and `exp` claims of wallet (client) attestations and Client Attestation PoP JWTs at the pushed authorization request, authorization challenge, and token endpoints, and as the allowed clock skew for DPoP proof verification. Previously a wallet whose clock was a few seconds ahead was rejected with `jwt 'nbf' is in the future`.
+  
+  `@openid4vc/*` dependencies are updated to `^0.7.0`. As a result, the `credential_response_encryption` of a deferred credential request is now checked against the issuer metadata, and an invalid value is rejected with an `invalid_encryption_parameters` error response.
+- 7c4ed20: Align OpenID4VCI issuer endpoint responses with the specs. A credential request that fails parsing (e.g. an unknown `credential_configuration_id`) now returns an OAuth2 error response instead of an unhandled `500`. Missing or invalid authentication now responds with `401` instead of `403` (RFC 9110, RFC 6750), a successful pushed authorization request responds with `201 Created` (RFC 9126), and the authorization server metadata now includes `response_types_supported: ["code"]` (RFC 8414).
+- 6b037bd: The credential and deferred credential endpoints now answer an error that is not a rejected access token or DPoP proof, such as a misconfigured resource server, with `500 server_error` instead of `401 Unauthorized`.
+- d80bc49: The credential endpoint now responds with `unknown_credential_identifier` (OpenID4VCI 1.0 §8.3.1) instead of `invalid_credential_request` when a credential request contains a `credential_identifier`, since Credo never grants credential identifiers.
+- 52d3782: The verifier's response endpoint now answers an OpenID4VP Authorization Error Response (e.g. `error=access_denied`, plain or encrypted) with HTTP 200 and the `redirect_uri` when one is set, as required by OpenID4VP 1.0 §8.2, instead of a 500. The verification session still moves to `Error`, with the wallet's `error` and `error_description` in `errorMessage`.
+- 52d3782: Creating an OpenID4VP `v1.draft21` authorization request with the `x509_hash` client id prefix now throws. Draft 21 signals the prefix through `client_id_scheme`, which has no `x509_hash` value (it was added in draft 25), so such a request was created but could not be parsed back and every response to it failed. Use `x509_san_dns`, or version `v1`.
+- 526a989: feat: support node 26
+- ef2502c: fix(openid4vc): when resolving an OpenID4VP authorization request with a DCQL query, the holder now rejects transaction data entries that reference credential ids not present in the DCQL query with an `invalid_transaction_data` error, instead of throwing a `TypeError`.
+- Updated dependencies [0b9531a]
+- Updated dependencies [798c401]
+- Updated dependencies [8abea64]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [526a989]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [716cb84]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [526a989]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes
