@@ -77,8 +77,18 @@ export interface OpenId4VcIssuanceSessionPresentation {
 }
 
 export interface OpenId4VcIssuanceSessionPkce {
-  codeChallengeMethod: PkceCodeChallengeMethod
-  codeChallenge: string
+  /**
+   * Whether PKCE is required for the authorization code flow of this issuance session.
+   * If not defined, the global `pkceRequired` config value is used.
+   */
+  required?: boolean
+
+  /**
+   * The code challenge method and code challenge provided by the wallet in the authorization request. If
+   * defined, the `code_verifier` MUST be provided and match when exchanging the authorization code.
+   */
+  codeChallengeMethod?: PkceCodeChallengeMethod
+  codeChallenge?: string
 }
 
 export interface OpenId4VcIssuanceSessionChainedIdentity {
@@ -215,10 +225,7 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   userPin?: string
 
   // Auth flow (move to authorization?)
-  pkce?: {
-    codeChallengeMethod: PkceCodeChallengeMethod
-    codeChallenge: string
-  }
+  pkce?: OpenId4VcIssuanceSessionPkce
 
   /**
    * When authorization code flow is used, this links the authorization

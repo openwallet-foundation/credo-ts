@@ -199,13 +199,14 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             // Ensure it matches previously provided jwk thumbprint
             expectedJwkThumbprint: issuanceSession.dpop?.dpopJkt,
           },
-          pkce: issuanceSession.pkce
-            ? {
-                codeChallenge: issuanceSession.pkce.codeChallenge,
-                codeChallengeMethod: issuanceSession.pkce.codeChallengeMethod,
-                codeVerifier: pkceCodeVerifier,
-              }
-            : undefined,
+          pkce:
+            issuanceSession.pkce?.codeChallenge && issuanceSession.pkce.codeChallengeMethod
+              ? {
+                  codeChallenge: issuanceSession.pkce.codeChallenge,
+                  codeChallengeMethod: issuanceSession.pkce.codeChallengeMethod,
+                  codeVerifier: pkceCodeVerifier,
+                }
+              : undefined,
         })
       } else if (grant.grantType === refreshTokenGrantIdentifier) {
         if (!parsedRefreshToken) {

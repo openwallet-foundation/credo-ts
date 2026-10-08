@@ -33,6 +33,7 @@ export {
 } from './keyOps'
 export {
   assertJwkAsymmetric,
+  assertJwkHasNoPrivateKeyMaterial,
   isJwkAsymmetric,
   type KmsJwkPrivate,
   type KmsJwkPrivateAsymmetric,
