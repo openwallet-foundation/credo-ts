@@ -54,9 +54,18 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
       const deferredCredentialRequest = request.body
       const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
 
-      const parsedCredentialRequest = vcIssuer.parseDeferredCredentialRequest({
-        deferredCredentialRequest,
-      })
+      let parsedCredentialRequest: ReturnType<typeof vcIssuer.parseDeferredCredentialRequest>
+      try {
+        parsedCredentialRequest = vcIssuer.parseDeferredCredentialRequest({
+          deferredCredentialRequest,
+          issuerMetadata,
+        })
+      } catch (error) {
+        if (error instanceof Oauth2ServerErrorResponseError) {
+          return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
+        }
+        return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
+      }
 
       const preAuthorizedCode =
         typeof tokenPayload['pre-authorized_code'] === 'string' ? tokenPayload['pre-authorized_code'] : undefined
