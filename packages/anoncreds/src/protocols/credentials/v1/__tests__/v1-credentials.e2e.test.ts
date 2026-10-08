@@ -1,9 +1,12 @@
-import { JsonTransformer } from '@credo-ts/core'
+import { JsonEncoder, JsonTransformer } from '@credo-ts/core'
+import type { DidCommEncryptedMessage } from '@credo-ts/didcomm'
 import {
   DidCommCredentialExchangeRecord,
   DidCommCredentialRole,
   DidCommCredentialState,
+  DidCommEventTypes,
   DidCommMessageRepository,
+  DidCommModuleConfig,
 } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../../../../../core/tests'
 import { waitForCredentialRecordSubject } from '../../../../../../core/tests/helpers'
@@ -39,6 +42,47 @@ describe('V1 Credentials', () => {
       holderName: 'Alice Agent Credentials V1',
       attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],
     }))
+
+    const faberDidCommConfig = faberAgent.dependencyManager.resolve(DidCommModuleConfig)
+    const aliceDidCommConfig = aliceAgent.dependencyManager.resolve(DidCommModuleConfig)
+
+    testLogger.test(`Faber DidComm config: didcommVersions=${JSON.stringify(faberDidCommConfig.didcommVersions)}`)
+    testLogger.test(`Alice DidComm config: didcommVersions=${JSON.stringify(aliceDidCommConfig.didcommVersions)}`)
+
+    // Logging DIDComm v2 envelopes for this test: need to check (protected header typ/alg/enc/skid) for issuer & holder. Should be removed later.
+    faberReplay.subscribe((event) => {
+      if (event.type === DidCommEventTypes.DidCommMessageProcessed) {
+        const enc = (event.payload as { encryptedMessage?: DidCommEncryptedMessage }).encryptedMessage
+        if (enc?.protected) {
+          const protectedJson = JsonEncoder.fromBase64(enc.protected) as {
+            typ?: string
+            alg?: string
+            enc?: string
+            skid?: string
+          }
+          testLogger.test(
+            `Faber processed encrypted message: typ=${protectedJson.typ}, alg=${protectedJson.alg}, enc=${protectedJson.enc}, skid=${protectedJson.skid}`
+          )
+        }
+      }
+    })
+
+    aliceReplay.subscribe((event) => {
+      if (event.type === DidCommEventTypes.DidCommMessageProcessed) {
+        const enc = (event.payload as { encryptedMessage?: DidCommEncryptedMessage }).encryptedMessage
+        if (enc?.protected) {
+          const protectedJson = JsonEncoder.fromBase64(enc.protected) as {
+            typ?: string
+            alg?: string
+            enc?: string
+            skid?: string
+          }
+          testLogger.test(
+            `Alice processed encrypted message: typ=${protectedJson.typ}, alg=${protectedJson.alg}, enc=${protectedJson.enc}, skid=${protectedJson.skid}`
+          )
+        }
+      }
+    })
   })
 
   afterAll(async () => {
