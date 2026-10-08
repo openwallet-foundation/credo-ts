@@ -48,6 +48,18 @@ const zKmsKeyAgreementDecryptEcdhHsalsa20 = z.object({
 })
 export type KmsKeyAgreementDecryptEcdhHsalsa20 = z.output<typeof zKmsKeyAgreementDecryptEcdhHsalsa20>
 
+const zKmsKeyAgreementDecryptEcdh1Pu = z.object({
+  keyId: zKmsKeyId,
+  algorithm: z.literal('ECDH-1PU+A256KW'),
+  encryptedKey: zKmsEncryptedKey,
+  ephemeralPublicJwk: zKmsJwkPublicEcdh,
+  senderPublicJwk: zKmsJwkPublicEcdh,
+
+  apu: z.optional(zAnyUint8Array),
+  apv: z.optional(zAnyUint8Array),
+})
+export type KmsKeyAgreementDecryptEcdh1Pu = z.output<typeof zKmsKeyAgreementDecryptEcdh1Pu>
+
 export const zKmsKeyAgreementDecryptHpke = z.object({
   /**
    * The key id pointing to the recipient private key (`skR`).
@@ -74,6 +86,7 @@ export const zKmsKeyAgreementDecryptOptions = z
     zKmsKeyAgreementEcdhEs,
     zKmsKeyAgreementDecryptEcdhEsKw,
     zKmsKeyAgreementDecryptEcdhHsalsa20,
+    zKmsKeyAgreementDecryptEcdh1Pu,
     zKmsKeyAgreementDecryptHpke,
   ])
   .describe('Options for key agreement based on an asymmetric key.')

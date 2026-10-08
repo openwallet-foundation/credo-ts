@@ -14,6 +14,9 @@ export interface DidCommMediationRecordProps {
   endpoint?: string
   recipientKeys?: string[]
   routingKeys?: string[]
+  routingDid?: string
+  recipientDids?: string[]
+  protocolVersion?: string
   pickupStrategy?: DidCommMediatorPickupStrategy
   tags?: CustomDidCommMediationTags
 }
@@ -50,6 +53,19 @@ export class DidCommMediationRecord
    */
   public routingKeys!: string[]
 
+  /**
+   * Mediator DID for v2 (from mediate-grant body). Used as serviceEndpoint per DID-as-endpoint.
+   */
+  public routingDid?: string
+
+  /**
+   * DIDs registered with mediator for v2 (replaces recipientKeys for v2).
+   */
+  public recipientDids?: string[]
+
+  /** Coordinate Mediation protocol version; undefined = v1. */
+  public protocolVersion?: string
+
   @Transform(({ value }) => {
     if (value === 'Explicit') {
       return DidCommMediatorPickupStrategy.PickUpV1
@@ -74,6 +90,9 @@ export class DidCommMediationRecord
       this.threadId = props.threadId
       this.recipientKeys = props.recipientKeys || []
       this.routingKeys = props.routingKeys || []
+      this.routingDid = props.routingDid
+      this.recipientDids = props.recipientDids || []
+      this.protocolVersion = props.protocolVersion
       this.state = props.state
       this.role = props.role
       this.endpoint = props.endpoint ?? undefined
@@ -90,6 +109,7 @@ export class DidCommMediationRecord
       connectionId: this.connectionId,
       threadId: this.threadId,
       recipientKeys: this.recipientKeys,
+      recipientDids: this.recipientDids,
     }
   }
 
@@ -104,6 +124,25 @@ export class DidCommMediationRecord
       return true
     }
 
+    return false
+  }
+
+  public addRecipientDid(did: string) {
+    const list = this.recipientDids ?? []
+    if (!list.includes(did)) {
+      list.push(did)
+    }
+    this.recipientDids = list
+  }
+
+  public removeRecipientDid(did: string): boolean {
+    const list = this.recipientDids ?? []
+    const index = list.indexOf(did, 0)
+    if (index > -1) {
+      list.splice(index, 1)
+      this.recipientDids = list
+      return true
+    }
     return false
   }
 
