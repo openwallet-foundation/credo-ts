@@ -35,7 +35,7 @@ export function mapV2AttachmentToV1(v2: DidCommV2Attachment): Record<string, unk
   }
   if (v2.description !== undefined) v1.description = v2.description
   if (v2.filename !== undefined) v1.filename = v2.filename
-  // Spec v2.1 IANA Media Types: a media type without a slash has an implied application/ prefix
+  // Spec v2.1 IANA Media Types implies application/ for DIDComm message media types. Extended here to attachments
   if (v2.media_type !== undefined) {
     v1['mime-type'] =
       typeof v2.media_type === 'string' && !v2.media_type.includes('/') ? `application/${v2.media_type}` : v2.media_type
