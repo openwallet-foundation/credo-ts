@@ -686,7 +686,7 @@ describe('out of band', () => {
         aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)
       ).rejects.toEqual(
         new CredoError(
-          `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.x,https://didcomm.org/connections/1.x]`
+          `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.x]`
         )
       )
     })
