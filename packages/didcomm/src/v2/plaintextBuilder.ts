@@ -72,6 +72,8 @@ export function buildV2PlaintextFromMessage(
     if (plaintext.from_prior === undefined && config?.fromPrior !== undefined) {
       plaintext.from_prior = config.fromPrior
     }
+    // thid stays with each class because a problem report carries the reported thread as pthid only
+    if (plaintext.pthid === undefined && message.thread?.parentThreadId) plaintext.pthid = message.thread.parentThreadId
     return plaintext
   }
 
