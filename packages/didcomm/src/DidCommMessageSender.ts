@@ -269,6 +269,8 @@ export class DidCommMessageSender {
     await this.sendOutboundMessage(outboundMessageContext, options)
 
     // Cleared only after a successful send so a retried first response still carries the pthid.
+    // A queued send counts as sent, and the queued copy already carries the pthid.
+    // Two first messages sent concurrently can both carry it, which the spec allows.
     // The record is reloaded because inbound messages may have updated it while this one was in flight.
     if (appliedParentThreadId) {
       const connectionRepository = agentContext.dependencyManager.resolve(DidCommConnectionRepository)
