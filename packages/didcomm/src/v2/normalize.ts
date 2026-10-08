@@ -1,3 +1,4 @@
+import type { Logger } from '@credo-ts/core'
 import type { DidCommPlaintextMessage } from '../types'
 import { mapV2AttachmentToV1 } from './plaintextBuilder'
 import type { DidCommV2PlaintextMessage } from './types'
@@ -29,7 +30,7 @@ const reservedBodyKeys = [
  * @param v2 - The DIDComm v2 plaintext message
  * @returns A v1-shaped plaintext message suitable for transformAndValidate and handler dispatch
  */
-export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidCommPlaintextMessage {
+export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?: Logger): DidCommPlaintextMessage {
   const {
     type,
     id,
@@ -48,9 +49,14 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidComm
   } = v2
 
   // Unknown headers are ignored (spec v2.1 Message Headers) and v2 has no ~ decorators
-  const bodyFields = Object.fromEntries(
-    Object.entries(body ?? {}).filter(([key]) => !key.startsWith('~') && !reservedBodyKeys.includes(key))
-  )
+  const droppedBodyKeys = Object.keys(body ?? {}).filter((key) => key.startsWith('~') || reservedBodyKeys.includes(key))
+  if (droppedBodyKeys.length > 0) {
+    logger?.debug('Dropped DIDComm v2 body keys that clash with v1 header or decorator names', {
+      type,
+      droppedBodyKeys,
+    })
+  }
+  const bodyFields = Object.fromEntries(Object.entries(body ?? {}).filter(([key]) => !droppedBodyKeys.includes(key)))
 
   const v1: DidCommPlaintextMessage = {
     ...bodyFields,
