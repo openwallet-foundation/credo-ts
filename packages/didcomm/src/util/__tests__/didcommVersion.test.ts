@@ -62,6 +62,20 @@ describe('didcommVersion', () => {
       expect(isDidCommV2EncryptedMessage(message)).toBe(false)
     })
 
+    it.each([undefined, 'didcomm-encrypted+json', 'application/didcomm+encrypted'])(
+      'returns true for a v2 key wrapping alg with typ %s',
+      (typ) => {
+        const message = {
+          protected: JsonEncoder.toBase64Url({ typ, alg: 'ECDH-ES+A256KW', enc: 'A256CBC-HS512' }),
+          recipients: [],
+          iv: 'base64iv',
+          ciphertext: 'base64ciphertext',
+          tag: 'base64tag',
+        }
+        expect(isDidCommV2EncryptedMessage(message)).toBe(true)
+      }
+    )
+
     it('returns false when top-level recipients is missing', () => {
       const message = {
         protected: v2AuthcryptProtected,
@@ -111,11 +125,16 @@ describe('didcommVersion', () => {
       expect(isDidCommV2SignedMessage(message)).toBe(false)
     })
 
-    it('returns false when a signature protected header has the wrong typ', () => {
-      const wrongTyp = JsonEncoder.toBase64Url({ typ: 'application/didcomm-plain+json', alg: 'EdDSA' })
+    it('returns true for the flattened JWS serialization', () => {
+      const message = { payload: 'base64payload', protected: signedProtected, signature: 'base64sig' }
+      expect(isDidCommV2SignedMessage(message)).toBe(true)
+    })
+
+    it('returns false when a signature protected header has neither alg nor the signed media type', () => {
+      const noAlg = JsonEncoder.toBase64Url({ typ: 'application/didcomm-plain+json' })
       const message = {
         payload: 'base64payload',
-        signatures: [{ protected: wrongTyp, signature: 'base64sig', header: { kid: 'k' } }],
+        signatures: [{ protected: noAlg, signature: 'base64sig', header: { kid: 'k' } }],
       }
       expect(isDidCommV2SignedMessage(message)).toBe(false)
     })

@@ -2,6 +2,7 @@ import { Subject } from 'rxjs'
 
 import type { MockedClassConstructor } from '../../../../tests/types'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
+import { JsonTransformer } from '../../../core/src/utils/JsonTransformer'
 import { getAgentConfig, getAgentContext } from '../../../core/tests/helpers'
 import { DidCommDispatcher } from '../DidCommDispatcher'
 import { DidCommMessage } from '../DidCommMessage'
@@ -72,6 +73,32 @@ describe('DidCommDispatcher', () => {
       await expect(dispatcher.dispatch(inboundMessageContext)).rejects.toThrow(
         'Error handling message 55170d10-b91f-4df2-9dcd-6deb4e806c1b with type https://didcomm.org/fake-protocol/1.5/message. The message type is not supported'
       )
+    })
+
+    it('does not answer a DIDComm v2 problem report with a problem report', async () => {
+      const messageSenderMock = new MessageSenderMock()
+      const dispatcher = new DidCommDispatcher(
+        messageSenderMock,
+        eventEmitter,
+        new DidCommMessageHandlerRegistry(),
+        agentConfig.logger
+      )
+      const problemReport = JsonTransformer.fromJSON(
+        {
+          '@type': 'https://didcomm.org/report-problem/2.0/problem-report',
+          '@id': '7c9de639-c51c-4d60-ab95-103fa613c805',
+        },
+        DidCommMessage
+      )
+      const inboundMessageContext = new DidCommInboundMessageContext(problemReport, {
+        agentContext,
+        connection: vi.fn() as unknown as DidCommConnectionRecord,
+      })
+
+      await expect(dispatcher.dispatch(inboundMessageContext)).rejects.toThrow(
+        'Not sending problem report in response to problem report'
+      )
+      expect(messageSenderMock.sendMessage).not.toHaveBeenCalled()
     })
 
     it('calls the middleware in the order they are registered', async () => {

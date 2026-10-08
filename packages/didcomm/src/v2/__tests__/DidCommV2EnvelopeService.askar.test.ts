@@ -1,4 +1,12 @@
-import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  DidDocument,
+  type DidResolverService,
+  InjectionSymbols,
+  JsonEncoder,
+  Kms,
+  TypedArrayEncoder,
+  VerificationMethod,
+} from '@credo-ts/core'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../../../askar/src/AskarModuleConfig'
@@ -7,11 +15,14 @@ import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
 
+import { isDidCommV2EncryptedMessage } from '../../util/didcommVersion'
 import { computeApu, computeApv } from '../apuApv'
 import { DidCommV2EnvelopeService } from '../DidCommV2EnvelopeService'
+import { DidCommV2KeyResolver } from '../resolveV2Keys'
 import type {
   DidCommV2AnoncryptContentEncryptionAlgorithm,
   DidCommV2AuthcryptContentEncryptionAlgorithm,
+  DidCommV2EncryptedMessage,
   DidCommV2PlaintextMessage,
 } from '../types'
 
@@ -42,6 +53,8 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
   let envelopeService: DidCommV2EnvelopeService
   let senderKey: Kms.PublicJwk<Kms.X25519PublicJwk>
   let recipientKey: Kms.PublicJwk<Kms.X25519PublicJwk>
+  const senderKid = 'did:example:alice#key-x25519-1'
+  const recipientKid = 'did:example:bob#key-x25519-1'
 
   beforeAll(async () => {
     agentContext.dependencyManager.registerSingleton(DidCommV2EnvelopeService)
@@ -71,31 +84,32 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       async (enc) => {
         const encrypted = await envelopeService.pack(agentContext, plaintext, {
           senderKey,
-          recipientKey,
+          senderKeySkid: senderKid,
+          recipients: [{ key: recipientKey, kid: recipientKid }],
           contentEncryptionAlgorithm: enc,
         })
 
         expect(encrypted.recipients).toHaveLength(1)
-        expect(encrypted.recipients[0].header.kid).toBe(recipientKey.keyId)
+        expect(encrypted.recipients[0].header.kid).toBe(recipientKid)
 
         const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected)
         expect(protectedJson).toMatchObject({
           typ: 'application/didcomm-encrypted+json',
           alg: 'ECDH-1PU+A256KW',
           enc,
-          skid: senderKey.keyId,
+          skid: senderKid,
           epk: { kty: 'OKP', crv: 'X25519', x: expect.any(String) },
         })
-        expect(protectedJson.apu).toBe(TypedArrayEncoder.toBase64Url(computeApu(senderKey.keyId)))
-        expect(protectedJson.apv).toBe(TypedArrayEncoder.toBase64Url(computeApv([recipientKey.keyId])))
+        expect(protectedJson.apu).toBe(TypedArrayEncoder.toBase64Url(computeApu(senderKid)))
+        expect(protectedJson.apv).toBe(TypedArrayEncoder.toBase64Url(computeApv([recipientKid])))
 
         const { plaintext: decrypted, senderKey: resolvedSender } = await envelopeService.unpack(
           agentContext,
           encrypted,
           {
             recipientKey: recipientKey as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
-            matchedKid: recipientKey.keyId,
-            resolveSenderKey: async (skid) => (skid === senderKey.keyId ? senderKey : null),
+            matchedKid: recipientKid,
+            resolveSenderKey: async (skid) => (skid === senderKid ? senderKey : null),
           }
         )
 
@@ -110,12 +124,12 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       'round-trips with %s content encryption',
       async (enc) => {
         const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
-          recipientKey,
+          recipients: [{ key: recipientKey, kid: recipientKid }],
           contentEncryptionAlgorithm: enc,
         })
 
         expect(encrypted.recipients).toHaveLength(1)
-        expect(encrypted.recipients[0].header.kid).toBe(recipientKey.keyId)
+        expect(encrypted.recipients[0].header.kid).toBe(recipientKid)
 
         const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected)
         expect(protectedJson).toMatchObject({
@@ -126,14 +140,14 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
         })
         expect(protectedJson.skid).toBeUndefined()
         expect(protectedJson.apu).toBeUndefined()
-        expect(protectedJson.apv).toBe(TypedArrayEncoder.toBase64Url(computeApv([recipientKey.keyId])))
+        expect(protectedJson.apv).toBe(TypedArrayEncoder.toBase64Url(computeApv([recipientKid])))
 
         const { plaintext: decrypted, senderKey: resolvedSender } = await envelopeService.unpack(
           agentContext,
           encrypted,
           {
             recipientKey: recipientKey as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
-            matchedKid: recipientKey.keyId,
+            matchedKid: recipientKid,
             resolveSenderKey: async () => null,
           }
         )
@@ -144,9 +158,67 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
     )
   })
 
+  describe('encrypted typ', () => {
+    // Mirrors packAnoncrypt with a caller-chosen typ, because the protected header is bound into the ciphertext.
+    async function packAnoncryptWithTyp(typ: string | undefined): Promise<DidCommV2EncryptedMessage> {
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      const ephemeralKey = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      const apv = computeApv([recipientKid])
+      const protectedHeader = JsonEncoder.toBase64Url({
+        typ,
+        alg: 'ECDH-ES+A256KW',
+        enc: 'A256CBC-HS512',
+        apv: TypedArrayEncoder.toBase64Url(apv),
+        epk: ephemeralKey.publicJwk,
+      })
+      const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-ES+A256KW',
+            keyId: ephemeralKey.keyId,
+            externalPublicJwk: recipientKey.toJson() as Kms.KmsJwkPublicEcdh,
+            apv,
+          },
+        },
+        encryption: { algorithm: 'A256CBC-HS512', aad: TypedArrayEncoder.fromUtf8String(protectedHeader) },
+        data: JsonEncoder.toUint8Array(plaintext),
+      })
+
+      return {
+        protected: protectedHeader,
+        recipients: [
+          {
+            header: { kid: recipientKid },
+            encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey?.encrypted as Uint8Array),
+          },
+        ],
+        iv: TypedArrayEncoder.toBase64Url(iv as Uint8Array),
+        ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
+        tag: TypedArrayEncoder.toBase64Url(tag as Uint8Array),
+      }
+    }
+
+    it.each([undefined, 'didcomm-encrypted+json', 'application/didcomm+encrypted'])(
+      'detects and unpacks an envelope with typ %s',
+      async (typ) => {
+        const encrypted = await packAnoncryptWithTyp(typ)
+
+        expect(isDidCommV2EncryptedMessage(encrypted)).toBe(true)
+        const { plaintext: decrypted } = await envelopeService.unpack(agentContext, encrypted, {
+          recipientKey: recipientKey as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
+          matchedKid: recipientKid,
+          resolveSenderKey: async () => null,
+        })
+        expect(decrypted).toEqual(plaintext)
+      }
+    )
+  })
+
   describe('P-256 keyAgreement', () => {
     let p256SenderKey: Kms.PublicJwk<Kms.P256PublicJwk>
     let p256RecipientKey: Kms.PublicJwk<Kms.P256PublicJwk>
+    const p256SenderKid = 'did:example:alice#key-p256-1'
+    const p256RecipientKid = 'did:example:bob#key-p256-1'
 
     beforeAll(async () => {
       const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
@@ -164,7 +236,8 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       async (enc) => {
         const encrypted = await envelopeService.pack(agentContext, plaintext, {
           senderKey: p256SenderKey,
-          recipientKey: p256RecipientKey,
+          senderKeySkid: p256SenderKid,
+          recipients: [{ key: p256RecipientKey, kid: p256RecipientKid }],
           contentEncryptionAlgorithm: enc,
         })
 
@@ -172,19 +245,19 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
         expect(protectedJson).toMatchObject({
           alg: 'ECDH-1PU+A256KW',
           enc,
-          skid: p256SenderKey.keyId,
+          skid: p256SenderKid,
           epk: { kty: 'EC', crv: 'P-256', x: expect.any(String), y: expect.any(String) },
         })
-        expect(protectedJson.apu).toBe(TypedArrayEncoder.toBase64Url(computeApu(p256SenderKey.keyId)))
-        expect(protectedJson.apv).toBe(TypedArrayEncoder.toBase64Url(computeApv([p256RecipientKey.keyId])))
+        expect(protectedJson.apu).toBe(TypedArrayEncoder.toBase64Url(computeApu(p256SenderKid)))
+        expect(protectedJson.apv).toBe(TypedArrayEncoder.toBase64Url(computeApv([p256RecipientKid])))
 
         const { plaintext: decrypted, senderKey: resolvedSender } = await envelopeService.unpack(
           agentContext,
           encrypted,
           {
             recipientKey: p256RecipientKey as Kms.PublicJwk<Kms.P256PublicJwk> & { keyId: string },
-            matchedKid: p256RecipientKey.keyId,
-            resolveSenderKey: async (skid) => (skid === p256SenderKey.keyId ? p256SenderKey : null),
+            matchedKid: p256RecipientKid,
+            resolveSenderKey: async (skid) => (skid === p256SenderKid ? p256SenderKey : null),
           }
         )
 
@@ -197,7 +270,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       'anoncrypt round-trips with %s content encryption',
       async (enc) => {
         const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
-          recipientKey: p256RecipientKey,
+          recipients: [{ key: p256RecipientKey, kid: p256RecipientKid }],
           contentEncryptionAlgorithm: enc,
         })
 
@@ -209,14 +282,14 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
         })
         expect(protectedJson.skid).toBeUndefined()
         expect(protectedJson.apu).toBeUndefined()
-        expect(protectedJson.apv).toBe(TypedArrayEncoder.toBase64Url(computeApv([p256RecipientKey.keyId])))
+        expect(protectedJson.apv).toBe(TypedArrayEncoder.toBase64Url(computeApv([p256RecipientKid])))
 
         const { plaintext: decrypted, senderKey: resolvedSender } = await envelopeService.unpack(
           agentContext,
           encrypted,
           {
             recipientKey: p256RecipientKey as Kms.PublicJwk<Kms.P256PublicJwk> & { keyId: string },
-            matchedKid: p256RecipientKey.keyId,
+            matchedKid: p256RecipientKid,
             resolveSenderKey: async () => null,
           }
         )
@@ -230,6 +303,8 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
   describe('P-384 keyAgreement', () => {
     let p384SenderKey: Kms.PublicJwk<Kms.P384PublicJwk>
     let p384RecipientKey: Kms.PublicJwk<Kms.P384PublicJwk>
+    const p384SenderKid = 'did:example:alice#key-p384-1'
+    const p384RecipientKid = 'did:example:bob#key-p384-1'
 
     beforeAll(async () => {
       const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
@@ -247,7 +322,8 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       async (enc) => {
         const encrypted = await envelopeService.pack(agentContext, plaintext, {
           senderKey: p384SenderKey,
-          recipientKey: p384RecipientKey,
+          senderKeySkid: p384SenderKid,
+          recipients: [{ key: p384RecipientKey, kid: p384RecipientKid }],
           contentEncryptionAlgorithm: enc,
         })
 
@@ -255,7 +331,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
         expect(protectedJson).toMatchObject({
           alg: 'ECDH-1PU+A256KW',
           enc,
-          skid: p384SenderKey.keyId,
+          skid: p384SenderKid,
           epk: { kty: 'EC', crv: 'P-384', x: expect.any(String), y: expect.any(String) },
         })
 
@@ -264,8 +340,8 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
           encrypted,
           {
             recipientKey: p384RecipientKey as Kms.PublicJwk<Kms.P384PublicJwk> & { keyId: string },
-            matchedKid: p384RecipientKey.keyId,
-            resolveSenderKey: async (skid) => (skid === p384SenderKey.keyId ? p384SenderKey : null),
+            matchedKid: p384RecipientKid,
+            resolveSenderKey: async (skid) => (skid === p384SenderKid ? p384SenderKey : null),
           }
         )
 
@@ -278,7 +354,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       'anoncrypt round-trips with %s content encryption',
       async (enc) => {
         const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
-          recipientKey: p384RecipientKey,
+          recipients: [{ key: p384RecipientKey, kid: p384RecipientKid }],
           contentEncryptionAlgorithm: enc,
         })
 
@@ -294,7 +370,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
           encrypted,
           {
             recipientKey: p384RecipientKey as Kms.PublicJwk<Kms.P384PublicJwk> & { keyId: string },
-            matchedKid: p384RecipientKey.keyId,
+            matchedKid: p384RecipientKid,
             resolveSenderKey: async () => null,
           }
         )
@@ -303,5 +379,139 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
         expect(resolvedSender).toBeNull()
       }
     )
+  })
+
+  describe('off-curve NIST points', () => {
+    // There is no on-curve check of our own. These pin down that the KMS rejects the point on import,
+    // which fails with a different cause than a tag mismatch.
+    async function expectInvalidKeyData(unpack: Promise<unknown>): Promise<void> {
+      const error = await unpack.then(
+        () => undefined,
+        (e: Error) => e
+      )
+      expect(error?.cause).toEqual(expect.objectContaining({ message: 'Invalid key data' }))
+    }
+
+    function offCurve<T extends { y: string }>(jwk: T): T {
+      const y = TypedArrayEncoder.fromBase64Url(jwk.y)
+      y[y.length - 1] ^= 1
+      return { ...jwk, y: TypedArrayEncoder.toBase64Url(y) }
+    }
+
+    function withOffCurveEpk(encrypted: DidCommV2EncryptedMessage): DidCommV2EncryptedMessage {
+      const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected)
+      return {
+        ...encrypted,
+        protected: JsonEncoder.toBase64Url({ ...protectedJson, epk: offCurve(protectedJson.epk) }),
+      }
+    }
+
+    async function createKeyPair(crv: 'P-256' | 'P-384'): Promise<{
+      sender: Kms.PublicJwk<Kms.P256PublicJwk | Kms.P384PublicJwk>
+      recipient: Kms.PublicJwk<Kms.P256PublicJwk | Kms.P384PublicJwk> & { keyId: string }
+    }> {
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      const [sender, recipient] = await Promise.all([
+        kms.createKey({ type: { kty: 'EC', crv } }),
+        kms.createKey({ type: { kty: 'EC', crv } }),
+      ])
+      const senderJwk = Kms.PublicJwk.fromPublicJwk(sender.publicJwk) as Kms.PublicJwk<
+        Kms.P256PublicJwk | Kms.P384PublicJwk
+      >
+      senderJwk.keyId = sender.keyId
+      const recipientJwk = Kms.PublicJwk.fromPublicJwk(recipient.publicJwk) as Kms.PublicJwk<
+        Kms.P256PublicJwk | Kms.P384PublicJwk
+      >
+      recipientJwk.keyId = recipient.keyId
+      return { sender: senderJwk, recipient: recipientJwk }
+    }
+
+    it.each(['P-256', 'P-384'] as const)('rejects an anoncrypt envelope whose %s epk is off the curve', async (crv) => {
+      const { recipient } = await createKeyPair(crv)
+      const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
+        recipients: [{ key: recipient, kid: recipientKid }],
+      })
+
+      await expectInvalidKeyData(
+        envelopeService.unpack(agentContext, withOffCurveEpk(encrypted), {
+          recipientKey: recipient,
+          matchedKid: recipientKid,
+          resolveSenderKey: async () => null,
+        })
+      )
+    })
+
+    it.each(['P-256', 'P-384'] as const)('rejects an authcrypt envelope whose %s epk is off the curve', async (crv) => {
+      const { sender, recipient } = await createKeyPair(crv)
+      const encrypted = await envelopeService.pack(agentContext, plaintext, {
+        senderKey: sender,
+        senderKeySkid: senderKid,
+        recipients: [{ key: recipient, kid: recipientKid }],
+      })
+
+      await expectInvalidKeyData(
+        envelopeService.unpack(agentContext, withOffCurveEpk(encrypted), {
+          recipientKey: recipient,
+          matchedKid: recipientKid,
+          resolveSenderKey: async () => sender,
+        })
+      )
+    })
+
+    it.each(['P-256', 'P-384'] as const)(
+      'rejects an authcrypt envelope whose resolved %s sender key is off the curve',
+      async (crv) => {
+        const { sender, recipient } = await createKeyPair(crv)
+        const encrypted = await envelopeService.pack(agentContext, plaintext, {
+          senderKey: sender,
+          senderKeySkid: senderKid,
+          recipients: [{ key: recipient, kid: recipientKid }],
+        })
+        const offCurveSender = Kms.PublicJwk.fromUnknown(offCurve(sender.toJson() as { y: string }))
+
+        await expectInvalidKeyData(
+          envelopeService.unpack(agentContext, encrypted, {
+            recipientKey: recipient,
+            matchedKid: recipientKid,
+            resolveSenderKey: async () => offCurveSender,
+          })
+        )
+      }
+    )
+  })
+
+  describe('key resolver', () => {
+    it('does not resolve a recipient kid that is a local KMS key id', async () => {
+      const resolver = new DidCommV2KeyResolver({} as DidResolverService)
+      const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
+        recipients: [{ key: recipientKey, kid: recipientKey.keyId }],
+      })
+
+      expect(await resolver.resolveRecipientKey(agentContext, encrypted)).toBeNull()
+    })
+
+    it('names the sender key by its verification method when the published jwk carries a kid', async () => {
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      const created = await kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      const skid = 'did:example:alice#key-p256-1'
+      const didDocument = new DidDocument({
+        id: 'did:example:alice',
+        keyAgreement: [
+          new VerificationMethod({
+            id: skid,
+            type: 'JsonWebKey2020',
+            controller: 'did:example:alice',
+            publicKeyJwk: { ...created.publicJwk, kid: created.keyId },
+          }),
+        ],
+      })
+      const resolver = new DidCommV2KeyResolver({
+        resolveDidDocument: async () => didDocument,
+      } as unknown as DidResolverService)
+
+      const senderKey = await resolver.resolveSenderKey(agentContext, skid)
+
+      expect(senderKey?.keyId).toBe(skid)
+    })
   })
 })

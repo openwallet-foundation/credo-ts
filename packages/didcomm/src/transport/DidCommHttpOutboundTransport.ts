@@ -5,7 +5,9 @@ import type { DidCommMessageReceivedEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import type { DidCommOutboundPackage } from '../types'
+import { isDidCommV2EncryptedMessage } from '../util/didcommVersion'
 import { isValidJweStructure } from '../util/JWE'
+import { DIDCOMM_V2_ENCRYPTED_MIME_TYPE } from '../v2/types'
 import type { DidCommOutboundTransport } from './DidCommOutboundTransport'
 
 export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
@@ -58,6 +60,7 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
   public async sendMessage(outboundPackage: DidCommOutboundPackage) {
     const { payload, endpoint } = outboundPackage
     const didCommMimeType = this.agentContext.dependencyManager.resolve(DidCommModuleConfig).didCommMimeType
+    const contentType = isDidCommV2EncryptedMessage(payload) ? DIDCOMM_V2_ENCRYPTED_MIME_TYPE : didCommMimeType
 
     if (!this.isActive) {
       throw new CredoError('Outbound transport is not active. Not sending message.')
@@ -82,7 +85,7 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
         response = await this.fetch(endpoint, {
           method: 'POST',
           body: JSON.stringify(payload),
-          headers: { 'Content-Type': didCommMimeType },
+          headers: { 'Content-Type': contentType },
           signal: abortController.signal as NonNullable<RequestInit['signal']>,
         })
         clearTimeout(id)
@@ -139,7 +142,7 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
         error,
         message: error.message,
         body: payload,
-        didCommMimeType,
+        contentType,
       })
       throw new CredoError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
     } finally {

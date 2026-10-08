@@ -1,10 +1,13 @@
 import { CredoError, JsonEncoder } from '@credo-ts/core'
 import type { DidCommConnectionRecord } from '../modules/connections/repository'
-import type { DidCommV2EncryptedMessage, DidCommV2SignedMessage } from '../v2/types'
+import type { DidCommV2EncryptedMessage, DidCommV2SignedMessageWire } from '../v2/types'
+import {
+  DIDCOMM_V2_ENCRYPTED_MIME_TYPE,
+  DIDCOMM_V2_KEY_WRAPPING_ALGORITHMS,
+  DIDCOMM_V2_SIGNED_MIME_TYPE,
+  normalizeDidCommMediaType,
+} from '../v2/types'
 import { isValidJweStructure } from './JWE'
-
-const DIDCOMM_V2_TYP = 'application/didcomm-encrypted+json'
-const DIDCOMM_V2_SIGNED_TYP = 'application/didcomm-signed+json'
 
 /**
  * Canonical DIDComm protocol version identifier.
@@ -18,9 +21,9 @@ const DIDCOMM_V2_SIGNED_TYP = 'application/didcomm-signed+json'
 export type DidCommVersion = 'v1' | 'v2'
 
 /**
- * Detect whether an encrypted message is DIDComm v2 format.
- * v2 uses typ: 'application/didcomm-encrypted+json' in the JWE protected header,
- * and JWE General JSON Serialization with a top-level recipients array.
+ * Detect whether an encrypted message is DIDComm v2 format: a JWE in General JSON Serialization with a
+ * top-level recipients array, whose protected header uses a v2 key wrapping algorithm or the v2 media type.
+ * The spec only says `typ` SHOULD be set, so a missing or different `typ` does not rule a message out.
  *
  * @param message - The message to check (typically a JWE object with protected, recipients, iv, ciphertext, tag)
  * @returns true if the message is DIDComm v2 encrypted format
@@ -32,40 +35,51 @@ export function isDidCommV2EncryptedMessage(message: unknown): message is DidCom
   if (!Array.isArray((message as { recipients?: unknown }).recipients)) {
     return false
   }
-  try {
-    const protectedJson = JsonEncoder.fromBase64Url((message as { protected: string }).protected)
-    return protectedJson?.typ === DIDCOMM_V2_TYP
-  } catch {
-    return false
+  const protectedJson = decodeProtectedHeader((message as { protected: string }).protected)
+  if (!protectedJson) return false
+  if (typeof protectedJson.alg === 'string' && DIDCOMM_V2_KEY_WRAPPING_ALGORITHMS.includes(protectedJson.alg)) {
+    return true
   }
+  return hasMediaType(protectedJson, DIDCOMM_V2_ENCRYPTED_MIME_TYPE)
 }
 
 /**
- * Detect whether a message is a DIDComm v2 signed message (JWS general serialization).
- * v2 signed messages use typ: 'application/didcomm-signed+json' in each signature's protected header,
- * with `payload` (base64url JWM bytes) and `signatures` (array with per-signature kid in unprotected header) at the top level.
+ * Detect whether a message is a DIDComm v2 signed message, in the General or the Flattened JWS JSON
+ * serialization. A signature is recognised by its protected `alg` or by the v2 signed media type. The
+ * `typ` value is checked when the signature is verified, not here.
  *
  * @param message - The message to check
  * @returns true if the message is DIDComm v2 signed format
  */
-export function isDidCommV2SignedMessage(message: unknown): message is DidCommV2SignedMessage {
+export function isDidCommV2SignedMessage(message: unknown): message is DidCommV2SignedMessageWire {
   if (!message || typeof message !== 'object') return false
   const m = message as { payload?: unknown; signatures?: unknown }
-  if (typeof m.payload !== 'string' || !Array.isArray(m.signatures) || m.signatures.length === 0) {
-    return false
+  if (typeof m.payload !== 'string') return false
+  if (m.signatures === undefined) return isDidCommV2JwsSignature(m)
+  if (!Array.isArray(m.signatures) || m.signatures.length === 0) return false
+  return m.signatures.every(isDidCommV2JwsSignature)
+}
+
+function isDidCommV2JwsSignature(signature: unknown): boolean {
+  if (!signature || typeof signature !== 'object') return false
+  const s = signature as { protected?: unknown; signature?: unknown }
+  if (typeof s.protected !== 'string' || typeof s.signature !== 'string') return false
+  const protectedJson = decodeProtectedHeader(s.protected)
+  if (!protectedJson) return false
+  return typeof protectedJson.alg === 'string' || hasMediaType(protectedJson, DIDCOMM_V2_SIGNED_MIME_TYPE)
+}
+
+function decodeProtectedHeader(encoded: string): { alg?: unknown; typ?: unknown } | undefined {
+  try {
+    const decoded = JsonEncoder.fromBase64Url(encoded)
+    return decoded && typeof decoded === 'object' ? decoded : undefined
+  } catch {
+    return undefined
   }
-  for (const sig of m.signatures) {
-    if (!sig || typeof sig !== 'object') return false
-    const s = sig as { protected?: unknown; signature?: unknown; header?: unknown }
-    if (typeof s.protected !== 'string' || typeof s.signature !== 'string') return false
-    try {
-      const protectedJson = JsonEncoder.fromBase64Url(s.protected)
-      if (protectedJson?.typ !== DIDCOMM_V2_SIGNED_TYP) return false
-    } catch {
-      return false
-    }
-  }
-  return true
+}
+
+function hasMediaType(protectedJson: { typ?: unknown }, mediaType: string): boolean {
+  return typeof protectedJson.typ === 'string' && normalizeDidCommMediaType(protectedJson.typ) === mediaType
 }
 
 /**
