@@ -2,8 +2,13 @@ import type { AgentContext, VerificationMethod } from '@credo-ts/core'
 import {
   DidCommV1Service,
   DidDocument,
+  DidDocumentBuilder,
+  DidKey,
   DidRepository,
   DidResolverService,
+  didDocumentToNumAlgo2Did,
+  getEd25519VerificationKey2018,
+  getX25519KeyAgreementKey2019,
   IndyAgentService,
   Kms,
   NewDidCommV2Service,
@@ -267,6 +272,224 @@ describe('DidCommDocumentService', () => {
         publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58Ed25519),
       })
       expect(resolved[0].routingKeys[0].equals(ed25519Key)).toBe(true)
+    })
+
+    test('resolves keyAgreement routing keys for a DIDComm v2 service', async () => {
+      const mediatorKeyAgreementKey = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'X25519',
+        publicKey: new Uint8Array(32).fill(7),
+      })
+      const bareDidKeyRoutingKey = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'X25519',
+        publicKey: TypedArrayEncoder.fromBase58('S3AQEEKkGYrrszT9D55ozVVX2XixYp8uynqVm4okbud'),
+      })
+      const mediatorDoc = new DidDocument({
+        context: ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/x25519-2019/v1'],
+        id: 'did:example:mediator',
+        verificationMethod: [
+          {
+            id: 'did:example:mediator#kx',
+            type: 'X25519KeyAgreementKey2019',
+            controller: 'did:example:mediator',
+            publicKeyBase58: TypedArrayEncoder.toBase58(mediatorKeyAgreementKey.publicKey.publicKey),
+          },
+        ],
+        keyAgreement: ['did:example:mediator#kx'],
+      })
+      const aliceDoc = new DidDocument({
+        id: 'did:example:alice',
+        service: [
+          new NewDidCommV2Service({
+            id: 'did:example:alice#dm',
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
+              uri: 'https://mediator.example/didcomm',
+              routingKeys: ['did:example:mediator#kx', new DidKey(bareDidKeyRoutingKey).did],
+            }),
+          }),
+        ],
+      })
+      mockFunction(didResolverService.resolveDidDocument).mockImplementation(async (_, did) =>
+        did.startsWith('did:example:mediator') ? mediatorDoc : aliceDoc
+      )
+
+      const [resolved] = await didCommDocumentService.resolveServicesFromDid(agentContext, 'did:example:alice')
+
+      expect(resolved.routingKeys).toHaveLength(2)
+      expect(resolved.routingKeys[0].equals(mediatorKeyAgreementKey)).toBe(true)
+      expect(resolved.routingKeys[0].keyId).toBe('did:example:mediator#kx')
+      expect(resolved.routingKeys[1].equals(bareDidKeyRoutingKey)).toBe(true)
+    })
+
+    test('uses one keyAgreement hop for a DIDComm v2 mediator DID endpoint', async () => {
+      const mediatorKeyAgreementKey = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'X25519',
+        publicKey: new Uint8Array(32).fill(7),
+      })
+      const mediatorDid = didDocumentToNumAlgo2Did(
+        new DidDocumentBuilder('')
+          .addAuthentication(
+            getEd25519VerificationKey2018({
+              id: '#key-1',
+              publicJwk: Kms.PublicJwk.fromPublicKey({
+                kty: 'OKP',
+                crv: 'Ed25519',
+                publicKey: TypedArrayEncoder.fromBase58('GyYtYWU1vjwd5PFJM4VSX5aUiSV3TyZMuLBJBTQvfdF8'),
+              }),
+              controller: '#id',
+            })
+          )
+          .addKeyAgreement(
+            getX25519KeyAgreementKey2019({ id: '#key-2', publicJwk: mediatorKeyAgreementKey, controller: '#id' })
+          )
+          .addKeyAgreement(
+            getX25519KeyAgreementKey2019({
+              id: '#key-3',
+              publicJwk: Kms.PublicJwk.fromPublicKey({
+                kty: 'OKP',
+                crv: 'X25519',
+                publicKey: new Uint8Array(32).fill(9),
+              }),
+              controller: '#id',
+            })
+          )
+          .addService(
+            new NewDidCommV2Service({
+              id: '#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: 'https://mediator.example/didcomm' }),
+            })
+          )
+          .build()
+      )
+      mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(
+        new DidDocument({
+          id: 'did:example:bob',
+          service: [
+            new NewDidCommV2Service({
+              id: 'did:example:bob#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: mediatorDid }),
+            }),
+          ],
+        })
+      )
+
+      const [resolved] = await didCommDocumentService.resolveServicesFromDid(agentContext, 'did:example:bob')
+
+      expect(resolved.serviceEndpoint).toBe('https://mediator.example/didcomm')
+      expect(resolved.routingKeys).toHaveLength(1)
+      expect(resolved.routingKeys[0].equals(mediatorKeyAgreementKey)).toBe(true)
+    })
+
+    test('keeps a forward hop for a DIDComm v2 mediator DID endpoint without keyAgreement', async () => {
+      const mediatorRoutingKey = Kms.PublicJwk.fromFingerprint('z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE')
+      const mediatorDid = didDocumentToNumAlgo2Did(
+        new DidDocumentBuilder('')
+          .addAuthentication(
+            getEd25519VerificationKey2018({
+              id: '#key-1',
+              publicJwk: mediatorRoutingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>,
+              controller: '#id',
+            })
+          )
+          .addService(
+            new NewDidCommV2Service({
+              id: '#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: 'https://mediator.example/didcomm' }),
+            })
+          )
+          .build()
+      )
+      mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(
+        new DidDocument({
+          id: 'did:example:bob',
+          service: [
+            new NewDidCommV2Service({
+              id: 'did:example:bob#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: mediatorDid }),
+            }),
+          ],
+        })
+      )
+
+      const [resolved] = await didCommDocumentService.resolveServicesFromDid(agentContext, 'did:example:bob')
+
+      expect(resolved.serviceEndpoint).toBe('https://mediator.example/didcomm')
+      expect(resolved.routingKeys).toHaveLength(1)
+      expect(resolved.routingKeys[0].equals(mediatorRoutingKey)).toBe(true)
+    })
+
+    test('uses the keyAgreement verification method id as DIDComm v2 recipient key id', async () => {
+      mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(
+        new DidDocument({
+          context: ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
+          id: 'did:web:bob.example',
+          verificationMethod: [
+            {
+              id: '#key-1',
+              type: 'JsonWebKey2020',
+              controller: 'did:web:bob.example',
+              publicKeyJwk: {
+                kty: 'EC',
+                crv: 'P-256',
+                x: 'acbIQiuMs3i8_uszEjJ2tpTtRM4EU3yz91PH6CdH2V0',
+                y: '_KcyLj9vWMptnmKtm46GqDz8wf74I5LKgrl2GzH3nSE',
+                kid: 'key-1',
+              },
+            },
+          ],
+          keyAgreement: ['#key-1'],
+          service: [
+            new NewDidCommV2Service({
+              id: 'did:web:bob.example#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: 'https://bob.example/didcomm' }),
+            }),
+          ],
+        })
+      )
+
+      const resolved = await didCommDocumentService.resolveServicesFromDid(agentContext, 'did:web:bob.example')
+
+      expect(resolved[0].recipientKeys[0].keyId).toBe('did:web:bob.example#key-1')
+    })
+
+    test('skips an Ed25519 keyAgreement verification method for a DIDComm v2 service', async () => {
+      mockFunction(didResolverService.resolveDidDocument).mockResolvedValue(
+        new DidDocument({
+          context: [
+            'https://w3id.org/did/v1',
+            'https://w3id.org/security/suites/ed25519-2018/v1',
+            'https://w3id.org/security/suites/x25519-2019/v1',
+          ],
+          id: 'did:web:bob.example',
+          verificationMethod: [
+            {
+              id: '#key-1',
+              type: 'Ed25519VerificationKey2018',
+              controller: 'did:web:bob.example',
+              publicKeyBase58: 'GyYtYWU1vjwd5PFJM4VSX5aUiSV3TyZMuLBJBTQvfdF8',
+            },
+            {
+              id: '#key-2',
+              type: 'X25519KeyAgreementKey2019',
+              controller: 'did:web:bob.example',
+              publicKeyBase58: 'S3AQEEKkGYrrszT9D55ozVVX2XixYp8uynqVm4okbud',
+            },
+          ],
+          keyAgreement: ['#key-1', '#key-2'],
+          service: [
+            new NewDidCommV2Service({
+              id: 'did:web:bob.example#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: 'https://bob.example/didcomm' }),
+            }),
+          ],
+        })
+      )
+
+      const resolved = await didCommDocumentService.resolveServicesFromDid(agentContext, 'did:web:bob.example')
+
+      expect(resolved[0].recipientKeys.map((key) => key.keyId)).toEqual(['did:web:bob.example#key-2'])
     })
   })
 

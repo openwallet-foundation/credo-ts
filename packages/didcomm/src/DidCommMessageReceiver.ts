@@ -1,7 +1,9 @@
 import type { AgentContext } from '@credo-ts/core'
 import {
   type AgentContextProvider,
+  areEquivalentDidPeer4Forms,
   CredoError,
+  DidRepository,
   DidsApi,
   InjectionSymbols,
   inject,
@@ -10,7 +12,7 @@ import {
   type Logger,
   RecordDuplicateError,
 } from '@credo-ts/core'
-import { DidCommDispatcher } from './DidCommDispatcher'
+import { DidCommDispatcher, isProblemReportMessageType } from './DidCommDispatcher'
 import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
 import { DidCommMessage } from './DidCommMessage'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
@@ -32,12 +34,13 @@ import {
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import { DidCommDidRotateV2Service } from './modules/connections/services/DidCommDidRotateV2Service'
 import { DidCommOutOfBandService } from './modules/oob/DidCommOutOfBandService'
+import { DidCommOutOfBandRole, DidCommOutOfBandState } from './modules/oob/domain'
 import { DidCommRoutingService } from './modules/routing/services/DidCommRoutingService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isDidCommV2SignedMessage } from './util/didcommVersion'
 import { isValidJweStructure } from './util/JWE'
-import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
-import type { DidCommV2SignedMessage } from './v2'
+import { parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
+import type { DidCommV2SignedMessageWire } from './v2'
 
 @injectable()
 export class DidCommMessageReceiver {
@@ -140,7 +143,7 @@ export class DidCommMessageReceiver {
 
   private async receiveSignedMessage(
     agentContext: AgentContext,
-    signedMessage: DidCommV2SignedMessage,
+    signedMessage: DidCommV2SignedMessageWire,
     connection?: DidCommConnectionRecord,
     receivedAt?: Date
   ) {
@@ -163,29 +166,53 @@ export class DidCommMessageReceiver {
   ) {
     const envelope = this.envelopeRegistry.getEnvelopeForInbound(encryptedMessage)
     const decryptedMessage = await this.decryptMessage(agentContext, envelope, encryptedMessage)
-    const { plaintextMessage, senderKey, recipientKey } = decryptedMessage
+    const { plaintextMessage, senderKey, recipientKey, authenticatedSenderDid } = decryptedMessage
 
     this.logger.info(
       `Received message with type '${plaintextMessage['@type']}', recipient key ${recipientKey?.fingerprint} and sender key ${senderKey?.fingerprint}`,
       plaintextMessage
     )
 
-    const connection = await this.findConnection(agentContext, decryptedMessage)
+    const { connection, linkedByFromPrior, linkedBySupersededKey } = await this.findConnection(
+      agentContext,
+      decryptedMessage
+    )
 
     if (connection) {
+      // DIDComm v2.1 DID Rotation: messages sent before a rotation that arrive after it MUST be ignored
+      if (
+        authenticatedSenderDid &&
+        (linkedBySupersededKey || this.isSupersededTheirDid(connection, authenticatedSenderDid))
+      ) {
+        this.logger.debug('Ignoring v2 message from a superseded peer DID', {
+          connectionId: connection.id,
+          senderDid: authenticatedSenderDid,
+        })
+        await session?.close()
+        return
+      }
+
+      const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
       const fromPriorJws = plaintextMessage.from_prior as string | undefined
       if (fromPriorJws) {
-        const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
-        await didRotateV2Service.processFromPrior(
+        const result = await didRotateV2Service.processFromPrior(
           agentContext,
           connection,
           fromPriorJws,
-          plaintextMessage.from as string | undefined
+          authenticatedSenderDid
         )
+        // A from_prior applied before says nothing about who sent this copy of it
+        if (result !== 'applied' && linkedByFromPrior) {
+          this.logger.warn('Dropping v2 message tied to a connection only by a from_prior that changed nothing', {
+            connectionId: connection.id,
+          })
+          await session?.close()
+          return
+        }
       }
+
       const inboundTo = Array.isArray(plaintextMessage.to) ? (plaintextMessage.to as string[]) : undefined
       if (inboundTo?.length) {
-        const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
         await didRotateV2Service.clearPendingRotationIfAcknowledged(agentContext, connection, inboundTo)
       }
     }
@@ -199,7 +226,7 @@ export class DidCommMessageReceiver {
       connection: connection?.isReady ? connection : undefined,
       senderKey,
       recipientKey,
-      senderDid: plaintextMessage.from as string | undefined,
+      senderDid: authenticatedSenderDid,
       agentContext,
       receivedAt,
       encryptedMessage,
@@ -286,14 +313,23 @@ export class DidCommMessageReceiver {
     return message
   }
 
+  private isSupersededTheirDid(connection: DidCommConnectionRecord, senderDid: string): boolean {
+    if (connection.theirDid && areEquivalentDidPeer4Forms(connection.theirDid, senderDid)) return false
+    return connection.previousTheirDids.some((did) => areEquivalentDidPeer4Forms(did, senderDid))
+  }
+
   private async findConnection(
     agentContext: AgentContext,
     decryptedMessage: DecryptedDidCommMessageContext
-  ): Promise<DidCommConnectionRecord | null> {
-    const { plaintextMessage, recipientKey, senderKey } = decryptedMessage
+  ): Promise<{
+    connection: DidCommConnectionRecord | null
+    linkedByFromPrior?: boolean
+    linkedBySupersededKey?: boolean
+  }> {
+    const { plaintextMessage, recipientKey, senderKey, authenticatedSenderDid } = decryptedMessage
 
-    // DIDComm v2: plaintext has from/to (normalized from v2 shape). Try findByTheirDid first.
-    const from = plaintextMessage.from as string | undefined
+    // DIDComm v2: an anoncrypt `from` is unauthenticated, so only the authcrypt sender selects a connection.
+    const from = authenticatedSenderDid
     const to = Array.isArray(plaintextMessage.to) ? plaintextMessage.to : undefined
     const fromPriorJws = plaintextMessage.from_prior as string | undefined
 
@@ -305,7 +341,7 @@ export class DidCommMessageReceiver {
           ourDid: to[0],
           theirDid: from,
         })
-        if (byPair) return byPair
+        if (byPair) return { connection: byPair }
       }
 
       let connection: DidCommConnectionRecord | null = null
@@ -324,37 +360,42 @@ export class DidCommMessageReceiver {
           throw error
         }
       }
-      if (connection) return connection
+      if (connection) return { connection }
 
       // Fallback: try findByKeys. With v1 connections + v2 envelope, findByTheirDid can fail in edge cases.
       // With v2 OOB, findByKeys may work if DidRecords exist for the keys. DID record tags index
       // X25519 and P-256/P-384 fingerprints too, so v2 key-agreement keys can match.
       if (recipientKey && senderKey) {
         connection = await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
-        if (connection) return connection
+        if (connection) {
+          const keyOwner = await agentContext.dependencyManager
+            .resolve(DidRepository)
+            .findReceivedDidByRecipientKey(agentContext, senderKey)
+          return {
+            connection,
+            linkedBySupersededKey: keyOwner !== null && this.isSupersededTheirDid(connection, keyOwner.did),
+          }
+        }
       }
     }
+
+    const recipient = decryptedMessage.recipientDid
 
     // Connection lookup is by (ourDid, priorDid) pair per V2.
-    if (fromPriorJws && to?.length) {
-      try {
-        const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
-        const payload = await didRotateV2Service.verifyFromPrior(agentContext, fromPriorJws)
-        const byPair = await this.connectionService.findByDids(agentContext, {
-          ourDid: to[0],
-          theirDid: payload.iss,
-        })
-        if (byPair) return byPair
-      } catch (error) {
-        this.logger.warn('from_prior JWT verification failed during connection lookup', {
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
+    if (fromPriorJws && recipient) {
+      const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
+      const { iss } = await didRotateV2Service.verifyFromPrior(agentContext, fromPriorJws)
+      const byPair = await this.connectionService.findByDids(agentContext, { ourDid: recipient, theirDid: iss })
+      if (byPair) return { connection: byPair, linkedByFromPrior: true }
     }
 
-    if (from !== undefined && to?.length && this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
-      const recipient = to[0]
-      const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipient)
+    if (from !== undefined && recipient && this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
+      const [recipientDidRecord] = await agentContext.resolve(DidsApi).getCreatedDids({ did: recipient })
+      // Match every form of the DID (did:peer:4 short and long) so a sender cannot pick the untracked one.
+      const recipientDids = recipientDidRecord
+        ? [recipientDidRecord.did, ...(recipientDidRecord.getTags().alternativeDids ?? [])]
+        : [recipient]
+      const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipientDids)
       if (outOfBandRecord) {
         // Inviter receives first message → Responder (so retrieveServicesByConnection uses theirDid parse fallback)
         const connection = await this.connectionService.createConnection(
@@ -375,16 +416,13 @@ export class DidCommMessageReceiver {
         // attached to the next outbound message notifies the peer about the linkage.
         if (outOfBandRecord.reusable) {
           await this.rotateInviterDidForV2OOB(agentContext, connection)
+        } else {
+          await this.outOfBandService.updateState(agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
         }
-        return connection
+        return { connection }
       }
 
-      // For implicit v2 OOB invitations: no OutOfBandRecord exists on the responder side
-      // because the public DID itself IS the invitation. Auto-create the connection if the
-      // recipient DID is one of our created DIDs.
-      const dids = agentContext.resolve(DidsApi)
-      try {
-        await dids.resolveCreatedDidDocumentWithKeys(recipient)
+      if (recipientDidRecord && (await this.isImplicitInvitationDid(agentContext, recipientDids))) {
         const connection = await this.connectionService.createConnection(
           agentContext,
           {
@@ -393,21 +431,34 @@ export class DidCommMessageReceiver {
             state: DidCommDidExchangeState.Completed,
             theirDid: from,
             did: recipient,
+            invitationDid: recipient,
             didcommVersion: 'v2',
           },
           true
         )
         // Always rotate to a per-pair DID
         await this.rotateInviterDidForV2OOB(agentContext, connection)
-        return connection
-      } catch {
-        // recipient is not our DID — no connection created
+        return { connection }
       }
     }
 
     // v1: use sender/recipient keys
-    if (!recipientKey || !senderKey) return null
-    return this.connectionService.findByKeys(agentContext, { senderKey, recipientKey })
+    if (!recipientKey || !senderKey) return { connection: null }
+    return { connection: await this.connectionService.findByKeys(agentContext, { senderKey, recipientKey }) }
+  }
+
+  private async isImplicitInvitationDid(agentContext: AgentContext, dids: string[]): Promise<boolean> {
+    const outOfBandRecords = await this.outOfBandService.findAllByQuery(agentContext, {
+      role: DidCommOutOfBandRole.Sender,
+      $or: dids.map((recipientDid) => ({ recipientDid })),
+    })
+    if (outOfBandRecords.length > 0) return false
+
+    const connections = await this.connectionService.findAllByQuery(agentContext, {
+      $or: dids.flatMap((ourDid) => [{ did: ourDid }, { previousDids: [ourDid] }]),
+    })
+    // Connections this implicit invitation already opened rotated away from it, so they do not make it pairwise.
+    return connections.every(({ invitationDid }) => invitationDid !== undefined && dids.includes(invitationDid))
   }
 
   /**
@@ -473,7 +524,7 @@ export class DidCommMessageReceiver {
     plaintextMessage: DidCommPlaintextMessage
   ) {
     const messageType = parseMessageType(plaintextMessage['@type'])
-    if (canHandleMessageType(DidCommProblemReportMessage, messageType)) {
+    if (isProblemReportMessageType(messageType)) {
       throw new CredoError(`Not sending problem report in response to problem report: ${message}`)
     }
     const problemReportMessage = new DidCommProblemReportMessage({

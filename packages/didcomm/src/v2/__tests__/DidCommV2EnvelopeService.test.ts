@@ -174,7 +174,8 @@ describe('DidCommV2EnvelopeService', () => {
 
     const encrypted = await envelopeService.pack(agentContext, plaintext, {
       senderKey,
-      recipientKey,
+      senderKeySkid: 'did:example:alice#key-1',
+      recipients: [{ key: recipientKey, kid: 'did:example:bob#key-1' }],
       contentEncryptionAlgorithm: 'A256CBC-HS512',
     })
 
@@ -190,7 +191,7 @@ describe('DidCommV2EnvelopeService', () => {
     const { plaintext: decrypted } = await envelopeService.unpack(agentContext, encrypted, {
       recipientKey,
       matchedKid,
-      resolveSenderKey: async (skid) => (skid === senderKey.keyId ? senderKey : null),
+      resolveSenderKey: async (skid) => (skid === 'did:example:alice#key-1' ? senderKey : null),
     })
 
     expect(decrypted).toEqual(plaintext)
@@ -206,7 +207,7 @@ describe('DidCommV2EnvelopeService', () => {
     }
 
     const encrypted = await envelopeService.packAnoncrypt(agentContext, plaintext, {
-      recipientKey,
+      recipients: [{ key: recipientKey, kid: 'did:example:mediator#key-1' }],
       contentEncryptionAlgorithm: 'A256CBC-HS512',
     })
 

@@ -1,6 +1,7 @@
 export {
   type DidCommV2AnoncryptKeys,
   type DidCommV2EnvelopeKeys,
+  type DidCommV2EnvelopeRecipient,
   DidCommV2EnvelopeService,
   type DidCommV2Signer,
   type DidCommV2VerifiedSigner,
@@ -19,5 +20,7 @@ export {
   type DidCommV2KeyAgreementJwk,
   type DidCommV2PlaintextMessage,
   type DidCommV2SignedMessage,
+  type DidCommV2SignedMessageWire,
   type DidCommV2SigningAlgorithm,
+  normalizeDidCommMediaType,
 } from './types'
