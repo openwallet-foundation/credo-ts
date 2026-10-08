@@ -720,14 +720,14 @@ importers:
         specifier: ^2.0.1
         version: 2.4.0
       '@owf/cose':
-        specifier: ^0.4.1
-        version: 0.4.1
+        specifier: ^0.4.2
+        version: 0.4.2
       '@owf/mdoc':
-        specifier: ^0.8.1
-        version: 0.8.1
+        specifier: ^0.8.2
+        version: 0.8.2
       '@owf/token-status-list':
-        specifier: ^0.4.1
-        version: 0.4.1
+        specifier: ^0.4.2
+        version: 0.4.2
       '@peculiar/asn1-ecc':
         specifier: ^2.6.0
         version: 2.6.1
@@ -747,11 +747,11 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       '@sd-jwt/core':
-        specifier: ^0.21.1
-        version: 0.21.1
+        specifier: ^0.22.0
+        version: 0.22.0
       '@sd-jwt/sd-jwt-vc':
-        specifier: ^0.21.1
-        version: 0.21.1
+        specifier: ^0.22.0
+        version: 0.22.0
       '@sphereon/pex-models':
         specifier: 'catalog:'
         version: 2.3.2
@@ -791,9 +791,6 @@ importers:
       lru_map:
         specifier: ^0.4.1
         version: 0.4.1
-      make-error:
-        specifier: ^1.3.6
-        version: 1.3.6
       object-inspect:
         specifier: ^1.13.4
         version: 1.13.4
@@ -1081,17 +1078,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: ^0.6.0
-        version: 0.6.0
+        specifier: ^0.7.0
+        version: 0.7.0
       '@openid4vc/openid4vci':
-        specifier: ^0.6.0
-        version: 0.6.0
+        specifier: ^0.7.0
+        version: 0.7.0
       '@openid4vc/openid4vp':
-        specifier: ^0.6.0
-        version: 0.6.0
+        specifier: ^0.7.0
+        version: 0.7.0
       '@openid4vc/utils':
-        specifier: ^0.6.0
-        version: 0.6.0
+        specifier: ^0.7.0
+        version: 0.7.0
       '@types/express':
         specifier: 'catalog:'
         version: 5.0.6
@@ -3145,17 +3142,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.6.0':
-    resolution: {integrity: sha512-RUFhS+3La1NtIk7kE0MaikE4mmn3uzaKrVNffdlM/fYEGwddJYosikHpTOzoDUPPhXdNSVHPEoF57SLcZTu7ag==}
+  '@openid4vc/oauth2@0.7.0':
+    resolution: {integrity: sha512-sd8FHCb71nLvoETBKX+zawPmf5xdFHKNbw2cpDbqFQvce174nfFq7aQtBwLVSXEFgJf40bEa+TytlXBtQpjjwQ==}
 
-  '@openid4vc/openid4vci@0.6.0':
-    resolution: {integrity: sha512-G1IiELI8qCDMgJXb6v9QpuEz7scX/SoAY/4+ArhJ8pjWbMrPyBUrB43/ZiO3jQBT1SXoJ/+Z38svgMfGx74wnA==}
+  '@openid4vc/openid4vci@0.7.0':
+    resolution: {integrity: sha512-v2io0iTevgv/sThe2FfJ4RSmxtgqs5ABqovyUi/UMYbn0zl6ZJVk2bNQ6a6j7f2TndivCuEceZqSdboDS30p+Q==}
 
-  '@openid4vc/openid4vp@0.6.0':
-    resolution: {integrity: sha512-u1AcPHiGRZNKoFsg8knn8sEjbPtAtBOO0/AGlLxRUt7aWHS12docRgl7jPUuD6isU5FS4oCOMumP3jCnFB38qw==}
+  '@openid4vc/openid4vp@0.7.0':
+    resolution: {integrity: sha512-lZ5V3m2BuqWVwEw/3PVGnYJDHmIJVCuClvMnMLvWgFYgoKQZxho8Ut+1l+urbkihdoaHyskLZrb8unLJpsnGZg==}
 
-  '@openid4vc/utils@0.6.0':
-    resolution: {integrity: sha512-oowl3vQf0yMxaQe96fZjLfAcqjzkxl/A8N2Z9GkXqnQUd17RAEnDpnzq9/MkRasf6x9co5fkKMYIkEn8ApIjQw==}
+  '@openid4vc/utils@0.7.0':
+    resolution: {integrity: sha512-5OnwGrpcN1ISeFQIKF7fXZRqT9howo8vH7PSbPqP9CUovQ4+gPOdH5uboxErdUHAThyugR/vU/wdZPVnAhX3kw==}
 
   '@openwallet-foundation/askar-nodejs@0.6.1':
     resolution: {integrity: sha512-9cAXjAA9vHyUJ/wKZUCFpJZghcopR1DCEc98OdihY7X/RGSevuxA+twArLDgJSzasqINPNLMuGpp3FCJjVIlGg==}
@@ -3164,17 +3161,17 @@ packages:
   '@openwallet-foundation/askar-shared@0.6.1':
     resolution: {integrity: sha512-xjFYyK5Zk/uTFKfTn2BnnldmBLGWBkVfPhOoXQl122YcRVPN7BadAvFUi6Ad+zu7Nk3axj416+fvXtUUQm1Vig==}
 
-  '@owf/cose@0.4.1':
-    resolution: {integrity: sha512-UN5oBzCS+Yehlv14xyjNdNoVy7GjV6f2cOHikIKHxb30ao+fJ+ituLTw6BkVKJ/Vi0HQKwvfT/icEQx2tlHZRA==}
+  '@owf/cose@0.4.2':
+    resolution: {integrity: sha512-ISjH/NFxgI2p0jiCY462JdL5m2bHg850iehvYj8sL9dHra06sJy0RTO1dwx78xqpCkFc/4h9Oo8XXLQD1eyLMg==}
 
-  '@owf/identity-common@0.4.1':
-    resolution: {integrity: sha512-65rM9s02kXz24BTd+wyvLvx/Fk/kHzKo8LmZPbGR+zsR3V2Naa+PevwQeh13xKSZrBhDoAqvvVNe4raOnxhpOA==}
+  '@owf/identity-common@0.4.2':
+    resolution: {integrity: sha512-z+iFDpBYo2Z2uVnE5UytKlAHPaKHReijHaVXl45Yb9LbeR12hGg5CdfzfY0Tfm5m/Dr8iClfAiFizA9JYuUJ0Q==}
 
-  '@owf/mdoc@0.8.1':
-    resolution: {integrity: sha512-qERRQh5SUB59scrFiMBieD2O8OigG8QYYdWK6OtVqdpB+HjWNo77psvGY2goO3tue3EwUzyr3AMQIaXy7zTFXQ==}
+  '@owf/mdoc@0.8.2':
+    resolution: {integrity: sha512-Mmn8a7Xy2duwoX5x3LeNkzOeOIjrjInygfPWi43Xy6DnNQprXSymB1KTwHWDGvBoTcopg7APDL41oTgSWri0ZA==}
 
-  '@owf/token-status-list@0.4.1':
-    resolution: {integrity: sha512-fPkQZsXJv4c5lC+BrWBhMP8KRclBwxVLzNewlEnGz6+cbAI2KSsAC5GtnSYWYyvSjVMVtsyoeQhGiob/EyC7cA==}
+  '@owf/token-status-list@0.4.2':
+    resolution: {integrity: sha512-vBIpSRvfgRTWq1pjs7ERafdEjKpkRRcPdMRpKM1BEsKp1mwB6p6cinf95oWOgXKWq8s3l0I4yTzZ1SdIM8/z0Q==}
 
   '@oxc-project/types@0.112.0':
     resolution: {integrity: sha512-m6RebKHIRsax2iCwVpYW2ErQwa4ywHJrE4sCK3/8JK8ZZAWOKXaRJFl/uP51gaVyyXlaS4+chU1nSCdzYf6QqQ==}
@@ -3750,8 +3747,8 @@ packages:
   '@scure/base@2.0.0':
     resolution: {integrity: sha512-3E1kpuZginKkek01ovG8krQ0Z44E3DHPjc5S2rjJw9lZn3KSQOs8S7wqikF/AH7iRanHypj85uGyxk0XAyC37w==}
 
-  '@sd-jwt/core@0.21.1':
-    resolution: {integrity: sha512-lQfUOWTQGrHPVreWvs9ZhLznQqARK+VlkB64eqqKUL9QPJ2v5sEX/LN9yr61mfkDsYCU5veCUxCLd0GT6hGk6g==}
+  '@sd-jwt/core@0.22.0':
+    resolution: {integrity: sha512-N6fcXbkkvGZKWnUqESWMVNDXv8VjdhSYudjP+Jq+Tm0yqzumJ27JSxL0aCr25AwFgFy7kRkDctOvgB9biiYWqg==}
 
   '@sd-jwt/decode@0.7.2':
     resolution: {integrity: sha512-dan2LSvK63SKwb62031G4r7TE4TaiI0EK1KbPXqS+LCXNkNDUHqhtYp9uOpj+grXceCsMtMa2f8VnUfsjmwHHg==}
@@ -3768,8 +3765,8 @@ packages:
     engines: {node: '>=18'}
     deprecated: Package got merged into @sd-jwt/core, please use this instead
 
-  '@sd-jwt/sd-jwt-vc@0.21.1':
-    resolution: {integrity: sha512-fB+tm3ldm0XSPpMLbUhvpHyUssp48B8k+MsoSPpp7TRVsTXLfZC16yxRTA40Hnh+tRBdvkNtdAUGrWz1y+8BuQ==}
+  '@sd-jwt/sd-jwt-vc@0.22.0':
+    resolution: {integrity: sha512-jOHOS9ObTurb7uqUtktMZKnJU1PIPE25WqYxsIQqgGNd3B/r3RYKtBaI+Jsc3sajkr16PxvTvkrnugKBEXW6xg==}
 
   '@sd-jwt/types@0.7.2':
     resolution: {integrity: sha512-1NRKowiW0ZiB9SGLApLPBH4Xk8gDQJ+nA9NdZ+uy6MmJKLEwjuJxO7yTvRIv/jX/0/Ebh339S7Kq4RD2AiFuRg==}
@@ -6074,9 +6071,6 @@ packages:
   make-dir@4.0.0:
     resolution: {integrity: sha512-hXdUTZYIVOt1Ex//jAQi+wTZZpUpwBj/0QsOzqegb3rGMMeJiSEu5xLHnYfBrRV4RH2+OCSOO95Is/7x1WJ4bw==}
     engines: {node: '>=10'}
-
-  make-error@1.3.6:
-    resolution: {integrity: sha512-s8UhlNe7vPKomQhC1qFelMokr/Sc3AgNbso3n74mVPA5LTZwkB9NlXf4XPamLxJE8h0gh73rM94xvwRT2CVInw==}
 
   makeerror@1.0.12:
     resolution: {integrity: sha512-JmqCvUhmt43madlpFzG4BQzG2Z3m6tvQDNKdClZnO3VbIudJYmxsT0FNJMeiB2+JTSlTQTSbU8QdesVmwJcmLg==}
@@ -10208,24 +10202,24 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.6.0':
+  '@openid4vc/oauth2@0.7.0':
     dependencies:
-      '@openid4vc/utils': 0.6.0
+      '@openid4vc/utils': 0.7.0
       zod: 4.6.5
 
-  '@openid4vc/openid4vci@0.6.0':
+  '@openid4vc/openid4vci@0.7.0':
     dependencies:
-      '@openid4vc/oauth2': 0.6.0
-      '@openid4vc/utils': 0.6.0
+      '@openid4vc/oauth2': 0.7.0
+      '@openid4vc/utils': 0.7.0
       zod: 4.6.5
 
-  '@openid4vc/openid4vp@0.6.0':
+  '@openid4vc/openid4vp@0.7.0':
     dependencies:
-      '@openid4vc/oauth2': 0.6.0
-      '@openid4vc/utils': 0.6.0
+      '@openid4vc/oauth2': 0.7.0
+      '@openid4vc/utils': 0.7.0
       zod: 4.6.5
 
-  '@openid4vc/utils@0.6.0':
+  '@openid4vc/utils@0.7.0':
     dependencies:
       buffer: 6.0.3
       zod: 4.6.5
@@ -10241,26 +10235,26 @@ snapshots:
       buffer: 6.0.3
       tar: 7.5.22
 
-  '@owf/cose@0.4.1':
+  '@owf/cose@0.4.2':
     dependencies:
-      '@owf/identity-common': 0.4.1
+      '@owf/identity-common': 0.4.2
       cbor-x: 1.6.6
       zod: 4.6.5
       zod-validation-error: 5.0.0(zod@4.6.5)
 
-  '@owf/identity-common@0.4.1': {}
+  '@owf/identity-common@0.4.2': {}
 
-  '@owf/mdoc@0.8.1':
+  '@owf/mdoc@0.8.2':
     dependencies:
-      '@owf/cose': 0.4.1
-      '@owf/identity-common': 0.4.1
-      '@owf/token-status-list': 0.4.1
+      '@owf/cose': 0.4.2
+      '@owf/identity-common': 0.4.2
+      '@owf/token-status-list': 0.4.2
       zod: 4.6.5
 
-  '@owf/token-status-list@0.4.1':
+  '@owf/token-status-list@0.4.2':
     dependencies:
-      '@owf/cose': 0.4.1
-      '@owf/identity-common': 0.4.1
+      '@owf/cose': 0.4.2
+      '@owf/identity-common': 0.4.2
       cbor-x: 1.6.6
       pako: 3.0.2
       zod: 4.6.5
@@ -10741,9 +10735,9 @@ snapshots:
 
   '@scure/base@2.0.0': {}
 
-  '@sd-jwt/core@0.21.1':
+  '@sd-jwt/core@0.22.0':
     dependencies:
-      '@owf/identity-common': 0.4.1
+      '@owf/identity-common': 0.4.2
 
   '@sd-jwt/decode@0.7.2':
     dependencies:
@@ -10761,11 +10755,11 @@ snapshots:
       '@sd-jwt/types': 0.7.2
       '@sd-jwt/utils': 0.7.2
 
-  '@sd-jwt/sd-jwt-vc@0.21.1':
+  '@sd-jwt/sd-jwt-vc@0.22.0':
     dependencies:
-      '@owf/identity-common': 0.4.1
-      '@owf/token-status-list': 0.4.1
-      '@sd-jwt/core': 0.21.1
+      '@owf/identity-common': 0.4.2
+      '@owf/token-status-list': 0.4.2
+      '@sd-jwt/core': 0.22.0
       zod: 4.6.5
 
   '@sd-jwt/types@0.7.2': {}
@@ -13198,8 +13192,6 @@ snapshots:
   make-dir@4.0.0:
     dependencies:
       semver: 7.8.5
-
-  make-error@1.3.6: {}
 
   makeerror@1.0.12:
     dependencies:
