@@ -238,7 +238,7 @@ export class DidCommV2EnvelopeService {
       )
     }
 
-    if (plaintext.from && plaintext.from !== signer.kid.split('#')[0]) {
+    if (plaintext.from && !areEquivalentDidPeer4Forms(plaintext.from, signer.kid.split('#')[0])) {
       throw new CredoError(
         `Plaintext 'from' (${plaintext.from}) does not match signer DID (${signer.kid.split('#')[0]})`
       )
