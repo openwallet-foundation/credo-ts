@@ -677,6 +677,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       code: authorizationCode,
+      codeVerifier: resolvedAuthorizationRequest.codeVerifier,
       dpop,
       walletAttestationJwt,
       clientId: 'wallet',
@@ -781,6 +782,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       code: authorizationCode,
+      codeVerifier: resolvedAuthorizationRequest.codeVerifier,
       dpop,
       walletAttestationJwt,
       clientId: 'wallet',
@@ -979,6 +981,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       holder.agent.openid4vc.holder.requestToken({
         resolvedCredentialOffer,
         code: authorizationCode,
+        codeVerifier: resolvedAuthorizationRequest.codeVerifier,
         dpop,
         clientId: 'wallet',
       })
@@ -989,6 +992,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       holder.agent.openid4vc.holder.requestToken({
         resolvedCredentialOffer,
         code: authorizationCode,
+        codeVerifier: resolvedAuthorizationRequest.codeVerifier,
         dpop,
         walletAttestationJwt,
         clientId: 'wallet',
@@ -1163,5 +1167,43 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
 
     await expect(requestToken(false)).resolves.toMatchObject({ accessToken: expect.any(String) })
     await expect(requestToken(true)).rejects.toThrow('Error verifying client attestation')
+  })
+
+  it('uses the global config for dpop and wallet attestations unless overridden on the issuance session', async () => {
+    const issuerConfig = issuer.agent.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+    vi.spyOn(issuerConfig, 'dpopRequired', 'get').mockReturnValue(true)
+    vi.spyOn(issuerConfig, 'walletAttestationsRequired', 'get').mockReturnValue(true)
+
+    const requestToken = async (authorization?: { requireDpop?: boolean; requireWalletAttestation?: boolean }) => {
+      const { credentialOffer, issuanceSession } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+        issuerId: issuerRecord.issuerId,
+        credentialConfigurationIds: ['universityDegree'],
+        preAuthorizedCodeFlowConfig: {},
+        authorization,
+      })
+      const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+
+      return {
+        issuanceSession,
+        tokenResponse: holder.agent.openid4vc.holder.requestToken({
+          resolvedCredentialOffer,
+          clientId: 'wallet',
+        }),
+      }
+    }
+
+    // Not provided, so the global config is used
+    const globalConfig = await requestToken()
+    expect(globalConfig.issuanceSession.dpop).toBeUndefined()
+    expect(globalConfig.issuanceSession.walletAttestation).toBeUndefined()
+    await expect(globalConfig.tokenResponse).rejects.toThrow(
+      'Missing required client attestation parameters in access token request'
+    )
+
+    // `false` disables the requirement for the issuance session
+    const overridden = await requestToken({ requireDpop: false, requireWalletAttestation: false })
+    expect(overridden.issuanceSession.dpop).toEqual({ required: false })
+    expect(overridden.issuanceSession.walletAttestation).toEqual({ required: false })
+    await expect(overridden.tokenResponse).resolves.toMatchObject({ accessToken: expect.any(String) })
   })
 })
