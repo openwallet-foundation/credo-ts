@@ -379,15 +379,16 @@ export class DidCommMessageReceiver {
       }
     }
 
+    const recipient = decryptedMessage.recipientDid
+
     // Connection lookup is by (ourDid, priorDid) pair per V2.
-    if (fromPriorJws && to?.length) {
+    if (fromPriorJws && recipient) {
       const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
       const { iss } = await didRotateV2Service.verifyFromPrior(agentContext, fromPriorJws)
-      const byPair = await this.connectionService.findByDids(agentContext, { ourDid: to[0], theirDid: iss })
+      const byPair = await this.connectionService.findByDids(agentContext, { ourDid: recipient, theirDid: iss })
       if (byPair) return { connection: byPair, linkedByFromPrior: true }
     }
 
-    const recipient = decryptedMessage.recipientDid
     if (from !== undefined && recipient && this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
       const [recipientDidRecord] = await agentContext.resolve(DidsApi).getCreatedDids({ did: recipient })
       // Match every form of the DID (did:peer:4 short and long) so a sender cannot pick the untracked one.
