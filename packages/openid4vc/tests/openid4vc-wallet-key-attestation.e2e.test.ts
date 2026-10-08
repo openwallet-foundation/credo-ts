@@ -1,5 +1,15 @@
 import type { KeyDidCreateOptions } from '@credo-ts/core'
-import { CredoError, DidKey, Kms, Mdoc, MdocRecord, SdJwtVcRecord, utils } from '@credo-ts/core'
+import {
+  type Agent,
+  CredoError,
+  DidKey,
+  Kms,
+  Mdoc,
+  MdocRecord,
+  SdJwtVcRecord,
+  utils,
+  type X509Certificate,
+} from '@credo-ts/core'
 import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import { AuthorizationFlow, Openid4vciWalletProvider } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
@@ -7,6 +17,7 @@ import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
   OpenId4VcIssuanceSessionState,
+  OpenId4VcIssuerApi,
   OpenId4VcIssuerModuleConfig,
   type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerRecord,
@@ -103,6 +114,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
   let attestedKeys: Kms.PublicJwk[]
   let walletAttestationJwt: string
   let walletInstanceKey: Kms.PublicJwk
+  let walletProviderCertificate: X509Certificate
 
   beforeEach(async () => {
     expressApp = express()
@@ -224,7 +236,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       global.fetch
     )
 
-    const walletProviderCertificate = await holder.agent.x509.createCertificate({
+    walletProviderCertificate = await holder.agent.x509.createCertificate({
       authorityKey: Kms.PublicJwk.fromPublicJwk(
         (await holder.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
       ),
@@ -885,6 +897,164 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       expect(resolvedAuthorizationRequest.dpop?.jwk.fingerprint).not.toEqual(walletInstanceKey.fingerprint)
     } finally {
       clearIdpNock()
+    }
+  })
+
+  it('pushed authorization request applies AgentConfig validitySkewSeconds to client attestation PoP JWT validation', async () => {
+    const idpApp = express()
+    idpApp.get('/.well-known/oauth-authorization-server', (_req, res) =>
+      res.json({
+        issuer: externalAuthorizationServerUrl,
+        token_endpoint: `${externalAuthorizationServerUrl}/token`,
+        authorization_endpoint: `${externalAuthorizationServerUrl}/authorize`,
+      } satisfies AuthorizationServerMetadata)
+    )
+    const clearIdpNock = setupNockToExpress(externalAuthorizationServerUrl, idpApp)
+
+    // Issuer agent configured with a validity skew of 28 seconds, instead of the default 30 seconds
+    const skewBaseUrl = 'http://localhost:3993'
+    const skewIssuerBaseUrl = `${skewBaseUrl}/oid4vci`
+    const skewApp = express()
+    const skewIssuer = await createAgentFromModules(
+      {
+        openid4vc: new OpenId4VcModule({
+          app: skewApp,
+          issuer: {
+            baseUrl: skewIssuerBaseUrl,
+            credentialRequestToCredentialMapper: async () => {
+              throw new Error('not supported')
+            },
+          },
+        }),
+        inMemory: new InMemoryWalletModule({}),
+      },
+      undefined,
+      global.fetch,
+      { validitySkewSeconds: 28 }
+    )
+    skewIssuer.agent.x509.config.setTrustedCertificatesForVerification((_agentContext, { verification }) =>
+      verification.type === 'oauth2ClientAttestation' ? [walletProviderCertificate.toString('pem')] : undefined
+    )
+    const clearSkewNock = setupNockToExpress(skewBaseUrl, skewApp)
+
+    const holderCallbacks = getOid4vcCallbacks(holder.agent.context)
+
+    // Creates a chained issuer with a credential offer, and returns a function that sends a pushed authorization
+    // request with a client attestation pop jwt whose `nbf` is the given number of seconds ahead of the issuer.
+    const setupPushAuthorizationRequest = async (agent: Agent, agentIssuerBaseUrl: string) => {
+      const issuerApi = agent.dependencyManager.resolve(OpenId4VcIssuerApi)
+      const chainedIssuerRecord = await issuerApi.createIssuer({
+        issuerId: utils.uuid(),
+        clientAttestationSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+        clientAttestationPopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
+        credentialConfigurationsSupported: {
+          universityDegree: universityDegreeCredentialConfigurationSupportedMdoc,
+        },
+        authorizationServerConfigs: [
+          {
+            type: 'chained',
+            issuer: externalAuthorizationServerUrl,
+            clientAuthentication: {
+              type: 'clientSecret',
+              clientId: 'issuer-client-id',
+              clientSecret: 'issuer-client-secret',
+            },
+            scopesMapping: {
+              [universityDegreeCredentialConfigurationSupportedMdoc.scope]: ['MappedUniversityDegreeCredential'],
+            },
+          },
+        ],
+      })
+
+      const issuerState = utils.uuid()
+      await issuerApi.createCredentialOffer({
+        issuerId: chainedIssuerRecord.issuerId,
+        credentialConfigurationIds: ['universityDegree'],
+        authorizationCodeFlowConfig: {
+          authorizationServerUrl: externalAuthorizationServerUrl,
+          issuerState,
+        },
+        authorization: {
+          requireDpop: false,
+          requireWalletAttestation: true,
+        },
+      })
+
+      const authorizationServer = `${agentIssuerBaseUrl}/${chainedIssuerRecord.issuerId}`
+      const issuerService = agent.dependencyManager.resolve(OpenId4VcIssuerService)
+
+      return async (popNbfAheadInSeconds: number) => {
+        const { challenge } = await issuerService.createClientAttestationChallenge(agent.context, chainedIssuerRecord)
+        const walletNowInSeconds = Math.floor(Date.now() / 1000) + popNbfAheadInSeconds
+        const { jwt: clientAttestationPopJwt } = await holderCallbacks.signJwt(
+          {
+            method: 'jwk',
+            alg: Kms.KnownJwaSignatureAlgorithms.ES256,
+            publicJwk: walletInstanceKey.toJson() as Jwk,
+            kid: walletInstanceKey.keyId,
+          },
+          {
+            header: { typ: 'oauth-client-attestation-pop+jwt', alg: Kms.KnownJwaSignatureAlgorithms.ES256 },
+            payload: {
+              aud: authorizationServer,
+              iat: walletNowInSeconds,
+              nbf: walletNowInSeconds,
+              jti: utils.uuid(),
+              challenge,
+            },
+          }
+        )
+
+        const response = await fetch(`${authorizationServer}/par`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'OAuth-Client-Attestation': walletAttestationJwt,
+            'OAuth-Client-Attestation-PoP': clientAttestationPopJwt,
+          },
+          body: new URLSearchParams({
+            response_type: 'code',
+            client_id: 'wallet',
+            redirect_uri: 'http://localhost/callback',
+            scope: universityDegreeCredentialConfigurationSupportedMdoc.scope,
+            issuer_state: issuerState,
+            // PKCE is required by default. Only the challenge is checked at PAR (RFC 7636 appendix B example).
+            code_challenge: 'E9Melhoa2OwvFrEMTJguCgdoV4bZ6NGKS4W0nQGXUs8',
+            code_challenge_method: 'S256',
+          }).toString(),
+        })
+
+        return { status: response.status, body: await response.json() }
+      }
+    }
+
+    // Freeze the clock, so the `nbf` of the pop jwt is exactly the given number of seconds ahead of the issuer
+    vi.useFakeTimers({ toFake: ['Date'] })
+
+    try {
+      // The default validity skew is 30 seconds. An accepted request moves the issuance session forward,
+      // so it must be the last request for an issuer.
+      const pushAuthorizationRequest = await setupPushAuthorizationRequest(issuer.agent, issuerBaseUrl)
+      await expect(pushAuthorizationRequest(31)).resolves.toMatchObject({
+        status: 401,
+        body: { error: 'invalid_client', error_description: expect.stringContaining("'nbf' is in the future") },
+      })
+      await expect(pushAuthorizationRequest(29)).resolves.toMatchObject({
+        status: 201,
+        body: { request_uri: expect.any(String) },
+      })
+
+      // With a validity skew of 28 seconds, the same pop jwt is rejected
+      const pushSkewAuthorizationRequest = await setupPushAuthorizationRequest(skewIssuer.agent, skewIssuerBaseUrl)
+      await expect(pushSkewAuthorizationRequest(29)).resolves.toMatchObject({
+        status: 401,
+        body: { error: 'invalid_client', error_description: expect.stringContaining("'nbf' is in the future") },
+      })
+    } finally {
+      vi.useRealTimers()
+      clearIdpNock()
+      clearSkewNock()
+      await skewIssuer.agent.shutdown()
     }
   })
 

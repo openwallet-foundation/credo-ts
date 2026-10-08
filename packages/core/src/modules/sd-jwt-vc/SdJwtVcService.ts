@@ -653,12 +653,9 @@ export class SdJwtVcService {
 
     return async (uri: string) => {
       const defaultFetcher = () => this.fetchStatusListJwt(agentContext, uri)
-      const statusListJwt = sdJwtVcConfig.customStatusListFetcher
+      return sdJwtVcConfig.customStatusListFetcher
         ? await sdJwtVcConfig.customStatusListFetcher(uri, { defaultFetcher })
         : await defaultFetcher()
-
-      this.assertStatusListJwtTyp(statusListJwt, uri)
-      return statusListJwt
     }
   }
 
@@ -678,29 +675,6 @@ export class SdJwtVcService {
     }
 
     return await response.text()
-  }
-
-  /**
-   * Token Status List requires a status list JWT to carry the JOSE header `typ` `statuslist+jwt`,
-   * and requires the relying party to check it. Neither `@sd-jwt/sd-jwt-vc` nor `@owf/token-status-list`
-   * checks the `typ` of a status list JWT, so it is checked here until they do.
-   */
-  private assertStatusListJwtTyp(statusListJwt: string, uri: string) {
-    let header: { typ?: unknown }
-    try {
-      header = JsonEncoder.fromBase64Url(statusListJwt.split('.')[0])
-    } catch {
-      // `@sd-jwt/sd-jwt-vc` reports a malformed status list JWT
-      return
-    }
-
-    // RFC 7515 section 4.1.9: a `typ` without a `/` is short for `application/<typ>`
-    const typ = typeof header.typ === 'string' && !header.typ.includes('/') ? `application/${header.typ}` : header.typ
-    if (typ !== 'application/statuslist+jwt') {
-      throw new SdJwtVcError(
-        `The status list JWT fetched from ${uri} has 'typ' '${header.typ}', but 'statuslist+jwt' is required.`
-      )
-    }
   }
 
   /**

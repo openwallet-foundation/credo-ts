@@ -1855,6 +1855,8 @@ export class OpenId4VcIssuerService {
   ) {
     return new Oauth2AuthorizationServer({
       callbacks: getOid4vcCallbacks(agentContext, options),
+      // Allowed clock skew for the client attestation and DPoP verification of all authorization server requests
+      allowedSkewInSeconds: agentContext.config.validitySkewSeconds,
     })
   }
 
