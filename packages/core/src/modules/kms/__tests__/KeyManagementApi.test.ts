@@ -1,3 +1,4 @@
+import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { ZodValidationError } from '../../../error/ZodValidationError'
@@ -181,6 +182,48 @@ describe('KeyManagementApi', () => {
         'ES256',
       ])
     })
+  })
+
+  test('encrypts, decrypts and verifies with keys that only exist in a backend that is not the default', async () => {
+    const otherBackend = Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), {
+      backend: 'other',
+    })
+    const kms = new KeyManagementApi(
+      new KeyManagementModuleConfig({
+        backends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), otherBackend],
+      }),
+      agent.context
+    )
+    const data = new Uint8Array([1, 2, 3])
+
+    const recipient = await kms.createKey({ backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
+    const ephemeral = await kms.createKey({ backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
+    const agreement = await kms.encrypt({
+      key: { keyAgreement: { algorithm: 'ECDH-ES', keyId: ephemeral.keyId, externalPublicJwk: recipient.publicJwk } },
+      encryption: { algorithm: 'A256GCM' },
+      data,
+    })
+    const agreementDecrypted = await kms.decrypt({
+      key: { keyAgreement: { algorithm: 'ECDH-ES', keyId: recipient.keyId, externalPublicJwk: ephemeral.publicJwk } },
+      decryption: { algorithm: 'A256GCM', iv: agreement.iv as Uint8Array, tag: agreement.tag as Uint8Array },
+      encrypted: agreement.encrypted,
+    })
+    expect(Uint8Array.from(agreementDecrypted.data)).toEqual(data)
+
+    const symmetric = await kms.createKey({ backend: 'other', type: { kty: 'oct', algorithm: 'aes', length: 256 } })
+    const direct = await kms.encrypt({ key: { keyId: symmetric.keyId }, encryption: { algorithm: 'A256GCM' }, data })
+    const directDecrypted = await kms.decrypt({
+      key: { keyId: symmetric.keyId },
+      decryption: { algorithm: 'A256GCM', iv: direct.iv as Uint8Array, tag: direct.tag as Uint8Array },
+      encrypted: direct.encrypted,
+    })
+    expect(Uint8Array.from(directDecrypted.data)).toEqual(data)
+
+    const signingKey = await kms.createKey({ backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
+    const { signature } = await kms.sign({ keyId: signingKey.keyId, algorithm: 'ES256', data })
+    await expect(
+      kms.verify({ key: { keyId: signingKey.keyId }, algorithm: 'ES256', data, signature })
+    ).resolves.toMatchObject({ verified: true })
   })
 
   describe('hpke', () => {
