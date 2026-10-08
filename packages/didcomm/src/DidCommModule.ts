@@ -37,6 +37,8 @@ import type { DidCommCredentialsModuleConfigOptions } from './modules/credential
 import { DidCommMediationRecipientModule } from './modules/routing/DidCommMediationRecipientModule'
 import { DidCommMediatorModule } from './modules/routing/DidCommMediatorModule'
 import { DidCommMessageRepository } from './repository'
+import type { DidCommInboundTransport } from './transport/DidCommInboundTransport'
+import type { DidCommOutboundTransport } from './transport/DidCommOutboundTransport'
 import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
 import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
@@ -209,16 +211,33 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
       )
       .subscribe()
 
-    for (const transport of this.config.inboundTransports) {
-      await transport.start(agentContext)
-    }
+    const startedTransports: Array<DidCommInboundTransport | DidCommOutboundTransport> = []
+    try {
+      for (const transport of this.config.inboundTransports) {
+        await transport.start(agentContext)
+        startedTransports.push(transport)
+      }
 
-    for (const transport of this.config.outboundTransports) {
-      await transport.start(agentContext)
-    }
+      for (const transport of this.config.outboundTransports) {
+        await transport.start(agentContext)
+        startedTransports.push(transport)
+      }
 
-    for (const module of Object.values(this.modules)) {
-      await module.initialize?.(agentContext)
+      for (const module of Object.values(this.modules)) {
+        await module.initialize?.(agentContext)
+      }
+    } catch (error) {
+      // Stop the transports that were started, so a failed initialization does not leave listeners open
+      for (const transport of startedTransports.reverse()) {
+        try {
+          await transport.stop()
+        } catch (stopError) {
+          agentContext.config.logger.error('Failed to stop transport after DIDComm initialization failed', {
+            error: stopError,
+          })
+        }
+      }
+      throw error
     }
   }
 
