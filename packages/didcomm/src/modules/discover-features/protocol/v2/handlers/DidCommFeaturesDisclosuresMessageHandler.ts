@@ -1,8 +1,7 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { DidCommDiscoverFeaturesV2Service } from '../DidCommDiscoverFeaturesV2Service'
 
-import { DidCommFeaturesDisclosuresMessage } from '../messages'
-import { DidCommFeaturesDiscloseV2Message } from '../messages/DidCommFeaturesDiscloseV2Message'
+import { DidCommFeaturesDiscloseV2Message, DidCommFeaturesDisclosuresMessage } from '../messages'
 
 export class DidCommFeaturesDisclosuresMessageHandler implements DidCommMessageHandler {
   private discoverFeaturesService: DidCommDiscoverFeaturesV2Service
