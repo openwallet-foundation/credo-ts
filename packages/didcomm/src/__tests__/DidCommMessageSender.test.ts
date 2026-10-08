@@ -803,6 +803,12 @@ describe('DidCommMessageSender', () => {
           .build()
       )
       didResolverServiceResolveDidServicesMock.mockResolvedValue([])
+      const actual = await vi.importActual<typeof import('../services/DidCommDocumentService')>(
+        '../services/DidCommDocumentService'
+      )
+      mockFunction(didCommDocumentService.expandV2EndpointIfRoutingDid).mockImplementation(
+        actual.DidCommDocumentService.prototype.expandV2EndpointIfRoutingDid
+      )
       const didCommModuleConfig = new DidCommModuleConfig({
         queueTransportRepository: new InMemoryQueueTransportRepository(),
       })

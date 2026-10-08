@@ -122,7 +122,7 @@ export class DidCommDocumentService {
 
   /**
    * When a v2 service endpoint is a nested `did:` (common for did:peer mediation), expand to the transport URI and
-   * mediator keys — same idea as {@link DidCommMessageSender.retrieveServicesByConnection} peer fallback.
+   * mediator keys. Returns undefined when the DID can not be parsed.
    *
    * For mediator routing DIDs (did:peer:2 E<X25519>.V<Ed25519>), the Ed25519 authentication
    * key and X25519 keyAgreement key represent the same physical key (related by the
@@ -133,11 +133,12 @@ export class DidCommDocumentService {
    * This function extracts ONE key per physical routing key, preferring the X25519
    * keyAgreement form so the Forward envelope kid matches the mediator's decryption key.
    */
-  private expandV2EndpointIfRoutingDid(
+  public expandV2EndpointIfRoutingDid(
+    agentContext: AgentContext,
     endpoint: string,
     routingKeysFromRefs: Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
     singleHop = false
-  ): { endpoint: string; routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] } {
+  ): { endpoint: string; routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] } | undefined {
     if (!endpoint.startsWith('did:')) {
       return { endpoint, routingKeys: routingKeysFromRefs }
     }
@@ -182,6 +183,11 @@ export class DidCommDocumentService {
 
       // A DID endpoint adds one hop: https://identity.foundation/didcomm-messaging/spec/v2.1/#using-a-did-as-an-endpoint
       const nestedRoutingKeys = Array.from(byX25519Fingerprint.values()).slice(0, singleHop ? 1 : undefined)
+      if (singleHop && nestedRoutingKeys[0]?.is(Kms.Ed25519PublicJwk)) {
+        agentContext.config.logger.warn(
+          `Mediator DID ${endpoint} has no keyAgreement key. The DIDComm v2 forward is addressed to its Ed25519 key as a did:key, which a mediator outside Credo may not resolve.`
+        )
+      }
 
       let resolvedEndpoint = endpoint
       const firstSvc = routingDoc.service?.[0]
@@ -198,7 +204,7 @@ export class DidCommDocumentService {
         routingKeys: [...nestedRoutingKeys, ...routingKeysFromRefs],
       }
     } catch {
-      return { endpoint, routingKeys: routingKeysFromRefs }
+      return undefined
     }
   }
 
@@ -281,7 +287,10 @@ export class DidCommDocumentService {
         let serviceEndpoint = v1Service.serviceEndpoint
         let expandedRoutingKeys = routingKeys
         if (typeof serviceEndpoint === 'string' && serviceEndpoint.startsWith('did:')) {
-          const expanded = this.expandV2EndpointIfRoutingDid(serviceEndpoint, routingKeys)
+          const expanded = this.expandV2EndpointIfRoutingDid(agentContext, serviceEndpoint, routingKeys) ?? {
+            endpoint: serviceEndpoint,
+            routingKeys,
+          }
           serviceEndpoint = expanded.endpoint
           // For v1 Forward, only use Ed25519 routing keys. The v1 envelope packing
           // sets kid = base58(raw_public_key) and the mediator looks up keys assuming
@@ -334,7 +343,10 @@ export class DidCommDocumentService {
               : (didCommService.serviceEndpoint as { uri?: string })?.uri
         if (endpoint) {
           const routingKeys = await this.resolveRoutingKeyReferences(agentContext, routingKeyRefs)
-          const expanded = this.expandV2EndpointIfRoutingDid(endpoint, routingKeys, true)
+          const expanded = this.expandV2EndpointIfRoutingDid(agentContext, endpoint, routingKeys, true) ?? {
+            endpoint,
+            routingKeys,
+          }
           resolvedServices.push({
             id: didCommService.id,
             recipientKeys: recipientKeys as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],

@@ -672,57 +672,15 @@ export class DidCommMessageSender {
             let routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
             const isV2Connection = (connection.didcommVersion ?? 'v1') === 'v2'
             // When endpoint is a DID (e.g. routing DID), resolve to get transport URL and mediator's keys for Forward.
-            // Dedupe by X25519 fingerprint: a mediator's Ed25519 authentication VM and X25519 keyAgreement VM
-            // are the same physical key (birational map) and must count as ONE hop. Without dedup, the sender
-            // wraps the Forward twice, and the inner wrap (addressed to the mediator) gets delivered to the
-            // recipient who cannot decrypt it. Prefers the X25519 form so the Forward kid matches the
-            // mediator's decryption key directly.
             if (endpoint?.startsWith('did:')) {
-              try {
-                const routingDoc = endpoint.startsWith('did:peer:4')
-                  ? didToNumAlgo4DidDocument(endpoint)
-                  : didToNumAlgo2DidDocument(endpoint)
-                const byX25519Fp = new Map<string, Kms.PublicJwk<Kms.Ed25519PublicJwk>>()
-                // keyAgreement first so X25519 wins the tie-breaker when both forms are present
-                const routingKeyRefs = [...(routingDoc.keyAgreement ?? []), ...(routingDoc.authentication ?? [])]
-                const seen = new Set<string>()
-                for (const keyRef of routingKeyRefs) {
-                  const vm = typeof keyRef === 'string' ? routingDoc.dereferenceVerificationMethod(keyRef) : keyRef
-                  if (seen.has(vm.id)) continue
-                  seen.add(vm.id)
-                  const publicJwk = getPublicJwkFromVerificationMethod(vm)
-                  let fingerprint: string | undefined
-                  try {
-                    if (publicJwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
-                      fingerprint = publicJwk.fingerprint
-                    } else if (publicJwk.is(Kms.Ed25519PublicJwk)) {
-                      fingerprint = (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(
-                        Kms.X25519PublicJwk
-                      ).fingerprint
-                    }
-                  } catch {
-                    // Skip keys we can't convert
-                  }
-                  if (!fingerprint) continue
-                  const existing = byX25519Fp.get(fingerprint)
-                  if (!existing || (publicJwk.is(Kms.X25519PublicJwk) && !existing.is(Kms.X25519PublicJwk))) {
-                    byX25519Fp.set(fingerprint, publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
-                  }
-                }
-                routingKeys = Array.from(byX25519Fp.values()).slice(0, isV2Connection ? 1 : undefined)
-                const firstSvc = routingDoc.service?.[0]
-                if (firstSvc) {
-                  const resolved =
-                    typeof firstSvc.serviceEndpoint === 'string'
-                      ? firstSvc.serviceEndpoint
-                      : ((firstSvc.serviceEndpoint as { uri?: string; s?: string })?.uri ??
-                        (firstSvc.serviceEndpoint as { uri?: string; s?: string })?.s)
-                  if (resolved) endpoint = resolved
-                }
-              } catch {
-                endpoint = undefined
-                routingKeys = []
-              }
+              const expanded = this.didCommDocumentService.expandV2EndpointIfRoutingDid(
+                agentContext,
+                endpoint,
+                [],
+                isV2Connection
+              )
+              endpoint = expanded?.endpoint
+              routingKeys = expanded?.routingKeys ?? []
             }
             if (endpoint) {
               const recipientKeys: Kms.PublicJwk[] = []
