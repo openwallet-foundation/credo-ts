@@ -1,3 +1,6 @@
+import { JsonTransformer } from '@credo-ts/core'
+
+import { normalizeV2PlaintextToV1 } from '../../../../../../v2/normalize'
 import { DidCommBasicMessageV2 } from '../DidCommBasicMessageV2'
 
 describe('DidCommBasicMessageV2', () => {
@@ -61,6 +64,13 @@ describe('DidCommBasicMessageV2', () => {
       const v2 = msg.toV2Plaintext()
       expect(v2.thid).toBe('thread-456')
       expect(v2.pthid).toBe('parent-123')
+    })
+
+    it('keeps lang after a v2 receive round trip', () => {
+      const msg = new DidCommBasicMessageV2({ content: 'Bonjour', lang: 'fr' })
+      const received = JsonTransformer.fromJSON(normalizeV2PlaintextToV1(msg.toV2Plaintext()), DidCommBasicMessageV2)
+      expect(received.lang).toBe('fr')
+      expect(received.content).toBe('Bonjour')
     })
   })
 })

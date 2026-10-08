@@ -1,6 +1,9 @@
+import { JsonTransformer } from '@credo-ts/core'
+
 import { DidCommAttachment, DidCommAttachmentData } from '../../decorators/attachment/DidCommAttachment'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidCommTrustPingMessage } from '../../modules/connections/messages/DidCommTrustPingMessage'
+import { normalizeV2PlaintextToV1 } from '../normalize'
 import { buildV2PlaintextFromMessage } from '../plaintextBuilder'
 
 describe('buildV2PlaintextFromMessage', () => {
@@ -51,6 +54,64 @@ describe('buildV2PlaintextFromMessage', () => {
     const v2 = buildV2PlaintextFromMessage(message)
     expect(v2.return_route).toBe('all')
     expect(v2.body).not.toHaveProperty('~transport')
+  })
+
+  it('maps ~please_ack to a please_ack header for the current message', () => {
+    const message = new DidCommTrustPingMessage({ comment: 'hi' })
+    message.setPleaseAck()
+    const v2 = buildV2PlaintextFromMessage(message)
+    expect(v2.please_ack).toEqual([''])
+    expect(v2.body).not.toHaveProperty('~please_ack')
+  })
+
+  it('maps ~timing to created_time and expires_time and keeps decorators out of the body', () => {
+    const message = new DidCommTrustPingMessage({ comment: 'hi' })
+    message.setTiming({
+      outTime: new Date('2020-01-01T00:00:00.500Z'),
+      expiresTime: new Date('2020-01-01T01:00:00.000Z'),
+      delayMilli: 10,
+    })
+    message.setService({ recipientKeys: ['key'], serviceEndpoint: 'https://example.com' })
+
+    const v2 = buildV2PlaintextFromMessage(message)
+    expect(v2.created_time).toBe(1577836800)
+    expect(v2.expires_time).toBe(1577840400)
+    expect(v2.body).toEqual({ comment: 'hi', response_requested: true })
+  })
+
+  it('keeps created_time and expires_time already on the message over ~timing', () => {
+    const received = normalizeV2PlaintextToV1({
+      id: 'received-msg-1',
+      type: 'https://didcomm.org/trust_ping/1.0/ping',
+      created_time: 100,
+      expires_time: 200,
+      body: { comment: 'hi' },
+    })
+    const message = JsonTransformer.fromJSON(received, DidCommTrustPingMessage)
+    message.setTiming({
+      outTime: new Date('2020-01-01T00:00:00.000Z'),
+      expiresTime: new Date('2020-01-01T01:00:00.000Z'),
+    })
+
+    const v2 = buildV2PlaintextFromMessage(message)
+    expect(v2.created_time).toBe(100)
+    expect(v2.expires_time).toBe(200)
+  })
+
+  it('keeps lang and please_ack as headers when a received v2 message is sent again', () => {
+    const received = normalizeV2PlaintextToV1({
+      id: 'received-msg-1',
+      type: 'https://didcomm.org/trust_ping/1.0/ping',
+      lang: 'fr',
+      please_ack: [''],
+      body: { comment: 'hi' },
+    })
+    const message = JsonTransformer.fromJSON(received, DidCommTrustPingMessage)
+
+    const v2 = buildV2PlaintextFromMessage(message)
+    expect(v2.lang).toBe('fr')
+    expect(v2.please_ack).toEqual([''])
+    expect(v2.body).toEqual({ comment: 'hi', response_requested: true })
   })
 
   it('round-trip: message with thread, locale, and attachment produces v2 with all fields', () => {

@@ -236,7 +236,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     agentContext.config.logger.debug('Unpacked DIDComm v2 message', { type: unwrapped.type })
 
     return {
-      plaintextMessage: normalizeV2PlaintextToV1(unwrapped),
+      plaintextMessage: normalizeV2PlaintextToV1(unwrapped, agentContext.config.logger),
       senderKey: senderKey ?? undefined,
       recipientKey,
       authenticatedSenderDid: senderDid ? (from ?? senderDid) : undefined,
@@ -275,7 +275,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     agentContext.config.logger.info(
       `Verified DIDComm v2 signed message of type '${plaintext.type}' from '${plaintext.from}'`
     )
-    return normalizeV2PlaintextToV1(plaintext)
+    return normalizeV2PlaintextToV1(plaintext, agentContext.config.logger)
   }
 
   /**
