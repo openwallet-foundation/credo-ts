@@ -384,13 +384,19 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
         if (ephemeralPrivateJwk) Kms.assertJwkAsymmetric(ephemeralPrivateJwk, ephemeralKeyId)
 
         try {
-          return await encryptEcdh1Pu({
+          const { encrypted, iv, tag, encryptedKey } = await encryptEcdh1Pu({
             keyAgreement: key.keyAgreement,
             encryption,
             senderPrivateJwk: agreementPrivateJwk,
             ephemeralPrivateJwk,
             data,
           })
+          return {
+            encrypted: new Uint8Array(encrypted),
+            iv: iv ? new Uint8Array(iv) : undefined,
+            tag: tag ? new Uint8Array(tag) : undefined,
+            encryptedKey,
+          }
         } catch (error) {
           if (error instanceof Kms.KeyManagementError) throw error
 

@@ -298,9 +298,9 @@ function ecdhSharedSecret(privateJwk: Kms.KmsJwkPrivateAsymmetric, publicJwk: Km
   })
 }
 
-function aesKeyWrap(keyEncryptionKey: Uint8Array, contentEncryptionKey: Uint8Array): Buffer {
+function aesKeyWrap(keyEncryptionKey: Uint8Array, contentEncryptionKey: Uint8Array): Uint8Array {
   const cipher = createCipheriv(`id-aes${keyEncryptionKey.length * 8}-wrap`, keyEncryptionKey, aesKeyWrapIv)
-  return Buffer.concat([cipher.update(contentEncryptionKey), cipher.final()])
+  return new Uint8Array(Buffer.concat([cipher.update(contentEncryptionKey), cipher.final()]))
 }
 
 function aesKeyUnwrap(keyEncryptionKey: Uint8Array, encryptedContentEncryptionKey: Uint8Array): Buffer {
