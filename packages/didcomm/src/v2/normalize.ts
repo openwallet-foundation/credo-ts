@@ -1,33 +1,36 @@
+import type { Logger } from '@credo-ts/core'
 import type { DidCommPlaintextMessage } from '../types'
-import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from './types'
+import { mapV2AttachmentToV1 } from './plaintextBuilder'
+import type { DidCommV2PlaintextMessage } from './types'
 
-/**
- * Map a v2 attachment to v1 ~attach format.
- * v2: id, media_type, data; v1: @id, mime-type, data.
- */
-function mapV2AttachmentToV1(att: DidCommV2Attachment): Record<string, unknown> {
-  const v1: Record<string, unknown> = {
-    '@id': att.id,
-    data: att.data,
-  }
-  if (att.description !== undefined) v1.description = att.description
-  if (att.filename !== undefined) v1.filename = att.filename
-  if (att.media_type !== undefined) v1['mime-type'] = att.media_type
-  if (att.format !== undefined) v1.format = att.format
-  if (att.lastmod_time !== undefined) v1.lastmod_time = att.lastmod_time
-  if (att.byte_count !== undefined) v1.byte_count = att.byte_count
-  return v1
-}
+const reservedBodyKeys = [
+  '@id',
+  '@type',
+  'from',
+  'to',
+  'from_prior',
+  'lang',
+  'created_time',
+  'expires_time',
+  // class-transformer also binds a decorator from its property name, not only from its ~ key
+  'service',
+  'timing',
+  'thread',
+  'transport',
+  'pleaseAck',
+  'l10n',
+  'appendedAttachments',
+]
 
 /**
  * Normalize a DIDComm v2 plaintext message to v1 shape so existing handlers work.
- * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→~l10n, attachments→~attach.
+ * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, attachments→~attach.
  * This allows v2 plaintext to be processed by v1 message handlers without changes.
  *
  * @param v2 - The DIDComm v2 plaintext message
  * @returns A v1-shaped plaintext message suitable for transformAndValidate and handler dispatch
  */
-export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidCommPlaintextMessage {
+export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?: Logger): DidCommPlaintextMessage {
   const {
     type,
     id,
@@ -41,18 +44,29 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidComm
     created_time,
     expires_time,
     return_route,
-    ...rest
+    please_ack,
+    from_prior,
   } = v2
 
+  // Unknown headers are ignored (spec v2.1 Message Headers) and v2 has no ~ decorators
+  const droppedBodyKeys = Object.keys(body ?? {}).filter((key) => key.startsWith('~') || reservedBodyKeys.includes(key))
+  if (droppedBodyKeys.length > 0) {
+    logger?.debug('Dropped DIDComm v2 body keys that clash with v1 header or decorator names', {
+      type,
+      droppedBodyKeys,
+    })
+  }
+  const bodyFields = Object.fromEntries(Object.entries(body ?? {}).filter(([key]) => !droppedBodyKeys.includes(key)))
+
   const v1: DidCommPlaintextMessage = {
+    ...bodyFields,
     '@type': type,
     '@id': id,
-    ...(body ?? {}),
-    ...rest,
   }
 
   if (from !== undefined) v1.from = from
   if (to !== undefined) v1.to = to
+  if (from_prior !== undefined) v1.from_prior = from_prior
 
   if (thid !== undefined || pthid !== undefined) {
     const thread: { thid?: string; pthid?: string } = {}
@@ -62,7 +76,12 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidComm
   }
 
   if (lang !== undefined) {
+    v1.lang = lang
     v1['~l10n'] = { locale: lang }
+  }
+
+  if (Array.isArray(please_ack) && (please_ack.includes('') || please_ack.includes(id))) {
+    v1['~please_ack'] = { on: ['RECEIPT'] }
   }
 
   if (attachments !== undefined && Array.isArray(attachments) && attachments.length > 0) {
@@ -73,7 +92,6 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage): DidComm
     v1['~transport'] = { return_route }
   }
 
-  // TODO: Do we need to convert created_time/expires_time from epoch seconds (v2) to Date/~timing (v1)?
   if (created_time !== undefined) v1.created_time = created_time
   if (expires_time !== undefined) v1.expires_time = expires_time
 
