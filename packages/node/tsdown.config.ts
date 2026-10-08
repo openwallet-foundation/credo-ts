@@ -4,6 +4,7 @@ import config from '../../tsdown.config.base'
 export default defineConfig(
   config.map((e) => ({
     ...e,
+    entry: ['src/index.ts', 'src/express/index.ts'],
     platform: 'node' as const,
     dts: {
       ...(typeof e.dts === 'object' ? e.dts : {}),
