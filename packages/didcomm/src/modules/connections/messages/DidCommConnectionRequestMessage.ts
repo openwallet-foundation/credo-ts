@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator'
 import { DidCommMessage } from '../../../DidCommMessage'
+import type { DidCommVersion } from '../../../util/didcommVersion'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 import type { DidDoc } from '../models'
 import { DidCommConnection } from '../models'
@@ -20,6 +21,13 @@ export interface DidCommConnectionRequestMessageOptions {
  */
 export class DidCommConnectionRequestMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
+
+  /**
+   * The connection protocol establishes the very relationship a DIDComm v2 envelope needs.
+   * At this point no peer DID is resolvable yet, so the recipient cannot resolve a `skid`.
+   * V1 authcrypt embeds the sender key in the envelope, so it works without resolution.
+   */
+  public readonly supportedDidCommVersions: DidCommVersion[] = ['v1']
 
   /**
    * Create new ConnectionRequestMessage instance.

@@ -17,6 +17,7 @@ export const didcommBasicMessage = sqliteTable(
     role: text().$type<DidCommBasicMessageRole>().notNull(),
     threadId: text('thread_id'),
     parentThreadId: text('parent_thread_id'),
+    protocolVersion: text('protocol_version'),
   },
   (table) => [
     ...sqliteBaseRecordIndexes(table, 'didcommBasicMessage'),
