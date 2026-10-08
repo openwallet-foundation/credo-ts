@@ -2,7 +2,7 @@ import type { AgentContext } from '../../../agent/context'
 import { TrustedIssuerContext } from '../../../agent/TrustedIssuerContext'
 import type { TrustedIssuerDid } from '../../../agent/TrustedIssuersForVerification'
 import { createKmsKeyPairClass } from '../../../crypto/KmsKeyPair'
-import { CredoError } from '../../../error'
+import { CredoError, RecordNotFoundError } from '../../../error'
 import { injectable } from '../../../plugins'
 import type { SingleOrArray } from '../../../types'
 import { asArray, JsonTransformer } from '../../../utils'
@@ -24,10 +24,11 @@ import { W3cJsonLdVerifiableCredential } from './models/W3cJsonLdVerifiableCrede
 import { W3cJsonLdVerifiablePresentation } from './models/W3cJsonLdVerifiablePresentation'
 import { assertOnlyW3cJsonLdVerifiableCredentials } from './proof-ops/jsonldUtil'
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
+import { W3cJsonLdCredentialSigningNotSupportedError } from './W3cJsonLdCredentialSigningNotSupportedError'
 
 /**
  * Supports signing and verification of credentials according to the [Verifiable Credential Data Model](https://www.w3.org/TR/vc-data-model)
- * using [Data Integrity Proof](https://www.w3.org/TR/vc-data-model/#data-integrity-proofs).
+ * using [Linked Data Proofs](https://www.w3.org/TR/vc-data-model/#proofs).
  */
 @injectable()
 export class W3cJsonLdCredentialService {
@@ -68,6 +69,21 @@ export class W3cJsonLdCredentialService {
         cause: error,
       })
     }
+  }
+
+  /**
+   * Validate that the agent can prepare to sign a credential with the given proof type and verification method.
+   */
+  public async assertCanSignCredential(
+    agentContext: AgentContext,
+    options: Pick<W3cJsonLdSignCredentialOptions, 'proofType' | 'verificationMethod'> & { controller?: string }
+  ): Promise<void> {
+    await this.prepareSigningSuite(agentContext, {
+      proofType: options.proofType,
+      verificationMethodId: options.verificationMethod,
+      allowedPurposes: ['assertionMethod'],
+      controller: options.controller,
+    })
   }
 
   /**
@@ -318,6 +334,13 @@ export class W3cJsonLdCredentialService {
   }
 
   public getVerificationMethodTypesByProofType(proofType: string): string[] {
+    if (!this.signatureSuiteRegistry.supportedProofTypes.includes(proofType)) {
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        `The requested proofType ${proofType} is not supported`,
+        'unsupported-proof-type'
+      )
+    }
+
     return this.signatureSuiteRegistry.getByProofType(proofType).verificationMethodTypes
   }
 
@@ -373,18 +396,39 @@ export class W3cJsonLdCredentialService {
       controller?: string
     }
   ) {
-    const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
-    if (!suiteInfo) {
-      throw new CredoError(`The requested proofType ${options.proofType} is not supported`)
+    if (!this.signatureSuiteRegistry.supportedProofTypes.includes(options.proofType)) {
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        `The requested proofType ${options.proofType} is not supported`,
+        'unsupported-proof-type'
+      )
     }
 
+    const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
+
     const dids = agentContext.resolve(DidsApi)
-    const { verificationMethod: nativeVerificationMethod, publicJwk } =
-      await dids.resolveVerificationMethodFromCreatedDidRecord(options.verificationMethodId, options.allowedPurposes)
+    let resolved: Awaited<ReturnType<typeof dids.resolveVerificationMethodFromCreatedDidRecord>>
+    try {
+      resolved = await dids.resolveVerificationMethodFromCreatedDidRecord(
+        options.verificationMethodId,
+        options.allowedPurposes
+      )
+    } catch (error) {
+      if (error instanceof RecordNotFoundError) {
+        throw new W3cJsonLdCredentialSigningNotSupportedError(
+          error.message,
+          'verification-method-not-controlled',
+          error
+        )
+      }
+      throw error
+    }
+
+    const { verificationMethod: nativeVerificationMethod, publicJwk } = resolved
 
     if (!suiteInfo.verificationMethodTypes.includes(nativeVerificationMethod.type)) {
-      throw new CredoError(
-        `Unsupported verification method type '${nativeVerificationMethod.type}' for proof type '${options.proofType}'. Supported types are: ${suiteInfo.verificationMethodTypes.join(', ')}`
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        `Unsupported verification method type '${nativeVerificationMethod.type}' for proof type '${options.proofType}'. Supported types are: ${suiteInfo.verificationMethodTypes.join(', ')}`,
+        'unsupported-verification-method-type'
       )
     }
 
@@ -410,7 +454,10 @@ export class W3cJsonLdCredentialService {
 
     const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwkType(publicJwk)
     if (!suitesForKey.some(({ suiteClass }) => suiteClass === suiteInfo.suiteClass)) {
-      throw new CredoError('The key type of the verification method does not match the suite')
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        'The key type of the verification method does not match the suite',
+        'unsupported-key-type'
+      )
     }
 
     const keyPair = new WalletKeyPair({

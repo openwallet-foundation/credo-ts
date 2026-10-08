@@ -11,6 +11,7 @@ import {
   W3cCredentialRecord,
   W3cCredentialService,
   W3cJsonLdCredentialService,
+  W3cJsonLdCredentialSigningNotSupportedError,
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
@@ -97,7 +98,7 @@ export class DidCommJsonLdCredentialFormatService
   }
 
   public async acceptProposal(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { attachmentId, proposalAttachment }: DidCommCredentialFormatAcceptProposalOptions<DidCommJsonLdCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
@@ -108,6 +109,19 @@ export class DidCommJsonLdCredentialFormatService
 
     const credentialProposal = proposalAttachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
     JsonTransformer.fromJSON(credentialProposal, DidCommJsonLdCredentialDetail)
+
+    const verificationMethod = await this.deriveVerificationMethod(
+      agentContext,
+      credentialProposal.credential,
+      credentialProposal
+    )
+    const w3cJsonLdCredentialService = agentContext.dependencyManager.resolve(W3cJsonLdCredentialService)
+    const credential = JsonTransformer.fromJSON(credentialProposal.credential, W3cCredential)
+    await w3cJsonLdCredentialService.assertCanSignCredential(agentContext, {
+      proofType: credentialProposal.options.proofType,
+      verificationMethod,
+      controller: credential.issuerId,
+    })
 
     const offerData = credentialProposal
 
@@ -124,7 +138,7 @@ export class DidCommJsonLdCredentialFormatService
    *
    */
   public async createOffer(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     { credentialFormats, attachmentId }: DidCommCredentialFormatCreateOfferOptions<DidCommJsonLdCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
@@ -140,6 +154,15 @@ export class DidCommJsonLdCredentialFormatService
 
     // validate
     JsonTransformer.fromJSON(jsonLdFormat.credential, DidCommJsonLdCredentialDetail)
+
+    const verificationMethod = await this.deriveVerificationMethod(agentContext, jsonLdFormat.credential, jsonLdFormat)
+    const w3cJsonLdCredentialService = agentContext.dependencyManager.resolve(W3cJsonLdCredentialService)
+    const credential = JsonTransformer.fromJSON(jsonLdFormat.credential, W3cCredential)
+    await w3cJsonLdCredentialService.assertCanSignCredential(agentContext, {
+      proofType: jsonLdFormat.options.proofType,
+      verificationMethod,
+      controller: credential.issuerId,
+    })
 
     const attachment = this.getFormatData(jsonLdFormat, format.attachmentId)
 
@@ -274,7 +297,7 @@ export class DidCommJsonLdCredentialFormatService
   private async deriveVerificationMethod(
     agentContext: AgentContext,
     credentialAsJson: JsonCredential,
-    credentialRequest: JsonLdFormatDataCredentialDetail
+    credentialRequest: { options: { proofType: string } }
   ): Promise<string> {
     const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
     const w3cJsonLdCredentialService = agentContext.dependencyManager.resolve(W3cJsonLdCredentialService)
@@ -297,7 +320,10 @@ export class DidCommJsonLdCredentialFormatService
     const keyType = w3cJsonLdCredentialService.getVerificationMethodTypesByProofType(proofType)
 
     if (!keyType || keyType.length === 0) {
-      throw new CredoError(`No Key Type found for proofType ${proofType}`)
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        `No Key Type found for proofType ${proofType}`,
+        'no-verification-method-types-for-proof-type'
+      )
     }
 
     const verificationMethod = issuerDidDocument.findVerificationMethodsByTypeAndPurpose(keyType, [
@@ -306,7 +332,10 @@ export class DidCommJsonLdCredentialFormatService
     ])[0]
 
     if (!verificationMethod) {
-      throw new CredoError(`Missing verification method for key type ${keyType}`)
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        `Missing verification method for key type ${keyType}`,
+        'no-compatible-verification-method'
+      )
     }
 
     return verificationMethod.id
