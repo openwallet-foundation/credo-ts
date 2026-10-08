@@ -399,7 +399,7 @@ export async function wrapInV2Forward(
 
   for (let i = 0; i < routingKeysReversed.length; i++) {
     const routingKey = routingKeysReversed[i]
-    const next = i === 0 ? recipientNext : new DidKey(routingKeysReversed[i - 1]).did
+    const next = i === 0 ? recipientNext : toKeyAgreementDidUrl(routingKeysReversed[i - 1]).split('#')[0]
 
     const attachment = {
       id: utils.uuid(),

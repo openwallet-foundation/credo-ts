@@ -1,5 +1,6 @@
 import {
   DidDocumentBuilder,
+  DidKey,
   didDocumentToNumAlgo2Did,
   getEd25519VerificationKey2018,
   Kms,
@@ -273,6 +274,35 @@ describe('DidCommV2Envelope', () => {
 
     expect(forward.recipients[0].header.kid).toBe('did:example:mediator#kx')
     expect(plaintext.to).toEqual(['did:example:mediator'])
+  })
+
+  it('names the DID of a DID URL routing key as next of the forward before it', async () => {
+    const outerCreated = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+    const innerCreated = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+    const outerKey: Kms.PublicJwk = Kms.PublicJwk.fromPublicJwk(outerCreated.publicJwk)
+    const innerKey: Kms.PublicJwk = Kms.PublicJwk.fromPublicJwk(innerCreated.publicJwk)
+    innerKey.keyId = 'did:example:anothermediator#somekey'
+    const envelopeService = agent.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const recipient = await createKeyAgreementDid()
+    const unwrap = async (message: unknown, created: typeof outerCreated, matchedKid: string) =>
+      (
+        await envelopeService.unpack(agent.context, message as DidCommV2EncryptedMessage, {
+          recipientKey: Kms.PublicJwk.fromPublicJwk(created.publicJwk) as DidCommV2KeyAgreementJwk & { keyId: string },
+          matchedKid,
+          resolveSenderKey: async () => null,
+        })
+      ).plaintext
+
+    const forward = await wrapInV2Forward(agent.context, envelopeService, {} as DidCommV2EncryptedMessage, {
+      routingKeys: [outerKey, innerKey] as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
+      recipientKey: recipient.publicJwk,
+      contentEncryptionAlgorithm: 'A256CBC-HS512',
+    })
+    const outer = await unwrap(forward, outerCreated, toKeyAgreementDidUrl(outerKey))
+    const inner = await unwrap(outer.attachments?.[0].data.json, innerCreated, 'did:example:anothermediator#somekey')
+
+    expect(outer.body?.next).toBe('did:example:anothermediator')
+    expect(inner.body?.next).toBe(new DidKey(recipient.publicJwk).did)
   })
 
   describe('authcrypt sender binding', () => {
