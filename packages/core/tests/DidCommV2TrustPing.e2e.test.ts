@@ -1,8 +1,24 @@
-import { DidCommDidExchangeState, DidCommHandshakeProtocol, DidCommTrustPingEventTypes } from '../../didcomm/src'
+import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import type { DidCommConnectionStateChangedEvent } from '../../didcomm/src'
+import {
+  DidCommBasicMessageEventTypes,
+  DidCommConnectionEventTypes,
+  DidCommDidExchangeState,
+  DidCommEmptyMessage,
+  DidCommEventTypes,
+  DidCommHandshakeProtocol,
+  DidCommTrustPingEventTypes,
+  DidCommTrustPingMessage,
+} from '../../didcomm/src'
+import { DidCommConnectionMetadataKeys } from '../../didcomm/src/modules/connections/repository/DidCommConnectionMetadataTypes'
+import { JsonEncoder } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { setupEventReplaySubjects } from './events'
 import {
   getAgentOptions,
+  makeConnection,
+  waitForAgentMessageProcessedEventSubject,
+  waitForBasicMessageSubject,
   waitForTrustPingReceivedEventSubject,
   waitForTrustPingResponseReceivedEventSubject,
 } from './helpers'
@@ -66,76 +82,12 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       await aliceAgent.shutdown()
     })
 
-    it('invitee sends trust-ping and receives response over v2', async () => {
-      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
-      })
-
-      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        invitationUrl,
-        { label: 'alice' }
-      )
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-      expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
-
-      const [aliceReplay] = setupEventReplaySubjects([aliceAgent], trustPingEventTypes)
-      const ping = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection.id, {})
-
-      await waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: ping.threadId })
-    })
-
-    it('inviter sends trust-ping and receives response over v2', async () => {
-      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
-      })
-
-      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        invitationUrl,
-        { label: 'alice' }
-      )
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-      expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
-
-      const [faberConn] = await faberAgent.didcomm.connections.findAllByOutOfBandId(faberOutOfBandRecord.id)
-      expect(faberConn).toBeDefined()
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      const faberConnected = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
-
-      const [faberReplay] = setupEventReplaySubjects([faberAgent], trustPingEventTypes)
-      const ping = await faberAgent.didcomm.connections.sendPing(faberConnected.id, {})
-      await waitForTrustPingResponseReceivedEventSubject(faberReplay, { threadId: ping.threadId })
-    })
-
     it('sends trust-ping without response (responseRequested: false) over v2', async () => {
-      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
-      })
-
-      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        invitationUrl,
-        { label: 'alice' }
-      )
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-
-      const [faberConn] = await faberAgent.didcomm.connections.findAllByOutOfBandId(faberOutOfBandRecord.id)
-      expect(faberConn).toBeDefined()
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      const faberConnected = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
+      const [faberConnection] = await makeConnection(faberAgent, aliceAgent, { didCommVersion: 'v2' })
+      expect(faberConnection.didcommVersion).toBe('v2')
 
       const [aliceReplay] = setupEventReplaySubjects([aliceAgent], trustPingEventTypes)
-      const ping = await faberAgent.didcomm.connections.sendPing(faberConnected.id, {
+      const ping = await faberAgent.didcomm.connections.sendPing(faberConnection.id, {
         responseRequested: false,
       })
 
@@ -144,27 +96,14 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
     })
 
     it('bidirectional trust-ping over v2', async () => {
-      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
-        multiUseInvitation: true,
+      const [faberConnection, aliceFaberConnection] = await makeConnection(faberAgent, aliceAgent, {
+        didCommVersion: 'v2',
       })
-
-      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
-        invitationUrl,
-        { label: 'alice' }
-      )
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-
-      const [faberConn] = await faberAgent.didcomm.connections.findAllByOutOfBandId(faberOutOfBandRecord.id)
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      const faberConnected = await faberAgent.didcomm.connections.returnWhenIsConnected(faberConn!.id)
+      expect(faberConnection.didcommVersion).toBe('v2')
 
       const [faberReplay, aliceReplay] = setupEventReplaySubjects([faberAgent, aliceAgent], trustPingEventTypes)
       const alicePing = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection.id, {})
-      const faberPing = await faberAgent.didcomm.connections.sendPing(faberConnected.id, {})
+      const faberPing = await faberAgent.didcomm.connections.sendPing(faberConnection.id, {})
 
       await Promise.all([
         waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: alicePing.threadId }),
@@ -206,6 +145,229 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       const [aliceReplay] = setupEventReplaySubjects([aliceAgent], trustPingEventTypes)
       const ping = await aliceAgent.didcomm.connections.sendPing(aliceFaberConnection.id, {})
       await waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: ping.threadId })
+    })
+
+    it('v2 OOB (no handshake): only the first message carries the invitation id as pthid', async () => {
+      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+      const invitationId = faberOutOfBandRecord.outOfBandInvitation.id
+
+      const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
+        faberOutOfBandRecord.outOfBandInvitation,
+        { label: 'alice' }
+      )
+      if (!connectionRecord) throw new Error('Expected connectionRecord to be defined')
+
+      const [faberReplay, aliceReplay] = setupEventReplaySubjects([faberAgent, aliceAgent], trustPingEventTypes)
+      const firstPing = await aliceAgent.didcomm.connections.sendPing(connectionRecord.id, {})
+      const firstPingReceived = await waitForTrustPingReceivedEventSubject(faberReplay, {
+        threadId: firstPing.threadId,
+      })
+      expect(firstPingReceived.thread?.parentThreadId).toBe(invitationId)
+      await waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: firstPing.threadId })
+
+      const secondPing = await aliceAgent.didcomm.connections.sendPing(connectionRecord.id, {})
+      const secondPingReceived = await waitForTrustPingReceivedEventSubject(faberReplay, {
+        threadId: secondPing.threadId,
+      })
+      expect(secondPingReceived.thread?.parentThreadId).toBeUndefined()
+
+      const aliceConnection = await aliceAgent.didcomm.connections.getById(connectionRecord.id)
+      expect(aliceConnection.metadata.get(DidCommConnectionMetadataKeys.OutOfBandV2ParentThreadId)).toBeNull()
+    })
+
+    it('v2 OOB (no handshake): a first message with its own pthid keeps it', async () => {
+      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+
+      const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
+        faberOutOfBandRecord.outOfBandInvitation,
+        { label: 'alice' }
+      )
+      if (!connectionRecord) throw new Error('Expected connectionRecord to be defined')
+
+      const [faberReplay] = setupEventReplaySubjects(
+        [faberAgent],
+        [
+          ...trustPingEventTypes,
+          DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+          DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged,
+        ]
+      )
+      await aliceAgent.didcomm.basicMessages.sendMessage(connectionRecord.id, 'hello', 'custom-pthid')
+      const basicMessageReceived = await waitForBasicMessageSubject(faberReplay, { content: 'hello' })
+      expect(basicMessageReceived.thread?.parentThreadId).toBe('custom-pthid')
+
+      const ping = await aliceAgent.didcomm.connections.sendPing(connectionRecord.id, {})
+      const pingReceived = await waitForTrustPingReceivedEventSubject(faberReplay, { threadId: ping.threadId })
+      expect(pingReceived.thread?.parentThreadId).toBeUndefined()
+    })
+
+    it('v2 OOB with an attached request: the reply carries the invitation id as pthid', async () => {
+      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
+        didCommVersion: 'v2',
+        messages: [new DidCommTrustPingMessage({ responseRequested: true })],
+      })
+      const invitationId = faberOutOfBandRecord.outOfBandInvitation.id
+
+      const [faberReplay] = setupEventReplaySubjects([faberAgent], trustPingEventTypes)
+      const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
+        faberOutOfBandRecord.outOfBandInvitation,
+        { label: 'alice' }
+      )
+      if (!connectionRecord) throw new Error('Expected connectionRecord to be defined')
+      const reply = await waitForTrustPingResponseReceivedEventSubject(faberReplay, {})
+      expect(reply.thread?.parentThreadId).toBe(invitationId)
+
+      const aliceConnection = await aliceAgent.didcomm.connections.getById(connectionRecord.id)
+      expect(aliceConnection.metadata.get(DidCommConnectionMetadataKeys.OutOfBandV2ParentThreadId)).toBeNull()
+
+      const ping = await aliceAgent.didcomm.connections.sendPing(connectionRecord.id, {})
+      const pingReceived = await waitForTrustPingReceivedEventSubject(faberReplay, { threadId: ping.threadId })
+      expect(pingReceived.thread?.parentThreadId).toBeUndefined()
+    })
+
+    it('v2 OOB with an attached request: the attached message is a v2 plaintext message', async () => {
+      const ping = new DidCommTrustPingMessage({ responseRequested: true })
+      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
+        didCommVersion: 'v2',
+        messages: [ping],
+      })
+
+      const invitationUrl = faberOutOfBandRecord.outOfBandInvitation.toUrl({ domain: 'https://example.com' })
+      const invitationJson = JsonEncoder.fromBase64Url(new URL(invitationUrl).searchParams.get('_oob') as string)
+      const attachedMessage = invitationJson.attachments[0].data.json
+      expect(attachedMessage).toEqual({
+        id: ping.id,
+        type: DidCommTrustPingMessage.type.messageTypeUri,
+        body: { response_requested: true },
+      })
+      expect(attachedMessage).not.toHaveProperty('@type')
+    })
+
+    const toV2Json = (ping: DidCommTrustPingMessage) => ({
+      id: ping.id,
+      type: ping.type,
+      body: { response_requested: true },
+    })
+
+    it.each([
+      ['v2 shaped json', (ping: DidCommTrustPingMessage) => ({ json: toV2Json(ping) })],
+      ['v2 shaped base64', (ping: DidCommTrustPingMessage) => ({ base64: JsonEncoder.toBase64Url(toV2Json(ping)) })],
+      ['v1 shaped json', (ping: DidCommTrustPingMessage) => ({ json: ping.toJSON() })],
+      ['v1 shaped base64', (ping: DidCommTrustPingMessage) => ({ base64: JsonEncoder.toBase64Url(ping.toJSON()) })],
+    ])(
+      'v2 OOB with a %s attached request: it is dispatched and the reply carries the invitation id as pthid',
+      async (_, toAttachedData) => {
+        const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+        const invitationId = faberOutOfBandRecord.outOfBandInvitation.id
+        const ping = new DidCommTrustPingMessage({ responseRequested: true })
+        const invitationJson = {
+          ...faberOutOfBandRecord.outOfBandInvitation.v2Invitation?.toJSON(),
+          attachments: [{ id: 'request-0', media_type: 'application/json', data: toAttachedData(ping) }],
+        }
+
+        const [faberReplay, aliceReplay] = setupEventReplaySubjects([faberAgent, aliceAgent], trustPingEventTypes)
+        const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
+          `https://example.com?_oob=${JsonEncoder.toBase64Url(invitationJson)}`,
+          { label: 'alice' }
+        )
+        if (!connectionRecord) throw new Error('Expected connectionRecord to be defined')
+
+        await waitForTrustPingReceivedEventSubject(aliceReplay, { threadId: ping.id })
+        const reply = await waitForTrustPingResponseReceivedEventSubject(faberReplay, { threadId: ping.id })
+        expect(reply.thread?.parentThreadId).toBe(invitationId)
+      }
+    )
+
+    it('v2 OOB (no handshake): a first message sent from the connection state listener carries the pthid', async () => {
+      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+      const invitationId = faberOutOfBandRecord.outOfBandInvitation.id
+
+      const [faberReplay] = setupEventReplaySubjects([faberAgent], trustPingEventTypes)
+      const firstPingSent = new Promise<DidCommTrustPingMessage>((resolve, reject) => {
+        const listener = ({ payload }: DidCommConnectionStateChangedEvent) => {
+          aliceAgent.events.off(DidCommConnectionEventTypes.DidCommConnectionStateChanged, listener)
+          aliceAgent.didcomm.connections.sendPing(payload.connectionRecord.id, {}).then(resolve, reject)
+        }
+        aliceAgent.events.on(DidCommConnectionEventTypes.DidCommConnectionStateChanged, listener)
+      })
+
+      const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
+        faberOutOfBandRecord.outOfBandInvitation,
+        { label: 'alice' }
+      )
+      if (!connectionRecord) throw new Error('Expected connectionRecord to be defined')
+
+      const firstPing = await firstPingSent
+      const firstPingReceived = await waitForTrustPingReceivedEventSubject(faberReplay, {
+        threadId: firstPing.threadId,
+      })
+      expect(firstPingReceived.thread?.parentThreadId).toBe(invitationId)
+
+      const secondPing = await aliceAgent.didcomm.connections.sendPing(connectionRecord.id, {})
+      const secondPingReceived = await waitForTrustPingReceivedEventSubject(faberReplay, {
+        threadId: secondPing.threadId,
+      })
+      expect(secondPingReceived.thread?.parentThreadId).toBeUndefined()
+    })
+
+    it('v2 OOB (no handshake): a rotation sent as the first message carries the pthid', async () => {
+      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+      const invitationId = faberOutOfBandRecord.outOfBandInvitation.id
+
+      const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
+        faberOutOfBandRecord.outOfBandInvitation,
+        { label: 'alice' }
+      )
+      if (!connectionRecord) throw new Error('Expected connectionRecord to be defined')
+
+      const [faberReplay] = setupEventReplaySubjects([faberAgent], [DidCommEventTypes.DidCommMessageProcessed])
+      await aliceAgent.didcomm.connections.rotate({ connectionId: connectionRecord.id })
+      const emptyMessage = await waitForAgentMessageProcessedEventSubject(faberReplay, {
+        messageType: DidCommEmptyMessage.type.messageTypeUri,
+      })
+      expect(emptyMessage.thread?.parentThreadId).toBe(invitationId)
+    })
+
+    it('v2 OOB (no handshake): a first message that fails to send leaves the pthid for the retry', async () => {
+      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+      const invitationId = faberOutOfBandRecord.outOfBandInvitation.id
+
+      const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
+        faberOutOfBandRecord.outOfBandInvitation,
+        { label: 'alice' }
+      )
+      if (!connectionRecord) throw new Error('Expected connectionRecord to be defined')
+
+      const sendSpy = vi
+        .spyOn(SubjectOutboundTransport.prototype, 'sendMessage')
+        .mockRejectedValueOnce(new Error('offline'))
+      await expect(aliceAgent.didcomm.connections.sendPing(connectionRecord.id, {})).rejects.toThrow(/undeliverable/)
+      sendSpy.mockRestore()
+
+      const [faberReplay] = setupEventReplaySubjects([faberAgent], trustPingEventTypes)
+      const ping = await aliceAgent.didcomm.connections.sendPing(connectionRecord.id, {})
+      const pingReceived = await waitForTrustPingReceivedEventSubject(faberReplay, { threadId: ping.threadId })
+      expect(pingReceived.thread?.parentThreadId).toBe(invitationId)
+    })
+
+    it('v2 OOB (no handshake): an invitation id that is not a valid pthid does not block the first message', async () => {
+      const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+      const v2Invitation = faberOutOfBandRecord.outOfBandInvitation.v2Invitation
+      if (!v2Invitation) throw new Error('Expected v2Invitation to be defined')
+      const invitationUrl = `https://example.com?_oob=${JsonEncoder.toBase64Url({
+        ...v2Invitation.toJSON(),
+        id: 'inv~0123456789',
+      })}`
+
+      const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, {
+        label: 'alice',
+      })
+      if (!connectionRecord) throw new Error('Expected connectionRecord to be defined')
+
+      const [faberReplay] = setupEventReplaySubjects([faberAgent], trustPingEventTypes)
+      const ping = await aliceAgent.didcomm.connections.sendPing(connectionRecord.id, {})
+      const pingReceived = await waitForTrustPingReceivedEventSubject(faberReplay, { threadId: ping.threadId })
+      expect(pingReceived.thread?.parentThreadId).toBeUndefined()
     })
   })
 
