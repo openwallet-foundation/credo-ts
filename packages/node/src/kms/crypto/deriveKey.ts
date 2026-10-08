@@ -95,7 +95,7 @@ export async function deriveEncryptionKey(options: {
 
   return {
     encryptedContentEncryptionKey: {
-      encrypted: Buffer.concat([cipher.update(contentEncryptionKeyBytes), cipher.final()]),
+      encrypted: new Uint8Array(Buffer.concat([cipher.update(contentEncryptionKeyBytes), cipher.final()])),
     } satisfies Kms.KmsEncryptedKey,
     contentEncryptionKey: {
       kty: 'oct',
