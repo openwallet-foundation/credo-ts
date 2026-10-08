@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.3
+
+### Patch Changes
+
+- d9db392: Remove unused ffi-napi-era type packages from development dependencies.
+- cb11314: Remove duplicate error-level logging at throw sites that already chain the original error as `cause`.
+- Updated dependencies [cce51fb]
+  - @credo-ts/core@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes

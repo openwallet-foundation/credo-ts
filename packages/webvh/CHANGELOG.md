@@ -1,5 +1,15 @@
 # @credo-ts/webvh
 
+## 0.7.3
+
+### Patch Changes
+
+- 643544e: The did:webvh AnonCreds registry signs again with an `assertionMethod` key of any type Credo maps to an Ed25519 key (`Multikey`, `Ed25519VerificationKey2020`, `Ed25519VerificationKey2018`, `JsonWebKey2020`), preferring `Multikey`. Since #2934 it only looked at `Multikey`, so a DID whose `assertionMethod` key is an `Ed25519VerificationKey2020` could not register a schema, credential definition, revocation registry or status list.
+- Updated dependencies [cce51fb]
+- Updated dependencies [37fb179]
+  - @credo-ts/core@0.7.3
+  - @credo-ts/anoncreds@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes
