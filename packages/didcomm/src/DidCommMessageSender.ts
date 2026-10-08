@@ -29,7 +29,7 @@ import { DidCommEnvelopeRegistry } from './envelope'
 import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
-import { findOwnKeyAgreementKey, toAbsoluteDidUrl } from './modules/connections/services/helpers'
+import { findOwnKeyAgreementKey, toAbsoluteDidUrl, toKeyAgreement } from './modules/connections/services/helpers'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommOutOfBandRepository } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
@@ -382,17 +382,6 @@ export class DidCommMessageSender {
         })()
       : services
 
-    // Resolve the sender key and skid for DIDComm v2.
-    // When an independent X25519 keyAgreement key is available AND the connection uses V2,
-    // use it directly as the sender key for ECDH-1PU. Otherwise fall back to the Ed25519 key
-    // (Askar handles birational conversion at runtime). The cast is safe: downstream toX25519() handles both.
-    // IMPORTANT: V1 authcrypt embeds raw sender bytes as Ed25519; using X25519 bytes there would
-    // cause "Ed25519: invalid public key" on the receiver during convertTo(X25519).
-    let effectiveSenderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> = senderVerificationMethod.publicJwk
-    if (senderKeyAgreement && useV2ForServiceOrder) {
-      effectiveSenderKey = senderKeyAgreement.publicJwk as never
-    }
-
     // Per DIDComm v2 spec section 5.1.4, skid MUST point into the sender's keyAgreement (X25519).
     const effectiveSenderKeySkid: string = (() => {
       if (senderKeyAgreement) return senderKeyAgreement.didUrl
@@ -415,18 +404,36 @@ export class DidCommMessageSender {
       return toAbsoluteDidUrl(didDocument.id, kaVm?.id ?? senderVerificationMethod.verificationMethod.id)
     })()
 
+    // v1 authcrypt keeps the Ed25519 key because the receiver converts it to X25519 itself
+    const senderKeysForService = (
+      service: ResolvedDidCommService
+    ): { senderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>; senderKeySkid: string } => {
+      if (!senderKeyAgreement || !useV2ForServiceOrder) {
+        return { senderKey: senderVerificationMethod.publicJwk, senderKeySkid: effectiveSenderKeySkid }
+      }
+      for (const recipientKey of service.recipientKeys) {
+        const ownKey = findOwnKeyAgreementKey(didDocument, keys, toKeyAgreement(recipientKey))
+        if (ownKey) return { senderKey: ownKey.publicJwk as never, senderKeySkid: ownKey.didUrl }
+      }
+      throw new MessageSendingError(
+        `Unable to send DIDComm v2 message to service ${service.id}, did ${connection.did} has no keyAgreement key on the curve of a service recipient key`,
+        { outboundMessageContext }
+      )
+    }
+
     // Loop trough all available services and try to send the message
     for (const service of orderedServices) {
       try {
+        const { senderKey, senderKeySkid } = senderKeysForService(service)
         // Enable return routing if the our did document does not have any inbound endpoint for given sender key
         await this.sendToService(
           new DidCommOutboundMessageContext(message, {
             agentContext,
             serviceParams: {
               service,
-              senderKey: effectiveSenderKey,
+              senderKey,
               returnRoute: shouldAddReturnRoute,
-              senderKeySkid: effectiveSenderKeySkid,
+              senderKeySkid,
             },
             connection,
           })
@@ -453,8 +460,7 @@ export class DidCommMessageSender {
       const keys = {
         recipientKeys: queueService.recipientKeys,
         routingKeys: queueService.routingKeys,
-        senderKey: effectiveSenderKey,
-        senderKeySkid: effectiveSenderKeySkid,
+        ...senderKeysForService(queueService),
       }
 
       const encryptedMessage = await this.encryptMessage(agentContext, { message, keys, connection })
