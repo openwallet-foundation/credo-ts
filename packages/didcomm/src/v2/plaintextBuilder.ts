@@ -1,3 +1,4 @@
+import { utils } from '@credo-ts/core'
 import type { DidCommMessage } from '../DidCommMessage'
 import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from './types'
 
@@ -34,7 +35,11 @@ export function mapV2AttachmentToV1(v2: DidCommV2Attachment): Record<string, unk
   }
   if (v2.description !== undefined) v1.description = v2.description
   if (v2.filename !== undefined) v1.filename = v2.filename
-  if (v2.media_type !== undefined) v1['mime-type'] = v2.media_type
+  // Spec v2.1 IANA Media Types implies application/ for DIDComm message media types. Extended here to attachments
+  if (v2.media_type !== undefined) {
+    v1['mime-type'] =
+      typeof v2.media_type === 'string' && !v2.media_type.includes('/') ? `application/${v2.media_type}` : v2.media_type
+  }
   if (v2.format !== undefined) v1.format = v2.format
   if (v2.lastmod_time !== undefined) v1.lastmod_time = v2.lastmod_time
   if (v2.byte_count !== undefined) v1.byte_count = v2.byte_count
@@ -44,7 +49,7 @@ export function mapV2AttachmentToV1(v2: DidCommV2Attachment): Record<string, unk
 /**
  * Build a DIDComm v2 plaintext message from a DidCommMessage.
  * For messages that implement toV2Plaintext() (e.g. DidCommBasicMessageV2), uses that directly.
- * Otherwise maps v1 shape: @type→type, @id→id, ~thread→thid/pthid, ~l10n→lang, ~attach→attachments, remaining fields→body.
+ * Otherwise maps v1 shape: @type→type, @id→id, ~thread→thid/pthid, lang or ~l10n→lang, ~please_ack→please_ack, ~attach→attachments, ~timing→created_time/expires_time, remaining non-decorator fields→body.
  *
  * @param message - The DidCommMessage to convert
  * @param config - Optional config (e.g. useDidSovPrefixWhereAllowed, from/to override for connection-based sends)
@@ -88,6 +93,8 @@ export function buildV2PlaintextFromMessage(
     '~l10n': l10n,
     '~attach': attach,
     '~transport': transport,
+    '~please_ack': pleaseAck,
+    lang,
     created_time,
     expires_time,
     from,
@@ -98,7 +105,7 @@ export function buildV2PlaintextFromMessage(
   const v2: DidCommV2PlaintextMessage = {
     id: id as string,
     type: type as string,
-    body: rest as Record<string, unknown>,
+    body: Object.fromEntries(Object.entries(rest).filter(([key]) => !key.startsWith('~'))),
   }
 
   const fromVal = (from ?? config?.from) as string | undefined
@@ -110,9 +117,11 @@ export function buildV2PlaintextFromMessage(
     if ('pthid' in thread && thread.pthid !== undefined) v2.pthid = thread.pthid as string
   }
 
-  if (l10n && typeof l10n === 'object' && 'locale' in l10n && l10n.locale !== undefined) {
-    v2.lang = l10n.locale as string
-  }
+  const langVal = (lang ?? (l10n && typeof l10n === 'object' && 'locale' in l10n ? l10n.locale : undefined)) as
+    | string
+    | undefined
+  if (langVal !== undefined) v2.lang = langVal
+  if (pleaseAck !== undefined) v2.please_ack = ['']
 
   // DIDComm v2 carries return_route as a top-level header, not the v1 ~transport decorator.
   if (transport && typeof transport === 'object') {
@@ -124,9 +133,13 @@ export function buildV2PlaintextFromMessage(
     v2.attachments = attach.map((a) => mapV1AttachmentToV2(a as Record<string, unknown>))
   }
 
-  // TODO: Do we need to convert created_time/expires_time from Date (v1 ~timing) to epoch (v2)?
+  // Other ~timing fields have no v2 header (spec v2.1 Message Headers)
+  const outTime = message.timing?.outTime
+  const expiresTime = message.timing?.expiresTime
   if (created_time !== undefined) v2.created_time = created_time as number
+  else if (outTime) v2.created_time = utils.dateToSeconds(outTime)
   if (expires_time !== undefined) v2.expires_time = expires_time as number
+  else if (expiresTime) v2.expires_time = utils.dateToSeconds(expiresTime)
 
   if (config?.fromPrior !== undefined) v2.from_prior = config.fromPrior
 
