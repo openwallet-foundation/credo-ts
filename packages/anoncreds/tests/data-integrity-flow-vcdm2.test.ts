@@ -11,7 +11,6 @@ import {
   KeyDidResolver,
   Kms,
   RecordNotFoundError,
-  SignatureSuiteToken,
   W3cV2CredentialRecord,
   W3cV2CredentialService,
   W3cV2CredentialsModuleConfig,
@@ -56,7 +55,6 @@ const agentContext = getAgentContext({
     [DidResolverService, new DidResolverService(testLogger, didsModuleConfig, {} as unknown as DidRepository)],
     [JsonLdModuleConfig, new JsonLdModuleConfig()],
     [W3cV2CredentialsModuleConfig, new W3cV2CredentialsModuleConfig()],
-    [SignatureSuiteToken, 'default'],
     [
       W3cDataIntegrityCryptosuiteToken,
       {
