@@ -1,5 +1,23 @@
 # @credo-ts/didcomm
 
+## 0.7.3
+
+### Patch Changes
+
+- 4d82972: Emit `DidCommMessageProcessingFailed` when an inbound message received through the DIDComm event path cannot be processed.
+  
+  ```ts
+  agent.events.on<DidCommMessageProcessingFailedEvent>(
+    DidCommEventTypes.DidCommMessageProcessingFailed,
+    ({ payload }) => {
+      // payload.error, payload.message, payload.connection, payload.contextCorrelationId, payload.receivedAt
+    }
+  )
+  ```
+- cb11314: Remove duplicate error-level logging at throw sites that already chain the original error as `cause`.
+- Updated dependencies [cce51fb]
+  - @credo-ts/core@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes

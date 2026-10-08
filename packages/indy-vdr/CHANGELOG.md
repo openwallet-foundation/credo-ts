@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.3
+
+### Patch Changes
+
+- d9db392: Remove unused ffi-napi-era type packages from development dependencies.
+- 37fb179: Fix issuance of revocable AnonCreds credentials with Indy VDR, including registries created before this fix, and report causes when revocation status list resolution fails.
+- Updated dependencies [cce51fb]
+- Updated dependencies [37fb179]
+  - @credo-ts/core@0.7.3
+  - @credo-ts/anoncreds@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes
