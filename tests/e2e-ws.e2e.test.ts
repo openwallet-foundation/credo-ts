@@ -2,9 +2,10 @@ import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
   DidCommMediatorPickupStrategy,
+  DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
-import { DidCommWsInboundTransport } from '@credo-ts/node'
+import { webSocketHost } from '@credo-ts/node'
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
@@ -39,6 +40,9 @@ const mediatorAgentOptions = getAgentOptions(
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
       extraDidCommConfig: {
         endpoints: [`ws://localhost:${mediatorPort}`],
+        transports: {
+          inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ port: mediatorPort }) })],
+        },
         mediator: {
           autoAcceptMediationRequests: true,
         },
@@ -58,6 +62,9 @@ const senderAgentOptions = getAgentOptions(
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
       extraDidCommConfig: {
         endpoints: [`ws://localhost:${senderPort}`],
+        transports: {
+          inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ port: senderPort }) })],
+        },
         mediationRecipient: {
           mediatorPollingInterval: 1000,
           mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
@@ -91,12 +98,10 @@ describe('E2E WS tests', () => {
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.didcomm.registerInboundTransport(new DidCommWsInboundTransport({ port: mediatorPort }))
     mediatorAgent.didcomm.registerOutboundTransport(new DidCommWsOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.didcomm.registerInboundTransport(new DidCommWsInboundTransport({ port: senderPort }))
     senderAgent.didcomm.registerOutboundTransport(new DidCommWsOutboundTransport())
     await senderAgent.initialize()
 

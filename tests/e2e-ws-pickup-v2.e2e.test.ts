@@ -1,5 +1,5 @@
 import { Agent } from '@credo-ts/core'
-import { DidCommWsInboundTransport } from '@credo-ts/node'
+import { webSocketHost } from '@credo-ts/node'
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
@@ -7,6 +7,7 @@ import {
   DidCommAutoAcceptCredential,
   DidCommMediatorPickupStrategy,
   DidCommMessageForwardingStrategy,
+  DidCommWsInboundTransport,
   DidCommWsOutboundTransport,
 } from '../packages/didcomm/src'
 import { e2eTest } from './e2e-test'
@@ -26,6 +27,9 @@ const mediatorOptions = () =>
         autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
         extraDidCommConfig: {
           endpoints: [`ws://localhost:${mediatorPort}`],
+          transports: {
+            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ port: mediatorPort }) })],
+          },
           mediator: {
             autoAcceptMediationRequests: true,
             messageForwardingStrategy: DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery,
@@ -47,6 +51,9 @@ const senderOptions = () =>
         autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
         extraDidCommConfig: {
           endpoints: [`ws://localhost:${senderPort}`],
+          transports: {
+            inbound: [new DidCommWsInboundTransport({ host: webSocketHost({ port: senderPort }) })],
+          },
         },
       }),
     },
@@ -97,12 +104,10 @@ describe('E2E WS Pickup V2 tests', () => {
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.didcomm.registerInboundTransport(new DidCommWsInboundTransport({ port: mediatorPort }))
     mediatorAgent.didcomm.registerOutboundTransport(new DidCommWsOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.didcomm.registerInboundTransport(new DidCommWsInboundTransport({ port: senderPort }))
     senderAgent.didcomm.registerOutboundTransport(new DidCommWsOutboundTransport())
     await senderAgent.initialize()
 
@@ -138,12 +143,10 @@ describe('E2E WS Pickup V2 tests', () => {
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.didcomm.registerInboundTransport(new DidCommWsInboundTransport({ port: mediatorPort }))
     mediatorAgent.didcomm.registerOutboundTransport(new DidCommWsOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.didcomm.registerInboundTransport(new DidCommWsInboundTransport({ port: senderPort }))
     senderAgent.didcomm.registerOutboundTransport(new DidCommWsOutboundTransport())
     await senderAgent.initialize()
 

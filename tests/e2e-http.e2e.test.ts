@@ -1,10 +1,11 @@
 import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
+  DidCommHttpInboundTransport,
   DidCommHttpOutboundTransport,
   DidCommMediatorPickupStrategy,
 } from '@credo-ts/didcomm'
-import { DidCommHttpInboundTransport } from '@credo-ts/node'
+import { httpServerHost } from '@credo-ts/node'
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
@@ -38,6 +39,9 @@ const mediatorAgentOptions = getAgentOptions(
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
       extraDidCommConfig: {
         endpoints: [`http://localhost:${mediatorPort}`],
+        transports: {
+          inbound: [new DidCommHttpInboundTransport({ host: httpServerHost({ port: mediatorPort }) })],
+        },
         mediator: {
           autoAcceptMediationRequests: true,
         },
@@ -56,6 +60,9 @@ const senderAgentOptions = getAgentOptions(
     autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
     extraDidCommConfig: {
       endpoints: [`http://localhost:${senderPort}`],
+      transports: {
+        inbound: [new DidCommHttpInboundTransport({ host: httpServerHost({ port: senderPort }) })],
+      },
     },
   }),
   { requireDidcomm: true }
@@ -84,12 +91,10 @@ describe('E2E HTTP tests', () => {
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port: mediatorPort }))
     mediatorAgent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port: senderPort }))
     senderAgent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
     await senderAgent.initialize()
 
