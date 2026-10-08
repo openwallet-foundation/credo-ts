@@ -232,4 +232,64 @@ describe('WebVhAnonCredsRegistry assertionMethod signing', () => {
     const attestedResource = JSON.parse(JSON.stringify(registrationMetadata.attestedResource))
     expect(attestedResource.proof.verificationMethod).toBe(assertionVerificationMethodId)
   })
+
+  it('signs with an Ed25519VerificationKey2020 assertionMethod key and the resource round-trips', async () => {
+    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+    const didRecord = await didRepository.getSingleByQuery(agentContext, { did: issuerId })
+    const didDocument = didRecord.didDocument
+    if (!didDocument) throw new Error('did record has no did document')
+
+    didDocument.verificationMethod = (didDocument.verificationMethod ?? []).map((method) =>
+      method.id === assertionVerificationMethodId
+        ? new VerificationMethod({
+            id: method.id,
+            type: 'Ed25519VerificationKey2020',
+            controller: method.controller,
+            publicKeyMultibase: method.publicKeyMultibase,
+          })
+        : method
+    )
+    await didRepository.update(agentContext, didRecord)
+
+    const { registrationMetadata, schemaState } = await registry.registerSchema(agentContext, { schema })
+
+    const attestedResource = JSON.parse(JSON.stringify(registrationMetadata.attestedResource))
+    expect(attestedResource.proof.verificationMethod).toBe(assertionVerificationMethodId)
+
+    if (schemaState.state !== 'finished') throw new Error(`registerSchema did not finish: ${schemaState.state}`)
+    resolveResource.mockResolvedValue({
+      content: attestedResource,
+      dereferencingMetadata: { contentType: 'application/json' },
+    })
+
+    const schemaResponse = await registry.getSchema(agentContext, schemaState.schemaId)
+
+    expect(schemaResponse.resolutionMetadata.error).toBeUndefined()
+    expect(schemaResponse.schema).toEqual(schema)
+  })
+
+  it('prefers a Multikey assertionMethod key over an Ed25519VerificationKey2020 one', async () => {
+    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+    const didRecord = await didRepository.getSingleByQuery(agentContext, { did: issuerId })
+    const didDocument = didRecord.didDocument
+    if (!didDocument) throw new Error('did record has no did document')
+
+    didDocument.verificationMethod = (didDocument.verificationMethod ?? []).map((method) =>
+      method.id === updateVerificationMethodId
+        ? new VerificationMethod({
+            id: method.id,
+            type: 'Ed25519VerificationKey2020',
+            controller: method.controller,
+            publicKeyMultibase: method.publicKeyMultibase,
+          })
+        : method
+    )
+    didDocument.assertionMethod = [updateVerificationMethodId, assertionVerificationMethodId]
+    await didRepository.update(agentContext, didRecord)
+
+    const { registrationMetadata } = await registry.registerSchema(agentContext, { schema })
+
+    const attestedResource = JSON.parse(JSON.stringify(registrationMetadata.attestedResource))
+    expect(attestedResource.proof.verificationMethod).toBe(assertionVerificationMethodId)
+  })
 })
