@@ -1,0 +1,90 @@
+import { InjectionSymbols, type Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
+import { getAgentConfig, getAgentContext } from '../../../../core/tests'
+import { NodeInMemoryKeyManagementStorage } from '../../../../node/src/kms/NodeInMemoryKeyManagementStorage'
+import { NodeKeyManagementService } from '../../../../node/src/kms/NodeKeyManagementService'
+import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
+import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../AskarModuleConfig'
+import { AskarKeyManagementService } from '../AskarKeyManagementService'
+
+const agentContext = getAgentContext({
+  contextCorrelationId: 'default',
+  agentConfig: getAgentConfig('AskarKeyManagementServiceNodeInterop'),
+  registerInstances: [
+    [InjectionSymbols.FileSystem, new NodeFileSystem()],
+    [
+      AskarModuleConfig,
+      new AskarModuleConfig({
+        multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,
+        askar: NativeAskar,
+        store: {
+          id: 'default',
+          key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
+          keyDerivationMethod: 'raw',
+          database: { type: 'sqlite', config: { inMemory: true } },
+        },
+      }),
+    ],
+  ],
+})
+
+const services = {
+  askar: new AskarKeyManagementService(),
+  node: new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()),
+}
+
+const apu = TypedArrayEncoder.fromUtf8String('did:example:alice#key-1')
+const apv = TypedArrayEncoder.fromUtf8String('did:example:bob#key-1')
+const aad = TypedArrayEncoder.fromUtf8String('eyJhbGciOiJFQ0RILUVTIn0')
+
+describe('AskarKeyManagementService ECDH-ES interop with NodeKeyManagementService', () => {
+  describe.each([
+    { from: 'node', to: 'askar' },
+    { from: 'askar', to: 'node' },
+  ] as const)('$from encrypts, $to decrypts', ({ from, to }) => {
+    it.each([
+      { algorithm: 'ECDH-ES', encryption: 'A256GCM', type: { kty: 'OKP', crv: 'X25519' } },
+      { algorithm: 'ECDH-ES', encryption: 'A256GCM', type: { kty: 'EC', crv: 'P-256' } },
+      { algorithm: 'ECDH-ES', encryption: 'A256GCM', type: { kty: 'EC', crv: 'P-384' } },
+      { algorithm: 'ECDH-ES+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'OKP', crv: 'X25519' } },
+      { algorithm: 'ECDH-ES+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'EC', crv: 'P-256' } },
+      { algorithm: 'ECDH-ES+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'EC', crv: 'P-384' } },
+    ] as const)('$algorithm with $encryption and $type.crv keys', async ({ algorithm, encryption, type }) => {
+      const ephemeral = await services[from].createKey(agentContext, { type })
+      const recipient = await services[to].createKey(agentContext, { type })
+
+      const { encrypted, iv, tag, encryptedKey } = await services[from].encrypt(agentContext, {
+        key: {
+          keyAgreement: {
+            algorithm,
+            keyId: ephemeral.keyId,
+            externalPublicJwk: recipient.publicJwk as Kms.KmsJwkPublicEcdh,
+            apu,
+            apv,
+          },
+        },
+        encryption: { algorithm: encryption, aad },
+        data: TypedArrayEncoder.fromUtf8String(`${from} to ${to}`),
+      })
+
+      const keyAgreement = {
+        keyId: recipient.keyId,
+        externalPublicJwk: ephemeral.publicJwk as Kms.KmsJwkPublicEcdh,
+        apu,
+        apv,
+      }
+      const { data } = await services[to].decrypt(agentContext, {
+        key: {
+          keyAgreement:
+            algorithm === 'ECDH-ES'
+              ? { ...keyAgreement, algorithm }
+              : { ...keyAgreement, algorithm, encryptedKey: { encrypted: encryptedKey?.encrypted as Uint8Array } },
+        },
+        decryption: { algorithm: encryption, iv: iv as Uint8Array, tag: tag as Uint8Array, aad },
+        encrypted,
+      })
+
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual(`${from} to ${to}`)
+    })
+  })
+})

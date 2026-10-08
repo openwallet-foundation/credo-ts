@@ -25,6 +25,7 @@ import {
   CredoError,
   DidRepository,
   JsonTransformer,
+  keyDidEd25519,
   MultiBaseEncoder,
   MultiHashEncoder,
   type Proof,
@@ -833,7 +834,9 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
-    const authorizedMethods = didDocument.findVerificationMethodsByTypeAndPurpose('Multikey', ['assertionMethod'])
+    const authorizedMethods = didDocument
+      .findVerificationMethodsByTypeAndPurpose(keyDidEd25519.supportedVerificationMethodTypes, ['assertionMethod'])
+      .sort((a, b) => Number(b.type === 'Multikey') - Number(a.type === 'Multikey'))
     const authorizedIds = authorizedMethods.map((method) => toAbsoluteId(method.id))
 
     if (authorizedIds.length === 0) {

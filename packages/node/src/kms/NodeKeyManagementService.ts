@@ -127,7 +127,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
   }
 
   public randomBytes(_agentContext: AgentContext, options: Kms.KmsRandomBytesOptions): Kms.KmsRandomBytesReturn {
-    return randomBytes(options.length)
+    return new Uint8Array(randomBytes(options.length))
   }
 
   public async getPublicKey(agentContext: AgentContext, keyId: string): Promise<Kms.KmsJwkPublic | null> {
@@ -258,7 +258,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       const signature = await performSign(key, algorithm, data)
 
       return {
-        signature,
+        signature: new Uint8Array(signature),
       }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
@@ -383,9 +383,11 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       Kms.assertKeyAllowsEncrypt(encryptionKey)
 
       // 3. Perform the encryption operation
-      const encrypted = await performEncrypt(encryptionKey, encryption, data)
+      const { encrypted, iv, tag } = await performEncrypt(encryptionKey, encryption, data)
       return {
-        ...encrypted,
+        encrypted: new Uint8Array(encrypted),
+        iv: new Uint8Array(iv),
+        tag: tag ? new Uint8Array(tag) : undefined,
         encryptedKey,
       }
     } catch (error) {
@@ -476,7 +478,8 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       Kms.assertKeyAllowsEncrypt(decryptionKey)
 
       // 3. Perform the decryption operation
-      return await performDecrypt(decryptionKey, decryption, encrypted)
+      const { data } = await performDecrypt(decryptionKey, decryption, encrypted)
+      return { data: new Uint8Array(data) }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
 
