@@ -216,6 +216,8 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       }
     }
 
+    // Lenient on purpose: authcrypt without from falls back to the skid DID, though the spec requires from.
+    // https://identity.foundation/didcomm-messaging/spec/v2.1/#message-headers
     const from = unwrapped.from
     if (senderDid && from !== undefined && (typeof from !== 'string' || !areEquivalentDidPeer4Forms(from, senderDid))) {
       throw new CredoError(`DIDComm v2 plaintext 'from' (${from}) does not match the authcrypt sender '${senderDid}'`)
