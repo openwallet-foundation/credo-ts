@@ -1,4 +1,4 @@
-import { InjectionSymbols, type Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { InjectionSymbols, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests'
 import { NodeInMemoryKeyManagementStorage } from '../../../../node/src/kms/NodeInMemoryKeyManagementStorage'
@@ -81,6 +81,65 @@ describe('AskarKeyManagementService ECDH-ES interop with NodeKeyManagementServic
               : { ...keyAgreement, algorithm, encryptedKey: { encrypted: encryptedKey?.encrypted as Uint8Array } },
         },
         decryption: { algorithm: encryption, iv: iv as Uint8Array, tag: tag as Uint8Array, aad },
+        encrypted,
+      })
+
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual(`${from} to ${to}`)
+    })
+  })
+})
+
+describe('AskarKeyManagementService ECDH-1PU+A256KW interop with NodeKeyManagementService', () => {
+  const aad = TypedArrayEncoder.fromUtf8String('eyJhbGciOiJFQ0RILTFQVStBMjU2S1cifQ')
+  const toKeyAgreementJwk = (publicJwk: Kms.KmsJwkPublic): Kms.KmsJwkPublicEcdh =>
+    publicJwk.kty === 'OKP' && publicJwk.crv === 'Ed25519'
+      ? Kms.PublicJwk.fromPublicJwk(publicJwk).convertTo(Kms.X25519PublicJwk).toJson()
+      : (publicJwk as Kms.KmsJwkPublicEcdh)
+
+  describe.each([
+    { from: 'node', to: 'askar' },
+    { from: 'askar', to: 'node' },
+  ] as const)('$from encrypts, $to decrypts', ({ from, to }) => {
+    it.each([
+      { kty: 'OKP', crv: 'X25519' },
+      { kty: 'EC', crv: 'P-256' },
+      { kty: 'EC', crv: 'P-384' },
+      { kty: 'OKP', crv: 'Ed25519' },
+    ] as const)('with $crv keys', async (type) => {
+      const sender = await services[from].createKey(agentContext, { type })
+      const ephemeral = await services[from].createKey(agentContext, {
+        type: type.crv === 'Ed25519' ? { kty: 'OKP', crv: 'X25519' } : type,
+      })
+      const recipient = await services[to].createKey(agentContext, { type })
+
+      const { encrypted, iv, tag, encryptedKey } = await services[from].encrypt(agentContext, {
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-1PU+A256KW',
+            keyId: sender.keyId,
+            ephemeralKeyId: ephemeral.keyId,
+            externalPublicJwk: toKeyAgreementJwk(recipient.publicJwk),
+            apu,
+            apv,
+          },
+        },
+        encryption: { algorithm: 'A256CBC-HS512', aad },
+        data: TypedArrayEncoder.fromUtf8String(`${from} to ${to}`),
+      })
+
+      const { data } = await services[to].decrypt(agentContext, {
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-1PU+A256KW',
+            keyId: recipient.keyId,
+            encryptedKey: { encrypted: encryptedKey?.encrypted as Uint8Array },
+            ephemeralPublicJwk: ephemeral.publicJwk as Kms.KmsJwkPublicEcdh,
+            senderPublicJwk: toKeyAgreementJwk(sender.publicJwk),
+            apu,
+            apv,
+          },
+        },
+        decryption: { algorithm: 'A256CBC-HS512', iv: iv as Uint8Array, tag: tag as Uint8Array, aad },
         encrypted,
       })
 

@@ -30,10 +30,20 @@ export interface DidCommConnectionsModuleConfigOptions {
    * @default PeerDidNumAlgo.ShortFormAndLongForm
    */
   peerNumAlgoForDidRotation?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
+
+  /**
+   * When true, create a connection record automatically when receiving the first DIDComm v2 message
+   * from an invitee, if an out-of-band record exists for the recipient DID (v2 OOB inviter flow).
+   * A created DID with no out-of-band record that no connection uses also acts as an implicit invitation.
+   *
+   * @default false
+   */
+  autoCreateConnectionOnFirstMessage?: boolean
 }
 
 export class DidCommConnectionsModuleConfig {
   #autoAcceptConnections?: boolean
+  #autoCreateConnectionOnFirstMessage?: boolean
   #peerNumAlgoForDidExchangeRequests?: PeerDidNumAlgo
   #peerNumAlgoForDidRotation?: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
 
@@ -42,6 +52,7 @@ export class DidCommConnectionsModuleConfig {
   public constructor(options?: DidCommConnectionsModuleConfigOptions) {
     this.options = options ?? {}
     this.#autoAcceptConnections = this.options.autoAcceptConnections
+    this.#autoCreateConnectionOnFirstMessage = this.options.autoCreateConnectionOnFirstMessage
     this.#peerNumAlgoForDidExchangeRequests = this.options.peerNumAlgoForDidExchangeRequests
     this.#peerNumAlgoForDidRotation = this.options.peerNumAlgoForDidRotation
   }
@@ -54,6 +65,11 @@ export class DidCommConnectionsModuleConfig {
   /** See {@link DidCommConnectionsModuleConfigOptions.autoAcceptConnections} */
   public set autoAcceptConnections(autoAcceptConnections: boolean) {
     this.#autoAcceptConnections = autoAcceptConnections
+  }
+
+  /** See {@link DidCommConnectionsModuleConfigOptions.autoCreateConnectionOnFirstMessage} */
+  public get autoCreateConnectionOnFirstMessage() {
+    return this.#autoCreateConnectionOnFirstMessage ?? false
   }
 
   /** See {@link DidCommConnectionsModuleConfigOptions.peerNumAlgoForDidExchangeRequests} */
