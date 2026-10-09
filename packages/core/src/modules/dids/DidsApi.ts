@@ -6,7 +6,7 @@ import type { Query, QueryOptions } from '../../storage/StorageService'
 import { KeyManagementApi } from '../kms'
 import type { ImportDidOptions } from './DidsApiOptions'
 import { DidsModuleConfig } from './DidsModuleConfig'
-import { type DidPurpose, getPublicJwkFromVerificationMethod } from './domain'
+import { type DidPurpose, getKmsKeyIdForVerifiacationMethod, getPublicJwkFromVerificationMethod } from './domain'
 import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'
 import { DidRecord, DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'
@@ -204,9 +204,7 @@ export class DidsApi {
 
     const verificationMethod = didDocument.dereferenceKey(didUrl, allowedPurposes)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-    publicJwk.keyId =
-      keys?.find(({ didDocumentRelativeKeyId }) => verificationMethod.id.endsWith(didDocumentRelativeKeyId))
-        ?.kmsKeyId ?? publicJwk.legacyKeyId
+    publicJwk.keyId = getKmsKeyIdForVerifiacationMethod(verificationMethod, keys) ?? publicJwk.legacyKeyId
 
     return {
       verificationMethod,
