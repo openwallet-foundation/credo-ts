@@ -1586,6 +1586,20 @@ describe('NodeKeyManagementService', () => {
       ).rejects.toThrow('Error unwrapping content encryption key')
     })
 
+    it('rejects a sender key of another type than the recipient key', async () => {
+      const decryptOptions = await encryptEcdh1Pu({ kty: 'OKP', crv: 'X25519' })
+      const { publicJwk } = await service.createKey(agentContext, { type: { kty: 'EC', crv: 'P-256' } })
+
+      await expect(
+        service.decrypt(agentContext, {
+          ...decryptOptions,
+          key: {
+            keyAgreement: { ...decryptOptions.key.keyAgreement, senderPublicJwk: publicJwk as Kms.KmsJwkPublicEcdh },
+          },
+        })
+      ).rejects.toThrow('Expected jwk types to match')
+    })
+
     it('only supports AES_CBC_HMAC_SHA2 content encryption', async () => {
       const decryptOptions = await encryptEcdh1Pu({ kty: 'OKP', crv: 'X25519' })
       const { keyAgreement } = decryptOptions.key

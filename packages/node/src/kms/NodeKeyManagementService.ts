@@ -500,6 +500,9 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       Kms.assertKeyAllowsDerive(privateJwk)
       const agreementPrivateJwk = toKeyAgreementPrivateJwk(privateJwk)
       Kms.assertAsymmetricJwkKeyTypeMatches(agreementPrivateJwk, publicJwkForAssert)
+      if (key.keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+        Kms.assertAsymmetricJwkKeyTypeMatches(agreementPrivateJwk, key.keyAgreement.senderPublicJwk)
+      }
 
       const { contentEncryptionKey } = await deriveDecryptionKey({
         keyAgreement: key.keyAgreement,
