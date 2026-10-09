@@ -944,7 +944,14 @@ export class OpenId4VciHolderService {
         throw new CredoError('Expected all did urls to point to the same key type')
       }
 
+      // The issuer may bind the credential to the key of the did (e.g. `cnf.jwk` for a `did:jwk`), so we also
+      // map the keys of the dids, to link a credential bound to one of them back to its kms key id
+      const jwkThumbprintKmsKeyIdMapping = Object.fromEntries(
+        keys.map((key) => [TypedArrayEncoder.toBase64(key.jwk.getJwkThumbprint()), key.jwk.keyId])
+      )
+
       return {
+        jwkThumbprintKmsKeyIdMapping,
         proofs: {
           jwt: await Promise.all(
             keys.map((key) =>

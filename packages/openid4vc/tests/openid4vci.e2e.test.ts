@@ -69,6 +69,9 @@ describe('OpenId4Vc', () => {
 
   let credentialIssuerCertificate: X509Certificate
 
+  // When set, the issuer binds sd-jwt vcs to the jwk of the holder's did (`cnf.jwk`) instead of the did url (`cnf.kid`)
+  let bindDidHolderToJwk = false
+
   beforeEach(async () => {
     expressApp = express()
 
@@ -105,7 +108,7 @@ describe('OpenId4Vc', () => {
                   format: 'dc+sd-jwt',
                   credentials: holderBinding.keys.map((holderBinding) => ({
                     payload: { vct: credentialConfiguration.vct, university: 'innsbruck', degree: 'bachelor' },
-                    holder: holderBinding,
+                    holder: bindDidHolderToJwk ? { method: 'jwk', jwk: holderBinding.jwk } : holderBinding,
                     issuer: {
                       method: 'did',
                       didUrl: verificationMethod.id,
@@ -173,6 +176,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
   afterEach(async () => {
     clearNock()
+    bindDidHolderToJwk = false
 
     await issuer.agent.shutdown()
     await holder.agent.shutdown()
@@ -647,5 +651,41 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(response.status).toBe(500)
     expect(response.headers.get('WWW-Authenticate')).toBeNull()
     expect(await response.json()).toEqual({ error: 'server_error' })
+  })
+  it('accepts an sd-jwt vc bound to the jwk of the did used for credential binding', async () => {
+    bindDidHolderToJwk = true
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: 'c1a9e5f2-7b3d-4e8a-9f6c-2d4b8e1a7c35',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupported,
+      },
+    })
+
+    const { credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1.draft15',
+    })
+
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    // Binds through did:key, the issuer returns `cnf.jwk` with the key of that did
+    const credentialResponse = await holderTenant.modules.openid4vc.holder.requestCredentials({
+      resolvedCredentialOffer,
+      ...tokenResponse,
+      credentialBindingResolver,
+    })
+
+    expect(credentialResponse.credentials).toHaveLength(1)
+    const sdJwtVc = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
+    expect(sdJwtVc.holder?.method).toEqual('jwk')
+    expect(sdJwtVc.kmsKeyId).toEqual(holder1.publicJwk.keyId)
+
+    await holderTenant.endSession()
   })
 })
