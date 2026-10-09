@@ -3,8 +3,10 @@ import { AgentContext } from '../../agent'
 import type { HashName } from '../../crypto'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
+import { zParseWithErrorHandling } from '../../utils/zod'
 import { type DidPurpose, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { isKnownJwaSignatureAlgorithm, type Jwk, KeyManagementApi, PublicJwk } from '../kms'
+import { zJwkThumbprintComponents } from '../kms/jwk/jwkThumbprint'
 import { X509Certificate } from '../x509/X509Certificate'
 import { SdJwtVcError } from './SdJwtVcError'
 import type { SdJwtVcHolderBinding, SdJwtVcIssuer } from './SdJwtVcOptions'
@@ -45,11 +47,10 @@ export async function extractKeyFromHolderBinding(
     return {
       alg,
       publicJwk,
-      cnf: {
-        // We need to include the whole didUrl here, otherwise the verifier
-        // won't know which did it is associated with
-        kid: holder.didUrl,
-      },
+      cnf:
+        holder.cnf === 'jwk'
+          ? { jwk: zParseWithErrorHandling(zJwkThumbprintComponents, publicJwk.toJson(), 'Invalid holder jwk') }
+          : { kid: holder.didUrl },
     }
   }
   if (holder.method === 'jwk') {
@@ -64,7 +65,7 @@ export async function extractKeyFromHolderBinding(
       alg,
       publicJwk,
       cnf: {
-        jwk: publicJwk.toJson(),
+        jwk: zParseWithErrorHandling(zJwkThumbprintComponents, publicJwk.toJson(), 'Invalid holder jwk'),
       },
     }
   }
