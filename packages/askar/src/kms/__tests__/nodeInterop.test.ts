@@ -1,4 +1,4 @@
-import { InjectionSymbols, type Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { InjectionSymbols, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests'
 import { NodeInMemoryKeyManagementStorage } from '../../../../node/src/kms/NodeInMemoryKeyManagementStorage'
@@ -91,6 +91,10 @@ describe('AskarKeyManagementService ECDH-ES interop with NodeKeyManagementServic
 
 describe('AskarKeyManagementService ECDH-1PU+A256KW interop with NodeKeyManagementService', () => {
   const aad = TypedArrayEncoder.fromUtf8String('eyJhbGciOiJFQ0RILTFQVStBMjU2S1cifQ')
+  const toKeyAgreementJwk = (publicJwk: Kms.KmsJwkPublic): Kms.KmsJwkPublicEcdh =>
+    publicJwk.kty === 'OKP' && publicJwk.crv === 'Ed25519'
+      ? Kms.PublicJwk.fromPublicJwk(publicJwk).convertTo(Kms.X25519PublicJwk).toJson()
+      : (publicJwk as Kms.KmsJwkPublicEcdh)
 
   describe.each([
     { from: 'node', to: 'askar' },
@@ -100,9 +104,12 @@ describe('AskarKeyManagementService ECDH-1PU+A256KW interop with NodeKeyManageme
       { kty: 'OKP', crv: 'X25519' },
       { kty: 'EC', crv: 'P-256' },
       { kty: 'EC', crv: 'P-384' },
+      { kty: 'OKP', crv: 'Ed25519' },
     ] as const)('with $crv keys', async (type) => {
       const sender = await services[from].createKey(agentContext, { type })
-      const ephemeral = await services[from].createKey(agentContext, { type })
+      const ephemeral = await services[from].createKey(agentContext, {
+        type: type.crv === 'Ed25519' ? { kty: 'OKP', crv: 'X25519' } : type,
+      })
       const recipient = await services[to].createKey(agentContext, { type })
 
       const { encrypted, iv, tag, encryptedKey } = await services[from].encrypt(agentContext, {
@@ -111,7 +118,7 @@ describe('AskarKeyManagementService ECDH-1PU+A256KW interop with NodeKeyManageme
             algorithm: 'ECDH-1PU+A256KW',
             keyId: sender.keyId,
             ephemeralKeyId: ephemeral.keyId,
-            externalPublicJwk: recipient.publicJwk as Kms.KmsJwkPublicEcdh,
+            externalPublicJwk: toKeyAgreementJwk(recipient.publicJwk),
             apu,
             apv,
           },
@@ -127,7 +134,7 @@ describe('AskarKeyManagementService ECDH-1PU+A256KW interop with NodeKeyManageme
             keyId: recipient.keyId,
             encryptedKey: { encrypted: encryptedKey?.encrypted as Uint8Array },
             ephemeralPublicJwk: ephemeral.publicJwk as Kms.KmsJwkPublicEcdh,
-            senderPublicJwk: sender.publicJwk as Kms.KmsJwkPublicEcdh,
+            senderPublicJwk: toKeyAgreementJwk(sender.publicJwk),
             apu,
             apv,
           },
