@@ -3,10 +3,15 @@ import { AgentContext } from '../../agent'
 import { CredoError, RecordNotFoundError } from '../../error'
 import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
-import { KeyManagementApi } from '../kms'
+import { KeyManagementApi, PublicJwk } from '../kms'
 import type { ImportDidOptions } from './DidsApiOptions'
 import { DidsModuleConfig } from './DidsModuleConfig'
-import { type DidPurpose, getKmsKeyIdForVerifiacationMethod, getPublicJwkFromVerificationMethod } from './domain'
+import {
+  type DidPurpose,
+  getKmsKeyIdForVerifiacationMethod,
+  getPublicJwkFromVerificationMethod,
+  type VerificationMethod,
+} from './domain'
 import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'
 import { DidRecord, DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'
@@ -210,6 +215,28 @@ export class DidsApi {
       verificationMethod,
       publicJwk,
     }
+  }
+
+  public async getKeyIdFromCreatedDidRecord(didUrl: string, verificationMethod: VerificationMethod) {
+    const did = parseDid(didUrl).did
+    const [didRecord] = await this.didRepository.getCreatedDids(this.agentContext, { did })
+    if (!didRecord) {
+      throw new RecordNotFoundError(`Created did '${did}' not found`, { recordType: DidRecord.type })
+    }
+
+    const keyId = getKmsKeyIdForVerifiacationMethod(verificationMethod, didRecord.keys)
+    if (!keyId) {
+      throw new CredoError(`No locally managed key is associated with verification method '${verificationMethod.id}'`)
+    }
+
+    const kmsPublicJwk = await this.agentContext.resolve(KeyManagementApi).getPublicKey({ keyId })
+    if (!getPublicJwkFromVerificationMethod(verificationMethod).equals(PublicJwk.fromUnknown(kmsPublicJwk))) {
+      throw new CredoError(
+        `Locally managed key '${keyId}' does not match verification method '${verificationMethod.id}'`
+      )
+    }
+
+    return keyId
   }
 
   public get supportedResolverMethods() {
