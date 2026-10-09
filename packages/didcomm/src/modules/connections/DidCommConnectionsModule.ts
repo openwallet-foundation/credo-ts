@@ -15,10 +15,6 @@ import type { DidCommConnectionsModuleConfigOptions } from './DidCommConnections
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
 import {
-  DidCommAckMessageHandler,
-  DidCommConnectionProblemReportHandler,
-  DidCommConnectionRequestHandler,
-  DidCommConnectionResponseHandler,
   DidCommDidExchangeCompleteHandler,
   DidCommDidExchangeRequestHandler,
   DidCommDidExchangeResponseHandler,
@@ -29,7 +25,7 @@ import {
   DidCommTrustPingMessageHandler,
   DidCommTrustPingResponseMessageHandler,
 } from './handlers'
-import { DidCommConnectionRole, DidCommDidExchangeRole, DidCommDidRotateRole } from './models'
+import { DidCommDidExchangeRole, DidCommDidRotateRole } from './models'
 import { DidCommConnectionRepository } from './repository'
 import { DidCommConnectionService } from './services/DidCommConnectionService'
 import { DidCommDidRotateService } from './services/DidCommDidRotateService'
@@ -75,20 +71,6 @@ export class DidCommConnectionsModule implements Module {
     const didRotateService = agentContext.resolve(DidCommDidRotateService)
 
     messageHandlerRegistry.registerMessageHandler(
-      new DidCommConnectionRequestHandler(
-        connectionService,
-        outOfBandService,
-        routingService,
-        didRepository,
-        this.config
-      )
-    )
-    messageHandlerRegistry.registerMessageHandler(
-      new DidCommConnectionResponseHandler(connectionService, outOfBandService, didResolverService, this.config)
-    )
-    messageHandlerRegistry.registerMessageHandler(new DidCommAckMessageHandler(connectionService))
-    messageHandlerRegistry.registerMessageHandler(new DidCommConnectionProblemReportHandler(connectionService))
-    messageHandlerRegistry.registerMessageHandler(
       new DidCommTrustPingMessageHandler(trustPingService, connectionService)
     )
     messageHandlerRegistry.registerMessageHandler(new DidCommTrustPingResponseMessageHandler(trustPingService))
@@ -119,10 +101,6 @@ export class DidCommConnectionsModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateProblemReportHandler(didRotateService))
 
     featureRegistry.register(
-      new DidCommProtocol({
-        id: 'https://didcomm.org/connections/1.0',
-        roles: [DidCommConnectionRole.Invitee, DidCommConnectionRole.Inviter],
-      }),
       new DidCommProtocol({
         id: 'https://didcomm.org/didexchange/1.1',
         roles: [DidCommDidExchangeRole.Requester, DidCommDidExchangeRole.Responder],

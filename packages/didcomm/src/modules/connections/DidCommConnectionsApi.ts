@@ -10,7 +10,6 @@ import { DidCommRoutingService } from '../routing/services/DidCommRoutingService
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
-import { DidCommConnectionRequestMessage, DidCommDidExchangeRequestMessage } from './messages'
 import type { DidCommConnectionType } from './models'
 import { DidCommHandshakeProtocol } from './models'
 import type { DidCommConnectionRecord } from './repository'
@@ -65,13 +64,16 @@ export class DidCommConnectionsApi {
       autoAcceptConnection?: boolean
       label: string
       alias?: string
-      imageUrl?: string
       protocol: DidCommHandshakeProtocol
       routing?: DidCommRouting
       ourDid?: string
     }
   ) {
-    const { protocol, label, alias, imageUrl, autoAcceptConnection, ourDid } = config
+    const { protocol, label, alias, autoAcceptConnection, ourDid } = config
+
+    if (protocol !== DidCommHandshakeProtocol.DidExchange) {
+      throw new CredoError(`Unsupported handshake protocol ${protocol}.`)
+    }
 
     if (ourDid && config.routing) {
       throw new CredoError(`'routing' is disallowed when defining 'ourDid'`)
@@ -83,40 +85,18 @@ export class DidCommConnectionsApi {
       routing = await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId })
     }
 
-    let result: {
-      message: DidCommDidExchangeRequestMessage | DidCommConnectionRequestMessage
-      connectionRecord: DidCommConnectionRecord
-    }
-    if (protocol === DidCommHandshakeProtocol.DidExchange) {
-      result = await this.didExchangeProtocol.createRequest(this.agentContext, outOfBandRecord, {
+    const { message, connectionRecord } = await this.didExchangeProtocol.createRequest(
+      this.agentContext,
+      outOfBandRecord,
+      {
         label,
         alias,
         routing,
         autoAcceptConnection,
         ourDid,
-      })
-    } else if (protocol === DidCommHandshakeProtocol.Connections) {
-      if (ourDid) {
-        throw new CredoError('Using an externally defined did for connections protocol is unsupported')
       }
-      // This is just to make TS happy, as we always generate routing if ourDid is not provided
-      // and ourDid is not supported for connection (see check above)
-      if (!routing) {
-        throw new CredoError('Routing is required for connections protocol')
-      }
+    )
 
-      result = await this.connectionService.createRequest(this.agentContext, outOfBandRecord, {
-        label,
-        alias,
-        imageUrl,
-        routing,
-        autoAcceptConnection,
-      })
-    } else {
-      throw new CredoError(`Unsupported handshake protocol ${protocol}.`)
-    }
-
-    const { message, connectionRecord } = result
     const outboundMessageContext = new DidCommOutboundMessageContext(message, {
       agentContext: this.agentContext,
       connection: connectionRecord,
@@ -127,7 +107,7 @@ export class DidCommConnectionsApi {
   }
 
   /**
-   * Accept a connection request as inviter (by sending a connection response message) for the connection with the specified connection id.
+   * Accept a DID exchange request as responder (by sending a DID exchange response message) for the connection with the specified connection id.
    * This is not needed when auto accepting of connection is enabled.
    *
    * @param connectionId the id of the connection for which to accept the request
@@ -147,6 +127,8 @@ export class DidCommConnectionsApi {
       throw new CredoError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
+    this.assertDidExchangeProtocol(connectionRecord)
+
     // We generate routing in two scenarios:
     // 1. When the out-of-band invitation is reusable, as otherwise all connections use the same keys
     // 2. When the out-of-band invitation has no inline services, as we don't want to generate a legacy did doc from a service did
@@ -155,45 +137,23 @@ export class DidCommConnectionsApi {
         ? await this.routingService.getRouting(this.agentContext)
         : undefined
 
-    let outboundMessageContext: DidCommOutboundMessageContext
-    if (connectionRecord.protocol === DidCommHandshakeProtocol.DidExchange) {
-      const message = await this.didExchangeProtocol.createResponse(
-        this.agentContext,
-        connectionRecord,
-        outOfBandRecord,
-        routing
-      )
-      outboundMessageContext = new DidCommOutboundMessageContext(message, {
-        agentContext: this.agentContext,
-        connection: connectionRecord,
-      })
-    } else {
-      // We generate routing in two scenarios:
-      // 1. When the out-of-band invitation is reusable, as otherwise all connections use the same keys
-      // 2. When the out-of-band invitation has no inline services, as we don't want to generate a legacy did doc from a service did
-      const routing =
-        outOfBandRecord.reusable || outOfBandRecord.outOfBandInvitation.getInlineServices().length === 0
-          ? await this.routingService.getRouting(this.agentContext)
-          : undefined
-
-      const { message } = await this.connectionService.createResponse(
-        this.agentContext,
-        connectionRecord,
-        outOfBandRecord,
-        routing
-      )
-      outboundMessageContext = new DidCommOutboundMessageContext(message, {
-        agentContext: this.agentContext,
-        connection: connectionRecord,
-      })
-    }
+    const message = await this.didExchangeProtocol.createResponse(
+      this.agentContext,
+      connectionRecord,
+      outOfBandRecord,
+      routing
+    )
+    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+    })
 
     await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
 
   /**
-   * Accept a connection response as invitee (by sending a trust ping message) for the connection with the specified connection id.
+   * Accept a DID exchange response as requester (by sending a DID exchange complete message) for the connection with the specified connection id.
    * This is not needed when auto accepting of connection is enabled.
    *
    * @param connectionId the id of the connection for which to accept the response
@@ -202,44 +162,36 @@ export class DidCommConnectionsApi {
   public async acceptResponse(connectionId: string): Promise<DidCommConnectionRecord> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
-    let outboundMessageContext: DidCommOutboundMessageContext
-    if (connectionRecord.protocol === DidCommHandshakeProtocol.DidExchange) {
-      if (!connectionRecord.outOfBandId) {
-        throw new CredoError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
-      }
-      const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
-      if (!outOfBandRecord) {
-        throw new CredoError(
-          `OutOfBand record for connection ${connectionRecord.id} with outOfBandId ${connectionRecord.outOfBandId} not found!`
-        )
-      }
-      const message = await this.didExchangeProtocol.createComplete(
-        this.agentContext,
-        connectionRecord,
-        outOfBandRecord
-      )
-      // Disable return routing as we don't want to receive a response for this message over the same channel
-      // This has led to long timeouts as not all clients actually close an http socket if there is no response message
-      message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessageContext = new DidCommOutboundMessageContext(message, {
-        agentContext: this.agentContext,
-        connection: connectionRecord,
-      })
-    } else {
-      const { message } = await this.connectionService.createTrustPing(this.agentContext, connectionRecord, {
-        responseRequested: false,
-      })
-      // Disable return routing as we don't want to receive a response for this message over the same channel
-      // This has led to long timeouts as not all clients actually close an http socket if there is no response message
-      message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessageContext = new DidCommOutboundMessageContext(message, {
-        agentContext: this.agentContext,
-        connection: connectionRecord,
-      })
+    this.assertDidExchangeProtocol(connectionRecord)
+
+    if (!connectionRecord.outOfBandId) {
+      throw new CredoError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
     }
+    const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
+    if (!outOfBandRecord) {
+      throw new CredoError(
+        `OutOfBand record for connection ${connectionRecord.id} with outOfBandId ${connectionRecord.outOfBandId} not found!`
+      )
+    }
+    const message = await this.didExchangeProtocol.createComplete(this.agentContext, connectionRecord, outOfBandRecord)
+    // Disable return routing as we don't want to receive a response for this message over the same channel
+    // This has led to long timeouts as not all clients actually close an http socket if there is no response message
+    message.setReturnRouting(ReturnRouteTypes.none)
+    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+    })
 
     await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
+  }
+
+  private assertDidExchangeProtocol(connectionRecord: DidCommConnectionRecord) {
+    if (connectionRecord.protocol !== DidCommHandshakeProtocol.DidExchange) {
+      throw new CredoError(
+        `Connection record ${connectionRecord.id} uses unsupported handshake protocol ${connectionRecord.protocol}. Only ${DidCommHandshakeProtocol.DidExchange} is supported.`
+      )
+    }
   }
 
   /**

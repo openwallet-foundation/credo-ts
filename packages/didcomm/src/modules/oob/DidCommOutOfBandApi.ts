@@ -31,15 +31,9 @@ import {
   supportsIncomingMessageType,
 } from '../../util/messageType'
 import { parseInvitationShortUrl } from '../../util/parseInvitation'
-import {
-  DidCommConnectionInvitationMessage,
-  DidCommConnectionRecord,
-  DidCommDidExchangeState,
-  DidCommHandshakeProtocol,
-} from '../connections'
+import { DidCommConnectionRecord, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../connections'
 import { DidCommConnectionsApi } from '../connections/DidCommConnectionsApi'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
-import { convertToNewInvitation, convertToOldInvitation } from './converters'
 
 import { DidCommOutOfBandService } from './DidCommOutOfBandService'
 import type { DidCommHandshakeReusedEvent } from './domain/DidCommOutOfBandEvents'
@@ -75,19 +69,9 @@ export interface CreateOutOfBandInvitationConfig {
   invitationDid?: string
 }
 
-export interface CreateLegacyInvitationConfig {
-  label?: string
-  alias?: string // alias for a connection record to be created
-  imageUrl?: string
-  multiUseInvitation?: boolean
-  autoAcceptConnection?: boolean
-  routing?: DidCommRouting
-}
-
 interface BaseReceiveOutOfBandInvitationConfig {
   label: string
   alias?: string
-  imageUrl?: string
   autoAcceptInvitation?: boolean
   autoAcceptConnection?: boolean
   reuseConnection?: boolean
@@ -263,32 +247,6 @@ export class DidCommOutOfBandApi {
     return outOfBandRecord
   }
 
-  /**
-   * Creates an outbound out-of-band record in the same way how `createInvitation` method does it,
-   * but it also converts out-of-band invitation message to an "legacy" invitation message defined
-   * in RFC 0160: Connection Protocol and returns it together with out-of-band record.
-   *
-   * Agent role: sender (inviter)
-   *
-   * @param config configuration of how a connection invitation should be created
-   * @returns out-of-band record and connection invitation
-   */
-  public async createLegacyInvitation(config: CreateLegacyInvitationConfig = {}) {
-    const outOfBandRecord = await this.createInvitation({
-      ...config,
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
-    })
-
-    // Set legacy invitation type
-    outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.LegacyInvitation, {
-      legacyInvitationType: DidCommInvitationType.Connection,
-    })
-    const outOfBandRepository = this.agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
-    await outOfBandRepository.update(this.agentContext, outOfBandRecord)
-
-    return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandInvitation) }
-  }
-
   public async createLegacyConnectionlessInvitation<Message extends DidCommMessage>(config: {
     /**
      * @deprecated this value is not used anymore, as the legacy connection-less exchange is now
@@ -361,18 +319,17 @@ export class DidCommOutOfBandApi {
    * attribute in `config` parameter to `false` and accept the message later by calling
    * `acceptInvitation`.
    *
-   * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation
-   * (0160: Connection Protocol).
+   * It supports OOB invitations (Aries RFC 0434: Out-of-Band Protocol 1.1).
    *
    * Agent role: receiver (invitee)
    *
-   * @param invitation either DidCommOutOfBandInvitation or DidCommConnectionInvitationMessage
+   * @param invitation the DidCommOutOfBandInvitation to receive
    * @param config config for handling of invitation
    *
    * @returns out-of-band record and connection record if one has been created.
    */
   public async receiveInvitation(
-    invitation: DidCommOutOfBandInvitation | DidCommConnectionInvitationMessage,
+    invitation: DidCommOutOfBandInvitation,
     config: ReceiveOutOfBandInvitationConfig
   ): Promise<{ outOfBandRecord: DidCommOutOfBandRecord; connectionRecord?: DidCommConnectionRecord }> {
     return this._receiveInvitation(invitation, config)
@@ -385,9 +342,7 @@ export class DidCommOutOfBandApi {
    * `autoAcceptInvitation` attribute in `config` parameter to `false` and accept the message later by
    * calling `acceptInvitation`.
    *
-   * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation
-   * (0160: Connection Protocol). Handshake protocol to be used depends on handshakeProtocols
-   * (DID Exchange by default)
+   * Handshake protocol to be used depends on handshakeProtocols (DID Exchange by default)
    *
    * Agent role: receiver (invitee)
    *
@@ -414,13 +369,9 @@ export class DidCommOutOfBandApi {
    * Internal receive invitation method, for both explicit and implicit OOB invitations
    */
   private async _receiveInvitation(
-    invitation: DidCommOutOfBandInvitation | DidCommConnectionInvitationMessage,
+    outOfBandInvitation: DidCommOutOfBandInvitation,
     config: BaseReceiveOutOfBandInvitationConfig
   ): Promise<{ outOfBandRecord: DidCommOutOfBandRecord; connectionRecord?: DidCommConnectionRecord }> {
-    // Convert to out of band invitation if needed
-    const outOfBandInvitation =
-      invitation instanceof DidCommOutOfBandInvitation ? invitation : convertToNewInvitation(invitation)
-
     const { handshakeProtocols } = outOfBandInvitation
     const { routing } = config
 
@@ -429,7 +380,6 @@ export class DidCommOutOfBandApi {
     const reuseConnection = config.reuseConnection ?? false
     const label = config.label
     const alias = config.alias
-    const imageUrl = config.imageUrl
 
     const messages = outOfBandInvitation.getRequests()
 
@@ -492,7 +442,6 @@ export class DidCommOutOfBandApi {
       return await this.acceptInvitation(outOfBandRecord.id, {
         label,
         alias,
-        imageUrl,
         autoAcceptConnection,
         reuseConnection,
         routing,
@@ -525,7 +474,6 @@ export class DidCommOutOfBandApi {
       reuseConnection?: boolean
       label: string
       alias?: string
-      imageUrl?: string
       /**
        * Routing for the exchange (either connection or connection-less exchange).
        *
@@ -539,7 +487,7 @@ export class DidCommOutOfBandApi {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
 
     const { outOfBandInvitation } = outOfBandRecord
-    const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, ourDid } = config
+    const { label, alias, autoAcceptConnection, reuseConnection, ourDid } = config
     const services = outOfBandInvitation.getServices()
     const messages = outOfBandInvitation.getRequests()
     const timeoutMs = config.timeoutMs ?? 20000
@@ -608,7 +556,6 @@ export class DidCommOutOfBandApi {
         connectionRecord = await this.connectionsApi.acceptOutOfBandInvitation(outOfBandRecord, {
           label,
           alias,
-          imageUrl,
           autoAcceptConnection,
           protocol: firstSupportedProtocol.handshakeProtocol,
           routing,

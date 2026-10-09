@@ -48,13 +48,14 @@ export type ProofFormatDataMessagePayload<
  *
  * @example
  * ```
- * // TheProofFormatServices is now equal to [IndyProofFormatService]
- * type TheProofFormatServices = ProofFormatsFromProtocols<[DidCommProofV1Protocol]>
+ * // TheProofFormatServices is now equal to [AnonCredsProofFormatService]
+ * type TheProofFormatServices = ProofFormatsFromProtocols<[DidCommProofV2Protocol<[AnonCredsProofFormatService]>]>
  * ```
  *
- * Because the `DidCommProofV1Protocol` is defined as follows:
+ * Because the `DidCommProofV2Protocol` is defined as follows:
  * ```
- * class DidCommProofV1Protocol implements DidCommProofProtocol<[IndyProofFormatService]> {
+ * class DidCommProofV2Protocol<ProofFormatServices extends DidCommProofFormatService[]>
+ *   implements DidCommProofProtocol<ProofFormatServices> {
  * }
  * ```
  */

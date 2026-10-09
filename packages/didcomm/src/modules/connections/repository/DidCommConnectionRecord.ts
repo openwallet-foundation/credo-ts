@@ -2,12 +2,7 @@ import type { TagsBase } from '@credo-ts/core'
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Transform } from 'class-transformer'
 import type { DidCommConnectionType } from '../models'
-import {
-  DidCommDidExchangeRole,
-  DidCommDidExchangeState,
-  DidCommHandshakeProtocol,
-  rfc0160StateFromDidExchangeState,
-} from '../models'
+import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../models'
 import type { DidCommConnectionMetadata } from './DidCommConnectionMetadataTypes'
 
 export interface DidCommConnectionRecordProps {
@@ -140,10 +135,6 @@ export class DidCommConnectionRecord extends BaseRecord<
 
   public get isRequester() {
     return this.role === DidCommDidExchangeRole.Requester
-  }
-
-  public get rfc0160State() {
-    return rfc0160StateFromDidExchangeState(this.state)
   }
 
   public get isReady() {

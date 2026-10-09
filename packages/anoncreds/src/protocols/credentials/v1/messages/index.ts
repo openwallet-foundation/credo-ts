@@ -1,7 +1,0 @@
-export * from './DidCommCredentialV1AckMessage'
-export * from './DidCommCredentialV1Preview'
-export * from './DidCommCredentialV1ProblemReportMessage'
-export * from './DidCommIssueCredentialV1Message'
-export * from './DidCommOfferCredentialV1Message'
-export * from './DidCommProposeCredentialV1Message'
-export * from './DidCommRequestCredentialV1Message'

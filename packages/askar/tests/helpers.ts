@@ -108,7 +108,7 @@ export async function e2eTest(
   receiverAgent: Agent<{ didcomm: DidCommModule<object> }>
 ) {
   const senderReceiverOutOfBandRecord = await senderAgent.didcomm.oob.createInvitation({
-    handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+    handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
   })
 
   const { connectionRecord: bobConnectionAtReceiversender } = await receiverAgent.didcomm.oob.receiveInvitation(
