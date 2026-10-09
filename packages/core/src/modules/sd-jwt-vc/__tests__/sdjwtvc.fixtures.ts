@@ -20,7 +20,7 @@
         "iss": "did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW",
         "iat": 1698151532
       },
-      "signature": "vLkigrBr1IIVRJeYE5DQx0rKUVzO3KT9T0XBATWJE89pWCyvB3Rzs8VD7qfi0vDk_QVCPIiHq1U1PsmSe4ZqCg"
+      "signature": "mVaO61d9YYRbzWATBztGw2axg-2zjYWtNp5BVxhoi4RW6VQGjlJtn8OY7j8RLnkcMYKVvakQO56_Rco-vy2kAA"
     },
     "disclosures": []
   }
@@ -127,13 +127,14 @@ export const simpleJwtVcWithoutHolderBinding =
           "jwk": {
             "kty": "OKP",
             "crv": "Ed25519",
-            "x": "oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo"
+            "x": "oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo",
+            "kid": "BnbnQW5VWoys6x6qYxEUVrEKGYW2GS5vG71vCMwwfsYm"
           }
         },
         "iss": "did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW",
         "iat": 1698151532
       },
-      "signature": "vLkigrBr1IIVRJeYE5DQx0rKUVzO3KT9T0XBATWJE89pWCyvB3Rzs8VD7qfi0vDk_QVCPIiHq1U1PsmSe4ZqCg"
+      "signature": "mVaO61d9YYRbzWATBztGw2axg-2zjYWtNp5BVxhoi4RW6VQGjlJtn8OY7j8RLnkcMYKVvakQO56_Rco-vy2kAA"
     },
     "disclosures": [],
     "kbJwt": {
@@ -145,9 +146,9 @@ export const simpleJwtVcWithoutHolderBinding =
         "iat": 1698151532,
         "nonce": "salt",
         "aud": "did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y",
-        "sd_hash": "f48YBevUG5JVuAHMryWQ4i2OF7XJoI-dL-jjYx-HqxQ"
+        "sd_hash": "x_Tfds9dHpznffcjzQrow-cKT5rllll7xb2SMhr192Q"
       },
-      "signature": "skMqC7ej50kOeGEJZ_8J5eK1YqKN7vkqS_t8DQ4Y3i6DdN20eAXbaGMU4G4AOGk_hAYctTZwxaeQQEBX8pu5Cg"
+      "signature": "OndMm3YfGko5Zzqdm6wM88mwjXVR8MXpvMmmE3lU9RoC719h4mWH6R0DC2qLC8wK1S9TvIF8ZDHKaAMlGvfYBw"
     }
   }
  */
@@ -168,23 +169,24 @@ export const simpleJwtVcPresentation =
         "jwk": {
           "kty": "OKP",
           "crv": "Ed25519",
-          "x": "oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo"
+          "x": "oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo",
+          "kid": "BnbnQW5VWoys6x6qYxEUVrEKGYW2GS5vG71vCMwwfsYm"
         }
       },
       "iss": "did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW",
       "iat": 1698151532,
       "_sd": [
-        "vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg"
+        "LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M"
       ],
       "_sd_alg": "sha-256"
     },
-    "signature": "wX-7AyTsGMFDpgaw-TMjFK2zyywB94lKAwXlc4DtNoYjhnvKEe6eln1YhKTD_IIPNyTDOCT-TgtzA-8tCg9NCQ"
+    "signature": "u6NtGsC0QinrfCCRGcnTTcCqy4uyB-jywCKx3O00quMJW9KjspKGMjH-cp4p_-XLmtzLIqiurFvhR1Kbrvn6CQ"
   },
   "disclosures": [
     {
-      "_digest": "vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg",
-      "_encoded": "WyJzYWx0IiwiY2xhaW0iLCJzb21lLWNsYWltIl0",
-      "salt": "salt",
+      "_digest": "LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M",
+      "_encoded": "WyJjMkZzZEEiLCJjbGFpbSIsInNvbWUtY2xhaW0iXQ",
+      "salt": "c2FsdA",
       "key": "claim",
       "value": "some-claim"
     }
@@ -223,23 +225,24 @@ export const sdJwtVcWithSingleDisclosure =
         "jwk": {
           "kty": "OKP",
           "crv": "Ed25519",
-          "x": "oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo"
+          "x": "oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo",
+          "kid": "BnbnQW5VWoys6x6qYxEUVrEKGYW2GS5vG71vCMwwfsYm"
         }
       },
       "iss": "did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW",
       "iat": 1698151532,
       "_sd": [
-        "vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg"
+        "LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M"
       ],
       "_sd_alg": "sha-256"
     },
-    "signature": "wX-7AyTsGMFDpgaw-TMjFK2zyywB94lKAwXlc4DtNoYjhnvKEe6eln1YhKTD_IIPNyTDOCT-TgtzA-8tCg9NCQ"
+    "signature": "u6NtGsC0QinrfCCRGcnTTcCqy4uyB-jywCKx3O00quMJW9KjspKGMjH-cp4p_-XLmtzLIqiurFvhR1Kbrvn6CQ"
   },
   "disclosures": [
     {
-      "_digest": "vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg",
-      "_encoded": "WyJzYWx0IiwiY2xhaW0iLCJzb21lLWNsYWltIl0",
-      "salt": "salt",
+      "_digest": "LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M",
+      "_encoded": "WyJjMkZzZEEiLCJjbGFpbSIsInNvbWUtY2xhaW0iXQ",
+      "salt": "c2FsdA",
       "key": "claim",
       "value": "some-claim"
     }
@@ -253,9 +256,9 @@ export const sdJwtVcWithSingleDisclosure =
       "iat": 1698151532,
       "nonce": "salt",
       "aud": "did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y",
-      "sd_hash": "9F5VQwSVO7ZAwIgyh1jrwnJWgy7fTId1mj1MRp41nM8"
+      "sd_hash": "Uq-V5u_s_Zklr2D_Cfgde74ESPtBg-EyhGhftpWMadM"
     },
-    "signature": "9TcpFkSLYMbsQzkPMyqrT5kMk8sobEvTzfkwym5HvbTfEMa_J23LB-UFhY0FsBhe-1rYqnAykGuimQNaWIwODw"
+    "signature": "Fv2pj-s7tZj0mYb2Oh3d_qWhddnU5ZhywaLvLAe3-QJDggjExua0WXqYZhW6imGmLvUCikpWMP75pyNp9o_uBg"
   }
 }
 
