@@ -1586,6 +1586,43 @@ describe('NodeKeyManagementService', () => {
       ).rejects.toThrow('Error unwrapping content encryption key')
     })
 
+    // Any wrong key already makes the key unwrap fail, so these pin the error from the import or derivation check
+    it.each(['P-256', 'P-384'] as const)('rejects an off-curve %s ephemeral or sender key', async (crv) => {
+      const decryptOptions = await encryptEcdh1Pu({ kty: 'EC', crv })
+
+      for (const field of ['ephemeralPublicJwk', 'senderPublicJwk'] as const) {
+        const jwk = decryptOptions.key.keyAgreement[field] as Kms.KmsJwkPublicEc
+        const y = TypedArrayEncoder.fromBase64Url(jwk.y)
+        y[y.length - 1] ^= 1
+
+        await expect(
+          service.decrypt(agentContext, {
+            ...decryptOptions,
+            key: {
+              keyAgreement: {
+                ...decryptOptions.key.keyAgreement,
+                [field]: { ...jwk, y: TypedArrayEncoder.toBase64Url(y) },
+              },
+            },
+          })
+        ).rejects.toMatchObject({ code: 'ERR_CRYPTO_INVALID_JWK' })
+      }
+    })
+
+    it('rejects an all-zero X25519 ephemeral or sender key', async () => {
+      const decryptOptions = await encryptEcdh1Pu({ kty: 'OKP', crv: 'X25519' })
+      const allZero = { kty: 'OKP', crv: 'X25519', x: TypedArrayEncoder.toBase64Url(new Uint8Array(32)) } as const
+
+      for (const field of ['ephemeralPublicJwk', 'senderPublicJwk'] as const) {
+        await expect(
+          service.decrypt(agentContext, {
+            ...decryptOptions,
+            key: { keyAgreement: { ...decryptOptions.key.keyAgreement, [field]: allZero } },
+          })
+        ).rejects.toMatchObject({ code: 'ERR_OSSL_FAILED_DURING_DERIVATION' })
+      }
+    })
+
     it('rejects a sender key of another type than the recipient key', async () => {
       const decryptOptions = await encryptEcdh1Pu({ kty: 'OKP', crv: 'X25519' })
       const { publicJwk } = await service.createKey(agentContext, { type: { kty: 'EC', crv: 'P-256' } })
