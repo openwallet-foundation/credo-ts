@@ -3,27 +3,17 @@ import { AgentContext } from '../../agent'
 import type { HashName } from '../../crypto'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
-import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
+import { type DidPurpose, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { isKnownJwaSignatureAlgorithm, type Jwk, KeyManagementApi, PublicJwk } from '../kms'
 import { X509Certificate } from '../x509/X509Certificate'
 import { SdJwtVcError } from './SdJwtVcError'
 import type { SdJwtVcHolderBinding, SdJwtVcIssuer } from './SdJwtVcOptions'
 
-export async function resolveSigningPublicJwkFromDidUrl(agentContext: AgentContext, didUrl: string) {
-  const dids = agentContext.dependencyManager.resolve(DidsApi)
+export async function resolveDidVerificationKey(dids: DidsApi, didUrl: string, allowedPurposes: DidPurpose[]) {
+  const didDocument = await dids.resolveDidDocument(didUrl)
+  const verificationMethod = didDocument.dereferenceKey(didUrl, allowedPurposes)
 
-  const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(didUrl)
-  return publicJwk
-}
-
-export async function resolveDidUrl(agentContext: AgentContext, didUrl: string) {
-  const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
-  const didDocument = await didResolver.resolveDidDocument(agentContext, didUrl)
-
-  return {
-    verificationMethod: didDocument.dereferenceKey(didUrl, ['assertionMethod']),
-    didDocument,
-  }
+  return { verificationMethod, publicJwk: getPublicJwkFromVerificationMethod(verificationMethod) }
 }
 
 export async function extractKeyFromHolderBinding(
@@ -37,12 +27,13 @@ export async function extractKeyFromHolderBinding(
       throw new CredoError(`didUrl '${holder.didUrl}' does not contain a '#'. Unable to derive key from did document`)
     }
 
-    let publicJwk: PublicJwk
+    const dids = agentContext.dependencyManager.resolve(DidsApi)
+    const { verificationMethod, publicJwk } = await resolveDidVerificationKey(dids, holder.didUrl, [
+      'authentication',
+      'assertionMethod',
+    ])
     if (forSigning) {
-      publicJwk = await resolveSigningPublicJwkFromDidUrl(agentContext, holder.didUrl)
-    } else {
-      const { verificationMethod } = await resolveDidUrl(agentContext, holder.didUrl)
-      publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      publicJwk.keyId = await dids.getKeyIdFromCreatedDidRecord(holder.didUrl, verificationMethod)
     }
 
     const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms

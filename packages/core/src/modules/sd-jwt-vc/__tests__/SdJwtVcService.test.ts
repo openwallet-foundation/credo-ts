@@ -92,11 +92,12 @@ const mockUniqueSalts = () => {
   let counter = 0
   vi.mocked(agent.kms.randomBytes).mockImplementation(() => TypedArrayEncoder.fromUtf8String(`salt${counter++}`))
 }
+const mockedNowSeconds = 1698151532
 Date.prototype.getTime = vi.fn(function () {
-  return 1698151532000
+  return mockedNowSeconds * 1000
 })
 Date.now = vi.fn(function () {
-  return 1698151532000
+  return mockedNowSeconds * 1000
 })
 
 const simpleX509Certificate = X509Certificate.fromEncodedCertificate(simpleX509.trustedCertificate)
@@ -271,6 +272,39 @@ describe('SdJwtVcService', () => {
   describe('SdJwtVcService.sign', () => {
     afterEach(() => {
       vi.mocked(agent.kms.randomBytes).mockImplementation(staticSalt)
+    })
+
+    test('does not sign as an issuer for an unregistered DID even if its key exists in KMS', async () => {
+      const key = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const didUrl = new DidKey(PublicJwk.fromUnknown(key.publicJwk)).didDocument.verificationMethod?.[0]?.id
+      if (!didUrl) throw new Error('Expected a DID verification method')
+
+      // Deliberately do not call agent.dids.import: the key exists in KMS, but no created-DID record maps it to this DID.
+      await expect(
+        sdJwtVcService.sign(agent.context, {
+          payload: { claim: 'some-claim', vct: 'IdentityCredential' },
+          issuer: { method: 'did', didUrl },
+        })
+      ).rejects.toThrow('not found')
+    })
+
+    test('does not sign a presentation for an unregistered holder DID even if its key exists in KMS', async () => {
+      const key = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const didUrl = new DidKey(PublicJwk.fromUnknown(key.publicJwk)).didDocument.verificationMethod?.[0]?.id
+      if (!didUrl) throw new Error('Expected a DID verification method')
+
+      // Deliberately do not call agent.dids.import: the key exists in KMS, but no created-DID record maps it to this DID.
+      const credential = await sdJwtVcService.sign(agent.context, {
+        payload: { claim: 'some-claim', vct: 'IdentityCredential' },
+        issuer: { method: 'did', didUrl: issuerDidUrl },
+        holder: { method: 'did', didUrl },
+      })
+      await expect(
+        sdJwtVcService.present(agent.context, {
+          sdJwtVc: credential.compact,
+          verifierMetadata: { issuedAt: mockedNowSeconds, audience: verifierDid, nonce: 'unregistered-holder' },
+        })
+      ).rejects.toThrow('not found')
     })
 
     test('Sign (x509) sd-jwt-vc with an invalid certificate issuer should fail', async () => {

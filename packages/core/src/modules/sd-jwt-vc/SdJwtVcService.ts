@@ -12,7 +12,7 @@ import type { JsonObject } from '../../types'
 import { dateToSeconds, IntegrityVerifier, JsonEncoder, nowInSeconds, TypedArrayEncoder } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
-import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
+import { DidsApi, parseDid } from '../dids'
 import { KeyManagementApi, PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig, X509Service } from '../x509'
@@ -40,8 +40,7 @@ import {
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
   parseIssuerFromCredential,
-  resolveDidUrl,
-  resolveSigningPublicJwkFromDidUrl,
+  resolveDidVerificationKey,
   setJwkAlgFromJwtHeader,
 } from './utils'
 
@@ -504,12 +503,12 @@ export class SdJwtVcService {
         )
       }
 
-      let publicJwk: PublicJwk
+      const dids = agentContext.dependencyManager.resolve(DidsApi)
+      const { verificationMethod, publicJwk } = await resolveDidVerificationKey(dids, issuer.didUrl, [
+        'assertionMethod',
+      ])
       if (forSigning) {
-        publicJwk = await resolveSigningPublicJwkFromDidUrl(agentContext, issuer.didUrl)
-      } else {
-        const { verificationMethod } = await resolveDidUrl(agentContext, issuer.didUrl)
-        publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+        publicJwk.keyId = await dids.getKeyIdFromCreatedDidRecord(issuer.didUrl, verificationMethod)
       }
 
       const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
@@ -791,8 +790,8 @@ export class SdJwtVcService {
         throw new SdJwtVcError('Unable to resolve the status list signer: the status list JWT has no `kid` header.')
       }
 
-      const { verificationMethod } = await resolveDidUrl(agentContext, didUrl)
-      const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      const dids = agentContext.dependencyManager.resolve(DidsApi)
+      const { publicJwk } = await resolveDidVerificationKey(dids, didUrl, ['assertionMethod'])
       setJwkAlgFromJwtHeader(publicJwk, header.alg)
       return getSdJwtVerifier(agentContext, publicJwk)(data, signatureBase64Url)
     }
