@@ -105,7 +105,9 @@ export class DidCommV2EnvelopeService {
     const apu = computeApu(skid)
     const apv = computeApv(keys.recipients.map((r) => r.kid))
 
-    const ephemeralKey = await kms.createKey({ type: keyTypeForCurve(recipientCurve) })
+    // The KMS backend needs both private keys, so the ephemeral key goes where the sender key lives
+    const backend = await kms.getBackendForKey({ keyId: keys.senderKey.keyId })
+    const ephemeralKey = await kms.createKey({ backend, type: keyTypeForCurve(recipientCurve) })
     try {
       const epkJwk = toEpkJwk(ephemeralKey.publicJwk, recipientCurve)
 
@@ -120,6 +122,7 @@ export class DidCommV2EnvelopeService {
       })
 
       const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
+        backend,
         key: {
           keyAgreement: {
             algorithm: 'ECDH-1PU+A256KW',
@@ -154,7 +157,7 @@ export class DidCommV2EnvelopeService {
         tag: TypedArrayEncoder.toBase64Url(tag),
       }
     } finally {
-      await kms.deleteKey({ keyId: ephemeralKey.keyId })
+      await kms.deleteKey({ backend, keyId: ephemeralKey.keyId })
     }
   }
 

@@ -197,6 +197,7 @@ describe('KeyManagementApi', () => {
     const data = new Uint8Array([1, 2, 3])
 
     const recipient = await kms.createKey({ backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
+    expect(await kms.getBackendForKey({ keyId: recipient.keyId })).toBe('other')
     const ephemeral = await kms.createKey({ backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
     const agreement = await kms.encrypt({
       key: { keyAgreement: { algorithm: 'ECDH-ES', keyId: ephemeral.keyId, externalPublicJwk: recipient.publicJwk } },
