@@ -29,6 +29,13 @@ export interface IPresentationFrame {
 export interface SdJwtVcHolderDidBinding {
   method: 'did'
   didUrl: string
+  /**
+   * How the holder key appears in the issued SD-JWT VC. `jwk` embeds the public key
+   * (recommended by SD-JWT VC); `kid` uses the DID URL and requires DID-aware verifiers.
+   *
+   * @default 'kid'
+   */
+  cnf?: 'kid' | 'jwk'
 }
 
 export interface SdJwtVcHolderJwkBinding {
