@@ -13,6 +13,8 @@ import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../../../a
 import { AskarKeyManagementService } from '../../../../askar/src/kms/AskarKeyManagementService'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
+import { NodeInMemoryKeyManagementStorage } from '../../../../node/src/kms/NodeInMemoryKeyManagementStorage'
+import { NodeKeyManagementService } from '../../../../node/src/kms/NodeKeyManagementService'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
 
 import { isDidCommV2EncryptedMessage } from '../../util/didcommVersion'
@@ -513,5 +515,70 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
 
       expect(senderKey?.keyId).toBe(skid)
     })
+  })
+})
+
+describe('DidCommV2EnvelopeService with the sender key outside the default backend', () => {
+  const agentContext = getAgentContext({
+    contextCorrelationId: 'v2-envelope-cross-backend',
+    agentConfig: getAgentConfig('V2EnvelopeCrossBackend'),
+    kmsBackends: [
+      new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()),
+      new AskarKeyManagementService(),
+    ],
+    registerInstances: [
+      [InjectionSymbols.Logger, testLogger],
+      [InjectionSymbols.FileSystem, new NodeFileSystem()],
+      [
+        AskarModuleConfig,
+        new AskarModuleConfig({
+          multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,
+          askar,
+          store: {
+            id: 'v2-envelope-cross-backend',
+            key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
+            keyDerivationMethod: 'raw',
+            database: { type: 'sqlite', config: { inMemory: true } },
+          },
+        }),
+      ],
+    ],
+  })
+
+  it('creates the authcrypt ephemeral key in the backend of the sender key', async () => {
+    agentContext.dependencyManager.registerSingleton(DidCommV2EnvelopeService)
+    const envelopeService = agentContext.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+
+    const sender = await kms.createKey({ backend: 'askar', type: { kty: 'OKP', crv: 'X25519' } })
+    const recipient = await kms.createKey({ backend: 'askar', type: { kty: 'OKP', crv: 'X25519' } })
+    const senderKey = Kms.PublicJwk.fromPublicJwk(sender.publicJwk) as Kms.PublicJwk<Kms.X25519PublicJwk>
+    senderKey.keyId = sender.keyId
+    const recipientKey = Kms.PublicJwk.fromPublicJwk(recipient.publicJwk) as Kms.PublicJwk<Kms.X25519PublicJwk>
+    recipientKey.keyId = recipient.keyId
+    const deleteKey = vi.spyOn(kms, 'deleteKey')
+    const plaintext: DidCommV2PlaintextMessage = {
+      id: 'cross-backend-1',
+      type: 'https://didcomm.org/trust-ping/2.0/ping',
+      from: 'did:example:alice',
+      to: ['did:example:bob'],
+      body: {},
+    }
+
+    const encrypted = await envelopeService.pack(agentContext, plaintext, {
+      senderKey,
+      senderKeySkid: 'did:example:alice#key-1',
+      recipients: [{ key: recipientKey, kid: 'did:example:bob#key-1' }],
+    })
+
+    expect(deleteKey).toHaveBeenCalledWith(expect.objectContaining({ backend: 'askar' }))
+    await expect(deleteKey.mock.results[0].value).resolves.toBe(true)
+
+    const { plaintext: decrypted } = await envelopeService.unpack(agentContext, encrypted, {
+      recipientKey: recipientKey as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },
+      matchedKid: 'did:example:bob#key-1',
+      resolveSenderKey: async () => senderKey,
+    })
+    expect(decrypted).toEqual(plaintext)
   })
 })
