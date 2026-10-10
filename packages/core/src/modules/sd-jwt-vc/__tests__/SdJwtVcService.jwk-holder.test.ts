@@ -11,7 +11,8 @@ import {
   sdJwtVcWithSingleDisclosurePresentation,
   simpleJwtVc,
   simpleJwtVcPresentation,
-} from './sdjwtvc.fixtures'
+} from './sdjwtvc.cnf-jwk.fixtures'
+import { simpleJwtVcWithCnfJwkKid } from './sdjwtvc.cnf-jwk-kid.fixtures'
 
 describe('SdJwtVcService JWK holder binding (cnf.jwk)', () => {
   let setup: Awaited<ReturnType<typeof createHolderBindingTestSetup>>
@@ -31,7 +32,7 @@ describe('SdJwtVcService JWK holder binding (cnf.jwk)', () => {
     agent = setup.agent
     sdJwtVcService = setup.service
     issuerDidUrl = setup.issuer.didUrl
-    holderKey = setup.holder.key
+    holderKey = setup.holderPublicJwk
     agent.kms.randomBytes = vi.fn(staticSalt)
     Date.prototype.getTime = vi.fn(() => 1698151532 * 1000)
     Date.now = vi.fn(() => 1698151532 * 1000)
@@ -755,7 +756,6 @@ describe('SdJwtVcService JWK holder binding (cnf.jwk)', () => {
           jwk: {
             kty: 'OKP',
             crv: 'Ed25519',
-            kid: 'BnbnQW5VWoys6x6qYxEUVrEKGYW2GS5vG71vCMwwfsYm',
             x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
           },
         },
@@ -765,5 +765,45 @@ describe('SdJwtVcService JWK holder binding (cnf.jwk)', () => {
 
       expect(presentation.compact).toEqual(simpleJwtVc)
     })
+  })
+
+  test('issues cnf.jwk with only public key members', async () => {
+    const holderJwk = setup.holder.key.toJson()
+    if (holderJwk.kty !== 'OKP') throw new Error('Expected an OKP holder key')
+    const holderKeyWithMetadata = PublicJwk.fromUnknown({
+      ...holderJwk,
+      alg: 'EdDSA',
+      use: 'sig',
+      key_ops: ['verify'],
+      x5c: ['certificate'],
+      vendor: 'wallet',
+    })
+
+    const { payload } = await setup.service.sign(setup.agent.context, {
+      payload: { claim: 'some-claim', vct: 'IdentityCredential' },
+      holder: { method: 'jwk', jwk: holderKeyWithMetadata },
+      issuer: { method: 'did', didUrl: setup.issuer.didUrl },
+    })
+
+    expect(payload.cnf).toEqual({
+      jwk: { kty: 'OKP', crv: 'Ed25519', x: holderJwk.x },
+    })
+  })
+
+  test('presents and verifies a credential containing cnf.jwk.kid', async () => {
+    const credential = sdJwtVcService.fromCompact(simpleJwtVcWithCnfJwkKid)
+    expect(credential.payload.cnf).toEqual({ jwk: setup.holder.key.toJson() })
+
+    const presentation = await sdJwtVcService.present(agent.context, {
+      sdJwtVc: simpleJwtVcWithCnfJwkKid,
+      presentationFrame: {},
+      verifierMetadata: { issuedAt: 1698151532, audience: verifierDid, nonce: 'salt' },
+    })
+    const result = await sdJwtVcService.verify(agent.context, {
+      compactSdJwtVc: presentation,
+      keyBinding: { audience: verifierDid, nonce: 'salt' },
+      now: new Date(1698151532 * 1000),
+    })
+    expect(result.isValid).toBe(true)
   })
 })

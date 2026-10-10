@@ -25,7 +25,7 @@ import { agentDependencies } from '@credo-ts/node'
 import { askarPostgresStorageConfig, NativeAskar } from '../../askar/tests/helpers'
 import didKeyP256 from '../../core/src/modules/dids/__tests__/__fixtures__/didKeyP256.json'
 import { sprindFunkeTestVectorBase64Url } from '../../core/src/modules/mdoc/__tests__/mdoc.fixtures'
-import { sdJwtVcWithSingleDisclosure } from '../../core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.fixtures'
+import { sdJwtVcWithSingleDisclosureWithCnfJwkKid } from '../../core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.cnf-jwk-kid.fixtures'
 import { CredoDidKeyDiVcEncoded } from '../../core/src/modules/vc/data-integrity/__tests__/fixtures/credo-di-vc'
 import { CredoEs256DidJwkJwtVc } from '../../core/src/modules/vc/jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
 import { customDocumentLoader } from '../../core/src/modules/vc/linked-data-proofs/__tests__/documentLoader'
@@ -55,7 +55,7 @@ async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
     record: new SdJwtVcRecord({
       credentialInstances: [
         {
-          compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+          compactSdJwtVc: sdJwtVcWithSingleDisclosureWithCnfJwkKid,
         },
       ],
     }),
@@ -109,7 +109,7 @@ async function expectDatabaseWithRecords(agent: Agent | TenantAgent) {
     {
       credentialInstances: [
         {
-          compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+          compactSdJwtVc: sdJwtVcWithSingleDisclosureWithCnfJwkKid,
         },
       ],
     },

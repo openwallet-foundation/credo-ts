@@ -10,7 +10,6 @@ import {
   KeyDidResolver,
   parseDid,
   TypedArrayEncoder,
-  X509Certificate,
 } from '@credo-ts/core'
 import { SLException } from '@owf/token-status-list'
 import { decodeSdJwtSync, getClaimsSync, Jwt, SDJwt } from '@sd-jwt/core'
@@ -29,16 +28,15 @@ import {
 } from '../SdJwtVcModuleConfig'
 import type { IDisclosureFrame } from '../SdJwtVcOptions'
 import { SdJwtVcService } from '../SdJwtVcService'
+import { simpleJwtVcWithCnfJwkKid } from './sdjwtvc.cnf-jwk-kid.fixtures'
 import {
   contentChangedSdJwtVc,
   expiredSdJwtVc,
   notBeforeInFutureSdJwtVc,
   sdJwtVcPid,
   signatureInvalidSdJwtVc,
-  simpleJwtVc,
   simpleJwtVcWithoutHolderBinding,
   simpleSdJwtVcWithStatus,
-  simpleX509,
 } from './sdjwtvc.fixtures'
 import { generateStatusList } from './statusListTestUtils'
 
@@ -89,14 +87,9 @@ Date.now = vi.fn(function () {
   return mockedNowSeconds * 1000
 })
 
-const simpleX509Certificate = X509Certificate.fromEncodedCertificate(simpleX509.trustedCertificate)
-
-// Generates a status list JWT signed with an `x5c` header (x509), instead of a `kid` (did).
-
 describe('SdJwtVcService', () => {
   let issuerDidUrl: string
   let issuerKey: PublicJwk
-  let holderKey: PublicJwk
   let sdJwtVcService: SdJwtVcService
 
   const mockStatusList = (statusList: string) =>
@@ -107,6 +100,7 @@ describe('SdJwtVcService', () => {
 
   afterEach(() => {
     nock.cleanAll()
+    vi.restoreAllMocks()
   })
 
   beforeAll(async () => {
@@ -137,41 +131,6 @@ describe('SdJwtVcService', () => {
         {
           didDocumentRelativeKeyId: `#${issuerDidUrl.split('#')[1]}`,
           kmsKeyId: issuerKey.keyId,
-        },
-      ],
-    })
-
-    simpleX509Certificate.keyId = issuerKey.keyId
-
-    const holderPrivateJwk = transformSeedToPrivateJwk({
-      seed: TypedArrayEncoder.fromUtf8String('00000000000000000000000000000001'),
-      type: {
-        crv: 'Ed25519',
-        kty: 'OKP',
-      },
-    }).privateJwk
-
-    // We use hardcoded SD-JWT VCs which don't have a `kid` in the credential JWK
-    // So we set the kid to the legacy key id
-    holderPrivateJwk.kid = TypedArrayEncoder.toBase58(PublicJwk.fromPublicJwk(holderPrivateJwk).publicKey.publicKey)
-
-    holderKey = PublicJwk.fromPublicJwk(
-      (
-        await agent.kms.importKey({
-          privateJwk: holderPrivateJwk,
-        })
-      ).publicJwk
-    )
-    const holderDidKey = new DidKey(holderKey)
-    const holderDidDocument = holderDidKey.didDocument
-    const holderDidUrl = (holderDidDocument.verificationMethod ?? [])[0].id
-    await agent.dids.import({
-      didDocument: holderDidDocument,
-      did: holderDidDocument.id,
-      keys: [
-        {
-          kmsKeyId: holderKey.keyId,
-          didDocumentRelativeKeyId: `#${holderDidUrl.split('#')[1]}`,
         },
       ],
     })
@@ -310,7 +269,6 @@ describe('SdJwtVcService', () => {
       sdJwtVcService.sign(agent.context, {
         payload: { vct: 'IdentityCredential', ...payload },
         disclosureFrame,
-        holder: { method: 'jwk', jwk: holderKey },
         issuer: { method: 'did', didUrl: issuerDidUrl },
       })
 
@@ -777,7 +735,7 @@ describe('SdJwtVcService', () => {
     test('verify sd-jwt-vc signed with a sha-1 based signature algorithm and fails', async () => {
       // SHA-1 based signature algorithms (such as RS1) are not registered JWA signature algorithms,
       // and thus can never be used to sign or verify an sd-jwt-vc
-      const [jwt, ...disclosures] = simpleJwtVc.split('~')
+      const [jwt, ...disclosures] = simpleJwtVcWithCnfJwkKid.split('~')
       const [encodedHeader, encodedPayload, signature] = jwt.split('.')
       const header = JsonEncoder.fromBase64Url(encodedHeader)
 

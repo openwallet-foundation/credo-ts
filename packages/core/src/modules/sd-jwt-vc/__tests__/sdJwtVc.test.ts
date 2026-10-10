@@ -139,7 +139,6 @@ describe('sd-jwt-vc end to end test', () => {
           jwk: {
             jwk: {
               crv: 'Ed25519',
-              kid: expect.any(String),
               kty: 'OKP',
               x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
             },
@@ -181,7 +180,6 @@ describe('sd-jwt-vc end to end test', () => {
         },
         cnf: {
           jwk: {
-            kid: expect.any(String),
             crv: 'Ed25519',
             kty: 'OKP',
             x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
@@ -201,7 +199,6 @@ describe('sd-jwt-vc end to end test', () => {
         birthdate: '1940-01-01',
         cnf: {
           jwk: {
-            kid: expect.any(String),
             crv: 'Ed25519',
             kty: 'OKP',
             x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
@@ -294,5 +291,106 @@ describe('sd-jwt-vc end to end test', () => {
     expect(isValid).toBe(true)
 
     cleanAll()
+  })
+
+  describe('DID holder end to end flow', () => {
+    let holderDidUrl: string
+
+    beforeAll(async () => {
+      const holderDidDocument = new DidKey(holderKey).didDocument
+      const verificationMethodId = holderDidDocument.verificationMethod?.[0]?.id
+      if (!verificationMethodId) throw new Error('Expected a holder DID verification method')
+      holderDidUrl = verificationMethodId
+
+      await holder.dids.import({
+        did: holderDidDocument.id,
+        didDocument: holderDidDocument,
+        keys: [{ didDocumentRelativeKeyId: `#${holderDidUrl.split('#')[1]}`, kmsKeyId: holderKey.keyId }],
+      })
+    })
+
+    test('uses cnf.kid by default across issuer, holder and verifier agents', async () => {
+      const { compact, payload } = await issuer.sdJwtVc.sign({
+        payload: { vct: 'https://example.com/vct-type', given_name: 'John' },
+        disclosureFrame: { _sd: ['given_name'] },
+        holder: { method: 'did', didUrl: holderDidUrl },
+        issuer: { method: 'did', didUrl: issuerDidUrl },
+      })
+
+      expect(payload.cnf).toEqual({ kid: holderDidUrl })
+
+      const credential = holder.sdJwtVc.fromCompact(compact)
+      expect(credential.payload.cnf).toEqual({ kid: holderDidUrl })
+
+      await holder.sdJwtVc.store({
+        record: new SdJwtVcRecord({ credentialInstances: [{ compactSdJwtVc: compact }] }),
+      })
+
+      const verifierMetadata = {
+        audience: verifierDid,
+        issuedAt: Date.now() / 1000,
+        nonce: TypedArrayEncoder.toBase64Url(verifier.kms.randomBytes({ length: 32 })),
+      }
+      const presentation = await holder.sdJwtVc.present({
+        sdJwtVc: credential,
+        verifierMetadata,
+        presentationFrame: { given_name: true },
+      })
+
+      const result = await verifier.sdJwtVc.verify({
+        compactSdJwtVc: presentation,
+        keyBinding: { audience: verifierDid, nonce: verifierMetadata.nonce },
+        requiredClaimKeys: ['given_name'],
+      })
+
+      expect(result.isValid).toBe(true)
+      expect(result.sdJwtVc?.prettyClaims.given_name).toBe('John')
+    })
+  })
+
+  test('DID-selected holder key opts in to JWK binding across issuer, holder and verifier agents', async () => {
+    const holderDidUrl = new DidKey(holderKey).didDocument.verificationMethod?.[0]?.id
+    if (!holderDidUrl) throw new Error('Expected a holder DID verification method')
+
+    const { compact, payload } = await issuer.sdJwtVc.sign({
+      payload: { vct: 'https://example.com/vct-type', given_name: 'John' },
+      disclosureFrame: { _sd: ['given_name'] },
+      holder: { method: 'did', didUrl: holderDidUrl, cnf: 'jwk' },
+      issuer: { method: 'did', didUrl: issuerDidUrl },
+    })
+
+    // The fixture holder key's local kid is not included in the issued cnf.jwk.
+    const expectedCnf = { jwk: holderKey.toJson({ includeKid: false }) }
+    expect(payload.cnf).toEqual(expectedCnf)
+
+    const credential = holder.sdJwtVc.fromCompact(compact)
+    expect(credential.payload.cnf).toEqual(expectedCnf)
+    credential.kmsKeyId = holderKey.keyId
+
+    await holder.sdJwtVc.store({
+      record: new SdJwtVcRecord({
+        credentialInstances: [{ compactSdJwtVc: compact, kmsKeyId: holderKey.keyId }],
+      }),
+    })
+
+    const verifierMetadata = {
+      audience: verifierDid,
+      issuedAt: Date.now() / 1000,
+      nonce: TypedArrayEncoder.toBase64Url(verifier.kms.randomBytes({ length: 32 })),
+    }
+    const presentation = await holder.sdJwtVc.present({
+      sdJwtVc: credential,
+      verifierMetadata,
+      presentationFrame: { given_name: true },
+    })
+
+    const result = await verifier.sdJwtVc.verify({
+      compactSdJwtVc: presentation,
+      keyBinding: { audience: verifierDid, nonce: verifierMetadata.nonce },
+      requiredClaimKeys: ['given_name'],
+    })
+
+    expect(result.isValid).toBe(true)
+    expect(result.sdJwtVc?.prettyClaims.given_name).toBe('John')
   })
 })

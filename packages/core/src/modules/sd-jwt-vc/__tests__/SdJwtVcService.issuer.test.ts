@@ -10,8 +10,10 @@ import nock from 'nock'
 import { vi } from 'vitest'
 import { PublicJwk } from '../../kms'
 import type { SdJwtVcPayload } from '../SdJwtVcOptions'
-import { createHolderBindingTestSetup } from './holderBindingTestSetup'
-import { funkeX509, simpleJwtVc, simpleSdJwtVcWithStatus, simpleX509, simpleX509WithoutIss } from './sdjwtvc.fixtures'
+import { createHolderBindingTestSetup, useAuthenticationOnlyDid } from './holderBindingTestSetup'
+import { simpleX509PublicJwk, simpleX509WithoutIssPublicJwk } from './sdjwtvc.cnf-jwk.fixtures'
+import { simpleJwtVcWithCnfJwkKid } from './sdjwtvc.cnf-jwk-kid.fixtures'
+import { funkeX509, simpleSdJwtVcWithStatus, simpleX509, simpleX509WithoutIss } from './sdjwtvc.fixtures'
 import { generateStatusList, generateX509StatusList } from './statusListTestUtils'
 
 describe('SdJwtVcService issuer signing and trust', () => {
@@ -36,7 +38,7 @@ describe('SdJwtVcService issuer signing and trust', () => {
     sdJwtVcService = setup.service
     issuerDidUrl = setup.issuer.didUrl
     issuerKey = setup.issuer.key
-    holderKey = setup.holder.key
+    holderKey = setup.holderPublicJwk
     simpleX509Certificate.keyId = issuerKey.keyId
     agent.kms.randomBytes = vi.fn(() => TypedArrayEncoder.fromUtf8String('salt'))
     Date.prototype.getTime = vi.fn(() => 1698151532 * 1000)
@@ -149,10 +151,30 @@ describe('SdJwtVcService issuer signing and trust', () => {
     ).rejects.toThrow('not found')
   })
 
+  test('Issuer DID keys listed only under authentication are rejected for signing and verification', async () => {
+    const compact = await sdJwtVcService
+      .sign(agent.context, {
+        payload: { claim: 'some-claim', vct: 'IdentityCredential' },
+        issuer: { method: 'did', didUrl: issuerDidUrl },
+      })
+      .then(({ compact }) => compact)
+    await useAuthenticationOnlyDid(agent.context, issuerKey)
+
+    await expect(
+      sdJwtVcService.sign(agent.context, {
+        payload: { claim: 'some-claim', vct: 'IdentityCredential' },
+        issuer: { method: 'did', didUrl: issuerDidUrl },
+      })
+    ).rejects.toThrow()
+
+    const verificationResult = await sdJwtVcService.verify(agent.context, { compactSdJwtVc: compact })
+    expect(verificationResult.isValid).toBe(false)
+  })
+
   describe('SdJwtVcService.verify with getTrustedIssuersForVerification', () => {
     const presentDid = () =>
       sdJwtVcService.present(agent.context, {
-        sdJwtVc: simpleJwtVc,
+        sdJwtVc: simpleJwtVcWithCnfJwkKid,
         presentationFrame: {},
         verifierMetadata: { issuedAt: Date.now() / 1000, audience: verifierDid, nonce: 'salt' },
       })
@@ -572,7 +594,7 @@ describe('SdJwtVcService issuer signing and trust', () => {
       headerType: 'vc+sd-jwt',
     })
 
-    expect(compact).toStrictEqual(simpleX509.sdJwtVc)
+    expect(compact).toStrictEqual(simpleX509PublicJwk)
 
     const sdJwtVc = sdJwtVcService.fromCompact(compact)
     expect(sdJwtVc.header).toEqual({
@@ -607,7 +629,7 @@ describe('SdJwtVcService issuer signing and trust', () => {
       },
     })
 
-    expect(compact).toStrictEqual(simpleX509WithoutIss.sdJwtVc)
+    expect(compact).toStrictEqual(simpleX509WithoutIssPublicJwk)
 
     const sdJwtVc = sdJwtVcService.fromCompact(compact)
     expect(sdJwtVc.header).toEqual({
