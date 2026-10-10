@@ -1,17 +1,6 @@
-import {
-  Agent,
-  AgentContext,
-  DidDocument,
-  DidKey,
-  DidsModule,
-  KeyDidRegistrar,
-  KeyDidResolver,
-  TypedArrayEncoder,
-} from '@credo-ts/core'
-import { vi } from 'vitest'
+import { Agent, DidKey, DidsModule, KeyDidRegistrar, KeyDidResolver, TypedArrayEncoder } from '@credo-ts/core'
 import { transformSeedToPrivateJwk } from '../../../../../askar/src'
 import { getAgentOptions } from '../../../../tests'
-import { DidResolverService } from '../../dids/services'
 import { PublicJwk } from '../../kms'
 import { SdJwtVcService } from '../SdJwtVcService'
 
@@ -51,20 +40,4 @@ export async function createHolderBindingTestSetup(name: string) {
   const service = agent.context.dependencyManager.resolve(SdJwtVcService)
 
   return { agent, service, issuer, holder }
-}
-
-export async function useAuthenticationOnlyDid(agentContext: AgentContext, key: PublicJwk) {
-  const didDocument = new DidKey(key).didDocument
-  const did = didDocument.id
-  const authenticationOnlyDocument = new DidDocument({
-    id: did,
-    verificationMethod: didDocument.verificationMethod,
-    authentication: didDocument.authentication,
-  })
-  const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
-  const resolveDidDocument = didResolver.resolveDidDocument.bind(didResolver)
-  vi.spyOn(didResolver, 'resolveDidDocument').mockImplementation(async (context, requestedDid) =>
-    requestedDid.split('#')[0] === did ? authenticationOnlyDocument : resolveDidDocument(context, requestedDid)
-  )
-  await didResolver.invalidateCacheForDid(agentContext, did)
 }
