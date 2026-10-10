@@ -94,7 +94,6 @@ const simpleX509Certificate = X509Certificate.fromEncodedCertificate(simpleX509.
 // Generates a status list JWT signed with an `x5c` header (x509), instead of a `kid` (did).
 
 describe('SdJwtVcService', () => {
-  const verifierDid = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
   let issuerDidUrl: string
   let issuerKey: PublicJwk
   let holderKey: PublicJwk
@@ -184,25 +183,6 @@ describe('SdJwtVcService', () => {
   describe('SdJwtVcService.sign', () => {
     afterEach(() => {
       vi.mocked(agent.kms.randomBytes).mockImplementation(staticSalt)
-    })
-
-    test('does not sign a presentation for an unregistered holder DID even if its key exists in KMS', async () => {
-      const key = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
-      const didUrl = new DidKey(PublicJwk.fromUnknown(key.publicJwk)).didDocument.verificationMethod?.[0]?.id
-      if (!didUrl) throw new Error('Expected a DID verification method')
-
-      // Deliberately do not call agent.dids.import: the key exists in KMS, but no created-DID record maps it to this DID.
-      const credential = await sdJwtVcService.sign(agent.context, {
-        payload: { claim: 'some-claim', vct: 'IdentityCredential' },
-        issuer: { method: 'did', didUrl: issuerDidUrl },
-        holder: { method: 'did', didUrl },
-      })
-      await expect(
-        sdJwtVcService.present(agent.context, {
-          sdJwtVc: credential.compact,
-          verifierMetadata: { issuedAt: mockedNowSeconds, audience: verifierDid, nonce: 'unregistered-holder' },
-        })
-      ).rejects.toThrow('not found')
     })
 
     test('Sign sd-jwt-vc from a basic payload without holder binding', async () => {

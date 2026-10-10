@@ -725,7 +725,7 @@ describe('SdJwtVcService JWK holder binding (cnf.jwk)', () => {
       })
     })
 
-    test('Verify did holder-bound sd-jwt-vc with disclosures and kb-jwt', async () => {
+    test('Verify cnf.jwk holder-bound sd-jwt-vc with disclosures and kb-jwt', async () => {
       const verificationResult = await sdJwtVcService.verify<
         SdJwtVcHeader,
         { address: { country: string } } & SdJwtVcPayload
