@@ -17,7 +17,8 @@ import {
 } from '@credo-ts/core'
 import type { DidCommEncryptedMessage, DidCommRoutingCreatedEvent } from '@credo-ts/didcomm'
 import { DidCommRoutingEventTypes, isValidJweStructure } from '@credo-ts/didcomm'
-import type { TenantRecord } from '../repository'
+import { TenantInactiveError } from '../error/TenantInactiveError'
+import { type TenantRecord, TenantStatus } from '../repository'
 import { TenantRecordService } from '../services'
 import { TenantAgent } from '../TenantAgent'
 
@@ -54,7 +55,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
 
   public async getAgentContextForContextCorrelationId(
     contextCorrelationId: string,
-    { provisionContext = false }: { provisionContext?: boolean } = {}
+    { provisionContext = false, allowInactive = false }: { provisionContext?: boolean; allowInactive?: boolean } = {}
   ) {
     // It could be that the root agent context is requested, in that case we return the root agent context
     if (contextCorrelationId === this.rootAgentContext.contextCorrelationId) {
@@ -67,6 +68,11 @@ export class TenantAgentContextProvider implements AgentContextProvider {
 
     // TODO: maybe we can look at not having to retrieve the tenant record if there's already a context available.
     const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
+
+    if (tenantRecord.status !== TenantStatus.Active && !allowInactive) {
+      throw new TenantInactiveError(tenantRecord.id)
+    }
+
     const shouldUpdate = !isStorageUpToDate(tenantRecord.storageVersion)
 
     // If the tenant storage is not up to date, and autoUpdate is disabled we throw an error
