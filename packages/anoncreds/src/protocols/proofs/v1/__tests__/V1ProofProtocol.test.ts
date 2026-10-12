@@ -117,6 +117,51 @@ describe('DidCommProofV1Protocol', () => {
     proofProtocol = new DidCommProofV1Protocol({ indyProofFormat: indyProofFormatService })
   })
 
+  describe('createRequest', () => {
+    const proofFormats = {
+      indy: { name: 'Proof request', version: '1.0', attributes: [], predicates: [] },
+    }
+
+    beforeEach(() => {
+      mockFunction(indyProofFormatService.createRequest).mockResolvedValue({
+        attachment: requestAttachment,
+        format: { attachmentId: INDY_PROOF_REQUEST_ATTACHMENT_ID, format: 'hlindy/proof-req@v2.0' },
+      } as never)
+    })
+
+    // The repository mocks are shared across describe blocks, which count their calls
+    afterEach(() => {
+      vi.clearAllMocks()
+    })
+
+    test('sets ~timing.expires_time on the request before it is stored', async () => {
+      const expiresTime = new Date('2030-01-01T00:00:00.000Z')
+
+      const { message } = await proofProtocol.createRequest(agentContext, {
+        connectionRecord: connection,
+        proofFormats,
+        expiresTime,
+      })
+
+      expect(message.timing?.expiresTime).toEqual(expiresTime)
+      expect(didCommMessageRepository.saveAgentMessage).toHaveBeenLastCalledWith(
+        agentContext,
+        expect.objectContaining({
+          agentMessage: expect.objectContaining({ timing: expect.objectContaining({ expiresTime }) }),
+        })
+      )
+    })
+
+    test('adds no timing decorator without an expiry time', async () => {
+      const { message } = await proofProtocol.createRequest(agentContext, {
+        connectionRecord: connection,
+        proofFormats,
+      })
+
+      expect(message.timing).toBeUndefined()
+    })
+  })
+
   describe('processRequest', () => {
     let presentationRequest: DidCommRequestPresentationV1Message
     let messageContext: DidCommInboundMessageContext<DidCommRequestPresentationV1Message>

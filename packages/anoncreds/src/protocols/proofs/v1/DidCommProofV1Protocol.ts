@@ -359,6 +359,7 @@ export class DidCommProofV1Protocol
       comment,
       parentThreadId,
       autoAcceptProof,
+      expiresTime,
     }: ProofProtocolOptions.CreateProofRequestOptions<[LegacyIndyDidCommProofFormatService]>
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     this.assertOnlyIndyFormat(proofFormats)
@@ -399,6 +400,7 @@ export class DidCommProofV1Protocol
       threadId: proofRecord.threadId,
       parentThreadId: proofRecord.parentThreadId,
     })
+    if (expiresTime) message.setTiming({ expiresTime })
 
     await didCommMessageRepository.saveAgentMessage(agentContext, {
       agentMessage: message,
