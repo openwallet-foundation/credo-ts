@@ -3,9 +3,11 @@ import {
   CredoError,
   createPeerDidDocumentFromServices,
   DidCommV1Service,
+  type DidDocument,
   DidDocumentBuilder,
   type DidDocumentKey,
   DidDocumentRole,
+  DidKey,
   DidRepository,
   DidsApi,
   didDocumentJsonToNumAlgo1Did,
@@ -53,6 +55,44 @@ export function toKeyAgreement(jwk: Kms.PublicJwk): DidCommV2KeyAgreementJwk {
     return jwk.convertTo(Kms.X25519PublicJwk)
   }
   throw new CredoError(`Unsupported keyAgreement curve: ${jwk.jwkTypeHumanDescription}`)
+}
+
+/**
+ * DID URL of a keyAgreement key, for use as a DIDComm v2 `kid` or `skid`. For Ed25519 the did:key
+ * fragment is the derived X25519 fingerprint, because that is the keyAgreement verification method.
+ */
+export function toKeyAgreementDidUrl(jwk: Kms.PublicJwk): string {
+  if (jwk.hasKeyId && jwk.keyId.startsWith('did:') && jwk.keyId.includes('#')) return jwk.keyId
+  return `${new DidKey(jwk).did}#${toKeyAgreement(jwk).fingerprint}`
+}
+
+export function toAbsoluteDidUrl(did: string, id: string): string {
+  return id.startsWith('did:') ? id : `${did}#${id.replace(/^#/, '')}`
+}
+
+/**
+ * Find a keyAgreement key in one of our own DID documents that we hold in the KMS. The returned
+ * key carries the KMS key id, and `didUrl` is the verification method to use as `skid`.
+ */
+export function findOwnKeyAgreementKey(
+  didDocument: DidDocument,
+  keys: DidDocumentKey[] | undefined,
+  sameCurveAs?: Kms.PublicJwk
+): { publicJwk: DidCommV2KeyAgreementJwk; didUrl: string } | undefined {
+  for (const kaRef of didDocument.keyAgreement ?? []) {
+    const vm = typeof kaRef === 'string' ? didDocument.dereferenceVerificationMethod(kaRef) : kaRef
+    try {
+      const jwk = getPublicJwkFromVerificationMethod(vm)
+      if (!jwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) continue
+      if (sameCurveAs && jwk.JwkClass !== sameCurveAs.JwkClass) continue
+      const kmsKeyId = keys?.find((key) => vm.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
+      if (!kmsKeyId) continue
+
+      jwk.keyId = kmsKeyId
+      return { publicJwk: jwk, didUrl: toAbsoluteDidUrl(didDocument.id, vm.id) }
+    } catch {}
+  }
+  return undefined
 }
 
 /**

@@ -1,4 +1,4 @@
-import { Kms, RecordNotFoundError, TypedArrayEncoder } from '@credo-ts/core'
+import { didToNumAlgo2DidDocument, Kms, RecordNotFoundError, TypedArrayEncoder } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
@@ -287,6 +287,25 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       expect(record.role).toBe(DidCommMediationRole.Mediator)
       expect(record.state).toBe(DidCommMediationState.Requested)
     })
+
+    test('looks up the connection by the authenticated sender DID, never by message.from', async () => {
+      const mediateRequest = new DidCommMediateRequestV2Message({})
+      mediateRequest.from = 'did:example:victim'
+      mockFunction(connectionService.findByTheirDidOrSender).mockResolvedValue(mockConnection)
+
+      await expect(
+        mediatorService.processMediationRequestV2(new DidCommInboundMessageContext(mediateRequest, { agentContext }))
+      ).rejects.toThrow('No connection associated')
+      expect(connectionService.findByTheirDidOrSender).not.toHaveBeenCalled()
+
+      await mediatorService.processMediationRequestV2(
+        new DidCommInboundMessageContext(mediateRequest, { agentContext, senderDid: 'did:example:sender' })
+      )
+      expect(connectionService.findByTheirDidOrSender).toHaveBeenCalledWith(agentContext, {
+        theirDid: 'did:example:sender',
+        senderKey: undefined,
+      })
+    })
   })
 
   describe('createGrantMediationMessageV2', () => {
@@ -305,6 +324,45 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
 
       expect(message.routingDid).toBe(mediatorModuleConfig.mediatorRoutingDid)
       expect(message.threadId).toBe('threadId')
+    })
+
+    test('publishes the DIDCommMessaging endpoint of a generated routing DID as an object', async () => {
+      const generatedRoutingDidContext = getAgentContext({
+        agentConfig,
+        registerInstances: [
+          [DidCommModuleConfig, new DidCommModuleConfig({ endpoints: ['wss://mediator.example'] })],
+          [DidCommMediatorModuleConfig, new DidCommMediatorModuleConfig()],
+        ],
+      })
+      mockFunction(mediatorRoutingRepository.findById).mockResolvedValue(
+        new DidCommMediatorRoutingRecord({
+          routingKeys: [
+            {
+              routingKeyFingerprint: Kms.PublicJwk.fromPublicKey({
+                kty: 'OKP',
+                crv: 'Ed25519',
+                publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+              }).fingerprint,
+              kmsKeyId: 'some-key-id',
+            },
+          ],
+        })
+      )
+
+      const { message } = await mediatorService.createGrantMediationMessageV2(
+        generatedRoutingDidContext,
+        new DidCommMediationRecord({
+          connectionId: 'connectionId',
+          role: DidCommMediationRole.Mediator,
+          state: DidCommMediationState.Requested,
+          threadId: 'threadId',
+          protocolVersion: 'v2',
+        })
+      )
+
+      const [service] = didToNumAlgo2DidDocument(message.routingDid).service ?? []
+      expect(service.type).toBe('DIDCommMessaging')
+      expect(service.serviceEndpoint).toMatchObject({ uri: 'wss://mediator.example' })
     })
   })
 

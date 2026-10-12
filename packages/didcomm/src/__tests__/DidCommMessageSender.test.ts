@@ -1,7 +1,17 @@
 import { Subject } from 'rxjs'
 import type { MockedClassConstructor } from '../../../../tests/types'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
-import { AgentConfig, Kms, TypedArrayEncoder } from '../../../core/src/index'
+import {
+  AgentConfig,
+  DidDocumentBuilder,
+  didDocumentToNumAlgo2Did,
+  getEd25519VerificationKey2018,
+  getX25519KeyAgreementKey2019,
+  Kms,
+  NewDidCommV2Service,
+  NewDidCommV2ServiceEndpoint,
+  TypedArrayEncoder,
+} from '../../../core/src/index'
 import type { DidDocumentService, IndyAgentService } from '../../../core/src/modules/dids'
 import { DidDocument, VerificationMethod } from '../../../core/src/modules/dids'
 import { DidsApi } from '../../../core/src/modules/dids/DidsApi'
@@ -26,7 +36,7 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { DidCommEnvelopeRegistry, DidCommV1Envelope, type DidCommV2Envelope } from '../envelope'
 import { MessageSendingError } from '../errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../models'
-import type { DidCommConnectionRecord } from '../modules'
+import { DidCommConnectionRecord, DidCommDidExchangeRole, DidCommDidExchangeState } from '../modules'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 import { type DidCommOutboundTransport, InMemoryQueueTransportRepository } from '../transport'
 import type { DidCommEncryptedMessage } from '../types'
@@ -171,7 +181,6 @@ describe('DidCommMessageSender', () => {
       })
       outboundTransport = new DummyHttpOutboundTransport()
       messageSender = new DidCommMessageSender(
-        enveloperService,
         buildEnvelopeRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,
@@ -597,7 +606,6 @@ describe('DidCommMessageSender', () => {
       outboundTransport = new DummyHttpOutboundTransport()
       didCommModuleConfig.outboundTransports = [outboundTransport]
       messageSender = new DidCommMessageSender(
-        enveloperService,
         buildEnvelopeRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,
@@ -741,7 +749,6 @@ describe('DidCommMessageSender', () => {
       outboundTransport = new DummyHttpOutboundTransport()
       didCommModuleConfig.outboundTransports = [outboundTransport]
       messageSender = new DidCommMessageSender(
-        enveloperService,
         buildEnvelopeRegistry(didCommModuleConfig),
         transportService,
         didCommModuleConfig,
@@ -773,6 +780,115 @@ describe('DidCommMessageSender', () => {
         responseRequested: message.hasAnyReturnRoute(),
         endpoint,
       })
+    })
+  })
+
+  describe('peer DID fallback', () => {
+    async function retrieveServicesViaMediatorDid(mediatorDid: string): Promise<ResolvedDidCommService[]> {
+      const theirDid = didDocumentToNumAlgo2Did(
+        new DidDocumentBuilder('')
+          .addKeyAgreement(
+            getX25519KeyAgreementKey2019({
+              id: '#key-1',
+              publicJwk: recipientKey.convertTo(Kms.X25519PublicJwk),
+              controller: '#id',
+            })
+          )
+          .addService(
+            new NewDidCommV2Service({
+              id: '#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: mediatorDid }),
+            })
+          )
+          .build()
+      )
+      didResolverServiceResolveDidServicesMock.mockResolvedValue([])
+      const actual = await vi.importActual<typeof import('../services/DidCommDocumentService')>(
+        '../services/DidCommDocumentService'
+      )
+      mockFunction(didCommDocumentService.expandV2EndpointIfRoutingDid).mockImplementation(
+        actual.DidCommDocumentService.prototype.expandV2EndpointIfRoutingDid
+      )
+      const didCommModuleConfig = new DidCommModuleConfig({
+        queueTransportRepository: new InMemoryQueueTransportRepository(),
+      })
+      const messageSender = new DidCommMessageSender(
+        buildEnvelopeRegistry(didCommModuleConfig),
+        transportService,
+        didCommModuleConfig,
+        didCommDocumentService,
+        eventEmitter
+      )
+
+      // @ts-expect-error retrieveServicesByConnection is private
+      const { services } = await messageSender.retrieveServicesByConnection(
+        agentContext,
+        new DidCommConnectionRecord({
+          role: DidCommDidExchangeRole.Requester,
+          state: DidCommDidExchangeState.Completed,
+          theirDid,
+          outOfBandId: 'oob-1',
+          didcommVersion: 'v2',
+        })
+      )
+      return services
+    }
+
+    test('uses one keyAgreement hop for a v2 mediator DID endpoint', async () => {
+      const mediatorKeyAgreementKey = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'X25519',
+        publicKey: new Uint8Array(32).fill(7),
+      })
+      const mediatorDid = didDocumentToNumAlgo2Did(
+        new DidDocumentBuilder('')
+          .addAuthentication(getEd25519VerificationKey2018({ id: '#key-1', publicJwk: senderKey, controller: '#id' }))
+          .addKeyAgreement(
+            getX25519KeyAgreementKey2019({ id: '#key-2', publicJwk: mediatorKeyAgreementKey, controller: '#id' })
+          )
+          .addKeyAgreement(
+            getX25519KeyAgreementKey2019({
+              id: '#key-3',
+              publicJwk: Kms.PublicJwk.fromPublicKey({
+                kty: 'OKP',
+                crv: 'X25519',
+                publicKey: new Uint8Array(32).fill(9),
+              }),
+              controller: '#id',
+            })
+          )
+          .addService(
+            new NewDidCommV2Service({
+              id: '#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: 'https://mediator.example/didcomm' }),
+            })
+          )
+          .build()
+      )
+      const services = await retrieveServicesViaMediatorDid(mediatorDid)
+
+      expect(services[0].serviceEndpoint).toBe('https://mediator.example/didcomm')
+      expect(services[0].routingKeys).toHaveLength(1)
+      expect(services[0].routingKeys[0].equals(mediatorKeyAgreementKey)).toBe(true)
+    })
+
+    test('keeps a forward hop for a v2 mediator DID endpoint without keyAgreement', async () => {
+      const mediatorDid = didDocumentToNumAlgo2Did(
+        new DidDocumentBuilder('')
+          .addAuthentication(getEd25519VerificationKey2018({ id: '#key-1', publicJwk: senderKey, controller: '#id' }))
+          .addService(
+            new NewDidCommV2Service({
+              id: '#dm',
+              serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: 'https://mediator.example/didcomm' }),
+            })
+          )
+          .build()
+      )
+      const services = await retrieveServicesViaMediatorDid(mediatorDid)
+
+      expect(services[0].serviceEndpoint).toBe('https://mediator.example/didcomm')
+      expect(services[0].routingKeys).toHaveLength(1)
+      expect(services[0].routingKeys[0].equals(senderKey)).toBe(true)
     })
   })
 })

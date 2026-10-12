@@ -1,4 +1,4 @@
-import { Kms } from '@credo-ts/core'
+import { DidKey, Kms } from '@credo-ts/core'
 import { DidCommV1Service, IndyAgentService, VerificationMethod } from '../../../../../core/src/modules/dids'
 import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
 import {
@@ -9,7 +9,13 @@ import {
   ReferencedAuthentication,
   RsaSig2018,
 } from '../models'
-import { convertToNewDidDocument, keyAgreementsEqual, routingToServices, toKeyAgreement } from '../services/helpers'
+import {
+  convertToNewDidDocument,
+  keyAgreementsEqual,
+  routingToServices,
+  toKeyAgreement,
+  toKeyAgreementDidUrl,
+} from '../services/helpers'
 
 const key = new Ed25119Sig2018({
   id: 'did:sov:SKJVx2kn373FNgvff1SbJo#4',
@@ -375,5 +381,55 @@ describe('keyAgreementsEqual', () => {
   it('does not match P-256 against Ed25519', () => {
     expect(keyAgreementsEqual(p256A, ed25519A)).toBe(false)
     expect(keyAgreementsEqual(ed25519A, p256A)).toBe(false)
+  })
+})
+
+describe('toKeyAgreementDidUrl', () => {
+  const ed25519 = Kms.PublicJwk.fromFingerprint(
+    'z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
+  ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+
+  const p256 = Kms.PublicJwk.fromPublicJwk({
+    kty: 'EC',
+    crv: 'P-256',
+    x: 'FQVaTOksf-XsCUrt4J1L2UGvtWaDwpboVlqbKBY2AIo',
+    y: '6XFB9PYo7dyC5ViJSO9uXNYkxTJWn0d_mqJ__ZYhcNY',
+  })
+
+  const dereferenceKeyAgreement = (didUrl: string) =>
+    DidKey.fromDid(didUrl).didDocument.dereferenceKey(didUrl, ['keyAgreement'])
+
+  it('uses the derived X25519 fingerprint as the fragment for an Ed25519 key', () => {
+    const x25519Fingerprint = ed25519.convertTo(Kms.X25519PublicJwk).fingerprint
+
+    const didUrl = toKeyAgreementDidUrl(ed25519)
+
+    expect(didUrl).toBe(`did:key:${ed25519.fingerprint}#${x25519Fingerprint}`)
+    expect(x25519Fingerprint).not.toBe(ed25519.fingerprint)
+    expect(dereferenceKeyAgreement(didUrl).id).toBe(didUrl)
+  })
+
+  it.each([
+    ['X25519', ed25519.convertTo(Kms.X25519PublicJwk)],
+    ['P-256', p256],
+  ])('uses the key fingerprint as the fragment for a %s key', (_, jwk) => {
+    const didUrl = toKeyAgreementDidUrl(jwk)
+
+    expect(didUrl).toBe(`did:key:${jwk.fingerprint}#${jwk.fingerprint}`)
+    expect(dereferenceKeyAgreement(didUrl).id).toBe(didUrl)
+  })
+
+  it('keeps a DID URL key id', () => {
+    const jwk = Kms.PublicJwk.fromPublicJwk(p256.toJson({ includeKid: false }))
+    jwk.keyId = 'did:peer:4zQm:abc#key-2'
+
+    expect(toKeyAgreementDidUrl(jwk)).toBe('did:peer:4zQm:abc#key-2')
+  })
+
+  it('ignores a KMS key id', () => {
+    const jwk = Kms.PublicJwk.fromPublicJwk(p256.toJson({ includeKid: false }))
+    jwk.keyId = '9f7c1d3e-2b4a-4c6d-8e0f-1a2b3c4d5e6f'
+
+    expect(toKeyAgreementDidUrl(jwk)).toBe(`did:key:${p256.fingerprint}#${p256.fingerprint}`)
   })
 })

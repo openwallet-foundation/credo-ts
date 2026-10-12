@@ -1,12 +1,12 @@
 import type { AgentContext, BaseRecordAny, ResolvedDidCommService } from '@credo-ts/core'
-import { CredoError, DidKey, Kms } from '@credo-ts/core'
+import { CredoError, Kms } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { ServiceDecorator } from './decorators/service/ServiceDecorator'
 import type { DidCommRouting } from './models'
 import { DidCommOutboundMessageContext } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
-import { routingToServices } from './modules/connections/services/helpers'
+import { routingToServices, toKeyAgreementDidUrl } from './modules/connections/services/helpers'
 import type { DidCommOutOfBandRecord } from './modules/oob'
 import {
   DidCommInvitationType,
@@ -128,8 +128,7 @@ export async function getConnectionlessOutboundMessageContext(
   await addExchangeDataToMessage(agentContext, { message, ourService, outOfBandRecord, associatedRecord })
 
   const senderKey = ourService.recipientKeys[0]
-  // For DIDComm v2: skid must be resolvable. Use did:key so recipient can resolve via tryParseKidAsPublicJwk
-  const senderKeySkid = new DidKey(senderKey).did
+  const senderKeySkid = toKeyAgreementDidUrl(senderKey)
 
   return new DidCommOutboundMessageContext(message, {
     agentContext: agentContext,

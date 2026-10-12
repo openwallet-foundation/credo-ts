@@ -170,10 +170,11 @@ export class KeyManagementApi {
     )
 
     const operation = { operation: 'verify', algorithm: options.algorithm } as const
+    const keyId = options.key.keyId
     const kms =
-      backend || typeof options.key !== 'string'
+      backend || !keyId
         ? this.getKms(this.agentContext, backend, operation)
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, options.key, operation)).kms
+        : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
 
     return await kms.verify(this.agentContext, kmsOptions)
   }
@@ -193,10 +194,11 @@ export class KeyManagementApi {
       encryption: options.encryption,
       keyAgreement: options.key.keyAgreement,
     } as const
+    const keyId = routingKeyId(options.key)
     const kms =
-      backend || typeof options.key !== 'string'
+      backend || !keyId
         ? this.getKms(this.agentContext, backend, operation)
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, options.key, operation)).kms
+        : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
 
     return await kms.encrypt(this.agentContext, kmsOptions)
   }
@@ -216,15 +218,11 @@ export class KeyManagementApi {
       decryption: options.decryption,
       keyAgreement: options.key.keyAgreement,
     } as const
+    const keyId = routingKeyId(options.key)
     const kms =
-      backend || typeof options.key !== 'string'
-        ? this.getKms(
-            this.agentContext,
-
-            backend,
-            operation
-          )
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, options.key, operation)).kms
+      backend || !keyId
+        ? this.getKms(this.agentContext, backend, operation)
+        : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
 
     return await kms.decrypt(this.agentContext, kmsOptions)
   }
@@ -277,6 +275,20 @@ export class KeyManagementApi {
 
     const { publicKey } = await this.getKmsForOperationAndKeyId(this.agentContext, options.keyId)
     return publicKey
+  }
+
+  /**
+   * Get the backend that holds the key with the given `keyId`.
+   */
+  public async getBackendForKey(options: KmsGetPublicKeyOptions): Promise<string> {
+    const { keyId } = zParseWithErrorHandling(
+      zKmsGetPublicKeyOptions,
+      options,
+      'Invalid options provided to getBackendForKey method'
+    )
+
+    const { kms } = await this.getKmsForOperationAndKeyId(this.agentContext, keyId)
+    return kms.backend
   }
 
   /**
@@ -397,4 +409,10 @@ export class KeyManagementApi {
         : 'No key management service backend found.'
     )
   }
+}
+
+function routingKeyId(key: KmsEncryptOptions['key'] | KmsDecryptOptions['key']): string | undefined {
+  if (key.keyId) return key.keyId
+  if (key.keyAgreement && 'keyId' in key.keyAgreement) return key.keyAgreement.keyId
+  return undefined
 }

@@ -18,7 +18,7 @@ import {
   X509Service,
 } from '@credo-ts/core'
 import { createHeaderAndPayload, SLException, StatusList } from '@owf/token-status-list'
-import { decodeSdJwtSync, getClaimsSync, Jwt, SDJWTException, SDJwt } from '@sd-jwt/core'
+import { decodeSdJwtSync, getClaimsSync, Jwt, SDJwt } from '@sd-jwt/core'
 import { randomUUID } from 'crypto'
 import nock from 'nock'
 import { type Mock, vi } from 'vitest'
@@ -27,7 +27,6 @@ import { getAgentOptions, mockProperty } from '../../../../tests'
 import { PublicJwk } from '../../kms'
 import { applyDisclosuresForPaths, buildPresentationFrameForPaths } from '../disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from '../repository'
-import { SdJwtVcError } from '../SdJwtVcError'
 import {
   type CustomStatusListFetcher,
   type CustomTypeMetadataResolver,
@@ -1550,7 +1549,11 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: false,
         sdJwtVc: expect.any(Object),
-        error: new SDJWTException('Status is not valid'),
+        error: expect.objectContaining({
+          name: 'SDJWTException',
+          message: 'Status is not valid',
+          code: 'STATUS_INVALID',
+        }),
       })
     })
 
@@ -1697,7 +1700,11 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        error: new SDJWTException('Verify Error: JWT is expired'),
+        error: expect.objectContaining({
+          name: 'JwtTimeClaimException',
+          message: 'Verify Error: JWT is expired',
+          code: 'JWT_EXPIRED',
+        }),
         sdJwtVc: expect.any(Object),
       })
     })
@@ -1709,7 +1716,11 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        error: new SDJWTException('Verify Error: JWT is not yet valid'),
+        error: expect.objectContaining({
+          name: 'JwtTimeClaimException',
+          message: 'Verify Error: JWT is not yet valid',
+          code: 'JWT_NOT_YET_VALID',
+        }),
         sdJwtVc: expect.any(Object),
       })
     })
@@ -1721,7 +1732,11 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        error: new SDJWTException('Verify Error: Invalid JWT Signature'),
+        error: expect.objectContaining({
+          name: 'SDJWTException',
+          message: 'Verify Error: Invalid JWT Signature',
+          code: 'INVALID_JWT_SIGNATURE',
+        }),
         sdJwtVc: expect.any(Object),
       })
     })
@@ -1733,7 +1748,11 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        error: new SDJWTException('Verify Error: Invalid JWT Signature'),
+        error: expect.objectContaining({
+          name: 'SDJWTException',
+          message: 'Verify Error: Invalid JWT Signature',
+          code: 'INVALID_JWT_SIGNATURE',
+        }),
         sdJwtVc: expect.any(Object),
       })
     })
@@ -2210,7 +2229,11 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: false,
         sdJwtVc: expect.any(Object),
-        error: new SDJWTException('Status is not valid'),
+        error: expect.objectContaining({
+          name: 'SDJWTException',
+          message: 'Status is not valid',
+          code: 'STATUS_INVALID',
+        }),
       })
     })
 
@@ -2222,9 +2245,10 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: false,
         sdJwtVc: expect.any(Object),
-        error: new SdJwtVcError(
-          `The status list JWT fetched from ${statusListUri} has 'typ' 'JWT', but 'statuslist+jwt' is required.`
-        ),
+        error: expect.objectContaining({
+          name: 'SLException',
+          message: "The typ header 'JWT' must be equal to 'statuslist+jwt'",
+        }),
       })
     })
 

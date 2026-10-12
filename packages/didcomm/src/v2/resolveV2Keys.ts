@@ -11,7 +11,11 @@ import {
   parseDid,
   RecordNotFoundError,
 } from '@credo-ts/core'
-import { getResolvedDidcommServiceWithSigningKeyId, toKeyAgreement } from '../modules/connections/services/helpers'
+import {
+  getResolvedDidcommServiceWithSigningKeyId,
+  toAbsoluteDidUrl,
+  toKeyAgreement,
+} from '../modules/connections/services/helpers'
 import { DidCommOutOfBandRole } from '../modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRepository } from '../modules/oob/repository/DidCommOutOfBandRepository'
 import { DidCommOutOfBandRecordMetadataKeys } from '../modules/oob/repository/outOfBandRecordMetadataTypes'
@@ -72,31 +76,22 @@ export class DidCommV2KeyResolver {
    * 2. **Mediator routing key** — kid is a did:key for a mediator routing key.
    * 3. **Reverse did:key lookup** — did:key kid that maps to a VM on a Created DID.
    * 4. **OOB ephemeral key** — did:key kid stored on an out-of-band record.
-   * 5. **Direct KMS lookup** — kid is a raw KMS key id.
    */
   public async resolveRecipientKey(
     agentContext: AgentContext,
     encrypted: DidCommV2EncryptedMessage
   ): Promise<ResolvedRecipientKey | null> {
     const recipients = encrypted.recipients ?? []
-    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
     for (const recipient of recipients) {
       const kid = recipient.header?.kid
-      if (!kid) continue
+      if (!kid?.startsWith('did:')) continue
 
-      if (kid.startsWith('did:')) {
-        const result =
-          (await this.resolveFromCreatedDid(agentContext, kid)) ??
-          (await this.resolveFromMediatorRouting(agentContext, kid)) ??
-          (await this.resolveFromReverseLookup(agentContext, kid)) ??
-          (await this.resolveFromOutOfBand(agentContext, kid))
-        if (result) return result
-        continue
-      }
-
-      // kid stored directly in KMS (e.g. internal key id)
-      const result = await this.resolveFromKms(kms, kid)
+      const result =
+        (await this.resolveFromCreatedDid(agentContext, kid)) ??
+        (await this.resolveFromMediatorRouting(agentContext, kid)) ??
+        (await this.resolveFromReverseLookup(agentContext, kid)) ??
+        (await this.resolveFromOutOfBand(agentContext, kid))
       if (result) return result
     }
 
@@ -109,7 +104,7 @@ export class DidCommV2KeyResolver {
    * Per DIDComm v2 spec, `skid` is a DID URL into the sender's `keyAgreement`.
    * Used for ECDH-1PU authcrypt verification.
    */
-  public async resolveSenderKey(agentContext: AgentContext, skid: string): Promise<DidCommV2KeyAgreementJwk | null> {
+  public async resolveSenderKey(agentContext: AgentContext, skid: string): Promise<Kms.PublicJwk | null> {
     if (!skid.startsWith('did:')) return null
 
     try {
@@ -125,7 +120,7 @@ export class DidCommV2KeyResolver {
         vmId = typeof vm === 'object' && vm !== null && 'id' in vm ? (vm as { id: string }).id : undefined
       } else {
         const kaVms = didDocument.keyAgreement
-        if (kaVms && kaVms.length > 0) {
+        if (kaVms?.length === 1) {
           const ka = typeof kaVms[0] === 'string' ? didDocument.dereferenceKey(kaVms[0], ['keyAgreement']) : kaVms[0]
           senderJwk = getPublicJwkFromVerificationMethod(ka)
           vmId = typeof ka === 'object' && ka !== null && 'id' in ka ? (ka as { id: string }).id : undefined
@@ -134,11 +129,8 @@ export class DidCommV2KeyResolver {
 
       if (!senderJwk) return null
 
-      const ka = toKeyAgreement(senderJwk)
-      if (vmId && !ka.hasKeyId) {
-        ka.keyId = vmId.startsWith('did:') ? vmId : vmId.startsWith('#') ? `${didOnly}${vmId}` : `${didOnly}#${vmId}`
-      }
-      return ka
+      if (vmId) senderJwk.keyId = toAbsoluteDidUrl(didOnly, vmId)
+      return senderJwk
     } catch {
       return null
     }
@@ -240,7 +232,12 @@ export class DidCommV2KeyResolver {
         kidPublicJwk
       )
 
-      for (const vm of didDocument.verificationMethod ?? []) {
+      // keyAgreement methods can be embedded instead of listed in verificationMethod (did:peer:4)
+      const candidates = [
+        ...(didDocument.verificationMethod ?? []),
+        ...didDocument.findVerificationMethodsByPurpose(['keyAgreement']),
+      ]
+      for (const vm of candidates) {
         let vmJwk: Kms.PublicJwk
         try {
           vmJwk = getPublicJwkFromVerificationMethod(vm)
@@ -316,19 +313,5 @@ export class DidCommV2KeyResolver {
     }
 
     return null
-  }
-
-  /**
-   * Path 5: kid is a raw KMS key id (not a DID URL).
-   */
-  private async resolveFromKms(kms: Kms.KeyManagementApi, kid: string): Promise<ResolvedRecipientKey | null> {
-    const kmsPublic = await kms.getPublicKey({ keyId: kid }).catch((err) => {
-      if (err instanceof Kms.KeyManagementKeyNotFoundError) return null
-      throw err
-    })
-    if (!kmsPublic) return null
-
-    const publicJwk = Kms.PublicJwk.fromPublicJwk(kmsPublic as Kms.KmsJwkPublicAsymmetric)
-    return { recipientKey: toKeyAgreementWithKeyId(publicJwk, kid), matchedKid: kid }
   }
 }

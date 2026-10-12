@@ -54,6 +54,7 @@ export interface DidCommModuleConfigOptions {
   /**
    * keyAgreement curve for DIDComm v2 outbound routing. X25519, P-256, and P-384 are MUST-support
    * curves per DIDComm Messaging v2.1. P-256 and P-384 require 'v2' in `didcommVersions`.
+   * Both agents need a common keyAgreement curve to exchange authcrypt messages.
    *
    * @default 'X25519'
    */

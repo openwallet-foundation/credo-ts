@@ -33,6 +33,7 @@ export {
   didToNumAlgo2DidDocument,
 } from './modules/dids/methods/peer/peerDidNumAlgo2'
 export {
+  areEquivalentDidPeer4Forms,
   didDocumentToNumAlgo4Did,
   didToNumAlgo4DidDocument,
   getAlternativeDidsForNumAlgo4Did,
