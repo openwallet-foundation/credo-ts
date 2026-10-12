@@ -29,7 +29,12 @@ import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
 import { DidCommOutOfBandRole } from '../../oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
 import { DidCommOutOfBandRepository } from '../../oob/repository/DidCommOutOfBandRepository'
-import { DidCommConnectionRequestMessage, DidCommConnectionResponseMessage, DidCommTrustPingMessage } from '../messages'
+import {
+  DidCommConnectionRequestMessage,
+  DidCommConnectionResponseMessage,
+  DidCommTrustPingMessage,
+  DidCommTrustPingV2Message,
+} from '../messages'
 import {
   authenticationTypes,
   DidCommConnection,
@@ -788,6 +793,19 @@ describe('DidCommConnectionService', () => {
 
       expect(connectionRecord.state).toBe(DidCommDidExchangeState.Completed)
       expect(message).toEqual(expect.any(DidCommTrustPingMessage))
+    })
+
+    it('returns a trust ping 2.0 message for a DIDComm v2 connection', async () => {
+      expect.assertions(2)
+
+      const mockConnection = getMockConnection({ state: DidCommDidExchangeState.Completed, didcommVersion: 'v2' })
+
+      const { message } = await connectionService.createTrustPing(agentContext, mockConnection, {
+        responseRequested: false,
+      })
+
+      expect(message).toEqual(expect.any(DidCommTrustPingV2Message))
+      expect(message.responseRequested).toBe(false)
     })
 
     const invalidConnectionStates = [

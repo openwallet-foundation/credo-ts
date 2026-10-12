@@ -224,6 +224,15 @@ export class DidCommOutOfBandApi {
           ? 'v2'
           : 'v1')
     this.assertAgentSupportsDidCommVersion(didCommVersion)
+    const unsupportedMessage = config.messages?.find(
+      ({ supportedDidCommVersions }) =>
+        supportedDidCommVersions?.length && !supportedDidCommVersions.includes(didCommVersion)
+    )
+    if (unsupportedMessage) {
+      throw new CredoError(
+        `Message type ${unsupportedMessage.type} only supports DIDComm ${unsupportedMessage.supportedDidCommVersions?.join(', ')} but the invitation uses DIDComm ${didCommVersion}`
+      )
+    }
     const autoAcceptConnection = config.autoAcceptConnection ?? this.connectionsApi.config.autoAcceptConnections
 
     // V2 OOB path: no handshake, did:peer:2, first-message connection establishment
