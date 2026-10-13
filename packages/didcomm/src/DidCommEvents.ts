@@ -8,6 +8,7 @@ import type { DidCommEncryptedMessage } from './types'
 export enum DidCommEventTypes {
   DidCommMessageReceived = 'DidCommMessageReceived',
   DidCommMessageProcessed = 'DidCommMessageProcessed',
+  DidCommMessageProcessingFailed = 'DidCommMessageProcessingFailed',
   DidCommMessageSent = 'DidCommMessageSent',
 }
 
@@ -29,6 +30,18 @@ export interface DidCommMessageProcessedEvent extends BaseEvent {
     connection?: DidCommConnectionRecord
     receivedAt?: Date
     encryptedMessage?: DidCommEncryptedMessage
+  }
+}
+
+export interface DidCommMessageProcessingFailedEvent extends BaseEvent {
+  type: typeof DidCommEventTypes.DidCommMessageProcessingFailed
+  payload: {
+    error: Error
+    // The message exactly as received, whether encrypted or plaintext.
+    message: unknown
+    connection?: DidCommConnectionRecord
+    contextCorrelationId?: string
+    receivedAt?: Date
   }
 }
 

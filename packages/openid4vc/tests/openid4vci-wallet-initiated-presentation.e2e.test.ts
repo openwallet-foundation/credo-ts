@@ -266,6 +266,7 @@ describe('OpenId4Vc (Wallet Initiated Presentation During Issuance)', () => {
     const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       code: authorizationCode,
+      codeVerifier: resolvedAuthorization.codeVerifier,
       clientId: 'foo',
       redirectUri: 'http://localhost:1234/redirect',
     })

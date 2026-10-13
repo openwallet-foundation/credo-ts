@@ -649,23 +649,32 @@ export class SdJwtVcService {
   }
 
   private getStatusListFetcher(agentContext: AgentContext) {
+    const sdJwtVcConfig = agentContext.dependencyManager.resolve(SdJwtVcModuleConfig)
+
     return async (uri: string) => {
-      const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
-        headers: {
-          Accept: 'application/statuslist+jwt',
-        },
-      })
-
-      if (!response.ok) {
-        throw new CredoError(
-          `Received invalid response with status ${
-            response.status
-          } when fetching status list from ${uri}. ${await response.text()}`
-        )
-      }
-
-      return await response.text()
+      const defaultFetcher = () => this.fetchStatusListJwt(agentContext, uri)
+      return sdJwtVcConfig.customStatusListFetcher
+        ? await sdJwtVcConfig.customStatusListFetcher(uri, { defaultFetcher })
+        : await defaultFetcher()
     }
+  }
+
+  private async fetchStatusListJwt(agentContext: AgentContext, uri: string): Promise<string> {
+    const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
+      headers: {
+        Accept: 'application/statuslist+jwt',
+      },
+    })
+
+    if (!response.ok) {
+      throw new CredoError(
+        `Received invalid response with status ${
+          response.status
+        } when fetching status list JWT from ${uri}. ${await response.text()}`
+      )
+    }
+
+    return await response.text()
   }
 
   /**

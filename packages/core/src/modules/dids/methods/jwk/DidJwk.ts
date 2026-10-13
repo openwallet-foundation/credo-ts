@@ -1,5 +1,6 @@
+import { CredoError } from '../../../../error'
 import { JsonEncoder } from '../../../../utils'
-import { PublicJwk } from '../../../kms'
+import { assertJwkHasNoPrivateKeyMaterial, PublicJwk } from '../../../kms'
 import { parseDid } from '../../domain/parse'
 import { getDidJwkDocument } from './didJwkDidDocument'
 
@@ -10,21 +11,34 @@ export class DidJwk {
   ) {}
 
   public get allowsEncrypting() {
-    return this.publicJwk.toJson().use === 'enc' || this.publicJwk.supportedEncryptionKeyAgreementAlgorithms.length > 0
+    const use = this.publicJwk.toJson().use
+    if (use === 'sig') return false
+    if (use === 'enc') return true
+
+    return this.publicJwk.supportedEncryptionKeyAgreementAlgorithms.length > 0
   }
 
   public get allowsSigning() {
-    return this.publicJwk.toJson().use === 'sig' || this.publicJwk.supportedSignatureAlgorithms.length > 0
+    const use = this.publicJwk.toJson().use
+    if (use === 'enc') return false
+    if (use === 'sig') return true
+
+    return this.publicJwk.supportedSignatureAlgorithms.length > 0
   }
 
   public static fromDid(did: string) {
     const parsed = parseDid(did)
-    const jwkJson = JsonEncoder.fromBase64Url(parsed.id)
+    if (parsed.fragment !== undefined && parsed.fragment !== null && parsed.fragment !== '0') {
+      throw new CredoError(`Unsupported did:jwk fragment '#${parsed.fragment}'`)
+    }
 
-    // This validates the jwk
+    const jwkJson = JsonEncoder.fromBase64Url(parsed.id)
+    assertJwkHasNoPrivateKeyMaterial(jwkJson)
+
+    // Validate the public JWK and remove unsupported or private properties.
     const publicJwk = PublicJwk.fromUnknown(jwkJson)
 
-    return new DidJwk(did, publicJwk)
+    return new DidJwk(parsed.did, publicJwk)
   }
 
   /**

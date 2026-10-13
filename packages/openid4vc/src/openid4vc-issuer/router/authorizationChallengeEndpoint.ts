@@ -26,6 +26,7 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../repository'
+import { getPkceFromAuthorizationRequest } from '../util/pkce'
 import { getClientAttestationToVerify } from '../util/walletAttestation'
 import { handlePushedAuthorizationRequest } from './pushedAuthorizationRequestEndpoint'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
@@ -240,6 +241,12 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     )
   }
 
+  const walletPkce = getPkceFromAuthorizationRequest({
+    authorizationRequest: authorizationChallengeRequest,
+    // First session config, fall back to global config
+    required: issuanceSession.pkce?.required ?? config.pkceRequired,
+  })
+
   const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, { issuanceSession })
 
   // First session config, fall back to global config
@@ -274,11 +281,21 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
       required: true,
       dpopJkt: dpop.jwkThumbprint,
     }
-  if (clientAttestation)
+  if (clientAttestation) {
     issuanceSession.walletAttestation = {
       // If client attestation is provided at the start, it's required from now on.
       required: true,
     }
+  }
+
+  // Bind the pkce code challenge to the session, it will be verified at the token endpoint
+  if (walletPkce) {
+    issuanceSession.pkce = {
+      // If PKCE is provided by the client, it is required for the remainder of this issuance session, even if the session or global config do not require it.
+      required: true,
+      ...walletPkce,
+    }
+  }
 
   const offeredCredentialConfigurations = getOfferedCredentials(
     issuanceSession.credentialOfferPayload.credential_configuration_ids,
