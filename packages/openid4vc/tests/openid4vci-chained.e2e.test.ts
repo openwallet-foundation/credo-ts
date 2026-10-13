@@ -1261,7 +1261,6 @@ describe('OpenId4Vc (Chained Authorization)', () => {
     await issuerTenant.endSession()
   })
 
-
   it.each([
     { name: 'by default', pkceRequired: undefined, requirePkce: undefined },
     { name: 'globally', pkceRequired: true, requirePkce: undefined },
