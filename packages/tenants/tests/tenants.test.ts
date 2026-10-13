@@ -9,7 +9,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { AskarModule } from '../../askar/src'
 import { getAskarStoreConfig, testLogger } from '../../core/tests'
-import { TenantsModule } from '../src'
+import { TenantInactiveError, TenantStatus, TenantsModule } from '../src'
 import type { TenantAgent } from '../src/TenantAgent'
 
 const agent1Config: InitConfig = {
@@ -141,6 +141,45 @@ describe('Tenants E2E', () => {
     await expect(agent1.modules.tenants.getTenantAgent({ tenantId: tenantRecord1.id })).rejects.toThrow(
       `TenantRecord: record with id ${tenantRecord1.id} not found.`
     )
+  })
+
+  test('inactive tenants can not open sessions unless allowInactive is set', async () => {
+    const tenantRecord = await agent1.modules.tenants.createTenant({
+      config: {
+        label: 'Inactive Tenant',
+      },
+    })
+    expect(tenantRecord.status).toBe(TenantStatus.Active)
+
+    // Set tenant to inactive
+    const updatedTenantRecord = await agent1.modules.tenants.updateTenantStatus(tenantRecord.id, TenantStatus.Inactive)
+    expect(updatedTenantRecord.status).toBe(TenantStatus.Inactive)
+
+    // Can not open a session for an inactive tenant
+    await expect(agent1.modules.tenants.getTenantAgent({ tenantId: tenantRecord.id })).rejects.toThrow(
+      TenantInactiveError
+    )
+
+    // Can be found by status
+    const inactiveTenants = await agent1.modules.tenants.findTenantsByQuery({ status: TenantStatus.Inactive })
+    expect(inactiveTenants.length).toBe(1)
+    expect(inactiveTenants[0].id).toBe(tenantRecord.id)
+
+    // Can open a session with allowInactive
+    const tenantAgent = await agent1.modules.tenants.getTenantAgent({
+      tenantId: tenantRecord.id,
+      allowInactive: true,
+    })
+    await tenantAgent.endSession()
+
+    // Setting the tenant back to active allows sessions again
+    await agent1.modules.tenants.updateTenantStatus(tenantRecord.id, TenantStatus.Active)
+    const activeTenantAgent = await agent1.modules.tenants.getTenantAgent({ tenantId: tenantRecord.id })
+    await activeTenantAgent.endSession()
+
+    // Deleting an inactive tenant works without reactivating
+    await agent1.modules.tenants.updateTenantStatus(tenantRecord.id, TenantStatus.Inactive)
+    await agent1.modules.tenants.deleteTenantById(tenantRecord.id)
   })
 
   test('withTenantAgent returns value from callback', async () => {

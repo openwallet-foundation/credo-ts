@@ -145,6 +145,7 @@ export class DidCommMediationRecipientService {
       payload: {
         mediationRecord,
         keylist,
+        threadId: messageContext.message.thread?.threadId,
       },
     })
   }
@@ -194,6 +195,9 @@ export class DidCommMediationRecipientService {
         filterContextCorrelationId(agentContext.contextCorrelationId),
         // Only take event for current mediation record
         filter((event) => mediationRecord.id === event.payload.mediationRecord.id),
+        // Only take the response to this keylist update, as concurrent updates to the same mediator would
+        // otherwise resolve each other. Unthreaded responses from older mediators are still accepted.
+        filter((event) => !event.payload.threadId || event.payload.threadId === message.threadId),
         // Only wait for first event that matches the criteria
         first(),
         // Do not wait for longer than specified timeout

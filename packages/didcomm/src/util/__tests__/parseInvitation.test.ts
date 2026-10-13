@@ -1,9 +1,7 @@
 import { JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 
 import { agentDependencies } from '../../../../core/tests'
-import { DidCommConnectionInvitationMessage } from '../../modules/connections'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../../modules/oob'
-import { convertToNewInvitation } from '../../modules/oob/converters'
 import { oobInvitationFromShortUrl, parseInvitationShortUrl, parseInvitationUrl } from '../parseInvitation'
 
 const mockOobInvite = {
@@ -12,14 +10,6 @@ const mockOobInvite = {
   label: 'Alice',
   handshake_protocols: ['did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0'],
   services: ['did:sov:MvTqVXCEmJ87usL9uQTo7v'],
-}
-
-const mockConnectionInvite = {
-  '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
-  '@id': '20971ef0-1029-46db-a25b-af4c465dd16b',
-  label: 'test',
-  serviceEndpoint: 'http://sour-cow-15.tun1.indiciotech.io',
-  recipientKeys: ['5Gvpf9M4j7vWpHyeTyvBKbjYe7qWc72kGo6qZaLHkLrd'],
 }
 
 const mockLegacyConnectionless = {
@@ -67,37 +57,12 @@ const mockedLegacyConnectionlessInvitationJson = {
   headers: header,
 } as Response
 
-const mockedResponseConnectionJson = {
-  status: 200,
-  ok: true,
-  json: async () => ({
-    '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
-    '@id': '20971ef0-1029-46db-a25b-af4c465dd16b',
-    label: 'test',
-    serviceEndpoint: 'http://sour-cow-15.tun1.indiciotech.io',
-    recipientKeys: ['5Gvpf9M4j7vWpHyeTyvBKbjYe7qWc72kGo6qZaLHkLrd'],
-  }),
-  headers: header,
-} as Response
-
-const mockedResponseConnectionUrl = {
-  status: 200,
-  ok: true,
-  url: 'http://sour-cow-15.tun1.indiciotech.io?c_i=eyJAdHlwZSI6ICJkaWQ6c292OkJ6Q2JzTlloTXJqSGlxWkRUVUFTSGc7c3BlYy9jb25uZWN0aW9ucy8xLjAvaW52aXRhdGlvbiIsICJAaWQiOiAiMjA5NzFlZjAtMTAyOS00NmRiLWEyNWItYWY0YzQ2NWRkMTZiIiwgImxhYmVsIjogInRlc3QiLCAic2VydmljZUVuZHBvaW50IjogImh0dHA6Ly9zb3VyLWNvdy0xNS50dW4xLmluZGljaW90ZWNoLmlvIiwgInJlY2lwaWVudEtleXMiOiBbIjVHdnBmOU00ajd2V3BIeWVUeXZCS2JqWWU3cVdjNzJrR282cVphTEhrTHJkIl19',
-  headers: dummyHeader,
-} as Response
-
 let outOfBandInvitationMock: DidCommOutOfBandInvitation
-let connectionInvitationMock: DidCommConnectionInvitationMessage
-let connectionInvitationToNew: DidCommOutOfBandInvitation
 
 beforeAll(async () => {
   outOfBandInvitationMock = JsonTransformer.fromJSON(mockOobInvite, DidCommOutOfBandInvitation)
   outOfBandInvitationMock.invitationType = DidCommInvitationType.OutOfBand
   MessageValidator.validateSync(outOfBandInvitationMock)
-  connectionInvitationMock = JsonTransformer.fromJSON(mockConnectionInvite, DidCommConnectionInvitationMessage)
-  MessageValidator.validateSync(connectionInvitationMock)
-  connectionInvitationToNew = convertToNewInvitation(connectionInvitationMock)
 })
 
 describe('shortened urls resolving to oob invitations', () => {
@@ -182,42 +147,34 @@ describe('legacy connectionless', () => {
   })
 })
 
-describe('shortened urls resolving to connection invitations', () => {
-  test('Resolve a mocked response in the form of a connection invitation as a json object', async () => {
-    const short = await oobInvitationFromShortUrl(mockedResponseConnectionJson)
-    expect(short).toEqual(connectionInvitationToNew)
+describe('unsupported invitations', () => {
+  test('throws for a legacy connection invitation encoded in an url c_i query parameter', () => {
+    expect(() =>
+      parseInvitationUrl(
+        'http://sour-cow-15.tun1.indiciotech.io?c_i=eyJAdHlwZSI6ICJkaWQ6c292OkJ6Q2JzTlloTXJqSGlxWkRUVUFTSGc7c3BlYy9jb25uZWN0aW9ucy8xLjAvaW52aXRhdGlvbiIsICJAaWQiOiAiMjA5NzFlZjAtMTAyOS00NmRiLWEyNWItYWY0YzQ2NWRkMTZiIiwgImxhYmVsIjogInRlc3QiLCAic2VydmljZUVuZHBvaW50IjogImh0dHA6Ly9zb3VyLWNvdy0xNS50dW4xLmluZGljaW90ZWNoLmlvIiwgInJlY2lwaWVudEtleXMiOiBbIjVHdnBmOU00ajd2V3BIeWVUeXZCS2JqWWU3cVdjNzJrR282cVphTEhrTHJkIl19'
+      )
+    ).toThrow(
+      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob` or `d_m`.'
+    )
   })
 
-  test('Resolve a mocked Response in the form of a connection invitation encoded in an url c_i query parameter', async () => {
-    const short = await oobInvitationFromShortUrl(mockedResponseConnectionUrl)
-    expect(short).toEqual(connectionInvitationToNew)
-  })
-
-  test('Resolve a mocked Response in the form of a connection invitation encoded in an url oob query parameter', async () => {
-    const mockedResponseConnectionInOobUrl = {
+  test('throws for a legacy connection invitation as a json object', async () => {
+    const mockedResponseConnectionJson = {
       status: 200,
       ok: true,
-      headers: dummyHeader,
-      url: 'https://oob.lissi.io/ssi?oob=eyJAdHlwZSI6ImRpZDpzb3Y6QnpDYnNOWWhNcmpIaXFaRFRVQVNIZztzcGVjL2Nvbm5lY3Rpb25zLzEuMC9pbnZpdGF0aW9uIiwiQGlkIjoiMGU0NmEzYWEtMzUyOC00OTIxLWJmYjItN2JjYjk0NjVjNjZjIiwibGFiZWwiOiJTdGFkdCB8IExpc3NpLURlbW8iLCJzZXJ2aWNlRW5kcG9pbnQiOiJodHRwczovL2RlbW8tYWdlbnQuaW5zdGl0dXRpb25hbC1hZ2VudC5saXNzaS5pZC9kaWRjb21tLyIsImltYWdlVXJsIjoiaHR0cHM6Ly9yb3V0aW5nLmxpc3NpLmlvL2FwaS9JbWFnZS9kZW1vTXVzdGVyaGF1c2VuIiwicmVjaXBpZW50S2V5cyI6WyJEZlcxbzM2ekxuczlVdGlDUGQyalIyS2pvcnRvZkNhcFNTWTdWR2N2WEF6aCJdfQ',
+      json: async () => ({
+        '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
+        '@id': '20971ef0-1029-46db-a25b-af4c465dd16b',
+        label: 'test',
+        serviceEndpoint: 'http://sour-cow-15.tun1.indiciotech.io',
+        recipientKeys: ['5Gvpf9M4j7vWpHyeTyvBKbjYe7qWc72kGo6qZaLHkLrd'],
+      }),
+      headers: header,
     } as Response
 
-    dummyHeader.forEach(mockedResponseConnectionInOobUrl.headers.append)
-
-    const expectedOobMessage = convertToNewInvitation(
-      JsonTransformer.fromJSON(
-        {
-          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
-          '@id': '0e46a3aa-3528-4921-bfb2-7bcb9465c66c',
-          label: 'Stadt | Lissi-Demo',
-          serviceEndpoint: 'https://demo-agent.institutional-agent.lissi.id/didcomm/',
-          imageUrl: 'https://routing.lissi.io/api/Image/demoMusterhausen',
-          recipientKeys: ['DfW1o36zLns9UtiCPd2jR2KjortofCapSSY7VGcvXAzh'],
-        },
-        DidCommConnectionInvitationMessage
-      )
+    await expect(oobInvitationFromShortUrl(mockedResponseConnectionJson)).rejects.toThrow(
+      "Invitation with '@type' did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation not supported."
     )
-    const short = await oobInvitationFromShortUrl(mockedResponseConnectionInOobUrl)
-    expect(short).toEqual(expectedOobMessage)
   })
 })
 
