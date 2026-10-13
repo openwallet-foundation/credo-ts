@@ -261,7 +261,11 @@ export async function handlePushedAuthorizationRequest(
     authorizationServerMetadata,
   })
 
-  const { authorizationRequestUrl, pkce } = await oauth2Client.initiateAuthorization({
+  const {
+    authorizationRequestUrl,
+    pkce,
+    dpop: initiatedDpop,
+  } = await oauth2Client.initiateAuthorization({
     authorizationServerMetadata,
     clientId: authorizationServerConfig.clientAuthentication.clientId,
     redirectUri,
@@ -270,6 +274,8 @@ export async function handlePushedAuthorizationRequest(
     additionalRequestPayload,
     dpop: upstreamDpop.dpop,
   })
+
+  if (upstreamDpop.session) upstreamDpop.session.nonce = initiatedDpop?.nonce
 
   issuanceSession.chainedIdentity = {
     ...issuanceSession.chainedIdentity,

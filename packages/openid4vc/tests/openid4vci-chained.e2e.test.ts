@@ -113,8 +113,8 @@ describe('OpenId4Vc (Chained Authorization)', () => {
   afterEach(async () => {
     clearNock()
 
-    await issuer.agent.shutdown()
-    await holder.agent.shutdown()
+    if (issuer) await issuer.agent.shutdown()
+    if (holder) await holder.agent.shutdown()
   })
 
   const credentialBindingResolver: OpenId4VciCredentialBindingResolver = async ({
@@ -1406,12 +1406,15 @@ describe('OpenId4Vc (Chained Authorization)', () => {
       openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions, undefined>
     }>
     let issuerService: OpenId4VcIssuerService
+    let clearDpopNock: (() => void) | undefined
 
     beforeEach(async () => {
+      const app = express()
       dpopAgent = (await createAgentFromModules(
         {
           inMemory: new InMemoryWalletModule(),
           openid4vc: new OpenId4VcModule({
+            app,
             issuer: {
               baseUrl: 'http://localhost:3000/oid4vci',
               credentialRequestToCredentialMapper,
@@ -1422,11 +1425,191 @@ describe('OpenId4Vc (Chained Authorization)', () => {
         global.fetch
       )) as typeof dpopAgent
       issuerService = dpopAgent.agent.dependencyManager.resolve(OpenId4VcIssuerService)
+      clearDpopNock = setupNockToExpress('http://localhost:3000', app)
     })
 
     afterEach(async () => {
+      clearDpopNock?.()
       await dpopAgent.agent.shutdown()
     })
+
+    it.each([
+      { mode: 'strict', required: true },
+      { mode: 'tolerant', required: false },
+    ])(
+      'preserves upstream nonce from authorization initiation through token exchange in $mode mode',
+      async ({ required }) => {
+        const issuerId = `chained-dpop-${utils.uuid()}`
+        const upstreamIssuer = 'http://localhost:4748'
+        const nonce = 'authorization-challenge-nonce'
+        const redirectUri = 'http://localhost:5757/redirect'
+        const tokenProofs: string[] = []
+        let authorizationChallengeState: string | undefined
+        let authorizationChallengeRedirectUri: string | undefined
+
+        const upstreamServer = new Oauth2AuthorizationServer({
+          callbacks: getOid4vcCallbacks(dpopAgent.agent.context),
+        })
+        const upstreamKey = await dpopAgent.agent.kms.createKey({
+          type: { kty: 'EC', crv: 'P-256' },
+        })
+        const upstreamApp = express()
+        upstreamApp.use(express.urlencoded({ extended: false }))
+        upstreamApp.get('/.well-known/oauth-authorization-server', (_req, res) =>
+          res.json({
+            ...upstreamAuthorizationServerMetadata,
+            issuer: upstreamIssuer,
+            authorization_endpoint: `${upstreamIssuer}/authorize`,
+            authorization_challenge_endpoint: `${upstreamIssuer}/authorization-challenge`,
+            token_endpoint: `${upstreamIssuer}/token`,
+          } satisfies AuthorizationServerMetadata)
+        )
+        upstreamApp.post('/authorization-challenge', async (req, res) => {
+          authorizationChallengeState = req.body.state
+          authorizationChallengeRedirectUri = req.body.redirect_uri
+
+          const proof = req.header('DPoP')
+          if (!proof) return res.status(400).json({ error: 'invalid_dpop_proof' })
+
+          try {
+            await upstreamServer.verifyDpopJwt({
+              dpopJwt: proof,
+              request: {
+                headers: new Headers(),
+                method: 'POST',
+                url: `${upstreamIssuer}/authorization-challenge`,
+              },
+            })
+          } catch (error) {
+            return res.status(400).json({
+              error: 'invalid_dpop_proof',
+              error_description: error instanceof Error ? error.message : 'Invalid DPoP proof',
+            })
+          }
+
+          return res
+            .status(400)
+            .set('DPoP-Nonce', nonce)
+            .json({ error: 'redirect_to_web', request_uri: `${upstreamIssuer}/request/1` })
+        })
+        upstreamApp.post('/token', async (req, res) => {
+          const proof = req.header('DPoP')
+          if (!proof) return res.status(400).json({ error: 'invalid_dpop_proof' })
+          tokenProofs.push(proof)
+
+          try {
+            await upstreamServer.verifyDpopJwt({
+              dpopJwt: proof,
+              request: {
+                headers: new Headers(),
+                method: 'POST',
+                url: `${upstreamIssuer}/token`,
+              },
+              expectedNonce: nonce,
+            })
+          } catch (error) {
+            return res
+              .status(400)
+              .set('DPoP-Nonce', nonce)
+              .json({
+                error: 'use_dpop_nonce',
+                error_description: error instanceof Error ? error.message : 'DPoP nonce required',
+              })
+          }
+
+          const accessToken = await dpopAgent.agent.dependencyManager
+            .resolve(JwsService)
+            .createJwsCompact(dpopAgent.agent.context, {
+              keyId: upstreamKey.keyId,
+              payload: JwtPayload.fromJson({
+                iss: upstreamIssuer,
+                aud: 'upstream-client',
+                sub: 'upstream-user',
+                exp: Math.floor(Date.now() / 1000) + 300,
+                iat: Math.floor(Date.now() / 1000),
+                cnf: { jkt: 'not-the-dpop-thumbprint' },
+              }),
+              protectedHeaderOptions: {
+                typ: 'at+jwt',
+                alg: 'ES256',
+                kid: 'upstream',
+              },
+            })
+
+          return res.json({
+            access_token: accessToken,
+            token_type: 'DPoP',
+            expires_in: 300,
+            scope: 'MappedUniversityDegreeCredential',
+          })
+        })
+        clearDpopNock = setupNockToExpress(upstreamIssuer, upstreamApp)
+
+        const openIdIssuer = await dpopAgent.agent.modules.openid4vc.issuer.createIssuer({
+          issuerId,
+          credentialConfigurationsSupported: {
+            universityDegree: universityDegreeCredentialConfigurationSupported,
+          },
+          authorizationServerConfigs: [
+            createDpopConfig({
+              issuer: upstreamIssuer,
+              dpop: { required },
+              clientAuthentication: {
+                type: 'clientSecret',
+                clientId: 'upstream-client',
+                clientSecret: 'upstream-secret',
+              },
+              scopesMapping: {
+                UniversityDegreeCredential: ['MappedUniversityDegreeCredential'],
+              },
+            }),
+          ],
+        })
+        const { issuanceSession } = await dpopAgent.agent.modules.openid4vc.issuer.createCredentialOffer({
+          issuerId: openIdIssuer.issuerId,
+          credentialConfigurationIds: ['universityDegree'],
+          authorizationCodeFlowConfig: {
+            authorizationServerUrl: upstreamIssuer,
+          },
+        })
+
+        const pushedAuthorizationResponse = await fetch(`http://localhost:3000/oid4vci/${issuerId}/par`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: 'wallet-client',
+            response_type: 'code',
+            redirect_uri: redirectUri,
+            scope: 'UniversityDegreeCredential',
+            state: 'wallet-state',
+            issuer_state: issuanceSession.authorization?.issuerState,
+            code_challenge: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            code_challenge_method: 'S256',
+          }),
+        })
+        expect(pushedAuthorizationResponse.status).toBe(201)
+        if (!authorizationChallengeState || !authorizationChallengeRedirectUri) {
+          throw new Error('Expected the upstream authorization challenge request to be sent')
+        }
+
+        const upstreamRedirect = new URL(authorizationChallengeRedirectUri)
+        upstreamRedirect.searchParams.set('state', authorizationChallengeState)
+        upstreamRedirect.searchParams.set('code', 'upstream-authorization-code')
+        const tokenExchangeResponse = await fetch(upstreamRedirect, { redirect: 'manual' })
+
+        expect(tokenExchangeResponse.status).toBe(302)
+        expect(tokenProofs).toHaveLength(1)
+        const issuerRedirectLocation = tokenExchangeResponse.headers.get('location')
+        if (!issuerRedirectLocation) throw new Error('Expected the issuer to redirect the authorization response')
+        const issuerRedirect = new URL(issuerRedirectLocation)
+        if (required) {
+          expect(issuerRedirect.searchParams.get('error')).toBe('server_error')
+          expect(issuerRedirect.searchParams.get('error_description')).toBe('Upstream DPoP token binding mismatch.')
+        } else {
+          expect(issuerRedirect.searchParams.get('code')).toEqual(expect.any(String))
+        }
+      }
+    )
 
     it('creates a DPoP proof that an upstream authorization server can verify', async () => {
       const result = await issuerService.getChainedUpstreamDpopRequestOptions(dpopAgent.agent.context, {
