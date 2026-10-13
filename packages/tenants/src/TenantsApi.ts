@@ -9,7 +9,7 @@ import {
   UpdateAssistant,
 } from '@credo-ts/core'
 import { TenantAgentContextProvider } from './context/TenantAgentContextProvider'
-import type { TenantRecord } from './repository'
+import type { TenantRecord, TenantStatus } from './repository'
 import { TenantRecordService } from './services'
 import { TenantAgent } from './TenantAgent'
 import type {
@@ -38,8 +38,8 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
     this.logger = logger
   }
 
-  public async getTenantAgent({ tenantId }: GetTenantAgentOptions): Promise<TenantAgent<AgentModules>> {
-    return this._getTenantAgent({ tenantId })
+  public async getTenantAgent({ tenantId, allowInactive }: GetTenantAgentOptions): Promise<TenantAgent<AgentModules>> {
+    return this._getTenantAgent({ tenantId, allowInactive })
   }
 
   public async withTenantAgent<ReturnValue>(
@@ -92,7 +92,8 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
 
   public async deleteTenantById(tenantId: string) {
     this.logger.debug(`Deleting tenant by id '${tenantId}'`)
-    const tenantAgent = await this.getTenantAgent({ tenantId })
+    // Inactive tenants can also be deleted, so we allow opening a session for them
+    const tenantAgent = await this.getTenantAgent({ tenantId, allowInactive: true })
 
     this.logger.trace(`Deleting wallet for tenant '${tenantId}'`)
 
@@ -104,6 +105,21 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
 
   public async updateTenant(tenant: TenantRecord) {
     await this.tenantRecordService.updateTenant(this.rootAgentContext, tenant)
+  }
+
+  /**
+   * Update the status of a tenant. When a tenant is set to inactive, new sessions can not be
+   * opened for the tenant anymore. This also means inbound DIDComm messages and endpoints such
+   * as OpenID4VC will result in an error for the tenant. Already open sessions are not ended.
+   */
+  public async updateTenantStatus(tenantId: string, status: TenantStatus) {
+    this.logger.debug(`Updating status for tenant '${tenantId}' to '${status}'`)
+    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
+
+    tenantRecord.status = status
+    await this.tenantRecordService.updateTenant(this.rootAgentContext, tenantRecord)
+
+    return tenantRecord
   }
 
   public async findTenantsByQuery(query: Query<TenantRecord>, queryOptions?: QueryOptions) {
@@ -139,12 +155,13 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
 
   private async _getTenantAgent({
     tenantId,
+    allowInactive = false,
     provisionContext = false,
   }: GetTenantAgentOptions & { provisionContext?: boolean }): Promise<TenantAgent<AgentModules>> {
     this.logger.debug(`Getting tenant agent for tenant '${tenantId}'`)
     const tenantContext = await this.agentContextProvider.getAgentContextForContextCorrelationId(
       this.agentContextProvider.getContextCorrelationIdForTenantId(tenantId),
-      { provisionContext }
+      { provisionContext, allowInactive }
     )
 
     this.logger.trace(`Got tenant context for tenant '${tenantId}'`)
