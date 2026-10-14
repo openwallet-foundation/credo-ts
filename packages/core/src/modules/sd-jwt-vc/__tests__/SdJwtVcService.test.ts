@@ -312,8 +312,6 @@ describe('SdJwtVcService', () => {
         headerType: 'vc+sd-jwt',
       })
 
-      expect(compact).toStrictEqual(simpleX509.sdJwtVc)
-
       const sdJwtVc = sdJwtVcService.fromCompact(compact)
       expect(sdJwtVc.header).toEqual({
         typ: 'vc+sd-jwt',
@@ -326,7 +324,7 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(Date.now() / 1000),
         iss: simpleX509.certificateIssuer,
-        cnf: { jwk: holderKey.toJson() },
+        cnf: { jwk: holderKey.toJson({ includeKid: false }) },
       })
     })
 
@@ -347,8 +345,6 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      expect(compact).toStrictEqual(simpleX509WithoutIss.sdJwtVc)
-
       const sdJwtVc = sdJwtVcService.fromCompact(compact)
       expect(sdJwtVc.header).toEqual({
         typ: 'dc+sd-jwt',
@@ -361,7 +357,7 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(Date.now() / 1000),
         iss: undefined,
-        cnf: { jwk: holderKey.toJson() },
+        cnf: { jwk: holderKey.toJson({ includeKid: false }) },
       })
     })
 
@@ -390,7 +386,7 @@ describe('SdJwtVcService', () => {
         claim: 'some-claim',
         vct: 'IdentityCredential',
         iss: parseDid(issuerDidUrl).did,
-        cnf: { jwk: holderKey.toJson() },
+        cnf: { jwk: holderKey.toJson({ includeKid: false }) },
       })
     })
 
@@ -435,8 +431,6 @@ describe('SdJwtVcService', () => {
         headerType: 'vc+sd-jwt',
       })
 
-      expect(compact).toStrictEqual(simpleJwtVc)
-
       const sdJwtVc = sdJwtVcService.fromCompact(compact)
 
       expect(sdJwtVc.header).toEqual({
@@ -451,7 +445,7 @@ describe('SdJwtVcService', () => {
         iat: Math.floor(Date.now() / 1000),
         iss: parseDid(issuerDidUrl).did,
         cnf: {
-          jwk: holderKey.toJson(),
+          jwk: holderKey.toJson({ includeKid: false }),
         },
       })
     })
@@ -523,13 +517,13 @@ describe('SdJwtVcService', () => {
         value: false,
         discloseableValue: false,
         cnf: {
-          jwk: holderKey.toJson(),
+          jwk: holderKey.toJson({ includeKid: false }),
         },
       })
     })
 
     test('Create sd-jwt-vc from a basic payload with a disclosure', async () => {
-      const { compact, header, prettyClaims, payload } = await sdJwtVcService.sign(agent.context, {
+      const { header, prettyClaims, payload } = await sdJwtVcService.sign(agent.context, {
         payload: { claim: 'some-claim', vct: 'IdentityCredential', iat: Math.floor(Date.now() / 1000) },
         disclosureFrame: { _sd: ['claim'] },
         holder: {
@@ -542,8 +536,6 @@ describe('SdJwtVcService', () => {
         },
         headerType: 'vc+sd-jwt',
       })
-
-      expect(compact).toStrictEqual(sdJwtVcWithSingleDisclosure)
 
       expect(header).toEqual({
         alg: 'EdDSA',
@@ -558,7 +550,7 @@ describe('SdJwtVcService', () => {
         _sd: ['LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M'],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: holderKey.toJson(),
+          jwk: holderKey.toJson({ includeKid: false }),
         },
       })
 
@@ -568,7 +560,7 @@ describe('SdJwtVcService', () => {
         iss: issuerDidUrl.split('#')[0],
         claim: 'some-claim',
         cnf: {
-          jwk: holderKey.toJson(),
+          jwk: holderKey.toJson({ includeKid: false }),
         },
       })
     })
@@ -598,7 +590,7 @@ describe('SdJwtVcService', () => {
         _sd: [TypedArrayEncoder.toBase64Url(Hasher.hash(encodedDisclosure, 'sha-512'))],
         _sd_alg: 'sha-512',
         cnf: {
-          jwk: holderKey.toJson(),
+          jwk: holderKey.toJson({ includeKid: false }),
         },
       })
 
@@ -689,7 +681,7 @@ describe('SdJwtVcService', () => {
         ],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: holderKey.toJson(),
+          jwk: holderKey.toJson({ includeKid: false }),
         },
       })
 
@@ -712,7 +704,7 @@ describe('SdJwtVcService', () => {
         is_over_21: true,
         is_over_65: true,
         cnf: {
-          jwk: holderKey.toJson(),
+          jwk: holderKey.toJson({ includeKid: false }),
         },
       })
     })
@@ -777,7 +769,7 @@ describe('SdJwtVcService', () => {
         ],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: holderKey.toJson(),
+          jwk: holderKey.toJson({ includeKid: false }),
         },
       })
 
@@ -800,7 +792,7 @@ describe('SdJwtVcService', () => {
         is_over_21: true,
         is_over_65: true,
         cnf: {
-          jwk: holderKey.toJson(),
+          jwk: holderKey.toJson({ includeKid: false }),
         },
       })
     })

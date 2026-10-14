@@ -139,7 +139,6 @@ describe('sd-jwt-vc end to end test', () => {
           jwk: {
             jwk: {
               crv: 'Ed25519',
-              kid: expect.any(String),
               kty: 'OKP',
               x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
             },
@@ -181,7 +180,6 @@ describe('sd-jwt-vc end to end test', () => {
         },
         cnf: {
           jwk: {
-            kid: expect.any(String),
             crv: 'Ed25519',
             kty: 'OKP',
             x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
@@ -201,7 +199,6 @@ describe('sd-jwt-vc end to end test', () => {
         birthdate: '1940-01-01',
         cnf: {
           jwk: {
-            kid: expect.any(String),
             crv: 'Ed25519',
             kty: 'OKP',
             x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
