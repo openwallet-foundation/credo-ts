@@ -715,6 +715,7 @@ export function getMockConnection({
   tags = {},
   theirLabel,
   theirDid = 'their-did',
+  didcommVersion,
 }: Partial<DidCommConnectionRecordProps> = {}) {
   return new DidCommConnectionRecord({
     did,
@@ -725,6 +726,7 @@ export function getMockConnection({
     state,
     tags,
     theirLabel,
+    didcommVersion,
   })
 }
 

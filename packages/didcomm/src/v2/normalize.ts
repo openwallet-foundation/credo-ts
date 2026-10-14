@@ -9,6 +9,7 @@ const reservedBodyKeys = [
   'from',
   'to',
   'from_prior',
+  'ack',
   'lang',
   'created_time',
   'expires_time',
@@ -24,7 +25,7 @@ const reservedBodyKeys = [
 
 /**
  * Normalize a DIDComm v2 plaintext message to v1 shape so existing handlers work.
- * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, attachments→~attach.
+ * Maps: type→@type, id→@id, body→top level, thid/pthid→~thread, lang→lang and ~l10n, please_ack→~please_ack, ack→ack, attachments→~attach.
  * This allows v2 plaintext to be processed by v1 message handlers without changes.
  *
  * @param v2 - The DIDComm v2 plaintext message
@@ -45,6 +46,7 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
     expires_time,
     return_route,
     please_ack,
+    ack,
     from_prior,
   } = v2
 
@@ -67,6 +69,7 @@ export function normalizeV2PlaintextToV1(v2: DidCommV2PlaintextMessage, logger?:
   if (from !== undefined) v1.from = from
   if (to !== undefined) v1.to = to
   if (from_prior !== undefined) v1.from_prior = from_prior
+  if (ack !== undefined) v1.ack = ack
 
   if (thid !== undefined || pthid !== undefined) {
     const thread: { thid?: string; pthid?: string } = {}

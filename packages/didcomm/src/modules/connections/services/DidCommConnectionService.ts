@@ -37,7 +37,12 @@ import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEve
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import type { DidCommConnectionProblemReportMessage } from '../messages'
-import { DidCommConnectionRequestMessage, DidCommConnectionResponseMessage, DidCommTrustPingMessage } from '../messages'
+import {
+  DidCommConnectionRequestMessage,
+  DidCommConnectionResponseMessage,
+  DidCommTrustPingMessage,
+  DidCommTrustPingV2Message,
+} from '../messages'
 import type { DidCommConnectionType } from '../models'
 import {
   authenticationTypes,
@@ -51,6 +56,7 @@ import {
 } from '../models'
 import type { DidCommConnectionRecordProps } from '../repository'
 import { DidCommConnectionRecord, DidCommConnectionRepository } from '../repository'
+import type { DidCommConnectionMetadata } from '../repository/DidCommConnectionMetadataTypes'
 
 import {
   assertNoCreatedDidExistsForKeys,
@@ -413,13 +419,16 @@ export class DidCommConnectionService {
     agentContext: AgentContext,
     connectionRecord: DidCommConnectionRecord,
     config: { responseRequested?: boolean; comment?: string } = {}
-  ): Promise<ConnectionProtocolMsgReturnType<DidCommTrustPingMessage>> {
+  ): Promise<ConnectionProtocolMsgReturnType<DidCommTrustPingMessage | DidCommTrustPingV2Message>> {
     connectionRecord.assertState([DidCommDidExchangeState.ResponseReceived, DidCommDidExchangeState.Completed])
 
     // TODO:
     //  - create ack message
     //  - maybe this shouldn't be in the connection service?
-    const trustPing = new DidCommTrustPingMessage(config)
+    const trustPing =
+      connectionRecord.didcommVersion === 'v2'
+        ? new DidCommTrustPingV2Message({ responseRequested: config.responseRequested })
+        : new DidCommTrustPingMessage(config)
 
     // Only update connection record and emit an event if the state is not already 'Complete'
     if (connectionRecord.state !== DidCommDidExchangeState.Completed) {
@@ -897,9 +906,11 @@ export class DidCommConnectionService {
   public async createConnection(
     agentContext: AgentContext,
     options: DidCommConnectionRecordProps | DidCommConnectionRecord,
-    emitStateChanged = false
+    emitStateChanged = false,
+    metadata?: Partial<DidCommConnectionMetadata>
   ): Promise<DidCommConnectionRecord> {
     const connectionRecord = options instanceof DidCommConnectionRecord ? options : new DidCommConnectionRecord(options)
+    for (const [key, value] of Object.entries(metadata ?? {})) connectionRecord.metadata.set(key, value)
     await this.connectionRepository.save(agentContext, connectionRecord)
     if (emitStateChanged) {
       this.emitStateChangedEvent(agentContext, connectionRecord, null)

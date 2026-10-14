@@ -36,6 +36,7 @@ import {
   supportsIncomingMessageType,
 } from '../../util/messageType'
 import { parseInvitationShortUrl } from '../../util/parseInvitation'
+import { buildV2PlaintextFromMessage } from '../../v2/plaintextBuilder'
 import type { DidCommV2Attachment, DidCommV2KeyAgreementJwk } from '../../v2/types'
 import {
   DidCommConnectionInvitationMessage,
@@ -223,6 +224,15 @@ export class DidCommOutOfBandApi {
           ? 'v2'
           : 'v1')
     this.assertAgentSupportsDidCommVersion(didCommVersion)
+    const unsupportedMessage = config.messages?.find(
+      ({ supportedDidCommVersions }) =>
+        supportedDidCommVersions?.length && !supportedDidCommVersions.includes(didCommVersion)
+    )
+    if (unsupportedMessage) {
+      throw new CredoError(
+        `Message type ${unsupportedMessage.type} only supports DIDComm ${unsupportedMessage.supportedDidCommVersions?.join(', ')} but the invitation uses DIDComm ${didCommVersion}`
+      )
+    }
     const autoAcceptConnection = config.autoAcceptConnection ?? this.connectionsApi.config.autoAcceptConnections
 
     // V2 OOB path: no handshake, did:peer:2, first-message connection establishment
@@ -396,7 +406,7 @@ export class DidCommOutOfBandApi {
         v2Attachments.push({
           id: utils.uuid(),
           media_type: 'application/json',
-          data: { json: message.toJSON() as Record<string, unknown> },
+          data: { json: buildV2PlaintextFromMessage(message) },
         })
       }
     }
@@ -716,6 +726,10 @@ export class DidCommOutOfBandApi {
         DidCommOutOfBandRecordMetadataKeys.V2Invitation,
         outOfBandInvitation.v2Invitation.toJSON()
       )
+      if (config.isImplicit) {
+        // The invitation id of an implicit invitation was generated locally and never sent, so it must not become a pthid
+        outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.V2ImplicitInvitation, {})
+      }
     }
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)

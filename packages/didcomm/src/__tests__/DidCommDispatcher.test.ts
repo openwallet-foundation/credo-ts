@@ -3,13 +3,15 @@ import { Subject } from 'rxjs'
 import type { MockedClassConstructor } from '../../../../tests/types'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { JsonTransformer } from '../../../core/src/utils/JsonTransformer'
-import { getAgentConfig, getAgentContext } from '../../../core/tests/helpers'
+import { getAgentConfig, getAgentContext, getMockConnection } from '../../../core/tests/helpers'
 import { DidCommDispatcher } from '../DidCommDispatcher'
 import { DidCommMessage } from '../DidCommMessage'
 import { DidCommMessageHandlerRegistry } from '../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../DidCommMessageSender'
+import { DidCommProblemReportError } from '../errors'
 import { getOutboundDidCommMessageContext } from '../getDidCommOutboundMessageContext'
-import { DidCommInboundMessageContext } from '../models'
+import { DidCommProblemReportMessage, DidCommProblemReportV2Message } from '../messages'
+import { DidCommInboundMessageContext, DidCommProblemReportReason } from '../models'
 import type { DidCommConnectionRecord } from '../modules/connections'
 import { parseMessageType } from '../util/messageType'
 
@@ -26,6 +28,11 @@ class CustomProtocolMessage extends DidCommMessage {
       this.id = options.id ?? this.generateId()
     }
   }
+}
+
+class CustomProtocolProblemReportMessage extends DidCommProblemReportMessage {
+  public readonly type = CustomProtocolProblemReportMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/problem-report')
 }
 
 describe('DidCommDispatcher', () => {
@@ -75,7 +82,10 @@ describe('DidCommDispatcher', () => {
       )
     })
 
-    it('does not answer a DIDComm v2 problem report with a problem report', async () => {
+    it.each([
+      'https://didcomm.org/report-problem/2.0/problem-report',
+      'https://didcomm.org/report-problem/2.1/problem-report',
+    ])('does not answer a DIDComm v2 problem report (%s) with a problem report', async (type) => {
       const messageSenderMock = new MessageSenderMock()
       const dispatcher = new DidCommDispatcher(
         messageSenderMock,
@@ -85,7 +95,7 @@ describe('DidCommDispatcher', () => {
       )
       const problemReport = JsonTransformer.fromJSON(
         {
-          '@type': 'https://didcomm.org/report-problem/2.0/problem-report',
+          '@type': type,
           '@id': '7c9de639-c51c-4d60-ab95-103fa613c805',
         },
         DidCommMessage
@@ -99,6 +109,114 @@ describe('DidCommDispatcher', () => {
         'Not sending problem report in response to problem report'
       )
       expect(messageSenderMock.sendMessage).not.toHaveBeenCalled()
+    })
+
+    describe('problem report for a failed message', () => {
+      const dispatchFailingMessage = async (connection: DidCommConnectionRecord, error: DidCommProblemReportError) => {
+        const messageSenderMock = new MessageSenderMock()
+        const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
+        messageHandlerRegistry.registerMessageHandler({
+          supportedMessages: [CustomProtocolMessage],
+          handle: async () => {
+            throw error
+          },
+        })
+        const dispatcher = new DidCommDispatcher(
+          messageSenderMock,
+          eventEmitter,
+          messageHandlerRegistry,
+          agentConfig.logger
+        )
+        const message = new CustomProtocolMessage({ id: 'message-1' })
+        message.setThread({ threadId: 'thread-1' })
+
+        await dispatcher.dispatch(new DidCommInboundMessageContext(message, { agentContext, connection }))
+
+        expect(messageSenderMock.sendMessage).toHaveBeenCalledTimes(1)
+        return vi.mocked(messageSenderMock.sendMessage).mock.calls[0][0].message
+      }
+
+      it('sends a report-problem 2.0 problem report on a DIDComm v2 connection', async () => {
+        const problemReport = await dispatchFailingMessage(
+          getMockConnection({ didcommVersion: 'v2' }),
+          new DidCommProblemReportError('boom', { problemCode: DidCommProblemReportReason.MessageParseFailure })
+        )
+
+        expect(problemReport).toBeInstanceOf(DidCommProblemReportV2Message)
+        expect(problemReport).toMatchObject({
+          type: 'https://didcomm.org/report-problem/2.0/problem-report',
+          ack: ['message-1'],
+          code: 'e.p.msg.message-parse-failure',
+          comment: 'Bad message: {1}',
+          args: ['boom'],
+        })
+        expect(problemReport.thread?.parentThreadId).toBe('thread-1')
+        expect(problemReport.thread?.threadId).toBeUndefined()
+        expect(problemReport.getLocale()).toBe('en')
+      })
+
+      it('sends only the e.p.msg code when the problem code is not lower kebab-case', async () => {
+        const problemReport = await dispatchFailingMessage(
+          getMockConnection({ didcommVersion: 'v2' }),
+          new DidCommProblemReportError('boom', { problemCode: 'e.p.me.res.storage' })
+        )
+
+        expect(problemReport).toMatchObject({ code: 'e.p.msg', comment: 'Bad message: {1}', args: ['boom'] })
+      })
+
+      it('sends a notification 1.0 problem report on a DIDComm v1 connection', async () => {
+        const problemReport = await dispatchFailingMessage(
+          getMockConnection({ didcommVersion: 'v1' }),
+          new DidCommProblemReportError('boom', { problemCode: DidCommProblemReportReason.MessageParseFailure })
+        )
+
+        expect(problemReport).toBeInstanceOf(DidCommProblemReportMessage)
+        expect(problemReport).toMatchObject({
+          type: 'https://didcomm.org/notification/1.0/problem-report',
+          description: { en: 'boom', code: 'message-parse-failure' },
+        })
+        expect(problemReport.thread?.parentThreadId).toBe('message-1')
+      })
+
+      it('does not send a problem report when the message id is not a valid pthid', async () => {
+        const messageSenderMock = new MessageSenderMock()
+        const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
+        messageHandlerRegistry.registerMessageHandler({
+          supportedMessages: [CustomProtocolMessage],
+          handle: async () => {
+            throw new DidCommProblemReportError('boom', { problemCode: DidCommProblemReportReason.MessageParseFailure })
+          },
+        })
+        const warn = vi.spyOn(agentConfig.logger, 'warn')
+        const dispatcher = new DidCommDispatcher(
+          messageSenderMock,
+          eventEmitter,
+          messageHandlerRegistry,
+          agentConfig.logger
+        )
+        const message = new CustomProtocolMessage({ id: 'urn:uuid:4c1d6c5e-2f44-4a8e-9d3c-1f0b6a7e8d90' })
+
+        await dispatcher.dispatch(
+          new DidCommInboundMessageContext(message, {
+            agentContext,
+            connection: getMockConnection({ didcommVersion: 'v2' }),
+          })
+        )
+
+        expect(messageSenderMock.sendMessage).not.toHaveBeenCalled()
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('is not a valid pthid'), expect.anything())
+        warn.mockRestore()
+      })
+
+      it('keeps a protocol problem report on a DIDComm v2 connection', async () => {
+        const error = new DidCommProblemReportError('boom', { problemCode: 'abandoned' })
+        error.problemReport = new CustomProtocolProblemReportMessage({ description: { en: 'boom', code: 'abandoned' } })
+
+        const problemReport = await dispatchFailingMessage(getMockConnection({ didcommVersion: 'v2' }), error)
+
+        expect(problemReport).toBe(error.problemReport)
+        expect(problemReport.thread?.threadId).toBe('thread-1')
+      })
     })
 
     it('calls the middleware in the order they are registered', async () => {

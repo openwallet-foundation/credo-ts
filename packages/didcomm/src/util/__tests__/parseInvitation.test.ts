@@ -1,10 +1,15 @@
-import { JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
+import { JsonEncoder, JsonTransformer, MessageValidator, TypedArrayEncoder } from '@credo-ts/core'
 
 import { agentDependencies } from '../../../../core/tests'
 import { DidCommConnectionInvitationMessage } from '../../modules/connections'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../../modules/oob'
 import { convertToNewInvitation } from '../../modules/oob/converters'
-import { oobInvitationFromShortUrl, parseInvitationShortUrl, parseInvitationUrl } from '../parseInvitation'
+import {
+  oobInvitationFromShortUrl,
+  parseInvitationJson,
+  parseInvitationShortUrl,
+  parseInvitationUrl,
+} from '../parseInvitation'
 
 const mockOobInvite = {
   '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/out-of-band/1.0/invitation',
@@ -257,5 +262,19 @@ describe('invitation url encoding', () => {
 
   test('throws for an invitation that is not valid base64url or base64', () => {
     expect(() => parseInvitationUrl('https://example.com?oob=not*valid*base64')).toThrow()
+  })
+})
+
+describe('v2 out-of-band invitations', () => {
+  test('parse an invitation with an attachment that is not JSON', () => {
+    const base64 = TypedArrayEncoder.toBase64Url(Uint8Array.from([0xff]))
+    const invitation = parseInvitationJson({
+      type: 'https://didcomm.org/out-of-band/2.0/invitation',
+      id: 'invitation-1',
+      from: 'did:example:alice',
+      attachments: [{ id: 'attachment-1', data: { base64 } }],
+    })
+
+    expect(invitation.toJSON()['requests~attach']).toMatchObject([{ '@id': 'attachment-1', data: { base64 } }])
   })
 })

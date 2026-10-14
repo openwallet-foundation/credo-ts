@@ -12,7 +12,11 @@ import {
 import type { DidCommMessageReceivedEvent } from '../../didcomm/src/DidCommEvents'
 import { DidCommEventTypes } from '../../didcomm/src/DidCommEvents'
 import type { DidCommMessage } from '../../didcomm/src/DidCommMessage'
-import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../didcomm/src/modules/connections'
+import {
+  DidCommDidExchangeState,
+  DidCommHandshakeProtocol,
+  DidCommTrustPingV2Message,
+} from '../../didcomm/src/modules/connections'
 import {
   type CreateCredentialOfferOptions,
   DidCommAutoAcceptCredential,
@@ -182,6 +186,16 @@ describe('out of band', () => {
           multiUseInvitation: true,
         })
       ).rejects.toEqual(new CredoError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined."))
+    })
+
+    test('throw error when a message does not support the DIDComm version of the invitation', async () => {
+      await expect(
+        faberAgent.didcomm.oob.createInvitation({ messages: [new DidCommTrustPingV2Message({})] })
+      ).rejects.toEqual(
+        new CredoError(
+          'Message type https://didcomm.org/trust-ping/2.0/ping only supports DIDComm v2 but the invitation uses DIDComm v1'
+        )
+      )
     })
 
     test('handles empty messages array as no messages being passed', async () => {

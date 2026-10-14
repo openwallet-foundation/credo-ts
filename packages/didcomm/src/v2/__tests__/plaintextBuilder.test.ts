@@ -2,6 +2,7 @@ import { JsonTransformer } from '@credo-ts/core'
 
 import { DidCommAttachment, DidCommAttachmentData } from '../../decorators/attachment/DidCommAttachment'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import { DidCommProblemReportV2Message } from '../../messages/problem-reports/DidCommProblemReportV2Message'
 import { DidCommTrustPingMessage } from '../../modules/connections/messages/DidCommTrustPingMessage'
 import { normalizeV2PlaintextToV1 } from '../normalize'
 import { buildV2PlaintextFromMessage } from '../plaintextBuilder'
@@ -134,5 +135,30 @@ describe('buildV2PlaintextFromMessage', () => {
     expect(v2.attachments).toHaveLength(1)
     expect(v2.attachments?.[0].id).toBe('att-round')
     expect(v2.attachments?.[0].data).toEqual({ base64: 'e30=' })
+  })
+
+  it('builds a report-problem 2.0 problem report with pthid and ack and without thid', () => {
+    const message = new DidCommProblemReportV2Message({
+      id: 'report-id-1',
+      parentThreadId: 'thread-1',
+      ack: ['message-1'],
+      code: 'e.p.msg.message-parse-failure',
+      comment: 'Bad message: {1}',
+      args: ['detail'],
+    })
+    message.addLocale('en')
+    message.setReturnRouting(ReturnRouteTypes.all)
+
+    expect(buildV2PlaintextFromMessage(message, { from: 'did:example:alice', to: ['did:example:bob'] })).toEqual({
+      id: 'report-id-1',
+      type: 'https://didcomm.org/report-problem/2.0/problem-report',
+      from: 'did:example:alice',
+      to: ['did:example:bob'],
+      pthid: 'thread-1',
+      ack: ['message-1'],
+      lang: 'en',
+      return_route: 'all',
+      body: { code: 'e.p.msg.message-parse-failure', comment: 'Bad message: {1}', args: ['detail'] },
+    })
   })
 })
