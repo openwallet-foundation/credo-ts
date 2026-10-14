@@ -10,7 +10,7 @@ import { DidCommRoutingService } from '../../routing'
 import { DidCommConnectionsModule } from '../DidCommConnectionsModule'
 import { DidCommConnectionsModuleConfig } from '../DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from '../DidExchangeProtocol'
-import { DidCommConnectionRole, DidCommDidExchangeRole, DidCommDidRotateRole } from '../models'
+import { DidCommDidExchangeRole, DidCommDidRotateRole } from '../models'
 import { DidCommConnectionRepository } from '../repository'
 import { DidCommConnectionService, DidCommTrustPingService } from '../services'
 import { DidCommDidRotateService } from '../services/DidCommDidRotateService'
@@ -59,10 +59,6 @@ describe('DidCommConnectionsModule', () => {
     await new DidCommConnectionsModule().initialize(agentContext)
 
     expect(featureRegistry.query({ featureType: 'protocol', match: '*' })).toEqual([
-      new DidCommProtocol({
-        id: 'https://didcomm.org/connections/1.0',
-        roles: [DidCommConnectionRole.Invitee, DidCommConnectionRole.Inviter],
-      }),
       new DidCommProtocol({
         id: 'https://didcomm.org/didexchange/1.1',
         roles: [DidCommDidExchangeRole.Requester, DidCommDidExchangeRole.Responder],
