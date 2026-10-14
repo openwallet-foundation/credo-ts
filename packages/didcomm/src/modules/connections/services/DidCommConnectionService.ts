@@ -896,10 +896,10 @@ export class DidCommConnectionService {
 
   public async createConnection(
     agentContext: AgentContext,
-    options: DidCommConnectionRecordProps,
+    options: DidCommConnectionRecordProps | DidCommConnectionRecord,
     emitStateChanged = false
   ): Promise<DidCommConnectionRecord> {
-    const connectionRecord = new DidCommConnectionRecord(options)
+    const connectionRecord = options instanceof DidCommConnectionRecord ? options : new DidCommConnectionRecord(options)
     await this.connectionRepository.save(agentContext, connectionRecord)
     if (emitStateChanged) {
       this.emitStateChangedEvent(agentContext, connectionRecord, null)

@@ -45,6 +45,12 @@ describe('DidCommConnectionRecord', () => {
     expect(connectionRecord.protocol).toEqual(DidCommHandshakeProtocol.DidExchange)
   })
 
+  it('should not transform the None handshake protocol', () => {
+    const connectionRecord = JsonTransformer.fromJSON({ protocol: 'None' }, DidCommConnectionRecord)
+
+    expect(connectionRecord.protocol).toEqual(DidCommHandshakeProtocol.None)
+  })
+
   it('should not transform handshake protocol when minor version is .x', () => {
     const connectionRecord = JsonTransformer.fromJSON(
       {

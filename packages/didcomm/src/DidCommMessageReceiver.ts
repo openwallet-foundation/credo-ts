@@ -5,12 +5,15 @@ import {
   CredoError,
   DidRepository,
   DidsApi,
+  getDidPeer4ShortFormForEquivalence,
   InjectionSymbols,
   inject,
   injectable,
   JsonTransformer,
+  Kms,
   type Logger,
   RecordDuplicateError,
+  utils,
 } from '@credo-ts/core'
 import { DidCommDispatcher, isProblemReportMessageType } from './DidCommDispatcher'
 import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
@@ -23,7 +26,12 @@ import type { DidCommEnvelope } from './envelope'
 import { DidCommEnvelopeRegistry } from './envelope'
 import { DidCommProblemReportError } from './errors'
 import { DidCommProblemReportMessage } from './messages'
-import { DidCommInboundMessageContext, DidCommOutboundMessageContext, DidCommProblemReportReason } from './models'
+import {
+  DidCommInboundMessageContext,
+  DidCommOutboundMessageContext,
+  DidCommProblemReportReason,
+  type DidCommRouting,
+} from './models'
 import {
   DidCommConnectionService,
   DidCommConnectionsModuleConfig,
@@ -31,16 +39,24 @@ import {
   DidCommDidExchangeState,
   DidCommHandshakeProtocol,
 } from './modules/connections'
-import type { DidCommConnectionRecord } from './modules/connections/repository'
+import { DidCommConnectionRecord, type DidCommConnectionRecordProps } from './modules/connections/repository'
 import { DidCommDidRotateV2Service } from './modules/connections/services/DidCommDidRotateV2Service'
 import { DidCommOutOfBandService } from './modules/oob/DidCommOutOfBandService'
 import { DidCommOutOfBandRole, DidCommOutOfBandState } from './modules/oob/domain'
-import { DidCommRoutingService } from './modules/routing/services/DidCommRoutingService'
+import { DidCommRoutingService, type RemoveRoutingOptions } from './modules/routing/services/DidCommRoutingService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isDidCommV2SignedMessage } from './util/didcommVersion'
 import { isValidJweStructure } from './util/JWE'
 import { parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
 import type { DidCommV2SignedMessageWire } from './v2'
+
+const FIRST_MESSAGE_CONNECTION_ID_NAMESPACE = '6b238103-2e51-4a24-9fd0-8d4223f63b08'
+
+const firstMessageConnectionId = (ourDid: string, theirDid: string): string =>
+  utils.uuidFromName(
+    [ourDid, theirDid].map((did) => getDidPeer4ShortFormForEquivalence(did) ?? did).join(' '),
+    FIRST_MESSAGE_CONNECTION_ID_NAMESPACE
+  )
 
 @injectable()
 export class DidCommMessageReceiver {
@@ -398,7 +414,10 @@ export class DidCommMessageReceiver {
       const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipientDids)
       if (outOfBandRecord) {
         // Inviter receives first message → Responder (so retrieveServicesByConnection uses theirDid parse fallback)
-        const connection = await this.connectionService.createConnection(
+        // Spec privacy: for reusable invitations, the invitation DID is shared across every
+        // accepter; rotate to a per-pair DID before our first outbound. The from_prior JWT
+        // attached to the next outbound message notifies the peer about the linkage.
+        const { connection, created } = await this.createFirstMessageConnection(
           agentContext,
           {
             protocol: DidCommHandshakeProtocol.None,
@@ -409,21 +428,17 @@ export class DidCommMessageReceiver {
             outOfBandId: outOfBandRecord.id,
             didcommVersion: 'v2',
           },
-          true
+          outOfBandRecord.reusable
         )
-        // Spec privacy: for reusable invitations, the invitation DID is shared across every
-        // accepter; rotate to a per-pair DID before our first outbound. The from_prior JWT
-        // attached to the next outbound message notifies the peer about the linkage.
-        if (outOfBandRecord.reusable) {
-          await this.rotateInviterDidForV2OOB(agentContext, connection)
-        } else {
+        if (created && !outOfBandRecord.reusable) {
           await this.outOfBandService.updateState(agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
         }
         return { connection }
       }
 
       if (recipientDidRecord && (await this.isImplicitInvitationDid(agentContext, recipientDids))) {
-        const connection = await this.connectionService.createConnection(
+        // Always rotate to a per-pair DID
+        const { connection } = await this.createFirstMessageConnection(
           agentContext,
           {
             protocol: DidCommHandshakeProtocol.None,
@@ -436,9 +451,16 @@ export class DidCommMessageReceiver {
           },
           true
         )
-        // Always rotate to a per-pair DID
-        await this.rotateInviterDidForV2OOB(agentContext, connection)
         return { connection }
+      }
+
+      // A first message that raced the one which used up a single-use invitation finds it Done
+      const racedConnection = await this.connectionService.findById(
+        agentContext,
+        firstMessageConnectionId(recipient, from)
+      )
+      if (racedConnection?.theirDid && areEquivalentDidPeer4Forms(racedConnection.theirDid, from)) {
+        return { connection: racedConnection }
       }
     }
 
@@ -461,23 +483,87 @@ export class DidCommMessageReceiver {
     return connections.every(({ invitationDid }) => invitationDid !== undefined && dids.includes(invitationDid))
   }
 
+  // First messages from one peer that are processed at the same time, also on agent instances sharing
+  // one database, all derive this id, so storage keeps a single connection. The connection is saved
+  // already rotated, so a concurrent message never loads a copy from before the rotation and saves it back.
+  private async createFirstMessageConnection(
+    agentContext: AgentContext,
+    props: DidCommConnectionRecordProps & { did: string; theirDid: string },
+    rotate: boolean
+  ): Promise<{ connection: DidCommConnectionRecord; created: boolean }> {
+    const connection = new DidCommConnectionRecord({
+      ...props,
+      id: firstMessageConnectionId(props.did, props.theirDid),
+    })
+    const routing = rotate ? await this.rotateInviterDidForV2OOB(agentContext, connection) : undefined
+
+    for (;;) {
+      try {
+        return {
+          connection: await this.connectionService.createConnection(agentContext, connection, true),
+          created: true,
+        }
+      } catch (error) {
+        if (!(error instanceof RecordDuplicateError)) throw error
+      }
+
+      const existing = await this.connectionService.getById(agentContext, connection.id)
+      if (existing.theirDid && areEquivalentDidPeer4Forms(existing.theirDid, props.theirDid)) {
+        if (routing && connection.did) await this.discardUnusedDid(agentContext, connection.did, routing)
+        return { connection: existing, created: false }
+      }
+
+      // The connection on this id moved off this DID pair (rotation or hangup). Open a new connection rather than drop
+      // the message, so a peer that lost its state can reconnect. Chaining the id keeps racing first messages together.
+      connection.id = utils.uuidFromName(existing.id, FIRST_MESSAGE_CONNECTION_ID_NAMESPACE)
+    }
+  }
+
   /**
    * Generate a fresh per-pair peer DID for a v2 connection that was auto-created from a
    * reusable or implicit OOB invitation, and write `from_prior` rotation metadata so the
-   * next outbound message announces the rotation.
+   * next outbound message announces the rotation. The connection is not saved.
    */
   private async rotateInviterDidForV2OOB(
     agentContext: AgentContext,
     connection: DidCommConnectionRecord
-  ): Promise<void> {
+  ): Promise<DidCommRouting | undefined> {
     try {
       const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
       const routing = await routingService.getRouting(agentContext, {})
       const didRotateV2Service = agentContext.dependencyManager.resolve(DidCommDidRotateV2Service)
-      await didRotateV2Service.rotateOurDid(agentContext, connection, { routing })
+      await didRotateV2Service.rotateOurDid(agentContext, connection, { routing, save: false })
+      return routing
     } catch (error) {
       this.logger.warn('Failed to rotate inviter DID for v2 OOB connection; continuing with invitation DID', {
         connectionId: connection.id,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return undefined
+    }
+  }
+
+  private async discardUnusedDid(agentContext: AgentContext, did: string, routing: DidCommRouting): Promise<void> {
+    const keys = routing.keyAgreementKey ? [routing.recipientKey, routing.keyAgreementKey] : [routing.recipientKey]
+    try {
+      if (routing.mediatorId) {
+        const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
+        await routingService.unregisterRecipientDidForV2Routing(agentContext, routing, did)
+        await routingService.removeRouting(agentContext, {
+          recipientKeys: keys as RemoveRoutingOptions['recipientKeys'],
+          mediatorId: routing.mediatorId,
+        })
+      }
+
+      const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+      const didRecord = await didRepository.findCreatedDid(agentContext, did)
+      if (didRecord) await didRepository.delete(agentContext, didRecord)
+
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      for (const key of keys) await kms.deleteKey({ keyId: key.keyId })
+    } catch (error) {
+      this.logger.warn('Failed to clean up the unused DID of a duplicate first message connection', {
+        did,
         error: error instanceof Error ? error.message : String(error),
       })
     }

@@ -95,6 +95,21 @@ export class DidCommRoutingService {
     }
   }
 
+  public async unregisterRecipientDidForV2Routing(
+    agentContext: AgentContext,
+    routing: DidCommRouting,
+    did: string
+  ): Promise<void> {
+    if (!routing.mediatorId) return
+
+    const mediationRecord = await this.mediationRecipientService.getById(agentContext, routing.mediatorId)
+    if (mediationRecord.protocolVersion !== 'v2') return
+
+    await this.mediationRecipientService.keylistUpdateAndAwaitV2(agentContext, mediationRecord, [
+      { recipientDid: getDidPeer4ShortFormForEquivalence(did) ?? did, action: KeylistUpdateActionV2.remove },
+    ])
+  }
+
   public async removeRouting(agentContext: AgentContext, options: RemoveRoutingOptions) {
     await this.mediationRecipientService.removeMediationRouting(agentContext, options)
   }

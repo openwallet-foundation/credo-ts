@@ -40,5 +40,6 @@ export interface DidCommKeylistUpdatedV2Event extends BaseEvent {
   payload: {
     mediationRecord: DidCommMediationRecord
     updated: KeylistUpdateResponseItem[]
+    threadId?: string
   }
 }

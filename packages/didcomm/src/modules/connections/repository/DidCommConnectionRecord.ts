@@ -78,7 +78,7 @@ export class DidCommConnectionRecord extends BaseRecord<
   // transformation so we don't have to migrate the data in the database.
   @Transform(
     ({ value }) => {
-      if (!value || typeof value !== 'string' || value.endsWith('.x')) return value
+      if (!value || typeof value !== 'string' || !value.includes('.') || value.endsWith('.x')) return value
       return `${value.split('.').slice(0, -1).join('.')}.x`
     },
 
