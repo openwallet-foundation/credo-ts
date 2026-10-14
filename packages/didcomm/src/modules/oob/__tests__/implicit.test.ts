@@ -223,6 +223,57 @@ describe('out of band implicit', () => {
     ).toHaveLength(2)
   })
 
+  test('v2 implicit invitation: a peer that rotated off its public DID and lost its state gets a new connection', async () => {
+    const faberDid = await createInMemoryDid(faberAgent, 'rxjs:faber', { withKeyAgreement: true })
+    const aliceDid = await createInMemoryDid(aliceAgent, 'rxjs:alice', { withKeyAgreement: true })
+    const { connectionRecord: firstConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+      did: faberDid,
+      didCommVersion: 'v2',
+      label: 'alice',
+      ourDid: aliceDid,
+    })
+    if (!firstConnection) throw new Error('Expected a connection')
+
+    await aliceAgent.didcomm.basicMessages.sendMessage(firstConnection.id, 'before restart')
+    await waitForBasicMessageSubject(faberMessageReplay, { content: 'before restart' })
+
+    const [faberRotateReplay] = setupEventReplaySubjects(
+      [faberAgent],
+      [DidCommConnectionEventTypes.DidCommConnectionDidRotated]
+    )
+    await aliceAgent.didcomm.connections.rotate({ connectionId: firstConnection.id })
+    await waitForDidRotateSubject(faberRotateReplay, {})
+    const [oldFaberConnection] = await faberAgent.didcomm.connections.findAllByQuery({ invitationDid: faberDid })
+    expect(oldFaberConnection.did).not.toBe(faberDid)
+    expect(oldFaberConnection.previousTheirDids).toEqual([aliceDid])
+
+    await aliceAgent.didcomm.connections.deleteById(firstConnection.id)
+    const { connectionRecord: secondConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+      did: faberDid,
+      didCommVersion: 'v2',
+      label: 'alice',
+      ourDid: aliceDid,
+    })
+    if (!secondConnection) throw new Error('Expected a connection')
+
+    await Promise.all([
+      aliceAgent.didcomm.basicMessages.sendMessage(secondConnection.id, 'after restart 1'),
+      aliceAgent.didcomm.basicMessages.sendMessage(secondConnection.id, 'after restart 2'),
+    ])
+    await waitForBasicMessageSubject(faberMessageReplay, { content: 'after restart 1' })
+    await waitForBasicMessageSubject(faberMessageReplay, { content: 'after restart 2' })
+
+    const faberConnections = await faberAgent.didcomm.connections.findAllByQuery({ theirDid: aliceDid })
+    expect(faberConnections).toHaveLength(1)
+    expect(
+      await faberAgent.didcomm.basicMessages.findAllByQuery({ connectionId: faberConnections[0].id })
+    ).toHaveLength(2)
+    expect(await faberAgent.didcomm.connections.getById(oldFaberConnection.id)).toMatchObject({
+      state: DidCommDidExchangeState.Completed,
+      theirDid: oldFaberConnection.theirDid,
+    })
+  })
+
   test('v2 single-use invitation: a first message racing the one that used up the invitation gets its connection', async () => {
     const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
       didCommVersion: 'v2',

@@ -513,8 +513,8 @@ export class DidCommMessageReceiver {
         return { connection: existing, created: false }
       }
 
-      // The id belongs to an earlier relationship with this DID pair that has ended. Derive the next id
-      // from it, so first messages that race on a reconnect also end up on one connection.
+      // The connection on this id moved off this DID pair (rotation or hangup). Open a new connection rather than drop
+      // the message, so a peer that lost its state can reconnect. Chaining the id keeps racing first messages together.
       connection.id = utils.uuidFromName(existing.id, FIRST_MESSAGE_CONNECTION_ID_NAMESPACE)
     }
   }
