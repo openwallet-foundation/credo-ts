@@ -7,7 +7,6 @@
  */
 export enum DidCommHandshakeProtocol {
   DidExchange = 'https://didcomm.org/didexchange/1.x',
-  Connections = 'https://didcomm.org/connections/1.x',
   /** v2: no handshake, connection from OOB + first message */
   None = 'None',
 }

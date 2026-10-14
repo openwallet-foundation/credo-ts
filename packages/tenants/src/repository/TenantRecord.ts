@@ -4,17 +4,24 @@ import type { TenantConfig } from '../models/TenantConfig'
 
 export type TenantRecordTags = RecordTags<TenantRecord>
 
+export enum TenantStatus {
+  Active = 'active',
+  Inactive = 'inactive',
+}
+
 export interface TenantRecordProps {
   id?: string
   createdAt?: Date
   config: TenantConfig
   tags?: TagsBase
   storageVersion: VersionString
+  status?: TenantStatus
 }
 
 export type DefaultTenantRecordTags = {
   label: string
   storageVersion: VersionString
+  status: TenantStatus
 }
 
 export class TenantRecord extends BaseRecord<DefaultTenantRecordTags> {
@@ -32,6 +39,15 @@ export class TenantRecord extends BaseRecord<DefaultTenantRecordTags> {
    */
   public storageVersion: VersionString = '0.4'
 
+  /**
+   * Whether the tenant is active. Sessions can not be opened for inactive tenants,
+   * meaning the tenant can not be used anymore until it is set to active again.
+   *
+   * @default TenantStatus.Active records stored before this field was introduced are
+   * considered active
+   */
+  public status: TenantStatus = TenantStatus.Active
+
   public constructor(props: TenantRecordProps) {
     super()
 
@@ -41,6 +57,7 @@ export class TenantRecord extends BaseRecord<DefaultTenantRecordTags> {
       this._tags = props.tags ?? {}
       this.config = props.config
       this.storageVersion = props.storageVersion
+      this.status = props.status ?? TenantStatus.Active
     }
   }
 
@@ -49,6 +66,7 @@ export class TenantRecord extends BaseRecord<DefaultTenantRecordTags> {
       ...this._tags,
       label: this.config.label,
       storageVersion: this.storageVersion,
+      status: this.status,
     }
   }
 }

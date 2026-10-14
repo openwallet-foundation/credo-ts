@@ -32,6 +32,10 @@ export interface DidCommKeylistUpdatedEvent extends BaseEvent {
   payload: {
     mediationRecord: DidCommMediationRecord
     keylist: DidCommKeylistUpdate[]
+    /**
+     * Thread id of the keylist update this response belongs to. Undefined if the mediator did not thread the response.
+     */
+    threadId?: string
   }
 }
 

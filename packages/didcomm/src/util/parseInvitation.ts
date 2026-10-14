@@ -4,8 +4,7 @@ import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@cre
 import queryString from 'query-string'
 
 import { DidCommMessage } from '../DidCommMessage'
-import { DidCommConnectionInvitationMessage } from '../modules/connections/messages'
-import { convertToNewInvitation, convertV2InvitationToOutOfBandInvitation } from '../modules/oob/converters'
+import { convertV2InvitationToOutOfBandInvitation } from '../modules/oob/converters'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../modules/oob/messages'
 import { DidCommOutOfBandInvitationV2 } from '../modules/oob/messages/DidCommOutOfBandInvitationV2'
@@ -74,13 +73,6 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Di
     invitation.invitationType = DidCommInvitationType.OutOfBand
     return invitation
   }
-  if (supportsIncomingMessageType(parsedMessageType, DidCommConnectionInvitationMessage.type)) {
-    const invitation = JsonTransformer.fromJSON(invitationJson, DidCommConnectionInvitationMessage)
-    MessageValidator.validateSync(invitation)
-    const outOfBandInvitation = convertToNewInvitation(invitation)
-    outOfBandInvitation.invitationType = DidCommInvitationType.Connection
-    return outOfBandInvitation
-  }
   if (invitationJson['~service']) {
     // This is probably a legacy connectionless invitation
     return transformLegacyConnectionlessInvitationToOutOfBandInvitation(invitationJson)
@@ -98,13 +90,13 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Di
 export const parseInvitationUrl = (invitationUrl: string): DidCommOutOfBandInvitation => {
   const parsedUrl = queryString.parseUrl(invitationUrl).query
 
-  const encodedInvitation = parsedUrl._oob ?? parsedUrl.oob ?? parsedUrl.c_i ?? parsedUrl.d_m
+  const encodedInvitation = parsedUrl._oob ?? parsedUrl.oob ?? parsedUrl.d_m
 
   if (typeof encodedInvitation === 'string') {
     return parseInvitationJson(decodeInvitationJson(encodedInvitation))
   }
   throw new CredoError(
-    'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob`, `c_i` or `d_m`.'
+    'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob` or `d_m`.'
   )
 }
 
@@ -167,7 +159,7 @@ export const parseInvitationShortUrl = async (
   dependencies: AgentDependencies
 ): Promise<DidCommOutOfBandInvitation> => {
   const parsedUrl = queryString.parseUrl(invitationUrl).query
-  if (parsedUrl._oob || parsedUrl.oob || parsedUrl.c_i) {
+  if (parsedUrl._oob || parsedUrl.oob) {
     return parseInvitationUrl(invitationUrl)
   }
   // Legacy connectionless invitation
@@ -180,7 +172,7 @@ export const parseInvitationShortUrl = async (
     return outOfBandInvitation
   } catch (_error) {
     throw new CredoError(
-      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob`, `c_i` or `d_m`, or be valid shortened URL'
+      'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `_oob`, `oob` or `d_m`, or be valid shortened URL'
     )
   }
 }

@@ -7,6 +7,7 @@ import { DidRepository } from '../../../../../../core/src/modules/dids/repositor
 import { uuid } from '../../../../../../core/src/utils/uuid'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { DidCommMessageSender } from '../../../../DidCommMessageSender'
+import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../../models'
 import { DidCommInboundMessageContext } from '../../../../models/DidCommInboundMessageContext'
 import { DidCommDidExchangeState } from '../../../connections'
@@ -17,6 +18,7 @@ import { DidCommRoutingEventTypes } from '../../DidCommRoutingEvents'
 import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import {
   DidCommKeylistUpdateAction,
+  type DidCommKeylistUpdateMessage,
   DidCommKeylistUpdateResponseMessage,
   DidCommKeylistUpdateResult,
   DidCommMediationGrantMessage,
@@ -180,10 +182,90 @@ describe('DidCommMediationRecipientService', () => {
         payload: {
           mediationRecord,
           keylist,
+          threadId: keyListUpdateResponse.threadId,
         },
       })
       expect(spyAddRecipientKey).toHaveBeenCalledWith('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K')
       spyAddRecipientKey.mockClear()
+    })
+  })
+
+  describe('keylistUpdateAndAwait', () => {
+    const recipientKey1 = Kms.PublicJwk.fromFingerprint(
+      'z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
+    ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    const recipientKey2 = Kms.PublicJwk.fromFingerprint(
+      'z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL'
+    ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+
+    const keylistAgentContext = getAgentContext({
+      agentConfig: config,
+      registerInstances: [[DidCommModuleConfig, new DidCommModuleConfig()]],
+    })
+    let realEventEmitter: EventEmitter
+    let service: DidCommMediationRecipientService
+
+    beforeEach(async () => {
+      const { EventEmitter: ActualEventEmitter } = await vi.importActual<
+        typeof import('../../../../../../core/src/agent/EventEmitter')
+      >('../../../../../../core/src/agent/EventEmitter')
+      realEventEmitter = new ActualEventEmitter(config.agentDependencies, new Subject())
+      service = new DidCommMediationRecipientService(
+        connectionService,
+        messageSender,
+        mediationRepository,
+        realEventEmitter
+      )
+      vi.spyOn(connectionService, 'getById').mockResolvedValue(
+        getMockConnection({ state: DidCommDidExchangeState.Completed })
+      )
+    })
+
+    const sentKeylistUpdates = () =>
+      mockFunction(messageSender.sendMessage).mock.calls.map(
+        ([outboundMessageContext]) => outboundMessageContext.message as DidCommKeylistUpdateMessage
+      )
+
+    const emitKeylistUpdated = (threadId?: string) =>
+      realEventEmitter.emit(keylistAgentContext, {
+        type: DidCommRoutingEventTypes.RecipientKeylistUpdated,
+        payload: { mediationRecord, keylist: [], threadId },
+      })
+
+    it('only resolves on the response to its own keylist update', async () => {
+      let firstResolved = false
+      const first = service
+        .keylistUpdateAndAwait(keylistAgentContext, mediationRecord, [
+          { recipientKey: recipientKey1, action: DidCommKeylistUpdateAction.add },
+        ])
+        .then((record) => {
+          firstResolved = true
+          return record
+        })
+      const second = service.keylistUpdateAndAwait(keylistAgentContext, mediationRecord, [
+        { recipientKey: recipientKey2, action: DidCommKeylistUpdateAction.add },
+      ])
+
+      await vi.waitFor(() => expect(messageSender.sendMessage).toHaveBeenCalledTimes(2))
+      const [firstMessage, secondMessage] = sentKeylistUpdates()
+
+      emitKeylistUpdated(secondMessage.threadId)
+      await expect(second).resolves.toBe(mediationRecord)
+      expect(firstResolved).toBe(false)
+
+      emitKeylistUpdated(firstMessage.threadId)
+      await expect(first).resolves.toBe(mediationRecord)
+    })
+
+    it('resolves on an unthreaded response', async () => {
+      const result = service.keylistUpdateAndAwait(keylistAgentContext, mediationRecord, [
+        { recipientKey: recipientKey1, action: DidCommKeylistUpdateAction.add },
+      ])
+
+      await vi.waitFor(() => expect(messageSender.sendMessage).toHaveBeenCalledTimes(1))
+      emitKeylistUpdated(undefined)
+
+      await expect(result).resolves.toBe(mediationRecord)
     })
   })
 

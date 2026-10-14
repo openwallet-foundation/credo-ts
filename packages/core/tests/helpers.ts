@@ -117,7 +117,7 @@ export function getCreateInvitationConfigForConnection(
   overrides: Record<string, unknown> = {}
 ): Record<string, unknown> {
   if (didCommVersion === 'v1') {
-    return { handshakeProtocols: [DidCommHandshakeProtocol.Connections], ...overrides }
+    return { handshakeProtocols: [DidCommHandshakeProtocol.DidExchange], ...overrides }
   }
   return { ...overrides }
 }
@@ -846,7 +846,7 @@ export async function makeConnection(
 
   // V1: handshake protocol, both agents get connections from a single invitation
   const agentAOutOfBand = await agentA.didcomm.oob.createInvitation({
-    handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+    handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
   })
 
   const { connectionRecord: agentBConnection, outOfBandRecord: agentBOutOfBand } =

@@ -18,12 +18,7 @@
 import { AskarModule } from '@credo-ts/askar'
 import type { InitConfig } from '@credo-ts/core'
 import { Agent, LogLevel } from '@credo-ts/core'
-import {
-  DidCommConnectionInvitationMessage,
-  DidCommHttpOutboundTransport,
-  DidCommModule,
-  DidCommWsOutboundTransport,
-} from '@credo-ts/didcomm'
+import { DidCommHttpOutboundTransport, DidCommModule, DidCommWsOutboundTransport } from '@credo-ts/didcomm'
 import { agentDependencies, DidCommHttpInboundTransport, DidCommWsInboundTransport } from '@credo-ts/node'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
@@ -99,15 +94,10 @@ const agent = new Agent({
 await agent.initialize()
 
 // Create invitation: GET /invitation (follows the configured DIDComm version)
-httpInboundTransport.app.get('/invitation', async (req, res) => {
-  if (typeof req.query.c_i === 'string') {
-    const invitation = DidCommConnectionInvitationMessage.fromUrl(req.url)
-    res.send(invitation.toJSON())
-  } else {
-    const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation()
-    const httpEndpoint = endpoints.find((e) => e.startsWith('http'))
-    res.send(outOfBandInvitation.toUrl({ domain: `${httpEndpoint}/invitation` }))
-  }
+httpInboundTransport.app.get('/invitation', async (_req, res) => {
+  const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation()
+  const httpEndpoint = endpoints.find((e) => e.startsWith('http'))
+  res.send(outOfBandInvitation.toUrl({ domain: `${httpEndpoint}/invitation` }))
 })
 
 // When an 'upgrade' to WS is made on our http server, we forward the

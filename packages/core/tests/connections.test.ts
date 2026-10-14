@@ -90,7 +90,7 @@ describe('connections', () => {
     )
 
     const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
       multiUseInvitation: true,
     })
 
@@ -113,7 +113,7 @@ describe('connections', () => {
 
   it('one should be able to make multiple connections using a multi use invite', async () => {
     const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
       multiUseInvitation: true,
     })
 
@@ -159,7 +159,7 @@ describe('connections', () => {
 
   it('tag connections with multiple types and query them', async () => {
     const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
       multiUseInvitation: true,
     })
 
@@ -212,7 +212,7 @@ describe('connections', () => {
 
   it.skip('should be able to make multiple connections using a multi use invite', async () => {
     const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
       multiUseInvitation: true,
     })
 
@@ -260,7 +260,7 @@ describe('connections', () => {
   it('agent using mediator should be able to make multiple connections using a multi use invite', async () => {
     // Make Faber use a mediator
     const { outOfBandInvitation: mediatorOutOfBandInvitation } = await mediatorAgent.didcomm.oob.createInvitation({
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
     let { connectionRecord } = await faberAgent.didcomm.oob.receiveInvitation(mediatorOutOfBandInvitation, {
       label: 'faber',
@@ -290,7 +290,7 @@ describe('connections', () => {
 
     // Now create invitations that will be mediated
     const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
-      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
       multiUseInvitation: true,
     })
 

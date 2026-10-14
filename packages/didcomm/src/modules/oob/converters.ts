@@ -3,87 +3,16 @@ import {
   DidDocumentBuilder,
   DidKey,
   didDocumentToNumAlgo4Did,
-  didKeyToVerkey,
   type JsonObject,
   JsonTransformer,
-  verkeyToDidKey,
 } from '@credo-ts/core'
 import { DidCommAttachment } from '../../decorators/attachment/DidCommAttachment'
 import { normalizeV2PlaintextToV1 } from '../../v2/normalize'
 import { mapV1AttachmentToV2, mapV2AttachmentToV1 } from '../../v2/plaintextBuilder'
 import type { DidCommV2Attachment, DidCommV2PlaintextMessage } from '../../v2/types'
-import {
-  DidCommConnectionInvitationMessage,
-  type DidCommConnectionInvitationMessageOptions,
-} from '../connections/messages/DidCommConnectionInvitationMessage'
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
-import type { DidCommOutOfBandInvitationOptions } from './messages'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from './messages/DidCommOutOfBandInvitation'
 import type { DidCommOutOfBandInvitationV2 } from './messages/DidCommOutOfBandInvitationV2'
-
-export function convertToNewInvitation(oldInvitation: DidCommConnectionInvitationMessage) {
-  let service: string | OutOfBandDidCommService
-
-  if (oldInvitation.did) {
-    service = oldInvitation.did
-  } else if (oldInvitation.serviceEndpoint && oldInvitation.recipientKeys && oldInvitation.recipientKeys.length > 0) {
-    service = new OutOfBandDidCommService({
-      id: '#inline',
-      recipientKeys: oldInvitation.recipientKeys?.map(verkeyToDidKey),
-      routingKeys: oldInvitation.routingKeys?.map(verkeyToDidKey),
-      serviceEndpoint: oldInvitation.serviceEndpoint,
-    })
-  } else {
-    throw new Error('Missing required serviceEndpoint, routingKeys and/or did fields in connection invitation')
-  }
-
-  const options: DidCommOutOfBandInvitationOptions = {
-    id: oldInvitation.id,
-    label: oldInvitation.label,
-    imageUrl: oldInvitation.imageUrl,
-    appendedAttachments: oldInvitation.appendedAttachments,
-    accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
-    services: [service],
-    // NOTE: we hardcode it to 1.0, we won't see support for newer versions of the protocol
-    // and we also can process 1.0 if we support newer versions
-    handshakeProtocols: ['https://didcomm.org/connections/1.0'],
-  }
-
-  const outOfBandInvitation = new DidCommOutOfBandInvitation(options)
-  outOfBandInvitation.invitationType = DidCommInvitationType.Connection
-  return outOfBandInvitation
-}
-
-export function convertToOldInvitation(newInvitation: DidCommOutOfBandInvitation) {
-  // Taking first service, as we can only include one service in a legacy invitation.
-  const [service] = newInvitation.getServices()
-
-  let options: DidCommConnectionInvitationMessageOptions
-  if (typeof service === 'string') {
-    options = {
-      id: newInvitation.id,
-      // label is optional
-      label: newInvitation.label ?? '',
-      did: service,
-      imageUrl: newInvitation.imageUrl,
-      appendedAttachments: newInvitation.appendedAttachments,
-    }
-  } else {
-    options = {
-      id: newInvitation.id,
-      // label is optional
-      label: newInvitation.label ?? '',
-      recipientKeys: service.recipientKeys.map(didKeyToVerkey),
-      routingKeys: service.routingKeys?.map(didKeyToVerkey),
-      serviceEndpoint: service.serviceEndpoint,
-      imageUrl: newInvitation.imageUrl,
-      appendedAttachments: newInvitation.appendedAttachments,
-    }
-  }
-
-  const connectionInvitationMessage = new DidCommConnectionInvitationMessage(options)
-  return connectionInvitationMessage
-}
 
 /**
  * Map a v2 attachment (`{ id, media_type, ... }`) to a typed `DidCommAttachment`

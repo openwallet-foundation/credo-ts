@@ -15,7 +15,6 @@ import type { DidCommOutOfBandInvitationV2 } from './DidCommOutOfBandInvitationV
  */
 export enum DidCommInvitationType {
   OutOfBand = 'out-of-band/1.x',
-  Connection = 'connections/1.x',
   Connectionless = 'connectionless',
   V2OutOfBand = 'out-of-band/2.x',
 }
