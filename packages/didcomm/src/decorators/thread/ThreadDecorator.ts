@@ -7,7 +7,7 @@ import { IsInt, IsOptional, Matches } from 'class-validator'
 // (?:#(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)?   # optional fragment
 // $
 
-const PthidRegExp =
+export const PthidRegExp =
   /^([-_./A-Za-z0-9]{8,64}|did:[a-z0-9]+:(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9.-])+(?::(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)*(?:\?(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)?(?:#(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)?)$/
 
 /**
