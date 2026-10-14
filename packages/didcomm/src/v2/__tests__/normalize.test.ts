@@ -1,5 +1,6 @@
-import { JsonTransformer } from '@credo-ts/core'
+import { ClassValidationError, JsonTransformer } from '@credo-ts/core'
 
+import { DidCommProblemReportV2Message } from '../../messages/problem-reports/DidCommProblemReportV2Message'
 import { DidCommTrustPingMessage } from '../../modules/connections/messages/DidCommTrustPingMessage'
 import { DidCommForwardV2Message } from '../../modules/routing/protocol/v2/messages/DidCommForwardV2Message'
 import { normalizeV2PlaintextToV1 } from '../normalize'
@@ -289,6 +290,42 @@ describe('normalizeV2PlaintextToV1', () => {
     })
     const message = JsonTransformer.fromJSON(v1, DidCommForwardV2Message)
     expect(message.appendedAttachments?.[0].mimeType).toBeNull()
+  })
+
+  it('reads a received report-problem 2.0 problem report', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      type: 'https://didcomm.org/report-problem/2.0/problem-report',
+      id: '7c9de639-c51c-4d60-ab95-103fa613c805',
+      pthid: '1e513ad4-48c9-444e-9e7e-5b8b45c5e325',
+      ack: ['1e513ad4-48c9-444e-9e7e-5b8b45c5e325'],
+      body: {
+        code: 'e.p.xfer.cant-use-endpoint',
+        comment: 'Unable to use the {1} endpoint for {2}.',
+        args: ['https://agents.r.us/inbox', 'did:sov:C805sNYhMrjHiqZDTUASHg'],
+        escalate_to: 'mailto:admin@foo.org',
+      },
+    })
+    const message = JsonTransformer.fromJSON(v1, DidCommProblemReportV2Message)
+
+    expect(message).toMatchObject({
+      code: 'e.p.xfer.cant-use-endpoint',
+      comment: 'Unable to use the {1} endpoint for {2}.',
+      args: ['https://agents.r.us/inbox', 'did:sov:C805sNYhMrjHiqZDTUASHg'],
+      escalateTo: 'mailto:admin@foo.org',
+    })
+    expect(message.thread?.parentThreadId).toBe('1e513ad4-48c9-444e-9e7e-5b8b45c5e325')
+    expect(message.ack).toEqual(['1e513ad4-48c9-444e-9e7e-5b8b45c5e325'])
+  })
+
+  it('rejects a received report-problem 2.0 problem report without a code', () => {
+    const v1 = normalizeV2PlaintextToV1({
+      type: 'https://didcomm.org/report-problem/2.0/problem-report',
+      id: '7c9de639-c51c-4d60-ab95-103fa613c805',
+      pthid: '1e513ad4-48c9-444e-9e7e-5b8b45c5e325',
+      body: { comment: 'Bad message.' },
+    })
+
+    expect(() => JsonTransformer.fromJSON(v1, DidCommProblemReportV2Message)).toThrow(ClassValidationError)
   })
 
   it('passes through created_time and expires_time', () => {

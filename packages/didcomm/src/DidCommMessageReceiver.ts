@@ -22,7 +22,7 @@ import { DidCommTransportService } from './DidCommTransportService'
 import type { DidCommEnvelope } from './envelope'
 import { DidCommEnvelopeRegistry } from './envelope'
 import { DidCommProblemReportError } from './errors'
-import { DidCommProblemReportMessage } from './messages'
+import { DidCommProblemReportMessage, DidCommProblemReportV2Message } from './messages'
 import { DidCommInboundMessageContext, DidCommOutboundMessageContext, DidCommProblemReportReason } from './models'
 import {
   DidCommConnectionService,
@@ -512,7 +512,8 @@ export class DidCommMessageReceiver {
   }
 
   /**
-   * Send the problem report message (https://didcomm.org/notification/1.0/problem-report) to the recipient.
+   * Send the problem report message (https://didcomm.org/notification/1.0/problem-report, or
+   * https://didcomm.org/report-problem/2.0/problem-report on DIDComm v2 connections) to the recipient.
    * @param message error message to send
    * @param connection connection to send the message to
    * @param plaintextMessage received inbound message
@@ -536,7 +537,19 @@ export class DidCommMessageReceiver {
     problemReportMessage.setThread({
       parentThreadId: plaintextMessage['@id'],
     })
-    const outboundMessageContext = new DidCommOutboundMessageContext(problemReportMessage, { agentContext, connection })
+    let outboundProblemReport: DidCommMessage = problemReportMessage
+    if (connection.didcommVersion === 'v2') {
+      const problemReportV2 = DidCommProblemReportV2Message.fromProblemReportMessage(problemReportMessage, {
+        id: plaintextMessage['@id'],
+        threadId: plaintextMessage['~thread']?.thid,
+      })
+      if (!problemReportV2) return
+      outboundProblemReport = problemReportV2
+    }
+    const outboundMessageContext = new DidCommOutboundMessageContext(outboundProblemReport, {
+      agentContext,
+      connection,
+    })
     if (outboundMessageContext) {
       await this.messageSender.sendMessage(outboundMessageContext)
     }

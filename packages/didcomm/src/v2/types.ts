@@ -29,6 +29,7 @@ export interface DidCommV2PlaintextMessage {
   lang?: string
   return_route?: string
   please_ack?: string[]
+  ack?: string[]
   attachments?: DidCommV2Attachment[]
   body?: Record<string, unknown>
   from_prior?: string

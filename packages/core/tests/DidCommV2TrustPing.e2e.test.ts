@@ -7,6 +7,7 @@ import {
   DidCommEmptyMessage,
   DidCommEventTypes,
   DidCommHandshakeProtocol,
+  DidCommProblemReportV2Message,
   DidCommTrustPingEventTypes,
   DidCommTrustPingMessage,
   DidCommTrustPingResponseMessage,
@@ -283,8 +284,8 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       const ping = new DidCommTrustPingMessage({ responseRequested: true })
       const { invitationUrl } = await createInvitationUrlWithAttachedData({ json: ping.toJSON() })
 
-      const [aliceReplay] = setupEventReplaySubjects(
-        [aliceAgent],
+      const [faberReplay, aliceReplay] = setupEventReplaySubjects(
+        [faberAgent, aliceAgent],
         [...trustPingEventTypes, DidCommEventTypes.DidCommMessageProcessed]
       )
       const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, {
@@ -298,6 +299,18 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       const aliceEventTypes: string[] = []
       aliceReplay.subscribe((event) => aliceEventTypes.push(event.type))
       expect(aliceEventTypes).not.toContain(DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent)
+
+      const problemReport = await waitForAgentMessageProcessedEventSubject(faberReplay, {
+        messageType: DidCommProblemReportV2Message.type.messageTypeUri,
+      })
+      expect(problemReport).toBeInstanceOf(DidCommProblemReportV2Message)
+      expect(problemReport).toMatchObject({
+        code: 'e.p.msg.message-parse-failure',
+        comment: 'Bad message: {1}',
+        args: [expect.stringContaining('The message type is not supported over DIDComm v2')],
+      })
+      expect(problemReport.thread?.parentThreadId).toBe(ping.id)
+      expect(problemReport.getLocale()).toBe('en')
     })
 
     it('v2 OOB (no handshake): a first message sent from the connection state listener carries the pthid', async () => {

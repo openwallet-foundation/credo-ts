@@ -27,6 +27,7 @@ import {
   DidCommDidRotateProblemReportHandler,
   DidCommEmptyMessageHandler,
   DidCommHangupHandler,
+  DidCommProblemReportV2MessageHandler,
   DidCommTrustPingMessageHandler,
   DidCommTrustPingResponseMessageHandler,
 } from './handlers'
@@ -121,6 +122,7 @@ export class DidCommConnectionsModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommHangupHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateProblemReportHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommEmptyMessageHandler())
+    messageHandlerRegistry.registerMessageHandler(new DidCommProblemReportV2MessageHandler())
 
     featureRegistry.register(
       new DidCommProtocol({

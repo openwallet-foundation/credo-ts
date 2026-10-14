@@ -4,6 +4,7 @@ import { getAgentOptions, getMockConnection } from '../../../core/tests/helpers'
 import { setupSubjectTransports } from '../../../core/tests/transport'
 import { DidCommMessageReceiver } from '../DidCommMessageReceiver'
 import { DidCommMessageSender } from '../DidCommMessageSender'
+import { DidCommProblemReportV2Message } from '../messages'
 import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
 
 describe('DidCommMessageReceiver', () => {
@@ -88,6 +89,65 @@ describe('DidCommMessageReceiver', () => {
       expect(sendMessage).not.toHaveBeenCalled()
 
       await agent.shutdown()
+    })
+
+    describe('invalid message on a DIDComm v2 connection', () => {
+      const pingId = '4c1d6c5e-2f44-4a8e-9d3c-1f0b6a7e8d90'
+      let agent: Agent
+
+      beforeAll(async () => {
+        agent = new Agent(getAgentOptions('ReceiverProblemReportV2Test', {}, {}, undefined, { requireDidcomm: true }))
+        await agent.initialize()
+      })
+
+      afterAll(async () => {
+        await agent.shutdown()
+      })
+
+      afterEach(() => {
+        vi.restoreAllMocks()
+      })
+
+      const transformInvalidPing = async (ping: { '@id': string; '~thread': { thid: string } }) => {
+        const sendMessage = vi
+          .spyOn(agent.dependencyManager.resolve(DidCommMessageSender), 'sendMessage')
+          .mockResolvedValue()
+        const receiver = agent.dependencyManager.resolve(DidCommMessageReceiver)
+
+        // @ts-expect-error
+        const transformed = receiver.transformAndValidate(
+          agent.context,
+          { '@type': 'https://didcomm.org/trust-ping/2.0/ping', response_requested: 'yes', ...ping },
+          getMockConnection({ didcommVersion: 'v2' })
+        )
+        await expect(transformed).rejects.toThrow('Error validating message https://didcomm.org/trust-ping/2.0/ping')
+
+        return sendMessage.mock.calls.map(([{ message }]) => message)
+      }
+
+      it('answers with a report-problem 2.0 problem report', async () => {
+        const [problemReport] = await transformInvalidPing({ '@id': pingId, '~thread': { thid: 'thread-1' } })
+
+        expect(problemReport).toBeInstanceOf(DidCommProblemReportV2Message)
+        expect(problemReport).toMatchObject({
+          ack: [pingId],
+          code: 'e.p.msg.message-parse-failure',
+          comment: 'Bad message: {1}',
+          args: ['Error validating message https://didcomm.org/trust-ping/2.0/ping'],
+        })
+        expect(problemReport.thread?.parentThreadId).toBe('thread-1')
+      })
+
+      it('uses the message id as pthid when the thid is not valid', async () => {
+        const [problemReport] = await transformInvalidPing({ '@id': pingId, '~thread': { thid: `urn:uuid:${pingId}` } })
+
+        expect(problemReport).toMatchObject({ ack: [pingId] })
+        expect(problemReport.thread?.parentThreadId).toBe(pingId)
+      })
+
+      it('does not answer a message without a valid id', async () => {
+        expect(await transformInvalidPing({ '@id': 'short', '~thread': { thid: 'thread-1' } })).toEqual([])
+      })
     })
   })
 })
