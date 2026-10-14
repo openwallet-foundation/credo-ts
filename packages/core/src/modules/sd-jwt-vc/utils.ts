@@ -3,8 +3,10 @@ import { AgentContext } from '../../agent'
 import type { HashName } from '../../crypto'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
+import { zParseWithErrorHandling } from '../../utils/zod'
 import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { isKnownJwaSignatureAlgorithm, type Jwk, KeyManagementApi, PublicJwk } from '../kms'
+import { zJwkThumbprintComponents } from '../kms/jwk/jwkThumbprint'
 import { X509Certificate } from '../x509/X509Certificate'
 import { SdJwtVcError } from './SdJwtVcError'
 import type { SdJwtVcHolderBinding, SdJwtVcIssuer } from './SdJwtVcOptions'
@@ -73,7 +75,7 @@ export async function extractKeyFromHolderBinding(
       alg,
       publicJwk,
       cnf: {
-        jwk: publicJwk.toJson(),
+        jwk: zParseWithErrorHandling(zJwkThumbprintComponents, publicJwk.toJson(), 'Invalid holder jwk'),
       },
     }
   }
