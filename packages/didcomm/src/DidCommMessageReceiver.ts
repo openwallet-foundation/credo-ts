@@ -5,6 +5,7 @@ import {
   CredoError,
   DidRepository,
   DidsApi,
+  getDidPeer4ShortFormForEquivalence,
   InjectionSymbols,
   inject,
   injectable,
@@ -52,7 +53,10 @@ import type { DidCommV2SignedMessageWire } from './v2'
 const FIRST_MESSAGE_CONNECTION_ID_NAMESPACE = '6b238103-2e51-4a24-9fd0-8d4223f63b08'
 
 const firstMessageConnectionId = (ourDid: string, theirDid: string): string =>
-  utils.uuidFromName(`${ourDid} ${theirDid}`, FIRST_MESSAGE_CONNECTION_ID_NAMESPACE)
+  utils.uuidFromName(
+    [ourDid, theirDid].map((did) => getDidPeer4ShortFormForEquivalence(did) ?? did).join(' '),
+    FIRST_MESSAGE_CONNECTION_ID_NAMESPACE
+  )
 
 @injectable()
 export class DidCommMessageReceiver {
@@ -455,7 +459,9 @@ export class DidCommMessageReceiver {
         agentContext,
         firstMessageConnectionId(recipient, from)
       )
-      if (racedConnection?.theirDid === from) return { connection: racedConnection }
+      if (racedConnection?.theirDid && areEquivalentDidPeer4Forms(racedConnection.theirDid, from)) {
+        return { connection: racedConnection }
+      }
     }
 
     // v1: use sender/recipient keys
@@ -502,7 +508,7 @@ export class DidCommMessageReceiver {
       }
 
       const existing = await this.connectionService.getById(agentContext, connection.id)
-      if (existing.theirDid === props.theirDid) {
+      if (existing.theirDid && areEquivalentDidPeer4Forms(existing.theirDid, props.theirDid)) {
         if (routing && connection.did) await this.discardUnusedDid(agentContext, connection.did, routing)
         return { connection: existing, created: false }
       }

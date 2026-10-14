@@ -1,4 +1,4 @@
-import { type DidDocumentKey, Kms } from '@credo-ts/core'
+import { type DidDocumentKey, getDidPeer4ShortFormForEquivalence, Kms } from '@credo-ts/core'
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import {
@@ -19,6 +19,7 @@ import {
   waitForConnectionRecordSubject,
   waitForDidRotateSubject,
 } from '../../../../../core/tests/helpers'
+import { DidCommEnvelopeRegistry } from '../../../envelope'
 import { DidCommBasicMessageEventTypes } from '../../basic-messages'
 import { DidCommConnectionEventTypes, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../connections'
 import { InMemoryDidRegistry } from '../../connections/__tests__/InMemoryDidRegistry'
@@ -141,6 +142,42 @@ describe('out of band implicit', () => {
       await faberAgent.didcomm.basicMessages.findAllByQuery({ connectionId: faberConnections[0].id })
     ).toHaveLength(2)
     expect(await faberAgent.dids.getCreatedDids({ method: 'peer' })).toHaveLength(peerDidsBefore.length + 1)
+  })
+
+  test('v2 implicit invitation: first messages that use both did:peer:4 forms create one connection', async () => {
+    const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber', { withKeyAgreement: true })
+    const { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+      did: inMemoryDid,
+      didCommVersion: 'v2',
+      label: 'alice',
+    })
+    const aliceShortDid = aliceFaberConnection?.did && getDidPeer4ShortFormForEquivalence(aliceFaberConnection.did)
+    if (!aliceFaberConnection || !aliceShortDid) throw new Error('Expected a did:peer:4 connection')
+
+    const envelope = faberAgent.dependencyManager.resolve(DidCommEnvelopeRegistry).getEnvelopeForDidCommVersion('v2')
+    const unpack = envelope.unpack.bind(envelope)
+    let unpacked = 0
+    const spy = vi.spyOn(envelope, 'unpack').mockImplementation(async (context, message) => {
+      const decrypted = await unpack(context, message)
+      return ++unpacked === 2 ? { ...decrypted, authenticatedSenderDid: aliceShortDid } : decrypted
+    })
+
+    try {
+      await Promise.all([
+        aliceAgent.didcomm.basicMessages.sendMessage(aliceFaberConnection.id, 'mixed forms 1'),
+        aliceAgent.didcomm.basicMessages.sendMessage(aliceFaberConnection.id, 'mixed forms 2'),
+      ])
+      await waitForBasicMessageSubject(faberMessageReplay, { content: 'mixed forms 1' })
+      await waitForBasicMessageSubject(faberMessageReplay, { content: 'mixed forms 2' })
+    } finally {
+      spy.mockRestore()
+    }
+
+    const faberConnections = await faberAgent.didcomm.connections.findAllByQuery({ invitationDid: inMemoryDid })
+    expect(faberConnections).toHaveLength(1)
+    expect(
+      await faberAgent.didcomm.basicMessages.findAllByQuery({ connectionId: faberConnections[0].id })
+    ).toHaveLength(2)
   })
 
   test('v2 implicit invitation: a peer reusing its DID after hanging up gets one new connection', async () => {
