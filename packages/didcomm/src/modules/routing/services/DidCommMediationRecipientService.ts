@@ -229,6 +229,7 @@ export class DidCommMediationRecipientService {
       payload: {
         mediationRecord,
         updated,
+        threadId: messageContext.message.thread?.threadId,
       },
     })
   }
@@ -279,6 +280,13 @@ export class DidCommMediationRecipientService {
       .pipe(
         filterContextCorrelationId(agentContext.contextCorrelationId),
         filter((event) => mediationRecord.id === event.payload.mediationRecord.id),
+        // Several keylist updates to one mediator can be in flight at once. CM 2.0 does not require a thid on the
+        // response, so an unthreaded one falls back to matching on updates[0].recipientDid.
+        filter((event) =>
+          event.payload.threadId
+            ? event.payload.threadId === message.threadId
+            : event.payload.updated.some((item) => item.recipientDid === updates[0].recipientDid)
+        ),
         first(),
         timeout({
           first: timeoutMs,

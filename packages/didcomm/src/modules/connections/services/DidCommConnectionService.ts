@@ -905,11 +905,11 @@ export class DidCommConnectionService {
 
   public async createConnection(
     agentContext: AgentContext,
-    options: DidCommConnectionRecordProps,
+    options: DidCommConnectionRecordProps | DidCommConnectionRecord,
     emitStateChanged = false,
     metadata?: Partial<DidCommConnectionMetadata>
   ): Promise<DidCommConnectionRecord> {
-    const connectionRecord = new DidCommConnectionRecord(options)
+    const connectionRecord = options instanceof DidCommConnectionRecord ? options : new DidCommConnectionRecord(options)
     for (const [key, value] of Object.entries(metadata ?? {})) connectionRecord.metadata.set(key, value)
     await this.connectionRepository.save(agentContext, connectionRecord)
     if (emitStateChanged) {

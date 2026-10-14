@@ -118,11 +118,12 @@ import { indyDidFromPublicKeyBase58 } from './utils/did'
 import { areObjectsEqual } from './utils/objectEquality'
 import timestamp, { addSecondsToDate, dateToSeconds, nowInSeconds } from './utils/timestamp'
 import { getProtocolScheme } from './utils/uri'
-import { isValidUuid, uuid } from './utils/uuid'
+import { isValidUuid, uuid, uuidFromName } from './utils/uuid'
 
 const utils = {
   areObjectsEqual,
   uuid,
+  uuidFromName,
   isValidUuid,
   getProtocolScheme,
   timestamp,
