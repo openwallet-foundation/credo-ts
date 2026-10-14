@@ -356,12 +356,13 @@ describe('DidCommMediationRecipientService', () => {
         mockFunction(connectionRepository.getById).mockResolvedValue(
           getMockConnection({ state: DidCommDidExchangeState.Completed })
         )
-        const emitUpdated = (recipientDid: string) =>
+        const emitUpdated = (recipientDid: string, threadId?: string) =>
           actualEventEmitter.emit(agentContext, {
             type: DidCommRoutingEventTypes.RecipientKeylistUpdatedV2,
             payload: {
               mediationRecord: v2Record,
               updated: [{ recipientDid, action: KeylistUpdateActionV2.add, result: KeylistUpdateResultV2.Success }],
+              threadId,
             },
           })
         const updates = [{ recipientDid: 'did:peer:2.mine', action: KeylistUpdateActionV2.add }]
@@ -373,6 +374,14 @@ describe('DidCommMediationRecipientService', () => {
           emitUpdated('did:peer:2.other')
           emitUpdated('did:peer:2.mine')
         })
+        await expect(service.keylistUpdateAndAwaitV2(agentContext, v2Record, updates, 100)).resolves.toBe(v2Record)
+
+        mockFunction(messageSender.sendMessage).mockImplementation(async () => emitUpdated('did:peer:2.mine', 'other'))
+        await expect(service.keylistUpdateAndAwaitV2(agentContext, v2Record, updates, 100)).rejects.toThrow()
+
+        mockFunction(messageSender.sendMessage).mockImplementation(async ({ message }) =>
+          emitUpdated('did:peer:2.mine-in-another-form', message.threadId)
+        )
         await expect(service.keylistUpdateAndAwaitV2(agentContext, v2Record, updates, 100)).resolves.toBe(v2Record)
       })
     })
