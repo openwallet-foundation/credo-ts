@@ -82,7 +82,7 @@ describe('DidCommMessageReceiver', () => {
       // @ts-expect-error
       const transformed = receiver.transformAndValidate(
         agent.context,
-        { '@type': 'https://didcomm.org/report-problem/2.0/problem-report', '@id': 'short' },
+        { '@type': 'https://didcomm.org/report-problem/2.0/problem-report', '@id': 'bad id!' },
         connection
       )
       await expect(transformed).rejects.toThrow('Not sending problem report in response to problem report')
@@ -146,7 +146,7 @@ describe('DidCommMessageReceiver', () => {
       })
 
       it('does not answer a message without a valid id', async () => {
-        expect(await transformInvalidPing({ '@id': 'short', '~thread': { thid: 'thread-1' } })).toEqual([])
+        expect(await transformInvalidPing({ '@id': 'bad id!', '~thread': { thid: 'thread-1' } })).toEqual([])
       })
     })
   })
