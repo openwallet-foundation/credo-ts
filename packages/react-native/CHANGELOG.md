@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.3
+
+### Patch Changes
+
+- Updated dependencies [cce51fb]
+- Updated dependencies [cfa27d3]
+  - @credo-ts/core@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes
