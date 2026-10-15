@@ -224,13 +224,12 @@ export class DidsApi {
       throw new RecordNotFoundError(`Created did '${did}' not found`, { recordType: DidRecord.type })
     }
 
-    const keyId = getKmsKeyIdForVerifiacationMethod(verificationMethod, didRecord.keys)
-    if (!keyId) {
-      throw new CredoError(`No locally managed key is associated with verification method '${verificationMethod.id}'`)
-    }
+    const verificationMethodPublicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    const keyId =
+      getKmsKeyIdForVerifiacationMethod(verificationMethod, didRecord.keys) ?? verificationMethodPublicJwk.legacyKeyId
 
     const kmsPublicJwk = await this.agentContext.resolve(KeyManagementApi).getPublicKey({ keyId })
-    if (!getPublicJwkFromVerificationMethod(verificationMethod).equals(PublicJwk.fromUnknown(kmsPublicJwk))) {
+    if (!verificationMethodPublicJwk.equals(PublicJwk.fromUnknown(kmsPublicJwk))) {
       throw new CredoError(
         `Locally managed key '${keyId}' does not match verification method '${verificationMethod.id}'`
       )

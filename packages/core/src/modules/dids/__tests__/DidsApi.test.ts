@@ -286,12 +286,12 @@ describe('DidsApi', () => {
     )
   })
 
-  test('getKeyIdFromCreatedDidRecord rejects a verification method without a local key mapping', async () => {
+  test('getKeyIdFromCreatedDidRecord rejects a verification method without a mapped or legacy KMS key', async () => {
     const { didDocument, verificationMethod } = await createKmsKeyAndDidDocument()
     await agent.dids.import({ did: didDocument.id })
 
     await expect(agent.dids.getKeyIdFromCreatedDidRecord(didDocument.id, verificationMethod)).rejects.toThrow(
-      'No locally managed key'
+      'not found in backend'
     )
   })
 
@@ -330,6 +330,39 @@ describe('DidsApi', () => {
     })
     expect(await agent.dids.getKeyIdFromCreatedDidRecord(didDocument.id, verificationMethod)).toBe(
       PublicJwk.fromUnknown(importedKey.publicJwk).legacyKeyId
+    )
+  })
+
+  test('accepts an unmapped legacy key ID when its public key matches the verification method', async () => {
+    const privateJwk = transformPrivateKeyToPrivateJwk({
+      privateKey: TypedArrayEncoder.fromUtf8String('00000000000000000000000000000003'),
+      type: { kty: 'OKP', crv: 'Ed25519' },
+    }).privateJwk
+    privateJwk.kid = PublicJwk.fromUnknown(privateJwk).legacyKeyId
+    const importedKey = await agent.kms.importKey({ privateJwk })
+    const didDocument = new DidKey(PublicJwk.fromUnknown(importedKey.publicJwk)).didDocument
+    const verificationMethod = didDocument.verificationMethod?.[0]
+    if (!verificationMethod) throw new Error('Expected verification method for legacy key')
+    await agent.dids.import({ did: didDocument.id, didDocument })
+
+    expect(await agent.dids.getKeyIdFromCreatedDidRecord(didDocument.id, verificationMethod)).toBe(
+      PublicJwk.fromUnknown(importedKey.publicJwk).legacyKeyId
+    )
+  })
+
+  test('rejects an unmapped legacy key ID when its public key does not match the verification method', async () => {
+    const { didDocument, verificationMethod, keyId } = await createKmsKeyAndDidDocument()
+    const legacyKeyId = PublicJwk.fromUnknown(await agent.kms.getPublicKey({ keyId })).legacyKeyId
+    const privateJwk = transformPrivateKeyToPrivateJwk({
+      privateKey: TypedArrayEncoder.fromUtf8String('00000000000000000000000000000004'),
+      type: { kty: 'OKP', crv: 'Ed25519' },
+    }).privateJwk
+    privateJwk.kid = legacyKeyId
+    await agent.kms.importKey({ privateJwk })
+    await agent.dids.import({ did: didDocument.id, didDocument })
+
+    await expect(agent.dids.getKeyIdFromCreatedDidRecord(didDocument.id, verificationMethod)).rejects.toThrow(
+      'does not match verification method'
     )
   })
 })
