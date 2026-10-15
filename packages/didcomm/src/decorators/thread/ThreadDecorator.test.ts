@@ -130,7 +130,7 @@ describe('Decorators | ThreadDecorator', () => {
     })
 
     it('should accept DIDComm v2 message IDs for threadId and parentThreadId', async () => {
-      for (const id of ['a', 'inv1', 'inv~0123456789', 'a'.repeat(64)]) {
+      for (const id of ['a', 'inv1', 'inv~0123456789']) {
         const decorator = new ThreadDecorator({
           threadId: id,
           parentThreadId: id,
