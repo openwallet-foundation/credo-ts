@@ -284,6 +284,12 @@ describe('JsonLd CredentialFormatService', () => {
     })
 
     test('Creates JsonLd Credential Offer', async () => {
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
+      mockFunction(w3cJsonLdCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
+        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      ])
+      mockFunction(w3cJsonLdCredentialService.assertCanSignCredential).mockResolvedValue()
+
       // when
       const { attachment, previewAttributes, format } = await jsonLdFormatService.createOffer(agentContext, {
         credentialFormats: {
@@ -311,11 +317,36 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       expect(previewAttributes).toBeUndefined()
+      expect(w3cJsonLdCredentialService.assertCanSignCredential).toHaveBeenCalledWith(agentContext, {
+        proofType: 'Ed25519Signature2018',
+        verificationMethod:
+          'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        controller: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+      })
 
       expect(format).toMatchObject({
         attachmentId: expect.any(String),
         format: 'aries/ld-proof-vc-detail@v1.0',
       })
+    })
+
+    test('rejects a JsonLd Credential Offer when the issuer DID was not created by the agent', async () => {
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
+      mockFunction(w3cJsonLdCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
+        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      ])
+      mockFunction(w3cJsonLdCredentialService.assertCanSignCredential).mockRejectedValue(
+        new Error("Created did 'did:key:external' not found")
+      )
+
+      await expect(
+        jsonLdFormatService.createOffer(agentContext, {
+          credentialFormats: {
+            jsonld: signCredentialOptions,
+          },
+          credentialExchangeRecord: mockCredentialRecord(),
+        })
+      ).rejects.toThrow("Created did 'did:key:external' not found")
     })
   })
 
@@ -355,6 +386,68 @@ describe('JsonLd CredentialFormatService', () => {
         attachmentId: expect.any(String),
         format: 'aries/ld-proof-vc-detail@v1.0',
       })
+    })
+  })
+
+  describe('Accept Credential Proposal', () => {
+    test('accepts a proposal when the issuer DID has a verification method compatible with the proof type', async () => {
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
+      mockFunction(w3cJsonLdCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
+        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      ])
+      mockFunction(w3cJsonLdCredentialService.assertCanSignCredential).mockResolvedValue()
+
+      const { attachment, format } = await jsonLdFormatService.acceptProposal(agentContext, {
+        credentialExchangeRecord: mockCredentialRecord({
+          state: DidCommCredentialState.ProposalReceived,
+        }),
+        proposalAttachment: requestAttachment,
+      })
+
+      expect(didResolver.resolveDidDocument).toHaveBeenCalledWith(agentContext, inputDocAsJson.issuer)
+      expect(w3cJsonLdCredentialService.assertCanSignCredential).toHaveBeenCalledWith(agentContext, {
+        proofType: 'Ed25519Signature2018',
+        verificationMethod:
+          'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        controller: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+      })
+      expect(attachment.getDataAsJson()).toEqual(signCredentialOptions)
+      expect(format.format).toBe('aries/ld-proof-vc-detail@v1.0')
+    })
+
+    test('rejects a proposal when the issuer DID was not created by the agent', async () => {
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
+      mockFunction(w3cJsonLdCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
+        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+      ])
+      mockFunction(w3cJsonLdCredentialService.assertCanSignCredential).mockRejectedValue(
+        new Error("Created did 'did:key:external' not found")
+      )
+
+      await expect(
+        jsonLdFormatService.acceptProposal(agentContext, {
+          credentialExchangeRecord: mockCredentialRecord({
+            state: DidCommCredentialState.ProposalReceived,
+          }),
+          proposalAttachment: requestAttachment,
+        })
+      ).rejects.toThrow("Created did 'did:key:external' not found")
+    })
+
+    test('rejects a proposal when the issuer DID has no verification method compatible with the proof type', async () => {
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
+      mockFunction(w3cJsonLdCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
+        VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
+      ])
+
+      await expect(
+        jsonLdFormatService.acceptProposal(agentContext, {
+          credentialExchangeRecord: mockCredentialRecord({
+            state: DidCommCredentialState.ProposalReceived,
+          }),
+          proposalAttachment: requestAttachment,
+        })
+      ).rejects.toThrow('Missing verification method for key type Ed25519VerificationKey2020')
     })
   })
 
