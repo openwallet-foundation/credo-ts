@@ -2,8 +2,13 @@ import {
   DidDocumentBuilder,
   DidKey,
   didDocumentToNumAlgo2Did,
+  didToNumAlgo2DidDocument,
   getEd25519VerificationKey2018,
+  getPublicJwkFromVerificationMethod,
+  getX25519KeyAgreementKey2019,
   Kms,
+  NewDidCommV2Service,
+  NewDidCommV2ServiceEndpoint,
   TypedArrayEncoder,
   utils,
 } from '@credo-ts/core'
@@ -19,6 +24,8 @@ import {
   toKeyAgreement,
   toKeyAgreementDidUrl,
 } from '../../modules/connections/services/helpers'
+import { DidCommMediatorService } from '../../modules/routing/services/DidCommMediatorService'
+import { DidCommDocumentService } from '../../services/DidCommDocumentService'
 import {
   type DidCommV2EncryptedMessage,
   DidCommV2EnvelopeService,
@@ -356,6 +363,95 @@ describe('DidCommV2Envelope', () => {
 
     expect(outer.body?.next).toBe('did:example:anothermediator')
     expect(inner.body?.next).toBe(new DidKey(recipient.publicJwk).did)
+  })
+
+  it('addresses a forward to the keyAgreement verification method of a mediator DID endpoint', async () => {
+    const mediatorCreated = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+    const mediatorDid = didDocumentToNumAlgo2Did(
+      new DidDocumentBuilder('')
+        .addKeyAgreement(
+          getX25519KeyAgreementKey2019({
+            id: '#key-1',
+            publicJwk: Kms.PublicJwk.fromPublicJwk(mediatorCreated.publicJwk),
+            controller: '#id',
+          })
+        )
+        .addService(
+          new NewDidCommV2Service({
+            id: '#dm',
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: 'https://mediator.example' }),
+          })
+        )
+        .build()
+    )
+    const recipientDid = didDocumentToNumAlgo2Did(
+      new DidDocumentBuilder('')
+        .addKeyAgreement(
+          getX25519KeyAgreementKey2019({
+            id: '#key-1',
+            publicJwk: Kms.PublicJwk.fromPublicKey({
+              kty: 'OKP',
+              crv: 'X25519',
+              publicKey: new Uint8Array(32).fill(7),
+            }),
+            controller: '#id',
+          })
+        )
+        .addService(
+          new NewDidCommV2Service({
+            id: '#dm',
+            serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: mediatorDid }),
+          })
+        )
+        .build()
+    )
+    const [service] = await agent.dependencyManager
+      .resolve(DidCommDocumentService)
+      .resolveServicesFromDid(agent.context, recipientDid)
+    const envelopeService = agent.dependencyManager.resolve(DidCommV2EnvelopeService)
+
+    const forward = (await wrapInV2Forward(agent.context, envelopeService, {} as DidCommV2EncryptedMessage, {
+      routingKeys: service.routingKeys,
+      recipientKey: service.recipientKeys[0],
+      contentEncryptionAlgorithm: 'A256CBC-HS512',
+    })) as DidCommV2EncryptedMessage
+    expect(forward.recipients[0].header.kid).toBe(`${mediatorDid}#key-1`)
+
+    const { plaintext } = await envelopeService.unpack(agent.context, forward, {
+      recipientKey: Kms.PublicJwk.fromPublicJwk(mediatorCreated.publicJwk) as DidCommV2KeyAgreementJwk & {
+        keyId: string
+      },
+      matchedKid: `${mediatorDid}#key-1`,
+      resolveSenderKey: async () => null,
+    })
+    expect(plaintext.to).toEqual([mediatorDid])
+  })
+
+  it('decrypts a forward addressed to a keyAgreement key of the mediator routing DID', async () => {
+    const mediatorService = agent.dependencyManager.resolve(DidCommMediatorService)
+    // @ts-expect-error getEffectiveMediatorRoutingDid is private
+    const routingDid: string = await mediatorService.getEffectiveMediatorRoutingDid(agent.context)
+    const [keyAgreement] = didToNumAlgo2DidDocument(routingDid).findVerificationMethodsByPurpose(['keyAgreement'])
+    const routingKey = getPublicJwkFromVerificationMethod(keyAgreement)
+    routingKey.keyId = keyAgreement.id
+    const recipient = await createKeyAgreementDid()
+
+    const forward = await wrapInV2Forward(
+      agent.context,
+      agent.dependencyManager.resolve(DidCommV2EnvelopeService),
+      {} as DidCommV2EncryptedMessage,
+      {
+        routingKeys: [routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>],
+        recipientKey: recipient.publicJwk,
+        contentEncryptionAlgorithm: 'A256CBC-HS512',
+      }
+    )
+    const { recipientDid, plaintextMessage } = await agent.dependencyManager
+      .resolve(DidCommV2Envelope)
+      .unpack(agent.context, forward)
+
+    expect(recipientDid).toBe(routingDid)
+    expect(plaintextMessage.next).toBe(new DidKey(recipient.publicJwk).did)
   })
 
   describe('authcrypt sender binding', () => {
