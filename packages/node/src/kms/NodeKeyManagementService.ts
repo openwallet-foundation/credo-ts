@@ -14,6 +14,7 @@ import { performDecrypt } from './crypto/decrypt'
 import {
   deriveDecryptionKey,
   deriveEncryptionKey,
+  encryptAndWrapForRecipients,
   encryptEcdh1Pu,
   nodeSupportedEcdh1PuContentEncryptionAlgorithms,
   nodeSupportedKeyAgreementAlgorithms,
@@ -139,6 +140,35 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
 
       return nodeSupportedKeyAgreementAlgorithms.includes(
         operation.keyAgreement.algorithm as (typeof nodeSupportedKeyAgreementAlgorithms)[number]
+      )
+    }
+
+    if (operation.operation === 'encryptMultiRecipient') {
+      const { encryption, keyAgreement } = operation
+      if (
+        !nodeSupportedEncryptionAlgorithms.includes(
+          encryption.algorithm as (typeof nodeSupportedEncryptionAlgorithms)[number]
+        ) ||
+        !nodeSupportedKeyAgreementAlgorithms.includes(keyAgreement.algorithm)
+      ) {
+        return false
+      }
+
+      try {
+        for (const { externalPublicJwk } of keyAgreement.recipients) {
+          if (externalPublicJwk.kty === 'EC') assertNodeSupportedEcCrv(externalPublicJwk)
+          else assertNodeSupportedOkpCrv(externalPublicJwk)
+        }
+      } catch {
+        return false
+      }
+
+      if (keyAgreement.algorithm !== 'ECDH-1PU+A256KW') return true
+
+      return (
+        keyAgreement.recipients.every(({ externalPublicJwk }) =>
+          Kms.supportedKeyDerivationAlgsForKey(externalPublicJwk).includes('ECDH-1PU+A256KW')
+        ) && (nodeSupportedEcdh1PuContentEncryptionAlgorithms as readonly string[]).includes(encryption.algorithm)
       )
     }
 
@@ -436,6 +466,40 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
         tag: tag ? new Uint8Array(tag) : undefined,
         encryptedKey,
       }
+    } catch (error) {
+      if (error instanceof Kms.KeyManagementError) throw error
+
+      throw new Kms.KeyManagementError('Error encrypting', { cause: error })
+    }
+  }
+
+  public async encryptMultiRecipient(
+    agentContext: AgentContext,
+    options: Kms.KmsEncryptMultiRecipientOptions
+  ): Promise<Kms.KmsEncryptMultiRecipientReturn> {
+    const { keyAgreement, encryption, aad, data } = options
+
+    Kms.assertSupportedKeyAgreementAlgorithm(keyAgreement, nodeSupportedKeyAgreementAlgorithms, this.backend)
+    Kms.assertSupportedEncryptionAlgorithm(encryption, nodeSupportedEncryptionAlgorithms, this.backend)
+    for (const { externalPublicJwk } of keyAgreement.recipients) {
+      Kms.assertAllowedKeyDerivationAlgForKey(externalPublicJwk, keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(externalPublicJwk)
+    }
+
+    let senderPrivateJwk: Kms.KmsJwkPrivateAsymmetric | undefined
+    if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+      const privateJwk = await this.getKeyAsserted(agentContext, keyAgreement.keyId)
+      Kms.assertJwkAsymmetric(privateJwk, keyAgreement.keyId)
+      Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(privateJwk)
+      senderPrivateJwk = toKeyAgreementPrivateJwk(privateJwk)
+      for (const { externalPublicJwk } of keyAgreement.recipients) {
+        Kms.assertAsymmetricJwkKeyTypeMatches(senderPrivateJwk, externalPublicJwk)
+      }
+    }
+
+    try {
+      return await encryptAndWrapForRecipients({ keyAgreement, encryption, aad, senderPrivateJwk, data })
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
 

@@ -6,7 +6,7 @@ import { KeyManagementError } from '../error/KeyManagementError'
 import { KeyManagementApi } from '../KeyManagementApi'
 import { KeyManagementModuleConfig } from '../KeyManagementModuleConfig'
 import type { KeyManagementService } from '../KeyManagementService'
-import type { KmsOperation } from '../options'
+import type { KmsEncryptMultiRecipientOptions, KmsOperation } from '../options'
 
 const agentOptions = getAgentOptions('KeyManagementApi')
 const agent = new Agent(agentOptions)
@@ -225,6 +225,115 @@ describe('KeyManagementApi', () => {
     await expect(
       kms.verify({ key: { keyId: signingKey.keyId }, algorithm: 'ES256', data, signature })
     ).resolves.toMatchObject({ verified: true })
+  })
+
+  describe('encryptMultiRecipient', () => {
+    const data = new Uint8Array([1, 2, 3])
+    const createNodeBackend = (backend: string) =>
+      Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), { backend })
+
+    test('routes ECDH-1PU+A256KW to the backend that holds the sender key', async () => {
+      const defaultBackend = createNodeBackend('node')
+      const otherBackend = createNodeBackend('other')
+      const kms = new KeyManagementApi(
+        new KeyManagementModuleConfig({ backends: [defaultBackend, otherBackend] }),
+        agent.context
+      )
+      const sender = await kms.createKey({ backend: 'other', type: { kty: 'OKP', crv: 'X25519' } })
+      const recipient = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      const defaultEncrypt = vi.spyOn(defaultBackend, 'encryptMultiRecipient')
+      const otherEncrypt = vi.spyOn(otherBackend, 'encryptMultiRecipient')
+
+      await kms.encryptMultiRecipient({
+        keyAgreement: {
+          algorithm: 'ECDH-1PU+A256KW',
+          keyId: sender.keyId,
+          recipients: [{ externalPublicJwk: recipient.publicJwk }],
+        },
+        encryption: { algorithm: 'A256CBC-HS512' },
+        data,
+      })
+
+      expect(otherEncrypt).toHaveBeenCalledTimes(1)
+      expect(defaultEncrypt).not.toHaveBeenCalled()
+    })
+
+    test('skips backends that do not support ECDH-ES and rejects a backend without the method', async () => {
+      const unsupported = {
+        backend: 'unsupported',
+        isOperationSupported: () => false,
+      } as unknown as KeyManagementService
+      const withoutMethod = {
+        backend: 'without-method',
+        isOperationSupported: () => true,
+      } as unknown as KeyManagementService
+      const nodeBackend = createNodeBackend('node')
+      const kms = new KeyManagementApi(
+        new KeyManagementModuleConfig({ backends: [unsupported, nodeBackend, withoutMethod] }),
+        agent.context
+      )
+      const recipient = await kms.createKey({ backend: 'node', type: { kty: 'EC', crv: 'P-256' } })
+      const options = {
+        encryption: { algorithm: 'A256GCM' },
+        keyAgreement: { algorithm: 'ECDH-ES+A256KW', recipients: [{ externalPublicJwk: recipient.publicJwk }] },
+        data,
+      } satisfies KmsEncryptMultiRecipientOptions
+
+      const { encryptedKeys } = await kms.encryptMultiRecipient(options)
+
+      expect(encryptedKeys).toHaveLength(1)
+      await expect(kms.encryptMultiRecipient({ ...options, backend: 'without-method' })).rejects.toThrow(
+        "Key management service backend 'without-method' does not support 'encryptMultiRecipient' operation"
+      )
+    })
+
+    test('throws when no backend supports it', async () => {
+      const recipient = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+      await expect(
+        agent.kms.encryptMultiRecipient({
+          keyAgreement: { algorithm: 'ECDH-ES+A256KW', recipients: [{ externalPublicJwk: recipient.publicJwk }] },
+          encryption: { algorithm: 'XC20P' },
+          data,
+        })
+      ).rejects.toThrow(KeyManagementError)
+    })
+
+    test.each([
+      { case: 'no recipients', recipients: 0 },
+      { case: 'recipients on different curves', recipients: 2, mixed: true },
+      { case: 'ECDH-1PU+A256KW without a sender key id', recipients: 1, algorithm: 'ECDH-1PU+A256KW' },
+      {
+        case: 'ECDH-1PU+A256KW with A256GCM',
+        recipients: 1,
+        algorithm: 'ECDH-1PU+A256KW',
+        keyId: 'sender',
+        encryption: 'A256GCM',
+      },
+      { case: 'HPKE content encryption', recipients: 1, encryption: 'HPKE' },
+      { case: 'an aad that is not a function', recipients: 1, aad: new Uint8Array([1]) },
+    ])(
+      'rejects $case',
+      async ({ recipients, mixed, algorithm = 'ECDH-ES+A256KW', keyId, encryption = 'A256CBC-HS512', aad }) => {
+        const x25519 = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+        const p256 = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+        await expect(
+          agent.kms.encryptMultiRecipient({
+            keyAgreement: {
+              algorithm,
+              keyId,
+              recipients: Array.from({ length: recipients }, (_, index) => ({
+                externalPublicJwk: mixed && index === 1 ? p256.publicJwk : x25519.publicJwk,
+              })),
+            },
+            encryption: { algorithm: encryption },
+            aad,
+            data,
+          } as unknown as Parameters<typeof agent.kms.encryptMultiRecipient>[0])
+        ).rejects.toThrow(ZodValidationError)
+      }
+    )
   })
 
   describe('hpke', () => {
