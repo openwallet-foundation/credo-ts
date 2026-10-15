@@ -563,7 +563,15 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         Kms.assertJwkAsymmetric(senderPrivateJwk, keyAgreement.keyId)
         Kms.assertAllowedKeyDerivationAlgForKey(senderPrivateJwk, keyAgreement.algorithm)
         Kms.assertKeyAllowsDerive(senderPrivateJwk)
-        Kms.assertAsymmetricJwkKeyTypeMatches(senderPrivateJwk, recipientJwks[0])
+
+        if (senderKey.algorithm === KeyAlgorithm.Ed25519) {
+          senderKey = senderKey.convertkey({ algorithm: KeyAlgorithm.X25519 })
+          keysToFree.push(senderKey)
+        }
+        Kms.assertAsymmetricJwkKeyTypeMatches(
+          this.publicJwkFromKey(agentContext, senderKey) as Kms.KmsJwkPublicEcdh,
+          recipientJwks[0]
+        )
       }
 
       const ephemeralKey = Key.generate(this.assertAskarAlgForJwkCrv(recipientJwks[0].kty, recipientJwks[0].crv))
@@ -689,7 +697,12 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
         // Special case for ECDH-HSALSA as we can have mismatch between keys because of DIDComm v1
         if (keyAgreement.algorithm !== 'ECDH-HSALSA20') {
-          for (const publicJwk of publicJwks) Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, publicJwk)
+          if (privateKey.algorithm === KeyAlgorithm.Ed25519) {
+            privateKey = privateKey.convertkey({ algorithm: KeyAlgorithm.X25519 })
+            keysToFree.push(privateKey)
+          }
+          const agreementJwk = this.publicJwkFromKey(agentContext, privateKey) as Kms.KmsJwkPublicEcdh
+          for (const publicJwk of publicJwks) Kms.assertAsymmetricJwkKeyTypeMatches(agreementJwk, publicJwk)
         }
 
         // Special case to support DIDComm v1

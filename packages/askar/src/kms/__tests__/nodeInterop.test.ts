@@ -1,4 +1,4 @@
-import { InjectionSymbols, JsonEncoder, type Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests'
 import { NodeInMemoryKeyManagementStorage } from '../../../../node/src/kms/NodeInMemoryKeyManagementStorage'
@@ -36,6 +36,10 @@ const services = {
 const apu = TypedArrayEncoder.fromUtf8String('did:example:alice#key-1')
 const apv = TypedArrayEncoder.fromUtf8String('did:example:bob#key-1')
 const aadFor = (ephemeralPublicJwk: Kms.KmsJwkPublicEcdh) => JsonEncoder.toUint8Array({ epk: ephemeralPublicJwk })
+const toKeyAgreementJwk = (publicJwk: Kms.KmsJwkPublic): Kms.KmsJwkPublicEcdh =>
+  publicJwk.kty === 'OKP' && publicJwk.crv === 'Ed25519'
+    ? Kms.PublicJwk.fromPublicJwk(publicJwk).convertTo(Kms.X25519PublicJwk).toJson()
+    : (publicJwk as Kms.KmsJwkPublicEcdh)
 
 describe('AskarKeyManagementService ECDH interop with NodeKeyManagementService', () => {
   describe.each([
@@ -49,17 +53,17 @@ describe('AskarKeyManagementService ECDH interop with NodeKeyManagementService',
       { algorithm: 'ECDH-ES+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'OKP', crv: 'X25519' } },
       { algorithm: 'ECDH-ES+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'EC', crv: 'P-256' } },
       { algorithm: 'ECDH-ES+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'EC', crv: 'P-384' } },
+      { algorithm: 'ECDH-ES+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'OKP', crv: 'Ed25519' } },
       { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'OKP', crv: 'X25519' } },
       { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'EC', crv: 'P-256' } },
       { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'EC', crv: 'P-384' } },
+      { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', type: { kty: 'OKP', crv: 'Ed25519' } },
     ] as const)('$algorithm with $encryption and $type.crv keys', async ({ algorithm, encryption, type }) => {
       const sender = await services[from].createKey(agentContext, { type })
       const recipients = await Promise.all(
         Array.from({ length: algorithm === 'ECDH-ES' ? 1 : 2 }, () => services[to].createKey(agentContext, { type }))
       )
-      const recipientJwks = recipients.map(({ publicJwk }) => ({
-        externalPublicJwk: publicJwk as Kms.KmsJwkPublicEcdh,
-      }))
+      const recipientJwks = recipients.map(({ publicJwk }) => ({ externalPublicJwk: toKeyAgreementJwk(publicJwk) }))
 
       const { encrypted, iv, tag, ephemeralPublicJwk, encryptedKeys } = await services[from].encrypt(agentContext, {
         key: {
@@ -89,7 +93,7 @@ describe('AskarKeyManagementService ECDH interop with NodeKeyManagementService',
                       ...keyAgreement,
                       algorithm,
                       encryptedKey,
-                      senderPublicJwk: sender.publicJwk as Kms.KmsJwkPublicEcdh,
+                      senderPublicJwk: toKeyAgreementJwk(sender.publicJwk),
                     },
           },
           decryption: { algorithm: encryption, iv, tag, aad: aadFor(ephemeralPublicJwk) },

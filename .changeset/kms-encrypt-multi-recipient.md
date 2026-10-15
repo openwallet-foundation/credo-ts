@@ -14,5 +14,6 @@ KMS `encrypt` now supports multiple recipients for ECDH key wrapping, and the As
 - In `decrypt`, the ephemeral key for `ECDH-ES` and `ECDH-ES+KW` moves from `externalPublicJwk` to `ephemeralPublicJwk`, and the sender key for `ECDH-HSALSA20` moves to `senderPublicJwk`.
 - `KmsEncryptedKey` no longer has `iv` and `tag`. `KmsKeyAgreementEcdhEs` is replaced by `KmsKeyAgreementEncryptEcdhEs` and `KmsKeyAgreementDecryptEcdhEs`.
 - Askar no longer reports `ECDH-ES` with `A256CBC-HS512` as supported, as its key derivation cannot produce the 64 byte key. Agents that also register the Node backend now use Node for it.
+- A stored Ed25519 key can be used for `ECDH-ES+A256KW` and `ECDH-1PU+A256KW`. The KMS converts it to X25519, like it already does for `ECDH-HSALSA20`.
 
 OpenID4VP response encryption no longer stores and deletes an ephemeral key for every response. The `epk` in the JWE header no longer has a `kid`.

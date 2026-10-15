@@ -40,6 +40,11 @@ export function supportedKeyDerivationAlgsForKey(
     algs.push('ECDH-HSALSA20')
   }
 
+  // Like ECDH-HSALSA20, the KMS converts our own Ed25519 key to X25519 (needed for DIDComm v2)
+  if (jwk.kty === 'OKP' && jwk.crv === 'Ed25519' && 'd' in jwk) {
+    algs.push('ECDH-ES+A256KW', 'ECDH-1PU+A256KW')
+  }
+
   return algs
 }
 
