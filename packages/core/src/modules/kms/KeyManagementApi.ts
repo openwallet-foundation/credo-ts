@@ -278,6 +278,20 @@ export class KeyManagementApi {
   }
 
   /**
+   * Get the backend that holds the key with the given `keyId`.
+   */
+  public async getBackendForKey(options: KmsGetPublicKeyOptions): Promise<string> {
+    const { keyId } = zParseWithErrorHandling(
+      zKmsGetPublicKeyOptions,
+      options,
+      'Invalid options provided to getBackendForKey method'
+    )
+
+    const { kms } = await this.getKmsForOperationAndKeyId(this.agentContext, keyId)
+    return kms.backend
+  }
+
+  /**
    * Delete a key.
    */
   public async deleteKey(options: WithBackend<KmsDeleteKeyOptions>) {

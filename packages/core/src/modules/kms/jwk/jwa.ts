@@ -79,6 +79,9 @@ export const KnownJwaKeyAgreementAlgorithms = {
 
   ECDH_HSALSA20: 'ECDH-HSALSA20',
 
+  /** DIDComm v2 authcrypt; draft-madden-jose-ecdh-1pu */
+  ECDH_1PU_A256KW: 'ECDH-1PU+A256KW',
+
   // HPKE (RFC 9180) in integrated encryption mode, named after
   // draft-ietf-jose-hpke-encrypt. The suite fixes the AEAD, so no separate content encryption
   // algorithm is used:
