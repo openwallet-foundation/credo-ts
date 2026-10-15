@@ -355,7 +355,10 @@ export class DidCommDataIntegrityCredentialFormatService
     )
 
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
-    const signatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    const signatureSuite = signatureSuiteRegistry
+      .getAllByPublicJwkType(publicJwk)
+      .find((suite) => suite.verificationMethodTypes.includes(verificationMethod.type))
     if (!signatureSuite) {
       throw new CredoError(`Could not find signature suite for verification method type ${verificationMethod.type}`)
     }
