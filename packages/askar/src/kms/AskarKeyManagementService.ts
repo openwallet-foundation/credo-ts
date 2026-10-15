@@ -12,7 +12,12 @@ import { AskarModuleConfig } from '../AskarModuleConfig'
 import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarErrorCode, isAskarError, jwkCrvToAskarAlg, jwkEncToAskarAlg } from '../utils'
 import { aeadDecrypt } from './crypto/decrypt'
-import { askarSupportedKeyAgreementAlgorithms, deriveDecryptionKey, deriveEncryptionKey } from './crypto/deriveKey'
+import {
+  type AskarEcdhKeyAgreementEncryptOptions,
+  askarSupportedKeyAgreementAlgorithms,
+  deriveDecryptionKey,
+  encryptEcdh,
+} from './crypto/deriveKey'
 import { type AskarSupportedEncryptionOptions, aeadEncrypt } from './crypto/encrypt'
 import { askarSupportedHpkeAlgorithms, hpkeOpen, hpkeSeal } from './crypto/hpke'
 import { randomBytes } from './crypto/randomBytes'
@@ -76,15 +81,12 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
     if (operation.operation === 'encrypt' || operation.operation === 'decrypt') {
       const encryption = operation.operation === 'encrypt' ? operation.encryption : operation.decryption
+      const { keyAgreement } = operation
+      const publicJwks = keyAgreement ? Kms.keyAgreementPublicJwks(keyAgreement) : []
 
       // Askar can only perform key agreement with curves it supports. We also can't create the
       // ephemeral key for e.g. ECDH-ES if the curve is not supported.
-      if (
-        operation.keyAgreement &&
-        'externalPublicJwk' in operation.keyAgreement &&
-        operation.keyAgreement.externalPublicJwk &&
-        jwkCrvToAskarAlg[operation.keyAgreement.externalPublicJwk.crv] === undefined
-      ) {
+      if (publicJwks.some((jwk) => jwkCrvToAskarAlg[jwk.crv] === undefined)) {
         return false
       }
 
@@ -105,10 +107,15 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       ) {
         return false
       }
-      if (!operation.keyAgreement) return true
+      if (!keyAgreement) return true
 
-      return askarSupportedKeyAgreementAlgorithms.includes(
-        operation.keyAgreement.algorithm as (typeof askarSupportedKeyAgreementAlgorithms)[number]
+      // Askar's Concat KDF stops at one SHA-256 block, so it cannot derive the 64 byte A256CBC-HS512 key
+      if (keyAgreement.algorithm === 'ECDH-ES' && encryption.algorithm === 'A256CBC-HS512') return false
+
+      return (
+        askarSupportedKeyAgreementAlgorithms.includes(
+          keyAgreement.algorithm as (typeof askarSupportedKeyAgreementAlgorithms)[number]
+        ) && publicJwks.every((jwk) => Kms.supportedKeyDerivationAlgsForKey(jwk).includes(keyAgreement.algorithm))
       )
     }
 
@@ -406,10 +413,17 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
     Kms.assertSupportedEncryptionAlgorithm(encryption, askarSupportedEncryptionAlgorithms, this.backend)
 
+    if (key.keyAgreement) {
+      Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, askarSupportedKeyAgreementAlgorithms, this.backend)
+
+      if (key.keyAgreement.algorithm !== 'ECDH-HSALSA20' && encryption.algorithm !== 'XSALSA20-POLY1305') {
+        return await this.encryptWithEcdh(agentContext, key.keyAgreement, encryption, data)
+      }
+    }
+
     const keysToFree: Key[] = []
     try {
       let encryptionKey: Key | undefined
-      let encryptedKey: Kms.KmsEncryptedKey | undefined
 
       // TODO: we should check if the key allows this operation
       if (key.keyId) {
@@ -429,91 +443,66 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         )
         keysToFree.push(encryptionKey)
       } else if (key.keyAgreement) {
-        Kms.assertAllowedKeyDerivationAlgForKey(key.keyAgreement.externalPublicJwk, key.keyAgreement.algorithm)
-        Kms.assertKeyAllowsDerive(key.keyAgreement.externalPublicJwk)
-        Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, askarSupportedKeyAgreementAlgorithms, this.backend)
-
-        let privateKey = key.keyAgreement.keyId
-          ? (await this.getKeyAsserted(agentContext, key.keyAgreement.keyId)).key
-          : undefined
-        if (privateKey) keysToFree.push(privateKey)
-
-        const privateJwk = privateKey ? this.privateJwkFromKey(agentContext, privateKey) : undefined
-        if (privateJwk) {
-          Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
-          Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
-          Kms.assertKeyAllowsDerive(privateJwk)
-
-          // Special case, for DIDComm v1 we often use an X25519 for the external key
-          // but we use an Ed25519 for our key
-          if (key.keyAgreement.algorithm !== 'ECDH-HSALSA20') {
-            Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
-          }
+        const { keyAgreement } = key
+        // Special case to support DIDComm v1
+        if (encryption.algorithm !== 'XSALSA20-POLY1305' || keyAgreement.algorithm !== 'ECDH-HSALSA20') {
+          throw new Kms.KeyManagementAlgorithmNotSupportedError(
+            `key agreement algorithm '${keyAgreement.algorithm}' with encryption algorithm '${encryption.algorithm}'`,
+            this.backend
+          )
         }
 
-        const recipientKey = this.keyFromJwk(agentContext, key.keyAgreement.externalPublicJwk)
+        Kms.assertAllowedKeyDerivationAlgForKey(keyAgreement.externalPublicJwk, keyAgreement.algorithm)
+        Kms.assertKeyAllowsDerive(keyAgreement.externalPublicJwk)
+
+        let privateKey = keyAgreement.keyId
+          ? (await this.getKeyAsserted(agentContext, keyAgreement.keyId)).key
+          : undefined
+        if (privateKey) {
+          keysToFree.push(privateKey)
+
+          const privateJwk = this.privateJwkFromKey(agentContext, privateKey)
+          Kms.assertJwkAsymmetric(privateJwk, keyAgreement.keyId)
+          Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, keyAgreement.algorithm)
+          Kms.assertKeyAllowsDerive(privateJwk)
+        }
+
+        const recipientKey = this.keyFromJwk(agentContext, keyAgreement.externalPublicJwk)
         keysToFree.push(recipientKey)
 
-        // Special case to support DIDComm v1
-        if (key.keyAgreement.algorithm === 'ECDH-HSALSA20' || encryption.algorithm === 'XSALSA20-POLY1305') {
-          if (encryption.algorithm !== 'XSALSA20-POLY1305' || key.keyAgreement.algorithm !== 'ECDH-HSALSA20') {
-            throw new Kms.KeyManagementAlgorithmNotSupportedError(
-              `key agreement algorithm '${key.keyAgreement.algorithm}' with encryption algorithm '${encryption.algorithm}'`,
-              this.backend
-            )
-          }
-
-          // anonymous encryption
-          if (!privateKey) {
-            return {
-              encrypted: new Uint8Array(
-                CryptoBox.seal({
-                  recipientKey,
-                  message: new Uint8Array(data),
-                })
-              ),
-            }
-          }
-
-          // Special case. For DIDComm v1 we basically use the Ed25519 key also
-          // for X25519 operations.
-          if (privateKey.algorithm === KeyAlgorithm.Ed25519) {
-            privateKey = privateKey.convertkey({ algorithm: KeyAlgorithm.X25519 })
-            keysToFree.push(privateKey)
-          }
-
-          const nonce = new Uint8Array(CryptoBox.randomNonce())
-          const encrypted = new Uint8Array(
-            CryptoBox.cryptoBox({
-              recipientKey,
-              senderKey: privateKey,
-              message: new Uint8Array(data),
-              nonce,
-            })
-          )
-
-          return {
-            encrypted,
-            iv: nonce,
-          }
-        }
-
-        // This should not happen, but for TS
+        // anonymous encryption
         if (!privateKey) {
-          throw new Kms.KeyManagementError('sender key is required for ECDH-ES key derivation.')
+          return {
+            encrypted: new Uint8Array(
+              CryptoBox.seal({
+                recipientKey,
+                message: new Uint8Array(data),
+              })
+            ),
+          }
         }
 
-        const { contentEncryptionKey, encryptedContentEncryptionKey } = deriveEncryptionKey({
-          askar: this.getAskar(agentContext),
-          encryption,
-          keyAgreement: key.keyAgreement,
-          recipientKey,
-          senderKey: privateKey,
-        })
+        // Special case. For DIDComm v1 we basically use the Ed25519 key also
+        // for X25519 operations.
+        if (privateKey.algorithm === KeyAlgorithm.Ed25519) {
+          privateKey = privateKey.convertkey({ algorithm: KeyAlgorithm.X25519 })
+          keysToFree.push(privateKey)
+        }
 
-        encryptionKey = contentEncryptionKey
-        keysToFree.push(contentEncryptionKey)
-        encryptedKey = encryptedContentEncryptionKey
+        const nonce = new Uint8Array(CryptoBox.randomNonce())
+        const encrypted = new Uint8Array(
+          CryptoBox.cryptoBox({
+            recipientKey,
+            senderKey: privateKey,
+            message: new Uint8Array(data),
+            nonce,
+          })
+        )
+
+        return {
+          encrypted,
+          iv: nonce,
+        }
       } else {
         throw new Kms.KeyManagementError('Unexpected key parameter for encrypt')
       }
@@ -525,26 +514,93 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         )
       }
 
+      if (typeof encryption.aad === 'function') {
+        throw new Kms.KeyManagementError(`'encryption.aad' can only be a callback with ECDH key agreement`)
+      }
+
       const privateJwk = this.privateJwkFromKey(agentContext, encryptionKey)
       Kms.assertKeyAllowsDerive(privateJwk)
       Kms.assertAllowedEncryptionAlgForKey(privateJwk, encryption.algorithm)
       Kms.assertKeyAllowsEncrypt(privateJwk)
 
-      const encrypted = aeadEncrypt({
+      return aeadEncrypt({
         key: encryptionKey,
         data,
         encryption,
+        aad: encryption.aad,
       })
-
-      return {
-        ...encrypted,
-        encryptedKey,
-      }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
       throw new Kms.KeyManagementError('Error encrypting with key', { cause: error })
     } finally {
       // Clear all keys
+      for (const key of keysToFree) {
+        key.handle.free()
+      }
+    }
+  }
+
+  private async encryptWithEcdh(
+    agentContext: AgentContext,
+    keyAgreement: AskarEcdhKeyAgreementEncryptOptions,
+    encryption: AskarSupportedEncryptionOptions,
+    data: Uint8Array
+  ): Promise<Kms.KmsEncryptReturn> {
+    const recipientJwks = Kms.keyAgreementPublicJwks(keyAgreement)
+    for (const recipientJwk of recipientJwks) {
+      Kms.assertAllowedKeyDerivationAlgForKey(recipientJwk, keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(recipientJwk)
+    }
+
+    const keysToFree: Key[] = []
+    try {
+      let senderKey: Key | undefined
+      if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+        senderKey = (await this.getKeyAsserted(agentContext, keyAgreement.keyId)).key
+        keysToFree.push(senderKey)
+
+        const senderPrivateJwk = this.privateJwkFromKey(agentContext, senderKey)
+        Kms.assertJwkAsymmetric(senderPrivateJwk, keyAgreement.keyId)
+        Kms.assertAllowedKeyDerivationAlgForKey(senderPrivateJwk, keyAgreement.algorithm)
+        Kms.assertKeyAllowsDerive(senderPrivateJwk)
+        Kms.assertAsymmetricJwkKeyTypeMatches(senderPrivateJwk, recipientJwks[0])
+      }
+
+      const ephemeralKey = Key.generate(this.assertAskarAlgForJwkCrv(recipientJwks[0].kty, recipientJwks[0].crv))
+      keysToFree.push(ephemeralKey)
+      const ephemeralPublicJwk = this.publicJwkFromKey(agentContext, ephemeralKey) as Kms.KmsJwkPublicEcdh
+
+      // Called outside the try below, so errors from the callback reach the caller as they are
+      const aad = typeof encryption.aad === 'function' ? encryption.aad({ ephemeralPublicJwk }) : encryption.aad
+      if (aad !== undefined && !(aad instanceof Uint8Array)) {
+        throw new Kms.KeyManagementError(`'encryption.aad' callback must return a Uint8Array`)
+      }
+
+      try {
+        const recipientKeys = recipientJwks.map((recipientJwk) => {
+          const recipientKey = this.keyFromJwk(agentContext, recipientJwk)
+          keysToFree.push(recipientKey)
+          return recipientKey
+        })
+
+        return {
+          ...encryptEcdh({
+            askar: this.getAskar(agentContext),
+            keyAgreement,
+            encryption,
+            aad,
+            ephemeralKey,
+            senderKey,
+            recipientKeys,
+            data,
+          }),
+          ephemeralPublicJwk,
+        }
+      } catch (error) {
+        if (error instanceof Kms.KeyManagementError) throw error
+        throw new Kms.KeyManagementError('Error encrypting with key', { cause: error })
+      }
+    } finally {
       for (const key of keysToFree) {
         key.handle.free()
       }
@@ -614,36 +670,33 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       } else if (key.keyAgreement) {
         // Narrows away the integrated-encryption HPKE algorithms, which are handled above
         Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, askarSupportedKeyAgreementAlgorithms, this.backend)
+        const { keyAgreement } = key
 
-        if (key.keyAgreement.externalPublicJwk) {
-          Kms.assertAllowedKeyDerivationAlgForKey(key.keyAgreement.externalPublicJwk, key.keyAgreement.algorithm)
-          Kms.assertKeyAllowsDerive(key.keyAgreement.externalPublicJwk)
+        const publicJwks = Kms.keyAgreementPublicJwks(keyAgreement)
+        for (const publicJwk of publicJwks) {
+          Kms.assertAllowedKeyDerivationAlgForKey(publicJwk, keyAgreement.algorithm)
+          Kms.assertKeyAllowsDerive(publicJwk)
         }
 
-        let privateKey = (await this.getKeyAsserted(agentContext, key.keyAgreement.keyId)).key
+        let privateKey = (await this.getKeyAsserted(agentContext, keyAgreement.keyId)).key
         keysToFree.push(privateKey)
 
         const privateJwk = this.privateJwkFromKey(agentContext, privateKey)
 
-        Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
-        Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
+        Kms.assertJwkAsymmetric(privateJwk, keyAgreement.keyId)
+        Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, keyAgreement.algorithm)
         Kms.assertKeyAllowsDerive(privateJwk)
 
         // Special case for ECDH-HSALSA as we can have mismatch between keys because of DIDComm v1
-        if (key.keyAgreement.externalPublicJwk && key.keyAgreement.algorithm !== 'ECDH-HSALSA20') {
-          Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
+        if (keyAgreement.algorithm !== 'ECDH-HSALSA20') {
+          for (const publicJwk of publicJwks) Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, publicJwk)
         }
 
-        const senderKey = key.keyAgreement.externalPublicJwk
-          ? this.keyFromJwk(agentContext, key.keyAgreement.externalPublicJwk)
-          : undefined
-        if (senderKey) keysToFree.push(senderKey)
-
         // Special case to support DIDComm v1
-        if (key.keyAgreement.algorithm === 'ECDH-HSALSA20' || decryption.algorithm === 'XSALSA20-POLY1305') {
-          if (decryption.algorithm !== 'XSALSA20-POLY1305' || key.keyAgreement.algorithm !== 'ECDH-HSALSA20') {
+        if (keyAgreement.algorithm === 'ECDH-HSALSA20' || decryption.algorithm === 'XSALSA20-POLY1305') {
+          if (decryption.algorithm !== 'XSALSA20-POLY1305' || keyAgreement.algorithm !== 'ECDH-HSALSA20') {
             throw new Kms.KeyManagementAlgorithmNotSupportedError(
-              `key agreement algorithm '${key.keyAgreement.algorithm}' with encryption algorithm '${decryption.algorithm}'`,
+              `key agreement algorithm '${keyAgreement.algorithm}' with encryption algorithm '${decryption.algorithm}'`,
               this.backend
             )
           }
@@ -655,7 +708,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
             keysToFree.push(privateKey)
           }
 
-          if (!senderKey) {
+          if (!keyAgreement.senderPublicJwk) {
             // anonymous encryption
             return {
               data: new Uint8Array(
@@ -669,9 +722,12 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
           if (!decryption.iv) {
             throw new Kms.KeyManagementError(
-              `Missing required 'iv' for key agreement algorithm ${key.keyAgreement.algorithm} and encryption algorithm ${decryption.algorithm} with sender key defined.`
+              `Missing required 'iv' for key agreement algorithm ${keyAgreement.algorithm} and encryption algorithm ${decryption.algorithm} with sender key defined.`
             )
           }
+
+          const senderKey = this.keyFromJwk(agentContext, keyAgreement.senderPublicJwk)
+          keysToFree.push(senderKey)
 
           const decrypted = new Uint8Array(
             CryptoBox.open({
@@ -687,16 +743,21 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           }
         }
 
-        // This should not happen, but for TS
-        if (!senderKey) {
-          throw new Kms.KeyManagementError('sender key is required for ECDH-ES key derivation.')
-        }
+        const ephemeralKey = this.keyFromJwk(agentContext, keyAgreement.ephemeralPublicJwk)
+        keysToFree.push(ephemeralKey)
+
+        const senderKey =
+          keyAgreement.algorithm === 'ECDH-1PU+A256KW'
+            ? this.keyFromJwk(agentContext, keyAgreement.senderPublicJwk)
+            : undefined
+        if (senderKey) keysToFree.push(senderKey)
 
         const { contentEncryptionKey } = deriveDecryptionKey({
           askar: this.getAskar(agentContext),
           decryption,
-          keyAgreement: key.keyAgreement,
+          keyAgreement,
           recipientKey: privateKey,
+          ephemeralKey,
           senderKey,
         })
 
