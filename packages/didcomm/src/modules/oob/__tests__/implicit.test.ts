@@ -339,6 +339,16 @@ describe('out of band implicit', () => {
     ).toHaveLength(2)
   })
 
+  test('v2 invitation: the record loaded from storage still gives an out-of-band 2.0 invitation', async () => {
+    const domain = 'https://example.com'
+    const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2', goal: 'reload' })
+    const storedRecord = await faberAgent.didcomm.oob.getById(outOfBandRecord.id)
+
+    const invitationUrl = storedRecord.outOfBandInvitation.toUrl({ domain })
+    expect(invitationUrl).toContain('?_oob=')
+    expect(invitationUrl).toBe(outOfBandRecord.outOfBandInvitation.toUrl({ domain }))
+  })
+
   test('v2 with handshakeProtocols throws', async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
 

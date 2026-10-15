@@ -1,11 +1,11 @@
 import type { TagsBase } from '@credo-ts/core'
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
-import { Type } from 'class-transformer'
+import { Transform, Type } from 'class-transformer'
 import { getThreadIdFromPlainTextMessage } from '../../../util/thread'
 import type { DidCommOutOfBandRole } from '../domain/DidCommOutOfBandRole'
 import type { DidCommOutOfBandState } from '../domain/DidCommOutOfBandState'
-import { DidCommOutOfBandInvitation } from '../messages'
-import type { DidCommOutOfBandRecordMetadata } from './outOfBandRecordMetadataTypes'
+import { DidCommOutOfBandInvitation, DidCommOutOfBandInvitationV2 } from '../messages'
+import { type DidCommOutOfBandRecordMetadata, DidCommOutOfBandRecordMetadataKeys } from './outOfBandRecordMetadataTypes'
 
 export interface DidCommOutOfBandInlineServiceKey {
   recipientKeyFingerprint: string
@@ -73,6 +73,14 @@ export class DidCommOutOfBandRecord extends BaseRecord<
   DidCommOutOfBandRecordMetadata
 > {
   @Type(() => DidCommOutOfBandInvitation)
+  @Transform(
+    ({ value, obj }) => {
+      const v2InvitationJson = obj.metadata?.[DidCommOutOfBandRecordMetadataKeys.V2Invitation]
+      if (v2InvitationJson) value.v2Invitation = DidCommOutOfBandInvitationV2.fromJson(v2InvitationJson)
+      return value
+    },
+    { toClassOnly: true }
+  )
   public outOfBandInvitation!: DidCommOutOfBandInvitation
   public role!: DidCommOutOfBandRole
   public state!: DidCommOutOfBandState

@@ -146,7 +146,7 @@ describe('DidCommMessageReceiver', () => {
       })
 
       it('does not answer a message without a valid id', async () => {
-        expect(await transformInvalidPing({ '@id': 'short', '~thread': { thid: 'thread-1' } })).toEqual([])
+        expect(await transformInvalidPing({ '@id': 'bad id!', '~thread': { thid: 'thread-1' } })).toEqual([])
       })
     })
   })
