@@ -1,4 +1,3 @@
-import { parseDid } from '@sphereon/ssi-types'
 import { AgentContext } from '../../agent'
 import { CredoError, RecordNotFoundError } from '../../error'
 import { injectable } from '../../plugins'
@@ -10,6 +9,7 @@ import {
   type DidPurpose,
   getKmsKeyIdForVerificationMethod,
   getPublicJwkFromVerificationMethod,
+  parseDid,
   type VerificationMethod,
 } from './domain'
 import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'

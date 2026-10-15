@@ -14,7 +14,6 @@ import { outOfBandServiceToNumAlgo2Did } from '../helpers'
  */
 export enum DidCommInvitationType {
   OutOfBand = 'out-of-band/1.x',
-  Connection = 'connections/1.x',
   Connectionless = 'connectionless',
 }
 

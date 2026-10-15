@@ -22,11 +22,12 @@ export class DrizzleTenantRecordAdapter extends BaseDrizzleRecordAdapter<
   }
 
   public getValues(record: TenantRecord): DrizzleAdapterValues<(typeof sqlite)['tenant']> {
-    const { label, storageVersion, ...customTags } = record.getTags()
+    const { label, storageVersion, status, ...customTags } = record.getTags()
 
     return {
       label,
       storageVersion,
+      status,
       config: record.config,
       customTags,
     }
