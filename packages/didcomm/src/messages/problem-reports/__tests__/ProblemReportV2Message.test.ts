@@ -40,5 +40,17 @@ describe('DidCommProblemReportV2Message', () => {
         })
       ).toBeUndefined()
     })
+
+    it('ignores ids that are not strings', () => {
+      expect(
+        DidCommProblemReportV2Message.fromProblemReportMessage(problemReport, { id: null as unknown as string })
+      ).toBeUndefined()
+
+      const message = DidCommProblemReportV2Message.fromProblemReportMessage(problemReport, {
+        id: 'message-1',
+        threadId: 12345 as unknown as string,
+      })
+      expect(message?.thread?.parentThreadId).toBe('message-1')
+    })
   })
 })

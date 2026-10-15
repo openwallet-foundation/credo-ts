@@ -82,7 +82,7 @@ describe('DidCommMessageReceiver', () => {
       // @ts-expect-error
       const transformed = receiver.transformAndValidate(
         agent.context,
-        { '@type': 'https://didcomm.org/report-problem/2.0/problem-report', '@id': 'bad id!' },
+        { '@type': 'https://didcomm.org/report-problem/2.0/problem-report', '@id': 'short' },
         connection
       )
       await expect(transformed).rejects.toThrow('Not sending problem report in response to problem report')

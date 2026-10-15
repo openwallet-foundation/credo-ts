@@ -44,10 +44,10 @@ export class DidCommProblemReportV2Message extends DidCommMessage {
     { id, threadId }: { id: string; threadId?: string }
   ): DidCommProblemReportV2Message | undefined {
     // pthid is REQUIRED and an id that does not match PthidRegExp would make the sender reject the report
-    if (!PthidRegExp.test(id)) return undefined
+    if (typeof id !== 'string' || !PthidRegExp.test(id)) return undefined
 
     const problemReport = new DidCommProblemReportV2Message({
-      parentThreadId: threadId && PthidRegExp.test(threadId) ? threadId : id,
+      parentThreadId: typeof threadId === 'string' && PthidRegExp.test(threadId) ? threadId : id,
       ack: [id],
       code: /^[a-z0-9]+(-[a-z0-9]+)*$/.test(description.code) ? `e.p.msg.${description.code}` : 'e.p.msg',
       comment: 'Bad message: {1}',
