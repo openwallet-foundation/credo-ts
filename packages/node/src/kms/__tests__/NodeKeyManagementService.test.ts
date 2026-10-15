@@ -1784,32 +1784,24 @@ describe('NodeKeyManagementService', () => {
         recipientType: { kty: 'OKP', crv: 'X25519' } as const,
         senderType: { kty: 'OKP', crv: 'Ed25519' } as const,
       },
-    ])(
-      '$algorithm with $encryption encrypts once for three $recipientType.crv recipients (sender $senderType.crv)',
-      async (options) => {
-        const { result, decryptAs, set } = await encryptForRecipients(options)
+    ])('$algorithm with $encryption encrypts once for three $recipientType.crv recipients', async (options) => {
+      const { result, decryptAs, set } = await encryptForRecipients(options)
 
-        expect(set).not.toHaveBeenCalled()
-        expect(result.encryptedKeys).toHaveLength(3)
-        expect(result.ephemeralPublicJwk).toMatchObject({
-          kty: options.recipientType.kty,
-          crv: options.recipientType.crv,
-        })
-        for (const bytes of [
-          result.encrypted,
-          result.iv,
-          result.tag,
-          ...result.encryptedKeys.map((k) => k.encrypted),
-        ]) {
-          expect(bytes.constructor).toBe(Uint8Array)
-        }
-
-        for (const index of [0, 1, 2]) {
-          const { data: decrypted } = await decryptAs(index)
-          expect(TypedArrayEncoder.toUtf8String(decrypted)).toEqual('heelllo')
-        }
+      expect(set).not.toHaveBeenCalled()
+      expect(result.encryptedKeys).toHaveLength(3)
+      expect(result.ephemeralPublicJwk).toMatchObject({
+        kty: options.recipientType.kty,
+        crv: options.recipientType.crv,
+      })
+      for (const bytes of [result.encrypted, result.iv, result.tag, ...result.encryptedKeys.map((k) => k.encrypted)]) {
+        expect(bytes.constructor).toBe(Uint8Array)
       }
-    )
+
+      for (const index of [0, 1, 2]) {
+        const { data: decrypted } = await decryptAs(index)
+        expect(TypedArrayEncoder.toUtf8String(decrypted)).toEqual('heelllo')
+      }
+    })
 
     it('calls aad once with the returned ephemeral public key and binds it into the tag', async () => {
       const { result, decryptAs, buildAad } = await encryptForRecipients({

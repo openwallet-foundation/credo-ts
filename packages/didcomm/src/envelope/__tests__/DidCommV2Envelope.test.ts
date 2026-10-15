@@ -261,6 +261,7 @@ describe('DidCommV2Envelope', () => {
     const createKey = async (type: Kms.KmsCreateKeyTypeEc | Kms.KmsCreateKeyTypeOkp) =>
       Kms.PublicJwk.fromPublicJwk((await agent.kms.createKey({ type })).publicJwk) as Kms.PublicJwk
     const p256Key = await createKey({ kty: 'EC', crv: 'P-256' })
+    p256Key.keyId = `${recipient.didUrl.split('#')[0]}#p256-key`
     const secondKey = await createKey({ kty: 'OKP', crv: 'X25519' })
     secondKey.keyId = `${recipient.didUrl.split('#')[0]}#second-key`
     const envelope = agent.dependencyManager.resolve(DidCommV2Envelope)

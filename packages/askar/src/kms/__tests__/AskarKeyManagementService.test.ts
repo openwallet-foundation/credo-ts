@@ -1851,7 +1851,7 @@ describe('AskarKeyManagementService', () => {
         senderType: { kty: 'OKP', crv: 'Ed25519' } as const,
       },
     ])(
-      '$algorithm with $encryption encrypts once for three $recipientType.crv recipients (sender $senderType.crv)',
+      '$algorithm with $encryption encrypts once for three $recipientType.crv recipients',
       async ({ algorithm, encryption, recipientType, senderType }) => {
         const sender = senderType ? await service.createKey(agentContext, { type: senderType }) : undefined
         const recipients = []
