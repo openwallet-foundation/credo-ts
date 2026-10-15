@@ -146,28 +146,9 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
 
     const senderKey = toKeyAgreement(keys.senderKey)
     senderKey.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
-    const recipients = keys.recipientKeys
-      .filter((key) => key.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk))
-      .map((key) => ({ key: toKeyAgreement(key), kid: toKeyAgreementDidUrl(key) }))
-    // DIDComm v2.1 encrypts to all keyAgreement keys of the recipient DID on one curve: https://identity.foundation/didcomm-messaging/spec/v2.1/#key-ids
-    const first = recipients.find(({ key }) => key.JwkClass === senderKey.JwkClass) ?? recipients[0]
-    if (!first) {
-      throw new CredoError('DIDComm v2 pack requires a supported recipient key')
-    }
-    const did = first.kid.split('#')[0]
-    const sameDidAndCurve: DidCommV2EnvelopeRecipient[] = []
-    for (const recipient of recipients) {
-      if (
-        recipient.key.JwkClass === first.key.JwkClass &&
-        recipient.kid.split('#')[0] === did &&
-        !sameDidAndCurve.some(({ kid }) => kid === recipient.kid)
-      ) {
-        sameDidAndCurve.push(recipient)
-      }
-    }
 
     return {
-      recipients: sameDidAndCurve,
+      recipients: toV2EnvelopeRecipients(keys.recipientKeys, senderKey),
       senderKey,
       routingKeys: keys.routingKeys,
       senderKeySkid: keys.senderKeySkid,
@@ -399,6 +380,36 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
       return undefined
     }
   }
+}
+
+/**
+ * DIDComm v2.1 default recipients are all keyAgreement keys of the DID: https://identity.foundation/didcomm-messaging/spec/v2.1/#key-ids
+ * Keys of other DIDs or on another curve than the first match are skipped, as they need a separate envelope.
+ */
+export function toV2EnvelopeRecipients(
+  recipientKeys: Kms.PublicJwk[],
+  preferredCurveKey?: Kms.PublicJwk
+): DidCommV2EnvelopeRecipient[] {
+  const recipients = recipientKeys
+    .filter((key) => key.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk))
+    .map((key) => ({ key: toKeyAgreement(key), kid: toKeyAgreementDidUrl(key) }))
+  const first = recipients.find(({ key }) => key.JwkClass === preferredCurveKey?.JwkClass) ?? recipients[0]
+  if (!first) {
+    throw new CredoError('DIDComm v2 pack requires a supported recipient key')
+  }
+  const did = first.kid.split('#')[0]
+  const sameDidAndCurve: DidCommV2EnvelopeRecipient[] = []
+  for (const recipient of recipients) {
+    if (
+      recipient.key.JwkClass === first.key.JwkClass &&
+      recipient.kid.split('#')[0] === did &&
+      !sameDidAndCurve.some(({ kid }) => kid === recipient.kid)
+    ) {
+      sameDidAndCurve.push(recipient)
+    }
+  }
+
+  return sameDidAndCurve
 }
 
 /**

@@ -23,7 +23,7 @@ import {
 } from '@credo-ts/core'
 import { DidCommEventTypes, type DidCommMessageSentEvent } from '../../../DidCommEvents'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
-import { wrapInV2Forward } from '../../../envelope/DidCommV2Envelope'
+import { toV2EnvelopeRecipients, wrapInV2Forward } from '../../../envelope/DidCommV2Envelope'
 import { DidCommEmptyMessage } from '../../../messages'
 import type { DidCommRouting } from '../../../models'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../../../models'
@@ -36,7 +36,7 @@ import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import type { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from './DidCommConnectionService'
-import { createPeerDidForV2OOB, toAbsoluteDidUrl, toKeyAgreement, toKeyAgreementDidUrl } from './helpers'
+import { createPeerDidForV2OOB, toAbsoluteDidUrl } from './helpers'
 
 export interface FromPriorPayload {
   iss: string
@@ -293,7 +293,7 @@ export class DidCommDidRotateV2Service {
       throw new CredoError(`Resolved DIDComm service for '${connection.theirDid}' has no recipient key`)
     }
 
-    const recipientEd25519 = service.recipientKeys[0]
+    const recipients = toV2EnvelopeRecipients(service.recipientKeys)
 
     const empty = new DidCommEmptyMessage({ fromPrior: fromPriorJwt })
     const plaintext: DidCommV2PlaintextMessage = {
@@ -307,12 +307,12 @@ export class DidCommDidRotateV2Service {
     const didCommModuleConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
     const v2EnvelopeService = agentContext.dependencyManager.resolve(DidCommV2EnvelopeService)
     const encryptedMessage = await v2EnvelopeService.packAnoncrypt(agentContext, plaintext, {
-      recipients: [{ key: toKeyAgreement(recipientEd25519), kid: toKeyAgreementDidUrl(recipientEd25519) }],
+      recipients,
       contentEncryptionAlgorithm: didCommModuleConfig.v2DefaultAnoncryptContentEncryption,
     })
     const payload = await wrapInV2Forward(agentContext, v2EnvelopeService, encryptedMessage, {
       routingKeys: service.routingKeys,
-      recipientKey: recipientEd25519,
+      recipientKey: recipients[0].key,
       connection,
       contentEncryptionAlgorithm: didCommModuleConfig.v2DefaultAnoncryptContentEncryption,
     })

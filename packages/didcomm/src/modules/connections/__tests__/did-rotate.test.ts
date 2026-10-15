@@ -713,6 +713,53 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     expect(plaintext.from_prior).toBeDefined()
   })
 
+  test('rotate-to-nothing encrypts to every keyAgreement key of their DID on one curve', async () => {
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const connection = aliceBobConnection!
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const theirDid = connection.theirDid!
+    const agentContext = aliceAgent.context
+
+    const [service] = await aliceAgent.dependencyManager
+      .resolve(DidCommDocumentService)
+      .resolveServicesFromDid(agentContext, theirDid)
+    const firstKid = toKeyAgreementDidUrl(service.recipientKeys[0])
+    const { kty, crv } = toKeyAgreement(service.recipientKeys[0]).toJson() as Kms.KmsJwkPublicEcdh
+    const { publicJwk } = await aliceAgent.kms.createKey({
+      type: { kty, crv } as Kms.KmsCreateKeyTypeEc | Kms.KmsCreateKeyTypeOkp,
+    })
+    const secondKey = Kms.PublicJwk.fromPublicJwk(publicJwk)
+    secondKey.keyId = `${firstKid.split('#')[0]}#second-key`
+    const resolveServices = vi.spyOn(DidCommDocumentService.prototype, 'resolveServicesFromDid').mockResolvedValueOnce([
+      {
+        ...service,
+        routingKeys: [],
+        recipientKeys: [service.recipientKeys[0], secondKey] as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
+      },
+    ])
+
+    const transport = aliceAgent.dependencyManager
+      .resolve(DidCommModuleConfig)
+      .outboundTransports.find((t) => t.supportedSchemes.includes('rxjs'))
+    const sentPayloads: DidCommV2EncryptedMessage[] = []
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    const sendMessage = vi.spyOn(transport!, 'sendMessage').mockImplementation(async ({ payload }) => {
+      sentPayloads.push(payload as DidCommV2EncryptedMessage)
+    })
+
+    try {
+      await aliceAgent.dependencyManager
+        .resolve(DidCommDidRotateV2Service)
+        .sendRotateToNothing(agentContext, connection)
+    } finally {
+      resolveServices.mockRestore()
+      sendMessage.mockRestore()
+    }
+
+    expect(sentPayloads).toHaveLength(1)
+    expect(sentPayloads[0].recipients.map(({ header }) => header.kid)).toEqual([firstKid, secondKey.keyId])
+  })
+
   test.each(['hangup', 'rotate'] as const)(
     'an anoncrypt %s naming alice in from and skid leaves the connection alone',
     async (kind) => {
