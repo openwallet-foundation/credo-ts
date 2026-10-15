@@ -35,7 +35,7 @@ catalog:
   '@openwallet-foundation/askar-nodejs': 0.6.1
   '@openwallet-foundation/askar-shared': 0.6.1
   '@panva/hpke-noble': ^1.1.4
-  '@peculiar/x509': ^2.0.0
+  '@peculiar/x509': ^2.2.0
   '@sphereon/pex-models': ^2.3.2
   '@stablelib/ed25519': ^2.0.2
   '@types/express': ^5.0.6
@@ -66,3 +66,4 @@ minimumReleaseAgeExclude:
   - '@owf/token-status-list@0.4.2'
   - '@sd-jwt/core@0.22.0'
   - '@sd-jwt/sd-jwt-vc@0.22.0'
+  - '@peculiar/x509@2.2.0'
