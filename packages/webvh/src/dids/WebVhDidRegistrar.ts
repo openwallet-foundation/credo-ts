@@ -16,7 +16,7 @@ import {
   DidDocumentRole,
   DidRecord,
   DidRepository,
-  getKmsKeyIdForVerifiacationMethod,
+  getKmsKeyIdForVerificationMethod,
   JsonTransformer,
   Kms,
 } from '@credo-ts/core'
@@ -167,7 +167,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
       const domain = didRecord.getTag('domain') as string
       const activeUpdateKey = log[log.length - 1]?.parameters?.updateKeys?.[0] ?? log[0]?.parameters?.updateKeys?.[0]
       const vm = didRecord.didDocument?.verificationMethod?.find((v) => v.publicKeyMultibase === activeUpdateKey)
-      let keyId = vm ? getKmsKeyIdForVerifiacationMethod(vm, didRecord.keys) : undefined
+      let keyId = vm ? getKmsKeyIdForVerificationMethod(vm, didRecord.keys) : undefined
       if (!keyId && activeUpdateKey)
         keyId = didRecord.metadata.get(WebVhDidRecordMetadataKeys.UpdateKeyKmsKeyIds)?.[activeUpdateKey]
 

@@ -8,7 +8,7 @@ import type { ImportDidOptions } from './DidsApiOptions'
 import { DidsModuleConfig } from './DidsModuleConfig'
 import {
   type DidPurpose,
-  getKmsKeyIdForVerifiacationMethod,
+  getKmsKeyIdForVerificationMethod,
   getPublicJwkFromVerificationMethod,
   type VerificationMethod,
 } from './domain'
@@ -209,7 +209,7 @@ export class DidsApi {
 
     const verificationMethod = didDocument.dereferenceKey(didUrl, allowedPurposes)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-    publicJwk.keyId = getKmsKeyIdForVerifiacationMethod(verificationMethod, keys) ?? publicJwk.legacyKeyId
+    publicJwk.keyId = getKmsKeyIdForVerificationMethod(verificationMethod, keys) ?? publicJwk.legacyKeyId
 
     return {
       verificationMethod,
@@ -226,7 +226,7 @@ export class DidsApi {
 
     const verificationMethodPublicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
     const keyId =
-      getKmsKeyIdForVerifiacationMethod(verificationMethod, didRecord.keys) ?? verificationMethodPublicJwk.legacyKeyId
+      getKmsKeyIdForVerificationMethod(verificationMethod, didRecord.keys) ?? verificationMethodPublicJwk.legacyKeyId
 
     const kmsPublicJwk = await this.agentContext.resolve(KeyManagementApi).getPublicKey({ keyId })
     if (!verificationMethodPublicJwk.equals(PublicJwk.fromUnknown(kmsPublicJwk))) {

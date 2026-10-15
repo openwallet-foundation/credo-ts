@@ -23,7 +23,7 @@ import {
   DidRepository,
   type DidUpdateOptions,
   type DidUpdateResult,
-  getKmsKeyIdForVerifiacationMethod,
+  getKmsKeyIdForVerificationMethod,
   getPublicJwkFromVerificationMethod,
   JsonTransformer,
   Kms,
@@ -645,7 +645,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     return await Promise.all(
       verificationMethod.map(async (method) => {
         const publicJwk = getPublicJwkFromVerificationMethod(method)
-        const kmsKeyId = getKmsKeyIdForVerifiacationMethod(method, keys) ?? publicJwk.legacyKeyId
+        const kmsKeyId = getKmsKeyIdForVerificationMethod(method, keys) ?? publicJwk.legacyKeyId
 
         const { signature } = await kms.sign({
           data: payload,
