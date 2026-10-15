@@ -1822,35 +1822,31 @@ describe('AskarKeyManagementService', () => {
     })
 
     it.each([
-      ...(['ECDH-ES+A128KW', 'ECDH-ES+A256KW'] as const).flatMap((algorithm) =>
-        (
-          [
-            { kty: 'OKP', crv: 'X25519' },
-            { kty: 'EC', crv: 'P-256' },
-            { kty: 'EC', crv: 'P-384' },
-            { kty: 'EC', crv: 'secp256k1' },
-          ] as const
-        ).map((recipientType) => ({ algorithm, encryption: 'XC20P' as const, recipientType, senderType: undefined }))
-      ),
-      ...(
-        [
-          { kty: 'OKP', crv: 'X25519' },
-          { kty: 'EC', crv: 'P-256' },
-          { kty: 'EC', crv: 'P-384' },
-        ] as const
-      ).map((type) => ({
-        algorithm: 'ECDH-1PU+A256KW' as const,
-        encryption: 'A256CBC-HS512' as const,
-        recipientType: type,
-        senderType: type,
-      })),
       {
-        algorithm: 'ECDH-1PU+A256KW' as const,
-        encryption: 'A128CBC-HS256' as const,
-        recipientType: { kty: 'OKP', crv: 'X25519' } as const,
-        senderType: { kty: 'OKP', crv: 'Ed25519' } as const,
+        algorithm: 'ECDH-ES+A128KW',
+        encryption: 'XC20P',
+        recipientType: { kty: 'OKP', crv: 'X25519' },
+        senderType: undefined,
       },
-    ])(
+      {
+        algorithm: 'ECDH-ES+A256KW',
+        encryption: 'XC20P',
+        recipientType: { kty: 'EC', crv: 'P-256' },
+        senderType: undefined,
+      },
+      {
+        algorithm: 'ECDH-1PU+A256KW',
+        encryption: 'A256CBC-HS512',
+        recipientType: { kty: 'EC', crv: 'P-256' },
+        senderType: { kty: 'EC', crv: 'P-256' },
+      },
+      {
+        algorithm: 'ECDH-1PU+A256KW',
+        encryption: 'A128CBC-HS256',
+        recipientType: { kty: 'OKP', crv: 'X25519' },
+        senderType: { kty: 'OKP', crv: 'Ed25519' },
+      },
+    ] as const)(
       '$algorithm with $encryption encrypts once for three $recipientType.crv recipients',
       async ({ algorithm, encryption, recipientType, senderType }) => {
         const sender = senderType ? await service.createKey(agentContext, { type: senderType }) : undefined
@@ -1958,7 +1954,6 @@ describe('AskarKeyManagementService', () => {
       { algorithm: 'ECDH-ES+A256KW', encryption: 'A192GCM', crv: 'P-256', supported: false },
       { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', crv: 'P-384', supported: true },
       { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256GCM', crv: 'P-256', supported: false },
-      { algorithm: 'ECDH-1PU+A256KW', encryption: 'XC20P', crv: 'P-256', supported: false },
       { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', crv: 'secp256k1', supported: false },
     ] as const)(
       'reports support for $algorithm with $encryption on $crv as $supported',

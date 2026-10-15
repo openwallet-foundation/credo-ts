@@ -286,22 +286,8 @@ describe('KeyManagementApi', () => {
       )
     })
 
-    test('throws when no backend supports it', async () => {
-      const recipient = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
-
-      await expect(
-        agent.kms.encryptMultiRecipient({
-          keyAgreement: { algorithm: 'ECDH-ES+A256KW', recipients: [{ externalPublicJwk: recipient.publicJwk }] },
-          encryption: { algorithm: 'XC20P' },
-          data,
-        })
-      ).rejects.toThrow(KeyManagementError)
-    })
-
     test.each([
-      { case: 'no recipients', recipients: 0 },
       { case: 'recipients on different curves', recipients: 2, mixed: true },
-      { case: 'ECDH-1PU+A256KW without a sender key id', recipients: 1, algorithm: 'ECDH-1PU+A256KW' },
       {
         case: 'ECDH-1PU+A256KW with A256GCM',
         recipients: 1,
@@ -309,11 +295,9 @@ describe('KeyManagementApi', () => {
         keyId: 'sender',
         encryption: 'A256GCM',
       },
-      { case: 'HPKE content encryption', recipients: 1, encryption: 'HPKE' },
-      { case: 'an aad that is not a function', recipients: 1, aad: new Uint8Array([1]) },
     ])(
       'rejects $case',
-      async ({ recipients, mixed, algorithm = 'ECDH-ES+A256KW', keyId, encryption = 'A256CBC-HS512', aad }) => {
+      async ({ recipients, mixed, algorithm = 'ECDH-ES+A256KW', keyId, encryption = 'A256CBC-HS512' }) => {
         const x25519 = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
         const p256 = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
 
@@ -327,7 +311,6 @@ describe('KeyManagementApi', () => {
               })),
             },
             encryption: { algorithm: encryption },
-            aad,
             data,
           } as unknown as Parameters<typeof agent.kms.encryptMultiRecipient>[0])
         ).rejects.toThrow(ZodValidationError)

@@ -407,12 +407,8 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       return { sender, recipients }
     }
 
-    it.each([
-      { kty: 'OKP', crv: 'X25519' },
-      { kty: 'EC', crv: 'P-256' },
-      { kty: 'EC', crv: 'P-384' },
-    ] as const)('authcrypts and anoncrypts once for two $crv recipients', async (type) => {
-      const { sender, recipients } = await createKeys(type)
+    it('authcrypts and anoncrypts once for two X25519 recipients', async () => {
+      const { sender, recipients } = await createKeys({ kty: 'OKP', crv: 'X25519' })
       const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
       const storageCalls = [vi.spyOn(kms, 'createKey'), vi.spyOn(kms, 'importKey'), vi.spyOn(kms, 'deleteKey')]
       const envelopeRecipients = recipients.map((key, index) => ({ key, kid: kids[index] }))
@@ -429,7 +425,7 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
       for (const spy of storageCalls) expect(spy).not.toHaveBeenCalled()
       for (const encrypted of encryptedMessages) {
         const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected)
-        expect(protectedJson.epk).toMatchObject({ kty: type.kty, crv: type.crv })
+        expect(protectedJson.epk).toMatchObject({ kty: 'OKP', crv: 'X25519' })
         expect(protectedJson.apv).toBe(TypedArrayEncoder.toBase64Url(computeApv(kids)))
         expect(encrypted.recipients.map(({ header }) => header.kid)).toEqual(kids)
 

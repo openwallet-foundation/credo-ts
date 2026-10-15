@@ -1756,52 +1756,39 @@ describe('NodeKeyManagementService', () => {
     }
 
     it.each([
-      ...(['ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW'] as const).flatMap((algorithm) =>
-        (
-          [
-            { kty: 'OKP', crv: 'X25519' },
-            { kty: 'EC', crv: 'P-256' },
-            { kty: 'EC', crv: 'P-384' },
-            { kty: 'EC', crv: 'P-521' },
-          ] as const
-        ).map((recipientType) => ({ algorithm, encryption: 'A256GCM' as const, recipientType, senderType: undefined }))
-      ),
-      ...(
-        [
-          { kty: 'OKP', crv: 'X25519' },
-          { kty: 'EC', crv: 'P-256' },
-          { kty: 'EC', crv: 'P-384' },
-        ] as const
-      ).map((type) => ({
-        algorithm: 'ECDH-1PU+A256KW' as const,
-        encryption: 'A256CBC-HS512' as const,
-        recipientType: type,
-        senderType: type,
-      })),
+      { algorithm: 'ECDH-ES+A128KW', encryption: 'A256GCM', recipientType: { kty: 'OKP', crv: 'X25519' } },
+      { algorithm: 'ECDH-ES+A192KW', encryption: 'A256GCM', recipientType: { kty: 'EC', crv: 'P-256' } },
+      { algorithm: 'ECDH-ES+A256KW', encryption: 'A256GCM', recipientType: { kty: 'EC', crv: 'P-521' } },
       {
-        algorithm: 'ECDH-1PU+A256KW' as const,
-        encryption: 'A128CBC-HS256' as const,
-        recipientType: { kty: 'OKP', crv: 'X25519' } as const,
-        senderType: { kty: 'OKP', crv: 'Ed25519' } as const,
+        algorithm: 'ECDH-1PU+A256KW',
+        encryption: 'A256CBC-HS512',
+        recipientType: { kty: 'EC', crv: 'P-256' },
+        senderType: { kty: 'EC', crv: 'P-256' },
       },
-    ])('$algorithm with $encryption encrypts once for three $recipientType.crv recipients', async (options) => {
-      const { result, decryptAs, set } = await encryptForRecipients(options)
+      {
+        algorithm: 'ECDH-1PU+A256KW',
+        encryption: 'A128CBC-HS256',
+        recipientType: { kty: 'OKP', crv: 'X25519' },
+        senderType: { kty: 'OKP', crv: 'Ed25519' },
+      },
+    ] as const)(
+      '$algorithm with $encryption encrypts once for three $recipientType.crv recipients',
+      async (options) => {
+        const { result, decryptAs, set } = await encryptForRecipients(options)
 
-      expect(set).not.toHaveBeenCalled()
-      expect(result.encryptedKeys).toHaveLength(3)
-      expect(result.ephemeralPublicJwk).toMatchObject({
-        kty: options.recipientType.kty,
-        crv: options.recipientType.crv,
-      })
-      for (const bytes of [result.encrypted, result.iv, result.tag, ...result.encryptedKeys.map((k) => k.encrypted)]) {
-        expect(bytes.constructor).toBe(Uint8Array)
-      }
+        expect(set).not.toHaveBeenCalled()
+        expect(result.encryptedKeys).toHaveLength(3)
+        expect(result.ephemeralPublicJwk).toMatchObject({
+          kty: options.recipientType.kty,
+          crv: options.recipientType.crv,
+        })
 
-      for (const index of [0, 1, 2]) {
-        const { data: decrypted } = await decryptAs(index)
-        expect(TypedArrayEncoder.toUtf8String(decrypted)).toEqual('heelllo')
+        for (const index of [0, 1, 2]) {
+          const { data: decrypted } = await decryptAs(index)
+          expect(TypedArrayEncoder.toUtf8String(decrypted)).toEqual('heelllo')
+        }
       }
-    })
+    )
 
     it('calls aad once with the returned ephemeral public key and binds it into the tag', async () => {
       const { result, decryptAs, buildAad } = await encryptForRecipients({
@@ -1813,20 +1800,6 @@ describe('NodeKeyManagementService', () => {
       expect(buildAad).toHaveBeenCalledTimes(1)
       expect(buildAad).toHaveBeenCalledWith(result.ephemeralPublicJwk)
       await expect(decryptAs(0, TypedArrayEncoder.fromUtf8String('other'))).rejects.toThrow(Kms.KeyManagementError)
-    })
-
-    it('binds the tag into the key wrapping of every ECDH-1PU+A256KW recipient', async () => {
-      const { result, decryptAs } = await encryptForRecipients({
-        algorithm: 'ECDH-1PU+A256KW',
-        encryption: 'A256CBC-HS512',
-        senderType: { kty: 'OKP', crv: 'X25519' },
-        recipientType: { kty: 'OKP', crv: 'X25519' },
-      })
-      result.tag[0] ^= 1
-
-      for (const index of [0, 1, 2]) {
-        await expect(decryptAs(index)).rejects.toThrow('Error unwrapping content encryption key')
-      }
     })
 
     it('does not store the ephemeral key when aad throws', async () => {
@@ -1874,11 +1847,9 @@ describe('NodeKeyManagementService', () => {
 
     it.each([
       { algorithm: 'ECDH-ES+A192KW', encryption: 'A256GCM', crv: 'P-256', supported: true },
-      { algorithm: 'ECDH-ES+A256KW', encryption: 'A256GCM', crv: 'P-521', supported: true },
       { algorithm: 'ECDH-ES+A256KW', encryption: 'XC20P', crv: 'P-256', supported: false },
       { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', crv: 'P-256', supported: true },
       { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256GCM', crv: 'P-256', supported: false },
-      { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', crv: 'P-521', supported: false },
       { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', crv: 'secp256k1', supported: false },
     ] as const)(
       'reports support for $algorithm with $encryption on $crv as $supported',

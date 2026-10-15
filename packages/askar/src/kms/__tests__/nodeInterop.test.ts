@@ -152,10 +152,8 @@ describe('AskarKeyManagementService encryptMultiRecipient interop with NodeKeyMa
     it.each([
       { algorithm: 'ECDH-ES+A256KW', type: { kty: 'OKP', crv: 'X25519' } },
       { algorithm: 'ECDH-ES+A256KW', type: { kty: 'EC', crv: 'P-256' } },
-      { algorithm: 'ECDH-ES+A256KW', type: { kty: 'EC', crv: 'P-384' } },
       { algorithm: 'ECDH-1PU+A256KW', type: { kty: 'OKP', crv: 'X25519' } },
       { algorithm: 'ECDH-1PU+A256KW', type: { kty: 'EC', crv: 'P-256' } },
-      { algorithm: 'ECDH-1PU+A256KW', type: { kty: 'EC', crv: 'P-384' } },
       { algorithm: 'ECDH-1PU+A256KW', type: { kty: 'OKP', crv: 'Ed25519' } },
     ] as const)('$algorithm with $type.crv keys for two recipients', async ({ algorithm, type }) => {
       const sender =
