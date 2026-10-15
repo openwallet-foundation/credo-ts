@@ -3,6 +3,7 @@ import { zAnyUint8Array } from '../../../utils/zod'
 import { isJwaHpkeAlgorithm, KnownJwaContentEncryptionAlgorithms } from '../jwk/jwa'
 import { zKmsJwkPrivateOct } from '../jwk/kty/oct/octJwk'
 import { zKmsKeyId } from './common'
+import { ecdh1PuContentEncryptionAlgorithms } from './KmsEncryptOptions'
 import { zKmsKeyAgreementDecryptOptions } from './KmsKeyAgreementDecryptOptions'
 
 const zKmsDecryptDataDecryptionAesGcm = z.object({
@@ -151,6 +152,18 @@ export const zKmsDecryptOptions = z
         input: value.decryption,
         path: ['decryption', 'algorithm'],
         message: `'decryption.algorithm' 'HPKE' can only be used with an integrated-encryption HPKE key agreement algorithm`,
+      })
+    }
+
+    if (
+      value.key.keyAgreement?.algorithm === 'ECDH-1PU+A256KW' &&
+      !ecdh1PuContentEncryptionAlgorithms.includes(value.decryption.algorithm)
+    ) {
+      issues.push({
+        code: 'custom',
+        input: value.decryption,
+        path: ['decryption', 'algorithm'],
+        message: `'decryption.algorithm' must be one of ${ecdh1PuContentEncryptionAlgorithms.join(', ')} for key agreement algorithm 'ECDH-1PU+A256KW'`,
       })
     }
   })
