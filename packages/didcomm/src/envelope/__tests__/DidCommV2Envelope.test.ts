@@ -254,6 +254,58 @@ describe('DidCommV2Envelope', () => {
     expect(authenticatedSenderDid).toBe(sender.did)
   })
 
+  it('encrypts to every recipient key of the DID on the sender curve once', async () => {
+    const sender = await createKeyAgreementDid()
+    const recipient = await createKeyAgreementDid()
+    recipient.publicJwk.keyId = recipient.didUrl
+    const createKey = async (type: Kms.KmsCreateKeyTypeEc | Kms.KmsCreateKeyTypeOkp) =>
+      Kms.PublicJwk.fromPublicJwk((await agent.kms.createKey({ type })).publicJwk) as Kms.PublicJwk
+    const p256Key = await createKey({ kty: 'EC', crv: 'P-256' })
+    const secondKey = await createKey({ kty: 'OKP', crv: 'X25519' })
+    secondKey.keyId = `${recipient.didUrl.split('#')[0]}#second-key`
+    const envelope = agent.dependencyManager.resolve(DidCommV2Envelope)
+
+    const keys = await envelope.buildReturnRouteKeys(agent.context, {
+      senderKey: recipient.publicJwk,
+      recipientKey: sender.publicJwk,
+      plaintextMessage: { '@type': DidCommTrustPingMessage.type.messageTypeUri, '@id': 'ping-8' },
+    })
+    const encrypted = (await envelope.pack(agent.context, new DidCommTrustPingMessage({}), {
+      ...keys,
+      recipientKeys: [
+        p256Key,
+        recipient.publicJwk,
+        secondKey,
+        recipient.publicJwk,
+      ] as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
+    })) as DidCommV2EncryptedMessage
+    const { authenticatedSenderDid } = await envelope.unpack(agent.context, encrypted)
+
+    expect(encrypted.recipients.map(({ header }) => header.kid)).toEqual([recipient.didUrl, secondKey.keyId])
+    expect(authenticatedSenderDid).toBe(sender.did)
+  })
+
+  it('encrypts only to the keys of the first DID when recipient keys belong to different DIDs', async () => {
+    const sender = await createKeyAgreementDid()
+    const recipient = await createKeyAgreementDid()
+    const envelope = agent.dependencyManager.resolve(DidCommV2Envelope)
+    const createX25519Key = async (): Promise<Kms.PublicJwk> =>
+      Kms.PublicJwk.fromPublicJwk((await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })).publicJwk)
+    const [first, second] = [await createX25519Key(), await createX25519Key()]
+
+    const keys = await envelope.buildReturnRouteKeys(agent.context, {
+      senderKey: recipient.publicJwk,
+      recipientKey: sender.publicJwk,
+      plaintextMessage: { '@type': DidCommTrustPingMessage.type.messageTypeUri, '@id': 'ping-9' },
+    })
+    const encrypted = (await envelope.pack(agent.context, new DidCommTrustPingMessage({}), {
+      ...keys,
+      recipientKeys: [first, second] as Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
+    })) as DidCommV2EncryptedMessage
+
+    expect(encrypted.recipients.map(({ header }) => header.kid)).toEqual([toKeyAgreementDidUrl(first)])
+  })
+
   it('addresses a forward to the DID of a keyAgreement routing key', async () => {
     const created = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
     const routingKey: Kms.PublicJwk = Kms.PublicJwk.fromPublicJwk(created.publicJwk)

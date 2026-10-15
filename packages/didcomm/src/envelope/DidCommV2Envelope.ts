@@ -1,4 +1,4 @@
-import type { AgentContext, DidDocument, Kms } from '@credo-ts/core'
+import type { AgentContext, DidDocument } from '@credo-ts/core'
 import {
   areEquivalentDidPeer4Forms,
   CredoError,
@@ -7,6 +7,7 @@ import {
   getDidPeer4ShortFormForEquivalence,
   getPublicJwkFromVerificationMethod,
   injectable,
+  Kms,
   utils,
 } from '@credo-ts/core'
 import type { DecryptedDidCommMessageContext, DidCommEnvelopeKey, EnvelopeKeys } from '../DidCommEnvelopeService'
@@ -23,7 +24,12 @@ import { DidCommForwardV2Message } from '../modules/routing/protocol/v2/messages
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from '../types'
 import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
-import type { DidCommV2KeyAgreementJwk, DidCommV2PlaintextMessage, DidCommV2SignedMessageWire } from '../v2'
+import type {
+  DidCommV2EnvelopeRecipient,
+  DidCommV2KeyAgreementJwk,
+  DidCommV2PlaintextMessage,
+  DidCommV2SignedMessageWire,
+} from '../v2'
 import {
   buildV2PlaintextFromMessage,
   DidCommV2EnvelopeService,
@@ -41,8 +47,7 @@ import type { DidCommEnvelope, DidCommPackOptions, DidCommReturnRouteOptions } f
  * class converts that carrier into the honest v2 shape at the last moment, in one place.
  */
 interface DidCommV2PackKeys {
-  recipientKey: DidCommV2KeyAgreementJwk
-  recipientKid: string
+  recipients: DidCommV2EnvelopeRecipient[]
   senderKey: DidCommV2KeyAgreementJwk
   routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   senderKeySkid: string
@@ -110,7 +115,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
     })
 
     const encryptedMessage = await this.envelopeService.pack(agentContext, plaintext, {
-      recipients: [{ key: v2Keys.recipientKey, kid: v2Keys.recipientKid }],
+      recipients: v2Keys.recipients,
       senderKey: v2Keys.senderKey,
       senderKeySkid: v2Keys.senderKeySkid,
       contentEncryptionAlgorithm: this.config.v2DefaultAuthcryptContentEncryption,
@@ -120,7 +125,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
 
     return wrapInV2Forward(agentContext, this.envelopeService, encryptedMessage, {
       routingKeys: v2Keys.routingKeys,
-      recipientKey: v2Keys.recipientKey,
+      recipientKey: v2Keys.recipients[0].key,
       connection: options?.connection,
       contentEncryptionAlgorithm: this.config.v2DefaultAnoncryptContentEncryption,
     })
@@ -141,12 +146,28 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
 
     const senderKey = toKeyAgreement(keys.senderKey)
     senderKey.keyId = keys.senderKey.hasKeyId ? keys.senderKey.keyId : keys.senderKey.legacyKeyId
-    const recipientKey =
-      keys.recipientKeys.find((key) => toKeyAgreement(key).JwkClass === senderKey.JwkClass) ?? keys.recipientKeys[0]
+    const recipients = keys.recipientKeys
+      .filter((key) => key.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk))
+      .map((key) => ({ key: toKeyAgreement(key), kid: toKeyAgreementDidUrl(key) }))
+    // DIDComm v2.1 encrypts to all keyAgreement keys of the recipient DID on one curve: https://identity.foundation/didcomm-messaging/spec/v2.1/#key-ids
+    const first = recipients.find(({ key }) => key.JwkClass === senderKey.JwkClass) ?? recipients[0]
+    if (!first) {
+      throw new CredoError('DIDComm v2 pack requires a supported recipient key')
+    }
+    const did = first.kid.split('#')[0]
+    const sameDidAndCurve: DidCommV2EnvelopeRecipient[] = []
+    for (const recipient of recipients) {
+      if (
+        recipient.key.JwkClass === first.key.JwkClass &&
+        recipient.kid.split('#')[0] === did &&
+        !sameDidAndCurve.some(({ kid }) => kid === recipient.kid)
+      ) {
+        sameDidAndCurve.push(recipient)
+      }
+    }
 
     return {
-      recipientKey: toKeyAgreement(recipientKey),
-      recipientKid: toKeyAgreementDidUrl(recipientKey),
+      recipients: sameDidAndCurve,
       senderKey,
       routingKeys: keys.routingKeys,
       senderKeySkid: keys.senderKeySkid,
