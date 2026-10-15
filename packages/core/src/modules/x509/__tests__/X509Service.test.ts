@@ -6,25 +6,9 @@ import {
   X509ExtensionIdentifier,
   X509KeyUsage,
 } from '@credo-ts/core'
-import { AsnConvert, OctetString } from '@peculiar/asn1-schema'
-import {
-  AlgorithmIdentifier as AsnAlgorithmIdentifier,
-  Certificate as AsnCertificate,
-  Extension as AsnExtension,
-  Extensions as AsnExtensions,
-  Name as AsnName,
-  TBSCertificate as AsnTBSCertificate,
-  Validity as AsnValidity,
-  AttributeTypeAndValue,
-  AttributeValue,
-  BasicConstraints,
-  RelativeDistinguishedName,
-  Version,
-} from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
-import { publicJwkToSpki } from '../../../crypto/webcrypto/utils'
 import {
   KeyManagementApi,
   KeyManagementModuleConfig,
@@ -32,7 +16,6 @@ import {
   type KmsJwkPublicRsa,
   P256PublicJwk,
   PublicJwk,
-  rawEcSignatureToDer,
 } from '../../kms'
 import { X509Certificate } from '../X509Certificate'
 import { X509Error } from '../X509Error'
@@ -787,61 +770,19 @@ gTqhM3BGMuf+
     /**
      * Build a self-signed certificate whose DER needs more ASN.1 nodes than the parser allows by
      * default, by giving it a subject with a few thousand relative distinguished names.
-     *
-     * It is assembled from its ASN.1 rather than through `X509Service.createCertificate`, because
-     * `@peculiar/x509`'s generator re-parses the certificate it builds under the default limits and
-     * so cannot produce one that exceeds them.
      */
     async function createOversizedCertificate(relativeDistinguishedNames: number) {
       const key = PublicJwk.fromPublicJwk((await kmsApi.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk)
+      const units = Array.from({ length: relativeDistinguishedNames }, (_, i) => `OU=unit-${i}`)
 
-      const name = new AsnName()
-      for (let i = 0; i < relativeDistinguishedNames; i++) {
-        name.push(
-          new RelativeDistinguishedName([
-            new AttributeTypeAndValue({ type: '2.5.4.11', value: new AttributeValue({ utf8String: `unit-${i}` }) }),
-          ])
-        )
-      }
-      name.push(
-        new RelativeDistinguishedName([
-          new AttributeTypeAndValue({ type: '2.5.4.3', value: new AttributeValue({ utf8String: 'Oversized' }) }),
-        ])
-      )
-
-      // ecdsa-with-SHA256
-      const signatureAlgorithm = new AsnAlgorithmIdentifier({ algorithm: '1.2.840.10045.4.3.2' })
-      const tbsCertificate = new AsnTBSCertificate({
-        version: Version.v3,
-        serialNumber: new Uint8Array([0x01]).buffer,
-        signature: signatureAlgorithm,
-        issuer: name,
-        validity: new AsnValidity({ notBefore: getLastMonth(), notAfter: getNextMonth() }),
-        subject: name,
-        subjectPublicKeyInfo: publicJwkToSpki(key),
-        extensions: new AsnExtensions([
-          new AsnExtension({
-            extnID: X509ExtensionIdentifier.BasicConstraints,
-            critical: true,
-            extnValue: new OctetString(AsnConvert.serialize(new BasicConstraints({ cA: true }))),
-          }),
-        ]),
+      const certificate = await X509Service.createCertificate(agentContext, {
+        authorityKey: key,
+        issuer: [...units, 'CN=Oversized'].join(', '),
+        validity: { notBefore: getLastMonth(), notAfter: getNextMonth() },
+        extensions: { basicConstraints: { ca: true, markAsCritical: true } },
       })
 
-      const { signature } = await kmsApi.sign({
-        keyId: key.keyId,
-        algorithm: 'ES256',
-        data: new Uint8Array(AsnConvert.serialize(tbsCertificate)),
-      })
-
-      const certificate = new AsnCertificate({
-        tbsCertificate,
-        signatureAlgorithm,
-        // X.509 carries the ECDSA signature as a DER SEQUENCE, the KMS returns it as raw r || s
-        signatureValue: rawEcSignatureToDer(signature, 'P-256').buffer as ArrayBuffer,
-      })
-
-      return TypedArrayEncoder.toBase64(new Uint8Array(AsnConvert.serialize(certificate)))
+      return certificate.toString('base64')
     }
 
     it('applies the parse options to every phase of certificate chain validation', async () => {

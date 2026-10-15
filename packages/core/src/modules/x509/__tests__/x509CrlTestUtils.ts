@@ -1,13 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { AsnConvert } from '@peculiar/asn1-schema'
-import {
-  CRLDistributionPoints,
-  DistributionPoint,
-  DistributionPointName,
-  GeneralName,
-  id_ce_cRLDistributionPoints,
-  Reason,
-} from '@peculiar/asn1-x509'
+import { DistributionPoint, DistributionPointName, GeneralName, Reason } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 import type { Scope } from 'nock'
 import nock from 'nock'
@@ -157,15 +149,7 @@ export async function generateLeafWithPartitionedDistributionPoints(
       notBefore: options.notBefore,
       notAfter: options.notAfter,
       serialNumber: options.serialNumber,
-      // Built from DER rather than `x509.CRLDistributionPointsExtension`, see
-      // `createCrlDistributionPointsExtension`.
-      extensions: [
-        new x509.Extension(
-          id_ce_cRLDistributionPoints,
-          false,
-          AsnConvert.serialize(new CRLDistributionPoints(distributionPoints))
-        ),
-      ],
+      extensions: [new x509.CRLDistributionPointsExtension(distributionPoints)],
     },
     webCrypto
   )
