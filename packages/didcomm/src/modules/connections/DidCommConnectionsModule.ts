@@ -21,7 +21,9 @@ import {
   DidCommDidRotateAckHandler,
   DidCommDidRotateHandler,
   DidCommDidRotateProblemReportHandler,
+  DidCommEmptyMessageHandler,
   DidCommHangupHandler,
+  DidCommProblemReportV2MessageHandler,
   DidCommTrustPingMessageHandler,
   DidCommTrustPingResponseMessageHandler,
 } from './handlers'
@@ -29,6 +31,7 @@ import { DidCommDidExchangeRole, DidCommDidRotateRole } from './models'
 import { DidCommConnectionRepository } from './repository'
 import { DidCommConnectionService } from './services/DidCommConnectionService'
 import { DidCommDidRotateService } from './services/DidCommDidRotateService'
+import { DidCommDidRotateV2Service } from './services/DidCommDidRotateV2Service'
 import { DidCommTrustPingService } from './services/DidCommTrustPingService'
 
 export class DidCommConnectionsModule implements Module {
@@ -50,6 +53,7 @@ export class DidCommConnectionsModule implements Module {
     dependencyManager.registerSingleton(DidCommConnectionService)
     dependencyManager.registerSingleton(DidExchangeProtocol)
     dependencyManager.registerSingleton(DidCommDidRotateService)
+    dependencyManager.registerSingleton(DidCommDidRotateV2Service)
     dependencyManager.registerSingleton(DidCommTrustPingService)
 
     // Repositories
@@ -99,6 +103,8 @@ export class DidCommConnectionsModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateAckHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommHangupHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateProblemReportHandler(didRotateService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommEmptyMessageHandler())
+    messageHandlerRegistry.registerMessageHandler(new DidCommProblemReportV2MessageHandler())
 
     featureRegistry.register(
       new DidCommProtocol({
@@ -108,6 +114,10 @@ export class DidCommConnectionsModule implements Module {
       new DidCommProtocol({
         id: 'https://didcomm.org/did-rotate/1.0',
         roles: [DidCommDidRotateRole.RotatingParty, DidCommDidRotateRole.ObservingParty],
+      }),
+      new DidCommProtocol({
+        id: 'https://didcomm.org/empty/1.0',
+        roles: [],
       })
     )
   }
