@@ -250,16 +250,18 @@ export class DidCommOutOfBandService {
   /**
    * Find v2 OOB record (Sender role) awaiting a response by recipient DID. Used when inviter receives first
    * DIDComm v2 message (to=[our DID]). Duplicates can exist when invitations reuse a public
-   * ourDid; prefer the most recent reusable record.
+   * ourDid; prefer the most recent reusable record, unless `invitationId` names the one to take.
    */
   public async findCreatedByRecipientDid(
     agentContext: AgentContext,
-    recipientDids: string[]
+    recipientDids: string[],
+    invitationId?: string
   ): Promise<DidCommOutOfBandRecord | null> {
     const records = await this.outOfBandRepository.findByQuery(agentContext, {
       $or: recipientDids.map((recipientDid) => ({ recipientDid })),
       role: DidCommOutOfBandRole.Sender,
       state: DidCommOutOfBandState.AwaitResponse,
+      invitationId,
     })
     if (records.length === 0) return null
     const byNewest = [...records].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())

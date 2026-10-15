@@ -1,7 +1,6 @@
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import type { DidCommConnectionStateChangedEvent } from '../../didcomm/src'
 import {
-  DidCommBasicMessageEventTypes,
   DidCommConnectionEventTypes,
   DidCommDidExchangeState,
   DidCommEmptyMessage,
@@ -22,7 +21,6 @@ import {
   getAgentOptions,
   makeConnection,
   waitForAgentMessageProcessedEventSubject,
-  waitForBasicMessageSubject,
   waitForTrustPingReceivedEventSubject,
   waitForTrustPingResponseReceivedEventSubject,
 } from './helpers'
@@ -175,7 +173,7 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       expect(aliceConnection.metadata.get(DidCommConnectionMetadataKeys.OutOfBandV2ParentThreadId)).toBeNull()
     })
 
-    it('v2 OOB (no handshake): a first message with its own pthid keeps it', async () => {
+    it('v2 OOB (no handshake): a first message with its own pthid is dropped and the next one carries the invitation id', async () => {
       const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
 
       const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
@@ -184,21 +182,23 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       )
       if (!connectionRecord) throw new Error('Expected connectionRecord to be defined')
 
-      const [faberReplay] = setupEventReplaySubjects(
-        [faberAgent],
-        [
-          ...trustPingEventTypes,
-          DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
-          DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged,
-        ]
-      )
-      await aliceAgent.didcomm.basicMessages.sendMessage(connectionRecord.id, 'hello', 'custom-pthid')
-      const basicMessageReceived = await waitForBasicMessageSubject(faberReplay, { content: 'hello' })
-      expect(basicMessageReceived.thread?.parentThreadId).toBe('custom-pthid')
+      const [faberReplay] = setupEventReplaySubjects([faberAgent], trustPingEventTypes)
+      const warn = vi.spyOn(faberAgent.config.logger, 'warn')
+      try {
+        await aliceAgent.didcomm.basicMessages.sendMessage(connectionRecord.id, 'hello', 'custom-pthid')
+        await vi.waitFor(() =>
+          expect(warn).toHaveBeenCalledWith(expect.any(String), {
+            pthid: 'custom-pthid',
+            senderDid: connectionRecord.did,
+          })
+        )
+      } finally {
+        warn.mockRestore()
+      }
 
       const ping = await aliceAgent.didcomm.connections.sendPing(connectionRecord.id, {})
       const pingReceived = await waitForTrustPingReceivedEventSubject(faberReplay, { threadId: ping.threadId })
-      expect(pingReceived.thread?.parentThreadId).toBeUndefined()
+      expect(pingReceived.thread?.parentThreadId).toBe(faberOutOfBandRecord.outOfBandInvitation.id)
     })
 
     it('v2 OOB with an attached request: the reply carries the invitation id as pthid', async () => {

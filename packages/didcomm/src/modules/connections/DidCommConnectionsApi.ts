@@ -161,6 +161,22 @@ export class DidCommConnectionsApi {
   }
 
   /**
+   * Reuse a connection for a DIDComm v2 out-of-band invitation: the next message sent on it carries the invitation id as pthid.
+   */
+  public async reuseForOutOfBandInvitation(
+    outOfBandRecord: DidCommOutOfBandRecord,
+    connectionId: string
+  ): Promise<DidCommConnectionRecord> {
+    const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
+    const metadata = this.getPendingOutOfBandParentThreadIdMetadata(outOfBandRecord)
+    if (!metadata) return connectionRecord
+
+    for (const [key, value] of Object.entries(metadata)) connectionRecord.metadata.set(key, value)
+    await this.connectionService.update(this.agentContext, connectionRecord)
+    return connectionRecord
+  }
+
+  /**
    * Accept a DID exchange request as responder (by sending a DID exchange response message) for the connection with the specified connection id.
    * This is not needed when auto accepting of connection is enabled.
    *

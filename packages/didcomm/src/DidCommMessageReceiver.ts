@@ -411,7 +411,13 @@ export class DidCommMessageReceiver {
       const recipientDids = recipientDidRecord
         ? [recipientDidRecord.did, ...(recipientDidRecord.getTags().alternativeDids ?? [])]
         : [recipient]
-      const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipientDids)
+      // https://identity.foundation/didcomm-messaging/spec/v2.1/#invitation
+      const pthid: unknown = plaintextMessage['~thread']?.pthid
+      // Not yet validated, and a non-string value would reach the storage query as an operator
+      const outOfBandRecord =
+        pthid === undefined || typeof pthid === 'string'
+          ? await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipientDids, pthid)
+          : null
       if (outOfBandRecord) {
         // Inviter receives first message → Responder (so retrieveServicesByConnection uses theirDid parse fallback)
         // Spec privacy: for reusable invitations, the invitation DID is shared across every
@@ -434,6 +440,13 @@ export class DidCommMessageReceiver {
           await this.outOfBandService.updateState(agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
         }
         return { connection }
+      }
+
+      if (pthid !== undefined) {
+        this.logger.warn('First message names no out-of-band invitation awaiting a response', {
+          pthid,
+          senderDid: from,
+        })
       }
 
       if (recipientDidRecord && (await this.isImplicitInvitationDid(agentContext, recipientDids))) {

@@ -1529,6 +1529,7 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
         // biome-ignore lint/style/noNonNullAssertion: no explanation
         from: connectionRecord!.did!,
         to: [invitationDid],
+        pthid: invitation.outOfBandInvitation.id,
         body: {},
       },
       {
@@ -1640,10 +1641,19 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
       invitation.outOfBandInvitation,
       { label: '' }
     )
-    await waitUntilInviterReceives(() =>
-      // biome-ignore lint/style/noNonNullAssertion: no explanation
-      accepterTwo.didcomm.basicMessages.sendMessage(secondConnection!.id, 'second')
-    )
+    const warn = vi.spyOn(inviter.config.logger, 'warn')
+    try {
+      await waitUntilInviterReceives(() =>
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
+        accepterTwo.didcomm.basicMessages.sendMessage(secondConnection!.id, 'second')
+      )
+      expect(warn).toHaveBeenCalledWith(expect.any(String), {
+        pthid: invitation.outOfBandInvitation.id,
+        senderDid: secondConnection?.did,
+      })
+    } finally {
+      warn.mockRestore()
+    }
 
     expect(await inviter.didcomm.connections.getAll()).toHaveLength(0)
     expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.Done)
@@ -1709,6 +1719,33 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     expect(await inviter.didcomm.connections.findAllByOutOfBandId(encryptedTo.id)).toHaveLength(1)
     expect(await inviter.didcomm.connections.findAllByOutOfBandId(namedInTo.id)).toHaveLength(0)
     expect((await inviter.didcomm.oob.getById(namedInTo.id)).state).toEqual(DidCommOutOfBandState.AwaitResponse)
+  })
+
+  test('a first message whose pthid is not a string binds no invitation', async () => {
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+    const { connectionRecord } = await accepter.didcomm.oob.receiveInvitation(invitation.outOfBandInvitation, {
+      label: '',
+    })
+    const envelopeService = accepter.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const pack = envelopeService.pack.bind(envelopeService)
+    const queryOperatorPthid = vi
+      .spyOn(envelopeService, 'pack')
+      .mockImplementation((agentContext, payload, keys) =>
+        pack(
+          agentContext,
+          { ...(payload as DidCommV2PlaintextMessage), pthid: { $neq: '' } as unknown as string },
+          keys
+        )
+      )
+    try {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await waitUntilInviterReceives(() => accepter.didcomm.basicMessages.sendMessage(connectionRecord!.id, 'first'))
+    } finally {
+      queryOperatorPthid.mockRestore()
+    }
+
+    expect(await inviter.didcomm.connections.getAll()).toHaveLength(0)
+    expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.AwaitResponse)
   })
 
   test('a message from an unknown sender to a pairwise DID creates no connection', async () => {
