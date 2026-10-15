@@ -13,6 +13,7 @@ import {
   JsonTransformer,
   Kms,
   type Logger,
+  MessageValidator,
   PeerDidNumAlgo,
   utils,
 } from '@credo-ts/core'
@@ -405,6 +406,7 @@ export class DidCommOutOfBandApi {
       },
       attachments: v2Attachments.length > 0 ? v2Attachments : undefined,
     })
+    MessageValidator.validateSync(v2Invitation)
 
     const outOfBandRecord = new DidCommOutOfBandRecord({
       mediatorId: routing.mediatorId,
@@ -419,6 +421,7 @@ export class DidCommOutOfBandApi {
         recipientDid: did,
       },
     })
+    outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.V2Invitation, v2Invitation.toJSON())
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)
     this.outOfBandService.emitStateChangedEvent(this.agentContext, outOfBandRecord, null)
@@ -729,14 +732,6 @@ export class DidCommOutOfBandApi {
     }
   ) {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
-
-    // Restore v2Invitation from metadata (it's @Exclude() and lost on record deserialization)
-    const v2InvitationJson = outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.V2Invitation)
-    if (v2InvitationJson) {
-      outOfBandRecord.outOfBandInvitation.v2Invitation = DidCommOutOfBandInvitationV2.fromJson(
-        v2InvitationJson as Record<string, unknown>
-      )
-    }
 
     const { outOfBandInvitation } = outOfBandRecord
     const { label, alias, autoAcceptConnection, reuseConnection, ourDid } = config

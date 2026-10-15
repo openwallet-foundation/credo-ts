@@ -114,4 +114,17 @@ describe('DidCommMessage', () => {
       }
     })
   })
+
+  describe('@id', () => {
+    it('accepts DIDComm v2 and urn:uuid message ids', () => {
+      for (const id of ['a', 'a~b', 'urn:uuid:d61c7e3d-d4af-469b-8d42-33fd14262e17']) {
+        const message = JsonTransformer.fromJSON(
+          { '@id': id, '@type': 'https://didcomm.org/fake-protocol/1.5/message' },
+          CustomProtocolMessage
+        )
+
+        expect(message.id).toBe(id)
+      }
+    })
+  })
 })

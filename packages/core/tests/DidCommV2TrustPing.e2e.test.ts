@@ -391,7 +391,7 @@ describe('DIDComm trust-ping (v1 and v2)', () => {
       if (!v2Invitation) throw new Error('Expected v2Invitation to be defined')
       const invitationUrl = `https://example.com?_oob=${JsonEncoder.toBase64Url({
         ...v2Invitation.toJSON(),
-        id: 'inv~0123456789',
+        id: 'urn:uuid:d61c7e3d-d4af-469b-8d42-33fd14262e17',
       })}`
 
       const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, {

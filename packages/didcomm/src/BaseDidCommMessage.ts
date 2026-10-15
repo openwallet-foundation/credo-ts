@@ -4,7 +4,8 @@ import { Expose } from 'class-transformer'
 import { Matches } from 'class-validator'
 import type { ParsedMessageType } from './util/messageType'
 
-export const MessageIdRegExp = /[-_./a-zA-Z0-9]{8,64}/
+// First branch stays unanchored: anchoring it would reject ids that only partly match today, like urn:uuid:<uuid>
+export const MessageIdRegExp = /[-_./a-zA-Z0-9]{8,64}|^[-_./~a-zA-Z0-9]{1,64}$/
 export const MessageTypeRegExp = /(.*?)([a-zA-Z0-9._-]+)\/(\d[^/]*)\/([a-zA-Z0-9._-]+)$/
 
 export type BaseMessageConstructor = Constructor<BaseDidCommMessage>
