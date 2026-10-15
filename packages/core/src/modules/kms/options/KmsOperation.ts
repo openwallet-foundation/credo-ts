@@ -2,6 +2,10 @@ import { KeyManagementError } from '../error/KeyManagementError'
 import { getJwkHumanDescription, type KmsJwkPrivate, type KnownJwaSignatureAlgorithm } from '../jwk'
 import type { KmsCreateKeyType } from './KmsCreateKeyOptions'
 import type { KmsDecryptDataDecryption } from './KmsDecryptOptions'
+import type {
+  KmsEncryptMultiRecipientOptions,
+  KmsKeyAgreementEncryptMultiRecipientOptions,
+} from './KmsEncryptMultiRecipientOptions'
 import type { KmsEncryptDataEncryption } from './KmsEncryptOptions'
 import type { KmsKeyAgreementDecryptOptions } from './KmsKeyAgreementDecryptOptions'
 import type { KmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
@@ -57,6 +61,12 @@ export type KmsOperationDecrypt = {
   keyAgreement?: WithOptionalKeyId<KmsKeyAgreementDecryptOptions>
 }
 
+export type KmsOperationEncryptMultiRecipient = {
+  operation: 'encryptMultiRecipient'
+  encryption: KmsEncryptMultiRecipientOptions['encryption']
+  keyAgreement: WithOptionalKeyId<KmsKeyAgreementEncryptMultiRecipientOptions>
+}
+
 export type KmsOperationRandomBytes = {
   operation: 'randomBytes'
 }
@@ -69,6 +79,7 @@ export type KmsOperation =
   | KmsOperationVerify
   | KmsOperationEncrypt
   | KmsOperationDecrypt
+  | KmsOperationEncryptMultiRecipient
   | KmsOperationRandomBytes
 
 export function getKmsOperationHumanDescription(operation: KmsOperation) {
@@ -102,8 +113,12 @@ export function getKmsOperationHumanDescription(operation: KmsOperation) {
     return `'${operation.operation}' operation with algorithm '${operation.algorithm}'`
   }
 
-  if (operation.operation === 'encrypt' || operation.operation === 'decrypt') {
-    const encryption = operation.operation === 'encrypt' ? operation.encryption : operation.decryption
+  if (
+    operation.operation === 'encrypt' ||
+    operation.operation === 'decrypt' ||
+    operation.operation === 'encryptMultiRecipient'
+  ) {
+    const encryption = operation.operation === 'decrypt' ? operation.decryption : operation.encryption
 
     let message = `'${operation.operation}' operation with encryption algorithm '${encryption.algorithm}'`
     if (operation.keyAgreement) {
