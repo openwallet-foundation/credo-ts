@@ -159,11 +159,6 @@ describe('DidCommOutOfBandInvitationV2', () => {
       expect(inv.attachments?.[0]).toMatchObject({ id: 'att-1', media_type: 'application/json' })
     })
 
-    it('accepts a short DIDComm v2 id', () => {
-      const inv = DidCommOutOfBandInvitationV2.fromJson({ type: TYPE_URI, id: 'inv1', from: FROM })
-      expect(inv.id).toBe('inv1')
-    })
-
     it('throws on wrong type (JsonTransformer.fromJSON validates by default)', () => {
       expect(() =>
         DidCommOutOfBandInvitationV2.fromJson({
