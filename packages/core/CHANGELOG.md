@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.3
+
+### Patch Changes
+
+- cce51fb: `KeyManagementApi` now picks the backend that holds the key for `encrypt`, `decrypt` and `verify` when no `backend` is given, like `sign` already did. Before, these always used the default backend, so a key that lived in another backend was not found.
+- cfa27d3: `DidsApi` no longer imports `parseDid` from `@sphereon/ssi-types` and uses Credo's own `parseDid` instead. Parsing behaviour is unchanged. An invalid DID URL passed to `resolveVerificationMethodFromCreatedDidRecord` now throws a `CredoError` ("Error parsing did '…'") instead of a plain `Error('invalid did')`.
+
 ## 0.7.2
 
 ### Patch Changes
