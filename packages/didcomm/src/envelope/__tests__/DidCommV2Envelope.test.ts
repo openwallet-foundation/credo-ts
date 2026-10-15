@@ -389,28 +389,29 @@ describe('DidCommV2Envelope', () => {
     }): Promise<DidCommV2EncryptedMessage> => {
       const apu = computeApu(apuSkid)
       const apv = computeApv([recipient.didUrl])
-      const ephemeralKey = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
-      const protectedHeader = JsonEncoder.toBase64Url({
-        typ: 'application/didcomm-encrypted+json',
-        alg: 'ECDH-1PU+A256KW',
-        enc,
-        ...(skid ? { skid } : {}),
-        apu: TypedArrayEncoder.toBase64Url(apu),
-        apv: TypedArrayEncoder.toBase64Url(apv),
-        epk: { kty: 'OKP', crv: 'X25519', x: (ephemeralKey.publicJwk as Kms.KmsJwkPublicOkp).x },
-      })
-      const { encrypted, iv, tag, encryptedKey } = await agent.kms.encrypt({
-        key: {
-          keyAgreement: {
-            algorithm: 'ECDH-1PU+A256KW',
-            keyId: sender.publicJwk.keyId,
-            ephemeralKeyId: ephemeralKey.keyId,
-            externalPublicJwk: recipient.publicJwk.toJson() as Kms.KmsJwkPublicEcdh,
-            apu,
-            apv,
-          },
+      let protectedHeader = ''
+      const { encrypted, iv, tag, encryptedKeys } = await agent.kms.encryptMultiRecipient({
+        keyAgreement: {
+          algorithm: 'ECDH-1PU+A256KW',
+          keyId: sender.publicJwk.keyId,
+          recipients: [{ externalPublicJwk: recipient.publicJwk.toJson() as Kms.KmsJwkPublicEcdh }],
+          apu,
+          apv,
         },
-        encryption: { algorithm: enc, aad: TypedArrayEncoder.fromUtf8String(protectedHeader) },
+        // unpack rejects an A256GCM header before it decrypts, so the content is always A256CBC-HS512
+        encryption: { algorithm: 'A256CBC-HS512' },
+        aad: (epk) => {
+          protectedHeader = JsonEncoder.toBase64Url({
+            typ: 'application/didcomm-encrypted+json',
+            alg: 'ECDH-1PU+A256KW',
+            enc,
+            ...(skid ? { skid } : {}),
+            apu: TypedArrayEncoder.toBase64Url(apu),
+            apv: TypedArrayEncoder.toBase64Url(apv),
+            epk: { kty: 'OKP', crv: 'X25519', x: (epk as Kms.KmsJwkPublicOkp).x },
+          })
+          return TypedArrayEncoder.fromUtf8String(protectedHeader)
+        },
         data: JsonEncoder.toUint8Array({
           id: utils.uuid(),
           type: DidCommTrustPingMessage.type.messageTypeUri,
@@ -418,12 +419,14 @@ describe('DidCommV2Envelope', () => {
           to: [recipient.did],
         }),
       })
-      if (!iv || !tag || !encryptedKey) throw new Error('Expected iv, tag and encrypted key from KMS encrypt')
 
       return {
         protected: protectedHeader,
         recipients: [
-          { header: { kid: recipient.didUrl }, encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted) },
+          {
+            header: { kid: recipient.didUrl },
+            encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKeys[0].encrypted),
+          },
         ],
         iv: TypedArrayEncoder.toBase64Url(iv),
         ciphertext: TypedArrayEncoder.toBase64Url(encrypted),

@@ -69,13 +69,6 @@ const zKmsKeyAgreementEncryptEcdh1Pu = z.object({
   algorithm: z.literal('ECDH-1PU+A256KW'),
   externalPublicJwk: zKmsJwkPublicEcdh,
 
-  /**
-   * Optional id of a caller-provided ephemeral key. When set, the KMS uses this key for the
-   * ECDH-1PU agreement instead of generating one internally; the caller can then read its
-   * public component to embed in the JWE protected header before computing AAD.
-   */
-  ephemeralKeyId: zKmsKeyId.optional(),
-
   apu: z.optional(zAnyUint8Array),
   apv: z.optional(zAnyUint8Array),
 })

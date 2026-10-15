@@ -409,16 +409,11 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       Kms.assertAsymmetricJwkKeyTypeMatches(agreementPrivateJwk, key.keyAgreement.externalPublicJwk)
 
       if (key.keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
-        const { ephemeralKeyId } = key.keyAgreement
-        const ephemeralPrivateJwk = ephemeralKeyId ? await this.getKeyAsserted(agentContext, ephemeralKeyId) : undefined
-        if (ephemeralPrivateJwk) Kms.assertJwkAsymmetric(ephemeralPrivateJwk, ephemeralKeyId)
-
         try {
           const { encrypted, iv, tag, encryptedKey } = await encryptEcdh1Pu({
             keyAgreement: key.keyAgreement,
             encryption,
             senderPrivateJwk: agreementPrivateJwk,
-            ephemeralPrivateJwk,
             data,
           })
           return {

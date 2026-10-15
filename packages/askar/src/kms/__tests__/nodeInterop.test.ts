@@ -107,9 +107,6 @@ describe('AskarKeyManagementService ECDH-1PU+A256KW interop with NodeKeyManageme
       { kty: 'OKP', crv: 'Ed25519' },
     ] as const)('with $crv keys', async (type) => {
       const sender = await services[from].createKey(agentContext, { type })
-      const ephemeral = await services[from].createKey(agentContext, {
-        type: type.crv === 'Ed25519' ? { kty: 'OKP', crv: 'X25519' } : type,
-      })
       const recipient = await services[to].createKey(agentContext, { type })
 
       const { encrypted, iv, tag, encryptedKey } = await services[from].encrypt(agentContext, {
@@ -117,7 +114,6 @@ describe('AskarKeyManagementService ECDH-1PU+A256KW interop with NodeKeyManageme
           keyAgreement: {
             algorithm: 'ECDH-1PU+A256KW',
             keyId: sender.keyId,
-            ephemeralKeyId: ephemeral.keyId,
             externalPublicJwk: toKeyAgreementJwk(recipient.publicJwk),
             apu,
             apv,
@@ -133,7 +129,7 @@ describe('AskarKeyManagementService ECDH-1PU+A256KW interop with NodeKeyManageme
             algorithm: 'ECDH-1PU+A256KW',
             keyId: recipient.keyId,
             encryptedKey: { encrypted: encryptedKey?.encrypted as Uint8Array },
-            ephemeralPublicJwk: ephemeral.publicJwk as Kms.KmsJwkPublicEcdh,
+            ephemeralPublicJwk: encryptedKey?.ephemeralPublicKey as Kms.KmsJwkPublicEcdh,
             senderPublicJwk: toKeyAgreementJwk(sender.publicJwk),
             apu,
             apv,

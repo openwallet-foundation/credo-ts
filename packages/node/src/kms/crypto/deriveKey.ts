@@ -152,21 +152,15 @@ export async function encryptEcdh1Pu(options: {
   keyAgreement: Kms.KmsKeyAgreementEncryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
   encryption: Kms.KmsEncryptDataContentEncryption
   senderPrivateJwk: Kms.KmsJwkPrivateAsymmetric
-  ephemeralPrivateJwk?: Kms.KmsJwkPrivateAsymmetric
   data: Uint8Array
 }): Promise<Kms.KmsEncryptReturn> {
   const { keyAgreement, encryption, senderPrivateJwk, data } = options
   assertNodeSupportedEcdh1PuContentEncryptionAlgorithm(encryption)
 
   const recipientPublicJwk = keyAgreement.externalPublicJwk
-  const ephemeralPrivateJwk =
-    options.ephemeralPrivateJwk ??
-    (
-      await (recipientPublicJwk.kty === 'OKP'
-        ? createOkpKey({ kty: 'OKP', crv: 'X25519' })
-        : createEcKey({ kty: 'EC', crv: recipientPublicJwk.crv }))
-    ).privateJwk
-  Kms.assertAsymmetricJwkKeyTypeMatches(ephemeralPrivateJwk, recipientPublicJwk)
+  const { privateJwk: ephemeralPrivateJwk } = await (recipientPublicJwk.kty === 'OKP'
+    ? createOkpKey({ kty: 'OKP', crv: 'X25519' })
+    : createEcKey({ kty: 'EC', crv: recipientPublicJwk.crv }))
 
   const contentEncryptionKeyBytes = getRandomValues(
     new Uint8Array(mapContentEncryptionAlgorithmToKeyLength(encryption.algorithm) >> 3)

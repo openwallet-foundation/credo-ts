@@ -1471,24 +1471,19 @@ describe('NodeKeyManagementService', () => {
     const apv = TypedArrayEncoder.fromUtf8String('did:example:bob#key-1')
     const aad = TypedArrayEncoder.fromUtf8String('eyJhbGciOiJFQ0RILTFQVStBMjU2S1cifQ')
 
-    async function encryptEcdh1Pu(
-      type: Kms.KmsCreateKeyTypeAsymmetric,
-      withEphemeralKeyId = true
-    ): Promise<{
+    async function encryptEcdh1Pu(type: Kms.KmsCreateKeyTypeAsymmetric): Promise<{
       key: { keyAgreement: Extract<Kms.KmsKeyAgreementDecryptOptions, { algorithm: 'ECDH-1PU+A256KW' }> }
       decryption: { algorithm: 'A256CBC-HS512'; iv: Uint8Array; tag: Uint8Array; aad: Uint8Array }
       encrypted: Uint8Array
     }> {
       const sender = await service.createKey(agentContext, { type })
       const recipient = await service.createKey(agentContext, { type })
-      const ephemeral = withEphemeralKeyId ? await service.createKey(agentContext, { type }) : undefined
 
       const { encrypted, iv, tag, encryptedKey } = await service.encrypt(agentContext, {
         key: {
           keyAgreement: {
             algorithm: 'ECDH-1PU+A256KW',
             keyId: sender.keyId,
-            ephemeralKeyId: ephemeral?.keyId,
             externalPublicJwk: recipient.publicJwk as Kms.KmsJwkPublicEcdh,
             apu,
             apv,
@@ -1504,7 +1499,7 @@ describe('NodeKeyManagementService', () => {
             algorithm: 'ECDH-1PU+A256KW',
             keyId: recipient.keyId,
             encryptedKey: { encrypted: encryptedKey?.encrypted as Uint8Array },
-            ephemeralPublicJwk: (ephemeral?.publicJwk ?? encryptedKey?.ephemeralPublicKey) as Kms.KmsJwkPublicEcdh,
+            ephemeralPublicJwk: encryptedKey?.ephemeralPublicKey as Kms.KmsJwkPublicEcdh,
             senderPublicJwk: sender.publicJwk as Kms.KmsJwkPublicEcdh,
             apu,
             apv,
@@ -1516,30 +1511,24 @@ describe('NodeKeyManagementService', () => {
     }
 
     it.each([
-      { type: { kty: 'OKP', crv: 'X25519' }, withEphemeralKeyId: true },
-      { type: { kty: 'EC', crv: 'P-256' }, withEphemeralKeyId: true },
-      { type: { kty: 'EC', crv: 'P-384' }, withEphemeralKeyId: true },
-      { type: { kty: 'EC', crv: 'P-256' }, withEphemeralKeyId: false },
-    ] as const)(
-      'encrypts and decrypts with $type.crv keys (ephemeralKeyId: $withEphemeralKeyId)',
-      async ({ type, withEphemeralKeyId }) => {
-        const { data } = await service.decrypt(agentContext, await encryptEcdh1Pu(type, withEphemeralKeyId))
+      { kty: 'OKP', crv: 'X25519' },
+      { kty: 'EC', crv: 'P-256' },
+      { kty: 'EC', crv: 'P-384' },
+    ] as const)('encrypts and decrypts with $crv keys', async (type) => {
+      const { data } = await service.decrypt(agentContext, await encryptEcdh1Pu(type))
 
-        expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
-      }
-    )
+      expect(TypedArrayEncoder.toUtf8String(data)).toEqual('heelllo')
+    })
 
     it('encrypts and decrypts with Ed25519 keys', async () => {
       const sender = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'Ed25519' } })
       const recipient = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'Ed25519' } })
-      const ephemeral = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
 
       const { encrypted, iv, tag, encryptedKey } = await service.encrypt(agentContext, {
         key: {
           keyAgreement: {
             algorithm: 'ECDH-1PU+A256KW',
             keyId: sender.keyId,
-            ephemeralKeyId: ephemeral.keyId,
             externalPublicJwk: toX25519PublicJwk(recipient.publicJwk),
           },
         },
@@ -1553,7 +1542,7 @@ describe('NodeKeyManagementService', () => {
             algorithm: 'ECDH-1PU+A256KW',
             keyId: recipient.keyId,
             encryptedKey: { encrypted: encryptedKey?.encrypted as Uint8Array },
-            ephemeralPublicJwk: ephemeral.publicJwk as Kms.KmsJwkPublicEcdh,
+            ephemeralPublicJwk: encryptedKey?.ephemeralPublicKey as Kms.KmsJwkPublicEcdh,
             senderPublicJwk: toX25519PublicJwk(sender.publicJwk),
           },
         },

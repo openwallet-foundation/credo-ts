@@ -15,6 +15,7 @@ import { aeadDecrypt } from './crypto/decrypt'
 import {
   askarSupportedEcdh1PuContentEncryptionAlgorithms,
   askarSupportedKeyAgreementAlgorithms,
+  assertAskarSupportedEcdh1PuContentEncryptionAlgorithm,
   deriveDecryptionKey,
   deriveEncryptionKey,
   encryptAndWrapForRecipients,
@@ -113,6 +114,10 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         return false
       }
       if (!operation.keyAgreement) return true
+
+      if (operation.keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+        return (askarSupportedEcdh1PuContentEncryptionAlgorithms as readonly string[]).includes(encryption.algorithm)
+      }
 
       return askarSupportedKeyAgreementAlgorithms.includes(
         operation.keyAgreement.algorithm as (typeof askarSupportedKeyAgreementAlgorithms)[number]
@@ -543,11 +548,6 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         // atomic flow (CEK gen, content encrypt, KEK derive with tag, CEK wrap) and short-circuits
         // the rest of this method.
         if (key.keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
-          let ephemeralKey: Key | undefined
-          if ('ephemeralKeyId' in key.keyAgreement && key.keyAgreement.ephemeralKeyId) {
-            ephemeralKey = (await this.getKeyAsserted(agentContext, key.keyAgreement.ephemeralKeyId)).key
-            keysToFree.push(ephemeralKey)
-          }
           return encryptEcdh1Pu({
             askar: this.getAskar(agentContext),
             keyAgreement: key.keyAgreement,
@@ -555,7 +555,6 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
             senderKey: privateKey,
             recipientKey,
             data,
-            ephemeralKey,
           })
         }
 
@@ -615,14 +614,8 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
     Kms.assertSupportedKeyAgreementAlgorithm(keyAgreement, askarSupportedKeyAgreementAlgorithms, this.backend)
     Kms.assertSupportedEncryptionAlgorithm(encryption, askarSupportedEncryptionAlgorithms, this.backend)
-    if (
-      keyAgreement.algorithm === 'ECDH-1PU+A256KW' &&
-      !(askarSupportedEcdh1PuContentEncryptionAlgorithms as readonly string[]).includes(encryption.algorithm)
-    ) {
-      throw new Kms.KeyManagementAlgorithmNotSupportedError(
-        `content encryption algorithm '${encryption.algorithm}' with key agreement algorithm 'ECDH-1PU+A256KW'`,
-        this.backend
-      )
+    if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+      assertAskarSupportedEcdh1PuContentEncryptionAlgorithm(encryption.algorithm)
     }
     for (const { externalPublicJwk } of keyAgreement.recipients) {
       Kms.assertAllowedKeyDerivationAlgForKey(externalPublicJwk, keyAgreement.algorithm)
