@@ -36,6 +36,10 @@ const services = {
 const apu = TypedArrayEncoder.fromUtf8String('did:example:alice#key-1')
 const apv = TypedArrayEncoder.fromUtf8String('did:example:bob#key-1')
 const aad = TypedArrayEncoder.fromUtf8String('eyJhbGciOiJFQ0RILUVTIn0')
+const toKeyAgreementJwk = (publicJwk: Kms.KmsJwkPublic): Kms.KmsJwkPublicEcdh =>
+  publicJwk.kty === 'OKP' && publicJwk.crv === 'Ed25519'
+    ? Kms.PublicJwk.fromPublicJwk(publicJwk).convertTo(Kms.X25519PublicJwk).toJson()
+    : (publicJwk as Kms.KmsJwkPublicEcdh)
 
 describe('AskarKeyManagementService ECDH-ES interop with NodeKeyManagementService', () => {
   describe.each([
@@ -91,10 +95,6 @@ describe('AskarKeyManagementService ECDH-ES interop with NodeKeyManagementServic
 
 describe('AskarKeyManagementService ECDH-1PU+A256KW interop with NodeKeyManagementService', () => {
   const aad = TypedArrayEncoder.fromUtf8String('eyJhbGciOiJFQ0RILTFQVStBMjU2S1cifQ')
-  const toKeyAgreementJwk = (publicJwk: Kms.KmsJwkPublic): Kms.KmsJwkPublicEcdh =>
-    publicJwk.kty === 'OKP' && publicJwk.crv === 'Ed25519'
-      ? Kms.PublicJwk.fromPublicJwk(publicJwk).convertTo(Kms.X25519PublicJwk).toJson()
-      : (publicJwk as Kms.KmsJwkPublicEcdh)
 
   describe.each([
     { from: 'node', to: 'askar' },
@@ -144,6 +144,68 @@ describe('AskarKeyManagementService ECDH-1PU+A256KW interop with NodeKeyManageme
       })
 
       expect(TypedArrayEncoder.toUtf8String(data)).toEqual(`${from} to ${to}`)
+    })
+  })
+})
+
+describe('AskarKeyManagementService encryptMultiRecipient interop with NodeKeyManagementService', () => {
+  describe.each([
+    { from: 'node', to: 'askar' },
+    { from: 'askar', to: 'node' },
+  ] as const)('$from encrypts, $to decrypts', ({ from, to }) => {
+    it.each([
+      { algorithm: 'ECDH-ES+A256KW', type: { kty: 'OKP', crv: 'X25519' } },
+      { algorithm: 'ECDH-ES+A256KW', type: { kty: 'EC', crv: 'P-256' } },
+      { algorithm: 'ECDH-ES+A256KW', type: { kty: 'EC', crv: 'P-384' } },
+      { algorithm: 'ECDH-1PU+A256KW', type: { kty: 'OKP', crv: 'X25519' } },
+      { algorithm: 'ECDH-1PU+A256KW', type: { kty: 'EC', crv: 'P-256' } },
+      { algorithm: 'ECDH-1PU+A256KW', type: { kty: 'EC', crv: 'P-384' } },
+      { algorithm: 'ECDH-1PU+A256KW', type: { kty: 'OKP', crv: 'Ed25519' } },
+    ] as const)('$algorithm with $type.crv keys for two recipients', async ({ algorithm, type }) => {
+      const sender =
+        algorithm === 'ECDH-1PU+A256KW' ? await services[from].createKey(agentContext, { type }) : undefined
+      const recipients = [
+        await services[to].createKey(agentContext, { type }),
+        await services[to].createKey(agentContext, { type }),
+      ]
+      const recipientJwks = recipients.map(({ publicJwk }) => ({ externalPublicJwk: toKeyAgreementJwk(publicJwk) }))
+
+      const { encrypted, iv, tag, ephemeralPublicJwk, encryptedKeys } = await services[from].encryptMultiRecipient(
+        agentContext,
+        {
+          keyAgreement:
+            algorithm === 'ECDH-1PU+A256KW'
+              ? { algorithm, keyId: sender?.keyId as string, recipients: recipientJwks, apu, apv }
+              : { algorithm, recipients: recipientJwks, apu, apv },
+          encryption: { algorithm: 'A256CBC-HS512' },
+          aad: () => aad,
+          data: TypedArrayEncoder.fromUtf8String(`${from} to ${to}`),
+        }
+      )
+
+      for (const [index, recipient] of recipients.entries()) {
+        const encryptedKey = { encrypted: encryptedKeys[index].encrypted }
+        const { data } = await services[to].decrypt(agentContext, {
+          key: {
+            keyAgreement:
+              algorithm === 'ECDH-1PU+A256KW'
+                ? {
+                    algorithm,
+                    keyId: recipient.keyId,
+                    encryptedKey,
+                    ephemeralPublicJwk,
+                    senderPublicJwk: toKeyAgreementJwk(sender?.publicJwk as Kms.KmsJwkPublic),
+                    apu,
+                    apv,
+                  }
+                : { algorithm, keyId: recipient.keyId, encryptedKey, externalPublicJwk: ephemeralPublicJwk, apu, apv },
+          },
+          decryption: { algorithm: 'A256CBC-HS512', iv, tag, aad },
+          encrypted,
+        })
+
+        expect(TypedArrayEncoder.toUtf8String(data)).toEqual(`${from} to ${to}`)
+      }
     })
   })
 })

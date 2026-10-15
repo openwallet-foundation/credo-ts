@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
-import { AskarError } from '@openwallet-foundation/askar-shared'
+import { AskarError, Session } from '@openwallet-foundation/askar-shared'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../AskarModuleConfig'
@@ -1809,6 +1809,250 @@ describe('AskarKeyManagementService', () => {
 
       expect(decrypted.data).toEqual(new Uint8Array([1, 2, 3]))
     })
+
+    it('rejects an all-zero X25519 recipient, ephemeral or sender key', async () => {
+      const sender = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
+      const recipient = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
+      const allZero = { kty: 'OKP', crv: 'X25519', x: TypedArrayEncoder.toBase64Url(new Uint8Array(32)) } as const
+      const error = 'Failed during key derivation, the X25519 shared secret is all zero'
+      const data = new Uint8Array([1, 2, 3])
+      const encrypt = (algorithm: 'ECDH-ES+A256KW' | 'ECDH-1PU+A256KW', externalPublicJwk: Kms.KmsJwkPublicEcdh) =>
+        service.encrypt(agentContext, {
+          key: { keyAgreement: { keyId: sender.keyId, algorithm, externalPublicJwk } },
+          encryption: { algorithm: 'A256CBC-HS512' },
+          data,
+        })
+
+      for (const algorithm of ['ECDH-ES+A256KW', 'ECDH-1PU+A256KW'] as const) {
+        await expect(encrypt(algorithm, allZero)).rejects.toThrow(error)
+      }
+
+      const ecdhEs = await encrypt('ECDH-ES+A256KW', recipient.publicJwk as Kms.KmsJwkPublicEcdh)
+      await expect(
+        service.decrypt(agentContext, {
+          key: {
+            keyAgreement: {
+              keyId: recipient.keyId,
+              algorithm: 'ECDH-ES+A256KW',
+              externalPublicJwk: allZero,
+              encryptedKey: ecdhEs.encryptedKey as Kms.KmsEncryptedKey,
+            },
+          },
+          decryption: { algorithm: 'A256CBC-HS512', iv: ecdhEs.iv as Uint8Array, tag: ecdhEs.tag as Uint8Array },
+          encrypted: ecdhEs.encrypted,
+        })
+      ).rejects.toThrow(error)
+
+      const ecdh1Pu = await encrypt('ECDH-1PU+A256KW', recipient.publicJwk as Kms.KmsJwkPublicEcdh)
+      for (const field of ['ephemeralPublicJwk', 'senderPublicJwk'] as const) {
+        await expect(
+          service.decrypt(agentContext, {
+            key: {
+              keyAgreement: {
+                keyId: recipient.keyId,
+                algorithm: 'ECDH-1PU+A256KW',
+                encryptedKey: ecdh1Pu.encryptedKey as Kms.KmsEncryptedKey,
+                ephemeralPublicJwk: ecdh1Pu.encryptedKey?.ephemeralPublicKey as Kms.KmsJwkPublicEcdh,
+                senderPublicJwk: sender.publicJwk as Kms.KmsJwkPublicEcdh,
+                [field]: allZero,
+              },
+            },
+            decryption: { algorithm: 'A256CBC-HS512', iv: ecdh1Pu.iv as Uint8Array, tag: ecdh1Pu.tag as Uint8Array },
+            encrypted: ecdh1Pu.encrypted,
+          })
+        ).rejects.toThrow(error)
+      }
+    })
+  })
+
+  describe('encryptMultiRecipient', () => {
+    const apu = TypedArrayEncoder.fromUtf8String('did:example:alice#key-1')
+    const apv = TypedArrayEncoder.fromUtf8String('did:example:bob')
+    const aad = TypedArrayEncoder.fromUtf8String('eyJhbGciOiJFQ0RILTFQVStBMjU2S1cifQ')
+    const data = TypedArrayEncoder.fromUtf8String('heelllo')
+    const toKeyAgreementJwk = (publicJwk: Kms.KmsJwkPublic): Kms.KmsJwkPublicEcdh =>
+      publicJwk.kty === 'OKP' && publicJwk.crv === 'Ed25519'
+        ? Kms.PublicJwk.fromPublicJwk(publicJwk).convertTo(Kms.X25519PublicJwk).toJson()
+        : (publicJwk as Kms.KmsJwkPublicEcdh)
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it.each([
+      ...(['ECDH-ES+A128KW', 'ECDH-ES+A256KW'] as const).flatMap((algorithm) =>
+        (
+          [
+            { kty: 'OKP', crv: 'X25519' },
+            { kty: 'EC', crv: 'P-256' },
+            { kty: 'EC', crv: 'P-384' },
+            { kty: 'EC', crv: 'secp256k1' },
+          ] as const
+        ).map((recipientType) => ({ algorithm, encryption: 'XC20P' as const, recipientType, senderType: undefined }))
+      ),
+      ...(
+        [
+          { kty: 'OKP', crv: 'X25519' },
+          { kty: 'EC', crv: 'P-256' },
+          { kty: 'EC', crv: 'P-384' },
+        ] as const
+      ).map((type) => ({
+        algorithm: 'ECDH-1PU+A256KW' as const,
+        encryption: 'A256CBC-HS512' as const,
+        recipientType: type,
+        senderType: type,
+      })),
+      {
+        algorithm: 'ECDH-1PU+A256KW' as const,
+        encryption: 'A128CBC-HS256' as const,
+        recipientType: { kty: 'OKP', crv: 'X25519' } as const,
+        senderType: { kty: 'OKP', crv: 'Ed25519' } as const,
+      },
+    ])(
+      '$algorithm with $encryption encrypts once for three $recipientType.crv recipients (sender $senderType.crv)',
+      async ({ algorithm, encryption, recipientType, senderType }) => {
+        const sender = senderType ? await service.createKey(agentContext, { type: senderType }) : undefined
+        const recipients = []
+        for (let i = 0; i < 3; i++) recipients.push(await service.createKey(agentContext, { type: recipientType }))
+        const insertKey = vi.spyOn(Session.prototype, 'insertKey')
+
+        const recipientJwks = recipients.map(({ publicJwk }) => ({
+          externalPublicJwk: publicJwk as Kms.KmsJwkPublicEcdh,
+        }))
+        const result = await service.encryptMultiRecipient(agentContext, {
+          keyAgreement:
+            algorithm === 'ECDH-1PU+A256KW'
+              ? { algorithm, keyId: sender?.keyId as string, recipients: recipientJwks, apu, apv }
+              : { algorithm, recipients: recipientJwks, apu, apv },
+          encryption: { algorithm: encryption },
+          aad: () => aad,
+          data,
+        })
+
+        expect(insertKey).not.toHaveBeenCalled()
+        expect(result.ephemeralPublicJwk).toMatchObject({ kty: recipientType.kty, crv: recipientType.crv })
+        expect(result.encryptedKeys).toHaveLength(3)
+
+        for (const [index, recipient] of recipients.entries()) {
+          const encryptedKey = { encrypted: result.encryptedKeys[index].encrypted }
+          const { data: decrypted } = await service.decrypt(agentContext, {
+            key: {
+              keyAgreement:
+                algorithm === 'ECDH-1PU+A256KW'
+                  ? {
+                      algorithm,
+                      keyId: recipient.keyId,
+                      encryptedKey,
+                      ephemeralPublicJwk: result.ephemeralPublicJwk,
+                      senderPublicJwk: toKeyAgreementJwk(sender?.publicJwk as Kms.KmsJwkPublic),
+                      apu,
+                      apv,
+                    }
+                  : {
+                      algorithm,
+                      keyId: recipient.keyId,
+                      encryptedKey,
+                      externalPublicJwk: result.ephemeralPublicJwk,
+                      apu,
+                      apv,
+                    },
+            },
+            decryption: { algorithm: encryption, iv: result.iv, tag: result.tag, aad },
+            encrypted: result.encrypted,
+          })
+
+          expect(TypedArrayEncoder.toUtf8String(decrypted)).toEqual('heelllo')
+        }
+      }
+    )
+
+    it('does not store a key when aad throws', async () => {
+      const recipient = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
+      const insertKey = vi.spyOn(Session.prototype, 'insertKey')
+      const aadError = new Error('aad failed')
+
+      const error = await service
+        .encryptMultiRecipient(agentContext, {
+          keyAgreement: {
+            algorithm: 'ECDH-ES+A256KW',
+            recipients: [{ externalPublicJwk: recipient.publicJwk as Kms.KmsJwkPublicEcdh }],
+          },
+          encryption: { algorithm: 'A256CBC-HS512' },
+          aad: () => {
+            throw aadError
+          },
+          data,
+        })
+        .catch((e) => e)
+
+      expect(error).toBeInstanceOf(Kms.KeyManagementError)
+      expect(error.cause).toBe(aadError)
+      expect(insertKey).not.toHaveBeenCalled()
+    })
+
+    it('rejects ECDH-1PU+A256KW with content encryption other than AES_CBC_HMAC_SHA2', async () => {
+      const sender = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
+      const recipient = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
+
+      await expect(
+        service.encryptMultiRecipient(agentContext, {
+          keyAgreement: {
+            algorithm: 'ECDH-1PU+A256KW',
+            keyId: sender.keyId,
+            recipients: [{ externalPublicJwk: recipient.publicJwk as Kms.KmsJwkPublicEcdh }],
+          },
+          encryption: { algorithm: 'A256GCM' },
+          data,
+        })
+      ).rejects.toThrow(
+        "askar backend does not support content encryption algorithm 'A256GCM' with key agreement algorithm 'ECDH-1PU+A256KW'."
+      )
+    })
+
+    it.each(['ECDH-ES+A256KW', 'ECDH-1PU+A256KW'] as const)(
+      'rejects an all-zero X25519 recipient key with %s',
+      async (algorithm) => {
+        const sender = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
+        const recipient = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
+        const recipients: Array<{ externalPublicJwk: Kms.KmsJwkPublicEcdh }> = [
+          { externalPublicJwk: recipient.publicJwk as Kms.KmsJwkPublicEcdh },
+          { externalPublicJwk: { kty: 'OKP', crv: 'X25519', x: TypedArrayEncoder.toBase64Url(new Uint8Array(32)) } },
+        ]
+
+        await expect(
+          service.encryptMultiRecipient(agentContext, {
+            keyAgreement:
+              algorithm === 'ECDH-1PU+A256KW'
+                ? { algorithm, keyId: sender.keyId, recipients }
+                : { algorithm, recipients },
+            encryption: { algorithm: 'A256CBC-HS512' },
+            data,
+          })
+        ).rejects.toThrow('Failed during key derivation, the X25519 shared secret is all zero')
+      }
+    )
+
+    it.each([
+      { algorithm: 'ECDH-ES+A256KW', encryption: 'XC20P', crv: 'P-256', supported: true },
+      { algorithm: 'ECDH-ES+A192KW', encryption: 'A256GCM', crv: 'P-256', supported: false },
+      { algorithm: 'ECDH-ES+A256KW', encryption: 'A256GCM', crv: 'P-521', supported: false },
+      { algorithm: 'ECDH-ES+A256KW', encryption: 'A192GCM', crv: 'P-256', supported: false },
+      { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', crv: 'P-384', supported: true },
+      { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256GCM', crv: 'P-256', supported: false },
+      { algorithm: 'ECDH-1PU+A256KW', encryption: 'XC20P', crv: 'P-256', supported: false },
+      { algorithm: 'ECDH-1PU+A256KW', encryption: 'A256CBC-HS512', crv: 'secp256k1', supported: false },
+    ] as const)(
+      'reports support for $algorithm with $encryption on $crv as $supported',
+      ({ algorithm, encryption, crv, supported }) => {
+        expect(
+          service.isOperationSupported(agentContext, {
+            operation: 'encryptMultiRecipient',
+            encryption: { algorithm: encryption },
+            keyAgreement: { algorithm, recipients: [{ externalPublicJwk: { kty: 'EC', crv, x: '', y: '' } }] },
+          })
+        ).toBe(supported)
+      }
+    )
   })
 
   describe('didcomm', () => {

@@ -12,6 +12,11 @@ export const askarSupportedKeyAgreementAlgorithms = [
   'ECDH-HSALSA20',
 ] satisfies Kms.KnownJwaKeyAgreementAlgorithm[]
 
+export const askarSupportedEcdh1PuContentEncryptionAlgorithms = [
+  'A128CBC-HS256',
+  'A256CBC-HS512',
+] as const satisfies Kms.KnownJwaContentEncryptionAlgorithm[]
+
 type AskarSupportedKeyAgreementEncryptOptions = Kms.KmsKeyAgreementEncryptOptions & {
   algorithm: (typeof askarSupportedKeyAgreementAlgorithms)[number]
 }
@@ -73,6 +78,9 @@ export function encryptEcdh1Pu(options: {
   const contentEncryptionKey = Key.generate(askarEncryptionAlgorithm)
   let derivedKey: Key | undefined
   try {
+    assertNonZeroX25519SharedSecret(ephemeralKey, recipientKey)
+    assertNonZeroX25519SharedSecret(senderKey, recipientKey)
+
     const aeadResult = aeadEncrypt({ key: contentEncryptionKey, data, encryption })
 
     derivedKey = new Key(
@@ -106,6 +114,73 @@ export function encryptEcdh1Pu(options: {
     if (ownsEphemeralKey) ephemeralKey.handle.free()
     derivedKey?.handle.free()
     contentEncryptionKey.handle.free()
+  }
+}
+
+export function encryptAndWrapForRecipients(options: {
+  askar: Askar
+  keyAgreement: Kms.KmsKeyAgreementEncryptMultiRecipientOptions & {
+    algorithm: (typeof askarSupportedKeyAgreementAlgorithms)[number]
+  }
+  encryption: AskarSupportedEncryptionOptions
+  ephemeralKey: Key
+  senderKey?: Key
+  recipientKeys: Key[]
+  data: Uint8Array
+}): Omit<Kms.KmsEncryptMultiRecipientReturn, 'ephemeralPublicJwk'> {
+  const { askar, keyAgreement, encryption, ephemeralKey, senderKey, recipientKeys, data } = options
+
+  if (keyAgreement.algorithm === 'ECDH-1PU+A256KW' && senderKey?.algorithm !== ephemeralKey.algorithm) {
+    throw new Kms.KeyManagementAlgorithmNotSupportedError(
+      'ECDH-1PU+A256KW sender and recipient keys must be on the same curve',
+      'askar'
+    )
+  }
+
+  const apu = keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array([])
+  const apv = keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array([])
+  const algId = TypedArrayEncoder.fromUtf8String(keyAgreement.algorithm)
+
+  const contentEncryptionKey = Key.generate(jwkEncToAskarAlg[encryption.algorithm])
+  const keysToFree = [contentEncryptionKey]
+  try {
+    const { encrypted, iv, tag } = aeadEncrypt({ key: contentEncryptionKey, data, encryption })
+
+    const encryptedKeys = recipientKeys.map((recipientKey) => {
+      assertNonZeroX25519SharedSecret(ephemeralKey, recipientKey)
+      if (senderKey) assertNonZeroX25519SharedSecret(senderKey, recipientKey)
+
+      const keyEncryptionKey = new Key(
+        keyAgreement.algorithm === 'ECDH-1PU+A256KW'
+          ? askar.keyDeriveEcdh1pu({
+              algorithm: KeyAlgorithm.AesA256Kw,
+              ephemeralKey,
+              senderKey: senderKey as Key,
+              recipientKey,
+              algId,
+              apu,
+              apv,
+              ccTag: tag,
+              receive: false,
+            })
+          : askar.keyDeriveEcdhEs({
+              algorithm: keyAgreement.algorithm === 'ECDH-ES+A128KW' ? KeyAlgorithm.AesA128Kw : KeyAlgorithm.AesA256Kw,
+              ephemeralKey,
+              recipientKey,
+              algId,
+              apu,
+              apv,
+              receive: false,
+            })
+      )
+      keysToFree.push(keyEncryptionKey)
+
+      return { encrypted: new Uint8Array(keyEncryptionKey.wrapKey({ other: contentEncryptionKey }).ciphertext) }
+    })
+
+    return { encrypted, iv, tag, encryptedKeys }
+  } finally {
+    for (const key of keysToFree) key.handle.free()
   }
 }
 
@@ -146,6 +221,7 @@ export function deriveEncryptionKey(options: {
       ? jwkEncToAskarAlg[keyAgreement.algorithm.replace('ECDH-ES+', '') as keyof typeof jwkEncToAskarAlg]
       : undefined
 
+  assertNonZeroX25519SharedSecret(senderKey, recipientKey)
   const derivedKey = new Key(
     askar.keyDeriveEcdhEs({
       algId: TypedArrayEncoder.fromUtf8String(
@@ -247,6 +323,7 @@ export function deriveDecryptionKey(options: {
       ? jwkEncToAskarAlg[keyAgreement.algorithm.replace('ECDH-ES+', '') as keyof typeof jwkEncToAskarAlg]
       : undefined
 
+  assertNonZeroX25519SharedSecret(recipientKey, senderKey)
   const derivedKey = new Key(
     askar.keyDeriveEcdhEs({
       algId: TypedArrayEncoder.fromUtf8String(
@@ -330,6 +407,8 @@ function deriveDecryptionKeyEcdh1Pu(options: {
   const decryptionTag = 'tag' in decryption ? decryption.tag : undefined
   const ccTag = decryptionTag ? new Uint8Array(decryptionTag) : undefined
 
+  assertNonZeroX25519SharedSecret(recipientKey, ephemeralKey)
+  assertNonZeroX25519SharedSecret(recipientKey, senderKey)
   const derivedKey = new Key(
     askar.keyDeriveEcdh1pu({
       algorithm: KeyAlgorithm.AesA256Kw,
@@ -356,5 +435,19 @@ function deriveDecryptionKeyEcdh1Pu(options: {
     }
   } finally {
     derivedKey.handle.free()
+  }
+}
+
+// RFC 7748 section 6.1, as OpenSSL does for the node backend. Askar only returns the raw secret as a 32 byte key
+function assertNonZeroX25519SharedSecret(privateKey: Key, publicKey: Key): void {
+  if (privateKey.algorithm !== KeyAlgorithm.X25519 || publicKey.algorithm !== KeyAlgorithm.X25519) return
+
+  const sharedSecret = privateKey.keyFromKeyExchange({ algorithm: KeyAlgorithm.AesA256Gcm, publicKey })
+  try {
+    if (sharedSecret.secretBytes.reduce((bits, byte) => bits | byte, 0) === 0) {
+      throw new Kms.KeyManagementError('Failed during key derivation, the X25519 shared secret is all zero')
+    }
+  } finally {
+    sharedSecret.handle.free()
   }
 }

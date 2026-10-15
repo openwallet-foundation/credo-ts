@@ -13,9 +13,11 @@ import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarErrorCode, isAskarError, jwkCrvToAskarAlg, jwkEncToAskarAlg } from '../utils'
 import { aeadDecrypt } from './crypto/decrypt'
 import {
+  askarSupportedEcdh1PuContentEncryptionAlgorithms,
   askarSupportedKeyAgreementAlgorithms,
   deriveDecryptionKey,
   deriveEncryptionKey,
+  encryptAndWrapForRecipients,
   encryptEcdh1Pu,
 } from './crypto/deriveKey'
 import { type AskarSupportedEncryptionOptions, aeadEncrypt } from './crypto/encrypt'
@@ -114,6 +116,29 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
       return askarSupportedKeyAgreementAlgorithms.includes(
         operation.keyAgreement.algorithm as (typeof askarSupportedKeyAgreementAlgorithms)[number]
+      )
+    }
+
+    if (operation.operation === 'encryptMultiRecipient') {
+      const { encryption, keyAgreement } = operation
+      if (
+        !askarSupportedEncryptionAlgorithms.includes(
+          encryption.algorithm as (typeof askarSupportedEncryptionAlgorithms)[number]
+        ) ||
+        !askarSupportedKeyAgreementAlgorithms.includes(
+          keyAgreement.algorithm as (typeof askarSupportedKeyAgreementAlgorithms)[number]
+        ) ||
+        keyAgreement.recipients.some(({ externalPublicJwk }) => jwkCrvToAskarAlg[externalPublicJwk.crv] === undefined)
+      ) {
+        return false
+      }
+
+      if (keyAgreement.algorithm !== 'ECDH-1PU+A256KW') return true
+
+      return (
+        keyAgreement.recipients.every(({ externalPublicJwk }) =>
+          Kms.supportedKeyDerivationAlgsForKey(externalPublicJwk).includes('ECDH-1PU+A256KW')
+        ) && (askarSupportedEcdh1PuContentEncryptionAlgorithms as readonly string[]).includes(encryption.algorithm)
       )
     }
 
@@ -576,6 +601,78 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       throw new Kms.KeyManagementError('Error encrypting with key', { cause: error })
     } finally {
       // Clear all keys
+      for (const key of keysToFree) {
+        key.handle.free()
+      }
+    }
+  }
+
+  public async encryptMultiRecipient(
+    agentContext: AgentContext,
+    options: Kms.KmsEncryptMultiRecipientOptions
+  ): Promise<Kms.KmsEncryptMultiRecipientReturn> {
+    const { keyAgreement, encryption, aad, data } = options
+
+    Kms.assertSupportedKeyAgreementAlgorithm(keyAgreement, askarSupportedKeyAgreementAlgorithms, this.backend)
+    Kms.assertSupportedEncryptionAlgorithm(encryption, askarSupportedEncryptionAlgorithms, this.backend)
+    if (
+      keyAgreement.algorithm === 'ECDH-1PU+A256KW' &&
+      !(askarSupportedEcdh1PuContentEncryptionAlgorithms as readonly string[]).includes(encryption.algorithm)
+    ) {
+      throw new Kms.KeyManagementAlgorithmNotSupportedError(
+        `content encryption algorithm '${encryption.algorithm}' with key agreement algorithm 'ECDH-1PU+A256KW'`,
+        this.backend
+      )
+    }
+    for (const { externalPublicJwk } of keyAgreement.recipients) {
+      Kms.assertAllowedKeyDerivationAlgForKey(externalPublicJwk, keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(externalPublicJwk)
+    }
+
+    const keysToFree: Key[] = []
+    try {
+      let senderKey: Key | undefined
+      if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+        senderKey = (await this.getKeyAsserted(agentContext, keyAgreement.keyId)).key
+        keysToFree.push(senderKey)
+
+        const senderPrivateJwk = this.privateJwkFromKey(agentContext, senderKey)
+        Kms.assertJwkAsymmetric(senderPrivateJwk, keyAgreement.keyId)
+        Kms.assertAllowedKeyDerivationAlgForKey(senderPrivateJwk, keyAgreement.algorithm)
+        Kms.assertKeyAllowsDerive(senderPrivateJwk)
+
+        if (senderKey.algorithm === KeyAlgorithm.Ed25519) {
+          senderKey = senderKey.convertkey({ algorithm: KeyAlgorithm.X25519 })
+          keysToFree.push(senderKey)
+        }
+      }
+
+      const recipientKeys = keyAgreement.recipients.map(({ externalPublicJwk }) => {
+        const recipientKey = this.keyFromJwk(agentContext, externalPublicJwk)
+        keysToFree.push(recipientKey)
+        return recipientKey
+      })
+
+      const ephemeralKey = Key.generate(recipientKeys[0].algorithm)
+      keysToFree.push(ephemeralKey)
+      const ephemeralPublicJwk = this.publicJwkFromKey(agentContext, ephemeralKey) as Kms.KmsJwkPublicEcdh
+
+      return {
+        ...encryptAndWrapForRecipients({
+          askar: this.getAskar(agentContext),
+          keyAgreement,
+          encryption: { algorithm: encryption.algorithm, aad: aad?.(ephemeralPublicJwk) },
+          ephemeralKey,
+          senderKey,
+          recipientKeys,
+          data,
+        }),
+        ephemeralPublicJwk,
+      }
+    } catch (error) {
+      if (error instanceof Kms.KeyManagementError) throw error
+      throw new Kms.KeyManagementError('Error encrypting with key', { cause: error })
+    } finally {
       for (const key of keysToFree) {
         key.handle.free()
       }
