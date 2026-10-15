@@ -16,18 +16,14 @@ import type {
   DidCommV2AnoncryptContentEncryptionAlgorithm,
   DidCommV2AuthcryptContentEncryptionAlgorithm,
   DidCommV2EncryptedMessage,
+  DidCommV2KeyAgreementCurve,
   DidCommV2KeyAgreementJwk,
   DidCommV2PlaintextMessage,
   DidCommV2SignedMessage,
   DidCommV2SignedMessageWire,
   DidCommV2SigningAlgorithm,
 } from './types'
-import {
-  DIDCOMM_V2_SIGNED_MIME_TYPE,
-  DIDCOMM_V2_SIGNING_ALGORITHMS,
-  keyTypeForCurve,
-  normalizeDidCommMediaType,
-} from './types'
+import { DIDCOMM_V2_SIGNED_MIME_TYPE, DIDCOMM_V2_SIGNING_ALGORITHMS, normalizeDidCommMediaType } from './types'
 
 // The DIDComm v2.1 signed message example uses the JWM media type.
 const ACCEPTED_SIGNED_MESSAGE_TYPS = [DIDCOMM_V2_SIGNED_MIME_TYPE, 'application/jwm']
@@ -93,10 +89,8 @@ export class DidCommV2EnvelopeService {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     const plaintextBytes = payload instanceof Uint8Array ? payload : JsonEncoder.toUint8Array(payload)
 
-    const recipient = singleRecipient(keys.recipients)
-    const recipientCurve = getKeyAgreementCurve(recipient.key)
-    const senderCurve = getKeyAgreementCurve(keys.senderKey)
-    if (recipientCurve !== senderCurve) {
+    const curve = assertOneDidAndCurve(keys.recipients)
+    if (curve !== getKeyAgreementCurve(keys.senderKey)) {
       throw new CredoError('DIDComm v2 authcrypt requires sender and recipient on the same curve')
     }
 
@@ -105,60 +99,32 @@ export class DidCommV2EnvelopeService {
     const apu = computeApu(skid)
     const apv = computeApv(keys.recipients.map((r) => r.kid))
 
-    // The KMS backend needs both private keys, so the ephemeral key goes where the sender key lives
-    const backend = await kms.getBackendForKey({ keyId: keys.senderKey.keyId })
-    const ephemeralKey = await kms.createKey({ backend, type: keyTypeForCurve(recipientCurve) })
-    try {
-      const epkJwk = toEpkJwk(ephemeralKey.publicJwk, recipientCurve)
+    let protectedHeader: string | undefined
+    const result = await kms.encryptMultiRecipient({
+      keyAgreement: {
+        algorithm: 'ECDH-1PU+A256KW',
+        keyId: keys.senderKey.keyId,
+        recipients: toKmsRecipients(keys.recipients),
+        apu,
+        apv,
+      },
+      encryption: { algorithm: enc },
+      aad: (epk) => {
+        protectedHeader = JsonEncoder.toBase64Url({
+          typ: 'application/didcomm-encrypted+json',
+          alg: 'ECDH-1PU+A256KW',
+          enc,
+          skid,
+          apu: TypedArrayEncoder.toBase64Url(apu),
+          apv: TypedArrayEncoder.toBase64Url(apv),
+          epk: toEpkJwk(epk, curve),
+        })
+        return TypedArrayEncoder.fromUtf8String(protectedHeader)
+      },
+      data: plaintextBytes,
+    })
 
-      const protectedHeader = JsonEncoder.toBase64Url({
-        typ: 'application/didcomm-encrypted+json',
-        alg: 'ECDH-1PU+A256KW',
-        enc,
-        skid,
-        apu: TypedArrayEncoder.toBase64Url(apu),
-        apv: TypedArrayEncoder.toBase64Url(apv),
-        epk: epkJwk,
-      })
-
-      const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
-        backend,
-        key: {
-          keyAgreement: {
-            algorithm: 'ECDH-1PU+A256KW',
-            keyId: keys.senderKey.keyId,
-            ephemeralKeyId: ephemeralKey.keyId,
-            externalPublicJwk: recipient.key.toJson() as Kms.KmsJwkPublicEcdh,
-            apu,
-            apv,
-          },
-        },
-        encryption: { algorithm: enc, aad: TypedArrayEncoder.fromUtf8String(protectedHeader) },
-        data: plaintextBytes,
-      })
-
-      if (!iv || !tag) {
-        throw new CredoError('Expected iv and tag from KMS encrypt')
-      }
-      if (!encryptedKey?.encrypted) {
-        throw new CredoError('Expected encrypted key from KMS for ECDH-1PU+A256KW')
-      }
-
-      return {
-        protected: protectedHeader,
-        recipients: [
-          {
-            header: { kid: recipient.kid },
-            encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
-          },
-        ],
-        iv: TypedArrayEncoder.toBase64Url(iv),
-        ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
-        tag: TypedArrayEncoder.toBase64Url(tag),
-      }
-    } finally {
-      await kms.deleteKey({ backend, keyId: ephemeralKey.keyId })
-    }
+    return toEncryptedMessage(protectedHeader, keys.recipients, result)
   }
 
   /**
@@ -173,60 +139,33 @@ export class DidCommV2EnvelopeService {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     const plaintextBytes = payload instanceof Uint8Array ? payload : JsonEncoder.toUint8Array(payload)
 
-    const recipient = singleRecipient(keys.recipients)
-    const recipientCurve = getKeyAgreementCurve(recipient.key)
+    const curve = assertOneDidAndCurve(keys.recipients)
 
     const enc: DidCommV2AnoncryptContentEncryptionAlgorithm = keys.contentEncryptionAlgorithm ?? 'A256CBC-HS512'
     const apv = computeApv(keys.recipients.map((r) => r.kid))
 
-    const ephemeralKey = await kms.createKey({ type: keyTypeForCurve(recipientCurve) })
+    let protectedHeader: string | undefined
+    const result = await kms.encryptMultiRecipient({
+      keyAgreement: {
+        algorithm: 'ECDH-ES+A256KW',
+        recipients: toKmsRecipients(keys.recipients),
+        apv,
+      },
+      encryption: { algorithm: enc },
+      aad: (epk) => {
+        protectedHeader = JsonEncoder.toBase64Url({
+          typ: 'application/didcomm-encrypted+json',
+          alg: 'ECDH-ES+A256KW',
+          enc,
+          apv: TypedArrayEncoder.toBase64Url(apv),
+          epk: toEpkJwk(epk, curve),
+        })
+        return TypedArrayEncoder.fromUtf8String(protectedHeader)
+      },
+      data: plaintextBytes,
+    })
 
-    try {
-      const epkJwk = toEpkJwk(ephemeralKey.publicJwk, recipientCurve)
-
-      const protectedHeader = JsonEncoder.toBase64Url({
-        typ: 'application/didcomm-encrypted+json',
-        alg: 'ECDH-ES+A256KW',
-        enc,
-        apv: TypedArrayEncoder.toBase64Url(apv),
-        epk: epkJwk,
-      })
-
-      const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
-        key: {
-          keyAgreement: {
-            algorithm: 'ECDH-ES+A256KW',
-            keyId: ephemeralKey.keyId,
-            externalPublicJwk: recipient.key.toJson() as Kms.KmsJwkPublicEcdh,
-            apv,
-          },
-        },
-        encryption: { algorithm: enc, aad: TypedArrayEncoder.fromUtf8String(protectedHeader) },
-        data: plaintextBytes,
-      })
-
-      if (!iv || !tag) {
-        throw new CredoError('Expected iv and tag from KMS encrypt')
-      }
-      if (!encryptedKey?.encrypted) {
-        throw new CredoError('Expected encrypted key from KMS for ECDH-ES+A256KW')
-      }
-
-      return {
-        protected: protectedHeader,
-        recipients: [
-          {
-            header: { kid: recipient.kid },
-            encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted),
-          },
-        ],
-        iv: TypedArrayEncoder.toBase64Url(iv),
-        ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
-        tag: TypedArrayEncoder.toBase64Url(tag),
-      }
-    } finally {
-      await kms.deleteKey({ keyId: ephemeralKey.keyId })
-    }
+    return toEncryptedMessage(protectedHeader, keys.recipients, result)
   }
 
   /** Sign a v2 plaintext into a single-signer JWS (typ application/didcomm-signed+json). */
@@ -565,12 +504,50 @@ function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0
 }
 
-// The KMS encrypt API wraps the content key for one recipient
-function singleRecipient(recipients: DidCommV2EnvelopeRecipient[]): DidCommV2EnvelopeRecipient {
-  if (recipients.length !== 1) {
-    throw new CredoError(`DIDComm v2 pack supports exactly one recipient, got ${recipients.length}`)
+// One JWE has one epk and is for the keys of one DID: https://identity.foundation/didcomm-messaging/spec/v2.1/#message-encryption
+function assertOneDidAndCurve(recipients: DidCommV2EnvelopeRecipient[]): DidCommV2KeyAgreementCurve {
+  const [first, ...others] = recipients
+  if (!first) {
+    throw new CredoError('DIDComm v2 pack requires at least one recipient')
   }
-  return recipients[0]
+
+  const curve = getKeyAgreementCurve(first.key)
+  const did = first.kid.split('#')[0]
+  for (const { key, kid } of others) {
+    if (getKeyAgreementCurve(key) !== curve) {
+      throw new CredoError('DIDComm v2 pack requires all recipient keys on the same curve')
+    }
+    if (kid.split('#')[0] !== did) {
+      throw new CredoError('DIDComm v2 pack requires all recipient keys to belong to the same DID')
+    }
+  }
+
+  return curve
+}
+
+function toKmsRecipients(recipients: DidCommV2EnvelopeRecipient[]): Array<{ externalPublicJwk: Kms.KmsJwkPublicEcdh }> {
+  return recipients.map(({ key }) => ({ externalPublicJwk: key.toJson() as Kms.KmsJwkPublicEcdh }))
+}
+
+function toEncryptedMessage(
+  protectedHeader: string | undefined,
+  recipients: DidCommV2EnvelopeRecipient[],
+  { encrypted, iv, tag, encryptedKeys }: Kms.KmsEncryptMultiRecipientReturn
+): DidCommV2EncryptedMessage {
+  if (!protectedHeader || encryptedKeys.length !== recipients.length) {
+    throw new CredoError('Expected the KMS to authenticate the protected header and wrap a key for every recipient')
+  }
+
+  return {
+    protected: protectedHeader,
+    recipients: recipients.map(({ kid }, index) => ({
+      header: { kid },
+      encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKeys[index].encrypted),
+    })),
+    iv: TypedArrayEncoder.toBase64Url(iv),
+    ciphertext: TypedArrayEncoder.toBase64Url(encrypted),
+    tag: TypedArrayEncoder.toBase64Url(tag),
+  }
 }
 
 function getKeyAgreementCurve(jwk: DidCommV2KeyAgreementJwk): 'X25519' | 'P-256' | 'P-384' {

@@ -160,8 +160,6 @@ export class DidCommMediatorService {
     // extractOurRecipientKeyWithKeyId) correctly resolves the Ed25519 key and
     // its KMS key ID from DidCommMediatorRoutingRecord. Importing would require
     // complex VM-to-KMS key mapping that is fragile across did:peer:2 round-trips.
-    // For v2 Forward decryption (future), a separate DID import with proper
-    // X25519 key mapping can be added when needed.
 
     return did
   }

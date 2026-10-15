@@ -25,6 +25,7 @@ import type {
   DidCommV2AnoncryptContentEncryptionAlgorithm,
   DidCommV2AuthcryptContentEncryptionAlgorithm,
   DidCommV2EncryptedMessage,
+  DidCommV2KeyAgreementJwk,
   DidCommV2PlaintextMessage,
 } from '../types'
 
@@ -383,6 +384,109 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
     )
   })
 
+  describe('multiple recipients', () => {
+    const kids = ['did:example:bob#key-1', 'did:example:bob#key-2']
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    async function createKeys(type: Kms.KmsCreateKeyTypeEc | Kms.KmsCreateKeyTypeOkp): Promise<{
+      sender: DidCommV2KeyAgreementJwk
+      recipients: Array<DidCommV2KeyAgreementJwk & { keyId: string }>
+    }> {
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      const [sender, ...recipients] = await Promise.all(
+        [1, 2, 3].map(async () => {
+          const { keyId, publicJwk } = await kms.createKey({ type })
+          const jwk = Kms.PublicJwk.fromPublicJwk(publicJwk) as DidCommV2KeyAgreementJwk
+          jwk.keyId = keyId
+          return jwk as DidCommV2KeyAgreementJwk & { keyId: string }
+        })
+      )
+      return { sender, recipients }
+    }
+
+    it('authcrypts and anoncrypts once for two X25519 recipients', async () => {
+      const { sender, recipients } = await createKeys({ kty: 'OKP', crv: 'X25519' })
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      const storageCalls = [vi.spyOn(kms, 'createKey'), vi.spyOn(kms, 'importKey'), vi.spyOn(kms, 'deleteKey')]
+      const envelopeRecipients = recipients.map((key, index) => ({ key, kid: kids[index] }))
+
+      const encryptedMessages = [
+        await envelopeService.pack(agentContext, plaintext, {
+          senderKey: sender,
+          senderKeySkid: senderKid,
+          recipients: envelopeRecipients,
+        }),
+        await envelopeService.packAnoncrypt(agentContext, plaintext, { recipients: envelopeRecipients }),
+      ]
+
+      for (const spy of storageCalls) expect(spy).not.toHaveBeenCalled()
+      for (const encrypted of encryptedMessages) {
+        const protectedJson = JsonEncoder.fromBase64Url(encrypted.protected)
+        expect(protectedJson.epk).toMatchObject({ kty: 'OKP', crv: 'X25519' })
+        expect(protectedJson.apv).toBe(TypedArrayEncoder.toBase64Url(computeApv(kids)))
+        expect(encrypted.recipients.map(({ header }) => header.kid)).toEqual(kids)
+
+        for (const [index, recipientKey] of recipients.entries()) {
+          const { plaintext: decrypted } = await envelopeService.unpack(agentContext, encrypted, {
+            recipientKey,
+            matchedKid: kids[index],
+            resolveSenderKey: async () => sender,
+          })
+          expect(decrypted).toEqual(plaintext)
+        }
+      }
+    })
+
+    it('rejects recipients on different curves', async () => {
+      const x25519 = await createKeys({ kty: 'OKP', crv: 'X25519' })
+      const p256 = await createKeys({ kty: 'EC', crv: 'P-256' })
+      const recipients = [
+        { key: x25519.recipients[0], kid: kids[0] },
+        { key: p256.recipients[0], kid: kids[1] },
+      ]
+
+      await expect(
+        envelopeService.pack(agentContext, plaintext, {
+          senderKey: x25519.sender,
+          senderKeySkid: senderKid,
+          recipients,
+        })
+      ).rejects.toThrow('DIDComm v2 pack requires all recipient keys on the same curve')
+      await expect(envelopeService.packAnoncrypt(agentContext, plaintext, { recipients })).rejects.toThrow(
+        'DIDComm v2 pack requires all recipient keys on the same curve'
+      )
+    })
+
+    it('rejects authcrypt to recipients on another curve than the sender', async () => {
+      const x25519 = await createKeys({ kty: 'OKP', crv: 'X25519' })
+      const p256 = await createKeys({ kty: 'EC', crv: 'P-256' })
+
+      await expect(
+        envelopeService.pack(agentContext, plaintext, {
+          senderKey: x25519.sender,
+          senderKeySkid: senderKid,
+          recipients: p256.recipients.map((key, index) => ({ key, kid: kids[index] })),
+        })
+      ).rejects.toThrow('DIDComm v2 authcrypt requires sender and recipient on the same curve')
+    })
+
+    it('rejects recipients of different DIDs', async () => {
+      const { recipients } = await createKeys({ kty: 'OKP', crv: 'X25519' })
+
+      await expect(
+        envelopeService.packAnoncrypt(agentContext, plaintext, {
+          recipients: [
+            { key: recipients[0], kid: 'did:example:bob#key-1' },
+            { key: recipients[1], kid: 'did:example:carol#key-1' },
+          ],
+        })
+      ).rejects.toThrow('DIDComm v2 pack requires all recipient keys to belong to the same DID')
+    })
+  })
+
   describe('off-curve NIST points', () => {
     // There is no on-curve check of our own. These pin down that the KMS rejects the point on import,
     // which fails with a different cause than a tag mismatch.
@@ -545,7 +649,11 @@ describe('DidCommV2EnvelopeService with the sender key outside the default backe
     ],
   })
 
-  it('creates the authcrypt ephemeral key in the backend of the sender key', async () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('encrypts in the backend of the sender key without storing an ephemeral key', async () => {
     agentContext.dependencyManager.registerSingleton(DidCommV2EnvelopeService)
     const envelopeService = agentContext.dependencyManager.resolve(DidCommV2EnvelopeService)
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
@@ -556,7 +664,9 @@ describe('DidCommV2EnvelopeService with the sender key outside the default backe
     senderKey.keyId = sender.keyId
     const recipientKey = Kms.PublicJwk.fromPublicJwk(recipient.publicJwk) as Kms.PublicJwk<Kms.X25519PublicJwk>
     recipientKey.keyId = recipient.keyId
-    const deleteKey = vi.spyOn(kms, 'deleteKey')
+    const storageCalls = [vi.spyOn(kms, 'createKey'), vi.spyOn(kms, 'deleteKey')]
+    const askarEncrypt = vi.spyOn(AskarKeyManagementService.prototype, 'encryptMultiRecipient')
+    const nodeEncrypt = vi.spyOn(NodeKeyManagementService.prototype, 'encryptMultiRecipient')
     const plaintext: DidCommV2PlaintextMessage = {
       id: 'cross-backend-1',
       type: 'https://didcomm.org/trust-ping/2.0/ping',
@@ -571,8 +681,9 @@ describe('DidCommV2EnvelopeService with the sender key outside the default backe
       recipients: [{ key: recipientKey, kid: 'did:example:bob#key-1' }],
     })
 
-    expect(deleteKey).toHaveBeenCalledWith(expect.objectContaining({ backend: 'askar' }))
-    await expect(deleteKey.mock.results[0].value).resolves.toBe(true)
+    expect(askarEncrypt).toHaveBeenCalledTimes(1)
+    expect(nodeEncrypt).not.toHaveBeenCalled()
+    for (const spy of storageCalls) expect(spy).not.toHaveBeenCalled()
 
     const { plaintext: decrypted } = await envelopeService.unpack(agentContext, encrypted, {
       recipientKey: recipientKey as Kms.PublicJwk<Kms.X25519PublicJwk> & { keyId: string },

@@ -178,7 +178,11 @@ export class DidCommDocumentService {
         const vm = typeof keyRef === 'string' ? routingDoc.dereferenceVerificationMethod(keyRef) : keyRef
         if (seenVmIds.has(vm.id)) continue
         seenVmIds.add(vm.id)
-        addKey(getPublicJwkFromVerificationMethod(vm))
+        const publicJwk = getPublicJwkFromVerificationMethod(vm)
+        if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
+          publicJwk.keyId = toAbsoluteDidUrl(routingDoc.id, vm.id)
+        }
+        addKey(publicJwk)
       }
 
       // A DID endpoint adds one hop: https://identity.foundation/didcomm-messaging/spec/v2.1/#using-a-did-as-an-endpoint

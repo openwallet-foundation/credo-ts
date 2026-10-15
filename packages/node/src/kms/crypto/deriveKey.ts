@@ -10,7 +10,7 @@ import {
 } from 'node:crypto'
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { createEcKey, createOkpKey, type NodeKmsSupportedEcCrvs } from './createKey'
-import { performEncrypt } from './encrypt'
+import { type nodeSupportedEncryptionAlgorithms, performEncrypt } from './encrypt'
 
 const nodeSupportedEcdhKeyDerivationEcCrv = [
   'P-256',
@@ -56,7 +56,10 @@ type NodeSupportedKeyAgreementEncryptOptions = Kms.KmsKeyAgreementEncryptOptions
 }
 
 function assertNodeSupportedEcdh1PuContentEncryptionAlgorithm<
-  Encryption extends Kms.KmsEncryptDataContentEncryption | Kms.KmsDecryptDataContentDecryption,
+  Encryption extends
+    | Kms.KmsEncryptDataContentEncryption
+    | Kms.KmsDecryptDataContentDecryption
+    | Kms.KmsEncryptMultiRecipientOptions['encryption'],
 >(
   encryption: Encryption
 ): asserts encryption is Encryption & { algorithm: (typeof nodeSupportedEcdh1PuContentEncryptionAlgorithms)[number] } {
@@ -149,21 +152,15 @@ export async function encryptEcdh1Pu(options: {
   keyAgreement: Kms.KmsKeyAgreementEncryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
   encryption: Kms.KmsEncryptDataContentEncryption
   senderPrivateJwk: Kms.KmsJwkPrivateAsymmetric
-  ephemeralPrivateJwk?: Kms.KmsJwkPrivateAsymmetric
   data: Uint8Array
 }): Promise<Kms.KmsEncryptReturn> {
   const { keyAgreement, encryption, senderPrivateJwk, data } = options
   assertNodeSupportedEcdh1PuContentEncryptionAlgorithm(encryption)
 
   const recipientPublicJwk = keyAgreement.externalPublicJwk
-  const ephemeralPrivateJwk =
-    options.ephemeralPrivateJwk ??
-    (
-      await (recipientPublicJwk.kty === 'OKP'
-        ? createOkpKey({ kty: 'OKP', crv: 'X25519' })
-        : createEcKey({ kty: 'EC', crv: recipientPublicJwk.crv }))
-    ).privateJwk
-  Kms.assertAsymmetricJwkKeyTypeMatches(ephemeralPrivateJwk, recipientPublicJwk)
+  const { privateJwk: ephemeralPrivateJwk } = await (recipientPublicJwk.kty === 'OKP'
+    ? createOkpKey({ kty: 'OKP', crv: 'X25519' })
+    : createEcKey({ kty: 'EC', crv: recipientPublicJwk.crv }))
 
   const contentEncryptionKeyBytes = getRandomValues(
     new Uint8Array(mapContentEncryptionAlgorithmToKeyLength(encryption.algorithm) >> 3)
@@ -191,6 +188,74 @@ export async function encryptEcdh1Pu(options: {
       encrypted: aesKeyWrap(keyEncryptionKey, contentEncryptionKeyBytes),
       ephemeralPublicKey: Kms.publicJwkFromPrivateJwk(ephemeralPrivateJwk) as Kms.KmsJwkPublicEcdh,
     },
+  }
+}
+
+export async function encryptAndWrapForRecipients(options: {
+  keyAgreement: Kms.KmsKeyAgreementEncryptMultiRecipientOptions & {
+    algorithm: (typeof nodeSupportedKeyAgreementAlgorithms)[number]
+  }
+  encryption: Kms.KmsEncryptMultiRecipientOptions['encryption'] & {
+    algorithm: (typeof nodeSupportedEncryptionAlgorithms)[number]
+  }
+  aad?: (ephemeralPublicJwk: Kms.KmsJwkPublicEcdh) => Uint8Array
+  senderPrivateJwk?: Kms.KmsJwkPrivateAsymmetric
+  data: Uint8Array
+}): Promise<Kms.KmsEncryptMultiRecipientReturn> {
+  const { keyAgreement, encryption, senderPrivateJwk, data } = options
+  const recipientPublicJwk = keyAgreement.recipients[0].externalPublicJwk
+  assertNodeSupportedEcdhKeyDerivationCrv(recipientPublicJwk)
+  if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+    assertNodeSupportedEcdh1PuContentEncryptionAlgorithm(encryption)
+  }
+
+  const ephemeral = await (recipientPublicJwk.kty === 'OKP'
+    ? createOkpKey({ kty: 'OKP', crv: 'X25519' })
+    : createEcKey({ kty: 'EC', crv: recipientPublicJwk.crv }))
+  const ephemeralPublicJwk = ephemeral.publicJwk as Kms.KmsJwkPublicEcdh
+
+  const contentEncryptionKeyBytes = getRandomValues(
+    new Uint8Array(mapContentEncryptionAlgorithmToKeyLength(encryption.algorithm) >> 3)
+  )
+  const { encrypted, iv, tag } = await performEncrypt(
+    { kty: 'oct', k: TypedArrayEncoder.toBase64Url(contentEncryptionKeyBytes) },
+    { algorithm: encryption.algorithm, aad: options.aad?.(ephemeralPublicJwk) },
+    data
+  )
+  if (!tag) throw new Kms.KeyManagementError('Expected authentication tag from content encryption')
+
+  const encryptedKeys: Kms.KmsEncryptedKey[] = []
+  for (const { externalPublicJwk } of keyAgreement.recipients) {
+    let keyEncryptionKey: Buffer
+    if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+      keyEncryptionKey = deriveKeyEcdh1Pu({
+        ephemeralSecret: ecdhSharedSecret(ephemeral.privateJwk, externalPublicJwk),
+        staticSecret: ecdhSharedSecret(senderPrivateJwk as Kms.KmsJwkPrivateAsymmetric, externalPublicJwk),
+        apu: keyAgreement.apu,
+        apv: keyAgreement.apv,
+        tag,
+      })
+    } else {
+      keyEncryptionKey = await deriveKeyEcdhEs({
+        keyLength:
+          keyAgreement.algorithm === 'ECDH-ES+A128KW' ? 128 : keyAgreement.algorithm === 'ECDH-ES+A192KW' ? 192 : 256,
+        usageAlgorithm: keyAgreement.algorithm,
+        privateJwk: ephemeral.privateJwk,
+        publicJwk: externalPublicJwk,
+        apu: keyAgreement.apu,
+        apv: keyAgreement.apv,
+      })
+    }
+
+    encryptedKeys.push({ encrypted: aesKeyWrap(keyEncryptionKey, contentEncryptionKeyBytes) })
+  }
+
+  return {
+    encrypted: new Uint8Array(encrypted),
+    iv: new Uint8Array(iv),
+    tag: new Uint8Array(tag),
+    ephemeralPublicJwk,
+    encryptedKeys,
   }
 }
 

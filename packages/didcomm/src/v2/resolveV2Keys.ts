@@ -170,17 +170,22 @@ export class DidCommV2KeyResolver {
   }
 
   /**
-   * Path 2: did:key kid for a mediator routing key. Routing keys aren't Created DIDs,
-   * so we look them up in the mediator routing repository.
+   * Path 2: kid for a mediator routing key, as a did:key or a did:peer keyAgreement DID URL.
+   * Routing keys aren't Created DIDs, so we look them up in the mediator routing repository.
    */
   private async resolveFromMediatorRouting(
     agentContext: AgentContext,
     kid: string
   ): Promise<ResolvedRecipientKey | null> {
-    if (!kid.startsWith('did:key:')) return null
-    const kidPublicJwk = DidKey.fromDid(kid).publicJwk
+    // did:key and did:peer resolve locally, so a kid that is not ours never triggers network resolution
+    if (!kid.startsWith('did:key:') && !kid.startsWith('did:peer:')) return null
 
     try {
+      const kidPublicJwk = kid.startsWith('did:key:')
+        ? DidKey.fromDid(kid).publicJwk
+        : getPublicJwkFromVerificationMethod(
+            (await this.didResolverService.resolveDidDocument(agentContext, kid)).dereferenceKey(kid, ['keyAgreement'])
+          )
       const mediatorRoutingRepository = agentContext.dependencyManager.resolve(DidCommMediatorRoutingRepository)
 
       if (kidPublicJwk.is(Kms.Ed25519PublicJwk)) {
