@@ -6,6 +6,7 @@ import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommTransportSessionRemovedEvent, DidCommTransportSessionSavedEvent } from './transport'
 import { DidCommTransportEventTypes } from './transport'
 import type { DidCommEncryptedMessage } from './types'
+import type { DidCommVersion } from './util/didcommVersion'
 
 @injectable()
 export class DidCommTransportService {
@@ -97,6 +98,11 @@ export interface DidCommTransportSession {
   // The enveloping keys that can be used during the transport. This is used so the framework
   // does not have to look up the associated keys for sending a message.
   keys?: EnvelopeKeys
+
+  // The envelope version of the inbound message this session was stored for. A reply over this
+  // session uses the same version, even when the connection record says otherwise, because the
+  // peer may have fallen back to another version for this exchange.
+  didcommVersion?: DidCommVersion
 
   // A received message that will be used to check whether it has any return routing.
   inboundMessage?: DidCommMessage
