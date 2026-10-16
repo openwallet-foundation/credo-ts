@@ -22,10 +22,12 @@ export const didcommConnectionStateEnum = pgEnum('DidcommConnectionState', didco
 export const didcommConnectionRoles = exhaustiveArray({} as DidCommDidExchangeRole, ['requester', 'responder'] as const)
 export const didcommConnectionRoleEnum = pgEnum('DidcommConnectionRole', didcommConnectionRoles)
 
-export const didcommConnectionHandshakeProtocols = exhaustiveArray(
-  {} as DidCommHandshakeProtocol,
-  ['https://didcomm.org/didexchange/1.x', 'https://didcomm.org/connections/1.x'] as const
-)
+// NOTE: the connection protocol (https://didcomm.org/connections/1.x) is not supported anymore, but the value
+// is kept in the database enum so connection records created with the connection protocol can still be read.
+export const didcommConnectionHandshakeProtocols = [
+  'https://didcomm.org/didexchange/1.x',
+  'https://didcomm.org/connections/1.x',
+] as const
 export const didcommConnectionHandshakeProtocolEnum = pgEnum(
   'DidcommConnectionHandshakeProtocol',
   didcommConnectionHandshakeProtocols
@@ -53,7 +55,7 @@ export const didcommConnection = pgTable(
     outOfBandId: text('out_of_band_id'),
 
     errorMessage: text('error_message'),
-    protocol: didcommConnectionHandshakeProtocolEnum(),
+    protocol: didcommConnectionHandshakeProtocolEnum().$type<DidCommHandshakeProtocol>(),
     connectionTypes: text('connection_types').array(),
 
     previousDids: text('previous_dids').array(),

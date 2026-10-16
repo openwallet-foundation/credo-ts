@@ -4,7 +4,7 @@ import type { MockInstance } from 'vitest'
 import type { MockedClassConstructor } from '../../../../tests/types'
 import { getAgentContext, getAgentOptions, mockFunction } from '../../../core/tests'
 import { TenantAgentContextProvider } from '../context/TenantAgentContextProvider'
-import { TenantRecord } from '../repository'
+import { TenantRecord, TenantStatus } from '../repository'
 import { TenantRecordService } from '../services/TenantRecordService'
 import { TenantAgent } from '../TenantAgent'
 import { TenantsApi } from '../TenantsApi'
@@ -43,6 +43,7 @@ describe('TenantsApi', () => {
 
       expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-tenant-id', {
         provisionContext: false,
+        allowInactive: false,
       })
       expect(tenantAgent).toBeInstanceOf(TenantAgent)
       expect(tenantAgent.context).toBe(tenantAgentContext)
@@ -71,6 +72,7 @@ describe('TenantsApi', () => {
 
         expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-tenant-id', {
           provisionContext: false,
+          allowInactive: false,
         })
         expect(tenantAgent).toBeInstanceOf(TenantAgent)
         expect(tenantAgent.context).toBe(tenantAgentContext)
@@ -100,6 +102,7 @@ describe('TenantsApi', () => {
 
           expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-tenant-id', {
             provisionContext: false,
+            allowInactive: false,
           })
           expect(tenantAgent).toBeInstanceOf(TenantAgent)
           expect(tenantAgent.context).toBe(tenantAgentContext)
@@ -173,9 +176,27 @@ describe('TenantsApi', () => {
 
       await tenantsApi.deleteTenantById('tenant-id')
 
-      expect(getTenantAgentSpy).toHaveBeenCalledWith({ tenantId: 'tenant-id' })
+      expect(getTenantAgentSpy).toHaveBeenCalledWith({ tenantId: 'tenant-id', allowInactive: true })
       expect(agentContextProvider.deleteAgentContext).toHaveBeenCalled()
       expect(tenantRecordService.deleteTenantById).toHaveBeenCalledWith(rootAgent.context, 'tenant-id')
+    })
+  })
+
+  describe('updateTenantStatus', () => {
+    test('updates the status on the tenant record', async () => {
+      const tenantRecord = new TenantRecord({
+        id: 'tenant-id',
+        config: {
+          label: 'test',
+        },
+        storageVersion: '0.5',
+      })
+      mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
+
+      const updatedTenantRecord = await tenantsApi.updateTenantStatus('tenant-id', TenantStatus.Inactive)
+
+      expect(tenantRecordService.updateTenant).toHaveBeenCalledWith(rootAgent.context, tenantRecord)
+      expect(updatedTenantRecord.status).toBe(TenantStatus.Inactive)
     })
   })
 

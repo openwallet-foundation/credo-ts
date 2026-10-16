@@ -181,7 +181,9 @@ describe('TokenStatusListService', () => {
       },
     } satisfies CreateTokenStatusListOptions
 
-    await expect(tokenStatusListService.createTokenStatusList(agentContext, options)).rejects.toThrow('invalid did')
+    await expect(tokenStatusListService.createTokenStatusList(agentContext, options)).rejects.toThrow(
+      "Error parsing did 'did:invalid'"
+    )
   })
 
   test('create token status list with did in cwt format, not supported', async () => {

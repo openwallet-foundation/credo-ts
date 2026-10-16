@@ -53,7 +53,7 @@ export async function handlePushedAuthorizationRequest(
 
   if (!parsedAuthorizationRequest.authorizationRequest.redirect_uri) {
     throw new Oauth2ServerErrorResponseError({
-      error: Oauth2ErrorCodes.InvalidScope,
+      error: Oauth2ErrorCodes.InvalidRequest,
       error_description: `Missing required 'redirect_uri' parameter.`,
     })
   }
