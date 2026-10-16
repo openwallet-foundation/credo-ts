@@ -780,8 +780,8 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1(typescript@5.9.3)
       did-resolver:
-        specifier: ^4.1.0
-        version: 4.1.0
+        specifier: ^6.0.0
+        version: 6.0.0
       ec-compression:
         specifier: ^2.0.0
         version: 2.0.0
@@ -810,8 +810,8 @@ importers:
         specifier: ^6.0.0
         version: 6.0.0
       web-did-resolver:
-        specifier: ^2.0.32
-        version: 2.0.32
+        specifier: ^3.2.0
+        version: 3.2.0
       webcrypto-core:
         specifier: ^1.8.1
         version: 1.8.1
@@ -5001,6 +5001,9 @@ packages:
   did-resolver@4.1.0:
     resolution: {integrity: sha512-S6fWHvCXkZg2IhS4RcVHxwuyVejPR7c+a4Go0xbQ9ps5kILa8viiYQgrM4gfTyeTjJ0ekgJH9gk/BawTpmkbZA==}
 
+  did-resolver@6.0.0:
+    resolution: {integrity: sha512-qYlNpucsgfBE0foIqlnEjLx7ZvMTUOkPeIjOhVKPJKm4h8afFNS78zDLbiJPZ2yvY3Z7C79FW1UHSRyehRCpOg==}
+
   didwebvh-ts@2.8.0:
     resolution: {integrity: sha512-JAIK/Udr7xbGoYTDRjbm34nD8iddREIQffRL+vsrCaREyVtZDuy8SdFs5lXoop9zwEjXwh64ZFRSOYm6ZCZcAw==}
     hasBin: true
@@ -7724,8 +7727,9 @@ packages:
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
 
-  web-did-resolver@2.0.32:
-    resolution: {integrity: sha512-L91/ApTmDjgzS0UDstTKn3kN/1hlQBnVcUN8K29e3xhVBpPktHYC6uvVAQ8ohbIg9D6wrrbaBQvfRArDxgJG2g==}
+  web-did-resolver@3.2.0:
+    resolution: {integrity: sha512-DclShDbyFGnUuk17Is+hdBPsBbQRiZfcp6sEBS+4y8DeYN+sXnxYJPpdcgbLoNZHGYNoj12MR7MgO/j4VUrdFw==}
+    engines: {node: '>=22'}
 
   web-streams-polyfill@3.3.3:
     resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
@@ -12125,6 +12129,8 @@ snapshots:
 
   did-resolver@4.1.0: {}
 
+  did-resolver@6.0.0: {}
+
   didwebvh-ts@2.8.0:
     dependencies:
       '@noble/hashes': 2.2.0
@@ -15244,12 +15250,9 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
-  web-did-resolver@2.0.32:
+  web-did-resolver@3.2.0:
     dependencies:
-      cross-fetch: 4.1.0
-      did-resolver: 4.1.0
-    transitivePeerDependencies:
-      - encoding
+      did-resolver: 6.0.0
 
   web-streams-polyfill@3.3.3: {}
 
