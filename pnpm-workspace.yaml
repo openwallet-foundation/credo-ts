@@ -46,7 +46,7 @@ catalog:
   class-validator: ^0.14.3
   express: ^5.2.1
   hpke: ^1.1.4
-  nock: ^14.0.17
+  nock: ^15.0.2
   reflect-metadata: 0.2.2
   rxjs: ^7.8.2
   tsyringe: ^4.10.0
@@ -67,3 +67,4 @@ minimumReleaseAgeExclude:
   - '@sd-jwt/core@0.22.0'
   - '@sd-jwt/sd-jwt-vc@0.22.0'
   - '@peculiar/x509@2.2.0'
+  - nock@15.0.2
