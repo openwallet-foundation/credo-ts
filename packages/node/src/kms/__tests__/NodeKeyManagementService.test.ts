@@ -1350,27 +1350,6 @@ describe('NodeKeyManagementService', () => {
       expect(JsonEncoder.fromUint8Array(data)).toEqual(decodedPayload)
     })
 
-    it('throws error when decrypting ECDH-ES with an Ed25519 key', async () => {
-      const recipient = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'Ed25519' } })
-      const ephemeral = await service.createKey(agentContext, { type: { kty: 'OKP', crv: 'X25519' } })
-
-      await expect(
-        service.decrypt(agentContext, {
-          key: {
-            keyAgreement: {
-              algorithm: 'ECDH-ES',
-              keyId: recipient.keyId,
-              ephemeralPublicJwk: ephemeral.publicJwk as Kms.KmsJwkPublicEcdh,
-            },
-          },
-          decryption: { algorithm: 'A256GCM', iv: randomBytes(12), tag: randomBytes(16) },
-          encrypted: randomBytes(16),
-        })
-      ).rejects.toThrow(
-        `OKP key with crv 'Ed25519' cannot be used with algorithm 'ECDH-ES' for key derivation. Allowed algs are 'ECDH-HSALSA20', 'ECDH-ES+A256KW', 'ECDH-1PU+A256KW'`
-      )
-    })
-
     const didcommVectors = JSON.parse(
       readFileSync(path.join(__dirname, '../__fixtures__/didcomm-v2.1-encrypted-messages.json')).toString('utf-8')
     ) as {

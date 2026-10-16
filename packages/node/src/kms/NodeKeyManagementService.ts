@@ -11,12 +11,7 @@ import {
   createRsaKey,
 } from './crypto/createKey'
 import { performDecrypt } from './crypto/decrypt'
-import {
-  deriveDecryptionKey,
-  encryptEcdh,
-  nodeSupportedKeyAgreementAlgorithms,
-  toKeyAgreementPrivateJwk,
-} from './crypto/deriveKey'
+import { deriveDecryptionKey, encryptEcdh, nodeSupportedKeyAgreementAlgorithms } from './crypto/deriveKey'
 import { nodeSupportedEncryptionAlgorithms, performEncrypt } from './crypto/encrypt'
 import { hpkeOpen, hpkeSeal, nodeSupportedHpkeAlgorithms } from './crypto/hpke'
 import { nodeSupportedJwaAlgorithm, performSign } from './crypto/sign'
@@ -362,8 +357,8 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
         Kms.assertJwkAsymmetric(privateJwk, keyAgreement.keyId)
         Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, keyAgreement.algorithm)
         Kms.assertKeyAllowsDerive(privateJwk)
-        senderPrivateJwk = toKeyAgreementPrivateJwk(privateJwk)
-        Kms.assertAsymmetricJwkKeyTypeMatches(senderPrivateJwk, recipientJwks[0])
+        Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, recipientJwks[0])
+        senderPrivateJwk = privateJwk
       }
 
       const recipientPublicJwk = recipientJwks[0]
@@ -495,15 +490,14 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
       Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
       Kms.assertKeyAllowsDerive(privateJwk)
-      const agreementPrivateJwk = toKeyAgreementPrivateJwk(privateJwk)
       for (const publicJwk of publicJwks) {
-        Kms.assertAsymmetricJwkKeyTypeMatches(agreementPrivateJwk, publicJwk)
+        Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, publicJwk)
       }
 
       const { contentEncryptionKey } = deriveDecryptionKey({
         keyAgreement: key.keyAgreement,
         decryption,
-        privateJwk: agreementPrivateJwk,
+        privateJwk,
       })
 
       decryptionKey = contentEncryptionKey
