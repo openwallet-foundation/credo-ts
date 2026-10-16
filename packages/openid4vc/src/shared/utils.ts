@@ -69,7 +69,7 @@ export async function getPublicJwkFromDid(
   agentContext: AgentContext,
   didUrl: string,
   allowedPurposes: DidPurpose[] = ['authentication']
-) {
+): Promise<Kms.PublicJwk> {
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
   const didDocument = await didsApi.resolveDidDocument(didUrl)
   const verificationMethod = didDocument.dereferenceKey(didUrl, allowedPurposes)

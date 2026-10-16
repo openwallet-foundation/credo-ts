@@ -52,6 +52,7 @@
     "@types/supertest": "^7.2.1",
     "@types/varint": "^6.0.3",
     "@types/ws": "catalog:",
+    "@typescript/native": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "cors": "^2.8.6",
     "drizzle-kit": "^0.31.11",
