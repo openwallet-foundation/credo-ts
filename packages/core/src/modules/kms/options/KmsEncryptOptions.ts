@@ -43,14 +43,14 @@ const ecdhContentEncryptionAlgorithms: string[] = [
 ]
 
 // https://datatracker.ietf.org/doc/html/draft-madden-jose-ecdh-1pu-04#section-2.1
-export const ecdh1PuContentEncryptionAlgorithms: string[] = [
+const ecdh1PuContentEncryptionAlgorithms: string[] = [
   KnownJwaContentEncryptionAlgorithms.A128CBC_HS256,
   KnownJwaContentEncryptionAlgorithms.A192CBC_HS384,
   KnownJwaContentEncryptionAlgorithms.A256CBC_HS512,
 ]
 
 /**
- * The content encryption algorithms `encrypt` allows with a key agreement algorithm, or `undefined` if it is not ECDH.
+ * The content encryption algorithms `encrypt` and `decrypt` allow with a key agreement algorithm, or `undefined` if it is not ECDH.
  */
 export function ecdhContentEncryptionAlgorithmsFor(keyAgreementAlgorithm: string): string[] | undefined {
   if (keyAgreementAlgorithm === KnownJwaKeyAgreementAlgorithms.ECDH_1PU_A256KW)

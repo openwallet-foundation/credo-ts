@@ -109,7 +109,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       }
       if (!keyAgreement) return true
 
-      // Askar's Concat KDF stops at one SHA-256 block, so it cannot derive the 64 byte A256CBC-HS512 key
+      // Askar's ECDH-ES derivation (askar-crypto/src/kdf/ecdh_es.rs) caps the key at 32 bytes, A256CBC-HS512 needs 64
       if (keyAgreement.algorithm === 'ECDH-ES' && encryption.algorithm === 'A256CBC-HS512') return false
 
       return (

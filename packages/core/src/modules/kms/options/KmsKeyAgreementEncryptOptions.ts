@@ -12,7 +12,8 @@ export const zKmsJwkPublicEcdh = z.union([
 
 export type KmsJwkPublicEcdh = z.infer<typeof zKmsJwkPublicEcdh>
 
-const zKmsKeyAgreementEncryptEcdhEs = z.object({
+// Strict so a leftover ephemeral keyId fails instead of being dropped
+const zKmsKeyAgreementEncryptEcdhEs = z.strictObject({
   algorithm: z.literal('ECDH-ES'),
 
   externalPublicJwk: zKmsJwkPublicEcdh,
@@ -24,7 +25,7 @@ export type KmsKeyAgreementEncryptEcdhEs = z.output<typeof zKmsKeyAgreementEncry
 
 const zKmsEncryptRecipients = z.array(z.object({ externalPublicJwk: zKmsJwkPublicEcdh })).min(1)
 
-const zKmsKeyAgreementEncryptEcdhEsKw = z.object({
+const zKmsKeyAgreementEncryptEcdhEsKw = z.strictObject({
   algorithm: z.enum(['ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW']),
   recipients: zKmsEncryptRecipients,
   apu: z.optional(zAnyUint8Array),

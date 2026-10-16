@@ -314,6 +314,23 @@ describe('KeyManagementApi', () => {
           }),
       },
       {
+        case: 'ECDH-ES with an ephemeral keyId',
+        message: /unrecognized key.*"keyId"/i,
+        call: () =>
+          agent.kms.encrypt({
+            key: {
+              keyAgreement: {
+                algorithm: 'ECDH-ES',
+                // @ts-expect-error the KMS now creates the ephemeral key
+                keyId: 'ephemeral',
+                externalPublicJwk: x25519,
+              },
+            },
+            encryption: { algorithm: 'A256GCM' },
+            data,
+          }),
+      },
+      {
         case: 'ECDH-ES with an iv',
         message: `'encryption.iv' cannot be provided with ECDH key agreement`,
         call: () =>
@@ -331,6 +348,16 @@ describe('KeyManagementApi', () => {
             key: { keyId: 'symmetric' },
             encryption: { algorithm: 'A256GCM', aad: () => data },
             data,
+          }),
+      },
+      {
+        case: 'decrypting ECDH-ES with A256CBC',
+        message: `'decryption.algorithm' must be one of A128CBC-HS256`,
+        call: () =>
+          agent.kms.decrypt({
+            key: { keyAgreement: { algorithm: 'ECDH-ES', keyId: 'recipient', ephemeralPublicJwk: x25519 } },
+            decryption: { algorithm: 'A256CBC', iv: new Uint8Array(16) },
+            encrypted: data,
           }),
       },
       {
@@ -375,6 +402,30 @@ describe('KeyManagementApi', () => {
           operation: 'encrypt',
           encryption: { algorithm: 'A256CBC' },
           keyAgreement: { algorithm: 'ECDH-ES', externalPublicJwk: x25519 },
+        })
+      ).toEqual([])
+    })
+
+    test('supportedBackendsForOperation returns no backends for content decryption that decrypt rejects', () => {
+      const keyAgreement = {
+        algorithm: 'ECDH-1PU+A256KW',
+        ephemeralPublicJwk: x25519,
+        senderPublicJwk: x25519,
+        encryptedKey: { encrypted: data },
+      } as const
+
+      expect(
+        agent.kms.supportedBackendsForOperation({
+          operation: 'decrypt',
+          decryption: { algorithm: 'A256CBC-HS512', iv: new Uint8Array(16), tag: new Uint8Array(32) },
+          keyAgreement,
+        })
+      ).toEqual(['node'])
+      expect(
+        agent.kms.supportedBackendsForOperation({
+          operation: 'decrypt',
+          decryption: { algorithm: 'A256GCM', iv: new Uint8Array(12), tag: new Uint8Array(16) },
+          keyAgreement,
         })
       ).toEqual([])
     })

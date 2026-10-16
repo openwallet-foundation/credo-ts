@@ -57,10 +57,11 @@ export class KeyManagementApi {
    * no backends are supported it returns an empty array
    */
   public supportedBackendsForOperation(operation: KmsOperation): string[] {
-    // Backends report what they can compute, the ECDH content encryption rules live in the encrypt schema
-    if (operation.operation === 'encrypt' && operation.keyAgreement) {
+    // Backends report what they can compute, the ECDH content encryption rules live in the encrypt and decrypt schemas
+    if ((operation.operation === 'encrypt' || operation.operation === 'decrypt') && operation.keyAgreement) {
+      const encryption = operation.operation === 'encrypt' ? operation.encryption : operation.decryption
       const ecdhEncryptionAlgorithms = ecdhContentEncryptionAlgorithmsFor(operation.keyAgreement.algorithm)
-      if (ecdhEncryptionAlgorithms && !ecdhEncryptionAlgorithms.includes(operation.encryption.algorithm)) return []
+      if (ecdhEncryptionAlgorithms && !ecdhEncryptionAlgorithms.includes(encryption.algorithm)) return []
     }
 
     const supportedBackends: string[] = []
