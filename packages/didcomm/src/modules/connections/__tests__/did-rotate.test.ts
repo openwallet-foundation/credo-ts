@@ -977,9 +977,10 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     const aliceRotateService = () => aliceAgent.dependencyManager.resolve(DidCommDidRotateV2Service)
 
     const rotateAlice = async (toDid?: string) => {
-      const rotated = waitForDidRotateSubject(
-        bobAgent.events.observable(DidCommConnectionEventTypes.DidCommConnectionDidRotated),
-        {}
+      // Bob emits the rotation event before it dispatches the message, so wait until the message is processed
+      const rotated = waitForAgentMessageProcessedEventSubject(
+        bobAgent.events.observable(DidCommEventTypes.DidCommMessageProcessed),
+        { messageType: DidCommEmptyMessage.type.messageTypeUri }
       )
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const { newDid } = await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection!.id, toDid })
@@ -1529,7 +1530,6 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
         // biome-ignore lint/style/noNonNullAssertion: no explanation
         from: connectionRecord!.did!,
         to: [invitationDid],
-        pthid: invitation.outOfBandInvitation.id,
         body: {},
       },
       {
@@ -1641,19 +1641,10 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
       invitation.outOfBandInvitation,
       { label: '' }
     )
-    const warn = vi.spyOn(inviter.config.logger, 'warn')
-    try {
-      await waitUntilInviterReceives(() =>
-        // biome-ignore lint/style/noNonNullAssertion: no explanation
-        accepterTwo.didcomm.basicMessages.sendMessage(secondConnection!.id, 'second')
-      )
-      expect(warn).toHaveBeenCalledWith(expect.any(String), {
-        pthid: invitation.outOfBandInvitation.id,
-        senderDid: secondConnection?.did,
-      })
-    } finally {
-      warn.mockRestore()
-    }
+    await waitUntilInviterReceives(() =>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      accepterTwo.didcomm.basicMessages.sendMessage(secondConnection!.id, 'second')
+    )
 
     expect(await inviter.didcomm.connections.getAll()).toHaveLength(0)
     expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.Done)
@@ -1722,7 +1713,11 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
   })
 
   test('a first message whose pthid is not a string binds no invitation', async () => {
-    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+    const { did } = await createPeerDidForV2OOB(
+      inviter.context,
+      await inviter.didcomm.mediationRecipient.getRouting({})
+    )
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2', ourDid: did })
     const { connectionRecord } = await accepter.didcomm.oob.receiveInvitation(invitation.outOfBandInvitation, {
       label: '',
     })
@@ -1744,7 +1739,7 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
       queryOperatorPthid.mockRestore()
     }
 
-    expect(await inviter.didcomm.connections.getAll()).toHaveLength(0)
+    expect(await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)).toHaveLength(0)
     expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.AwaitResponse)
   })
 

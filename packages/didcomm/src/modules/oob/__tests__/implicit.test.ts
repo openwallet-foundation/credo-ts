@@ -32,7 +32,7 @@ import {
 } from '../../connections'
 import { InMemoryDidRegistry } from '../../connections/__tests__/InMemoryDidRegistry'
 import { DidCommOutOfBandService } from '../DidCommOutOfBandService'
-import { DidCommOutOfBandState } from '../domain'
+import { DidCommOutOfBandEventTypes, DidCommOutOfBandState } from '../domain'
 
 const inMemoryDidsRegistry = new InMemoryDidRegistry()
 
@@ -364,8 +364,18 @@ describe('out of band implicit', () => {
     expect((await faberAgent.didcomm.oob.getById(newer.id)).state).toBe(DidCommOutOfBandState.AwaitResponse)
   })
 
-  test('v2 implicit invitation: a first message whose pthid names no invitation gets a connection without one', async () => {
+  test('v2 invitations under one DID: a first message naming a used invitation gets a connection without one', async () => {
     const publicDid = await createInMemoryDid(faberAgent, 'rxjs:faber', { withKeyAgreement: true })
+    const used = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2', ourDid: publicDid })
+    const live = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2', ourDid: publicDid })
+    const { connectionRecord: usedConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+      used.outOfBandInvitation,
+      { label: 'alice' }
+    )
+    if (!usedConnection) throw new Error('Expected a connection')
+    await aliceAgent.didcomm.basicMessages.sendMessage(usedConnection.id, 'uses the invitation')
+    await waitForBasicMessageSubject(faberMessageReplay, { content: 'uses the invitation' })
+
     const { connectionRecord: implicitConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
       did: publicDid,
       didCommVersion: 'v2',
@@ -374,9 +384,16 @@ describe('out of band implicit', () => {
     if (!implicitConnection) throw new Error('Expected a connection')
     const warn = vi.spyOn(faberAgent.config.logger, 'warn')
     try {
-      await aliceAgent.didcomm.basicMessages.sendMessage(implicitConnection.id, 'names no invitation', 'unknown')
-      await waitForBasicMessageSubject(faberMessageReplay, { content: 'names no invitation' })
-      expect(warn).toHaveBeenCalledWith(expect.any(String), { pthid: 'unknown', senderDid: implicitConnection.did })
+      await aliceAgent.didcomm.basicMessages.sendMessage(
+        implicitConnection.id,
+        'names the used invitation',
+        used.outOfBandInvitation.id
+      )
+      await waitForBasicMessageSubject(faberMessageReplay, { content: 'names the used invitation' })
+      expect(warn).toHaveBeenCalledWith(expect.any(String), {
+        pthid: used.outOfBandInvitation.id,
+        senderDid: implicitConnection.did,
+      })
     } finally {
       warn.mockRestore()
     }
@@ -384,46 +401,148 @@ describe('out of band implicit', () => {
     const faberConnections = await faberAgent.didcomm.connections.findAllByQuery({ theirDid: implicitConnection.did })
     expect(faberConnections).toHaveLength(1)
     expect(faberConnections[0].outOfBandId).toBeUndefined()
+    expect((await faberAgent.didcomm.oob.getById(used.id)).state).toBe(DidCommOutOfBandState.Done)
+    expect((await faberAgent.didcomm.oob.getById(live.id)).state).toBe(DidCommOutOfBandState.AwaitResponse)
+    expect(await faberAgent.didcomm.connections.findAllByOutOfBandId(live.id)).toHaveLength(0)
   })
 
-  test('v2 invitation with reuseConnection: the next message on the existing connection names the invitation', async () => {
+  test('v2 invitations under a DID that also opened a connection: a first message without pthid binds none of them', async () => {
     const publicDid = await createInMemoryDid(faberAgent, 'rxjs:faber', { withKeyAgreement: true })
-    const firstInvitation = await faberAgent.didcomm.oob.createInvitation({
-      didCommVersion: 'v2',
+    await faberAgent.didcomm.oob.receiveImplicitInvitation({
+      did: await createInMemoryDid(aliceAgent, 'rxjs:alice', { withKeyAgreement: true }),
       ourDid: publicDid,
-      multiUseInvitation: true,
+      didCommVersion: 'v2',
+      label: 'faber',
     })
-    const { connectionRecord: existingConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
-      firstInvitation.outOfBandInvitation,
-      { label: 'alice' }
-    )
-    if (!existingConnection) throw new Error('Expected a connection')
-    const [aliceReplay] = setupEventReplaySubjects(
-      [aliceAgent],
-      [DidCommTrustPingEventTypes.DidCommTrustPingResponseReceivedEvent]
-    )
-    const firstPing = await aliceAgent.didcomm.connections.sendPing(existingConnection.id, {})
-    await waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: firstPing.threadId })
-    expect((await aliceAgent.didcomm.connections.getById(existingConnection.id)).theirDid).not.toBe(publicDid)
+    const invitations = [
+      await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2', ourDid: publicDid }),
+      await faberAgent.didcomm.oob.createInvitation({
+        didCommVersion: 'v2',
+        ourDid: publicDid,
+        multiUseInvitation: true,
+      }),
+    ]
+    const { connectionRecord } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+      did: publicDid,
+      didCommVersion: 'v2',
+      label: 'alice',
+    })
+    if (!connectionRecord) throw new Error('Expected a connection')
+    await aliceAgent.didcomm.basicMessages.sendMessage(connectionRecord.id, 'names no invitation')
+    await waitForBasicMessageSubject(faberMessageReplay, { content: 'names no invitation' })
 
-    const secondInvitation = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2', ourDid: publicDid })
-    const { connectionRecord, outOfBandRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
-      secondInvitation.outOfBandInvitation,
-      { label: 'alice', reuseConnection: true }
-    )
-    expect(connectionRecord?.id).toBe(existingConnection.id)
-    expect(await aliceAgent.didcomm.connections.findByInvitationDid(publicDid)).toHaveLength(1)
-    expect(outOfBandRecord.state).toBe(DidCommOutOfBandState.Done)
+    const faberConnections = await faberAgent.didcomm.connections.findAllByQuery({ theirDid: connectionRecord.did })
+    expect(faberConnections).toHaveLength(1)
+    expect(faberConnections[0].outOfBandId).toBeUndefined()
+    for (const invitation of invitations) {
+      expect((await faberAgent.didcomm.oob.getById(invitation.id)).state).toBe(DidCommOutOfBandState.AwaitResponse)
+      expect(await faberAgent.didcomm.connections.findAllByOutOfBandId(invitation.id)).toHaveLength(0)
+    }
+  })
 
-    const [faberPingReplay] = setupEventReplaySubjects(
-      [faberAgent],
-      [DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent]
-    )
-    const ping = await aliceAgent.didcomm.connections.sendPing(existingConnection.id, { responseRequested: false })
-    const pingReceived = await waitForTrustPingReceivedEventSubject(faberPingReplay, { threadId: ping.threadId })
-    expect(pingReceived.thread?.parentThreadId).toBe(secondInvitation.outOfBandInvitation.id)
-    expect(await faberAgent.didcomm.connections.getAll()).toHaveLength(1)
-    expect((await faberAgent.didcomm.oob.getById(secondInvitation.id)).state).toBe(DidCommOutOfBandState.AwaitResponse)
+  test.each([
+    [false, DidCommOutOfBandState.Done],
+    [true, DidCommOutOfBandState.AwaitResponse],
+  ])(
+    'v2 invitation with reuseConnection: the inviter reports the reuse (reusable %s)',
+    async (multiUseInvitation, state) => {
+      const reused = vi.fn()
+      faberAgent.events.on(DidCommOutOfBandEventTypes.HandshakeReused, reused)
+      try {
+        const publicDid = await createInMemoryDid(faberAgent, 'rxjs:faber', { withKeyAgreement: true })
+        const firstInvitation = await faberAgent.didcomm.oob.createInvitation({
+          didCommVersion: 'v2',
+          ourDid: publicDid,
+          multiUseInvitation: true,
+        })
+        const { connectionRecord: existingConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+          firstInvitation.outOfBandInvitation,
+          { label: 'alice' }
+        )
+        if (!existingConnection) throw new Error('Expected a connection')
+        const [aliceReplay] = setupEventReplaySubjects(
+          [aliceAgent],
+          [DidCommTrustPingEventTypes.DidCommTrustPingResponseReceivedEvent]
+        )
+        const firstPing = await aliceAgent.didcomm.connections.sendPing(existingConnection.id, {})
+        await waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: firstPing.threadId })
+        expect((await aliceAgent.didcomm.connections.getById(existingConnection.id)).theirDid).not.toBe(publicDid)
+
+        const secondInvitation = await faberAgent.didcomm.oob.createInvitation({
+          didCommVersion: 'v2',
+          ourDid: publicDid,
+          multiUseInvitation,
+        })
+        const { connectionRecord, outOfBandRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
+          secondInvitation.outOfBandInvitation,
+          { label: 'alice', reuseConnection: true }
+        )
+        expect(connectionRecord?.id).toBe(existingConnection.id)
+        expect(await aliceAgent.didcomm.connections.findByInvitationDid(publicDid)).toHaveLength(1)
+        expect(outOfBandRecord.state).toBe(DidCommOutOfBandState.Done)
+
+        const [faberPingReplay] = setupEventReplaySubjects(
+          [faberAgent],
+          [DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent]
+        )
+        const ping = await aliceAgent.didcomm.connections.sendPing(existingConnection.id, {})
+        const pingReceived = await waitForTrustPingReceivedEventSubject(faberPingReplay, { threadId: ping.threadId })
+        await waitForTrustPingResponseReceivedEventSubject(aliceReplay, { threadId: ping.threadId })
+        expect(pingReceived.thread?.parentThreadId).toBe(secondInvitation.outOfBandInvitation.id)
+
+        const faberConnections = await faberAgent.didcomm.connections.getAll()
+        expect(faberConnections).toHaveLength(1)
+        expect((await faberAgent.didcomm.oob.getById(secondInvitation.id)).state).toBe(state)
+        expect(reused).toHaveBeenCalledTimes(1)
+        expect(reused.mock.calls[0][0].payload).toMatchObject({
+          reuseThreadId: ping.id,
+          connectionRecord: { id: faberConnections[0].id },
+          outOfBandRecord: { id: secondInvitation.id },
+        })
+      } finally {
+        faberAgent.events.off(DidCommOutOfBandEventTypes.HandshakeReused, reused)
+      }
+    }
+  )
+
+  test('v2 invitation accepted with a DID the inviter knows from another invitation: the inviter reports the reuse', async () => {
+    const reused = vi.fn()
+    faberAgent.events.on(DidCommOutOfBandEventTypes.HandshakeReused, reused)
+    try {
+      const aliceDid = await createInMemoryDid(aliceAgent, 'rxjs:alice', { withKeyAgreement: true })
+      const firstInvitation = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+      const { connectionRecord: firstConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+        firstInvitation.outOfBandInvitation,
+        { label: 'alice', ourDid: aliceDid }
+      )
+      if (!firstConnection) throw new Error('Expected a connection')
+      await aliceAgent.didcomm.basicMessages.sendMessage(firstConnection.id, 'accepts the first invitation')
+      await waitForBasicMessageSubject(faberMessageReplay, { content: 'accepts the first invitation' })
+
+      const publicDid = await createInMemoryDid(faberAgent, 'rxjs:faber', { withKeyAgreement: true })
+      const secondInvitation = await faberAgent.didcomm.oob.createInvitation({
+        didCommVersion: 'v2',
+        ourDid: publicDid,
+      })
+      const { connectionRecord: secondConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
+        secondInvitation.outOfBandInvitation,
+        { label: 'alice', ourDid: aliceDid }
+      )
+      if (!secondConnection) throw new Error('Expected a connection')
+      await aliceAgent.didcomm.basicMessages.sendMessage(secondConnection.id, 'accepts the second invitation')
+      await waitForBasicMessageSubject(faberMessageReplay, { content: 'accepts the second invitation' })
+
+      const faberConnections = await faberAgent.didcomm.connections.getAll()
+      expect(faberConnections).toHaveLength(1)
+      expect((await faberAgent.didcomm.oob.getById(secondInvitation.id)).state).toBe(DidCommOutOfBandState.Done)
+      expect(reused).toHaveBeenCalledTimes(1)
+      expect(reused.mock.calls[0][0].payload).toMatchObject({
+        connectionRecord: { id: faberConnections[0].id },
+        outOfBandRecord: { id: secondInvitation.id },
+      })
+    } finally {
+      faberAgent.events.off(DidCommOutOfBandEventTypes.HandshakeReused, reused)
+    }
   })
 
   test('v2 invitation with reuseConnection: an attached message is answered on the existing connection', async () => {

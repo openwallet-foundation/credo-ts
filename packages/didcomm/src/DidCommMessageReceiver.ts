@@ -182,7 +182,7 @@ export class DidCommMessageReceiver {
   ) {
     const envelope = this.envelopeRegistry.getEnvelopeForInbound(encryptedMessage)
     const decryptedMessage = await this.decryptMessage(agentContext, envelope, encryptedMessage)
-    const { plaintextMessage, senderKey, recipientKey, authenticatedSenderDid } = decryptedMessage
+    const { plaintextMessage, senderKey, recipientKey, authenticatedSenderDid, recipientDid } = decryptedMessage
 
     this.logger.info(
       `Received message with type '${plaintextMessage['@type']}', recipient key ${recipientKey?.fingerprint} and sender key ${senderKey?.fingerprint}`,
@@ -234,6 +234,9 @@ export class DidCommMessageReceiver {
     }
 
     const message = await this.transformAndValidate(agentContext, plaintextMessage, connection)
+    if (authenticatedSenderDid && recipientDid && connection?.isReady) {
+      await this.outOfBandService.processHandshakeReuseV2(agentContext, connection, message, recipientDid)
+    }
 
     const messageContext = new DidCommInboundMessageContext(message, {
       // Only make the connection available in message context if the connection is ready
@@ -414,10 +417,26 @@ export class DidCommMessageReceiver {
       // https://identity.foundation/didcomm-messaging/spec/v2.1/#invitation
       const pthid: unknown = plaintextMessage['~thread']?.pthid
       // Not yet validated, and a non-string value would reach the storage query as an operator
-      const outOfBandRecord =
-        pthid === undefined || typeof pthid === 'string'
+      const invitedRecord =
+        typeof pthid === 'string'
           ? await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipientDids, pthid)
           : null
+      if (pthid !== undefined && !invitedRecord) {
+        this.logger.warn('First message names no out-of-band invitation awaiting a response', {
+          pthid,
+          senderDid: from,
+        })
+      }
+      const isImplicitInvitation =
+        !invitedRecord &&
+        recipientDidRecord !== undefined &&
+        (await this.isImplicitInvitationDid(agentContext, recipientDids))
+      // Tolerates a peer that omits the pthid: a DID that is no implicit invitation was created for one invitation at most
+      const outOfBandRecord =
+        invitedRecord ??
+        (isImplicitInvitation
+          ? null
+          : await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipientDids))
       if (outOfBandRecord) {
         // Inviter receives first message → Responder (so retrieveServicesByConnection uses theirDid parse fallback)
         // Spec privacy: for reusable invitations, the invitation DID is shared across every
@@ -432,6 +451,8 @@ export class DidCommMessageReceiver {
             theirDid: from,
             did: recipient,
             outOfBandId: outOfBandRecord.id,
+            // Keeps the DID an implicit invitation once its invitations are deleted (isImplicitInvitationDid)
+            invitationDid: outOfBandRecord.getTags().invitationSpecificDid ? undefined : recipient,
             didcommVersion: 'v2',
           },
           outOfBandRecord.reusable
@@ -442,14 +463,7 @@ export class DidCommMessageReceiver {
         return { connection }
       }
 
-      if (pthid !== undefined) {
-        this.logger.warn('First message names no out-of-band invitation awaiting a response', {
-          pthid,
-          senderDid: from,
-        })
-      }
-
-      if (recipientDidRecord && (await this.isImplicitInvitationDid(agentContext, recipientDids))) {
+      if (isImplicitInvitation) {
         // Always rotate to a per-pair DID
         const { connection } = await this.createFirstMessageConnection(
           agentContext,
@@ -486,8 +500,16 @@ export class DidCommMessageReceiver {
     const outOfBandRecords = await this.outOfBandService.findAllByQuery(agentContext, {
       role: DidCommOutOfBandRole.Sender,
       $or: dids.map((recipientDid) => ({ recipientDid })),
+      invitationSpecificDid: true,
     })
     if (outOfBandRecords.length > 0) return false
+    const sharedInvitations = await this.outOfBandService.findAllByQuery(
+      agentContext,
+      { role: DidCommOutOfBandRole.Sender, $or: dids.map((recipientDid) => ({ recipientDid })) },
+      { limit: 1 }
+    )
+    // ourDid invitations share the DID, so connections it is ours on (such as one to a public DID) do not make it pairwise
+    if (sharedInvitations.length > 0) return true
 
     const connections = await this.connectionService.findAllByQuery(agentContext, {
       $or: dids.flatMap((ourDid) => [{ did: ourDid }, { previousDids: [ourDid] }]),

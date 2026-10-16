@@ -1,5 +1,6 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import { CredoError, DidsApi, EventEmitter, injectable, Kms, parseDid } from '@credo-ts/core'
+import type { DidCommMessage } from '../../DidCommMessage'
 import type { DidCommInboundMessageContext } from '../../models'
 import { DidCommDocumentService } from '../../services'
 import type { DidCommConnectionRecord, DidCommHandshakeProtocol } from '../connections'
@@ -124,6 +125,35 @@ export class DidCommOutOfBandService {
     })
 
     return reuseAcceptedMessage
+  }
+
+  /**
+   * DIDComm v2 has no handshake-reuse message: a message on an existing connection reuses it for the invitation its pthid names.
+   */
+  public async processHandshakeReuseV2(
+    agentContext: AgentContext,
+    connectionRecord: DidCommConnectionRecord,
+    message: DidCommMessage,
+    recipientDid: string
+  ): Promise<void> {
+    const parentThreadId = message.thread?.parentThreadId
+    if (!parentThreadId || !connectionRecord.did) return
+
+    const outOfBandRecord = await this.findCreatedByRecipientDid(
+      agentContext,
+      [recipientDid, connectionRecord.did, ...connectionRecord.previousDids],
+      parentThreadId
+    )
+    // Also reached by the first message of a connection opened through a reusable invitation, which is no reuse
+    if (!outOfBandRecord || outOfBandRecord.id === connectionRecord.outOfBandId) return
+
+    if (!outOfBandRecord.reusable) {
+      await this.updateState(agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
+    }
+    this.eventEmitter.emit<DidCommHandshakeReusedEvent>(agentContext, {
+      type: DidCommOutOfBandEventTypes.HandshakeReused,
+      payload: { reuseThreadId: message.id, connectionRecord, outOfBandRecord },
+    })
   }
 
   public async processHandshakeReuseAccepted(

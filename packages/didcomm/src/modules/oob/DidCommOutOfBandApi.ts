@@ -419,6 +419,7 @@ export class DidCommOutOfBandApi {
       tags: {
         recipientKeyFingerprints,
         recipientDid: did,
+        invitationSpecificDid: !config.ourDid,
       },
     })
     outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.V2Invitation, v2Invitation.toJSON())

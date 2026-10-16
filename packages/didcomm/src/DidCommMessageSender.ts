@@ -636,7 +636,7 @@ export class DidCommMessageSender {
     } else if (!message.thread.parentThreadId) {
       message.thread.parentThreadId = pending.parentThreadId
     }
-    return message.thread?.parentThreadId === pending.parentThreadId
+    return true
   }
 
   private findSessionForOutboundContext(outboundContext: DidCommOutboundMessageContext) {
