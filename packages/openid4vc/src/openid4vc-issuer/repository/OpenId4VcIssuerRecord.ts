@@ -7,7 +7,10 @@ import type {
   OpenId4VciCredentialIssuerMetadataDisplay,
   OpenId4VcJwtIssuerEncoded,
 } from '../../shared'
-import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
+import type {
+  OpenId4VciBatchCredentialIssuanceOptions,
+  OpenId4VciCredentialResponseEncryptionOptions,
+} from '../OpenId4VcIssuerServiceOptions'
 
 export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>
 
@@ -64,6 +67,12 @@ export type OpenId4VcIssuerRecordProps = {
    * Indicate support for batch issuance of credentials
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
+
+  /**
+   * Credential response encryption configuration. When not provided, encryption is optional and all
+   * algorithms supported by Credo are advertised.
+   */
+  credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
 
   /**
    * When signed metadata is supported, this stores the
@@ -158,6 +167,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
     ...Kms.KnownJwaSignatureAlgorithm[],
   ]
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
+  public credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
 
   public signedMetadata?: OpenId4VcIssuerRecordSignedMetadata
 
@@ -204,6 +214,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.display = props.display
       this.authorizationServerConfigs = props.authorizationServerConfigs
       this.batchCredentialIssuance = props.batchCredentialIssuance
+      this.credentialResponseEncryption = props.credentialResponseEncryption
       this.signedMetadata = props.signedMetadata
     }
   }
