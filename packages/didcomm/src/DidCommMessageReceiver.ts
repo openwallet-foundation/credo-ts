@@ -452,7 +452,7 @@ export class DidCommMessageReceiver {
             did: recipient,
             outOfBandId: outOfBandRecord.id,
             // Keeps the DID an implicit invitation once its invitations are deleted (isImplicitInvitationDid)
-            invitationDid: outOfBandRecord.getTags().invitationSpecificDid ? undefined : recipient,
+            invitationDid: outOfBandRecord.getTags().sharedRecipientDid ? recipient : undefined,
             didcommVersion: 'v2',
           },
           outOfBandRecord.reusable
@@ -497,19 +497,23 @@ export class DidCommMessageReceiver {
   }
 
   private async isImplicitInvitationDid(agentContext: AgentContext, dids: string[]): Promise<boolean> {
-    const outOfBandRecords = await this.outOfBandService.findAllByQuery(agentContext, {
-      role: DidCommOutOfBandRole.Sender,
-      $or: dids.map((recipientDid) => ({ recipientDid })),
-      invitationSpecificDid: true,
-    })
-    if (outOfBandRecords.length > 0) return false
     const sharedInvitations = await this.outOfBandService.findAllByQuery(
       agentContext,
-      { role: DidCommOutOfBandRole.Sender, $or: dids.map((recipientDid) => ({ recipientDid })) },
+      {
+        role: DidCommOutOfBandRole.Sender,
+        $or: dids.map((recipientDid) => ({ recipientDid })),
+        sharedRecipientDid: true,
+      },
       { limit: 1 }
     )
     // ourDid invitations share the DID, so connections it is ours on (such as one to a public DID) do not make it pairwise
     if (sharedInvitations.length > 0) return true
+    const invitations = await this.outOfBandService.findAllByQuery(
+      agentContext,
+      { role: DidCommOutOfBandRole.Sender, $or: dids.map((recipientDid) => ({ recipientDid })) },
+      { limit: 1 }
+    )
+    if (invitations.length > 0) return false
 
     const connections = await this.connectionService.findAllByQuery(agentContext, {
       $or: dids.flatMap((ourDid) => [{ did: ourDid }, { previousDids: [ourDid] }]),

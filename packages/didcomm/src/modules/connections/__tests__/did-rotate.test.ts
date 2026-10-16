@@ -1816,4 +1816,57 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
       expect(connection.previousDids).toContain(did)
     }
   })
+
+  async function acceptAndSendFirst(invitation: DidCommOutOfBandRecord): Promise<void> {
+    const { connectionRecord } = await accepter.didcomm.oob.receiveInvitation(invitation.outOfBandInvitation, {
+      label: '',
+    })
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await accepter.didcomm.basicMessages.sendMessage(connectionRecord!.id, 'first')
+    await waitForBasicMessageSubject(inviterReplay, { content: 'first' })
+  }
+
+  async function sendImplicitFirstMessage(did: string): Promise<void> {
+    const { connectionRecord } = await accepterTwo.didcomm.oob.receiveImplicitInvitation({
+      did,
+      didCommVersion: 'v2',
+      label: '',
+    })
+    await waitUntilInviterReceives(() =>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      accepterTwo.didcomm.basicMessages.sendMessage(connectionRecord!.id, 'stranger')
+    )
+  }
+
+  test('a DID minted for one invitation and then passed as ourDid takes implicit first messages', async () => {
+    const minted = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+    const did = minted.outOfBandInvitation.v2Invitation?.from as string
+    await acceptAndSendFirst(minted)
+    const shared = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2', ourDid: did })
+
+    await sendImplicitFirstMessage(did)
+
+    expect(await inviter.didcomm.connections.findAllByOutOfBandId(shared.id)).toHaveLength(0)
+    expect((await inviter.didcomm.oob.getById(shared.id)).state).toEqual(DidCommOutOfBandState.AwaitResponse)
+    expect(await inviter.didcomm.connections.getAll()).toHaveLength(2)
+  })
+
+  test.each([
+    ['ourDid', true, 2],
+    ['minted', false, 1],
+  ] as const)(
+    'a DID whose %s invitation was deleted takes implicit first messages only when shared',
+    async (_, shared, count) => {
+      const ourDid = shared
+        ? (await createPeerDidForV2OOB(inviter.context, await inviter.didcomm.mediationRecipient.getRouting({}))).did
+        : undefined
+      const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2', ourDid })
+      await acceptAndSendFirst(invitation)
+      await inviter.didcomm.oob.deleteById(invitation.id)
+
+      await sendImplicitFirstMessage(invitation.outOfBandInvitation.v2Invitation?.from as string)
+
+      expect(await inviter.didcomm.connections.getAll()).toHaveLength(count)
+    }
+  )
 })

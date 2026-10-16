@@ -46,9 +46,9 @@ interface CustomDidCommOutOfBandRecordTags extends TagsBase {
   recipientDid?: string
 
   /**
-   * For v2 OOB (Sender role): true when `recipientDid` was created for this invitation alone.
+   * For v2 OOB (Sender role): true when `recipientDid` was supplied as `ourDid` and can be shared by several invitations.
    */
-  invitationSpecificDid?: boolean
+  sharedRecipientDid?: boolean
 }
 
 export interface DidCommOutOfBandRecordProps {
