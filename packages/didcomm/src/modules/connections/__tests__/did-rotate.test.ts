@@ -977,9 +977,10 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     const aliceRotateService = () => aliceAgent.dependencyManager.resolve(DidCommDidRotateV2Service)
 
     const rotateAlice = async (toDid?: string) => {
-      const rotated = waitForDidRotateSubject(
-        bobAgent.events.observable(DidCommConnectionEventTypes.DidCommConnectionDidRotated),
-        {}
+      // Bob emits the rotation event before it dispatches the message, so wait until the message is processed
+      const rotated = waitForAgentMessageProcessedEventSubject(
+        bobAgent.events.observable(DidCommEventTypes.DidCommMessageProcessed),
+        { messageType: DidCommEmptyMessage.type.messageTypeUri }
       )
       // biome-ignore lint/style/noNonNullAssertion: no explanation
       const { newDid } = await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection!.id, toDid })
@@ -1711,6 +1712,37 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
     expect((await inviter.didcomm.oob.getById(namedInTo.id)).state).toEqual(DidCommOutOfBandState.AwaitResponse)
   })
 
+  test('a first message whose pthid is not a string binds no invitation', async () => {
+    const { did } = await createPeerDidForV2OOB(
+      inviter.context,
+      await inviter.didcomm.mediationRecipient.getRouting({})
+    )
+    const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2', ourDid: did })
+    const { connectionRecord } = await accepter.didcomm.oob.receiveInvitation(invitation.outOfBandInvitation, {
+      label: '',
+    })
+    const envelopeService = accepter.dependencyManager.resolve(DidCommV2EnvelopeService)
+    const pack = envelopeService.pack.bind(envelopeService)
+    const queryOperatorPthid = vi
+      .spyOn(envelopeService, 'pack')
+      .mockImplementation((agentContext, payload, keys) =>
+        pack(
+          agentContext,
+          { ...(payload as DidCommV2PlaintextMessage), pthid: { $neq: '' } as unknown as string },
+          keys
+        )
+      )
+    try {
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      await waitUntilInviterReceives(() => accepter.didcomm.basicMessages.sendMessage(connectionRecord!.id, 'first'))
+    } finally {
+      queryOperatorPthid.mockRestore()
+    }
+
+    expect(await inviter.didcomm.connections.findAllByOutOfBandId(invitation.id)).toHaveLength(0)
+    expect((await inviter.didcomm.oob.getById(invitation.id)).state).toEqual(DidCommOutOfBandState.AwaitResponse)
+  })
+
   test('a message from an unknown sender to a pairwise DID creates no connection', async () => {
     const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2', multiUseInvitation: true })
     const { connectionRecord: accepterConnection } = await accepter.didcomm.oob.receiveInvitation(
@@ -1784,4 +1816,57 @@ describe('DIDComm V2 multi-use OOB inviter-side rotation', () => {
       expect(connection.previousDids).toContain(did)
     }
   })
+
+  async function acceptAndSendFirst(invitation: DidCommOutOfBandRecord): Promise<void> {
+    const { connectionRecord } = await accepter.didcomm.oob.receiveInvitation(invitation.outOfBandInvitation, {
+      label: '',
+    })
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
+    await accepter.didcomm.basicMessages.sendMessage(connectionRecord!.id, 'first')
+    await waitForBasicMessageSubject(inviterReplay, { content: 'first' })
+  }
+
+  async function sendImplicitFirstMessage(did: string): Promise<void> {
+    const { connectionRecord } = await accepterTwo.didcomm.oob.receiveImplicitInvitation({
+      did,
+      didCommVersion: 'v2',
+      label: '',
+    })
+    await waitUntilInviterReceives(() =>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
+      accepterTwo.didcomm.basicMessages.sendMessage(connectionRecord!.id, 'stranger')
+    )
+  }
+
+  test('a DID minted for one invitation and then passed as ourDid takes implicit first messages', async () => {
+    const minted = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+    const did = minted.outOfBandInvitation.v2Invitation?.from as string
+    await acceptAndSendFirst(minted)
+    const shared = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2', ourDid: did })
+
+    await sendImplicitFirstMessage(did)
+
+    expect(await inviter.didcomm.connections.findAllByOutOfBandId(shared.id)).toHaveLength(0)
+    expect((await inviter.didcomm.oob.getById(shared.id)).state).toEqual(DidCommOutOfBandState.AwaitResponse)
+    expect(await inviter.didcomm.connections.getAll()).toHaveLength(2)
+  })
+
+  test.each([
+    ['ourDid', true, 2],
+    ['minted', false, 1],
+  ] as const)(
+    'a DID whose %s invitation was deleted takes implicit first messages only when shared',
+    async (_, shared, count) => {
+      const ourDid = shared
+        ? (await createPeerDidForV2OOB(inviter.context, await inviter.didcomm.mediationRecipient.getRouting({}))).did
+        : undefined
+      const invitation = await inviter.didcomm.oob.createInvitation({ didCommVersion: 'v2', ourDid })
+      await acceptAndSendFirst(invitation)
+      await inviter.didcomm.oob.deleteById(invitation.id)
+
+      await sendImplicitFirstMessage(invitation.outOfBandInvitation.v2Invitation?.from as string)
+
+      expect(await inviter.didcomm.connections.getAll()).toHaveLength(count)
+    }
+  )
 })

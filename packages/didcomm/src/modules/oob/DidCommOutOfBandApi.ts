@@ -419,6 +419,7 @@ export class DidCommOutOfBandApi {
       tags: {
         recipientKeyFingerprints,
         recipientDid: did,
+        sharedRecipientDid: config.ourDid ? true : undefined,
       },
     })
     outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.V2Invitation, v2Invitation.toJSON())
@@ -780,20 +781,28 @@ export class DidCommOutOfBandApi {
     // Enforce didcommVersions here so the explicit/scanned receive path fails fast like the implicit one.
     this.assertAgentSupportsDidCommVersion(isV2Invitation ? 'v2' : 'v1')
 
-    // V2 OOB: create connection with protocol None, no handshake messages sent
-    if (isV2Invitation) {
-      const connectionRecord = await this.connectionsApi.acceptOutOfBandInvitation(outOfBandRecord, {
-        label,
-        alias,
-        protocol: DidCommHandshakeProtocol.None,
-        routing,
-        ourDid,
-      })
+    // V2 OOB: reuse or create a connection with protocol None, no handshake messages sent
+    if (outOfBandInvitation.v2Invitation) {
+      // A hung-up or v1 connection keeps its invitationDid but cannot carry the v2 pthid
+      const existingConnection = reuseConnection
+        ? (await this.connectionsApi.findByInvitationDid(outOfBandInvitation.v2Invitation.from)).find(
+            ({ didcommVersion, did, theirDid }) => didcommVersion === 'v2' && did && theirDid
+          )
+        : undefined
+      const connectionRecord = existingConnection
+        ? await this.connectionsApi.reuseForOutOfBandInvitation(outOfBandRecord, existingConnection.id)
+        : await this.connectionsApi.acceptOutOfBandInvitation(outOfBandRecord, {
+            label,
+            alias,
+            protocol: DidCommHandshakeProtocol.None,
+            routing,
+            ourDid,
+          })
       await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
 
       // Dispatch any messages carried as attachments on the v2 invitation. Mirrors the v1
-      // `requests~attach` flow: each attached protocol message is emitted on the freshly
-      // established connection so the matching protocol handler can pick it up.
+      // `requests~attach` flow: each attached protocol message is emitted on the connection
+      // so the matching protocol handler can pick it up.
       if (messages && messages.length > 0) {
         await this.emitWithConnection(outOfBandRecord, connectionRecord, messages)
       }

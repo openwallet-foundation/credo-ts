@@ -44,6 +44,11 @@ interface CustomDidCommOutOfBandRecordTags extends TagsBase {
    * when the inviter receives the first message (to=[this DID]).
    */
   recipientDid?: string
+
+  /**
+   * For v2 OOB (Sender role): true when `recipientDid` was supplied as `ourDid` and can be shared by several invitations.
+   */
+  sharedRecipientDid?: boolean
 }
 
 export interface DidCommOutOfBandRecordProps {

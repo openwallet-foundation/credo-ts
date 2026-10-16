@@ -1,5 +1,6 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import { CredoError, DidsApi, EventEmitter, injectable, Kms, parseDid } from '@credo-ts/core'
+import type { DidCommMessage } from '../../DidCommMessage'
 import type { DidCommInboundMessageContext } from '../../models'
 import { DidCommDocumentService } from '../../services'
 import type { DidCommConnectionRecord, DidCommHandshakeProtocol } from '../connections'
@@ -126,6 +127,35 @@ export class DidCommOutOfBandService {
     return reuseAcceptedMessage
   }
 
+  /**
+   * DIDComm v2 has no handshake-reuse message: a message on an existing connection reuses it for the invitation its pthid names.
+   */
+  public async processHandshakeReuseV2(
+    agentContext: AgentContext,
+    connectionRecord: DidCommConnectionRecord,
+    message: DidCommMessage,
+    recipientDid: string
+  ): Promise<void> {
+    const parentThreadId = message.thread?.parentThreadId
+    if (!parentThreadId || !connectionRecord.did) return
+
+    const outOfBandRecord = await this.findCreatedByRecipientDid(
+      agentContext,
+      [recipientDid, connectionRecord.did, ...connectionRecord.previousDids],
+      parentThreadId
+    )
+    // Also reached by the first message of a connection opened through a reusable invitation, which is no reuse
+    if (!outOfBandRecord || outOfBandRecord.id === connectionRecord.outOfBandId) return
+
+    if (!outOfBandRecord.reusable) {
+      await this.updateState(agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
+    }
+    this.eventEmitter.emit<DidCommHandshakeReusedEvent>(agentContext, {
+      type: DidCommOutOfBandEventTypes.HandshakeReused,
+      payload: { reuseThreadId: message.id, connectionRecord, outOfBandRecord },
+    })
+  }
+
   public async processHandshakeReuseAccepted(
     messageContext: DidCommInboundMessageContext<DidCommHandshakeReuseAcceptedMessage>
   ) {
@@ -250,16 +280,18 @@ export class DidCommOutOfBandService {
   /**
    * Find v2 OOB record (Sender role) awaiting a response by recipient DID. Used when inviter receives first
    * DIDComm v2 message (to=[our DID]). Duplicates can exist when invitations reuse a public
-   * ourDid; prefer the most recent reusable record.
+   * ourDid; prefer the most recent reusable record, unless `invitationId` names the one to take.
    */
   public async findCreatedByRecipientDid(
     agentContext: AgentContext,
-    recipientDids: string[]
+    recipientDids: string[],
+    invitationId?: string
   ): Promise<DidCommOutOfBandRecord | null> {
     const records = await this.outOfBandRepository.findByQuery(agentContext, {
       $or: recipientDids.map((recipientDid) => ({ recipientDid })),
       role: DidCommOutOfBandRole.Sender,
       state: DidCommOutOfBandState.AwaitResponse,
+      invitationId,
     })
     if (records.length === 0) return null
     const byNewest = [...records].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
