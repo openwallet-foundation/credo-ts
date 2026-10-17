@@ -1326,6 +1326,7 @@ export class OpenId4VcIssuerService {
     const openId4VcIssuer = new OpenId4VcIssuerRecord({
       issuerId: options.issuerId ?? utils.uuid(),
       display: options.display,
+      issuerInfo: options.issuerInfo,
       dpopSigningAlgValuesSupported: options.dpopSigningAlgValuesSupported,
       clientAttestationSigningAlgValuesSupported: options.clientAttestationSigningAlgValuesSupported,
       clientAttestationPopSigningAlgValuesSupported: options.clientAttestationPopSigningAlgValuesSupported,
@@ -1434,6 +1435,7 @@ export class OpenId4VcIssuerService {
       credential_configurations_supported: issuerRecord.credentialConfigurationsSupported ?? {},
       authorization_servers: authorizationServers,
       display: issuerRecord.display,
+      issuer_info: issuerRecord.issuerInfo,
       nonce_endpoint: joinUriParts(issuerUrl, [config.nonceEndpointPath]),
       batch_credential_issuance: issuerRecord.batchCredentialIssuance
         ? {

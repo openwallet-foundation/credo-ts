@@ -5,6 +5,7 @@ import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
+  OpenId4VciIssuerInfo,
   OpenId4VcJwtIssuerEncoded,
 } from '../../shared'
 import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
@@ -56,6 +57,9 @@ export type OpenId4VcIssuerRecordProps = {
   clientAttestationPopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
+
+  // Issuer attestations published as `issuer_info` in the credential issuer metadata.
+  issuerInfo?: OpenId4VciIssuerInfo
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
 
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
@@ -128,6 +132,8 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
     return value
   })
   public display?: OpenId4VciCredentialIssuerMetadataDisplay[]
+
+  public issuerInfo?: OpenId4VciIssuerInfo
 
   // Adds the type field if missing (for older records)
   @Transform(({ type, value }) => {
@@ -202,6 +208,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.clientAttestationSigningAlgValuesSupported = props.clientAttestationSigningAlgValuesSupported
       this.clientAttestationPopSigningAlgValuesSupported = props.clientAttestationPopSigningAlgValuesSupported
       this.display = props.display
+      this.issuerInfo = props.issuerInfo
       this.authorizationServerConfigs = props.authorizationServerConfigs
       this.batchCredentialIssuance = props.batchCredentialIssuance
       this.signedMetadata = props.signedMetadata

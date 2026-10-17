@@ -42,6 +42,7 @@ import { OpenId4VcModule } from '../../OpenId4VcModule'
 import type {
   OpenId4VciCredentialConfigurationSupportedWithFormats,
   OpenId4VciCredentialRequest,
+  OpenId4VciIssuerInfo,
   OpenId4VciMetadata,
 } from '../../shared'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
@@ -1168,6 +1169,57 @@ describe('OpenId4VcIssuer', () => {
   it('throws an error when deleting a non-existent issuance session', async () => {
     await expect(issuer.openid4vc.issuer.deleteIssuanceSessionById('non-existent-id')).rejects.toThrow(
       RecordNotFoundError
+    )
+  })
+
+  it('creates, updates and removes issuer info in stored and signed metadata', async () => {
+    const issuerInfo: OpenId4VciIssuerInfo = [
+      { format: 'registration_cert', data: 'registration.certificate.jwt' },
+      { format: 'custom', data: { issuer: 'Example Issuer' } },
+    ]
+    const created = await issuer.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: { openBadgeCredential },
+      issuerInfo,
+      metadataSigner: { method: 'did', didUrl: issuerVerificationMethod.id },
+    })
+
+    const stored = await issuer.openid4vc.issuer.getIssuerByIssuerId(created.issuerId)
+    expect(stored.issuerInfo).toEqual(issuerInfo)
+    expect((await issuer.openid4vc.issuer.getIssuerMetadata(created.issuerId)).credentialIssuer.issuer_info).toEqual(
+      issuerInfo
+    )
+    expect(Jwt.fromSerializedJwt(stored.signedMetadata?.jwt as string).payload.additionalClaims.issuer_info).toEqual(
+      issuerInfo
+    )
+
+    const updatedInfo: OpenId4VciIssuerInfo = [{ format: 'registration_cert', data: 'updated.certificate.jwt' }]
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: created.issuerId,
+      credentialConfigurationsSupported: { openBadgeCredential },
+      issuerInfo: updatedInfo,
+    })
+
+    const updated = await issuer.openid4vc.issuer.getIssuerByIssuerId(created.issuerId)
+    expect(updated.issuerInfo).toEqual(updatedInfo)
+    expect((await issuer.openid4vc.issuer.getIssuerMetadata(created.issuerId)).credentialIssuer.issuer_info).toEqual(
+      updatedInfo
+    )
+    expect(Jwt.fromSerializedJwt(updated.signedMetadata?.jwt as string).payload.additionalClaims.issuer_info).toEqual(
+      updatedInfo
+    )
+
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: created.issuerId,
+      credentialConfigurationsSupported: { openBadgeCredential },
+    })
+
+    const removed = await issuer.openid4vc.issuer.getIssuerByIssuerId(created.issuerId)
+    expect(removed.issuerInfo).toBeUndefined()
+    expect(
+      (await issuer.openid4vc.issuer.getIssuerMetadata(created.issuerId)).credentialIssuer.issuer_info
+    ).toBeUndefined()
+    expect(Jwt.fromSerializedJwt(removed.signedMetadata?.jwt as string).payload.additionalClaims).not.toHaveProperty(
+      'issuer_info'
     )
   })
 
