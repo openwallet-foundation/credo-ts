@@ -32,11 +32,16 @@ To quickly set up all services needed to run tests (Postgres, Hyperledger Indy L
 docker compose up -d
 ```
 
-If you're running on an ARM based machine (such as Apple Silicon), you can use the `docker-compose.arm.yml` file instead:
+If you're running on an ARM based machine (such as Apple Silicon), use the `docker-compose.arm.yml` file instead:
 
 ```sh
-docker compose -f docker-compose.arm.yml up -d
+docker compose -f docker-compose.arm.yml up --build -d --wait --wait-timeout 600
 ```
+
+This builds a local cheqd image with the official Linux ARM64 `cheqd-noded` release archive.
+The upstream 4.2.1 ARM64 image contains an AMD64 node binary; the build verifies the archive
+checksum before replacing that binary. Update the pinned archive, checksum, and base image
+together when upgrading cheqd.
 
 ### Run all tests
 
