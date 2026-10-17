@@ -1,11 +1,11 @@
 import type { TagsBase } from '@credo-ts/core'
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
-import { Type } from 'class-transformer'
+import { Transform, Type } from 'class-transformer'
 import { getThreadIdFromPlainTextMessage } from '../../../util/thread'
 import type { DidCommOutOfBandRole } from '../domain/DidCommOutOfBandRole'
 import type { DidCommOutOfBandState } from '../domain/DidCommOutOfBandState'
-import { DidCommOutOfBandInvitation } from '../messages'
-import type { DidCommOutOfBandRecordMetadata } from './outOfBandRecordMetadataTypes'
+import { DidCommOutOfBandInvitation, DidCommOutOfBandInvitationV2 } from '../messages'
+import { type DidCommOutOfBandRecordMetadata, DidCommOutOfBandRecordMetadataKeys } from './outOfBandRecordMetadataTypes'
 
 export interface DidCommOutOfBandInlineServiceKey {
   recipientKeyFingerprint: string
@@ -38,6 +38,17 @@ interface CustomDidCommOutOfBandRecordTags extends TagsBase {
    * This will always be a key from our recipient
    */
   recipientRoutingKeyFingerprint?: string
+
+  /**
+   * For v2 OOB (Sender role): the inviter's DID (invitation.from). Used to find OOB record
+   * when the inviter receives the first message (to=[this DID]).
+   */
+  recipientDid?: string
+
+  /**
+   * For v2 OOB (Sender role): true when `recipientDid` was supplied as `ourDid` and can be shared by several invitations.
+   */
+  sharedRecipientDid?: boolean
 }
 
 export interface DidCommOutOfBandRecordProps {
@@ -67,6 +78,14 @@ export class DidCommOutOfBandRecord extends BaseRecord<
   DidCommOutOfBandRecordMetadata
 > {
   @Type(() => DidCommOutOfBandInvitation)
+  @Transform(
+    ({ value, obj }) => {
+      const v2InvitationJson = obj.metadata?.[DidCommOutOfBandRecordMetadataKeys.V2Invitation]
+      if (v2InvitationJson) value.v2Invitation = DidCommOutOfBandInvitationV2.fromJson(v2InvitationJson)
+      return value
+    },
+    { toClassOnly: true }
+  )
   public outOfBandInvitation!: DidCommOutOfBandInvitation
   public role!: DidCommOutOfBandRole
   public state!: DidCommOutOfBandState
@@ -113,6 +132,7 @@ export class DidCommOutOfBandRecord extends BaseRecord<
       invitationRequestsThreadIds: this.outOfBandInvitation
         .getRequests()
         ?.map((r) => getThreadIdFromPlainTextMessage(r)),
+      recipientDid: this._tags?.recipientDid,
     }
   }
 
