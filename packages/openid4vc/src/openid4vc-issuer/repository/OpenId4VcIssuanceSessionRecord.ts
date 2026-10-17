@@ -28,6 +28,16 @@ export interface OpenId4VcIssuanceSessionWalletAttestation {
    * Can be set to false to override the global config
    */
   required: boolean
+
+  /**
+   * Client id from the verified wallet attestation.
+   */
+  clientId?: string
+
+  /**
+   * JWK thumbprint of the client instance key bound to this issuance session.
+   */
+  confirmationJwkThumbprint?: string
 }
 
 export interface OpenId4VcIssuanceSessionAuthorization {
