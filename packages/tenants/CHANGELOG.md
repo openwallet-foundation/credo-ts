@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+
+### Patch Changes
+
+- 46700e9: Add a status (active/inactive) to tenant records. Sessions can not be opened for inactive tenants, so inbound DIDComm messages and endpoints such as OpenID4VC result in an error for the tenant. Use `tenants.updateTenantStatus` to change the status, and pass `allowInactive: true` to `getTenantAgent`/`withTenantAgent` to deliberately open a session for an inactive tenant. Existing tenant records are considered active.
+- 526a989: feat: support node 26
+- Updated dependencies [0b9531a]
+- Updated dependencies [798c401]
+- Updated dependencies [8abea64]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [14e84ce]
+- Updated dependencies [fac9757]
+- Updated dependencies [3d4b386]
+- Updated dependencies [dbde0f1]
+- Updated dependencies [526a989]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [4dd128a]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [dde35e0]
+- Updated dependencies [716cb84]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [526a989]
+- Updated dependencies [2f20e2e]
+- Updated dependencies [b1090de]
+- Updated dependencies [78d5cfb]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [dbafd1e]
+  - @credo-ts/didcomm@0.8.0
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes
