@@ -24,13 +24,16 @@ import {
   type AgentContext,
   CredoError,
   DidRepository,
+  getPublicJwkFromVerificationMethod,
   JsonTransformer,
+  Kms,
   keyDidEd25519,
   MultiBaseEncoder,
   MultiHashEncoder,
   type Proof,
   parseDid,
   TypedArrayEncoder,
+  type VerificationMethod,
   W3cDataIntegrityApi,
   type W3cDataIntegritySingleProofSecuredDocument,
   type W3cDataIntegrityUnsecuredDocument,
@@ -169,6 +172,11 @@ function isRevocationStatusListShape(value: unknown): value is RevocationStatusL
  * authorized for the `assertionMethod` verification relationship.
  */
 const ATTESTED_RESOURCE_PROOF_PURPOSE = 'assertionMethod' as const
+
+/**
+ * The only cryptosuite the attested resources specification allows, which signs with Ed25519 keys.
+ */
+const ATTESTED_RESOURCE_CRYPTOSUITE = 'eddsa-jcs-2022' as const
 
 export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   public methodName = 'webvh'
@@ -724,9 +732,19 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
           verificationMethod: attestedResource.proof?.verificationMethod,
           errors: verificationResult.errors,
         })
+        return false
       }
 
-      return verificationResult.verified
+      // Other cryptosuites can be registered with the agent, but are not allowed for attested resources
+      if (attestedResource.proof.cryptosuite !== ATTESTED_RESOURCE_CRYPTOSUITE) {
+        agentContext.config.logger.error('Proof of did:webvh resource uses an unsupported cryptosuite', {
+          resourceId: attestedResource.id,
+          cryptosuite: attestedResource.proof.cryptosuite,
+        })
+        return false
+      }
+
+      return true
     } catch (error) {
       agentContext.config.logger.error('Error during proof validation of did:webvh resource', {
         error: error instanceof Error ? error.message : String(error),
@@ -745,7 +763,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     try {
       const creationResult = await dataIntegrity.createProofOrThrow({
         unsecuredDocument,
-        cryptosuite: 'eddsa-jcs-2022',
+        cryptosuite: ATTESTED_RESOURCE_CRYPTOSUITE,
         verificationMethod,
         proofPurpose: ATTESTED_RESOURCE_PROOF_PURPOSE,
       })
@@ -821,27 +839,45 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     // verificationMethod must resolve on its own, so we always return an absolute did url.
     const toAbsoluteId = (id: string) => (id.startsWith('#') ? `${didDocument.id}${id}` : id)
 
-    if (explicitVerificationMethod) {
+    // Multikey and JsonWebKey2020 can hold any key type, so check the key itself: eddsa-jcs-2022
+    // can only sign with Ed25519.
+    const isEd25519 = (method: VerificationMethod) => {
       try {
-        return toAbsoluteId(
-          didDocument.dereferenceKey(explicitVerificationMethod, [ATTESTED_RESOURCE_PROOF_PURPOSE]).id
-        )
+        return getPublicJwkFromVerificationMethod(method).is(Kms.Ed25519PublicJwk)
+      } catch {
+        return false
+      }
+    }
+
+    if (explicitVerificationMethod) {
+      let method: VerificationMethod
+      try {
+        method = didDocument.dereferenceKey(explicitVerificationMethod, [ATTESTED_RESOURCE_PROOF_PURPOSE])
       } catch (error) {
         throw new CredoError(
           `Verification method '${explicitVerificationMethod}' is not authorized for '${ATTESTED_RESOURCE_PROOF_PURPOSE}' in the did document of issuer ${issuerId}`,
           { cause: error }
         )
       }
+
+      if (!isEd25519(method)) {
+        throw new CredoError(
+          `Verification method '${explicitVerificationMethod}' is not an Ed25519 key, which '${ATTESTED_RESOURCE_CRYPTOSUITE}' requires`
+        )
+      }
+
+      return toAbsoluteId(method.id)
     }
 
     const authorizedMethods = didDocument
       .findVerificationMethodsByTypeAndPurpose(keyDidEd25519.supportedVerificationMethodTypes, ['assertionMethod'])
+      .filter(isEd25519)
       .sort((a, b) => Number(b.type === 'Multikey') - Number(a.type === 'Multikey'))
     const authorizedIds = authorizedMethods.map((method) => toAbsoluteId(method.id))
 
     if (authorizedIds.length === 0) {
       throw new CredoError(
-        `No verification method authorized for '${ATTESTED_RESOURCE_PROOF_PURPOSE}' found in the did document of issuer ${issuerId}`
+        `No Ed25519 verification method authorized for '${ATTESTED_RESOURCE_PROOF_PURPOSE}' found in the did document of issuer ${issuerId}`
       )
     }
 
