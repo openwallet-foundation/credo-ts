@@ -71,7 +71,7 @@
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
     "dcql": "^3.0.1",
-    "did-resolver": "^4.1.0",
+    "did-resolver": "^6.0.0",
     "ec-compression": "^2.0.0",
     "json-canonicalize": "^3.0.0",
     "lru_map": "^0.4.1",
@@ -81,7 +81,7 @@
     "tsyringe": "catalog:",
     "uuid": "^14.0.2",
     "varint": "^6.0.0",
-    "web-did-resolver": "^2.0.32",
+    "web-did-resolver": "^3.2.0",
     "webcrypto-core": "^1.8.1",
     "zod": "catalog:"
   },

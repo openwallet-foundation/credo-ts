@@ -146,6 +146,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
       await pickupProtocol.processStatusRequest(messageContext)
       expect(queueTransportRepository.getAvailableMessageCount).toHaveBeenCalledWith(agentContext, {
         connectionId: mockConnection.id,
+        recipientDid: verkeyToDidKey('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
       })
     })
   })

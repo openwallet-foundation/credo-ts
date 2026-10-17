@@ -29,7 +29,8 @@ export const cheqdResourceMetadataRegex = new RegExp(
   `^did:cheqd:${NETWORK}:${IDENTIFIER}/resources/${IDENTIFIER}/metadata${QUERY}${FRAGMENT}`
 )
 
-export type ParsedCheqdDid = ParsedDid & { network: `${CheqdNetwork}` }
+// did-resolver 6 removed `params` from ParsedDID; cheqd keeps its DID URL query parameters here
+export type ParsedCheqdDid = ParsedDid & { network: `${CheqdNetwork}`; params?: Record<string, string> }
 export function parseCheqdDid(didUrl: string): ParsedCheqdDid | null {
   if (didUrl === '' || !didUrl) return null
   const sections = didUrl.match(cheqdSdkAnonCredsRegistryIdentifierRegex)

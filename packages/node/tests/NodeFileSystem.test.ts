@@ -1,5 +1,5 @@
 import { TypedArrayEncoder } from '@credo-ts/core'
-import nock, { cleanAll, enableNetConnect } from 'nock'
+import nock from 'nock'
 import path from 'path'
 
 import { NodeFileSystem } from '../src/NodeFileSystem'
@@ -9,8 +9,8 @@ describe('@credo-ts/file-system-node', () => {
     const fileSystem = new NodeFileSystem()
 
     afterAll(() => {
-      cleanAll()
-      enableNetConnect()
+      nock.cleanAll()
+      nock.enableNetConnect()
     })
 
     describe('exists()', () => {
