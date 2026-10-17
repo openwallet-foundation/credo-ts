@@ -5,6 +5,7 @@ import type {
   OpenId4VciBatchCredentialIssuanceOptions,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
+  OpenId4VciIssuerInfo,
 } from '@credo-ts/openid4vc'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
@@ -32,6 +33,7 @@ export const openid4vcIssuer = sqliteTable(
       .$type<OpenId4VciCredentialConfigurationsSupportedWithFormats>()
       .notNull(),
     display: text({ mode: 'json' }).$type<OpenId4VciCredentialIssuerMetadataDisplay[]>(),
+    issuerInfo: text('issuer_info', { mode: 'json' }).$type<OpenId4VciIssuerInfo>(),
     authorizationServerConfigs: text('authorization_server_configs', { mode: 'json' }).$type<
       OpenId4VciAuthorizationServerConfig[]
     >(),

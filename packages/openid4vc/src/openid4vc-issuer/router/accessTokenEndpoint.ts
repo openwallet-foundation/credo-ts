@@ -140,6 +140,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
             required: walletAttestationRequired,
+            expectedClientId: issuanceSession.walletAttestation?.clientId ?? issuanceSession.clientId,
+            expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
 
             // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
             // with an `OAuth-Client-Attestation-PoP` header has its DPoP proof verified per RFC 9449
@@ -180,7 +182,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
 
             // Ensure it matches the previously provided client id
             // FIXME: we don't verify that the attestation is issued by the same party
-            expectedClientId: issuanceSession.clientId,
+            expectedClientId: issuanceSession.walletAttestation?.clientId ?? issuanceSession.clientId,
+            expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
 
             // NOTE: we don't look at the global config here. As we already checked and
             // set required to true previously if client attestations were provided or required.
@@ -223,6 +226,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
             required: walletAttestationRequired,
+            expectedClientId: issuanceSession.walletAttestation?.clientId ?? issuanceSession.clientId,
+            expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
 
             // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
             // with an `OAuth-Client-Attestation-PoP` header has its DPoP proof verified per RFC 9449
@@ -289,6 +294,12 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
               error_description: `Invalid 'challenge' claim in client attestation pop jwt.`,
             })
           }
+        }
+
+        issuanceSession.walletAttestation = {
+          required: true,
+          clientId: verificationResult.clientAttestation.clientAttestation.payload.sub,
+          confirmationJwkThumbprint: verificationResult.clientAttestation.clientAttestation.confirmationJwkThumbprint,
         }
       }
 
