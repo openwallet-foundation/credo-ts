@@ -41,17 +41,17 @@ catalog:
   '@types/express': ^5.0.6
   '@types/node': ^22.19.0
   '@types/ws': ^8.18.2
-  '@vitest/coverage-v8': ^4.1.11
+  '@vitest/coverage-v8': ^5.0.5
   class-transformer: 0.5.1
   class-validator: ^0.14.3
   express: ^5.2.1
   hpke: ^1.1.4
-  nock: ^14.0.17
+  nock: ^15.0.2
   reflect-metadata: 0.2.2
   rxjs: ^7.8.2
   tsyringe: ^4.10.0
   typescript: ~5.9.3
-  vitest: ^4.1.11
+  vitest: ^5.0.5
   ws: ^8.22.0
   zod: ^4.6.5
 
@@ -67,3 +67,4 @@ minimumReleaseAgeExclude:
   - '@sd-jwt/core@0.22.0 || 0.23.0'
   - '@sd-jwt/sd-jwt-vc@0.22.0 || 0.23.0'
   - '@peculiar/x509@2.2.0'
+  - nock@15.0.2
