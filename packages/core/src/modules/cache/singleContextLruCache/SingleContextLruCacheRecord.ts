@@ -29,7 +29,7 @@ const singleContextLruCacheRecordEncodingSchema = createRecordEncodingSchema({
 })
 
 export class SingleContextLruCacheRecord extends BaseRecord {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return singleContextLruCacheRecordEncodingSchema
   }
 

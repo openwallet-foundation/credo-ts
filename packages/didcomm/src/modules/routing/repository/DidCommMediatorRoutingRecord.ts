@@ -41,7 +41,7 @@ const didCommMediatorRoutingRecordEncodingSchema = createRecordEncodingSchema({
 })
 
 export class DidCommMediatorRoutingRecord extends BaseRecord<DefaultDidCommMediatorRoutingRecordTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return didCommMediatorRoutingRecordEncodingSchema
   }
 

@@ -96,7 +96,7 @@ const mdocVerificationSessionRecordEncodingSchema = createRecordEncodingSchema({
 })
 
 export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerificationSessionRecordTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return mdocVerificationSessionRecordEncodingSchema
   }
 

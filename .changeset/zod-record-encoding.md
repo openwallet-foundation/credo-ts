@@ -1,12 +1,12 @@
 ---
-'@credo-ts/core': minor
-'@credo-ts/didcomm': minor
-'@credo-ts/anoncreds': minor
-'@credo-ts/openid4vc': minor
-'@credo-ts/tenants': minor
-'@credo-ts/action-menu': minor
-'@credo-ts/question-answer': minor
-'@credo-ts/drpc': minor
+'@credo-ts/core': patch
+'@credo-ts/didcomm': patch
+'@credo-ts/anoncreds': patch
+'@credo-ts/openid4vc': patch
+'@credo-ts/tenants': patch
+'@credo-ts/action-menu': patch
+'@credo-ts/question-answer': patch
+'@credo-ts/drpc': patch
 '@credo-ts/drizzle-storage': patch
 ---
 
@@ -32,4 +32,7 @@ export class MyRecord extends BaseRecord {
 }
 ```
 
-Records that fail to decode now throw a `ZodValidationError` instead of a `ClassValidationError`.
+Two things behave differently:
+
+- Records that fail to decode now throw a `ZodValidationError` instead of a `ClassValidationError`. Both extend `CredoError`.
+- A subclass of a Credo record inherits the record's `encodingSchema`. Properties the subclass adds with class-transformer decorators are still stored, but no longer transformed (for example a `Date` is decoded as a string). Define an `encodingSchema` on the subclass to transform them.

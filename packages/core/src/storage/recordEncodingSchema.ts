@@ -45,7 +45,7 @@ export interface CreateRecordEncodingSchemaOptions {
  * })
  *
  * class GenericRecord extends BaseRecord {
- *   public static get encodingSchema() {
+ *   public static get encodingSchema(): z.ZodType {
  *     return genericRecordEncodingSchema
  *   }
  * }

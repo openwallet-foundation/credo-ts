@@ -33,7 +33,7 @@ const drpcRecordEncodingSchema = createRecordEncodingSchema({
 })
 
 export class DrpcRecord extends BaseRecord<DefaultDrpcMessageTags, CustomDrpcMessageTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return drpcRecordEncodingSchema
   }
 

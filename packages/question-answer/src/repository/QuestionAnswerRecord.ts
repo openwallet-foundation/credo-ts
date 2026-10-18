@@ -44,7 +44,7 @@ const questionAnswerRecordEncodingSchema = createRecordEncodingSchema({
 })
 
 export class QuestionAnswerRecord extends BaseRecord<DefaultQuestionAnswerTags, CustomQuestionAnswerTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return questionAnswerRecordEncodingSchema
   }
 

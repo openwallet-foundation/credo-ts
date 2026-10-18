@@ -67,7 +67,7 @@ export class DidCommCredentialExchangeRecord extends BaseRecord<
   DefaultDidCommCredentialExchangeTags,
   CustomDidCommCredentialExchangeTags
 > {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return didCommCredentialExchangeRecordEncodingSchema
   }
 

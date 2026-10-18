@@ -32,7 +32,7 @@ const tenantRecordEncodingSchema = createRecordEncodingSchema({
 })
 
 export class TenantRecord extends BaseRecord<DefaultTenantRecordTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return tenantRecordEncodingSchema
   }
 

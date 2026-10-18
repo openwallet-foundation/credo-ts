@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import type { TagsBase } from '../../../storage/BaseRecord'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -25,7 +26,7 @@ const genericRecordEncodingSchema = createRecordEncodingSchema({
 })
 
 export class GenericRecord extends BaseRecord<GenericRecordTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return genericRecordEncodingSchema
   }
 

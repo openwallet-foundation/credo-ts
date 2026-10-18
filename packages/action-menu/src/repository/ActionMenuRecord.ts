@@ -51,7 +51,7 @@ export class ActionMenuRecord
   extends BaseRecord<DefaultActionMenuTags, CustomActionMenuTags>
   implements ActionMenuRecordProps
 {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return actionMenuRecordEncodingSchema
   }
 

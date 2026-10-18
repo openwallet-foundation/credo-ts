@@ -14,7 +14,7 @@ const storageVersionRecordEncodingSchema = createRecordEncodingSchema({
 })
 
 export class StorageVersionRecord extends BaseRecord {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return storageVersionRecordEncodingSchema
   }
 

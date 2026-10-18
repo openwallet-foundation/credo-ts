@@ -56,7 +56,7 @@ const w3cV2CredentialRecordEncodingSchema = createRecordEncodingSchema(
 )
 
 export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return w3cV2CredentialRecordEncodingSchema
   }
 

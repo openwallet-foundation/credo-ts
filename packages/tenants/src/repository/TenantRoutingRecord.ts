@@ -25,7 +25,7 @@ const tenantRoutingRecordEncodingSchema = createRecordEncodingSchema({
 })
 
 export class TenantRoutingRecord extends BaseRecord<DefaultTenantRoutingRecordTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return tenantRoutingRecordEncodingSchema
   }
 

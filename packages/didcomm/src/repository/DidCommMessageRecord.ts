@@ -42,7 +42,7 @@ const didCommMessageRecordEncodingSchema = createRecordEncodingSchema({
 })
 
 export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return didCommMessageRecordEncodingSchema
   }
 

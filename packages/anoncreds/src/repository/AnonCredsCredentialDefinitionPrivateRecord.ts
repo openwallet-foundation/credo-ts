@@ -23,7 +23,7 @@ export class AnonCredsCredentialDefinitionPrivateRecord extends BaseRecord<
   DefaultAnonCredsCredentialDefinitionPrivateTags,
   TagsBase
 > {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return anonCredsCredentialDefinitionPrivateRecordEncodingSchema
   }
 

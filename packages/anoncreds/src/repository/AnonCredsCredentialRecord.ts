@@ -50,7 +50,7 @@ export class AnonCredsCredentialRecord extends BaseRecord<
   DefaultAnonCredsCredentialTags,
   CustomAnonCredsCredentialTags
 > {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return anonCredsCredentialRecordEncodingSchema
   }
 

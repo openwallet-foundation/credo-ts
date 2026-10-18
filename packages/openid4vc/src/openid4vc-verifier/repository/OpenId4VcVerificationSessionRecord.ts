@@ -74,7 +74,7 @@ const openId4VcVerificationSessionRecordEncodingSchema = createRecordEncodingSch
 })
 
 export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId4VcVerificationSessionRecordTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return openId4VcVerificationSessionRecordEncodingSchema
   }
 

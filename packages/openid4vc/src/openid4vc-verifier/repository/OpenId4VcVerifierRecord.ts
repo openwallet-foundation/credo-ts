@@ -30,7 +30,7 @@ const openId4VcVerifierRecordEncodingSchema = createRecordEncodingSchema({
 })
 
 export class OpenId4VcVerifierRecord extends BaseRecord<DefaultOpenId4VcVerifierRecordTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return openId4VcVerifierRecordEncodingSchema
   }
 

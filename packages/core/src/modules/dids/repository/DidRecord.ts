@@ -57,7 +57,7 @@ const didRecordEncodingSchema = createRecordEncodingSchema({
 })
 
 export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidRecordMetadata> implements DidRecordProps {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return didRecordEncodingSchema
   }
 

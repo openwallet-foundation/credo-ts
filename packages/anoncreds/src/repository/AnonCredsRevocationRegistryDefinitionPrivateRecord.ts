@@ -34,7 +34,7 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseReco
   DefaultAnonCredsRevocationRegistryPrivateTags,
   TagsBase
 > {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return anonCredsRevocationRegistryDefinitionPrivateRecordEncodingSchema
   }
 

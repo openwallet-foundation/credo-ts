@@ -41,7 +41,7 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
   TagsBase,
   AnonCredsCredentialDefinitionRecordMetadata
 > {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return anonCredsCredentialDefinitionRecordEncodingSchema
   }
 

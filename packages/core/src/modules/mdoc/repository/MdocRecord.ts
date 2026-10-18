@@ -66,7 +66,7 @@ const mdocRecordEncodingSchema = createRecordEncodingSchema(
 )
 
 export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return mdocRecordEncodingSchema
   }
 

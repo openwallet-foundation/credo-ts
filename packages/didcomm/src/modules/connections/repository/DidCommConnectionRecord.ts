@@ -75,7 +75,7 @@ export class DidCommConnectionRecord extends BaseRecord<
   CustomDidCommConnectionTags,
   DidCommConnectionMetadata
 > {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return didCommConnectionRecordEncodingSchema
   }
 

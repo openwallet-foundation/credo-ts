@@ -95,7 +95,7 @@ const sdJwtVcRecordEncodingSchema = createRecordEncodingSchema(
 )
 
 export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return sdJwtVcRecordEncodingSchema
   }
 

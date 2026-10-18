@@ -25,7 +25,7 @@ const zodTestRecordEncodingSchema = createRecordEncodingSchema(
 )
 
 class ZodTestRecord extends BaseRecord<{ foo: string }> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return zodTestRecordEncodingSchema
   }
 

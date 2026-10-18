@@ -333,7 +333,7 @@ const openId4VcIssuanceSessionRecordEncodingSchema = createRecordEncodingSchema(
 })
 
 export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcIssuanceSessionRecordTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return openId4VcIssuanceSessionRecordEncodingSchema
   }
 

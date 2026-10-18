@@ -153,7 +153,7 @@ const openId4VcIssuerRecordEncodingSchema = createRecordEncodingSchema(
 )
 
 export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerRecordTags> {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return openId4VcIssuerRecordEncodingSchema
   }
 

@@ -85,7 +85,7 @@ export class DidCommOutOfBandRecord extends BaseRecord<
   CustomDidCommOutOfBandRecordTags,
   DidCommOutOfBandRecordMetadata
 > {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return didCommOutOfBandRecordEncodingSchema
   }
 

@@ -47,7 +47,7 @@ export class DidCommMediationRecord
   extends BaseRecord<DefaultDidCommMediationTags, CustomDidCommMediationTags>
   implements DidCommMediationRecordProps
 {
-  public static get encodingSchema() {
+  public static get encodingSchema(): z.ZodType {
     return didCommMediationRecordEncodingSchema
   }
 
