@@ -1,15 +1,9 @@
-import { JsonTransformer, type TagsBase } from '@credo-ts/core'
 import { DidCommMessageRecord } from '@credo-ts/didcomm'
-import {
-  BaseDrizzleRecordAdapter,
-  type DrizzleAdapterRecordValues,
-  type DrizzleAdapterValues,
-} from '../../adapter/BaseDrizzleRecordAdapter'
+import { BaseDrizzleRecordAdapter } from '../../adapter/BaseDrizzleRecordAdapter'
 import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
-type DrizzleDidcommMessageAdapterValues = DrizzleAdapterRecordValues<(typeof sqlite)['didcommMessage']>
 export class DrizzleDidcommMessageRecordAdapter extends BaseDrizzleRecordAdapter<
   DidCommMessageRecord,
   typeof postgres.didcommMessage,
@@ -25,49 +19,4 @@ export class DrizzleDidcommMessageRecordAdapter extends BaseDrizzleRecordAdapter
     messageType: ['message', '@type'],
     messageId: ['message', '@id'],
   } as const
-
-  public getValues(record: DidCommMessageRecord): DrizzleAdapterValues<(typeof sqlite)['didcommMessage']> {
-    const {
-      role,
-      associatedRecordId,
-      messageId,
-      messageName,
-      messageType,
-      protocolMajorVersion,
-      protocolMinorVersion,
-      protocolName,
-      threadId,
-      ...customTags
-    } = record.getTags()
-
-    return {
-      message: record.message,
-      role,
-
-      associatedRecordId,
-
-      // These are accessed on message['@type'] and message['@id']
-      // messageType,
-      // messageId,
-
-      threadId,
-      protocolName,
-      messageName,
-
-      protocolMajorVersion,
-      protocolMinorVersion,
-
-      customTags,
-    }
-  }
-
-  public toRecord(values: DrizzleDidcommMessageAdapterValues): DidCommMessageRecord {
-    const { customTags, messageName, protocolMajorVersion, protocolMinorVersion, protocolName, ...remainingValues } =
-      values
-
-    const record = JsonTransformer.fromJSON(remainingValues, DidCommMessageRecord)
-    record.setTags(customTags as TagsBase)
-
-    return record
-  }
 }
