@@ -32,7 +32,8 @@
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
     "class-transformer": "catalog:",
-    "class-validator": "catalog:"
+    "class-validator": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@credo-ts/node": "workspace:*",

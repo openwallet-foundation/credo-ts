@@ -1,5 +1,6 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils, zTypedObject } from '@credo-ts/core'
+import { z } from 'zod'
 import type { OpenId4VpVerifierClientMetadata } from '../OpenId4VpVerifierServiceOptions'
 
 export type OpenId4VcVerifierRecordTags = RecordTags<OpenId4VcVerifierRecord>
@@ -23,7 +24,16 @@ export interface OpenId4VcVerifierRecordProps {
  * So we create a record per openid issuer/verifier that you want, and each tenant can create multiple issuers/verifiers which have different endpoints
  * and metadata files
  * */
+const openId4VcVerifierRecordEncodingSchema = createRecordEncodingSchema({
+  verifierId: z.string().nullish(),
+  clientMetadata: zTypedObject<OpenId4VpVerifierClientMetadata>().nullish(),
+})
+
 export class OpenId4VcVerifierRecord extends BaseRecord<DefaultOpenId4VcVerifierRecordTags> {
+  public static get encodingSchema(): z.ZodType {
+    return openId4VcVerifierRecordEncodingSchema
+  }
+
   public static readonly type = 'OpenId4VcVerifierRecord'
   public readonly type = OpenId4VcVerifierRecord.type
 

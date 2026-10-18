@@ -43,7 +43,8 @@
     "@sphereon/pex-models": "catalog:",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
-    "reflect-metadata": "catalog:"
+    "reflect-metadata": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@credo-ts/node": "workspace:*",
