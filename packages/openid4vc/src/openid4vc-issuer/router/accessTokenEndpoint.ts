@@ -181,8 +181,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             ...getClientAttestationToVerify(config, clientAttestation, issuanceSession.walletAttestation?.required),
 
             // Ensure it matches the previously provided client id
-            // FIXME: we don't verify that the attestation is issued by the same party
-            expectedClientId: issuanceSession.walletAttestation?.clientId ?? issuanceSession.clientId,
+            expectedClientId: issuanceSession.clientId,
             expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
 
             // NOTE: we don't look at the global config here. As we already checked and
