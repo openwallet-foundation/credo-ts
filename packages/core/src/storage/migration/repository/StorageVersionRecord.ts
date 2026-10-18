@@ -1,6 +1,7 @@
+import { z } from 'zod'
 import type { VersionString } from '../../../utils/version'
-
 import { BaseRecord } from '../../BaseRecord'
+import { createRecordEncodingSchema } from '../../recordEncodingSchema'
 import { CURRENT_FRAMEWORK_STORAGE_VERSION, STORAGE_VERSION_RECORD_ID } from '../updates'
 
 export interface StorageVersionRecordProps {
@@ -8,7 +9,15 @@ export interface StorageVersionRecordProps {
   storageVersion: VersionString
 }
 
+const storageVersionRecordEncodingSchema = createRecordEncodingSchema({
+  storageVersion: z.string().optional(),
+})
+
 export class StorageVersionRecord extends BaseRecord {
+  public static get encodingSchema() {
+    return storageVersionRecordEncodingSchema
+  }
+
   public storageVersion!: VersionString
 
   public static readonly type = 'StorageVersionRecord'

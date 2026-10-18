@@ -1,5 +1,6 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, createRecordEncodingSchema, utils, zTypedObject } from '@credo-ts/core'
+import { z } from 'zod'
 import type { QuestionAnswerState, ValidResponse } from '../models'
 import type { QuestionAnswerRole } from '../QuestionAnswerRole'
 
@@ -30,7 +31,23 @@ export interface QuestionAnswerStorageProps {
   response?: string
 }
 
+const questionAnswerRecordEncodingSchema = createRecordEncodingSchema({
+  questionText: z.string().optional(),
+  questionDetail: z.string().optional(),
+  validResponses: z.array(zTypedObject<ValidResponse>()).optional(),
+  connectionId: z.string().optional(),
+  role: z.string().optional(),
+  signatureRequired: z.boolean().optional(),
+  state: z.string().optional(),
+  threadId: z.string().optional(),
+  response: z.string().optional(),
+})
+
 export class QuestionAnswerRecord extends BaseRecord<DefaultQuestionAnswerTags, CustomQuestionAnswerTags> {
+  public static get encodingSchema() {
+    return questionAnswerRecordEncodingSchema
+  }
+
   public questionText!: string
   public questionDetail?: string
   public validResponses!: ValidResponse[]

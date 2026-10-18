@@ -1,8 +1,9 @@
+import { z } from 'zod'
 import { CredoError } from '../../../error'
 import { BaseRecord, type TagsBase } from '../../../storage/BaseRecord'
-import { DateTransformer, JsonTransformer } from '../../../utils'
-import type { Constructable } from '../../../utils/mixins'
+import { createRecordEncodingSchema } from '../../../storage/recordEncodingSchema'
 import { uuid } from '../../../utils/uuid'
+import { zIsoDate, zTypedObject } from '../../../utils/zod'
 import type { MdocDeviceRequestDefinition } from '../MdocOptions'
 import type { MdocVerificationSessionState } from '../MdocVerificationSessionState'
 
@@ -84,7 +85,21 @@ export interface MdocVerificationSessionRecordProps {
  * has it — for the DC API the exchange is synchronous, so the response is returned to the caller
  * rather than delivered out of band.
  */
+const mdocVerificationSessionRecordEncodingSchema = createRecordEncodingSchema({
+  state: z.string().optional(),
+  errorMessage: z.string().optional(),
+  deviceRequestBase64Url: z.string().optional(),
+  deviceRequestDefinition: zTypedObject<MdocDeviceRequestDefinition>().optional(),
+  sessionTranscript: zTypedObject<MdocVerificationSessionTranscript>().optional(),
+  sessionKeyId: z.string().optional(),
+  expiresAt: zIsoDate.optional(),
+})
+
 export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerificationSessionRecordTags> {
+  public static get encodingSchema() {
+    return mdocVerificationSessionRecordEncodingSchema
+  }
+
   public static readonly type = 'MdocVerificationSessionRecord'
   public readonly type = MdocVerificationSessionRecord.type
 
@@ -128,7 +143,6 @@ export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerific
    */
   public sessionKeyId!: string
 
-  @DateTransformer()
   public expiresAt!: Date
 
   public constructor(props: MdocVerificationSessionRecordProps) {
@@ -185,9 +199,5 @@ export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerific
       sessionTranscriptType: this.sessionTranscript.type,
       nonce: this.sessionTranscript.nonce,
     }
-  }
-
-  public clone(): this {
-    return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
   }
 }

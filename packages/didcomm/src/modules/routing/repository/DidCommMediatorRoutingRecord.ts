@@ -1,6 +1,7 @@
 import type { TagsBase } from '@credo-ts/core'
 
-import { BaseRecord, CredoError, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, createRecordEncodingSchema, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
+import { z } from 'zod'
 
 export interface DidCommMediatorRoutingRecordProps {
   id?: string
@@ -25,7 +26,25 @@ export type DefaultDidCommMediatorRoutingRecordTags = {
   routingKeyFingerprints: string[]
 }
 
+const didCommMediatorRoutingRecordEncodingSchema = createRecordEncodingSchema({
+  routingKeys: z
+    .array(
+      z.union([
+        z.string(),
+        z.object({
+          routingKeyFingerprint: z.string(),
+          kmsKeyId: z.string(),
+        }),
+      ])
+    )
+    .optional(),
+})
+
 export class DidCommMediatorRoutingRecord extends BaseRecord<DefaultDidCommMediatorRoutingRecordTags> {
+  public static get encodingSchema() {
+    return didCommMediatorRoutingRecordEncodingSchema
+  }
+
   // TODO: update routing keys here to a did, so we can just point to a did here
   // and reuse all the key management logic we already have in place for dids
 

@@ -1,6 +1,7 @@
 import type { TagsBase } from '@credo-ts/core'
 
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils } from '@credo-ts/core'
+import { z } from 'zod'
 
 export interface AnonCredsLinkSecretRecordProps {
   id?: string
@@ -17,10 +18,19 @@ export type CustomAnonCredsLinkSecretTags = TagsBase & {
   isDefault?: boolean
 }
 
+const anonCredsLinkSecretRecordEncodingSchema = createRecordEncodingSchema({
+  linkSecretId: z.string().optional(),
+  value: z.string().optional(),
+})
+
 export class AnonCredsLinkSecretRecord extends BaseRecord<
   DefaultAnonCredsLinkSecretTags,
   CustomAnonCredsLinkSecretTags
 > {
+  public static get encodingSchema() {
+    return anonCredsLinkSecretRecordEncodingSchema
+  }
+
   public static readonly type = 'AnonCredsLinkSecretRecord'
   public readonly type = AnonCredsLinkSecretRecord.type
 

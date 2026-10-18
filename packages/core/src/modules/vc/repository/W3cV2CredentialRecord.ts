@@ -1,9 +1,11 @@
+import { z } from 'zod'
 import { BaseRecord, type Tags, type TagsBase } from '../../../storage/BaseRecord'
+import { createRecordEncodingSchema } from '../../../storage/recordEncodingSchema'
 import type { NonEmptyArray } from '../../../types'
-import { asArray, JsonTransformer } from '../../../utils'
+import { asArray } from '../../../utils/array'
 import { CredentialMultiInstanceState } from '../../../utils/credentialUseTypes'
-import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
+import { zNonEmptyArray } from '../../../utils/zod'
 import { ClaimFormat, type W3cV2VerifiableCredential } from '../models'
 import { decodeW3cV2VerifiableCredential } from '../models/credential/W3cV2VerifiableCredential'
 
@@ -41,7 +43,23 @@ export type DefaultW3cV2CredentialTags = {
   multiInstanceState?: CredentialMultiInstanceState
 }
 
+const w3cV2CredentialRecordEncodingSchema = createRecordEncodingSchema(
+  {
+    credentialInstances: zNonEmptyArray(z.object({ credential: z.string() })).optional(),
+    multiInstanceState: z.string().optional(),
+  },
+  {
+    // Records stored before 0.6 have a single credential instead of credentialInstances
+    upgrade: ({ credential, ...encoded }) =>
+      credential !== undefined ? { ...encoded, credentialInstances: [{ credential }] } : encoded,
+  }
+)
+
 export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags> {
+  public static get encodingSchema() {
+    return w3cV2CredentialRecordEncodingSchema
+  }
+
   public static readonly type = 'W3cV2CredentialRecord'
   public readonly type = W3cV2CredentialRecord.type
 
@@ -69,21 +87,6 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
           ? CredentialMultiInstanceState.SingleInstanceUnused
           : CredentialMultiInstanceState.MultiInstanceFirstUnused
     }
-  }
-
-  /**
-   * Only here for class transformation. If credential is set we transform
-   * it to the new credentialInstances array format
-   */
-  private set credential(credential: W3cV2VerifiableCredential) {
-    this.credentialInstances = [
-      {
-        // NOTE: we have to type the `set` method the same as the `get`. Previously
-        // we had a transformer that would transform. Now the set is private and will
-        // only be called by class transformer, and is the raw type.
-        credential: credential as unknown as string,
-      },
-    ]
   }
 
   public get firstCredential(): W3cV2VerifiableCredential {
@@ -139,16 +142,6 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
     }
 
     return tags
-  }
-
-  /**
-   * This overwrites the default `clone` method for records, as the W3cV3CredentialRecord
-   * has issues with the default clone method due to the way the JWT and SD-JWT
-   * records are implemented. This is a temporary way to make sure the clone still works, but ideally
-   * we find an alternative.
-   */
-  public clone(): this {
-    return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
   }
 
   /**

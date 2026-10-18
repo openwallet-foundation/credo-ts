@@ -1,4 +1,15 @@
-import { BaseRecord, CredoError, DateTransformer, Jwt, type RecordTags, type TagsBase, utils } from '@credo-ts/core'
+import {
+  BaseRecord,
+  CredoError,
+  createRecordEncodingSchema,
+  Jwt,
+  type RecordTags,
+  type TagsBase,
+  utils,
+  zIsoDate,
+  zTypedObject,
+} from '@credo-ts/core'
+import { z } from 'zod'
 import type { OpenId4VpAuthorizationRequestPayload, OpenId4VpAuthorizationResponsePayload } from '../../shared/models'
 import type { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import type { OpenId4VpVersion } from '../OpenId4VpVerifierServiceOptions'
@@ -47,7 +58,26 @@ export interface OpenId4VcVerificationSessionRecordProps {
   openId4VpVersion: OpenId4VpVersion
 }
 
+const openId4VcVerificationSessionRecordEncodingSchema = createRecordEncodingSchema({
+  verifierId: z.string().optional(),
+  state: z.string().optional(),
+  errorMessage: z.string().optional(),
+  authorizationRequestJwt: z.string().optional(),
+  authorizationRequestPayload: zTypedObject<OpenId4VpAuthorizationRequestPayload>().optional(),
+  authorizationRequestUri: z.string().optional(),
+  authorizationRequestId: z.string().optional(),
+  openId4VpVersion: z.string().optional(),
+  expiresAt: zIsoDate.optional(),
+  authorizationResponsePayload: zTypedObject<OpenId4VpAuthorizationResponsePayload>().optional(),
+  presentationDuringIssuanceSession: z.string().optional(),
+  authorizationResponseRedirectUri: z.string().optional(),
+})
+
 export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId4VcVerificationSessionRecordTags> {
+  public static get encodingSchema() {
+    return openId4VcVerificationSessionRecordEncodingSchema
+  }
+
   public static readonly type = 'OpenId4VcVerificationSessionRecord'
   public readonly type = OpenId4VcVerificationSessionRecord.type
 
@@ -111,7 +141,6 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
    *
    * @since 0.6
    */
-  @DateTransformer()
   public expiresAt?: Date
 
   /**

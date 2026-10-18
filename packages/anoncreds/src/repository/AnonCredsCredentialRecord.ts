@@ -1,5 +1,6 @@
 import type { Tags } from '@credo-ts/core'
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils, zTypedObject } from '@credo-ts/core'
+import { z } from 'zod'
 import type { AnonCredsCredential } from '../models'
 
 export interface AnonCredsCredentialRecordProps {
@@ -37,10 +38,22 @@ export type CustomAnonCredsCredentialTags = {
   issuerId: string
 }
 
+const anonCredsCredentialRecordEncodingSchema = createRecordEncodingSchema({
+  credentialId: z.string().optional(),
+  credentialRevocationId: z.string().optional(),
+  linkSecretId: z.string().optional(),
+  credential: zTypedObject<AnonCredsCredential>().optional(),
+  methodName: z.string().optional(),
+})
+
 export class AnonCredsCredentialRecord extends BaseRecord<
   DefaultAnonCredsCredentialTags,
   CustomAnonCredsCredentialTags
 > {
+  public static get encodingSchema() {
+    return anonCredsCredentialRecordEncodingSchema
+  }
+
   public static readonly type = 'AnonCredsCredentialRecord'
   public readonly type = AnonCredsCredentialRecord.type
 

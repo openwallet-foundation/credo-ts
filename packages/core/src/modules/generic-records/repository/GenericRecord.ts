@@ -1,7 +1,9 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
+import { createRecordEncodingSchema } from '../../../storage/recordEncodingSchema'
 import { uuid } from '../../../utils/uuid'
+import { zTypedObject } from '../../../utils/zod'
 
 export type GenericRecordTags = TagsBase
 
@@ -18,7 +20,15 @@ export interface SaveGenericRecordOption {
   tags?: GenericRecordTags
 }
 
+const genericRecordEncodingSchema = createRecordEncodingSchema({
+  content: zTypedObject<Record<string, unknown>>().optional(),
+})
+
 export class GenericRecord extends BaseRecord<GenericRecordTags> {
+  public static get encodingSchema() {
+    return genericRecordEncodingSchema
+  }
+
   public content!: Record<string, unknown>
 
   public static readonly type = 'GenericRecord'

@@ -1,5 +1,6 @@
 import type { TagsBase } from '@credo-ts/core'
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils, zTypedObject } from '@credo-ts/core'
+import { z } from 'zod'
 import type { AnonCredsSchema } from '../models'
 import { getUnqualifiedSchemaId, isDidIndySchemaId, parseIndySchemaId } from '../utils/indyIdentifiers'
 import type { AnonCredsSchemaRecordMetadata } from './anonCredsSchemaRecordMetadataTypes'
@@ -25,11 +26,21 @@ export type DefaultAnonCredsSchemaTags = {
   unqualifiedSchemaId?: string
 }
 
+const anonCredsSchemaRecordEncodingSchema = createRecordEncodingSchema({
+  schemaId: z.string().optional(),
+  schema: zTypedObject<AnonCredsSchema>().optional(),
+  methodName: z.string().optional(),
+})
+
 export class AnonCredsSchemaRecord extends BaseRecord<
   DefaultAnonCredsSchemaTags,
   TagsBase,
   AnonCredsSchemaRecordMetadata
 > {
+  public static get encodingSchema() {
+    return anonCredsSchemaRecordEncodingSchema
+  }
+
   public static readonly type = 'AnonCredsSchemaRecord'
   public readonly type = AnonCredsSchemaRecord.type
 

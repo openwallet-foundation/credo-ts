@@ -1,5 +1,6 @@
 import type { TagsBase } from '@credo-ts/core'
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, createRecordEncodingSchema, utils } from '@credo-ts/core'
+import { z } from 'zod'
 import type { DidCommProofRole, DidCommProofState } from '../models'
 import type { DidCommAutoAcceptProof } from '../models/DidCommProofAutoAcceptType'
 
@@ -27,10 +28,26 @@ export type DefaultDidCommProofExchangeTags = {
   role: DidCommProofRole
 }
 
+const didCommProofExchangeRecordEncodingSchema = createRecordEncodingSchema({
+  connectionId: z.string().optional(),
+  threadId: z.string().optional(),
+  protocolVersion: z.string().optional(),
+  parentThreadId: z.string().optional(),
+  isVerified: z.boolean().optional(),
+  state: z.string().optional(),
+  role: z.string().optional(),
+  autoAcceptProof: z.string().optional(),
+  errorMessage: z.string().optional(),
+})
+
 export class DidCommProofExchangeRecord extends BaseRecord<
   DefaultDidCommProofExchangeTags,
   CustomDidCommProofExchangeTags
 > {
+  public static get encodingSchema() {
+    return didCommProofExchangeRecordEncodingSchema
+  }
+
   public connectionId?: string
   public threadId!: string
   public protocolVersion!: string

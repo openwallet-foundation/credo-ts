@@ -1,5 +1,6 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, createRecordEncodingSchema, utils } from '@credo-ts/core'
+import { z } from 'zod'
 import type { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
 
 export type CustomDidCommBasicMessageTags = TagsBase
@@ -24,10 +25,23 @@ export interface DidCommBasicMessageStorageProps {
   sentTime: string
 }
 
+const didCommBasicMessageRecordEncodingSchema = createRecordEncodingSchema({
+  content: z.string().optional(),
+  sentTime: z.string().optional(),
+  connectionId: z.string().optional(),
+  role: z.string().optional(),
+  threadId: z.string().optional(),
+  parentThreadId: z.string().optional(),
+})
+
 export class DidCommBasicMessageRecord extends BaseRecord<
   DefaultDidCommBasicMessageTags,
   CustomDidCommBasicMessageTags
 > {
+  public static get encodingSchema() {
+    return didCommBasicMessageRecordEncodingSchema
+  }
+
   public content!: string
   public sentTime!: string
   public connectionId!: string

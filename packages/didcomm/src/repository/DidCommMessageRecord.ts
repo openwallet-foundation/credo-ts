@@ -1,4 +1,13 @@
-import { BaseRecord, CredoError, isJsonObject, JsonTransformer, utils } from '@credo-ts/core'
+import {
+  BaseRecord,
+  CredoError,
+  createRecordEncodingSchema,
+  isJsonObject,
+  JsonTransformer,
+  utils,
+  zTypedObject,
+} from '@credo-ts/core'
+import { z } from 'zod'
 import type { ConstructableAgentMessage } from '../DidCommMessage'
 import type { DidCommPlaintextMessage } from '../types'
 import { canHandleMessageType, parseMessageType } from '../util/messageType'
@@ -26,7 +35,17 @@ export interface DidCommMessageRecordProps {
   associatedRecordId?: string
 }
 
+const didCommMessageRecordEncodingSchema = createRecordEncodingSchema({
+  message: zTypedObject<DidCommPlaintextMessage>().optional(),
+  role: z.string().optional(),
+  associatedRecordId: z.string().optional(),
+})
+
 export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> {
+  public static get encodingSchema() {
+    return didCommMessageRecordEncodingSchema
+  }
+
   public message!: DidCommPlaintextMessage
   public role!: DidCommMessageRole
 
