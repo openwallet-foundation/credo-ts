@@ -870,7 +870,9 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     }
 
     const authorizedMethods = didDocument
-      .findVerificationMethodsByTypeAndPurpose(keyDidEd25519.supportedVerificationMethodTypes, ['assertionMethod'])
+      .findVerificationMethodsByTypeAndPurpose(keyDidEd25519.supportedVerificationMethodTypes, [
+        ATTESTED_RESOURCE_PROOF_PURPOSE,
+      ])
       .filter(isEd25519)
       .sort((a, b) => Number(b.type === 'Multikey') - Number(a.type === 'Multikey'))
     const authorizedIds = authorizedMethods.map((method) => toAbsoluteId(method.id))
