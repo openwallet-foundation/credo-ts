@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { zIsoDate, zTypedObject } from '../utils/zod'
+import { getEncodingSchema, zIsoDate, zTypedObject } from '../utils/zod'
 import type { TagsBase } from './BaseRecord'
 import { Metadata, type MetadataBase } from './Metadata'
 
@@ -64,4 +64,21 @@ export function createRecordEncodingSchema<Shape extends z.core.$ZodLooseShape>(
       (options.upgrade ? options.upgrade(encoded) : encoded) as z.input<typeof decodedSchema>,
     encode: ({ type, allowCache, ...decoded }) => decoded,
   })
+}
+
+/**
+ * Returns the names of the properties of a record, including the properties of {@link BaseRecord}.
+ *
+ * These are the keys of the object schema that the record is decoded to: the output schema of the
+ * `encodingSchema` codec, as created by {@link createRecordEncodingSchema}, or the `encodingSchema`
+ * itself if it is an object schema. Returns `undefined` otherwise.
+ */
+export function getRecordPropertyNames(recordClass: unknown): string[] | undefined {
+  const encodingSchema = getEncodingSchema(recordClass)
+
+  // When the schema is a codec, the decoded properties are described by its output schema
+  const decodedSchema = encodingSchema instanceof z.ZodPipe ? encodingSchema.out : encodingSchema
+  if (!(decodedSchema instanceof z.ZodObject)) return undefined
+
+  return Object.keys(decodedSchema.shape)
 }

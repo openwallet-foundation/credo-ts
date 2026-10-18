@@ -1,5 +1,4 @@
 import { AnonCredsCredentialRecord } from '@credo-ts/anoncreds'
-import { JsonTransformer, type TagsBase } from '@credo-ts/core'
 import { BaseDrizzleRecordAdapter, type DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
@@ -13,6 +12,8 @@ export class DrizzleAnonCredsCredentialRecordAdapter extends BaseDrizzleRecordAd
   typeof sqlite.anonCredsCredential,
   typeof sqlite
 > {
+  public customTagColumns = ['schemaName', 'schemaVersion', 'schemaIssuerId', 'issuerId']
+
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
     super(
       database,
@@ -21,71 +22,24 @@ export class DrizzleAnonCredsCredentialRecordAdapter extends BaseDrizzleRecordAd
     )
   }
 
+  // The schema id, credential definition id and revocation registry id of the credential are stored in separate columns
   public getValues(record: AnonCredsCredentialRecord) {
-    const {
-      credentialId,
-      linkSecretId,
-      credentialDefinitionId,
-      credentialRevocationId,
-      revocationRegistryId,
-      schemaId,
-      methodName,
-      schemaName,
-      schemaVersion,
-      schemaIssuerId,
-      issuerId,
-      ...customTags
-    } = record.getTags()
+    const { schema_id: _, cred_def_id: __, rev_reg_id: ___, ...credential } = record.credential
 
-    const { schema_id, cred_def_id, rev_reg_id, ...credentialRest } = record.credential
-
-    return {
-      credentialId,
-      credentialRevocationId,
-      linkSecretId,
-      methodName,
-
-      credential: credentialRest,
-      credentialDefinitionId,
-      revocationRegistryId,
-      schemaId,
-
-      schemaName,
-      schemaVersion,
-      schemaIssuerId,
-      issuerId,
-
-      customTags,
-    }
+    return { ...super.getValues(record), credential }
   }
 
   public toRecord(values: DrizzleAnonCredsCredentialAdapterValues): AnonCredsCredentialRecord {
-    const {
-      customTags,
-      schemaId,
-      revocationRegistryId,
-      credentialDefinitionId,
-      schemaName,
-      schemaVersion,
-      schemaIssuerId,
-      issuerId,
-      ...remainingValues
-    } = values
+    const { credential, schemaId, credentialDefinitionId, revocationRegistryId } = values
 
-    const record = JsonTransformer.fromJSON(
-      {
-        ...remainingValues,
-        credential: {
-          ...remainingValues.credential,
-          schema_id: schemaId,
-          cred_def_id: credentialDefinitionId,
-          rev_reg_id: revocationRegistryId,
-        },
-      },
-      AnonCredsCredentialRecord
-    )
-    record.setTags({ ...customTags, schemaName, schemaVersion, schemaIssuerId, issuerId } as TagsBase)
-
-    return record
+    return super.toRecord({
+      ...values,
+      credential: {
+        ...credential,
+        schema_id: schemaId,
+        cred_def_id: credentialDefinitionId,
+        rev_reg_id: revocationRegistryId,
+      } as typeof credential,
+    })
   }
 }

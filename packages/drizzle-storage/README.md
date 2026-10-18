@@ -225,7 +225,48 @@ Developing a custom Drizzle storage bundle for Credo requires the following:
 - A bundle definition describing the records, and metadata about the migrations
 - A set of record files with the PostgreSQL and SQLite database definitions, as well as the Credo record adapters.
 
-The Drizzle storage module for Credo is still in an experimental phase, and documentation for creating Drizzle bundles is not available yet. You can look at the bundles from thie repository (such as `action-menu`), to see how a storage bundle can be defined.
+The Drizzle storage module for Credo is still in an experimental phase. You can look at the bundles from this repository (such as `action-menu`) to see how a storage bundle is defined.
+
+### Record adapters
+
+An adapter maps a Credo record to its table. For records that define their `encodingSchema` with `createRecordEncodingSchema` from `@credo-ts/core`, the adapter only needs the tables and the record class:
+
+```ts
+import { BaseDrizzleRecordAdapter, type DrizzleDatabase } from "@credo-ts/drizzle-storage";
+import { MyRecord } from "./MyRecord";
+import * as postgres from "./postgres";
+import * as sqlite from "./sqlite";
+
+export class DrizzleMyRecordAdapter extends BaseDrizzleRecordAdapter<
+  MyRecord,
+  typeof postgres.myRecord,
+  typeof postgres,
+  typeof sqlite.myRecord,
+  typeof sqlite
+> {
+  public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
+    super(database, { postgres: postgres.myRecord, sqlite: sqlite.myRecord }, MyRecord);
+  }
+}
+```
+
+Columns are matched by the key in the table definition (`threadId`, not the SQL name `thread_id`):
+
+- A column with the name of a record property stores that property, encoded with the record's `encodingSchema`. Every property needs a column.
+- Any other column stores the tag with that name, so you can query on it.
+- Tags without a column are stored in the `customTags` column.
+
+When a record is loaded, the tag columns are not restored, as the record computes these tags from its properties in `getTags()`. If a column stores a tag that is set with `setTags()` instead (a custom tag), list it in `customTagColumns`, otherwise the tag is lost when the record is loaded. If a tag is part of a JSON property, map it with `tagKeyMapping` (for example `invitationId: ['outOfBandInvitation', '@id']`) to query on it without storing it twice.
+
+```ts
+public customTagColumns = ["alternativeDids"];
+```
+
+The `DrizzleStorageModule` validates every adapter when it's created: the table must have a column for every record property, and every column in `customTagColumns` must exist. A missing column throws a `CredoDrizzleStorageError` before any record is stored, so when you add a property to a record, also add the column and generate a migration for it (`drizzle-storage --bundle <your-bundle> generate --name <migration-name>`).
+
+If the table is structured differently from the record, override `getValues` and `toRecord` and call `super` with the transformed values. The AnonCreds schema adapter does this to store some fields of the schema in separate columns. If your columns have different names than the record properties, also override `validateRecordMapping`.
+
+Records that don't define an `encodingSchema` (and still use class-transformer) must implement `getValues` and `toRecord` themselves.
 
 > [!WARNING]  
 > Drizzle requires TypeScript files to be used for generation of migrations. For this reason if you're developing storage bundles for Drizzle in Credo, you MUST write the storage bundle in TypeScript. We recommend every JavaScript/Credo project to be written in TypeScript, but for Drizzle it is required.

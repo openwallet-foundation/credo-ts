@@ -50,6 +50,13 @@
       "when": 1792424958994,
       "tag": "0006_add_credential_response_encryption",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793381737657,
+      "tag": "0007_add_openid4vc_versions",
+      "breakpoints": true
     }
   ]
 }
