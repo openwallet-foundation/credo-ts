@@ -1713,6 +1713,14 @@ export class OpenId4VcIssuerService {
     const expiresInSeconds = this.openId4VcIssuerConfig.refreshTokenExpiresInSeconds
     const expiresAt = utils.addSecondsToDate(new Date(), expiresInSeconds)
 
+    const dpopJkt = options.dpop
+      ? await calculateJwkThumbprint({
+          hashAlgorithm: HashAlgorithm.Sha256,
+          hashCallback: getOid4vcCallbacks(agentContext).hash,
+          jwk: options.dpop.jwk,
+        })
+      : undefined
+
     const key = issuer.resolvedAccessTokenPublicJwk
     const refreshToken = await jwsService.createJwsCompact(agentContext, {
       keyId: key.keyId,
@@ -1722,15 +1730,7 @@ export class OpenId4VcIssuerService {
         exp: utils.dateToSeconds(expiresAt),
         issuer_state: options.issuerState,
         'pre-authorized_code': options.preAuthorizedCode,
-        cnf: options.dpop
-          ? {
-              jkt: await calculateJwkThumbprint({
-                hashAlgorithm: HashAlgorithm.Sha256,
-                hashCallback: getOid4vcCallbacks(agentContext).hash,
-                jwk: options.dpop.jwk,
-              }),
-            }
-          : undefined,
+        cnf: dpopJkt ? { jkt: dpopJkt } : undefined,
       }),
       protectedHeaderOptions: {
         typ: 'credo+refresh_token',
