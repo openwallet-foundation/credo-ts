@@ -1,13 +1,9 @@
 import { AnonCredsCredentialDefinitionPrivateRecord } from '@credo-ts/anoncreds'
-import { JsonTransformer, type TagsBase } from '@credo-ts/core'
-import { BaseDrizzleRecordAdapter, type DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
+import { BaseDrizzleRecordAdapter } from '../../adapter/BaseDrizzleRecordAdapter'
 import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
-type DrizzleAnonCredsCredentialDefinitionPrivateAdapterValues = DrizzleAdapterRecordValues<
-  (typeof sqlite)['anonCredsCredentialDefinitionPrivate']
->
 export class DrizzleAnonCredsCredentialDefinitionPrivateRecordAdapter extends BaseDrizzleRecordAdapter<
   AnonCredsCredentialDefinitionPrivateRecord,
   typeof postgres.anonCredsCredentialDefinitionPrivate,
@@ -21,26 +17,5 @@ export class DrizzleAnonCredsCredentialDefinitionPrivateRecordAdapter extends Ba
       { postgres: postgres.anonCredsCredentialDefinitionPrivate, sqlite: sqlite.anonCredsCredentialDefinitionPrivate },
       AnonCredsCredentialDefinitionPrivateRecord
     )
-  }
-
-  public getValues(record: AnonCredsCredentialDefinitionPrivateRecord) {
-    const { credentialDefinitionId, ...customTags } = record.getTags()
-
-    return {
-      credentialDefinitionId,
-      value: record.value,
-      customTags,
-    }
-  }
-
-  public toRecord(
-    values: DrizzleAnonCredsCredentialDefinitionPrivateAdapterValues
-  ): AnonCredsCredentialDefinitionPrivateRecord {
-    const { customTags, credentialDefinitionId, ...remainingValues } = values
-
-    const record = JsonTransformer.fromJSON(remainingValues, AnonCredsCredentialDefinitionPrivateRecord)
-    record.setTags({ ...customTags, credentialDefinitionId } as TagsBase)
-
-    return record
   }
 }

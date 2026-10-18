@@ -6,7 +6,7 @@ import { JsonTransformer, zJsonTransformerClass } from '../../utils/JsonTransfor
 import { MessageValidator } from '../../utils/MessageValidator'
 import { zIsoDate } from '../../utils/zod'
 import { BaseRecord } from '../BaseRecord'
-import { createRecordEncodingSchema } from '../recordEncodingSchema'
+import { createRecordEncodingSchema, getRecordPropertyNames } from '../recordEncodingSchema'
 import { TestRecord } from './TestRecord'
 
 class LegacyNested {
@@ -184,5 +184,21 @@ describe('createRecordEncodingSchema', () => {
     const record = JsonTransformer.fromJSON({ id: 'record-id', content: null }, GenericRecord)
 
     expect(record.content).toBeNull()
+  })
+
+  test('returns the property names of a record', () => {
+    expect(getRecordPropertyNames(ZodTestRecord)).toEqual([
+      'id',
+      'createdAt',
+      'updatedAt',
+      'metadata',
+      '_tags',
+      'foo',
+      'expiresAt',
+      'nested',
+    ])
+
+    // Records without an encoding schema
+    expect(getRecordPropertyNames(TestRecord)).toBeUndefined()
   })
 })

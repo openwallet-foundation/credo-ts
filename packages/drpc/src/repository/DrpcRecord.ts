@@ -14,6 +14,7 @@ export type DrpcMessageTags = RecordTags<DrpcRecord>
 
 export interface DrpcStorageProps {
   id?: string
+  createdAt?: Date
   connectionId: string
   role: DrpcRole
   tags?: CustomDrpcMessageTags
@@ -52,6 +53,7 @@ export class DrpcRecord extends BaseRecord<DefaultDrpcMessageTags, CustomDrpcMes
 
     if (props) {
       this.id = props.id ?? utils.uuid()
+      this.createdAt = props.createdAt ?? new Date()
       this.request = props.request
       this.response = props.response
       this.connectionId = props.connectionId
