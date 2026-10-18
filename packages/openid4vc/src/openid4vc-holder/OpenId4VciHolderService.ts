@@ -935,10 +935,8 @@ export class OpenId4VciHolderService {
       const keys = await Promise.all(
         credentialBinding.didUrls.map(async (didUrl, index) => {
           // We already fetched the first did
-          if (index === 0) return { jwk: firstKey, didUrl: firstDid.didUrl }
+          if (index === 0) return { jwk: firstKey, didUrl }
 
-          // NOTE: the await is not inlined in the object literal, as Hermes can return the wrong value
-          // for an await inside an object literal in a conditional expression
           const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(didUrl)
           return { jwk: publicJwk, didUrl }
         })

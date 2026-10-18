@@ -1713,8 +1713,6 @@ export class OpenId4VcIssuerService {
     const expiresInSeconds = this.openId4VcIssuerConfig.refreshTokenExpiresInSeconds
     const expiresAt = utils.addSecondsToDate(new Date(), expiresInSeconds)
 
-    // NOTE: the await is not inlined in the object literal, as Hermes can return the wrong value
-    // for an await inside an object literal in a conditional expression
     const dpopJkt = options.dpop
       ? await calculateJwkThumbprint({
           hashAlgorithm: HashAlgorithm.Sha256,
