@@ -38,6 +38,8 @@ export interface CreateRecordEncodingSchemaOptions {
  *   that are no longer part of the record, so these must not be dropped when decoding.
  * - `type` and `allowCache` are not stored.
  *
+ * Properties that were never validated use `.nullish()`, as a stored record may contain `null` for these.
+ *
  * @example
  * ```ts
  * const genericRecordEncodingSchema = createRecordEncodingSchema({

@@ -39,11 +39,11 @@ export type CustomAnonCredsCredentialTags = {
 }
 
 const anonCredsCredentialRecordEncodingSchema = createRecordEncodingSchema({
-  credentialId: z.string().optional(),
-  credentialRevocationId: z.string().optional(),
-  linkSecretId: z.string().optional(),
-  credential: zTypedObject<AnonCredsCredential>().optional(),
-  methodName: z.string().optional(),
+  credentialId: z.string().nullish(),
+  credentialRevocationId: z.string().nullish(),
+  linkSecretId: z.string().nullish(),
+  credential: zTypedObject<AnonCredsCredential>().nullish(),
+  methodName: z.string().nullish(),
 })
 
 export class AnonCredsCredentialRecord extends BaseRecord<

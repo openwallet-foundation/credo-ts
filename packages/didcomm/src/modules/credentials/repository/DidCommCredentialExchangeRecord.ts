@@ -41,15 +41,15 @@ export interface CredentialRecordBinding {
 }
 
 const didCommCredentialExchangeRecordEncodingSchema = createRecordEncodingSchema({
-  connectionId: z.string().optional(),
-  threadId: z.string().optional(),
-  parentThreadId: z.string().optional(),
-  state: z.string().optional(),
-  role: z.string().optional(),
-  autoAcceptCredential: z.string().optional(),
-  revocationNotification: zJsonTransformerClass(() => DidCommRevocationNotification, { validate: false }).optional(),
-  errorMessage: z.string().optional(),
-  protocolVersion: z.string().optional(),
+  connectionId: z.string().nullish(),
+  threadId: z.string().nullish(),
+  parentThreadId: z.string().nullish(),
+  state: z.string().nullish(),
+  role: z.string().nullish(),
+  autoAcceptCredential: z.string().nullish(),
+  revocationNotification: zJsonTransformerClass(() => DidCommRevocationNotification, { validate: false }).nullish(),
+  errorMessage: z.string().nullish(),
+  protocolVersion: z.string().nullish(),
   credentials: z
     .array(
       z.object({
@@ -57,10 +57,10 @@ const didCommCredentialExchangeRecordEncodingSchema = createRecordEncodingSchema
         credentialRecordId: z.string(),
       })
     )
-    .optional(),
+    .nullish(),
   credentialAttributes: z
     .array(zJsonTransformerClass(() => DidCommCredentialPreviewAttribute, { validate: false }))
-    .optional(),
+    .nullish(),
 })
 
 export class DidCommCredentialExchangeRecord extends BaseRecord<

@@ -49,11 +49,11 @@ type DefaultDidTags = {
 }
 
 const didRecordEncodingSchema = createRecordEncodingSchema({
-  didDocument: zJsonTransformerClass(() => DidDocument).optional(),
+  didDocument: zJsonTransformerClass(() => DidDocument).nullish(),
   // Records stored before 0.3.1 don't have a did property
-  did: z.string().optional(),
+  did: z.string().nullish(),
   role: z.enum(DidDocumentRole),
-  keys: z.array(zTypedObject<DidDocumentKey>()).optional(),
+  keys: z.array(zTypedObject<DidDocumentKey>()).nullish(),
 })
 
 export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidRecordMetadata> implements DidRecordProps {

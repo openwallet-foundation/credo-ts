@@ -24,10 +24,10 @@ export type DefaultAnonCredsRevocationRegistryPrivateTags = {
 }
 
 const anonCredsRevocationRegistryDefinitionPrivateRecordEncodingSchema = createRecordEncodingSchema({
-  revocationRegistryDefinitionId: z.string().optional(),
-  credentialDefinitionId: z.string().optional(),
-  value: zTypedObject<Record<string, unknown>>().optional(),
-  state: z.string().optional(),
+  revocationRegistryDefinitionId: z.string().nullish(),
+  credentialDefinitionId: z.string().nullish(),
+  value: zTypedObject<Record<string, unknown>>().nullish(),
+  state: z.string().nullish(),
 })
 
 export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseRecord<

@@ -53,10 +53,10 @@ const mdocRecordEncodingSchema = createRecordEncodingSchema(
     credentialInstances: zNonEmptyArray(
       z.object({
         issuerSignedBase64Url: z.string(),
-        kmsKeyId: z.string().optional(),
+        kmsKeyId: z.string().nullish(),
       })
-    ).optional(),
-    multiInstanceState: z.string().optional(),
+    ).nullish(),
+    multiInstanceState: z.string().nullish(),
   },
   {
     // Records stored before 0.6 have a single base64Url instead of credentialInstances

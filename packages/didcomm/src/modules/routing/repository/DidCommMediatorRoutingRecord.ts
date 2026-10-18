@@ -37,7 +37,7 @@ const didCommMediatorRoutingRecordEncodingSchema = createRecordEncodingSchema({
         }),
       ])
     )
-    .optional(),
+    .nullish(),
 })
 
 export class DidCommMediatorRoutingRecord extends BaseRecord<DefaultDidCommMediatorRoutingRecordTags> {

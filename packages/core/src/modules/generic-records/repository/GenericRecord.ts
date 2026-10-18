@@ -22,7 +22,7 @@ export interface SaveGenericRecordOption {
 }
 
 const genericRecordEncodingSchema = createRecordEncodingSchema({
-  content: zTypedObject<Record<string, unknown>>().optional(),
+  content: zTypedObject<Record<string, unknown>>().nullish(),
 })
 
 export class GenericRecord extends BaseRecord<GenericRecordTags> {

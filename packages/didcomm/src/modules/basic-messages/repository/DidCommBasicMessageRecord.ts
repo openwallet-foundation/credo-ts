@@ -26,12 +26,12 @@ export interface DidCommBasicMessageStorageProps {
 }
 
 const didCommBasicMessageRecordEncodingSchema = createRecordEncodingSchema({
-  content: z.string().optional(),
-  sentTime: z.string().optional(),
-  connectionId: z.string().optional(),
-  role: z.string().optional(),
-  threadId: z.string().optional(),
-  parentThreadId: z.string().optional(),
+  content: z.string().nullish(),
+  sentTime: z.string().nullish(),
+  connectionId: z.string().nullish(),
+  role: z.string().nullish(),
+  threadId: z.string().nullish(),
+  parentThreadId: z.string().nullish(),
 })
 
 export class DidCommBasicMessageRecord extends BaseRecord<

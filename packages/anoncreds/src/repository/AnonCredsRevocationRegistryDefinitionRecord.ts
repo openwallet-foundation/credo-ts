@@ -17,8 +17,8 @@ export type DefaultAnonCredsRevocationRegistryDefinitionTags = {
 }
 
 const anonCredsRevocationRegistryDefinitionRecordEncodingSchema = createRecordEncodingSchema({
-  revocationRegistryDefinitionId: z.string().optional(),
-  revocationRegistryDefinition: zTypedObject<AnonCredsRevocationRegistryDefinition>().optional(),
+  revocationRegistryDefinitionId: z.string().nullish(),
+  revocationRegistryDefinition: zTypedObject<AnonCredsRevocationRegistryDefinition>().nullish(),
 })
 
 export class AnonCredsRevocationRegistryDefinitionRecord extends BaseRecord<

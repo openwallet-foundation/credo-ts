@@ -32,15 +32,15 @@ export interface QuestionAnswerStorageProps {
 }
 
 const questionAnswerRecordEncodingSchema = createRecordEncodingSchema({
-  questionText: z.string().optional(),
-  questionDetail: z.string().optional(),
-  validResponses: z.array(zTypedObject<ValidResponse>()).optional(),
-  connectionId: z.string().optional(),
-  role: z.string().optional(),
-  signatureRequired: z.boolean().optional(),
-  state: z.string().optional(),
-  threadId: z.string().optional(),
-  response: z.string().optional(),
+  questionText: z.string().nullish(),
+  questionDetail: z.string().nullish(),
+  validResponses: z.array(zTypedObject<ValidResponse>()).nullish(),
+  connectionId: z.string().nullish(),
+  role: z.string().nullish(),
+  signatureRequired: z.boolean().nullish(),
+  state: z.string().nullish(),
+  threadId: z.string().nullish(),
+  response: z.string().nullish(),
 })
 
 export class QuestionAnswerRecord extends BaseRecord<DefaultQuestionAnswerTags, CustomQuestionAnswerTags> {

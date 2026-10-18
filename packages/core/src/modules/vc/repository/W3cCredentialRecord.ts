@@ -64,8 +64,8 @@ const w3cCredentialRecordEncodingSchema = createRecordEncodingSchema(
       z.object({
         credential: z.union([z.string(), zTypedObject<W3cJsonCredential>()]),
       })
-    ).optional(),
-    multiInstanceState: z.string().optional(),
+    ).nullish(),
+    multiInstanceState: z.string().nullish(),
   },
   {
     // Records stored before 0.6 have a single credential instead of credentialInstances

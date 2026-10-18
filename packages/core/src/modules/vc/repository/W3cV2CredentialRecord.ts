@@ -45,8 +45,8 @@ export type DefaultW3cV2CredentialTags = {
 
 const w3cV2CredentialRecordEncodingSchema = createRecordEncodingSchema(
   {
-    credentialInstances: zNonEmptyArray(z.object({ credential: z.string() })).optional(),
-    multiInstanceState: z.string().optional(),
+    credentialInstances: zNonEmptyArray(z.object({ credential: z.string() })).nullish(),
+    multiInstanceState: z.string().nullish(),
   },
   {
     // Records stored before 0.6 have a single credential instead of credentialInstances

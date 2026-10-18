@@ -295,41 +295,41 @@ const zPublicJwk = z.codec(
 )
 
 const openId4VcIssuanceSessionRecordEncodingSchema = createRecordEncodingSchema({
-  expiresAt: zIsoDate.optional(),
-  issuerId: z.string().optional(),
+  expiresAt: zIsoDate.nullish(),
+  issuerId: z.string().nullish(),
   state: zWithUpgrade(z.string(), (value) =>
     // CredentialIssued is an old state that is no longer used. It should be mapped to Error.
     value === 'CredentialIssued' ? OpenId4VcIssuanceSessionState.Error : value
-  ).optional(),
-  issuedCredentials: z.array(z.string()).optional(),
+  ).nullish(),
+  issuedCredentials: z.array(z.string()).nullish(),
   transactions: z
     .array(
       z.looseObject({
-        deferredUntil: zIsoDate.optional(),
+        deferredUntil: zIsoDate.nullish(),
         holderBinding: z
           .looseObject({
-            keys: z.array(z.looseObject({ jwk: zPublicJwk })).optional(),
+            keys: z.array(z.looseObject({ jwk: zPublicJwk })).nullish(),
           })
-          .optional(),
+          .nullish(),
       })
     )
-    .optional(),
-  preAuthorizedCode: z.string().optional(),
-  userPin: z.string().optional(),
-  clientId: z.string().optional(),
-  pkce: zTypedObject<OpenId4VcIssuanceSessionPkce>().optional(),
-  walletAttestation: zTypedObject<OpenId4VcIssuanceSessionWalletAttestation>().optional(),
-  dpop: zTypedObject<OpenId4VcIssuanceSessionDpop>().optional(),
-  authorization: z.looseObject({ codeExpiresAt: zIsoDate.optional() }).optional(),
-  presentation: zTypedObject<OpenId4VcIssuanceSessionPresentation>().optional(),
-  chainedIdentity: z.looseObject({ requestUriExpiresAt: zIsoDate.optional() }).optional(),
-  issuanceMetadata: zTypedObject<Record<string, unknown>>().optional(),
-  credentialOfferPayload: zTypedObject<OpenId4VciCredentialOfferPayload>().optional(),
-  credentialOfferUri: z.string().optional(),
-  credentialOfferId: z.string().optional(),
-  generateRefreshTokens: z.boolean().optional(),
-  openId4VciVersion: z.string().optional(),
-  errorMessage: z.string().optional(),
+    .nullish(),
+  preAuthorizedCode: z.string().nullish(),
+  userPin: z.string().nullish(),
+  clientId: z.string().nullish(),
+  pkce: zTypedObject<OpenId4VcIssuanceSessionPkce>().nullish(),
+  walletAttestation: zTypedObject<OpenId4VcIssuanceSessionWalletAttestation>().nullish(),
+  dpop: zTypedObject<OpenId4VcIssuanceSessionDpop>().nullish(),
+  authorization: z.looseObject({ codeExpiresAt: zIsoDate.nullish() }).nullish(),
+  presentation: zTypedObject<OpenId4VcIssuanceSessionPresentation>().nullish(),
+  chainedIdentity: z.looseObject({ requestUriExpiresAt: zIsoDate.nullish() }).nullish(),
+  issuanceMetadata: zTypedObject<Record<string, unknown>>().nullish(),
+  credentialOfferPayload: zTypedObject<OpenId4VciCredentialOfferPayload>().nullish(),
+  credentialOfferUri: z.string().nullish(),
+  credentialOfferId: z.string().nullish(),
+  generateRefreshTokens: z.boolean().nullish(),
+  openId4VciVersion: z.string().nullish(),
+  errorMessage: z.string().nullish(),
 })
 
 export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcIssuanceSessionRecordTags> {

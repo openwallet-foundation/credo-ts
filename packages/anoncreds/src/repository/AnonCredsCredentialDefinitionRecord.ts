@@ -31,9 +31,9 @@ export type DefaultAnonCredsCredentialDefinitionTags = {
 }
 
 const anonCredsCredentialDefinitionRecordEncodingSchema = createRecordEncodingSchema({
-  credentialDefinitionId: z.string().optional(),
-  credentialDefinition: zTypedObject<AnonCredsCredentialDefinition>().optional(),
-  methodName: z.string().optional(),
+  credentialDefinitionId: z.string().nullish(),
+  credentialDefinition: zTypedObject<AnonCredsCredentialDefinition>().nullish(),
+  methodName: z.string().nullish(),
 })
 
 export class AnonCredsCredentialDefinitionRecord extends BaseRecord<

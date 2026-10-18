@@ -27,9 +27,9 @@ export type DefaultAnonCredsSchemaTags = {
 }
 
 const anonCredsSchemaRecordEncodingSchema = createRecordEncodingSchema({
-  schemaId: z.string().optional(),
-  schema: zTypedObject<AnonCredsSchema>().optional(),
-  methodName: z.string().optional(),
+  schemaId: z.string().nullish(),
+  schema: zTypedObject<AnonCredsSchema>().nullish(),
+  methodName: z.string().nullish(),
 })
 
 export class AnonCredsSchemaRecord extends BaseRecord<

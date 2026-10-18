@@ -19,8 +19,8 @@ export type CustomAnonCredsLinkSecretTags = TagsBase & {
 }
 
 const anonCredsLinkSecretRecordEncodingSchema = createRecordEncodingSchema({
-  linkSecretId: z.string().optional(),
-  value: z.string().optional(),
+  linkSecretId: z.string().nullish(),
+  value: z.string().nullish(),
 })
 
 export class AnonCredsLinkSecretRecord extends BaseRecord<

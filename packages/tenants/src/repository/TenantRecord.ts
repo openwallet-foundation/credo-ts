@@ -26,9 +26,9 @@ export type DefaultTenantRecordTags = {
 }
 
 const tenantRecordEncodingSchema = createRecordEncodingSchema({
-  config: zTypedObject<TenantConfig>().optional(),
-  storageVersion: z.string().optional(),
-  status: z.string().optional(),
+  config: zTypedObject<TenantConfig>().nullish(),
+  storageVersion: z.string().nullish(),
+  status: z.string().nullish(),
 })
 
 export class TenantRecord extends BaseRecord<DefaultTenantRecordTags> {

@@ -29,15 +29,15 @@ export type DefaultDidCommProofExchangeTags = {
 }
 
 const didCommProofExchangeRecordEncodingSchema = createRecordEncodingSchema({
-  connectionId: z.string().optional(),
-  threadId: z.string().optional(),
-  protocolVersion: z.string().optional(),
-  parentThreadId: z.string().optional(),
-  isVerified: z.boolean().optional(),
-  state: z.string().optional(),
-  role: z.string().optional(),
-  autoAcceptProof: z.string().optional(),
-  errorMessage: z.string().optional(),
+  connectionId: z.string().nullish(),
+  threadId: z.string().nullish(),
+  protocolVersion: z.string().nullish(),
+  parentThreadId: z.string().nullish(),
+  isVerified: z.boolean().nullish(),
+  state: z.string().nullish(),
+  role: z.string().nullish(),
+  autoAcceptProof: z.string().nullish(),
+  errorMessage: z.string().nullish(),
 })
 
 export class DidCommProofExchangeRecord extends BaseRecord<

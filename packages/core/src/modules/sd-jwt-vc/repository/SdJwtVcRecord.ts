@@ -80,12 +80,12 @@ const sdJwtVcRecordEncodingSchema = createRecordEncodingSchema(
     credentialInstances: zNonEmptyArray(
       z.object({
         compactSdJwtVc: z.string(),
-        kmsKeyId: z.string().optional(),
+        kmsKeyId: z.string().nullish(),
       })
-    ).optional(),
-    multiInstanceState: z.string().optional(),
-    typeMetadata: zTypedObject<SdJwtVcTypeMetadata>().optional(),
-    typeMetadataChain: zNonEmptyArray(zTypedObject<SdJwtVcTypeMetadata>()).optional(),
+    ).nullish(),
+    multiInstanceState: z.string().nullish(),
+    typeMetadata: zTypedObject<SdJwtVcTypeMetadata>().nullish(),
+    typeMetadataChain: zNonEmptyArray(zTypedObject<SdJwtVcTypeMetadata>()).nullish(),
   },
   {
     // Records stored before 0.6 have a single compactSdJwtVc instead of credentialInstances

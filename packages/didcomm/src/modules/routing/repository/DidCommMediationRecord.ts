@@ -31,16 +31,16 @@ export type DefaultDidCommMediationTags = {
 }
 
 const didCommMediationRecordEncodingSchema = createRecordEncodingSchema({
-  state: z.string().optional(),
-  role: z.string().optional(),
-  connectionId: z.string().optional(),
-  threadId: z.string().optional(),
-  endpoint: z.string().optional(),
-  recipientKeys: z.array(z.string()).optional(),
-  routingKeys: z.array(z.string()).optional(),
+  state: z.string().nullish(),
+  role: z.string().nullish(),
+  connectionId: z.string().nullish(),
+  threadId: z.string().nullish(),
+  endpoint: z.string().nullish(),
+  recipientKeys: z.array(z.string()).nullish(),
+  routingKeys: z.array(z.string()).nullish(),
   pickupStrategy: zWithUpgrade(z.string(), (value) =>
     value === 'Explicit' ? DidCommMediatorPickupStrategy.PickUpV1 : value
-  ).optional(),
+  ).nullish(),
 })
 
 export class DidCommMediationRecord

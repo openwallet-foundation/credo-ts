@@ -90,12 +90,11 @@ export type OpenId4VcIssuerRecordProps = {
  * */
 const openId4VcIssuerRecordEncodingSchema = createRecordEncodingSchema(
   {
-    issuerId: z.string().optional(),
-    accessTokenPublicKeyFingerprint: z.string().optional(),
-    accessTokenPublicJwk: zTypedObject<Kms.KmsJwkPublicAsymmetric>().optional(),
-    accessTokenSignerKmsBackend: z.string().optional(),
-    credentialConfigurationsSupported:
-      zTypedObject<OpenId4VciCredentialConfigurationsSupportedWithFormats>().optional(),
+    issuerId: z.string().nullish(),
+    accessTokenPublicKeyFingerprint: z.string().nullish(),
+    accessTokenPublicJwk: zTypedObject<Kms.KmsJwkPublicAsymmetric>().nullish(),
+    accessTokenSignerKmsBackend: z.string().nullish(),
+    credentialConfigurationsSupported: zTypedObject<OpenId4VciCredentialConfigurationsSupportedWithFormats>().nullish(),
     // Draft 11 to draft 13+ syntax
     display: zWithUpgrade(z.array(zTypedObject<OpenId4VciCredentialIssuerMetadataDisplay>()), (value) => {
       if (!Array.isArray(value)) return value
@@ -114,7 +113,7 @@ const openId4VcIssuerRecordEncodingSchema = createRecordEncodingSchema(
             : undefined,
         }
       })
-    }).optional(),
+    }).nullish(),
     // Adds the type field if missing (for older records)
     authorizationServerConfigs: zWithUpgrade(z.array(zTypedObject<OpenId4VciAuthorizationServerConfig>()), (value) => {
       if (!Array.isArray(value)) return value
@@ -129,12 +128,12 @@ const openId4VcIssuerRecordEncodingSchema = createRecordEncodingSchema(
 
         return config
       })
-    }).optional(),
-    dpopSigningAlgValuesSupported: z.array(z.string()).optional(),
-    clientAttestationSigningAlgValuesSupported: z.array(z.string()).optional(),
-    clientAttestationPopSigningAlgValuesSupported: z.array(z.string()).optional(),
-    batchCredentialIssuance: zTypedObject<OpenId4VciBatchCredentialIssuanceOptions>().optional(),
-    signedMetadata: zTypedObject<OpenId4VcIssuerRecordSignedMetadata>().optional(),
+    }).nullish(),
+    dpopSigningAlgValuesSupported: z.array(z.string()).nullish(),
+    clientAttestationSigningAlgValuesSupported: z.array(z.string()).nullish(),
+    clientAttestationPopSigningAlgValuesSupported: z.array(z.string()).nullish(),
+    batchCredentialIssuance: zTypedObject<OpenId4VciBatchCredentialIssuanceOptions>().nullish(),
+    signedMetadata: zTypedObject<OpenId4VcIssuerRecordSignedMetadata>().nullish(),
   },
   {
     // Records stored before draft 13 have credentialsSupported instead of credentialConfigurationsSupported

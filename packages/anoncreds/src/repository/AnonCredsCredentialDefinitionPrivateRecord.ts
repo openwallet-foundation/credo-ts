@@ -15,8 +15,8 @@ export type DefaultAnonCredsCredentialDefinitionPrivateTags = {
 }
 
 const anonCredsCredentialDefinitionPrivateRecordEncodingSchema = createRecordEncodingSchema({
-  credentialDefinitionId: z.string().optional(),
-  value: zTypedObject<Record<string, unknown>>().optional(),
+  credentialDefinitionId: z.string().nullish(),
+  value: zTypedObject<Record<string, unknown>>().nullish(),
 })
 
 export class AnonCredsCredentialDefinitionPrivateRecord extends BaseRecord<

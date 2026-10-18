@@ -1,6 +1,7 @@
 import { IsString } from 'class-validator'
 import { z } from 'zod'
 import { ClassValidationError, ZodValidationError } from '../../error'
+import { GenericRecord } from '../../modules/generic-records/repository/GenericRecord'
 import { JsonTransformer, zJsonTransformerClass } from '../../utils/JsonTransformer'
 import { MessageValidator } from '../../utils/MessageValidator'
 import { zIsoDate } from '../../utils/zod'
@@ -177,5 +178,11 @@ describe('createRecordEncodingSchema', () => {
     })
     expect(JsonTransformer.fromJSON(JsonTransformer.toJSON(testRecord), TestRecord)).toEqual(testRecord)
     expect(() => JsonTransformer.fromJSON({ name: 10 }, LegacyNested)).toThrow(ClassValidationError)
+  })
+
+  test('accepts null for record properties that were never validated', () => {
+    const record = JsonTransformer.fromJSON({ id: 'record-id', content: null }, GenericRecord)
+
+    expect(record.content).toBeNull()
   })
 })

@@ -20,8 +20,8 @@ export interface TenantRoutingRecordProps {
 }
 
 const tenantRoutingRecordEncodingSchema = createRecordEncodingSchema({
-  tenantId: z.string().optional(),
-  recipientKeyFingerprint: z.string().optional(),
+  tenantId: z.string().nullish(),
+  recipientKeyFingerprint: z.string().nullish(),
 })
 
 export class TenantRoutingRecord extends BaseRecord<DefaultTenantRoutingRecordTags> {

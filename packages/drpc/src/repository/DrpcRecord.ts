@@ -24,12 +24,12 @@ export interface DrpcStorageProps {
 }
 
 const drpcRecordEncodingSchema = createRecordEncodingSchema({
-  request: z.custom<DrpcRequest>().optional(),
-  response: z.custom<DrpcResponse>().optional(),
-  connectionId: z.string().optional(),
-  role: z.string().optional(),
-  state: z.string().optional(),
-  threadId: z.string().optional(),
+  request: z.custom<DrpcRequest>().nullish(),
+  response: z.custom<DrpcResponse>().nullish(),
+  connectionId: z.string().nullish(),
+  role: z.string().nullish(),
+  state: z.string().nullish(),
+  threadId: z.string().nullish(),
 })
 
 export class DrpcRecord extends BaseRecord<DefaultDrpcMessageTags, CustomDrpcMessageTags> {

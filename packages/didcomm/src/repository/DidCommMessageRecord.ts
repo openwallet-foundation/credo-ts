@@ -36,9 +36,9 @@ export interface DidCommMessageRecordProps {
 }
 
 const didCommMessageRecordEncodingSchema = createRecordEncodingSchema({
-  message: zTypedObject<DidCommPlaintextMessage>().optional(),
-  role: z.string().optional(),
-  associatedRecordId: z.string().optional(),
+  message: zTypedObject<DidCommPlaintextMessage>().nullish(),
+  role: z.string().nullish(),
+  associatedRecordId: z.string().nullish(),
 })
 
 export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> {

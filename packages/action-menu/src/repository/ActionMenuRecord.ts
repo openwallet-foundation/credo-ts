@@ -39,12 +39,12 @@ export type DefaultActionMenuTags = {
  * @public
  */
 const actionMenuRecordEncodingSchema = createRecordEncodingSchema({
-  state: z.string().optional(),
-  role: z.string().optional(),
-  connectionId: z.string().optional(),
-  threadId: z.string().optional(),
-  menu: zJsonTransformerClass(() => ActionMenu, { validate: false }).optional(),
-  performedAction: zJsonTransformerClass(() => ActionMenuSelection, { validate: false }).optional(),
+  state: z.string().nullish(),
+  role: z.string().nullish(),
+  connectionId: z.string().nullish(),
+  threadId: z.string().nullish(),
+  menu: zJsonTransformerClass(() => ActionMenu, { validate: false }).nullish(),
+  performedAction: zJsonTransformerClass(() => ActionMenuSelection, { validate: false }).nullish(),
 })
 
 export class ActionMenuRecord

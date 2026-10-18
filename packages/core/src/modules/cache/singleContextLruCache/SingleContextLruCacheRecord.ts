@@ -22,10 +22,10 @@ export interface SingleContextLruCacheProps {
 const singleContextLruCacheRecordEncodingSchema = createRecordEncodingSchema({
   entries: zMapFromObject(
     z.looseObject({
-      value: z.unknown(),
-      expiresAt: z.number().optional(),
+      value: z.unknown().optional(),
+      expiresAt: z.number().nullish(),
     })
-  ).optional(),
+  ).nullish(),
 })
 
 export class SingleContextLruCacheRecord extends BaseRecord {

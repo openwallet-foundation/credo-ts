@@ -10,7 +10,7 @@ export interface StorageVersionRecordProps {
 }
 
 const storageVersionRecordEncodingSchema = createRecordEncodingSchema({
-  storageVersion: z.string().optional(),
+  storageVersion: z.string().nullish(),
 })
 
 export class StorageVersionRecord extends BaseRecord {

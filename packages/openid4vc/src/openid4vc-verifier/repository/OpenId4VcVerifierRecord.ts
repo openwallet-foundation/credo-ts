@@ -25,8 +25,8 @@ export interface OpenId4VcVerifierRecordProps {
  * and metadata files
  * */
 const openId4VcVerifierRecordEncodingSchema = createRecordEncodingSchema({
-  verifierId: z.string().optional(),
-  clientMetadata: zTypedObject<OpenId4VpVerifierClientMetadata>().optional(),
+  verifierId: z.string().nullish(),
+  clientMetadata: zTypedObject<OpenId4VpVerifierClientMetadata>().nullish(),
 })
 
 export class OpenId4VcVerifierRecord extends BaseRecord<DefaultOpenId4VcVerifierRecordTags> {

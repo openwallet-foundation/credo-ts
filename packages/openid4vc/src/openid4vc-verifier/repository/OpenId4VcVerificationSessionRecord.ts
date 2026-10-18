@@ -59,18 +59,18 @@ export interface OpenId4VcVerificationSessionRecordProps {
 }
 
 const openId4VcVerificationSessionRecordEncodingSchema = createRecordEncodingSchema({
-  verifierId: z.string().optional(),
-  state: z.string().optional(),
-  errorMessage: z.string().optional(),
-  authorizationRequestJwt: z.string().optional(),
-  authorizationRequestPayload: zTypedObject<OpenId4VpAuthorizationRequestPayload>().optional(),
-  authorizationRequestUri: z.string().optional(),
-  authorizationRequestId: z.string().optional(),
-  openId4VpVersion: z.string().optional(),
-  expiresAt: zIsoDate.optional(),
-  authorizationResponsePayload: zTypedObject<OpenId4VpAuthorizationResponsePayload>().optional(),
-  presentationDuringIssuanceSession: z.string().optional(),
-  authorizationResponseRedirectUri: z.string().optional(),
+  verifierId: z.string().nullish(),
+  state: z.string().nullish(),
+  errorMessage: z.string().nullish(),
+  authorizationRequestJwt: z.string().nullish(),
+  authorizationRequestPayload: zTypedObject<OpenId4VpAuthorizationRequestPayload>().nullish(),
+  authorizationRequestUri: z.string().nullish(),
+  authorizationRequestId: z.string().nullish(),
+  openId4VpVersion: z.string().nullish(),
+  expiresAt: zIsoDate.nullish(),
+  authorizationResponsePayload: zTypedObject<OpenId4VpAuthorizationResponsePayload>().nullish(),
+  presentationDuringIssuanceSession: z.string().nullish(),
+  authorizationResponseRedirectUri: z.string().nullish(),
 })
 
 export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId4VcVerificationSessionRecordTags> {

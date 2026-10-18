@@ -62,14 +62,14 @@ export interface DidCommOutOfBandRecordProps {
 }
 
 const didCommOutOfBandRecordEncodingSchema = createRecordEncodingSchema({
-  outOfBandInvitation: zJsonTransformerClass(() => DidCommOutOfBandInvitation, { validate: false }).optional(),
-  role: z.string().optional(),
-  state: z.string().optional(),
-  alias: z.string().optional(),
-  reusable: z.boolean().optional(),
-  autoAcceptConnection: z.boolean().optional(),
-  mediatorId: z.string().optional(),
-  reuseConnectionId: z.string().optional(),
+  outOfBandInvitation: zJsonTransformerClass(() => DidCommOutOfBandInvitation, { validate: false }).nullish(),
+  role: z.string().nullish(),
+  state: z.string().nullish(),
+  alias: z.string().nullish(),
+  reusable: z.boolean().nullish(),
+  autoAcceptConnection: z.boolean().nullish(),
+  mediatorId: z.string().nullish(),
+  reuseConnectionId: z.string().nullish(),
   invitationInlineServiceKeys: z
     .array(
       z.object({
@@ -77,7 +77,7 @@ const didCommOutOfBandRecordEncodingSchema = createRecordEncodingSchema({
         kmsKeyId: z.string(),
       })
     )
-    .optional(),
+    .nullish(),
 })
 
 export class DidCommOutOfBandRecord extends BaseRecord<

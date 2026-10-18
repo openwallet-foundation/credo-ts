@@ -86,13 +86,13 @@ export interface MdocVerificationSessionRecordProps {
  * rather than delivered out of band.
  */
 const mdocVerificationSessionRecordEncodingSchema = createRecordEncodingSchema({
-  state: z.string().optional(),
-  errorMessage: z.string().optional(),
-  deviceRequestBase64Url: z.string().optional(),
-  deviceRequestDefinition: zTypedObject<MdocDeviceRequestDefinition>().optional(),
-  sessionTranscript: zTypedObject<MdocVerificationSessionTranscript>().optional(),
-  sessionKeyId: z.string().optional(),
-  expiresAt: zIsoDate.optional(),
+  state: z.string().nullish(),
+  errorMessage: z.string().nullish(),
+  deviceRequestBase64Url: z.string().nullish(),
+  deviceRequestDefinition: zTypedObject<MdocDeviceRequestDefinition>().nullish(),
+  sessionTranscript: zTypedObject<MdocVerificationSessionTranscript>().nullish(),
+  sessionKeyId: z.string().nullish(),
+  expiresAt: zIsoDate.nullish(),
 })
 
 export class MdocVerificationSessionRecord extends BaseRecord<DefaultMdocVerificationSessionRecordTags> {

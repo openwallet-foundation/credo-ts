@@ -44,17 +44,17 @@ export type DefaultDidCommConnectionTags = {
 }
 
 const didCommConnectionRecordEncodingSchema = createRecordEncodingSchema({
-  state: z.string().optional(),
-  role: z.string().optional(),
-  did: z.string().optional(),
-  theirDid: z.string().optional(),
-  theirLabel: z.string().optional(),
-  alias: z.string().optional(),
-  autoAcceptConnection: z.boolean().optional(),
-  imageUrl: z.string().optional(),
-  threadId: z.string().optional(),
-  mediatorId: z.string().optional(),
-  errorMessage: z.string().optional(),
+  state: z.string().nullish(),
+  role: z.string().nullish(),
+  did: z.string().nullish(),
+  theirDid: z.string().nullish(),
+  theirLabel: z.string().nullish(),
+  alias: z.string().nullish(),
+  autoAcceptConnection: z.boolean().nullish(),
+  imageUrl: z.string().nullish(),
+  threadId: z.string().nullish(),
+  mediatorId: z.string().nullish(),
+  errorMessage: z.string().nullish(),
 
   // We used to store connection record using major.minor version, but we now
   // only store the major version, storing .x for the minor version. We have this
@@ -62,12 +62,12 @@ const didCommConnectionRecordEncodingSchema = createRecordEncodingSchema({
   protocol: zWithUpgrade(z.string(), (value) => {
     if (!value || typeof value !== 'string' || value.endsWith('.x')) return value
     return `${value.split('.').slice(0, -1).join('.')}.x`
-  }).optional(),
-  outOfBandId: z.string().optional(),
-  invitationDid: z.string().optional(),
-  connectionTypes: z.array(z.string()).optional(),
-  previousDids: z.array(z.string()).optional(),
-  previousTheirDids: z.array(z.string()).optional(),
+  }).nullish(),
+  outOfBandId: z.string().nullish(),
+  invitationDid: z.string().nullish(),
+  connectionTypes: z.array(z.string()).nullish(),
+  previousDids: z.array(z.string()).nullish(),
+  previousTheirDids: z.array(z.string()).nullish(),
 })
 
 export class DidCommConnectionRecord extends BaseRecord<
