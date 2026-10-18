@@ -32,6 +32,15 @@ import type { OpenId4VcVerificationTypes } from './OpenId4VcTrustedIssuersVerifi
 import { getPublicJwkFromDid, supportedJarmContentEncryptionAlgorithms } from './utils'
 
 /**
+ * Normalizes a jwt `typ` header value so it can be compared to the type without the `application/` prefix.
+ * Media types are case-insensitive, and RFC 7515 allows omitting the `application/` prefix in `typ`.
+ */
+function normalizeJwtTyp(typ?: string) {
+  const lowerCaseTyp = typ?.toLowerCase()
+  return lowerCaseTyp?.startsWith('application/') ? lowerCaseTyp.slice('application/'.length) : lowerCaseTyp
+}
+
+/**
  * Maps the `typ` header of a jwt verified by oid4vc-ts to the trust verification context.
  *
  * Two shapes are returned, as the deprecated x509 callback only carries the issuance session id.
@@ -39,6 +48,7 @@ import { getPublicJwkFromDid, supportedJarmContentEncryptionAlgorithms } from '.
  * for which only the signature is verified.
  */
 function getOid4vcJwtVerificationContext(options: {
+  /** normalized with {@link normalizeJwtTyp} */
   typ?: string
   compact: string
   payload: Record<string, unknown>
@@ -125,9 +135,27 @@ export function getOid4vcJwtVerifyCallback(
 
   return async (signer, { compact, header, payload }) => {
     let trustedCertificates = options?.trustedCertificates
+    const typ = normalizeJwtTyp(header.typ)
+
+    // Wallet and key attestations signed with a bare `jwk` can't be checked against the trusted issuers
+    // (there is no `jwk` variant of `VerificationSigner`/`TrustedIssuer`), so any client could sign its own.
+    // This is checked regardless of the issuance session, so it applies to every endpoint.
+    if (signer.method === 'jwk') {
+      if (typ === 'oauth-client-attestation+jwt') {
+        throw new CredoError(
+          `Wallet attestations signed with a 'jwk' header are not supported. Use 'x5c' or 'did' to sign the wallet attestation.`
+        )
+      }
+
+      if (typ === 'keyattestation+jwt' || typ === 'key-attestation+jwt') {
+        throw new CredoError(
+          `Key attestations signed with a 'jwk' header are not supported. Use 'x5c' or 'did' to sign the key attestation.`
+        )
+      }
+    }
 
     const verificationContext = getOid4vcJwtVerificationContext({
-      typ: header.typ,
+      typ,
       compact,
       payload,
       issuanceSession: options?.issuanceSession,
@@ -162,8 +190,8 @@ export function getOid4vcJwtVerifyCallback(
         })
       }
 
-      // NOTE: jwts signed with a bare `jwk` are not checked against a trust list, as there is no
-      // `jwk` variant of `VerificationSigner`/`TrustedIssuer`.
+      // NOTE: other jwts signed with a bare `jwk` are not checked against a trust list, as there is no
+      // `jwk` variant of `VerificationSigner`/`TrustedIssuer`. Wallet and key attestations are rejected above.
     }
 
     const alg = signer.alg as Kms.KnownJwaSignatureAlgorithm
