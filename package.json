@@ -63,7 +63,7 @@
     "rxjs": "catalog:",
     "supertest": "^7.3.1",
     "testcontainers": "^12.2.1",
-    "tsdown": "^0.23.0",
+    "tsdown": "^0.23.1",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
     "undici": "^6.28.0",
