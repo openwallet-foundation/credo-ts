@@ -904,6 +904,9 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const resolvedAuthorizationRequest =
       await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
     expect(resolvedAuthorizationRequest.authorizationRequestPayload.response_mode).toEqual('direct_post.jwt')
+    expect(resolvedAuthorizationRequest.signedAuthorizationRequest?.compact).toEqual(
+      verificationSession.authorizationRequestJwt
+    )
 
     expect(resolvedAuthorizationRequest.authorizationRequestPayload).toMatchObject({
       verifier_info: [{ format: 'jwt', data: { hello: 'world' } }],

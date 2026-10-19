@@ -1078,7 +1078,9 @@ export class OpenId4VcIssuerService {
         const { signer, payload, header, keyAttestation } = await vcIssuer.verifyCredentialRequestJwtProof({
           issuerMetadata,
           jwt,
-          clientId: options.issuanceSession.clientId,
+          // The `iss` of the proof must be the client id of the session. It's only undefined, and so `iss` must be
+          // omitted, with anonymous access to the token endpoint in the pre-authorized code flow.
+          clientId: issuanceSession.clientId,
         })
 
         // TODO: we should probably do this check before signature verification, but we then we
@@ -1330,6 +1332,7 @@ export class OpenId4VcIssuerService {
     const openId4VcIssuer = new OpenId4VcIssuerRecord({
       issuerId: options.issuerId ?? utils.uuid(),
       display: options.display,
+      issuerInfo: options.issuerInfo,
       dpopSigningAlgValuesSupported: options.dpopSigningAlgValuesSupported,
       clientAttestationSigningAlgValuesSupported: options.clientAttestationSigningAlgValuesSupported,
       clientAttestationPopSigningAlgValuesSupported: options.clientAttestationPopSigningAlgValuesSupported,
@@ -1439,6 +1442,7 @@ export class OpenId4VcIssuerService {
       credential_configurations_supported: issuerRecord.credentialConfigurationsSupported ?? {},
       authorization_servers: authorizationServers,
       display: issuerRecord.display,
+      issuer_info: issuerRecord.issuerInfo,
       nonce_endpoint: joinUriParts(issuerUrl, [config.nonceEndpointPath]),
       batch_credential_issuance: issuerRecord.batchCredentialIssuance
         ? {
@@ -1719,6 +1723,14 @@ export class OpenId4VcIssuerService {
     const expiresInSeconds = this.openId4VcIssuerConfig.refreshTokenExpiresInSeconds
     const expiresAt = utils.addSecondsToDate(new Date(), expiresInSeconds)
 
+    const dpopJkt = options.dpop
+      ? await calculateJwkThumbprint({
+          hashAlgorithm: HashAlgorithm.Sha256,
+          hashCallback: getOid4vcCallbacks(agentContext).hash,
+          jwk: options.dpop.jwk,
+        })
+      : undefined
+
     const key = issuer.resolvedAccessTokenPublicJwk
     const refreshToken = await jwsService.createJwsCompact(agentContext, {
       keyId: key.keyId,
@@ -1728,15 +1740,7 @@ export class OpenId4VcIssuerService {
         exp: utils.dateToSeconds(expiresAt),
         issuer_state: options.issuerState,
         'pre-authorized_code': options.preAuthorizedCode,
-        cnf: options.dpop
-          ? {
-              jkt: await calculateJwkThumbprint({
-                hashAlgorithm: HashAlgorithm.Sha256,
-                hashCallback: getOid4vcCallbacks(agentContext).hash,
-                jwk: options.dpop.jwk,
-              }),
-            }
-          : undefined,
+        cnf: dpopJkt ? { jkt: dpopJkt } : undefined,
       }),
       protectedHeaderOptions: {
         typ: 'credo+refresh_token',
