@@ -30,12 +30,11 @@ export interface OpenId4VcIssuanceSessionWalletAttestation {
   required: boolean
 
   /**
-   * Client id from the verified wallet attestation.
-   */
-  clientId?: string
-
-  /**
-   * JWK thumbprint of the client instance key bound to this issuance session.
+   * JWK thumbprint of the client instance key (the `cnf` key of the wallet attestation) bound to
+   * this issuance session. Set by the first request with a wallet attestation, after which all
+   * requests of the session, including refresh token requests, must use a wallet attestation
+   * for the same key. The `sub` of the wallet attestation is stored as `clientId` on the session, and
+   * must match in later requests as well.
    */
   confirmationJwkThumbprint?: string
 }

@@ -286,7 +286,6 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     issuanceSession.walletAttestation = {
       // If client attestation is provided at the start, it's required from now on.
       required: true,
-      clientId: clientAttestation.clientAttestation.payload.sub,
       confirmationJwkThumbprint: clientAttestation.clientAttestation.confirmationJwkThumbprint,
     }
   }

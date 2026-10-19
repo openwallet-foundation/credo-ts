@@ -1,5 +1,4 @@
 import { generateKeyPairSync, randomUUID } from 'crypto'
-import { DcqlNotDisclosed } from 'dcql'
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { Hasher, JwsService, JwtPayload } from '../../../crypto'
@@ -10,6 +9,7 @@ import { type SdJwtVc, SdJwtVcRecord, SdJwtVcService } from '../../sd-jwt-vc'
 import { type ClaimPath, getClaimPathsForDcqlClaimSet } from '../../sd-jwt-vc/disclosureFrame'
 import { W3cV2CredentialRecord } from '../../vc'
 import { W3cV2SdJwtVerifiablePresentation } from '../../vc/sd-jwt-vc'
+import { DcqlNotDisclosed } from '..'
 import { DcqlService } from '../DcqlService'
 import type { DcqlQueryResult } from '../models'
 

@@ -140,7 +140,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
             required: walletAttestationRequired,
-            expectedClientId: issuanceSession.walletAttestation?.clientId ?? issuanceSession.clientId,
+            expectedClientId: issuanceSession.clientId,
             expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
 
             // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
@@ -225,7 +225,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
             required: walletAttestationRequired,
-            expectedClientId: issuanceSession.walletAttestation?.clientId ?? issuanceSession.clientId,
+            expectedClientId: issuanceSession.clientId,
             expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
 
             // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
@@ -295,10 +295,16 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           }
         }
 
-        issuanceSession.walletAttestation = {
-          required: true,
-          clientId: verificationResult.clientAttestation.clientAttestation.payload.sub,
-          confirmationJwkThumbprint: verificationResult.clientAttestation.clientAttestation.confirmationJwkThumbprint,
+        // Bind the wallet attestation to the session if this is the first request of the session with a wallet
+        // attestation. This is the case for the pre-authorized code flow, and for a session that did not use a wallet
+        // attestation before. Once bound, the client id and key never change: they are verified above to match.
+        if (!issuanceSession.walletAttestation?.confirmationJwkThumbprint) {
+          issuanceSession.walletAttestation = {
+            // If client attestation is provided, it's required from now on.
+            required: true,
+            confirmationJwkThumbprint: verificationResult.clientAttestation.clientAttestation.confirmationJwkThumbprint,
+          }
+          issuanceSession.clientId = verificationResult.clientAttestation.clientAttestation.payload.sub
         }
       }
 

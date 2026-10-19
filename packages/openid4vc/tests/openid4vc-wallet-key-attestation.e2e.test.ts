@@ -430,6 +430,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     const credentialResponse = await holder.agent.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponse,
+      clientId: 'wallet',
       credentialBindingResolver: async () => ({
         method: 'attestation',
         keyAttestationJwt: await generateKeyAttestation(),
@@ -479,6 +480,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     const credentialResponse = await holder.agent.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponse,
+      clientId: 'wallet',
       credentialBindingResolver: async () => ({
         method: 'attestation',
         keyAttestationJwt: await generateKeyAttestation(undefined, {
@@ -521,6 +523,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       holder.agent.openid4vc.holder.requestCredentials({
         resolvedCredentialOffer,
         ...tokenResponse,
+        clientId: 'wallet',
         credentialBindingResolver: async () => ({
           method: 'attestation',
           keyAttestationJwt: await generateKeyAttestation(undefined, {
@@ -565,6 +568,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       holder.agent.openid4vc.holder.requestCredentials({
         resolvedCredentialOffer,
         ...tokenResponse,
+        clientId: 'wallet',
         credentialBindingResolver: async () => ({
           method: 'attestation',
           keyAttestationJwt: await generateDidKeyAttestation(),
@@ -1351,9 +1355,9 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       clientId: 'wallet',
     })
     const stored = await issuer.agent.openid4vc.issuer.getIssuanceSessionById(issuanceSession.id)
+    expect(stored.clientId).toEqual('wallet')
     expect(stored.walletAttestation).toEqual({
       required: true,
-      clientId: 'wallet',
       confirmationJwkThumbprint: await calculateJwkThumbprint({
         jwk: walletInstanceKey.toJson() as Jwk,
         hashAlgorithm: HashAlgorithm.Sha256,
@@ -1361,9 +1365,11 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       }),
     })
 
+    // The proof includes the client id as `iss`
     const credentials = await holder.agent.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponse,
+      clientId: 'wallet',
       credentialBindingResolver: async () => ({
         method: 'attestation',
         keyAttestationJwt: await generateKeyAttestation(),
@@ -1409,6 +1415,33 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     await expect(
       holder.agent.openid4vc.holder.refreshToken({ ...refreshOptions, walletAttestationJwt })
     ).resolves.toMatchObject({ accessToken: expect.any(String) })
+  })
+
+  it('rejects a credential request proof with another client id as iss in the pre-authorized code flow', async () => {
+    const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+      issuerId: issuerRecord.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      authorization: { requireWalletAttestation: true },
+    })
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
+      resolvedCredentialOffer,
+      walletAttestationJwt,
+      clientId: 'wallet',
+    })
+
+    await expect(
+      holder.agent.openid4vc.holder.requestCredentials({
+        resolvedCredentialOffer,
+        ...tokenResponse,
+        clientId: 'other-wallet',
+        credentialBindingResolver: async () => ({
+          method: 'attestation',
+          keyAttestationJwt: await generateKeyAttestation(),
+        }),
+      })
+    ).rejects.toThrow("jwt 'iss' does not match expected value")
   })
 
   it('throws error if the client attestation pop challenge is invalid', async () => {
