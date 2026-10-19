@@ -140,6 +140,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
             required: walletAttestationRequired,
+            expectedClientId: issuanceSession.clientId,
+            expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
 
             // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
             // with an `OAuth-Client-Attestation-PoP` header has its DPoP proof verified per RFC 9449
@@ -179,8 +181,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             ...getClientAttestationToVerify(config, clientAttestation, issuanceSession.walletAttestation?.required),
 
             // Ensure it matches the previously provided client id
-            // FIXME: we don't verify that the attestation is issued by the same party
             expectedClientId: issuanceSession.clientId,
+            expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
 
             // NOTE: we don't look at the global config here. As we already checked and
             // set required to true previously if client attestations were provided or required.
@@ -223,6 +225,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           clientAttestation: {
             ...getClientAttestationToVerify(config, clientAttestation, walletAttestationRequired),
             required: walletAttestationRequired,
+            expectedClientId: issuanceSession.clientId,
+            expectedConfirmationJwkThumbprint: issuanceSession.walletAttestation?.confirmationJwkThumbprint,
 
             // NOTE: `ensureConfirmationKeyMatchesDpopKey` is intentionally not enabled. Per draft §7.2 a request
             // with an `OAuth-Client-Attestation-PoP` header has its DPoP proof verified per RFC 9449
@@ -289,6 +293,18 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
               error_description: `Invalid 'challenge' claim in client attestation pop jwt.`,
             })
           }
+        }
+
+        // Bind the wallet attestation to the session if this is the first request of the session with a wallet
+        // attestation. This is the case for the pre-authorized code flow, and for a session that did not use a wallet
+        // attestation before. Once bound, the client id and key never change: they are verified above to match.
+        if (!issuanceSession.walletAttestation?.confirmationJwkThumbprint) {
+          issuanceSession.walletAttestation = {
+            // If client attestation is provided, it's required from now on.
+            required: true,
+            confirmationJwkThumbprint: verificationResult.clientAttestation.clientAttestation.confirmationJwkThumbprint,
+          }
+          issuanceSession.clientId = verificationResult.clientAttestation.clientAttestation.payload.sub
         }
       }
 

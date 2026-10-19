@@ -70,7 +70,7 @@
     "@verifiables/request-converter": "^0.2.0",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
-    "dcql": "^3.0.1",
+    "dcql": "^4.0.0",
     "did-resolver": "^6.0.0",
     "ec-compression": "^2.0.0",
     "json-canonicalize": "^3.0.0",

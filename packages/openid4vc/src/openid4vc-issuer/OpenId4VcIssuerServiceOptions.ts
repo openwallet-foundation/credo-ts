@@ -23,6 +23,7 @@ import type {
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialRequestFormatSpecific,
   OpenId4VciDeferredCredentialRequest,
+  OpenId4VciIssuerInfo,
   OpenId4VciTxCode,
   OpenId4VcJwtIssuer,
   VerifiedOpenId4VcCredentialHolderBinding,
@@ -767,6 +768,11 @@ export type OpenId4VciCreateIssuerOptions = {
   accessTokenSignerKmsBackend?: string
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
+
+  /**
+   * Issuer attestations published as `issuer_info` in the credential issuer metadata.
+   */
+  issuerInfo?: OpenId4VciIssuerInfo
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   clientAttestationSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
@@ -808,6 +814,7 @@ export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   OpenId4VcIssuerRecordProps,
   | 'issuerId'
   | 'display'
+  | 'issuerInfo'
   | 'dpopSigningAlgValuesSupported'
   | 'clientAttestationSigningAlgValuesSupported'
   | 'clientAttestationPopSigningAlgValuesSupported'
