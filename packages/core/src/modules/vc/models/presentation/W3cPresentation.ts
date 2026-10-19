@@ -23,7 +23,6 @@ export interface W3cPresentationOptions {
 export class W3cPresentation {
   public constructor(options: W3cPresentationOptions) {
     if (options) {
-      // Only set when provided, so serialization does not emit an `undefined` id (which JSON-LD signing rejects)
       if (options.id !== undefined) this.id = options.id
       this.context = options.context ?? [CREDENTIALS_CONTEXT_V1_URL]
       this.type = options.type ?? [VERIFIABLE_PRESENTATION_TYPE]

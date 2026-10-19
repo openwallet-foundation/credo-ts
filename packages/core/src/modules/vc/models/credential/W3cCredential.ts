@@ -35,8 +35,6 @@ export class W3cCredential {
           ? options.issuer
           : new W3cIssuer(options.issuer)
       this.issuanceDate = options.issuanceDate
-      // Optional fields are only set when provided, so serialization does not emit `undefined` keys
-      // (which JSON-LD signing rejects)
       if (options.expirationDate !== undefined) this.expirationDate = options.expirationDate
       this.credentialSubject = mapSingleOrArray(options.credentialSubject, (subject) =>
         subject instanceof W3cCredentialSubject ? subject : new W3cCredentialSubject(subject)
