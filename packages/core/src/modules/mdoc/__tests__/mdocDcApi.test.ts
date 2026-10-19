@@ -1,14 +1,21 @@
+import { type DocRequestMatchSuccess, UnsatisfiedDeviceRequestError } from '@owf/mdoc'
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import type {
   TrustedIssuersForVerificationContext,
   VerificationSigner,
 } from '../../../agent/TrustedIssuersForVerification'
+import { CredentialMultiInstanceUseMode } from '../../../utils/credentialUseTypes'
 import { PublicJwk } from '../../kms'
 import { type X509Certificate, X509Service, type X509VerificationContext } from '../../x509'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceRequestNotSatisfiedError, MdocVerificationSessionExpiredError } from '../MdocError'
-import type { MdocDcApiCreateVerificationSessionOptions, MdocDeviceRequestMatch } from '../MdocOptions'
+import type {
+  MdocDcApiCreateVerificationSessionOptions,
+  MdocDeviceRequestMatch,
+  MdocDocRequestInfo,
+  MdocResolvedRequest,
+} from '../MdocOptions'
 import { MdocVerificationSessionState } from '../MdocVerificationSessionState'
 import { MdocRecord } from '../repository'
 
@@ -23,11 +30,23 @@ const otherNameSpace = 'org.iso.23220.1'
  * session expects unless it requested its doc requests as alternatives.
  */
 const matchedDocRequests = (deviceRequestMatch: MdocDeviceRequestMatch) => {
-  if (!deviceRequestMatch.success || deviceRequestMatch.docRequestsAsAlternatives) {
+  const docRequests = deviceRequestMatch.docRequests
+  if (!deviceRequestMatch.success || !docRequests.every((docRequest) => docRequest.success)) {
     throw new Error('Expected the device response to satisfy every doc request')
   }
 
-  return deviceRequestMatch.docRequests
+  return docRequests as DocRequestMatchSuccess[]
+}
+
+/**
+ * Assert the stored mdocs satisfy every doc request of a request without use cases.
+ */
+function assertEveryDocRequestSatisfied(
+  resolved: MdocResolvedRequest
+): asserts resolved is Extract<MdocResolvedRequest, { success: true; useCasesSource: 'allDocRequests' }> {
+  if (!resolved.success || resolved.useCasesSource !== 'allDocRequests') {
+    throw new Error('Expected the stored mdocs to satisfy every doc request')
+  }
 }
 
 const getNextMonth = () => {
@@ -118,8 +137,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
       readerAuth: undefined,
       nameSpaces: { [nameSpace]: { family_name: true, given_name: false } },
     })
-    if (!resolved.success || resolved.docRequestsAsAlternatives)
-      throw new Error('Expected the stored mdocs to satisfy every doc request')
+    assertEveryDocRequestSatisfied(resolved)
     expect(resolved.docRequests[0]).toMatchObject({ success: true, failedCredentials: [] })
     expect(resolved.docRequests[0].validCredentials).toHaveLength(1)
     expect(resolved.docRequests[0].validCredentials[0]).toMatchObject({
@@ -358,8 +376,8 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
     })
   })
 
-  // A device request with more than one doc request does not say whether it asks for all of them or
-  // for any one of them, so both sides have to opt in to the same interpretation.
+  // A device request with more than one doc request and no use cases does not say whether it asks for
+  // all of them or for any one of them, so both sides have to opt in to the same interpretation.
   describe('doc requests as alternatives', () => {
     const unknownDocType = 'com.example.unknown.1'
     const otherUnknownDocType = 'com.example.unknown.2'
@@ -373,6 +391,27 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
         treatAmbiguousMultipleDocRequestsAsAlternatives: true,
       })
 
+    test('selecting credentials answers the first alternative that can be answered', async () => {
+      const { verificationSession, request } = await createAlternativesSession([unknownDocType, docType])
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({
+        request,
+        origin,
+        treatAmbiguousMultipleDocRequestsAsAlternatives: true,
+      })
+      const selected = agent.mdoc.selectCredentialsForRequest(resolved)
+
+      expect(selected.credentials.map(({ docRequestIndex }) => docRequestIndex)).toEqual([1])
+
+      const result = await agent.mdoc.verifyDcApiResponse({
+        verificationSessionId: verificationSession.id,
+        response: await agent.mdoc.createDcApiResponse(selected),
+        origin,
+        trustedCertificates: [issuerCertificatePem],
+      })
+      expect(result.deviceRequestMatch.success).toBe(true)
+    })
+
     test('a response that only answers one of the alternatives verifies', async () => {
       const { verificationSession, request } = await createAlternativesSession([unknownDocType, docType])
 
@@ -385,7 +424,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
       })
 
       // The doc requests that cannot be answered are kept, so the wallet can see which alternative it can answer
-      expect(resolved).toMatchObject({ success: true, docRequestsAsAlternatives: true })
+      expect(resolved).toMatchObject({ success: true, useCasesSource: 'eachDocRequest' })
       expect(resolved.docRequests.map(({ docType: requested, success }) => ({ docType: requested, success }))).toEqual([
         { docType: unknownDocType, success: false },
         { docType, success: true },
@@ -406,7 +445,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
       expect(result.verificationSession.state).toBe(MdocVerificationSessionState.ResponseVerified)
       expect(result.deviceRequestMatch).toMatchObject({
         success: true,
-        docRequestsAsAlternatives: true,
+        useCasesSource: 'eachDocRequest',
         unrequestedDocuments: [],
         docRequests: [
           { docRequestIndex: 0, docType: unknownDocType, success: false },
@@ -424,7 +463,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
       })
 
       const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
-      expect(resolved).toMatchObject({ success: false, docRequestsAsAlternatives: false })
+      expect(resolved).toMatchObject({ success: false, useCasesSource: 'allDocRequests' })
 
       const response = await agent.mdoc.createDcApiResponse({
         resolvedRequest: resolved,
@@ -452,7 +491,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
         origin,
         treatAmbiguousMultipleDocRequestsAsAlternatives: true,
       })
-      expect(resolved).toMatchObject({ success: false, docRequestsAsAlternatives: true })
+      expect(resolved).toMatchObject({ success: false, useCasesSource: 'eachDocRequest' })
 
       // Answer another device request, so the response carries a document neither alternative asked for
       const { request: otherRequest } = await createSession()
@@ -493,7 +532,317 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
         treatAmbiguousMultipleDocRequestsAsAlternatives: true,
       })
 
-      expect(resolved).toMatchObject({ success: false, docRequestsAsAlternatives: false })
+      expect(resolved).toMatchObject({ success: false, useCasesSource: 'allDocRequests' })
+    })
+  })
+
+  describe('use cases', () => {
+    const unknownDocType = 'com.example.unknown.1'
+
+    // An unknown document or an mDL, and optionally a photo ID
+    const createUseCasesSession = () =>
+      agent.mdoc.createDcApiVerificationSession({
+        docRequests: [
+          { docType: unknownDocType, nameSpaces: { [nameSpace]: { family_name: true } } },
+          { docType, nameSpaces: { [nameSpace]: { family_name: true } } },
+          { docType: otherDocType, nameSpaces: { [otherNameSpace]: { given_name: true } } },
+        ],
+        deviceRequestInfo: {
+          useCases: [
+            { mandatory: true, documentSets: [[0], [1]], purposeHints: { 'org.example.purpose': 1 } },
+            { mandatory: false, documentSets: [[2]] },
+          ],
+        },
+      })
+
+    test('a response that answers a document set of each use case verifies', async () => {
+      const { verificationSession, request } = await createUseCasesSession()
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+
+      expect(resolved).toMatchObject({
+        success: true,
+        useCasesSource: 'deviceRequestInfo',
+        useCases: [
+          {
+            useCaseIndex: 0,
+            mandatory: true,
+            purposeHints: { 'org.example.purpose': 1 },
+            success: true,
+            documentSets: [[0], [1]],
+            matchingDocumentSets: [[1]],
+          },
+          { useCaseIndex: 1, mandatory: false, success: true, documentSets: [[2]], matchingDocumentSets: [[2]] },
+        ],
+      })
+      expect(resolved.docRequests.map(({ success }) => success)).toEqual([false, true, true])
+
+      const response = await agent.mdoc.createDcApiResponse({
+        resolvedRequest: resolved,
+        credentials: [
+          { docRequestIndex: 1, record: mdocRecord },
+          { docRequestIndex: 2, record: otherMdocRecord },
+        ],
+      })
+
+      const result = await agent.mdoc.verifyDcApiResponse({
+        verificationSessionId: verificationSession.id,
+        response,
+        origin,
+        trustedCertificates: [issuerCertificatePem],
+      })
+
+      expect(result.deviceRequestMatch).toMatchObject({
+        success: true,
+        useCasesSource: 'deviceRequestInfo',
+        useCases: [
+          { useCaseIndex: 0, success: true, matchingDocumentSets: [[1]] },
+          { useCaseIndex: 1, success: true, matchingDocumentSets: [[2]] },
+        ],
+      })
+    })
+
+    test('selecting credentials answers the mandatory use case with its first matching document set', async () => {
+      const { verificationSession, request } = await createUseCasesSession()
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+      const selected = agent.mdoc.selectCredentialsForRequest(resolved)
+
+      // The optional use case is left out, as with optional credential sets in DCQL
+      expect(selected.credentials.map(({ docRequestIndex, record }) => ({ docRequestIndex, id: record.id }))).toEqual([
+        { docRequestIndex: 1, id: mdocRecord.id },
+      ])
+
+      const result = await agent.mdoc.verifyDcApiResponse({
+        verificationSessionId: verificationSession.id,
+        response: await agent.mdoc.createDcApiResponse(selected),
+        origin,
+        trustedCertificates: [issuerCertificatePem],
+      })
+
+      expect(result.deviceRequestMatch).toMatchObject({
+        success: true,
+        useCases: [{ success: true }, { success: false }],
+      })
+    })
+
+    test('a response that leaves the mandatory use case unanswered does not verify', async () => {
+      const { verificationSession, request } = await createUseCasesSession()
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+      await expect(
+        agent.mdoc.createDcApiResponse({
+          resolvedRequest: resolved,
+          credentials: [{ docRequestIndex: 2, record: otherMdocRecord }],
+        })
+      ).rejects.toThrow(UnsatisfiedDeviceRequestError)
+
+      // Answer another device request, so the wallet does not stop the response
+      const { request: otherRequest } = await agent.mdoc.createDcApiVerificationSession({
+        docRequests: [{ docType: otherDocType, nameSpaces: { [otherNameSpace]: { given_name: true } } }],
+      })
+      const otherResolved = await agent.mdoc.resolveDcApiRequest({
+        request: { ...request, deviceRequest: otherRequest.deviceRequest },
+        origin,
+      })
+      const response = await agent.mdoc.createDcApiResponse({
+        resolvedRequest: otherResolved,
+        credentials: [{ docRequestIndex: 0, record: otherMdocRecord }],
+      })
+
+      await expect(
+        agent.mdoc.verifyDcApiResponse({
+          verificationSessionId: verificationSession.id,
+          response,
+          origin,
+          trustedCertificates: [issuerCertificatePem],
+        })
+      ).rejects.toThrow(MdocDeviceRequestNotSatisfiedError)
+    })
+
+    test('treating doc requests as alternatives is ignored when use cases are passed', async () => {
+      const { request } = await agent.mdoc.createDcApiVerificationSession({
+        docRequests: [
+          { docType, nameSpaces: { [nameSpace]: { family_name: true } } },
+          { docType: otherDocType, nameSpaces: { [otherNameSpace]: { given_name: true } } },
+        ],
+        deviceRequestInfo: { useCases: [{ mandatory: true, documentSets: [[0], [1]] }] },
+        treatAmbiguousMultipleDocRequestsAsAlternatives: true,
+      })
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+
+      expect(resolved.useCases).toMatchObject([{ mandatory: true, documentSets: [[0], [1]] }])
+    })
+  })
+
+  describe('doc request info', () => {
+    test('a requested element can be answered by an alternative set the wallet chooses', async () => {
+      const requestInfo = {
+        alternativeDataElements: [
+          {
+            requestedElement: [nameSpace, 'portrait'],
+            alternativeElementSets: [[[nameSpace, 'birth_date']]],
+          },
+        ],
+      } satisfies MdocDocRequestInfo
+
+      const { verificationSession, request } = await agent.mdoc.createDcApiVerificationSession({
+        docRequests: [{ docType, nameSpaces: { [nameSpace]: { family_name: true, portrait: false } }, requestInfo }],
+      })
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+      assertEveryDocRequestSatisfied(resolved)
+
+      expect(resolved.docRequests[0].requestInfo).toEqual(requestInfo)
+      expect(resolved.docRequests[0].validCredentials[0].claims.validClaims[1]).toMatchObject({
+        elementIdentifier: 'portrait',
+        options: [
+          {
+            alternativeElementSetIndex: 0,
+            elements: [{ namespace: nameSpace, elementIdentifier: 'birth_date', elementValue: '1990-01-01' }],
+          },
+        ],
+      })
+
+      // An alternative set is only disclosed when the wallet chooses it
+      await expect(
+        agent.mdoc.createDcApiResponse({
+          resolvedRequest: resolved,
+          credentials: [{ docRequestIndex: 0, record: mdocRecord }],
+        })
+      ).rejects.toThrow("Element 'portrait'")
+
+      // Selecting chooses the alternative set, as the mdoc has no portrait
+      const selected = agent.mdoc.selectCredentialsForRequest(resolved)
+      expect(selected.credentials).toEqual([
+        {
+          docRequestIndex: 0,
+          record: expect.objectContaining({ id: mdocRecord.id }),
+          useMode: CredentialMultiInstanceUseMode.NewOrFirst,
+          alternatives: { [nameSpace]: { portrait: 0 } },
+        },
+      ])
+
+      const response = await agent.mdoc.createDcApiResponse(selected)
+
+      const result = await agent.mdoc.verifyDcApiResponse({
+        verificationSessionId: verificationSession.id,
+        response,
+        origin,
+        trustedCertificates: [issuerCertificatePem],
+      })
+
+      expect(result.deviceResponse.issuerClaims).toEqual({
+        [docType]: { [nameSpace]: { family_name: 'Doe', birth_date: '1990-01-01' } },
+      })
+      expect(matchedDocRequests(result.deviceRequestMatch)[0].validDocuments[0].claims).toMatchObject({
+        success: true,
+        unrequestedClaims: [],
+      })
+    })
+
+    describe('issuer identifiers', () => {
+      const issuerDocType = 'com.example.issuer.1'
+      let keyIdentifiedIssuerCertificate: X509Certificate
+      let keyIdentifiedMdocRecord: MdocRecord
+
+      beforeAll(async () => {
+        const issuerKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+        const holderKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+
+        keyIdentifiedIssuerCertificate = await X509Service.createCertificate(agent.context, {
+          issuer: 'CN=credo-issuer, C=NL',
+          authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
+          validity: { notBefore: new Date(Date.now() - 60_000), notAfter: getNextMonth() },
+          extensions: { authorityKeyIdentifier: { include: true } },
+        })
+
+        const mdoc = await Mdoc.sign(agent.context, {
+          docType: issuerDocType,
+          validityInfo: { validUntil: getNextMonth() },
+          holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+          namespaces: { [nameSpace]: { family_name: 'Doe' } },
+          issuerCertificate: keyIdentifiedIssuerCertificate,
+        })
+        mdoc.deviceKeyId = holderKey.keyId
+
+        keyIdentifiedMdocRecord = await agent.mdoc.store({ record: MdocRecord.fromMdoc(mdoc) })
+      })
+
+      const createIssuerSession = (issuerIdentifiers: string[]) =>
+        agent.mdoc.createDcApiVerificationSession({
+          docRequests: [
+            {
+              docType: issuerDocType,
+              nameSpaces: { [nameSpace]: { family_name: true } },
+              requestInfo: { issuerIdentifiers },
+            },
+          ],
+        })
+
+      test('an mdoc of an accepted issuer matches and verifies', async () => {
+        const authorityKeyIdentifier = keyIdentifiedIssuerCertificate.authorityKeyIdentifier
+        if (!authorityKeyIdentifier) throw new Error('Expected the certificate to have an authority key identifier')
+
+        const { verificationSession, request } = await createIssuerSession([authorityKeyIdentifier])
+
+        const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+        assertEveryDocRequestSatisfied(resolved)
+        expect(resolved.docRequests[0].validCredentials[0]).toMatchObject({
+          record: { id: keyIdentifiedMdocRecord.id },
+          issuer: { success: true },
+        })
+
+        const response = await agent.mdoc.createDcApiResponse({
+          resolvedRequest: resolved,
+          credentials: [{ docRequestIndex: 0, record: keyIdentifiedMdocRecord }],
+        })
+
+        // The issuer is matched against the certificate chain the document was verified with
+        const result = await agent.mdoc.verifyDcApiResponse({
+          verificationSessionId: verificationSession.id,
+          response,
+          origin,
+          trustedCertificates: [keyIdentifiedIssuerCertificate.toString('pem')],
+        })
+
+        expect(matchedDocRequests(result.deviceRequestMatch)[0].validDocuments[0]).toMatchObject({
+          issuer: { success: true },
+        })
+      })
+
+      test('an mdoc of another issuer does not match or verify', async () => {
+        const { verificationSession, request } = await createIssuerSession(['00'.repeat(20)])
+
+        const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+        expect(resolved.success).toBe(false)
+        expect(resolved.docRequests[0].failedCredentials).toMatchObject([
+          { record: { id: keyIdentifiedMdocRecord.id }, issuer: { success: false } },
+        ])
+
+        // Answer another device request, so the wallet does not stop the response
+        const { request: otherRequest } = await agent.mdoc.createDcApiVerificationSession({
+          docRequests: [{ docType: issuerDocType, nameSpaces: { [nameSpace]: { family_name: true } } }],
+        })
+        const otherResolved = await agent.mdoc.resolveDcApiRequest({
+          request: { ...request, deviceRequest: otherRequest.deviceRequest },
+          origin,
+        })
+        const response = await agent.mdoc.createDcApiResponse({
+          resolvedRequest: otherResolved,
+          credentials: [{ docRequestIndex: 0, record: keyIdentifiedMdocRecord }],
+        })
+
+        await expect(
+          agent.mdoc.verifyDcApiResponse({
+            verificationSessionId: verificationSession.id,
+            response,
+            origin,
+            trustedCertificates: [keyIdentifiedIssuerCertificate.toString('pem')],
+          })
+        ).rejects.toThrow(MdocDeviceRequestNotSatisfiedError)
+      })
     })
   })
 
@@ -545,8 +894,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
       })
 
       // The element is not issuer signed, but the device key is authorized for it
-      if (!resolved.success || resolved.docRequestsAsAlternatives)
-        throw new Error('Expected the stored mdocs to satisfy every doc request')
+      assertEveryDocRequestSatisfied(resolved)
       expect(resolved.docRequests[0].validCredentials).toHaveLength(1)
       expect(resolved.docRequests[0].validCredentials[0].claims.validClaims).toMatchObject([
         { namespace: nameSpace, elementIdentifier: 'family_name', elementValue: 'Doe', source: 'issuerSigned' },
@@ -568,16 +916,18 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
         "Element 'session_id' in namespace 'com.example.device' is not issuer-signed in the credential, so it has to be disclosed device-signed"
       )
 
-      const response = await agent.mdoc.createDcApiResponse({
-        resolvedRequest: resolved,
-        credentials: [
-          {
-            docRequestIndex: 0,
-            record: deviceMdocRecord,
-            deviceNameSpaces: { [deviceNameSpace]: { session_id: 'abc' } },
-          },
-        ],
-      })
+      // Selecting provides the device signed values the request was resolved with
+      const selected = agent.mdoc.selectCredentialsForRequest(resolved)
+      expect(selected.credentials).toEqual([
+        {
+          docRequestIndex: 0,
+          record: expect.objectContaining({ id: deviceMdocRecord.id }),
+          useMode: CredentialMultiInstanceUseMode.NewOrFirst,
+          deviceNameSpaces: { [deviceNameSpace]: { session_id: 'abc' } },
+        },
+      ])
+
+      const response = await agent.mdoc.createDcApiResponse(selected)
 
       const result = await agent.mdoc.verifyDcApiResponse({
         verificationSessionId: verificationSession.id,
@@ -603,8 +953,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
       })
 
       const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
-      if (!resolved.success || resolved.docRequestsAsAlternatives)
-        throw new Error('Expected the stored mdocs to satisfy every doc request')
+      assertEveryDocRequestSatisfied(resolved)
 
       expect(resolved.docRequests[0].validCredentials[0].claims.validClaims).toMatchObject([
         { elementIdentifier: 'age_over_18', disclosedElementIdentifier: 'age_over_21', elementValue: true },
@@ -627,6 +976,59 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
         elementIdentifier: 'age_over_18',
         disclosedElementIdentifier: 'age_over_21',
       })
+    })
+  })
+
+  describe('selecting credentials', () => {
+    test('the selected credentials are the input to create a response', async () => {
+      const { verificationSession, request } = await createSession()
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+      const selected = agent.mdoc.selectCredentialsForRequest(resolved)
+
+      expect(selected).toEqual({
+        resolvedRequest: resolved,
+        credentials: [
+          {
+            docRequestIndex: 0,
+            record: expect.objectContaining({ id: mdocRecord.id }),
+            useMode: CredentialMultiInstanceUseMode.NewOrFirst,
+          },
+        ],
+      })
+
+      const result = await agent.mdoc.verifyDcApiResponse({
+        verificationSessionId: verificationSession.id,
+        response: await agent.mdoc.createDcApiResponse(selected),
+        origin,
+        trustedCertificates: [issuerCertificatePem],
+      })
+
+      expect(result.verificationSession.state).toBe(MdocVerificationSessionState.ResponseVerified)
+    })
+
+    test('a request that cannot be satisfied has nothing to select', async () => {
+      const { request } = await agent.mdoc.createDcApiVerificationSession({
+        docRequests: [{ docType, nameSpaces: { [nameSpace]: { family_name: true, portrait: false } } }],
+      })
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+
+      expect(() => agent.mdoc.selectCredentialsForRequest(resolved)).toThrow(
+        'Cannot select the credentials for the request if the request cannot be satisfied'
+      )
+    })
+
+    test('only credentials that can be used with the use mode are selected', async () => {
+      const { request } = await createSession()
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+      await agent.mdoc.createDcApiResponse(agent.mdoc.selectCredentialsForRequest(resolved))
+
+      // The stored mdoc has a single instance, which is now used, so it can be used again but not as a new one
+      expect(() =>
+        agent.mdoc.selectCredentialsForRequest(resolved, { useMode: CredentialMultiInstanceUseMode.New })
+      ).toThrow('Unable to select credentials for use case 0')
     })
   })
 
@@ -762,8 +1164,7 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
     const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
 
     expect(resolved.docRequests.map(({ docType: requested }) => requested)).toEqual([docType, otherDocType])
-    if (!resolved.success || resolved.docRequestsAsAlternatives)
-      throw new Error('Expected the stored mdocs to satisfy every doc request')
+    assertEveryDocRequestSatisfied(resolved)
     expect(resolved.docRequests[0].validCredentials.map(({ record }) => record.id)).toEqual([mdocRecord.id])
     expect(resolved.docRequests[1].validCredentials.map(({ record }) => record.id)).toEqual([otherMdocRecord.id])
     expect(resolved.docRequests[1].validCredentials[0].claims.validClaims).toMatchObject([
