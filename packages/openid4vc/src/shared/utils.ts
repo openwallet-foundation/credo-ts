@@ -13,17 +13,13 @@ import {
 import type { Jwk, JwkSet, JwtSigner } from '@openid4vc/oauth2'
 import type { OpenId4VcJwtIssuer, OpenId4VcJwtIssuerEncoded } from './models'
 
-/**
- * The `alg` values supported for response encryption (JARM and OpenID4VCI credential responses).
- * Keep in sync with the encrypt/decrypt jwe callbacks.
- */
 export const supportedResponseEncryptionKeyAgreementAlgorithms = [
   'ECDH-ES',
 ] satisfies Kms.KnownJwaKeyAgreementAlgorithm[]
 
 /**
- * The `enc` values supported for response encryption (JARM and OpenID4VCI credential responses).
- * Keep in sync with the encrypt/decrypt jwe callbacks.
+ * The `enc` values supported for response encryption. Keep in sync with the
+ * encrypt/decrypt jwe callbacks.
  */
 export const supportedResponseEncryptionContentAlgorithms = [
   'A128GCM',

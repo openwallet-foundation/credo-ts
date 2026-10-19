@@ -747,30 +747,13 @@ export interface OpenId4VciBatchCredentialIssuanceOptions {
 }
 
 export interface OpenId4VciCredentialResponseEncryptionOptions {
-  /**
-   * Whether the wallet must request an encrypted credential response. When `true`, credential and
-   * deferred credential requests without `credential_response_encryption` are rejected with
-   * `invalid_encryption_parameters`. Advertised as `encryption_required`.
-   *
-   * @default false
-   */
   required?: boolean
 
-  /**
-   * The JWE `alg` values supported for credential response encryption.
-   *
-   * @default all key agreement algorithms supported by Credo for response encryption
-   */
   algValuesSupported?: [
     (typeof supportedResponseEncryptionKeyAgreementAlgorithms)[number],
     ...(typeof supportedResponseEncryptionKeyAgreementAlgorithms)[number][],
   ]
 
-  /**
-   * The JWE `enc` values supported for credential response encryption.
-   *
-   * @default all content encryption algorithms supported by Credo for response encryption
-   */
   encValuesSupported?: [
     (typeof supportedResponseEncryptionContentAlgorithms)[number],
     ...(typeof supportedResponseEncryptionContentAlgorithms)[number][],
@@ -814,10 +797,6 @@ export type OpenId4VciCreateIssuerOptions = {
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
-  /**
-   * Configure credential response encryption. When not provided, encryption is optional and all
-   * algorithms supported by Credo are advertised.
-   */
   credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
 
   /**

@@ -1273,7 +1273,6 @@ describe('OpenId4VcIssuer', () => {
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
-    // Create a P-256 key in the holder's KMS to use as the encryption recipient key
     const encKey = await holder.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
     const encPublicJwk = {
       ...Kms.PublicJwk.fromPublicJwk(encKey.publicJwk).toJson(),
@@ -1320,15 +1319,12 @@ describe('OpenId4VcIssuer', () => {
       }),
     })
 
-    // Response is encrypted: credentialResponseJwt is a compact JWE (header.encKey.iv.ciphertext.tag)
     expect(credentialResponseJwt).toBeDefined()
     expect(credentialResponseJwt?.split('.').length).toBe(5)
-    // The unencrypted response object is still available for session bookkeeping
     expect(credentialResponse.credential).toBeDefined()
   })
 
   describe('credential response encryption configuration', () => {
-    // Requests an sd-jwt credential, with credential response encryption using `enc` if provided
     const requestSdJwtCredential = async (enc?: string) => {
       const preAuthorizedCode = '1234567890'
       const result = await issuer.openid4vc.issuer.createCredentialOffer({

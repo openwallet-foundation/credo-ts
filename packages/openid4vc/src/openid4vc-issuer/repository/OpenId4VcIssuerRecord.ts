@@ -68,10 +68,6 @@ export type OpenId4VcIssuerRecordProps = {
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
-  /**
-   * Credential response encryption configuration. When not provided, encryption is optional and all
-   * algorithms supported by Credo are advertised.
-   */
   credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
 
   /**

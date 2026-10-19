@@ -2325,10 +2325,6 @@ function getCredentialResponseEncryptionMetadata(issuerRecord: OpenId4VcIssuerRe
   }
 }
 
-/**
- * Asserts the credential response encryption requested by the wallet matches the issuer
- * metadata (OpenID4VCI 1.0 §8.2, §8.3.1.2)
- */
 function assertCredentialResponseEncryption(
   issuerRecord: OpenId4VcIssuerRecord,
   credentialResponseEncryption: CredentialResponseEncryption | undefined
