@@ -32,6 +32,10 @@ import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciChainedAuthorizationServerConfig,
 } from '../shared/models/OpenId4VciAuthorizationServerConfig'
+import type {
+  supportedResponseEncryptionContentAlgorithms,
+  supportedResponseEncryptionKeyAgreementAlgorithms,
+} from '../shared/utils'
 import {
   OpenId4VcIssuanceSessionRecord,
   type OpenId4VcIssuanceSessionRecordTransaction,
@@ -743,6 +747,20 @@ export interface OpenId4VciBatchCredentialIssuanceOptions {
   batchSize: number
 }
 
+export interface OpenId4VciCredentialResponseEncryptionOptions {
+  required?: boolean
+
+  algValuesSupported?: [
+    (typeof supportedResponseEncryptionKeyAgreementAlgorithms)[number],
+    ...(typeof supportedResponseEncryptionKeyAgreementAlgorithms)[number][],
+  ]
+
+  encValuesSupported?: [
+    (typeof supportedResponseEncryptionContentAlgorithms)[number],
+    ...(typeof supportedResponseEncryptionContentAlgorithms)[number][],
+  ]
+}
+
 export type OpenId4VciCreateIssuerOptions = {
   /**
    * Id of the issuer, not the id of the issuer record. Will be exposed publicly
@@ -785,6 +803,8 @@ export type OpenId4VciCreateIssuerOptions = {
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
+  credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
+
   /**
    * When provided, allows wallets to fetch signed metadata.
    *
@@ -820,6 +840,7 @@ export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   | 'clientAttestationPopSigningAlgValuesSupported'
   | 'credentialConfigurationsSupported'
   | 'batchCredentialIssuance'
+  | 'credentialResponseEncryption'
   | 'authorizationServerConfigs'
 > &
   OpenId4VcUpdateIssuerOptions

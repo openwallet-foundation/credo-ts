@@ -5,6 +5,7 @@ import type {
   OpenId4VciBatchCredentialIssuanceOptions,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
+  OpenId4VciCredentialResponseEncryptionOptions,
   OpenId4VciIssuerInfo,
 } from '@credo-ts/openid4vc'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
@@ -47,6 +48,9 @@ export const openid4vcIssuer = sqliteTable(
       mode: 'json',
     }).$type<[Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]>(),
     batchCredentialIssuance: text('batch_credential_issuance').$type<OpenId4VciBatchCredentialIssuanceOptions>(),
+    credentialResponseEncryption: text('credential_response_encryption', {
+      mode: 'json',
+    }).$type<OpenId4VciCredentialResponseEncryptionOptions>(),
   },
   (table) => sqliteBaseRecordIndexes(table, 'openid4vcIssuer')
 )

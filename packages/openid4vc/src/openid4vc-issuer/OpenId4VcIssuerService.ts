@@ -75,6 +75,8 @@ import {
   encodeJwtIssuer,
   getProofTypeFromPublicJwk,
   getPublicJwkFromDid,
+  supportedResponseEncryptionContentAlgorithms,
+  supportedResponseEncryptionKeyAgreementAlgorithms,
 } from '../shared/utils'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
@@ -594,7 +596,11 @@ export class OpenId4VcIssuerService {
   public async createCredentialResponse(
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
-  ): Promise<{ issuanceSession: OpenId4VcIssuanceSessionRecord; credentialResponse: CredentialResponse }> {
+  ): Promise<{
+    issuanceSession: OpenId4VcIssuanceSessionRecord
+    credentialResponse: CredentialResponse
+    credentialResponseJwt?: string
+  }> {
     options.issuanceSession.assertState([
       // OfferUriRetrieved is valid when doing auth flow (we should add a check)
       OpenId4VcIssuanceSessionState.OfferUriRetrieved,
@@ -618,14 +624,6 @@ export class OpenId4VcIssuerService {
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidCredentialRequest,
         error_description: `Using unsupported 'credential_identifier'`,
-      })
-    }
-
-    // TODO: support credential response encryption
-    if (parsedCredentialRequest.credentialResponseEncryption) {
-      throw new Oauth2ServerErrorResponseError({
-        error: Oauth2ErrorCodes.InvalidCredentialRequest,
-        error_description: `Credential response encryption is not supported.`,
       })
     }
 
@@ -718,21 +716,22 @@ export class OpenId4VcIssuerService {
     })
 
     let credentialResponse: CredentialResponse
+    let credentialResponseJwt: string | undefined
 
     // NOTE: nonce in credential response is deprecated in newer drafts, but for now we keep it in
     const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
 
     if (signOptionsOrDeferral.type === 'deferral') {
-      // TODO: support credential response encryption
-      credentialResponse = (
-        await vcIssuer.createCredentialResponse({
-          transactionId: signOptionsOrDeferral.transactionId,
-          interval: signOptionsOrDeferral.interval,
-          cNonce,
-          cNonceExpiresInSeconds,
-          credentialRequest: parsedCredentialRequest,
-        })
-      ).credentialResponse
+      const deferralResult = await vcIssuer.createCredentialResponse({
+        transactionId: signOptionsOrDeferral.transactionId,
+        interval: signOptionsOrDeferral.interval,
+        cNonce,
+        cNonceExpiresInSeconds,
+        credentialRequest: parsedCredentialRequest,
+        credentialResponseEncryption: parsedCredentialRequest.credentialResponseEncryption,
+      })
+      credentialResponse = deferralResult.credentialResponse
+      credentialResponseJwt = deferralResult.credentialResponseJwt
 
       // Save transaction data for deferred issuance
       issuanceSession.transactions.push({
@@ -761,20 +760,20 @@ export class OpenId4VcIssuerService {
         expectedLength: verifiedCredentialRequestProofs.keys.length,
       })
 
-      // TODO: support credential response encryption
-      credentialResponse = (
-        await vcIssuer.createCredentialResponse({
-          credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
-          credentials: credentialRequest.proofs
-            ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
-              ? credentials.credentials.map((c) => ({ credential: c }))
-              : credentials.credentials
-            : undefined,
-          cNonce,
-          cNonceExpiresInSeconds,
-          credentialRequest: parsedCredentialRequest,
-        })
-      ).credentialResponse
+      const immediateResult = await vcIssuer.createCredentialResponse({
+        credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
+        credentials: credentialRequest.proofs
+          ? issuanceSession.openId4VciVersion === 'v1' || issuanceSession.openId4VciVersion === 'v1.draft15'
+            ? credentials.credentials.map((c) => ({ credential: c }))
+            : credentials.credentials
+          : undefined,
+        cNonce,
+        cNonceExpiresInSeconds,
+        credentialRequest: parsedCredentialRequest,
+        credentialResponseEncryption: parsedCredentialRequest.credentialResponseEncryption,
+      })
+      credentialResponse = immediateResult.credentialResponse
+      credentialResponseJwt = immediateResult.credentialResponseJwt
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
       const newState =
@@ -787,6 +786,7 @@ export class OpenId4VcIssuerService {
 
     return {
       credentialResponse,
+      credentialResponseJwt,
       issuanceSession,
     }
   }
@@ -797,6 +797,7 @@ export class OpenId4VcIssuerService {
   ): Promise<{
     issuanceSession: OpenId4VcIssuanceSessionRecord
     deferredCredentialResponse: DeferredCredentialResponse
+    deferredCredentialResponseJwt?: string
   }> {
     const { issuanceSession, deferredCredentialRequest, authorization, deferredCredentialRequestToCredentialMapper } =
       options
@@ -827,14 +828,14 @@ export class OpenId4VcIssuerService {
     const now = Date.now()
     const remainingInterval = deferredUntil ? Math.round((deferredUntil - now) / 1000) : undefined
     if (remainingInterval && remainingInterval > 0) {
+      const earlyDeferralResult = await vcIssuer.createDeferredCredentialResponse({
+        interval: remainingInterval,
+        transactionId: transaction.transactionId,
+        credentialResponseEncryption: deferredCredentialRequest.credential_response_encryption,
+      })
       return {
-        // TODO: support credential response encryption
-        deferredCredentialResponse: (
-          await vcIssuer.createDeferredCredentialResponse({
-            interval: remainingInterval,
-            transactionId: transaction.transactionId,
-          })
-        ).deferredCredentialResponse,
+        deferredCredentialResponse: earlyDeferralResult.deferredCredentialResponse,
+        deferredCredentialResponseJwt: earlyDeferralResult.deferredCredentialResponseJwt,
         issuanceSession,
       }
     }
@@ -865,14 +866,16 @@ export class OpenId4VcIssuerService {
     })
 
     let deferredCredentialResponse: DeferredCredentialResponse
+    let deferredCredentialResponseJwt: string | undefined
+
     if (signOptionsOrDeferral.type === 'deferral') {
-      // TODO: support credential response encryption
-      deferredCredentialResponse = (
-        await vcIssuer.createDeferredCredentialResponse({
-          interval: signOptionsOrDeferral.interval,
-          transactionId: signOptionsOrDeferral.transactionId,
-        })
-      ).deferredCredentialResponse
+      const deferralResult = await vcIssuer.createDeferredCredentialResponse({
+        interval: signOptionsOrDeferral.interval,
+        transactionId: signOptionsOrDeferral.transactionId,
+        credentialResponseEncryption: deferredCredentialRequest.credential_response_encryption,
+      })
+      deferredCredentialResponse = deferralResult.deferredCredentialResponse
+      deferredCredentialResponseJwt = deferralResult.deferredCredentialResponseJwt
 
       // Update transaction with the new deferredUntil value
       issuanceSession.transactions = issuanceSession.transactions.map((tx) => {
@@ -895,12 +898,12 @@ export class OpenId4VcIssuerService {
         expectedLength: transaction.numberOfCredentials,
       })
 
-      // TODO: support credential response encryption
-      deferredCredentialResponse = (
-        await vcIssuer.createDeferredCredentialResponse({
-          credentials: credentials.credentials.map((c) => ({ credential: c })),
-        })
-      ).deferredCredentialResponse
+      const immediateResult = await vcIssuer.createDeferredCredentialResponse({
+        credentials: credentials.credentials.map((c) => ({ credential: c })),
+        credentialResponseEncryption: deferredCredentialRequest.credential_response_encryption,
+      })
+      deferredCredentialResponse = immediateResult.deferredCredentialResponse
+      deferredCredentialResponseJwt = immediateResult.deferredCredentialResponseJwt
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
 
@@ -921,6 +924,7 @@ export class OpenId4VcIssuerService {
 
     return {
       deferredCredentialResponse,
+      deferredCredentialResponseJwt,
       issuanceSession,
     }
   }
@@ -1337,6 +1341,7 @@ export class OpenId4VcIssuerService {
       authorizationServerConfigs: options.authorizationServerConfigs,
       credentialConfigurationsSupported: options.credentialConfigurationsSupported,
       batchCredentialIssuance: options.batchCredentialIssuance,
+      credentialResponseEncryption: options.credentialResponseEncryption,
     })
 
     if (options.metadataSigner) {
@@ -1444,6 +1449,7 @@ export class OpenId4VcIssuerService {
             batch_size: issuerRecord.batchCredentialIssuance.batchSize,
           }
         : undefined,
+      credential_response_encryption: getCredentialResponseEncryptionMetadata(issuerRecord),
     } satisfies CredentialIssuerMetadata
 
     const clientAttestationAuthMethods = [
@@ -2303,5 +2309,17 @@ export class OpenId4VcIssuerService {
       verificationMethod: options.verificationMethod,
       proofType: proofType,
     })
+  }
+}
+
+function getCredentialResponseEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
+  return {
+    alg_values_supported: issuerRecord.credentialResponseEncryption?.algValuesSupported ?? [
+      ...supportedResponseEncryptionKeyAgreementAlgorithms,
+    ],
+    enc_values_supported: issuerRecord.credentialResponseEncryption?.encValuesSupported ?? [
+      ...supportedResponseEncryptionContentAlgorithms,
+    ],
+    encryption_required: issuerRecord.credentialResponseEncryption?.required ?? false,
   }
 }
