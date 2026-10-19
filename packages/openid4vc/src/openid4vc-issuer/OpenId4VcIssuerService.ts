@@ -1074,7 +1074,9 @@ export class OpenId4VcIssuerService {
         const { signer, payload, header, keyAttestation } = await vcIssuer.verifyCredentialRequestJwtProof({
           issuerMetadata,
           jwt,
-          clientId: options.issuanceSession.clientId,
+          // The `iss` of the proof must be the client id of the session. It's only undefined, and so `iss` must be
+          // omitted, with anonymous access to the token endpoint in the pre-authorized code flow.
+          clientId: issuanceSession.clientId,
         })
 
         // TODO: we should probably do this check before signature verification, but we then we
@@ -1326,6 +1328,7 @@ export class OpenId4VcIssuerService {
     const openId4VcIssuer = new OpenId4VcIssuerRecord({
       issuerId: options.issuerId ?? utils.uuid(),
       display: options.display,
+      issuerInfo: options.issuerInfo,
       dpopSigningAlgValuesSupported: options.dpopSigningAlgValuesSupported,
       clientAttestationSigningAlgValuesSupported: options.clientAttestationSigningAlgValuesSupported,
       clientAttestationPopSigningAlgValuesSupported: options.clientAttestationPopSigningAlgValuesSupported,
@@ -1434,6 +1437,7 @@ export class OpenId4VcIssuerService {
       credential_configurations_supported: issuerRecord.credentialConfigurationsSupported ?? {},
       authorization_servers: authorizationServers,
       display: issuerRecord.display,
+      issuer_info: issuerRecord.issuerInfo,
       nonce_endpoint: joinUriParts(issuerUrl, [config.nonceEndpointPath]),
       batch_credential_issuance: issuerRecord.batchCredentialIssuance
         ? {

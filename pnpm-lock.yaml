@@ -720,14 +720,14 @@ importers:
         specifier: ^2.0.1
         version: 2.4.0
       '@owf/cose':
-        specifier: ^0.4.2
-        version: 0.4.2
+        specifier: ^0.5.0
+        version: 0.5.0
       '@owf/mdoc':
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^0.8.3
+        version: 0.8.3
       '@owf/token-status-list':
-        specifier: ^0.4.2
-        version: 0.4.2
+        specifier: ^0.5.0
+        version: 0.5.0
       '@peculiar/asn1-ecc':
         specifier: ^2.11.0
         version: 2.11.0
@@ -747,11 +747,11 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       '@sd-jwt/core':
-        specifier: ^0.22.0
-        version: 0.22.0
+        specifier: ^0.23.0
+        version: 0.23.0
       '@sd-jwt/sd-jwt-vc':
-        specifier: ^0.22.0
-        version: 0.22.0
+        specifier: ^0.23.0
+        version: 0.23.0
       '@sphereon/pex-models':
         specifier: 'catalog:'
         version: 2.3.2
@@ -769,7 +769,7 @@ importers:
         version: 8.18.2
       '@verifiables/request-converter':
         specifier: ^0.2.0
-        version: 0.2.0(dcql@3.0.1(typescript@5.9.3))
+        version: 0.2.0(dcql@4.0.0(typescript@5.9.3))
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1
@@ -777,8 +777,8 @@ importers:
         specifier: 'catalog:'
         version: 0.14.3
       dcql:
-        specifier: ^3.0.1
-        version: 3.0.1(typescript@5.9.3)
+        specifier: ^4.0.0
+        version: 4.0.0(typescript@5.9.3)
       did-resolver:
         specifier: ^6.0.0
         version: 6.0.0
@@ -1078,17 +1078,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: ^0.7.0
-        version: 0.7.0
+        specifier: ^0.8.0
+        version: 0.8.0
       '@openid4vc/openid4vci':
-        specifier: ^0.7.0
-        version: 0.7.0
+        specifier: ^0.8.0
+        version: 0.8.0
       '@openid4vc/openid4vp':
-        specifier: ^0.7.0
-        version: 0.7.0
+        specifier: ^0.8.0
+        version: 0.8.0
       '@openid4vc/utils':
-        specifier: ^0.7.0
-        version: 0.7.0
+        specifier: ^0.8.0
+        version: 0.8.0
       '@types/express':
         specifier: 'catalog:'
         version: 5.0.6
@@ -3148,17 +3148,17 @@ packages:
   '@open-draft/until@3.0.1':
     resolution: {integrity: sha512-s7/9ELP4aP9YZtW7RJaa0Xf3RISaRH9+EFN18FtykJYRHGNrl8f9ymvoNXzjhrjmftFvkQudtuDU9RYhk0xs3A==}
 
-  '@openid4vc/oauth2@0.7.0':
-    resolution: {integrity: sha512-sd8FHCb71nLvoETBKX+zawPmf5xdFHKNbw2cpDbqFQvce174nfFq7aQtBwLVSXEFgJf40bEa+TytlXBtQpjjwQ==}
+  '@openid4vc/oauth2@0.8.0':
+    resolution: {integrity: sha512-2S2/ykXKhP2mvoDxQE+pivrnBXwRqEN8GkWaG2KWA8Hc18jRY5wLJGSRdPZqdTI8mF+HF7Fyc6T7xPsR3QZWWg==}
 
-  '@openid4vc/openid4vci@0.7.0':
-    resolution: {integrity: sha512-v2io0iTevgv/sThe2FfJ4RSmxtgqs5ABqovyUi/UMYbn0zl6ZJVk2bNQ6a6j7f2TndivCuEceZqSdboDS30p+Q==}
+  '@openid4vc/openid4vci@0.8.0':
+    resolution: {integrity: sha512-sx9U4hBjqFL4uYJkF+2oa+k8AO3TX9H7Usu6oh4YDWagBpZwY5dIEVq4Fud06PKqMc2KOMO7cIjgn9URYEAU8w==}
 
-  '@openid4vc/openid4vp@0.7.0':
-    resolution: {integrity: sha512-lZ5V3m2BuqWVwEw/3PVGnYJDHmIJVCuClvMnMLvWgFYgoKQZxho8Ut+1l+urbkihdoaHyskLZrb8unLJpsnGZg==}
+  '@openid4vc/openid4vp@0.8.0':
+    resolution: {integrity: sha512-quev85ex0qUZOM5bE6JtoegBAmi/5C4QV6FnAv6TFYFJlc8rupKA39IFmJt9SgBg2ahY/SyuhUjRMRIA7Ixiig==}
 
-  '@openid4vc/utils@0.7.0':
-    resolution: {integrity: sha512-5OnwGrpcN1ISeFQIKF7fXZRqT9howo8vH7PSbPqP9CUovQ4+gPOdH5uboxErdUHAThyugR/vU/wdZPVnAhX3kw==}
+  '@openid4vc/utils@0.8.0':
+    resolution: {integrity: sha512-qKeZLbfYty2s7f26RZAiR58N+24XCCzghc75hUUE+26Jc1mtKiLS1W0ZUf8Joi7iFrMSy502Iw4M6BNG4VTt1w==}
 
   '@openwallet-foundation/askar-nodejs@0.6.1':
     resolution: {integrity: sha512-9cAXjAA9vHyUJ/wKZUCFpJZghcopR1DCEc98OdihY7X/RGSevuxA+twArLDgJSzasqINPNLMuGpp3FCJjVIlGg==}
@@ -3167,17 +3167,17 @@ packages:
   '@openwallet-foundation/askar-shared@0.6.1':
     resolution: {integrity: sha512-xjFYyK5Zk/uTFKfTn2BnnldmBLGWBkVfPhOoXQl122YcRVPN7BadAvFUi6Ad+zu7Nk3axj416+fvXtUUQm1Vig==}
 
-  '@owf/cose@0.4.2':
-    resolution: {integrity: sha512-ISjH/NFxgI2p0jiCY462JdL5m2bHg850iehvYj8sL9dHra06sJy0RTO1dwx78xqpCkFc/4h9Oo8XXLQD1eyLMg==}
+  '@owf/cose@0.5.0':
+    resolution: {integrity: sha512-QYTZP1pHJzraX9GVx3MvRs0DWVnYDho5fWyyElBNvr0axG3xHOmaK1v3EFFABHkxRhD8xbFC/YwnWqw+1MQHZw==}
 
-  '@owf/identity-common@0.4.2':
-    resolution: {integrity: sha512-z+iFDpBYo2Z2uVnE5UytKlAHPaKHReijHaVXl45Yb9LbeR12hGg5CdfzfY0Tfm5m/Dr8iClfAiFizA9JYuUJ0Q==}
+  '@owf/identity-common@0.5.0':
+    resolution: {integrity: sha512-h8lto+C1h6wYLe9HwF3C7NaZyB0wydstmdkgrGrpWhfCyyX+XfBZtIC494reAaj19pQTXIdEsNC91Gheo25T+Q==}
 
-  '@owf/mdoc@0.8.2':
-    resolution: {integrity: sha512-Mmn8a7Xy2duwoX5x3LeNkzOeOIjrjInygfPWi43Xy6DnNQprXSymB1KTwHWDGvBoTcopg7APDL41oTgSWri0ZA==}
+  '@owf/mdoc@0.8.3':
+    resolution: {integrity: sha512-hNakQwZByOaEvrJL3/lv9ld64zcff34T+RpOsoFeFofzLZ1HLpakvIqsybZ4s9AYYEXpR7QkXPvzzNL0041MlA==}
 
-  '@owf/token-status-list@0.4.2':
-    resolution: {integrity: sha512-vBIpSRvfgRTWq1pjs7ERafdEjKpkRRcPdMRpKM1BEsKp1mwB6p6cinf95oWOgXKWq8s3l0I4yTzZ1SdIM8/z0Q==}
+  '@owf/token-status-list@0.5.0':
+    resolution: {integrity: sha512-sM3WsYsCdwlUUrRekCOwslIhS8QfBDON/WErUzqHRt0ubgX4IDgLdlJXxOAjmK6LOW4spOSLf02GJIJOrefb4A==}
 
   '@oxc-project/types@0.112.0':
     resolution: {integrity: sha512-m6RebKHIRsax2iCwVpYW2ErQwa4ywHJrE4sCK3/8JK8ZZAWOKXaRJFl/uP51gaVyyXlaS4+chU1nSCdzYf6QqQ==}
@@ -3783,8 +3783,8 @@ packages:
   '@scure/base@2.0.0':
     resolution: {integrity: sha512-3E1kpuZginKkek01ovG8krQ0Z44E3DHPjc5S2rjJw9lZn3KSQOs8S7wqikF/AH7iRanHypj85uGyxk0XAyC37w==}
 
-  '@sd-jwt/core@0.22.0':
-    resolution: {integrity: sha512-N6fcXbkkvGZKWnUqESWMVNDXv8VjdhSYudjP+Jq+Tm0yqzumJ27JSxL0aCr25AwFgFy7kRkDctOvgB9biiYWqg==}
+  '@sd-jwt/core@0.23.0':
+    resolution: {integrity: sha512-/9/z3Gpfd50hOUk/kj8QfUjhDcKU9sdrTxt9HqhG/YkjpGU+7iIU24qYYPagf0btUKN4jbUQ0uS7eWYdvdzhJg==}
 
   '@sd-jwt/decode@0.7.2':
     resolution: {integrity: sha512-dan2LSvK63SKwb62031G4r7TE4TaiI0EK1KbPXqS+LCXNkNDUHqhtYp9uOpj+grXceCsMtMa2f8VnUfsjmwHHg==}
@@ -3801,8 +3801,8 @@ packages:
     engines: {node: '>=18'}
     deprecated: Package got merged into @sd-jwt/core, please use this instead
 
-  '@sd-jwt/sd-jwt-vc@0.22.0':
-    resolution: {integrity: sha512-jOHOS9ObTurb7uqUtktMZKnJU1PIPE25WqYxsIQqgGNd3B/r3RYKtBaI+Jsc3sajkr16PxvTvkrnugKBEXW6xg==}
+  '@sd-jwt/sd-jwt-vc@0.23.0':
+    resolution: {integrity: sha512-/XtRYZTHD1PAdez8YXuwc36XGo2aHkLUjX4IR01+nHJakSvbwTSpy/SFweIN80L3TNgxt8N5UsFUyIZANIbxlA==}
 
   '@sd-jwt/types@0.7.2':
     resolution: {integrity: sha512-1NRKowiW0ZiB9SGLApLPBH4Xk8gDQJ+nA9NdZ+uy6MmJKLEwjuJxO7yTvRIv/jX/0/Ebh339S7Kq4RD2AiFuRg==}
@@ -4795,8 +4795,8 @@ packages:
   dateformat@4.6.3:
     resolution: {integrity: sha512-2P0p0pFGzHS5EMnhdxQi7aJN+iMheud0UhG4dlE1DLAlvL8JHjJJTX/CSm4JXwV0Ka5nGk3zC5mcb5bUQUxxMA==}
 
-  dcql@3.0.1:
-    resolution: {integrity: sha512-RxGW4fdMzLWQTqE096aiMKGIG4MT30YMs6/u7UNhId4q9FkMf2tkhvSyIaU54nplQXdeGW2YN/JsC/X0Ck647A==}
+  dcql@4.0.0:
+    resolution: {integrity: sha512-GfInd9DqzwU9t6Nf2VkFjlwust0qexwuPlUdbm5LlocEwym/Xip/LBacChbIPwxWnsGHWw3YhCaY1JopefSb6g==}
 
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
@@ -10147,24 +10147,24 @@ snapshots:
 
   '@open-draft/until@3.0.1': {}
 
-  '@openid4vc/oauth2@0.7.0':
+  '@openid4vc/oauth2@0.8.0':
     dependencies:
-      '@openid4vc/utils': 0.7.0
+      '@openid4vc/utils': 0.8.0
       zod: 4.6.7
 
-  '@openid4vc/openid4vci@0.7.0':
+  '@openid4vc/openid4vci@0.8.0':
     dependencies:
-      '@openid4vc/oauth2': 0.7.0
-      '@openid4vc/utils': 0.7.0
+      '@openid4vc/oauth2': 0.8.0
+      '@openid4vc/utils': 0.8.0
       zod: 4.6.7
 
-  '@openid4vc/openid4vp@0.7.0':
+  '@openid4vc/openid4vp@0.8.0':
     dependencies:
-      '@openid4vc/oauth2': 0.7.0
-      '@openid4vc/utils': 0.7.0
+      '@openid4vc/oauth2': 0.8.0
+      '@openid4vc/utils': 0.8.0
       zod: 4.6.7
 
-  '@openid4vc/utils@0.7.0':
+  '@openid4vc/utils@0.8.0':
     dependencies:
       buffer: 6.0.3
       zod: 4.6.7
@@ -10180,26 +10180,26 @@ snapshots:
       buffer: 6.0.3
       tar: 7.5.22
 
-  '@owf/cose@0.4.2':
+  '@owf/cose@0.5.0':
     dependencies:
-      '@owf/identity-common': 0.4.2
+      '@owf/identity-common': 0.5.0
       cbor-x: 1.6.6
       zod: 4.6.7
       zod-validation-error: 5.0.0(zod@4.6.7)
 
-  '@owf/identity-common@0.4.2': {}
+  '@owf/identity-common@0.5.0': {}
 
-  '@owf/mdoc@0.8.2':
+  '@owf/mdoc@0.8.3':
     dependencies:
-      '@owf/cose': 0.4.2
-      '@owf/identity-common': 0.4.2
-      '@owf/token-status-list': 0.4.2
+      '@owf/cose': 0.5.0
+      '@owf/identity-common': 0.5.0
+      '@owf/token-status-list': 0.5.0
       zod: 4.6.7
 
-  '@owf/token-status-list@0.4.2':
+  '@owf/token-status-list@0.5.0':
     dependencies:
-      '@owf/cose': 0.4.2
-      '@owf/identity-common': 0.4.2
+      '@owf/cose': 0.5.0
+      '@owf/identity-common': 0.5.0
       cbor-x: 1.6.6
       pako: 3.0.2
       zod: 4.6.7
@@ -10721,9 +10721,9 @@ snapshots:
 
   '@scure/base@2.0.0': {}
 
-  '@sd-jwt/core@0.22.0':
+  '@sd-jwt/core@0.23.0':
     dependencies:
-      '@owf/identity-common': 0.4.2
+      '@owf/identity-common': 0.5.0
 
   '@sd-jwt/decode@0.7.2':
     dependencies:
@@ -10741,11 +10741,11 @@ snapshots:
       '@sd-jwt/types': 0.7.2
       '@sd-jwt/utils': 0.7.2
 
-  '@sd-jwt/sd-jwt-vc@0.22.0':
+  '@sd-jwt/sd-jwt-vc@0.23.0':
     dependencies:
-      '@owf/identity-common': 0.4.2
-      '@owf/token-status-list': 0.4.2
-      '@sd-jwt/core': 0.22.0
+      '@owf/identity-common': 0.5.0
+      '@owf/token-status-list': 0.5.0
+      '@sd-jwt/core': 0.23.0
       zod: 4.6.7
 
   '@sd-jwt/types@0.7.2': {}
@@ -11066,9 +11066,9 @@ snapshots:
   '@ungap/structured-clone@1.4.0':
     optional: true
 
-  '@verifiables/request-converter@0.2.0(dcql@3.0.1(typescript@5.9.3))':
+  '@verifiables/request-converter@0.2.0(dcql@4.0.0(typescript@5.9.3))':
     optionalDependencies:
-      dcql: 3.0.1(typescript@5.9.3)
+      dcql: 4.0.0(typescript@5.9.3)
 
   '@vitest/coverage-v8@5.0.5(vitest@5.0.5)':
     dependencies:
@@ -11869,7 +11869,7 @@ snapshots:
 
   dateformat@4.6.3: {}
 
-  dcql@3.0.1(typescript@5.9.3):
+  dcql@4.0.0(typescript@5.9.3):
     dependencies:
       valibot: 1.5.0(typescript@5.9.3)
     transitivePeerDependencies:
