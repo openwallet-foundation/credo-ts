@@ -79,7 +79,7 @@
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "tsyringe": "catalog:",
-    "uuid": "^14.0.2",
+    "uuid": "^14.0.3",
     "varint": "^6.0.0",
     "web-did-resolver": "^3.2.0",
     "webcrypto-core": "^1.8.1",
