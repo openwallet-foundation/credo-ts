@@ -41,6 +41,7 @@ catalog:
   '@types/express': ^5.0.6
   '@types/node': ^22.19.0
   '@types/ws': ^8.18.2
+  '@typescript/native': npm:typescript@^7.0.2
   '@vitest/coverage-v8': ^5.0.5
   class-transformer: 0.5.1
   class-validator: ^0.14.3
@@ -50,7 +51,7 @@ catalog:
   reflect-metadata: 0.2.2
   rxjs: ^7.8.2
   tsyringe: ^4.10.0
-  typescript: ~5.9.3
+  typescript: npm:@typescript/typescript6@^6.0.2
   vitest: ^5.0.5
   ws: ^8.22.0
   zod: ^4.6.7
