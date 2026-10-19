@@ -1,12 +1,100 @@
+import type {
+  AuthenticationPrompt,
+  GenerateKeypairOptions,
+  UserAuthenticationSession,
+  WithUserAuthenticationOptions,
+} from '@animo-id/expo-secure-environment'
 import type { AgentContext } from '@credo-ts/core'
 
 import { Kms, utils } from '@credo-ts/core'
 
 import { importSecureEnvironment } from './secureEnvironment'
 
+/**
+ * Options for a key in the secure environment, the `generateKeypair` options of `@animo-id/expo-secure-environment`:
+ * the user authentication the key requires, the minimum key storage on Android and a key attestation challenge.
+ * Without options the key requires biometrics for every signature, and on Android StrongBox.
+ */
+export type SecureEnvironmentCreateKeyOptions = GenerateKeypairOptions
+
+export interface SecureEnvironmentKeyManagementServiceOptions {
+  /**
+   * The texts of the prompt where the user authenticates to sign, also for `withUserAuthentication` without a
+   * `prompt`. A function is called for every prompt, so the texts can follow the language of the app.
+   *
+   * Without it the library's defaults are used, which are in English.
+   */
+  prompt?: AuthenticationPrompt | (() => AuthenticationPrompt)
+}
+
+export interface SecureEnvironmentUserAuthenticationOptions extends WithUserAuthenticationOptions {
+  /**
+   * The keys that sign with the authentication. Other keys ask the user to authenticate for every signature, as
+   * outside `withUserAuthentication`. Default: all keys.
+   */
+  keyIds?: string[]
+}
+
 export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementService {
   public readonly backend = 'secureEnvironment'
   private readonly secureEnvironment = importSecureEnvironment()
+  private readonly options: SecureEnvironmentKeyManagementServiceOptions
+
+  public constructor(options: SecureEnvironmentKeyManagementServiceOptions = {}) {
+    this.options = options
+  }
+
+  private getPrompt() {
+    return typeof this.options.prompt === 'function' ? this.options.prompt() : this.options.prompt
+  }
+
+  // The user authentication of a running `withUserAuthentication`, by context correlation id
+  private readonly userAuthentications = new Map<string, { session: UserAuthenticationSession; keyIds?: string[] }>()
+
+  /**
+   * Asks the user to authenticate once, and then runs `callback`. While it runs, signatures of this agent context
+   * with keys in this backend use the authentication instead of asking the user again, for example to present
+   * multiple credentials with one authentication. Limit it to the keys of the presentation with `keyIds`.
+   *
+   * This uses `withUserAuthentication` of `@animo-id/expo-secure-environment`, which on iOS works for all keys
+   * generated with the same `methods`. On Android it only works for keys with a validity above `0`: keys with a
+   * validity of `0` still ask for every signature, after the prompt of this method itself.
+   *
+   * ```ts
+   * // The instance configured as backend of the KeyManagementModule
+   * const secureEnvironment = new SecureEnvironmentKeyManagementService()
+   *
+   * await secureEnvironment.withUserAuthentication(agent.context, () => presentCredentials(), {
+   *   keyIds: credentialKeyIds,
+   *   prompt: { title: 'Share 2 credentials' },
+   * })
+   * ```
+   */
+  public async withUserAuthentication<Result>(
+    agentContext: AgentContext,
+    callback: () => Promise<Result>,
+    { keyIds, ...options }: SecureEnvironmentUserAuthenticationOptions = {}
+  ): Promise<Result> {
+    const { contextCorrelationId } = agentContext
+    if (this.userAuthentications.has(contextCorrelationId)) {
+      throw new Kms.KeyManagementError(
+        `A user authentication of backend '${this.backend}' is already running for agent context '${contextCorrelationId}'`
+      )
+    }
+
+    const secureEnvironment = await this.secureEnvironment
+    return secureEnvironment.withUserAuthentication(
+      async (session) => {
+        this.userAuthentications.set(contextCorrelationId, { session, keyIds })
+        try {
+          return await callback()
+        } finally {
+          this.userAuthentications.delete(contextCorrelationId)
+        }
+      },
+      { ...options, prompt: options.prompt ?? this.getPrompt() }
+    )
+  }
 
   public isOperationSupported(_agentContext: AgentContext, operation: Kms.KmsOperation): boolean {
     if (operation.operation === 'createKey') {
@@ -65,10 +153,11 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
     throw new Kms.KeyManagementError(`Decryption is not supported for backend '${this.backend}'`)
   }
 
-  public async createKey(
+  // The `backendOptions` type here is what `createKey` of the agent accepts for this backend
+  public async createKey<Type extends Kms.KmsCreateKeyType>(
     _agentContext: AgentContext,
-    options: Kms.KmsCreateKeyOptions
-  ): Promise<Kms.KmsCreateKeyReturn> {
+    options: Kms.KmsCreateKeyOptions<Type> & { backendOptions?: SecureEnvironmentCreateKeyOptions }
+  ): Promise<Kms.KmsCreateKeyReturn<Type>> {
     if (options.type.kty !== 'EC') {
       throw new Kms.KeyManagementAlgorithmNotSupportedError(
         `kty ${options.type.kty}. Only EC P-256 supported.`,
@@ -86,12 +175,10 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
     const secureEnvironment = await this.secureEnvironment
 
     try {
-      await secureEnvironment.generateKeypair(keyId)
+      await secureEnvironment.generateKeypair(keyId, options.backendOptions)
 
-      return {
-        keyId,
-        publicJwk: await this.getKeyAsserted(keyId),
-      }
+      const publicJwk = (await this.getKeyAsserted(keyId)) as Kms.KmsJwkPublic
+      return { keyId, publicJwk: publicJwk as Kms.KmsCreateKeyReturn<Type>['publicJwk'] }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
       if (error instanceof secureEnvironment.KeyAlreadyExistsError) {
@@ -102,7 +189,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
     }
   }
 
-  public async sign(_agentContext: AgentContext, options: Kms.KmsSignOptions): Promise<Kms.KmsSignReturn> {
+  public async sign(agentContext: AgentContext, options: Kms.KmsSignOptions): Promise<Kms.KmsSignReturn> {
     if (options.algorithm !== 'ES256') {
       throw new Kms.KeyManagementAlgorithmNotSupportedError(
         `algorithm '${options.algorithm}'. Only 'ES256' supported.`,
@@ -116,8 +203,12 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
       // TODO: can we store something like 'use' for the key in secure environment?
       // Kms.assertKeyAllowsSign(publicJwk)
 
-      // Perform the signing operation
-      const signature = await secureEnvironment.sign(options.keyId, options.data)
+      // Perform the signing operation, with the user authentication of `withUserAuthentication` if it covers the key
+      const userAuthentication = this.userAuthentications.get(agentContext.contextCorrelationId)
+      const signature =
+        userAuthentication && (!userAuthentication.keyIds || userAuthentication.keyIds.includes(options.keyId))
+          ? await userAuthentication.session.sign(options.keyId, options.data, { prompt: this.getPrompt() })
+          : await secureEnvironment.sign(options.keyId, options.data, { prompt: this.getPrompt() })
 
       return {
         signature,

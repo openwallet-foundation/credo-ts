@@ -68,3 +68,7 @@ minimumReleaseAgeExclude:
   - '@sd-jwt/sd-jwt-vc@0.22.0'
   - '@peculiar/x509@2.2.0'
   - nock@15.0.2
+
+# LOCAL ONLY, do not commit: unreleased @animo-id/expo-secure-environment rewrite (animo/expo-secure-environment#46, c27bce3)
+overrides:
+  '@animo-id/expo-secure-environment': file:../local-tarballs/expo-secure-environment-rewrite/animo-id-expo-secure-environment-0.0.0.tgz
