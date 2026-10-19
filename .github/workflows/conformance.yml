@@ -69,7 +69,7 @@ jobs:
           TESTCONTAINERS_HOST_OVERRIDE: host.testcontainers.internal
         run: pnpm test:conformance
 
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: oidf-conformance-logs

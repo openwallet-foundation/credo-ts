@@ -1,5 +1,0 @@
-export * from './DidCommPresentationV1AckMessage'
-export * from './DidCommPresentationV1Message'
-export * from './DidCommPresentationV1ProblemReportMessage'
-export * from './DidCommProposePresentationV1Message'
-export * from './DidCommRequestPresentationV1Message'

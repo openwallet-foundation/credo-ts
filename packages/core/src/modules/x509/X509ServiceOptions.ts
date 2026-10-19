@@ -16,6 +16,41 @@ type AddMarkAsCritical<T extends Record<string, Record<string, unknown>>> = T & 
  */
 export type EncodedX509Certificate = string
 
+/**
+ * Resource limits applied when parsing DER/ASN.1 input. Intended to bound the work done on
+ * untrusted input, such as certificates from an `x5c` header or a CRL fetched over HTTP.
+ *
+ * These options are always taken as a whole: providing them replaces {@link defaultX509ParseOptions}
+ * instead of being merged with it, so any limit left unset here falls back to the underlying parser
+ * default rather than to Credo's.
+ */
+export interface X509ParseOptions {
+  /**
+   * Maximum ASN.1 nesting depth.
+   *
+   * @default 100
+   */
+  maxDepth?: number
+
+  /**
+   * Maximum number of ASN.1 nodes in the parsed structure.
+   *
+   * NOTE: a CRL entry costs roughly three nodes, so the parser's own default of 10000 rejects CRLs
+   * with more than about 3300 revoked entries. Credo raises this to match the size of the CRLs it
+   * is willing to download, see {@link defaultX509ParseOptions}.
+   *
+   * @default 1500000 (the parser's own default is 10000)
+   */
+  maxNodes?: number
+
+  /**
+   * Maximum length in bytes of a single ASN.1 value.
+   *
+   * @default 16777216 (16 MB)
+   */
+  maxContentLength?: number
+}
+
 export interface X509ValidateCertificateChainOptions {
   certificateChain: EncodedX509Certificate[]
 
@@ -54,14 +89,35 @@ export interface X509ValidateCertificateChainOptions {
    * @default true
    */
   allowNonRootTrustedCertificate?: boolean
+
+  /**
+   * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
+   * `parseOptions` in full rather than being merged with them. When omitted, the configured
+   * options are used, falling back to {@link defaultX509ParseOptions}.
+   */
+  parseOptions?: X509ParseOptions
 }
 
 export interface X509GetLeafCertificateOptions {
   certificateChain: Array<string>
+
+  /**
+   * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
+   * `parseOptions` in full rather than being merged with them. When omitted, the configured
+   * options are used, falling back to {@link defaultX509ParseOptions}.
+   */
+  parseOptions?: X509ParseOptions
 }
 
 export interface X509ParseCertificateOptions {
   encodedCertificate: string
+
+  /**
+   * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
+   * `parseOptions` in full rather than being merged with them. When omitted, the configured
+   * options are used, falling back to {@link defaultX509ParseOptions}.
+   */
+  parseOptions?: X509ParseOptions
 }
 
 export interface X509CheckCertificateRevocationOptions {
@@ -81,6 +137,13 @@ export interface X509CheckCertificateRevocationOptions {
    * `revocationCheck` options are used, falling back to {@link X509RevocationCheckMode.SoftFail}.
    */
   revocationCheckOptions?: X509RevocationCheckOptions
+
+  /**
+   * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
+   * `parseOptions` in full rather than being merged with them. When omitted, the configured
+   * options are used, falling back to {@link defaultX509ParseOptions}.
+   */
+  parseOptions?: X509ParseOptions
 }
 
 export interface X509FetchCertificateRevocationListOptions {
@@ -116,6 +179,13 @@ export interface X509FetchCertificateRevocationListOptions {
    * @default new Date() (current time)
    */
   verificationDate?: Date
+
+  /**
+   * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
+   * `parseOptions` in full rather than being merged with them. When omitted, the configured
+   * options are used, falling back to {@link defaultX509ParseOptions}.
+   */
+  parseOptions?: X509ParseOptions
 }
 
 export interface X509ParseCertificateRevocationListOptions {
@@ -281,6 +351,13 @@ export interface X509CreateCertificateSigningRequestOptions {
 
 export interface X509ParseCertificateSigningRequestOptions {
   encodedCertificateSigningRequest: string
+
+  /**
+   * Resource limits applied when parsing the DER/ASN.1 input. Replaces the module's configured
+   * `parseOptions` in full rather than being merged with them. When omitted, the configured
+   * options are used, falling back to {@link defaultX509ParseOptions}.
+   */
+  parseOptions?: X509ParseOptions
 }
 
 export interface X509CertificateRevocationListEntryOptions {

@@ -63,8 +63,6 @@ import type { AnonCredsDidCommOfferCredentialFormat } from '../src/didcomm'
 import {
   AnonCredsDidCommCredentialFormatService,
   AnonCredsDidCommProofFormatService,
-  DidCommCredentialV1Protocol,
-  DidCommProofV1Protocol,
   LegacyIndyDidCommCredentialFormatService,
   LegacyIndyDidCommProofFormatService,
 } from '../src/didcomm'
@@ -118,9 +116,6 @@ export const getAnonCredsIndyModules = <
       credentials: {
         autoAcceptCredentials,
         credentialProtocols: [
-          new DidCommCredentialV1Protocol({
-            indyCredentialFormat: legacyIndyCredentialFormatService,
-          }),
           new DidCommCredentialV2Protocol({
             credentialFormats: [
               legacyIndyCredentialFormatService,
@@ -133,9 +128,6 @@ export const getAnonCredsIndyModules = <
       proofs: {
         autoAcceptProofs,
         proofProtocols: [
-          new DidCommProofV1Protocol({
-            indyProofFormat: legacyIndyProofFormatService,
-          }),
           new DidCommProofV2Protocol({
             proofFormats: [
               legacyIndyProofFormatService,
@@ -263,7 +255,7 @@ export async function issueLegacyAnonCredsCredential({
   let issuerCredentialExchangeRecord = await issuerAgent.didcomm.credentials.offerCredential({
     comment: 'some comment about credential',
     connectionId: issuerHolderConnectionId,
-    protocolVersion: 'v1',
+    protocolVersion: 'v2',
     credentialFormats: {
       indy: offer,
     },
