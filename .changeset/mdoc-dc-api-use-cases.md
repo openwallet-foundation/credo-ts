@@ -22,6 +22,7 @@ await agent.mdoc.createDcApiVerificationSession({
 Wallet:
 
 - New `agent.mdoc.selectCredentialsForRequest` selects the credentials to answer a resolved request with, like `selectCredentialsForDcqlRequest`: the first matching document set of every mandatory use case (or, without mandatory use cases, of the first use case that can be answered), the first credential per doc request that can be used with `useMode`, and per claim its first option, including the alternative sets and device signed values that takes. For a resolved DC API request the result can be passed to `createDcApiResponse` as is.
+- `createDcApiResponse` takes several doc request indexes in `docRequestIndex`, to answer several doc requests of a credential's docType with a single document.
 - `createDcApiResponse` takes `alternatives` per credential, to disclose an alternative set in place of a requested element. The claim `options` in the resolved request list the sets an mdoc can disclose. It throws when the credentials do not answer the use cases of the request.
 
 ```ts

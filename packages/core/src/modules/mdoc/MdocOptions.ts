@@ -619,9 +619,11 @@ export type MdocDcApiResolvedRequest = MdocResolvedRequest & {
  */
 export type MdocCredentialForRequest = {
   /**
-   * Index into `resolvedRequest.docRequests`.
+   * The index of the doc request the credential answers, the `docRequestIndex` of the resolved doc
+   * request. Pass several indexes to answer several doc requests of the credential's docType with a
+   * single document, which discloses the elements all of them request.
    */
-  docRequestIndex: number
+  docRequestIndex: number | number[]
 
   /**
    * The mdoc record to disclose, or its id.
@@ -679,7 +681,9 @@ export type MdocSelectCredentialsForRequestOptions = {
  */
 export type MdocSelectedCredentials<ResolvedRequest extends MdocResolvedRequest = MdocResolvedRequest> = {
   resolvedRequest: ResolvedRequest
-  credentials: Array<MdocCredentialForRequest & { record: MdocRecord; useMode: CredentialMultiInstanceUseMode }>
+  credentials: Array<
+    MdocCredentialForRequest & { docRequestIndex: number; record: MdocRecord; useMode: CredentialMultiInstanceUseMode }
+  >
 }
 
 export type MdocSignOptions = {

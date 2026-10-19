@@ -626,6 +626,36 @@ describe('mdoc DC API (ISO 18013-7 Annex C)', () => {
       })
     })
 
+    test('a single mdoc can answer several doc requests of its docType', async () => {
+      const { verificationSession, request } = await agent.mdoc.createDcApiVerificationSession({
+        docRequests: [
+          { docType, nameSpaces: { [nameSpace]: { family_name: true } } },
+          { docType, nameSpaces: { [nameSpace]: { given_name: true } } },
+        ],
+        deviceRequestInfo: { useCases: [{ mandatory: true, documentSets: [[0, 1]] }] },
+      })
+
+      const resolved = await agent.mdoc.resolveDcApiRequest({ request, origin })
+      const response = await agent.mdoc.createDcApiResponse({
+        resolvedRequest: resolved,
+        credentials: [{ docRequestIndex: [0, 1], record: mdocRecord }],
+      })
+
+      const result = await agent.mdoc.verifyDcApiResponse({
+        verificationSessionId: verificationSession.id,
+        response,
+        origin,
+        trustedCertificates: [issuerCertificatePem],
+      })
+
+      // One document, disclosing the elements of both doc requests
+      expect(result.deviceResponse.deviceResponse.documents).toHaveLength(1)
+      expect(result.deviceResponse.issuerClaims).toEqual({
+        [docType]: { [nameSpace]: { family_name: 'Doe', given_name: 'John' } },
+      })
+      expect(result.deviceRequestMatch).toMatchObject({ success: true, useCases: [{ success: true }] })
+    })
+
     test('a response that leaves the mandatory use case unanswered does not verify', async () => {
       const { verificationSession, request } = await createUseCasesSession()
 
