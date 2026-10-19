@@ -6,6 +6,7 @@ import m0002 from './0002_add_signed_issuer_metadata.sql'
 import m0003 from './0003_dry_spiral.sql'
 import m0004 from './0004_add_access_token_signer_kms_backend.sql'
 import m0005 from './0005_add_issuer_info.sql'
+import m0006 from './0006_add_credential_response_encryption.sql'
 import journal from './meta/_journal.json'
 
 export default {
@@ -17,5 +18,6 @@ export default {
     m0003,
     m0004,
     m0005,
+    m0006,
   },
 }

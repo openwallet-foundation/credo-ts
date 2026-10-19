@@ -43,6 +43,13 @@
       "when": 1792243249741,
       "tag": "0005_add_issuer_info",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792424959258,
+      "tag": "0006_add_credential_response_encryption",
+      "breakpoints": true
     }
   ]
 }
