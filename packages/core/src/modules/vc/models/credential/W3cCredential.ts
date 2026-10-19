@@ -28,14 +28,16 @@ export class W3cCredential {
   public constructor(options: W3cCredentialOptions) {
     if (options) {
       this.context = options.context ?? [CREDENTIALS_CONTEXT_V1_URL]
-      this.id = options.id
+      if (options.id !== undefined) this.id = options.id
       this.type = options.type || ['VerifiableCredential']
       this.issuer =
         typeof options.issuer === 'string' || options.issuer instanceof W3cIssuer
           ? options.issuer
           : new W3cIssuer(options.issuer)
       this.issuanceDate = options.issuanceDate
-      this.expirationDate = options.expirationDate
+      // Optional fields are only set when provided, so serialization does not emit `undefined` keys
+      // (which JSON-LD signing rejects)
+      if (options.expirationDate !== undefined) this.expirationDate = options.expirationDate
       this.credentialSubject = mapSingleOrArray(options.credentialSubject, (subject) =>
         subject instanceof W3cCredentialSubject ? subject : new W3cCredentialSubject(subject)
       )
