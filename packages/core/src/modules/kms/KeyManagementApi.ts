@@ -32,6 +32,11 @@ import {
 } from './options/KmsCreateKeyOptions'
 import { zKmsDecryptOptions } from './options/KmsDecryptOptions'
 import { zKmsDeleteKeyOptions } from './options/KmsDeleteKeyOptions'
+import {
+  type KmsEncryptMultiRecipientOptions,
+  type KmsEncryptMultiRecipientReturn,
+  zKmsEncryptMultiRecipientOptions,
+} from './options/KmsEncryptMultiRecipientOptions'
 import { type KmsEncryptOptions, zKmsEncryptOptions } from './options/KmsEncryptOptions'
 import { zKmsGetPublicKeyOptions } from './options/KmsGetPublicKeyOptions'
 import { type KmsImportKeyReturn, zKmsImportKeyOptions } from './options/KmsImportKeyOptions'
@@ -201,6 +206,38 @@ export class KeyManagementApi {
         : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
 
     return await kms.encrypt(this.agentContext, kmsOptions)
+  }
+
+  /**
+   * Encrypt once for several recipients.
+   */
+  public async encryptMultiRecipient(
+    options: WithBackend<KmsEncryptMultiRecipientOptions>
+  ): Promise<KmsEncryptMultiRecipientReturn> {
+    const { backend, ...kmsOptions } = zParseWithErrorHandling(
+      zWithBackend(zKmsEncryptMultiRecipientOptions),
+      options,
+      'Invalid options provided to encryptMultiRecipient method'
+    )
+
+    const operation = {
+      operation: 'encryptMultiRecipient',
+      encryption: options.encryption,
+      keyAgreement: options.keyAgreement,
+    } as const
+    const keyId = 'keyId' in options.keyAgreement ? options.keyAgreement.keyId : undefined
+    const kms =
+      backend || !keyId
+        ? this.getKms(this.agentContext, backend, operation)
+        : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
+
+    if (!kms.encryptMultiRecipient) {
+      throw new KeyManagementError(
+        `Key management service backend '${kms.backend}' does not support ${getKmsOperationHumanDescription(operation)}`
+      )
+    }
+
+    return await kms.encryptMultiRecipient(this.agentContext, kmsOptions)
   }
 
   /**
