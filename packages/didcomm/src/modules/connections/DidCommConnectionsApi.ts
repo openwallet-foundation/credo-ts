@@ -109,7 +109,10 @@ export class DidCommConnectionsApi {
             didcommVersion: 'v2',
           },
           true,
-          this.getPendingOutOfBandParentThreadIdMetadata(outOfBandRecord)
+          {
+            ...this.getPendingOutOfBandParentThreadIdMetadata(outOfBandRecord),
+            [DidCommConnectionMetadataKeys.SharedDid]: { did: ourDid },
+          }
         )
         return connectionRecord
       }

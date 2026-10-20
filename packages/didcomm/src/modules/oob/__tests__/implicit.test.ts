@@ -516,6 +516,29 @@ describe('out of band implicit', () => {
     }
   })
 
+  test('v2 implicit invitation: a public DID the agent dialed from still takes first messages from new peers', async () => {
+    const publicDid = await createInMemoryDid(faberAgent, 'rxjs:faber', { withKeyAgreement: true })
+    await faberAgent.didcomm.oob.receiveImplicitInvitation({
+      did: await createInMemoryDid(aliceAgent, 'rxjs:alice', { withKeyAgreement: true }),
+      ourDid: publicDid,
+      didCommVersion: 'v2',
+      label: 'faber',
+    })
+
+    const { connectionRecord } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+      did: publicDid,
+      didCommVersion: 'v2',
+      label: 'alice',
+    })
+    if (!connectionRecord) throw new Error('Expected a connection')
+    await aliceAgent.didcomm.basicMessages.sendMessage(connectionRecord.id, 'to the dialed public DID')
+    await waitForBasicMessageSubject(faberMessageReplay, { content: 'to the dialed public DID' })
+
+    const faberConnections = await faberAgent.didcomm.connections.findAllByQuery({ theirDid: connectionRecord.did })
+    expect(faberConnections).toHaveLength(1)
+    expect(faberConnections[0].invitationDid).toBe(publicDid)
+  })
+
   test.each([
     [false, DidCommOutOfBandState.Done],
     [true, DidCommOutOfBandState.AwaitResponse],

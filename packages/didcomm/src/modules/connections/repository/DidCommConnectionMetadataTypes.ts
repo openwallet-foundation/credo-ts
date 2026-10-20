@@ -3,6 +3,7 @@ export enum DidCommConnectionMetadataKeys {
   DidRotate = '_internal/didRotate',
   DidRotateV2 = '_internal/didRotateV2',
   OutOfBandV2ParentThreadId = '_internal/outOfBandV2ParentThreadId',
+  SharedDid = '_internal/sharedDid',
 }
 
 export type DidCommConnectionMetadata = {
@@ -21,5 +22,8 @@ export type DidCommConnectionMetadata = {
   }
   [DidCommConnectionMetadataKeys.OutOfBandV2ParentThreadId]: {
     parentThreadId: string
+  }
+  [DidCommConnectionMetadataKeys.SharedDid]: {
+    did: string
   }
 }
