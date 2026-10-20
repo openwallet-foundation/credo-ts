@@ -91,6 +91,29 @@ describe('shortened urls resolving to oob invitations', () => {
   })
 })
 
+describe('shortened url fetching', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  test('aborts the request when the short url does not respond within 15 seconds', async () => {
+    vi.useFakeTimers()
+    const fetch = vi.fn(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new Error('The operation was aborted')))
+        })
+    )
+
+    const result = parseInvitationShortUrl('https://example.com/short', { ...agentDependencies, fetch })
+    const assertion = expect(result).rejects.toThrow('be valid shortened URL')
+    await vi.advanceTimersByTimeAsync(15000)
+    await assertion
+
+    expect(fetch.mock.calls[0][1]?.signal?.aborted).toBe(true)
+  })
+})
+
 describe('legacy connectionless', () => {
   test('parse url containing d_m ', async () => {
     const parsed = await parseInvitationShortUrl(

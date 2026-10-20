@@ -22,11 +22,13 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
+      signal: abortController.signal as NonNullable<RequestInit['signal']>,
     })
   } catch (error) {
     throw new CredoError(`Get request failed on provided url: ${error.message}`, { cause: error })
+  } finally {
+    clearTimeout(id)
   }
-  clearTimeout(id)
   return response
 }
 

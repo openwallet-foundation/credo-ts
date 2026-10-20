@@ -19,9 +19,10 @@ import {
   X509ExtensionIdentifier,
   x509SignatureAlgorithmToJwa,
 } from './utils'
+import { defaultX509ParseOptions } from './utils/parseOptions'
 import type { X509CrlDistributionPoint, X509RevocationReason } from './X509CrlDistributionPoint'
 import { X509Error } from './X509Error'
-import type { X509CreateCertificateOptions } from './X509ServiceOptions'
+import type { X509CreateCertificateOptions, X509ParseOptions } from './X509ServiceOptions'
 
 export enum X509KeyUsage {
   DigitalSignature = 1,
@@ -74,18 +75,24 @@ export class X509Certificate {
     return this.publicJwk.hasKeyId
   }
 
-  public static fromRawCertificate(rawCertificate: Uint8Array): X509Certificate {
-    const certificate = new x509.X509Certificate(rawCertificate)
-    return X509Certificate.parseCertificate(certificate)
+  public static fromRawCertificate(
+    rawCertificate: Uint8Array,
+    parseOptions: X509ParseOptions = defaultX509ParseOptions
+  ): X509Certificate {
+    const certificate = new x509.X509Certificate(rawCertificate, { berOptions: parseOptions })
+    return X509Certificate.parseCertificate(certificate, parseOptions)
   }
 
-  public static fromEncodedCertificate(encodedCertificate: string): X509Certificate {
-    const certificate = new x509.X509Certificate(encodedCertificate)
-    return X509Certificate.parseCertificate(certificate)
+  public static fromEncodedCertificate(
+    encodedCertificate: string,
+    parseOptions: X509ParseOptions = defaultX509ParseOptions
+  ): X509Certificate {
+    const certificate = new x509.X509Certificate(encodedCertificate, { berOptions: parseOptions })
+    return X509Certificate.parseCertificate(certificate, parseOptions)
   }
 
-  private static parseCertificate(certificate: x509.X509Certificate): X509Certificate {
-    const spki = AsnParser.parse(certificate.publicKey.rawData, SubjectPublicKeyInfo)
+  private static parseCertificate(certificate: x509.X509Certificate, parseOptions?: X509ParseOptions): X509Certificate {
+    const spki = AsnParser.parse(certificate.publicKey.rawData, SubjectPublicKeyInfo, { berOptions: parseOptions })
     const privateKey = certificate.privateKey ? new Uint8Array(certificate.privateKey.rawData) : undefined
 
     const publicJwk = spkiToPublicJwk(spki)
@@ -496,8 +503,6 @@ export class X509Certificate {
   }
 
   public equal(certificate: X509Certificate) {
-    const parsedOther = new x509.X509Certificate(certificate.rawCertificate)
-
-    return this.x509Certificate.equal(parsedOther)
+    return this.x509Certificate.equal(certificate.x509Certificate)
   }
 }

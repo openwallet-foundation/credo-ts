@@ -66,6 +66,7 @@ export interface OpenId4VpResolvedAuthorizationRequest {
     signer: VerifiedJarRequest['signer']
     payload: VerifiedJarRequest['jwt']['payload']
     header: VerifiedJarRequest['jwt']['header']
+    compact: VerifiedJarRequest['jwt']['compact']
   }
 
   verifier: {

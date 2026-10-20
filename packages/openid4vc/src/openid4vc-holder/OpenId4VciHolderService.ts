@@ -933,12 +933,13 @@ export class OpenId4VciHolderService {
 
       // This will/should leverage the caching, so it's ok to resolve the did here
       const keys = await Promise.all(
-        credentialBinding.didUrls.map(async (didUrl, index) =>
-          index === 0
-            ? // We already fetched the first did
-              { jwk: firstKey, didUrl: firstDid.didUrl }
-            : { jwk: (await dids.resolveVerificationMethodFromCreatedDidRecord(didUrl)).publicJwk, didUrl }
-        )
+        credentialBinding.didUrls.map(async (didUrl, index) => {
+          // We already fetched the first did
+          if (index === 0) return { jwk: firstKey, didUrl }
+
+          const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(didUrl)
+          return { jwk: publicJwk, didUrl }
+        })
       )
       if (!keys.every((key) => Kms.asymmetricJwkKeyTypeMatches(key.jwk.toJson(), firstKey.toJson()))) {
         throw new CredoError('Expected all did urls to point to the same key type')
