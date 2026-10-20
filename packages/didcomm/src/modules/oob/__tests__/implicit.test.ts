@@ -299,6 +299,36 @@ describe('out of band implicit', () => {
     })
   })
 
+  test('v2: a message to a DID pair that two connections match goes to the one on both current DIDs', async () => {
+    const faberDid = await createInMemoryDid(faberAgent, 'rxjs:faber', { withKeyAgreement: true })
+    const aliceDid = await createInMemoryDid(aliceAgent, 'rxjs:alice', { withKeyAgreement: true })
+    const { connectionRecord: aliceConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+      did: faberDid,
+      didCommVersion: 'v2',
+      label: 'alice',
+      ourDid: aliceDid,
+    })
+    if (!aliceConnection) throw new Error('Expected a connection')
+
+    await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'opens the first-message connection')
+    await waitForBasicMessageSubject(faberMessageReplay, { content: 'opens the first-message connection' })
+
+    const { connectionRecord: faberDial } = await faberAgent.didcomm.oob.receiveImplicitInvitation({
+      did: aliceDid,
+      didCommVersion: 'v2',
+      label: 'faber',
+      ourDid: faberDid,
+    })
+    if (!faberDial) throw new Error('Expected a connection')
+
+    await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'to the pair both connections match')
+    await waitForBasicMessageSubject(faberMessageReplay, { content: 'to the pair both connections match' })
+
+    expect(await faberAgent.didcomm.basicMessages.findAllByQuery({ connectionId: faberDial.id })).toMatchObject([
+      { content: 'to the pair both connections match' },
+    ])
+  })
+
   test('v2 implicit invitation to an alias of the inviter DID: the invitee follows the rotation away from the inviter DID', async () => {
     const aliasDid = `did:inmemory:${uuid()}`
     const faberDid = await createInMemoryDid(faberAgent, 'rxjs:faber', {
