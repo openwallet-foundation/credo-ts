@@ -1,4 +1,4 @@
-import type { Optional } from '@credo-ts/core'
+import type { Kms, Optional } from '@credo-ts/core'
 
 /**
  * Credo supports two types of authorization servers, indicated by the `type` field:
@@ -66,6 +66,17 @@ export interface OpenId4VciChainedAuthorizationServerConfig {
    * This will be used for exchanging the authorization code for an access token
    */
   clientAuthentication: OpenId4VciAuthorizationServerClientAuthenticationClientSecret
+
+  dpop?: {
+    /** Whether DPoP is required for upstream authorization and token requests. */
+    required: boolean
+
+    /** Existing KMS key id to use for DPoP signing. */
+    keyId?: string
+
+    /** Allow-list for DPoP signing algorithms. */
+    allowedAlgorithms?: Kms.KnownJwaSignatureAlgorithm[]
+  }
 
   /**
    * Mapping between credential scopes and authorization server scopes.
