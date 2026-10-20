@@ -181,7 +181,10 @@ export class DidCommDidRotateV2Service {
       return 'ignored'
     }
 
-    if (!areEquivalentDidPeer4Forms(payload.iss, connection.theirDid)) {
+    if (
+      !areEquivalentDidPeer4Forms(payload.iss, connection.theirDid) &&
+      !(await this.isVerifiedAlias(agentContext, payload.iss, connection.theirDid))
+    ) {
       this.logger.warn("Ignoring from_prior whose 'iss' is not the connection's current peer DID", {
         connectionId: connection.id,
         iss: payload.iss,
@@ -211,6 +214,31 @@ export class DidCommDidRotateV2Service {
     if (!connection.previousTheirDids.some((did) => areEquivalentDidPeer4Forms(did, iss))) return false
     if (sub === undefined) return !connection.theirDid
     return connection.theirDid !== undefined && areEquivalentDidPeer4Forms(sub, connection.theirDid)
+  }
+
+  public async getAlsoKnownAs(agentContext: AgentContext, did: string): Promise<string[]> {
+    const didDocument = await this.findDidDocument(agentContext, did)
+    return (didDocument?.alsoKnownAs ?? []).filter(
+      (alias) => alias.startsWith('did:') && !areEquivalentDidPeer4Forms(alias, did)
+    )
+  }
+
+  /**
+   * Whether `alias` is in the `alsoKnownAs` of `did` and its own document points back to `did`, by its `id` or its `alsoKnownAs`.
+   */
+  public async isVerifiedAlias(agentContext: AgentContext, did: string, alias: string): Promise<boolean> {
+    if (!(await this.getAlsoKnownAs(agentContext, did)).includes(alias)) return false
+    const aliasDocument = await this.findDidDocument(agentContext, alias)
+    return aliasDocument?.id === did || aliasDocument?.alsoKnownAs?.includes(did) === true
+  }
+
+  private async findDidDocument(agentContext: AgentContext, did: string): Promise<DidDocument | null> {
+    try {
+      const resolver = agentContext.dependencyManager.resolve(DidResolverService)
+      return (await resolver.resolve(agentContext, did)).didDocument
+    } catch {
+      return null
+    }
   }
 
   /**
@@ -246,6 +274,14 @@ export class DidCommDidRotateV2Service {
     if (connection.theirDid && !connection.previousTheirDids.includes(connection.theirDid)) {
       connection.previousTheirDids = [...connection.previousTheirDids, connection.theirDid]
     } else if (!connection.previousTheirDids.includes(priorDid)) {
+      connection.previousTheirDids = [...connection.previousTheirDids, priorDid]
+    }
+    // theirDid was an alias of priorDid, keep priorDid too so a retransmitted from_prior counts as applied
+    if (
+      connection.theirDid &&
+      !areEquivalentDidPeer4Forms(priorDid, connection.theirDid) &&
+      !connection.previousTheirDids.includes(priorDid)
+    ) {
       connection.previousTheirDids = [...connection.previousTheirDids, priorDid]
     }
     connection.theirDid = newDid
