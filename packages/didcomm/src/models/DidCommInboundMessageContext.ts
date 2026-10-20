@@ -1,5 +1,6 @@
-import type { AgentContext, Kms } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
 import { CredoError } from '@credo-ts/core'
+import type { DidCommEnvelopeKey } from '../DidCommEnvelopeService'
 import type { DidCommMessage } from '../DidCommMessage'
 import type { DidCommMessageHandler } from '../handlers'
 import type { DidCommConnectionRecord } from '../modules/connections/repository'
@@ -9,8 +10,10 @@ import type { DidCommOutboundMessageContext } from './DidCommOutboundMessageCont
 export interface MessageContextParams {
   connection?: DidCommConnectionRecord
   sessionId?: string
-  senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
-  recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  senderKey?: DidCommEnvelopeKey
+  recipientKey?: DidCommEnvelopeKey
+  /** DIDComm v2 sender DID proven by the authcrypt envelope. Never set for anoncrypt. */
+  senderDid?: string
   agentContext: AgentContext
   receivedAt?: Date
   encryptedMessage?: DidCommEncryptedMessage
@@ -19,8 +22,10 @@ export interface MessageContextParams {
 export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMessage> {
   public connection?: DidCommConnectionRecord
   public sessionId?: string
-  public senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
-  public recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  public senderKey?: DidCommEnvelopeKey
+  public recipientKey?: DidCommEnvelopeKey
+  /** DIDComm v2 sender DID proven by the authcrypt envelope. Never set for anoncrypt. */
+  public senderDid?: string
   public receivedAt: Date
 
   public readonly agentContext: AgentContext
@@ -36,6 +41,7 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
     this.senderKey = context.senderKey
     this.connection = context.connection
     this.sessionId = context.sessionId
+    this.senderDid = context.senderDid
     this.agentContext = context.agentContext
     this.receivedAt = context.receivedAt ?? new Date()
     this.encryptedMessage = context.encryptedMessage
