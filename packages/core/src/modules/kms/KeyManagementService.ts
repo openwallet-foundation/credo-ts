@@ -3,6 +3,10 @@ import type { KmsJwkPrivate, KmsJwkPublic } from './jwk/knownJwk'
 import type { KmsDecryptOptions, KmsDecryptReturn, KmsRandomBytesOptions, KmsRandomBytesReturn } from './options'
 import type { KmsCreateKeyOptions, KmsCreateKeyReturn, KmsCreateKeyType } from './options/KmsCreateKeyOptions'
 import type { KmsDeleteKeyOptions } from './options/KmsDeleteKeyOptions'
+import type {
+  KmsEncryptMultiRecipientOptions,
+  KmsEncryptMultiRecipientReturn,
+} from './options/KmsEncryptMultiRecipientOptions'
 import type { KmsEncryptOptions, KmsEncryptReturn } from './options/KmsEncryptOptions'
 import type { KmsImportKeyOptions, KmsImportKeyReturn } from './options/KmsImportKeyOptions'
 import type { KmsOperation } from './options/KmsOperation'
@@ -69,6 +73,15 @@ export interface KeyManagementService {
    * Encrypt data
    */
   encrypt(agentContext: AgentContext, options: KmsEncryptOptions): Promise<KmsEncryptReturn>
+
+  /**
+   * Encrypt data once and wrap the content encryption key for every recipient, using one ephemeral key
+   * that is never stored
+   */
+  encryptMultiRecipient?(
+    agentContext: AgentContext,
+    options: KmsEncryptMultiRecipientOptions
+  ): Promise<KmsEncryptMultiRecipientReturn>
 
   /**
    * Decrypt data
