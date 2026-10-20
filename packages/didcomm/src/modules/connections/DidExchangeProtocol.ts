@@ -42,9 +42,9 @@ import {
 } from './messages'
 import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
 import type { DidCommConnectionRecord } from './repository'
-import { DidCommConnectionMetadataKeys } from './repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from './services'
 import {
+  addSharedDid,
   createPeerDidFromServices,
   getResolvedDidcommServiceWithSigningKeyId,
   routingToServices,
@@ -166,7 +166,7 @@ export class DidExchangeProtocol {
 
     connectionRecord.did = didDocument.id
     connectionRecord.threadId = message.id
-    if (did) connectionRecord.metadata.set(DidCommConnectionMetadataKeys.SharedDid, { did: didDocument.id })
+    if (did) addSharedDid(connectionRecord, didDocument.id)
 
     if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
       connectionRecord.autoAcceptConnection = autoAcceptConnection

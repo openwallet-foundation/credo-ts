@@ -36,7 +36,7 @@ import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import type { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from './DidCommConnectionService'
-import { createPeerDidForV2OOB, toAbsoluteDidUrl } from './helpers'
+import { addSharedDid, createPeerDidForV2OOB, toAbsoluteDidUrl } from './helpers'
 
 export interface FromPriorPayload {
   iss: string
@@ -118,6 +118,7 @@ export class DidCommDidRotateV2Service {
     connection.previousDids = [...connection.previousDids, priorDid]
     connection.did = newDid
     if (mediatorId) connection.mediatorId = mediatorId
+    if (toDid) addSharedDid(connection, newDid)
     connection.metadata.set(DidCommConnectionMetadataKeys.DidRotateV2, {
       fromPriorJwt,
       priorDid,

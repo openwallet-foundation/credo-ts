@@ -24,6 +24,6 @@ export type DidCommConnectionMetadata = {
     parentThreadId: string
   }
   [DidCommConnectionMetadataKeys.SharedDid]: {
-    did: string
+    dids: string[]
   }
 }

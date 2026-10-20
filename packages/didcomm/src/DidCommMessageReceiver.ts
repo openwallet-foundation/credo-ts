@@ -526,9 +526,9 @@ export class DidCommMessageReceiver {
     const connections = await this.connectionService.findAllByQuery(agentContext, {
       $or: dids.flatMap((ourDid) => [{ did: ourDid }, { previousDids: [ourDid] }]),
     })
-    // Connections it opened as an implicit invitation, or that the app dialed from it as ourDid, do not make it pairwise
+    // Connections it opened as an implicit invitation, or that got it from the app as ourDid or toDid, do not make it pairwise
     return connections.every(({ invitationDid, metadata }) =>
-      [invitationDid, metadata.get(DidCommConnectionMetadataKeys.SharedDid)?.did].some(
+      [invitationDid, ...(metadata.get(DidCommConnectionMetadataKeys.SharedDid)?.dids ?? [])].some(
         (did) => did !== undefined && dids.includes(did)
       )
     )

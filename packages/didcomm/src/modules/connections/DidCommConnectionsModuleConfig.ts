@@ -34,7 +34,7 @@ export interface DidCommConnectionsModuleConfigOptions {
    * When true, create a connection record automatically when receiving the first DIDComm v2 message
    * from an invitee, if an out-of-band record exists for the recipient DID (v2 OOB inviter flow).
    * A created DID with no out-of-band record also acts as an implicit invitation, as long as every connection
-   * using it was opened through it or with it as `ourDid`.
+   * using it was opened through it or got it as `ourDid` or `toDid`.
    *
    * @default false
    */
