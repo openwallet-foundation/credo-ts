@@ -2,7 +2,7 @@ import { Subject } from 'rxjs'
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import type { AgentContext } from '../../../../../core/src/agent'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
-import { Kms, RecordDuplicateError, TypedArrayEncoder } from '../../../../../core/src/index'
+import { Kms, TypedArrayEncoder } from '../../../../../core/src/index'
 import { DidDocumentRole } from '../../../../../core/src/modules/dids/domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../../../../core/src/modules/dids/repository'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../core/tests/helpers'
@@ -13,8 +13,8 @@ import { DidCommInboundMessageContext } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
 import { DidCommOutOfBandRepository } from '../../oob/repository/DidCommOutOfBandRepository'
 import { DidCommTrustPingMessage, DidCommTrustPingV2Message } from '../messages'
-import { DidCommDidExchangeRole, DidCommDidExchangeState } from '../models'
-import { DidCommConnectionRecord, DidCommConnectionRepository } from '../repository'
+import { DidCommDidExchangeState } from '../models'
+import { DidCommConnectionRepository } from '../repository'
 import { DidCommConnectionService } from '../services'
 
 vi.mock('../repository/DidCommConnectionRepository')
@@ -446,41 +446,6 @@ describe('DidCommConnectionService', () => {
       )
 
       expect(result).toEqual(expect.arrayContaining(expected))
-    })
-
-    it.each([
-      {
-        label: 'their previous DID loses to our previous DID',
-        loser: { did: 'did:example:our', theirDid: 'did:example:their-new', previousTheirDids: ['did:example:their'] },
-        winner: { did: 'did:example:our-new', previousDids: ['did:example:our'], theirDid: 'did:example:their' },
-      },
-      {
-        label: 'our previous DID loses to the exact pair',
-        loser: { did: 'did:example:our-new', previousDids: ['did:example:our'], theirDid: 'did:example:their' },
-        winner: { did: 'did:example:our', theirDid: 'did:example:their' },
-      },
-      {
-        label: 'a newer exact match loses to an older one',
-        loser: { did: 'did:example:our', theirDid: 'did:example:their', createdAt: new Date('2026-01-02') },
-        winner: { did: 'did:example:our', theirDid: 'did:example:their', createdAt: new Date('2026-01-01') },
-      },
-    ])('findByDids picks the closest of several matches: $label', async ({ loser, winner }) => {
-      const props = { role: DidCommDidExchangeRole.Responder, state: DidCommDidExchangeState.Completed }
-      const expected = new DidCommConnectionRecord({ ...props, ...winner })
-      mockFunction(connectionRepository.findByDids).mockRejectedValue(
-        new RecordDuplicateError('Multiple records found', { recordType: DidCommConnectionRecord.type })
-      )
-      mockFunction(connectionRepository.findAllByDids).mockResolvedValue([
-        new DidCommConnectionRecord({ ...props, ...loser }),
-        expected,
-      ])
-
-      const result = await connectionService.findByDids(agentContext, {
-        ourDid: 'did:example:our',
-        theirDid: 'did:example:their',
-      })
-
-      expect(result).toBe(expected)
     })
   })
 

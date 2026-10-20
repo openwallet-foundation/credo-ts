@@ -9,7 +9,6 @@ import {
   injectable,
   Kms,
   type Logger,
-  RecordDuplicateError,
 } from '@credo-ts/core'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
@@ -354,29 +353,8 @@ export class DidCommConnectionService {
     return this.connectionRepository.delete(agentContext, connectionRecord)
   }
 
-  public async findByDids(
-    agentContext: AgentContext,
-    query: { ourDid: string; theirDid: string }
-  ): Promise<DidCommConnectionRecord | null> {
-    try {
-      return await this.connectionRepository.findByDids(agentContext, query)
-    } catch (error) {
-      if (!(error instanceof RecordDuplicateError)) throw error
-    }
-
-    // A match only through previousTheirDids is dropped as superseded, so current DIDs rank first.
-    const rank = (connection: DidCommConnectionRecord): number =>
-      (connection.theirDid === query.theirDid ? 0 : 2) + (connection.did === query.ourDid ? 0 : 1)
-    const [connection, ...others] = (await this.connectionRepository.findAllByDids(agentContext, query)).sort(
-      (a, b) => rank(a) - rank(b) || a.createdAt.getTime() - b.createdAt.getTime()
-    )
-    if (!connection) return null
-    this.logger.warn('More than one connection matches the DID pair, using the closest match', {
-      ...query,
-      connectionId: connection.id,
-      otherConnectionIds: others.map(({ id }) => id),
-    })
-    return connection
+  public async findByDids(agentContext: AgentContext, query: { ourDid: string; theirDid: string }) {
+    return this.connectionRepository.findByDids(agentContext, query)
   }
 
   /**
