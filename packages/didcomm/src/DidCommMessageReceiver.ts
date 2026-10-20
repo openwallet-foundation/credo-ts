@@ -406,6 +406,13 @@ export class DidCommMessageReceiver {
       const { iss } = await didRotateV2Service.verifyFromPrior(agentContext, fromPriorJws)
       const byPair = await this.connectionService.findByDids(agentContext, { ourDid: recipient, theirDid: iss })
       if (byPair) return { connection: byPair, linkedByFromPrior: true }
+
+      for (const alias of await didRotateV2Service.getAlsoKnownAs(agentContext, iss)) {
+        const byAlias = await this.connectionService.findByDids(agentContext, { ourDid: recipient, theirDid: alias })
+        if (byAlias && (await didRotateV2Service.isVerifiedAlias(agentContext, iss, alias))) {
+          return { connection: byAlias, linkedByFromPrior: true }
+        }
+      }
     }
 
     if (from !== undefined && recipient && this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {

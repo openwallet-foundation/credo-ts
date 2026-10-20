@@ -1,8 +1,11 @@
-import { type DidDocumentKey, getDidPeer4ShortFormForEquivalence, Kms } from '@credo-ts/core'
+import { type BaseEvent, type DidDocumentKey, getDidPeer4ShortFormForEquivalence, Kms } from '@credo-ts/core'
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
+import { firstValueFrom, timeout } from 'rxjs'
+import type { MockInstance } from 'vitest'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import {
   DidCommV1Service,
+  DidDocument,
   DidDocumentBuilder,
   DidDocumentService,
   DidsModule,
@@ -11,7 +14,7 @@ import {
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
 } from '../../../../../core/src/modules/dids'
-import { isValidUuid } from '../../../../../core/src/utils/uuid'
+import { isValidUuid, uuid } from '../../../../../core/src/utils/uuid'
 import { type EventReplaySubject, setupEventReplaySubjects, setupSubjectTransports } from '../../../../../core/tests'
 import {
   getAgentOptions,
@@ -294,6 +297,79 @@ describe('out of band implicit', () => {
       state: DidCommDidExchangeState.Completed,
       theirDid: oldFaberConnection.theirDid,
     })
+  })
+
+  test('v2 implicit invitation to an alias of the inviter DID: the invitee follows the rotation away from the inviter DID', async () => {
+    const aliasDid = `did:inmemory:${uuid()}`
+    const faberDid = await createInMemoryDid(faberAgent, 'rxjs:faber', {
+      withKeyAgreement: true,
+      alsoKnownAs: [aliasDid],
+    })
+    const resolveAlias = resolveAliasTo(aliasDid, await faberAgent.dids.resolveDidDocument(faberDid))
+    const [aliceMessageReplay] = setupEventReplaySubjects(
+      [aliceAgent],
+      [DidCommBasicMessageEventTypes.DidCommBasicMessageV2StateChanged]
+    )
+
+    try {
+      const { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+        did: aliasDid,
+        didCommVersion: 'v2',
+        label: 'alice',
+      })
+      if (!aliceFaberConnection) throw new Error('Expected a connection')
+      await aliceAgent.didcomm.basicMessages.sendMessage(aliceFaberConnection.id, 'to the alias')
+      await waitForBasicMessageSubject(faberMessageReplay, { content: 'to the alias' })
+      const [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByQuery({ invitationDid: faberDid })
+
+      await faberAgent.didcomm.basicMessages.sendMessage(faberAliceConnection.id, 'from the rotated DID')
+      await waitForBasicMessageSubject(aliceMessageReplay, { content: 'from the rotated DID' })
+
+      expect(await aliceAgent.didcomm.connections.getById(aliceFaberConnection.id)).toMatchObject({
+        theirDid: faberAliceConnection.did,
+        previousTheirDids: [aliasDid, faberDid],
+      })
+    } finally {
+      resolveAlias.mockRestore()
+    }
+  })
+
+  test('v2 implicit invitation to a DID that does not point back to the inviter DID: the invitee finds no connection for the rotated inviter', async () => {
+    const aliasDid = `did:inmemory:${uuid()}`
+    const faberDid = await createInMemoryDid(faberAgent, 'rxjs:faber', {
+      withKeyAgreement: true,
+      alsoKnownAs: [aliasDid],
+    })
+    const faberDidDocument = await faberAgent.dids.resolveDidDocument(faberDid)
+    const resolveAlias = resolveAliasTo(
+      aliasDid,
+      new DidDocument({ ...faberDidDocument, id: aliasDid, alsoKnownAs: undefined })
+    )
+
+    try {
+      const { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+        did: aliasDid,
+        didCommVersion: 'v2',
+        label: 'alice',
+      })
+      if (!aliceFaberConnection) throw new Error('Expected a connection')
+      await aliceAgent.didcomm.basicMessages.sendMessage(aliceFaberConnection.id, 'to the unverified alias')
+      await waitForBasicMessageSubject(faberMessageReplay, { content: 'to the unverified alias' })
+      const [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByQuery({ invitationDid: faberDid })
+
+      const receiveError = firstValueFrom(
+        aliceAgent.events.observable<BaseEvent & { payload: Error }>('AgentReceiveMessageError').pipe(timeout(10000))
+      )
+      await faberAgent.didcomm.basicMessages.sendMessage(faberAliceConnection.id, 'from the rotated DID')
+      expect((await receiveError).payload.message).toMatch(/No connection associated with incoming message/)
+
+      expect(await aliceAgent.didcomm.connections.getById(aliceFaberConnection.id)).toMatchObject({
+        theirDid: aliasDid,
+        previousTheirDids: [],
+      })
+    } finally {
+      resolveAlias.mockRestore()
+    }
   })
 
   test('v2 single-use invitation: a first message racing the one that used up the invitation gets its connection', async () => {
@@ -804,7 +880,22 @@ describe('out of band implicit', () => {
   })
 })
 
-async function createInMemoryDid(agent: Agent, endpoint: string, { withKeyAgreement = false } = {}) {
+function resolveAliasTo(aliasDid: string, didDocument: DidDocument): MockInstance<InMemoryDidRegistry['resolve']> {
+  const resolve = inMemoryDidsRegistry.resolve.bind(inMemoryDidsRegistry)
+  return vi
+    .spyOn(inMemoryDidsRegistry, 'resolve')
+    .mockImplementation(async (agentContext, did) =>
+      did === aliasDid
+        ? { didDocument, didDocumentMetadata: {}, didResolutionMetadata: {} }
+        : resolve(agentContext, did)
+    )
+}
+
+async function createInMemoryDid(
+  agent: Agent,
+  endpoint: string,
+  { withKeyAgreement = false, alsoKnownAs }: { withKeyAgreement?: boolean; alsoKnownAs?: string[] } = {}
+): Promise<string> {
   const ed25519Key = await agent.kms.createKey({
     type: {
       kty: 'OKP',
@@ -867,12 +958,15 @@ async function createInMemoryDid(agent: Agent, endpoint: string, { withKeyAgreem
     )
   }
 
+  const didDocument = builder.build()
+  didDocument.alsoKnownAs = alsoKnownAs
+
   // Create the did:inmemory did
   const {
     didState: { state },
   } = await agent.dids.create({
     did,
-    didDocument: builder.build(),
+    didDocument,
     options: {
       keys: [
         {
