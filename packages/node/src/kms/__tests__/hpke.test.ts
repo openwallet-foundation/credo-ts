@@ -516,7 +516,6 @@ describe('NodeKeyManagementService HPKE', () => {
         encryption: { algorithm: 'HPKE' },
         keyAgreement: {
           algorithm: 'ECDH-ES',
-          keyId: 'key-1',
           externalPublicJwk: { kty: 'EC', crv: 'P-256', x: '', y: '' },
         },
       })

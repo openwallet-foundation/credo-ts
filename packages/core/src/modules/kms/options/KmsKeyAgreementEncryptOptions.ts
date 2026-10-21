@@ -12,14 +12,8 @@ export const zKmsJwkPublicEcdh = z.union([
 
 export type KmsJwkPublicEcdh = z.infer<typeof zKmsJwkPublicEcdh>
 
-export const zKmsKeyAgreementEcdhEs = z.object({
-  /**
-   * The key id pointing to the ephemeral public key.
-   *
-   * The key type MUST match with the externalPublicJwk
-   */
-  keyId: zKmsKeyId,
-
+// Strict so a leftover ephemeral keyId fails instead of being dropped
+const zKmsKeyAgreementEncryptEcdhEs = z.strictObject({
   algorithm: z.literal('ECDH-ES'),
 
   externalPublicJwk: zKmsJwkPublicEcdh,
@@ -27,29 +21,33 @@ export const zKmsKeyAgreementEcdhEs = z.object({
   apu: z.optional(zAnyUint8Array),
   apv: z.optional(zAnyUint8Array),
 })
-export type KmsKeyAgreementEcdhEs = z.output<typeof zKmsKeyAgreementEcdhEs>
+export type KmsKeyAgreementEncryptEcdhEs = z.output<typeof zKmsKeyAgreementEncryptEcdhEs>
 
-const zKmsKeyAgreementEncryptEcdhEsKw = z.object({
-  /**
-   * The key id pointing to the ephemeral public key.
-   *
-   * The key type MUST match with the externalPublicJwk
-   */
-  keyId: zKmsKeyId,
+const zKmsEncryptRecipients = z.array(z.object({ externalPublicJwk: zKmsJwkPublicEcdh })).min(1)
 
+const zKmsKeyAgreementEncryptEcdhEsKw = z.strictObject({
   algorithm: z.enum(['ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW']),
-
-  externalPublicJwk: zKmsJwkPublicEcdh,
-
+  recipients: zKmsEncryptRecipients,
   apu: z.optional(zAnyUint8Array),
   apv: z.optional(zAnyUint8Array),
 })
 export type KmsKeyAgreementEncryptEcdhEsKw = z.output<typeof zKmsKeyAgreementEncryptEcdhEsKw>
 
+const zKmsKeyAgreementEncryptEcdh1Pu = z.object({
+  /**
+   * The key id of the sender's static key.
+   */
+  keyId: zKmsKeyId,
+  algorithm: z.literal('ECDH-1PU+A256KW'),
+  recipients: zKmsEncryptRecipients,
+  apu: z.optional(zAnyUint8Array),
+  apv: z.optional(zAnyUint8Array),
+})
+export type KmsKeyAgreementEncryptEcdh1Pu = z.output<typeof zKmsKeyAgreementEncryptEcdh1Pu>
+
 const zKmsKeyAgreementEncryptEcdhHsalsa20 = z.object({
   /**
-   * The key id to use for encrypting the content encryption key.
-   * If no key id is provided, anonymous encryption is used.
+   * The key id of the sender's static key. Omit for anonymous encryption.
    */
   keyId: zKmsKeyId.optional(),
 
@@ -86,8 +84,9 @@ export type KmsKeyAgreementEncryptHpke = z.output<typeof zKmsKeyAgreementEncrypt
 
 export const zKmsKeyAgreementEncryptOptions = z
   .discriminatedUnion('algorithm', [
-    zKmsKeyAgreementEcdhEs,
+    zKmsKeyAgreementEncryptEcdhEs,
     zKmsKeyAgreementEncryptEcdhEsKw,
+    zKmsKeyAgreementEncryptEcdh1Pu,
     zKmsKeyAgreementEncryptEcdhHsalsa20,
     zKmsKeyAgreementEncryptHpke,
   ])
