@@ -22,7 +22,6 @@ import {
   TypedArrayEncoder,
   verkeyToDidKey,
 } from '@credo-ts/core'
-import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommInboundMessageContext } from '../../../models'
@@ -119,33 +118,38 @@ export class DidCommMediatorService {
     const wsEndpoint =
       didcommConfig.endpoints.find((e) => e.startsWith('ws://') || e.startsWith('wss://')) ?? didcommConfig.endpoints[0]
 
-    const routingKey = routingKeys[0]
-    if (!routingKey.is(Kms.Ed25519PublicJwk)) {
-      throw new CredoError('Mediator routing key must be Ed25519 for did:peer:2 creation.')
+    // DIDComm v2 forwards encrypt to a keyAgreement key. The KMS does not derive an X25519 key from the
+    // Ed25519 routing key, so the routing record holds a separate X25519 key for v2.
+    const x25519RoutingKey = routingKeys.find((routingKey): routingKey is Kms.PublicJwk<Kms.X25519PublicJwk> =>
+      routingKey.is(Kms.X25519PublicJwk)
+    )
+    if (!x25519RoutingKey) {
+      throw new CredoError('Cannot grant mediation v2: the mediator routing record has no X25519 routing key.')
     }
-
-    // DIDComm v2 Forward messages encrypt to a keyAgreement (X25519) key, not an authentication
-    // (Ed25519) key. Convert the routing key so the mediator can decrypt inbound forwards.
-    const x25519PublicKey = convertPublicKeyToX25519(routingKey.publicKey.publicKey)
-    const x25519Jwk = Kms.PublicJwk.fromPublicKey({ kty: 'OKP', crv: 'X25519', publicKey: x25519PublicKey })
     const verificationMethod = getX25519KeyAgreementKey2019({
       id: 'did:peer:2-placeholder#key-1',
-      publicJwk: x25519Jwk,
+      publicJwk: x25519RoutingKey,
       controller: 'did:peer:2-placeholder',
     })
+
+    const didDocumentBuilder = new DidDocumentBuilder('did:peer:2-placeholder')
 
     // Also include the Ed25519 authentication key so that v1 agents (which use Ed25519
     // routing keys for Forward message encryption) can find it when resolving the routing DID.
     // Without this, the routing DID only contains an X25519 keyAgreement key, which causes
     // v1 Forward packing to produce a kid the mediator can't look up.
-    const ed25519VerificationMethod = getEd25519VerificationKey2018({
-      id: 'did:peer:2-placeholder#key-2',
-      publicJwk: routingKey,
-      controller: 'did:peer:2-placeholder',
-    })
-
-    const didDocumentBuilder = new DidDocumentBuilder('did:peer:2-placeholder')
-    didDocumentBuilder.addAuthentication(ed25519VerificationMethod)
+    const ed25519RoutingKey = routingKeys.find((routingKey): routingKey is Kms.PublicJwk<Kms.Ed25519PublicJwk> =>
+      routingKey.is(Kms.Ed25519PublicJwk)
+    )
+    if (ed25519RoutingKey) {
+      didDocumentBuilder.addAuthentication(
+        getEd25519VerificationKey2018({
+          id: 'did:peer:2-placeholder#key-2',
+          publicJwk: ed25519RoutingKey,
+          controller: 'did:peer:2-placeholder',
+        })
+      )
+    }
     didDocumentBuilder.addKeyAgreement(verificationMethod)
     didDocumentBuilder.addService(
       new NewDidCommV2Service({ id: '#dm-0', serviceEndpoint: new NewDidCommV2ServiceEndpoint({ uri: wsEndpoint }) })
@@ -311,9 +315,12 @@ export class DidCommMediatorService {
     const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
     const useDidKey = didcommConfig.useDidKeyInProtocols
 
-    const routingKeys = (await this.getRoutingKeys(agentContext)).map((routingKey) =>
-      useDidKey ? new DidKey(routingKey).did : TypedArrayEncoder.toBase58(routingKey.publicKey.publicKey)
-    )
+    // DIDComm v1 forwards encrypt to the Ed25519 routing key, the X25519 key only serves DIDComm v2
+    const routingKeys = (await this.getRoutingKeys(agentContext))
+      .filter((routingKey) => routingKey.is(Kms.Ed25519PublicJwk))
+      .map((routingKey) =>
+        useDidKey ? new DidKey(routingKey).did : TypedArrayEncoder.toBase58(routingKey.publicKey.publicKey)
+      )
 
     const message = new DidCommMediationGrantMessage({
       endpoint: didcommConfig.endpoints[0],
@@ -521,6 +528,8 @@ export class DidCommMediatorService {
           routingKeyFingerprint: publicJwk.fingerprint,
           kmsKeyId: routingKey.keyId,
         },
+        // DIDComm v2 forwards encrypt to an X25519 key, which the KMS does not derive from the Ed25519 key
+        ...(didcommConfig.isSupported('v2') ? [await this.createV2RoutingKey(agentContext)] : []),
       ],
     })
 
@@ -552,6 +561,37 @@ export class DidCommMediatorService {
     }
 
     return routingRecord
+  }
+
+  /**
+   * Add an X25519 routing key for DIDComm v2 to a routing record that has none, such as a record
+   * created before the mediator supported DIDComm v2. Does nothing when DIDComm v2 is not supported.
+   */
+  public async addV2RoutingKeyIfMissing(
+    agentContext: AgentContext,
+    routingRecord: DidCommMediatorRoutingRecord
+  ): Promise<DidCommMediatorRoutingRecord> {
+    const didcommConfig = agentContext.resolve(DidCommModuleConfig)
+    if (!didcommConfig.isSupported('v2')) return routingRecord
+    if (routingRecord.routingKeysWithKeyId.some((routingKey) => routingKey.is(Kms.X25519PublicJwk))) {
+      return routingRecord
+    }
+
+    this.logger.debug('Mediator routing record has no X25519 routing key, adding one for DIDComm v2')
+    routingRecord.routingKeys = [...routingRecord.routingKeys, await this.createV2RoutingKey(agentContext)]
+    await this.mediatorRoutingRepository.update(agentContext, routingRecord)
+    return routingRecord
+  }
+
+  private async createV2RoutingKey(
+    agentContext: AgentContext
+  ): Promise<{ routingKeyFingerprint: string; kmsKeyId: string }> {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const routingKey = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+    return {
+      routingKeyFingerprint: Kms.PublicJwk.fromPublicJwk(routingKey.publicJwk).fingerprint,
+      kmsKeyId: routingKey.keyId,
+    }
   }
 
   public async findAllByQuery(

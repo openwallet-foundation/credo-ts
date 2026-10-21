@@ -100,26 +100,30 @@ export class DidCommV2EnvelopeService {
     const apv = computeApv(keys.recipients.map((r) => r.kid))
 
     let protectedHeader: string | undefined
-    const result = await kms.encryptMultiRecipient({
-      keyAgreement: {
-        algorithm: 'ECDH-1PU+A256KW',
-        keyId: keys.senderKey.keyId,
-        recipients: toKmsRecipients(keys.recipients),
-        apu,
-        apv,
+    const result = await kms.encrypt({
+      key: {
+        keyAgreement: {
+          algorithm: 'ECDH-1PU+A256KW',
+          keyId: keys.senderKey.keyId,
+          recipients: toKmsRecipients(keys.recipients),
+          apu,
+          apv,
+        },
       },
-      encryption: { algorithm: enc },
-      aad: (epk) => {
-        protectedHeader = JsonEncoder.toBase64Url({
-          typ: 'application/didcomm-encrypted+json',
-          alg: 'ECDH-1PU+A256KW',
-          enc,
-          skid,
-          apu: TypedArrayEncoder.toBase64Url(apu),
-          apv: TypedArrayEncoder.toBase64Url(apv),
-          epk: toEpkJwk(epk, curve),
-        })
-        return TypedArrayEncoder.fromUtf8String(protectedHeader)
+      encryption: {
+        algorithm: enc,
+        aad: ({ ephemeralPublicJwk }) => {
+          protectedHeader = JsonEncoder.toBase64Url({
+            typ: 'application/didcomm-encrypted+json',
+            alg: 'ECDH-1PU+A256KW',
+            enc,
+            skid,
+            apu: TypedArrayEncoder.toBase64Url(apu),
+            apv: TypedArrayEncoder.toBase64Url(apv),
+            epk: toEpkJwk(ephemeralPublicJwk, curve),
+          })
+          return TypedArrayEncoder.fromUtf8String(protectedHeader)
+        },
       },
       data: plaintextBytes,
     })
@@ -145,22 +149,26 @@ export class DidCommV2EnvelopeService {
     const apv = computeApv(keys.recipients.map((r) => r.kid))
 
     let protectedHeader: string | undefined
-    const result = await kms.encryptMultiRecipient({
-      keyAgreement: {
-        algorithm: 'ECDH-ES+A256KW',
-        recipients: toKmsRecipients(keys.recipients),
-        apv,
+    const result = await kms.encrypt({
+      key: {
+        keyAgreement: {
+          algorithm: 'ECDH-ES+A256KW',
+          recipients: toKmsRecipients(keys.recipients),
+          apv,
+        },
       },
-      encryption: { algorithm: enc },
-      aad: (epk) => {
-        protectedHeader = JsonEncoder.toBase64Url({
-          typ: 'application/didcomm-encrypted+json',
-          alg: 'ECDH-ES+A256KW',
-          enc,
-          apv: TypedArrayEncoder.toBase64Url(apv),
-          epk: toEpkJwk(epk, curve),
-        })
-        return TypedArrayEncoder.fromUtf8String(protectedHeader)
+      encryption: {
+        algorithm: enc,
+        aad: ({ ephemeralPublicJwk }) => {
+          protectedHeader = JsonEncoder.toBase64Url({
+            typ: 'application/didcomm-encrypted+json',
+            alg: 'ECDH-ES+A256KW',
+            enc,
+            apv: TypedArrayEncoder.toBase64Url(apv),
+            epk: toEpkJwk(ephemeralPublicJwk, curve),
+          })
+          return TypedArrayEncoder.fromUtf8String(protectedHeader)
+        },
       },
       data: plaintextBytes,
     })
@@ -355,7 +363,7 @@ export class DidCommV2EnvelopeService {
         keyAgreement: {
           algorithm: 'ECDH-ES+A256KW',
           keyId: keys.recipientKey.keyId,
-          externalPublicJwk: epkJwk,
+          ephemeralPublicJwk: epkJwk,
           encryptedKey: {
             encrypted: TypedArrayEncoder.fromBase64Url(recipient.encrypted_key),
           },
@@ -532,9 +540,9 @@ function toKmsRecipients(recipients: DidCommV2EnvelopeRecipient[]): Array<{ exte
 function toEncryptedMessage(
   protectedHeader: string | undefined,
   recipients: DidCommV2EnvelopeRecipient[],
-  { encrypted, iv, tag, encryptedKeys }: Kms.KmsEncryptMultiRecipientReturn
+  { encrypted, iv, tag, encryptedKeys }: Kms.KmsEncryptReturn
 ): DidCommV2EncryptedMessage {
-  if (!protectedHeader || encryptedKeys.length !== recipients.length) {
+  if (!protectedHeader || !iv || !tag || !encryptedKeys || encryptedKeys.length !== recipients.length) {
     throw new CredoError('Expected the KMS to authenticate the protected header and wrap a key for every recipient')
   }
 

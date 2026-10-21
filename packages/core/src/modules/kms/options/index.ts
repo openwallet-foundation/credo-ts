@@ -21,11 +21,8 @@ export type {
 } from './KmsDecryptOptions'
 export type { KmsDeleteKeyOptions } from './KmsDeleteKeyOptions'
 export type {
-  KmsEncryptMultiRecipientOptions,
-  KmsEncryptMultiRecipientReturn,
-  KmsKeyAgreementEncryptMultiRecipientOptions,
-} from './KmsEncryptMultiRecipientOptions'
-export type {
+  KmsEncryptAad,
+  KmsEncryptAadContext,
   KmsEncryptDataContentEncryption,
   KmsEncryptDataEncryption,
   KmsEncryptDataEncryptionAesCbc,
@@ -39,6 +36,8 @@ export type {
 export type { KmsGetPublicKeyOptions } from './KmsGetPublicKeyOptions'
 export type { KmsImportKeyOptions, KmsImportKeyReturn } from './KmsImportKeyOptions'
 export type {
+  KmsKeyAgreementDecryptEcdh1Pu,
+  KmsKeyAgreementDecryptEcdhEs,
   KmsKeyAgreementDecryptEcdhEsKw,
   KmsKeyAgreementDecryptEcdhHsalsa20,
   KmsKeyAgreementDecryptHpke,
@@ -47,7 +46,8 @@ export type {
 export { isKmsKeyAgreementDecryptHpke } from './KmsKeyAgreementDecryptOptions'
 export type {
   KmsJwkPublicEcdh,
-  KmsKeyAgreementEcdhEs,
+  KmsKeyAgreementEncryptEcdh1Pu,
+  KmsKeyAgreementEncryptEcdhEs,
   KmsKeyAgreementEncryptEcdhEsKw,
   KmsKeyAgreementEncryptEcdhHsalsa20,
   KmsKeyAgreementEncryptHpke,
@@ -61,10 +61,10 @@ export {
   type KmsOperationDecrypt,
   type KmsOperationDeleteKey,
   type KmsOperationEncrypt,
-  type KmsOperationEncryptMultiRecipient,
   type KmsOperationImportKey,
   type KmsOperationSign,
   type KmsOperationVerify,
+  keyAgreementPublicJwks,
 } from './KmsOperation'
 export type { KmsRandomBytesOptions, KmsRandomBytesReturn } from './KmsRandomBytesOptions'
 export type { KmsSignOptions, KmsSignReturn } from './KmsSignOptions'

@@ -1,5 +1,4 @@
 import { type BaseEvent, type DidDocumentKey, getDidPeer4ShortFormForEquivalence, Kms } from '@credo-ts/core'
-import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { firstValueFrom, timeout } from 'rxjs'
 import type { MockInstance } from 'vitest'
 import { Agent } from '../../../../../core/src/agent/Agent'
@@ -993,6 +992,8 @@ async function createInMemoryDid(
     },
   })
   const publicJwk = Kms.PublicJwk.fromPublicJwk(ed25519Key.publicJwk)
+  // DIDComm v2 agrees on an X25519 key of its own, the KMS does not derive one from the Ed25519 key
+  const x25519Key = withKeyAgreement ? await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } }) : undefined
 
   const did = `did:inmemory:${publicJwk.fingerprint}`
   const builder = new DidDocumentBuilder(did)
@@ -1034,16 +1035,12 @@ async function createInMemoryDid(
   builder.addVerificationMethod(ed25519VerificationMethod)
   builder.addAuthentication(ed25519VerificationMethod.id)
   builder.addAssertionMethod(ed25519VerificationMethod.id)
-  if (withKeyAgreement) {
+  if (x25519Key) {
     builder.addKeyAgreement(
       getX25519KeyAgreementKey2019({
         id: `${did}#key-agreement-1`,
         controller: did,
-        publicJwk: Kms.PublicJwk.fromPublicKey({
-          kty: 'OKP',
-          crv: 'X25519',
-          publicKey: convertPublicKeyToX25519(publicJwk.publicKey.publicKey),
-        }),
+        publicJwk: Kms.PublicJwk.fromPublicJwk(x25519Key.publicJwk),
       })
     )
   }
@@ -1063,8 +1060,8 @@ async function createInMemoryDid(
           didDocumentRelativeKeyId: `#${publicJwk.fingerprint}`,
           kmsKeyId: ed25519Key.keyId,
         } satisfies DidDocumentKey,
-        ...(withKeyAgreement
-          ? [{ didDocumentRelativeKeyId: '#key-agreement-1', kmsKeyId: ed25519Key.keyId } satisfies DidDocumentKey]
+        ...(x25519Key
+          ? [{ didDocumentRelativeKeyId: '#key-agreement-1', kmsKeyId: x25519Key.keyId } satisfies DidDocumentKey]
           : []),
       ],
     },

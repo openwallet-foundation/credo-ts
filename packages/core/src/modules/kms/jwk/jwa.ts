@@ -79,7 +79,7 @@ export const KnownJwaKeyAgreementAlgorithms = {
 
   ECDH_HSALSA20: 'ECDH-HSALSA20',
 
-  /** DIDComm v2 authcrypt; draft-madden-jose-ecdh-1pu */
+  // https://datatracker.ietf.org/doc/html/draft-madden-jose-ecdh-1pu-04
   ECDH_1PU_A256KW: 'ECDH-1PU+A256KW',
 
   // HPKE (RFC 9180) in integrated encryption mode, named after

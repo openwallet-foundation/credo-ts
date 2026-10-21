@@ -124,14 +124,10 @@ export class DidCommDocumentService {
    * When a v2 service endpoint is a nested `did:` (common for did:peer mediation), expand to the transport URI and
    * mediator keys. Returns undefined when the DID can not be parsed.
    *
-   * For mediator routing DIDs (did:peer:2 E<X25519>.V<Ed25519>), the Ed25519 authentication
-   * key and X25519 keyAgreement key represent the same physical key (related by the
-   * birational map). They MUST NOT be treated as two sequential routing hops — otherwise
-   * the sender would wrap the Forward twice, and the innermost wrap (addressed to the
-   * mediator) would be delivered to the recipient who cannot decrypt it.
-   *
-   * This function extracts ONE key per physical routing key, preferring the X25519
-   * keyAgreement form so the Forward envelope kid matches the mediator's decryption key.
+   * For mediator routing DIDs (did:peer:2 E<X25519>.V<Ed25519>), only the keyAgreement keys take part
+   * in the forward. The Ed25519 authentication key serves DIDComm v1 and MUST NOT become a second hop,
+   * otherwise the sender would wrap the Forward twice and the innermost wrap (addressed to the mediator)
+   * would be delivered to the recipient, who cannot decrypt it.
    */
   public expandV2EndpointIfRoutingDid(
     agentContext: AgentContext,
@@ -147,46 +143,25 @@ export class DidCommDocumentService {
         ? didToNumAlgo4DidDocument(endpoint)
         : didToNumAlgo2DidDocument(endpoint)
 
-      // Dedupe by X25519 fingerprint so Ed25519 auth + X25519 keyAgreement of the
-      // same physical key collapse to one hop. Prefer keyAgreement entries so the
-      // kept key is X25519 when available.
-      const byX25519Fingerprint = new Map<string, Kms.PublicJwk<Kms.Ed25519PublicJwk>>()
-      const addKey = (publicJwk: Kms.PublicJwk) => {
-        let fingerprint: string
-        try {
-          if (publicJwk.is(Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) {
-            fingerprint = publicJwk.fingerprint
-          } else if (publicJwk.is(Kms.Ed25519PublicJwk)) {
-            fingerprint = (publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk).fingerprint
-          } else {
-            return
-          }
-        } catch {
-          return
-        }
-        const existing = byX25519Fingerprint.get(fingerprint)
-        // Prefer X25519 over Ed25519 for the same physical key
-        if (!existing || (publicJwk.is(Kms.X25519PublicJwk) && !existing.is(Kms.X25519PublicJwk))) {
-          byX25519Fingerprint.set(fingerprint, publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
-        }
-      }
-
-      // keyAgreement first so X25519 wins the dedupe tie-breaker when both are present
-      const keyRefs = [...(routingDoc.keyAgreement ?? []), ...(routingDoc.authentication ?? [])]
-      const seenVmIds = new Set<string>()
+      // Forwards encrypt to the keyAgreement keys of the routing DID. The authentication keys are only a
+      // fallback for a mediator that publishes no keyAgreement key, since the KMS does not derive an X25519
+      // key from an Ed25519 key.
+      const keyAgreementRefs = routingDoc.keyAgreement ?? []
+      const keyRefs = keyAgreementRefs.length > 0 ? keyAgreementRefs : (routingDoc.authentication ?? [])
+      const routingKeysByFingerprint = new Map<string, Kms.PublicJwk<Kms.Ed25519PublicJwk>>()
       for (const keyRef of keyRefs) {
         const vm = typeof keyRef === 'string' ? routingDoc.dereferenceVerificationMethod(keyRef) : keyRef
-        if (seenVmIds.has(vm.id)) continue
-        seenVmIds.add(vm.id)
         const publicJwk = getPublicJwkFromVerificationMethod(vm)
+        if (!publicJwk.is(Kms.Ed25519PublicJwk, Kms.X25519PublicJwk, Kms.P256PublicJwk, Kms.P384PublicJwk)) continue
+        if (routingKeysByFingerprint.has(publicJwk.fingerprint)) continue
         if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
           publicJwk.keyId = toAbsoluteDidUrl(routingDoc.id, vm.id)
         }
-        addKey(publicJwk)
+        routingKeysByFingerprint.set(publicJwk.fingerprint, publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>)
       }
 
       // A DID endpoint adds one hop: https://identity.foundation/didcomm-messaging/spec/v2.1/#using-a-did-as-an-endpoint
-      const nestedRoutingKeys = Array.from(byX25519Fingerprint.values()).slice(0, singleHop ? 1 : undefined)
+      const nestedRoutingKeys = Array.from(routingKeysByFingerprint.values()).slice(0, singleHop ? 1 : undefined)
       if (singleHop && nestedRoutingKeys[0]?.is(Kms.Ed25519PublicJwk)) {
         agentContext.config.logger.warn(
           `Mediator DID ${endpoint} has no keyAgreement key. The DIDComm v2 forward is addressed to its Ed25519 key as a did:key, which a mediator outside Credo may not resolve.`

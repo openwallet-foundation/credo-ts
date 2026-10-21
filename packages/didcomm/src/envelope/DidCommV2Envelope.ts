@@ -420,7 +420,7 @@ export async function wrapInV2Forward(
   envelopeService: DidCommV2EnvelopeService,
   encryptedMessage: DidCommEncryptedMessage,
   options: {
-    routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+    routingKeys: Kms.PublicJwk[]
     recipientKey: Kms.PublicJwk
     connection?: DidCommPackOptions['connection']
     contentEncryptionAlgorithm: DidCommV2AnoncryptContentEncryptionAlgorithm

@@ -20,16 +20,9 @@ export function supportedKeyDerivationAlgsForKey(
   if (isCrvJwk(jwk) && allowedCurves.includes(jwk.crv)) {
     algs.push('ECDH-ES', 'ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW')
   }
-  // Ed25519: ECDH-ES via X25519 conversion (e.g. DIDComm v2 anoncrypt with invitation keys)
-  if (jwk.kty === 'OKP' && jwk.crv === 'Ed25519') {
-    algs.push('ECDH-ES', 'ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW')
-  }
 
-  // ECDH-1PU+A256KW (e.g. DIDComm v2): X25519 natively; Ed25519 may be converted to X25519 by the KMS
-  if (jwk.kty === 'OKP' && (jwk.crv === 'X25519' || jwk.crv === 'Ed25519')) {
-    algs.push('ECDH-1PU+A256KW')
-  }
-  if (jwk.kty === 'EC' && (jwk.crv === 'P-256' || jwk.crv === 'P-384')) {
+  const ecdh1PuCurves: KmsJwkPublicCrv['crv'][] = ['P-256', 'P-384', 'X25519']
+  if (isCrvJwk(jwk) && ecdh1PuCurves.includes(jwk.crv)) {
     algs.push('ECDH-1PU+A256KW')
   }
 

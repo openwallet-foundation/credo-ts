@@ -2,9 +2,7 @@ import { KeyManagementAlgorithmNotSupportedError } from '../error/KeyManagementA
 import type {
   KmsDecryptDataDecryption,
   KmsEncryptDataEncryption,
-  KmsEncryptMultiRecipientOptions,
   KmsKeyAgreementDecryptOptions,
-  KmsKeyAgreementEncryptMultiRecipientOptions,
   KmsKeyAgreementEncryptOptions,
 } from '../options'
 import type {
@@ -14,10 +12,7 @@ import type {
 } from './jwa'
 
 export function assertSupportedKeyAgreementAlgorithm<
-  KeyAgreement extends
-    | KmsKeyAgreementEncryptOptions
-    | KmsKeyAgreementDecryptOptions
-    | KmsKeyAgreementEncryptMultiRecipientOptions,
+  KeyAgreement extends KmsKeyAgreementEncryptOptions | KmsKeyAgreementDecryptOptions,
   SupportedAlgorithms extends KnownJwaKeyAgreementAlgorithm[],
 >(
   keyAgreement: KeyAgreement,
@@ -33,10 +28,7 @@ export function assertSupportedKeyAgreementAlgorithm<
 }
 
 export function assertSupportedEncryptionAlgorithm<
-  Encryption extends
-    | KmsEncryptDataEncryption
-    | KmsDecryptDataDecryption
-    | KmsEncryptMultiRecipientOptions['encryption'],
+  Encryption extends KmsEncryptDataEncryption | KmsDecryptDataDecryption,
   SupportedAlgorithms extends Array<KnownJwaContentEncryptionAlgorithm | KnownJwaKeyEncryptionAlgorithm>,
 >(
   encryption: Encryption,

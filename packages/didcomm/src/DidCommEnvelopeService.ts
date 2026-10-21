@@ -223,7 +223,7 @@ export class DidCommEnvelopeService {
           keyId: recipientKey.keyId,
 
           // Optionally we have a sender
-          externalPublicJwk: senderPublicJwk?.convertTo(Kms.X25519PublicJwk).toJson(),
+          senderPublicJwk: senderPublicJwk?.convertTo(Kms.X25519PublicJwk).toJson(),
         },
       },
     })
@@ -349,8 +349,10 @@ export class DidCommEnvelopeService {
             `Found mediator routing record with id '${mediatorRoutingRecord.id}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
           )
 
-          const routingKey = mediatorRoutingRecord.routingKeysWithKeyId.find((routingKey) =>
-            publicKey.equals(routingKey)
+          // DIDComm v1 uses the Ed25519 routing key, the X25519 routing key only serves DIDComm v2
+          const routingKey = mediatorRoutingRecord.routingKeysWithKeyId.find(
+            (routingKey): routingKey is Kms.PublicJwk<Kms.Ed25519PublicJwk> =>
+              routingKey.is(Kms.Ed25519PublicJwk) && publicKey.equals(routingKey)
           )
 
           // This should not happen as we only get here if the tag matches

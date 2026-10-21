@@ -2,13 +2,9 @@ import { KeyManagementError } from '../error/KeyManagementError'
 import { getJwkHumanDescription, type KmsJwkPrivate, type KnownJwaSignatureAlgorithm } from '../jwk'
 import type { KmsCreateKeyType } from './KmsCreateKeyOptions'
 import type { KmsDecryptDataDecryption } from './KmsDecryptOptions'
-import type {
-  KmsEncryptMultiRecipientOptions,
-  KmsKeyAgreementEncryptMultiRecipientOptions,
-} from './KmsEncryptMultiRecipientOptions'
 import type { KmsEncryptDataEncryption } from './KmsEncryptOptions'
 import type { KmsKeyAgreementDecryptOptions } from './KmsKeyAgreementDecryptOptions'
-import type { KmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
+import type { KmsJwkPublicEcdh, KmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
 
 export type KmsOperationCreateKey = {
   operation: 'createKey'
@@ -36,8 +32,7 @@ export type KmsOperationVerify = {
 
 /**
  * The key id is not needed to determine whether an operation is supported, and is
- * often not known yet when checking for support (e.g. the ephemeral key for `ECDH-ES`
- * is only created once we know the key agreement is supported).
+ * often not known yet when checking for support.
  */
 type WithOptionalKeyId<Options> = Options extends { keyId: string }
   ? Omit<Options, 'keyId'> & { keyId?: string }
@@ -61,10 +56,19 @@ export type KmsOperationDecrypt = {
   keyAgreement?: WithOptionalKeyId<KmsKeyAgreementDecryptOptions>
 }
 
-export type KmsOperationEncryptMultiRecipient = {
-  operation: 'encryptMultiRecipient'
-  encryption: KmsEncryptMultiRecipientOptions['encryption']
-  keyAgreement: WithOptionalKeyId<KmsKeyAgreementEncryptMultiRecipientOptions>
+/**
+ * The public keys in a key agreement: the recipients on encrypt, the sender's ephemeral and static keys on decrypt.
+ */
+export function keyAgreementPublicJwks(
+  keyAgreement: NonNullable<KmsOperationEncrypt['keyAgreement'] | KmsOperationDecrypt['keyAgreement']>
+): KmsJwkPublicEcdh[] {
+  if ('recipients' in keyAgreement) return keyAgreement.recipients.map(({ externalPublicJwk }) => externalPublicJwk)
+
+  return [
+    'externalPublicJwk' in keyAgreement ? keyAgreement.externalPublicJwk : undefined,
+    'ephemeralPublicJwk' in keyAgreement ? keyAgreement.ephemeralPublicJwk : undefined,
+    'senderPublicJwk' in keyAgreement ? keyAgreement.senderPublicJwk : undefined,
+  ].filter((jwk) => jwk !== undefined)
 }
 
 export type KmsOperationRandomBytes = {
@@ -79,7 +83,6 @@ export type KmsOperation =
   | KmsOperationVerify
   | KmsOperationEncrypt
   | KmsOperationDecrypt
-  | KmsOperationEncryptMultiRecipient
   | KmsOperationRandomBytes
 
 export function getKmsOperationHumanDescription(operation: KmsOperation) {
@@ -113,12 +116,8 @@ export function getKmsOperationHumanDescription(operation: KmsOperation) {
     return `'${operation.operation}' operation with algorithm '${operation.algorithm}'`
   }
 
-  if (
-    operation.operation === 'encrypt' ||
-    operation.operation === 'decrypt' ||
-    operation.operation === 'encryptMultiRecipient'
-  ) {
-    const encryption = operation.operation === 'decrypt' ? operation.decryption : operation.encryption
+  if (operation.operation === 'encrypt' || operation.operation === 'decrypt') {
+    const encryption = operation.operation === 'encrypt' ? operation.encryption : operation.decryption
 
     let message = `'${operation.operation}' operation with encryption algorithm '${encryption.algorithm}'`
     if (operation.keyAgreement) {

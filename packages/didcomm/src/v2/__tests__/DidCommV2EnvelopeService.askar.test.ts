@@ -165,34 +165,39 @@ describe('DidCommV2EnvelopeService (Askar round-trip)', () => {
     // Mirrors packAnoncrypt with a caller-chosen typ, because the protected header is bound into the ciphertext.
     async function packAnoncryptWithTyp(typ: string | undefined): Promise<DidCommV2EncryptedMessage> {
       const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-      const ephemeralKey = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
       const apv = computeApv([recipientKid])
-      const protectedHeader = JsonEncoder.toBase64Url({
-        typ,
-        alg: 'ECDH-ES+A256KW',
-        enc: 'A256CBC-HS512',
-        apv: TypedArrayEncoder.toBase64Url(apv),
-        epk: ephemeralKey.publicJwk,
-      })
-      const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
+      let protectedHeader: string | undefined
+      const { encrypted, iv, tag, encryptedKeys } = await kms.encrypt({
         key: {
           keyAgreement: {
             algorithm: 'ECDH-ES+A256KW',
-            keyId: ephemeralKey.keyId,
-            externalPublicJwk: recipientKey.toJson() as Kms.KmsJwkPublicEcdh,
+            recipients: [{ externalPublicJwk: recipientKey.toJson() as Kms.KmsJwkPublicEcdh }],
             apv,
           },
         },
-        encryption: { algorithm: 'A256CBC-HS512', aad: TypedArrayEncoder.fromUtf8String(protectedHeader) },
+        encryption: {
+          algorithm: 'A256CBC-HS512',
+          aad: ({ ephemeralPublicJwk }) => {
+            protectedHeader = JsonEncoder.toBase64Url({
+              typ,
+              alg: 'ECDH-ES+A256KW',
+              enc: 'A256CBC-HS512',
+              apv: TypedArrayEncoder.toBase64Url(apv),
+              epk: ephemeralPublicJwk,
+            })
+            return TypedArrayEncoder.fromUtf8String(protectedHeader)
+          },
+        },
         data: JsonEncoder.toUint8Array(plaintext),
       })
+      if (!protectedHeader) throw new Error('Expected the KMS to call the aad callback')
 
       return {
         protected: protectedHeader,
         recipients: [
           {
             header: { kid: recipientKid },
-            encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey?.encrypted as Uint8Array),
+            encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKeys?.[0].encrypted as Uint8Array),
           },
         ],
         iv: TypedArrayEncoder.toBase64Url(iv as Uint8Array),
@@ -665,8 +670,8 @@ describe('DidCommV2EnvelopeService with the sender key outside the default backe
     const recipientKey = Kms.PublicJwk.fromPublicJwk(recipient.publicJwk) as Kms.PublicJwk<Kms.X25519PublicJwk>
     recipientKey.keyId = recipient.keyId
     const storageCalls = [vi.spyOn(kms, 'createKey'), vi.spyOn(kms, 'deleteKey')]
-    const askarEncrypt = vi.spyOn(AskarKeyManagementService.prototype, 'encryptMultiRecipient')
-    const nodeEncrypt = vi.spyOn(NodeKeyManagementService.prototype, 'encryptMultiRecipient')
+    const askarEncrypt = vi.spyOn(AskarKeyManagementService.prototype, 'encrypt')
+    const nodeEncrypt = vi.spyOn(NodeKeyManagementService.prototype, 'encrypt')
     const plaintext: DidCommV2PlaintextMessage = {
       id: 'cross-backend-1',
       type: 'https://didcomm.org/trust-ping/2.0/ping',
