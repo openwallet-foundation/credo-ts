@@ -29,7 +29,11 @@ import { clientAuthenticationDynamic, decodeJwtHeader } from '@openid4vc/oauth2'
 import type { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 import type { OpenId4VcVerificationTypes } from './OpenId4VcTrustedIssuersVerificationTypes'
 
-import { getPublicJwkFromDid, supportedJarmContentEncryptionAlgorithms } from './utils'
+import {
+  getPublicJwkFromDid,
+  supportedResponseEncryptionContentAlgorithms,
+  supportedResponseEncryptionKeyAgreementAlgorithms,
+} from './utils'
 
 /**
  * Maps the `typ` header of a jwt verified by oid4vc-ts to the trust verification context.
@@ -229,20 +233,26 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
       throw new CredoError('Expected kid to be defined on the JWK')
     }
 
-    if (jweEncryptor.alg !== 'ECDH-ES') {
-      throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
-    }
-
     if (
-      !supportedJarmContentEncryptionAlgorithms.includes(
-        jweEncryptor.enc as (typeof supportedJarmContentEncryptionAlgorithms)[number]
+      !supportedResponseEncryptionKeyAgreementAlgorithms.includes(
+        jweEncryptor.alg as (typeof supportedResponseEncryptionKeyAgreementAlgorithms)[number]
       )
     ) {
       throw new CredoError(
-        `Only ${supportedJarmContentEncryptionAlgorithms.map((alg) => `'${alg}'`).join(', ')} are supported as 'enc' value for JARM response encryption`
+        `Only ${supportedResponseEncryptionKeyAgreementAlgorithms.map((alg) => `'${alg}'`).join(', ')} are supported as 'alg' value for response encryption`
       )
     }
-    const enc = jweEncryptor.enc as (typeof supportedJarmContentEncryptionAlgorithms)[number]
+
+    if (
+      !supportedResponseEncryptionContentAlgorithms.includes(
+        jweEncryptor.enc as (typeof supportedResponseEncryptionContentAlgorithms)[number]
+      )
+    ) {
+      throw new CredoError(
+        `Only ${supportedResponseEncryptionContentAlgorithms.map((alg) => `'${alg}'`).join(', ')} are supported as 'enc' value for response encryption`
+      )
+    }
+    const enc = jweEncryptor.enc as (typeof supportedResponseEncryptionContentAlgorithms)[number]
 
     const jwkJson = jwk.toJson()
     if (jwkJson.kty !== 'EC' && jwkJson.kty !== 'OKP') {

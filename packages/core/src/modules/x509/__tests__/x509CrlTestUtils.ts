@@ -1,7 +1,6 @@
 import { Buffer } from 'node:buffer'
 import { DistributionPoint, DistributionPointName, GeneralName, Reason } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
-import type { Scope } from 'nock'
 import nock from 'nock'
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
@@ -19,6 +18,8 @@ export interface CrlTestAgent {
   /** The in-memory cache used by the agent. Tests can `clear()` it between cases. */
   cache: InMemoryLruCache
 }
+
+type Scope = nock.Scope
 
 /**
  * Create and initialize a real {@link Agent} wired for CRL revocation tests.

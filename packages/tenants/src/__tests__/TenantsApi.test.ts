@@ -132,7 +132,6 @@ describe('TenantsApi', () => {
 
       mockFunction(tenantRecordService.createTenant).mockResolvedValue(tenantRecord)
 
-      // @ts-expect-error
       const getTenantAgentSpy = vi.spyOn(tenantsApi, '_getTenantAgent').mockResolvedValue(tenantAgentMock)
 
       const createdTenantRecord = await tenantsApi.createTenant({

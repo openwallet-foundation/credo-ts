@@ -24,7 +24,7 @@ import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
-import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciSignMdocCredentials } from '../src'
+import type { OpenId4VcIssuerModuleConfigOptions, OpenId4VciIssuerInfo, OpenId4VciSignMdocCredentials } from '../src'
 import { OpenId4VcIssuanceSessionState, OpenId4VciCredentialFormatProfile, OpenId4VcModule } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
@@ -198,6 +198,44 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     // otherwise throw an error
     throw new CredoError('Issuer does not support did:key or JWK for credential binding')
   }
+
+  it('publishes issuer info in JSON and signed metadata and exposes it to the holder', async () => {
+    const issuerInfo: OpenId4VciIssuerInfo = [{ format: 'registration_cert', data: 'registration.certificate.jwt' }]
+    const key = await issuer.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const certificate = await issuer.agent.x509.createCertificate({
+      authorityKey: Kms.PublicJwk.fromPublicJwk(key.publicJwk),
+      issuer: 'CN=Credential Issuer',
+    })
+    certificate.keyId = key.keyId
+
+    const created = await issuer.agent.openid4vc.issuer.createIssuer({
+      credentialConfigurationsSupported: { universityDegree: universityDegreeCredentialConfigurationSupported },
+      issuerInfo,
+      metadataSigner: { method: 'x5c', x5c: [certificate] },
+    })
+    const metadataUrl = `${baseUrl}/.well-known/openid-credential-issuer/oid4vci/${created.issuerId}`
+    const jsonResponse = await fetch(metadataUrl, { headers: { Accept: 'application/json' } })
+    expect(jsonResponse.status).toBe(200)
+    expect(await jsonResponse.json()).toMatchObject({ issuer_info: issuerInfo })
+
+    const signedResponse = await fetch(metadataUrl, { headers: { Accept: 'application/jwt' } })
+    expect(signedResponse.status).toBe(200)
+    const signedMetadata = Jwt.fromSerializedJwt(await signedResponse.text())
+    expect(signedMetadata.header.x5c).toEqual([certificate.toString('base64')])
+    expect(signedMetadata.payload.additionalClaims.issuer_info).toEqual(issuerInfo)
+
+    const metadata = await holder.agent.openid4vc.holder.resolveIssuerMetadata(`${issuanceBaseUrl}/${created.issuerId}`)
+    expect(metadata.credentialIssuer.issuer_info).toEqual(issuerInfo)
+
+    const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
+      issuerId: created.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolved = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    expect(resolved.metadata.credentialIssuer.issuer_info).toEqual(issuerInfo)
+  })
 
   it('e2e flow with tenants, issuer endpoints requesting a sd-jwt-vc using authorization code flow', async () => {
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
