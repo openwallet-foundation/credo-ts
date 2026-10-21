@@ -12,6 +12,7 @@ import { getAgentConfig, getAgentContext } from '../../../../tests'
 import {
   KeyManagementApi,
   KeyManagementModuleConfig,
+  type KeyManagementService,
   type KmsJwkPublicEc,
   type KmsJwkPublicRsa,
   P256PublicJwk,
@@ -50,6 +51,24 @@ const getLastMonth = () => {
   }
   return lastMonth
 }
+
+// Generated offline with OpenSSL 3.6.4 because this regression verifies a P-521-signed certificate chain using a KMS
+// backend that does not support ES512 verification; P-521 signing support is unrelated and out of scope.
+// The fixtures are valid from 2026-10-21 through 2126-09-27.
+// openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:secp521r1 -out root.key
+// openssl req -new -x509 -key root.key -sha512 -days 36500 -subj '/CN=P-521 Test Root' -addext 'basicConstraints=critical,CA:TRUE' -addext 'keyUsage=critical,keyCertSign,cRLSign' -addext 'subjectKeyIdentifier=hash' -out root.pem
+// openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:prime256v1 -out leaf.key
+// openssl req -new -key leaf.key -subj '/CN=P-256 Test Leaf' -out leaf.csr
+// printf 'basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\nauthorityKeyIdentifier=keyid,issuer\nsubjectKeyIdentifier=hash\n' > leaf.ext
+// openssl x509 -req -in leaf.csr -CA root.pem -CAkey root.key -CAcreateserial -days 36500 -sha512 -extfile leaf.ext -out leaf.pem
+// openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:secp521r1 -out wrong-root.key
+// openssl req -new -x509 -key wrong-root.key -sha512 -days 36500 -subj '/CN=P-521 Test Root' -addext 'basicConstraints=critical,CA:TRUE' -addext 'keyUsage=critical,keyCertSign,cRLSign' -addext 'subjectKeyIdentifier=hash' -out wrong-root.pem
+const p521SignedLeafCertificate =
+  'MIIB3TCCAT6gAwIBAgIUJ9ULhHSYaBn1ISb40pkFkVKP6Z8wCgYIKoZIzj0EAwQwGjEYMBYGA1UEAwwPUC01MjEgVGVzdCBSb290MCAXDTI2MTAyMTA3NTA1NFoYDzIxMjYwOTI3MDc1MDU0WjAaMRgwFgYDVQQDDA9QLTI1NiBUZXN0IExlYWYwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARyWQDPrjKMpQ4dwX2UjaxWmCglNayp5ja0mtfSM8w2mXmsCqbluDDU0+NJ2oXJb22KxG771H0bfgsN7puOPcp5o2AwXjAMBgNVHRMBAf8EAjAAMA4GA1UdDwEB/wQEAwIHgDAdBgNVHQ4EFgQUNFUf9VYkQBiGaA1i01XuVlPPSCgwHwYDVR0jBBgwFoAUOCWQ4rD3n1XAxcBhEZ0tdddQgrMwCgYIKoZIzj0EAwQDgYwAMIGIAkIA9IZqCYDRDjYSnqNPL8HNpB4cHgnAkbHOwM85MkTX/goV86zVf/TzuJybOaoR71Do6gHxHea1/NNq1LnN2+outhMCQgCYwCzay7n7tlIit+NNvT/e2b2MWuxDeGkfGJVWjUaJh6ny/ElfSDJqlXCza9/CxC4RnbYCvNR7gGDnRg9qBkhBgQ=='
+const p521RootCertificate =
+  'MIICIzCCAYSgAwIBAgIUFMYCePUePRKqq0xN1FBXsgodZ/YwCgYIKoZIzj0EAwQwGjEYMBYGA1UEAwwPUC01MjEgVGVzdCBSb290MCAXDTI2MTAyMTA3NTA1NFoYDzIxMjYwOTI3MDc1MDU0WjAaMRgwFgYDVQQDDA9QLTUyMSBUZXN0IFJvb3QwgZswEAYHKoZIzj0CAQYFK4EEACMDgYYABAATiiwEm+LjhrxrEjV0l0pBlUJlwz0sJv2QZCLclOJHYE2FLn7vBjn2J7P3EaNrG/9OGptuM//85X3WfvosGqHN/wFPU9FGxQeeoqHYIGFD0phV6nt3fNWWGg8nXOhC4fbYLTE1wRUsswxFPJB40CAqBBuN79h635A45V2zLRQKd+u+DqNjMGEwHwYDVR0jBBgwFoAUOCWQ4rD3n1XAxcBhEZ0tdddQgrMwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwHQYDVR0OBBYEFDglkOKw959VwMXAYRGdLXXXUIKzMAoGCCqGSM49BAMEA4GMADCBiAJCAfEdfs+CohAphzkvnJDDwLX0m7FWp97DE7LKWg0q+oHivRTEgQ/OxwcnMCX07tKS4zyErS5ZBHYrTZ6WRXP0slKLAkIBQqaS5h6mGCkplK+FnZV9qhUd6SmGheghg+2CehR0ALq9uZQ8vD4CrSpIbJ0Fq0uHgxyXZkPqc2Sehu2irsvfxa8='
+const p521WrongRootCertificate =
+  'MIICIjCCAYSgAwIBAgIUapaAYKzFoh5MSAGEnZ1BstAx5bMwCgYIKoZIzj0EAwQwGjEYMBYGA1UEAwwPUC01MjEgVGVzdCBSb290MCAXDTI2MTAyMTA3NTA1NFoYDzIxMjYwOTI3MDc1MDU0WjAaMRgwFgYDVQQDDA9QLTUyMSBUZXN0IFJvb3QwgZswEAYHKoZIzj0CAQYFK4EEACMDgYYABACA4rNm5ietkWAGzJUJmsQkBzKaU47AGOwEZL2az+9k7hVJLGImBWkgscsAA7e0N2VpQ0b9hxeqk9hDH3IyT6L+fwHLklJ/WI3wPbbIqQikeeE7Ks/kRLNKX75xuVpINuSuR8YV/7zlJwD92yxfpkIs1bq6nxR8Z5KbYn5jZC42c3PaoqNjMGEwHwYDVR0jBBgwFoAU4tqeMlaawSV9w2hd4IJjt7vXaEUwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwHQYDVR0OBBYEFOLanjJWmsElfcNoXeCCY7e712hFMAoGCCqGSM49BAMEA4GLADCBhwJBefhrDWyq4mhYTm1YitqtfJ5j4oPrKw560aJnyFGsgYSURb2Dh3l4KAEJ2S4u3773xE/uaSJVdRrRkllbjqGQ4zwCQgCec07kuHlbLOpCYYiQBN/uYe/BlUk2W7Jyb2rAsWNmKmILiMZ4Iv7MhpgHI6AeZhU5AWw79VQvjq16HFuc/sTi9w=='
 
 const agentConfig = getAgentConfig('X509Service')
 const agentContext = getAgentContext({
@@ -824,6 +843,44 @@ gTqhM3BGMuf+
       expect(() =>
         X509Service.parseCertificateSigningRequest(agentContext, { encodedCertificateSigningRequest })
       ).toThrow()
+    })
+  })
+
+  describe('P-521-signed X.509 chains with a backend that does not support ES512 verification', () => {
+    const verify = vi.fn()
+    const kmsBackend = {
+      backend: 'no-es512',
+      isOperationSupported: (_agentContext: unknown, operation: { operation: string; algorithm?: string }) =>
+        operation.operation !== 'verify' || operation.algorithm !== 'ES512',
+      verify,
+    } as unknown as KeyManagementService
+    const p521AgentContext = getAgentContext({
+      agentConfig,
+      kmsBackends: [kmsBackend],
+    })
+    p521AgentContext.dependencyManager.registerInstance(X509ModuleConfig, new X509ModuleConfig({}))
+
+    it('builds and validates the two-certificate chain without invoking KMS verification', async () => {
+      const chain = await X509Service.validateCertificateChain(p521AgentContext, {
+        certificateChain: [p521SignedLeafCertificate],
+        trustedCertificates: [p521RootCertificate],
+        verificationDate: new Date('2027-01-01T00:00:00Z'),
+      })
+
+      expect(chain).toHaveLength(2)
+      expect(verify).not.toHaveBeenCalled()
+    })
+
+    it('rejects the chain when the trusted P-521 root has a different key', async () => {
+      await expect(
+        X509Service.validateCertificateChain(p521AgentContext, {
+          certificateChain: [p521SignedLeafCertificate],
+          trustedCertificates: [p521WrongRootCertificate],
+          verificationDate: new Date('2027-01-01T00:00:00Z'),
+        })
+      ).rejects.toThrow('No trusted certificate was found while validating the X.509 chain')
+
+      expect(verify).not.toHaveBeenCalled()
     })
   })
 })
