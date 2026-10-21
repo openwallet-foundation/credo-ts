@@ -21,6 +21,11 @@ export type {
 } from './KmsDecryptOptions'
 export type { KmsDeleteKeyOptions } from './KmsDeleteKeyOptions'
 export type {
+  KmsEncryptMultiRecipientOptions,
+  KmsEncryptMultiRecipientReturn,
+  KmsKeyAgreementEncryptMultiRecipientOptions,
+} from './KmsEncryptMultiRecipientOptions'
+export type {
   KmsEncryptDataContentEncryption,
   KmsEncryptDataEncryption,
   KmsEncryptDataEncryptionAesCbc,
@@ -56,6 +61,7 @@ export {
   type KmsOperationDecrypt,
   type KmsOperationDeleteKey,
   type KmsOperationEncrypt,
+  type KmsOperationEncryptMultiRecipient,
   type KmsOperationImportKey,
   type KmsOperationSign,
   type KmsOperationVerify,
