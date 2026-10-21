@@ -20,7 +20,7 @@ catalog:
   '@hyperledger/indy-vdr-nodejs': ^0.3.0
   '@hyperledger/indy-vdr-shared': ^0.3.0
   '@openwallet-foundation/askar-nodejs': 0.6.0
-  '@openwallet-foundation/askar-shared': 0.6.0
+  '@openwallet-foundation/askar-shared': ^0.4.3 || ^0.5.0 || ^0.6.0
   '@panva/hpke-noble': ^1.1.4
   '@peculiar/x509': ^2.0.0
   '@sphereon/pex-models': ^2.3.2
@@ -41,6 +41,11 @@ catalog:
   vitest: ^4.1.11
   ws: ^8.19.0
   zod: ^4.6.5
+
+catalogs:
+  dev:
+    # askar-nodejs pins askar-shared exactly, keep this in sync with it
+    '@openwallet-foundation/askar-shared': 0.6.0
 
 ignoredBuiltDependencies:
   - es5-ext
