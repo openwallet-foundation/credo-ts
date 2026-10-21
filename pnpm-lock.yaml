@@ -45,9 +45,6 @@ catalogs:
     '@openwallet-foundation/askar-nodejs':
       specifier: 0.6.0
       version: 0.6.0
-    '@openwallet-foundation/askar-shared':
-      specifier: 0.6.0
-      version: 0.6.0
     '@panva/hpke-noble':
       specifier: ^1.1.4
       version: 1.1.7
@@ -108,6 +105,10 @@ catalogs:
     zod:
       specifier: ^4.6.5
       version: 4.6.5
+  dev:
+    '@openwallet-foundation/askar-shared':
+      specifier: 0.6.0
+      version: 0.6.0
 
 overrides:
   undici: ^6.28.0
@@ -461,7 +462,7 @@ importers:
         specifier: 'catalog:'
         version: 0.6.0
       '@openwallet-foundation/askar-shared':
-        specifier: 'catalog:'
+        specifier: catalog:dev
         version: 0.6.0
       reflect-metadata:
         specifier: 'catalog:'
@@ -486,7 +487,7 @@ importers:
         version: link:../tenants
     devDependencies:
       '@openwallet-foundation/askar-shared':
-        specifier: 'catalog:'
+        specifier: catalog:dev
         version: 0.6.0
       typescript:
         specifier: 'catalog:'
