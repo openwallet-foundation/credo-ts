@@ -1,0 +1,49 @@
+{
+  "$description": "SICPA didcomm-python TEST_ENCRYPTED_DIDCOMM_MESSAGE_ANON_XC20P_1: anoncrypt with ECDH-ES+A256KW, XC20P, X25519. Anonymous sender -> Bob (4 X25519 keys).",
+  "$source": "https://github.com/sicpa-dlab/didcomm-python/blob/main/tests/test_vectors/didcomm_messages/spec/spec_test_vectors_anon_encrypted.py",
+  "$license": "Apache-2.0",
+  "encryptedMessage": {
+    "protected": "eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLWVuY3J5cHRlZCtqc29uIiwiYWxnIjoiRUNESC1FUytBMjU2S1ciLCJlbmMiOiJYQzIwUCIsImFwdiI6IlkxWXh3b053WU5HNGRKRlBKanZtLTk0aWJhdXFBOUhyV0tZWmhtY29lU2ciLCJlcGsiOnsiY3J2IjoiWDI1NTE5IiwieCI6ImFNZzU4X1JqT2dGcjhZQWtCdmptOXhKYVZ3bnlXRVRmRFpYaGMyWVctamMiLCJrdHkiOiJPS1AifX0",
+    "recipients": [
+      {
+        "header": { "kid": "did:example:bob#key-x25519-1" },
+        "encrypted_key": "ThzyeMnViwuOEK3LLAhKXyoTUCOcBhaa4FxMvC1F3nLI9oXeKJjtPQ"
+      },
+      {
+        "header": { "kid": "did:example:bob#key-x25519-2" },
+        "encrypted_key": "yglsPC468bnwGL2aPcbGZUdvWFSipmoP9wJoaWqWVc3Ce56jI5v9xQ"
+      },
+      {
+        "header": { "kid": "did:example:bob#key-x25519-3" },
+        "encrypted_key": "SpAP0Gzo2lazwfAPyMhaTd1GlO6aRTmXngDu3j9iFwXetow_FkVxsw"
+      },
+      {
+        "header": { "kid": "did:example:bob#key-x25519-4" },
+        "encrypted_key": "_bWWYGGUZ2ITqcGDdP7C1_LkYb_2qtOaXQ3sWyoK6g161SGxsWEpoQ"
+      }
+    ],
+    "iv": "9AVo9rQR0ZX7QEhguuRWV-JcCbwkaa3x",
+    "ciphertext": "lSto80zaVP0ywIYzF2ecD01SM1xyqqPexRcZ8f-7D1T00AEWdTfJxw3Hp1ktNJFHpj5RHbFomrJy9LXErJWZXQWxmZBhmcIfZwu0b70Nq20m8I4oI-ZN2twVGMApFj-M98aZ11M17SI8jToOPPFJAdfLKBM3Q1nFW4LoqJZQgbRt0T2pHhgeS-xlwzSbC3aNpYPcfm-eceDrZis_GKgvCx5Jqw6BQdSYRxAXIwIM68owSAn9wAPTZlAqgyMXs3aZGvVSGYx6_PnWIqBhubdQ9hod2-XHUzT054MUJPCF16jC1K1qgOYrZguQC6FF0Ly9_Zcr1NQCZSeJLSuSP6BWtDsFaoVC5bLVDAtmqjKgI2uRlo6KaBaXq1f_nzIx_JfBPX8fmSI9k9nfBU0",
+    "tag": "NW406iWJxQucfftvd5Cy9Q"
+  },
+  "expectedPlaintext": {
+    "id": "1234567890",
+    "thid": "1234567890",
+    "typ": "application/didcomm-plain+json",
+    "type": "http://example.com/protocols/lets_do_lunch/1.0/proposal",
+    "from": "did:example:alice",
+    "to": ["did:example:bob"],
+    "created_time": 1516269022,
+    "expires_time": 1516385931,
+    "body": { "messagespecificattribute": "and its value" }
+  },
+  "recipient": {
+    "kid": "did:example:bob#key-x25519-1",
+    "privateJwk": {
+      "kty": "OKP",
+      "crv": "X25519",
+      "d": "b9NnuOCB0hm7YGNvaE9DMhwH_wjZA1-gWD6dA0JWdL0",
+      "x": "GDTrI66K0pFfO54tlCSvfjjNapIs44dzpneBgyx0S3E"
+    }
+  }
+}

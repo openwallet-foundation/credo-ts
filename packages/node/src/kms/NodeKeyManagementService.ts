@@ -11,7 +11,15 @@ import {
   createRsaKey,
 } from './crypto/createKey'
 import { performDecrypt } from './crypto/decrypt'
-import { deriveDecryptionKey, deriveEncryptionKey, nodeSupportedKeyAgreementAlgorithms } from './crypto/deriveKey'
+import {
+  deriveDecryptionKey,
+  deriveEncryptionKey,
+  encryptAndWrapForRecipients,
+  encryptEcdh1Pu,
+  nodeSupportedEcdh1PuContentEncryptionAlgorithms,
+  nodeSupportedKeyAgreementAlgorithms,
+  toKeyAgreementPrivateJwk,
+} from './crypto/deriveKey'
 import { nodeSupportedEncryptionAlgorithms, performEncrypt } from './crypto/encrypt'
 import { hpkeOpen, hpkeSeal, nodeSupportedHpkeAlgorithms } from './crypto/hpke'
 import { nodeSupportedJwaAlgorithm, performSign } from './crypto/sign'
@@ -118,8 +126,49 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       if (!isSupportedEncryptionAlgorithm) return false
       if (!operation.keyAgreement) return true
 
+      if (operation.keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+        const publicJwk =
+          'externalPublicJwk' in operation.keyAgreement
+            ? operation.keyAgreement.externalPublicJwk
+            : operation.keyAgreement.ephemeralPublicJwk
+
+        return (
+          Kms.supportedKeyDerivationAlgsForKey(publicJwk).includes('ECDH-1PU+A256KW') &&
+          (nodeSupportedEcdh1PuContentEncryptionAlgorithms as readonly string[]).includes(encryption.algorithm)
+        )
+      }
+
       return nodeSupportedKeyAgreementAlgorithms.includes(
         operation.keyAgreement.algorithm as (typeof nodeSupportedKeyAgreementAlgorithms)[number]
+      )
+    }
+
+    if (operation.operation === 'encryptMultiRecipient') {
+      const { encryption, keyAgreement } = operation
+      if (
+        !nodeSupportedEncryptionAlgorithms.includes(
+          encryption.algorithm as (typeof nodeSupportedEncryptionAlgorithms)[number]
+        ) ||
+        !nodeSupportedKeyAgreementAlgorithms.includes(keyAgreement.algorithm)
+      ) {
+        return false
+      }
+
+      try {
+        for (const { externalPublicJwk } of keyAgreement.recipients) {
+          if (externalPublicJwk.kty === 'EC') assertNodeSupportedEcCrv(externalPublicJwk)
+          else assertNodeSupportedOkpCrv(externalPublicJwk)
+        }
+      } catch {
+        return false
+      }
+
+      if (keyAgreement.algorithm !== 'ECDH-1PU+A256KW') return true
+
+      return (
+        keyAgreement.recipients.every(({ externalPublicJwk }) =>
+          Kms.supportedKeyDerivationAlgsForKey(externalPublicJwk).includes('ECDH-1PU+A256KW')
+        ) && (nodeSupportedEcdh1PuContentEncryptionAlgorithms as readonly string[]).includes(encryption.algorithm)
       )
     }
 
@@ -356,12 +405,34 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
       Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
       Kms.assertKeyAllowsDerive(privateJwk)
-      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
+      const agreementPrivateJwk = toKeyAgreementPrivateJwk(privateJwk)
+      Kms.assertAsymmetricJwkKeyTypeMatches(agreementPrivateJwk, key.keyAgreement.externalPublicJwk)
+
+      if (key.keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+        try {
+          const { encrypted, iv, tag, encryptedKey } = await encryptEcdh1Pu({
+            keyAgreement: key.keyAgreement,
+            encryption,
+            senderPrivateJwk: agreementPrivateJwk,
+            data,
+          })
+          return {
+            encrypted: new Uint8Array(encrypted),
+            iv: iv ? new Uint8Array(iv) : undefined,
+            tag: tag ? new Uint8Array(tag) : undefined,
+            encryptedKey,
+          }
+        } catch (error) {
+          if (error instanceof Kms.KeyManagementError) throw error
+
+          throw new Kms.KeyManagementError('Error encrypting', { cause: error })
+        }
+      }
 
       const { contentEncryptionKey, encryptedContentEncryptionKey } = await deriveEncryptionKey({
         keyAgreement: key.keyAgreement,
         encryption,
-        privateJwk,
+        privateJwk: agreementPrivateJwk,
       })
 
       encryptionKey = contentEncryptionKey
@@ -390,6 +461,40 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
         tag: tag ? new Uint8Array(tag) : undefined,
         encryptedKey,
       }
+    } catch (error) {
+      if (error instanceof Kms.KeyManagementError) throw error
+
+      throw new Kms.KeyManagementError('Error encrypting', { cause: error })
+    }
+  }
+
+  public async encryptMultiRecipient(
+    agentContext: AgentContext,
+    options: Kms.KmsEncryptMultiRecipientOptions
+  ): Promise<Kms.KmsEncryptMultiRecipientReturn> {
+    const { keyAgreement, encryption, aad, data } = options
+
+    Kms.assertSupportedKeyAgreementAlgorithm(keyAgreement, nodeSupportedKeyAgreementAlgorithms, this.backend)
+    Kms.assertSupportedEncryptionAlgorithm(encryption, nodeSupportedEncryptionAlgorithms, this.backend)
+    for (const { externalPublicJwk } of keyAgreement.recipients) {
+      Kms.assertAllowedKeyDerivationAlgForKey(externalPublicJwk, keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(externalPublicJwk)
+    }
+
+    let senderPrivateJwk: Kms.KmsJwkPrivateAsymmetric | undefined
+    if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+      const privateJwk = await this.getKeyAsserted(agentContext, keyAgreement.keyId)
+      Kms.assertJwkAsymmetric(privateJwk, keyAgreement.keyId)
+      Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(privateJwk)
+      senderPrivateJwk = toKeyAgreementPrivateJwk(privateJwk)
+      for (const { externalPublicJwk } of keyAgreement.recipients) {
+        Kms.assertAsymmetricJwkKeyTypeMatches(senderPrivateJwk, externalPublicJwk)
+      }
+    }
+
+    try {
+      return await encryptAndWrapForRecipients({ keyAgreement, encryption, aad, senderPrivateJwk, data })
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
 
@@ -440,19 +545,28 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       decryptionKey = key.privateJwk
     } else if (key.keyAgreement) {
       Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, nodeSupportedKeyAgreementAlgorithms, this.backend)
-      Kms.assertAllowedKeyDerivationAlgForKey(key.keyAgreement.externalPublicJwk, key.keyAgreement.algorithm)
-      Kms.assertKeyAllowsDerive(key.keyAgreement.externalPublicJwk)
+
+      const publicJwkForAssert =
+        key.keyAgreement.algorithm === 'ECDH-1PU+A256KW'
+          ? key.keyAgreement.ephemeralPublicJwk
+          : key.keyAgreement.externalPublicJwk
+      Kms.assertAllowedKeyDerivationAlgForKey(publicJwkForAssert, key.keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(publicJwkForAssert)
 
       const privateJwk = await this.getKeyAsserted(agentContext, key.keyAgreement.keyId)
       Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
       Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
       Kms.assertKeyAllowsDerive(privateJwk)
-      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
+      const agreementPrivateJwk = toKeyAgreementPrivateJwk(privateJwk)
+      Kms.assertAsymmetricJwkKeyTypeMatches(agreementPrivateJwk, publicJwkForAssert)
+      if (key.keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+        Kms.assertAsymmetricJwkKeyTypeMatches(agreementPrivateJwk, key.keyAgreement.senderPublicJwk)
+      }
 
       const { contentEncryptionKey } = await deriveDecryptionKey({
         keyAgreement: key.keyAgreement,
         decryption,
-        privateJwk,
+        privateJwk: agreementPrivateJwk,
       })
 
       decryptionKey = contentEncryptionKey
