@@ -44,6 +44,7 @@ import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtoc
 import type { DidCommConnectionRecord } from './repository'
 import { DidCommConnectionService } from './services'
 import {
+  addSharedDid,
   createPeerDidFromServices,
   getResolvedDidcommServiceWithSigningKeyId,
   routingToServices,
@@ -165,6 +166,7 @@ export class DidExchangeProtocol {
 
     connectionRecord.did = didDocument.id
     connectionRecord.threadId = message.id
+    if (did) addSharedDid(connectionRecord, didDocument.id)
 
     if (autoAcceptConnection !== undefined || autoAcceptConnection !== null) {
       connectionRecord.autoAcceptConnection = autoAcceptConnection

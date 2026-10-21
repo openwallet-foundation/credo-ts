@@ -33,6 +33,8 @@ import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommServic
 import type { DidCommOutOfBandInlineServiceKey } from '../../oob/repository/DidCommOutOfBandRecord'
 import type { DidDoc, PublicKey } from '../models'
 import { EmbeddedAuthentication } from '../models'
+import type { DidCommConnectionRecord } from '../repository'
+import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 
 /**
  * Normalize a PublicJwk to X25519 for comparison. DIDComm v2 uses X25519 for decryption;
@@ -502,4 +504,9 @@ export function getResolvedDidcommServiceWithSigningKeyId(
   }
 
   return resolvedService
+}
+
+export function addSharedDid(connection: DidCommConnectionRecord, did: string): void {
+  const dids = connection.metadata.get(DidCommConnectionMetadataKeys.SharedDid)?.dids ?? []
+  if (!dids.includes(did)) connection.metadata.set(DidCommConnectionMetadataKeys.SharedDid, { dids: [...dids, did] })
 }

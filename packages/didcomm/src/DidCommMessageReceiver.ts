@@ -40,6 +40,7 @@ import {
   DidCommHandshakeProtocol,
 } from './modules/connections'
 import { DidCommConnectionRecord, type DidCommConnectionRecordProps } from './modules/connections/repository'
+import { DidCommConnectionMetadataKeys } from './modules/connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommDidRotateV2Service } from './modules/connections/services/DidCommDidRotateV2Service'
 import { DidCommOutOfBandService } from './modules/oob/DidCommOutOfBandService'
 import { DidCommOutOfBandRole, DidCommOutOfBandState } from './modules/oob/domain'
@@ -525,8 +526,12 @@ export class DidCommMessageReceiver {
     const connections = await this.connectionService.findAllByQuery(agentContext, {
       $or: dids.flatMap((ourDid) => [{ did: ourDid }, { previousDids: [ourDid] }]),
     })
-    // Connections this implicit invitation already opened rotated away from it, so they do not make it pairwise.
-    return connections.every(({ invitationDid }) => invitationDid !== undefined && dids.includes(invitationDid))
+    // Connections it opened as an implicit invitation, or that got it from the app as ourDid or toDid, do not make it pairwise
+    return connections.every(({ invitationDid, metadata }) =>
+      [invitationDid, ...(metadata.get(DidCommConnectionMetadataKeys.SharedDid)?.dids ?? [])].some(
+        (did) => did !== undefined && dids.includes(did)
+      )
+    )
   }
 
   // First messages from one peer that are processed at the same time, also on agent instances sharing
