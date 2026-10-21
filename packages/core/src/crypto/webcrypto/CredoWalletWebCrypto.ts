@@ -1,4 +1,4 @@
-import { p256, p384 } from '@noble/curves/nist.js'
+import { p256, p384, p521 } from '@noble/curves/nist.js'
 import { AsnConvert, AsnParser } from '@peculiar/asn1-schema'
 import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import type { AgentContext } from '../../agent'
@@ -83,6 +83,28 @@ export class CredoWalletWebCrypto {
           lowS: false,
         })
       }
+
+      // Unlike P-256/P-384 above, verify all supported P-521 hashes locally: only SHA-512 maps to ES512,
+      // which some KMS backends do not support, while SHA-256 and SHA-384 have no P-521 KMS mapping.
+      if (publicKey.kty === 'EC' && publicKey.crv === 'P-521') {
+        if (hashAlg !== 'SHA-256' && hashAlg !== 'SHA-384' && hashAlg !== 'SHA-512') {
+          throw new CredoWebCryptoError(
+            `Hash Alg: ${hashAlg} is not supported with key type ${publicKey.crv} currently`
+          )
+        }
+
+        return p521.verify(signature, Hasher.hash(message, hashAlg.toLowerCase()), publicKey.publicKey, {
+          // we use a custom hash
+          prehash: false,
+          lowS: false,
+        })
+      }
+
+      // Curve families in use in X.509 PKIs but not supported for verification at this time
+      // (X509ChainBuilder silently stops building the chain at certificates signed with them):
+      //  - Brainpool: EU/German eID PKIs; permitted for mdoc by ISO/IEC 18013-5
+      //  - GOST R 34.10-2012: Russian PKI
+      //  - SM2: Chinese PKI  
     }
 
     const jwaAlgorithm = keyParamsToJwaAlgorithm(algorithm, key)
