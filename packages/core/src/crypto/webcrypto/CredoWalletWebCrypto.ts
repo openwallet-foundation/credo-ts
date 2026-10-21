@@ -104,7 +104,7 @@ export class CredoWalletWebCrypto {
       // (X509ChainBuilder silently stops building the chain at certificates signed with them):
       //  - Brainpool: EU/German eID PKIs; permitted for mdoc by ISO/IEC 18013-5
       //  - GOST R 34.10-2012: Russian PKI
-      //  - SM2: Chinese PKI  
+      //  - SM2: Chinese PKI
     }
 
     const jwaAlgorithm = keyParamsToJwaAlgorithm(algorithm, key)
