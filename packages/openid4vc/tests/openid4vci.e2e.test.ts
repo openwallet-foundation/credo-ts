@@ -624,6 +624,67 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await holderTenant1.endSession()
   })
 
+  it('credential and deferred credential endpoints decrypt encrypted requests', async () => {
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    const requestEncryptionKey = await issuerTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    const openIdIssuerTenant = await issuerTenant.modules.openid4vc.issuer.createIssuer({
+      issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
+      credentialConfigurationsSupported: {
+        universityDegree: universityDegreeCredentialConfigurationSupportedJwkOnly,
+      },
+      credentialRequestEncryption: { jwks: [requestEncryptionKey.publicJwk] },
+    })
+    const issuerUrl = `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}`
+
+    const { credentialOffer } = await issuerTenant.modules.openid4vc.issuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1',
+    })
+    const resolvedCredentialOffer = await holderTenant.modules.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    expect(resolvedCredentialOffer.metadata.credentialIssuer.credential_request_encryption).toMatchObject({
+      jwks: { keys: [{ kid: requestEncryptionKey.keyId, alg: 'ECDH-ES', use: 'enc' }] },
+      encryption_required: false,
+    })
+    const { accessToken } = await holderTenant.modules.openid4vc.holder.requestToken({ resolvedCredentialOffer })
+
+    const encrypt = async (publicJwk: Jwk, payload: object) =>
+      (
+        await getOid4vcCallbacks(holderTenant.context).encryptJwe(
+          { method: 'jwk', publicJwk, alg: 'ECDH-ES', enc: 'A256GCM' },
+          JSON.stringify(payload)
+        )
+      ).jwe
+    const post = (path: string, body: string) =>
+      fetch(`${issuerUrl}/${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/jwt', Authorization: `Bearer ${accessToken}` },
+        body,
+      })
+
+    const decryptedResponse = await post(
+      'credential',
+      await encrypt(requestEncryptionKey.publicJwk as Jwk, {
+        credential_identifier: 'never-granted',
+        proofs: { jwt: ['ey.ey.S'] },
+      })
+    )
+    expect(decryptedResponse.status).toBe(400)
+    expect(await decryptedResponse.json()).toMatchObject({ error: 'unknown_credential_identifier' })
+
+    const otherKey = await holderTenant.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    for (const path of ['credential', 'deferred-credential']) {
+      const response = await post(path, await encrypt(otherKey.publicJwk as Jwk, { transaction_id: 'a' }))
+      expect(response.status).toBe(400)
+      expect(await response.json()).toMatchObject({ error: 'invalid_encryption_parameters' })
+    }
+
+    await holderTenant.endSession()
+  })
+
   it('credential endpoint responds with unknown_credential_identifier for a credential_identifier that was never granted', async () => {
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
     const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
