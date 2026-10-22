@@ -79,11 +79,18 @@ export class DidCommDispatcher {
     }
 
     let outboundMessage: DidCommOutboundMessageContext<DidCommMessage> | undefined
+    let handled = false
 
     try {
       const messageHandlerMiddlewares =
         agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).messageHandlerMiddlewares
-      const middlewares = [...messageHandlerMiddlewares, this.defaultHandlerMiddleware]
+      const middlewares = [
+        ...messageHandlerMiddlewares,
+        this.defaultHandlerMiddleware,
+        async (): Promise<void> => {
+          handled = true
+        },
+      ]
       await DidCommMessageHandlerMiddlewareRunner.run(middlewares, messageContext)
 
       outboundMessage = messageContext.responseMessage
@@ -158,6 +165,7 @@ export class DidCommDispatcher {
         connection,
         receivedAt: messageContext.receivedAt,
         encryptedMessage,
+        handled,
       },
     })
   }

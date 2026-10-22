@@ -21,7 +21,6 @@ import { DidCommConnectionRecord } from '../../modules/connections/repository'
 import {
   findOwnKeyAgreementKey,
   toAbsoluteDidUrl,
-  toKeyAgreement,
   toKeyAgreementDidUrl,
 } from '../../modules/connections/services/helpers'
 import { DidCommMediatorService } from '../../modules/routing/services/DidCommMediatorService'
@@ -487,27 +486,31 @@ describe('DidCommV2Envelope', () => {
       const apu = computeApu(apuSkid)
       const apv = computeApv([recipient.didUrl])
       let protectedHeader = ''
-      const { encrypted, iv, tag, encryptedKeys } = await agent.kms.encryptMultiRecipient({
-        keyAgreement: {
-          algorithm: 'ECDH-1PU+A256KW',
-          keyId: sender.publicJwk.keyId,
-          recipients: [{ externalPublicJwk: recipient.publicJwk.toJson() as Kms.KmsJwkPublicEcdh }],
-          apu,
-          apv,
+      const { encrypted, iv, tag, encryptedKeys } = await agent.kms.encrypt({
+        key: {
+          keyAgreement: {
+            algorithm: 'ECDH-1PU+A256KW',
+            keyId: sender.publicJwk.keyId,
+            recipients: [{ externalPublicJwk: recipient.publicJwk.toJson() as Kms.KmsJwkPublicEcdh }],
+            apu,
+            apv,
+          },
         },
         // unpack rejects an A256GCM header before it decrypts, so the content is always A256CBC-HS512
-        encryption: { algorithm: 'A256CBC-HS512' },
-        aad: (epk) => {
-          protectedHeader = JsonEncoder.toBase64Url({
-            typ: 'application/didcomm-encrypted+json',
-            alg: 'ECDH-1PU+A256KW',
-            enc,
-            ...(skid ? { skid } : {}),
-            apu: TypedArrayEncoder.toBase64Url(apu),
-            apv: TypedArrayEncoder.toBase64Url(apv),
-            epk: { kty: 'OKP', crv: 'X25519', x: (epk as Kms.KmsJwkPublicOkp).x },
-          })
-          return TypedArrayEncoder.fromUtf8String(protectedHeader)
+        encryption: {
+          algorithm: 'A256CBC-HS512',
+          aad: ({ ephemeralPublicJwk }) => {
+            protectedHeader = JsonEncoder.toBase64Url({
+              typ: 'application/didcomm-encrypted+json',
+              alg: 'ECDH-1PU+A256KW',
+              enc,
+              ...(skid ? { skid } : {}),
+              apu: TypedArrayEncoder.toBase64Url(apu),
+              apv: TypedArrayEncoder.toBase64Url(apv),
+              epk: { kty: 'OKP', crv: 'X25519', x: (ephemeralPublicJwk as Kms.KmsJwkPublicOkp).x },
+            })
+            return TypedArrayEncoder.fromUtf8String(protectedHeader)
+          },
         },
         data: JsonEncoder.toUint8Array({
           id: utils.uuid(),
@@ -516,6 +519,7 @@ describe('DidCommV2Envelope', () => {
           to: [recipient.did],
         }),
       })
+      if (!iv || !tag || !encryptedKeys) throw new Error('Expected iv, tag and encryptedKeys')
 
       return {
         protected: protectedHeader,
@@ -610,15 +614,18 @@ describe('DidCommV2Envelope', () => {
 
     it('rejects a sender whose keyAgreement key is Ed25519', async () => {
       const recipient = await createKeyAgreementDid()
-      const { keyId, publicJwk } = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      // The KMS only agrees on keys with an ECDH curve, so the envelope is packed with an X25519 key
+      // while the sender DID advertises an Ed25519 keyAgreement key under the skid.
+      const { publicJwk } = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
       const ed25519 = Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       const did = didDocumentToNumAlgo2Did(
         new DidDocumentBuilder('')
           .addKeyAgreement(getEd25519VerificationKey2018({ id: '#key-1', publicJwk: ed25519, controller: '#id' }))
           .build()
       )
-      const senderKey = toKeyAgreement(ed25519)
-      senderKey.keyId = keyId
+      const x25519 = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      const senderKey = Kms.PublicJwk.fromPublicJwk(x25519.publicJwk) as Kms.PublicJwk<Kms.X25519PublicJwk>
+      senderKey.keyId = x25519.keyId
       const encrypted = await packAuthcrypt(
         { to: [recipient.did] },
         { did, didUrl: `${did}#key-1`, publicJwk: senderKey },

@@ -264,55 +264,42 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
     }
 
     // TODO: create a JWE service that handles this
-    const ephmeralKey = await kms.createKey({
-      type: jwkJson,
+    let encodedHeader: string | undefined
+    const { encrypted, iv, tag } = await kms.encrypt({
+      key: {
+        keyAgreement: {
+          algorithm: 'ECDH-ES',
+          externalPublicJwk: jwkJson,
+          apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apu) : undefined,
+          apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apv) : undefined,
+        },
+      },
+      data: TypedArrayEncoder.fromUtf8String(compact),
+      encryption: {
+        algorithm: enc,
+        aad: ({ ephemeralPublicJwk }) => {
+          encodedHeader = JsonEncoder.toBase64Url({
+            kid: jweEncryptor.publicJwk.kid,
+            apu: jweEncryptor.apu,
+            apv: jweEncryptor.apv,
+            enc,
+            alg: 'ECDH-ES',
+            epk: ephemeralPublicJwk,
+          })
+          return TypedArrayEncoder.fromUtf8String(encodedHeader)
+        },
+      },
     })
 
-    try {
-      const header = {
-        kid: jweEncryptor.publicJwk.kid,
-        apu: jweEncryptor.apu,
-        apv: jweEncryptor.apv,
-        enc,
-        alg: 'ECDH-ES',
-        epk: ephmeralKey.publicJwk,
-      }
-      const encodedHeader = JsonEncoder.toBase64Url(header)
-
-      const encrypted = await kms.encrypt({
-        key: {
-          keyAgreement: {
-            // FIXME: We can make the keyId optional for ECDH-ES
-            // That way we don't have to store the key
-            keyId: ephmeralKey.keyId,
-            algorithm: 'ECDH-ES',
-            apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apu) : undefined,
-            apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64Url(jweEncryptor.apv) : undefined,
-            externalPublicJwk: jwkJson,
-          },
-        },
-        data: TypedArrayEncoder.fromUtf8String(compact),
-        encryption: {
-          algorithm: enc,
-          aad: TypedArrayEncoder.fromUtf8String(encodedHeader),
-        },
-      })
-
-      if (!encrypted.iv || !encrypted.tag) {
-        throw new CredoError("Expected 'iv' and 'tag' to be defined")
-      }
-
-      const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64Url(encrypted.iv)}.${TypedArrayEncoder.toBase64Url(
-        encrypted.encrypted
-      )}.${TypedArrayEncoder.toBase64Url(encrypted.tag)}`
-
-      return { encryptionJwk: jweEncryptor.publicJwk, jwe: compactJwe }
-    } finally {
-      // Delete the key
-      await kms.deleteKey({
-        keyId: ephmeralKey.keyId,
-      })
+    if (!encodedHeader || !iv || !tag) {
+      throw new CredoError('Expected protected header, iv and tag')
     }
+
+    const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64Url(iv)}.${TypedArrayEncoder.toBase64Url(
+      encrypted
+    )}.${TypedArrayEncoder.toBase64Url(tag)}`
+
+    return { encryptionJwk: jweEncryptor.publicJwk, jwe: compactJwe }
   }
 }
 
@@ -371,7 +358,7 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
         key: {
           keyAgreement: {
             algorithm: header.alg,
-            externalPublicJwk: epk.toJson() as Kms.KmsJwkPublicEcdh,
+            ephemeralPublicJwk: epk.toJson() as Kms.KmsJwkPublicEcdh,
             keyId: kid,
             apu: typeof header.apu === 'string' ? TypedArrayEncoder.fromBase64Url(header.apu) : undefined,
             apv: typeof header.apv === 'string' ? TypedArrayEncoder.fromBase64Url(header.apv) : undefined,

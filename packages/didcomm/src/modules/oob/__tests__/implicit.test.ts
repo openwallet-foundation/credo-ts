@@ -1,5 +1,4 @@
 import { type BaseEvent, type DidDocumentKey, getDidPeer4ShortFormForEquivalence, Kms } from '@credo-ts/core'
-import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { firstValueFrom, timeout } from 'rxjs'
 import type { MockInstance } from 'vitest'
 import { Agent } from '../../../../../core/src/agent/Agent'
@@ -18,6 +17,7 @@ import { isValidUuid, uuid } from '../../../../../core/src/utils/uuid'
 import { type EventReplaySubject, setupEventReplaySubjects, setupSubjectTransports } from '../../../../../core/tests'
 import {
   getAgentOptions,
+  makeConnection,
   waitForBasicMessageSubject,
   waitForConnectionRecordSubject,
   waitForDidRotateSubject,
@@ -547,6 +547,95 @@ describe('out of band implicit', () => {
   })
 
   test.each([
+    {
+      flow: 'dialed from over v2',
+      useWithAlice: async (publicDid: string): Promise<void> => {
+        await faberAgent.didcomm.oob.receiveImplicitInvitation({
+          did: await createInMemoryDid(aliceAgent, 'rxjs:alice', { withKeyAgreement: true }),
+          ourDid: publicDid,
+          didCommVersion: 'v2',
+          label: 'faber',
+        })
+      },
+    },
+    {
+      flow: 'dialed from over DID Exchange',
+      useWithAlice: async (publicDid: string): Promise<void> => {
+        const [aliceReplay] = setupEventReplaySubjects(
+          [aliceAgent],
+          [DidCommConnectionEventTypes.DidCommConnectionStateChanged]
+        )
+        const { connectionRecord } = await faberAgent.didcomm.oob.receiveImplicitInvitation({
+          did: await createInMemoryDid(aliceAgent, 'rxjs:alice'),
+          ourDid: publicDid,
+          didCommVersion: 'v1',
+          handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
+          label: 'faber',
+        })
+        if (!connectionRecord) throw new Error('Expected a connection')
+        const aliceConnection = await waitForConnectionRecordSubject(aliceReplay, {
+          threadId: connectionRecord.threadId,
+          state: DidCommDidExchangeState.RequestReceived,
+        })
+        await aliceAgent.didcomm.connections.acceptRequest(aliceConnection.id)
+        await faberAgent.didcomm.connections.returnWhenIsConnected(connectionRecord.id)
+      },
+    },
+    {
+      flow: 'rotated to over v2',
+      useWithAlice: async (publicDid: string): Promise<void> => {
+        const invitation = await faberAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+        const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(invitation.outOfBandInvitation, {
+          label: 'alice',
+        })
+        if (!connectionRecord) throw new Error('Expected a connection')
+        await aliceAgent.didcomm.basicMessages.sendMessage(connectionRecord.id, 'before rotating to the public DID')
+        await waitForBasicMessageSubject(faberMessageReplay, { content: 'before rotating to the public DID' })
+        const [faberConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(invitation.id)
+
+        const [aliceRotateReplay] = setupEventReplaySubjects(
+          [aliceAgent],
+          [DidCommConnectionEventTypes.DidCommConnectionDidRotated]
+        )
+        await faberAgent.didcomm.connections.rotate({ connectionId: faberConnection.id, toDid: publicDid })
+        await waitForDidRotateSubject(aliceRotateReplay, {})
+      },
+    },
+    {
+      flow: 'rotated to over DID Rotate',
+      useWithAlice: async (publicDid: string): Promise<void> => {
+        const [faberConnection] = await makeConnection(faberAgent, aliceAgent)
+        const [faberRotateReplay] = setupEventReplaySubjects(
+          [faberAgent],
+          [DidCommConnectionEventTypes.DidCommConnectionDidRotated]
+        )
+        await faberAgent.didcomm.connections.rotate({ connectionId: faberConnection.id, toDid: publicDid })
+        await waitForDidRotateSubject(faberRotateReplay, {})
+      },
+    },
+  ])(
+    'v2 implicit invitation: a public DID the agent $flow still takes first messages from new peers',
+    async ({ flow, useWithAlice }) => {
+      const publicDid = await createInMemoryDid(faberAgent, 'rxjs:faber', { withKeyAgreement: true })
+      await useWithAlice(publicDid)
+      expect((await faberAgent.didcomm.connections.getAll()).map(({ did }) => did)).toContain(publicDid)
+
+      const { connectionRecord } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+        did: publicDid,
+        didCommVersion: 'v2',
+        label: 'alice',
+      })
+      if (!connectionRecord) throw new Error('Expected a connection')
+      await aliceAgent.didcomm.basicMessages.sendMessage(connectionRecord.id, `to the public DID it ${flow}`)
+      await waitForBasicMessageSubject(faberMessageReplay, { content: `to the public DID it ${flow}` })
+
+      const faberConnections = await faberAgent.didcomm.connections.findAllByQuery({ theirDid: connectionRecord.did })
+      expect(faberConnections).toHaveLength(1)
+      expect(faberConnections[0].invitationDid).toBe(publicDid)
+    }
+  )
+
+  test.each([
     [false, DidCommOutOfBandState.Done],
     [true, DidCommOutOfBandState.AwaitResponse],
   ])(
@@ -933,6 +1022,8 @@ async function createInMemoryDid(
     },
   })
   const publicJwk = Kms.PublicJwk.fromPublicJwk(ed25519Key.publicJwk)
+  // DIDComm v2 agrees on an X25519 key of its own, the KMS does not derive one from the Ed25519 key
+  const x25519Key = withKeyAgreement ? await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } }) : undefined
 
   const did = `did:inmemory:${publicJwk.fingerprint}`
   const builder = new DidDocumentBuilder(did)
@@ -974,16 +1065,12 @@ async function createInMemoryDid(
   builder.addVerificationMethod(ed25519VerificationMethod)
   builder.addAuthentication(ed25519VerificationMethod.id)
   builder.addAssertionMethod(ed25519VerificationMethod.id)
-  if (withKeyAgreement) {
+  if (x25519Key) {
     builder.addKeyAgreement(
       getX25519KeyAgreementKey2019({
         id: `${did}#key-agreement-1`,
         controller: did,
-        publicJwk: Kms.PublicJwk.fromPublicKey({
-          kty: 'OKP',
-          crv: 'X25519',
-          publicKey: convertPublicKeyToX25519(publicJwk.publicKey.publicKey),
-        }),
+        publicJwk: Kms.PublicJwk.fromPublicJwk(x25519Key.publicJwk),
       })
     )
   }
@@ -1003,8 +1090,8 @@ async function createInMemoryDid(
           didDocumentRelativeKeyId: `#${publicJwk.fingerprint}`,
           kmsKeyId: ed25519Key.keyId,
         } satisfies DidDocumentKey,
-        ...(withKeyAgreement
-          ? [{ didDocumentRelativeKeyId: '#key-agreement-1', kmsKeyId: ed25519Key.keyId } satisfies DidDocumentKey]
+        ...(x25519Key
+          ? [{ didDocumentRelativeKeyId: '#key-agreement-1', kmsKeyId: x25519Key.keyId } satisfies DidDocumentKey]
           : []),
       ],
     },

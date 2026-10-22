@@ -56,7 +56,7 @@ describe('DIDComm v2 with only the node KMS', () => {
       expect(backends.map((kms) => kms.backend)).toEqual(['node'])
     }
 
-    const encryptSpy = vi.spyOn(NodeKeyManagementService.prototype, 'encryptMultiRecipient')
+    const encryptSpy = vi.spyOn(NodeKeyManagementService.prototype, 'encrypt')
     const decryptSpy = vi.spyOn(NodeKeyManagementService.prototype, 'decrypt')
 
     const [aliceReplay, faberReplay] = setupEventReplaySubjects(
@@ -81,7 +81,7 @@ describe('DIDComm v2 with only the node KMS', () => {
 
     const authcryptEncrypts = encryptSpy.mock.calls
       .map(([, options]) => options)
-      .filter((options) => options.keyAgreement.algorithm === 'ECDH-1PU+A256KW')
+      .filter((options) => options.key.keyAgreement?.algorithm === 'ECDH-1PU+A256KW')
     const authcryptDecrypts = decryptSpy.mock.calls
       .map(([, options]) => options)
       .filter((options) => options.key.keyAgreement?.algorithm === 'ECDH-1PU+A256KW')
@@ -91,7 +91,7 @@ describe('DIDComm v2 with only the node KMS', () => {
     for (const options of authcryptEncrypts) {
       expect(options).toMatchObject({
         encryption: { algorithm: 'A256CBC-HS512' },
-        keyAgreement: { recipients: [{ externalPublicJwk: { crv: 'X25519' } }] },
+        key: { keyAgreement: { recipients: [{ externalPublicJwk: { crv: 'X25519' } }] } },
       })
     }
     expect(decryptSpy.mock.settledResults.map((result) => result.type)).not.toContain('rejected')

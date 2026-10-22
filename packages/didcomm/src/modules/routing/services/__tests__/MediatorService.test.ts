@@ -326,43 +326,76 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       expect(message.threadId).toBe('threadId')
     })
 
-    test('publishes the DIDCommMessaging endpoint of a generated routing DID as an object', async () => {
-      const generatedRoutingDidContext = getAgentContext({
-        agentConfig,
-        registerInstances: [
-          [DidCommModuleConfig, new DidCommModuleConfig({ endpoints: ['wss://mediator.example'] })],
-          [DidCommMediatorModuleConfig, new DidCommMediatorModuleConfig()],
-        ],
+    const generatedRoutingDidContext = getAgentContext({
+      agentConfig,
+      registerInstances: [
+        [DidCommModuleConfig, new DidCommModuleConfig({ endpoints: ['wss://mediator.example'] })],
+        [DidCommMediatorModuleConfig, new DidCommMediatorModuleConfig()],
+      ],
+    })
+    const ed25519RoutingKey = {
+      routingKeyFingerprint: Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'Ed25519',
+        publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+      }).fingerprint,
+      kmsKeyId: 'some-key-id',
+    }
+    const x25519RoutingKey = {
+      routingKeyFingerprint: Kms.PublicJwk.fromPublicJwk({
+        kty: 'OKP',
+        crv: 'X25519',
+        x: 'hSDwCYkwp1R0i33ctD73Wg2_Og0mOBr066SpjqqbTmo',
+      }).fingerprint,
+      kmsKeyId: 'some-x25519-key-id',
+    }
+    const requestedMediationRecord = () =>
+      new DidCommMediationRecord({
+        connectionId: 'connectionId',
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Requested,
+        threadId: 'threadId',
+        protocolVersion: 'v2',
       })
+
+    test('publishes the DIDCommMessaging endpoint of a generated routing DID as an object', async () => {
       mockFunction(mediatorRoutingRepository.findById).mockResolvedValue(
-        new DidCommMediatorRoutingRecord({
-          routingKeys: [
-            {
-              routingKeyFingerprint: Kms.PublicJwk.fromPublicKey({
-                kty: 'OKP',
-                crv: 'Ed25519',
-                publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
-              }).fingerprint,
-              kmsKeyId: 'some-key-id',
-            },
-          ],
-        })
+        new DidCommMediatorRoutingRecord({ routingKeys: [ed25519RoutingKey, x25519RoutingKey] })
       )
 
       const { message } = await mediatorService.createGrantMediationMessageV2(
         generatedRoutingDidContext,
-        new DidCommMediationRecord({
-          connectionId: 'connectionId',
-          role: DidCommMediationRole.Mediator,
-          state: DidCommMediationState.Requested,
-          threadId: 'threadId',
-          protocolVersion: 'v2',
-        })
+        requestedMediationRecord()
       )
 
       const [service] = didToNumAlgo2DidDocument(message.routingDid).service ?? []
       expect(service.type).toBe('DIDCommMessaging')
       expect(service.serviceEndpoint).toMatchObject({ uri: 'wss://mediator.example' })
+    })
+
+    test('publishes the X25519 routing key of the record as the keyAgreement key of the routing DID', async () => {
+      mockFunction(mediatorRoutingRepository.findById).mockResolvedValue(
+        new DidCommMediatorRoutingRecord({ routingKeys: [ed25519RoutingKey, x25519RoutingKey] })
+      )
+
+      const { message } = await mediatorService.createGrantMediationMessageV2(
+        generatedRoutingDidContext,
+        requestedMediationRecord()
+      )
+
+      // did:peer:2 encodes a keyAgreement key as .E<multibase key> and an authentication key as .V<multibase key>
+      expect(message.routingDid).toContain(`.E${x25519RoutingKey.routingKeyFingerprint}`)
+      expect(message.routingDid).toContain(`.V${ed25519RoutingKey.routingKeyFingerprint}`)
+    })
+
+    test('fails to grant mediation v2 when the routing record has no X25519 routing key', async () => {
+      mockFunction(mediatorRoutingRepository.findById).mockResolvedValue(
+        new DidCommMediatorRoutingRecord({ routingKeys: [ed25519RoutingKey] })
+      )
+
+      await expect(
+        mediatorService.createGrantMediationMessageV2(generatedRoutingDidContext, requestedMediationRecord())
+      ).rejects.toThrow('no X25519 routing key')
     })
   })
 

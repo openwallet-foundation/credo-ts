@@ -2,6 +2,7 @@ import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import type { Askar } from '@openwallet-foundation/askar-shared'
 import { Key, KeyAlgorithm } from '@openwallet-foundation/askar-shared'
 import { jwkEncToAskarAlg } from '../../utils'
+import type { AskarSupportedDecryptionOptions } from './decrypt'
 import { type AskarSupportedEncryptionOptions, aeadEncrypt } from './encrypt'
 
 export const askarSupportedKeyAgreementAlgorithms = [
@@ -12,155 +13,121 @@ export const askarSupportedKeyAgreementAlgorithms = [
   'ECDH-HSALSA20',
 ] satisfies Kms.KnownJwaKeyAgreementAlgorithm[]
 
-// draft-madden-jose-ecdh-1pu-04 section 2.1: key wrapping mode MUST reject content encryption other than AES_CBC_HMAC_SHA2
-export const askarSupportedEcdh1PuContentEncryptionAlgorithms = [
-  'A128CBC-HS256',
-  'A256CBC-HS512',
-] as const satisfies Kms.KnownJwaContentEncryptionAlgorithm[]
+type AskarEcdhAlgorithm = Exclude<(typeof askarSupportedKeyAgreementAlgorithms)[number], 'ECDH-HSALSA20'>
 
-type AskarSupportedKeyAgreementEncryptOptions = Kms.KmsKeyAgreementEncryptOptions & {
-  algorithm: (typeof askarSupportedKeyAgreementAlgorithms)[number]
-}
+export type AskarEcdhKeyAgreementEncryptOptions = Kms.KmsKeyAgreementEncryptOptions & { algorithm: AskarEcdhAlgorithm }
 
-type AskarSupportedKeyAgreementDecryptOptions = Kms.KmsKeyAgreementDecryptOptions & {
-  algorithm: (typeof askarSupportedKeyAgreementAlgorithms)[number]
-}
+type AskarEcdhKeyAgreementDecryptOptions = Kms.KmsKeyAgreementDecryptOptions & { algorithm: AskarEcdhAlgorithm }
 
-/**
- * Full ECDH-1PU+A256KW encrypt flow per draft-madden-jose-ecdh-1pu-04 §2.3:
- * encrypt content with a fresh CEK first, then derive the KEK with the resulting JWE
- * Authentication Tag bound into SuppPubInfo, then wrap the CEK with that KEK. The KEK
- * cannot be derived before content encryption because it depends on the tag.
- */
-export function encryptEcdh1Pu(options: {
+function deriveEcdhKey(options: {
   askar: Askar
-  keyAgreement: AskarSupportedKeyAgreementEncryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
-  encryption: AskarSupportedEncryptionOptions
-  senderKey: Key
+  keyAgreement: { algorithm: AskarEcdhAlgorithm; apu?: Uint8Array; apv?: Uint8Array }
+  contentEncryptionAlgorithm: keyof typeof jwkEncToAskarAlg
+  ephemeralKey: Key
+  senderKey?: Key
   recipientKey: Key
-  data: Uint8Array
-}) {
-  const { askar, keyAgreement, encryption, senderKey, recipientKey, data } = options
+  ccTag?: Uint8Array
+  receive: boolean
+}): Key {
+  const { askar, keyAgreement, contentEncryptionAlgorithm, ephemeralKey, senderKey, recipientKey, ccTag, receive } =
+    options
+  const apu = new Uint8Array(keyAgreement.apu ?? [])
+  const apv = new Uint8Array(keyAgreement.apv ?? [])
 
-  const supportedAlgorithms: KeyAlgorithm[] = [KeyAlgorithm.X25519, KeyAlgorithm.EcSecp256r1, KeyAlgorithm.EcSecp384r1]
-  if (!supportedAlgorithms.includes(senderKey.algorithm) || !supportedAlgorithms.includes(recipientKey.algorithm)) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      'ECDH-1PU+A256KW requires X25519, P-256, or P-384 sender and recipient keys',
-      'askar'
-    )
-  }
-  if (senderKey.algorithm !== recipientKey.algorithm) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      'ECDH-1PU+A256KW sender and recipient keys must be on the same curve',
-      'askar'
-    )
-  }
-  assertAskarSupportedEcdh1PuContentEncryptionAlgorithm(encryption.algorithm)
-  const askarEncryptionAlgorithm = jwkEncToAskarAlg[encryption.algorithm as keyof typeof jwkEncToAskarAlg]
-  if (!askarEncryptionAlgorithm) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      `encryption with algorithm '${encryption.algorithm}'`,
-      'askar'
+  if (keyAgreement.algorithm === 'ECDH-ES') {
+    return new Key(
+      askar.keyDeriveEcdhEs({
+        algorithm: jwkEncToAskarAlg[contentEncryptionAlgorithm],
+        algId: TypedArrayEncoder.fromUtf8String(contentEncryptionAlgorithm),
+        apu,
+        apv,
+        ephemeralKey,
+        recipientKey,
+        receive,
+      })
     )
   }
 
-  const ephemeralKey = Key.generate(recipientKey.algorithm)
-  const apu = keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array([])
-  const apv = keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array([])
-  const algId = TypedArrayEncoder.fromUtf8String('ECDH-1PU+A256KW')
+  const algId = TypedArrayEncoder.fromUtf8String(keyAgreement.algorithm)
+  if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
+    if (!senderKey) {
+      throw new Kms.KeyManagementError(`Missing sender key for key agreement algorithm '${keyAgreement.algorithm}'`)
+    }
 
-  const contentEncryptionKey = Key.generate(askarEncryptionAlgorithm)
-  let derivedKey: Key | undefined
-  try {
-    const aeadResult = aeadEncrypt({ key: contentEncryptionKey, data, encryption })
-
-    derivedKey = new Key(
+    return new Key(
       askar.keyDeriveEcdh1pu({
         algorithm: KeyAlgorithm.AesA256Kw,
-        ephemeralKey,
-        senderKey,
-        recipientKey,
         algId,
         apu,
         apv,
-        ccTag: aeadResult.tag,
-        receive: false,
+        ephemeralKey,
+        senderKey,
+        recipientKey,
+        ccTag,
+        receive,
       })
     )
-    const wrappedKey = derivedKey.wrapKey({ other: contentEncryptionKey })
-    const ephemeralPublicKey = ephemeralKey.jwkPublic as Kms.KmsJwkPublicEcdh
-
-    return {
-      encrypted: aeadResult.encrypted,
-      iv: aeadResult.iv,
-      tag: aeadResult.tag,
-      encryptedKey: {
-        encrypted: new Uint8Array(wrappedKey.ciphertext),
-        iv: wrappedKey.nonce ? new Uint8Array(wrappedKey.nonce) : undefined,
-        tag: wrappedKey.tag ? new Uint8Array(wrappedKey.tag) : undefined,
-        ephemeralPublicKey,
-      } satisfies Kms.KmsEncryptedKey,
-    }
-  } finally {
-    ephemeralKey.handle.free()
-    derivedKey?.handle.free()
-    contentEncryptionKey.handle.free()
   }
+
+  return new Key(
+    askar.keyDeriveEcdhEs({
+      algorithm: keyAgreement.algorithm === 'ECDH-ES+A128KW' ? KeyAlgorithm.AesA128Kw : KeyAlgorithm.AesA256Kw,
+      algId,
+      apu,
+      apv,
+      ephemeralKey,
+      recipientKey,
+      receive,
+    })
+  )
 }
 
-export function encryptAndWrapForRecipients(options: {
+export function encryptEcdh(options: {
   askar: Askar
-  keyAgreement: Kms.KmsKeyAgreementEncryptMultiRecipientOptions & {
-    algorithm: (typeof askarSupportedKeyAgreementAlgorithms)[number]
-  }
+  keyAgreement: AskarEcdhKeyAgreementEncryptOptions
   encryption: AskarSupportedEncryptionOptions
+  aad?: Uint8Array
   ephemeralKey: Key
   senderKey?: Key
   recipientKeys: Key[]
   data: Uint8Array
-}): Omit<Kms.KmsEncryptMultiRecipientReturn, 'ephemeralPublicJwk'> {
-  const { askar, keyAgreement, encryption, ephemeralKey, senderKey, recipientKeys, data } = options
+}): { encrypted: Uint8Array; iv: Uint8Array; tag: Uint8Array; encryptedKeys?: Kms.KmsEncryptedKey[] } {
+  const { askar, keyAgreement, encryption, aad, ephemeralKey, senderKey, recipientKeys, data } = options
 
-  if (keyAgreement.algorithm === 'ECDH-1PU+A256KW' && senderKey?.algorithm !== ephemeralKey.algorithm) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      'ECDH-1PU+A256KW sender and recipient keys must be on the same curve',
-      'askar'
-    )
+  if (keyAgreement.algorithm === 'ECDH-ES') {
+    const contentEncryptionKey = deriveEcdhKey({
+      askar,
+      keyAgreement,
+      contentEncryptionAlgorithm: encryption.algorithm,
+      ephemeralKey,
+      recipientKey: recipientKeys[0],
+      receive: false,
+    })
+
+    try {
+      return aeadEncrypt({ key: contentEncryptionKey, encryption, aad, data })
+    } finally {
+      contentEncryptionKey.handle.free()
+    }
   }
-
-  const apu = keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array([])
-  const apv = keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array([])
-  const algId = TypedArrayEncoder.fromUtf8String(keyAgreement.algorithm)
 
   const contentEncryptionKey = Key.generate(jwkEncToAskarAlg[encryption.algorithm])
   const keysToFree = [contentEncryptionKey]
   try {
-    const { encrypted, iv, tag } = aeadEncrypt({ key: contentEncryptionKey, data, encryption })
+    // ECDH-1PU puts the tag into the KDF, so the content is encrypted before the key is wrapped
+    const { encrypted, iv, tag } = aeadEncrypt({ key: contentEncryptionKey, encryption, aad, data })
 
     const encryptedKeys = recipientKeys.map((recipientKey) => {
-      const keyEncryptionKey = new Key(
-        keyAgreement.algorithm === 'ECDH-1PU+A256KW'
-          ? askar.keyDeriveEcdh1pu({
-              algorithm: KeyAlgorithm.AesA256Kw,
-              ephemeralKey,
-              senderKey: senderKey as Key,
-              recipientKey,
-              algId,
-              apu,
-              apv,
-              ccTag: tag,
-              receive: false,
-            })
-          : askar.keyDeriveEcdhEs({
-              algorithm: keyAgreement.algorithm === 'ECDH-ES+A128KW' ? KeyAlgorithm.AesA128Kw : KeyAlgorithm.AesA256Kw,
-              ephemeralKey,
-              recipientKey,
-              algId,
-              apu,
-              apv,
-              receive: false,
-            })
-      )
+      const keyEncryptionKey = deriveEcdhKey({
+        askar,
+        keyAgreement,
+        contentEncryptionAlgorithm: encryption.algorithm,
+        ephemeralKey,
+        senderKey,
+        recipientKey,
+        ccTag: tag,
+        receive: false,
+      })
       keysToFree.push(keyEncryptionKey)
 
       return { encrypted: new Uint8Array(keyEncryptionKey.wrapKey({ other: contentEncryptionKey }).ciphertext) }
@@ -172,262 +139,36 @@ export function encryptAndWrapForRecipients(options: {
   }
 }
 
-export function deriveEncryptionKey(options: {
-  askar: Askar
-  keyAgreement: AskarSupportedKeyAgreementEncryptOptions
-  senderKey: Key
-  recipientKey: Key
-  encryption: Kms.KmsEncryptDataContentEncryption
-}) {
-  const { askar, keyAgreement, encryption, senderKey, recipientKey } = options
-
-  const askarEncryptionAlgorithm = jwkEncToAskarAlg[encryption.algorithm as keyof typeof jwkEncToAskarAlg]
-  if (!askarEncryptionAlgorithm) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      `encryption with algorithm '${encryption.algorithm}'`,
-      'askar'
-    )
-  }
-
-  // This should be handled on a higher level as we only support combined key agreemnt + encryption
-  if (keyAgreement.algorithm === 'ECDH-HSALSA20') {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      `derive key for algorithm '${keyAgreement.algorithm}' with encryption algorithm '${encryption.algorithm}'`,
-      'askar'
-    )
-  }
-
-  // ECDH-1PU+A256KW requires the JWE Authentication Tag in the KDF, so it goes through encryptEcdh1Pu
-  // which performs content encryption + key wrapping atomically. Callers that reach this dispatcher
-  // with 1PU are programming errors.
-  if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
-    throw new Kms.KeyManagementError('Use encryptEcdh1Pu for ECDH-1PU+A256KW; deriveEncryptionKey only handles ECDH-ES')
-  }
-
-  const askarKeyWrappingAlgorithm =
-    keyAgreement.algorithm !== 'ECDH-ES'
-      ? jwkEncToAskarAlg[keyAgreement.algorithm.replace('ECDH-ES+', '') as keyof typeof jwkEncToAskarAlg]
-      : undefined
-
-  const derivedKey = new Key(
-    askar.keyDeriveEcdhEs({
-      algId: TypedArrayEncoder.fromUtf8String(
-        keyAgreement.algorithm === 'ECDH-ES' ? encryption.algorithm : keyAgreement.algorithm
-      ),
-      receive: false,
-      apv: keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array([]),
-      apu: keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array([]),
-      algorithm: askarKeyWrappingAlgorithm ?? askarEncryptionAlgorithm,
-      ephemeralKey: senderKey,
-      recipientKey: recipientKey,
-    })
-  )
-  let contentEncryptionKey: Key | undefined
-  let encryptedContentEncryptionKey: Kms.KmsEncryptedKey | undefined
-  try {
-    // Key wrapping
-    if (keyAgreement.algorithm !== 'ECDH-ES') {
-      contentEncryptionKey = Key.generate(askarEncryptionAlgorithm)
-
-      const wrappedKey = derivedKey.wrapKey({
-        other: contentEncryptionKey,
-      })
-      encryptedContentEncryptionKey = {
-        encrypted: new Uint8Array(wrappedKey.ciphertext),
-        iv: new Uint8Array(wrappedKey.nonce),
-        tag: new Uint8Array(wrappedKey.tag),
-      }
-    }
-
-    return {
-      contentEncryptionKey: contentEncryptionKey ?? derivedKey,
-      encryptedContentEncryptionKey,
-    }
-  } catch (error) {
-    if (contentEncryptionKey) {
-      contentEncryptionKey.handle.free()
-    }
-    // We only free the derived key if there is no content encryption key
-    // as in this case the derived key is already freed in the finally clause
-    else {
-      derivedKey.handle.free()
-    }
-
-    throw error
-  } finally {
-    // If there is a content encryption key, it means we can free the
-    // derived key
-    if (contentEncryptionKey) {
-      derivedKey.handle.free()
-    }
-  }
-}
-
 export function deriveDecryptionKey(options: {
   askar: Askar
-  keyAgreement: AskarSupportedKeyAgreementDecryptOptions
-  senderKey: Key
+  keyAgreement: AskarEcdhKeyAgreementDecryptOptions
+  decryption: AskarSupportedDecryptionOptions
   recipientKey: Key
-  decryption: Kms.KmsDecryptDataDecryption
-  /** For ECDH-1PU+A256KW: ephemeral public key from the JWE header */
-  ephemeralKey?: Key
-}) {
-  const { askar, keyAgreement, decryption, senderKey, recipientKey, ephemeralKey } = options
-
-  const askarEncryptionAlgorithm = jwkEncToAskarAlg[decryption.algorithm as keyof typeof jwkEncToAskarAlg]
-  if (!askarEncryptionAlgorithm) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      `decryption with algorithm '${decryption.algorithm}'`,
-      'askar'
-    )
-  }
-
-  if (keyAgreement.algorithm === 'ECDH-HSALSA20') {
-    // This should be handled on a higher level as we only support combined key agreemnt + encryption
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      `derive key for algorithm '${keyAgreement.algorithm}' with encryption algorithm '${decryption.algorithm}'`,
-      'askar'
-    )
-  }
-
-  // ECDH-1PU+A256KW: ephemeralKey and senderKey (sender public) are required
-  if (keyAgreement.algorithm === 'ECDH-1PU+A256KW') {
-    if (!ephemeralKey) {
-      throw new Kms.KeyManagementError('ECDH-1PU+A256KW decrypt requires ephemeralKey (ephemeral public key from JWE)')
-    }
-    return deriveDecryptionKeyEcdh1Pu({
-      askar,
-      keyAgreement: keyAgreement as AskarSupportedKeyAgreementDecryptOptions & { algorithm: 'ECDH-1PU+A256KW' },
-      decryption,
-      ephemeralKey,
-      senderKey,
-      recipientKey,
-    })
-  }
-
-  const askarKeyWrappingAlgorithm =
-    keyAgreement.algorithm !== 'ECDH-ES'
-      ? jwkEncToAskarAlg[keyAgreement.algorithm.replace('ECDH-ES+', '') as keyof typeof jwkEncToAskarAlg]
-      : undefined
-
-  const derivedKey = new Key(
-    askar.keyDeriveEcdhEs({
-      algId: TypedArrayEncoder.fromUtf8String(
-        keyAgreement.algorithm === 'ECDH-ES' ? decryption.algorithm : keyAgreement.algorithm
-      ),
-      receive: true,
-      apv: keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array(),
-      apu: keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array(),
-      algorithm: askarKeyWrappingAlgorithm ?? askarEncryptionAlgorithm,
-      ephemeralKey: senderKey,
-      recipientKey: recipientKey,
-    })
-  )
-
-  let contentEncryptionKey: Key | undefined
-  try {
-    // Key unwrapping
-    if (keyAgreement.algorithm !== 'ECDH-ES') {
-      contentEncryptionKey = derivedKey.unwrapKey({
-        ciphertext: new Uint8Array(keyAgreement.encryptedKey.encrypted),
-        algorithm: askarEncryptionAlgorithm,
-        nonce: keyAgreement.encryptedKey.iv ? new Uint8Array(keyAgreement.encryptedKey.iv) : undefined,
-        tag: keyAgreement.encryptedKey.tag ? new Uint8Array(keyAgreement.encryptedKey.tag) : undefined,
-      })
-    }
-
-    return {
-      contentEncryptionKey: contentEncryptionKey ?? derivedKey,
-    }
-  } catch (error) {
-    if (contentEncryptionKey) {
-      contentEncryptionKey.handle.free()
-    } else {
-      derivedKey.handle.free()
-    }
-    throw error
-  } finally {
-    if (contentEncryptionKey) {
-      derivedKey.handle.free()
-    }
-  }
-}
-
-function deriveDecryptionKeyEcdh1Pu(options: {
-  askar: Askar
-  keyAgreement: AskarSupportedKeyAgreementDecryptOptions & { algorithm: 'ECDH-1PU+A256KW' }
-  decryption: Kms.KmsDecryptDataDecryption
   ephemeralKey: Key
-  senderKey: Key
-  recipientKey: Key
-}) {
-  const { askar, keyAgreement, decryption, ephemeralKey, senderKey, recipientKey } = options
+  senderKey?: Key
+}): { contentEncryptionKey: Key } {
+  const { askar, keyAgreement, decryption, recipientKey, ephemeralKey, senderKey } = options
 
-  const supportedAlgorithms: KeyAlgorithm[] = [KeyAlgorithm.X25519, KeyAlgorithm.EcSecp256r1, KeyAlgorithm.EcSecp384r1]
-  if (!supportedAlgorithms.includes(recipientKey.algorithm)) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      'ECDH-1PU+A256KW requires X25519, P-256, or P-384 recipient key',
-      'askar'
-    )
-  }
-  if (ephemeralKey.algorithm !== recipientKey.algorithm || senderKey.algorithm !== recipientKey.algorithm) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      'ECDH-1PU+A256KW sender, ephemeral, and recipient keys must be on the same curve',
-      'askar'
-    )
-  }
-
-  assertAskarSupportedEcdh1PuContentEncryptionAlgorithm(decryption.algorithm)
-  const askarEncryptionAlgorithm = jwkEncToAskarAlg[decryption.algorithm as keyof typeof jwkEncToAskarAlg]
-  if (!askarEncryptionAlgorithm) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      `decryption with algorithm '${decryption.algorithm}'`,
-      'askar'
-    )
-  }
-
-  const apu = keyAgreement.apu ? new Uint8Array(keyAgreement.apu) : new Uint8Array([])
-  const apv = keyAgreement.apv ? new Uint8Array(keyAgreement.apv) : new Uint8Array([])
-  const algId = TypedArrayEncoder.fromUtf8String('ECDH-1PU+A256KW')
-  // draft-madden-jose-ecdh-1pu-04 binds the JWE Authentication Tag into the KDF SuppPubInfo
-  // for the Key Wrapping variants of ECDH-1PU.
-  const decryptionTag = 'tag' in decryption ? decryption.tag : undefined
-  const ccTag = decryptionTag ? new Uint8Array(decryptionTag) : undefined
-
-  const derivedKey = new Key(
-    askar.keyDeriveEcdh1pu({
-      algorithm: KeyAlgorithm.AesA256Kw,
-      ephemeralKey,
-      senderKey,
-      recipientKey,
-      algId,
-      apu,
-      apv,
-      ccTag,
-      receive: true,
-    })
-  )
+  const derivedKey = deriveEcdhKey({
+    askar,
+    keyAgreement,
+    contentEncryptionAlgorithm: decryption.algorithm,
+    ephemeralKey,
+    senderKey,
+    recipientKey,
+    ccTag: new Uint8Array(decryption.tag),
+    receive: true,
+  })
+  if (keyAgreement.algorithm === 'ECDH-ES') return { contentEncryptionKey: derivedKey }
 
   try {
-    const contentEncryptionKey = derivedKey.unwrapKey({
-      ciphertext: new Uint8Array(keyAgreement.encryptedKey.encrypted),
-      algorithm: askarEncryptionAlgorithm,
-      nonce: keyAgreement.encryptedKey.iv ? new Uint8Array(keyAgreement.encryptedKey.iv) : undefined,
-      tag: keyAgreement.encryptedKey.tag ? new Uint8Array(keyAgreement.encryptedKey.tag) : undefined,
-    })
     return {
-      contentEncryptionKey,
+      contentEncryptionKey: derivedKey.unwrapKey({
+        ciphertext: new Uint8Array(keyAgreement.encryptedKey.encrypted),
+        algorithm: jwkEncToAskarAlg[decryption.algorithm],
+      }),
     }
   } finally {
     derivedKey.handle.free()
-  }
-}
-
-export function assertAskarSupportedEcdh1PuContentEncryptionAlgorithm(algorithm: string): void {
-  if (!(askarSupportedEcdh1PuContentEncryptionAlgorithms as readonly string[]).includes(algorithm)) {
-    throw new Kms.KeyManagementAlgorithmNotSupportedError(
-      `content encryption algorithm '${algorithm}' with key agreement algorithm 'ECDH-1PU+A256KW'`,
-      'askar'
-    )
   }
 }

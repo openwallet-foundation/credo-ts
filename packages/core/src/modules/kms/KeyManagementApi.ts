@@ -33,11 +33,10 @@ import {
 import { zKmsDecryptOptions } from './options/KmsDecryptOptions'
 import { zKmsDeleteKeyOptions } from './options/KmsDeleteKeyOptions'
 import {
-  type KmsEncryptMultiRecipientOptions,
-  type KmsEncryptMultiRecipientReturn,
-  zKmsEncryptMultiRecipientOptions,
-} from './options/KmsEncryptMultiRecipientOptions'
-import { type KmsEncryptOptions, zKmsEncryptOptions } from './options/KmsEncryptOptions'
+  ecdhContentEncryptionAlgorithmsFor,
+  type KmsEncryptOptions,
+  zKmsEncryptOptions,
+} from './options/KmsEncryptOptions'
 import { zKmsGetPublicKeyOptions } from './options/KmsGetPublicKeyOptions'
 import { type KmsImportKeyReturn, zKmsImportKeyOptions } from './options/KmsImportKeyOptions'
 import { zKmsRandomBytesOptions } from './options/KmsRandomBytesOptions'
@@ -58,6 +57,13 @@ export class KeyManagementApi {
    * no backends are supported it returns an empty array
    */
   public supportedBackendsForOperation(operation: KmsOperation): string[] {
+    // Backends report what they can compute, the ECDH content encryption rules live in the encrypt and decrypt schemas
+    if ((operation.operation === 'encrypt' || operation.operation === 'decrypt') && operation.keyAgreement) {
+      const encryption = operation.operation === 'encrypt' ? operation.encryption : operation.decryption
+      const ecdhEncryptionAlgorithms = ecdhContentEncryptionAlgorithmsFor(operation.keyAgreement.algorithm)
+      if (ecdhEncryptionAlgorithms && !ecdhEncryptionAlgorithms.includes(encryption.algorithm)) return []
+    }
+
     const supportedBackends: string[] = []
 
     for (const kms of this.keyManagementConfig.backends) {
@@ -199,45 +205,13 @@ export class KeyManagementApi {
       encryption: options.encryption,
       keyAgreement: options.key.keyAgreement,
     } as const
-    const keyId = routingKeyId(options.key)
+    const keyId = routingKeyId(kmsOptions.key)
     const kms =
       backend || !keyId
         ? this.getKms(this.agentContext, backend, operation)
         : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
 
     return await kms.encrypt(this.agentContext, kmsOptions)
-  }
-
-  /**
-   * Encrypt once for several recipients.
-   */
-  public async encryptMultiRecipient(
-    options: WithBackend<KmsEncryptMultiRecipientOptions>
-  ): Promise<KmsEncryptMultiRecipientReturn> {
-    const { backend, ...kmsOptions } = zParseWithErrorHandling(
-      zWithBackend(zKmsEncryptMultiRecipientOptions),
-      options,
-      'Invalid options provided to encryptMultiRecipient method'
-    )
-
-    const operation = {
-      operation: 'encryptMultiRecipient',
-      encryption: options.encryption,
-      keyAgreement: options.keyAgreement,
-    } as const
-    const keyId = 'keyId' in options.keyAgreement ? options.keyAgreement.keyId : undefined
-    const kms =
-      backend || !keyId
-        ? this.getKms(this.agentContext, backend, operation)
-        : (await this.getKmsForOperationAndKeyId(this.agentContext, keyId, operation)).kms
-
-    if (!kms.encryptMultiRecipient) {
-      throw new KeyManagementError(
-        `Key management service backend '${kms.backend}' does not support ${getKmsOperationHumanDescription(operation)}`
-      )
-    }
-
-    return await kms.encryptMultiRecipient(this.agentContext, kmsOptions)
   }
 
   /**

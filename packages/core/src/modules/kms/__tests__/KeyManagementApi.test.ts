@@ -6,7 +6,7 @@ import { KeyManagementError } from '../error/KeyManagementError'
 import { KeyManagementApi } from '../KeyManagementApi'
 import { KeyManagementModuleConfig } from '../KeyManagementModuleConfig'
 import type { KeyManagementService } from '../KeyManagementService'
-import type { KmsEncryptMultiRecipientOptions, KmsOperation } from '../options'
+import type { KmsJwkPublicEcdh, KmsOperation } from '../options'
 
 const agentOptions = getAgentOptions('KeyManagementApi')
 const agent = new Agent(agentOptions)
@@ -197,14 +197,19 @@ describe('KeyManagementApi', () => {
     const data = new Uint8Array([1, 2, 3])
 
     const recipient = await kms.createKey({ backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
-    const ephemeral = await kms.createKey({ backend: 'other', type: { kty: 'EC', crv: 'P-256' } })
     const agreement = await kms.encrypt({
-      key: { keyAgreement: { algorithm: 'ECDH-ES', keyId: ephemeral.keyId, externalPublicJwk: recipient.publicJwk } },
+      key: { keyAgreement: { algorithm: 'ECDH-ES', externalPublicJwk: recipient.publicJwk } },
       encryption: { algorithm: 'A256GCM' },
       data,
     })
     const agreementDecrypted = await kms.decrypt({
-      key: { keyAgreement: { algorithm: 'ECDH-ES', keyId: recipient.keyId, externalPublicJwk: ephemeral.publicJwk } },
+      key: {
+        keyAgreement: {
+          algorithm: 'ECDH-ES',
+          keyId: recipient.keyId,
+          ephemeralPublicJwk: agreement.ephemeralPublicJwk as KmsJwkPublicEcdh,
+        },
+      },
       decryption: { algorithm: 'A256GCM', iv: agreement.iv as Uint8Array, tag: agreement.tag as Uint8Array },
       encrypted: agreement.encrypted,
     })
@@ -226,96 +231,204 @@ describe('KeyManagementApi', () => {
     ).resolves.toMatchObject({ verified: true })
   })
 
-  describe('encryptMultiRecipient', () => {
-    const data = new Uint8Array([1, 2, 3])
-    const createNodeBackend = (backend: string) =>
-      Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), { backend })
+  test('routes ECDH-1PU+A256KW to the backend that holds the sender key', async () => {
+    const defaultBackend = new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())
+    const otherBackend = Object.assign(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()), {
+      backend: 'other',
+    })
+    const kms = new KeyManagementApi(
+      new KeyManagementModuleConfig({ backends: [defaultBackend, otherBackend] }),
+      agent.context
+    )
+    const sender = await kms.createKey({ backend: 'other', type: { kty: 'OKP', crv: 'X25519' } })
+    const recipient = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+    const defaultEncrypt = vi.spyOn(defaultBackend, 'encrypt')
+    const otherEncrypt = vi.spyOn(otherBackend, 'encrypt')
 
-    test('routes ECDH-1PU+A256KW to the backend that holds the sender key', async () => {
-      const defaultBackend = createNodeBackend('node')
-      const otherBackend = createNodeBackend('other')
-      const kms = new KeyManagementApi(
-        new KeyManagementModuleConfig({ backends: [defaultBackend, otherBackend] }),
-        agent.context
-      )
-      const sender = await kms.createKey({ backend: 'other', type: { kty: 'OKP', crv: 'X25519' } })
-      const recipient = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
-      const defaultEncrypt = vi.spyOn(defaultBackend, 'encryptMultiRecipient')
-      const otherEncrypt = vi.spyOn(otherBackend, 'encryptMultiRecipient')
-
-      await kms.encryptMultiRecipient({
+    await kms.encrypt({
+      key: {
         keyAgreement: {
           algorithm: 'ECDH-1PU+A256KW',
           keyId: sender.keyId,
           recipients: [{ externalPublicJwk: recipient.publicJwk }],
         },
-        encryption: { algorithm: 'A256CBC-HS512' },
-        data,
-      })
-
-      expect(otherEncrypt).toHaveBeenCalledTimes(1)
-      expect(defaultEncrypt).not.toHaveBeenCalled()
+      },
+      encryption: { algorithm: 'A256CBC-HS512' },
+      data: new Uint8Array([1, 2, 3]),
     })
 
-    test('skips backends that do not support ECDH-ES and rejects a backend without the method', async () => {
-      const unsupported = {
-        backend: 'unsupported',
-        isOperationSupported: () => false,
-      } as unknown as KeyManagementService
-      const withoutMethod = {
-        backend: 'without-method',
-        isOperationSupported: () => true,
-      } as unknown as KeyManagementService
-      const nodeBackend = createNodeBackend('node')
-      const kms = new KeyManagementApi(
-        new KeyManagementModuleConfig({ backends: [unsupported, nodeBackend, withoutMethod] }),
-        agent.context
-      )
-      const recipient = await kms.createKey({ backend: 'node', type: { kty: 'EC', crv: 'P-256' } })
-      const options = {
-        encryption: { algorithm: 'A256GCM' },
-        keyAgreement: { algorithm: 'ECDH-ES+A256KW', recipients: [{ externalPublicJwk: recipient.publicJwk }] },
-        data,
-      } satisfies KmsEncryptMultiRecipientOptions
+    expect(otherEncrypt).toHaveBeenCalledTimes(1)
+    expect(defaultEncrypt).not.toHaveBeenCalled()
+  })
 
-      const { encryptedKeys } = await kms.encryptMultiRecipient(options)
-
-      expect(encryptedKeys).toHaveLength(1)
-      await expect(kms.encryptMultiRecipient({ ...options, backend: 'without-method' })).rejects.toThrow(
-        "Key management service backend 'without-method' does not support 'encryptMultiRecipient' operation"
-      )
-    })
+  describe('rejects invalid ECDH options', () => {
+    const x25519 = { kty: 'OKP', crv: 'X25519', x: 'hSDwCYkwp1R0i33ctD73Wg2_Og0mOBr066SpjqqbTmo' } as const
+    const p256 = {
+      kty: 'EC',
+      crv: 'P-256',
+      x: 'gI0GAILBdu7T53akrFmMyGcsF3n5dO7MmwNBHKW5SV0',
+      y: 'SLW_xSffzlPWrHEVI30DHM_4egVwt3NQqeUD7nMFpps',
+    } as const
+    const data = new Uint8Array([1, 2, 3])
 
     test.each([
-      { case: 'recipients on different curves', recipients: 2, mixed: true },
+      {
+        case: 'recipients on different curves',
+        message: 'All recipient keys must have the same key type and curve',
+        call: () =>
+          agent.kms.encrypt({
+            key: {
+              keyAgreement: {
+                algorithm: 'ECDH-ES+A256KW',
+                recipients: [{ externalPublicJwk: x25519 }, { externalPublicJwk: p256 }],
+              },
+            },
+            encryption: { algorithm: 'A256GCM' },
+            data,
+          }),
+      },
       {
         case: 'ECDH-1PU+A256KW with A256GCM',
-        recipients: 1,
-        algorithm: 'ECDH-1PU+A256KW',
-        keyId: 'sender',
-        encryption: 'A256GCM',
-      },
-    ])(
-      'rejects $case',
-      async ({ recipients, mixed, algorithm = 'ECDH-ES+A256KW', keyId, encryption = 'A256CBC-HS512' }) => {
-        const x25519 = await agent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
-        const p256 = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
-
-        await expect(
-          agent.kms.encryptMultiRecipient({
-            keyAgreement: {
-              algorithm,
-              keyId,
-              recipients: Array.from({ length: recipients }, (_, index) => ({
-                externalPublicJwk: mixed && index === 1 ? p256.publicJwk : x25519.publicJwk,
-              })),
+        message: `'encryption.algorithm' must be one of A128CBC-HS256, A192CBC-HS384, A256CBC-HS512`,
+        call: () =>
+          agent.kms.encrypt({
+            key: {
+              keyAgreement: {
+                algorithm: 'ECDH-1PU+A256KW',
+                keyId: 'sender',
+                recipients: [{ externalPublicJwk: x25519 }],
+              },
             },
-            encryption: { algorithm: encryption },
+            encryption: { algorithm: 'A256GCM' },
             data,
-          } as unknown as Parameters<typeof agent.kms.encryptMultiRecipient>[0])
-        ).rejects.toThrow(ZodValidationError)
-      }
-    )
+          }),
+      },
+      {
+        case: 'ECDH-ES with A256CBC',
+        message: `for key agreement algorithm 'ECDH-ES'`,
+        call: () =>
+          agent.kms.encrypt({
+            key: { keyAgreement: { algorithm: 'ECDH-ES', externalPublicJwk: x25519 } },
+            encryption: { algorithm: 'A256CBC' },
+            data,
+          }),
+      },
+      {
+        case: 'ECDH-ES with an ephemeral keyId',
+        message: /unrecognized key.*"keyId"/i,
+        call: () =>
+          agent.kms.encrypt({
+            key: {
+              keyAgreement: {
+                algorithm: 'ECDH-ES',
+                // @ts-expect-error the KMS now creates the ephemeral key
+                keyId: 'ephemeral',
+                externalPublicJwk: x25519,
+              },
+            },
+            encryption: { algorithm: 'A256GCM' },
+            data,
+          }),
+      },
+      {
+        case: 'ECDH-ES with an iv',
+        message: `'encryption.iv' cannot be provided with ECDH key agreement`,
+        call: () =>
+          agent.kms.encrypt({
+            key: { keyAgreement: { algorithm: 'ECDH-ES', externalPublicJwk: x25519 } },
+            encryption: { algorithm: 'A256GCM', iv: new Uint8Array(12) },
+            data,
+          }),
+      },
+      {
+        case: 'an aad callback without key agreement',
+        message: `'encryption.aad' can only be a callback with ECDH key agreement`,
+        call: () =>
+          agent.kms.encrypt({
+            key: { keyId: 'symmetric' },
+            encryption: { algorithm: 'A256GCM', aad: () => data },
+            data,
+          }),
+      },
+      {
+        case: 'decrypting ECDH-ES with A256CBC',
+        message: `'decryption.algorithm' must be one of A128CBC-HS256`,
+        call: () =>
+          agent.kms.decrypt({
+            key: { keyAgreement: { algorithm: 'ECDH-ES', keyId: 'recipient', ephemeralPublicJwk: x25519 } },
+            decryption: { algorithm: 'A256CBC', iv: new Uint8Array(16) },
+            encrypted: data,
+          }),
+      },
+      {
+        case: 'decrypting ECDH-1PU+A256KW with A256GCM',
+        message: `'decryption.algorithm' must be one of A128CBC-HS256, A192CBC-HS384, A256CBC-HS512`,
+        call: () =>
+          agent.kms.decrypt({
+            key: {
+              keyAgreement: {
+                algorithm: 'ECDH-1PU+A256KW',
+                keyId: 'recipient',
+                ephemeralPublicJwk: x25519,
+                senderPublicJwk: x25519,
+                encryptedKey: { encrypted: data },
+              },
+            },
+            decryption: { algorithm: 'A256GCM', iv: new Uint8Array(12), tag: new Uint8Array(16) },
+            encrypted: data,
+          }),
+      },
+    ])('$case', async ({ call, message }) => {
+      await expect(call()).rejects.toThrow(message)
+    })
+
+    test('supportedBackendsForOperation returns no backends for content encryption that encrypt rejects', () => {
+      expect(
+        agent.kms.supportedBackendsForOperation({
+          operation: 'encrypt',
+          encryption: { algorithm: 'A256CBC-HS512' },
+          keyAgreement: { algorithm: 'ECDH-1PU+A256KW', recipients: [{ externalPublicJwk: x25519 }] },
+        })
+      ).toEqual(['node'])
+      expect(
+        agent.kms.supportedBackendsForOperation({
+          operation: 'encrypt',
+          encryption: { algorithm: 'A256GCM' },
+          keyAgreement: { algorithm: 'ECDH-1PU+A256KW', recipients: [{ externalPublicJwk: x25519 }] },
+        })
+      ).toEqual([])
+      expect(
+        agent.kms.supportedBackendsForOperation({
+          operation: 'encrypt',
+          encryption: { algorithm: 'A256CBC' },
+          keyAgreement: { algorithm: 'ECDH-ES', externalPublicJwk: x25519 },
+        })
+      ).toEqual([])
+    })
+
+    test('supportedBackendsForOperation returns no backends for content decryption that decrypt rejects', () => {
+      const keyAgreement = {
+        algorithm: 'ECDH-1PU+A256KW',
+        ephemeralPublicJwk: x25519,
+        senderPublicJwk: x25519,
+        encryptedKey: { encrypted: data },
+      } as const
+
+      expect(
+        agent.kms.supportedBackendsForOperation({
+          operation: 'decrypt',
+          decryption: { algorithm: 'A256CBC-HS512', iv: new Uint8Array(16), tag: new Uint8Array(32) },
+          keyAgreement,
+        })
+      ).toEqual(['node'])
+      expect(
+        agent.kms.supportedBackendsForOperation({
+          operation: 'decrypt',
+          decryption: { algorithm: 'A256GCM', iv: new Uint8Array(12), tag: new Uint8Array(16) },
+          keyAgreement,
+        })
+      ).toEqual([])
+    })
   })
 
   describe('hpke', () => {

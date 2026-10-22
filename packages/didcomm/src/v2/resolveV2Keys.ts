@@ -1,7 +1,5 @@
 import {
   AgentContext,
-  type DidDocument,
-  type DidDocumentKey,
   DidKey,
   DidResolverService,
   DidsApi,
@@ -34,34 +32,6 @@ function toKeyAgreementWithKeyId(jwk: Kms.PublicJwk, keyId: string): DidCommV2Ke
   return ka as DidCommV2KeyAgreementJwk & { keyId: string }
 }
 
-/**
- * Legacy fallback: scan authentication VMs for an Ed25519 key whose derived X25519
- * matches the target X25519 fingerprint. Returns the Ed25519 VM's kmsKeyId.
- * Only needed for DIDs created before independent X25519 keys were stored.
- */
-function findLegacyEd25519KmsKeyId(
-  didDocument: DidDocument,
-  keys: DidDocumentKey[] | undefined,
-  x25519Fingerprint: string
-): string | undefined {
-  if (!keys) return undefined
-  for (const authRef of didDocument.authentication ?? []) {
-    try {
-      const authVm = typeof authRef === 'string' ? didDocument.dereferenceVerificationMethod(authRef) : authRef
-      const authJwk = getPublicJwkFromVerificationMethod(authVm)
-      if (!authJwk.is(Kms.Ed25519PublicJwk)) continue
-      const derivedX25519 = authJwk.convertTo(Kms.X25519PublicJwk)
-      if (derivedX25519.fingerprint === x25519Fingerprint) {
-        const kmsKeyId = keys.find(({ didDocumentRelativeKeyId }) =>
-          authVm.id.endsWith(didDocumentRelativeKeyId)
-        )?.kmsKeyId
-        if (kmsKeyId) return kmsKeyId
-      }
-    } catch {}
-  }
-  return undefined
-}
-
 @injectable()
 export class DidCommV2KeyResolver {
   public constructor(private didResolverService: DidResolverService) {}
@@ -71,9 +41,8 @@ export class DidCommV2KeyResolver {
    *
    * Resolution strategy (in order):
    * 1. **Created DID lookup** — kid is a DID URL; look up our DID record and find the
-   *    keyAgreement VM's kmsKeyId directly. For new DIDs with independent X25519 keys
-   *    this succeeds immediately. Legacy fallback scans Ed25519 auth keys.
-   * 2. **Mediator routing key** — kid is a did:key for a mediator routing key.
+   *    keyAgreement VM's kmsKeyId.
+   * 2. **Mediator routing key** — kid is a did:key or did:peer key for an X25519 mediator routing key.
    * 3. **Reverse did:key lookup** — did:key kid that maps to a VM on a Created DID.
    * 4. **OOB ephemeral key** — did:key kid stored on an out-of-band record.
    */
@@ -140,7 +109,6 @@ export class DidCommV2KeyResolver {
 
   /**
    * Path 1: kid is a DID URL pointing to a keyAgreement VM on one of our Created DIDs.
-   * With independent X25519 keys, the direct kmsKeyId lookup succeeds immediately.
    */
   private async resolveFromCreatedDid(agentContext: AgentContext, kid: string): Promise<ResolvedRecipientKey | null> {
     const didOnly = kid.includes('#') ? kid.split('#')[0] : kid
@@ -152,15 +120,9 @@ export class DidCommV2KeyResolver {
       const verificationMethod = didDocument.dereferenceKey(keyRef, ['keyAgreement'])
       const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
 
-      // Direct lookup — succeeds for new DIDs with independent X25519 keys
-      let kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
+      const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
         verificationMethod.id.endsWith(didDocumentRelativeKeyId)
       )?.kmsKeyId
-
-      // Legacy fallback: X25519 VM mapped to an Ed25519 KMS key (birational map)
-      if (!kmsKeyId && publicJwk.is(Kms.X25519PublicJwk)) {
-        kmsKeyId = findLegacyEd25519KmsKeyId(didDocument, keys, publicJwk.fingerprint)
-      }
 
       const keyId = kmsKeyId ?? (publicJwk.hasKeyId ? publicJwk.keyId : publicJwk.legacyKeyId)
       return { recipientKey: toKeyAgreementWithKeyId(publicJwk, keyId), matchedKid: kid }
@@ -188,31 +150,13 @@ export class DidCommV2KeyResolver {
           )
       const mediatorRoutingRepository = agentContext.dependencyManager.resolve(DidCommMediatorRoutingRepository)
 
-      if (kidPublicJwk.is(Kms.Ed25519PublicJwk)) {
-        const record = await mediatorRoutingRepository.findSingleByQuery(agentContext, {
-          routingKeyFingerprints: [kidPublicJwk.fingerprint],
-        })
-        const routingKey = record?.routingKeysWithKeyId.find((rk) => kidPublicJwk.equals(rk))
-        if (routingKey?.keyId) {
-          return { recipientKey: toKeyAgreementWithKeyId(routingKey, routingKey.keyId), matchedKid: kid }
-        }
-      }
-
-      if (kidPublicJwk.is(Kms.X25519PublicJwk)) {
-        const record = await mediatorRoutingRepository.findById(
-          agentContext,
-          mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID
-        )
-        if (record) {
-          for (const routingKey of record.routingKeysWithKeyId) {
-            try {
-              const derivedX25519 = (routingKey as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk)
-              if (derivedX25519.fingerprint === kidPublicJwk.fingerprint && routingKey.keyId) {
-                return { recipientKey: toKeyAgreementWithKeyId(derivedX25519, routingKey.keyId), matchedKid: kid }
-              }
-            } catch {}
-          }
-        }
+      const record = await mediatorRoutingRepository.findSingleByQuery(agentContext, {
+        routingKeyFingerprints: [kidPublicJwk.fingerprint],
+      })
+      const routingKey = record?.routingKeysWithKeyId.find((rk) => kidPublicJwk.equals(rk))
+      // The KMS agrees on keys with an ECDH curve only, so the Ed25519 routing key of DIDComm v1 cannot open a v2 forward
+      if (routingKey?.keyId && routingKey.is(Kms.X25519PublicJwk)) {
+        return { recipientKey: toKeyAgreementWithKeyId(routingKey, routingKey.keyId), matchedKid: kid }
       }
     } catch {}
 
@@ -250,13 +194,7 @@ export class DidCommV2KeyResolver {
           continue
         }
 
-        const directMatch = vmJwk.fingerprint === kidPublicJwk.fingerprint
-        const derivedMatch =
-          !directMatch &&
-          vmJwk.is(Kms.Ed25519PublicJwk) &&
-          (vmJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>).convertTo(Kms.X25519PublicJwk).fingerprint ===
-            kidPublicJwk.fingerprint
-        if (!directMatch && !derivedMatch) continue
+        if (vmJwk.fingerprint !== kidPublicJwk.fingerprint) continue
 
         const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
           vm.id.endsWith(didDocumentRelativeKeyId)
@@ -305,14 +243,8 @@ export class DidCommV2KeyResolver {
       const recipientRouting = outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.RecipientRouting)
       if (!recipientRouting) return null
 
-      // Independent X25519 key — direct match
       if (recipientRouting.keyAgreementKeyFingerprint === fingerprint) {
         const keyId = recipientRouting.keyAgreementKeyId ?? kidPublicJwk.legacyKeyId
-        return { recipientKey: toKeyAgreementWithKeyId(kidPublicJwk, keyId), matchedKid: kid }
-      }
-      // Legacy Ed25519 fallback
-      if (recipientRouting.recipientKeyFingerprint === fingerprint) {
-        const keyId = recipientRouting.recipientKeyId ?? kidPublicJwk.legacyKeyId
         return { recipientKey: toKeyAgreementWithKeyId(kidPublicJwk, keyId), matchedKid: kid }
       }
     }

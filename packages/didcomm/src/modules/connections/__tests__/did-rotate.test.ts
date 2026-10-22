@@ -643,9 +643,10 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
     const theirDid = connection.theirDid!
     const agentContext = aliceAgent.context
 
+    // DIDComm v2 routing keys are X25519 keys, the KMS does not derive them from Ed25519 keys
     const createRoutingKey = async () => {
-      const { keyId, publicJwk } = await aliceAgent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
-      return { keyId, publicJwk: Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk> }
+      const { keyId, publicJwk } = await aliceAgent.kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
+      return { keyId, publicJwk: Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk }
     }
     const r1 = await createRoutingKey()
     const r2 = await createRoutingKey()
@@ -655,7 +656,9 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
       .resolveServicesFromDid(agentContext, theirDid)
     const resolveServices = vi
       .spyOn(DidCommDocumentService.prototype, 'resolveServicesFromDid')
-      .mockResolvedValueOnce([{ ...service, routingKeys: [r1.publicJwk, r2.publicJwk] }])
+      .mockResolvedValueOnce([
+        { ...service, routingKeys: [r1.publicJwk, r2.publicJwk] as Kms.PublicJwk<Kms.Ed25519PublicJwk>[] },
+      ])
 
     const transport = aliceAgent.dependencyManager
       .resolve(DidCommModuleConfig)
@@ -787,33 +790,41 @@ describe('DIDComm V2 Ending a Relationship E2E tests', () => {
 
       const kms = aliceAgent.kms
       const apv = computeApv([recipientKid])
-      const ephemeralKey = await kms.createKey({ type: { kty: 'OKP', crv: 'X25519' } })
-      const protectedHeader = JsonEncoder.toBase64Url({
-        typ: 'application/didcomm-encrypted+json',
-        alg: 'ECDH-ES+A256KW',
-        enc: 'A256CBC-HS512',
-        skid: aliceSkid,
-        apu: TypedArrayEncoder.toBase64Url(computeApu(aliceSkid)),
-        apv: TypedArrayEncoder.toBase64Url(apv),
-        epk: { kty: 'OKP', crv: 'X25519', x: (ephemeralKey.publicJwk as Kms.KmsJwkPublicOkp).x },
-      })
-      const { encrypted, iv, tag, encryptedKey } = await kms.encrypt({
+      let protectedHeader: string | undefined
+      const { encrypted, iv, tag, encryptedKeys } = await kms.encrypt({
         key: {
           keyAgreement: {
             algorithm: 'ECDH-ES+A256KW',
-            keyId: ephemeralKey.keyId,
-            externalPublicJwk: toKeyAgreement(bobService.recipientKeys[0]).toJson() as Kms.KmsJwkPublicEcdh,
+            recipients: [
+              { externalPublicJwk: toKeyAgreement(bobService.recipientKeys[0]).toJson() as Kms.KmsJwkPublicEcdh },
+            ],
             apv,
           },
         },
-        encryption: { algorithm: 'A256CBC-HS512', aad: TypedArrayEncoder.fromUtf8String(protectedHeader) },
+        encryption: {
+          algorithm: 'A256CBC-HS512',
+          aad: ({ ephemeralPublicJwk }) => {
+            protectedHeader = JsonEncoder.toBase64Url({
+              typ: 'application/didcomm-encrypted+json',
+              alg: 'ECDH-ES+A256KW',
+              enc: 'A256CBC-HS512',
+              skid: aliceSkid,
+              apu: TypedArrayEncoder.toBase64Url(computeApu(aliceSkid)),
+              apv: TypedArrayEncoder.toBase64Url(apv),
+              epk: { kty: 'OKP', crv: 'X25519', x: (ephemeralPublicJwk as Kms.KmsJwkPublicOkp).x },
+            })
+            return TypedArrayEncoder.fromUtf8String(protectedHeader)
+          },
+        },
         data: JsonEncoder.toUint8Array(plaintext),
       })
-      if (!iv || !tag || !encryptedKey) throw new Error('Expected iv, tag and encrypted key from KMS encrypt')
+      if (!protectedHeader || !iv || !tag || !encryptedKeys) {
+        throw new Error('Expected protected header, iv, tag and encrypted keys from KMS encrypt')
+      }
       const message: DidCommV2EncryptedMessage = {
         protected: protectedHeader,
         recipients: [
-          { header: { kid: recipientKid }, encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKey.encrypted) },
+          { header: { kid: recipientKid }, encrypted_key: TypedArrayEncoder.toBase64Url(encryptedKeys[0].encrypted) },
         ],
         iv: TypedArrayEncoder.toBase64Url(iv),
         ciphertext: TypedArrayEncoder.toBase64Url(encrypted),

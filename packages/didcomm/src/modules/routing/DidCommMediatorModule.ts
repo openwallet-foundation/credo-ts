@@ -83,6 +83,9 @@ export class DidCommMediatorModule implements Module {
     if (!routingRecord) {
       agentContext.config.logger.debug('Mediator routing record does not exist yet, creating routing keys and record')
       await mediatorService.createMediatorRoutingRecord(agentContext)
+    } else {
+      // A record from before DIDComm v2 support holds only an Ed25519 routing key
+      await mediatorService.addV2RoutingKeyIfMissing(agentContext, routingRecord)
     }
   }
 }
