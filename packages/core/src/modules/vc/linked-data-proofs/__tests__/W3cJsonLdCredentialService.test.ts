@@ -337,6 +337,26 @@ describe('W3cJsonLdCredentialsService', () => {
         expect(asArray(vc.proof)[0].verificationMethod).toEqual(verificationMethod)
       })
 
+      it('should sign a credential constructed without optional fields', async () => {
+        const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT
+        const credential = new W3cCredential({
+          context: credentialJson['@context'],
+          type: credentialJson.type,
+          issuer: credentialJson.issuer,
+          issuanceDate: credentialJson.issuanceDate,
+          credentialSubject: { claims: credentialJson.credentialSubject },
+        })
+
+        const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential,
+          proofType: 'Ed25519Signature2018',
+          verificationMethod: verificationMethod,
+        })
+
+        expect(vc).toBeInstanceOf(W3cJsonLdVerifiableCredential)
+      })
+
       it('throws a typed error when the verification method is not controlled by this wallet', async () => {
         const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT
         credentialJson.issuer = issuerDidKey.did
@@ -647,6 +667,33 @@ describe('W3cJsonLdCredentialsService', () => {
           format: ClaimFormat.LdpVp,
           presentation: presentation,
           proofPurpose: purpose,
+          proofType: 'Ed25519Signature2018',
+          challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
+          domain: 'issuer.example.com',
+          verificationMethod: verificationMethod,
+        })
+
+        expect(verifiablePresentation).toBeInstanceOf(W3cJsonLdVerifiablePresentation)
+      })
+
+      it('should sign a presentation constructed without an id', async () => {
+        const vpJson = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_VP_DOCUMENT, W3cPresentation)
+        const presentation = new W3cPresentation({
+          context: vpJson.context,
+          type: vpJson.type,
+          holder: vpJson.holder,
+          verifiableCredential: vpJson.verifiableCredential,
+        })
+
+        const verifiablePresentation = await w3cJsonLdCredentialService.signPresentation(agentContext, {
+          format: ClaimFormat.LdpVp,
+          presentation,
+          proofPurpose: new CredentialIssuancePurpose({
+            controller: {
+              id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+            },
+            date: new Date().toISOString(),
+          }),
           proofType: 'Ed25519Signature2018',
           challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
           domain: 'issuer.example.com',

@@ -4,6 +4,7 @@ import type { MockedClassConstructor } from '../../../../tests/types'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext } from '../../../core/tests/helpers'
 import { DidCommDispatcher } from '../DidCommDispatcher'
+import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommMessage } from '../DidCommMessage'
 import { DidCommMessageHandlerRegistry } from '../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../DidCommMessageSender'
@@ -323,6 +324,75 @@ describe('DidCommDispatcher', () => {
         serviceParams: undefined,
         sessionId: undefined,
       })
+    })
+
+    it('emits the processed event with handled false when a middleware does not call next', async () => {
+      const agentContext = getAgentContext()
+      const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
+      agentContext.dependencyManager.registerInstance(DidCommMessageHandlerRegistry, messageHandlerRegistry)
+      const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
+      const dispatcher = new DidCommDispatcher(
+        new MessageSenderMock(),
+        eventEmitter,
+        messageHandlerRegistry,
+        agentConfig.logger
+      )
+
+      const handle = vi.fn()
+      messageHandlerRegistry.registerMessageHandler({ supportedMessages: [CustomProtocolMessage], handle })
+      messageHandlerRegistry.registerMessageHandlerMiddleware(vi.fn())
+
+      const listener = vi.fn()
+      eventEmitter.on(DidCommEventTypes.DidCommMessageProcessed, listener)
+
+      await dispatcher.dispatch(new DidCommInboundMessageContext(new CustomProtocolMessage({}), { agentContext }))
+
+      expect(handle).not.toHaveBeenCalled()
+      expect(listener).toHaveBeenCalledTimes(1)
+      expect(listener).toHaveBeenCalledWith(
+        expect.objectContaining({ payload: expect.objectContaining({ handled: false }) })
+      )
+    })
+
+    it('emits the processed event with handled true after the response is sent', async () => {
+      const agentContext = getAgentContext({ agentConfig })
+      const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
+      agentContext.dependencyManager.registerInstance(DidCommMessageHandlerRegistry, messageHandlerRegistry)
+      const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
+      const messageSenderMock = new MessageSenderMock()
+      const dispatcher = new DidCommDispatcher(
+        messageSenderMock,
+        eventEmitter,
+        messageHandlerRegistry,
+        agentConfig.logger
+      )
+
+      messageHandlerRegistry.registerMessageHandler({
+        supportedMessages: [CustomProtocolMessage],
+        handle: async (inboundMessageContext) =>
+          getOutboundDidCommMessageContext(inboundMessageContext.agentContext, {
+            message: new CustomProtocolMessage({ id: 'static-id' }),
+            connectionRecord: inboundMessageContext.connection,
+          }),
+      })
+
+      const listener = vi.fn()
+      eventEmitter.on(DidCommEventTypes.DidCommMessageProcessed, listener)
+
+      await dispatcher.dispatch(
+        new DidCommInboundMessageContext(new CustomProtocolMessage({}), {
+          agentContext,
+          connection: vi.fn() as unknown as DidCommConnectionRecord,
+        })
+      )
+
+      expect(listener).toHaveBeenCalledTimes(1)
+      expect(listener).toHaveBeenCalledWith(
+        expect.objectContaining({ payload: expect.objectContaining({ handled: true }) })
+      )
+      expect(vi.mocked(messageSenderMock.sendMessage).mock.invocationCallOrder[0]).toBeLessThan(
+        listener.mock.invocationCallOrder[0]
+      )
     })
   })
 })

@@ -89,6 +89,13 @@ export interface CreateProofRequestOptions<PPs extends DidCommProofProtocol[] = 
 
   /** @default true */
   willConfirm?: boolean
+
+  /**
+   * Absolute time after which the request should be considered expired. Set as the `~timing.expires_time`
+   * decorator (RFC 0032) on the request message, so the holder can stop offering to respond once it has passed.
+   * The decorator is advisory: Credo does not enforce it when receiving a request.
+   */
+  expiresTime?: Date
 }
 
 /**

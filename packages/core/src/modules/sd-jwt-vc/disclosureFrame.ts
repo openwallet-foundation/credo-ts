@@ -8,6 +8,7 @@ import {
   selectDisclosures,
 } from '@sd-jwt/core'
 import { isObject } from 'class-validator'
+import { DcqlNotDisclosed } from 'dcql'
 import { Hasher } from '../../crypto'
 import type { JsonObject } from '../../types'
 import { SdJwtVcError } from './SdJwtVcError'
@@ -80,8 +81,7 @@ export type ClaimPath = Array<string | number>
  *
  * A claims query path stands for the claim and everything below it, so it gives a single path however
  * much is below the claim. A `null` in the path selects the array elements that matched, which are the
- * ones the output holds: for an element that did not match, DCQL leaves `null` in the output of a claims
- * query, and `undefined` or nothing in the output of a claim set.
+ * ones the output holds: for an element that did not match, DCQL leaves `DcqlNotDisclosed`.
  *
  * The output of a claim set merges the output of its claims queries, so an element can be in it for
  * another claims query of the claim set. Its path is then selected by that claims query anyway.
@@ -91,10 +91,8 @@ export function getClaimPathsForDcqlClaimSet(
   output: unknown
 ): ClaimPath[] {
   const getPaths = (queryPath: Array<string | number | null>, value: unknown, path: ClaimPath): ClaimPath[] => {
-    // FIXME: logic should be updated once this PR is released:
-    // https://github.com/openwallet-foundation-labs/identity-common-ts/pull/261
-    // DCQL leaves `null`, `undefined` or nothing where no claim is selected
-    if (value === null || value === undefined) return []
+    // Skip undisclosed or missing claims, while preserving literal null values.
+    if (value === DcqlNotDisclosed || value === undefined) return []
     // The end of the query path selects the claim with everything below it
     if (queryPath.length === 0) return [path]
 
