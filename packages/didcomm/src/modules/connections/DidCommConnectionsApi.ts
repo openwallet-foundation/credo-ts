@@ -545,6 +545,7 @@ export class DidCommConnectionsApi {
         await this.routingService.removeRouting(this.agentContext, {
           recipientKeys,
           mediatorId: connection.mediatorId,
+          did,
         })
       }
     }
@@ -574,6 +575,7 @@ export class DidCommConnectionsApi {
         await this.routingService.removeRouting(this.agentContext, {
           recipientKeys,
           mediatorId: mediatorRecord.id,
+          did: previousDid,
         })
       }
     }

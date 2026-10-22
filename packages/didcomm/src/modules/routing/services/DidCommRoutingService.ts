@@ -95,21 +95,6 @@ export class DidCommRoutingService {
     }
   }
 
-  public async unregisterRecipientDidForV2Routing(
-    agentContext: AgentContext,
-    routing: DidCommRouting,
-    did: string
-  ): Promise<void> {
-    if (!routing.mediatorId) return
-
-    const mediationRecord = await this.mediationRecipientService.getById(agentContext, routing.mediatorId)
-    if (mediationRecord.protocolVersion !== 'v2') return
-
-    await this.mediationRecipientService.keylistUpdateAndAwaitV2(agentContext, mediationRecord, [
-      { recipientDid: getDidPeer4ShortFormForEquivalence(did) ?? did, action: KeylistUpdateActionV2.remove },
-    ])
-  }
-
   public async removeRouting(agentContext: AgentContext, options: RemoveRoutingOptions) {
     await this.mediationRecipientService.removeMediationRouting(agentContext, options)
   }
@@ -140,4 +125,11 @@ export interface RemoveRoutingOptions {
    * Identifier of the mediator used when routing has been set up
    */
   mediatorId: string
+
+  /**
+   * The did whose routing is removed. A Coordinate Mediation 2.0 mediator holds the did itself in its
+   * keylist (see {@link DidCommRoutingService.registerRecipientDidForV2Routing}), next to the did:key of
+   * each recipient key, so the did is removed as well. A 1.0 mediator only holds keys and ignores it.
+   */
+  did?: string
 }

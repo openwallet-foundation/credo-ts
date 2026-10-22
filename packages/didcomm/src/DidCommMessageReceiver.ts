@@ -606,10 +606,10 @@ export class DidCommMessageReceiver {
     try {
       if (routing.mediatorId) {
         const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
-        await routingService.unregisterRecipientDidForV2Routing(agentContext, routing, did)
         await routingService.removeRouting(agentContext, {
           recipientKeys: keys as RemoveRoutingOptions['recipientKeys'],
           mediatorId: routing.mediatorId,
+          did,
         })
       }
 

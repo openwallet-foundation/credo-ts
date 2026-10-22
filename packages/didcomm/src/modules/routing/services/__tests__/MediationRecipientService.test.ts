@@ -505,5 +505,63 @@ describe('DidCommMediationRecipientService', () => {
         )
       })
     })
+
+    describe('removeMediationRouting v2', () => {
+      const recipientKey = Kms.PublicJwk.fromFingerprint(
+        'z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
+      ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+      const v2MediationRecord = new DidCommMediationRecord({
+        connectionId: 'connection-id',
+        role: DidCommMediationRole.Recipient,
+        state: DidCommMediationState.Granted,
+        threadId: 'thread-id',
+        protocolVersion: 'v2',
+        routingDid: 'did:peer:2.mediator',
+      })
+
+      test('removes the did:key of each recipient key and the did itself', async () => {
+        mockFunction(mediationRepository.getById).mockResolvedValue(v2MediationRecord)
+        vi.spyOn(mediationRecipientService, 'keylistUpdateAndAwaitV2').mockResolvedValue(v2MediationRecord)
+
+        await mediationRecipientService.removeMediationRouting(agentContext, {
+          recipientKeys: [recipientKey],
+          mediatorId: 'mediator-id',
+          did: 'did:peer:2.ours',
+        })
+
+        expect(mediationRecipientService.keylistUpdateAndAwaitV2).toHaveBeenCalledWith(
+          agentContext,
+          v2MediationRecord,
+          [
+            {
+              recipientDid: 'did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th',
+              action: KeylistUpdateActionV2.remove,
+            },
+            { recipientDid: 'did:peer:2.ours', action: KeylistUpdateActionV2.remove },
+          ]
+        )
+      })
+
+      test('removes only the did:key entries when no did is given', async () => {
+        mockFunction(mediationRepository.getById).mockResolvedValue(v2MediationRecord)
+        vi.spyOn(mediationRecipientService, 'keylistUpdateAndAwaitV2').mockResolvedValue(v2MediationRecord)
+
+        await mediationRecipientService.removeMediationRouting(agentContext, {
+          recipientKeys: [recipientKey],
+          mediatorId: 'mediator-id',
+        })
+
+        expect(mediationRecipientService.keylistUpdateAndAwaitV2).toHaveBeenCalledWith(
+          agentContext,
+          v2MediationRecord,
+          [
+            {
+              recipientDid: 'did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th',
+              action: KeylistUpdateActionV2.remove,
+            },
+          ]
+        )
+      })
+    })
   })
 })

@@ -2,10 +2,13 @@ import { Subject } from 'rxjs'
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
+import { DidKey, getDidPeer4ShortFormForEquivalence } from '../../../../../core/src'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { getAgentOptions, makeConnection } from '../../../../../core/tests/helpers'
 import { DidCommMediationRecipientApi } from '../DidCommMediationRecipientApi'
 import { DidCommMediatorPickupStrategy } from '../DidCommMediatorPickupStrategy'
+import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
+import { DidCommRoutingService, type RemoveRoutingOptions } from '../services/DidCommRoutingService'
 
 // Mediator routing DID - serviceEndpoint will be this DID (DID-as-endpoint).
 const MEDIATOR_ROUTING_DID =
@@ -79,6 +82,34 @@ describe('Mediation 2.0 + Pickup 4.0 Combined', () => {
         expect(mediationRecord.routingDid).toBe(MEDIATOR_ROUTING_DID)
         expect(mediationRecord.recipientDids?.length).toBeGreaterThan(0)
 
+        // A v2 invitation registers its did:peer with the mediator. Removing the routing of that did
+        // must unregister the did itself and the did:key of its keys.
+        const { outOfBandInvitation } = await recipientAgent.didcomm.oob.createInvitation({ didCommVersion: 'v2' })
+        const invitationDid = outOfBandInvitation.v2Invitation?.from as string
+        const registeredDid = getDidPeer4ShortFormForEquivalence(invitationDid) ?? invitationDid
+        const mediatorMediationRepository = mediatorAgent.dependencyManager.resolve(DidCommMediationRepository)
+        let mediatorSideRecord = await mediatorMediationRepository.getByConnectionId(
+          mediatorAgent.context,
+          mediatorRecipientConn.id
+        )
+        expect(mediatorSideRecord.recipientDids).toContain(registeredDid)
+
+        const { didDocument } = await recipientAgent.dids.resolveCreatedDidDocumentWithKeys(invitationDid)
+        const recipientKeys = didDocument.allDidCommRecipientKeys as RemoveRoutingOptions['recipientKeys']
+        await recipientAgent.dependencyManager.resolve(DidCommRoutingService).removeRouting(recipientAgent.context, {
+          recipientKeys,
+          mediatorId: mediationRecord.id,
+          did: invitationDid,
+        })
+        mediatorSideRecord = await mediatorMediationRepository.getByConnectionId(
+          mediatorAgent.context,
+          mediatorRecipientConn.id
+        )
+        expect(mediatorSideRecord.recipientDids).not.toContain(registeredDid)
+        for (const key of recipientKeys) {
+          expect(mediatorSideRecord.recipientDids).not.toContain(new DidKey(key).did)
+        }
+
         await recipientAgent.didcomm.mediationRecipient.initiateMessagePickup(mediationRecord)
 
         await recipientAgent.didcomm.messagePickup.pickupMessages({
@@ -93,7 +124,7 @@ describe('Mediation 2.0 + Pickup 4.0 Combined', () => {
         await mediatorAgent.shutdown()
         await recipientAgent.shutdown()
       },
-      10000
+      20000
     )
   })
 })

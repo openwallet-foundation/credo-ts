@@ -5,6 +5,7 @@ import {
   didKeyToVerkey,
   EventEmitter,
   filterContextCorrelationId,
+  getDidPeer4ShortFormForEquivalence,
   injectable,
   isDidKey,
   Kms,
@@ -465,7 +466,7 @@ export class DidCommMediationRecipientService {
 
   public async removeMediationRouting(
     agentContext: AgentContext,
-    { recipientKeys, mediatorId }: RemoveRoutingOptions
+    { recipientKeys, mediatorId, did }: RemoveRoutingOptions
   ): Promise<void> {
     const mediationRecord = await this.getById(agentContext, mediatorId)
 
@@ -474,8 +475,11 @@ export class DidCommMediationRecipientService {
     }
 
     if (mediationRecord.protocolVersion === 'v2') {
-      // V2 mediators accept both Ed25519 and X25519 keys as did:key.
+      // A v2 mediator holds the did:key of each recipient key (Ed25519 and X25519) and, when the did was
+      // registered with registerRecipientDidForV2Routing, the did itself (did:peer:4 in short form).
+      // A v2 forward names the did in `next`, so the did must go as well.
       const recipientDids = recipientKeys.map((key) => new DidKey(key).did)
+      if (did) recipientDids.push(getDidPeer4ShortFormForEquivalence(did) ?? did)
       await this.keylistUpdateAndAwaitV2(
         agentContext,
         mediationRecord,
