@@ -319,13 +319,6 @@ export class DidCommJsonLdCredentialFormatService
     // actually gets the key type(s)
     const keyType = w3cJsonLdCredentialService.getVerificationMethodTypesByProofType(proofType)
 
-    if (!keyType || keyType.length === 0) {
-      throw new W3cJsonLdCredentialSigningNotSupportedError(
-        `No Key Type found for proofType ${proofType}`,
-        'no-verification-method-types-for-proof-type'
-      )
-    }
-
     const verificationMethod = issuerDidDocument.findVerificationMethodsByTypeAndPurpose(keyType, [
       'assertionMethod',
       'verificationMethod',
