@@ -13,6 +13,7 @@ import {
   Ed25519Signature2020,
   SECURITY_ED25519_2020_CONTEXT_URL,
   SignatureSuiteRegistry,
+  W3cCredential,
   W3cCredentialRecord,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
@@ -467,7 +468,7 @@ describe('JsonLd CredentialFormatService', () => {
       // calls private method in the format service
       const verificationMethod = await service.deriveVerificationMethod(
         agentContext,
-        signCredentialOptions.credential,
+        JsonTransformer.fromJSON(signCredentialOptions.credential, W3cCredential),
         credentialRequest
       )
       expect(verificationMethod).toBe(
