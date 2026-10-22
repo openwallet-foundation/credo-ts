@@ -28,7 +28,6 @@ import {
   type Jwk,
   type JwtSignerJwk,
   type JwtSignerWithJwk,
-  jwtHeaderFromJwtSigner,
   Oauth2AuthorizationServer,
   Oauth2Client,
   Oauth2ErrorCodes,
