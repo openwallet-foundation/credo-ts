@@ -217,7 +217,7 @@ export class DidCommEnvelopeService {
           keyId: recipientKey.keyId,
 
           // Optionally we have a sender
-          externalPublicJwk: senderPublicJwk?.convertTo(Kms.X25519PublicJwk).toJson(),
+          senderPublicJwk: senderPublicJwk?.convertTo(Kms.X25519PublicJwk).toJson(),
         },
       },
     })
