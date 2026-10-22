@@ -16,7 +16,7 @@ import {
   utils,
 } from '@credo-ts/core'
 import { DidCommDispatcher, isProblemReportMessageType } from './DidCommDispatcher'
-import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
+import type { DidCommEnvelopeKey } from './DidCommEnvelopeService'
 import { DidCommMessage } from './DidCommMessage'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from './DidCommMessageSender'
@@ -24,6 +24,7 @@ import type { DidCommTransportSession } from './DidCommTransportService'
 import { DidCommTransportService } from './DidCommTransportService'
 import type { DidCommEnvelope } from './envelope'
 import { DidCommEnvelopeRegistry } from './envelope'
+import type { DecryptedDidCommEnvelope } from './envelope/DidCommEnvelope'
 import { DidCommProblemReportError } from './errors'
 import { DidCommProblemReportMessage, DidCommProblemReportV2Message } from './messages'
 import {
@@ -49,7 +50,7 @@ import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isDidCommV2SignedMessage } from './util/didcommVersion'
 import { isValidJweStructure } from './util/JWE'
 import { parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
-import type { DidCommV2SignedMessageWire } from './v2'
+import type { DidCommV2KeyAgreementJwk, DidCommV2SignedMessageWire } from './v2'
 
 const FIRST_MESSAGE_CONNECTION_ID_NAMESPACE = '6b238103-2e51-4a24-9fd0-8d4223f63b08'
 
@@ -239,14 +240,20 @@ export class DidCommMessageReceiver {
       await this.outOfBandService.processHandshakeReuseV2(agentContext, connection, message, recipientDid)
     }
 
+    // A v1 envelope carries Ed25519 keys, a v2 envelope carries key agreement keys; the context names each kind
+    const sender = splitEnvelopeKey(senderKey)
+    const recipient = splitEnvelopeKey(recipientKey)
     const messageContext = new DidCommInboundMessageContext(message, {
       // Only make the connection available in message context if the connection is ready
       // To prevent unwanted usage of unready connections. Connections can still be retrieved from
       // Storage if the specific protocol allows an unready connection to be used.
       connection: connection?.isReady ? connection : undefined,
-      senderKey,
-      recipientKey,
+      senderKey: sender.ed25519Key,
+      recipientKey: recipient.ed25519Key,
+      senderKeyAgreementKey: sender.keyAgreementKey,
+      recipientKeyAgreementKey: recipient.keyAgreementKey,
       senderDid: authenticatedSenderDid,
+      recipientDid,
       agentContext,
       receivedAt,
       encryptedMessage,
@@ -292,7 +299,7 @@ export class DidCommMessageReceiver {
     agentContext: AgentContext,
     envelope: DidCommEnvelope,
     message: DidCommEncryptedMessage
-  ): Promise<DecryptedDidCommMessageContext> {
+  ): Promise<DecryptedDidCommEnvelope> {
     try {
       return await envelope.unpack(agentContext, message)
     } catch (error) {
@@ -340,7 +347,7 @@ export class DidCommMessageReceiver {
 
   private async findConnection(
     agentContext: AgentContext,
-    decryptedMessage: DecryptedDidCommMessageContext
+    decryptedMessage: DecryptedDidCommEnvelope
   ): Promise<{
     connection: DidCommConnectionRecord | null
     linkedByFromPrior?: boolean
@@ -691,4 +698,14 @@ export class DidCommMessageReceiver {
       await this.messageSender.sendMessage(outboundMessageContext)
     }
   }
+}
+
+/** A v1 envelope carries Ed25519 keys, a v2 envelope carries key agreement keys. */
+function splitEnvelopeKey(key: DidCommEnvelopeKey | undefined): {
+  ed25519Key?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  keyAgreementKey?: DidCommV2KeyAgreementJwk
+} {
+  if (!key) return {}
+  if (key.is(Kms.Ed25519PublicJwk)) return { ed25519Key: key }
+  return { keyAgreementKey: key as DidCommV2KeyAgreementJwk }
 }

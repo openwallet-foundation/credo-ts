@@ -1,12 +1,17 @@
 import type { AgentContext, Kms } from '@credo-ts/core'
 import { injectable } from '@credo-ts/core'
-import type { DecryptedDidCommMessageContext, EnvelopeKeys } from '../DidCommEnvelopeService'
+import type { EnvelopeKeys } from '../DidCommEnvelopeService'
 import { DidCommEnvelopeService } from '../DidCommEnvelopeService'
 import type { DidCommMessage } from '../DidCommMessage'
 import type { DidCommEncryptedMessage } from '../types'
 import { isDidCommV2EncryptedMessage, isDidCommV2SignedMessage } from '../util/didcommVersion'
 import { isValidJweStructure } from '../util/JWE'
-import type { DidCommEnvelope, DidCommPackOptions, DidCommReturnRouteOptions } from './DidCommEnvelope'
+import type {
+  DecryptedDidCommEnvelope,
+  DidCommEnvelope,
+  DidCommPackOptions,
+  DidCommReturnRouteOptions,
+} from './DidCommEnvelope'
 
 /**
  * DIDComm v1 envelope.
@@ -51,7 +56,7 @@ export class DidCommV1Envelope implements DidCommEnvelope<'v1'> {
   public async unpack(
     agentContext: AgentContext,
     encryptedMessage: DidCommEncryptedMessage
-  ): Promise<DecryptedDidCommMessageContext> {
+  ): Promise<DecryptedDidCommEnvelope> {
     return this.envelopeService.unpackMessage(agentContext, encryptedMessage)
   }
 

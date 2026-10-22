@@ -303,7 +303,7 @@ describe('routingToServices', () => {
   })
 
   it('CM 2.0: resolves an Ed25519-bearing routing DID to the mediator endpoint + Ed25519 routing keys', () => {
-    const services = routingToServices({ recipientKey, endpoints: [], routingDid: ed25519RoutingDid })
+    const services = routingToServices({ recipientKey, endpoints: [], routingKeys: [], routingDid: ed25519RoutingDid })
 
     expect(services).toHaveLength(1)
     expect(services[0].serviceEndpoint).toBe('https://mediator.example.com')
@@ -312,15 +312,15 @@ describe('routingToServices', () => {
   })
 
   it('CM 2.0: throws when the routing DID exposes no Ed25519 routing key (X25519-only)', () => {
-    expect(() => routingToServices({ recipientKey, endpoints: [], routingDid: x25519OnlyRoutingDid })).toThrow(
-      /exposes no Ed25519 routing key/
-    )
+    expect(() =>
+      routingToServices({ recipientKey, endpoints: [], routingKeys: [], routingDid: x25519OnlyRoutingDid })
+    ).toThrow(/exposes no Ed25519 routing key/)
   })
 
   it('CM 2.0: throws when the routing DID cannot be resolved', () => {
-    expect(() => routingToServices({ recipientKey, endpoints: [], routingDid: 'did:peer:4zInvalidShortForm' })).toThrow(
-      /Unable to resolve Coordinate Mediation 2.0 routing DID/
-    )
+    expect(() =>
+      routingToServices({ recipientKey, endpoints: [], routingKeys: [], routingDid: 'did:peer:4zInvalidShortForm' })
+    ).toThrow(/Unable to resolve Coordinate Mediation 2.0 routing DID/)
   })
 })
 

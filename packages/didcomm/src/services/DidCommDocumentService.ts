@@ -57,13 +57,8 @@ export class DidCommDocumentService {
   ): Promise<GetSupportedDidCommVersionsFromDidDocResult> {
     const didDocument = await this.didResolverService.resolveDidDocument(agentContext, did)
 
-    const allDidCommServices = (didDocument.service?.filter(
-      (s) =>
-        s.type === IndyAgentService.type ||
-        s.type === DidCommV1Service.type ||
-        s.type === DidCommV2Service.type ||
-        s.type === NewDidCommV2Service.type
-    ) ?? []) as Array<IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service>
+    // The DIDComm v1 services first, in priority order, then the DIDComm v2 services
+    const allDidCommServices = [...didDocument.didCommServices, ...didDocument.didCommV2Services]
 
     const didCommServices = parseDid(did).fragment
       ? allDidCommServices.filter((service) => service.id === did)
@@ -193,13 +188,8 @@ export class DidCommDocumentService {
     const resolvedServices: ResolvedDidCommService[] = []
 
     // If did specifies a particular service, filter by its id
-    const allDidCommServices = (didDocument.service?.filter(
-      (s) =>
-        s.type === IndyAgentService.type ||
-        s.type === DidCommV1Service.type ||
-        s.type === DidCommV2Service.type ||
-        s.type === NewDidCommV2Service.type
-    ) ?? []) as Array<IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service>
+    // The DIDComm v1 services first, in priority order, then the DIDComm v2 services
+    const allDidCommServices = [...didDocument.didCommServices, ...didDocument.didCommV2Services]
     const didCommServices = parseDid(did).fragment
       ? allDidCommServices.filter((service) => service.id === did)
       : allDidCommServices

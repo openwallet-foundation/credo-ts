@@ -127,8 +127,8 @@ export class DidCommConnectionService {
         type: message.type,
       })
 
-      const recipientKey = messageContext.recipientKey
-      const senderKey = messageContext.senderKey
+      const recipientKey = messageContext.recipientKeyAgreementKey ?? messageContext.recipientKey
+      const senderKey = messageContext.senderKeyAgreementKey ?? messageContext.senderKey
 
       // set theirService to the value of lastReceivedMessage.service
       let theirService =

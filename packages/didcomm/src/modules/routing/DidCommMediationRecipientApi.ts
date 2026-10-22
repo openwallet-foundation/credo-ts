@@ -24,7 +24,7 @@ import { DidCommOutboundMessageContext } from '../../models'
 import type { DidCommOutboundWebSocketClosedEvent, DidCommOutboundWebSocketOpenedEvent } from '../../transport'
 import { DidCommTransportEventTypes } from '../../transport'
 import { assertDidCommV1Connection, assertDidCommV2Connection } from '../../util/didcommVersion'
-import type { DidCommConnectionRecord } from '../connections/repository'
+import { DidCommConnectionRecord } from '../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../connections/services'
 import { DidCommDiscoverFeaturesApi } from '../discover-features'
@@ -525,6 +525,17 @@ export class DidCommMediationRecipientApi {
   }
 
   /**
+   * Register (add/remove) a routing key with the mediator over Coordinate Mediation 1.0.
+   *
+   * @param connection the connection to the mediator
+   * @param verkey the recipient key as a verkey or a did:key
+   */
+  public async notifyKeylistUpdate(
+    connection: DidCommConnectionRecord,
+    verkey: string,
+    action?: DidCommKeylistUpdateAction
+  ): Promise<void>
+  /**
    * Register (add/remove) a routing key or DID with the mediator. Automatically selects
    * the v1 or v2 keylist-update flow based on the mediation record's protocol version.
    *
@@ -534,8 +545,19 @@ export class DidCommMediationRecipientApi {
   public async notifyKeylistUpdate(
     mediationRecord: DidCommMediationRecord,
     recipientKeyOrDid: string,
+    action?: DidCommKeylistUpdateAction
+  ): Promise<void>
+  public async notifyKeylistUpdate(
+    mediationRecordOrConnection: DidCommMediationRecord | DidCommConnectionRecord,
+    recipientKeyOrDid: string,
     action: DidCommKeylistUpdateAction = DidCommKeylistUpdateAction.add
   ): Promise<void> {
+    // The connection form predates Coordinate Mediation 2.0 and always sends a 1.0 keylist-update
+    if (mediationRecordOrConnection instanceof DidCommConnectionRecord) {
+      return this.sendKeylistUpdateV1(mediationRecordOrConnection, recipientKeyOrDid, action)
+    }
+
+    const mediationRecord = mediationRecordOrConnection
     mediationRecord.assertReady()
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
     const connection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)
@@ -552,7 +574,15 @@ export class DidCommMediationRecipientApi {
       return
     }
 
-    // v1 flow
+    await this.sendKeylistUpdateV1(connection, recipientKeyOrDid, action)
+  }
+
+  private async sendKeylistUpdateV1(
+    connection: DidCommConnectionRecord,
+    verkey: string,
+    action: DidCommKeylistUpdateAction
+  ): Promise<void> {
+    // Use our useDidKey configuration unless we know the key formatting other party is using
     const didcommConfig = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
     let useDidKey = didcommConfig.useDidKeyInProtocols
     const useDidKeysConnectionMetadata = connection.metadata.get(DidCommConnectionMetadataKeys.UseDidKeysForProtocol)
@@ -563,7 +593,7 @@ export class DidCommMediationRecipientApi {
     const message = this.mediationRecipientService.createKeylistUpdateMessage([
       new DidCommKeylistUpdate({
         action,
-        recipientKey: useDidKey ? verkeyToDidKey(recipientKeyOrDid) : recipientKeyOrDid,
+        recipientKey: useDidKey ? verkeyToDidKey(verkey) : verkey,
       }),
     ])
 

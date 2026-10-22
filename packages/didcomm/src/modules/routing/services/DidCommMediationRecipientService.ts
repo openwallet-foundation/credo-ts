@@ -440,6 +440,7 @@ export class DidCommMediationRecipientService {
         keyAgreementKey: routing.keyAgreementKey,
         mediatorId: mediationRecord.id,
         routingDid,
+        routingKeys: [],
       }
     }
 

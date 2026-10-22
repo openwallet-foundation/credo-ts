@@ -1,9 +1,23 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { DecryptedDidCommMessageContext, DidCommEnvelopeKey, EnvelopeKeys } from '../DidCommEnvelopeService'
+import type { DidCommEnvelopeKey, EnvelopeKeys } from '../DidCommEnvelopeService'
 import type { DidCommMessage } from '../DidCommMessage'
 import type { DidCommConnectionRecord } from '../modules/connections/repository'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from '../types'
 import type { DidCommVersion } from '../util/didcommVersion'
+
+/**
+ * The result of opening an envelope of either version. V1 carries Ed25519 keys and no DIDs; v2
+ * carries key agreement keys and the DIDs the envelope names.
+ */
+export interface DecryptedDidCommEnvelope {
+  plaintextMessage: DidCommPlaintextMessage
+  senderKey?: DidCommEnvelopeKey
+  recipientKey: DidCommEnvelopeKey
+  /** DIDComm v2 sender DID proven by the authcrypt envelope. Never set for anoncrypt or for v1. */
+  authenticatedSenderDid?: string
+  /** DIDComm v2: our DID the envelope was addressed to. */
+  recipientDid?: string
+}
 
 export interface DidCommReturnRouteOptions {
   /** The key that signed or encrypted the inbound message. It becomes our recipient key. */
@@ -65,7 +79,7 @@ export interface DidCommEnvelope<Version extends DidCommVersion = DidCommVersion
    * Open an encrypted envelope. The returned plaintext is always in v1 shape, so message handlers
    * and the dispatcher stay free of version logic.
    */
-  unpack(agentContext: AgentContext, encryptedMessage: DidCommEncryptedMessage): Promise<DecryptedDidCommMessageContext>
+  unpack(agentContext: AgentContext, encryptedMessage: DidCommEncryptedMessage): Promise<DecryptedDidCommEnvelope>
 
   /**
    * Build the key set that a transport session stores so a reply can travel back over the same

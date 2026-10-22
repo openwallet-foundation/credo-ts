@@ -541,9 +541,7 @@ export class DidCommConnectionsApi {
       const { didDocument } = await this.didResolverService.resolve(this.agentContext, did)
 
       if (didDocument) {
-        const recipientKeys = didDocument
-          .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
-          .map(({ publicJwk }) => publicJwk) as RemoveRoutingOptions['recipientKeys']
+        const recipientKeys = didDocument.allDidCommRecipientKeys as RemoveRoutingOptions['recipientKeys']
         await this.routingService.removeRouting(this.agentContext, {
           recipientKeys,
           mediatorId: connection.mediatorId,
@@ -572,9 +570,7 @@ export class DidCommConnectionsApi {
       const mediatorRecord = await getMediationRecordForDidDocument(this.agentContext, did.didDocument)
 
       if (mediatorRecord) {
-        const recipientKeys = did.didDocument
-          .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: false })
-          .map(({ publicJwk }) => publicJwk) as RemoveRoutingOptions['recipientKeys']
+        const recipientKeys = did.didDocument.allDidCommRecipientKeys as RemoveRoutingOptions['recipientKeys']
         await this.routingService.removeRouting(this.agentContext, {
           recipientKeys,
           mediatorId: mediatorRecord.id,

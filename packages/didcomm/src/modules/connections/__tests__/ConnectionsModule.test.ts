@@ -4,6 +4,7 @@ import type { DependencyManager } from '../../../../../core/src/plugins/Dependen
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { DidCommProtocol } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob'
 import { DidCommRoutingService } from '../../routing'
@@ -48,6 +49,7 @@ describe('DidCommConnectionsModule', () => {
       registerInstances: [
         [DidCommFeatureRegistry, featureRegistry],
         [DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry()],
+        [DidCommModuleConfig, new DidCommModuleConfig()],
         [DidCommConnectionService, {} as unknown as DidCommConnectionService],
         [DidCommOutOfBandService, {} as unknown as DidCommOutOfBandService],
         [DidCommRoutingService, {} as unknown as DidCommRoutingService],
@@ -69,10 +71,6 @@ describe('DidCommConnectionsModule', () => {
       new DidCommProtocol({
         id: 'https://didcomm.org/did-rotate/1.0',
         roles: [DidCommDidRotateRole.RotatingParty, DidCommDidRotateRole.ObservingParty],
-      }),
-      new DidCommProtocol({
-        id: 'https://didcomm.org/empty/1.0',
-        roles: [],
       }),
     ])
   })
