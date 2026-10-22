@@ -8,8 +8,12 @@ import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { DidCommInboundMessageContext } from '../../../../models/DidCommInboundMessageContext'
 import { DidCommConnectionService, DidCommDidExchangeState } from '../../../connections'
 import { DidCommMessagePickupApi } from '../../../message-pickup'
-import { DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage, DidCommKeylistUpdateResult } from '../../messages'
 import { DidCommMediationRole, DidCommMediationState } from '../../models'
+import {
+  DidCommKeylistUpdateAction,
+  DidCommKeylistUpdateMessage,
+  DidCommKeylistUpdateResult,
+} from '../../protocol/v1/messages'
 import { DidCommMediationRecord, DidCommMediatorRoutingRecord } from '../../repository'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
 import { DidCommMediatorRoutingRepository } from '../../repository/DidCommMediatorRoutingRepository'
