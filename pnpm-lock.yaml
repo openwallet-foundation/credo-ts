@@ -597,6 +597,9 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
+      '@noble/curves':
+        specifier: ^2.0.1
+        version: 2.4.0
       '@panva/hpke-noble':
         specifier: 'catalog:'
         version: 1.1.7(hpke@1.1.7)
