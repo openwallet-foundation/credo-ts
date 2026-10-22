@@ -334,14 +334,7 @@ export class W3cJsonLdCredentialService {
   }
 
   public getVerificationMethodTypesByProofType(proofType: string): string[] {
-    if (!this.signatureSuiteRegistry.supportedProofTypes.includes(proofType)) {
-      throw new W3cJsonLdCredentialSigningNotSupportedError(
-        `The requested proofType ${proofType} is not supported`,
-        'unsupported-proof-type'
-      )
-    }
-
-    return this.signatureSuiteRegistry.getByProofType(proofType).verificationMethodTypes
+    return this.getSigningSuiteInfo(proofType).verificationMethodTypes
   }
 
   public async getExpandedTypesForCredential(agentContext: AgentContext, credential: W3cJsonLdVerifiableCredential) {
@@ -386,6 +379,17 @@ export class W3cJsonLdCredentialService {
     }
   }
 
+  private getSigningSuiteInfo(proofType: string) {
+    if (!this.signatureSuiteRegistry.supportedProofTypes.includes(proofType)) {
+      throw new W3cJsonLdCredentialSigningNotSupportedError(
+        `The requested proofType ${proofType} is not supported`,
+        'unsupported-proof-type'
+      )
+    }
+
+    return this.signatureSuiteRegistry.getByProofType(proofType)
+  }
+
   private async prepareSigningSuite(
     agentContext: AgentContext,
     options: {
@@ -396,14 +400,7 @@ export class W3cJsonLdCredentialService {
       controller?: string
     }
   ) {
-    if (!this.signatureSuiteRegistry.supportedProofTypes.includes(options.proofType)) {
-      throw new W3cJsonLdCredentialSigningNotSupportedError(
-        `The requested proofType ${options.proofType} is not supported`,
-        'unsupported-proof-type'
-      )
-    }
-
-    const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
+    const suiteInfo = this.getSigningSuiteInfo(options.proofType)
 
     const dids = agentContext.resolve(DidsApi)
     let resolved: Awaited<ReturnType<typeof dids.resolveVerificationMethodFromCreatedDidRecord>>
