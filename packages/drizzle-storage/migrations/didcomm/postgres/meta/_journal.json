@@ -15,6 +15,20 @@
       "when": 1763065535482,
       "tag": "0001_remove_linked_attachments",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781282711684,
+      "tag": "0002_lame_punisher",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781619726392,
+      "tag": "0003_jittery_spitfire",
+      "breakpoints": true
     }
   ]
 }

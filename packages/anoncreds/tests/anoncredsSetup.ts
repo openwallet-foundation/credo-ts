@@ -33,6 +33,7 @@ import type { EventReplaySubject } from '../../core/tests'
 import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
 import {
   getAgentOptions,
+  getDefaultDidCommVersionForTests,
   makeConnection,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
@@ -324,6 +325,7 @@ export async function setupAnonCredsTests<
   supportRevocation,
   registries,
   cheqd,
+  didCommVersion,
 }: {
   issuerId?: string
   cheqd?: {
@@ -339,7 +341,13 @@ export async function setupAnonCredsTests<
   createConnections?: CreateConnections
   supportRevocation?: boolean
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
+  /** DIDComm envelope version for connections. When 'v2', uses v2 OOB so credential exchange runs over v2. Defaults to DIDCOMM_VERSION env var, else 'v1'. */
+  didCommVersion?: 'v1' | 'v2'
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
+  const resolvedDidCommVersion = didCommVersion ?? getDefaultDidCommVersionForTests()
+  const extraDidCommConfigForVersion: { didcommVersions?: ('v1' | 'v2')[] } =
+    resolvedDidCommVersion === 'v2' ? { didcommVersions: ['v1', 'v2'] } : {}
+
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
@@ -352,6 +360,7 @@ export async function setupAnonCredsTests<
         cheqd,
         extraDidCommConfig: {
           endpoints: ['rxjs:issuer'],
+          ...extraDidCommConfigForVersion,
         },
       }),
       { requireDidcomm: true }
@@ -370,6 +379,7 @@ export async function setupAnonCredsTests<
         cheqd,
         extraDidCommConfig: {
           endpoints: ['rxjs:holder'],
+          ...extraDidCommConfigForVersion,
         },
       }),
       { requireDidcomm: true }
@@ -389,6 +399,7 @@ export async function setupAnonCredsTests<
             cheqd,
             extraDidCommConfig: {
               endpoints: ['rxjs:verifier'],
+              ...extraDidCommConfigForVersion,
             },
           }),
           { requireDidcomm: true }
@@ -458,10 +469,14 @@ export async function setupAnonCredsTests<
   let holderVerifierConnection: DidCommConnectionRecord | undefined
 
   if (createConnections ?? true) {
-    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)
+    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent, {
+      didCommVersion: resolvedDidCommVersion,
+    })
 
     if (verifierAgent) {
-      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
+      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent, {
+        didCommVersion: resolvedDidCommVersion,
+      })
     }
   }
 
