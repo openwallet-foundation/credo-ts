@@ -92,9 +92,10 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
       did: this.did,
       methodSpecificIdentifier: did.id,
 
-      // Calculate if we have a did document, otherwise use the already present recipient keys
+      // Calculate if we have a did document, otherwise use the already present recipient keys.
+      // The keys of the DIDComm v1 services and, with a DIDComm v2 service, the keyAgreement keys.
       recipientKeyFingerprints: this.didDocument
-        ? this.didDocument.recipientKeys.map((recipientKey) => recipientKey.fingerprint)
+        ? this.didDocument.allDidCommRecipientKeys.map((recipientKey) => recipientKey.fingerprint)
         : this._tags.recipientKeyFingerprints,
     }
   }
