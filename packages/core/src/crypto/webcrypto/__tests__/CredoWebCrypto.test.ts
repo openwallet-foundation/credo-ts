@@ -70,25 +70,25 @@ describe('CredoWebCrypto', () => {
       })
     })
 
-    it.each(['SHA-256', 'SHA-384'] as const)(
-      'verifies P-521 signatures with non-standard %s hashing in CredoWalletWebCrypto',
-      async (hash) => {
-        const algorithm = { name: 'ECDSA', hash } as const satisfies KeyVerifyParams
-        const message = new Uint8Array([1, 2, 3, 4])
-        const privateKey = p521.utils.randomSecretKey()
-        const publicKey = p521.getPublicKey(privateKey)
-        const publicJwk = PublicJwk.fromPublicKey({ kty: 'EC', crv: 'P-521', publicKey })
-        const key = new CredoWebCryptoKey(publicJwk, { name: 'ECDSA', namedCurve: 'P-521' }, true, 'public', ['verify'])
-        const signature = p521.sign(Hasher.hash(message, hash.toLowerCase()), privateKey, {
-          prehash: false,
-          lowS: false,
-        })
+    it.each([
+      'SHA-256',
+      'SHA-384',
+    ] as const)('verifies P-521 signatures with non-standard %s hashing in CredoWalletWebCrypto', async (hash) => {
+      const algorithm = { name: 'ECDSA', hash } as const satisfies KeyVerifyParams
+      const message = new Uint8Array([1, 2, 3, 4])
+      const privateKey = p521.utils.randomSecretKey()
+      const publicKey = p521.getPublicKey(privateKey)
+      const publicJwk = PublicJwk.fromPublicKey({ kty: 'EC', crv: 'P-521', publicKey })
+      const key = new CredoWebCryptoKey(publicJwk, { name: 'ECDSA', namedCurve: 'P-521' }, true, 'public', ['verify'])
+      const signature = p521.sign(Hasher.hash(message, hash.toLowerCase()), privateKey, {
+        prehash: false,
+        lowS: false,
+      })
 
-        await expect(walletWebCrypto.verify(key, algorithm, message, signature)).resolves.toBe(true)
+      await expect(walletWebCrypto.verify(key, algorithm, message, signature)).resolves.toBe(true)
 
-        signature[0] ^= 1
-        await expect(walletWebCrypto.verify(key, algorithm, message, signature)).resolves.toBe(false)
-      }
-    )
+      signature[0] ^= 1
+      await expect(walletWebCrypto.verify(key, algorithm, message, signature)).resolves.toBe(false)
+    })
   })
 })
