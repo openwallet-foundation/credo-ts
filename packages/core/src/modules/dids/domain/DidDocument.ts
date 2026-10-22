@@ -289,6 +289,7 @@ export class DidDocument {
           if (seenVerificationMethodIds.includes(verificationMethod.id)) {
             continue
           }
+          seenVerificationMethodIds.push(verificationMethod.id)
 
           recipientKeys.push({
             publicJwk,
@@ -311,6 +312,7 @@ export class DidDocument {
             )
           }
 
+          seenVerificationMethodIds.push(verificationMethod.id)
           recipientKeys.push({
             publicJwk,
             verificationMethod,

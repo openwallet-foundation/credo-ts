@@ -1,10 +1,14 @@
 import { ClassValidationError } from '../../../../error/ClassValidationError'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import type { Ed25519PublicJwk } from '../../../kms'
+import { PublicJwk } from '../../../kms'
 import didExample123Fixture from '../../__tests__/__fixtures__/didExample123.json'
 import didExample456Invalid from '../../__tests__/__fixtures__/didExample456Invalid.json'
 import { DidDocument } from '../DidDocument'
+import { DidDocumentBuilder } from '../DidDocumentBuilder'
 import { DidCommV1Service, DidDocumentService, IndyAgentService } from '../service'
 import { VerificationMethod } from '../verificationMethod'
+import { getEd25519VerificationKey2018 } from '../verificationMethod/Ed25519VerificationKey2018'
 
 const didDocumentInstance = new DidDocument({
   id: 'did:example:123',
@@ -241,6 +245,50 @@ describe('Did | DidDocument', () => {
       const services = didDocumentInstance.service ?? []
 
       expect(didDocumentInstance.didCommServices).toEqual([services[1], services[2]])
+    })
+  })
+
+  describe('getRecipientKeysWithVerificationMethod', () => {
+    it('returns a key only once when several services reference the same verification method', () => {
+      const publicJwk = PublicJwk.fromFingerprint(
+        'z6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V'
+      ) as PublicJwk<Ed25519PublicJwk>
+      const verificationMethod = getEd25519VerificationKey2018({
+        publicJwk,
+        controller: 'did:example:alice',
+        id: 'did:example:alice#key-1',
+      })
+      const didDocument = new DidDocumentBuilder('did:example:alice')
+        .addVerificationMethod(verificationMethod)
+        .addAuthentication(verificationMethod.id)
+        .addService(
+          new IndyAgentService({
+            id: 'did:example:alice#indy',
+            recipientKeys: [verificationMethod.publicKeyBase58 as string],
+            serviceEndpoint: 'https://example.com/indy',
+          })
+        )
+        .addService(
+          new DidCommV1Service({
+            id: 'did:example:alice#service-0',
+            recipientKeys: [verificationMethod.id],
+            serviceEndpoint: 'https://example.com/0',
+          })
+        )
+        .addService(
+          new DidCommV1Service({
+            id: 'did:example:alice#service-1',
+            recipientKeys: [verificationMethod.id],
+            serviceEndpoint: 'https://example.com/1',
+          })
+        )
+        .build()
+
+      const recipientKeys = didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+
+      expect(recipientKeys).toHaveLength(1)
+      expect(recipientKeys[0].verificationMethod.id).toBe('did:example:alice#key-1')
+      expect(didDocument.recipientKeys.map((key) => key.fingerprint)).toEqual([publicJwk.fingerprint])
     })
   })
 
