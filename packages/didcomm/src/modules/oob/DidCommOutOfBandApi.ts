@@ -766,7 +766,7 @@ export class DidCommOutOfBandApi {
         mediatorId: recipientRouting.mediatorId,
       }
       routing = recipientRouting.routingDid
-        ? { ...baseRouting, routingDid: recipientRouting.routingDid }
+        ? { ...baseRouting, routingDid: recipientRouting.routingDid, routingKeys: [] }
         : {
             ...baseRouting,
             routingKeys: recipientRouting.routingKeyFingerprints.map(

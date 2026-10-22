@@ -10,7 +10,7 @@ import {
   Kms,
   utils,
 } from '@credo-ts/core'
-import type { DecryptedDidCommMessageContext, DidCommEnvelopeKey, EnvelopeKeys } from '../DidCommEnvelopeService'
+import type { DidCommEnvelopeKey, EnvelopeKeys } from '../DidCommEnvelopeService'
 import type { DidCommMessage } from '../DidCommMessage'
 import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { DidCommConnectionMetadataKeys } from '../modules/connections/repository/DidCommConnectionMetadataTypes'
@@ -37,7 +37,12 @@ import {
   normalizeV2PlaintextToV1,
 } from '../v2'
 import type { DidCommV2AnoncryptContentEncryptionAlgorithm } from '../v2/types'
-import type { DidCommEnvelope, DidCommPackOptions, DidCommReturnRouteOptions } from './DidCommEnvelope'
+import type {
+  DecryptedDidCommEnvelope,
+  DidCommEnvelope,
+  DidCommPackOptions,
+  DidCommReturnRouteOptions,
+} from './DidCommEnvelope'
 
 /**
  * Key material for one DIDComm v2 envelope, in the curves the v2 specification allows.
@@ -181,7 +186,7 @@ export class DidCommV2Envelope implements DidCommEnvelope<'v2'> {
   public async unpack(
     agentContext: AgentContext,
     encryptedMessage: DidCommEncryptedMessage
-  ): Promise<DecryptedDidCommMessageContext> {
+  ): Promise<DecryptedDidCommEnvelope> {
     if (!isDidCommV2EncryptedMessage(encryptedMessage)) {
       throw new CredoError('Message is not a DIDComm v2 encrypted envelope')
     }

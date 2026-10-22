@@ -459,8 +459,6 @@ export type DidCommEnvelopeKey = Kms.PublicJwk<
 
 export interface DecryptedDidCommMessageContext {
   plaintextMessage: DidCommPlaintextMessage
-  senderKey?: DidCommEnvelopeKey
-  recipientKey: DidCommEnvelopeKey
-  authenticatedSenderDid?: string
-  recipientDid?: string
+  senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
 }

@@ -1,19 +1,25 @@
-import type { AgentContext } from '@credo-ts/core'
+import type { AgentContext, Kms } from '@credo-ts/core'
 import { CredoError } from '@credo-ts/core'
-import type { DidCommEnvelopeKey } from '../DidCommEnvelopeService'
 import type { DidCommMessage } from '../DidCommMessage'
 import type { DidCommMessageHandler } from '../handlers'
 import type { DidCommConnectionRecord } from '../modules/connections/repository'
 import type { DidCommEncryptedMessage } from '../types'
+import type { DidCommV2KeyAgreementJwk } from '../v2/types'
 import type { DidCommOutboundMessageContext } from './DidCommOutboundMessageContext'
 
 export interface MessageContextParams {
   connection?: DidCommConnectionRecord
   sessionId?: string
-  senderKey?: DidCommEnvelopeKey
-  recipientKey?: DidCommEnvelopeKey
+  senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   /** DIDComm v2 sender DID proven by the authcrypt envelope. Never set for anoncrypt. */
   senderDid?: string
+  /** DIDComm v2: our DID the envelope was addressed to. */
+  recipientDid?: string
+  /** DIDComm v2: the key agreement key of the sender that encrypted the message. Never set for anoncrypt. */
+  senderKeyAgreementKey?: DidCommV2KeyAgreementJwk
+  /** DIDComm v2: the key agreement key of ours the message was encrypted to. */
+  recipientKeyAgreementKey?: DidCommV2KeyAgreementJwk
   agentContext: AgentContext
   receivedAt?: Date
   encryptedMessage?: DidCommEncryptedMessage
@@ -22,10 +28,18 @@ export interface MessageContextParams {
 export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMessage> {
   public connection?: DidCommConnectionRecord
   public sessionId?: string
-  public senderKey?: DidCommEnvelopeKey
-  public recipientKey?: DidCommEnvelopeKey
+  /** The Ed25519 key that authcrypted a DIDComm v1 message. Never set for v2 envelopes. */
+  public senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  /** The Ed25519 key of ours a DIDComm v1 message was encrypted to. Never set for v2 envelopes. */
+  public recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   /** DIDComm v2 sender DID proven by the authcrypt envelope. Never set for anoncrypt. */
   public senderDid?: string
+  /** DIDComm v2: our DID the envelope was addressed to. */
+  public recipientDid?: string
+  /** DIDComm v2: the key agreement key of the sender that encrypted the message. Never set for anoncrypt. */
+  public senderKeyAgreementKey?: DidCommV2KeyAgreementJwk
+  /** DIDComm v2: the key agreement key of ours the message was encrypted to. */
+  public recipientKeyAgreementKey?: DidCommV2KeyAgreementJwk
   public receivedAt: Date
 
   public readonly agentContext: AgentContext
@@ -42,6 +56,9 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
     this.connection = context.connection
     this.sessionId = context.sessionId
     this.senderDid = context.senderDid
+    this.recipientDid = context.recipientDid
+    this.senderKeyAgreementKey = context.senderKeyAgreementKey
+    this.recipientKeyAgreementKey = context.recipientKeyAgreementKey
     this.agentContext = context.agentContext
     this.receivedAt = context.receivedAt ?? new Date()
     this.encryptedMessage = context.encryptedMessage

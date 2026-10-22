@@ -358,7 +358,7 @@ export class DidCommMediatorService {
     // match, alternative DID forms, and sender key → DidRecord → connection. Only the authenticated
     // senderDid is used, message.from is whatever the sender wrote.
     const from = messageContext.senderDid
-    const senderKey = messageContext.senderKey
+    const senderKey = messageContext.senderKeyAgreementKey ?? messageContext.senderKey
     if (!connection && (from || senderKey)) {
       connection =
         (await this.connectionService.findByTheirDidOrSender(messageContext.agentContext, {

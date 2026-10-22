@@ -368,6 +368,7 @@ describe('out of band', () => {
         routing: {
           endpoints: ['rxjs:faber'],
           routingDid: mediatorRoutingDid,
+          routingKeys: [],
           recipientKey,
         },
       })
@@ -987,6 +988,7 @@ describe('out of band', () => {
         keyAgreementKey: baseRouting.keyAgreementKey,
         endpoints: baseRouting.endpoints,
         routingDid: mediatorRoutingDid,
+        routingKeys: [],
       }
 
       const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
@@ -1035,6 +1037,7 @@ describe('out of band', () => {
         keyAgreementKey: baseRouting.keyAgreementKey,
         endpoints: baseRouting.endpoints,
         routingDid: mediatorRoutingDid,
+        routingKeys: [],
       }
 
       const routingService = aliceAgent.dependencyManager.resolve(DidCommRoutingService)

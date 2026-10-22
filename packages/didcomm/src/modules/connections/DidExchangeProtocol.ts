@@ -224,7 +224,7 @@ export class DidExchangeProtocol {
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
-        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+        recipientKeyFingerprints: didDocument.allDidCommRecipientKeys.map((key) => key.fingerprint),
 
         // For did:peer, store any alternative dids (like short form did:peer:4),
         // it may have in order to relate any message referencing it
@@ -413,7 +413,7 @@ export class DidExchangeProtocol {
         tags: {
           // We need to save the recipientKeys, so we can find the associated did
           // of a key when we receive a message from another connection.
-          recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+          recipientKeyFingerprints: didDocument.allDidCommRecipientKeys.map((key) => key.fingerprint),
 
           // For did:peer, store any alternative dids (like short form did:peer:4),
           // it may have in order to relate any message referencing it

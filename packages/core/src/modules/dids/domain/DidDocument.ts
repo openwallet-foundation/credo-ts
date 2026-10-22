@@ -229,28 +229,72 @@ export class DidDocument {
    * Get all DIDComm services ordered by priority descending. This means the highest
    * priority will be the first entry.
    */
-  public get didCommServices(): Array<IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service> {
-    const didCommServiceTypes = [
-      IndyAgentService.type,
-      DidCommV1Service.type,
-      DidCommV2Service.type,
-      NewDidCommV2Service.type,
-    ]
+  public get didCommServices(): Array<IndyAgentService | DidCommV1Service> {
+    const didCommServiceTypes = [IndyAgentService.type, DidCommV1Service.type]
     const services = (this.service?.filter((service) => didCommServiceTypes.includes(service.type)) ?? []) as Array<
-      IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service
+      IndyAgentService | DidCommV1Service
     >
 
-    // Sort services based on indicated priority. DIDComm V2 services do not
-    // carry a priority field; treat them as priority 0 for a stable ordering.
-    const getPriority = (
-      service: IndyAgentService | DidCommV1Service | DidCommV2Service | NewDidCommV2Service
-    ): number => (service instanceof IndyAgentService || service instanceof DidCommV1Service ? service.priority : 0)
+    // Sort services based on indicated priority
+    return services.sort((a, b) => a.priority - b.priority)
+  }
 
-    return services.sort((a, b) => getPriority(a) - getPriority(b))
+  /**
+   * Get all DIDComm v2 services (`DIDCommMessaging`) in document order. They carry no priority.
+   */
+  public get didCommV2Services(): Array<DidCommV2Service | NewDidCommV2Service> {
+    const didCommV2ServiceTypes = [DidCommV2Service.type, NewDidCommV2Service.type]
+    return (this.service?.filter((service) => didCommV2ServiceTypes.includes(service.type)) ?? []) as Array<
+      DidCommV2Service | NewDidCommV2Service
+    >
+  }
+
+  /**
+   * The keys a DIDComm peer of either version encrypts to: the recipient keys of the DIDComm v1
+   * services and, when the document has a DIDComm v2 service, its keyAgreement keys.
+   */
+  public get allDidCommRecipientKeys(): PublicJwk<
+    Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk
+  >[] {
+    const keys: PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>[] = [
+      ...this.recipientKeys,
+    ]
+    for (const { publicJwk } of this.getKeyAgreementRecipientKeysWithVerificationMethod()) {
+      if (!keys.some((key) => key.fingerprint === publicJwk.fingerprint)) keys.push(publicJwk)
+    }
+    return keys
+  }
+
+  /**
+   * The keyAgreement keys that DIDComm v2 peers encrypt to, with their verification methods.
+   * Empty when the document has no DIDComm v2 service.
+   */
+  public getKeyAgreementRecipientKeysWithVerificationMethod(): Array<{
+    verificationMethod: VerificationMethod
+    publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>
+  }> {
+    if (this.didCommV2Services.length === 0) return []
+
+    const recipientKeys: Array<{
+      verificationMethod: VerificationMethod
+      publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>
+    }> = []
+    const seenVerificationMethodIds: string[] = []
+    for (const keyRef of this.keyAgreement ?? []) {
+      const verificationMethod = typeof keyRef === 'string' ? this.dereferenceVerificationMethod(keyRef) : keyRef
+      if (seenVerificationMethodIds.includes(verificationMethod.id)) continue
+
+      const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      if (!publicJwk.is(Ed25519PublicJwk, X25519PublicJwk, P256PublicJwk, P384PublicJwk)) continue
+
+      recipientKeys.push({ publicJwk, verificationMethod })
+      seenVerificationMethodIds.push(verificationMethod.id)
+    }
+    return recipientKeys
   }
 
   // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
-  public get recipientKeys(): PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>[] {
+  public get recipientKeys(): PublicJwk<Ed25519PublicJwk | X25519PublicJwk>[] {
     return this.getRecipientKeysWithVerificationMethod({
       // False for now to avoid breaking changes
       mapX25519ToEd25519: false,
@@ -268,15 +312,11 @@ export class DidDocument {
     mapX25519ToEd25519: MapX25519ToEd25519
   }): Array<{
     verificationMethod: VerificationMethod
-    publicJwk: PublicJwk<
-      | (MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk)
-      | P256PublicJwk
-      | P384PublicJwk
-    >
+    publicJwk: PublicJwk<MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk>
   }> {
     const recipientKeys: Array<{
       verificationMethod: VerificationMethod
-      publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>
+      publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk>
     }> = []
 
     const seenVerificationMethodIds: string[] = []
@@ -332,41 +372,18 @@ export class DidDocument {
           })
           seenVerificationMethodIds.push(verificationMethod.id)
         }
-      } else if (service instanceof DidCommV2Service || service instanceof NewDidCommV2Service) {
-        // DidCommV2Service: keys come from DID document keyAgreement
-        for (const keyRef of this.keyAgreement ?? []) {
-          const verificationMethod = typeof keyRef === 'string' ? this.dereferenceVerificationMethod(keyRef) : keyRef
-          if (seenVerificationMethodIds.includes(verificationMethod.id)) {
-            continue
-          }
-
-          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-          if (!publicJwk.is(Ed25519PublicJwk, X25519PublicJwk, P256PublicJwk, P384PublicJwk)) {
-            continue
-          }
-
-          recipientKeys.push({
-            publicJwk,
-            verificationMethod,
-          })
-          seenVerificationMethodIds.push(verificationMethod.id)
-        }
       }
     }
 
     if (!mapX25519ToEd25519) {
       return recipientKeys as Array<{
         verificationMethod: VerificationMethod
-        publicJwk: PublicJwk<
-          | (MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk)
-          | P256PublicJwk
-          | P384PublicJwk
-        >
+        publicJwk: PublicJwk<MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk>
       }>
     }
 
-    return recipientKeys.flatMap(({ publicJwk, verificationMethod }) => {
-      if (publicJwk.is(Ed25519PublicJwk, P256PublicJwk, P384PublicJwk)) return [{ publicJwk, verificationMethod }]
+    return recipientKeys.map(({ publicJwk, verificationMethod }) => {
+      if (publicJwk.is(Ed25519PublicJwk)) return { publicJwk, verificationMethod }
 
       const matchingEd25519Key = findMatchingEd25519Key(publicJwk as PublicJwk<X25519PublicJwk>, this)
 
@@ -377,7 +394,7 @@ export class DidDocument {
         )
       }
 
-      return [matchingEd25519Key]
+      return matchingEd25519Key
     })
   }
 

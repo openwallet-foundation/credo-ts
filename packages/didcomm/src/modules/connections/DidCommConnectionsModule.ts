@@ -7,6 +7,7 @@ import {
 } from '@credo-ts/core'
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommProtocol } from '../../models'
 import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
@@ -103,9 +104,6 @@ export class DidCommConnectionsModule implements Module {
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateAckHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommHangupHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateProblemReportHandler(didRotateService))
-    messageHandlerRegistry.registerMessageHandler(new DidCommEmptyMessageHandler())
-    messageHandlerRegistry.registerMessageHandler(new DidCommProblemReportV2MessageHandler())
-
     featureRegistry.register(
       new DidCommProtocol({
         id: 'https://didcomm.org/didexchange/1.1',
@@ -114,11 +112,16 @@ export class DidCommConnectionsModule implements Module {
       new DidCommProtocol({
         id: 'https://didcomm.org/did-rotate/1.0',
         roles: [DidCommDidRotateRole.RotatingParty, DidCommDidRotateRole.ObservingParty],
-      }),
-      new DidCommProtocol({
-        id: 'https://didcomm.org/empty/1.0',
-        roles: [],
       })
     )
+
+    // The handlers only accept the message classes; a v1-only agent still validates a misdirected v2 message
+    messageHandlerRegistry.registerMessageHandler(new DidCommEmptyMessageHandler())
+    messageHandlerRegistry.registerMessageHandler(new DidCommProblemReportV2MessageHandler())
+
+    // The empty message only travels in DIDComm v2 envelopes, so only a v2 agent advertises it
+    if (agentContext.resolve(DidCommModuleConfig).isSupported('v2')) {
+      featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/empty/1.0', roles: [] }))
+    }
   }
 }

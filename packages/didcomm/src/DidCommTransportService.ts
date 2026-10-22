@@ -52,7 +52,11 @@ export class DidCommTransportService {
   }
 
   public hasInboundEndpoint(didDocument: DidDocument): boolean {
-    return Boolean(didDocument.didCommServices?.find((s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE))
+    return Boolean(
+      [...didDocument.didCommServices, ...didDocument.didCommV2Services].find(
+        (s) => s.serviceEndpoint !== DID_COMM_TRANSPORT_QUEUE
+      )
+    )
   }
 
   public findSessionById(sessionId: string) {

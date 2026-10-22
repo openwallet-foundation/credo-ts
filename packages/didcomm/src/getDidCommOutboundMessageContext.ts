@@ -301,7 +301,7 @@ async function createOurService(
       mediatorId: oobRecordRecipientRouting.mediatorId,
     }
     routing = oobRecordRecipientRouting.routingDid
-      ? { ...baseRouting, routingDid: oobRecordRecipientRouting.routingDid }
+      ? { ...baseRouting, routingDid: oobRecordRecipientRouting.routingDid, routingKeys: [] }
       : {
           ...baseRouting,
           routingKeys: oobRecordRecipientRouting.routingKeyFingerprints.map(
