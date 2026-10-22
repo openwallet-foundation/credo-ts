@@ -346,7 +346,6 @@ describe('W3cJsonLdCredentialsService', () => {
           credentialSubject: { claims: credentialJson.credentialSubject },
         })
 
-
         const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
           format: ClaimFormat.LdpVc,
           credential,
@@ -671,7 +670,6 @@ describe('W3cJsonLdCredentialsService', () => {
           holder: vpJson.holder,
           verifiableCredential: vpJson.verifiableCredential,
         })
-
 
         const verifiablePresentation = await w3cJsonLdCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
