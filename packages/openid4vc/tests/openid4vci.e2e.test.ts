@@ -224,6 +224,25 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(signedMetadata.header.x5c).toEqual([certificate.toString('base64')])
     expect(signedMetadata.payload.additionalClaims.issuer_info).toEqual(issuerInfo)
 
+    const authorizationServerMetadataUrl = `${baseUrl}/.well-known/oauth-authorization-server/oid4vci/${created.issuerId}`
+    const signedAuthorizationServerResponse = await fetch(authorizationServerMetadataUrl, {
+      headers: { Accept: 'application/jwt, application/json' },
+    })
+    expect(signedAuthorizationServerResponse.headers.get('content-type')).toContain('application/jwt')
+    const signedAuthorizationServerMetadata = Jwt.fromSerializedJwt(await signedAuthorizationServerResponse.text())
+    expect(signedAuthorizationServerMetadata.header.x5c).toEqual([certificate.toString('base64')])
+    expect(signedAuthorizationServerMetadata.payload.sub).toEqual(`${issuanceBaseUrl}/${created.issuerId}`)
+    expect(signedAuthorizationServerMetadata.payload.additionalClaims.token_endpoint).toEqual(
+      `${issuanceBaseUrl}/${created.issuerId}/token`
+    )
+
+    const jsonAuthorizationServerResponse = await fetch(authorizationServerMetadataUrl, {
+      headers: { Accept: 'application/json' },
+    })
+    expect(await jsonAuthorizationServerResponse.json()).toMatchObject({
+      issuer: `${issuanceBaseUrl}/${created.issuerId}`,
+    })
+
     const metadata = await holder.agent.openid4vc.holder.resolveIssuerMetadata(`${issuanceBaseUrl}/${created.issuerId}`)
     expect(metadata.credentialIssuer.issuer_info).toEqual(issuerInfo)
 

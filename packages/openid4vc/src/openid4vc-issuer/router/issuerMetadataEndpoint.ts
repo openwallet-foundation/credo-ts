@@ -47,7 +47,7 @@ export function configureIssuerMetadataEndpoint(router: Router, path: string) {
   })
 }
 
-function parseAcceptHeader(header: string) {
+export function parseAcceptHeader(header: string) {
   return header
     .split(',')
     .map((type) => {

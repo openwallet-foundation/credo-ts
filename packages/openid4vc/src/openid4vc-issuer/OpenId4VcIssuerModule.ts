@@ -168,7 +168,7 @@ export class OpenId4VcIssuerModule implements Module {
   }
 
   private registerIssuerRoutes(rootAgentContext: AgentContext) {
-    const { Router, json, urlencoded } = importExpress()
+    const { Router, json, text, urlencoded } = importExpress()
 
     const issuerContextRouter = Router()
     const issuerEndpointsRouter = Router()
@@ -180,6 +180,7 @@ export class OpenId4VcIssuerModule implements Module {
     issuerContextRouter.use(urlencoded({ extended: false, limit: '1mb' }))
     // parse application/json
     issuerContextRouter.use(json({ limit: '1mb' }))
+    issuerContextRouter.use(text({ type: 'application/jwt', limit: '1mb' }))
 
     // Register the issuer endpoints under /:issuerId
     issuerContextRouter.param('issuerId', issuerIdParamHandler)

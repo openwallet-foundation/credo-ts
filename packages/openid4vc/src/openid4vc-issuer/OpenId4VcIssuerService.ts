@@ -4,6 +4,7 @@ import {
   CredoError,
   EventEmitter,
   injectable,
+  JsonEncoder,
   JwsService,
   Jwt,
   JwtPayload,
@@ -27,6 +28,7 @@ import {
   type Jwk,
   type JwtSignerJwk,
   type JwtSignerWithJwk,
+  jwtHeaderFromJwtSigner,
   Oauth2AuthorizationServer,
   Oauth2Client,
   Oauth2ErrorCodes,
@@ -61,7 +63,11 @@ import type {
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
 import { keyAttestationLevelSatisfies, OpenId4VciCredentialFormatProfile } from '../shared'
-import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
+import {
+  dynamicOid4vciClientAuthentication,
+  getOid4vcCallbacks,
+  getOid4vcDecryptJweCallback,
+} from '../shared/callbacks'
 import {
   getCredentialConfigurationsSupportedForScopes,
   getOfferedCredentials,
@@ -591,6 +597,82 @@ export class OpenId4VcIssuerService {
     this.emitStateChangedEvent(agentContext, issuanceSession, null)
 
     return issuanceSession
+  }
+
+  public async decryptCredentialRequest(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    credentialRequest: unknown
+  ): Promise<unknown> {
+    const requestEncryption = issuer.credentialRequestEncryption
+
+    if (typeof credentialRequest !== 'string') {
+      const requestsResponseEncryption =
+        typeof credentialRequest === 'object' &&
+        credentialRequest !== null &&
+        'credential_response_encryption' in credentialRequest
+      if (requestEncryption && (requestEncryption.required || requestsResponseEncryption)) {
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidEncryptionParameters,
+          error_description: requestEncryption.required
+            ? 'The credential issuer requires credential request encryption.'
+            : `Credential request encryption must be used when 'credential_response_encryption' is included.`,
+        })
+      }
+      return credentialRequest
+    }
+
+    if (!requestEncryption) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidEncryptionParameters,
+        error_description: 'Credential request encryption is not supported.',
+      })
+    }
+
+    let header: Record<string, unknown>
+    try {
+      header = JsonEncoder.fromBase64Url(credentialRequest.split('.')[0])
+    } catch {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidCredentialRequest,
+        error_description: 'The credential request is not a valid JWE.',
+      })
+    }
+
+    const encValuesSupported: string[] = requestEncryption.encValuesSupported ?? [
+      ...supportedResponseEncryptionContentAlgorithms,
+    ]
+    if (
+      header.alg !== 'ECDH-ES' ||
+      typeof header.enc !== 'string' ||
+      !encValuesSupported.includes(header.enc) ||
+      typeof header.kid !== 'string' ||
+      !requestEncryption.jwks.some((jwk) => jwk.kid === header.kid)
+    ) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidEncryptionParameters,
+        error_description: `The 'alg', 'enc' or 'kid' of the encrypted credential request is not supported.`,
+      })
+    }
+
+    const result = await Promise.resolve(getOid4vcDecryptJweCallback(agentContext)(credentialRequest)).catch(
+      () => undefined
+    )
+    if (!result?.decrypted) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidEncryptionParameters,
+        error_description: 'Unable to decrypt the credential request.',
+      })
+    }
+
+    try {
+      return JSON.parse(result.payload)
+    } catch {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidCredentialRequest,
+        error_description: 'The decrypted credential request is not valid JSON.',
+      })
+    }
   }
 
   public async createCredentialResponse(
@@ -1342,6 +1424,7 @@ export class OpenId4VcIssuerService {
       credentialConfigurationsSupported: options.credentialConfigurationsSupported,
       batchCredentialIssuance: options.batchCredentialIssuance,
       credentialResponseEncryption: options.credentialResponseEncryption,
+      credentialRequestEncryption: options.credentialRequestEncryption,
     })
 
     if (options.metadataSigner) {
@@ -1373,6 +1456,27 @@ export class OpenId4VcIssuerService {
       jwt: credentialIssuerMetadataJwt,
       signer: encodeJwtIssuer(metadataSigner),
     }
+  }
+
+  public async createSignedAuthorizationServerMetadataJwt(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    authorizationServerMetadata: AuthorizationServerMetadata
+  ) {
+    if (!issuer.signedMetadata) return undefined
+
+    const signer = await credoJwtIssuerToOpenId4VcJwtIssuer(agentContext, decodeJwtIssuer(issuer.signedMetadata.signer))
+    const { jwt } = await getOid4vcCallbacks(agentContext).signJwt(signer, {
+      header: { ...jwtHeaderFromJwtSigner(signer), typ: 'openidvci-issuer-metadata+jwt' },
+      payload: {
+        ...authorizationServerMetadata,
+        iss: authorizationServerMetadata.issuer,
+        sub: authorizationServerMetadata.issuer,
+        iat: utils.dateToSeconds(new Date()),
+      },
+    })
+
+    return jwt
   }
 
   public async rotateAccessTokenSigningKey(
@@ -1450,6 +1554,7 @@ export class OpenId4VcIssuerService {
           }
         : undefined,
       credential_response_encryption: getCredentialResponseEncryptionMetadata(issuerRecord),
+      credential_request_encryption: getCredentialRequestEncryptionMetadata(issuerRecord),
     } satisfies CredentialIssuerMetadata
 
     const clientAttestationAuthMethods = [
@@ -2321,5 +2426,23 @@ function getCredentialResponseEncryptionMetadata(issuerRecord: OpenId4VcIssuerRe
       ...supportedResponseEncryptionContentAlgorithms,
     ],
     encryption_required: issuerRecord.credentialResponseEncryption?.required ?? false,
+  }
+}
+
+function getCredentialRequestEncryptionMetadata(issuerRecord: OpenId4VcIssuerRecord) {
+  if (!issuerRecord.credentialRequestEncryption) return undefined
+
+  return {
+    jwks: {
+      keys: issuerRecord.credentialRequestEncryption.jwks.map((jwk) => ({
+        ...Kms.PublicJwk.fromUnknown(jwk).toJson(),
+        use: 'enc',
+        alg: 'ECDH-ES',
+      })),
+    },
+    enc_values_supported: issuerRecord.credentialRequestEncryption.encValuesSupported ?? [
+      ...supportedResponseEncryptionContentAlgorithms,
+    ],
+    encryption_required: issuerRecord.credentialRequestEncryption.required ?? false,
   }
 }
