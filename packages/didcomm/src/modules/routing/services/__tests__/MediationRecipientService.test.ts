@@ -15,14 +15,14 @@ import { DidCommConnectionMetadataKeys } from '../../../connections/repository/D
 import { DidCommConnectionRepository } from '../../../connections/repository/DidCommConnectionRepository'
 import { DidCommConnectionService } from '../../../connections/services/DidCommConnectionService'
 import { DidCommRoutingEventTypes } from '../../DidCommRoutingEvents'
+import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import {
   DidCommKeylistUpdateAction,
   type DidCommKeylistUpdateMessage,
   DidCommKeylistUpdateResponseMessage,
   DidCommKeylistUpdateResult,
   DidCommMediationGrantMessage,
-} from '../../messages'
-import { DidCommMediationRole, DidCommMediationState } from '../../models'
+} from '../../protocol/v1/messages'
 import { DidCommMediationRecord } from '../../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
 import { DidCommMediationRecipientService } from '../DidCommMediationRecipientService'
