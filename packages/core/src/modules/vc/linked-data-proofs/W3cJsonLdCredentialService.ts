@@ -420,6 +420,13 @@ export class W3cJsonLdCredentialService {
           error
         )
       }
+      if (
+        error instanceof CredoError &&
+        error.message ===
+          `Unable to locate verification method with id '${options.verificationMethodId}' in purposes ${options.allowedPurposes}`
+      ) {
+        throw new W3cJsonLdCredentialSigningNotSupportedError(error.message, 'verification-method-not-found', error)
+      }
       throw error
     }
 

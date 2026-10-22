@@ -441,7 +441,14 @@ describe('W3cJsonLdCredentialsService', () => {
             proofType: 'Ed25519Signature2018',
             verificationMethod: authOnlyVmId,
           })
-        ).rejects.toThrow(`Unable to locate verification method with id '${authOnlyVmId}' in purposes assertionMethod`)
+        ).rejects.toMatchObject({
+          name: W3cJsonLdCredentialSigningNotSupportedError.name,
+          reason: 'verification-method-not-found',
+          message: `Unable to locate verification method with id '${authOnlyVmId}' in purposes assertionMethod`,
+          cause: {
+            message: `Unable to locate verification method with id '${authOnlyVmId}' in purposes assertionMethod`,
+          },
+        })
       })
 
       it('should fail to sign credential when proofType is Ed25519Signature2020 but verificationMethod is Ed25519VerificationKey2018', async () => {
