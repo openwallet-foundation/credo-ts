@@ -4,11 +4,11 @@ import { CredoError } from '../../../error'
 import { TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
-import { Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
+import { Ed25519PublicJwk, P256PublicJwk, P384PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
 import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
 import { getPublicJwkFromVerificationMethod } from './key-type'
 import type { DidDocumentService } from './service'
-import { DidCommV1Service, IndyAgentService } from './service'
+import { DidCommV1Service, DidCommV2Service, IndyAgentService, NewDidCommV2Service } from './service'
 import { ServiceTransformer } from './service/ServiceTransformer'
 import { IsStringOrVerificationMethod, VerificationMethod, VerificationMethodTransformer } from './verificationMethod'
 
@@ -239,6 +239,60 @@ export class DidDocument {
     return services.sort((a, b) => a.priority - b.priority)
   }
 
+  /**
+   * Get all DIDComm v2 services (`DIDCommMessaging`) in document order. They carry no priority.
+   */
+  public get didCommV2Services(): Array<DidCommV2Service | NewDidCommV2Service> {
+    const didCommV2ServiceTypes = [DidCommV2Service.type, NewDidCommV2Service.type]
+    return (this.service?.filter((service) => didCommV2ServiceTypes.includes(service.type)) ?? []) as Array<
+      DidCommV2Service | NewDidCommV2Service
+    >
+  }
+
+  /**
+   * The keys a DIDComm peer of either version encrypts to: the recipient keys of the DIDComm v1
+   * services and, when the document has a DIDComm v2 service, its keyAgreement keys.
+   */
+  public get allDidCommRecipientKeys(): PublicJwk<
+    Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk
+  >[] {
+    const keys: PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>[] = [
+      ...this.recipientKeys,
+    ]
+    for (const { publicJwk } of this.getKeyAgreementRecipientKeysWithVerificationMethod()) {
+      if (!keys.some((key) => key.fingerprint === publicJwk.fingerprint)) keys.push(publicJwk)
+    }
+    return keys
+  }
+
+  /**
+   * The keyAgreement keys that DIDComm v2 peers encrypt to, with their verification methods.
+   * Empty when the document has no DIDComm v2 service.
+   */
+  public getKeyAgreementRecipientKeysWithVerificationMethod(): Array<{
+    verificationMethod: VerificationMethod
+    publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>
+  }> {
+    if (this.didCommV2Services.length === 0) return []
+
+    const recipientKeys: Array<{
+      verificationMethod: VerificationMethod
+      publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk | P256PublicJwk | P384PublicJwk>
+    }> = []
+    const seenVerificationMethodIds: string[] = []
+    for (const keyRef of this.keyAgreement ?? []) {
+      const verificationMethod = typeof keyRef === 'string' ? this.dereferenceVerificationMethod(keyRef) : keyRef
+      if (seenVerificationMethodIds.includes(verificationMethod.id)) continue
+
+      const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      if (!publicJwk.is(Ed25519PublicJwk, X25519PublicJwk, P256PublicJwk, P384PublicJwk)) continue
+
+      recipientKeys.push({ publicJwk, verificationMethod })
+      seenVerificationMethodIds.push(verificationMethod.id)
+    }
+    return recipientKeys
+  }
+
   // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
   public get recipientKeys(): PublicJwk<Ed25519PublicJwk | X25519PublicJwk>[] {
     return this.getRecipientKeysWithVerificationMethod({
@@ -269,7 +323,7 @@ export class DidDocument {
     // verification methods carry it. The first verification method that carries it is kept.
     const seenFingerprints: string[] = []
     for (const service of this.didCommServices) {
-      if (service.type === IndyAgentService.type) {
+      if (service instanceof IndyAgentService) {
         for (const publicKeyBase58 of service.recipientKeys) {
           const publicJwk = PublicJwk.fromPublicKey({
             kty: 'OKP',
@@ -294,8 +348,9 @@ export class DidDocument {
             publicJwk,
             verificationMethod,
           })
+          seenVerificationMethodIds.push(verificationMethod.id)
         }
-      } else if (service.type === DidCommV1Service.type) {
+      } else if (service instanceof DidCommV1Service) {
         for (const recipientKey of service.recipientKeys) {
           const verificationMethod = this.dereferenceKey(recipientKey, ['authentication', 'keyAgreement'])
           const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
@@ -312,6 +367,7 @@ export class DidDocument {
             publicJwk,
             verificationMethod,
           })
+          seenVerificationMethodIds.push(verificationMethod.id)
         }
       }
     }

@@ -94,7 +94,7 @@ describe('Decorators | ThreadDecorator', () => {
 
     it('should reject invalid formats for parentThreadId', async () => {
       const invalidValues = [
-        'short', // too short
+        '', // too short
         'invalid-did:format', // invalid DID format
         'did:', // incomplete DID
         'did:method', // incomplete DID
@@ -127,6 +127,17 @@ describe('Decorators | ThreadDecorator', () => {
       })
       const validationErrors = await validate(decorator)
       expect(validationErrors).toHaveLength(0)
+    })
+
+    it('should accept DIDComm v2 message IDs for threadId and parentThreadId', async () => {
+      for (const id of ['a', 'inv~0123456789']) {
+        const decorator = new ThreadDecorator({
+          threadId: id,
+          parentThreadId: id,
+        })
+        const validationErrors = await validate(decorator)
+        expect(validationErrors).toHaveLength(0)
+      }
     })
   })
 })
