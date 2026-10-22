@@ -20,6 +20,7 @@ import type { DidCommMessagePickupSession, DidCommMessagePickupSessionRole } fro
 @injectable()
 export class DidCommMessagePickupSessionService {
   private sessions: DidCommMessagePickupSession[]
+  public readonly liveModeCheckThreadIds = new Set<string>()
 
   public constructor() {
     this.sessions = []

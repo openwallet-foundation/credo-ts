@@ -151,6 +151,13 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
     const queueTransportRepository =
       agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
 
+    const liveSession = agentContext.dependencyManager
+      .resolve(DidCommMessagePickupSessionService)
+      .getLiveSessionByConnectionId(agentContext, {
+        connectionId: connection.id,
+        role: DidCommMessagePickupSessionRole.MessageHolder,
+      })
+
     const statusMessage = new DidCommStatusV2Message({
       threadId: messageContext.message.threadId,
       recipientKey,
@@ -158,6 +165,7 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
         connectionId: connection.id,
         recipientDid: recipientKey ? verkeyToDidKey(recipientKey) : undefined,
       }),
+      liveDelivery: liveSession !== undefined && liveSession.transportSessionId === messageContext.sessionId,
     })
 
     return new DidCommOutboundMessageContext(statusMessage, {
@@ -256,13 +264,18 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
 
     //No messages to be retrieved: message pick-up is completed
     if (messageCount === 0) {
-      eventEmitter.emit<MessagePickupCompletedEvent>(messageContext.agentContext, {
-        type: DidCommMessagePickupEventTypes.MessagePickupCompleted,
-        payload: {
-          connection,
-          threadId: statusMessage.threadId,
-        },
-      })
+      const { liveModeCheckThreadIds } = messageContext.agentContext.dependencyManager.resolve(
+        DidCommMessagePickupSessionService
+      )
+      if (!liveModeCheckThreadIds.has(statusMessage.threadId)) {
+        eventEmitter.emit<MessagePickupCompletedEvent>(messageContext.agentContext, {
+          type: DidCommMessagePickupEventTypes.MessagePickupCompleted,
+          payload: {
+            connection,
+            threadId: statusMessage.threadId,
+          },
+        })
+      }
       return null
     }
 
@@ -302,7 +315,7 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
 
     const statusMessage = new DidCommStatusV2Message({
       threadId: message.threadId,
-      liveDelivery: message.liveDelivery,
+      liveDelivery: message.liveDelivery && sessionId !== undefined,
       messageCount: await queueTransportRepository.getAvailableMessageCount(agentContext, {
         connectionId: connection.id,
       }),

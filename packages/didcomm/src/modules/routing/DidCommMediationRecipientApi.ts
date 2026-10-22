@@ -11,12 +11,15 @@ import {
   type Logger,
   verkeyToDidKey,
 } from '@credo-ts/core'
-import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
-import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
+import { firstValueFrom, interval, merge, type Observable, ReplaySubject, Subject, TimeoutError, timer } from 'rxjs'
+import { exhaustMap, filter, first, map, takeUntil, tap, timeout } from 'rxjs/operators'
+import type { DidCommMessageProcessedEvent } from '../../DidCommEvents'
+import { DidCommEventTypes } from '../../DidCommEvents'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
+import { MessageSendingError } from '../../errors'
 import { DidCommOutboundMessageContext } from '../../models'
-import type { DidCommOutboundWebSocketClosedEvent, DidCommOutboundWebSocketOpenedEvent } from '../../transport'
+import type { DidCommOutboundWebSocketClosedEvent } from '../../transport'
 import { DidCommTransportEventTypes } from '../../transport'
 import type { DidCommConnectionRecord } from '../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../connections/repository/DidCommConnectionMetadataTypes'
@@ -24,7 +27,8 @@ import { DidCommConnectionService } from '../connections/services'
 import { DidCommDiscoverFeaturesApi } from '../discover-features'
 import { DidCommMessagePickupApi } from '../message-pickup/DidCommMessagePickupApi'
 import { DidCommBatchPickupMessage } from '../message-pickup/protocol/v1'
-import { DidCommStatusV2Message } from '../message-pickup/protocol/v2'
+import { DidCommStatusRequestV2Message, DidCommStatusV2Message } from '../message-pickup/protocol/v2'
+import { DidCommMessagePickupSessionService } from '../message-pickup/services/DidCommMessagePickupSessionService'
 import { DidCommMediationRecipientModuleConfig } from './DidCommMediationRecipientModuleConfig'
 import { DidCommMediatorPickupStrategy } from './DidCommMediatorPickupStrategy'
 import type { DidCommMediationStateChangedEvent } from './DidCommRoutingEvents'
@@ -56,6 +60,7 @@ export class DidCommMediationRecipientApi {
 
   // stopMessagePickup$ is used for stop message pickup signal
   private readonly stopMessagePickup$ = new Subject<boolean>()
+  private readonly liveModeCheckStarted$ = new Subject<string>()
 
   public constructor(
     mediationRecipientService: DidCommMediationRecipientService,
@@ -163,18 +168,6 @@ export class DidCommMediationRecipientApi {
 
     const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
 
-    // Reset back off interval when the websocket is successfully opened again
-    this.eventEmitter
-      .observable<DidCommOutboundWebSocketOpenedEvent>(DidCommTransportEventTypes.DidCommOutboundWebSocketOpenedEvent)
-      .pipe(
-        // Stop when the agent shuts down or stop message pickup signal is received
-        takeUntil(stopConditions$),
-        filter((e) => e.payload.connectionId === mediator.connectionId)
-      )
-      .subscribe(() => {
-        interval = baseMediatorReconnectionIntervalMs
-      })
-
     // FIXME: this won't work for tenant agents created by the tenants module as the agent context session
     // could be closed. I'm not sure we want to support this as you probably don't want different tenants opening
     // various websocket connections to mediators. However we should look at throwing an error or making sure
@@ -187,39 +180,35 @@ export class DidCommMediationRecipientApi {
     this.eventEmitter
       .observable<DidCommOutboundWebSocketClosedEvent>(DidCommTransportEventTypes.DidCommOutboundWebSocketClosedEvent)
       .pipe(
-        // Stop when the agent shuts down or stop message pickup signal is received
-        takeUntil(stopConditions$),
         filter((e) => e.payload.connectionId === mediator.connectionId),
         // Make sure we're not reconnecting multiple times
-        throttleTime(interval),
-        // Wait for interval time before reconnecting
-        delayWhen(() => timer(interval)),
+        exhaustMap(() => {
+          const delay = Math.min(interval, maximumMediatorReconnectionIntervalMs)
+          const maximumDelay = Math.min(delay * 1.5, maximumMediatorReconnectionIntervalMs)
+          return timer(delay / 2 + Math.random() * (maximumDelay - delay / 2))
+        }),
         // Increase the interval (recursive back-off)
         tap(() => {
           interval = Math.min(interval * 2, maximumMediatorReconnectionIntervalMs)
-        })
+        }),
+        // Stop when the agent shuts down or stop message pickup signal is received
+        // Last in the pipe so a pending reconnect is dropped too
+        takeUntil(stopConditions$)
       )
       .subscribe({
         next: async () => {
           this.logger.debug(
             `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
           )
+          const resetBackoff = (): void => {
+            interval = baseMediatorReconnectionIntervalMs
+          }
           try {
             if (pickupStrategy === DidCommMediatorPickupStrategy.PickUpV2LiveMode) {
-              // Start Pickup v2 protocol in live mode (retrieve any queued message before)
-              await this.messagePickupApi.pickupMessages({
-                connectionId: mediator.connectionId,
-                protocolVersion: 'v2',
-                awaitCompletion: true,
-              })
-
-              await this.messagePickupApi.setLiveDeliveryMode({
-                connectionId: mediator.connectionId,
-                liveDelivery: true,
-                protocolVersion: 'v2',
-              })
+              await this.setUpLiveMode(mediator.connectionId, resetBackoff)
             } else {
               await this.initiateImplicitMode(mediator)
+              resetBackoff()
             }
           } catch (error) {
             this.logger.warn('Unable to re-open websocket connection to mediator', { error })
@@ -227,6 +216,165 @@ export class DidCommMediationRecipientApi {
         },
         complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediator.id}'`),
       })
+  }
+
+  private async setUpLiveMode(connectionId: string, onLive?: () => void): Promise<void> {
+    const checksEnabled = this.liveModeChecksEnabled()
+    const pickupStopped$ = merge(this.stop$, this.stopMessagePickup$)
+    let socketClosed = false
+    let pickupStopped = false
+    const subscription = this.eventEmitter
+      .observable<DidCommOutboundWebSocketClosedEvent>(DidCommTransportEventTypes.DidCommOutboundWebSocketClosedEvent)
+      .pipe(filter((e) => e.payload.connectionId === connectionId))
+      .subscribe(() => {
+        socketClosed = true
+      })
+    subscription.add(
+      pickupStopped$.subscribe(() => {
+        pickupStopped = true
+      })
+    )
+
+    try {
+      await this.messagePickupApi
+        .pickupMessages({ connectionId, protocolVersion: 'v2', awaitCompletion: true })
+        .catch((error: unknown) => {
+          // A slow drain carries on over this socket, live mode delivers whatever is left
+          if (!(error instanceof TimeoutError)) throw error
+        })
+      if (socketClosed || pickupStopped) return
+      await this.messagePickupApi
+        .setLiveDeliveryMode({
+          connectionId,
+          liveDelivery: true,
+          protocolVersion: 'v2',
+          awaitConfirmation: checksEnabled,
+          awaitConfirmationTimeoutMs: this.liveModeReplyTimeoutMs(),
+        })
+        .catch(async (error: unknown) => {
+          // Credo 0.4 and the ACA-Py pickup plugin never answer live-delivery-change but do answer status-request
+          if (!(error instanceof TimeoutError) || socketClosed || pickupStopped) throw error
+          const connection = await this.connectionService.getById(this.agentContext, connectionId)
+          const status = await this.checkLiveMode(connection, pickupStopped$)
+          if (status?.liveDelivery === false) throw error
+        })
+    } catch (error) {
+      const transportFailure = error instanceof MessageSendingError || error instanceof TimeoutError
+      if (pickupStopped || !transportFailure) throw error
+      // A socket that closed during setup already has a reconnect pending, closing now could hit its new socket
+      if (!socketClosed && !this.closeMediatorSockets(connectionId)) throw error
+      this.logger.warn(`Unable to set up live mode with mediator connection '${connectionId}', reconnecting`, { error })
+      return
+    } finally {
+      subscription.unsubscribe()
+    }
+
+    if (socketClosed || pickupStopped) return
+    if (checksEnabled) this.monitorLiveMode(connectionId, onLive)
+    else onLive?.()
+  }
+
+  private liveModeChecksEnabled(): boolean {
+    if (!this.config.liveModeCheckIntervalMs) return false
+    const { outboundTransports } = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
+    if (outboundTransports.some((transport) => transport.closeSocketByConnectionId)) return true
+    this.logger.warn('Live mode checks need an outbound transport that implements closeSocketByConnectionId')
+    return false
+  }
+
+  // Capped so a dead socket is noticed without waiting a full check interval
+  private liveModeReplyTimeoutMs(): number {
+    return Math.min(this.config.liveModeCheckIntervalMs, 10000)
+  }
+
+  private closeMediatorSockets(connectionId: string): boolean {
+    const { outboundTransports } = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
+    let closed = false
+    for (const transport of outboundTransports) {
+      if (transport.closeSocketByConnectionId?.(connectionId)) {
+        closed = true
+      }
+    }
+    return closed
+  }
+
+  private monitorLiveMode(connectionId: string, onLive?: () => void): void {
+    this.liveModeCheckStarted$.next(connectionId)
+    let stopped = false
+    const stopped$ = merge(
+      this.stop$,
+      this.stopMessagePickup$,
+      this.liveModeCheckStarted$.pipe(filter((id) => id === connectionId)),
+      this.eventEmitter
+        .observable<DidCommOutboundWebSocketClosedEvent>(DidCommTransportEventTypes.DidCommOutboundWebSocketClosedEvent)
+        .pipe(filter((e) => e.payload.connectionId === connectionId))
+    ).pipe(
+      first(),
+      tap(() => {
+        stopped = true
+      })
+    )
+
+    let liveDeliveryOff = false
+    interval(this.config.liveModeCheckIntervalMs)
+      .pipe(
+        takeUntil(stopped$),
+        exhaustMap(async () => {
+          try {
+            const connection = await this.connectionService.getById(this.agentContext, connectionId)
+            if (stopped) return
+            const status = await this.checkLiveMode(connection, stopped$)
+            if (stopped) return
+            // With queued messages the reply already triggered a delivery request, so that gets one interval to finish
+            if (status?.liveDelivery === false && (status.messageCount === 0 || liveDeliveryOff)) {
+              throw new CredoError('Mediator reports live mode is off for this socket')
+            }
+            liveDeliveryOff = status?.liveDelivery === false
+            if (status && !liveDeliveryOff) onLive?.()
+          } catch (error) {
+            if (stopped) return
+            this.logger.warn(`Live mode check failed for mediator connection '${connectionId}', reconnecting`, {
+              error,
+            })
+            this.closeMediatorSockets(connectionId)
+          }
+        })
+      )
+      .subscribe()
+  }
+
+  private async checkLiveMode(
+    connection: DidCommConnectionRecord,
+    stopped$: Observable<unknown>
+  ): Promise<DidCommStatusV2Message | undefined> {
+    const statusRequest = new DidCommStatusRequestV2Message({})
+    const { liveModeCheckThreadIds } = this.agentContext.dependencyManager.resolve(DidCommMessagePickupSessionService)
+
+    liveModeCheckThreadIds.add(statusRequest.threadId)
+    try {
+      const [status] = await Promise.all([
+        firstValueFrom(
+          this.eventEmitter.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
+            filterContextCorrelationId(this.agentContext.contextCorrelationId),
+            map((e) => e.payload.message),
+            filter(
+              (message): message is DidCommStatusV2Message =>
+                message instanceof DidCommStatusV2Message && message.threadId === statusRequest.threadId
+            ),
+            timeout(this.liveModeReplyTimeoutMs()),
+            takeUntil(stopped$)
+          ),
+          { defaultValue: undefined }
+        ),
+        this.messageSender.sendMessage(
+          new DidCommOutboundMessageContext(statusRequest, { agentContext: this.agentContext, connection }),
+          { transportPriority: { schemes: ['wss', 'ws'], restrictive: true } }
+        ),
+      ])
+      return status
+    } finally {
+      liveModeCheckThreadIds.delete(statusRequest.threadId)
+    }
   }
 
   /**
@@ -279,19 +427,7 @@ export class DidCommMediationRecipientApi {
         // PickUp V2 in Live Mode will retrieve queued messages and then set up live delivery mode
         this.logger.info(`Starting Live Mode pickup of messages from mediator '${mediatorRecord.id}'`)
         await this.monitorMediatorWebSocketEvents(mediatorRecord, mediatorPickupStrategy)
-
-        await this.messagePickupApi.pickupMessages({
-          connectionId: mediatorConnection.id,
-          protocolVersion: 'v2',
-          awaitCompletion: true,
-        })
-
-        await this.messagePickupApi.setLiveDeliveryMode({
-          connectionId: mediatorConnection.id,
-          liveDelivery: true,
-          protocolVersion: 'v2',
-        })
-
+        await this.setUpLiveMode(mediatorConnection.id)
         break
       case DidCommMediatorPickupStrategy.Implicit:
         // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
