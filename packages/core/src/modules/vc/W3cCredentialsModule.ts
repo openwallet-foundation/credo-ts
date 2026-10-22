@@ -6,11 +6,7 @@ import {
 import { Ed25519PublicJwk } from '../kms'
 import { JsonLdModuleConfig } from './jsonld'
 import { W3cJwtCredentialService } from './jwt-vc'
-import {
-  SignatureSuiteRegistry,
-  SignatureSuiteToken,
-  type SuiteInfo,
-} from './linked-data-proofs/SignatureSuiteRegistry'
+import { SignatureSuiteRegistry, type SuiteInfo } from './linked-data-proofs/SignatureSuiteRegistry'
 import { Ed25519Signature2018, Ed25519Signature2020 } from './linked-data-proofs/signature-suites'
 import { W3cJsonLdCredentialService } from './linked-data-proofs/W3cJsonLdCredentialService'
 import { W3cCredentialRepository } from './repository/W3cCredentialRepository'
@@ -45,30 +41,27 @@ export class W3cCredentialsModule implements Module {
       dependencyManager.registerInstance(JsonLdModuleConfig, this.config)
     }
 
-    // Collect any suites registered via the deprecated SignatureSuiteToken for backward compatibility.
-    // External consumers that used registerInstance(SignatureSuiteToken, suite) will still work until
-    // SignatureSuiteToken is removed in 0.8.
-    const tokenRegisteredSuites = dependencyManager.isRegistered(SignatureSuiteToken)
-      ? (dependencyManager.container.resolveAll<SuiteInfo>(SignatureSuiteToken) as SuiteInfo[])
-      : []
+    const builtInSuites: SuiteInfo[] = [
+      {
+        suiteClass: Ed25519Signature2018,
+        proofType: 'Ed25519Signature2018',
+        verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
+        supportedPublicJwkTypes: [Ed25519PublicJwk],
+      },
+      {
+        suiteClass: Ed25519Signature2020,
+        proofType: 'Ed25519Signature2020',
+        verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
+        supportedPublicJwkTypes: [Ed25519PublicJwk],
+      },
+    ]
+    const customProofTypes = new Set(this.config.signatureSuites.map((suite) => suite.proofType))
 
-    // Always register ed25519 signature suites
     dependencyManager.registerInstance(
       SignatureSuiteRegistry,
       new SignatureSuiteRegistry([
-        ...tokenRegisteredSuites,
-        {
-          suiteClass: Ed25519Signature2018,
-          proofType: 'Ed25519Signature2018',
-          verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
-          supportedPublicJwkTypes: [Ed25519PublicJwk],
-        } satisfies SuiteInfo,
-        {
-          suiteClass: Ed25519Signature2020,
-          proofType: 'Ed25519Signature2020',
-          verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020],
-          supportedPublicJwkTypes: [Ed25519PublicJwk],
-        } satisfies SuiteInfo,
+        ...this.config.signatureSuites,
+        ...builtInSuites.filter((suite) => !customProofTypes.has(suite.proofType)),
       ])
     )
   }

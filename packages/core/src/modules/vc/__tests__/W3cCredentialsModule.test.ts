@@ -7,11 +7,7 @@ import { Ed25519PublicJwk } from '../../kms'
 import { SECURITY_ED25519_2018_CONTEXT_URL, SECURITY_ED25519_2020_CONTEXT_URL } from '../constants'
 import { DEFAULT_CONTEXTS } from '../jsonld/contexts'
 import { W3cJwtCredentialService } from '../jwt-vc'
-import {
-  SignatureSuiteRegistry,
-  SignatureSuiteToken,
-  type SuiteInfo,
-} from '../linked-data-proofs/SignatureSuiteRegistry'
+import { SignatureSuiteRegistry } from '../linked-data-proofs/SignatureSuiteRegistry'
 import { Ed25519Signature2018, Ed25519Signature2020 } from '../linked-data-proofs/signature-suites'
 import { W3cJsonLdCredentialService } from '../linked-data-proofs/W3cJsonLdCredentialService'
 import { W3cCredentialRepository } from '../repository'
@@ -44,30 +40,35 @@ describe('W3cCredentialsModule', () => {
     ])
   })
 
+  test('custom signature suite replaces a built-in suite without removing other built-ins', () => {
+    class CustomEd25519Signature2018 extends Ed25519Signature2018 {}
+
+    const customSuite = {
+      suiteClass: CustomEd25519Signature2018,
+      proofType: 'Ed25519Signature2018',
+      verificationMethodTypes: [VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018],
+      supportedPublicJwkTypes: [Ed25519PublicJwk],
+    }
+    const module = new W3cCredentialsModule({ signatureSuites: [customSuite] })
+    const dependencyManager = new DependencyManager()
+
+    module.register(dependencyManager)
+
+    const registry = dependencyManager.resolve(SignatureSuiteRegistry)
+    expect(registry.getByProofType('Ed25519Signature2018')).toBe(customSuite)
+    expect(registry.supportedProofTypes).toEqual(['Ed25519Signature2018', 'Ed25519Signature2020'])
+    expect(registry.getAllByPublicJwkType(Ed25519PublicJwk).map((suite) => suite.suiteClass)).toEqual([
+      CustomEd25519Signature2018,
+      Ed25519Signature2020,
+    ])
+    expect(registry.getByProofType('Ed25519Signature2020').suiteClass).toBe(Ed25519Signature2020)
+  })
+
   test('ed25519 signature suites expose centrally bundled context metadata', () => {
     expect(Ed25519Signature2018.CONTEXT_URL).toBe(SECURITY_ED25519_2018_CONTEXT_URL)
     expect(Ed25519Signature2018.CONTEXT).toBe(DEFAULT_CONTEXTS[SECURITY_ED25519_2018_CONTEXT_URL])
 
     expect(Ed25519Signature2020.CONTEXT_URL).toBe(SECURITY_ED25519_2020_CONTEXT_URL)
     expect(Ed25519Signature2020.CONTEXT).toBe(DEFAULT_CONTEXTS[SECURITY_ED25519_2020_CONTEXT_URL])
-  })
-
-  // Remove this compatibility test when SignatureSuiteToken is removed in 0.8.
-  test('registers legacy signature suites from the deprecated token', () => {
-    const module = new W3cCredentialsModule()
-    const dependencyManager = new DependencyManager()
-    const legacySuite: SuiteInfo = {
-      suiteClass: Ed25519Signature2018,
-      verificationMethodTypes: ['LegacyVerificationMethod'],
-      proofType: 'LegacySignatureSuite',
-      supportedPublicJwkTypes: [Ed25519PublicJwk],
-    }
-
-    dependencyManager.registerInstance(SignatureSuiteToken, legacySuite)
-
-    module.register(dependencyManager)
-
-    const signatureSuiteRegistry = dependencyManager.resolve(SignatureSuiteRegistry)
-    expect(signatureSuiteRegistry.getByProofType('LegacySignatureSuite')).toBe(legacySuite)
   })
 })
