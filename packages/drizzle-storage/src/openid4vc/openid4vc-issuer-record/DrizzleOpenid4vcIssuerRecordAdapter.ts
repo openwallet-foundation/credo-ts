@@ -40,6 +40,7 @@ export class DrizzleOpenid4vcIssuerRecordAdapter extends BaseDrizzleRecordAdapte
       authorizationServerConfigs: record.authorizationServerConfigs,
       batchCredentialIssuance: record.batchCredentialIssuance,
       credentialResponseEncryption: record.credentialResponseEncryption ?? null,
+      credentialRequestEncryption: record.credentialRequestEncryption ?? null,
 
       customTags,
     }
