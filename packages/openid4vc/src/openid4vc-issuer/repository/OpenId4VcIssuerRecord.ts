@@ -10,6 +10,7 @@ import type {
 } from '../../shared'
 import type {
   OpenId4VciBatchCredentialIssuanceOptions,
+  OpenId4VciCredentialRequestEncryptionOptions,
   OpenId4VciCredentialResponseEncryptionOptions,
 } from '../OpenId4VcIssuerServiceOptions'
 
@@ -73,6 +74,7 @@ export type OpenId4VcIssuerRecordProps = {
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
   credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
+  credentialRequestEncryption?: OpenId4VciCredentialRequestEncryptionOptions
 
   /**
    * When signed metadata is supported, this stores the
@@ -170,6 +172,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   ]
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
   public credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
+  public credentialRequestEncryption?: OpenId4VciCredentialRequestEncryptionOptions
 
   public signedMetadata?: OpenId4VcIssuerRecordSignedMetadata
 
@@ -218,6 +221,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.authorizationServerConfigs = props.authorizationServerConfigs
       this.batchCredentialIssuance = props.batchCredentialIssuance
       this.credentialResponseEncryption = props.credentialResponseEncryption
+      this.credentialRequestEncryption = props.credentialRequestEncryption
       this.signedMetadata = props.signedMetadata
     }
   }

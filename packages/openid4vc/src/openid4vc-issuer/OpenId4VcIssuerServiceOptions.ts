@@ -761,6 +761,13 @@ export interface OpenId4VciCredentialResponseEncryptionOptions {
   ]
 }
 
+export interface OpenId4VciCredentialRequestEncryptionOptions {
+  required?: boolean
+
+  // each `kid` must be the KMS key id, it's used to find the private key when decrypting
+  jwks: [Kms.KmsJwkPublic, ...Kms.KmsJwkPublic[]]
+}
+
 export type OpenId4VciCreateIssuerOptions = {
   /**
    * Id of the issuer, not the id of the issuer record. Will be exposed publicly
@@ -805,6 +812,8 @@ export type OpenId4VciCreateIssuerOptions = {
 
   credentialResponseEncryption?: OpenId4VciCredentialResponseEncryptionOptions
 
+  credentialRequestEncryption?: OpenId4VciCredentialRequestEncryptionOptions
+
   /**
    * When provided, allows wallets to fetch signed metadata.
    *
@@ -841,6 +850,7 @@ export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   | 'credentialConfigurationsSupported'
   | 'batchCredentialIssuance'
   | 'credentialResponseEncryption'
+  | 'credentialRequestEncryption'
   | 'authorizationServerConfigs'
 > &
   OpenId4VcUpdateIssuerOptions
