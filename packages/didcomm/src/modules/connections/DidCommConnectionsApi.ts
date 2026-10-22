@@ -94,6 +94,14 @@ export class DidCommConnectionsApi {
     if (protocol === DidCommHandshakeProtocol.None) {
       // V2 OOB: create connection without handshake (no ConnectionRequest/Response sent)
       if (ourDid) {
+        const theirDid = outOfBandRecord.outOfBandInvitation.v2Invitation?.from
+        const existingConnection = theirDid
+          ? await this.connectionService.findByDids(this.agentContext, { ourDid, theirDid })
+          : null
+        // A hung-up connection still matches the pair through its previous DIDs
+        if (existingConnection?.didcommVersion === 'v2' && existingConnection.did && existingConnection.theirDid) {
+          return this.reuseForOutOfBandInvitation(outOfBandRecord, existingConnection.id)
+        }
         const connectionRecord = await this.connectionService.createConnection(
           this.agentContext,
           {

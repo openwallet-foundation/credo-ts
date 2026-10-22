@@ -299,6 +299,36 @@ describe('out of band implicit', () => {
     })
   })
 
+  test('v2: dialing with ourDid a peer that already opened a connection to that DID reuses the connection', async () => {
+    const faberDid = await createInMemoryDid(faberAgent, 'rxjs:faber', { withKeyAgreement: true })
+    const aliceDid = await createInMemoryDid(aliceAgent, 'rxjs:alice', { withKeyAgreement: true })
+    const { connectionRecord: aliceConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
+      did: faberDid,
+      didCommVersion: 'v2',
+      label: 'alice',
+      ourDid: aliceDid,
+    })
+    if (!aliceConnection) throw new Error('Expected a connection')
+
+    await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'opens the first-message connection')
+    await waitForBasicMessageSubject(faberMessageReplay, { content: 'opens the first-message connection' })
+    const [faberConnection] = await faberAgent.didcomm.connections.getAll()
+
+    const { connectionRecord: faberDial } = await faberAgent.didcomm.oob.receiveImplicitInvitation({
+      did: aliceDid,
+      didCommVersion: 'v2',
+      label: 'faber',
+      ourDid: faberDid,
+    })
+    expect(faberDial?.id).toBe(faberConnection.id)
+
+    await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'after the dial')
+    await waitForBasicMessageSubject(faberMessageReplay, { content: 'after the dial' })
+
+    expect(await faberAgent.didcomm.connections.getAll()).toHaveLength(1)
+    expect(await faberAgent.didcomm.basicMessages.findAllByQuery({ connectionId: faberConnection.id })).toHaveLength(2)
+  })
+
   test('v2 implicit invitation to an alias of the inviter DID: the invitee follows the rotation away from the inviter DID', async () => {
     const aliasDid = `did:inmemory:${uuid()}`
     const faberDid = await createInMemoryDid(faberAgent, 'rxjs:faber', {
