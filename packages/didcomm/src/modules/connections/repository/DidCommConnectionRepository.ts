@@ -6,7 +6,6 @@ import {
   InjectionSymbols,
   inject,
   injectable,
-  JsonTransformer,
   Repository,
   type StorageService,
 } from '@credo-ts/core'
@@ -31,8 +30,8 @@ export class DidCommConnectionRepository extends Repository<DidCommConnectionRec
     const cache = agentContext.resolve(CacheModuleConfig)
     if (cache.useCachedStorageService) {
       const recordId = await cache.cache.get<string>(agentContext, cacheKey)
-      const recordJson = recordId ? await cache.cache.get<DidCommConnectionRecord>(agentContext, recordId) : null
-      if (recordJson) return JsonTransformer.fromJSON(recordJson, DidCommConnectionRecord)
+      const cachedConnection = recordId ? await this.findById(agentContext, recordId) : null
+      if (cachedConnection) return cachedConnection
     }
 
     const connections = await this.findByQuery(agentContext, {
@@ -63,7 +62,6 @@ export class DidCommConnectionRepository extends Repository<DidCommConnectionRec
 
     if (cache.useCachedStorageService) {
       await cache.cache.set(agentContext, cacheKey, connection.id)
-      await cache.cache.set(agentContext, connection.id, connection.toJSON())
     }
     return connection
   }

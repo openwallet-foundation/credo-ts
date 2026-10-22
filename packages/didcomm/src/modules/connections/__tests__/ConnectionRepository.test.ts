@@ -96,13 +96,35 @@ describe('ConnectionRepository', () => {
     const storageServiceFindByQuerySpy = vi.spyOn(storageService, 'findByQuery')
 
     const foundConnectionRecord2 = await connectionRepository.findByDids(agent.context, dids)
-    expect(foundConnectionRecord2).toEqual(foundConnectionRecord)
+    expect(foundConnectionRecord2?.id).toBe(foundConnectionRecord?.id)
+    expect(foundConnectionRecord2?.getTags()).toEqual(foundConnectionRecord?.getTags())
 
     // Cache should be retrieved
     expect(cacheGetSpy).toHaveBeenCalled()
 
     // Should not check the persistent storage service
     expect(storageServiceFindByQuerySpy).not.toHaveBeenCalled()
+  })
+
+  test('cached query returns the current record after an update or a delete', async () => {
+    const dids = { theirDid: 'did:theirs-rotating', ourDid: 'did:ours-rotating' }
+    const connectionRecord = new DidCommConnectionRecord({
+      role: DidCommDidExchangeRole.Requester,
+      state: DidCommDidExchangeState.Completed,
+      theirDid: dids.theirDid,
+      did: dids.ourDid,
+    })
+    const connectionRepository = agent.context.resolve(DidCommConnectionRepository)
+    await connectionRepository.save(agent.context, connectionRecord)
+    await connectionRepository.findByDids(agent.context, dids)
+
+    connectionRecord.theirDid = 'did:theirs-rotated'
+    connectionRecord.previousTheirDids = [dids.theirDid]
+    await connectionRepository.update(agent.context, connectionRecord)
+    expect((await connectionRepository.findByDids(agent.context, dids))?.theirDid).toBe('did:theirs-rotated')
+
+    await connectionRepository.delete(agent.context, connectionRecord)
+    expect(await connectionRepository.findByDids(agent.context, dids)).toBeNull()
   })
 
   describe('findByDids with several matches', () => {
