@@ -415,11 +415,9 @@ export class DidCommConnectionsApi {
       await this.messageSender.sendMessage(outboundMessageContext)
     }
 
-    // After hang-up message submission, delete connection if required
+    // After hang-up message submission, delete connection if required.
+    // deleteById removes the mediator routing of the hung-up did as well.
     if (options.deleteAfterHangup) {
-      // First remove any recipient keys related to it
-      await this.removeRouting(connectionBeforeHangup)
-
       await this.deleteById(connection.id)
     }
   }
@@ -535,6 +533,7 @@ export class DidCommConnectionsApi {
   }
 
   private async removeRouting(connection: DidCommConnectionRecord) {
+    // A hung-up connection has no did any more, but the mediator still routes its last did
     const did = connection.did ?? connection.previousDids.at(-1)
 
     if (connection.mediatorId && did) {

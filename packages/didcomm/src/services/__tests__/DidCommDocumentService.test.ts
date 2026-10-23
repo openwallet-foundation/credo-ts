@@ -13,6 +13,7 @@ import {
   Kms,
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
+  RecordNotFoundError,
   TypedArrayEncoder,
   verkeyToPublicJwk,
 } from '@credo-ts/core'
@@ -628,6 +629,25 @@ describe('DidCommDocumentService', () => {
         'did:example:frag#v2'
       )
       expect(result.versions).toEqual(['v2'])
+    })
+  })
+
+  describe('resolveCreatedDidDocumentWithKeysByRecipientKey', () => {
+    test('throws RecordNotFoundError when the Ed25519 key has no X25519 counterpart', async () => {
+      vi.spyOn(didRepository, 'findCreatedDidByRecipientKey').mockResolvedValue(null)
+
+      // Bytes that a legacy ~service presents as an Ed25519 verkey are not always a valid Ed25519 point
+      const publicJwk = Kms.PublicJwk.fromFingerprint('z6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V')
+      vi.spyOn(publicJwk, 'convertTo').mockImplementation(() => {
+        throw new Error('Invalid Ed25519 point')
+      })
+
+      await expect(
+        didCommDocumentService.resolveCreatedDidDocumentWithKeysByRecipientKey(agentContext, publicJwk)
+      ).rejects.toThrow(RecordNotFoundError)
+
+      // Only the Ed25519 lookup ran; the failed conversion did not stop the caller from trying other lookups
+      expect(didRepository.findCreatedDidByRecipientKey).toHaveBeenCalledTimes(1)
     })
   })
 })

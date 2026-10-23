@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { p521 } from '@noble/curves/nist.js'
 import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
 import { AskarError, Session } from '@openwallet-foundation/askar-shared'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests'
@@ -401,6 +402,48 @@ describe('AskarKeyManagementService', () => {
   })
 
   describe('verify', () => {
+    it('verifies ES512 with a P-521 public JWK using Noble curves', async () => {
+      const privateKey = p521.utils.randomSecretKey()
+      const publicKey = p521.getPublicKey(privateKey)
+      const publicJwk = Kms.PublicJwk.fromPublicKey({ kty: 'EC', crv: 'P-521', publicKey }).toJson()
+      const data = new Uint8Array([1, 2, 3])
+      const signature = p521.sign(data, privateKey, { lowS: false })
+
+      expect(service.isOperationSupported(agentContext, { operation: 'verify', algorithm: 'ES512' })).toBe(true)
+      await expect(
+        service.verify(agentContext, {
+          key: { publicJwk },
+          algorithm: 'ES512',
+          data,
+          signature,
+        })
+      ).resolves.toEqual({ verified: true, publicJwk })
+
+      signature[0] ^= 1
+      await expect(
+        service.verify(agentContext, {
+          key: { publicJwk },
+          algorithm: 'ES512',
+          data,
+          signature,
+        })
+      ).resolves.toEqual({ verified: false })
+    })
+
+    it('wraps malformed ES512 signatures in a key management error', async () => {
+      const publicKey = p521.getPublicKey(p521.utils.randomSecretKey())
+      const publicJwk = Kms.PublicJwk.fromPublicKey({ kty: 'EC', crv: 'P-521', publicKey }).toJson()
+
+      await expect(
+        service.verify(agentContext, {
+          key: { publicJwk },
+          algorithm: 'ES512',
+          data: new Uint8Array([1, 2, 3]),
+          signature: new Uint8Array([1, 2, 3]),
+        })
+      ).rejects.toThrow(new Kms.KeyManagementError('Error verifying with key'))
+    })
+
     it('throws error if key is not found', async () => {
       await expect(
         service.verify(agentContext, {

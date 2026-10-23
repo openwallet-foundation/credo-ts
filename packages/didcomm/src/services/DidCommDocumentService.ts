@@ -334,13 +334,19 @@ export class DidCommDocumentService {
 
     // DIDComm v1 messages are sent with the Ed25519 key. However a did document may contain the X25519 key
     // In that case we transform it to an X25519 key.
-    // Conversion can fail if key bytes are invalid (e.g. X25519 bytes in legacy ~service wrongly treated as Ed25519).
+    // The conversion fails when the bytes are not a valid Ed25519 point, for example X25519 bytes that a
+    // legacy ~service decorator presents as an Ed25519 verkey. The key is then not one of ours, so the
+    // caller must continue with the other lookups instead of failing on the conversion.
     if (!didRecord && publicJwk.is(Kms.Ed25519PublicJwk)) {
+      let x25519PublicJwk: Kms.PublicJwk<Kms.X25519PublicJwk> | undefined
       try {
-        const x25519PublicJwk = publicJwk.convertTo(Kms.X25519PublicJwk)
-        didRecord = await this.didRepository.findCreatedDidByRecipientKey(agentContext, x25519PublicJwk)
+        x25519PublicJwk = publicJwk.convertTo(Kms.X25519PublicJwk)
       } catch {
-        // Fall through so caller can try OOB/mediator resolution
+        // Not a valid Ed25519 point, so there is no X25519 counterpart to look up
+      }
+
+      if (x25519PublicJwk) {
+        didRecord = await this.didRepository.findCreatedDidByRecipientKey(agentContext, x25519PublicJwk)
       }
     }
 

@@ -1,4 +1,4 @@
-import type { Logger } from '@credo-ts/core'
+import type { BaseEvent, Logger } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 import type { MockedFunction } from 'vitest'
 import type { MockedClassConstructor } from '../../../../../../tests/types'
@@ -7,11 +7,14 @@ import { CredoError } from '../../../../../core/src/error/CredoError'
 import { testLogger } from '../../../../../core/tests'
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../core/tests/helpers'
 import { DidCommModuleConfig } from '../../../../../didcomm/src'
+import { DidCommEventTypes } from '../../../DidCommEvents'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
+import type { DidCommOutboundMessageContext } from '../../../models'
 import { InMemoryQueueTransportRepository } from '../../../transport/queue/InMemoryQueueTransportRepository'
 import { DidCommDidExchangeState } from '../../connections/models/DidCommDidExchangeState'
 import { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
 import { DidCommMessagePickupApi } from '../DidCommMessagePickupApi'
+import { DidCommMessagePickupEventTypes } from '../DidCommMessagePickupEvents'
 import { DidCommMessagePickupModuleConfig } from '../DidCommMessagePickupModuleConfig'
 import type { DidCommMessagePickupSession } from '../DidCommMessagePickupSession'
 import {
@@ -19,6 +22,7 @@ import {
   DidCommMessagePickupV1Protocol,
   DidCommMessagePickupV2Protocol,
   DidCommMessagePickupV4Protocol,
+  DidCommStatusV2Message,
 } from '../protocol'
 import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
 import { DidCommMessageDeliveryV4Message } from '../protocol/v4'
@@ -179,5 +183,94 @@ describe('DidCommMessagePickupApi', () => {
     expect(sendMessageMock).toHaveBeenCalledTimes(1)
     const [outboundCtx] = sendMessageMock.mock.calls[0]
     expect(outboundCtx.message.type).toEqual(DidCommMessageDeliveryV4Message.type.messageTypeUri)
+  })
+
+  it('pickupMessages only completes on the completed event of its own thread', async () => {
+    const completed$ = new Subject<BaseEvent>()
+    mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
+    mockFunction(eventEmitter.observable).mockReturnValue(completed$)
+
+    function completeOnThread(threadId?: string): void {
+      mockFunction(messageSender.sendMessage).mockImplementation(async (outboundMessageContext) => {
+        const { message } = outboundMessageContext as DidCommOutboundMessageContext
+        completed$.next({
+          type: DidCommMessagePickupEventTypes.MessagePickupCompleted,
+          metadata: { contextCorrelationId: agentContext.contextCorrelationId },
+          payload: { connection: mockConnection, threadId: threadId ?? message.threadId },
+        })
+      })
+    }
+    const pickup = (): Promise<void> =>
+      api.pickupMessages({
+        connectionId: mockConnection.id,
+        protocolVersion: 'v2',
+        awaitCompletion: true,
+        awaitCompletionTimeoutMs: 50,
+      })
+
+    completeOnThread('another-thread')
+    await expect(pickup()).rejects.toThrow('Timeout has occurred')
+
+    completeOnThread()
+    await expect(pickup()).resolves.toBeUndefined()
+  })
+
+  describe('setLiveDeliveryMode with awaitConfirmation', () => {
+    const processed$ = new Subject<BaseEvent>()
+
+    function replyToLiveDeliveryChange(liveDelivery: boolean): void {
+      mockFunction(messageSender.sendMessage).mockImplementation(async (outboundMessageContext) => {
+        const { message } = outboundMessageContext as DidCommOutboundMessageContext
+        processed$.next({
+          type: DidCommEventTypes.DidCommMessageProcessed,
+          metadata: { contextCorrelationId: agentContext.contextCorrelationId },
+          payload: {
+            message: new DidCommStatusV2Message({ threadId: message.threadId, messageCount: 0, liveDelivery }),
+            connection: mockConnection,
+          },
+        })
+      })
+    }
+
+    beforeEach(() => {
+      mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
+      mockFunction(eventEmitter.observable).mockReturnValue(processed$)
+    })
+
+    it('resolves once the threaded status reply confirms live delivery', async () => {
+      replyToLiveDeliveryChange(true)
+
+      await expect(
+        api.setLiveDeliveryMode({
+          connectionId: mockConnection.id,
+          protocolVersion: 'v2',
+          liveDelivery: true,
+          awaitConfirmation: true,
+        })
+      ).resolves.toBeUndefined()
+    })
+
+    it('rejects when the mediator refuses live delivery or does not reply in time', async () => {
+      replyToLiveDeliveryChange(false)
+      await expect(
+        api.setLiveDeliveryMode({
+          connectionId: mockConnection.id,
+          protocolVersion: 'v2',
+          liveDelivery: true,
+          awaitConfirmation: true,
+        })
+      ).rejects.toThrow(CredoError)
+
+      mockFunction(messageSender.sendMessage).mockResolvedValue(undefined)
+      await expect(
+        api.setLiveDeliveryMode({
+          connectionId: mockConnection.id,
+          protocolVersion: 'v2',
+          liveDelivery: true,
+          awaitConfirmation: true,
+          awaitConfirmationTimeoutMs: 50,
+        })
+      ).rejects.toThrow('Timeout has occurred')
+    })
   })
 })

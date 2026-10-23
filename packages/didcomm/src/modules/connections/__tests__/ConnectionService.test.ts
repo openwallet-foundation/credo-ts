@@ -449,6 +449,14 @@ describe('DidCommConnectionService', () => {
     })
   })
 
+  describe('returnWhenIsConnected', () => {
+    it('rejects an empty connectionId before it subscribes to connection events', async () => {
+      await expect(connectionService.returnWhenIsConnected(agentContext, '', 10000)).rejects.toThrow(
+        'connectionId is required'
+      )
+    })
+  })
+
   describe('connectionType', () => {
     it('addConnectionType', async () => {
       const connection = getMockConnection()

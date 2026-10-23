@@ -262,10 +262,15 @@ export class DidCommMessagePickupV4Protocol extends DidCommBaseMessagePickupProt
     const { maximumBatchSize: maximumMessagePickup } = messagePickupModuleConfig
     const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
 
-    return new DidCommDeliveryRequestV4Message({
+    // The whole pickup loop stays on the thread of the status-request, so that the completion event
+    // carries the thread id that pickupMessages({ awaitCompletion }) waits for
+    const deliveryRequestMessage = new DidCommDeliveryRequestV4Message({
       messageCountLimit: limit,
       recipientDid,
     })
+    deliveryRequestMessage.setThread({ threadId: statusMessage.threadId })
+
+    return deliveryRequestMessage
   }
 
   public async processLiveDeliveryChange(
@@ -346,8 +351,11 @@ export class DidCommMessagePickupV4Protocol extends DidCommBaseMessagePickupProt
       })
     }
 
-    return new DidCommMessagesReceivedV4Message({
+    const messagesReceivedMessage = new DidCommMessagesReceivedV4Message({
       messageIdList: ids,
     })
+    messagesReceivedMessage.setThread({ threadId: messageContext.message.threadId })
+
+    return messagesReceivedMessage
   }
 }

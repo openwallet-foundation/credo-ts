@@ -497,9 +497,12 @@ export class DidCommConnectionService {
     connectionId: string,
     timeoutMs = 20000
   ): Promise<DidCommConnectionRecord> {
+    // An empty id matches no record. Fail with a clear error before the event subscription is set up,
+    // otherwise the subscription stays open until the timeout while getById fails with a not-found error.
     if (!connectionId) {
       throw new CredoError('connectionId is required for returnWhenIsConnected')
     }
+
     const isConnected = (connection: DidCommConnectionRecord) => {
       return connection.id === connectionId && connection.state === DidCommDidExchangeState.Completed
     }

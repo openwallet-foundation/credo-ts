@@ -559,6 +559,14 @@ export class DidCommMediatorService {
       if (error instanceof RecordDuplicateError) {
         // the record already exists, which is our intended end state
         // we can ignore this error and fetch the existing record
+        for (const { keyId } of routingRecord.routingKeysWithKeyId) {
+          try {
+            await kms.deleteKey({ keyId })
+          } catch (error) {
+            this.logger.warn(`Unable to delete unused mediator routing key '${keyId}'`, { error })
+          }
+        }
+
         return this.mediatorRoutingRepository.getById(
           agentContext,
           this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID

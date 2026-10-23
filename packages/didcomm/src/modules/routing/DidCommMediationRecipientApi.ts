@@ -16,12 +16,13 @@ import {
   type Logger,
   verkeyToDidKey,
 } from '@credo-ts/core'
-import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
-import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
+import { firstValueFrom, interval, merge, ReplaySubject, Subject, TimeoutError, timer } from 'rxjs'
+import { exhaustMap, filter, first, takeUntil, tap, timeout } from 'rxjs/operators'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
+import { MessageSendingError } from '../../errors'
 import { DidCommOutboundMessageContext } from '../../models'
-import type { DidCommOutboundWebSocketClosedEvent, DidCommOutboundWebSocketOpenedEvent } from '../../transport'
+import type { DidCommOutboundWebSocketClosedEvent } from '../../transport'
 import { DidCommTransportEventTypes } from '../../transport'
 import { assertDidCommV1Connection, assertDidCommV2Connection } from '../../util/didcommVersion'
 import { DidCommConnectionRecord } from '../connections/repository'
@@ -171,20 +172,9 @@ export class DidCommMediationRecipientApi {
   ) {
     const { baseMediatorReconnectionIntervalMs, maximumMediatorReconnectionIntervalMs } = this.config
     let interval = baseMediatorReconnectionIntervalMs
+    let attempts = 0
 
     const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
-
-    // Reset back off interval when the websocket is successfully opened again
-    this.eventEmitter
-      .observable<DidCommOutboundWebSocketOpenedEvent>(DidCommTransportEventTypes.DidCommOutboundWebSocketOpenedEvent)
-      .pipe(
-        // Stop when the agent shuts down or stop message pickup signal is received
-        takeUntil(stopConditions$),
-        filter((e) => e.payload.connectionId === mediator.connectionId)
-      )
-      .subscribe(() => {
-        interval = baseMediatorReconnectionIntervalMs
-      })
 
     // FIXME: this won't work for tenant agents created by the tenants module as the agent context session
     // could be closed. I'm not sure we want to support this as you probably don't want different tenants opening
@@ -198,20 +188,25 @@ export class DidCommMediationRecipientApi {
     this.eventEmitter
       .observable<DidCommOutboundWebSocketClosedEvent>(DidCommTransportEventTypes.DidCommOutboundWebSocketClosedEvent)
       .pipe(
-        // Stop when the agent shuts down or stop message pickup signal is received
-        takeUntil(stopConditions$),
         filter((e) => e.payload.connectionId === mediator.connectionId),
         // Make sure we're not reconnecting multiple times
-        throttleTime(interval),
-        // Wait for interval time before reconnecting
-        delayWhen(() => timer(interval)),
+        exhaustMap(() => {
+          const delay = Math.min(interval, maximumMediatorReconnectionIntervalMs)
+          const maximumDelay = Math.min(delay * 1.5, maximumMediatorReconnectionIntervalMs)
+          return timer(delay / 2 + Math.random() * (maximumDelay - delay / 2))
+        }),
         // Increase the interval (recursive back-off)
         tap(() => {
           interval = Math.min(interval * 2, maximumMediatorReconnectionIntervalMs)
-        })
+        }),
+        // Stop when the agent shuts down or stop message pickup signal is received
+        // Last in the pipe so a pending reconnect is dropped too
+        takeUntil(stopConditions$)
       )
       .subscribe({
         next: async () => {
+          // Setups can overlap, and a stale one must not close the socket of a newer one
+          const attempt = ++attempts
           this.logger.debug(
             `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
           )
@@ -244,8 +239,15 @@ export class DidCommMediationRecipientApi {
             } else {
               await this.initiateImplicitMode(mediator)
             }
+            // Reset here and not when the socket opens, so a setup that keeps failing still backs off
+            interval = baseMediatorReconnectionIntervalMs
           } catch (error) {
             this.logger.warn('Unable to re-open websocket connection to mediator', { error })
+            // Closing the socket emits a closed event, so the loop tries again instead of ending here
+            if (attempt === attempts && (error instanceof MessageSendingError || error instanceof TimeoutError)) {
+              const { outboundTransports } = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
+              for (const transport of outboundTransports) transport.closeSocketByConnectionId?.(mediator.connectionId)
+            }
           }
         },
         complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediator.id}'`),

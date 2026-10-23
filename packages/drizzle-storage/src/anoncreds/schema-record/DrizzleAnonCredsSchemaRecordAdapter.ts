@@ -1,5 +1,5 @@
 import { AnonCredsSchemaRecord } from '@credo-ts/anoncreds'
-import { JsonTransformer } from '@credo-ts/core'
+import { JsonTransformer, type TagsBase } from '@credo-ts/core'
 import { BaseDrizzleRecordAdapter, type DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
@@ -18,8 +18,7 @@ export class DrizzleAnonCredsSchemaRecordAdapter extends BaseDrizzleRecordAdapte
   }
 
   public getValues(record: AnonCredsSchemaRecord) {
-    const { schemaId, issuerId, schemaName, schemaVersion, methodName, unqualifiedSchemaId, ...customTags } =
-      record.getTags()
+    const { schemaId, issuerId, schemaName, schemaVersion, methodName, ...customTags } = record.getTags()
 
     const { issuerId: _, name: __, version: ___, ...restSchema } = record.schema
     return {
@@ -29,23 +28,19 @@ export class DrizzleAnonCredsSchemaRecordAdapter extends BaseDrizzleRecordAdapte
       schemaName,
       schemaVersion,
       methodName,
-      unqualifiedSchemaId,
       customTags,
     }
   }
 
   public toRecord(values: DrizzleAnonCredsSchemaAdapterValues): AnonCredsSchemaRecord {
-    const { customTags, unqualifiedSchemaId, issuerId, schemaName, schemaVersion, ...remainingValues } = values
+    const { customTags, issuerId, schemaName, schemaVersion, ...remainingValues } = values
 
     const record = JsonTransformer.fromJSON(
       { ...remainingValues, schema: { ...remainingValues.schema, issuerId, name: schemaName, version: schemaVersion } },
       AnonCredsSchemaRecord
     )
 
-    record.setTags({
-      ...customTags,
-      unqualifiedSchemaId: unqualifiedSchemaId ?? undefined,
-    })
+    record.setTags({ ...customTags } as TagsBase)
 
     return record
   }

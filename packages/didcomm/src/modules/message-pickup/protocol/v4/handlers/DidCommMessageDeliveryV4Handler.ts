@@ -33,6 +33,8 @@ export class DidCommMessageDeliveryV4Handler implements DidCommMessageHandler {
       messageCountLimit: maximumBatchSize,
       recipientDid: message.recipientDid,
     })
+    // Stay on the thread of the status-request that started the loop, so the completion event matches it
+    deliveryRequest.setThread({ threadId: message.threadId })
     return new DidCommOutboundMessageContext(deliveryRequest, { agentContext, connection })
   }
 }

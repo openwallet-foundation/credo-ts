@@ -47,6 +47,7 @@ import { computeApu, computeApv } from '../../../v2/apuApv'
 import { DidCommBasicMessage, DidCommBasicMessageEventTypes, DidCommBasicMessageV2 } from '../../basic-messages'
 import { type DidCommOutOfBandRecord, DidCommOutOfBandState } from '../../oob'
 import { DidCommForwardV2Message } from '../../routing/protocol/v2/messages'
+import { DidCommRoutingService } from '../../routing/services/DidCommRoutingService'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import {
   DidCommDidRotateAckMessage,
@@ -455,6 +456,56 @@ describe('Rotation E2E tests', () => {
         content: 'Message after did rotation failure',
         connectionId: aliceBobConnection?.id,
       })
+    })
+  })
+
+  describe('Mediator routing cleanup', () => {
+    const mediatorId = 'mediator-record-id'
+
+    // The mediator itself is not needed: the test checks the removal call that the api makes
+    const spyOnRemoveRouting = () =>
+      vi.spyOn(aliceAgent.dependencyManager.resolve(DidCommRoutingService), 'removeRouting').mockResolvedValue()
+
+    beforeEach(async () => {
+      const connectionService = aliceAgent.dependencyManager.resolve(DidCommConnectionService)
+      const connection = await connectionService.getById(aliceAgent.context, aliceBobConnection?.id as string)
+      connection.mediatorId = mediatorId
+      await connectionService.update(aliceAgent.context, connection)
+    })
+
+    test('deleting a hung-up connection removes the mediator routing of its last did', async () => {
+      const connectionId = aliceBobConnection?.id as string
+      const didBeforeHangup = aliceBobConnection?.did as string
+      const didDocument = await aliceAgent.dids.resolveDidDocument(didBeforeHangup)
+      const expectedFingerprints = didDocument.recipientKeys.map((key) => key.fingerprint)
+      const removeRouting = spyOnRemoveRouting()
+
+      await aliceAgent.didcomm.connections.hangup({ connectionId })
+      await waitForAgentMessageProcessedEventSubject(bobReplay, {
+        messageType: DidCommHangupMessage.type.messageTypeUri,
+      })
+      expect(removeRouting).not.toHaveBeenCalled()
+
+      await aliceAgent.didcomm.connections.deleteById(connectionId)
+
+      expect(removeRouting).toHaveBeenCalledTimes(1)
+      const [, options] = removeRouting.mock.calls[0]
+      expect(options.mediatorId).toBe(mediatorId)
+      expect(options.recipientKeys.map((key) => key.fingerprint)).toEqual(expectedFingerprints)
+    })
+
+    test('hangup with deleteAfterHangup removes the mediator routing once', async () => {
+      const connectionId = aliceBobConnection?.id as string
+      const removeRouting = spyOnRemoveRouting()
+
+      await aliceAgent.didcomm.connections.hangup({ connectionId, deleteAfterHangup: true })
+      await waitForAgentMessageProcessedEventSubject(bobReplay, {
+        messageType: DidCommHangupMessage.type.messageTypeUri,
+      })
+
+      expect(removeRouting).toHaveBeenCalledTimes(1)
+      expect(removeRouting.mock.calls[0][1].mediatorId).toBe(mediatorId)
+      await expect(aliceAgent.didcomm.connections.getById(connectionId)).rejects.toThrow(RecordNotFoundError)
     })
   })
 

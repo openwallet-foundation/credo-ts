@@ -321,10 +321,15 @@ describe('DidCommMessagePickupV4Protocol', () => {
       const messageContext = new DidCommInboundMessageContext(status, { connection: mockConnection, agentContext })
 
       const deliveryRequestMessage = await pickupProtocol.processStatus(messageContext)
-      expect(deliveryRequestMessage)
-      expect(deliveryRequestMessage).toEqual(
-        new DidCommDeliveryRequestV4Message({ id: deliveryRequestMessage?.id, messageCountLimit: 1 })
-      )
+      if (!deliveryRequestMessage) throw new Error('Expected a delivery-request message')
+
+      // The delivery-request stays on the thread of the status-request, so the pickup loop can be awaited
+      const expectedMessage = new DidCommDeliveryRequestV4Message({
+        id: deliveryRequestMessage.id,
+        messageCountLimit: 1,
+      })
+      expectedMessage.setThread({ threadId: status.threadId })
+      expect(deliveryRequestMessage).toEqual(expectedMessage)
     })
   })
 
@@ -359,12 +364,12 @@ describe('DidCommMessagePickupV4Protocol', () => {
       const messagesReceivedMessage = await pickupProtocol.processDelivery(messageContext)
       if (!messagesReceivedMessage) throw new Error('Expected a messages-received message')
 
-      expect(messagesReceivedMessage).toEqual(
-        new DidCommMessagesReceivedV4Message({
-          id: messagesReceivedMessage.id,
-          messageIdList: ['1'],
-        })
-      )
+      const expectedMessage = new DidCommMessagesReceivedV4Message({
+        id: messagesReceivedMessage.id,
+        messageIdList: ['1'],
+      })
+      expectedMessage.setThread({ threadId: messageDeliveryMessage.threadId })
+      expect(messagesReceivedMessage).toEqual(expectedMessage)
     })
 
     it('handles base64 attachments per Message Pickup 4.0 spec', async () => {

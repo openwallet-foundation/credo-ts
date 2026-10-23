@@ -2,13 +2,13 @@ import { Subject } from 'rxjs'
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import {
   getAnonCredsIndyModules,
-  issueLegacyAnonCredsCredential,
+  issueIndyAnonCredsCredential,
   prepareForAnonCredsIssuance,
   setupAnonCredsTests,
-} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+} from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import { Agent } from '../../../../../../../core/src/index'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import {
@@ -57,7 +57,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       attributeNames: ['name', 'age'],
     })
 
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
@@ -84,7 +84,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'test-proof-request',
           version: '1.0',
           requested_attributes: {
@@ -134,7 +134,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     aliceProofExchangeRecord = await aliceAgent.didcomm.proofs.acceptRequest({
       proofExchangeRecordId: aliceProofExchangeRecord.id,
       useReturnRoute: returnRoute,
-      proofFormats: { indy: requestedCredentials.proofFormats.indy },
+      proofFormats: { anoncreds: requestedCredentials.proofFormats.anoncreds },
     })
 
     testLogger.test('Faber waits for presentation from Alice')
@@ -180,7 +180,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       attributeNames: ['name', 'age'],
     })
 
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
@@ -206,7 +206,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'test-proof-request',
           version: '1.0',
           requested_attributes: {
@@ -370,7 +370,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const [faberConnection] = await makeConnection(faberAgent, aliceAgent)
 
     // issue credential
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent as AnonCredsTestsAgent,
       issuerReplay: faberReplay,
       issuerHolderConnectionId: faberConnection.id,
@@ -385,7 +385,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'test-proof-request',
           version: '1.0',
           requested_attributes: {
@@ -463,7 +463,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       attributeNames: ['name', 'age'],
     })
 
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
@@ -489,7 +489,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'test-proof-request',
           version: '1.0',
           requested_attributes: {
@@ -559,7 +559,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       attributeNames: ['name', 'age'],
     })
 
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
@@ -585,7 +585,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'test-proof-request',
           version: '1.0',
           requested_attributes: {
@@ -652,7 +652,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       autoAcceptProofs: DidCommAutoAcceptProof.Always,
       attributeNames: ['name', 'age'],
     })
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
@@ -677,7 +677,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const { message } = await aliceAgent.didcomm.proofs.createProofProposal({
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'abc',
           version: '1.0',
           attributes: [

@@ -44,6 +44,8 @@ export interface DidCommMediationRecipientModuleConfigOptions {
    * each retry, resulting in an exponential backoff strategy.
    *
    * For instance, if maximumMediatorReconnectionIntervalMs is b, the agent will attempt to reconnect after b, 2*b, 4*b, 8*b, 16*b, ... ms.
+   * Each delay is randomized by up to 50% either way and never exceeds maximumMediatorReconnectionIntervalMs. The interval goes
+   * back to this value once a reconnect sets up pickup again.
    *
    * This is only applicable when pickup protocol v2 or implicit pickup is used.
    *

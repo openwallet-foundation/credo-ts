@@ -7,7 +7,10 @@ import {
   injectable,
   type Logger,
 } from '@credo-ts/core'
-import { filter, first, firstValueFrom, ReplaySubject, Subject, takeUntil, timeout } from 'rxjs'
+import { filter, first, firstValueFrom, map, ReplaySubject, Subject, takeUntil, timeout } from 'rxjs'
+import type { DidCommMessageProcessedEvent } from '../../DidCommEvents'
+import { DidCommEventTypes } from '../../DidCommEvents'
+import type { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommOutboundMessageContext } from '../../models'
@@ -35,6 +38,7 @@ import type {
   DidCommMessagePickupV4Protocol,
 } from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
+import { DidCommStatusV2Message } from './protocol/v2/messages'
 import { DidCommMessagePickupSessionService } from './services/DidCommMessagePickupSessionService'
 
 export interface DidCommMessagePickupApi<MPPs extends DidCommMessagePickupProtocol[]> {
@@ -256,8 +260,8 @@ export class DidCommMessagePickupApi<
         .pipe(
           // Stop when the agent shuts down
           takeUntil(this.stop$),
-          // filter by connection id
-          filter((e) => e.payload.connection.id === connectionRecord.id),
+          // filter by connection and thread id
+          filter((e) => e.payload.connection.id === connectionRecord.id && e.payload.threadId === message.threadId),
           // Only wait for first event that matches the criteria
           first(),
           // If we don't receive all messages within timeoutMs miliseconds (no response, not supported, etc...) error
@@ -282,7 +286,11 @@ export class DidCommMessagePickupApi<
    * Enable or disable Live Delivery mode as a recipient. Depending on the message pickup protocol used,
    * after receiving a response from the mediator the agent might retrieve any pending message.
    *
-   * @param options connectionId, protocol version to use and boolean to enable/disable Live Mode
+   * By default, this method only waits until the message is sent. Use `options.awaitConfirmation` to wait until
+   * the mediator's status reply confirms the change. It rejects on a timeout or on any other reply to the change.
+   *
+   * @param options connectionId, protocol version to use, boolean to enable/disable Live Mode, awaitConfirmation,
+   * awaitConfirmationTimeoutMs
    */
   public async setLiveDeliveryMode(options: SetLiveDeliveryModeOptions): Promise<SetLiveDeliveryModeReturnType> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
@@ -297,6 +305,27 @@ export class DidCommMessagePickupApi<
       liveDelivery: options.liveDelivery,
     })
 
+    const replySubject = new ReplaySubject<DidCommMessage>(1)
+
+    if (options.awaitConfirmation) {
+      this.eventEmitter
+        .observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed)
+        .pipe(
+          takeUntil(this.stop$),
+          first(
+            ({ payload: { connection, message: reply } }) =>
+              connection?.id === connectionRecord.id &&
+              (reply.threadId === message.threadId || reply.thread?.parentThreadId === message.threadId)
+          ),
+          map((e) => e.payload.message),
+          timeout({
+            first: options.awaitConfirmationTimeoutMs ?? 10000,
+            meta: 'DidCommMessagePickupApi.setLiveDeliveryMode',
+          })
+        )
+        .subscribe(replySubject)
+    }
+
     // Live mode requires a long-lived transport session, so we'll require WebSockets to send this message
     await this.messageSender.sendMessage(
       new DidCommOutboundMessageContext(message, {
@@ -305,5 +334,12 @@ export class DidCommMessagePickupApi<
       }),
       { transportPriority: { schemes: ['wss', 'ws'], restrictive: options.liveDelivery } }
     )
+
+    if (options.awaitConfirmation) {
+      const reply = await firstValueFrom(replySubject)
+      if (!(reply instanceof DidCommStatusV2Message) || reply.liveDelivery === !options.liveDelivery) {
+        throw new CredoError(`Live delivery change was not confirmed, the mediator replied with '${reply.type}'`)
+      }
+    }
   }
 }

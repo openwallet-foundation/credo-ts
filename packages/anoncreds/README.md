@@ -42,15 +42,10 @@ import {
 } from '@credo-ts/anoncreds'
 ```
 
-Import the AnonCreds and legacy Indy DIDComm formats from the DIDComm integration entry point:
+Import the AnonCreds DIDComm formats from the DIDComm integration entry point:
 
 ```ts
-import {
-  AnonCredsDidCommCredentialFormatService,
-  AnonCredsDidCommProofFormatService,
-  LegacyIndyDidCommCredentialFormatService,
-  LegacyIndyDidCommProofFormatService,
-} from '@credo-ts/anoncreds/didcomm'
+import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService } from '@credo-ts/anoncreds/didcomm'
 ```
 
 The DIDComm APIs are no longer exported from the `@credo-ts/anoncreds` package root. This change only affects
