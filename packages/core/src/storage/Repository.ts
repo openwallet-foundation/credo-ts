@@ -82,7 +82,7 @@ export class Repository<T extends BaseRecord<any, any, any>> {
     if (!storageService.updateByIdWithLock) {
       const record = await this.getById(agentContext, id)
       const updatedRecord = await updateCallback(record)
-      await this.update(agentContext, record)
+      await this.update(agentContext, updatedRecord)
       return updatedRecord
     }
 

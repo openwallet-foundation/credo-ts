@@ -117,6 +117,19 @@ describe('Repository', () => {
     })
   })
 
+  describe('updateByIdWithLock()', () => {
+    it('should update the record returned by the callback if the storage service has no lock', async () => {
+      const record = getRecord({ id: 'test-id' })
+      const updatedRecord = getRecord({ id: 'test-id', tags: { myTag: 'updated' } })
+      mockFunction(storageMock.getById).mockReturnValue(Promise.resolve(record))
+
+      const returnValue = await repository.updateByIdWithLock(agentContext, 'test-id', async () => updatedRecord)
+
+      expect(storageMock.update).toHaveBeenCalledWith(agentContext, updatedRecord)
+      expect(returnValue).toBe(updatedRecord)
+    })
+  })
+
   describe('delete()', () => {
     it('should delete the record using the storage service', async () => {
       const record = getRecord({ id: 'test-id' })

@@ -1,4 +1,4 @@
-import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { Kms, RecordDuplicateError, TypedArrayEncoder } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
@@ -87,6 +87,23 @@ describe('MediatorService - default config', () => {
 
       expect(message.routingKeys.length).toBe(1)
       expect(isDidKey(message.routingKeys[0])).toBeTruthy()
+    })
+  })
+
+  describe('createMediatorRoutingRecord', () => {
+    test('deletes its routing keys and returns the stored record if another instance saved first', async () => {
+      const storedRecord = new DidCommMediatorRoutingRecord({ routingKeys: [] })
+      mockFunction(mediatorRoutingRepository.save).mockRejectedValueOnce(
+        new RecordDuplicateError('Record already exists', { recordType: DidCommMediatorRoutingRecord.type })
+      )
+      mockFunction(mediatorRoutingRepository.getById).mockResolvedValueOnce(storedRecord)
+
+      await expect(mediatorService.createMediatorRoutingRecord(agentContext)).resolves.toBe(storedRecord)
+
+      const [, unsavedRecord] = mockFunction(mediatorRoutingRepository.save).mock.calls[0]
+      await expect(
+        agentContext.resolve(Kms.KeyManagementApi).getPublicKey({ keyId: unsavedRecord.routingKeysWithKeyId[0].keyId })
+      ).rejects.toThrow(Kms.KeyManagementKeyNotFoundError)
     })
   })
 
