@@ -1,5 +1,112 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- bac90d4: Remove unused ffi-napi-era type packages from development dependencies.
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- fb968ea: The KMS now creates the ECDH ephemeral key itself and never stores it. `encrypt` returns its public key as `ephemeralPublicJwk`. `ECDH-ES` and `ECDH-ES+KW` no longer take a `keyId`, and passing one now fails validation. In `encrypt`, a `keyId` in `keyAgreement` now always means the sender's key.
+  
+  `encryption.aad` can now be a callback that gets the `ephemeralPublicJwk` and returns the AAD, so you can put the `epk` in a JWE protected header. This is only allowed with `ECDH-ES`, `ECDH-ES+KW` and `ECDH-1PU+A256KW`. These now only allow authenticated content encryption in both `encrypt` and `decrypt`, and `encrypt` no longer takes an `iv` for them.
+  
+  Askar no longer reports `ECDH-ES` with `A256CBC-HS512` as supported, as its key derivation can't produce the 64 byte key. Agents that also register the Node backend now encrypt it with Node.
+  
+  ```ts
+  // before
+  const ephemeralKey = await agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+  const header = JsonEncoder.toBase64Url({ alg: 'ECDH-ES', enc: 'A256GCM', epk: ephemeralKey.publicJwk })
+  const { encrypted, iv, tag } = await agent.kms.encrypt({
+    key: { keyAgreement: { algorithm: 'ECDH-ES', keyId: ephemeralKey.keyId, externalPublicJwk: recipientJwk } },
+    encryption: { algorithm: 'A256GCM', aad: TypedArrayEncoder.fromUtf8String(header) },
+    data,
+  })
+  await agent.kms.deleteKey({ keyId: ephemeralKey.keyId })
+  
+  // after
+  let header: string | undefined
+  const { encrypted, iv, tag } = await agent.kms.encrypt({
+    key: { keyAgreement: { algorithm: 'ECDH-ES', externalPublicJwk: recipientJwk } },
+    encryption: {
+      algorithm: 'A256GCM',
+      aad: ({ ephemeralPublicJwk }) => {
+        header = JsonEncoder.toBase64Url({ alg: 'ECDH-ES', enc: 'A256GCM', epk: ephemeralPublicJwk })
+        return TypedArrayEncoder.fromUtf8String(header)
+      },
+    },
+    data,
+  })
+  ```
+- fb968ea: KMS `encrypt` can now wrap the content key for more than one recipient. `ECDH-ES+A128KW`, `ECDH-ES+A192KW`, `ECDH-ES+A256KW` and the new `ECDH-1PU+A256KW` take a `recipients` array instead of `externalPublicJwk`, and return `encryptedKeys` in the same order. All recipients must use the same key type and curve, since they share one ephemeral key. The single `encryptedKey` is removed from the result.
+  
+  The Askar and Node backends support `ECDH-1PU+A256KW`, which needs an `A*CBC-HS*` content encryption algorithm in both `encrypt` and `decrypt`. `supportedBackendsForOperation` returns no backends for content encryption that `encrypt` or `decrypt` rejects.
+  
+  ```ts
+  const { encrypted, iv, tag, ephemeralPublicJwk, encryptedKeys } = await agent.kms.encrypt({
+    key: {
+      keyAgreement: {
+        algorithm: 'ECDH-1PU+A256KW',
+        keyId: senderKeyId,
+        recipients: [{ externalPublicJwk: aliceJwk }, { externalPublicJwk: bobJwk }],
+      },
+    },
+    encryption: { algorithm: 'A256CBC-HS512' },
+    data,
+  })
+  ```
+- b1090de: Remove duplicate error-level logging at throw sites that already chain the original error as `cause`.
+
+### Patch Changes
+
+- 61d7d0f: The `askar` option of the `AskarModule` now also accepts the `NativeAskar` class (available since `@openwallet-foundation/askar-shared` 0.6.0) in addition to an `Askar` instance. When `NativeAskar` is passed the registered native binding is resolved on each access, so it no longer matters whether the platform package (`askar-nodejs` / `askar-react-native`) was imported before Credo. This fixes errors like `Cannot read properties of undefined (reading 'keyGetJwkSecret')` in ESM, bundler and test-runner setups that load modules in a different order. See #2597, #2607.
+  
+  Passing the (deprecated) `askar` export keeps working, and askar-shared `^0.4.3 || ^0.5.0 || ^0.6.0` remains supported.
+  
+  ```ts
+  import { NativeAskar } from '@openwallet-foundation/askar-nodejs'
+  
+  new AskarModule({
+    askar: NativeAskar,
+    store: { id: 'my-wallet', key: 'my-key' },
+  })
+  ```
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- 0814729: Add P-521 ES512 signature verification to the Askar wrapper using @noble/curves and support P-521 ECDSA verification in CredoWalletWebCrypto.
+- 526a989: feat: support node 26
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [798c401]
+- Updated dependencies [8abea64]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [de1c035]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [14e84ce]
+- Updated dependencies [526a989]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [716cb84]
+- Updated dependencies [82a6efd]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [0814729]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [526a989]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [dbafd1e]
+  - @credo-ts/core@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes

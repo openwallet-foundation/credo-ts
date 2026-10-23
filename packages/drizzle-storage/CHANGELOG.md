@@ -1,5 +1,122 @@
 # @credo-ts/drizzle-storage
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+- 3678fb3: Remove support for unqualified (legacy) AnonCreds identifiers. All AnonCreds identifiers must be fully qualified. Use `did:indy` identifiers for objects on an indy ledger.
+  
+  `@credo-ts/anoncreds`:
+  
+  - The `LegacyIndyDidCommCredentialFormatService` and `LegacyIndyDidCommProofFormatService` classes are removed, together with the `LegacyIndyCredentialFormat` and `LegacyIndyDidCommProofFormat` types. The `hlindy/*` DIDComm formats only work with unqualified identifiers. Use the `AnonCredsDidCommCredentialFormatService` and `AnonCredsDidCommProofFormatService` classes instead.
+  - The `useLegacyProverDid` option of `createCredentialRequest` is removed from the holder service. A credential request always contains an `entropy` value.
+  - The `useUnqualifiedIdentifiers` option of `createProof` and the `useUnqualifiedIdentifiersIfPresent` option of `getCredential` are removed from the holder service.
+  - The unqualified identifier helpers are removed: `unqualifiedSchemaIdRegex`, `unqualifiedSchemaVersionRegex`, `unqualifiedIndyDidRegex`, `unqualifiedCredentialDefinitionIdRegex`, `unqualifiedRevocationRegistryIdRegex`, `getUnqualifiedSchemaId`, `getUnqualifiedCredentialDefinitionId`, `getUnqualifiedRevocationRegistryDefinitionId`, `isUnqualifiedIndyDid`, `isUnqualifiedSchemaId`, `isUnqualifiedCredentialDefinitionId`, `isUnqualifiedRevocationRegistryId`, `getQualifiedDidIndyDid`, `getUnQualifiedDidIndyDid`, the `(get|is)(Qualified|Unqualified)DidIndy(Schema|CredentialDefinition|RevocationRegistryDefinition)` helpers and `generateLegacyProverDidLikeString`.
+  - The `parseIndySchemaId`, `parseIndyCredentialDefinitionId` and `parseIndyRevocationRegistryId` functions only accept `did:indy` identifiers. The `namespace` property of the parsed result is always present.
+  - The `AnonCredsSchemaRecord` and `AnonCredsCredentialDefinitionRecord` classes do not have the `unqualifiedSchemaId` and `unqualifiedCredentialDefinitionId` tags anymore. The repositories only query by the qualified identifier.
+  - The W3C credential records of AnonCreds credentials do not get the `anonCredsUnqualifiedIssuerId`, `anonCredsUnqualifiedSchemaId`, `anonCredsUnqualifiedSchemaIssuerId`, `anonCredsUnqualifiedCredentialDefinitionId` and `anonCredsUnqualifiedRevocationRegistryId` tags anymore. Proof request restrictions only match the qualified identifiers.
+  - The storage migration from version 0.4 to 0.5 still migrates credentials that use unqualified identifiers. When the indy namespace of the issuer is not in the cache, the migration resolves the `did:sov` DID of the issuer to find the namespace. This requires the `IndyVdrSovDidResolver` and an `IndyVdrModule` that is configured with the ledger of the issuer.
+  
+  `@credo-ts/indy-vdr`:
+  
+  - The `IndyVdrAnonCredsRegistry` only resolves `did:indy` schema, credential definition and revocation registry identifiers. Unqualified identifiers are not supported anymore.
+  
+  `@credo-ts/didcomm`:
+  
+  - The revocation notification service only finds credential exchange records by the qualified revocation registry id. A revocation notification that contains an unqualified revocation registry id does not match a record anymore.
+  
+  `@credo-ts/drizzle-storage`:
+  
+  - The `unqualified_schema_id` column of the `AnonCredsSchema` table and the `unqualified_credential_definition_id` column of the `AnonCredsCredentialDefinition` table are removed. Run the database migrations to apply this change.
+
+### Patch Changes
+
+- 46700e9: Add a `status` column to the `Tenant` table for the new tenant status (active/inactive) feature. Make sure to run the migrations for the `tenants` bundle, existing tenants are set to active.
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- f87b6bb: The issuer now supports credential response encryption (OID4VCI §8.3). When a wallet includes `credential_response_encryption` in its credential or deferred credential request, the issuer encrypts the response body as a compact JWE and returns it with `Content-Type: application/jwt`. Requests without encryption continue to work unchanged.
+  
+  The issuer metadata advertises `credential_response_encryption`. By default encryption is optional and all algorithms supported by Credo are listed (`alg_values_supported: ["ECDH-ES"]`, `enc_values_supported: ["A128GCM", "A256GCM", "A128CBC-HS256"]`). Use the new `credentialResponseEncryption` option when creating or updating an issuer to require encryption or restrict the supported `alg` and `enc` values. Requests that omit required encryption or use an unsupported `alg` or `enc` are rejected with `invalid_encryption_parameters`.
+  
+  The drizzle storage stores the issuer's `credentialResponseEncryption` configuration in a new `credential_response_encryption` column; run the drizzle migrations when upgrading.
+- de1c035: Add `issuerInfo` to `createIssuer` and `updateIssuerMetadata`, published as `issuer_info` (ETSI TS 119 472-3) in the JSON and signed credential issuer metadata. The `Openid4vcIssuer` table gets an `issuer_info` column, so make sure to run the migrations for the `openid4vc` bundle.
+- 526a989: feat: support node 26
+- Updated dependencies [61d7d0f]
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [798c401]
+- Updated dependencies [8abea64]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [1c18cf8]
+- Updated dependencies [33d3f53]
+- Updated dependencies [de1c035]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [14e84ce]
+- Updated dependencies [218237d]
+- Updated dependencies [fac9757]
+- Updated dependencies [95b0dd5]
+- Updated dependencies [3d4b386]
+- Updated dependencies [dbde0f1]
+- Updated dependencies [526a989]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [4dd128a]
+- Updated dependencies [82a6efd]
+- Updated dependencies [46700e9]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [dde35e0]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [716cb84]
+- Updated dependencies [82a6efd]
+- Updated dependencies [e851280]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [f87b6bb]
+- Updated dependencies [aadabc9]
+- Updated dependencies [8abea64]
+- Updated dependencies [7c4ed20]
+- Updated dependencies [28bc709]
+- Updated dependencies [6b037bd]
+- Updated dependencies [fb968ea]
+- Updated dependencies [d80bc49]
+- Updated dependencies [de1c035]
+- Updated dependencies [de1c035]
+- Updated dependencies [52d3782]
+- Updated dependencies [52d3782]
+- Updated dependencies [0814729]
+- Updated dependencies [705ddec]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [526a989]
+- Updated dependencies [25199e8]
+- Updated dependencies [7e4863f]
+- Updated dependencies [ef2502c]
+- Updated dependencies [144ca38]
+- Updated dependencies [4c379c8]
+- Updated dependencies [3678fb3]
+- Updated dependencies [28bc709]
+- Updated dependencies [2f20e2e]
+- Updated dependencies [b1090de]
+- Updated dependencies [78d5cfb]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [3d4b386]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [dbafd1e]
+  - @credo-ts/anoncreds@0.8.0
+  - @credo-ts/core@0.8.0
+  - @credo-ts/didcomm@0.8.0
+  - @credo-ts/action-menu@0.8.0
+  - @credo-ts/drpc@0.8.0
+  - @credo-ts/openid4vc@0.8.0
+  - @credo-ts/question-answer@0.8.0
+  - @credo-ts/tenants@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes
