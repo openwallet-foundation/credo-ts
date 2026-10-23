@@ -1,7 +1,8 @@
 import { createServer } from 'node:http'
 import type { AgentContext } from '@credo-ts/core'
 import { EventEmitter } from '@credo-ts/core'
-import { DidCommWsOutboundTransport } from '@credo-ts/didcomm'
+import type { DidCommOutboundWebSocketClosedEvent } from '@credo-ts/didcomm'
+import { DidCommTransportEventTypes, DidCommWsOutboundTransport } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket, { WebSocketServer } from 'ws'
@@ -53,9 +54,9 @@ async function startServer() {
   return { endpoint: `ws://127.0.0.1:${address.port}`, serverSockets }
 }
 
-async function startTransport() {
+async function startTransport(agentContext = createAgentContext()) {
   const transport = new DidCommWsOutboundTransport()
-  await transport.start(createAgentContext())
+  await transport.start(agentContext)
   cleanup.push(() => transport.stop())
 
   return transport
@@ -112,6 +113,33 @@ describe('DidCommWsOutboundTransport', () => {
     await waitForSockets(serverSockets, 2)
 
     expect(serverSockets).toHaveLength(2)
+    expect(serverSockets[1].readyState).toBe(WebSocket.OPEN)
+  })
+
+  it('forgets the sockets of a connection at once and emits their closed event only once', async () => {
+    const { endpoint, serverSockets } = await startServer()
+    const agentContext = createAgentContext()
+    const transport = await startTransport(agentContext)
+
+    await transport.sendMessage({ payload, endpoint, connectionId: 'connection-a', responseRequested: true })
+    await transport.sendMessage({ payload, endpoint, connectionId: 'connection-b', responseRequested: true })
+    await waitForSockets(serverSockets, 2)
+
+    const closedEvents: string[] = []
+    agentContext.dependencyManager
+      .resolve(EventEmitter)
+      .observable<DidCommOutboundWebSocketClosedEvent>(DidCommTransportEventTypes.DidCommOutboundWebSocketClosedEvent)
+      .subscribe((e) => closedEvents.push(e.payload.connectionId ?? ''))
+    const serverCloseCode = new Promise<number>((resolve) => serverSockets[0].once('close', resolve))
+
+    expect(transport.closeSocketByConnectionId('connection-a')).toBe(true)
+    expect(transport.closeSocketByConnectionId('connection-c')).toBe(false)
+    expect(closedEvents).toEqual(['connection-a'])
+
+    // 1006 means the socket was terminated instead of waiting for a close handshake
+    expect(await serverCloseCode).toBe(1006)
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(closedEvents).toEqual(['connection-a'])
     expect(serverSockets[1].readyState).toBe(WebSocket.OPEN)
   })
 })
