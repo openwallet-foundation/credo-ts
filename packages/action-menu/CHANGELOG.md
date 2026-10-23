@@ -1,5 +1,64 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 526a989: Drop support for Node.js 20, which reached end-of-life. The minimum supported Node.js version is now 22.
+
+### Patch Changes
+
+- 82a6efd: Update the TypeScript development dependency to TypeScript 7 (`typescript@^7.0.2`, installed as `@typescript/native`) for type checking. The `typescript` package is now an alias of `@typescript/typescript6@^6.0.2`, so tools that use the TypeScript compiler API, such as `tsdown` when generating declaration files, keep working.
+  
+  This has no effect on runtime behaviour. `getPublicJwkFromDid` in `@credo-ts/openid4vc` now declares its `Promise<PublicJwk>` return type, which is the type it already returned.
+- 526a989: feat: support node 26
+- Updated dependencies [c2bb4d5]
+- Updated dependencies [0b9531a]
+- Updated dependencies [2c4e3a2]
+- Updated dependencies [798c401]
+- Updated dependencies [8abea64]
+- Updated dependencies [7a1a5c9]
+- Updated dependencies [33d3f53]
+- Updated dependencies [de1c035]
+- Updated dependencies [9eadcb8]
+- Updated dependencies [14e84ce]
+- Updated dependencies [218237d]
+- Updated dependencies [fac9757]
+- Updated dependencies [95b0dd5]
+- Updated dependencies [3d4b386]
+- Updated dependencies [dbde0f1]
+- Updated dependencies [526a989]
+- Updated dependencies [5cb5e46]
+- Updated dependencies [4dd128a]
+- Updated dependencies [82a6efd]
+- Updated dependencies [b2ac66a]
+- Updated dependencies [dde35e0]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [fb968ea]
+- Updated dependencies [716cb84]
+- Updated dependencies [82a6efd]
+- Updated dependencies [e851280]
+- Updated dependencies [cf46149]
+- Updated dependencies [56516ee]
+- Updated dependencies [4fed115]
+- Updated dependencies [aadabc9]
+- Updated dependencies [0814729]
+- Updated dependencies [2e13dd1]
+- Updated dependencies [fb99743]
+- Updated dependencies [526a989]
+- Updated dependencies [25199e8]
+- Updated dependencies [3678fb3]
+- Updated dependencies [2f20e2e]
+- Updated dependencies [b1090de]
+- Updated dependencies [78d5cfb]
+- Updated dependencies [7ba15bc]
+- Updated dependencies [194cf1e]
+- Updated dependencies [56ae9a6]
+- Updated dependencies [dbafd1e]
+  - @credo-ts/core@0.8.0
+  - @credo-ts/didcomm@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes
