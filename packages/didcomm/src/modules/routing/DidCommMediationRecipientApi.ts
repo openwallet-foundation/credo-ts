@@ -11,8 +11,18 @@ import {
   type Logger,
   verkeyToDidKey,
 } from '@credo-ts/core'
-import { firstValueFrom, interval, merge, type Observable, ReplaySubject, Subject, TimeoutError, timer } from 'rxjs'
-import { exhaustMap, filter, first, map, takeUntil, tap, timeout } from 'rxjs/operators'
+import {
+  firstValueFrom,
+  interval,
+  merge,
+  type Observable,
+  ReplaySubject,
+  Subject,
+  TimeoutError,
+  timeout,
+  timer,
+} from 'rxjs'
+import { exhaustMap, filter, first, map, takeUntil, tap } from 'rxjs/operators'
 import type { DidCommMessageProcessedEvent } from '../../DidCommEvents'
 import { DidCommEventTypes } from '../../DidCommEvents'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
