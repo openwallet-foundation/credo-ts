@@ -1,7 +1,8 @@
 import type {
+  DcqlQuery,
   JwtPayload,
   Mdoc,
-  SdJwtVc,
+  SdJwtVcWithTypeMetadataChain,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
   W3cV2JwtVerifiableCredential,
@@ -52,8 +53,33 @@ export type OpenId4VcVerificationTypeOauth2ClientAttestation = {
 export type OpenId4VcVerificationTypeOid4VpCredential = {
   type: 'openId4VpCredential'
   openId4VcVerificationSessionRecord: OpenId4VcVerificationSessionRecord
+
+  /**
+   * The DCQL context, when the credential was presented in response to a DCQL query. Not set for
+   * Presentation Exchange responses.
+   *
+   * Use it, rather than the credential's own type, to decide which issuers to trust. A credential
+   * query also matches an SD-JWT VC whose type metadata extends one of the `meta.vct_values`.
+   */
+  dcql?: {
+    /**
+     * The DCQL query of the authorization request.
+     */
+    query: DcqlQuery
+
+    /**
+     * The id of the credential query in `query.credentials` the credential was presented for. Whether
+     * the presentations satisfy the query is checked after verification.
+     */
+    credentialQueryId: string
+  }
+
+  /**
+   * The presented credential. An SD-JWT VC has `typeMetadataChain` set when its `vct` is not one of
+   * the `meta.vct_values` of the DCQL credential query.
+   */
   credential:
-    | SdJwtVc
+    | SdJwtVcWithTypeMetadataChain
     | Mdoc
     | W3cJsonLdVerifiableCredential
     | W3cJwtVerifiableCredential
