@@ -61,6 +61,13 @@ import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
 import { DidCommMediatorRoutingRepository } from '../repository/DidCommMediatorRoutingRepository'
 
+// A CredoError, so storage services rethrow it from updateByIdWithLock without wrapping it
+class V2RoutingKeyAlreadyStoredError extends CredoError {
+  public constructor() {
+    super('Mediator routing record already has an X25519 routing key')
+  }
+}
+
 @injectable()
 export class DidCommMediatorService {
   private logger: Logger
@@ -573,14 +580,48 @@ export class DidCommMediatorService {
   ): Promise<DidCommMediatorRoutingRecord> {
     const didcommConfig = agentContext.resolve(DidCommModuleConfig)
     if (!didcommConfig.isSupported('v2')) return routingRecord
-    if (routingRecord.routingKeysWithKeyId.some((routingKey) => routingKey.is(Kms.X25519PublicJwk))) {
-      return routingRecord
-    }
+    if (this.getV2RoutingKeys(routingRecord).length > 0) return routingRecord
 
     this.logger.debug('Mediator routing record has no X25519 routing key, adding one for DIDComm v2')
-    routingRecord.routingKeys = [...routingRecord.routingKeys, await this.createV2RoutingKey(agentContext)]
-    await this.mediatorRoutingRepository.update(agentContext, routingRecord)
-    return routingRecord
+    // Created outside the lock, as Askar on SQLite cannot store the key while the lock transaction is open
+    const v2RoutingKey = await this.createV2RoutingKey(agentContext)
+    try {
+      await this.mediatorRoutingRepository.updateByIdWithLock(agentContext, routingRecord.id, async (record) => {
+        // Throwing skips the write, so a storage without a lock never writes an old copy of the record back
+        if (this.getV2RoutingKeys(record).length > 0) throw new V2RoutingKeyAlreadyStoredError()
+        record.routingKeys = [...record.routingKeys, v2RoutingKey]
+        return record
+      })
+    } catch (error) {
+      if (!(error instanceof V2RoutingKeyAlreadyStoredError)) {
+        await this.deleteUnusedRoutingKey(agentContext, v2RoutingKey.kmsKeyId)
+        throw error
+      }
+    }
+
+    // Without a lock another instance can still overwrite the record after this write
+    const storedRecord = await this.mediatorRoutingRepository.getById(agentContext, routingRecord.id)
+    const storedV2RoutingKeys = this.getV2RoutingKeys(storedRecord)
+    if (!storedV2RoutingKeys.some((routingKey) => routingKey.keyId === v2RoutingKey.kmsKeyId)) {
+      await this.deleteUnusedRoutingKey(agentContext, v2RoutingKey.kmsKeyId)
+    }
+    if (storedV2RoutingKeys.length > 1) {
+      this.logger.warn('Mediator routing record has more than one X25519 routing key, DIDComm v2 uses the first one')
+    }
+
+    return storedRecord
+  }
+
+  private getV2RoutingKeys(routingRecord: DidCommMediatorRoutingRecord): Kms.PublicJwk[] {
+    return routingRecord.routingKeysWithKeyId.filter((routingKey) => routingKey.is(Kms.X25519PublicJwk))
+  }
+
+  private async deleteUnusedRoutingKey(agentContext: AgentContext, keyId: string): Promise<void> {
+    try {
+      await agentContext.resolve(Kms.KeyManagementApi).deleteKey({ keyId })
+    } catch (error) {
+      this.logger.warn(`Unable to delete unused mediator routing key '${keyId}'`, { error })
+    }
   }
 
   private async createV2RoutingKey(

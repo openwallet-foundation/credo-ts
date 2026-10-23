@@ -1,5 +1,14 @@
-import { didToNumAlgo2DidDocument, Kms, RecordNotFoundError, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  CachedStorageService,
+  CacheModuleConfig,
+  didToNumAlgo2DidDocument,
+  InMemoryLruCache,
+  Kms,
+  RecordNotFoundError,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
+import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
 import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
@@ -23,7 +32,11 @@ import {
   DidCommMediateRequestV2Message,
   KeylistUpdateActionV2,
 } from '../../protocol/v2/messages'
-import { DidCommMediationRecord, DidCommMediatorRoutingRecord } from '../../repository'
+import {
+  DidCommMediationRecord,
+  DidCommMediatorRoutingRecord,
+  type DidCommMediatorRoutingRecordRoutingKey,
+} from '../../repository'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
 import { DidCommMediatorRoutingRepository } from '../../repository/DidCommMediatorRoutingRepository'
 import { DidCommMediatorService } from '../DidCommMediatorService'
@@ -270,6 +283,43 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
     connectionService
   )
 
+  const ed25519RoutingKey = {
+    routingKeyFingerprint: Kms.PublicJwk.fromPublicKey({
+      kty: 'OKP',
+      crv: 'Ed25519',
+      publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+    }).fingerprint,
+    kmsKeyId: 'some-key-id',
+  }
+  const x25519RoutingKey = {
+    routingKeyFingerprint: Kms.PublicJwk.fromPublicJwk({
+      kty: 'OKP',
+      crv: 'X25519',
+      x: 'hSDwCYkwp1R0i33ctD73Wg2_Og0mOBr066SpjqqbTmo',
+    }).fingerprint,
+    kmsKeyId: 'some-x25519-key-id',
+  }
+
+  const createServiceWithStorage = async (
+    storageService: InMemoryStorageService<DidCommMediatorRoutingRecord>
+  ): Promise<{ repository: DidCommMediatorRoutingRepository; service: DidCommMediatorService }> => {
+    const { DidCommMediatorRoutingRepository: ActualMediatorRoutingRepository } = await vi.importActual<
+      typeof import('../../repository/DidCommMediatorRoutingRepository')
+    >('../../repository/DidCommMediatorRoutingRepository')
+    const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
+    const repository = new ActualMediatorRoutingRepository(storageService, eventEmitter)
+    return {
+      repository,
+      service: new DidCommMediatorService(
+        mediationRepository,
+        repository,
+        eventEmitter,
+        agentConfig.logger,
+        connectionService
+      ),
+    }
+  }
+
   describe('processMediationRequestV2', () => {
     test('creates mediation record with protocol version 2.0', async () => {
       const mediateRequest = new DidCommMediateRequestV2Message({})
@@ -333,22 +383,6 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
         [DidCommMediatorModuleConfig, new DidCommMediatorModuleConfig()],
       ],
     })
-    const ed25519RoutingKey = {
-      routingKeyFingerprint: Kms.PublicJwk.fromPublicKey({
-        kty: 'OKP',
-        crv: 'Ed25519',
-        publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
-      }).fingerprint,
-      kmsKeyId: 'some-key-id',
-    }
-    const x25519RoutingKey = {
-      routingKeyFingerprint: Kms.PublicJwk.fromPublicJwk({
-        kty: 'OKP',
-        crv: 'X25519',
-        x: 'hSDwCYkwp1R0i33ctD73Wg2_Og0mOBr066SpjqqbTmo',
-      }).fingerprint,
-      kmsKeyId: 'some-x25519-key-id',
-    }
     const requestedMediationRecord = () =>
       new DidCommMediationRecord({
         connectionId: 'connectionId',
@@ -396,6 +430,120 @@ describe('MediatorService - v2 (Coordinate Mediation 2.0)', () => {
       await expect(
         mediatorService.createGrantMediationMessageV2(generatedRoutingDidContext, requestedMediationRecord())
       ).rejects.toThrow('no X25519 routing key')
+    })
+  })
+
+  describe('addV2RoutingKeyIfMissing', () => {
+    const v2AgentContext = getAgentContext({
+      agentConfig,
+      registerInstances: [[DidCommModuleConfig, new DidCommModuleConfig({ didcommVersions: ['v1', 'v2'] })]],
+    })
+    const kms = v2AgentContext.resolve(Kms.KeyManagementApi)
+    const routingRecord = (...routingKeys: DidCommMediatorRoutingRecordRoutingKey[]): DidCommMediatorRoutingRecord =>
+      new DidCommMediatorRoutingRecord({ id: 'MEDIATOR_ROUTING_RECORD', routingKeys })
+    const x25519KeyIds = (record: DidCommMediatorRoutingRecord): string[] =>
+      record.routingKeysWithKeyId.filter((routingKey) => routingKey.is(Kms.X25519PublicJwk)).map(({ keyId }) => keyId)
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    test('two instances that upgrade at once without a lock end with one X25519 routing key that both use', async () => {
+      const storageService = new InMemoryStorageService<DidCommMediatorRoutingRecord>()
+      storageService.createRecordsForContext(v2AgentContext)
+      const { repository, service } = await createServiceWithStorage(storageService)
+      await repository.save(v2AgentContext, routingRecord(ed25519RoutingKey))
+      const startupRecords = await Promise.all(
+        [1, 2].map(() => repository.getById(v2AgentContext, 'MEDIATOR_ROUTING_RECORD'))
+      )
+
+      const upgradedRecords = await Promise.all(
+        startupRecords.map((startupRecord) => service.addV2RoutingKeyIfMissing(v2AgentContext, startupRecord))
+      )
+
+      const storedKeyIds = x25519KeyIds(await repository.getById(v2AgentContext, 'MEDIATOR_ROUTING_RECORD'))
+      expect(storedKeyIds).toHaveLength(1)
+      expect(upgradedRecords.map(x25519KeyIds)).toEqual([storedKeyIds, storedKeyIds])
+    })
+
+    test('does not write the record if another instance already stored an X25519 routing key', async () => {
+      const storageService = new InMemoryStorageService<DidCommMediatorRoutingRecord>()
+      storageService.createRecordsForContext(v2AgentContext)
+      const { repository, service } = await createServiceWithStorage(storageService)
+      await repository.save(v2AgentContext, routingRecord(ed25519RoutingKey, x25519RoutingKey))
+      const update = vi.spyOn(storageService, 'update')
+
+      const upgradedRecord = await service.addV2RoutingKeyIfMissing(v2AgentContext, routingRecord(ed25519RoutingKey))
+
+      expect(update).not.toHaveBeenCalled()
+      expect(x25519KeyIds(upgradedRecord)).toEqual([x25519RoutingKey.kmsKeyId])
+    })
+
+    test('deletes its own X25519 key and uses the stored record if another instance wrote after it', async () => {
+      const recordInCallback = routingRecord(ed25519RoutingKey)
+      const storedRecord = routingRecord(ed25519RoutingKey, x25519RoutingKey)
+      mockFunction(mediatorRoutingRepository.updateByIdWithLock).mockImplementationOnce(
+        async (_agentContext, _id, callback) => callback(recordInCallback)
+      )
+      mockFunction(mediatorRoutingRepository.getById).mockResolvedValueOnce(storedRecord)
+
+      await expect(
+        mediatorService.addV2RoutingKeyIfMissing(v2AgentContext, routingRecord(ed25519RoutingKey))
+      ).resolves.toBe(storedRecord)
+
+      const [ownKeyId] = x25519KeyIds(recordInCallback)
+      await expect(kms.getPublicKey({ keyId: ownKeyId })).rejects.toThrow(Kms.KeyManagementKeyNotFoundError)
+    })
+
+    test('keeps the first X25519 key and warns if the stored record holds more than one', async () => {
+      const warn = vi.spyOn(agentConfig.logger, 'warn')
+      const recordInCallback = routingRecord(ed25519RoutingKey)
+      mockFunction(mediatorRoutingRepository.updateByIdWithLock).mockImplementationOnce(
+        async (_agentContext, _id, callback) => callback(recordInCallback)
+      )
+      mockFunction(mediatorRoutingRepository.getById).mockImplementationOnce(async () => {
+        const storedRecord = recordInCallback.clone()
+        storedRecord.routingKeys.splice(1, 0, x25519RoutingKey)
+        return storedRecord
+      })
+
+      const upgradedRecord = await mediatorService.addV2RoutingKeyIfMissing(
+        v2AgentContext,
+        routingRecord(ed25519RoutingKey)
+      )
+
+      const [ownKeyId] = x25519KeyIds(recordInCallback)
+      expect(x25519KeyIds(upgradedRecord)).toEqual([x25519RoutingKey.kmsKeyId, ownKeyId])
+      await expect(kms.getPublicKey({ keyId: ownKeyId })).resolves.toBeDefined()
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('more than one X25519 routing key'))
+    })
+  })
+
+  describe('findMediatorRoutingRecord', () => {
+    test('reads the routing record from storage when the cache is enabled', async () => {
+      const storageService = new InMemoryStorageService<DidCommMediatorRoutingRecord>()
+      const cachedAgentContext = getAgentContext({
+        agentConfig,
+        registerInstances: [
+          [CacheModuleConfig, new CacheModuleConfig({ cache: new InMemoryLruCache({ limit: 10 }) })],
+          [CachedStorageService, new CachedStorageService(storageService)],
+        ],
+      })
+      storageService.createRecordsForContext(cachedAgentContext)
+      const { repository, service } = await createServiceWithStorage(storageService)
+      const id = 'MEDIATOR_ROUTING_RECORD'
+      await repository.save(
+        cachedAgentContext,
+        new DidCommMediatorRoutingRecord({ id, routingKeys: [ed25519RoutingKey] })
+      )
+      await storageService.update(
+        cachedAgentContext,
+        new DidCommMediatorRoutingRecord({ id, routingKeys: [ed25519RoutingKey, x25519RoutingKey] })
+      )
+
+      const routingRecord = await service.findMediatorRoutingRecord(cachedAgentContext)
+
+      expect(routingRecord?.routingKeys).toEqual([ed25519RoutingKey, x25519RoutingKey])
     })
   })
 
