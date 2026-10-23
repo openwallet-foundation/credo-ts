@@ -1315,6 +1315,12 @@ describe('OpenId4VcIssuer', () => {
 
   it('encrypts the credential response when the wallet requests credential_response_encryption', async () => {
     const preAuthorizedCode = '1234567890'
+    const requestEncryptionKey = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+    await issuer.openid4vc.issuer.updateIssuerMetadata({
+      issuerId: openId4VcIssuer.issuerId,
+      credentialConfigurationsSupported: openId4VcIssuer.credentialConfigurationsSupported,
+      credentialRequestEncryption: { jwks: [requestEncryptionKey.publicJwk] },
+    })
 
     const result = await issuer.openid4vc.issuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
@@ -1430,14 +1436,39 @@ describe('OpenId4VcIssuer', () => {
       })
     }
 
-    const configureEncryption = (credentialResponseEncryption: OpenId4VcIssuerRecord['credentialResponseEncryption']) =>
-      issuer.openid4vc.issuer.updateIssuerMetadata({
+    const configureEncryption = async (
+      credentialResponseEncryption?: OpenId4VcIssuerRecord['credentialResponseEncryption']
+    ) => {
+      const requestEncryptionKey = await issuer.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })
+      await issuer.openid4vc.issuer.updateIssuerMetadata({
         issuerId: openId4VcIssuer.issuerId,
         credentialConfigurationsSupported: openId4VcIssuer.credentialConfigurationsSupported,
+        credentialRequestEncryption: { jwks: [requestEncryptionKey.publicJwk] },
         credentialResponseEncryption,
       })
+    }
 
-    it('advertises all supported algorithms and optional encryption by default', async () => {
+    it('does not advertise response encryption without request encryption', async () => {
+      const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+      expect(issuerMetadata.credentialIssuer.credential_response_encryption).toBeUndefined()
+
+      await expect(requestSdJwtCredential('A256GCM')).rejects.toMatchObject({
+        errorResponse: { error: 'invalid_encryption_parameters' },
+      })
+    })
+
+    it('rejects response encryption configured without request encryption', async () => {
+      await expect(
+        issuer.openid4vc.issuer.updateIssuerMetadata({
+          issuerId: openId4VcIssuer.issuerId,
+          credentialConfigurationsSupported: openId4VcIssuer.credentialConfigurationsSupported,
+          credentialResponseEncryption: { required: true },
+        })
+      ).rejects.toThrow("'credentialResponseEncryption' requires 'credentialRequestEncryption'")
+    })
+
+    it('advertises all supported algorithms and optional encryption when request encryption is configured', async () => {
+      await configureEncryption()
       const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
 
       expect(issuerMetadata.credentialIssuer.credential_response_encryption).toEqual({
@@ -1572,6 +1603,44 @@ describe('OpenId4VcIssuer', () => {
       await expect(decrypt(issuerRecord, `${header}..aa.bb.cc`)).rejects.toMatchObject({
         errorResponse: { error: 'invalid_encryption_parameters' },
       })
+    })
+
+    it.each([
+      ['a zip header', { zip: 'DEF' }],
+      ['a crit header', { crit: ['b64'] }],
+      ['an alg other than ECDH-ES', { alg: 'ECDH-ES+A128KW' }],
+      ['an unsupported enc', { enc: 'A192GCM' }],
+      ['a malformed epk', { epk: { kty: 'EC' } }],
+    ])('rejects an encrypted credential request with %s', async (_, headerOverride) => {
+      const { publicJwk, issuerRecord } = await configureRequestEncryption()
+      const [encodedHeader, ...rest] = (await encryptRequest(publicJwk, { credential_configuration_id: 'a' })).split(
+        '.'
+      )
+      const header = JSON.parse(TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64Url(encodedHeader)))
+      const tampered = TypedArrayEncoder.toBase64Url(
+        TypedArrayEncoder.fromUtf8String(JSON.stringify({ ...header, ...headerOverride }))
+      )
+
+      await expect(decrypt(issuerRecord, [tampered, ...rest].join('.'))).rejects.toMatchObject({
+        errorResponse: { error: 'invalid_encryption_parameters' },
+      })
+    })
+
+    it('rejects a credential request that is not a compact JWE', async () => {
+      const { issuerRecord } = await configureRequestEncryption()
+
+      await expect(decrypt(issuerRecord, 'not.a.jwe')).rejects.toMatchObject({
+        errorResponse: { error: 'invalid_credential_request' },
+      })
+    })
+
+    it('rejects an issuer with response encryption but without request encryption', async () => {
+      await expect(
+        issuer.openid4vc.issuer.createIssuer({
+          credentialConfigurationsSupported: openId4VcIssuer.credentialConfigurationsSupported,
+          credentialResponseEncryption: { required: true },
+        })
+      ).rejects.toThrow("'credentialResponseEncryption' requires 'credentialRequestEncryption'")
     })
 
     it('rejects an encrypted credential request when request encryption is not configured', async () => {
