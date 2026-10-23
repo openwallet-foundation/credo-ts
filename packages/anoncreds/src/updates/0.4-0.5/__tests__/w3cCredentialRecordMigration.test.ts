@@ -1,11 +1,8 @@
-import type { DidRepository } from '@credo-ts/core'
-
 import {
   Agent,
   CacheModuleConfig,
   CredoError,
   DidResolverService,
-  DidsModuleConfig,
   EventEmitter,
   InjectionSymbols,
   JsonLdModuleConfig,
@@ -30,8 +27,14 @@ import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
 import { AnonCredsRsHolderService } from '../../../anoncreds-rs'
 import { AnonCredsCredentialRecord } from '../../../repository'
 import { AnonCredsHolderServiceSymbol, AnonCredsRegistryService } from '../../../services'
-import { getQualifiedDidIndyDid, getUnQualifiedDidIndyDid, isUnqualifiedIndyDid } from '../../../utils/indyIdentifiers'
+import {
+  isDidIndyCredentialDefinitionId,
+  isDidIndyRevocationRegistryId,
+  parseIndyCredentialDefinitionId,
+  parseIndyRevocationRegistryId,
+} from '../../../utils/indyIdentifiers'
 import * as testModule from '../anonCredsCredentialRecord'
+import { getQualifiedDidIndyDid, isUnqualifiedIndyDid } from '../unqualifiedIndyIdentifiers'
 
 const agentConfig = getAgentConfig('Migration AnonCreds Credential Records 0.4-0.5')
 const registry = new InMemoryAnonCredsRegistry()
@@ -60,6 +63,10 @@ const inMemoryLruCache = {
   remove: vi.fn(),
 }
 
+const didResolverService = {
+  resolve: vi.fn(),
+}
+
 const cacheModuleConfig = new CacheModuleConfig({
   cache: inMemoryLruCache,
 })
@@ -77,7 +84,7 @@ const agentContext = getAgentContext({
     [InjectionSymbols.FileSystem, new agentDependencies.FileSystem()],
     [InjectionSymbols.StorageService, inMemoryStorageService],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
-    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig(), {} as unknown as DidRepository)],
+    [DidResolverService, didResolverService],
     [InjectionSymbols.Logger, testLogger],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
@@ -131,6 +138,7 @@ describe('0.4-0.5 | AnonCredsRecord', () => {
       inMemoryLruCache.get.mockClear()
       inMemoryLruCache.set.mockClear()
       inMemoryLruCache.remove.mockClear()
+      didResolverService.resolve.mockClear()
 
       agent = new AgentMock()
     })
@@ -163,23 +171,31 @@ describe('0.4-0.5 | AnonCredsRecord', () => {
     })
 
     it('credential with unqualified did:indy (bcovrin:test) identifiers', async () => {
+      // The namespace is not cached. The did:sov resolution writes it to the cache.
+      inMemoryLruCache.get
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce({ indyNamespace: 'bcovrin:test' })
+
       await testMigration(agent, {
-        issuerId: getUnQualifiedDidIndyDid('did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH'),
-        schemaIssuerId: getUnQualifiedDidIndyDid('did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjG'),
-        schemaId: getUnQualifiedDidIndyDid(
-          'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjG/anoncreds/v0/SCHEMA/Employee Credential/1.0.0'
-        ),
+        issuerId: 'SDqTzbVuCowusqGBNbNDjH',
+        schemaIssuerId: 'SDqTzbVuCowusqGBNbNDjG',
+        schemaId: 'SDqTzbVuCowusqGBNbNDjG:2:Employee Credential:1.0.0',
         indyNamespace: 'bcovrin:test',
       })
     })
 
     it('revocable credential with unqualified did:indy (bcovrin:test) identifiers', async () => {
+      // The namespace is not cached. The did:sov resolution writes it to the cache.
+      inMemoryLruCache.get
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce({ indyNamespace: 'bcovrin:test' })
+
       await testMigration(agent, {
-        issuerId: getUnQualifiedDidIndyDid('did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH'),
-        schemaIssuerId: getUnQualifiedDidIndyDid('did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjG'),
-        schemaId: getUnQualifiedDidIndyDid(
-          'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjG/anoncreds/v0/SCHEMA/Employee Credential/1.0.0'
-        ),
+        issuerId: 'SDqTzbVuCowusqGBNbNDjH',
+        schemaIssuerId: 'SDqTzbVuCowusqGBNbNDjG',
+        schemaId: 'SDqTzbVuCowusqGBNbNDjG:2:Employee Credential:1.0.0',
         indyNamespace: 'bcovrin:test',
         revocable: true,
       })
@@ -189,11 +205,9 @@ describe('0.4-0.5 | AnonCredsRecord', () => {
       inMemoryLruCache.get.mockReturnValueOnce({ indyNamespace: 'bcovrin:test' })
 
       await testMigration(agent, {
-        issuerId: getUnQualifiedDidIndyDid('did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH'),
-        schemaIssuerId: getUnQualifiedDidIndyDid('did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjG'),
-        schemaId: getUnQualifiedDidIndyDid(
-          'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjG/anoncreds/v0/SCHEMA/Employee Credential/1.0.0'
-        ),
+        issuerId: 'SDqTzbVuCowusqGBNbNDjH',
+        schemaIssuerId: 'SDqTzbVuCowusqGBNbNDjG',
+        schemaId: 'SDqTzbVuCowusqGBNbNDjG:2:Employee Credential:1.0.0',
         indyNamespace: 'bcovrin:test',
         shouldBeInCache: 'indy',
       })
@@ -261,7 +275,7 @@ async function testMigration(
   // We'll use unqualified form in case the inputs are unqualified as well
   const credentialDefinitionId =
     indyNamespace && isUnqualifiedIndyDid(issuerId)
-      ? getUnQualifiedDidIndyDid(credentialDefinitionState.credentialDefinitionId)
+      ? getUnqualifiedIdentifier(credentialDefinitionState.credentialDefinitionId)
       : credentialDefinitionState.credentialDefinitionId
   let revocationRegistryDefinitionId: string | undefined
 
@@ -290,7 +304,7 @@ async function testMigration(
 
     revocationRegistryDefinitionId =
       indyNamespace && isUnqualifiedIndyDid(issuerId)
-        ? getUnQualifiedDidIndyDid(revocationRegistryDefinitionState.revocationRegistryDefinitionId)
+        ? getUnqualifiedIdentifier(revocationRegistryDefinitionState.revocationRegistryDefinitionId)
         : revocationRegistryDefinitionState.revocationRegistryDefinitionId
   }
 
@@ -374,20 +388,24 @@ async function testMigration(
 
   await testModule.storeAnonCredsInW3cFormatV0_5(agent)
 
-  const unqualifiedDidIndyDid = isUnqualifiedIndyDid(issuerId)
-  if (unqualifiedDidIndyDid) {
-    expect(inMemoryLruCache.get).toHaveBeenCalledTimes(
-      options.shouldBeInCache === 'sov' || !options.shouldBeInCache ? 2 : 1
-    )
-    if (options.shouldBeInCache === 'sov' || !options.shouldBeInCache) {
-      expect(inMemoryLruCache.get).toHaveBeenCalledWith(agent.context, `IndySdkPoolService:${issuerId}`)
-    } else {
-      expect(inMemoryLruCache.get).toHaveBeenCalledWith(agent.context, `IndyVdrPoolService:${issuerId}`, {
-        scope: 'global',
-      })
-    }
-  } else {
+  if (!isUnqualifiedIndyDid(issuerId)) {
     expect(inMemoryLruCache.get).toHaveBeenCalledTimes(0)
+    expect(didResolverService.resolve).toHaveBeenCalledTimes(0)
+  } else if (options.shouldBeInCache === 'indy') {
+    expect(inMemoryLruCache.get).toHaveBeenCalledTimes(1)
+    expect(inMemoryLruCache.get).toHaveBeenCalledWith(agent.context, `IndyVdrPoolService:${issuerId}`, {
+      scope: 'global',
+    })
+    expect(didResolverService.resolve).toHaveBeenCalledTimes(0)
+  } else if (options.shouldBeInCache === 'sov') {
+    expect(inMemoryLruCache.get).toHaveBeenCalledTimes(2)
+    expect(inMemoryLruCache.get).toHaveBeenCalledWith(agent.context, `IndySdkPoolService:${issuerId}`)
+    expect(didResolverService.resolve).toHaveBeenCalledTimes(0)
+  } else {
+    // The namespace was not cached, so the migration resolved the did:sov did and read the cache again
+    expect(didResolverService.resolve).toHaveBeenCalledTimes(1)
+    expect(didResolverService.resolve).toHaveBeenCalledWith(agent.context, `did:sov:${issuerId}`)
+    expect(inMemoryLruCache.get).toHaveBeenCalledTimes(3)
   }
 
   expect(anonCredsRepo.getAll).toHaveBeenCalledTimes(1)
@@ -425,12 +443,23 @@ async function testMigration(
       })
     )
   }
+}
 
-  if (unqualifiedDidIndyDid && options.shouldBeInCache) {
-    expect(inMemoryLruCache.get).toHaveReturnedWith({ indyNamespace })
-  } else if (unqualifiedDidIndyDid && !options.shouldBeInCache) {
-    expect(inMemoryLruCache.get).toHaveBeenCalledTimes(2)
-  } else {
-    expect(inMemoryLruCache.get).toHaveBeenCalledTimes(0)
+/**
+ * Converts a did:indy credential definition id or revocation registry id into the
+ * unqualified form that storage version 0.4 used.
+ */
+function getUnqualifiedIdentifier(identifier: string) {
+  if (isDidIndyCredentialDefinitionId(identifier)) {
+    const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(identifier)
+    return `${namespaceIdentifier}:3:CL:${schemaSeqNo}:${tag}`
   }
+
+  if (isDidIndyRevocationRegistryId(identifier)) {
+    const { namespaceIdentifier, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag } =
+      parseIndyRevocationRegistryId(identifier)
+    return `${namespaceIdentifier}:4:${namespaceIdentifier}:3:CL:${schemaSeqNo}:${credentialDefinitionTag}:CL_ACCUM:${revocationRegistryTag}`
+  }
+
+  throw new CredoError(`Cannot create unqualified identifier for '${identifier}'`)
 }

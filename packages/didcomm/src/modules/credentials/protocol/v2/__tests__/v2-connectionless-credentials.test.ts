@@ -2,8 +2,8 @@ import { ReplaySubject, Subject } from 'rxjs'
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { getAnonCredsIndyModules } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
+import { getAnonCredsIndyModules } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
   storePreCreatedAnonCredsDefinition,

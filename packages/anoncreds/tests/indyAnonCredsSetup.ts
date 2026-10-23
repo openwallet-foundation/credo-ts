@@ -52,20 +52,9 @@ import type {
   RegisterCredentialDefinitionReturnStateFinished,
   RegisterSchemaReturnStateFinished,
 } from '../src'
-import {
-  AnonCredsModule,
-  getUnqualifiedCredentialDefinitionId,
-  getUnqualifiedSchemaId,
-  parseIndyCredentialDefinitionId,
-  parseIndySchemaId,
-} from '../src'
+import { AnonCredsModule } from '../src'
 import type { AnonCredsDidCommOfferCredentialFormat } from '../src/didcomm'
-import {
-  AnonCredsDidCommCredentialFormatService,
-  AnonCredsDidCommProofFormatService,
-  LegacyIndyDidCommCredentialFormatService,
-  LegacyIndyDidCommProofFormatService,
-} from '../src/didcomm'
+import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService } from '../src/didcomm'
 import { NativeAnoncreds } from './helpers'
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import type { PreCreatedAnonCredsDefinition } from './preCreatedAnonCredsDefinition'
@@ -104,9 +93,6 @@ export const getAnonCredsIndyModules = <
     },
   })
 
-  const legacyIndyCredentialFormatService = new LegacyIndyDidCommCredentialFormatService()
-  const legacyIndyProofFormatService = new LegacyIndyDidCommProofFormatService()
-
   const modules = {
     didcomm: new DidCommModule({
       connections: {
@@ -118,7 +104,6 @@ export const getAnonCredsIndyModules = <
         credentialProtocols: [
           new DidCommCredentialV2Protocol({
             credentialFormats: [
-              legacyIndyCredentialFormatService,
               new AnonCredsDidCommCredentialFormatService(),
               ...(extraCredentialFormatServices ?? []),
             ],
@@ -129,11 +114,7 @@ export const getAnonCredsIndyModules = <
         autoAcceptProofs,
         proofProtocols: [
           new DidCommProofV2Protocol({
-            proofFormats: [
-              legacyIndyProofFormatService,
-              new AnonCredsDidCommProofFormatService(),
-              ...(extraProofFormatServices ?? []),
-            ],
+            proofFormats: [new AnonCredsDidCommProofFormatService(), ...(extraProofFormatServices ?? [])],
           }),
         ],
       },
@@ -156,7 +137,7 @@ export const getAnonCredsIndyModules = <
   return modules
 }
 
-export async function presentLegacyAnonCredsProof({
+export async function presentIndyAnonCredsProof({
   verifierAgent,
   verifierReplay,
 
@@ -186,7 +167,7 @@ export async function presentLegacyAnonCredsProof({
   let verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.requestProof({
     connectionId: verifierHolderConnectionId,
     proofFormats: {
-      indy: {
+      anoncreds: {
         name: 'Test Proof Request',
         requested_attributes: attributes,
         requested_predicates: predicates,
@@ -209,7 +190,7 @@ export async function presentLegacyAnonCredsProof({
 
   await holderAgent.didcomm.proofs.acceptRequest({
     proofExchangeRecordId: holderProofExchangeRecord.id,
-    proofFormats: { indy: selectedCredentials.proofFormats.indy },
+    proofFormats: { anoncreds: selectedCredentials.proofFormats.anoncreds },
   })
 
   verifierProofExchangeRecord = await verifierProofExchangeRecordPromise
@@ -233,7 +214,7 @@ export async function presentLegacyAnonCredsProof({
   }
 }
 
-export async function issueLegacyAnonCredsCredential({
+export async function issueIndyAnonCredsCredential({
   issuerAgent,
   issuerReplay,
 
@@ -257,7 +238,7 @@ export async function issueLegacyAnonCredsCredential({
     connectionId: issuerHolderConnectionId,
     protocolVersion: 'v2',
     credentialFormats: {
-      indy: offer,
+      anoncreds: offer,
     },
     autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
   })
@@ -523,31 +504,12 @@ export async function prepareForAnonCredsIssuance(agent: Agent, { attributeNames
     tag: 'default',
   })
 
-  const s = parseIndySchemaId(schema.schemaId)
-  const cd = parseIndyCredentialDefinitionId(credentialDefinition.credentialDefinitionId)
-
-  const legacySchemaId = getUnqualifiedSchemaId(s.namespaceIdentifier, s.schemaName, s.schemaVersion)
-  const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
-    cd.namespaceIdentifier,
-    cd.schemaSeqNo,
-    cd.tag
-  )
-
   // Wait some time pass to let ledger settle the object
   await sleep(1000)
 
-  // NOTE: we return the legacy schema and credential definition ids here because that's what currently expected
-  // in all tests. If we also support did:indy in tests we probably want to return the qualified identifiers here
-  // and transform them to the legacy variant in the specific tests that need it.
   return {
-    schema: {
-      ...schema,
-      schemaId: legacySchemaId,
-    },
-    credentialDefinition: {
-      ...credentialDefinition,
-      credentialDefinitionId: legacyCredentialDefinitionId,
-    },
+    schema,
+    credentialDefinition,
   }
 }
 

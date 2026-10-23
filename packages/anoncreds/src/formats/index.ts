@@ -3,7 +3,3 @@ export { AnonCredsDidCommCredentialFormatService } from './AnonCredsDidCommCrede
 export * from './AnonCredsDidCommProofFormat'
 export { AnonCredsDidCommProofFormatService } from './AnonCredsDidCommProofFormatService'
 export { AnonCredsLinkSecretBindingProvider } from './AnonCredsLinkSecretBindingProvider'
-export * from './LegacyIndyDidCommCredentialFormat'
-export { LegacyIndyDidCommCredentialFormatService } from './LegacyIndyDidCommCredentialFormatService'
-export * from './LegacyIndyDidCommProofFormat'
-export { LegacyIndyDidCommProofFormatService } from './LegacyIndyDidCommProofFormatService'

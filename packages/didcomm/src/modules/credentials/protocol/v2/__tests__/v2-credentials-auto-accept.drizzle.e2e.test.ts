@@ -1,5 +1,5 @@
-import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
+import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import { anoncredsDefinitionFourAttributesNoRevocation } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import type { EventReplaySubject } from '../../../../../../../core/tests'
 import {
