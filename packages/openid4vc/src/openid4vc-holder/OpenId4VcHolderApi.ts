@@ -24,6 +24,7 @@ import type {
 import { OpenId4VpHolderService } from './OpenId4vpHolderService'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
+  OpenId4VpDeclineAuthorizationRequestOptions,
   ResolveOpenId4VpAuthorizationRequestOptions,
 } from './OpenId4vpHolderServiceOptions'
 
@@ -57,6 +58,9 @@ export class OpenId4VcHolderApi {
    * - URI containing request or request_uri param
    * - Request payload
    * @returns the resolved and verified authentication request.
+   * @throws {Openid4vpAuthorizationRequestError} when the request is invalid and its payload is known. Pass it to
+   * {@link declineOpenId4VpAuthorizationRequest} as `authorizationRequestError` to send the error to the verifier.
+   * Other errors happen before the payload is known, so there is nowhere to send them to.
    */
   public async resolveOpenId4VpAuthorizationRequest(
     request: string | Record<string, unknown>,
@@ -77,6 +81,21 @@ export class OpenId4VcHolderApi {
    */
   public async acceptOpenId4VpAuthorizationRequest(options: OpenId4VpAcceptAuthorizationRequestOptions) {
     return await this.openId4VpHolderService.acceptAuthorizationRequest(this.agentContext, options)
+  }
+
+  /**
+   * Declines an authorization request by sending an OpenID4VP Authorization Error Response ([OpenID4VP 1.0] Section 8.5).
+   * Use it when the user declines the request, when the wallet doesn't have the requested credentials, or with the
+   * `Openid4vpAuthorizationRequestError` thrown by {@link resolveOpenId4VpAuthorizationRequest}. When that error's
+   * client is not authenticated, the `redirectUri` is left out of the result, as it could send the user anywhere.
+   *
+   * For response mode of `direct_post` or `direct_post.jwt` the response will be submitted directly to the
+   * response url, and the `redirectUri` the verifier may return should be opened to send the user back. For
+   * `dc_api` and `dc_api.jwt` the response will be returned but without a `serverResponse`, and you have to
+   * return it to the platform yourself.
+   */
+  public async declineOpenId4VpAuthorizationRequest(options: OpenId4VpDeclineAuthorizationRequestOptions) {
+    return await this.openId4VpHolderService.declineAuthorizationRequest(this.agentContext, options)
   }
 
   /**
