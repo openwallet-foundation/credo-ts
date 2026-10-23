@@ -3,13 +3,16 @@ import {
   ClaimFormat,
   DateOnly,
   type DcqlQuery,
+  type GetTrustedIssuersForVerification,
   Kms,
   MdocDeviceResponse,
   MdocRecord,
   parseDid,
   type SdJwtVc,
   SdJwtVcRecord,
+  type SdJwtVcWithTypeMetadataChain,
   TypedArrayEncoder,
+  type VerificationSigner,
   W3cCredential,
   W3cCredentialRecord,
   W3cCredentialSubject,
@@ -26,10 +29,19 @@ import {
   X509Service,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
+import nock from 'nock'
+import { filter, firstValueFrom } from 'rxjs'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
+import {
+  OpenId4VcModule,
+  OpenId4VcVerificationSessionState,
+  type OpenId4VcVerificationSessionStateChangedEvent,
+  type OpenId4VcVerificationTypes,
+  OpenId4VcVerifierEvents,
+  type OpenId4VcVerifierModuleConfigOptions,
+} from '../src'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
@@ -1202,6 +1214,99 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
+  })
+
+  it('e2e flow verifying a sd-jwt-vc whose vct extends the requested vct', async () => {
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
+
+    const requestedVct = 'https://example.com/vct/degree'
+    const presentedVct = 'https://example.com/vct/bachelor-degree'
+
+    // Served once each: DCQL matching must reuse the chain resolved before the trust callback
+    nock('https://example.com')
+      .get('/vct/bachelor-degree')
+      .once()
+      .reply(200, { vct: presentedVct, extends: requestedVct })
+      .get('/vct/degree')
+      .once()
+      .reply(200, { vct: requestedVct })
+
+    const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
+      holder: { method: 'did', didUrl: holder.kid },
+      issuer: { method: 'did', didUrl: verifier.kid },
+      payload: { vct: presentedVct, university: 'innsbruck' },
+    })
+    const credentialRecord = await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc) })
+
+    const trustContexts: Array<{ credentialQueryId?: string; vctChain?: string[] }> = []
+    const getTrustedIssuersForVerification: GetTrustedIssuersForVerification<
+      VerificationSigner,
+      OpenId4VcVerificationTypes
+    > = async (_agentContext, { verification }) => {
+      if (verification.type === 'openId4VpCredential' && verification.credential.claimFormat === ClaimFormat.SdJwtDc) {
+        trustContexts.push({
+          credentialQueryId: verification.dcql?.credentialQueryId,
+          vctChain: verification.credential.typeMetadataChain?.map((typeMetadata) => typeMetadata.vct),
+        })
+      }
+
+      return undefined
+    }
+    verifier.agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
+
+    const { authorizationRequest, verificationSession } =
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: { method: 'none' },
+        responseMode: 'direct_post',
+        dcql: {
+          query: {
+            credentials: [{ id: 'degree', format: 'dc+sd-jwt', meta: { vct_values: [requestedVct] } }],
+          },
+        },
+        version: 'v1',
+      })
+
+    const resolvedAuthorizationRequest =
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+
+    const { serverResponse } = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
+      dcql: {
+        credentials: {
+          degree: [
+            { claimFormat: ClaimFormat.SdJwtDc, credentialRecord, disclosedPayload: { university: 'innsbruck' } },
+          ],
+        },
+      },
+    })
+    expect(serverResponse).toMatchObject({ status: 200 })
+
+    // The event has the presentations as verified, so the type metadata doesn't have to be resolved again
+    const verifiedEvent = await firstValueFrom(
+      verifier.replaySubject.pipe(
+        filter(
+          (event): event is OpenId4VcVerificationSessionStateChangedEvent =>
+            event.type === OpenId4VcVerifierEvents.VerificationSessionStateChanged
+        ),
+        filter(
+          ({ payload }) =>
+            payload.verificationSession.id === verificationSession.id &&
+            payload.verificationSession.state === OpenId4VcVerificationSessionState.ResponseVerified
+        )
+      )
+    )
+
+    expect(trustContexts).toEqual([{ credentialQueryId: 'degree', vctChain: [presentedVct, requestedVct] }])
+
+    const presentation = verifiedEvent.payload.verifiedAuthorizationResponse?.dcql?.presentations.degree[0] as
+      | SdJwtVcWithTypeMetadataChain
+      | undefined
+    expect(presentation?.typeMetadataChain?.map((typeMetadata) => typeMetadata.vct)).toEqual([
+      presentedVct,
+      requestedVct,
+    ])
+    expect(presentation?.typeMetadata).toMatchObject({ vct: presentedVct, extends: requestedVct })
   })
 
   it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
@@ -2862,6 +2967,20 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
 
+    const trustedIssuersQueryIds: Array<string | undefined> = []
+    const getTrustedIssuersForVerification: GetTrustedIssuersForVerification<
+      VerificationSigner,
+      OpenId4VcVerificationTypes
+    > = async (_agentContext, { verification }) => {
+      if (verification.type === 'openId4VpCredential') {
+        trustedIssuersQueryIds.push(verification.dcql?.credentialQueryId)
+      }
+
+      // Fall back to the trusted certificates configured above
+      return undefined
+    }
+    verifier.agent.context.config.setTrustedIssuersForVerification(getTrustedIssuersForVerification)
+
     const dcqlQuery = {
       credentials: [
         {
@@ -3070,6 +3189,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const { dcql, transactionData } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession.id
     )
+
+    expect(trustedIssuersQueryIds.sort()).toEqual(['OpenBadgeCredentialDescriptor', 'university'])
 
     expect(transactionData).toEqual([
       {
