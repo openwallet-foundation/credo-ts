@@ -13,6 +13,7 @@ import type { DidCommOutboundMessageContext } from '../../../models'
 import { DidCommDidExchangeState } from '../../connections/models/DidCommDidExchangeState'
 import { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
 import { DidCommMessagePickupApi } from '../DidCommMessagePickupApi'
+import { DidCommMessagePickupEventTypes } from '../DidCommMessagePickupEvents'
 import { DidCommMessagePickupModuleConfig } from '../DidCommMessagePickupModuleConfig'
 import type { DidCommMessagePickupSession } from '../DidCommMessagePickupSession'
 import {
@@ -139,6 +140,36 @@ describe('DidCommMessagePickupApi', () => {
         batchSize: 10,
       })
     ).rejects.toThrow(CredoError)
+  })
+
+  it('pickupMessages only completes on the completed event of its own thread', async () => {
+    const completed$ = new Subject<BaseEvent>()
+    mockFunction(connectionService.getById).mockResolvedValue(mockConnection)
+    mockFunction(eventEmitter.observable).mockReturnValue(completed$)
+
+    function completeOnThread(threadId?: string): void {
+      mockFunction(messageSender.sendMessage).mockImplementation(async (outboundMessageContext) => {
+        const { message } = outboundMessageContext as DidCommOutboundMessageContext
+        completed$.next({
+          type: DidCommMessagePickupEventTypes.MessagePickupCompleted,
+          metadata: { contextCorrelationId: agentContext.contextCorrelationId },
+          payload: { connection: mockConnection, threadId: threadId ?? message.threadId },
+        })
+      })
+    }
+    const pickup = (): Promise<void> =>
+      api.pickupMessages({
+        connectionId: mockConnection.id,
+        protocolVersion: 'v2',
+        awaitCompletion: true,
+        awaitCompletionTimeoutMs: 50,
+      })
+
+    completeOnThread('another-thread')
+    await expect(pickup()).rejects.toThrow('Timeout has occurred')
+
+    completeOnThread()
+    await expect(pickup()).resolves.toBeUndefined()
   })
 
   describe('setLiveDeliveryMode with awaitConfirmation', () => {

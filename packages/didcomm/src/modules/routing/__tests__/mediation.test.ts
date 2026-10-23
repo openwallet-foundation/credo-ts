@@ -15,7 +15,6 @@ import {
   getMockConnection,
   waitForBasicMessageSubject,
 } from '../../../../../core/tests/helpers'
-import { DidCommEventTypes, type DidCommMessageProcessedEvent } from '../../../DidCommEvents'
 import { DidCommModule } from '../../../DidCommModule'
 import { DidCommModuleConfig, type DidCommModuleConfigOptions } from '../../../DidCommModuleConfig'
 import { MessageSendingError } from '../../../errors'
@@ -23,9 +22,6 @@ import type { DidCommOutboundMessageContext } from '../../../models'
 import { type DidCommOutboundWebSocketClosedEvent, DidCommTransportEventTypes } from '../../../transport'
 import { DidCommBasicMessageEventTypes } from '../../basic-messages'
 import { DidCommConnectionRecord, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../connections'
-import type { SetLiveDeliveryModeOptions } from '../../message-pickup/DidCommMessagePickupApiOptions'
-import { DidCommStatusRequestV2Message, DidCommStatusV2Message } from '../../message-pickup/protocol/v2'
-import { DidCommMessagePickupSessionService } from '../../message-pickup/services/DidCommMessagePickupSessionService'
 import { DidCommMediationRecipientApi } from '../DidCommMediationRecipientApi'
 import {
   DidCommMediationRecipientModuleConfig,
@@ -364,7 +360,10 @@ describe('DidCommMediationRecipientApi live mode', () => {
   const outboundTransport = {
     supportedSchemes: ['ws'],
     sendMessage: vi.fn(),
-    closeSocketByConnectionId: vi.fn(() => true),
+    closeSocketByConnectionId: vi.fn((): boolean => {
+      emitSocketClosed()
+      return true
+    }),
     start: vi.fn(),
     stop: vi.fn(),
   }
@@ -372,23 +371,21 @@ describe('DidCommMediationRecipientApi live mode', () => {
     agentConfig,
     registerInstances: [
       [DidCommModuleConfig, new DidCommModuleConfig({ transports: { outbound: [outboundTransport] } })],
-      [DidCommMessagePickupSessionService, new DidCommMessagePickupSessionService()],
     ],
   })
   const stop$ = new Subject<boolean>()
   const eventEmitter = new EventEmitter(agentConfig.agentDependencies, stop$)
   const messagePickupApi = {
     pickupMessages: vi.fn(async () => {}),
-    setLiveDeliveryMode: vi.fn(async (_options: SetLiveDeliveryModeOptions) => {}),
+    setLiveDeliveryMode: vi.fn(async () => {}),
   }
-  const messageSender = { sendMessage: vi.fn() }
 
   function liveModeRecipient(config: DidCommMediationRecipientModuleConfigOptions): DidCommMediationRecipientApi {
     return new DidCommMediationRecipientApi(
       {} as never,
       { getById: async () => connection } as never,
       {} as never,
-      messageSender as never,
+      {} as never,
       eventEmitter,
       {} as never,
       messagePickupApi as never,
@@ -408,16 +405,9 @@ describe('DidCommMediationRecipientApi live mode', () => {
     })
   }
 
-  function replyToStatusRequests(status: { messageCount: number; liveDelivery?: boolean }): void {
-    messageSender.sendMessage.mockImplementation(async ({ message }: DidCommOutboundMessageContext) => {
-      eventEmitter.emit<DidCommMessageProcessedEvent>(agentContext, {
-        type: DidCommEventTypes.DidCommMessageProcessed,
-        payload: {
-          message: new DidCommStatusV2Message({ threadId: message.threadId, ...status }),
-          connection,
-          handled: true,
-        },
-      })
+  function socketNotOpen(): MessageSendingError {
+    return new MessageSendingError('Socket is not open', {
+      outboundMessageContext: {} as DidCommOutboundMessageContext,
     })
   }
 
@@ -430,48 +420,6 @@ describe('DidCommMediationRecipientApi live mode', () => {
     vi.useRealTimers()
     vi.restoreAllMocks()
     vi.resetAllMocks()
-  })
-
-  test('waits for the mediator to confirm live mode for the check interval, capped at 10 seconds', async () => {
-    for (const config of [{}, { liveModeCheckIntervalMs: 1000 }]) {
-      await liveModeRecipient(config).initiateMessagePickup(
-        mediationRecord,
-        DidCommMediatorPickupStrategy.PickUpV2LiveMode
-      )
-    }
-
-    expect(
-      messagePickupApi.setLiveDeliveryMode.mock.calls.map(([options]) => [
-        options.awaitConfirmation,
-        options.awaitConfirmationTimeoutMs,
-      ])
-    ).toEqual([
-      [true, 10000],
-      [true, 1000],
-    ])
-  })
-
-  test('does not check live mode or wait for confirmation when liveModeCheckIntervalMs is 0', async () => {
-    await liveModeRecipient({ liveModeCheckIntervalMs: 0 }).initiateMessagePickup(
-      mediationRecord,
-      DidCommMediatorPickupStrategy.PickUpV2LiveMode
-    )
-    await vi.advanceTimersByTimeAsync(60000)
-
-    expect(messagePickupApi.setLiveDeliveryMode).toHaveBeenCalledWith(
-      expect.objectContaining({ awaitConfirmation: false })
-    )
-    expect(messageSender.sendMessage).not.toHaveBeenCalled()
-  })
-
-  test('does not start the live mode check when pickup stops while live mode is being set', async () => {
-    const recipient = liveModeRecipient({ liveModeCheckIntervalMs: 100 })
-    messagePickupApi.setLiveDeliveryMode.mockImplementation(() => recipient.stopMessagePickup())
-
-    await recipient.initiateMessagePickup(mediationRecord, DidCommMediatorPickupStrategy.PickUpV2LiveMode)
-    await vi.advanceTimersByTimeAsync(500)
-
-    expect(messageSender.sendMessage).not.toHaveBeenCalled()
   })
 
   test('jitters the reconnect delay once the backoff reaches the cap', async () => {
@@ -499,90 +447,47 @@ describe('DidCommMediationRecipientApi live mode', () => {
     expect(messagePickupApi.pickupMessages).toHaveBeenCalledTimes(1)
   })
 
-  test('resets the reconnect backoff only once a live mode check passes', async () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.5)
-    replyToStatusRequests({ messageCount: 0, liveDelivery: true })
-    await liveModeRecipient({
-      baseMediatorReconnectionIntervalMs: 1000,
-      liveModeCheckIntervalMs: 100,
-    }).initiateMessagePickup(mediationRecord, DidCommMediatorPickupStrategy.PickUpV2LiveMode)
+  test('still rejects when live mode setup fails at start', async () => {
+    messagePickupApi.setLiveDeliveryMode.mockRejectedValueOnce(socketNotOpen())
+
+    await expect(
+      liveModeRecipient({}).initiateMessagePickup(mediationRecord, DidCommMediatorPickupStrategy.PickUpV2LiveMode)
+    ).rejects.toThrow(MessageSendingError)
+    expect(outboundTransport.closeSocketByConnectionId).not.toHaveBeenCalled()
+  })
+
+  test('closes the mediator socket so the loop retries when live mode setup fails on a reconnect', async () => {
+    await liveModeRecipient({}).initiateMessagePickup(mediationRecord, DidCommMediatorPickupStrategy.PickUpV2LiveMode)
+    messagePickupApi.pickupMessages.mockRejectedValueOnce(new TimeoutError())
+    messagePickupApi.setLiveDeliveryMode.mockRejectedValueOnce(socketNotOpen())
 
     emitSocketClosed()
-    await vi.advanceTimersByTimeAsync(1000)
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(outboundTransport.closeSocketByConnectionId).toHaveBeenCalledTimes(2)
+    expect(messagePickupApi.setLiveDeliveryMode).toHaveBeenCalledTimes(3)
+
+    messagePickupApi.pickupMessages.mockRejectedValueOnce(new Error('No message pickup protocol registered'))
     emitSocketClosed()
-    await vi.advanceTimersByTimeAsync(1999)
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(outboundTransport.closeSocketByConnectionId).toHaveBeenCalledTimes(2)
+  })
+
+  test('resets the reconnect backoff only once a setup succeeds', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    await liveModeRecipient({ baseMediatorReconnectionIntervalMs: 1000 }).initiateMessagePickup(
+      mediationRecord,
+      DidCommMediatorPickupStrategy.PickUpV2LiveMode
+    )
+    messagePickupApi.setLiveDeliveryMode.mockRejectedValueOnce(socketNotOpen())
+
+    emitSocketClosed()
+    await vi.advanceTimersByTimeAsync(1000 + 1999)
     expect(messagePickupApi.pickupMessages).toHaveBeenCalledTimes(2)
     await vi.advanceTimersByTimeAsync(1)
     expect(messagePickupApi.pickupMessages).toHaveBeenCalledTimes(3)
 
-    await vi.advanceTimersByTimeAsync(100)
     emitSocketClosed()
     await vi.advanceTimersByTimeAsync(1000)
     expect(messagePickupApi.pickupMessages).toHaveBeenCalledTimes(4)
-  })
-
-  test('closes the mediator socket when live mode setup fails to send, and rethrows local errors', async () => {
-    const recipient = liveModeRecipient({})
-    messagePickupApi.setLiveDeliveryMode.mockRejectedValueOnce(
-      new MessageSendingError('Socket is not open', { outboundMessageContext: {} as DidCommOutboundMessageContext })
-    )
-    await expect(
-      recipient.initiateMessagePickup(mediationRecord, DidCommMediatorPickupStrategy.PickUpV2LiveMode)
-    ).resolves.toBeUndefined()
-    expect(outboundTransport.closeSocketByConnectionId).toHaveBeenCalledWith(connection.id)
-
-    outboundTransport.closeSocketByConnectionId.mockClear()
-    messagePickupApi.pickupMessages.mockRejectedValueOnce(new Error('No message pickup protocol registered'))
-    await expect(
-      recipient.initiateMessagePickup(mediationRecord, DidCommMediatorPickupStrategy.PickUpV2LiveMode)
-    ).rejects.toThrow('No message pickup protocol registered')
-    expect(outboundTransport.closeSocketByConnectionId).not.toHaveBeenCalled()
-  })
-
-  test('falls back to a status request when the mediator does not confirm live mode', async () => {
-    const recipient = liveModeRecipient({})
-    messagePickupApi.setLiveDeliveryMode.mockRejectedValue(new TimeoutError())
-
-    replyToStatusRequests({ messageCount: 0 })
-    await recipient.initiateMessagePickup(mediationRecord, DidCommMediatorPickupStrategy.PickUpV2LiveMode)
-    expect(outboundTransport.closeSocketByConnectionId).not.toHaveBeenCalled()
-
-    replyToStatusRequests({ messageCount: 0, liveDelivery: false })
-    await recipient.initiateMessagePickup(mediationRecord, DidCommMediatorPickupStrategy.PickUpV2LiveMode)
-    expect(outboundTransport.closeSocketByConnectionId).toHaveBeenCalledWith(connection.id)
-  })
-
-  test('sets live mode on the same socket when the pickup before it times out', async () => {
-    messagePickupApi.pickupMessages.mockRejectedValueOnce(new TimeoutError())
-
-    await liveModeRecipient({}).initiateMessagePickup(mediationRecord, DidCommMediatorPickupStrategy.PickUpV2LiveMode)
-
-    expect(messagePickupApi.setLiveDeliveryMode).toHaveBeenCalled()
-    expect(outboundTransport.closeSocketByConnectionId).not.toHaveBeenCalled()
-  })
-
-  test('closes the mediator socket when a live mode check gets no reply within 10 seconds', async () => {
-    await liveModeRecipient({}).initiateMessagePickup(mediationRecord, DidCommMediatorPickupStrategy.PickUpV2LiveMode)
-
-    await vi.advanceTimersByTimeAsync(30000 + 9999)
-    expect(messageSender.sendMessage.mock.calls[0][0].message).toBeInstanceOf(DidCommStatusRequestV2Message)
-    expect(outboundTransport.closeSocketByConnectionId).not.toHaveBeenCalled()
-
-    await vi.advanceTimersByTimeAsync(1)
-    expect(outboundTransport.closeSocketByConnectionId).toHaveBeenCalledWith(connection.id)
-  })
-
-  test('closes the mediator socket when live delivery is still off on the next check', async () => {
-    replyToStatusRequests({ messageCount: 1, liveDelivery: false })
-    await liveModeRecipient({ liveModeCheckIntervalMs: 100 }).initiateMessagePickup(
-      mediationRecord,
-      DidCommMediatorPickupStrategy.PickUpV2LiveMode
-    )
-
-    await vi.advanceTimersByTimeAsync(150)
-    expect(outboundTransport.closeSocketByConnectionId).not.toHaveBeenCalled()
-
-    await vi.advanceTimersByTimeAsync(100)
-    expect(outboundTransport.closeSocketByConnectionId).toHaveBeenCalledWith(connection.id)
   })
 })

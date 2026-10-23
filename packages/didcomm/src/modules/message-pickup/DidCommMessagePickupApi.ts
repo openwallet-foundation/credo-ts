@@ -234,8 +234,8 @@ export class DidCommMessagePickupApi<
         .pipe(
           // Stop when the agent shuts down
           takeUntil(this.stop$),
-          // filter by connection id
-          filter((e) => e.payload.connection.id === connectionRecord.id),
+          // filter by connection and thread id
+          filter((e) => e.payload.connection.id === connectionRecord.id && e.payload.threadId === message.threadId),
           // Only wait for first event that matches the criteria
           first(),
           // If we don't receive all messages within timeoutMs miliseconds (no response, not supported, etc...) error
@@ -281,10 +281,12 @@ export class DidCommMessagePickupApi<
         .observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed)
         .pipe(
           takeUntil(this.stop$),
-          filter((e) => e.payload.connection?.id === connectionRecord.id),
+          first(
+            ({ payload: { connection, message: reply } }) =>
+              connection?.id === connectionRecord.id &&
+              (reply.threadId === message.threadId || reply.thread?.parentThreadId === message.threadId)
+          ),
           map((e) => e.payload.message),
-          filter((reply) => reply.threadId === message.threadId || reply.thread?.parentThreadId === message.threadId),
-          first(),
           timeout({
             first: options.awaitConfirmationTimeoutMs ?? 10000,
             meta: 'DidCommMessagePickupApi.setLiveDeliveryMode',

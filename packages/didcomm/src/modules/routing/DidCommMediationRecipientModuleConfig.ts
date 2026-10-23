@@ -41,7 +41,8 @@ export interface DidCommMediationRecipientModuleConfigOptions {
    * each retry, resulting in an exponential backoff strategy.
    *
    * For instance, if maximumMediatorReconnectionIntervalMs is b, the agent will attempt to reconnect after b, 2*b, 4*b, 8*b, 16*b, ... ms.
-   * Each delay is randomized by up to 50% either way and never exceeds maximumMediatorReconnectionIntervalMs.
+   * Each delay is randomized by up to 50% either way and never exceeds maximumMediatorReconnectionIntervalMs. The interval goes
+   * back to this value once a reconnect sets up pickup again.
    *
    * This is only applicable when pickup protocol v2 or implicit pickup is used.
    *
@@ -56,24 +57,9 @@ export interface DidCommMediationRecipientModuleConfigOptions {
    * the agent will attempt to reconnect after 1000, 2000, 4000, 8000, 10000, ..., 10000 ms.
    *
    * This is only applicable when pickup protocol v2 or implicit pickup is used.
-   * @default 30000
+   * @default Number.POSITIVE_INFINITY
    */
   maximumMediatorReconnectionIntervalMs?: number
-
-  /**
-   * Interval in milliseconds between status requests sent to the mediator over the live mode socket. If the mediator does not
-   * reply within the interval or 10000 ms, whichever is shorter, or replies that live delivery is off for this socket, the socket
-   * is closed and live mode is set up again. Setting up live mode also waits that long for the mediator to confirm it, and sends
-   * one status request instead when the mediator does not.
-   *
-   * Set it to 0 to turn the checks and the confirmation wait off, for instance with mediators that do not thread their status
-   * replies to the request, or when several agents share one mediator connection. This is only applicable when pickup protocol
-   * v2 in live mode is used. The checks and the confirmation wait need an outbound transport that implements
-   * closeSocketByConnectionId (DidCommWsOutboundTransport does).
-   *
-   * @default 30000
-   */
-  liveModeCheckIntervalMs?: number
 
   /**
    * Invitation url for connection to a mediator. If provided, a connection to the mediator will be made, and the mediator will be set as default.
@@ -113,12 +99,7 @@ export class DidCommMediationRecipientModuleConfig {
 
   /** See {@link DidCommMediationRecipientModuleConfigOptions.maximumMediatorReconnectionIntervalMs} */
   public get maximumMediatorReconnectionIntervalMs() {
-    return this.options.maximumMediatorReconnectionIntervalMs ?? 30000
-  }
-
-  /** See {@link DidCommMediationRecipientModuleConfigOptions.liveModeCheckIntervalMs} */
-  public get liveModeCheckIntervalMs(): number {
-    return this.options.liveModeCheckIntervalMs ?? 30000
+    return this.options.maximumMediatorReconnectionIntervalMs ?? Number.POSITIVE_INFINITY
   }
 
   /** See {@link DidCommMediationRecipientModuleConfigOptions.mediatorInvitationUrl} */

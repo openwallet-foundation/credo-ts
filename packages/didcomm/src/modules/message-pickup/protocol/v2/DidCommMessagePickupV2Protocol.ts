@@ -264,18 +264,13 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
 
     //No messages to be retrieved: message pick-up is completed
     if (messageCount === 0) {
-      const { liveModeCheckThreadIds } = messageContext.agentContext.dependencyManager.resolve(
-        DidCommMessagePickupSessionService
-      )
-      if (!liveModeCheckThreadIds.has(statusMessage.threadId)) {
-        eventEmitter.emit<MessagePickupCompletedEvent>(messageContext.agentContext, {
-          type: DidCommMessagePickupEventTypes.MessagePickupCompleted,
-          payload: {
-            connection,
-            threadId: statusMessage.threadId,
-          },
-        })
-      }
+      eventEmitter.emit<MessagePickupCompletedEvent>(messageContext.agentContext, {
+        type: DidCommMessagePickupEventTypes.MessagePickupCompleted,
+        payload: {
+          connection,
+          threadId: statusMessage.threadId,
+        },
+      })
       return null
     }
 
@@ -286,6 +281,8 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
       limit,
       recipientKey,
     })
+    // pickupMessages waits for the status that ends the pickup on the thread it started
+    deliveryRequestMessage.setThread({ threadId: statusMessage.threadId })
 
     return deliveryRequestMessage
   }
@@ -350,8 +347,11 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
       })
     }
 
-    return new DidCommMessagesReceivedV2Message({
+    const messagesReceivedMessage = new DidCommMessagesReceivedV2Message({
       messageIdList: ids,
     })
+    messagesReceivedMessage.setThread({ threadId: messageContext.message.threadId })
+
+    return messagesReceivedMessage
   }
 }

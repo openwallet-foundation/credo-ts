@@ -414,22 +414,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
       expect(deliveryRequestMessage).toBeNull()
     })
 
-    it('does not emit pickup completed for the reply to a live mode check', async () => {
-      const status = new DidCommStatusV2Message({ threadId: uuid(), messageCount: 0 })
-      sessionService.liveModeCheckThreadIds.add(status.threadId)
-
-      await pickupProtocol.processStatus(
-        new DidCommInboundMessageContext(status, { connection: mockConnection, agentContext })
-      )
-
-      expect(eventEmitter.emit).not.toHaveBeenCalledWith(
-        agentContext,
-        expect.objectContaining({ payload: expect.objectContaining({ threadId: status.threadId }) })
-      )
-      sessionService.liveModeCheckThreadIds.delete(status.threadId)
-    })
-
-    it('if it has a message count greater than zero return a valid delivery request', async () => {
+    it('if it has a message count greater than zero return a valid delivery request on the status thread', async () => {
       const status = new DidCommStatusV2Message({
         threadId: uuid(),
         messageCount: 1,
@@ -437,10 +422,9 @@ describe('DidCommMessagePickupV2Protocol', () => {
       const messageContext = new DidCommInboundMessageContext(status, { connection: mockConnection, agentContext })
 
       const deliveryRequestMessage = await pickupProtocol.processStatus(messageContext)
-      expect(deliveryRequestMessage)
-      expect(deliveryRequestMessage).toEqual(
-        new DidCommDeliveryRequestV2Message({ id: deliveryRequestMessage?.id, limit: 1 })
-      )
+      const expectedDeliveryRequest = new DidCommDeliveryRequestV2Message({ id: deliveryRequestMessage?.id, limit: 1 })
+      expectedDeliveryRequest.setThread({ threadId: status.threadId })
+      expect(deliveryRequestMessage).toEqual(expectedDeliveryRequest)
     })
   })
 
@@ -454,7 +438,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
       await expect(pickupProtocol.processDelivery(messageContext)).rejects.toThrowError(DidCommProblemReportError)
     })
 
-    it('should return a message received with an message id list in it', async () => {
+    it('should return a message received on the delivery thread with an message id list in it', async () => {
       const messageDeliveryMessage = new DidCommMessageDeliveryV2Message({
         threadId: uuid(),
         attachments: [
@@ -475,12 +459,12 @@ describe('DidCommMessagePickupV2Protocol', () => {
 
       const messagesReceivedMessage = await pickupProtocol.processDelivery(messageContext)
 
-      expect(messagesReceivedMessage).toEqual(
-        new DidCommMessagesReceivedV2Message({
-          id: messagesReceivedMessage.id,
-          messageIdList: ['1'],
-        })
-      )
+      const expectedMessagesReceived = new DidCommMessagesReceivedV2Message({
+        id: messagesReceivedMessage.id,
+        messageIdList: ['1'],
+      })
+      expectedMessagesReceived.setThread({ threadId: messageDeliveryMessage.threadId })
+      expect(messagesReceivedMessage).toEqual(expectedMessagesReceived)
     })
 
     it('calls the event emitter for each message', async () => {
