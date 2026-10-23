@@ -312,7 +312,7 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
 
     const statusMessage = new DidCommStatusV2Message({
       threadId: message.threadId,
-      liveDelivery: message.liveDelivery && sessionId !== undefined,
+      liveDelivery: message.liveDelivery && Boolean(sessionId),
       messageCount: await queueTransportRepository.getAvailableMessageCount(agentContext, {
         connectionId: connection.id,
       }),

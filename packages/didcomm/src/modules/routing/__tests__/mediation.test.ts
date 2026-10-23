@@ -472,6 +472,27 @@ describe('DidCommMediationRecipientApi live mode', () => {
     expect(outboundTransport.closeSocketByConnectionId).toHaveBeenCalledTimes(2)
   })
 
+  test('does not let a stale setup close the socket of a newer reconnect', async () => {
+    await liveModeRecipient({}).initiateMessagePickup(mediationRecord, DidCommMediatorPickupStrategy.PickUpV2LiveMode)
+    let failStaleSetup = (): void => {}
+    messagePickupApi.pickupMessages.mockImplementationOnce(
+      () =>
+        new Promise<void>((_, reject) => {
+          failStaleSetup = (): void => reject(new TimeoutError())
+        })
+    )
+
+    emitSocketClosed()
+    await vi.advanceTimersByTimeAsync(1000)
+    emitSocketClosed()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(messagePickupApi.setLiveDeliveryMode).toHaveBeenCalledTimes(2)
+
+    failStaleSetup()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(outboundTransport.closeSocketByConnectionId).not.toHaveBeenCalled()
+  })
+
   test('resets the reconnect backoff only once a setup succeeds', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.5)
     await liveModeRecipient({ baseMediatorReconnectionIntervalMs: 1000 }).initiateMessagePickup(

@@ -161,6 +161,7 @@ export class DidCommMediationRecipientApi {
   ) {
     const { baseMediatorReconnectionIntervalMs, maximumMediatorReconnectionIntervalMs } = this.config
     let interval = baseMediatorReconnectionIntervalMs
+    let attempts = 0
 
     const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
 
@@ -193,6 +194,8 @@ export class DidCommMediationRecipientApi {
       )
       .subscribe({
         next: async () => {
+          // Setups can overlap, and a stale one must not close the socket of a newer one
+          const attempt = ++attempts
           this.logger.debug(
             `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
           )
@@ -218,7 +221,7 @@ export class DidCommMediationRecipientApi {
           } catch (error) {
             this.logger.warn('Unable to re-open websocket connection to mediator', { error })
             // Closing the socket emits a closed event, so the loop tries again instead of ending here
-            if (error instanceof MessageSendingError || error instanceof TimeoutError) {
+            if (attempt === attempts && (error instanceof MessageSendingError || error instanceof TimeoutError)) {
               const { outboundTransports } = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
               for (const transport of outboundTransports) transport.closeSocketByConnectionId?.(mediator.connectionId)
             }
