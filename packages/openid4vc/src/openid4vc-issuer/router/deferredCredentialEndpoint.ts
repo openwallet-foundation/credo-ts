@@ -51,11 +51,16 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
       if (!resourceRequestResult) return
       const { tokenPayload, accessToken, scheme, authorizationServer } = resourceRequestResult
 
-      const deferredCredentialRequest = request.body
+      let deferredCredentialRequest = request.body
       const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
 
       let parsedCredentialRequest: ReturnType<typeof vcIssuer.parseDeferredCredentialRequest>
       try {
+        deferredCredentialRequest = await openId4VcIssuerService.decryptCredentialRequest(
+          agentContext,
+          issuer,
+          deferredCredentialRequest
+        )
         parsedCredentialRequest = vcIssuer.parseDeferredCredentialRequest({
           deferredCredentialRequest,
           issuerMetadata,

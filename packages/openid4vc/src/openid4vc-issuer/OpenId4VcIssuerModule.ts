@@ -168,7 +168,7 @@ export class OpenId4VcIssuerModule implements Module {
   }
 
   private registerIssuerRoutes(rootAgentContext: AgentContext) {
-    const { Router, json, urlencoded } = importExpress()
+    const { Router, json, text, urlencoded } = importExpress()
 
     const issuerContextRouter = Router()
     const issuerEndpointsRouter = Router()
@@ -195,6 +195,10 @@ export class OpenId4VcIssuerModule implements Module {
     configureAccessTokenEndpoint(issuerEndpointsRouter, this.config)
     configureAuthorizationChallengeEndpoint(issuerEndpointsRouter, this.config)
     configureClientAttestationChallengeEndpoint(issuerEndpointsRouter, this.config)
+    issuerEndpointsRouter.use(
+      [this.config.credentialEndpointPath, this.config.deferredCredentialEndpointPath],
+      text({ type: 'application/jwt', limit: '1mb' })
+    )
     configureCredentialEndpoint(issuerEndpointsRouter, this.config)
     configureDeferredCredentialEndpoint(issuerEndpointsRouter, this.config)
     configurePushedAuthorizationRequestEndpoint(issuerEndpointsRouter, this.config)

@@ -52,11 +52,12 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
     if (!resourceRequestResult) return
     const { tokenPayload, accessToken, scheme, authorizationServer } = resourceRequestResult
 
-    const credentialRequest = request.body
+    let credentialRequest = request.body
     const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
 
     let parsedCredentialRequest: ReturnType<typeof vcIssuer.parseCredentialRequest>
     try {
+      credentialRequest = await openId4VcIssuerService.decryptCredentialRequest(agentContext, issuer, credentialRequest)
       parsedCredentialRequest = vcIssuer.parseCredentialRequest({
         credentialRequest,
         issuerMetadata,
