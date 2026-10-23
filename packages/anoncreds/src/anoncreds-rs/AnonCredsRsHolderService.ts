@@ -4,7 +4,6 @@ import {
   injectable,
   JsonTransformer,
   Kms,
-  TypedArrayEncoder,
   utils,
   W3cCredentialRecord,
   W3cCredentialRepository,
@@ -68,16 +67,10 @@ import type {
   LegacyToW3cCredentialOptions,
   W3cToLegacyCredentialOptions,
 } from '../services/AnonCredsHolderServiceOptions'
-import { storeLinkSecret, unqualifiedCredentialDefinitionIdRegex } from '../utils'
-import {
-  isUnqualifiedCredentialDefinitionId,
-  isUnqualifiedIndyDid,
-  isUnqualifiedSchemaId,
-} from '../utils/indyIdentifiers'
+import { storeLinkSecret } from '../utils'
 import { assertLinkSecretsMatch, getLinkSecret } from '../utils/linkSecret'
 import type { AnonCredsCredentialRequestMetadata, W3cAnonCredsCredentialMetadata } from '../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../utils/metadata'
-import { proofRequestUsesUnqualifiedIdentifiers } from '../utils/proofRequest'
 import { getAnoncredsCredentialInfoFromRecord, getW3cRecordAnonCredsTags } from '../utils/w3cAnonCredsUtils'
 
 import { getRevocationMetadata } from './utils'
@@ -150,9 +143,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           }
         }
 
-        const proofUsesUnqualifiedIdentifiers = proofRequestUsesUnqualifiedIdentifiers(proofRequest)
         const { linkSecretId, schemaId, credentialDefinitionId, revocationRegistryId, credentialRevocationId } =
-          getAnoncredsCredentialInfoFromRecord(credentialRecord, proofUsesUnqualifiedIdentifiers)
+          getAnoncredsCredentialInfoFromRecord(credentialRecord)
 
         // TODO: Check if credential has a revocation registry id (check response from anoncreds-rs API, as it is
         // sending back a mandatory string in Credential.revocationRegistryId)
@@ -193,11 +185,14 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
                 })
               : (credentialRecord.credential as AnonCredsCredential)
 
-          if (proofUsesUnqualifiedIdentifiers) {
-            credential.schema_id = schemaId
-            credential.cred_def_id = credentialDefinitionId
-            credential.rev_reg_id = revocationRegistryId != null ? revocationRegistryId : undefined
-          }
+          // A credential that the 0.4 to 0.5 storage update converted from the legacy format can contain
+          // unqualified identifiers in its proof. The record tags always contain the qualified identifiers,
+          // which must match the keys of the schemas and credential definitions passed to anoncreds-rs.
+          // These identifiers are not part of the credential signature, so we can safely overwrite them.
+          credential.schema_id = schemaId
+          credential.cred_def_id = credentialDefinitionId
+          credential.rev_reg_id = revocationRegistryId ?? undefined
+
           return {
             linkSecretId,
             credentialId: attribute.credentialId,
@@ -286,7 +281,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     agentContext: AgentContext,
     options: CreateCredentialRequestOptions
   ): Promise<CreateCredentialRequestReturn> {
-    const { useLegacyProverDid, credentialDefinition, credentialOffer } = options
+    const { credentialDefinition, credentialOffer } = options
     let createReturnObj:
       | { credentialRequest: CredentialRequest; credentialRequestMetadata: CredentialRequestMetadata }
       | undefined
@@ -315,15 +310,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       }
 
       const { anoncreds } = agentContext.dependencyManager.resolve(AnonCredsModuleConfig)
-      const isLegacyIdentifier = credentialOffer.cred_def_id.match(unqualifiedCredentialDefinitionIdRegex)
-      if (!isLegacyIdentifier && useLegacyProverDid) {
-        throw new CredoError('Cannot use legacy prover_did with non-legacy identifiers')
-      }
       createReturnObj = CredentialRequest.create({
-        entropy: !useLegacyProverDid || !isLegacyIdentifier ? anoncreds.generateNonce() : undefined,
-        proverDid: useLegacyProverDid
-          ? TypedArrayEncoder.toBase58(TypedArrayEncoder.fromUtf8String(anoncreds.generateNonce().slice(0, 16)))
-          : undefined,
+        entropy: anoncreds.generateNonce(),
         credentialDefinition: credentialDefinition as unknown as JsonObject,
         credentialOffer: credentialOffer as unknown as JsonObject,
         linkSecret: linkSecretRecord.value,
@@ -510,7 +498,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
     const w3cCredentialRecord = await w3cCredentialRepository.findById(agentContext, options.id)
     if (w3cCredentialRecord) {
-      return getAnoncredsCredentialInfoFromRecord(w3cCredentialRecord, options.useUnqualifiedIdentifiersIfPresent)
+      return getAnoncredsCredentialInfoFromRecord(w3cCredentialRecord)
     }
 
     const anonCredsCredentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
@@ -552,28 +540,13 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     const credentialRecords = await agentContext.dependencyManager
       .resolve(W3cCredentialRepository)
       .findByQuery(agentContext, {
-        issuerId: !options.issuerId || isUnqualifiedIndyDid(options.issuerId) ? undefined : options.issuerId,
-        anonCredsCredentialDefinitionId:
-          !options.credentialDefinitionId || isUnqualifiedCredentialDefinitionId(options.credentialDefinitionId)
-            ? undefined
-            : options.credentialDefinitionId,
-        anonCredsSchemaId: !options.schemaId || isUnqualifiedSchemaId(options.schemaId) ? undefined : options.schemaId,
+        issuerId: options.issuerId,
+        anonCredsCredentialDefinitionId: options.credentialDefinitionId,
+        anonCredsSchemaId: options.schemaId,
         anonCredsSchemaName: options.schemaName,
         anonCredsSchemaVersion: options.schemaVersion,
-        anonCredsSchemaIssuerId:
-          !options.schemaIssuerId || isUnqualifiedIndyDid(options.schemaIssuerId) ? undefined : options.schemaIssuerId,
-
+        anonCredsSchemaIssuerId: options.schemaIssuerId,
         anonCredsMethodName: options.methodName,
-        anonCredsUnqualifiedSchemaId:
-          options.schemaId && isUnqualifiedSchemaId(options.schemaId) ? options.schemaId : undefined,
-        anonCredsUnqualifiedIssuerId:
-          options.issuerId && isUnqualifiedIndyDid(options.issuerId) ? options.issuerId : undefined,
-        anonCredsUnqualifiedSchemaIssuerId:
-          options.schemaIssuerId && isUnqualifiedIndyDid(options.schemaIssuerId) ? options.schemaIssuerId : undefined,
-        anonCredsUnqualifiedCredentialDefinitionId:
-          options.credentialDefinitionId && isUnqualifiedCredentialDefinitionId(options.credentialDefinitionId)
-            ? options.credentialDefinitionId
-            : undefined,
       })
 
     const credentials = credentialRecords.map((credentialRecord) =>
@@ -669,8 +642,6 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     const $and = []
 
-    const useUnqualifiedIdentifiers = proofRequestUsesUnqualifiedIdentifiers(proofRequest)
-
     // Make sure the attribute(s) that are requested are present using the marker tag
     const attributes = requestedAttribute.names ?? [requestedAttribute.name]
     const attributeQuery: SimpleQuery<W3cCredentialRecord> = {}
@@ -707,7 +678,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     const credentialWithMetadata = credentials.map((credentialRecord) => {
       return {
-        credentialInfo: getAnoncredsCredentialInfoFromRecord(credentialRecord, useUnqualifiedIdentifiers),
+        credentialInfo: getAnoncredsCredentialInfoFromRecord(credentialRecord),
         interval: proofRequest.non_revoked,
       }
     })
@@ -724,37 +695,19 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       const queryElements: SimpleQuery<W3cCredentialRecord> = {}
 
       if (restriction.credentialDefinitionId) {
-        if (isUnqualifiedCredentialDefinitionId(restriction.credentialDefinitionId)) {
-          queryElements.anonCredsUnqualifiedCredentialDefinitionId = restriction.credentialDefinitionId
-        } else {
-          queryElements.anonCredsCredentialDefinitionId = restriction.credentialDefinitionId
-        }
+        queryElements.anonCredsCredentialDefinitionId = restriction.credentialDefinitionId
       }
 
       if (restriction.issuerId || restriction.issuerDid) {
-        const issuerId = (restriction.issuerId ?? restriction.issuerDid) as string
-        if (isUnqualifiedIndyDid(issuerId)) {
-          queryElements.anonCredsUnqualifiedIssuerId = issuerId
-        } else {
-          queryElements.issuerId = issuerId
-        }
+        queryElements.issuerId = (restriction.issuerId ?? restriction.issuerDid) as string
       }
 
       if (restriction.schemaId) {
-        if (isUnqualifiedSchemaId(restriction.schemaId)) {
-          queryElements.anonCredsUnqualifiedSchemaId = restriction.schemaId
-        } else {
-          queryElements.anonCredsSchemaId = restriction.schemaId
-        }
+        queryElements.anonCredsSchemaId = restriction.schemaId
       }
 
       if (restriction.schemaIssuerId || restriction.schemaIssuerDid) {
-        const schemaIssuerId = (restriction.schemaIssuerId ?? restriction.schemaIssuerDid) as string
-        if (isUnqualifiedIndyDid(schemaIssuerId)) {
-          queryElements.anonCredsUnqualifiedSchemaIssuerId = schemaIssuerId
-        } else {
-          queryElements.anonCredsSchemaIssuerId = schemaIssuerId
-        }
+        queryElements.anonCredsSchemaIssuerId = (restriction.schemaIssuerId ?? restriction.schemaIssuerDid) as string
       }
 
       if (restriction.schemaName) {
@@ -788,36 +741,21 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     for (const restriction of parsedRestrictions) {
       const queryElements: SimpleQuery<AnonCredsCredentialRecord> = {}
-      const additionalQueryElements: SimpleQuery<AnonCredsCredentialRecord> = {}
 
       if (restriction.credentialDefinitionId) {
         queryElements.credentialDefinitionId = restriction.credentialDefinitionId
-        if (isUnqualifiedCredentialDefinitionId(restriction.credentialDefinitionId)) {
-          additionalQueryElements.credentialDefinitionId = restriction.credentialDefinitionId
-        }
       }
 
       if (restriction.issuerId || restriction.issuerDid) {
-        const issuerId = (restriction.issuerId ?? restriction.issuerDid) as string
-        queryElements.issuerId = issuerId
-        if (isUnqualifiedIndyDid(issuerId)) {
-          additionalQueryElements.issuerId = issuerId
-        }
+        queryElements.issuerId = (restriction.issuerId ?? restriction.issuerDid) as string
       }
 
       if (restriction.schemaId) {
         queryElements.schemaId = restriction.schemaId
-        if (isUnqualifiedSchemaId(restriction.schemaId)) {
-          additionalQueryElements.schemaId = restriction.schemaId
-        }
       }
 
       if (restriction.schemaIssuerId || restriction.schemaIssuerDid) {
-        const issuerId = (restriction.schemaIssuerId ?? restriction.schemaIssuerDid) as string
-        queryElements.schemaIssuerId = issuerId
-        if (isUnqualifiedIndyDid(issuerId)) {
-          additionalQueryElements.schemaIssuerId = issuerId
-        }
+        queryElements.schemaIssuerId = (restriction.schemaIssuerId ?? restriction.schemaIssuerDid) as string
       }
 
       if (restriction.schemaName) {
@@ -839,9 +777,6 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       }
 
       query.push(queryElements)
-      if (Object.keys(additionalQueryElements).length > 0) {
-        query.push(additionalQueryElements)
-      }
     }
 
     return query.length === 1 ? query[0] : { $or: query }

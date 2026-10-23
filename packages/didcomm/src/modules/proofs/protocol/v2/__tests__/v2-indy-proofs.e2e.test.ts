@@ -1,8 +1,8 @@
-import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import {
-  issueLegacyAnonCredsCredential,
+  issueIndyAnonCredsCredential,
   setupAnonCredsTests,
-} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+} from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import type { EventReplaySubject } from '../../../../../../../core/tests'
 import { waitForProofExchangeRecord } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
@@ -42,7 +42,7 @@ describe('Present Proof', () => {
       attributeNames: ['name', 'age'],
     }))
 
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       holderAgent: aliceAgent,
       holderReplay: aliceReplay,
@@ -82,7 +82,7 @@ describe('Present Proof', () => {
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'abc',
           version: '1.0',
           attributes: [
@@ -114,7 +114,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof-req@v2.0',
+          format: 'anoncreds/proof-request@v1.0',
         },
       ],
       proposalAttachments: [
@@ -155,7 +155,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof-req@v2.0',
+          format: 'anoncreds/proof-request@v1.0',
         },
       ],
       requestAttachments: [
@@ -187,7 +187,7 @@ describe('Present Proof', () => {
 
     await aliceAgent.didcomm.proofs.acceptRequest({
       proofExchangeRecordId: aliceProofExchangeRecord.id,
-      proofFormats: { indy: requestedCredentials.proofFormats.indy },
+      proofFormats: { anoncreds: requestedCredentials.proofFormats.anoncreds },
     })
 
     // Faber waits for the presentation from Alice
@@ -200,7 +200,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof@v2.0',
+          format: 'anoncreds/proof@v1.0',
         },
       ],
       presentationAttachments: [
@@ -268,12 +268,12 @@ describe('Present Proof', () => {
 
     expect(formatData).toMatchObject({
       proposal: {
-        indy: {
+        anoncreds: {
           name: 'abc',
           version: '1.0',
           nonce: expect.any(String),
           requested_attributes: {
-            [Object.keys(formatData.proposal?.indy?.requested_attributes ?? {})[0]]: {
+            [Object.keys(formatData.proposal?.anoncreds?.requested_attributes ?? {})[0]]: {
               name: 'name',
               restrictions: [
                 {
@@ -283,7 +283,7 @@ describe('Present Proof', () => {
             },
           },
           requested_predicates: {
-            [Object.keys(formatData.proposal?.indy?.requested_predicates ?? {})[0]]: {
+            [Object.keys(formatData.proposal?.anoncreds?.requested_predicates ?? {})[0]]: {
               name: 'age',
               p_type: '>=',
               p_value: 50,
@@ -297,12 +297,12 @@ describe('Present Proof', () => {
         },
       },
       request: {
-        indy: {
+        anoncreds: {
           name: 'abc',
           version: '1.0',
           nonce: expect.any(String),
           requested_attributes: {
-            [Object.keys(formatData.request?.indy?.requested_attributes ?? {})[0]]: {
+            [Object.keys(formatData.request?.anoncreds?.requested_attributes ?? {})[0]]: {
               name: 'name',
               restrictions: [
                 {
@@ -312,7 +312,7 @@ describe('Present Proof', () => {
             },
           },
           requested_predicates: {
-            [Object.keys(formatData.request?.indy?.requested_predicates ?? {})[0]]: {
+            [Object.keys(formatData.request?.anoncreds?.requested_predicates ?? {})[0]]: {
               name: 'age',
               p_type: '>=',
               p_value: 50,
@@ -326,7 +326,7 @@ describe('Present Proof', () => {
         },
       },
       presentation: {
-        indy: {
+        anoncreds: {
           proof: {
             proofs: [
               {
@@ -357,7 +357,7 @@ describe('Present Proof', () => {
       protocolVersion: 'v2',
       connectionId: faberConnectionId,
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'Proof Request',
           version: '1.0.0',
           requested_attributes: {
@@ -396,7 +396,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof-req@v2.0',
+          format: 'anoncreds/proof-request@v1.0',
         },
       ],
       requestAttachments: [
@@ -432,7 +432,7 @@ describe('Present Proof', () => {
 
     await aliceAgent.didcomm.proofs.acceptRequest({
       proofExchangeRecordId: aliceProofExchangeRecord.id,
-      proofFormats: { indy: requestedCredentials.proofFormats.indy },
+      proofFormats: { anoncreds: requestedCredentials.proofFormats.anoncreds },
     })
 
     // Faber waits until it receives a presentation from Alice
@@ -445,7 +445,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof@v2.0',
+          format: 'anoncreds/proof@v1.0',
         },
       ],
       presentationAttachments: [
@@ -513,7 +513,7 @@ describe('Present Proof', () => {
       protocolVersion: 'v2',
       connectionId: faberConnectionId,
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'Proof Request',
           version: '1.0.0',
           requested_attributes: {
@@ -552,7 +552,7 @@ describe('Present Proof', () => {
 
     expect(retrievedCredentials).toMatchObject({
       proofFormats: {
-        indy: {
+        anoncreds: {
           attributes: {
             name: [
               {
@@ -606,7 +606,7 @@ describe('Present Proof', () => {
       protocolVersion: 'v2',
       connectionId: faberConnectionId,
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'proof-request',
           version: '1.0',
           requested_attributes: {
@@ -646,7 +646,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: 'hlindy/proof-req@v2.0',
+          format: 'anoncreds/proof-request@v1.0',
         },
       ],
       requestAttachments: [

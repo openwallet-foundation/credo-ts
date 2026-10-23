@@ -4,7 +4,7 @@ import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTran
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import type { AnonCredsDidCommCredentialFormatService } from '../../anoncreds/src/didcomm'
-import { getAnonCredsIndyModules } from '../../anoncreds/tests/legacyAnonCredsSetup'
+import { getAnonCredsIndyModules } from '../../anoncreds/tests/indyAnonCredsSetup'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
   storePreCreatedAnonCredsDefinition,
