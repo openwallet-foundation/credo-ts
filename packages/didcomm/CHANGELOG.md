@@ -1,5 +1,27 @@
 # @credo-ts/didcomm
 
+## 0.7.3
+
+### Patch Changes
+
+- a705a44: Validate JSON-LD credential signing readiness before accepting a proposal or creating a direct or negotiated offer. The preflight checks that the issuer verification method belongs to a DID created by the agent and is compatible with the requested proof type. This requires a created DID record and a resolvable issuer DID document earlier in the exchange, at offer creation or proposal acceptance, rather than waiting until request acceptance. For example, a `did:web` issuer is now resolved at offer time. Capability failures use the typed `W3cJsonLdCredentialSigningNotSupportedError`, allowing callers to choose a negotiation or rejection flow. Signing-time checks also use this error for the same capability failures. When a created DID or verification method cannot be found, the typed error wraps the original error as its cause.
+- 4d82972: Emit `DidCommMessageProcessingFailed` when an inbound message received through the DIDComm event path cannot be processed.
+  
+  ```ts
+  agent.events.on<DidCommMessageProcessingFailedEvent>(
+    DidCommEventTypes.DidCommMessageProcessingFailed,
+    ({ payload }) => {
+      // payload.error, payload.message, payload.connection, payload.contextCorrelationId, payload.receivedAt
+    }
+  )
+  ```
+- cb11314: Remove duplicate error-level logging at throw sites that already chain the original error as `cause`.
+- Updated dependencies [a705a44]
+- Updated dependencies [cce51fb]
+- Updated dependencies [790730c]
+- Updated dependencies [cfa27d3]
+  - @credo-ts/core@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes
