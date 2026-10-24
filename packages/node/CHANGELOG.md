@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.3
+
+### Patch Changes
+
+- fb1837a: ECDH-ES with `A192GCM` content encryption in the node KMS now uses a 192 bit key, so it no longer fails.
+- fb1837a: ECDH-ES in the node KMS now works with X25519 keys and with key wrapping, including 64 byte keys such as for `A256CBC-HS512`. P-384 and P-521 now derive keys with SHA-256 like other JOSE libraries, so data encrypted with the old node KMS on those curves won't decrypt.
+- fb1837a: The node KMS now returns `Uint8Array` instead of `Buffer` from `randomBytes`, `sign`, `encrypt` and `decrypt`.
+- Updated dependencies [a705a44]
+- Updated dependencies [4d82972]
+- Updated dependencies [cce51fb]
+- Updated dependencies [790730c]
+- Updated dependencies [cfa27d3]
+- Updated dependencies [cb11314]
+  - @credo-ts/core@0.7.3
+  - @credo-ts/didcomm@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes
