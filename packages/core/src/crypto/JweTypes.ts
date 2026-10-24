@@ -41,6 +41,7 @@ export interface JweEncryptOptions {
 
 export interface JweGeneralJson {
   protected: string
+  unprotected?: Record<string, unknown>
   recipients?: Array<{ header?: Record<string, unknown>; encrypted_key?: string }>
   aad?: string
   iv: string

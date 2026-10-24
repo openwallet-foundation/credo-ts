@@ -145,6 +145,59 @@ describe('JweService', () => {
     ).rejects.toThrow()
   })
 
+  it('only decrypts for the recipient kid that was asked for', async () => {
+    const recipient = await createKey('X25519')
+    const jwe = await jweService.encryptJwe(agentContext, {
+      keyAgreement: {
+        algorithm: 'ECDH-ES+A256KW',
+        recipients: [{ publicJwk: recipient.publicJwk, header: { kid: 'recipient' } }],
+      },
+      enc: 'A256GCM',
+      data,
+    })
+
+    await expect(
+      jweService.decryptJwe(agentContext, { jwe, recipientKeyId: recipient.keyId, recipientKid: 'other' })
+    ).rejects.toThrow("No JWE recipient with kid 'other'")
+
+    const compact = await jweService.encryptJweCompact(agentContext, {
+      keyAgreement: { algorithm: 'ECDH-ES', recipient: { publicJwk: recipient.publicJwk } },
+      enc: 'A256GCM',
+      data,
+    })
+    const decrypted = await jweService.decryptJwe(agentContext, {
+      jwe: compact,
+      recipientKeyId: recipient.keyId,
+      recipientKid: 'any',
+    })
+    expect(TypedArrayEncoder.toUtf8String(decrypted.data)).toBe('hello jwe')
+  })
+
+  it('rejects key agreement parameters outside the protected header', async () => {
+    const recipient = await createKey('X25519')
+    const jwe = await jweService.encryptJwe(agentContext, {
+      keyAgreement: {
+        algorithm: 'ECDH-ES+A256KW',
+        recipients: [{ publicJwk: recipient.publicJwk, header: { kid: 'recipient' } }],
+      },
+      enc: 'A256GCM',
+      data,
+    })
+
+    await expect(
+      jweService.decryptJwe(agentContext, {
+        jwe: { ...jwe, unprotected: { apu: 'YWxpY2U' } },
+        recipientKeyId: recipient.keyId,
+      })
+    ).rejects.toThrow("JWE header parameters 'apu' must be in the protected header")
+    await expect(
+      jweService.decryptJwe(agentContext, {
+        jwe: { ...jwe, recipients: [{ ...jwe.recipients?.[0], header: { kid: 'recipient', epk: {} } }] },
+        recipientKeyId: recipient.keyId,
+      })
+    ).rejects.toThrow("JWE header parameters 'epk' must be in the protected header")
+  })
+
   it('refuses a compact JWE for several recipients', async () => {
     const first = await createKey('X25519')
     const second = await createKey('X25519')

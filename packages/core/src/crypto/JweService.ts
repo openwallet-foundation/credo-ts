@@ -18,6 +18,8 @@ import type {
   JweRecipientOptions,
 } from './JweTypes'
 
+const PROTECTED_ONLY_HEADER_PARAMETERS = ['alg', 'enc', 'epk', 'apu', 'apv'] as const
+
 @injectable()
 export class JweService {
   public async encryptJwe(agentContext: AgentContext, options: JweEncryptOptions): Promise<JweGeneralJson> {
@@ -92,6 +94,16 @@ export class JweService {
     const protectedHeader = JsonEncoder.fromBase64Url(jwe.protected)
     if (!isJsonObject(protectedHeader)) {
       throw new CredoError('JWE protected header is not a JSON object')
+    }
+
+    const unprotectedHeaders = [jwe.unprotected, ...(jwe.recipients ?? []).map((r) => r.header)]
+    const misplaced = PROTECTED_ONLY_HEADER_PARAMETERS.filter((parameter) =>
+      unprotectedHeaders.some((header) => header && parameter in header)
+    )
+    if (misplaced.length > 0) {
+      throw new CredoError(
+        `JWE header parameters ${misplaced.map((p) => `'${p}'`).join(', ')} must be in the protected header`
+      )
     }
 
     const { alg, enc } = protectedHeader
@@ -225,7 +237,7 @@ export class JweService {
     if (kid) {
       const recipient = recipients.find((r) => r.header?.kid === kid)
       if (recipient) return recipient
-      if (recipients.length > 1) {
+      if (recipients.length > 1 || recipients[0]?.header?.kid !== undefined) {
         throw new CredoError(`No JWE recipient with kid '${kid}'`)
       }
     }
