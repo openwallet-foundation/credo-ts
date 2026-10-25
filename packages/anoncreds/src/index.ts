@@ -29,6 +29,5 @@ export { getCredentialsForAnonCredsProofRequest } from './utils/getCredentialsFo
 export * from './utils/indyIdentifiers'
 export { storeLinkSecret } from './utils/linkSecret'
 export { AnonCredsCredentialMetadataKey, W3cAnonCredsCredentialMetadataKey } from './utils/metadata'
-export { generateLegacyProverDidLikeString } from './utils/proverDid'
 export { assertBestPracticeRevocationInterval } from './utils/revocationInterval'
 export { type AnonCredsCredentialTags, getAnonCredsTagsFromRecord } from './utils/w3cAnonCredsUtils'

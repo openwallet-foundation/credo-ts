@@ -40,7 +40,6 @@ import {
 } from '../utils'
 import { encodeCredentialValue } from '../utils/credential'
 import { getCredentialsForAnonCredsProofRequest } from '../utils/getCredentialsForAnonCredsRequest'
-import { proofRequestUsesUnqualifiedIdentifiers } from '../utils/proofRequest'
 import type {
   AnonCredsDidCommProofFormat,
   AnonCredsGetCredentialsForProofRequestOptions,
@@ -418,7 +417,6 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
         async (c) =>
           holderService.getCredential(agentContext, {
             id: c.credentialId,
-            useUnqualifiedIdentifiersIfPresent: proofRequestUsesUnqualifiedIdentifiers(proofRequest),
           })
       )
     )

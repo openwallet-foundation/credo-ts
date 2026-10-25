@@ -1,5 +1,5 @@
-import type { AnonCredsTestsAgent } from '../../anoncreds/tests/legacyAnonCredsSetup'
-import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../anoncreds/tests/legacyAnonCredsSetup'
+import type { AnonCredsTestsAgent } from '../../anoncreds/tests/indyAnonCredsSetup'
+import { issueIndyAnonCredsCredential, setupAnonCredsTests } from '../../anoncreds/tests/indyAnonCredsSetup'
 import { DidCommProofState } from '../../didcomm/src/modules/proofs'
 import { uuid } from '../src/utils/uuid'
 import type { EventReplaySubject } from './events'
@@ -32,7 +32,7 @@ describe('Present Proof Subprotocol', () => {
       attributeNames: ['name', 'age'],
     }))
 
-    await issueLegacyAnonCredsCredential({
+    await issueIndyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
       holderAgent: aliceAgent,
@@ -76,7 +76,7 @@ describe('Present Proof Subprotocol', () => {
       protocolVersion: 'v2',
       parentThreadId,
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'abc',
           version: '1.0',
           attributes: [
@@ -165,7 +165,7 @@ describe('Present Proof Subprotocol', () => {
       parentThreadId,
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'proof-request',
           version: '1.0',
           requested_attributes: {

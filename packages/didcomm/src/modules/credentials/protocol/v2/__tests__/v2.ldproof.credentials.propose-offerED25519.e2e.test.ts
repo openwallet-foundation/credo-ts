@@ -1,7 +1,7 @@
 import {
   getAnonCredsIndyModules,
   prepareForAnonCredsIssuance,
-} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+} from '../../../../../../../anoncreds/tests/indyAnonCredsSetup'
 import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { Agent } from '../../../../../../../core/src/agent/Agent'
 import { CacheModule, InMemoryLruCache } from '../../../../../../../core/src/modules/cache'
@@ -319,7 +319,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       credentialFormats: {
-        indy: {
+        anoncreds: {
           attributes: credentialPreview.attributes,
           schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
           schemaName: 'ahoy',
@@ -350,7 +350,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
       credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C & INDY Proposals',
       credentialFormats: {
-        indy: {
+        anoncreds: {
           credentialDefinitionId,
           attributes: credentialPreview.attributes,
         },
@@ -404,7 +404,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
       formats: [
         {
           attach_id: expect.any(String),
-          format: 'hlindy/cred-abstract@v2.0',
+          format: 'anoncreds/credential-offer@v1.0',
         },
         {
           attach_id: expect.any(String),
@@ -535,7 +535,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
       formats: [
         {
           attach_id: expect.any(String),
-          format: 'hlindy/cred@v2.0',
+          format: 'anoncreds/credential@v1.0',
         },
         {
           attach_id: expect.any(String),
