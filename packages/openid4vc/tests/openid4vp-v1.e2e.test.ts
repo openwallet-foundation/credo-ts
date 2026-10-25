@@ -1290,16 +1290,20 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
             event.type === OpenId4VcVerifierEvents.VerificationSessionStateChanged
         ),
         filter(
-          ({ payload }) =>
-            payload.verificationSession.id === verificationSession.id &&
-            payload.verificationSession.state === OpenId4VcVerificationSessionState.ResponseVerified
+          (
+            event
+          ): event is OpenId4VcVerificationSessionStateChangedEvent & {
+            payload: { state: OpenId4VcVerificationSessionState.ResponseVerified }
+          } =>
+            event.payload.verificationSession.id === verificationSession.id &&
+            event.payload.state === OpenId4VcVerificationSessionState.ResponseVerified
         )
       )
     )
 
     expect(trustContexts).toEqual([{ credentialQueryId: 'degree', vctChain: [presentedVct, requestedVct] }])
 
-    const presentation = verifiedEvent.payload.verifiedAuthorizationResponse?.dcql?.presentations.degree[0] as
+    const presentation = verifiedEvent.payload.verifiedAuthorizationResponse.dcql?.presentations.degree[0] as
       | SdJwtVcWithTypeMetadataChain
       | undefined
     expect(presentation?.typeMetadataChain?.map((typeMetadata) => typeMetadata.vct)).toEqual([

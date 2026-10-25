@@ -76,7 +76,11 @@ import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import { credoJwtIssuerToOpenId4VcJwtIssuer, dcqlCredentialQueryToPresentationFormat } from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
-import { type OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
+import {
+  type OpenId4VcVerificationSessionStateChangedEvent,
+  type OpenId4VcVerificationSessionStateChangedEventPayload,
+  OpenId4VcVerifierEvents,
+} from './OpenId4VcVerifierEvents'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import type {
   OpenId4VpCreateAuthorizationRequestOptions,
@@ -1492,8 +1496,25 @@ export class OpenId4VpVerifierService {
   public async updateState(
     agentContext: AgentContext,
     verificationSession: OpenId4VcVerificationSessionRecord,
+    newState: OpenId4VcVerificationSessionState.ResponseVerified,
+    options: Pick<
+      Extract<
+        OpenId4VcVerificationSessionStateChangedEventPayload,
+        { state: OpenId4VcVerificationSessionState.ResponseVerified }
+      >,
+      'verifiedAuthorizationResponse'
+    >
+  ): Promise<void>
+  public async updateState(
+    agentContext: AgentContext,
+    verificationSession: OpenId4VcVerificationSessionRecord,
+    newState: Exclude<OpenId4VcVerificationSessionState, OpenId4VcVerificationSessionState.ResponseVerified>
+  ): Promise<void>
+  public async updateState(
+    agentContext: AgentContext,
+    verificationSession: OpenId4VcVerificationSessionRecord,
     newState: OpenId4VcVerificationSessionState,
-    options: Pick<OpenId4VcVerificationSessionStateChangedEvent['payload'], 'verifiedAuthorizationResponse'> = {}
+    options: Pick<OpenId4VcVerificationSessionStateChangedEventPayload, 'verifiedAuthorizationResponse'> = {}
   ) {
     agentContext.config.logger.debug(
       `Updating openid4vc verification session record ${verificationSession.id} to state ${newState} (previous=${verificationSession.state})`
@@ -1510,17 +1531,26 @@ export class OpenId4VpVerifierService {
     agentContext: AgentContext,
     verificationSession: OpenId4VcVerificationSessionRecord,
     previousState: OpenId4VcVerificationSessionState | null,
-    options: Pick<OpenId4VcVerificationSessionStateChangedEvent['payload'], 'verifiedAuthorizationResponse'> = {}
+    options: Pick<OpenId4VcVerificationSessionStateChangedEventPayload, 'verifiedAuthorizationResponse'> = {}
   ) {
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+
+    if (verificationSession.state === OpenId4VcVerificationSessionState.ResponseVerified) {
+      if (!options.verifiedAuthorizationResponse) {
+        throw new CredoError(
+          `Verification session '${verificationSession.id}' moved to '${verificationSession.state}' without a verified authorization response.`
+        )
+      }
+    }
 
     eventEmitter.emit<OpenId4VcVerificationSessionStateChangedEvent>(agentContext, {
       type: OpenId4VcVerifierEvents.VerificationSessionStateChanged,
       payload: {
         verificationSession: verificationSession.clone(),
         previousState,
+        state: verificationSession.state,
         verifiedAuthorizationResponse: options.verifiedAuthorizationResponse,
-      },
+      } as OpenId4VcVerificationSessionStateChangedEventPayload,
     })
   }
 }
