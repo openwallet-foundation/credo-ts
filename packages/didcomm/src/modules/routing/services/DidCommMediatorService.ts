@@ -26,7 +26,9 @@ import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
 import type { DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
-import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../messages'
+import { DidCommMediationRole } from '../models/DidCommMediationRole'
+import { DidCommMediationState } from '../models/DidCommMediationState'
+import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../protocol/v1/messages'
 import {
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdated,
@@ -34,9 +36,7 @@ import {
   DidCommKeylistUpdateResponseMessage,
   DidCommKeylistUpdateResult,
   DidCommMediationGrantMessage,
-} from '../messages'
-import { DidCommMediationRole } from '../models/DidCommMediationRole'
-import { DidCommMediationState } from '../models/DidCommMediationState'
+} from '../protocol/v1/messages'
 import { DidCommMediatorRoutingRecord } from '../repository'
 import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'

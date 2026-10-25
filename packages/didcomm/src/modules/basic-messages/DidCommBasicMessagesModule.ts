@@ -5,7 +5,7 @@ import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegist
 import { DidCommProtocol } from '../../models'
 import { DidCommBasicMessageRole } from './DidCommBasicMessageRole'
 import { DidCommBasicMessagesApi } from './DidCommBasicMessagesApi'
-import { DidCommBasicMessageHandler } from './handlers'
+import { DidCommBasicMessageHandler } from './protocol/v1/handlers'
 import { DidCommBasicMessageRepository } from './repository'
 import { DidCommBasicMessageService } from './services'
 
